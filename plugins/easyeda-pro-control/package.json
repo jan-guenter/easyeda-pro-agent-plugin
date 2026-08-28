@@ -10,13 +10,16 @@
   },
   "type": "module",
   "scripts": {
-    "build": "node scripts/build-server.mjs",
-    "test": "node --test server/tests/*.test.mjs",
-    "validate": "node scripts/validate-plugin.mjs",
-    "doctor": "node scripts/doctor.mjs --offline",
-    "compatibility:check": "node scripts/reviewed-compatibility.mjs --check",
-    "compatibility:update": "node scripts/reviewed-compatibility.mjs --write",
-    "verify": "npm run build && npm run compatibility:check && npm test && npm run validate"
+    "build": "node scripts/build-server.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --type-aware .",
+    "lint:fix": "oxlint --type-aware . --fix",
+    "test": "node --test server/tests/*.test.ts",
+    "validate": "node scripts/validate-plugin.ts",
+    "doctor": "node scripts/doctor.ts --offline",
+    "compatibility:check": "node scripts/reviewed-compatibility.ts --check",
+    "compatibility:update": "node scripts/reviewed-compatibility.ts --write",
+    "verify": "npm run typecheck && npm run lint && npm run build && npm run compatibility:check && npm test && npm run validate"
   },
   "engines": {
     "node": ">=24 <25"
@@ -26,6 +29,10 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "esbuild": "0.25.12"
+    "@types/node": "24.13.3",
+    "esbuild": "0.25.12",
+    "oxlint": "1.80.0",
+    "oxlint-tsgolint": "7.0.2001",
+    "typescript": "7.0.2"
   }
 }

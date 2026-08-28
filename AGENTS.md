@@ -42,6 +42,8 @@ Run with Node 24 from `plugins/easyeda-pro-control`:
 
 ```bash
 npm ci
+npm run typecheck
+npm run lint
 npm run build
 npm run compatibility:check
 npm test
@@ -79,6 +81,7 @@ The update command changes only the facade source/bundle projections and review 
 ## Current validation record
 
 - Compatibility target: EasyEDA Pro `3.2.149.88089769`, PCB bundle `3.2.149.5378b690`, public API `0.2.53.aee2f57a`, upstream/bridge `1.0.0-rc.1`, Node `24.18.0`.
+- Node source/toolchain: TypeScript `7.0.2` with all strict compiler checks enabled; Oxlint `1.80.0` plus type-aware `oxlint-tsgolint` `7.0.2001`; correctness, suspicious, and pedantic diagnostics are errors and warnings are denied.
 - Connected production-writer validation: **not performed; writer disabled**.
 - Unrestricted raw bridge execution: **structurally disabled**.
 - Release payload commit: `c47e6bb67c59f745bdee3bc61fbec7d97f7d1ec5` in `https://github.com/jan-guenter/easyeda-pro-agent-plugin`.

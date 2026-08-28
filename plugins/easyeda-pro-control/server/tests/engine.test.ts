@@ -11,14 +11,124 @@ import {
   reviewedCompatibilityManifestFingerprint,
   sha256Json,
   sha256Text,
-} from '../src/core.mjs';
+} from '../src/core.ts';
+import type {
+  EasyedaControlEngine as EngineInstance,
+  InstalledEasyedaBundles,
+  MutationPlan,
+  MutationStateName,
+  OperationJournal,
+  ToolCallSpec,
+  ToolDescriptor,
+  UpstreamClient,
+} from '../src/engine.ts';
+import { exactReadRequestSchema, type ExactReadRequest } from '../src/exact-readers.ts';
 
-let artifacts;
-let EasyedaControlEngine;
-let RuntimeDisabledEasyedaControlEngine;
-let source;
-let outputDir;
-let testDir;
+type EngineConstructor = new (upstream: UpstreamClient) => EngineInstance;
+type SourceEngineConstructor = typeof import('../src/engine.ts')['EasyedaControlEngine'];
+type ArtifactsModule = typeof import('../src/artifacts.ts');
+type TypedArtifactsModule = Omit<ArtifactsModule, 'listOperations' | 'loadOperation'> & {
+  listOperations(): Promise<OperationJournal[]>;
+  loadOperation(operationId: string): Promise<OperationJournal>;
+};
+type ComponentReadRequest = Extract<
+  ExactReadRequest,
+  { kind: 'schematic-components' | 'pcb-components' }
+>;
+
+interface MutableComponentRecord extends Record<string, unknown> {
+  bounds?: unknown;
+  pins?: unknown;
+  pads?: unknown;
+}
+
+interface InventoryFamily {
+  status: string;
+  count: number;
+  primitiveIds: string[];
+  byPrimitiveId?: Record<string, unknown>;
+}
+
+function isComponentReadRequest(request: ExactReadRequest): request is ComponentReadRequest {
+  return request.kind === 'schematic-components' || request.kind === 'pcb-components';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  if (!isRecord(value)) throw new Error(`Fixture ${label} must be an object.`);
+  return value;
+}
+
+function requireError(value: unknown): Error {
+  if (!(value instanceof Error)) throw new Error('Expected the fixture to reject with an Error.');
+  return value;
+}
+
+function parseJson(text: string): unknown {
+  const value: unknown = JSON.parse(text);
+  return value;
+}
+
+function isSourceEngineConstructor(value: unknown): value is SourceEngineConstructor {
+  return typeof value === 'function';
+}
+
+function requireEngineConstructor(value: unknown): SourceEngineConstructor {
+  if (!isSourceEngineConstructor(value)) {
+    throw new TypeError('Fixture engine module does not export EasyedaControlEngine.');
+  }
+  return value;
+}
+
+function isOperationJournal(value: unknown): value is OperationJournal {
+  return (
+    isRecord(value) &&
+    typeof value['operationId'] === 'string' &&
+    typeof value['planHash'] === 'string' &&
+    isRecord(value['plan']) &&
+    typeof value['state'] === 'string' &&
+    typeof value['mutationState'] === 'string' &&
+    typeof value['hardStop'] === 'boolean' &&
+    typeof value['mutationMayHaveOccurred'] === 'boolean' &&
+    isRecord(value['context']) &&
+    isRecord(value['preCheckpoint']) &&
+    Array.isArray(value['artifacts'])
+  );
+}
+
+function requireOperationJournal(value: unknown): OperationJournal {
+  if (!isOperationJournal(value)) {
+    throw new Error('Fixture operation journal has an invalid shape.');
+  }
+  return value;
+}
+
+function requireDefined<T>(value: T | undefined, label: string): T {
+  if (value === undefined) throw new Error(`Fixture ${label} is missing.`);
+  return value;
+}
+
+async function onlyOperation(): Promise<OperationJournal> {
+  const operations = await artifacts.listOperations();
+  if (operations.length !== 1) {
+    throw new Error(`Expected one fixture operation, received ${operations.length}.`);
+  }
+  return requireDefined(operations[0], 'operation');
+}
+
+function lastArtifact(operation: OperationJournal) {
+  return requireDefined(operation.artifacts.at(-1), 'phase artifact');
+}
+
+let artifacts: TypedArtifactsModule;
+let EasyedaControlEngine: EngineConstructor;
+let RuntimeDisabledEasyedaControlEngine: EngineConstructor;
+let source = '';
+let outputDir = '';
+let testDir = '';
 
 function createFixtureDatabase() {
   execFileSync('sqlite3', [
@@ -28,37 +138,46 @@ function createFixtureDatabase() {
 }
 
 async function resetFixture() {
-  await rm(process.env.EASYEDA_CONTROL_DATA_DIR, { recursive: true, force: true });
+  const controlDataDirectory = process.env['EASYEDA_CONTROL_DATA_DIR'];
+  if (controlDataDirectory === undefined || controlDataDirectory.length === 0) {
+    throw new Error('Fixture control-data directory is not configured.');
+  }
+  await rm(controlDataDirectory, { recursive: true, force: true });
   await rm(outputDir, { recursive: true, force: true });
   await rm(source, { force: true });
   createFixtureDatabase();
 }
 
-before(async () => {
+ before(async () => {
   testDir = await mkdtemp(join(tmpdir(), 'easyeda-control-engine-'));
   source = join(testDir, 'mock-project.eprj2');
   outputDir = join(testDir, 'checkpoints');
-  process.env.EASYEDA_CONTROL_DATA_DIR = join(testDir, 'control-data');
-  const engineModule = await import(
-    `../src/engine.mjs?engine-test=${encodeURIComponent(testDir)}`
+  process.env['EASYEDA_CONTROL_DATA_DIR'] = join(testDir, 'control-data');
+  const engineModule: unknown = await import(
+    `../src/engine.ts?engine-test=${encodeURIComponent(testDir)}`
   );
-  const SourceEngine = engineModule.EasyedaControlEngine;
+  const SourceEngine = requireEngineConstructor(
+    requireRecord(engineModule, 'engine module')['EasyedaControlEngine'],
+  );
   RuntimeDisabledEasyedaControlEngine = SourceEngine;
   EasyedaControlEngine = class ManifestBoundFixtureEngine extends SourceEngine {
-    constructor(upstream) {
+    constructor(upstream: UpstreamClient) {
       super(upstream, { privateComponentWriterValidated: true });
     }
 
-    async status() {
+    override async status() {
       const status = await super.status();
-      if (!(this.upstream instanceof MockUpstream) || this.upstream.options.implementationDrift) {
+      if (
+        !(this.upstream instanceof MockUpstream) ||
+        this.upstream.options.implementationDrift === true
+      ) {
         return status;
       }
       const manifest = loadReviewedCompatibilityManifest();
       const launcher = structuredClone(manifest.upstream.launcher);
       const serverVersion =
         this.upstream.options.serverVersion ?? manifest.upstream.serverVersion;
-      const installedBundles = structuredClone(status.installedBundles);
+      const installedBundles = structuredClone(await this.upstream.installedEasyedaBundles());
       installedBundles.pcbEditor.version =
         this.upstream.options.pcbEditorVersion ?? manifest.installedBundles.pcbEditor.version;
       installedBundles.pcbEditor.implementationSha256 =
@@ -126,24 +245,120 @@ before(async () => {
       return status;
     }
   };
-  artifacts = await import('../src/artifacts.mjs');
+  const artifactsModule = await import('../src/artifacts.ts');
+  artifacts = {
+    ...artifactsModule,
+    async listOperations(): Promise<OperationJournal[]> {
+      return (await artifactsModule.listOperations()).map((operation) =>
+        requireOperationJournal(operation),
+      );
+    },
+    async loadOperation(operationId: string): Promise<OperationJournal> {
+      return requireOperationJournal(await artifactsModule.loadOperation(operationId));
+    },
+  };
 });
 
-beforeEach(resetFixture);
+ beforeEach(resetFixture);
 
-after(async () => {
-  delete process.env.EASYEDA_CONTROL_DATA_DIR;
-  if (testDir) await rm(testDir, { recursive: true, force: true });
+ after(async () => {
+  delete process.env['EASYEDA_CONTROL_DATA_DIR'];
+  if (testDir.length > 0) await rm(testDir, { recursive: true, force: true });
 });
 
-function toolResult(payload) {
+function toolResult(payload: unknown): { structuredContent: { ok: true; result: unknown } } {
   return { structuredContent: { ok: true, result: payload } };
 }
 
-const digest = (character) => character.repeat(64);
+const digest = (character: string): string => character.repeat(64);
 
-class MockUpstream {
-  constructor(options = {}) {
+interface MockSnapshot {
+  state: string;
+  collateralState: string;
+}
+
+interface MockCall {
+  name: string;
+  args: Record<string, unknown>;
+  timeoutMs: number | undefined;
+}
+
+interface JournalCapture {
+  journal?: OperationJournal;
+}
+
+function captureOperationOnReopen(
+  operationId: string,
+  capture: JournalCapture,
+): () => Promise<void> {
+  return async () => {
+    capture.journal = await artifacts.loadOperation(operationId);
+  };
+}
+
+interface MockOptions {
+  applyCollateral?: boolean;
+  applyError?: Error;
+  applyMutatesBeforeError?: boolean;
+  applyPersistence?: 'logical' | 'physical-only';
+  baselineReopenErrorsRemaining?: number;
+  baselineReopenState?: string;
+  contextPath?: string;
+  documentType?: number;
+  doubleReadMismatch?: boolean;
+  implementationDrift?: boolean;
+  lockOnlyTargetMutation?: boolean;
+  onApply?: (mock: MockUpstream) => void | Promise<void>;
+  onBaselineReopen?: (mock: MockUpstream, count: number) => void | Promise<void>;
+  onReadState?: (mock: MockUpstream, count: number) => void | Promise<void>;
+  onReopen?: (mock: MockUpstream, count: number) => void | Promise<void>;
+  onRollback?: (mock: MockUpstream) => void | Promise<void>;
+  onSave?: () => void | Promise<void>;
+  pcbEditorVersion?: string;
+  pcbImplementationSha256?: string;
+  persistOnSave?: boolean;
+  publicApiAdapterSha256?: string;
+  publicApiDeclarationsSha256?: string;
+  publicApiImplementationSha256?: string;
+  publicApiVersion?: string;
+  recoveryActivationErrorsRemaining?: number;
+  recoveryActivationOpened?: boolean;
+  recoveryActivationTabId?: string;
+  reopenErrorsRemaining?: number;
+  reopenState?: string;
+  reopenedTabId?: string;
+  reportedReopenTabId?: string;
+  reportedSaveTabId?: string;
+  saveError?: Error;
+  savePersistence?: 'physical-only';
+  serverVersion?: string;
+  targetPadDirectDeclaredMismatch?: boolean;
+  targetPadDirectOrthogonalDrift?: boolean;
+  targetPadPrimitiveLockChanges?: boolean;
+  targetPadTransformChanges?: boolean;
+}
+
+class MockUpstream implements UpstreamClient {
+  options: MockOptions;
+  state: string;
+  applyAttempts: number;
+  rollbackAttempts: number;
+  saveAttempts: number;
+  reopenAttempts: number;
+  baselineReopenAttempts: number;
+  recoveryActivationAttempts: number;
+  readStateCalls: number;
+  contextCalls: number;
+  activeTabId: string;
+  collateralState: string;
+  exactReadExecutions: Map<string, number>;
+  exactReadSnapshots: Map<string, MockSnapshot>;
+  lastApplyCode: string | undefined;
+  calls: MockCall[];
+  events: string[];
+  tools: ToolDescriptor[];
+
+  constructor(options: MockOptions = {}) {
     this.options = options;
     this.state = 'baseline';
     this.applyAttempts = 0;
@@ -255,12 +470,12 @@ class MockUpstream {
     ];
   }
 
-  async listTools() {
-    return this.tools;
+  listTools(): Promise<ToolDescriptor[]> {
+    return Promise.resolve(this.tools);
   }
 
-  async findTool(name) {
-    return this.tools.find((tool) => tool.name === name);
+  findTool(name: string): Promise<ToolDescriptor | undefined> {
+    return Promise.resolve(this.tools.find((tool) => tool.name === name));
   }
 
   serverInfo() {
@@ -270,8 +485,8 @@ class MockUpstream {
     };
   }
 
-  async launcherFingerprint() {
-    return {
+  launcherFingerprint() {
+    return Promise.resolve({
       command: '/usr/bin/node',
       commandSha256: digest('1'),
       args: ['/opt/easyeda/dist/index.js'],
@@ -288,13 +503,13 @@ class MockUpstream {
         path: '/opt/easyeda/pnpm-lock.yaml',
         sha256: digest('4'),
       },
-    };
+    });
   }
 
   async launcherState() {
     const startup = await this.launcherFingerprint();
     const current = structuredClone(startup);
-    if (this.options.implementationDrift) {
+    if (this.options.implementationDrift === true) {
       current.entrypointSha256 = digest('9');
       current.implementationTree.sha256 = digest('8');
     }
@@ -302,7 +517,7 @@ class MockUpstream {
       startup,
       current,
       startupSha256: digest('5'),
-      currentSha256: this.options.implementationDrift ? digest('6') : digest('5'),
+      currentSha256: this.options.implementationDrift === true ? digest('6') : digest('5'),
       drift: this.options.implementationDrift === true,
     };
   }
@@ -311,8 +526,8 @@ class MockUpstream {
     return 'Offline EasyEDA control fixture.';
   }
 
-  async installedEasyedaBundles() {
-    return {
+  installedEasyedaBundles(): Promise<InstalledEasyedaBundles> {
+    return Promise.resolve({
       available: true,
       assetsRoot: '/opt/easyeda/assets',
       pcbEditor: {
@@ -337,7 +552,7 @@ class MockUpstream {
           this.options.publicApiDeclarationsSha256 ??
           '32a0d2f8b4bc3d7b2b93b33499d9d768b0c23c77f45843a65166cf4e8ad6dab1',
       },
-    };
+    });
   }
 
   persistDatabase() {
@@ -351,7 +566,11 @@ class MockUpstream {
     execFileSync('sqlite3', [source, 'VACUUM;']);
   }
 
-  async callTool(name, args = {}, timeoutMs) {
+  async callTool(
+    name: string,
+    args: Record<string, unknown> = {},
+    timeoutMs?: number,
+  ): Promise<unknown> {
     this.calls.push({ name, args, timeoutMs });
     if (name === 'easyeda_health_check') {
       return toolResult({
@@ -398,7 +617,8 @@ class MockUpstream {
     }
     if (name !== 'easyeda_execute') throw new Error(`Unexpected mock tool ${name}`);
 
-    const code = String(args.code ?? '');
+    const codeValue = args['code'];
+    const code = typeof codeValue === 'string' ? codeValue : '';
     if (
       code.includes('kind: "exact-component-mutation"') &&
       code.includes('state: "after"')
@@ -406,8 +626,8 @@ class MockUpstream {
       this.applyAttempts += 1;
       this.lastApplyCode = code;
       await this.options.onApply?.(this);
-      if (this.options.applyMutatesBeforeError) this.state = 'applied';
-      if (this.options.applyError) throw this.options.applyError;
+      if (this.options.applyMutatesBeforeError === true) this.state = 'applied';
+      if (this.options.applyError !== undefined) throw this.options.applyError;
       this.state = 'applied';
       if (this.options.applyCollateral === true) this.collateralState = 'changed';
       if (this.options.applyPersistence === 'logical') this.persistDatabase();
@@ -447,7 +667,7 @@ class MockUpstream {
         this.persistDatabase();
       }
       await this.options.onSave?.();
-      if (this.options.saveError) throw this.options.saveError;
+      if (this.options.saveError !== undefined) throw this.options.saveError;
       this.activeTabId = 'new-tab';
       return toolResult({
         ok: true,
@@ -463,8 +683,9 @@ class MockUpstream {
     }
     if (code.includes('kind: "activate-recovery-target"')) {
       this.recoveryActivationAttempts += 1;
-      if (Number(this.options.recoveryActivationErrorsRemaining ?? 0) > 0) {
-        this.options.recoveryActivationErrorsRemaining -= 1;
+      const remainingActivationErrors = this.options.recoveryActivationErrorsRemaining ?? 0;
+      if (remainingActivationErrors > 0) {
+        this.options.recoveryActivationErrorsRemaining = remainingActivationErrors - 1;
         throw applyTimeout();
       }
       this.activeTabId = this.options.recoveryActivationTabId ?? this.activeTabId;
@@ -492,8 +713,9 @@ class MockUpstream {
       const errorCounter = baselineReopen
         ? 'baselineReopenErrorsRemaining'
         : 'reopenErrorsRemaining';
-      if (Number(this.options[errorCounter] ?? 0) > 0) {
-        this.options[errorCounter] -= 1;
+      const remainingReopenErrors = this.options[errorCounter] ?? 0;
+      if (remainingReopenErrors > 0) {
+        this.options[errorCounter] = remainingReopenErrors - 1;
         throw applyTimeout();
       }
       this.state = baselineReopen
@@ -513,13 +735,15 @@ class MockUpstream {
       });
     }
 
-    const requestMatch = /const REQUEST = (\{[^\n]+\});/.exec(code);
-    if (requestMatch) {
-      const request = JSON.parse(requestMatch[1]);
-      const execution = Number(this.exactReadExecutions.get(request.kind) ?? 0) + 1;
+    const requestMatch = /const REQUEST = (\{[^\n]+\});/u.exec(code);
+    const requestSource = requestMatch?.[1];
+    if (requestSource !== undefined) {
+      const request: ExactReadRequest = exactReadRequestSchema.parse(parseJson(requestSource));
+      const execution = (this.exactReadExecutions.get(request.kind) ?? 0) + 1;
       this.exactReadExecutions.set(request.kind, execution);
       const firstObservation = execution % 2 === 1;
-      if (request.kind.endsWith('-components') && firstObservation) {
+      const componentRequest = isComponentReadRequest(request);
+      if (componentRequest && firstObservation) {
         this.readStateCalls += 1;
         await this.options.onReadState?.(this, this.readStateCalls);
         this.events.push(`read-state:${this.readStateCalls}:${this.state}`);
@@ -535,7 +759,7 @@ class MockUpstream {
         },
       );
       if (
-        request.kind.endsWith('-components') &&
+        componentRequest &&
         !firstObservation &&
         this.options.doubleReadMismatch === true
       ) {
@@ -543,7 +767,7 @@ class MockUpstream {
       }
       if (!firstObservation) this.exactReadSnapshots.delete(request.kind);
       const documentType = request.kind === 'schematic-components' ? 1 : 3;
-      if (request.kind.endsWith('-components')) {
+      if (componentRequest) {
         const targetValue =
           snapshot.state === 'baseline' ? 'baseline' : snapshot.state === 'applied' ? 'applied' : snapshot.state;
         const includeTargetPad =
@@ -570,7 +794,7 @@ class MockUpstream {
               },
             ]
           : [];
-        const allByPrimitiveId = {
+        const allByPrimitiveId: Record<string, MutableComponentRecord> = {
           R1: {
             primitiveId: 'R1',
             primitiveType: 'Component',
@@ -580,7 +804,7 @@ class MockUpstream {
             designator: 'R1',
             x:
               documentType === 3
-                ? this.options.lockOnlyTargetMutation
+                ? this.options.lockOnlyTargetMutation === true
                   ? 100
                   : targetValue === 'baseline'
                   ? 100
@@ -631,9 +855,13 @@ class MockUpstream {
         const selectedIds = request.selector?.primitiveIds ?? Object.keys(allByPrimitiveId);
         const byPrimitiveId = Object.fromEntries(
           selectedIds.map((primitiveId) => {
-            const record = structuredClone(allByPrimitiveId[primitiveId]);
-            if (request.includeBounds === false) delete record.bounds;
-            if (request.includePins === false) {
+            const sourceRecord = allByPrimitiveId[primitiveId];
+            if (sourceRecord === undefined) {
+              throw new Error(`Unknown fixture component ${primitiveId}.`);
+            }
+            const record = structuredClone(sourceRecord);
+            if (!request.includeBounds) delete record.bounds;
+            if (!request.includePins) {
               delete record.pins;
               delete record.pads;
             }
@@ -713,7 +941,7 @@ class MockUpstream {
           'strings',
           'vias',
         ];
-        const families = Object.fromEntries(
+        const families: Record<string, InventoryFamily> = Object.fromEntries(
           familyNames.map((family) => [
             family,
             {
@@ -782,9 +1010,11 @@ class MockUpstream {
             parentComponentPrimitiveId: 'R1',
             componentCorrelationSource: 'component-getState_Pads',
           };
-          families.pads.count = 1;
-          families.pads.primitiveIds = ['R1-pad-1'];
-          families.pads.byPrimitiveId = { 'R1-pad-1': pad };
+          const pads = families['pads'];
+          if (pads === undefined) throw new Error('Fixture pad family is missing.');
+          pads.count = 1;
+          pads.primitiveIds = ['R1-pad-1'];
+          pads.byPrimitiveId = { 'R1-pad-1': pad };
         }
         return toolResult({
           ok: true,
@@ -886,7 +1116,10 @@ class MockUpstream {
   }
 }
 
-function rawSpec(marker) {
+function rawSpec(marker: string): ToolCallSpec & {
+  mode: 'mutate-unsaved';
+  acknowledgeUnrestrictedRaw: true;
+} {
   const code = `// ${marker}\nreturn { ok: true };`;
   return {
     toolName: 'easyeda_execute',
@@ -897,14 +1130,18 @@ function rawSpec(marker) {
   };
 }
 
-function exactComponentMutationSpec(state) {
+function exactComponentMutationSpec(state: MutationStateName): ToolCallSpec {
   return {
     toolName: 'easyeda_control_exact_component_mutation',
     arguments: { state },
   };
 }
 
-function stateReadSpec(documentType, expectedState, options = {}) {
+function stateReadSpec(
+  documentType: number,
+  expectedState?: string,
+  options: { summary?: boolean } = {},
+): ToolCallSpec {
   const summary = options.summary === true;
   return {
     toolName: 'easyeda_control_exact_read',
@@ -936,8 +1173,8 @@ function stateReadSpec(documentType, expectedState, options = {}) {
   };
 }
 
-function phaseReadSpecs(documentType, expectedState) {
-  const calls = [
+function phaseReadSpecs(documentType: number, expectedState?: string): ToolCallSpec[] {
+  const calls: ToolCallSpec[] = [
     stateReadSpec(documentType, expectedState, { summary: true }),
     stateReadSpec(documentType, expectedState),
   ];
@@ -955,7 +1192,11 @@ function phaseReadSpecs(documentType, expectedState) {
   return calls;
 }
 
-async function makePlan(engine, label, overrides = {}) {
+async function makePlan(
+  engine: EngineInstance,
+  label: string,
+  overrides: Partial<MutationPlan> = {},
+): Promise<MutationPlan> {
   const expectedFingerprint = (await engine.status()).stableFingerprint;
   const documentType = overrides.expectedContext?.document?.documentType ?? 3;
   return {
@@ -1009,21 +1250,25 @@ async function makePlan(engine, label, overrides = {}) {
   };
 }
 
-async function planWithDiscard(engine, plan) {
-  return await engine.plan(plan, { confirmDiscardAnyUnsavedState: true });
+function planWithDiscard(engine: EngineInstance, plan: MutationPlan) {
+  return engine.plan(plan, { confirmDiscardAnyUnsavedState: true });
 }
 
-async function reachDelayedFinalFailure(engine, upstream, label) {
+async function reachDelayedFinalFailure(
+  engine: EngineInstance,
+  upstream: MockUpstream,
+  label: string,
+) {
   const planned = await planWithDiscard(engine, await makePlan(engine, label));
   await engine.apply(planned.operationId, planned.planHash);
   await engine.verify(planned.operationId);
   const failAtRead = upstream.readStateCalls + 5;
-  upstream.options.onReadState = (mock, count) => {
+  upstream.options.onReadState = (mock: MockUpstream, count: number) => {
     if (count === failAtRead) mock.state = 'unsaved-active-editor-change';
   };
   await assert.rejects(
     engine.saveReopen(planned.operationId, planned.planHash),
-    /assertion/i,
+    /assertion/iu,
   );
   delete upstream.options.onReadState;
   const failed = await artifacts.loadOperation(planned.operationId);
@@ -1034,17 +1279,21 @@ async function reachDelayedFinalFailure(engine, upstream, label) {
   return { planned, failed };
 }
 
-async function reachSavedVerificationFailure(engine, upstream, label) {
+async function reachSavedVerificationFailure(
+  engine: EngineInstance,
+  upstream: MockUpstream,
+  label: string,
+) {
   const planned = await planWithDiscard(engine, await makePlan(engine, label));
   await engine.apply(planned.operationId, planned.planHash);
   await engine.verify(planned.operationId);
   const failAtRead = upstream.readStateCalls + 3;
-  upstream.options.onReadState = (mock, count) => {
+  upstream.options.onReadState = (mock: MockUpstream, count: number) => {
     if (count === failAtRead) mock.state = 'baseline';
   };
   await assert.rejects(
     engine.saveReopen(planned.operationId, planned.planHash),
-    /assertion/i,
+    /assertion/iu,
   );
   delete upstream.options.onReadState;
   const failed = await artifacts.loadOperation(planned.operationId);
@@ -1061,23 +1310,30 @@ function applyTimeout() {
   return error;
 }
 
-async function restartConfirmation(operationId) {
+async function restartConfirmation(operationId: string): Promise<string> {
   const operation = await artifacts.loadOperation(operationId);
+  const challenge = operation['runtimeRestartChallenge'];
+  if (typeof challenge !== 'string') {
+    throw new TypeError(`Operation ${operationId} has no runtime restart challenge.`);
+  }
   assert.match(
-    operation.runtimeRestartChallenge,
-    new RegExp(`^EASYEDA_RESTARTED_AND_RECONNECTED:${operationId}:`),
+    challenge,
+    new RegExp(`^EASYEDA_RESTARTED_AND_RECONNECTED:${operationId}:`, 'u'),
   );
-  return operation.runtimeRestartChallenge;
+  return challenge;
 }
 
-function windowsPath(path) {
-  const match = /^\/mnt\/([a-z])\/(.*)$/i.exec(path);
+function windowsPath(path: string): string | undefined {
+  const match = /^\/mnt\/([a-z])\/(.*)$/iu.exec(path);
   if (!match) return undefined;
-  return `${match[1].toUpperCase()}:\\${match[2].replaceAll('/', '\\')}`;
+  const drive = match[1];
+  const suffix = match[2];
+  if (drive === undefined || suffix === undefined) return undefined;
+  return `${drive.toUpperCase()}:\\${suffix.replaceAll('/', '\\')}`;
 }
 
-describe('durable mutation state machine', { concurrency: false }, () => {
-  test('status separates the running startup fingerprint from on-disk drift', async () => {
+void describe('durable mutation state machine', { concurrency: false }, () => {
+  void test('status separates the running startup fingerprint from on-disk drift', async () => {
     const upstream = new MockUpstream({ implementationDrift: true });
     const engine = new EasyedaControlEngine(upstream);
     const status = await engine.status();
@@ -1095,10 +1351,11 @@ describe('durable mutation state machine', { concurrency: false }, () => {
       status.stableFingerprint.facadeImplementation,
       status.facadeImplementation,
     );
-    assert.match(status.facadeImplementation.sha256, /^[a-f0-9]{64}$/);
-    assert.ok(status.facadeImplementation.files.length >= 1);
-    assert.equal(status.dispatcher.payload.source, 'loader_status');
-    assert.equal(status.dispatcher.payload.dispatcher_build_id, 'd18b6xd531xe6ca');
+    assert.match(status.facadeImplementation.sha256, /^[a-f0-9]{64}$/u);
+    assert.ok(status.facadeImplementation.files.length > 0);
+    const dispatcherPayload = requireDefined(status.dispatcher.payload, 'dispatcher payload');
+    assert.equal(dispatcherPayload['source'], 'loader_status');
+    assert.equal(dispatcherPayload['dispatcher_build_id'], 'd18b6xd531xe6ca');
     assert.equal(status.installedBundles.available, true);
     assert.equal(status.capabilities.privateComponentWriter.enabled, true);
     assert.equal(
@@ -1115,7 +1372,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
       ),
     );
 
-    upstream.tools[0].outputSchema = {
+    requireDefined(upstream.tools[0], 'first upstream tool').outputSchema = {
       type: 'object',
       properties: { result: { type: 'string' } },
     };
@@ -1126,14 +1383,14 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     );
   });
 
-  test('runtime-disables the private component writer until connected validation is recorded', async () => {
+  void test('runtime-disables the private component writer until connected validation is recorded', async () => {
     const upstream = new MockUpstream();
     const engine = new RuntimeDisabledEasyedaControlEngine(upstream);
     const status = await engine.status();
 
     assert.equal(status.capabilities.privateComponentWriter.enabled, false);
-    assert.match(status.capabilities.privateComponentWriter.reason, /sacrificial-board test/);
-    await assert.rejects(engine.plan({}), /private PCB component writer is runtime-disabled/);
+    assert.match(status.capabilities.privateComponentWriter.reason, /sacrificial-board test/u);
+    await assert.rejects(engine.plan({}), /private PCB component writer is runtime-disabled/u);
     assert.deepEqual(await artifacts.listOperations(), []);
     assert.equal(upstream.contextCalls, 0);
     assert.equal(upstream.applyAttempts, 0);
@@ -1145,7 +1402,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     );
     await assert.rejects(
       engine.apply(planned.operationId, planned.planHash),
-      /private PCB component writer is runtime-disabled/,
+      /private PCB component writer is runtime-disabled/u,
     );
     let journal = await artifacts.loadOperation(planned.operationId);
     journal.state = 'applied-unsaved';
@@ -1153,21 +1410,21 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     await artifacts.updateOperation(journal);
     await assert.rejects(
       engine.rollback(planned.operationId, planned.planHash),
-      /private PCB component writer is runtime-disabled/,
+      /private PCB component writer is runtime-disabled/u,
     );
     journal = await artifacts.loadOperation(planned.operationId);
     journal.state = 'live-verified';
     await artifacts.updateOperation(journal);
     await assert.rejects(
       engine.saveReopen(planned.operationId, planned.planHash),
-      /private PCB component writer is runtime-disabled/,
+      /private PCB component writer is runtime-disabled/u,
     );
     assert.equal(upstream.applyAttempts, 0);
     assert.equal(upstream.rollbackAttempts, 0);
     assert.equal(upstream.saveAttempts, 0);
   });
 
-  test('context requires and canonicalizes the exact .eprj2 project path', async () => {
+  void test('context requires and canonicalizes the exact .eprj2 project path', async () => {
     const canonical = new MockUpstream({ contextPath: `file://${source}` });
     const canonicalContext = await new EasyedaControlEngine(canonical).context();
     assert.equal(canonicalContext.project.path, resolve(source));
@@ -1176,12 +1433,12 @@ describe('durable mutation state machine', { concurrency: false }, () => {
       const malformed = new MockUpstream({ contextPath });
       await assert.rejects(
         new EasyedaControlEngine(malformed).context(),
-        /project UUID\/path|absolute POSIX|\.eprj2 database/,
+        /project UUID\/path|absolute POSIX|\.eprj2 database/u,
       );
     }
   });
 
-  test('plans checkpoint and journal before discarding the live baseline', async () => {
+  void test('plans checkpoint and journal before discarding the live baseline', async () => {
     const upstream = new MockUpstream({ reopenedTabId: 'clean-tab' });
     const engine = new EasyedaControlEngine(upstream);
     const plan = await makePlan(engine, 'clean-baseline');
@@ -1189,30 +1446,38 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.plan(plan),
-      /confirmDiscardAnyUnsavedState=true/,
+      /confirmDiscardAnyUnsavedState=true/u,
     );
     assert.equal(upstream.baselineReopenAttempts, 0);
     assert.equal(upstream.readStateCalls, 0);
     assert.deepEqual(await artifacts.listOperations(), []);
 
-    let dispatchJournal;
-    let dispatchCheckpointVerification;
+    let dispatchJournal: OperationJournal | undefined;
+    let dispatchCheckpointVerification: unknown;
     upstream.options.onBaselineReopen = async () => {
-      [dispatchJournal] = await artifacts.listOperations();
+      dispatchJournal = await onlyOperation();
       dispatchCheckpointVerification = await engine.checkpoint({
         receiptPath: dispatchJournal.preCheckpoint.receiptPath,
       });
     };
     const planned = await planWithDiscard(engine, plan);
+    const observedDispatchJournal = requireDefined(dispatchJournal, 'baseline dispatch journal');
+    const observedCheckpointVerification = requireRecord(
+      dispatchCheckpointVerification,
+      'dispatch checkpoint verification',
+    );
     assert.equal(planned.state, 'preflight-proven');
     assert.equal(upstream.baselineReopenAttempts, 1);
     assert.equal(upstream.reopenAttempts, 0);
-    assert.equal(dispatchJournal.state, 'baseline-reopen-dispatching');
-    assert.equal(dispatchJournal.hardStop, true);
-    assert.equal(dispatchJournal.mutationMayHaveOccurred, true);
-    assert.equal(dispatchCheckpointVerification.ok, true);
-    assert.equal(dispatchJournal.artifacts.length, 1);
-    assert.match(dispatchJournal.artifacts[0].path, /baseline-checkpoint/);
+    assert.equal(observedDispatchJournal.state, 'baseline-reopen-dispatching');
+    assert.equal(observedDispatchJournal.hardStop, true);
+    assert.equal(observedDispatchJournal.mutationMayHaveOccurred, true);
+    assert.equal(observedCheckpointVerification['ok'], true);
+    assert.equal(observedDispatchJournal.artifacts.length, 1);
+    assert.match(
+      requireDefined(observedDispatchJournal.artifacts[0], 'baseline artifact').path,
+      /baseline-checkpoint/u,
+    );
     assert.deepEqual(upstream.events.slice(0, 2), [
       'baseline-reopen:1',
       'read-state:1:baseline',
@@ -1224,19 +1489,21 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(journal.planHash, planned.planHash);
     assert.equal(journal.planHash, buildPlanHash(journal.plan));
     assert.notEqual(journal.planHash, originalPlanHash);
-    assert.equal(journal.baselineHash.length, 64);
+    assert.equal(requireDefined(journal.baselineHash, 'baseline hash').length, 64);
     assert.equal(journal.artifacts.length, 3);
-    const preflightEvidence = JSON.parse(
-      await readFile(journal.artifacts.at(-1).path, 'utf8'),
+    const preflightEvidence = requireRecord(
+      parseJson(await readFile(lastArtifact(journal).path, 'utf8')),
+      'preflight evidence',
     );
-    assert.equal(preflightEvidence.finalCheckpointVerification.ok, true);
-    assert.equal(
-      preflightEvidence.finalCheckpointVerification.sourceEqualsCheckpoint,
-      true,
+    const finalCheckpointVerification = requireRecord(
+      preflightEvidence['finalCheckpointVerification'],
+      'final checkpoint verification',
     );
+    assert.equal(finalCheckpointVerification['ok'], true);
+    assert.equal(finalCheckpointVerification['sourceEqualsCheckpoint'], true);
   });
 
-  test('rebinds duplicate tab IDs in a full PCB context after each lifecycle reopen', async () => {
+  void test('rebinds duplicate tab IDs in a full PCB context after each lifecycle reopen', async () => {
     const upstream = new MockUpstream({ reopenedTabId: 'clean-full-context-tab' });
     const engine = new EasyedaControlEngine(upstream);
     const plan = await makePlan(engine, 'full-context-lifecycle', {
@@ -1256,10 +1523,15 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     const planned = await planWithDiscard(engine, plan);
     let journal = await artifacts.loadOperation(planned.operationId);
+    const plannedPcbContext = requireDefined(
+      journal.plan.expectedContext.pcb,
+      'planned PCB context',
+    );
+    const journalPcbContext = requireDefined(journal.context.pcb, 'journal PCB context');
     assert.equal(journal.plan.expectedContext.document.tabId, 'clean-full-context-tab');
-    assert.equal(journal.plan.expectedContext.pcb.tabId, 'clean-full-context-tab');
+    assert.equal(plannedPcbContext.tabId, 'clean-full-context-tab');
     assert.equal(journal.context.document.tabId, 'clean-full-context-tab');
-    assert.equal(journal.context.pcb.tabId, 'clean-full-context-tab');
+    assert.equal(journalPcbContext.tabId, 'clean-full-context-tab');
     assert.equal(journal.planHash, buildPlanHash(journal.plan));
     assert.notEqual(journal.planHash, originalPlanHash);
 
@@ -1267,16 +1539,24 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     await engine.verify(planned.operationId);
     const completed = await engine.saveReopen(planned.operationId, planned.planHash);
     journal = await artifacts.loadOperation(planned.operationId);
+    const completedPlanPcbContext = requireDefined(
+      journal.plan.expectedContext.pcb,
+      'completed plan PCB context',
+    );
+    const completedJournalPcbContext = requireDefined(
+      journal.context.pcb,
+      'completed journal PCB context',
+    );
     assert.equal(completed.state, 'completed');
     assert.equal(journal.plan.expectedContext.document.tabId, 'new-tab');
-    assert.equal(journal.plan.expectedContext.pcb.tabId, 'new-tab');
+    assert.equal(completedPlanPcbContext.tabId, 'new-tab');
     assert.equal(journal.context.document.tabId, 'new-tab');
-    assert.equal(journal.context.pcb.tabId, 'new-tab');
+    assert.equal(completedJournalPcbContext.tabId, 'new-tab');
     assert.equal(journal.planHash, buildPlanHash(journal.plan));
     assert.equal(journal.planHash, completed.planHash);
   });
 
-  test('hard-stops when lifecycle evidence reports a tab other than the active reopened tab', async () => {
+  void test('hard-stops when lifecycle evidence reports a tab other than the active reopened tab', async () => {
     const upstream = new MockUpstream({
       reopenedTabId: 'actual-clean-tab',
       reportedReopenTabId: 'different-reported-tab',
@@ -1285,9 +1565,9 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       planWithDiscard(engine, await makePlan(engine, 'mismatched-reopen-tab')),
-      /reopened tab does not match the active context tab/,
+      /reopened tab does not match the active context tab/u,
     );
-    const [unknown] = await artifacts.listOperations();
+    const unknown = await onlyOperation();
     assert.equal(unknown.state, 'baseline-reopen-unknown');
     assert.equal(unknown.unknownPhase, 'baseline-reopen');
     assert.equal(unknown.hardStop, true);
@@ -1301,13 +1581,13 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(upstream.readStateCalls, 0);
   });
 
-  test('baseline reopen timeout is recoverably invalidated without a baseline hash', async () => {
+  void test('baseline reopen timeout is recoverably invalidated without a baseline hash', async () => {
     const upstream = new MockUpstream({ baselineReopenErrorsRemaining: 1 });
     const engine = new EasyedaControlEngine(upstream);
     const plan = await makePlan(engine, 'baseline-timeout');
 
-    await assert.rejects(planWithDiscard(engine, plan), /timed out/);
-    const [unknown] = await artifacts.listOperations();
+    await assert.rejects(planWithDiscard(engine, plan), /timed out/u);
+    const unknown = await onlyOperation();
     assert.equal(unknown.state, 'baseline-reopen-unknown');
     assert.equal(unknown.unknownPhase, 'baseline-reopen');
     assert.equal(unknown.hardStop, true);
@@ -1318,7 +1598,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.recover(unknown.operationId, 'reconciled-no-mutation'),
-      /terminate EasyEDA Pro, restart it, reconnect the bridge/,
+      /terminate EasyEDA Pro, restart it, reconnect the bridge/u,
     );
     const recovered = await engine.recover(unknown.operationId, 'reconciled-no-mutation', {
       runtimeRestartConfirmation: await restartConfirmation(unknown.operationId),
@@ -1328,12 +1608,19 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(recovered.mutationMayHaveOccurred, false);
     assert.equal(upstream.readStateCalls, 0);
     const journal = await artifacts.loadOperation(unknown.operationId);
-    const evidence = JSON.parse(await readFile(journal.artifacts.at(-1).path, 'utf8'));
-    assert.equal(evidence.baselinePreparationInvalidated, true);
-    assert.equal(evidence.preCheckpointVerification.ok, true);
+    const evidence = requireRecord(
+      parseJson(await readFile(lastArtifact(journal).path, 'utf8')),
+      'baseline recovery evidence',
+    );
+    const preCheckpointVerification = requireRecord(
+      evidence['preCheckpointVerification'],
+      'pre-checkpoint verification',
+    );
+    assert.equal(evidence['baselinePreparationInvalidated'], true);
+    assert.equal(preCheckpointVerification['ok'], true);
   });
 
-  test('plan invalidates when the project source changes during clean-baseline preflight', async () => {
+  void test('plan invalidates when the project source changes during clean-baseline preflight', async () => {
     const upstream = new MockUpstream({
       onReadState(_mock, count) {
         if (count === 1) {
@@ -1349,9 +1636,9 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       planWithDiscard(engine, plan),
-      /durable database changed between the pre-checkpoint, baseline reopen, and preflight/,
+      /durable database changed between the pre-checkpoint, baseline reopen, and preflight/u,
     );
-    const [invalidated] = await artifacts.listOperations();
+    const invalidated = await onlyOperation();
     assert.equal(invalidated.state, 'plan-invalidated');
     assert.equal(invalidated.mutationState, 'none');
     assert.equal(invalidated.hardStop, false);
@@ -1361,15 +1648,15 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(upstream.applyAttempts, 0);
   });
 
-  test('guards apply, verifies live and reopened state, then completes with two checkpoints', async () => {
+  void test('guards apply, verifies live and reopened state, then completes with two checkpoints', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(engine, await makePlan(engine, 'success'));
     assert.equal(planned.state, 'preflight-proven');
     assert.equal(planned.mutationMayHaveOccurred, false);
 
-    let applyingJournal;
-    let savingJournal;
+    let applyingJournal: OperationJournal | undefined;
+    let savingJournal: OperationJournal | undefined;
     upstream.options.onApply = async () => {
       applyingJournal = await artifacts.loadOperation(planned.operationId);
     };
@@ -1378,28 +1665,31 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     };
 
     const applied = await engine.apply(planned.operationId, planned.planHash);
+    const observedApplyingJournal = requireDefined(applyingJournal, 'applying journal');
     assert.equal(applied.state, 'applied-unsaved');
-    assert.equal(applyingJournal.state, 'applying');
-    assert.equal(applyingJournal.hardStop, true);
-    assert.equal(applyingJournal.mutationMayHaveOccurred, true);
+    assert.equal(observedApplyingJournal.state, 'applying');
+    assert.equal(observedApplyingJournal.hardStop, true);
+    assert.equal(observedApplyingJournal.mutationMayHaveOccurred, true);
     assert.equal(applied.mutationMayHaveOccurred, true);
     assert.equal(upstream.applyAttempts, 1);
-    assert.match(upstream.lastApplyCode, /EXPECTED_PROJECT_UUID = "project-1"/);
-    assert.match(upstream.lastApplyCode, /EXPECTED_DOCUMENT_UUID = "document-1"/);
-    assert.match(upstream.lastApplyCode, /EXPECTED_TAB_ID = "reopened-tab"/);
-    assert.match(upstream.lastApplyCode, /eda\.pcb_PrimitiveComponent/);
-    assert.match(upstream.lastApplyCode, /"primitiveId":"R1","patch":\{"x":200\}/);
-    assert.doesNotMatch(upstream.lastApplyCode, /MOCK_APPLY/);
+    const applyCode = requireDefined(upstream.lastApplyCode, 'apply source');
+    assert.match(applyCode, /EXPECTED_PROJECT_UUID = "project-1"/u);
+    assert.match(applyCode, /EXPECTED_DOCUMENT_UUID = "document-1"/u);
+    assert.match(applyCode, /EXPECTED_TAB_ID = "reopened-tab"/u);
+    assert.match(applyCode, /eda\.pcb_PrimitiveComponent/u);
+    assert.match(applyCode, /"primitiveId":"R1","patch":\{"x":200\}/u);
+    assert.doesNotMatch(applyCode, /MOCK_APPLY/u);
 
     const verified = await engine.verify(planned.operationId);
     assert.equal(verified.state, 'live-verified');
     assert.equal(verified.hardStop, false);
 
     const completed = await engine.saveReopen(planned.operationId, planned.planHash);
+    const observedSavingJournal = requireDefined(savingJournal, 'saving journal');
     assert.equal(completed.state, 'completed');
-    assert.equal(savingJournal.state, 'saving');
-    assert.equal(savingJournal.hardStop, true);
-    assert.equal(savingJournal.mutationMayHaveOccurred, true);
+    assert.equal(observedSavingJournal.state, 'saving');
+    assert.equal(observedSavingJournal.hardStop, true);
+    assert.equal(observedSavingJournal.mutationMayHaveOccurred, true);
     assert.equal(completed.saved, true);
     assert.equal(completed.reopened, true);
     assert.equal(completed.mutationMayHaveOccurred, false);
@@ -1412,14 +1702,17 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(journal.planHash, buildPlanHash(journal.plan));
     assert.notEqual(journal.planHash, planned.planHash);
     assert.equal(journal.preCheckpoint.schema, 'easyeda-pro-control.checkpoint.v1');
-    assert.equal(journal.finalCheckpoint.schema, 'easyeda-pro-control.checkpoint.v1');
+    assert.equal(
+      requireDefined(journal.finalCheckpoint, 'final checkpoint').schema,
+      'easyeda-pro-control.checkpoint.v1',
+    );
     assert.equal(journal.artifacts.length, 9);
     assert.deepEqual(
       journal.artifacts.map((artifact) =>
         basename(artifact.path)
-          .replace(/^\d{2}-/, '')
-          .replace(/-\d{13}(?=\.json$)/, '')
-          .replace(/\.json$/, ''),
+          .replace(/^\d{2}-/u, '')
+          .replace(/-\d{13}(?=\.json$)/u, '')
+          .replace(/\.json$/u, ''),
       ),
       [
         'baseline-checkpoint',
@@ -1435,7 +1728,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     );
   });
 
-  test('delayed finalization retries discard active editor changes before certification', async () => {
+  void test('delayed finalization retries discard active editor changes before certification', async () => {
     const retryStates = ['final-checkpoint-failed', 'reopened-verified'];
     for (let index = 0; index < retryStates.length; index += 1) {
       if (index > 0) await resetFixture();
@@ -1460,64 +1753,78 @@ describe('durable mutation state machine', { concurrency: false }, () => {
       const artifactsBeforeRetry = failed.artifacts.length;
       await assert.rejects(
         engine.saveReopen(planned.operationId, failed.planHash),
-        /confirmDiscardAnyUnsavedState=true/,
+        /confirmDiscardAnyUnsavedState=true/u,
       );
       assert.equal(upstream.reopenAttempts, 0);
       assert.equal(upstream.saveAttempts, 1);
       assert.equal(upstream.readStateCalls, readsBeforeRetry);
       assert.equal(upstream.events.length, callsBeforeRetry);
 
-      let dispatchJournal;
-      upstream.options.onReopen = async () => {
-        dispatchJournal = await artifacts.loadOperation(planned.operationId);
-      };
+      const dispatchCapture: JournalCapture = {};
+      upstream.options.onReopen = captureOperationOnReopen(
+        planned.operationId,
+        dispatchCapture,
+      );
       const completed = await engine.saveReopen(
         planned.operationId,
         failed.planHash,
         { confirmDiscardAnyUnsavedState: true },
       );
+      const observedDispatchJournal = requireDefined(
+        dispatchCapture.journal,
+        'retry dispatch journal',
+      );
       assert.equal(completed.state, 'completed');
       assert.equal(upstream.saveAttempts, 1);
       assert.equal(upstream.reopenAttempts, 1);
-      assert.match(dispatchJournal.state, /reopen.*dispatch/i);
-      assert.equal(dispatchJournal.hardStop, true);
-      assert.equal(dispatchJournal.mutationMayHaveOccurred, true);
+      assert.match(observedDispatchJournal.state, /reopen.*dispatch/iu);
+      assert.equal(observedDispatchJournal.hardStop, true);
+      assert.equal(observedDispatchJournal.mutationMayHaveOccurred, true);
       const retryEvents = upstream.events.slice(callsBeforeRetry);
       assert.equal(retryEvents[0], 'reopen-only:1');
-      assert.match(retryEvents[1], /^read-state:\d+:applied$/);
+      assert.match(requireDefined(retryEvents[1], 'retry read event'), /^read-state:\d+:applied$/u);
 
       const journal = await artifacts.loadOperation(planned.operationId);
       const addedArtifacts = journal.artifacts.slice(artifactsBeforeRetry);
       const addedPayloads = await Promise.all(
         addedArtifacts.map(async (artifact) =>
-          JSON.parse(await readFile(artifact.path, 'utf8')),
+          parseJson(await readFile(artifact.path, 'utf8')),
         ),
       );
+      const firstAddedEvidence = requireRecord(
+        requireDefined(addedPayloads[0], 'first retry artifact'),
+        'first retry artifact',
+      );
+      const retryPayload = requireRecord(firstAddedEvidence['payload'], 'retry payload');
       assert.deepEqual(
         {
-          saved: addedPayloads[0]?.payload?.saved,
-          closed: addedPayloads[0]?.payload?.closed,
-          reopened: addedPayloads[0]?.payload?.reopened,
+          saved: retryPayload['saved'],
+          closed: retryPayload['closed'],
+          reopened: retryPayload['reopened'],
         },
         { saved: false, closed: true, reopened: true },
       );
     }
   });
 
-  test('rolls an applied unsaved mutation back and proves the exact baseline hash', async () => {
+  void test('rolls an applied unsaved mutation back and proves the exact baseline hash', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(engine, await makePlan(engine, 'rollback-happy'));
     await engine.apply(planned.operationId, planned.planHash);
-    let rollingBackJournal;
+    let rollingBackJournal: OperationJournal | undefined;
     upstream.options.onRollback = async () => {
       rollingBackJournal = await artifacts.loadOperation(planned.operationId);
     };
 
     const rolledBack = await engine.rollback(planned.operationId, planned.planHash);
-    assert.equal(rollingBackJournal.state, 'rolling-back');
-    assert.equal(rollingBackJournal.hardStop, true);
-    assert.equal(rollingBackJournal.mutationMayHaveOccurred, true);
+    const observedRollingBackJournal = requireDefined(
+      rollingBackJournal,
+      'rolling-back journal',
+    );
+    assert.equal(observedRollingBackJournal.state, 'rolling-back');
+    assert.equal(observedRollingBackJournal.hardStop, true);
+    assert.equal(observedRollingBackJournal.mutationMayHaveOccurred, true);
     assert.equal(rolledBack.state, 'rolled-back');
     assert.equal(rolledBack.mutationState, 'rolled-back');
     assert.equal(rolledBack.saved, false);
@@ -1526,7 +1833,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(upstream.state, 'baseline');
   });
 
-  test('lets the user cancel a live-verified mutation through guarded rollback', async () => {
+  void test('lets the user cancel a live-verified mutation through guarded rollback', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -1543,7 +1850,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(upstream.state, 'baseline');
   });
 
-  test('refuses rollback before dispatch when the durable baseline drifts', async () => {
+  void test('refuses rollback before dispatch when the durable baseline drifts', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -1564,7 +1871,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.rollback(planned.operationId, planned.planHash),
-      /durable baseline changed immediately before rollback/,
+      /durable baseline changed immediately before rollback/u,
     );
     assert.equal(upstream.rollbackAttempts, 0);
     const journal = await artifacts.loadOperation(planned.operationId);
@@ -1572,7 +1879,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(journal.orphanedCallPossible, false);
   });
 
-  test('refuses save immediately before dispatch when the durable baseline drifts', async () => {
+  void test('refuses save immediately before dispatch when the durable baseline drifts', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -1583,19 +1890,19 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     await engine.verify(planned.operationId);
 
     const requireDurableBaseline = engine.requireDurableBaselineBeforeDispatch.bind(engine);
-    engine.requireDurableBaselineBeforeDispatch = async (operation, phase, failure) => {
+    engine.requireDurableBaselineBeforeDispatch = (operation, phase, failure) => {
       if (phase === 'save-reopen') {
         execFileSync('sqlite3', [
           source,
           "UPDATE project_state SET value='save-pre-dispatch-race' WHERE id=1;",
         ]);
       }
-      return await requireDurableBaseline(operation, phase, failure);
+      return requireDurableBaseline(operation, phase, failure);
     };
 
     await assert.rejects(
       engine.saveReopen(planned.operationId, planned.planHash),
-      /durable baseline changed immediately before save-reopen/,
+      /durable baseline changed immediately before save-reopen/u,
     );
     assert.equal(upstream.saveAttempts, 0);
     const journal = await artifacts.loadOperation(planned.operationId);
@@ -1604,9 +1911,9 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(journal.orphanedCallPossible, false);
   });
 
-  test('binds the checkpoint to an equivalent Windows project path', async (context) => {
+  void test('binds the checkpoint to an equivalent Windows project path', async (context) => {
     const windows = windowsPath(source);
-    if (!windows) {
+    if (windows === undefined || windows.length === 0) {
       context.skip('Fixture is not under a mounted Windows drive.');
       return;
     }
@@ -1626,7 +1933,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     );
   });
 
-  test('binds the checkpoint to an equivalent file URI project path', async () => {
+  void test('binds the checkpoint to an equivalent file URI project path', async () => {
     const fileUri = `file://${source}`;
     const uriUpstream = new MockUpstream({ contextPath: fileUri });
     const uriEngine = new EasyedaControlEngine(uriUpstream);
@@ -1643,7 +1950,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     );
   });
 
-  test('rejects a checkpoint source that is not the active project database', async () => {
+  void test('rejects a checkpoint source that is not the active project database', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const plan = await makePlan(engine, 'wrong-checkpoint', {
@@ -1652,11 +1959,11 @@ describe('durable mutation state machine', { concurrency: false }, () => {
         document: { uuid: 'document-1', documentType: 3, tabId: 'tab-1' },
       },
     });
-    await assert.rejects(engine.plan(plan), /checkpoint\.source must be the exact/);
+    await assert.rejects(engine.plan(plan), /checkpoint\.source must be the exact/u);
     assert.deepEqual(await artifacts.listOperations(), []);
   });
 
-  test('rejects plans without declared target changes or mandatory exact phase readers', async () => {
+  void test('rejects plans without declared target changes or mandatory exact phase readers', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const noTargetChanges = await makePlan(engine, 'no-target-changes', {
@@ -1664,23 +1971,23 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     });
     await assert.rejects(
       engine.plan(noTargetChanges),
-      /require explicit before\/after targetChanges/,
+      /require explicit before\/after targetChanges/u,
     );
 
     const noLive = await makePlan(engine, 'no-live-assertions', {
       verifyAssertions: [],
       verifyCalls: [{ toolName: 'easyeda_read_state', arguments: {}, assertions: [] }],
     });
-    await assert.rejects(engine.plan(noLive), /Live verification requires one all-component/);
+    await assert.rejects(engine.plan(noLive), /Live verification requires one all-component/u);
 
     const noReopened = await makePlan(engine, 'no-reopened-assertions', {
       reopenedAssertions: [],
       reopenedVerifyCalls: [{ toolName: 'easyeda_read_state', arguments: {}, assertions: [] }],
     });
-    await assert.rejects(engine.plan(noReopened), /Reopened verification requires one all-component/);
+    await assert.rejects(engine.plan(noReopened), /Reopened verification requires one all-component/u);
   });
 
-  test('rejects multi-component targets before any lifecycle or mutation dispatch', async () => {
+  void test('rejects multi-component targets before any lifecycle or mutation dispatch', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const plan = await makePlan(engine, 'multi-component-target', {
@@ -1693,7 +2000,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       planWithDiscard(engine, plan),
-      /require exactly one targetPrimitiveId/,
+      /require exactly one targetPrimitiveId/u,
     );
     assert.equal(upstream.baselineReopenAttempts, 0);
     assert.equal(upstream.applyAttempts, 0);
@@ -1701,7 +2008,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.deepEqual(await artifacts.listOperations(), []);
   });
 
-  test('restricts declared changes to guarded PCB placement, layer, and lock fields', async () => {
+  void test('restricts declared changes to guarded PCB placement, layer, and lock fields', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const pcbAssociationChange = await makePlan(engine, 'pcb-association-change', {
@@ -1716,7 +2023,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     });
     await assert.rejects(
       planWithDiscard(engine, pcbAssociationChange),
-      /permits component placement\/lock state/,
+      /permits component placement\/lock state/u,
     );
     const invalidBeforeValue = await makePlan(engine, 'invalid-before-value', {
       targetChanges: [
@@ -1725,7 +2032,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     });
     await assert.rejects(
       planWithDiscard(engine, invalidBeforeValue),
-      /target R1\/x before value must be finite/i,
+      /target R1\/x before value must be finite/iu,
     );
     const invalidAfterLayer = await makePlan(engine, 'invalid-after-layer', {
       targetChanges: [
@@ -1734,17 +2041,17 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     });
     await assert.rejects(
       planWithDiscard(engine, invalidAfterLayer),
-      /target R1\/layer after value must be Top 1 or Bottom 2/i,
+      /target R1\/layer after value must be Top 1 or Bottom 2/iu,
     );
     assert.equal(upstream.baselineReopenAttempts, 0);
     assert.equal(upstream.contextCalls, 0);
     assert.deepEqual(await artifacts.listOperations(), []);
   });
 
-  test('rejects schematic mutation plans even with target-bound pinned read evidence', async () => {
+  void test('rejects schematic mutation plans even with target-bound pinned read evidence', async () => {
     const upstream = new MockUpstream({ documentType: 1 });
     const engine = new EasyedaControlEngine(upstream);
-    const verifier = {
+    const verifier: ToolCallSpec = {
       toolName: 'easyeda_schematic_verify_write',
       arguments: {},
       assertions: [{ pointer: '/verified', op: 'equals', value: true }],
@@ -1762,13 +2069,13 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     });
     await assert.rejects(
       planWithDiscard(engine, plan),
-      /currently support PCB \(3\) component placement\/layer\/lock only/,
+      /currently support PCB \(3\) component placement\/layer\/lock only/u,
     );
     assert.equal(upstream.baselineReopenAttempts, 0);
     assert.deepEqual(await artifacts.listOperations(), []);
   });
 
-  test('rejects cross-editor tools before dispatch', async () => {
+  void test('rejects cross-editor tools before dispatch', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const schematicReadOnPcb = await makePlan(engine, 'schematic-read-on-pcb', {
@@ -1783,7 +2090,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     });
     await assert.rejects(
       planWithDiscard(engine, schematicReadOnPcb),
-      /belongs to document type 1, not the plan's active document type 3/,
+      /belongs to document type 1, not the plan's active document type 3/u,
     );
 
     const pcbReadOnSchematic = await makePlan(engine, 'pcb-read-on-schematic', {
@@ -1802,7 +2109,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     });
     await assert.rejects(
       planWithDiscard(engine, pcbReadOnSchematic),
-      /currently support PCB \(3\) component placement\/layer\/lock only/,
+      /currently support PCB \(3\) component placement\/layer\/lock only/u,
     );
 
     const boardReadOnSchematic = await makePlan(engine, 'board-read-on-schematic', {
@@ -1821,7 +2128,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     });
     await assert.rejects(
       planWithDiscard(engine, boardReadOnSchematic),
-      /currently support PCB \(3\) component placement\/layer\/lock only/,
+      /currently support PCB \(3\) component placement\/layer\/lock only/u,
     );
 
     const diagnosticPlan = await makePlan(engine, 'diagnostic-read', {
@@ -1836,7 +2143,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     });
     await assert.rejects(
       planWithDiscard(engine, diagnosticPlan),
-      /not admitted as mutation proof/,
+      /not admitted as mutation proof/u,
     );
 
     const previewPlan = await makePlan(engine, 'preview-document-plan', {
@@ -1847,17 +2154,17 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     });
     await assert.rejects(
       planWithDiscard(engine, previewPlan),
-      /currently support PCB \(3\) component placement\/layer\/lock only/,
+      /currently support PCB \(3\) component placement\/layer\/lock only/u,
     );
     assert.equal(
       upstream.calls.some((call) =>
-        /schematic_components|pcb_components|board_dimensions|component_probe/.test(call.name),
+        /schematic_components|pcb_components|board_dimensions|component_probe/u.test(call.name),
       ),
       false,
     );
   });
 
-  test('rejects capture reads and export writers that bypass dedicated facade gates', async () => {
+  void test('rejects capture reads and export writers that bypass dedicated facade gates', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const capturePlan = await makePlan(engine, 'capture-bypass', {
@@ -1872,7 +2179,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     });
     await assert.rejects(
       planWithDiscard(engine, capturePlan),
-      /dedicated capture or export facade gate/,
+      /dedicated capture or export facade gate/u,
     );
 
     const exportPlan = await makePlan(engine, 'export-bypass', {
@@ -1883,15 +2190,15 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     });
     await assert.rejects(
       planWithDiscard(engine, exportPlan),
-      /applyCall must be the facade-generated easyeda_control_exact_component_mutation/,
+      /applyCall must be the facade-generated easyeda_control_exact_component_mutation/u,
     );
-    assert.equal(upstream.calls.some((call) => /capture|export/.test(call.name)), false);
+    assert.equal(upstream.calls.some((call) => /capture|export/u.test(call.name)), false);
   });
 
-  test('rejects every caller-selected writer outside the exact component mutation facade', async () => {
+  void test('rejects every caller-selected writer outside the exact component mutation facade', async () => {
     const pcbUpstream = new MockUpstream();
     const pcbEngine = new EasyedaControlEngine(pcbUpstream);
-    for (const [label, toolName, argumentsValue] of [
+    const writerCases: Array<readonly [string, string, Record<string, unknown>]> = [
       [
         'unreviewed-modify-writer',
         'easyeda_pcb_modify_component',
@@ -1907,13 +2214,14 @@ describe('durable mutation state machine', { concurrency: false }, () => {
         'easyeda_pcb_workflow_write',
         { tabId: 'tab-1', confirmWrite: true },
       ],
-    ]) {
+    ];
+    for (const [label, toolName, argumentsValue] of writerCases) {
       const plan = await makePlan(pcbEngine, label, {
         applyCall: { toolName, arguments: argumentsValue },
       });
       await assert.rejects(
         planWithDiscard(pcbEngine, plan),
-        /applyCall must be the facade-generated easyeda_control_exact_component_mutation/,
+        /applyCall must be the facade-generated easyeda_control_exact_component_mutation/u,
       );
     }
 
@@ -1922,25 +2230,25 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     });
     await assert.rejects(
       planWithDiscard(pcbEngine, rawApply),
-      /applyCall must be the facade-generated easyeda_control_exact_component_mutation/,
+      /applyCall must be the facade-generated easyeda_control_exact_component_mutation/u,
     );
     const rawRollback = await makePlan(pcbEngine, 'raw-rollback-bypass', {
       rollbackCalls: [rawSpec('CALLER_SUPPLIED_RAW_ROLLBACK')],
     });
     await assert.rejects(
       planWithDiscard(pcbEngine, rawRollback),
-      /rollbackCalls must contain exactly one facade-generated easyeda_control_exact_component_mutation/,
+      /rollbackCalls must contain exactly one facade-generated easyeda_control_exact_component_mutation/u,
     );
     assert.equal(
       pcbUpstream.calls.some((call) =>
-        /modify_component|add_text|workflow_write/.test(call.name),
+        /modify_component|add_text|workflow_write/u.test(call.name),
       ),
       false,
     );
     assert.deepEqual(await artifacts.listOperations(), []);
   });
 
-  test('invalidates a plan when the preflight snapshot drifts before apply', async () => {
+  void test('invalidates a plan when the preflight snapshot drifts before apply', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -1951,7 +2259,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.apply(planned.operationId, planned.planHash),
-      /Preflight state changed after planning/,
+      /Preflight state changed after planning/u,
     );
     assert.equal(upstream.applyAttempts, 0);
     const journal = await artifacts.loadOperation(planned.operationId);
@@ -1960,7 +2268,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(journal.mutationMayHaveOccurred, false);
   });
 
-  test('invalidates a plan when the durable database or pre-checkpoint drifts', async () => {
+  void test('invalidates a plan when the durable database or pre-checkpoint drifts', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -1971,7 +2279,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.apply(planned.operationId, planned.planHash),
-      /project database changed or its checkpoint proof failed/,
+      /project database changed or its checkpoint proof failed/u,
     );
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.equal(journal.state, 'plan-invalidated');
@@ -1979,7 +2287,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(upstream.applyAttempts, 0);
   });
 
-  test('does not claim applied-unsaved when apply changes the durable database', async () => {
+  void test('does not claim applied-unsaved when apply changes the durable database', async () => {
     const upstream = new MockUpstream({ applyPersistence: 'logical' });
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -1989,7 +2297,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.apply(planned.operationId, planned.planHash),
-      /checkpoint|durable|database/i,
+      /checkpoint|durable|database/iu,
     );
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.notEqual(journal.state, 'applied-unsaved');
@@ -2002,7 +2310,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(upstream.applyAttempts, 1);
   });
 
-  test('does not claim live-verified after the durable database changes', async () => {
+  void test('does not claim live-verified after the durable database changes', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -2012,13 +2320,13 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     await engine.apply(planned.operationId, planned.planHash);
     execFileSync('sqlite3', [source, "UPDATE project_state SET value='external' WHERE id=1;"]);
 
-    await assert.rejects(engine.verify(planned.operationId), /checkpoint|durable|database/i);
+    await assert.rejects(engine.verify(planned.operationId), /checkpoint|durable|database/iu);
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.notEqual(journal.state, 'live-verified');
     assert.equal(journal.hardStop, true);
   });
 
-  test('revalidates the stored runtime before live verification', async () => {
+  void test('revalidates the stored runtime before live verification', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -2029,16 +2337,16 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     const readsBefore = upstream.readStateCalls;
     upstream.options.serverVersion = '1.0.0-drifted';
 
-    await assert.rejects(engine.verify(planned.operationId), /runtime fingerprint/);
+    await assert.rejects(engine.verify(planned.operationId), /runtime fingerprint/u);
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.equal(journal.state, 'applied-unsaved');
     assert.equal(journal.hardStop, true);
-    assert.equal(journal.runtimeGuardFailure.phase, 'verify');
+    assert.equal(requireDefined(journal.runtimeGuardFailure, 'verify runtime guard').phase, 'verify');
     assert.equal(journal.unknownPhase, undefined);
     assert.equal(upstream.readStateCalls, readsBefore);
   });
 
-  test('revalidates the stored runtime before rollback', async () => {
+  void test('revalidates the stored runtime before rollback', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -2050,16 +2358,19 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.rollback(planned.operationId, planned.planHash),
-      /runtime fingerprint/,
+      /runtime fingerprint/u,
     );
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.equal(journal.state, 'applied-unsaved');
-    assert.equal(journal.runtimeGuardFailure.phase, 'rollback');
+    assert.equal(
+      requireDefined(journal.runtimeGuardFailure, 'rollback runtime guard').phase,
+      'rollback',
+    );
     assert.equal(journal.unknownPhase, undefined);
     assert.equal(upstream.rollbackAttempts, 0);
   });
 
-  test('revalidates the stored runtime before save and reopen', async () => {
+  void test('revalidates the stored runtime before save and reopen', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -2072,60 +2383,78 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.saveReopen(planned.operationId, planned.planHash),
-      /runtime fingerprint/,
+      /runtime fingerprint/u,
     );
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.equal(journal.state, 'live-verified');
-    assert.equal(journal.runtimeGuardFailure.phase, 'save-reopen');
+    assert.equal(
+      requireDefined(journal.runtimeGuardFailure, 'save runtime guard').phase,
+      'save-reopen',
+    );
     assert.equal(journal.unknownPhase, undefined);
     assert.equal(upstream.saveAttempts, 0);
   });
 
-  test('recovery runtime failure preserves the original unknown phase', async () => {
+  void test('recovery runtime failure preserves the original unknown phase', async () => {
     const upstream = new MockUpstream({ applyError: applyTimeout() });
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
       engine,
       await makePlan(engine, 'recovery-runtime-drift'),
     );
-    await assert.rejects(engine.apply(planned.operationId, planned.planHash), /timed out/);
+    await assert.rejects(engine.apply(planned.operationId, planned.planHash), /timed out/u);
     upstream.options.serverVersion = '1.0.0-drifted';
 
     await assert.rejects(
       engine.recover(planned.operationId, 'reconciled-no-mutation', {
         runtimeRestartConfirmation: await restartConfirmation(planned.operationId),
       }),
-      /runtime fingerprint/,
+      /runtime fingerprint/u,
     );
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.equal(journal.state, 'unknown');
     assert.equal(journal.unknownPhase, 'apply');
-    assert.equal(journal.runtimeGuardFailure.phase, 'recovery-runtime-restart-boundary');
+    assert.equal(
+      requireDefined(journal.runtimeGuardFailure, 'recovery runtime guard').phase,
+      'recovery-runtime-restart-boundary',
+    );
     assert.equal(journal.hardStop, true);
   });
 
-  test('stored runtime checks rerun public and private fingerprint validators', async () => {
-    const cases = [
+  void test('stored runtime checks rerun public and private fingerprint validators', async () => {
+    const cases: Array<{
+      label: string;
+      mutate(operation: OperationJournal): void;
+      expected: RegExp;
+    }> = [
       {
         label: 'stored-public-fingerprint',
         mutate(operation) {
           operation.plan.capabilityLevel = 'public-supported';
-          delete operation.plan.expectedFingerprint.upstreamLauncher.args;
+          const launcher = requireRecord(
+            operation.plan.expectedFingerprint['upstreamLauncher'],
+            'stored upstream launcher',
+          );
+          delete launcher['args'];
         },
-        expected: /expectedFingerprint must pin a connected/,
+        expected: /expectedFingerprint must pin a connected/u,
       },
       {
         label: 'stored-private-fingerprint',
         mutate(operation) {
-          operation.plan.expectedFingerprint.installedBundles.publicApi.declarationsSha256 =
-            digest('7');
+          const bundles = requireRecord(
+            operation.plan.expectedFingerprint['installedBundles'],
+            'stored installed bundles',
+          );
+          const publicApi = requireRecord(bundles['publicApi'], 'stored public API bundle');
+          publicApi['declarationsSha256'] = digest('7');
         },
-        expected: /compatibility tuple/,
+        expected: /compatibility tuple/u,
       },
     ];
     for (let index = 0; index < cases.length; index += 1) {
       if (index > 0) await resetFixture();
-      const scenario = cases[index];
+      const scenario = requireDefined(cases[index], 'runtime guard scenario');
       const upstream = new MockUpstream();
       const engine = new EasyedaControlEngine(upstream);
       const planned = await planWithDiscard(
@@ -2144,43 +2473,48 @@ describe('durable mutation state machine', { concurrency: false }, () => {
       const guarded = await artifacts.loadOperation(planned.operationId);
       assert.equal(guarded.state, 'applied-unsaved');
       assert.equal(guarded.hardStop, true);
-      assert.equal(guarded.runtimeGuardFailure.phase, 'verify');
-      assert.match(guarded.runtimeGuardFailure.error.message, scenario.expected);
+      const runtimeGuard = requireDefined(guarded.runtimeGuardFailure, 'stored runtime guard');
+      assert.equal(runtimeGuard.phase, 'verify');
+      assert.match(runtimeGuard.error.message, scenario.expected);
     }
   });
 
-  test('records a write timeout as unknown and hard-stops without blind retry', async () => {
+  void test('records a write timeout as unknown and hard-stops without blind retry', async () => {
     const upstream = new MockUpstream({ applyError: applyTimeout() });
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(engine, await makePlan(engine, 'write-timeout'));
 
-    await assert.rejects(engine.apply(planned.operationId, planned.planHash), /timed out/);
+    await assert.rejects(engine.apply(planned.operationId, planned.planHash), /timed out/u);
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.equal(journal.state, 'unknown');
     assert.equal(journal.mutationState, 'unknown');
     assert.equal(journal.hardStop, true);
     assert.equal(journal.mutationMayHaveOccurred, true);
-    assert.match(journal.nextSafeAction, /Do not retry or save/);
+    assert.match(journal.nextSafeAction, /Do not retry or save/u);
     assert.equal(upstream.applyAttempts, 1);
-    const restartChallenge = journal.runtimeRestartChallenge;
+    const restartChallenge = requireDefined(
+      journal.runtimeRestartChallenge,
+      'runtime restart challenge',
+    );
     assert.match(
       restartChallenge,
-      new RegExp(`^EASYEDA_RESTARTED_AND_RECONNECTED:${planned.operationId}:apply:`),
+      new RegExp(`^EASYEDA_RESTARTED_AND_RECONNECTED:${planned.operationId}:apply:`, 'u'),
     );
 
     await assert.rejects(
       engine.apply(planned.operationId, planned.planHash),
-      /state unknown, not preflight-proven/,
+      /state unknown, not preflight-proven/u,
     );
     assert.equal(upstream.applyAttempts, 1);
     await assert.rejects(
       engine.recover(planned.operationId, 'reconciled-no-mutation'),
       (error) => {
+        const errorRecord = requireRecord(error, 'recovery error');
         assert.equal(
-          error.requiredRuntimeRestartConfirmation,
+          errorRecord['requiredRuntimeRestartConfirmation'],
           restartChallenge,
         );
-        assert.equal(error.orphanedCallPhase, 'apply');
+        assert.equal(errorRecord['orphanedCallPhase'], 'apply');
         return true;
       },
     );
@@ -2188,7 +2522,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
       engine.recover(planned.operationId, 'reconciled-no-mutation', {
         runtimeRestartConfirmation: 'EASYEDA_RESTARTED_AND_RECONNECTED:wrong-operation',
       }),
-      /runtimeRestartConfirmation/,
+      /runtimeRestartConfirmation/u,
     );
     const recovered = await engine.recover(planned.operationId, 'reconciled-no-mutation', {
       runtimeRestartConfirmation: restartChallenge,
@@ -2197,16 +2531,23 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(recovered.orphanedCallPossible, false);
     assert.equal(recovered.orphanedCallPhase, 'recovery-target-activation');
     const recoveredJournal = await artifacts.loadOperation(planned.operationId);
+    const restartBoundary = requireDefined(
+      recoveredJournal.runtimeRestartBoundary,
+      'runtime restart boundary',
+    );
     assert.equal(recoveredJournal.orphanedCallPossible, false);
     assert.equal(
-      recoveredJournal.runtimeRestartBoundary.confirmationSha256,
+      restartBoundary.confirmationSha256,
       sha256Text(restartChallenge),
     );
     assert.equal(
-      recoveredJournal.runtimeRestartBoundary.storedRuntimeFingerprintMatchedAfterReconnect,
+      restartBoundary.storedRuntimeFingerprintMatchedAfterReconnect,
       true,
     );
-    assert.match(recoveredJournal.runtimeRestartBoundary.limitation, /cannot independently prove/);
+    assert.match(
+      requireDefined(restartBoundary.limitation, 'restart-boundary limitation'),
+      /cannot independently prove/u,
+    );
     assert.ok(
       recoveredJournal.artifacts.some((artifact) =>
         artifact.path.includes('runtime-restart-boundary'),
@@ -2214,7 +2555,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     );
   });
 
-  test('verification failure hard-stops and blocks save until explicit rollback', async () => {
+  void test('verification failure hard-stops and blocks save until explicit rollback', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -2226,32 +2567,32 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.verify(planned.operationId),
-      /Live verification failed|easyeda_control_exact_read failed/,
+      /Live verification failed|easyeda_control_exact_read failed/u,
     );
     const failed = await artifacts.loadOperation(planned.operationId);
     assert.equal(failed.state, 'verification-failed');
     assert.equal(failed.hardStop, true);
-    assert.match(failed.nextSafeAction, /Do not save/);
+    assert.match(failed.nextSafeAction, /Do not save/u);
     await assert.rejects(
       engine.saveReopen(planned.operationId, planned.planHash),
-      /cannot save\/reopen from state verification-failed/,
+      /cannot save\/reopen from state verification-failed/u,
     );
     assert.equal(upstream.saveAttempts, 0);
     await assert.rejects(
       engine.rollback(planned.operationId, planned.planHash),
-      /fresh exact readback could not prove the complete intended unsaved state/,
+      /fresh exact readback could not prove the complete intended unsaved state/u,
     );
     assert.equal(upstream.rollbackAttempts, 0);
   });
 
-  test('rebinds a restarted target tab before no-mutation recovery reads', async () => {
+  void test('rebinds a restarted target tab before no-mutation recovery reads', async () => {
     const upstream = new MockUpstream({ applyError: applyTimeout() });
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
       engine,
       await makePlan(engine, 'restart-tab-rebind'),
     );
-    await assert.rejects(engine.apply(planned.operationId, planned.planHash), /timed out/);
+    await assert.rejects(engine.apply(planned.operationId, planned.planHash), /timed out/u);
     const oldPlanHash = planned.planHash;
     upstream.activeTabId = 'post-restart-tab';
 
@@ -2266,12 +2607,12 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(journal.context.document.tabId, 'post-restart-tab');
     assert.equal(journal.planHash, buildPlanHash(journal.plan));
     assert.equal(
-      journal.runtimeRestartBoundary.reboundTabId,
+      requireDefined(journal.runtimeRestartBoundary, 'rebound restart boundary').reboundTabId,
       'post-restart-tab',
     );
   });
 
-  test('rejects applied-unsaved classification after a restart/discard boundary', async () => {
+  void test('rejects applied-unsaved classification after a restart/discard boundary', async () => {
     const upstream = new MockUpstream({
       applyError: applyTimeout(),
       applyMutatesBeforeError: true,
@@ -2281,13 +2622,13 @@ describe('durable mutation state machine', { concurrency: false }, () => {
       engine,
       await makePlan(engine, 'restart-cannot-preserve-unsaved'),
     );
-    await assert.rejects(engine.apply(planned.operationId, planned.planHash), /timed out/);
+    await assert.rejects(engine.apply(planned.operationId, planned.planHash), /timed out/u);
 
     await assert.rejects(
       engine.recover(planned.operationId, 'reconciled-applied-unsaved', {
         runtimeRestartConfirmation: await restartConfirmation(planned.operationId),
       }),
-      /Applied-unsaved recovery is illegal after .* restart\/discard boundary/,
+      /Applied-unsaved recovery is illegal after .* restart\/discard boundary/u,
     );
     assert.equal(upstream.recoveryActivationAttempts, 0);
     const journal = await artifacts.loadOperation(planned.operationId);
@@ -2295,7 +2636,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(journal.runtimeRestartChallenge, undefined);
   });
 
-  test('allows exact no-mutation recovery from saving before dispatch', async () => {
+  void test('allows exact no-mutation recovery from saving before dispatch', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -2322,7 +2663,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(upstream.recoveryActivationAttempts, 1);
   });
 
-  test('preserves the origin state when recovery target activation times out', async () => {
+  void test('preserves the origin state when recovery target activation times out', async () => {
     const upstream = new MockUpstream({ recoveryActivationErrorsRemaining: 1 });
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -2340,7 +2681,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.recover(planned.operationId, 'reconciled-no-mutation'),
-      /timed out/,
+      /timed out/u,
     );
     const activationUnknown = await artifacts.loadOperation(planned.operationId);
     assert.equal(activationUnknown.state, 'recovery-target-activation-unknown');
@@ -2359,7 +2700,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(upstream.reopenAttempts, 1);
   });
 
-  test('rejects undeclared collateral changes outside the target primitive set', async () => {
+  void test('rejects undeclared collateral changes outside the target primitive set', async () => {
     const upstream = new MockUpstream({ applyCollateral: true });
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -2370,7 +2711,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.verify(planned.operationId),
-      /changed one or more non-target component scalar records/,
+      /changed one or more non-target component scalar records/u,
     );
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.equal(journal.state, 'verification-failed');
@@ -2379,7 +2720,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(upstream.collateralState, 'changed');
   });
 
-  test('masks only explicitly declared direct-pad transform consequences', async () => {
+  void test('masks only explicitly declared direct-pad transform consequences', async () => {
     const upstream = new MockUpstream({ targetPadTransformChanges: true });
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -2398,7 +2739,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(upstream.state, 'applied');
   });
 
-  test('rejects undeclared orthogonal drift on a target-owned direct pad', async () => {
+  void test('rejects undeclared orthogonal drift on a target-owned direct pad', async () => {
     const upstream = new MockUpstream({
       targetPadTransformChanges: true,
       targetPadDirectOrthogonalDrift: true,
@@ -2417,14 +2758,14 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.verify(planned.operationId),
-      /changed the PCB primitive inventory or .*pad/,
+      /changed the PCB primitive inventory or .*pad/u,
     );
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.equal(journal.state, 'verification-failed');
     assert.equal(journal.hardStop, true);
   });
 
-  test('rejects a direct-pad value that disagrees with its declared consequence', async () => {
+  void test('rejects a direct-pad value that disagrees with its declared consequence', async () => {
     const upstream = new MockUpstream({
       targetPadTransformChanges: true,
       targetPadDirectDeclaredMismatch: true,
@@ -2443,14 +2784,14 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.verify(planned.operationId),
-      /direct pad R1-pad-1\/x disagrees with its declared after consequence/,
+      /direct pad R1-pad-1\/x disagrees with its declared after consequence/u,
     );
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.equal(journal.state, 'verification-failed');
     assert.equal(journal.hardStop, true);
   });
 
-  test('does not mask target-owned pad lock drift when only the component lock changed', async () => {
+  void test('does not mask target-owned pad lock drift when only the component lock changed', async () => {
     const upstream = new MockUpstream({
       lockOnlyTargetMutation: true,
       targetPadPrimitiveLockChanges: true,
@@ -2484,14 +2825,14 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.verify(planned.operationId),
-      /changed the PCB primitive inventory or .*pad/,
+      /changed the PCB primitive inventory or .*pad/u,
     );
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.equal(journal.state, 'verification-failed');
     assert.equal(journal.hardStop, true);
   });
 
-  test('normal save rejects a physical-only database rewrite', async () => {
+  void test('normal save rejects a physical-only database rewrite', async () => {
     const upstream = new MockUpstream({ savePersistence: 'physical-only' });
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -2503,14 +2844,14 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.saveReopen(planned.operationId, planned.planHash),
-      /logical|checkpoint|durable|database/i,
+      /logical|checkpoint|durable|database/iu,
     );
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.notEqual(journal.state, 'completed');
     assert.equal(journal.hardStop, true);
   });
 
-  test('normal save rejects pre-checkpoint corruption during the save call', async () => {
+  void test('normal save rejects pre-checkpoint corruption during the save call', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -2522,29 +2863,35 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     upstream.options.onSave = async () => {
       const journal = await artifacts.loadOperation(planned.operationId);
       execFileSync('sqlite3', [
-        journal.preCheckpoint.checkpoint,
+        requireDefined(journal.preCheckpoint.checkpoint, 'pre-checkpoint path'),
         "UPDATE project_state SET value='tampered-checkpoint' WHERE id=1;",
       ]);
     };
 
     await assert.rejects(
       engine.saveReopen(planned.operationId, planned.planHash),
-      /checkpoint|durable|database/i,
+      /checkpoint|durable|database/iu,
     );
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.notEqual(journal.state, 'completed');
     assert.equal(journal.hardStop, true);
   });
 
-  test('rejects a complete but different runtime fingerprint before context or checkpoint', async () => {
+  void test('rejects a complete but different runtime fingerprint before context or checkpoint', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const plan = await makePlan(engine, 'private-mismatch');
-    plan.expectedFingerprint.upstreamLauncher.dependencyLock.sha256 = digest('7');
+    const launcher = requireRecord(
+      plan.expectedFingerprint['upstreamLauncher'],
+      'plan upstream launcher',
+    );
+    const dependencyLock = requireRecord(launcher['dependencyLock'], 'launcher dependency lock');
+    dependencyLock['sha256'] = digest('7');
 
     await assert.rejects(planWithDiscard(engine, plan), (error) => {
-      assert.match(error.message, /compatibility tuple/);
-      assert.deepEqual(error.mismatches, [
+      const observedError = requireError(error);
+      assert.match(observedError.message, /compatibility tuple/u);
+      assert.deepEqual(requireRecord(error, 'compatibility error')['mismatches'], [
         {
           pointer: '/upstream/launcher/dependencyLock/sha256',
           expected: loadReviewedCompatibilityManifest().upstream.launcher.dependencyLock.sha256,
@@ -2557,15 +2904,21 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.deepEqual(await artifacts.listOperations(), []);
   });
 
-  test('rejects private plans when an installed API or PCB bundle hash is unreviewed', async () => {
+  void test('rejects private plans when an installed API or PCB bundle hash is unreviewed', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const plan = await makePlan(engine, 'private-bundle-mismatch');
-    plan.expectedFingerprint.installedBundles.publicApi.declarationsSha256 = digest('7');
+    const bundles = requireRecord(
+      plan.expectedFingerprint['installedBundles'],
+      'plan installed bundles',
+    );
+    const publicApi = requireRecord(bundles['publicApi'], 'plan public API bundle');
+    publicApi['declarationsSha256'] = digest('7');
 
     await assert.rejects(planWithDiscard(engine, plan), (error) => {
-      assert.match(error.message, /compatibility tuple/);
-      assert.deepEqual(error.mismatches, [
+      const observedError = requireError(error);
+      assert.match(observedError.message, /compatibility tuple/u);
+      assert.deepEqual(requireRecord(error, 'compatibility error')['mismatches'], [
         {
           pointer: '/installedBundles/publicApi/declarationsSha256',
           expected: '32a0d2f8b4bc3d7b2b93b33499d9d768b0c23c77f45843a65166cf4e8ad6dab1',
@@ -2578,7 +2931,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.deepEqual(await artifacts.listOperations(), []);
   });
 
-  test('allows only state-compatible recovery resolutions', async () => {
+  void test('allows only state-compatible recovery resolutions', async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -2588,17 +2941,17 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.recover(planned.operationId, 'reconciled-applied-unsaved'),
-      /not legal from operation state preflight-proven/,
+      /not legal from operation state preflight-proven/u,
     );
     await assert.rejects(
       engine.recover(planned.operationId, 'reconciled-saved-reopened'),
-      /not legal from operation state preflight-proven/,
+      /not legal from operation state preflight-proven/u,
     );
 
     await engine.apply(planned.operationId, planned.planHash);
     await assert.rejects(
       engine.recover(planned.operationId, 'reconciled-saved-reopened'),
-      /not legal from operation state applied-unsaved/,
+      /not legal from operation state applied-unsaved/u,
     );
     assert.equal(
       (await engine.rollback(planned.operationId, planned.planHash)).state,
@@ -2606,18 +2959,21 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     );
   });
 
-  test('blocks recovery when the stored pre-checkpoint receipt is corrupt', async () => {
+  void test('blocks recovery when the stored pre-checkpoint receipt is corrupt', async () => {
     const upstream = new MockUpstream({ applyError: applyTimeout() });
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
       engine,
       await makePlan(engine, 'corrupt-pre-checkpoint'),
     );
-    await assert.rejects(engine.apply(planned.operationId, planned.planHash), /timed out/);
+    await assert.rejects(engine.apply(planned.operationId, planned.planHash), /timed out/u);
 
     const journal = await artifacts.loadOperation(planned.operationId);
-    const receipt = JSON.parse(await readFile(journal.preCheckpoint.receiptPath, 'utf8'));
-    receipt.createdAt = '2000-01-01T00:00:00.000Z';
+    const receipt = requireRecord(
+      parseJson(await readFile(journal.preCheckpoint.receiptPath, 'utf8')),
+      'checkpoint receipt',
+    );
+    receipt['createdAt'] = '2000-01-01T00:00:00.000Z';
     await writeFile(
       journal.preCheckpoint.receiptPath,
       `${JSON.stringify(receipt, null, 2)}\n`,
@@ -2627,25 +2983,25 @@ describe('durable mutation state machine', { concurrency: false }, () => {
       engine.recover(planned.operationId, 'reconciled-no-mutation', {
         runtimeRestartConfirmation: await restartConfirmation(planned.operationId),
       }),
-      /pre-checkpoint integrity could not be proved/,
+      /pre-checkpoint integrity could not be proved/u,
     );
     assert.equal((await artifacts.loadOperation(planned.operationId)).state, 'unknown');
   });
 
-  test('cannot classify an apply timeout as saved and reopened', async () => {
+  void test('cannot classify an apply timeout as saved and reopened', async () => {
     const upstream = new MockUpstream({ applyError: applyTimeout() });
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
       engine,
       await makePlan(engine, 'false-saved-recovery'),
     );
-    await assert.rejects(engine.apply(planned.operationId, planned.planHash), /timed out/);
+    await assert.rejects(engine.apply(planned.operationId, planned.planHash), /timed out/u);
 
     await assert.rejects(
       engine.recover(planned.operationId, 'reconciled-saved-reopened', {
         confirmDiscardAnyUnsavedState: true,
       }),
-      /unknown apply cannot be reconciled as saved\/reopened/,
+      /unknown apply cannot be reconciled as saved\/reopened/u,
     );
     assert.equal(upstream.reopenAttempts, 0);
     assert.equal(
@@ -2658,7 +3014,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     );
   });
 
-  test('requires explicit discard confirmation before reopen-only saved recovery', async () => {
+  void test('requires explicit discard confirmation before reopen-only saved recovery', async () => {
     const upstream = new MockUpstream({ saveError: applyTimeout() });
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -2669,7 +3025,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     await engine.verify(planned.operationId);
     await assert.rejects(
       engine.saveReopen(planned.operationId, planned.planHash),
-      /timed out/,
+      /timed out/u,
     );
     const uncertain = await artifacts.loadOperation(planned.operationId);
     assert.equal(uncertain.state, 'unknown');
@@ -2679,13 +3035,13 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.recover(planned.operationId, 'reconciled-saved-reopened'),
-      /terminate EasyEDA Pro, restart it, reconnect the bridge/,
+      /terminate EasyEDA Pro, restart it, reconnect the bridge/u,
     );
     await assert.rejects(
       engine.recover(planned.operationId, 'reconciled-saved-reopened', {
         runtimeRestartConfirmation: await restartConfirmation(planned.operationId),
       }),
-      /confirmDiscardAnyUnsavedState=true/,
+      /confirmDiscardAnyUnsavedState=true/u,
     );
     assert.equal(upstream.reopenAttempts, 0);
 
@@ -2700,14 +3056,17 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(upstream.saveAttempts, 1);
     assert.equal(upstream.reopenAttempts, 1);
     const completed = await artifacts.loadOperation(planned.operationId);
-    assert.equal(completed.finalCheckpoint.schema, 'easyeda-pro-control.checkpoint.v1');
+    assert.equal(
+      requireDefined(completed.finalCheckpoint, 'completed final checkpoint').schema,
+      'easyeda-pro-control.checkpoint.v1',
+    );
     assert.match(
-      completed.artifacts.at(-1).path,
-      /recovery-reconciled-saved-reopened-[a-f0-9-]{36}\.json$/,
+      lastArtifact(completed).path,
+      /recovery-reconciled-saved-reopened-[a-f0-9-]{36}\.json$/u,
     );
   });
 
-  test('saved recovery discards active editor changes before reopened verification', async () => {
+  void test('saved recovery discards active editor changes before reopened verification', async () => {
     const upstream = new MockUpstream({ reopenState: 'baseline' });
     const engine = new EasyedaControlEngine(upstream);
     const { planned, failed } = await reachSavedVerificationFailure(
@@ -2720,13 +3079,13 @@ describe('durable mutation state machine', { concurrency: false }, () => {
 
     await assert.rejects(
       engine.recover(planned.operationId, 'reconciled-saved-reopened'),
-      /confirmDiscardAnyUnsavedState=true/,
+      /confirmDiscardAnyUnsavedState=true/u,
     );
     assert.equal(upstream.reopenAttempts, 0);
     assert.equal(upstream.readStateCalls, readsBeforeRecovery);
     assert.equal(upstream.events.length, eventsBeforeRecovery);
 
-    let dispatchJournal;
+    let dispatchJournal: OperationJournal | undefined;
     upstream.options.onReopen = async () => {
       dispatchJournal = await artifacts.loadOperation(planned.operationId);
     };
@@ -2736,35 +3095,45 @@ describe('durable mutation state machine', { concurrency: false }, () => {
         'reconciled-saved-reopened',
         { confirmDiscardAnyUnsavedState: true },
       ),
-      /assertion/i,
+      /assertion/iu,
     );
+    const observedDispatchJournal = requireDefined(dispatchJournal, 'recovery dispatch journal');
     assert.equal(upstream.reopenAttempts, 1);
     assert.equal(upstream.state, 'baseline');
-    assert.match(dispatchJournal.state, /reopen.*dispatch/i);
-    assert.equal(dispatchJournal.hardStop, true);
-    assert.equal(dispatchJournal.mutationMayHaveOccurred, true);
+    assert.match(observedDispatchJournal.state, /reopen.*dispatch/iu);
+    assert.equal(observedDispatchJournal.hardStop, true);
+    assert.equal(observedDispatchJournal.mutationMayHaveOccurred, true);
     const recoveryEvents = upstream.events.slice(eventsBeforeRecovery);
     assert.equal(recoveryEvents[0], 'reopen-only:1');
-    assert.match(recoveryEvents[1], /^read-state:\d+:baseline$/);
+    assert.match(
+      requireDefined(recoveryEvents[1], 'recovery read event'),
+      /^read-state:\d+:baseline$/u,
+    );
 
     const journal = await artifacts.loadOperation(planned.operationId);
     assert.equal(journal.state, 'recovery-verification-failed');
     assert.equal(journal.hardStop, true);
     assert.equal(journal.finalCheckpoint, undefined);
     const addedArtifacts = journal.artifacts.slice(failed.artifacts.length);
-    assert.ok(addedArtifacts.length >= 1);
-    const reopenEvidence = JSON.parse(await readFile(addedArtifacts[0].path, 'utf8'));
+    assert.ok(addedArtifacts.length > 0);
+    const reopenEvidence = requireRecord(
+      parseJson(
+        await readFile(requireDefined(addedArtifacts[0], 'recovery artifact').path, 'utf8'),
+      ),
+      'reopen evidence',
+    );
+    const reopenPayload = requireRecord(reopenEvidence['payload'], 'reopen payload');
     assert.deepEqual(
       {
-        saved: reopenEvidence.payload?.saved,
-        closed: reopenEvidence.payload?.closed,
-        reopened: reopenEvidence.payload?.reopened,
+        saved: reopenPayload['saved'],
+        closed: reopenPayload['closed'],
+        reopened: reopenPayload['reopened'],
       },
       { saved: false, closed: true, reopened: true },
     );
   });
 
-  test('saved recovery rejects a physical-only source rewrite', async () => {
+  void test('saved recovery rejects a physical-only source rewrite', async () => {
     const upstream = new MockUpstream({
       savePersistence: 'physical-only',
       saveError: applyTimeout(),
@@ -2778,7 +3147,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     await engine.verify(planned.operationId);
     await assert.rejects(
       engine.saveReopen(planned.operationId, planned.planHash),
-      /timed out/,
+      /timed out/u,
     );
 
     await assert.rejects(
@@ -2786,12 +3155,12 @@ describe('durable mutation state machine', { concurrency: false }, () => {
         confirmDiscardAnyUnsavedState: true,
         runtimeRestartConfirmation: await restartConfirmation(planned.operationId),
       }),
-      /logical|demonstrably changed|database/i,
+      /logical|demonstrably changed|database/iu,
     );
     assert.equal(upstream.reopenAttempts, 0);
   });
 
-  test('saved recovery rejects a changed pre-checkpoint artifact', async () => {
+  void test('saved recovery rejects a changed pre-checkpoint artifact', async () => {
     const upstream = new MockUpstream({ saveError: applyTimeout() });
     const engine = new EasyedaControlEngine(upstream);
     const planned = await planWithDiscard(
@@ -2802,11 +3171,11 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     await engine.verify(planned.operationId);
     await assert.rejects(
       engine.saveReopen(planned.operationId, planned.planHash),
-      /timed out/,
+      /timed out/u,
     );
     const journal = await artifacts.loadOperation(planned.operationId);
     execFileSync('sqlite3', [
-      journal.preCheckpoint.checkpoint,
+      requireDefined(journal.preCheckpoint.checkpoint, 'pre-checkpoint path'),
       "UPDATE project_state SET value='tampered-checkpoint' WHERE id=1;",
     ]);
 
@@ -2815,12 +3184,12 @@ describe('durable mutation state machine', { concurrency: false }, () => {
         confirmDiscardAnyUnsavedState: true,
         runtimeRestartConfirmation: await restartConfirmation(planned.operationId),
       }),
-      /intact pre-checkpoint|checkpoint|integrity/i,
+      /intact pre-checkpoint|checkpoint|integrity/iu,
     );
     assert.equal(upstream.reopenAttempts, 0);
   });
 
-  test('requires confirmation before repeating an uncertain recovery reopen', async () => {
+  void test('requires confirmation before repeating an uncertain recovery reopen', async () => {
     const upstream = new MockUpstream({
       saveError: applyTimeout(),
       reopenErrorsRemaining: 1,
@@ -2834,7 +3203,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     await engine.verify(planned.operationId);
     await assert.rejects(
       engine.saveReopen(planned.operationId, planned.planHash),
-      /timed out/,
+      /timed out/u,
     );
     const firstRestartChallenge = await restartConfirmation(planned.operationId);
     await assert.rejects(
@@ -2842,14 +3211,17 @@ describe('durable mutation state machine', { concurrency: false }, () => {
         confirmDiscardAnyUnsavedState: true,
         runtimeRestartConfirmation: firstRestartChallenge,
       }),
-      /timed out/,
+      /timed out/u,
     );
     const retryUnknown = await artifacts.loadOperation(planned.operationId);
     assert.equal(retryUnknown.state, 'recovery-reopen-unknown');
     assert.equal(retryUnknown.orphanedCallPossible, true);
     assert.equal(retryUnknown.orphanedCallPhase, 'recovery-reopen');
     assert.equal(upstream.reopenAttempts, 1);
-    const secondRestartChallenge = retryUnknown.runtimeRestartChallenge;
+    const secondRestartChallenge = requireDefined(
+      retryUnknown.runtimeRestartChallenge,
+      'second runtime restart challenge',
+    );
     assert.notEqual(secondRestartChallenge, firstRestartChallenge);
 
     await assert.rejects(
@@ -2857,7 +3229,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
         confirmDiscardAnyUnsavedState: true,
         runtimeRestartConfirmation: firstRestartChallenge,
       }),
-      /current nonce-bound runtimeRestartChallenge/,
+      /current nonce-bound runtimeRestartChallenge/u,
     );
     assert.equal(upstream.reopenAttempts, 1);
 
@@ -2866,7 +3238,7 @@ describe('durable mutation state machine', { concurrency: false }, () => {
         confirmDiscardAnyUnsavedState: true,
         runtimeRestartConfirmation: secondRestartChallenge,
       }),
-      /confirmRepeatAfterUnknownRecovery=true/,
+      /confirmRepeatAfterUnknownRecovery=true/u,
     );
     assert.equal(upstream.reopenAttempts, 1);
 

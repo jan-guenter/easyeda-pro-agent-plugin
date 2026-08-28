@@ -7213,15 +7213,15 @@ var require_windows = __commonJS({
       }
       return false;
     }
-    function checkStat(stat5, path, options) {
-      if (!stat5.isSymbolicLink() && !stat5.isFile()) {
+    function checkStat(stat4, path, options) {
+      if (!stat4.isSymbolicLink() && !stat4.isFile()) {
         return false;
       }
       return checkPathExt(path, options);
     }
     function isexe(path, options, cb) {
-      fs.stat(path, function(er, stat5) {
-        cb(er, er ? false : checkStat(stat5, path, options));
+      fs.stat(path, function(er, stat4) {
+        cb(er, er ? false : checkStat(stat4, path, options));
       });
     }
     function sync(path, options) {
@@ -7237,20 +7237,20 @@ var require_mode = __commonJS({
     isexe.sync = sync;
     var fs = __require("fs");
     function isexe(path, options, cb) {
-      fs.stat(path, function(er, stat5) {
-        cb(er, er ? false : checkStat(stat5, options));
+      fs.stat(path, function(er, stat4) {
+        cb(er, er ? false : checkStat(stat4, options));
       });
     }
     function sync(path, options) {
       return checkStat(fs.statSync(path), options);
     }
-    function checkStat(stat5, options) {
-      return stat5.isFile() && checkMode(stat5, options);
+    function checkStat(stat4, options) {
+      return stat4.isFile() && checkMode(stat4, options);
     }
-    function checkMode(stat5, options) {
-      var mod = stat5.mode;
-      var uid = stat5.uid;
-      var gid = stat5.gid;
+    function checkMode(stat4, options) {
+      var mod = stat4.mode;
+      var uid = stat4.uid;
+      var gid = stat4.gid;
       var myUid = options.uid !== void 0 ? options.uid : process.getuid && process.getuid();
       var myGid = options.gid !== void 0 ? options.gid : process.getgid && process.getgid();
       var u = parseInt("100", 8);
@@ -7687,11 +7687,11 @@ var require_cross_spawn = __commonJS({
   }
 });
 
-// server/src/index.mjs
+// server/src/index.ts
 import { createHash as createHash5 } from "node:crypto";
 import { createReadStream as createReadStream3 } from "node:fs";
-import { mkdir as mkdir4, open as open4, rmdir, stat as stat4 } from "node:fs/promises";
-import { basename as basename3, dirname as dirname5, isAbsolute as isAbsolute4, relative as relative4, resolve as resolve6 } from "node:path";
+import { mkdir as mkdir4, open as open4, rmdir, stat as stat3 } from "node:fs/promises";
+import { basename as basename3, dirname as dirname3, isAbsolute as isAbsolute4, relative as relative4, resolve as resolve6 } from "node:path";
 import process8 from "node:process";
 import { inflateSync } from "node:zlib";
 
@@ -8067,15 +8067,15 @@ var makeIssue = (params) => {
       message: issueData.message
     };
   }
-  let errorMessage = "";
+  let errorMessage2 = "";
   const maps = errorMaps.filter((m) => !!m).slice().reverse();
   for (const map2 of maps) {
-    errorMessage = map2(fullIssue, { data, defaultError: errorMessage }).message;
+    errorMessage2 = map2(fullIssue, { data, defaultError: errorMessage2 }).message;
   }
   return {
     ...issueData,
     path: fullPath,
-    message: errorMessage
+    message: errorMessage2
   };
 };
 function addIssueToContext(ctx, issueData) {
@@ -27868,19 +27868,19 @@ var getRefs = (options) => {
 };
 
 // node_modules/zod-to-json-schema/dist/esm/errorMessages.js
-function addErrorMessage(res, key, errorMessage, refs) {
+function addErrorMessage(res, key, errorMessage2, refs) {
   if (!refs?.errorMessages)
     return;
-  if (errorMessage) {
+  if (errorMessage2) {
     res.errorMessage = {
       ...res.errorMessage,
-      [key]: errorMessage
+      [key]: errorMessage2
     };
   }
 }
-function setResponseValueAndErrors(res, key, value, errorMessage, refs) {
+function setResponseValueAndErrors(res, key, value, errorMessage2, refs) {
   res[key] = value;
-  addErrorMessage(res, key, errorMessage, refs);
+  addErrorMessage(res, key, errorMessage2, refs);
 }
 
 // node_modules/zod-to-json-schema/dist/esm/getRelativePath.js
@@ -29191,8 +29191,8 @@ var Protocol = class {
                   if (queuedMessage.type === "response") {
                     resolver(message);
                   } else {
-                    const errorMessage = message;
-                    const error51 = new McpError(errorMessage.error.code, errorMessage.error.message, errorMessage.error.data);
+                    const errorMessage2 = message;
+                    const error51 = new McpError(errorMessage2.error.code, errorMessage2.error.message, errorMessage2.error.data);
                     resolver(error51);
                   }
                 } else {
@@ -30492,23 +30492,23 @@ var Server = class extends Protocol {
       const wrappedHandler = async (request, extra) => {
         const validatedRequest = safeParse2(CallToolRequestSchema, request);
         if (!validatedRequest.success) {
-          const errorMessage = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call request: ${errorMessage}`);
+          const errorMessage2 = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call request: ${errorMessage2}`);
         }
         const { params } = validatedRequest.data;
         const result = await Promise.resolve(handler(request, extra));
         if (params.task) {
           const taskValidationResult = safeParse2(CreateTaskResultSchema, result);
           if (!taskValidationResult.success) {
-            const errorMessage = taskValidationResult.error instanceof Error ? taskValidationResult.error.message : String(taskValidationResult.error);
-            throw new McpError(ErrorCode.InvalidParams, `Invalid task creation result: ${errorMessage}`);
+            const errorMessage2 = taskValidationResult.error instanceof Error ? taskValidationResult.error.message : String(taskValidationResult.error);
+            throw new McpError(ErrorCode.InvalidParams, `Invalid task creation result: ${errorMessage2}`);
           }
           return taskValidationResult.data;
         }
         const validationResult = safeParse2(CallToolResultSchema, result);
         if (!validationResult.success) {
-          const errorMessage = validationResult.error instanceof Error ? validationResult.error.message : String(validationResult.error);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call result: ${errorMessage}`);
+          const errorMessage2 = validationResult.error instanceof Error ? validationResult.error.message : String(validationResult.error);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid tools/call result: ${errorMessage2}`);
         }
         return validationResult.data;
       };
@@ -31002,12 +31002,12 @@ var McpServer = class {
    * @param errorMessage - The error message.
    * @returns The tool error result.
    */
-  createToolError(errorMessage) {
+  createToolError(errorMessage2) {
     return {
       content: [
         {
           type: "text",
-          text: errorMessage
+          text: errorMessage2
         }
       ],
       isError: true
@@ -31025,8 +31025,8 @@ var McpServer = class {
     const parseResult = await safeParseAsync2(schemaToParse, args);
     if (!parseResult.success) {
       const error51 = "error" in parseResult ? parseResult.error : "Unknown error";
-      const errorMessage = getParseErrorMessage(error51);
-      throw new McpError(ErrorCode.InvalidParams, `Input validation error: Invalid arguments for tool ${toolName}: ${errorMessage}`);
+      const errorMessage2 = getParseErrorMessage(error51);
+      throw new McpError(ErrorCode.InvalidParams, `Input validation error: Invalid arguments for tool ${toolName}: ${errorMessage2}`);
     }
     return parseResult.data;
   }
@@ -31050,8 +31050,8 @@ var McpServer = class {
     const parseResult = await safeParseAsync2(outputObj, result.structuredContent);
     if (!parseResult.success) {
       const error51 = "error" in parseResult ? parseResult.error : "Unknown error";
-      const errorMessage = getParseErrorMessage(error51);
-      throw new McpError(ErrorCode.InvalidParams, `Output validation error: Invalid structured content for tool ${toolName}: ${errorMessage}`);
+      const errorMessage2 = getParseErrorMessage(error51);
+      throw new McpError(ErrorCode.InvalidParams, `Output validation error: Invalid structured content for tool ${toolName}: ${errorMessage2}`);
     }
   }
   /**
@@ -31263,8 +31263,8 @@ var McpServer = class {
         const parseResult = await safeParseAsync2(argsObj, request.params.arguments);
         if (!parseResult.success) {
           const error51 = "error" in parseResult ? parseResult.error : "Unknown error";
-          const errorMessage = getParseErrorMessage(error51);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for prompt ${request.params.name}: ${errorMessage}`);
+          const errorMessage2 = getParseErrorMessage(error51);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for prompt ${request.params.name}: ${errorMessage2}`);
         }
         const args = parseResult.data;
         const cb = prompt.callback;
@@ -31759,7 +31759,7 @@ var StdioServerTransport = class {
   }
 };
 
-// server/src/artifacts.mjs
+// server/src/artifacts.ts
 import { constants as fsConstants } from "node:fs";
 import { createHash as createHash2 } from "node:crypto";
 import {
@@ -31770,35 +31770,56 @@ import {
   realpath,
   readdir,
   rename,
-  stat,
-  unlink,
-  writeFile
+  unlink
 } from "node:fs/promises";
-import { dirname as dirname2, join as join2, relative as relative2, resolve as resolve2 } from "node:path";
+import { dirname, join as join2, relative as relative2, resolve as resolve2 } from "node:path";
 import process4 from "node:process";
 
-// server/src/core.mjs
+// server/src/core.ts
 import { createHash, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
-import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { basename, isAbsolute, join, relative, resolve } from "node:path";
 var CONTROL_VERSION = "0.2.0";
 var OPERATION_SCHEMA = "easyeda-pro-control.operation.v2";
+function errorWithDetails(message, details) {
+  return Object.assign(new Error(message), details);
+}
+function errorMessage(error51) {
+  return error51 instanceof Error ? error51.message : String(error51);
+}
+function errorName(error51) {
+  return error51 instanceof Error ? error51.name : "Error";
+}
+function isErrnoException(error51) {
+  return error51 instanceof Error && "code" in error51;
+}
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function isUnknownArray(value) {
+  return Array.isArray(value);
+}
+function isSha256(value) {
+  return typeof value === "string" && /^[a-f0-9]{64}$/iu.test(value);
+}
+function stringValue(value) {
+  return typeof value === "string" ? value : "";
+}
 async function controlImplementationFingerprint() {
-  const currentPath = fileURLToPath(import.meta.url);
-  const sourceDirectory = dirname(currentPath);
+  const currentPath = import.meta.filename;
+  const sourceDirectory = import.meta.dirname;
   const bundleMode = basename(currentPath) === "server.mjs";
   const candidates = bundleMode ? [currentPath] : [
-    "artifacts.mjs",
-    "checkpoint.mjs",
-    "core.mjs",
-    "engine.mjs",
-    "exact-readers.mjs",
-    "index.mjs",
-    "lease.mjs",
-    "runtime-scripts.mjs",
-    "upstream.mjs"
+    "artifacts.ts",
+    "checkpoint.ts",
+    "core.ts",
+    "engine.ts",
+    "exact-readers.ts",
+    "index.ts",
+    "lease.ts",
+    "runtime-scripts.ts",
+    "upstream.ts"
   ].map((name) => join(sourceDirectory, name));
   const files = [];
   for (const path of candidates) {
@@ -31822,13 +31843,18 @@ async function controlImplementationFingerprint() {
 }
 function stable(value) {
   if (value === null || typeof value !== "object") return value;
-  if (Array.isArray(value)) return value.map(stable);
+  if (Array.isArray(value)) return value.map((item) => stable(item));
+  if (!isRecord(value)) return value;
   return Object.fromEntries(
-    Object.keys(value).sort().map((key) => [key, stable(value[key])])
+    Object.keys(value).toSorted().map((key) => [key, stable(value[key])])
   );
 }
 function canonicalJson(value) {
-  return JSON.stringify(stable(value));
+  const encoded = JSON.stringify(stable(value));
+  if (encoded === void 0) {
+    throw new TypeError("Canonical JSON requires a JSON-serializable root value.");
+  }
+  return encoded;
 }
 function sha256Text(value) {
   return createHash("sha256").update(String(value)).digest("hex");
@@ -31837,38 +31863,45 @@ function sha256Json(value) {
   return sha256Text(canonicalJson(value));
 }
 function newOperationId(now2 = /* @__PURE__ */ new Date()) {
-  const stamp = now2.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z").toLowerCase();
+  const stamp = now2.toISOString().replaceAll(/[-:]/gu, "").replace(/\.\d{3}Z$/u, "Z").toLowerCase();
   return `easyeda-${stamp}-${randomUUID().slice(0, 8)}`;
 }
 function reportsExplicitFailure(value, depth = 0) {
   if (!isRecord(value) || depth > 6) return false;
-  if (value.ok === false || value.success === false || value.not_available === true) return true;
-  if (isRecord(value.read_consistency) && value.read_consistency.stable === false) return true;
-  return Object.hasOwn(value, "result") && reportsExplicitFailure(value.result, depth + 1);
+  if (value["ok"] === false || value["success"] === false || value["not_available"] === true) {
+    return true;
+  }
+  const readConsistency = value["read_consistency"];
+  if (isRecord(readConsistency) && readConsistency["stable"] === false) return true;
+  return Object.hasOwn(value, "result") && reportsExplicitFailure(value["result"], depth + 1);
 }
 function normalizeToolResult(result) {
   const record2 = isRecord(result) ? result : {};
-  const structured = isRecord(record2.structuredContent) ? record2.structuredContent : {};
-  const hasEnvelope = isRecord(result) && (isRecord(record2.structuredContent) || Array.isArray(record2.content) && record2.content.length > 0);
-  const failed = !hasEnvelope || record2.isError === true || reportsExplicitFailure(structured);
+  const structured = isRecord(record2["structuredContent"]) ? record2["structuredContent"] : {};
+  const content = isUnknownArray(record2["content"]) ? record2["content"] : [];
+  const hasEnvelope = isRecord(result) && (isRecord(record2["structuredContent"]) || content.length > 0);
+  const failed = !hasEnvelope || record2["isError"] === true || reportsExplicitFailure(structured);
   return {
     ok: !failed,
-    isError: record2.isError === true,
-    structuredContent: record2.structuredContent,
-    content: Array.isArray(record2.content) ? record2.content : [],
+    isError: record2["isError"] === true,
+    structuredContent: record2["structuredContent"],
+    content,
     raw: result
   };
 }
 function extractToolPayload(result) {
   const normalized = normalizeToolResult(result);
   if (!normalized.ok) {
-    const error51 = new Error("The upstream EasyEDA tool reported failure.");
-    error51.upstreamResult = result;
-    throw error51;
+    throw errorWithDetails("The upstream EasyEDA tool reported failure.", {
+      upstreamResult: result
+    });
   }
   let value = normalized.structuredContent;
   if (value === void 0) {
-    const text = normalized.content.find((item) => item?.type === "text")?.text;
+    const textItem = normalized.content.find(
+      (item) => isRecord(item) && item["type"] === "text"
+    );
+    const text = isRecord(textItem) ? textItem["text"] : void 0;
     if (typeof text === "string") {
       try {
         value = JSON.parse(text);
@@ -31878,37 +31911,39 @@ function extractToolPayload(result) {
     }
   }
   if (reportsExplicitFailure(value)) {
-    const error51 = new Error("The upstream EasyEDA tool reported failure or unavailability.");
-    error51.upstreamResult = result;
-    throw error51;
+    throw errorWithDetails(
+      "The upstream EasyEDA tool reported failure or unavailability.",
+      { upstreamResult: result }
+    );
   }
   for (let depth = 0; depth < 4; depth += 1) {
     if (!isRecord(value) || !Object.hasOwn(value, "result")) break;
     const keys = Object.keys(value).filter((key) => !["ok", "success", "result"].includes(key));
     if (keys.length > 0) break;
-    value = value.result;
+    value = value["result"];
   }
   return value;
 }
 function classifyTool(tool) {
-  const annotations = isRecord(tool?.annotations) ? tool.annotations : {};
-  const schema = isRecord(tool?.inputSchema) ? tool.inputSchema : {};
-  const properties = isRecord(schema.properties) ? schema.properties : {};
+  const record2 = isRecord(tool) ? tool : {};
+  const annotations = isRecord(record2["annotations"]) ? record2["annotations"] : {};
+  const schema = isRecord(record2["inputSchema"]) ? record2["inputSchema"] : {};
+  const properties = isRecord(schema["properties"]) ? schema["properties"] : {};
   const hasConfirmWrite = Object.hasOwn(properties, "confirmWrite");
-  const name = String(tool?.name ?? "");
+  const name = stringValue(record2["name"]);
   const pinnedReadException = name === "easyeda_schematic_verify_write";
-  const knownWriteName = !pinnedReadException && /(^|_)(add|apply|begin_transaction|commit|create|delete|export|import|modify|move|place|recover|rollback|route|save|set|sync|update|write)(_|$)/i.test(name);
-  const destructive = annotations.destructiveHint === true;
-  const explicitlyReadOnly = annotations.readOnlyHint === true && !destructive && !hasConfirmWrite;
+  const knownWriteName = !pinnedReadException && /(^|_)(add|apply|begin_transaction|commit|create|delete|export|import|modify|move|place|recover|rollback|route|save|set|sync|update|write)(_|$)/iu.test(name);
+  const destructive = annotations["destructiveHint"] === true;
+  const explicitlyReadOnly = annotations["readOnlyHint"] === true && !destructive && !hasConfirmWrite;
   return {
     readOnly: explicitlyReadOnly && !knownWriteName,
     write: destructive || hasConfirmWrite || knownWriteName,
     hasConfirmWrite,
-    idempotent: annotations.idempotentHint === true
+    idempotent: annotations["idempotentHint"] === true
   };
 }
 function filterTools(tools, options = {}) {
-  const query = String(options.query ?? "").trim().toLowerCase();
+  const query = stringValue(options.query).trim().toLowerCase();
   const mode = options.mode ?? "all";
   const limit = Math.max(1, Math.min(100, Number(options.limit ?? 30)));
   const includeSchemas = options.includeSchemas === true;
@@ -31917,8 +31952,8 @@ function filterTools(tools, options = {}) {
     if (mode === "read" && !classification.readOnly) return false;
     if (mode === "write" && !classification.write) return false;
     if (!query) return true;
-    const haystack = [tool.name, tool.title, tool.description].filter(Boolean).join(" ").toLowerCase();
-    return query.split(/\s+/).every((term) => haystack.includes(term));
+    const haystack = [tool.name, tool.title, tool.description].filter((value) => typeof value === "string" && value.length > 0).join(" ").toLowerCase();
+    return query.split(/\s+/u).every((term) => haystack.includes(term));
   }).slice(0, limit).map((tool) => {
     const classification = classifyTool(tool);
     const compact = {
@@ -31936,25 +31971,29 @@ function filterTools(tools, options = {}) {
   });
 }
 function normalizeEasyedaProjectPath(value) {
-  let text = String(value ?? "").trim();
+  let text = stringValue(value).trim();
   if (!text) throw new Error("EasyEDA project path is required.");
-  if (/^file:\/\//i.test(text)) {
+  if (/^file:\/\//iu.test(text)) {
     try {
-      text = decodeURIComponent(text.replace(/^file:\/+/i, "/"));
+      text = decodeURIComponent(text.replace(/^file:\/+/iu, "/"));
     } catch {
       throw new Error("EasyEDA project file URI contains invalid escaping.");
     }
   }
   text = text.replaceAll("\\", "/");
-  const uriDrive = /^\/([a-zA-Z]):\/(.*)$/.exec(text);
-  if (uriDrive) text = `${uriDrive[1]}:/${uriDrive[2]}`;
-  const drive = /^([a-zA-Z]):\/(.*)$/.exec(text);
-  if (drive) text = `/mnt/${drive[1].toLowerCase()}/${drive[2]}`;
+  const uriDrive = /^\/([a-zA-Z]):\/(.*)$/u.exec(text);
+  if (uriDrive?.[1] !== void 0 && uriDrive[2] !== void 0) {
+    text = `${uriDrive[1]}:/${uriDrive[2]}`;
+  }
+  const drive = /^([a-zA-Z]):\/(.*)$/u.exec(text);
+  if (drive?.[1] !== void 0 && drive[2] !== void 0) {
+    text = `/mnt/${drive[1].toLowerCase()}/${drive[2]}`;
+  }
   if (!isAbsolute(text)) {
     throw new Error("EasyEDA project path must be an absolute POSIX or Windows path.");
   }
   const normalized = resolve(text);
-  if (!/\.eprj2$/i.test(normalized)) {
+  if (!/\.eprj2$/iu.test(normalized)) {
     throw new Error("EasyEDA project path must identify an .eprj2 database.");
   }
   return normalized;
@@ -31962,8 +32001,8 @@ function normalizeEasyedaProjectPath(value) {
 function validateEvidencePaths(evidence) {
   if (evidence === void 0) return void 0;
   if (!isRecord(evidence)) throw new Error("evidence must be an object.");
-  const resultPath = String(evidence.resultPath ?? "");
-  const receiptPath = String(evidence.receiptPath ?? "");
+  const resultPath = stringValue(evidence["resultPath"]);
+  const receiptPath = stringValue(evidence["receiptPath"]);
   if (!resultPath || !receiptPath) {
     throw new Error("evidence requires resultPath and receiptPath.");
   }
@@ -31977,186 +32016,81 @@ function validateEvidencePaths(evidence) {
   }
   return { resultPath: normalizedResult, receiptPath: normalizedReceipt };
 }
-function validateExpectedFingerprint(fingerprint) {
+var EXPECTED_FINGERPRINT_REQUIREMENTS = [
+  ["/facadeImplementation/version", "string"],
+  ["/facadeImplementation/operationSchema", "string"],
+  ["/facadeImplementation/mode", "string"],
+  ["/facadeImplementation/files", "nonempty-array"],
+  ["/facadeImplementation/sha256", "sha256"],
+  ["/upstreamServer/version", "string"],
+  ["/upstreamLauncher/command", "string"],
+  ["/upstreamLauncher/commandSha256", "sha256"],
+  ["/upstreamLauncher/args", "nonempty-string-array"],
+  ["/upstreamLauncher/cwd", "string"],
+  ["/upstreamLauncher/entrypoint", "string"],
+  ["/upstreamLauncher/entrypointSha256", "sha256"],
+  ["/upstreamLauncher/implementationTree/root", "string"],
+  ["/upstreamLauncher/implementationTree/sha256", "sha256"],
+  ["/upstreamLauncher/implementationTree/fileCount", "positive-integer"],
+  ["/upstreamLauncher/dependencyLock/type", "string"],
+  ["/upstreamLauncher/dependencyLock/path", "string"],
+  ["/upstreamLauncher/dependencyLock/sha256", "sha256"],
+  ["/upstreamImplementationDrift", "false"],
+  ["/toolCatalogSha256", "sha256"],
+  ["/toolCount", "positive-integer"],
+  ["/reviewedCompatibilityManifest/path", "string"],
+  ["/reviewedCompatibilityManifest/bytes", "positive-integer"],
+  ["/reviewedCompatibilityManifest/sha256", "sha256"],
+  ["/reviewedCompatibilityManifest/schema", "string"],
+  ["/reviewedCompatibilityManifest/reviewedAt", "string"],
+  ["/health/payload/version", "string"],
+  ["/health/payload/node_version", "string"],
+  ["/health/payload/bridge_connected", "true"],
+  ["/health/payload/easyeda_version", "string"],
+  ["/health/payload/extension_version", "string"],
+  ["/health/payload/extension_version_mismatch", "false"],
+  ["/health/payload/registry_mismatch", "false"],
+  ["/bridge/payload/connected", "true"],
+  ["/bridge/payload/bridge_version", "string"],
+  ["/bridge/payload/easyeda_version", "string"],
+  ["/bridge/payload/diagnostics/method_registry_hash", "string"],
+  ["/bridgeDispatcher/payload/source", "loader-status"],
+  ["/bridgeDispatcher/payload/dispatcher_build_id", "string"],
+  ["/bridgeDispatcher/payload/total", "positive-integer"],
+  ["/installedBundles/available", "true"],
+  ["/installedBundles/assetsRoot", "string"],
+  ["/installedBundles/pcbEditor/version", "string"],
+  ["/installedBundles/pcbEditor/implementationPath", "string"],
+  ["/installedBundles/pcbEditor/implementationSha256", "sha256"],
+  ["/installedBundles/publicApi/version", "string"],
+  ["/installedBundles/publicApi/implementationPath", "string"],
+  ["/installedBundles/publicApi/implementationSha256", "sha256"],
+  ["/installedBundles/publicApi/adapterPath", "string"],
+  ["/installedBundles/publicApi/adapterSha256", "sha256"],
+  ["/installedBundles/publicApi/declarationsPath", "string"],
+  ["/installedBundles/publicApi/declarationsSha256", "sha256"]
+];
+function fingerprintRequirementMissing(value, kind) {
+  if (kind === "string") return typeof value !== "string" || value.length === 0;
+  if (kind === "sha256") return !isSha256(value);
+  if (kind === "positive-integer") return !Number.isInteger(value) || Number(value) < 1;
+  if (kind === "nonempty-string-array") {
+    return !Array.isArray(value) || value.length === 0 || value.some((item) => typeof item !== "string" || item.length === 0);
+  }
+  if (kind === "nonempty-array") return !Array.isArray(value) || value.length === 0;
+  if (kind === "loader-status") return value !== "loader_status";
+  if (kind === "true") return value !== true;
+  return value !== false;
+}
+function assertExpectedFingerprint(fingerprint) {
   if (!isRecord(fingerprint)) throw new Error("expectedFingerprint must be an object.");
-  const required2 = [
-    ["/facadeImplementation/version", fingerprint.facadeImplementation?.version, "string"],
-    [
-      "/facadeImplementation/operationSchema",
-      fingerprint.facadeImplementation?.operationSchema,
-      "string"
-    ],
-    ["/facadeImplementation/mode", fingerprint.facadeImplementation?.mode, "string"],
-    ["/facadeImplementation/files", fingerprint.facadeImplementation?.files, "nonempty-array"],
-    ["/facadeImplementation/sha256", fingerprint.facadeImplementation?.sha256, "sha256"],
-    ["/upstreamServer/version", fingerprint.upstreamServer?.version, "string"],
-    ["/upstreamLauncher/command", fingerprint.upstreamLauncher?.command, "string"],
-    ["/upstreamLauncher/commandSha256", fingerprint.upstreamLauncher?.commandSha256, "sha256"],
-    ["/upstreamLauncher/args", fingerprint.upstreamLauncher?.args, "nonempty-string-array"],
-    ["/upstreamLauncher/cwd", fingerprint.upstreamLauncher?.cwd, "string"],
-    ["/upstreamLauncher/entrypoint", fingerprint.upstreamLauncher?.entrypoint, "string"],
-    [
-      "/upstreamLauncher/entrypointSha256",
-      fingerprint.upstreamLauncher?.entrypointSha256,
-      "sha256"
-    ],
-    [
-      "/upstreamLauncher/implementationTree/root",
-      fingerprint.upstreamLauncher?.implementationTree?.root,
-      "string"
-    ],
-    [
-      "/upstreamLauncher/implementationTree/sha256",
-      fingerprint.upstreamLauncher?.implementationTree?.sha256,
-      "sha256"
-    ],
-    [
-      "/upstreamLauncher/implementationTree/fileCount",
-      fingerprint.upstreamLauncher?.implementationTree?.fileCount,
-      "positive-integer"
-    ],
-    ["/upstreamLauncher/dependencyLock/type", fingerprint.upstreamLauncher?.dependencyLock?.type, "string"],
-    ["/upstreamLauncher/dependencyLock/path", fingerprint.upstreamLauncher?.dependencyLock?.path, "string"],
-    [
-      "/upstreamLauncher/dependencyLock/sha256",
-      fingerprint.upstreamLauncher?.dependencyLock?.sha256,
-      "sha256"
-    ],
-    [
-      "/upstreamImplementationDrift",
-      fingerprint.upstreamImplementationDrift,
-      "false"
-    ],
-    ["/toolCatalogSha256", fingerprint.toolCatalogSha256, "sha256"],
-    ["/toolCount", fingerprint.toolCount, "positive-integer"],
-    [
-      "/reviewedCompatibilityManifest/path",
-      fingerprint.reviewedCompatibilityManifest?.path,
-      "string"
-    ],
-    [
-      "/reviewedCompatibilityManifest/bytes",
-      fingerprint.reviewedCompatibilityManifest?.bytes,
-      "positive-integer"
-    ],
-    [
-      "/reviewedCompatibilityManifest/sha256",
-      fingerprint.reviewedCompatibilityManifest?.sha256,
-      "sha256"
-    ],
-    [
-      "/reviewedCompatibilityManifest/schema",
-      fingerprint.reviewedCompatibilityManifest?.schema,
-      "string"
-    ],
-    [
-      "/reviewedCompatibilityManifest/reviewedAt",
-      fingerprint.reviewedCompatibilityManifest?.reviewedAt,
-      "string"
-    ],
-    ["/health/payload/version", fingerprint.health?.payload?.version, "string"],
-    ["/health/payload/node_version", fingerprint.health?.payload?.node_version, "string"],
-    ["/health/payload/bridge_connected", fingerprint.health?.payload?.bridge_connected, "true"],
-    ["/health/payload/easyeda_version", fingerprint.health?.payload?.easyeda_version, "string"],
-    ["/health/payload/extension_version", fingerprint.health?.payload?.extension_version, "string"],
-    [
-      "/health/payload/extension_version_mismatch",
-      fingerprint.health?.payload?.extension_version_mismatch,
-      "false"
-    ],
-    ["/health/payload/registry_mismatch", fingerprint.health?.payload?.registry_mismatch, "false"],
-    ["/bridge/payload/connected", fingerprint.bridge?.payload?.connected, "true"],
-    ["/bridge/payload/bridge_version", fingerprint.bridge?.payload?.bridge_version, "string"],
-    ["/bridge/payload/easyeda_version", fingerprint.bridge?.payload?.easyeda_version, "string"],
-    [
-      "/bridge/payload/diagnostics/method_registry_hash",
-      fingerprint.bridge?.payload?.diagnostics?.method_registry_hash,
-      "string"
-    ],
-    [
-      "/bridgeDispatcher/payload/source",
-      fingerprint.bridgeDispatcher?.payload?.source,
-      "loader-status"
-    ],
-    [
-      "/bridgeDispatcher/payload/dispatcher_build_id",
-      fingerprint.bridgeDispatcher?.payload?.dispatcher_build_id,
-      "string"
-    ],
-    [
-      "/bridgeDispatcher/payload/total",
-      fingerprint.bridgeDispatcher?.payload?.total,
-      "positive-integer"
-    ],
-    ["/installedBundles/available", fingerprint.installedBundles?.available, "true"],
-    ["/installedBundles/assetsRoot", fingerprint.installedBundles?.assetsRoot, "string"],
-    [
-      "/installedBundles/pcbEditor/version",
-      fingerprint.installedBundles?.pcbEditor?.version,
-      "string"
-    ],
-    [
-      "/installedBundles/pcbEditor/implementationPath",
-      fingerprint.installedBundles?.pcbEditor?.implementationPath,
-      "string"
-    ],
-    [
-      "/installedBundles/pcbEditor/implementationSha256",
-      fingerprint.installedBundles?.pcbEditor?.implementationSha256,
-      "sha256"
-    ],
-    [
-      "/installedBundles/publicApi/version",
-      fingerprint.installedBundles?.publicApi?.version,
-      "string"
-    ],
-    [
-      "/installedBundles/publicApi/implementationPath",
-      fingerprint.installedBundles?.publicApi?.implementationPath,
-      "string"
-    ],
-    [
-      "/installedBundles/publicApi/implementationSha256",
-      fingerprint.installedBundles?.publicApi?.implementationSha256,
-      "sha256"
-    ],
-    [
-      "/installedBundles/publicApi/adapterPath",
-      fingerprint.installedBundles?.publicApi?.adapterPath,
-      "string"
-    ],
-    [
-      "/installedBundles/publicApi/adapterSha256",
-      fingerprint.installedBundles?.publicApi?.adapterSha256,
-      "sha256"
-    ],
-    [
-      "/installedBundles/publicApi/declarationsPath",
-      fingerprint.installedBundles?.publicApi?.declarationsPath,
-      "string"
-    ],
-    [
-      "/installedBundles/publicApi/declarationsSha256",
-      fingerprint.installedBundles?.publicApi?.declarationsSha256,
-      "sha256"
-    ]
-  ];
-  const missing = required2.filter(([_pointer, value, kind]) => {
-    if (kind === "string") return typeof value !== "string" || value.length === 0;
-    if (kind === "sha256") return !/^[a-f0-9]{64}$/i.test(String(value ?? ""));
-    if (kind === "positive-integer") return !Number.isInteger(value) || value < 1;
-    if (kind === "nonempty-string-array") {
-      return !Array.isArray(value) || value.length === 0 || value.some((item) => typeof item !== "string" || item.length === 0);
-    }
-    if (kind === "nonempty-array") return !Array.isArray(value) || value.length === 0;
-    if (kind === "loader-status") return value !== "loader_status";
-    if (kind === "true") return value !== true;
-    if (kind === "false") return value !== false;
-    return true;
-  }).map(([pointer, _value, kind]) => ({ pointer, required: kind }));
-  if (Array.isArray(fingerprint.facadeImplementation?.files)) {
-    fingerprint.facadeImplementation.files.forEach((file2, index) => {
-      if (!isRecord(file2) || typeof file2.path !== "string" || file2.path.length === 0 || typeof file2.relativePath !== "string" || file2.relativePath.length === 0 || !Number.isInteger(file2.bytes) || file2.bytes < 1 || !/^[a-f0-9]{64}$/i.test(String(file2.sha256 ?? ""))) {
+  const missing = EXPECTED_FINGERPRINT_REQUIREMENTS.filter(
+    ([pointer, kind]) => fingerprintRequirementMissing(getJsonPointer(fingerprint, pointer), kind)
+  ).map(([pointer, kind]) => ({ pointer, required: kind }));
+  const files = getJsonPointer(fingerprint, "/facadeImplementation/files");
+  if (Array.isArray(files)) {
+    files.forEach((file2, index) => {
+      if (!isRecord(file2) || typeof file2["path"] !== "string" || file2["path"].length === 0 || typeof file2["relativePath"] !== "string" || file2["relativePath"].length === 0 || !Number.isInteger(file2["bytes"]) || Number(file2["bytes"]) < 1 || !isSha256(file2["sha256"])) {
         missing.push({
           pointer: `/facadeImplementation/files/${index}`,
           required: "exact implementation file fingerprint"
@@ -32165,18 +32099,20 @@ function validateExpectedFingerprint(fingerprint) {
     });
   }
   if (missing.length > 0) {
-    const error51 = new Error(
-      "expectedFingerprint must pin a connected, non-mismatched EasyEDA runtime and method registry."
+    throw errorWithDetails(
+      "expectedFingerprint must pin a connected, non-mismatched EasyEDA runtime and method registry.",
+      { missingFingerprintFields: missing }
     );
-    error51.missingFingerprintFields = missing;
-    throw error51;
   }
+}
+function validateExpectedFingerprint(fingerprint) {
+  assertExpectedFingerprint(fingerprint);
   return true;
 }
 var REVIEWED_COMPATIBILITY_SCHEMA = "easyeda-pro-control.reviewed-compatibility.v1";
 function reviewedCompatibilityManifestPath() {
   return resolve(
-    dirname(fileURLToPath(import.meta.url)),
+    import.meta.dirname,
     "..",
     "..",
     "reviewed-compatibility.json"
@@ -32184,8 +32120,8 @@ function reviewedCompatibilityManifestPath() {
 }
 function manifestObject(value, pointer, keys) {
   if (!isRecord(value)) throw new Error(`Reviewed compatibility manifest ${pointer} must be an object.`);
-  const actual = Object.keys(value).sort();
-  const expected = [...keys].sort();
+  const actual = Object.keys(value).toSorted();
+  const expected = [...keys].toSorted();
   if (canonicalJson(actual) !== canonicalJson(expected)) {
     throw new Error(
       `Reviewed compatibility manifest ${pointer} has unexpected or missing keys: ${actual.join(", ")}.`
@@ -32200,54 +32136,58 @@ function manifestString(value, pointer) {
   return value;
 }
 function manifestSha256(value, pointer) {
-  if (!/^[a-f0-9]{64}$/i.test(String(value ?? ""))) {
+  if (!isSha256(value)) {
     throw new Error(`Reviewed compatibility manifest ${pointer} must be a SHA-256 digest.`);
   }
   return value;
 }
 function manifestPositiveInteger(value, pointer) {
-  if (!Number.isInteger(value) || value < 1) {
+  if (!Number.isInteger(value) || Number(value) < 1) {
     throw new Error(`Reviewed compatibility manifest ${pointer} must be a positive integer.`);
   }
-  return value;
+  return Number(value);
 }
-function validateFacadeManifest(value, pointer) {
-  manifestObject(value, pointer, [
+function assertFacadeManifest(value, pointer) {
+  const record2 = manifestObject(value, pointer, [
     "version",
     "operationSchema",
     "sha256",
     "fileCount",
     "files"
   ]);
-  manifestString(value.version, `${pointer}/version`);
-  manifestString(value.operationSchema, `${pointer}/operationSchema`);
-  manifestSha256(value.sha256, `${pointer}/sha256`);
-  manifestPositiveInteger(value.fileCount, `${pointer}/fileCount`);
-  if (!Array.isArray(value.files) || value.files.length !== value.fileCount) {
+  manifestString(record2["version"], `${pointer}/version`);
+  manifestString(record2["operationSchema"], `${pointer}/operationSchema`);
+  manifestSha256(record2["sha256"], `${pointer}/sha256`);
+  const fileCount = manifestPositiveInteger(record2["fileCount"], `${pointer}/fileCount`);
+  const files = record2["files"];
+  if (!Array.isArray(files) || files.length !== fileCount) {
     throw new Error(`Reviewed compatibility manifest ${pointer}/files must match fileCount.`);
   }
   const relativePaths = [];
-  value.files.forEach((file2, index) => {
+  files.forEach((file2, index) => {
     const filePointer = `${pointer}/files/${index}`;
-    manifestObject(file2, filePointer, ["relativePath", "bytes", "sha256"]);
-    manifestString(file2.relativePath, `${filePointer}/relativePath`);
-    if (isAbsolute(file2.relativePath) || file2.relativePath.includes("\\") || file2.relativePath.split("/").includes("..")) {
+    const fileRecord = manifestObject(file2, filePointer, ["relativePath", "bytes", "sha256"]);
+    const relativePath = manifestString(
+      fileRecord["relativePath"],
+      `${filePointer}/relativePath`
+    );
+    if (isAbsolute(relativePath) || relativePath.includes("\\") || relativePath.split("/").includes("..")) {
       throw new Error(
         `Reviewed compatibility manifest ${filePointer}/relativePath must be a normalized relative path.`
       );
     }
-    manifestPositiveInteger(file2.bytes, `${filePointer}/bytes`);
-    manifestSha256(file2.sha256, `${filePointer}/sha256`);
-    relativePaths.push(file2.relativePath);
+    manifestPositiveInteger(fileRecord["bytes"], `${filePointer}/bytes`);
+    manifestSha256(fileRecord["sha256"], `${filePointer}/sha256`);
+    relativePaths.push(relativePath);
   });
-  if (new Set(relativePaths).size !== relativePaths.length || canonicalJson(relativePaths) !== canonicalJson([...relativePaths].sort())) {
+  if (new Set(relativePaths).size !== relativePaths.length || canonicalJson(relativePaths) !== canonicalJson([...relativePaths].toSorted())) {
     throw new Error(
       `Reviewed compatibility manifest ${pointer}/files must have unique sorted relative paths.`
     );
   }
 }
-function validateReviewedCompatibilityManifest(value) {
-  manifestObject(value, "/", [
+function assertReviewedCompatibilityManifest(value) {
+  const root = manifestObject(value, "/", [
     "schema",
     "reviewedAt",
     "facadeImplementation",
@@ -32255,26 +32195,33 @@ function validateReviewedCompatibilityManifest(value) {
     "connectedRuntime",
     "installedBundles"
   ]);
-  if (value.schema !== REVIEWED_COMPATIBILITY_SCHEMA) {
-    throw new Error(`Unsupported reviewed compatibility manifest schema ${String(value.schema)}.`);
+  if (root["schema"] !== REVIEWED_COMPATIBILITY_SCHEMA) {
+    throw new Error(`Unsupported reviewed compatibility manifest schema ${String(root["schema"])}.`);
   }
-  manifestString(value.reviewedAt, "/reviewedAt");
-  if (!Number.isFinite(Date.parse(value.reviewedAt))) {
-    throw new Error("Reviewed compatibility manifest /reviewedAt must be an ISO date-time.");
+  const reviewedAt = manifestString(root["reviewedAt"], "/reviewedAt");
+  if (!Number.isFinite(Date.parse(reviewedAt))) {
+    throw new TypeError("Reviewed compatibility manifest /reviewedAt must be an ISO date-time.");
   }
-  manifestObject(value.facadeImplementation, "/facadeImplementation", [
-    "source-tree",
-    "bundle"
-  ]);
-  validateFacadeManifest(
-    value.facadeImplementation["source-tree"],
+  const facadeImplementation = manifestObject(
+    root["facadeImplementation"],
+    "/facadeImplementation",
+    [
+      "source-tree",
+      "bundle"
+    ]
+  );
+  assertFacadeManifest(
+    facadeImplementation["source-tree"],
     "/facadeImplementation/source-tree"
   );
-  validateFacadeManifest(value.facadeImplementation.bundle, "/facadeImplementation/bundle");
-  manifestObject(value.upstream, "/upstream", ["serverVersion", "launcher", "toolCatalog"]);
-  manifestString(value.upstream.serverVersion, "/upstream/serverVersion");
-  const launcher = value.upstream.launcher;
-  manifestObject(launcher, "/upstream/launcher", [
+  assertFacadeManifest(facadeImplementation["bundle"], "/facadeImplementation/bundle");
+  const upstream2 = manifestObject(root["upstream"], "/upstream", [
+    "serverVersion",
+    "launcher",
+    "toolCatalog"
+  ]);
+  manifestString(upstream2["serverVersion"], "/upstream/serverVersion");
+  const launcher = manifestObject(upstream2["launcher"], "/upstream/launcher", [
     "command",
     "commandSha256",
     "args",
@@ -32285,49 +32232,66 @@ function validateReviewedCompatibilityManifest(value) {
     "cwd"
   ]);
   for (const key of ["command", "entrypoint", "cwd"]) {
-    manifestString(launcher[key], `/upstream/launcher/${key}`);
-    if (!isAbsolute(launcher[key])) {
+    const path = manifestString(launcher[key], `/upstream/launcher/${key}`);
+    if (!isAbsolute(path)) {
       throw new Error(`Reviewed compatibility manifest /upstream/launcher/${key} must be absolute.`);
     }
   }
-  manifestSha256(launcher.commandSha256, "/upstream/launcher/commandSha256");
-  manifestSha256(launcher.entrypointSha256, "/upstream/launcher/entrypointSha256");
-  if (!Array.isArray(launcher.args) || launcher.args.length === 0 || launcher.args.some((item) => typeof item !== "string" || item.length === 0)) {
+  manifestSha256(launcher["commandSha256"], "/upstream/launcher/commandSha256");
+  manifestSha256(launcher["entrypointSha256"], "/upstream/launcher/entrypointSha256");
+  const launcherArgs = launcher["args"];
+  if (!Array.isArray(launcherArgs) || launcherArgs.length === 0 || launcherArgs.some((item) => typeof item !== "string" || item.length === 0)) {
     throw new Error("Reviewed compatibility manifest /upstream/launcher/args is malformed.");
   }
-  manifestObject(launcher.implementationTree, "/upstream/launcher/implementationTree", [
-    "root",
-    "fileCount",
-    "sha256"
-  ]);
-  manifestString(launcher.implementationTree.root, "/upstream/launcher/implementationTree/root");
-  if (!isAbsolute(launcher.implementationTree.root)) {
+  const implementationTree = manifestObject(
+    launcher["implementationTree"],
+    "/upstream/launcher/implementationTree",
+    [
+      "root",
+      "fileCount",
+      "sha256"
+    ]
+  );
+  const implementationRoot = manifestString(
+    implementationTree["root"],
+    "/upstream/launcher/implementationTree/root"
+  );
+  if (!isAbsolute(implementationRoot)) {
     throw new Error("Reviewed compatibility manifest implementation-tree root must be absolute.");
   }
   manifestPositiveInteger(
-    launcher.implementationTree.fileCount,
+    implementationTree["fileCount"],
     "/upstream/launcher/implementationTree/fileCount"
   );
   manifestSha256(
-    launcher.implementationTree.sha256,
+    implementationTree["sha256"],
     "/upstream/launcher/implementationTree/sha256"
   );
-  manifestObject(launcher.dependencyLock, "/upstream/launcher/dependencyLock", [
-    "type",
-    "path",
-    "sha256"
-  ]);
-  manifestString(launcher.dependencyLock.type, "/upstream/launcher/dependencyLock/type");
-  manifestString(launcher.dependencyLock.path, "/upstream/launcher/dependencyLock/path");
-  if (!isAbsolute(launcher.dependencyLock.path)) {
+  const dependencyLock = manifestObject(
+    launcher["dependencyLock"],
+    "/upstream/launcher/dependencyLock",
+    [
+      "type",
+      "path",
+      "sha256"
+    ]
+  );
+  manifestString(dependencyLock["type"], "/upstream/launcher/dependencyLock/type");
+  const dependencyLockPath = manifestString(
+    dependencyLock["path"],
+    "/upstream/launcher/dependencyLock/path"
+  );
+  if (!isAbsolute(dependencyLockPath)) {
     throw new Error("Reviewed compatibility manifest dependency-lock path must be absolute.");
   }
-  manifestSha256(launcher.dependencyLock.sha256, "/upstream/launcher/dependencyLock/sha256");
-  manifestObject(value.upstream.toolCatalog, "/upstream/toolCatalog", ["count", "sha256"]);
-  manifestPositiveInteger(value.upstream.toolCatalog.count, "/upstream/toolCatalog/count");
-  manifestSha256(value.upstream.toolCatalog.sha256, "/upstream/toolCatalog/sha256");
-  const runtime = value.connectedRuntime;
-  manifestObject(runtime, "/connectedRuntime", [
+  manifestSha256(dependencyLock["sha256"], "/upstream/launcher/dependencyLock/sha256");
+  const toolCatalog = manifestObject(upstream2["toolCatalog"], "/upstream/toolCatalog", [
+    "count",
+    "sha256"
+  ]);
+  manifestPositiveInteger(toolCatalog["count"], "/upstream/toolCatalog/count");
+  manifestSha256(toolCatalog["sha256"], "/upstream/toolCatalog/sha256");
+  const runtime = manifestObject(root["connectedRuntime"], "/connectedRuntime", [
     "healthVersion",
     "nodeVersion",
     "easyedaVersion",
@@ -32348,38 +32312,39 @@ function validateReviewedCompatibilityManifest(value) {
   ]) {
     manifestString(runtime[key], `/connectedRuntime/${key}`);
   }
-  manifestObject(runtime.dispatcher, "/connectedRuntime/dispatcher", [
+  const dispatcher = manifestObject(runtime["dispatcher"], "/connectedRuntime/dispatcher", [
     "source",
     "buildId",
     "total"
   ]);
-  if (runtime.dispatcher.source !== "loader_status") {
+  if (dispatcher["source"] !== "loader_status") {
     throw new Error("Reviewed compatibility manifest dispatcher source must be loader_status.");
   }
-  manifestString(runtime.dispatcher.buildId, "/connectedRuntime/dispatcher/buildId");
-  manifestPositiveInteger(runtime.dispatcher.total, "/connectedRuntime/dispatcher/total");
-  const bundles = value.installedBundles;
-  manifestObject(bundles, "/installedBundles", ["pcbEditor", "publicApi"]);
-  manifestObject(bundles.pcbEditor, "/installedBundles/pcbEditor", [
+  manifestString(dispatcher["buildId"], "/connectedRuntime/dispatcher/buildId");
+  manifestPositiveInteger(dispatcher["total"], "/connectedRuntime/dispatcher/total");
+  const bundles = manifestObject(root["installedBundles"], "/installedBundles", [
+    "pcbEditor",
+    "publicApi"
+  ]);
+  const pcbEditor = manifestObject(bundles["pcbEditor"], "/installedBundles/pcbEditor", [
     "version",
     "implementationSha256"
   ]);
-  manifestString(bundles.pcbEditor.version, "/installedBundles/pcbEditor/version");
+  manifestString(pcbEditor["version"], "/installedBundles/pcbEditor/version");
   manifestSha256(
-    bundles.pcbEditor.implementationSha256,
+    pcbEditor["implementationSha256"],
     "/installedBundles/pcbEditor/implementationSha256"
   );
-  manifestObject(bundles.publicApi, "/installedBundles/publicApi", [
+  const publicApi = manifestObject(bundles["publicApi"], "/installedBundles/publicApi", [
     "version",
     "implementationSha256",
     "adapterSha256",
     "declarationsSha256"
   ]);
-  manifestString(bundles.publicApi.version, "/installedBundles/publicApi/version");
+  manifestString(publicApi["version"], "/installedBundles/publicApi/version");
   for (const key of ["implementationSha256", "adapterSha256", "declarationsSha256"]) {
-    manifestSha256(bundles.publicApi[key], `/installedBundles/publicApi/${key}`);
+    manifestSha256(publicApi[key], `/installedBundles/publicApi/${key}`);
   }
-  return value;
 }
 function readReviewedCompatibilityManifest() {
   const path = reviewedCompatibilityManifestPath();
@@ -32393,7 +32358,8 @@ function readReviewedCompatibilityManifest() {
       cause: error51
     });
   }
-  const manifest = validateReviewedCompatibilityManifest(parsed);
+  assertReviewedCompatibilityManifest(parsed);
+  const manifest = parsed;
   return {
     manifest,
     fingerprint: {
@@ -32409,7 +32375,7 @@ function reviewedCompatibilityManifestFingerprint() {
   return readReviewedCompatibilityManifest().fingerprint;
 }
 function validatePrivateFingerprint(fingerprint) {
-  validateExpectedFingerprint(fingerprint);
+  assertExpectedFingerprint(fingerprint);
   const reviewed = readReviewedCompatibilityManifest();
   const manifest = reviewed.manifest;
   const manifestMismatches = compareSubset(
@@ -32417,17 +32383,13 @@ function validatePrivateFingerprint(fingerprint) {
     reviewed.fingerprint
   );
   if (manifestMismatches.length > 0) {
-    const error51 = new Error(
-      "Private EasyEDA automation is unavailable because the expected reviewed-compatibility manifest fingerprint does not match the current external manifest."
+    throw errorWithDetails(
+      "Private EasyEDA automation is unavailable because the expected reviewed-compatibility manifest fingerprint does not match the current external manifest.",
+      { mismatches: manifestMismatches }
     );
-    error51.mismatches = manifestMismatches;
-    throw error51;
   }
   const facadeMode = fingerprint.facadeImplementation.mode;
   const reviewedFacade = manifest.facadeImplementation[facadeMode];
-  if (!reviewedFacade) {
-    throw new Error(`Reviewed compatibility manifest has no facade mode ${facadeMode}.`);
-  }
   const actual = {
     facadeImplementation: {
       version: fingerprint.facadeImplementation.version,
@@ -32438,7 +32400,7 @@ function validatePrivateFingerprint(fingerprint) {
         relativePath: file2.relativePath,
         bytes: file2.bytes,
         sha256: file2.sha256
-      })).sort((left, right) => left.relativePath.localeCompare(right.relativePath))
+      })).toSorted((left, right) => left.relativePath.localeCompare(right.relativePath))
     },
     upstream: {
       serverVersion: fingerprint.upstreamServer?.version,
@@ -32450,7 +32412,7 @@ function validatePrivateFingerprint(fingerprint) {
     },
     connectedRuntime: {
       healthVersion: fingerprint.health?.payload?.version,
-      nodeVersion: String(fingerprint.health?.payload?.node_version ?? "").replace(/^v/, ""),
+      nodeVersion: fingerprint.health.payload.node_version.replace(/^v/u, ""),
       easyedaVersion: fingerprint.health?.payload?.easyeda_version,
       extensionVersion: fingerprint.health?.payload?.extension_version,
       bridgeVersion: fingerprint.bridge?.payload?.bridge_version,
@@ -32483,11 +32445,10 @@ function validatePrivateFingerprint(fingerprint) {
   };
   const mismatches = compareSubset(actual, expected);
   if (mismatches.length > 0) {
-    const error51 = new Error(
-      `Private EasyEDA automation is unavailable because the connected compatibility tuple does not match the external reviewed manifest at ${reviewedCompatibilityManifestPath()}.`
+    throw errorWithDetails(
+      `Private EasyEDA automation is unavailable because the connected compatibility tuple does not match the external reviewed manifest at ${reviewedCompatibilityManifestPath()}.`,
+      { mismatches }
     );
-    error51.mismatches = mismatches;
-    throw error51;
   }
   return true;
 }
@@ -32496,11 +32457,18 @@ function getJsonPointer(root, pointer) {
   if (typeof pointer !== "string" || !pointer.startsWith("/")) {
     throw new Error(`Invalid JSON pointer: ${String(pointer)}`);
   }
-  return pointer.slice(1).split("/").map((part) => part.replaceAll("~1", "/").replaceAll("~0", "~")).reduce((value, key) => {
-    if (Array.isArray(value) && /^\d+$/.test(key)) return value[Number(key)];
-    if (isRecord(value)) return value[key];
-    return void 0;
-  }, root);
+  const parts = pointer.slice(1).split("/").map((part) => part.replaceAll("~1", "/").replaceAll("~0", "~"));
+  let value = root;
+  for (const key of parts) {
+    if (Array.isArray(value) && /^\d+$/u.test(key)) {
+      value = value[Number(key)];
+    } else if (isRecord(value)) {
+      value = value[key];
+    } else {
+      return void 0;
+    }
+  }
+  return value;
 }
 function evaluateAssertions(root, assertions = []) {
   return assertions.map((assertion, index) => {
@@ -32517,7 +32485,7 @@ function evaluateAssertions(root, assertions = []) {
         passed = actual !== void 0 && canonicalJson(actual) !== canonicalJson(assertion.value);
         break;
       case "matches":
-        passed = typeof actual === "string" && new RegExp(String(assertion.value)).test(actual);
+        passed = typeof actual === "string" && new RegExp(stringValue(assertion.value), "u").test(actual);
         break;
       case "length-equals":
         passed = (Array.isArray(actual) || typeof actual === "string") && actual.length === assertion.value;
@@ -32559,78 +32527,80 @@ function compareSubset(actual, expected, pointer = "") {
 function assertSubset(actual, expected, label = "value") {
   const mismatches = compareSubset(actual, expected);
   if (mismatches.length > 0) {
-    const error51 = new Error(`${label} does not match the expected subset.`);
-    error51.mismatches = mismatches;
-    throw error51;
+    throw errorWithDetails(`${label} does not match the expected subset.`, { mismatches });
   }
   return true;
 }
 function buildPlanHash(plan) {
   return sha256Json({
-    name: plan.name,
-    intent: plan.intent,
-    targetPrimitiveIds: plan.targetPrimitiveIds ?? [],
-    targetChanges: plan.targetChanges ?? [],
-    capabilityLevel: plan.capabilityLevel,
-    expectedFingerprint: plan.expectedFingerprint,
-    expectedContext: plan.expectedContext,
-    preflightCalls: plan.preflightCalls ?? [],
-    applyCall: plan.applyCall,
-    verifyCalls: plan.verifyCalls ?? [],
-    verifyAssertions: plan.verifyAssertions ?? [],
-    rollbackCalls: plan.rollbackCalls ?? [],
-    reopenedVerifyCalls: plan.reopenedVerifyCalls ?? [],
-    reopenedAssertions: plan.reopenedAssertions ?? [],
-    checkpoint: plan.checkpoint
+    name: plan["name"],
+    intent: plan["intent"],
+    targetPrimitiveIds: plan["targetPrimitiveIds"] ?? [],
+    targetChanges: plan["targetChanges"] ?? [],
+    capabilityLevel: plan["capabilityLevel"],
+    expectedFingerprint: plan["expectedFingerprint"],
+    expectedContext: plan["expectedContext"],
+    preflightCalls: plan["preflightCalls"] ?? [],
+    applyCall: plan["applyCall"],
+    verifyCalls: plan["verifyCalls"] ?? [],
+    verifyAssertions: plan["verifyAssertions"] ?? [],
+    rollbackCalls: plan["rollbackCalls"] ?? [],
+    reopenedVerifyCalls: plan["reopenedVerifyCalls"] ?? [],
+    reopenedAssertions: plan["reopenedAssertions"] ?? [],
+    checkpoint: plan["checkpoint"]
   });
 }
-function operationSummary(operation) {
-  const bounded = (value, maximum = 2048) => {
-    if (typeof value !== "string") return void 0;
-    return value.length <= maximum ? value : `${value.slice(0, maximum - 1)}\u2026`;
-  };
-  const checkpointPointer = (checkpoint) => {
-    if (!checkpoint || typeof checkpoint !== "object") return void 0;
-    return {
-      receiptPath: checkpoint.receiptPath,
-      checkpointPath: checkpoint.checkpoint
-    };
-  };
-  const artifacts = Array.isArray(operation.artifacts) ? operation.artifacts : [];
+function boundedText(value, maximum = 2048) {
+  if (typeof value !== "string") return void 0;
+  return value.length <= maximum ? value : `${value.slice(0, maximum - 1)}\u2026`;
+}
+function checkpointPointer(checkpoint) {
+  return isRecord(checkpoint) ? {
+    receiptPath: checkpoint["receiptPath"],
+    checkpointPath: checkpoint["checkpoint"]
+  } : void 0;
+}
+function summarizeArtifact(artifact) {
+  const record2 = isRecord(artifact) ? artifact : {};
   return {
-    operationId: operation.operationId,
-    planHash: operation.planHash,
-    state: operation.state,
-    mutationState: operation.mutationState,
-    saved: operation.saved === true,
-    reopened: operation.reopened === true,
-    hardStop: operation.hardStop === true,
-    mutationMayHaveOccurred: operation.mutationMayHaveOccurred === true,
+    path: record2["path"],
+    sha256: record2["sha256"],
+    bytes: record2["bytes"]
+  };
+}
+function operationSummary(operation) {
+  const artifacts = Array.isArray(operation["artifacts"]) ? operation["artifacts"] : [];
+  const lastError = isRecord(operation["lastError"]) ? operation["lastError"] : void 0;
+  return {
+    operationId: operation["operationId"],
+    planHash: operation["planHash"],
+    state: operation["state"],
+    mutationState: operation["mutationState"],
+    saved: operation["saved"] === true,
+    reopened: operation["reopened"] === true,
+    hardStop: operation["hardStop"] === true,
+    mutationMayHaveOccurred: operation["mutationMayHaveOccurred"] === true,
     orphanedCallPossible: operationHasOrphanedCallRisk(operation),
-    orphanedCallPhase: operation.orphanedCallPhase,
-    runtimeRestartChallenge: operationHasOrphanedCallRisk(operation) && typeof operation.runtimeRestartChallenge === "string" ? operation.runtimeRestartChallenge : void 0,
-    runtimeRestartChallengeIssuedAt: operationHasOrphanedCallRisk(operation) && typeof operation.runtimeRestartChallengeIssuedAt === "string" ? operation.runtimeRestartChallengeIssuedAt : void 0,
-    runtimeRestartBoundary: operation.runtimeRestartBoundary,
-    nextSafeAction: operation.nextSafeAction,
-    unknownPhase: operation.unknownPhase,
-    lastError: operation.lastError ? {
-      name: bounded(operation.lastError.name, 128),
-      message: bounded(operation.lastError.message)
+    orphanedCallPhase: operation["orphanedCallPhase"],
+    runtimeRestartChallenge: operationHasOrphanedCallRisk(operation) && typeof operation["runtimeRestartChallenge"] === "string" ? operation["runtimeRestartChallenge"] : void 0,
+    runtimeRestartChallengeIssuedAt: operationHasOrphanedCallRisk(operation) && typeof operation["runtimeRestartChallengeIssuedAt"] === "string" ? operation["runtimeRestartChallengeIssuedAt"] : void 0,
+    runtimeRestartBoundary: operation["runtimeRestartBoundary"],
+    nextSafeAction: operation["nextSafeAction"],
+    unknownPhase: operation["unknownPhase"],
+    lastError: lastError ? {
+      name: boundedText(lastError["name"], 128),
+      message: boundedText(lastError["message"])
     } : void 0,
-    journalPath: operation.journalPath,
+    journalPath: operation["journalPath"],
     checkpoints: {
-      pre: checkpointPointer(operation.preCheckpoint),
-      final: checkpointPointer(operation.finalCheckpoint)
+      pre: checkpointPointer(operation["preCheckpoint"]),
+      final: checkpointPointer(operation["finalCheckpoint"])
     },
     artifacts: {
       count: artifacts.length,
-      recent: artifacts.slice(-12).map((artifact) => ({
-        path: artifact?.path,
-        sha256: artifact?.sha256,
-        bytes: artifact?.bytes
-      }))
+      recent: artifacts.slice(-12).map((artifact) => summarizeArtifact(artifact))
     },
-    updatedAt: operation.updatedAt
+    updatedAt: operation["updatedAt"]
   };
 }
 var LEGACY_ORPHAN_RISK_STATES = /* @__PURE__ */ new Set([
@@ -32649,23 +32619,27 @@ var LEGACY_ORPHAN_RISK_STATES = /* @__PURE__ */ new Set([
   "recovery-target-activation-unknown"
 ]);
 function operationHasOrphanedCallRisk(operation) {
-  if (typeof operation?.orphanedCallPossible === "boolean") {
-    return operation.orphanedCallPossible;
+  if (!isRecord(operation)) return false;
+  if (typeof operation["orphanedCallPossible"] === "boolean") {
+    return operation["orphanedCallPossible"];
   }
-  return LEGACY_ORPHAN_RISK_STATES.has(operation?.state);
+  return LEGACY_ORPHAN_RISK_STATES.has(String(operation["state"]));
 }
 function isTerminalOperation(operation) {
+  const state = isRecord(operation) ? operation["state"] : void 0;
   return ["completed", "rolled-back", "reconciled-no-mutation", "plan-invalidated"].includes(
-    operation?.state
+    String(state)
   );
 }
-function isRecord(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
-// server/src/artifacts.mjs
+// server/src/artifacts.ts
+var configuredControlDataDirectory = process4.env["EASYEDA_CONTROL_DATA_DIR"];
+var configuredHomeDirectory = process4.env["HOME"];
 var CONTROL_DATA_DIR = resolve2(
-  process4.env.EASYEDA_CONTROL_DATA_DIR || join2(process4.env.HOME || "/tmp", ".easyeda-pro-control")
+  configuredControlDataDirectory !== void 0 && configuredControlDataDirectory.length > 0 ? configuredControlDataDirectory : join2(
+    configuredHomeDirectory !== void 0 && configuredHomeDirectory.length > 0 ? configuredHomeDirectory : "/tmp",
+    ".easyeda-pro-control"
+  )
 );
 var OPERATIONS_DIR = join2(CONTROL_DATA_DIR, "operations");
 function isWithin(root, candidate) {
@@ -32698,11 +32672,11 @@ async function assertSafeManagedDirectory(directory) {
         throw new Error(`Managed parent ${current} is not a real directory.`);
       }
     } catch (error51) {
-      if (error51?.code !== "ENOENT") throw error51;
+      if (!isErrnoException(error51) || error51.code !== "ENOENT") throw error51;
       await mkdir(current, { mode: 448 });
       const created = await lstat(current);
       if (created.isSymbolicLink() || !created.isDirectory()) {
-        throw new Error(`Managed parent ${current} was replaced during creation.`);
+        throw new Error(`Managed parent ${current} was replaced during creation.`, { cause: error51 });
       }
     }
   }
@@ -32753,11 +32727,11 @@ async function openSafeManagedFile(path, label = "Artifact") {
     throw error51;
   }
 }
-async function ensureManagedDirectory(path) {
-  return await assertSafeManagedDirectory(path);
+function ensureManagedDirectory(path) {
+  return assertSafeManagedDirectory(path);
 }
-async function inspectManagedFile(path, label = "Artifact") {
-  return await assertSafeManagedFile(path, label);
+function inspectManagedFile(path, label = "Artifact") {
+  return assertSafeManagedFile(path, label);
 }
 async function readManagedFile(path, label = "Artifact") {
   const opened = await openSafeManagedFile(path, label);
@@ -32777,7 +32751,12 @@ async function hashManagedAttachment(path, label = "Evidence attachment") {
     await handle.sync();
     const before = await handle.stat();
     const hash2 = createHash2("sha256");
-    for await (const chunk of handle.createReadStream({ autoClose: false })) hash2.update(chunk);
+    for await (const chunk of handle.createReadStream({ autoClose: false })) {
+      if (!Buffer.isBuffer(chunk)) {
+        throw new TypeError("Evidence stream yielded a non-buffer chunk.");
+      }
+      hash2.update(chunk);
+    }
     const after = await handle.stat();
     assertFileStayedUnchanged(before, after, label);
     const result = {
@@ -32785,7 +32764,7 @@ async function hashManagedAttachment(path, label = "Evidence attachment") {
       bytes: after.size,
       sha256: hash2.digest("hex")
     };
-    await syncDirectory(dirname2(opened.absolute));
+    await syncDirectory(dirname(opened.absolute));
     return result;
   } finally {
     await handle.close();
@@ -32809,14 +32788,15 @@ async function syncDirectory(path) {
 }
 async function reserveEvidencePaths(evidence) {
   const paths = validateEvidencePaths(evidence);
+  if (!paths) throw new Error("Evidence paths are required.");
   const resultPath = assertManagedPath(paths.resultPath, "Evidence result");
   const receiptPath = assertManagedPath(paths.receiptPath, "Evidence receipt");
   const token = `${process4.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   let resultHandle;
   let receiptHandle;
   try {
-    await assertSafeManagedDirectory(dirname2(resultPath));
-    await assertSafeManagedDirectory(dirname2(receiptPath));
+    await assertSafeManagedDirectory(dirname(resultPath));
+    await assertSafeManagedDirectory(dirname(receiptPath));
     resultHandle = await open(resultPath, "wx", 384);
     receiptHandle = await open(receiptPath, "wx", 384);
     const marker = `${JSON.stringify({ schema: "easyeda-pro-control.evidence-reservation.v1", token })}
@@ -32826,29 +32806,36 @@ async function reserveEvidencePaths(evidence) {
     await resultHandle.sync();
     await receiptHandle.sync();
   } catch (error51) {
-    await resultHandle?.close().catch(() => void 0);
-    await receiptHandle?.close().catch(() => void 0);
-    if (resultHandle) await unlink(resultPath).catch(() => void 0);
-    if (receiptHandle) await unlink(receiptPath).catch(() => void 0);
-    for (const directory of /* @__PURE__ */ new Set([dirname2(resultPath), dirname2(receiptPath)])) {
-      await syncDirectory(directory).catch(() => void 0);
+    await resultHandle?.close().catch(() => {
+    });
+    await receiptHandle?.close().catch(() => {
+    });
+    if (resultHandle) await unlink(resultPath).catch(() => {
+    });
+    if (receiptHandle) await unlink(receiptPath).catch(() => {
+    });
+    for (const directory of /* @__PURE__ */ new Set([dirname(resultPath), dirname(receiptPath)])) {
+      await syncDirectory(directory).catch(() => {
+      });
     }
     throw error51;
   } finally {
-    await resultHandle?.close().catch(() => void 0);
-    await receiptHandle?.close().catch(() => void 0);
+    await resultHandle?.close().catch(() => {
+    });
+    await receiptHandle?.close().catch(() => {
+    });
   }
-  for (const directory of /* @__PURE__ */ new Set([dirname2(resultPath), dirname2(receiptPath)])) {
+  for (const directory of /* @__PURE__ */ new Set([dirname(resultPath), dirname(receiptPath)])) {
     await syncDirectory(directory);
   }
   return { resultPath, receiptPath, token };
 }
 async function assertReservation(reservation) {
-  if (!reservation?.token) throw new Error("A valid evidence reservation is required.");
+  if (!reservation.token) throw new Error("A valid evidence reservation is required.");
   for (const path of [reservation.resultPath, reservation.receiptPath]) {
     const { bytes } = await readManagedFile(path, "Evidence reservation");
     const parsed = JSON.parse(bytes.toString("utf8"));
-    if (parsed.schema !== "easyeda-pro-control.evidence-reservation.v1" || parsed.token !== reservation.token) {
+    if (!isRecord(parsed) || parsed["schema"] !== "easyeda-pro-control.evidence-reservation.v1" || parsed["token"] !== reservation.token) {
       throw new Error("Evidence reservation identity changed before finalization.");
     }
   }
@@ -32860,8 +32847,8 @@ async function releaseEvidenceReservation(reservation) {
     unlink(reservation.receiptPath)
   ]);
   for (const directory of /* @__PURE__ */ new Set([
-    dirname2(reservation.resultPath),
-    dirname2(reservation.receiptPath)
+    dirname(reservation.resultPath),
+    dirname(reservation.receiptPath)
   ])) {
     await syncDirectory(directory);
   }
@@ -32877,7 +32864,7 @@ async function finalizeReservedPair(reservation, resultText, receiptText) {
     try {
       const existing = await handle.readFile("utf8");
       const parsed = JSON.parse(existing);
-      if (parsed.token !== reservation.token) {
+      if (!isRecord(parsed) || parsed["token"] !== reservation.token) {
         throw new Error("Evidence reservation changed before final write.");
       }
       await handle.truncate(0);
@@ -32901,8 +32888,8 @@ async function finalizeReservedPair(reservation, resultText, receiptText) {
   await replaceReservation(reservation.resultPath, resultText);
   await replaceReservation(reservation.receiptPath, receiptText);
   for (const directory of /* @__PURE__ */ new Set([
-    dirname2(reservation.resultPath),
-    dirname2(reservation.receiptPath)
+    dirname(reservation.resultPath),
+    dirname(reservation.receiptPath)
   ])) {
     await syncDirectory(directory);
   }
@@ -32915,7 +32902,7 @@ async function archiveExternalEvidence({
   metadata,
   attachments = []
 }) {
-  if (!evidence && !reservation) return void 0;
+  if (evidence === void 0 && reservation === void 0) return evidence;
   const held = reservation ?? await reserveEvidencePaths(evidence);
   const createdAt = (/* @__PURE__ */ new Date()).toISOString();
   const payload = {
@@ -32934,7 +32921,7 @@ async function archiveExternalEvidence({
       throw new Error("Evidence attachment changed before its receipt was finalized.");
     }
     archivedAttachments.push({
-      kind: String(attachment.kind ?? "artifact").slice(0, 64),
+      kind: (attachment.kind ?? "artifact").slice(0, 64),
       path: archived.path,
       bytes: archived.bytes,
       sha256: archived.sha256
@@ -32955,17 +32942,24 @@ async function archiveExternalEvidence({
   };
   await finalizeReservedPair(held, resultText, `${JSON.stringify(receipt, null, 2)}
 `);
-  return { resultPath: held.resultPath, receiptPath: held.receiptPath, ...receipt };
+  return { ...receipt, resultPath: held.resultPath, receiptPath: held.receiptPath };
 }
-async function archiveCaptureEvidence({ reservation, request, payload, images, metadata }) {
+async function archiveCaptureEvidence({
+  reservation,
+  request,
+  payload,
+  images,
+  metadata
+}) {
   if (!reservation) throw new Error("Capture evidence must be reserved before dispatch.");
   await assertReservation(reservation);
   const created = [];
   try {
     for (let index = 0; index < images.length; index += 1) {
       const image = images[index];
+      if (!image) throw new Error(`Capture image ${index + 1} is unavailable.`);
       const path = assertManagedPath(`${reservation.resultPath}.image-${index + 1}.png`, "Capture image");
-      await assertSafeManagedDirectory(dirname2(path));
+      await assertSafeManagedDirectory(dirname(path));
       const handle = await open(path, "wx", 384);
       try {
         await handle.writeFile(image.bytes);
@@ -32980,7 +32974,7 @@ async function archiveCaptureEvidence({ reservation, request, payload, images, m
         sha256: createHash2("sha256").update(image.bytes).digest("hex")
       });
     }
-    for (const directory of new Set(created.map((item) => dirname2(item.path)))) {
+    for (const directory of new Set(created.map((item) => dirname(item.path)))) {
       await syncDirectory(directory);
     }
     const createdAt = (/* @__PURE__ */ new Date()).toISOString();
@@ -33013,51 +33007,72 @@ async function archiveCaptureEvidence({ reservation, request, payload, images, m
       `${JSON.stringify(receipt, null, 2)}
 `
     );
-    return { resultPath: reservation.resultPath, receiptPath: reservation.receiptPath, ...receipt };
+    return {
+      ...receipt,
+      resultPath: reservation.resultPath,
+      receiptPath: reservation.receiptPath
+    };
   } catch (error51) {
-    for (const item of created) await unlink(item.path).catch(() => void 0);
-    for (const directory of new Set(created.map((item) => dirname2(item.path)))) {
-      await syncDirectory(directory).catch(() => void 0);
+    for (const item of created) await unlink(item.path).catch(() => {
+    });
+    for (const directory of new Set(created.map((item) => dirname(item.path)))) {
+      await syncDirectory(directory).catch(() => {
+      });
     }
     throw error51;
   }
 }
 async function verifyEvidenceReceipt(receiptPathInput) {
   const receiptPath = assertManagedPath(receiptPathInput, "Evidence receipt");
-  const receipt = JSON.parse((await readManagedFile(receiptPath, "Evidence receipt")).bytes.toString("utf8"));
+  const parsed = JSON.parse(
+    (await readManagedFile(receiptPath, "Evidence receipt")).bytes.toString("utf8")
+  );
+  if (!isRecord(parsed)) throw new Error("Evidence receipt must be an object.");
+  const receipt = parsed;
   if (![
     "easyeda-pro-control.tool-receipt.v1",
     "easyeda-pro-control.capture-receipt.v1"
-  ].includes(receipt.schema)) {
+  ].includes(String(receipt["schema"]))) {
     throw new Error("Unsupported evidence receipt schema.");
   }
   const { receiptSha256, ...receiptCore } = receipt;
   const receiptHashOk = receiptSha256 === sha256Text(canonicalJson(receiptCore));
-  const resultPath = assertManagedPath(receipt.resultPath, "Evidence result");
+  if (typeof receipt["resultPath"] !== "string") {
+    throw new TypeError("Evidence receipt resultPath must be a string.");
+  }
+  const resultPath = assertManagedPath(receipt["resultPath"], "Evidence result");
   const resultText = (await readManagedFile(resultPath, "Evidence result")).bytes;
-  const resultHashOk = sha256Text(resultText) === receipt.resultSha256;
+  const resultHashOk = sha256Text(resultText) === receipt["resultSha256"];
   const imageChecks = [];
-  for (const image of receipt.images ?? []) {
-    const path = assertManagedPath(image.path, "Capture image");
+  const images = Array.isArray(receipt["images"]) ? receipt["images"] : [];
+  for (const image of images) {
+    if (!isRecord(image) || typeof image["path"] !== "string") {
+      throw new Error("Evidence receipt contains an invalid capture-image descriptor.");
+    }
+    const path = assertManagedPath(image["path"], "Capture image");
     const bytes = (await readManagedFile(path, "Capture image")).bytes;
     imageChecks.push({
       path,
-      ok: bytes.length === image.bytes && createHash2("sha256").update(bytes).digest("hex") === image.sha256
+      ok: bytes.length === image["bytes"] && createHash2("sha256").update(bytes).digest("hex") === image["sha256"]
     });
   }
   const attachmentChecks = [];
-  for (const attachment of receipt.attachments ?? []) {
+  const attachments = Array.isArray(receipt["attachments"]) ? receipt["attachments"] : [];
+  for (const attachment of attachments) {
     try {
-      const actual = await hashManagedAttachment(attachment.path);
+      if (!isRecord(attachment) || typeof attachment["path"] !== "string") {
+        throw new Error("Evidence receipt contains an invalid attachment descriptor.");
+      }
+      const actual = await hashManagedAttachment(attachment["path"]);
       attachmentChecks.push({
         path: actual.path,
-        ok: actual.bytes === attachment.bytes && actual.sha256 === attachment.sha256
+        ok: actual.bytes === attachment["bytes"] && actual.sha256 === attachment["sha256"]
       });
     } catch (error51) {
       attachmentChecks.push({
-        path: attachment?.path,
+        path: isRecord(attachment) && typeof attachment["path"] === "string" ? attachment["path"] : void 0,
         ok: false,
-        error: String(error51?.message ?? error51).slice(0, 2048)
+        error: errorMessage(error51).slice(0, 2048)
       });
     }
   }
@@ -33076,14 +33091,16 @@ async function ensureOperationStorage() {
   return OPERATIONS_DIR;
 }
 function operationPath(operationId) {
-  if (!/^[a-z0-9][a-z0-9-]{7,95}$/i.test(operationId)) {
+  if (!/^[a-z0-9][a-z0-9-]{7,95}$/iu.test(operationId)) {
     throw new Error("Invalid operationId.");
   }
   return join2(OPERATIONS_DIR, `${operationId}.json`);
 }
 async function createOperation(operation) {
   await ensureOperationStorage();
-  const path = operationPath(operation.operationId);
+  const operationId = operation["operationId"];
+  if (typeof operationId !== "string") throw new Error("Operation requires an operationId.");
+  const path = operationPath(operationId);
   const handle = await open(path, "wx", 384);
   try {
     const sealed = sealOperation(operation);
@@ -33099,36 +33116,63 @@ async function createOperation(operation) {
 }
 async function loadOperation(operationId) {
   const path = operationPath(operationId);
-  const parsed = JSON.parse((await readManagedFile(path, "Operation journal")).bytes.toString("utf8"));
-  if (parsed.schema !== OPERATION_SCHEMA || parsed.operationId !== operationId) {
+  const value = JSON.parse(
+    (await readManagedFile(path, "Operation journal")).bytes.toString("utf8")
+  );
+  if (!isRecord(value)) throw new Error(`Operation journal ${operationId} must be an object.`);
+  const parsed = value;
+  if (parsed["schema"] !== OPERATION_SCHEMA || parsed["operationId"] !== operationId) {
     throw new Error(`Operation journal ${operationId} has an invalid schema or identity.`);
   }
   const { journalSha256, ...journalCore } = parsed;
   if (journalSha256 !== sha256Text(canonicalJson(journalCore))) {
     throw new Error(`Operation journal ${operationId} failed its self-hash.`);
   }
-  if (!parsed.plan || parsed.planHash !== buildPlanHash(parsed.plan)) {
+  const plan = parsed["plan"];
+  if (!isRecord(plan) || parsed["planHash"] !== buildPlanHash(plan)) {
     throw new Error(`Operation journal ${operationId} has a mismatched plan hash.`);
   }
-  for (const descriptor of parsed.artifacts ?? []) {
-    if (!isWithin(join2(OPERATIONS_DIR, operationId), descriptor.path)) {
+  const artifactValues = parsed["artifacts"] ?? [];
+  if (!Array.isArray(artifactValues)) {
+    throw new TypeError(`Operation journal ${operationId} has an invalid artifacts list.`);
+  }
+  const artifacts = [];
+  for (const descriptor of artifactValues) {
+    if (!isRecord(descriptor) || typeof descriptor["path"] !== "string" || typeof descriptor["bytes"] !== "number" || typeof descriptor["sha256"] !== "string") {
+      throw new Error(`Operation ${operationId} has an invalid phase-artifact descriptor.`);
+    }
+    if (!isWithin(join2(OPERATIONS_DIR, operationId), descriptor["path"])) {
       throw new Error(`Operation ${operationId} references an artifact outside its directory.`);
     }
-    const text = (await readManagedFile(descriptor.path, "Operation phase artifact")).bytes;
-    if (text.length !== descriptor.bytes || sha256Text(text) !== descriptor.sha256) {
+    const text = (await readManagedFile(descriptor["path"], "Operation phase artifact")).bytes;
+    if (text.length !== descriptor["bytes"] || sha256Text(text) !== descriptor["sha256"]) {
       throw new Error(`Operation ${operationId} phase artifact failed hash verification.`);
     }
+    artifacts.push({
+      path: descriptor["path"],
+      bytes: descriptor["bytes"],
+      sha256: descriptor["sha256"]
+    });
   }
-  return parsed;
+  return {
+    ...parsed,
+    operationId,
+    plan,
+    planHash: parsed["planHash"],
+    artifacts
+  };
 }
 function sealOperation(operation) {
-  const { journalSha256: ignored, ...journalCore } = operation;
+  const journalCore = { ...operation };
+  delete journalCore["journalSha256"];
   return { ...journalCore, journalSha256: sha256Text(canonicalJson(journalCore)) };
 }
 async function updateOperation(operation) {
   await ensureOperationStorage();
-  const path = operationPath(operation.operationId);
-  if (!await pathExists(path)) throw new Error(`Operation ${operation.operationId} does not exist.`);
+  const operationId = operation["operationId"];
+  if (typeof operationId !== "string") throw new Error("Operation requires an operationId.");
+  const path = operationPath(operationId);
+  if (!await pathExists(path)) throw new Error(`Operation ${operationId} does not exist.`);
   const temporary = `${path}.tmp-${process4.pid}-${Date.now()}`;
   const sealed = sealOperation(operation);
   let handle;
@@ -33143,8 +33187,10 @@ async function updateOperation(operation) {
     await syncDirectory(OPERATIONS_DIR);
     Object.assign(operation, sealed);
   } catch (error51) {
-    await handle?.close().catch(() => void 0);
-    await unlink(temporary).catch(() => void 0);
+    await handle?.close().catch(() => {
+    });
+    await unlink(temporary).catch(() => {
+    });
     throw error51;
   }
   return path;
@@ -33153,8 +33199,8 @@ async function writePhaseArtifact(operationId, sequence, phase, value) {
   await ensureOperationStorage();
   const directory = join2(OPERATIONS_DIR, operationId);
   await assertSafeManagedDirectory(directory);
-  const safePhase = String(phase).replace(/[^a-z0-9_-]+/gi, "-").toLowerCase();
-  const path = join2(directory, `${String(sequence).padStart(2, "0")}-${safePhase}.json`);
+  const safePhase = phase.replaceAll(/[^a-z0-9_-]+/giu, "-").toLowerCase();
+  const path = join2(directory, `${sequence.toString().padStart(2, "0")}-${safePhase}.json`);
   const text = `${JSON.stringify(value)}
 `;
   const handle = await open(path, "wx", 384);
@@ -33169,24 +33215,24 @@ async function writePhaseArtifact(operationId, sequence, phase, value) {
 }
 async function listOperations() {
   await ensureOperationStorage();
-  const names = (await readdir(OPERATIONS_DIR)).filter((name) => name.endsWith(".json")).sort();
+  const names = (await readdir(OPERATIONS_DIR)).filter((name) => name.endsWith(".json")).toSorted();
   const output = [];
   for (const name of names) {
     try {
-      const operationId = name.replace(/\.json$/, "");
+      const operationId = name.replace(/\.json$/u, "");
       output.push(await loadOperation(operationId));
     } catch (error51) {
       const journalPath = join2(OPERATIONS_DIR, name);
-      const message = String(error51?.message ?? error51);
+      const message = errorMessage(error51);
       output.push({
-        operationId: name.replace(/\.json$/, ""),
+        operationId: name.replace(/\.json$/u, ""),
         state: "journal-unreadable",
         mutationState: "unknown",
         hardStop: true,
         mutationMayHaveOccurred: true,
         journalPath,
         lastError: {
-          name: String(error51?.name ?? "Error").slice(0, 128),
+          name: errorName(error51).slice(0, 128),
           message: message.length <= 2048 ? message : `${message.slice(0, 2047)}\u2026`
         },
         nextSafeAction: "Inspect and restore the named managed journal before any new mutation."
@@ -33197,8 +33243,8 @@ async function listOperations() {
 }
 async function readArtifact(path, offset = 0, length = 65536) {
   const absolute = assertManagedPath(path);
-  const boundedOffset = Math.max(0, Number(offset));
-  const boundedLength = Math.max(1, Math.min(256 * 1024, Number(length)));
+  const boundedOffset = Math.max(0, offset);
+  const boundedLength = Math.max(1, Math.min(256 * 1024, length));
   const opened = await openSafeManagedFile(absolute);
   const { handle, info } = opened;
   try {
@@ -33222,21 +33268,21 @@ function controlDataDirectory() {
   return CONTROL_DATA_DIR;
 }
 
-// server/src/checkpoint.mjs
+// server/src/checkpoint.ts
 import { createHash as createHash3 } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { mkdir as mkdir2, open as open2, readFile as readFile2, stat as stat2, unlink as unlink2 } from "node:fs/promises";
-import { basename as basename2, dirname as dirname3, join as join3, resolve as resolve3 } from "node:path";
+import { mkdir as mkdir2, open as open2, readFile as readFile2, stat, unlink as unlink2 } from "node:fs/promises";
+import { basename as basename2, join as join3, resolve as resolve3 } from "node:path";
 import { spawn } from "node:child_process";
 function safeLabel(value) {
-  const label = String(value ?? "").trim();
-  if (!/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(label)) {
+  const label = value.trim();
+  if (!/^[a-z0-9][a-z0-9._-]{0,63}$/iu.test(label)) {
     throw new Error("Checkpoint label must be 1-64 filename-safe characters.");
   }
   return label;
 }
 function timestampForPath(date5) {
-  return date5.toISOString().replace(/[-:]/g, "").replace(/\.(\d{3})Z$/, "$1Z");
+  return date5.toISOString().replaceAll(/[-:]/gu, "").replace(/\.(\d{3})Z$/u, "$1Z");
 }
 function sqliteUri(path) {
   return `file:${path}?mode=ro`;
@@ -33245,12 +33291,12 @@ function positiveInteger(value, fallback) {
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) && parsed > 0 && parsed <= 2147483647 ? parsed : fallback;
 }
-async function run(command, args, options = {}) {
-  return await new Promise((resolvePromise, reject) => {
+function run(command, args, options = {}) {
+  return new Promise((resolvePromise, reject) => {
     const {
       maxBuffer = 256 * 1024 * 1024,
-      maxStderrBuffer: requestedMaxStderrBuffer = process.env.EASYEDA_CHECKPOINT_STDERR_MAX_BYTES,
-      timeoutMs: requestedTimeoutMs = process.env.EASYEDA_CHECKPOINT_PROCESS_TIMEOUT_MS,
+      maxStderrBuffer: requestedMaxStderrBuffer = process.env["EASYEDA_CHECKPOINT_STDERR_MAX_BYTES"],
+      timeoutMs: requestedTimeoutMs = process.env["EASYEDA_CHECKPOINT_PROCESS_TIMEOUT_MS"],
       ...spawnOptions
     } = options;
     const checkedMaxBuffer = positiveInteger(maxBuffer, 256 * 1024 * 1024);
@@ -33262,25 +33308,33 @@ async function run(command, args, options = {}) {
     let stdoutBytes = 0;
     let stderrBytes = 0;
     let settled = false;
-    const finish = (callback, value) => {
+    let timer;
+    const finish = (callback) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      callback(value);
+      callback();
+    };
+    const fail = (error51) => {
+      finish(() => {
+        reject(error51 instanceof Error ? error51 : new Error(errorMessage(error51)));
+      });
     };
     const abort = (message) => {
       if (settled) return;
       child.kill("SIGKILL");
-      finish(reject, new Error(message));
+      fail(new Error(message));
     };
-    const timer = setTimeout(() => {
+    timer = setTimeout(() => {
       abort(`${command} timed out after ${timeoutMs} ms.`);
     }, timeoutMs);
     child.stdout.on("data", (chunk) => {
       stdoutBytes += chunk.length;
       if (stdoutBytes > checkedMaxBuffer) {
         abort(`${command} stdout exceeded ${checkedMaxBuffer} bytes.`);
-      } else stdout.push(chunk);
+      } else {
+        stdout.push(chunk);
+      }
     });
     child.stderr.on("data", (chunk) => {
       stderrBytes += chunk.length;
@@ -33290,17 +33344,20 @@ async function run(command, args, options = {}) {
         stderr.push(chunk);
       }
     });
-    child.once("error", (error51) => finish(reject, error51));
+    child.once("error", fail);
     child.once("close", (code, signal) => {
       if (settled) return;
-      if (code !== 0) {
-        finish(
-          reject,
+      if (code === 0) {
+        finish(() => {
+          resolvePromise(Buffer.concat(stdout));
+        });
+      } else {
+        fail(
           new Error(
             `${command} failed (${code ?? signal}): ${Buffer.concat(stderr).toString("utf8").trim()}`
           )
         );
-      } else finish(resolvePromise, Buffer.concat(stdout));
+      }
     });
   });
 }
@@ -33312,7 +33369,10 @@ async function quickCheck(path) {
 }
 async function sha256File(path) {
   const hash2 = createHash3("sha256");
-  for await (const chunk of createReadStream(path)) hash2.update(chunk);
+  for await (const chunk of createReadStream(path)) {
+    if (!Buffer.isBuffer(chunk)) throw new TypeError("File stream yielded a non-buffer chunk.");
+    hash2.update(chunk);
+  }
   return hash2.digest("hex");
 }
 async function dumpHash(path) {
@@ -33335,18 +33395,22 @@ async function syncDirectory2(path) {
     await handle.close();
   }
 }
-async function createCheckpoint({ source, outputDir, label }) {
+async function createCheckpoint({
+  source,
+  outputDir,
+  label
+}) {
   const sourcePath = resolve3(source);
   const destinationDir = resolve3(outputDir);
   const checkedLabel = safeLabel(label);
-  const sourceInfoBefore = await stat2(sourcePath);
+  const sourceInfoBefore = await stat(sourcePath);
   if (!sourceInfoBefore.isFile() || sourceInfoBefore.size === 0) {
     throw new Error("Checkpoint source must be a non-empty file.");
   }
   await mkdir2(destinationDir, { recursive: true, mode: 448 });
   await quickCheck(sourcePath);
   const createdAt = /* @__PURE__ */ new Date();
-  const sourceStem = basename2(sourcePath).replace(/\.[^.]+$/, "") || "EasyEDA";
+  const sourceStem = basename2(sourcePath).replace(/\.[^.]+$/u, "") || "EasyEDA";
   const stem = `${sourceStem}-${checkedLabel}-${timestampForPath(createdAt)}`;
   const checkpointPath = join3(destinationDir, `${stem}.eprj2`);
   const receiptPath = join3(destinationDir, `${stem}.checkpoint.json`);
@@ -33376,7 +33440,7 @@ async function createCheckpoint({ source, outputDir, label }) {
     if (sourceDumpSha256 !== checkpointDumpSha256) {
       throw new Error("Checkpoint dump does not match the source dump.");
     }
-    const sourceInfoAfter = await stat2(sourcePath);
+    const sourceInfoAfter = await stat(sourcePath);
     const receiptCore = {
       schema: "easyeda-pro-control.checkpoint.v1",
       createdAt: createdAt.toISOString(),
@@ -33413,10 +33477,11 @@ async function createCheckpoint({ source, outputDir, label }) {
         cleanupErrors.push(cleanupError);
       }
     }
-    for (const [created, path] of [
+    const cleanupPaths = [
       [receiptCreated, receiptPath],
       [checkpointCreated, checkpointPath]
-    ]) {
+    ];
+    for (const [created, path] of cleanupPaths) {
       if (!created) continue;
       try {
         await unlink2(path);
@@ -33432,20 +33497,38 @@ async function createCheckpoint({ source, outputDir, label }) {
     if (cleanupErrors.length > 0) {
       throw new AggregateError(
         [error51, ...cleanupErrors],
-        `Checkpoint creation failed and cleanup was incomplete: ${error51.message}`,
+        `Checkpoint creation failed and cleanup was incomplete: ${errorMessage(error51)}`,
         { cause: error51 }
       );
     }
     throw error51;
   }
 }
-async function verifyCheckpoint(receiptPathInput) {
-  const receiptPath = resolve3(receiptPathInput);
-  const receipt = JSON.parse(await readFile2(receiptPath, "utf8"));
-  if (receipt.schema !== "easyeda-pro-control.checkpoint.v1") {
+function assertCheckpointReceipt(value) {
+  if (!isRecord(value) || value["schema"] !== "easyeda-pro-control.checkpoint.v1") {
     throw new Error("Unexpected checkpoint receipt schema.");
   }
-  const { receiptSha256, receiptPath: ignoredReceiptPath, ...receiptCore } = receipt;
+  for (const key of [
+    "source",
+    "checkpoint",
+    "sourceSha256",
+    "checkpointSha256",
+    "sourceDumpSha256",
+    "checkpointDumpSha256",
+    "receiptSha256"
+  ]) {
+    if (typeof value[key] !== "string" || value[key].length === 0) {
+      throw new Error(`Checkpoint receipt ${key} must be a nonempty string.`);
+    }
+  }
+}
+async function verifyCheckpoint(receiptPathInput) {
+  const receiptPath = resolve3(receiptPathInput);
+  const parsed = JSON.parse(await readFile2(receiptPath, "utf8"));
+  assertCheckpointReceipt(parsed);
+  const receipt = parsed;
+  const { receiptSha256, ...receiptCore } = receipt;
+  delete receiptCore["receiptPath"];
   if (receiptSha256 !== sha256Text(canonicalJson(receiptCore))) {
     throw new Error("Checkpoint receipt hash is invalid.");
   }
@@ -33477,9 +33560,19 @@ async function verifyCheckpoint(receiptPathInput) {
   };
 }
 
-// server/src/runtime-scripts.mjs
+// server/src/runtime-scripts.ts
+function isWritableField(value) {
+  return value === "layer" || value === "x" || value === "y" || value === "rotation" || value === "primitiveLock";
+}
+function isMissingString(value) {
+  return value === void 0 || value.length === 0;
+}
 function jsString(value) {
-  return JSON.stringify(String(value));
+  const encoded = JSON.stringify(String(value));
+  if (encoded === void 0) {
+    throw new Error("String serialization unexpectedly returned undefined.");
+  }
+  return encoded;
 }
 var CONTEXT_PROBE_CODE = `
 return await (async () => {
@@ -33568,53 +33661,55 @@ return await (async () => {
     throw new Error("active EasyEDA context does not match the guarded operation");
   }
   return await (async () => {
-${String(source)}
+${source}
   })();
 })();`;
 }
 function buildComponentMutationCode(documentType, targetChanges, stateName) {
-  if (documentType !== 3 || !["before", "after"].includes(stateName)) {
+  if (documentType !== 3 || stateName !== "before" && stateName !== "after") {
     throw new Error("Exact component mutation currently requires PCB type and before/after state.");
   }
-  if (!Array.isArray(targetChanges) || targetChanges.length === 0) {
+  const mutationState = stateName;
+  if (targetChanges.length === 0) {
     throw new Error("Exact component mutation requires declared target changes.");
   }
-  const writableFields = /* @__PURE__ */ new Set(["layer", "x", "y", "rotation", "primitiveLock"]);
   const patches = /* @__PURE__ */ new Map();
   const preconditions = /* @__PURE__ */ new Map();
-  const preconditionStateName = stateName === "after" ? "before" : "after";
+  const preconditionStateName = mutationState === "after" ? "before" : "after";
   for (const change of targetChanges) {
-    const match = /^\/([^/]+)$/.exec(String(change?.pointer ?? ""));
-    if (!match || !writableFields.has(match[1])) continue;
-    const primitiveId = String(change?.primitiveId ?? "");
-    if (!/^[A-Za-z0-9._:-]{1,160}$/.test(primitiveId)) {
+    const pointer = typeof change.pointer === "string" ? change.pointer : "";
+    const match = /^\/([^/]+)$/u.exec(pointer);
+    const field = match?.[1];
+    if (!isWritableField(field)) continue;
+    const primitiveId = typeof change.primitiveId === "string" ? change.primitiveId : "";
+    if (!/^[A-Za-z0-9._:-]{1,160}$/u.test(primitiveId)) {
       throw new Error("Exact component mutation contains an invalid primitive ID.");
     }
-    const field = match[1];
-    const value = change[stateName];
+    const writableField = field;
+    const value = change[mutationState];
     const preconditionValue = change[preconditionStateName];
     for (const candidate of [value, preconditionValue]) {
-      if (["x", "y", "rotation"].includes(field) && (typeof candidate !== "number" || !Number.isFinite(candidate))) {
-        throw new Error(`PCB component field ${field} must be finite.`);
+      if (["x", "y", "rotation"].includes(writableField) && (typeof candidate !== "number" || !Number.isFinite(candidate))) {
+        throw new Error(`PCB component field ${writableField} must be finite.`);
       }
-      if (field === "layer" && ![1, 2].includes(candidate)) {
+      if (writableField === "layer" && candidate !== 1 && candidate !== 2) {
         throw new Error("PCB component layer must be exactly 1 (Top) or 2 (Bottom).");
       }
-      if (field === "primitiveLock" && typeof candidate !== "boolean") {
+      if (writableField === "primitiveLock" && typeof candidate !== "boolean") {
         throw new Error("PCB component primitiveLock must be boolean.");
       }
     }
     const patch = patches.get(primitiveId) ?? {};
     const precondition = preconditions.get(primitiveId) ?? {};
-    if (Object.hasOwn(patch, field)) {
-      throw new Error(`Exact component mutation repeats ${primitiveId}${change.pointer}.`);
+    if (Object.hasOwn(patch, writableField)) {
+      throw new Error(`Exact component mutation repeats ${primitiveId}${pointer}.`);
     }
-    patch[field] = value;
-    precondition[field] = preconditionValue;
+    patch[writableField] = value;
+    precondition[writableField] = preconditionValue;
     patches.set(primitiveId, patch);
     preconditions.set(primitiveId, precondition);
   }
-  const records = [...patches.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([primitiveId, patch]) => ({
+  const records = [...patches.entries()].toSorted(([left], [right]) => left.localeCompare(right)).map(([primitiveId, patch]) => ({
     primitiveId,
     patch,
     precondition: preconditions.get(primitiveId)
@@ -33704,7 +33799,7 @@ return await (async () => {
     throw new Error("component modify returned the wrong primitive");
   }
   return { ok: true, kind: "exact-component-mutation", state: ${jsString(
-    stateName
+    mutationState
   )}, documentType: ${documentType}, applied: [{ primitiveId: returnedId, fields: Object.keys(record.patch).sort() }] };
 })();`;
 }
@@ -33713,7 +33808,7 @@ function buildDsnExportCode(fileName, expectedContext) {
   const expectedDocumentUuid = expectedContext?.document?.uuid ?? expectedContext?.document?.documentUuid;
   const expectedDocumentType = expectedContext?.document?.documentType;
   const expectedTabId = expectedContext?.document?.tabId;
-  if (!expectedProjectUuid || !expectedDocumentUuid || expectedDocumentType !== 3 || !expectedTabId || typeof fileName !== "string" || fileName.length === 0 || fileName.length > 180) {
+  if (isMissingString(expectedProjectUuid) || isMissingString(expectedDocumentUuid) || expectedDocumentType !== 3 || isMissingString(expectedTabId) || typeof fileName !== "string" || fileName.length === 0 || fileName.length > 180) {
     throw new Error("Facade DSN export requires exact type-3 context and a bounded file name.");
   }
   return `
@@ -33771,7 +33866,7 @@ function buildSaveReopenCode(expectedContext) {
   const expectedUuid = expectedContext?.document?.uuid ?? expectedContext?.document?.documentUuid;
   const expectedType = expectedContext?.document?.documentType;
   const expectedTabId = expectedContext?.document?.tabId;
-  if (!expectedUuid || !Number.isInteger(expectedType)) {
+  if (isMissingString(expectedUuid) || typeof expectedType !== "number" || !Number.isInteger(expectedType)) {
     throw new Error("save/reopen requires expectedContext.document uuid and documentType.");
   }
   if (![1, 3].includes(expectedType)) {
@@ -33779,13 +33874,13 @@ function buildSaveReopenCode(expectedContext) {
       "exact save/reopen currently supports schematic (1) and PCB (3) documents only; library documents require a version-pinned library workflow."
     );
   }
-  if (!expectedTabId) {
+  if (isMissingString(expectedTabId)) {
     throw new Error("save/reopen requires expectedContext.document.tabId.");
   }
   return `
 return await (async () => {
   const EXPECTED_UUID = ${jsString(expectedUuid)};
-  const EXPECTED_TYPE = ${Number(expectedType)};
+  const EXPECTED_TYPE = ${expectedType};
   const EXPECTED_TAB_ID = ${jsString(expectedTabId)};
   const readDocument = async () => {
     const api = eda.dmt_SelectControl;
@@ -33845,14 +33940,14 @@ function buildActivateRecoveryTargetCode(expectedContext) {
   const expectedProjectUuid = expectedContext?.project?.uuid ?? expectedContext?.project?.projectUuid;
   const expectedUuid = expectedContext?.document?.uuid ?? expectedContext?.document?.documentUuid;
   const expectedType = expectedContext?.document?.documentType;
-  if (!expectedProjectUuid || !expectedUuid || !Number.isInteger(expectedType) || ![1, 2, 3, 4].includes(expectedType)) {
+  if (isMissingString(expectedProjectUuid) || isMissingString(expectedUuid) || typeof expectedType !== "number" || !Number.isInteger(expectedType) || ![1, 2, 3, 4].includes(expectedType)) {
     throw new Error("recovery target activation requires an exact supported document identity.");
   }
   return `
 return await (async () => {
   const EXPECTED_PROJECT_UUID = ${jsString(expectedProjectUuid)};
   const EXPECTED_UUID = ${jsString(expectedUuid)};
-  const EXPECTED_TYPE = ${Number(expectedType)};
+  const EXPECTED_TYPE = ${expectedType};
   const projectApi = eda.dmt_Project;
   const documentApi = eda.dmt_SelectControl;
   const editor = eda.dmt_EditorControl;
@@ -33895,14 +33990,14 @@ function buildReopenOnlyCode(expectedContext, options = {}) {
   const expectedProjectUuid = expectedContext?.project?.uuid ?? expectedContext?.project?.projectUuid;
   const expectedTabId = expectedContext?.document?.tabId;
   const allowDifferentActiveDocument = options.allowDifferentActiveDocument === true;
-  if (!expectedProjectUuid || !expectedUuid || !Number.isInteger(expectedType) || ![1, 2, 3, 4].includes(expectedType) || !allowDifferentActiveDocument && !expectedTabId) {
+  if (isMissingString(expectedProjectUuid) || isMissingString(expectedUuid) || typeof expectedType !== "number" || !Number.isInteger(expectedType) || ![1, 2, 3, 4].includes(expectedType) || !allowDifferentActiveDocument && isMissingString(expectedTabId)) {
     throw new Error("reopen-only recovery requires an exact supported document identity.");
   }
   return `
 return await (async () => {
   const EXPECTED_PROJECT_UUID = ${jsString(expectedProjectUuid)};
   const EXPECTED_UUID = ${jsString(expectedUuid)};
-  const EXPECTED_TYPE = ${Number(expectedType)};
+  const EXPECTED_TYPE = ${expectedType};
   const EXPECTED_TAB_ID = ${jsString(expectedTabId ?? "")};
   const ALLOW_DIFFERENT_ACTIVE_DOCUMENT = ${allowDifferentActiveDocument ? "true" : "false"};
   const projectApi = eda.dmt_Project;
@@ -33956,8 +34051,63 @@ return await (async () => {
 })();`;
 }
 
-// server/src/exact-readers.mjs
-var primitiveIdSchema = external_exports.string().min(1).max(160).regex(/^[A-Za-z0-9._:-]+$/);
+// server/src/exact-readers.ts
+var PCB_INVENTORY_FAMILY_NAMES = [
+  "arcs",
+  "attributes",
+  "components",
+  "dimensions",
+  "fills",
+  "images",
+  "lines",
+  "objects",
+  "pads",
+  "polylines",
+  "pours",
+  "regions",
+  "strings",
+  "vias"
+];
+var PCB_MONITORED_FAMILY_NAMES = [
+  "arcs",
+  "fills",
+  "lines",
+  "pads",
+  "polylines",
+  "pours",
+  "regions",
+  "vias"
+];
+function isUnknownRecord(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function isUnknownArray2(value) {
+  return Array.isArray(value);
+}
+function isStringArray(value) {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+function compareStrings(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+function requireFiniteNumber(value, label) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new TypeError(`${label} must be finite.`);
+  }
+  return value;
+}
+function assertUniqueNames(rows, label) {
+  const names = rows.map((row) => row.name);
+  if (names.some((name) => typeof name !== "string" || name.length === 0) || new Set(names).size !== names.length) {
+    throw new Error(`Exact PCB rules reader returned malformed or duplicate ${label} names.`);
+  }
+}
+function assertPayloadCandidate(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Exact reader returned a non-object payload.");
+  }
+}
+var primitiveIdSchema = external_exports.string().min(1).max(160).regex(/^[A-Za-z0-9._:-]+$/u);
 var designatorSchema = external_exports.string().min(1).max(160);
 var selectorSchema = external_exports.object({
   all: external_exports.literal(true).optional(),
@@ -33967,17 +34117,18 @@ var selectorSchema = external_exports.object({
   const choices = [value.all === true, value.primitiveIds !== void 0, value.designators !== void 0];
   if (choices.filter(Boolean).length !== 1) {
     context.addIssue({
-      code: external_exports.ZodIssueCode.custom,
+      code: "custom",
       message: "selector requires exactly one of all=true, primitiveIds, or designators."
     });
   }
-  for (const [key, items] of [
+  const selections = [
     ["primitiveIds", value.primitiveIds],
     ["designators", value.designators]
-  ]) {
-    if (items && new Set(items).size !== items.length) {
+  ];
+  for (const [key, items] of selections) {
+    if (items !== void 0 && new Set(items).size !== items.length) {
       context.addIssue({
-        code: external_exports.ZodIssueCode.custom,
+        code: "custom",
         path: [key],
         message: `${key} must not contain duplicates.`
       });
@@ -34003,8 +34154,8 @@ var exactReadRequestSchema = external_exports.discriminatedUnion("kind", [
   external_exports.object({ kind: external_exports.literal("pcb-rules") }).strict()
 ]);
 function exactReadDocumentType(kind) {
-  if (["schematic-components", "schematic-topology"].includes(kind)) return 1;
-  if (["pcb-components", "pcb-inventory", "pcb-rules"].includes(kind)) return 3;
+  if (kind === "schematic-components" || kind === "schematic-topology") return 1;
+  if (kind === "pcb-components" || kind === "pcb-inventory" || kind === "pcb-rules") return 3;
   throw new Error(`Unsupported exact-reader kind: ${String(kind)}`);
 }
 function validateExactReadRequest(request, expectedContext) {
@@ -34018,11 +34169,11 @@ function validateExactReadRequest(request, expectedContext) {
   return parsed;
 }
 function assertExactRecordKeys(value, requiredKeys, label) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`${label} must be an object.`);
   }
-  const actual = Object.keys(value).sort();
-  const expected = [...requiredKeys].sort();
+  const actual = Object.keys(value).toSorted();
+  const expected = [...requiredKeys].toSorted();
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
     throw new Error(`${label} has missing or unexpected fields.`);
   }
@@ -34030,7 +34181,7 @@ function assertExactRecordKeys(value, requiredKeys, label) {
 function assertFiniteFields(value, fields, label) {
   for (const field of fields) {
     if (typeof value[field] !== "number" || !Number.isFinite(value[field])) {
-      throw new Error(`${label}.${field} must be finite.`);
+      throw new TypeError(`${label}.${field} must be finite.`);
     }
   }
 }
@@ -34041,8 +34192,11 @@ function assertNullableString(value, label) {
 }
 function assertBounds(value, label) {
   assertExactRecordKeys(value, ["minX", "minY", "maxX", "maxY"], label);
-  assertFiniteFields(value, ["minX", "minY", "maxX", "maxY"], label);
-  if (value.minX > value.maxX || value.minY > value.maxY) {
+  const minX = requireFiniteNumber(value.minX, `${label}.minX`);
+  const minY = requireFiniteNumber(value.minY, `${label}.minY`);
+  const maxX = requireFiniteNumber(value.maxX, `${label}.maxX`);
+  const maxY = requireFiniteNumber(value.maxY, `${label}.maxY`);
+  if (minX > maxX || minY > maxY) {
     throw new Error(`${label} has inverted extents.`);
   }
 }
@@ -34052,19 +34206,22 @@ function assertNonemptyString(value, label) {
   }
 }
 function assertJsonContainer(value, label) {
-  if (!value || typeof value !== "object") {
+  if (value === null || typeof value !== "object") {
     throw new Error(`${label} must be a JSON object or array.`);
   }
 }
 function assertPadShape(value, label) {
   if (value === null) return;
-  if (!Array.isArray(value)) throw new Error(`${label} must be a pad-shape tuple or null.`);
+  if (!isUnknownArray2(value)) throw new Error(`${label} must be a pad-shape tuple or null.`);
   const [shape] = value;
-  if (["ELLIPSE", "OVAL", "NGON"].includes(shape)) {
+  if (typeof shape === "string" && ["ELLIPSE", "OVAL", "NGON"].includes(shape)) {
     if (value.length !== 3) throw new Error(`${label} has the wrong ${shape} tuple length.`);
     assertFiniteFields({ first: value[1], second: value[2] }, ["first", "second"], label);
-    if (shape === "NGON" && (!Number.isInteger(value[2]) || value[2] <= 2)) {
-      throw new Error(`${label} has an invalid regular-polygon side count.`);
+    if (shape === "NGON") {
+      const sideCount = requireFiniteNumber(value[2], `${label}[2]`);
+      if (!Number.isInteger(sideCount) || sideCount <= 2) {
+        throw new Error(`${label} has an invalid regular-polygon side count.`);
+      }
     }
     return;
   }
@@ -34099,7 +34256,7 @@ function assertSpecialPadShape(value, label) {
 }
 function assertPadHole(value, label) {
   if (value === null) return;
-  if (!Array.isArray(value)) throw new Error(`${label} must be a hole tuple or null.`);
+  if (!isUnknownArray2(value)) throw new Error(`${label} must be a hole tuple or null.`);
   const [holeType] = value;
   const expectedLength = holeType === "ROUND" ? 2 : holeType === "SLOT" ? 3 : 0;
   if (!expectedLength || value.length !== expectedLength) {
@@ -34107,14 +34264,14 @@ function assertPadHole(value, label) {
   }
   for (let index = 1; index < value.length; index += 1) {
     if (typeof value[index] !== "number" || !Number.isFinite(value[index])) {
-      throw new Error(`${label}[${index}] must be finite.`);
+      throw new TypeError(`${label}[${index}] must be finite.`);
     }
   }
 }
 function assertMaskExpansion(value, label) {
   if (value === null) return;
   const fields = ["topSolderMask", "bottomSolderMask", "topPasteMask", "bottomPasteMask"];
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
+  if (!isUnknownRecord(value)) {
     throw new Error(`${label} must be a mask-expansion object or null.`);
   }
   if (Object.keys(value).some((key) => !fields.includes(key))) {
@@ -34126,10 +34283,10 @@ function assertHeatWelding(value, label) {
   if (value === null) return;
   const required2 = ["connectionMethod"];
   const optional2 = ["divergenceSpacing", "divergenceLineWidth", "divergenceAngle"];
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
+  if (!isUnknownRecord(value)) {
     throw new Error(`${label} must be a thermal-connection object or null.`);
   }
-  if (Object.keys(value).some((key) => ![...required2, ...optional2].includes(key)) || !["Divergent", "Direct-connected", "Non-connected"].includes(value.connectionMethod)) {
+  if (Object.keys(value).some((key) => ![...required2, ...optional2].includes(key)) || typeof value["connectionMethod"] !== "string" || !["Divergent", "Direct-connected", "Non-connected"].includes(value["connectionMethod"])) {
     throw new Error(`${label} has a malformed connection method or unexpected field.`);
   }
   assertFiniteFields(
@@ -34139,13 +34296,13 @@ function assertHeatWelding(value, label) {
   );
 }
 function assertCanonicalUniqueStrings(value, label, { allowEmpty = true } = {}) {
-  if (!Array.isArray(value) || !allowEmpty && value.length === 0 || value.some((item) => typeof item !== "string" || item.length === 0) || new Set(value).size !== value.length || JSON.stringify(value) !== JSON.stringify([...value].sort())) {
+  if (!isStringArray(value) || !allowEmpty && value.length === 0 || value.some((item) => item.length === 0) || new Set(value).size !== value.length || JSON.stringify(value) !== JSON.stringify(value.toSorted(compareStrings))) {
     throw new Error(`${label} must be a sorted array of unique nonempty strings.`);
   }
 }
 function assertAssociation(value, label, kind = "library") {
   if (value === null) return;
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
+  if (!isUnknownRecord(value)) {
     throw new Error(`${label} must be a library association or null.`);
   }
   const allowed = kind === "cbb-symbol" ? /* @__PURE__ */ new Set(["libraryUuid", "cbbUuid", "uuid", "name"]) : /* @__PURE__ */ new Set(["libraryUuid", "uuid", "name"]);
@@ -34170,27 +34327,27 @@ function assertOtherProperty(value, label) {
       throw new Error(`${label} contains a malformed property.`);
     }
     if (typeof fieldValue === "number" && !Number.isFinite(fieldValue)) {
-      throw new Error(`${label} contains a non-finite property.`);
+      throw new TypeError(`${label} contains a non-finite property.`);
     }
   }
 }
 function validateExactReadPayload(payload, request) {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    throw new Error("Exact reader returned a non-object payload.");
-  }
+  assertPayloadCandidate(payload);
   if (payload.ok !== true || payload.kind !== request.kind || payload.documentType !== exactReadDocumentType(request.kind)) {
     throw new Error("Exact reader returned an inconsistent kind, document type, or success flag.");
   }
-  if (request.kind.endsWith("-components")) {
+  if (request.kind === "schematic-components" || request.kind === "pcb-components") {
     if (!Array.isArray(payload.primitiveIds) || payload.detail?.pins !== request.includePins || payload.detail?.bounds !== request.includeBounds || !payload.byPrimitiveId || typeof payload.byPrimitiveId !== "object" || Array.isArray(payload.byPrimitiveId)) {
       throw new Error("Exact component reader omitted its primitive index.");
     }
-    const keys = Object.keys(payload.byPrimitiveId).sort();
-    if (new Set(payload.primitiveIds).size !== payload.primitiveIds.length || JSON.stringify(keys) !== JSON.stringify(payload.primitiveIds)) {
+    const componentByPrimitiveId = payload.byPrimitiveId;
+    const primitiveIds = payload.primitiveIds;
+    const keys = Object.keys(componentByPrimitiveId).toSorted();
+    if (new Set(primitiveIds).size !== primitiveIds.length || JSON.stringify(keys) !== JSON.stringify(primitiveIds)) {
       throw new Error("Exact component reader primitive index is internally inconsistent.");
     }
     for (const id of keys) {
-      const component = payload.byPrimitiveId[id];
+      const component = componentByPrimitiveId[id];
       if (component?.primitiveId !== id) {
         throw new Error(`Exact component reader returned a mismatched primitive record for ${id}.`);
       }
@@ -34279,11 +34436,11 @@ function validateExactReadPayload(payload, request) {
           }
         }
         if (typeof component.mirror !== "boolean") {
-          throw new Error(`Exact component ${id}.mirror must be boolean.`);
+          throw new TypeError(`Exact component ${id}.mirror must be boolean.`);
         }
         if (request.includePins) {
           if (!Array.isArray(component.pins)) {
-            throw new Error(`Exact component ${id}.pins must be an array.`);
+            throw new TypeError(`Exact component ${id}.pins must be an array.`);
           }
           const pinIds = [];
           for (const [index, pin] of component.pins.entries()) {
@@ -34311,10 +34468,10 @@ function validateExactReadPayload(payload, request) {
             assertFiniteFields(pin, ["x", "y", "rotation", "pinLength"], label);
             assertNullableString(pin.pinColor, `${label}.pinColor`);
             if (typeof pin.pinShape !== "string" || typeof pin.pinType !== "string") {
-              throw new Error(`${label} has malformed pin shape or type.`);
+              throw new TypeError(`${label} has malformed pin shape or type.`);
             }
             if (typeof pin.noConnected !== "boolean") {
-              throw new Error(`${label}.noConnected must be boolean.`);
+              throw new TypeError(`${label}.noConnected must be boolean.`);
             }
             pinIds.push(pin.primitiveId);
           }
@@ -34325,11 +34482,11 @@ function validateExactReadPayload(payload, request) {
       } else {
         assertAssociation(component.model3D, `Exact component ${id}.model3D`);
         if (typeof component.primitiveLock !== "boolean" || typeof component.addIntoBom !== "boolean") {
-          throw new Error(`Exact PCB component ${id} has malformed boolean state.`);
+          throw new TypeError(`Exact PCB component ${id} has malformed boolean state.`);
         }
         if (request.includePins) {
           if (!Array.isArray(component.pads)) {
-            throw new Error(`Exact PCB component ${id}.pads must be an array.`);
+            throw new TypeError(`Exact PCB component ${id}.pads must be an array.`);
           }
           const padIds = [];
           for (const [index, pad] of component.pads.entries()) {
@@ -34369,35 +34526,40 @@ function validateExactReadPayload(payload, request) {
       }
     }
     if (request.selector.primitiveIds) {
-      const requested = [...request.selector.primitiveIds].sort();
+      const requested = [...request.selector.primitiveIds].toSorted();
       if (JSON.stringify(keys) !== JSON.stringify(requested)) {
         throw new Error("Exact component reader did not return every requested primitive ID exactly once.");
       }
     }
     if (request.selector.designators) {
-      const actual = keys.map((id) => payload.byPrimitiveId[id]?.designator).sort();
-      const requested = [...request.selector.designators].sort();
+      const actual = keys.map((id) => {
+        const designator = componentByPrimitiveId[id]?.designator;
+        assertNonemptyString(designator, `Exact component ${id}.designator`);
+        return designator;
+      }).toSorted(compareStrings);
+      const requested = request.selector.designators.toSorted(compareStrings);
       if (JSON.stringify(actual) !== JSON.stringify(requested)) {
         throw new Error("Exact component reader did not return every requested designator exactly once.");
       }
     }
+    const limitations = payload.limitations;
     if (request.kind === "schematic-components") {
-      if (typeof payload.limitations?.componentPinOtherProperty !== "string" || typeof payload.limitations?.componentOtherPropertyFiltering !== "string" || typeof payload.limitations?.cbbLibraryOwnership !== "string") {
+      if (!isUnknownRecord(limitations) || typeof limitations["componentPinOtherProperty"] !== "string" || typeof limitations["componentOtherPropertyFiltering"] !== "string" || typeof limitations["cbbLibraryOwnership"] !== "string") {
         throw new Error("Exact schematic component reader omitted adapter limitations.");
       }
       for (const id of keys) {
-        const component = payload.byPrimitiveId[id];
-        for (const pin of component.pins ?? []) {
+        const component = componentByPrimitiveId[id];
+        for (const pin of component?.pins ?? []) {
           if (Object.hasOwn(pin, "otherProperty")) {
             throw new Error("Exact schematic component reader exposed unobservable pin properties.");
           }
         }
       }
-    } else if (typeof payload.limitations?.componentPadWrapper !== "string") {
+    } else if (!isUnknownRecord(limitations) || typeof limitations["componentPadWrapper"] !== "string") {
       throw new Error("Exact PCB component reader omitted its adapter limitation.");
     }
   } else if (request.kind === "schematic-topology") {
-    if (!Array.isArray(payload.compiledConnectivity) || payload.authority?.connectivity !== "sch_Netlist.getNetlist(JLCEDA)" || payload.authority?.wireGeometry !== "unavailable" || payload.componentCorrelation?.status !== "exact-match" || payload.componentCorrelation?.source !== "sch_PrimitiveComponent.getAll(part,true)" || !Number.isSafeInteger(payload.componentCorrelation?.pinCount) || payload.componentCorrelation.pinCount < 0 || !Array.isArray(payload.componentCorrelation?.uniqueIds) || !Array.isArray(payload.componentCorrelation?.primitiveIds) || !payload.componentCorrelation?.byUniqueId || typeof payload.componentCorrelation.byUniqueId !== "object" || Array.isArray(payload.componentCorrelation.byUniqueId) || !Array.isArray(payload.limitations)) {
+    if (!Array.isArray(payload.compiledConnectivity) || payload.authority?.connectivity !== "sch_Netlist.getNetlist(JLCEDA)" || payload.authority?.wireGeometry !== "unavailable" || payload.componentCorrelation?.status !== "exact-match" || payload.componentCorrelation?.source !== "sch_PrimitiveComponent.getAll(part,true)" || typeof payload.componentCorrelation?.pinCount !== "number" || !Number.isSafeInteger(payload.componentCorrelation?.pinCount) || payload.componentCorrelation.pinCount < 0 || !Array.isArray(payload.componentCorrelation?.uniqueIds) || !Array.isArray(payload.componentCorrelation?.primitiveIds) || !payload.componentCorrelation?.byUniqueId || typeof payload.componentCorrelation.byUniqueId !== "object" || Array.isArray(payload.componentCorrelation.byUniqueId) || !Array.isArray(payload.limitations)) {
       throw new Error("Exact schematic topology reader omitted compiled connectivity provenance.");
     }
     assertExactRecordKeys(
@@ -34430,7 +34592,7 @@ function validateExactReadPayload(payload, request) {
         "Exact schematic topology compiled component"
       );
       if (!Array.isArray(component.pins)) {
-        throw new Error("Exact schematic topology compiled connectivity is malformed.");
+        throw new TypeError("Exact schematic topology compiled connectivity is malformed.");
       }
       assertNonemptyString(component.uniqueId, "Exact schematic topology compiled unique ID");
       assertNullableString(component.designator, "Exact schematic topology compiled designator");
@@ -34442,7 +34604,7 @@ function validateExactReadPayload(payload, request) {
         assertNullableString(pin.net, `${pinLabel}.net`);
         compiledPinNumbers.push(pin.pinNumber);
       }
-      if (new Set(compiledPinNumbers).size !== compiledPinNumbers.length || JSON.stringify(compiledPinNumbers) !== JSON.stringify([...compiledPinNumbers].sort())) {
+      if (new Set(compiledPinNumbers).size !== compiledPinNumbers.length || JSON.stringify(compiledPinNumbers) !== JSON.stringify([...compiledPinNumbers].toSorted())) {
         throw new Error("Exact schematic topology compiled pin numbers are not canonical and unique.");
       }
       const correlation = payload.componentCorrelation.byUniqueId[component.uniqueId];
@@ -34472,183 +34634,189 @@ function validateExactReadPayload(payload, request) {
     if (new Set(connectivityIds).size !== connectivityIds.length) {
       throw new Error("Exact schematic topology compiled connectivity has duplicate unique IDs.");
     }
-    const correlatedIds = [...payload.componentCorrelation.uniqueIds].sort();
+    const correlatedIds = [...payload.componentCorrelation.uniqueIds].toSorted();
     const compiledPinCount = payload.compiledConnectivity.reduce(
-      (total, component) => total + component.pins.length,
+      (total, component) => total + (component.pins?.length ?? 0),
       0
     );
-    if (payload.componentCorrelation.componentCount !== connectivityIds.length || payload.componentCorrelation.pinCount !== compiledPinCount || payload.componentCorrelation.primitiveIds.length !== connectivityIds.length || JSON.stringify(Object.keys(payload.componentCorrelation.byUniqueId).sort()) !== JSON.stringify([...connectivityIds].sort()) || JSON.stringify(correlatedIds) !== JSON.stringify([...connectivityIds].sort()) || JSON.stringify([...correlatedPrimitiveIds].sort()) !== JSON.stringify(payload.componentCorrelation.primitiveIds)) {
+    if (payload.componentCorrelation.componentCount !== connectivityIds.length || payload.componentCorrelation.pinCount !== compiledPinCount || payload.componentCorrelation.primitiveIds.length !== connectivityIds.length || JSON.stringify(Object.keys(payload.componentCorrelation.byUniqueId).toSorted()) !== JSON.stringify([...connectivityIds].toSorted()) || JSON.stringify(correlatedIds) !== JSON.stringify([...connectivityIds].toSorted()) || JSON.stringify([...correlatedPrimitiveIds].toSorted()) !== JSON.stringify(payload.componentCorrelation.primitiveIds)) {
       throw new Error("Exact schematic topology component correlation is inconsistent.");
     }
   } else if (request.kind === "pcb-inventory") {
-    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || typeof payload.limitations?.directPads !== "string" || typeof payload.limitations?.componentPadCorrelation !== "string" || typeof payload.limitations?.pouredCorrelation !== "string" || typeof payload.limitations?.regionRuleTypes !== "string" || typeof payload.limitations?.fillModes !== "string" || typeof payload.limitations?.arcPrecision !== "string" || typeof payload.limitations?.viaPrecision !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
+    const limitations = payload.limitations;
+    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations) || typeof limitations["directPads"] !== "string" || typeof limitations["componentPadCorrelation"] !== "string" || typeof limitations["pouredCorrelation"] !== "string" || typeof limitations["regionRuleTypes"] !== "string" || typeof limitations["fillModes"] !== "string" || typeof limitations["arcPrecision"] !== "string" || typeof limitations["viaPrecision"] !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
       throw new Error("Exact PCB inventory omitted primitive families.");
     }
-    const requiredFamilies = [
-      "arcs",
-      "attributes",
-      "components",
-      "dimensions",
-      "fills",
-      "images",
-      "lines",
-      "objects",
-      "pads",
-      "polylines",
-      "pours",
-      "regions",
-      "strings",
-      "vias"
-    ];
-    if (JSON.stringify(Object.keys(payload.families).sort()) !== JSON.stringify(requiredFamilies)) {
+    const families = payload.families;
+    if (JSON.stringify(Object.keys(families).toSorted()) !== JSON.stringify(PCB_INVENTORY_FAMILY_NAMES)) {
       throw new Error("Exact PCB inventory primitive-family set is incomplete.");
     }
-    const monitoredFamilies = /* @__PURE__ */ new Set([
-      "arcs",
-      "fills",
-      "lines",
-      "pads",
-      "polylines",
-      "pours",
-      "regions",
-      "vias"
-    ]);
+    const monitoredFamilies = new Set(PCB_MONITORED_FAMILY_NAMES);
+    const validatedFamilies = /* @__PURE__ */ new Map();
     const allFamilyPrimitiveIds = [];
-    for (const name of requiredFamilies) {
-      const family = payload.families[name];
+    for (const name of PCB_INVENTORY_FAMILY_NAMES) {
+      const family = families[name];
       assertExactRecordKeys(
         family,
         monitoredFamilies.has(name) ? ["status", "count", "primitiveIds", "byPrimitiveId"] : ["status", "count", "primitiveIds"],
         `Exact PCB inventory family ${name}`
       );
-      if (family?.status !== "adapter-enumerated" || family.count !== family.primitiveIds.length || !Number.isSafeInteger(family.count) || family.count < 0) {
-        throw new Error(`Exact PCB inventory family ${name} is internally inconsistent.`);
-      }
       assertCanonicalUniqueStrings(
         family.primitiveIds,
         `Exact PCB inventory family ${name} primitive IDs`
       );
-      allFamilyPrimitiveIds.push(...family.primitiveIds);
-      if (family.byPrimitiveId !== void 0) {
-        if (!family.byPrimitiveId || typeof family.byPrimitiveId !== "object" || Array.isArray(family.byPrimitiveId) || JSON.stringify(Object.keys(family.byPrimitiveId).sort()) !== JSON.stringify(family.primitiveIds)) {
+      const familyPrimitiveIds = family.primitiveIds;
+      if (family.status !== "adapter-enumerated" || typeof family.count !== "number" || family.count !== familyPrimitiveIds.length || !Number.isSafeInteger(family.count) || family.count < 0) {
+        throw new Error(`Exact PCB inventory family ${name} is internally inconsistent.`);
+      }
+      allFamilyPrimitiveIds.push(...familyPrimitiveIds);
+      const familyIndex = family.byPrimitiveId;
+      let validatedFamilyIndex;
+      if (familyIndex !== void 0) {
+        if (!isUnknownRecord(familyIndex) || JSON.stringify(Object.keys(familyIndex).toSorted(compareStrings)) !== JSON.stringify(familyPrimitiveIds)) {
           throw new Error(`Exact PCB inventory family ${name} has an inconsistent state index.`);
         }
-        for (const id of family.primitiveIds) {
-          if (family.byPrimitiveId[id]?.primitiveId !== id) {
+        const indexEntries = [];
+        for (const id of familyPrimitiveIds) {
+          const state = familyIndex[id];
+          if (!isUnknownRecord(state) || state["primitiveId"] !== id) {
             throw new Error(`Exact PCB inventory family ${name} mismatched state for ${id}.`);
           }
+          indexEntries.push([id, state]);
         }
+        validatedFamilyIndex = Object.fromEntries(indexEntries);
       }
+      if (monitoredFamilies.has(name) && familyIndex === void 0) {
+        throw new Error(`Exact PCB inventory family ${name} has an inconsistent state index.`);
+      }
+      validatedFamilies.set(name, {
+        count: family.count,
+        primitiveIds: familyPrimitiveIds,
+        ...validatedFamilyIndex === void 0 ? {} : { byPrimitiveId: validatedFamilyIndex }
+      });
     }
-    if (new Set(allFamilyPrimitiveIds).size !== allFamilyPrimitiveIds.length || !Number.isSafeInteger(payload.enumeratedPrimitiveCount) || payload.enumeratedPrimitiveCount !== allFamilyPrimitiveIds.length) {
+    if (new Set(allFamilyPrimitiveIds).size !== allFamilyPrimitiveIds.length || typeof payload.enumeratedPrimitiveCount !== "number" || !Number.isSafeInteger(payload.enumeratedPrimitiveCount) || payload.enumeratedPrimitiveCount !== allFamilyPrimitiveIds.length) {
       throw new Error("Exact PCB inventory family primitive identities overlap or have the wrong total.");
     }
+    const getFamily = (name) => {
+      const family = validatedFamilies.get(name);
+      if (!family) throw new Error(`Exact PCB inventory family ${name} is unavailable.`);
+      return family;
+    };
+    const getMonitoredFamily = (name) => {
+      const family = getFamily(name);
+      if (!family.byPrimitiveId) {
+        throw new Error(`Exact PCB inventory family ${name} has an inconsistent state index.`);
+      }
+      return { ...family, byPrimitiveId: family.byPrimitiveId };
+    };
+    const primitiveSchemas = {
+      pads: [
+        "primitiveId",
+        "primitiveType",
+        "layer",
+        "padNumber",
+        "x",
+        "y",
+        "rotation",
+        "pad",
+        "specialPad",
+        "net",
+        "hole",
+        "holeOffsetX",
+        "holeOffsetY",
+        "holeRotation",
+        "metallization",
+        "padType",
+        "solderMaskAndPasteMaskExpansion",
+        "heatWelding",
+        "primitiveLock",
+        "source"
+      ],
+      vias: [
+        "primitiveId",
+        "primitiveType",
+        "net",
+        "x",
+        "y",
+        "holeDiameter",
+        "diameter",
+        "viaType",
+        "designRuleBlindViaName",
+        "solderMaskExpansion",
+        "primitiveLock"
+      ],
+      lines: [
+        "primitiveId",
+        "primitiveType",
+        "net",
+        "layer",
+        "startX",
+        "startY",
+        "endX",
+        "endY",
+        "lineWidth",
+        "primitiveLock"
+      ],
+      arcs: [
+        "primitiveId",
+        "primitiveType",
+        "net",
+        "layer",
+        "startX",
+        "startY",
+        "endX",
+        "endY",
+        "lineWidth",
+        "primitiveLock",
+        "arcAngle",
+        "interactiveMode"
+      ],
+      polylines: [
+        "primitiveId",
+        "primitiveType",
+        "net",
+        "layer",
+        "polygon",
+        "lineWidth",
+        "primitiveLock"
+      ],
+      regions: [
+        "primitiveId",
+        "primitiveType",
+        "layer",
+        "complexPolygon",
+        "regionName",
+        "lineWidth",
+        "primitiveLock"
+      ],
+      pours: [
+        "primitiveId",
+        "primitiveType",
+        "net",
+        "layer",
+        "complexPolygon",
+        "pourFillMethod",
+        "preserveSilos",
+        "pourName",
+        "pourPriority",
+        "lineWidth",
+        "primitiveLock"
+      ],
+      fills: [
+        "primitiveId",
+        "primitiveType",
+        "net",
+        "layer",
+        "complexPolygon",
+        "lineWidth",
+        "primitiveLock"
+      ]
+    };
     const validatePrimitiveRecord = (name, row, id) => {
       const label = `Exact PCB inventory ${name} ${id}`;
-      const schemas = {
-        pads: [
-          "primitiveId",
-          "primitiveType",
-          "layer",
-          "padNumber",
-          "x",
-          "y",
-          "rotation",
-          "pad",
-          "specialPad",
-          "net",
-          "hole",
-          "holeOffsetX",
-          "holeOffsetY",
-          "holeRotation",
-          "metallization",
-          "padType",
-          "solderMaskAndPasteMaskExpansion",
-          "heatWelding",
-          "primitiveLock",
-          "source"
-        ],
-        vias: [
-          "primitiveId",
-          "primitiveType",
-          "net",
-          "x",
-          "y",
-          "holeDiameter",
-          "diameter",
-          "viaType",
-          "designRuleBlindViaName",
-          "solderMaskExpansion",
-          "primitiveLock"
-        ],
-        lines: [
-          "primitiveId",
-          "primitiveType",
-          "net",
-          "layer",
-          "startX",
-          "startY",
-          "endX",
-          "endY",
-          "lineWidth",
-          "primitiveLock"
-        ],
-        arcs: [
-          "primitiveId",
-          "primitiveType",
-          "net",
-          "layer",
-          "startX",
-          "startY",
-          "endX",
-          "endY",
-          "lineWidth",
-          "primitiveLock",
-          "arcAngle",
-          "interactiveMode"
-        ],
-        polylines: [
-          "primitiveId",
-          "primitiveType",
-          "net",
-          "layer",
-          "polygon",
-          "lineWidth",
-          "primitiveLock"
-        ],
-        regions: [
-          "primitiveId",
-          "primitiveType",
-          "layer",
-          "complexPolygon",
-          "regionName",
-          "lineWidth",
-          "primitiveLock"
-        ],
-        pours: [
-          "primitiveId",
-          "primitiveType",
-          "net",
-          "layer",
-          "complexPolygon",
-          "pourFillMethod",
-          "preserveSilos",
-          "pourName",
-          "pourPriority",
-          "lineWidth",
-          "primitiveLock"
-        ],
-        fills: [
-          "primitiveId",
-          "primitiveType",
-          "net",
-          "layer",
-          "complexPolygon",
-          "lineWidth",
-          "primitiveLock"
-        ]
-      };
-      const keys = [...schemas[name]];
+      if (!isUnknownRecord(row)) throw new Error(`${label} must be an object.`);
+      const keys = [...primitiveSchemas[name]];
       const hasParent = Object.hasOwn(row, "parentComponentPrimitiveId");
       const hasCorrelationSource = Object.hasOwn(row, "componentCorrelationSource");
       if (name === "pads" && hasParent && hasCorrelationSource) {
@@ -34669,7 +34837,7 @@ function validateExactReadPayload(payload, request) {
           label
         );
         if (typeof row.padNumber !== "string" || !Number.isInteger(row.padType)) {
-          throw new Error(`${label} has a malformed pad number or type.`);
+          throw new TypeError(`${label} has a malformed pad number or type.`);
         }
         if (typeof row.metallization !== "boolean" || typeof row.primitiveLock !== "boolean" || row.source !== "pcb_PrimitivePad-direct-state") {
           throw new Error(`${label} has malformed pad flags or provenance.`);
@@ -34687,7 +34855,7 @@ function validateExactReadPayload(payload, request) {
         assertNullableString(row.designRuleBlindViaName, `${label}.designRuleBlindViaName`);
         assertFiniteFields(row, ["x", "y", "holeDiameter", "diameter"], label);
         if (!Number.isInteger(row.viaType) || typeof row.primitiveLock !== "boolean") {
-          throw new Error(`${label} has malformed via type or lock state.`);
+          throw new TypeError(`${label} has malformed via type or lock state.`);
         }
         assertMaskExpansion(row.solderMaskExpansion, `${label}.solderMaskExpansion`);
       } else if (name === "lines" || name === "arcs") {
@@ -34721,7 +34889,7 @@ function validateExactReadPayload(payload, request) {
         assertJsonContainer(row.complexPolygon, `${label}.complexPolygon`);
         assertNullableString(row.pourName, `${label}.pourName`);
         if (typeof row.preserveSilos !== "boolean" || typeof row.primitiveLock !== "boolean") {
-          throw new Error(`${label} has malformed pour flags.`);
+          throw new TypeError(`${label} has malformed pour flags.`);
         }
       } else if (name === "fills") {
         assertFiniteFields(row, ["layer", "lineWidth"], label);
@@ -34729,16 +34897,24 @@ function validateExactReadPayload(payload, request) {
         if (typeof row.primitiveLock !== "boolean") throw new Error(`${label} has malformed lock state.`);
       }
     };
-    for (const name of monitoredFamilies) {
-      for (const id of payload.families[name].primitiveIds) {
-        validatePrimitiveRecord(name, payload.families[name].byPrimitiveId[id], id);
+    for (const name of PCB_MONITORED_FAMILY_NAMES) {
+      const family = getMonitoredFamily(name);
+      for (const id of family.primitiveIds) {
+        validatePrimitiveRecord(name, family.byPrimitiveId[id], id);
       }
     }
-    if (!Number.isSafeInteger(payload.physicalPadCount) || !Number.isSafeInteger(payload.standalonePadCount) || payload.physicalPadCount !== payload.families.pads.count || payload.standalonePadCount < 0) {
+    const componentsFamily = getFamily("components");
+    const padsFamily = getMonitoredFamily("pads");
+    const poursFamily = getMonitoredFamily("pours");
+    const regionsFamily = getMonitoredFamily("regions");
+    const fillsFamily = getMonitoredFamily("fills");
+    const componentPadCorrelation = payload.componentPadCorrelation;
+    const pouredCorrelation = payload.pouredCorrelation;
+    if (typeof payload.physicalPadCount !== "number" || !Number.isSafeInteger(payload.physicalPadCount) || typeof payload.standalonePadCount !== "number" || !Number.isSafeInteger(payload.standalonePadCount) || payload.physicalPadCount !== padsFamily.count || payload.standalonePadCount < 0) {
       throw new Error("Exact PCB inventory physical pad count is inconsistent.");
     }
     assertExactRecordKeys(
-      payload.componentPadCorrelation,
+      componentPadCorrelation,
       [
         "status",
         "count",
@@ -34749,65 +34925,78 @@ function validateExactReadPayload(payload, request) {
       "Exact PCB inventory component-pad correlation"
     );
     assertCanonicalUniqueStrings(
-      payload.componentPadCorrelation.primitiveIds,
+      componentPadCorrelation.primitiveIds,
       "Exact PCB inventory component-pad primitive IDs"
     );
-    const correlatedPadIds = [...payload.componentPadCorrelation.primitiveIds].sort();
-    const componentIds = payload.families.components.primitiveIds;
-    if (payload.componentPadCorrelation.count !== correlatedPadIds.length || !Number.isSafeInteger(payload.componentPadCorrelation.count) || new Set(correlatedPadIds).size !== correlatedPadIds.length || payload.standalonePadCount !== payload.families.pads.count - correlatedPadIds.length || correlatedPadIds.some((id) => !payload.families.pads.byPrimitiveId[id]) || JSON.stringify(Object.keys(payload.componentPadCorrelation.byPrimitiveId).sort()) !== JSON.stringify(correlatedPadIds) || JSON.stringify(Object.keys(payload.componentPadCorrelation.byComponentPrimitiveId).sort()) !== JSON.stringify(componentIds)) {
+    const componentPadByPrimitiveId = componentPadCorrelation.byPrimitiveId;
+    const padIdsByComponentPrimitiveId = componentPadCorrelation.byComponentPrimitiveId;
+    if (!componentPadByPrimitiveId || !padIdsByComponentPrimitiveId) {
+      throw new Error("Exact PCB inventory component-pad correlation is inconsistent.");
+    }
+    const correlatedPadIds = [...componentPadCorrelation.primitiveIds].toSorted();
+    const componentIds = componentsFamily.primitiveIds;
+    if (typeof componentPadCorrelation.count !== "number" || componentPadCorrelation.count !== correlatedPadIds.length || !Number.isSafeInteger(componentPadCorrelation.count) || new Set(correlatedPadIds).size !== correlatedPadIds.length || payload.standalonePadCount !== padsFamily.count - correlatedPadIds.length || correlatedPadIds.some((id) => !padsFamily.byPrimitiveId[id]) || JSON.stringify(Object.keys(componentPadByPrimitiveId).toSorted()) !== JSON.stringify(correlatedPadIds) || JSON.stringify(Object.keys(padIdsByComponentPrimitiveId).toSorted()) !== JSON.stringify(componentIds)) {
       throw new Error("Exact PCB inventory component-pad correlation is inconsistent.");
     }
     const mappedPadIds = [];
     for (const componentId of componentIds) {
-      const ids = payload.componentPadCorrelation.byComponentPrimitiveId[componentId];
+      const ids = padIdsByComponentPrimitiveId[componentId];
       assertCanonicalUniqueStrings(
         ids,
         `Exact PCB inventory component ${componentId} correlated pad IDs`
       );
       mappedPadIds.push(...ids);
     }
-    if (new Set(mappedPadIds).size !== mappedPadIds.length || JSON.stringify([...mappedPadIds].sort()) !== JSON.stringify(correlatedPadIds)) {
+    if (new Set(mappedPadIds).size !== mappedPadIds.length || JSON.stringify([...mappedPadIds].toSorted()) !== JSON.stringify(correlatedPadIds)) {
       throw new Error("Exact PCB inventory component-to-pad index is inconsistent.");
     }
     for (const id of correlatedPadIds) {
-      const correlation = payload.componentPadCorrelation.byPrimitiveId[id];
-      const directPad = payload.families.pads.byPrimitiveId[id];
+      const correlation = componentPadByPrimitiveId[id];
+      const directPad = padsFamily.byPrimitiveId[id];
       assertExactRecordKeys(
         correlation,
         ["primitiveId", "parentComponentPrimitiveId", "padNumber", "net", "source"],
         `Exact PCB inventory pad correlation ${id}`
       );
-      if (correlation.primitiveId !== id || !componentIds.includes(correlation.parentComponentPrimitiveId) || typeof correlation.padNumber !== "string" || correlation.source !== "component-getState_Pads") {
+      if (correlation.primitiveId !== id || typeof correlation.parentComponentPrimitiveId !== "string" || !componentIds.includes(correlation.parentComponentPrimitiveId) || typeof correlation.padNumber !== "string" || correlation.source !== "component-getState_Pads") {
         throw new Error("Exact PCB inventory correlated pad has malformed identity or provenance.");
       }
       assertNullableString(correlation.net, `Exact PCB inventory pad correlation ${id}.net`);
-      if (directPad.parentComponentPrimitiveId !== correlation.parentComponentPrimitiveId || directPad.componentCorrelationSource !== correlation.source || directPad.padNumber !== correlation.padNumber || directPad.net !== correlation.net || !payload.componentPadCorrelation.byComponentPrimitiveId[correlation.parentComponentPrimitiveId].includes(id)) {
+      if (!directPad) {
+        throw new Error("Exact PCB inventory correlated pad disagrees with direct pad state.");
+      }
+      const ownedPadIds = padIdsByComponentPrimitiveId[correlation.parentComponentPrimitiveId];
+      if (directPad.parentComponentPrimitiveId !== correlation.parentComponentPrimitiveId || directPad.componentCorrelationSource !== correlation.source || directPad.padNumber !== correlation.padNumber || directPad.net !== correlation.net || ownedPadIds === void 0 || !ownedPadIds.includes(id)) {
         throw new Error("Exact PCB inventory correlated pad disagrees with direct pad state.");
       }
     }
-    for (const id of payload.families.pads.primitiveIds) {
-      const directPad = payload.families.pads.byPrimitiveId[id];
-      const isCorrelated = payload.componentPadCorrelation.byPrimitiveId[id] !== void 0;
-      if (isCorrelated !== Object.hasOwn(directPad, "parentComponentPrimitiveId") || isCorrelated !== Object.hasOwn(directPad, "componentCorrelationSource")) {
+    for (const id of padsFamily.primitiveIds) {
+      const directPad = padsFamily.byPrimitiveId[id];
+      const isCorrelated = componentPadByPrimitiveId[id] !== void 0;
+      if (!directPad || isCorrelated !== Object.hasOwn(directPad, "parentComponentPrimitiveId") || isCorrelated !== Object.hasOwn(directPad, "componentCorrelationSource")) {
         throw new Error("Exact PCB inventory direct pad has unexpected component ownership state.");
       }
     }
     assertExactRecordKeys(
-      payload.pouredCorrelation,
+      pouredCorrelation,
       ["status", "count", "pourPrimitiveIds", "byPourPrimitiveId"],
       "Exact PCB inventory poured-state correlation"
     );
     assertCanonicalUniqueStrings(
-      payload.pouredCorrelation.pourPrimitiveIds,
+      pouredCorrelation.pourPrimitiveIds,
       "Exact PCB inventory poured parent IDs"
     );
-    const pouredParentIds = [...payload.pouredCorrelation.pourPrimitiveIds].sort();
-    if (payload.pouredCorrelation.count !== pouredParentIds.length || new Set(pouredParentIds).size !== pouredParentIds.length || JSON.stringify(Object.keys(payload.pouredCorrelation.byPourPrimitiveId).sort()) !== JSON.stringify(pouredParentIds) || pouredParentIds.some((id) => !payload.families.pours.byPrimitiveId[id])) {
+    const pouredByPrimitiveId = pouredCorrelation.byPourPrimitiveId;
+    if (!pouredByPrimitiveId) {
+      throw new Error("Exact PCB inventory poured-state correlation is inconsistent.");
+    }
+    const pouredParentIds = [...pouredCorrelation.pourPrimitiveIds].toSorted();
+    if (typeof pouredCorrelation.count !== "number" || pouredCorrelation.count !== pouredParentIds.length || new Set(pouredParentIds).size !== pouredParentIds.length || JSON.stringify(Object.keys(pouredByPrimitiveId).toSorted()) !== JSON.stringify(pouredParentIds) || pouredParentIds.some((id) => !poursFamily.byPrimitiveId[id])) {
       throw new Error("Exact PCB inventory poured-state correlation is inconsistent.");
     }
     const pouredFillIds = [];
     for (const id of pouredParentIds) {
-      const row = payload.pouredCorrelation.byPourPrimitiveId[id];
+      const row = pouredByPrimitiveId[id];
       assertExactRecordKeys(
         row,
         ["primitiveId", "primitiveType", "pourPrimitiveId", "pourFills"],
@@ -34827,7 +35016,7 @@ function validateExactReadPayload(payload, request) {
         if (typeof fill.fill !== "boolean") throw new Error(`${fillLabel}.fill must be boolean.`);
         rowFillIds.push(fill.id);
       }
-      if (new Set(rowFillIds).size !== rowFillIds.length || JSON.stringify(rowFillIds) !== JSON.stringify([...rowFillIds].sort())) {
+      if (new Set(rowFillIds).size !== rowFillIds.length || JSON.stringify(rowFillIds) !== JSON.stringify([...rowFillIds].toSorted())) {
         throw new Error("Exact PCB inventory poured fill-piece order or identity is inconsistent.");
       }
       pouredFillIds.push(...rowFillIds);
@@ -34835,83 +35024,80 @@ function validateExactReadPayload(payload, request) {
     if (pouredFillIds.some((id) => typeof id !== "string" || id.length === 0) || new Set(pouredFillIds).size !== pouredFillIds.length || !Number.isSafeInteger(payload.pouredFillPieceCount) || payload.pouredFillPieceCount !== pouredFillIds.length) {
       throw new Error("Exact PCB inventory poured fill-piece identities are inconsistent.");
     }
-    for (const row of Object.values(payload.families.regions.byPrimitiveId)) {
+    for (const row of Object.values(regionsFamily.byPrimitiveId)) {
       if (Object.hasOwn(row, "ruleType")) {
         throw new Error("Exact PCB inventory exposed incomplete region rule-type state.");
       }
     }
-    for (const row of Object.values(payload.families.fills.byPrimitiveId)) {
+    for (const row of Object.values(fillsFamily.byPrimitiveId)) {
       if (Object.hasOwn(row, "fillMode")) {
         throw new Error("Exact PCB inventory exposed adapter-hardcoded fill-mode state.");
       }
     }
   } else if (request.kind === "pcb-rules") {
-    if (!payload.rules || typeof payload.rules.configurationName !== "string" || !Array.isArray(payload.rules.netRules) || !Array.isArray(payload.rules.regionRules) || !Array.isArray(payload.rules.netClasses) || !Array.isArray(payload.rules.equalLengthGroups) || !Array.isArray(payload.rules.padPairGroups) || !Array.isArray(payload.rules.differentialPairs) || !payload.rules.configuration || typeof payload.rules.configuration !== "object" || Array.isArray(payload.rules.configuration) || typeof payload.rules.configuration.name !== "string" || payload.rules.configuration.name !== payload.rules.configurationName || !payload.rules.configuration.config || typeof payload.rules.configuration.config !== "object" || Array.isArray(payload.rules.configuration.config) || Object.keys(payload.rules.configuration.config).length === 0 || !payload.rules.netByNetRules || typeof payload.rules.netByNetRules !== "object" || Array.isArray(payload.rules.netByNetRules) || !Array.isArray(payload.nets) || new Set(payload.nets).size !== payload.nets.length) {
+    const rules = payload.rules;
+    const nets = payload.nets;
+    if (!rules || typeof rules.configurationName !== "string" || !Array.isArray(rules.netRules) || !Array.isArray(rules.regionRules) || !Array.isArray(rules.netClasses) || !Array.isArray(rules.equalLengthGroups) || !Array.isArray(rules.padPairGroups) || !Array.isArray(rules.differentialPairs) || !rules.configuration || typeof rules.configuration !== "object" || Array.isArray(rules.configuration) || typeof rules.configuration.name !== "string" || rules.configuration.name !== rules.configurationName || rules.configuration.config === void 0 || rules.configuration.config === null || typeof rules.configuration.config !== "object" || Array.isArray(rules.configuration.config) || Object.keys(rules.configuration.config).length === 0 || !rules.netByNetRules || typeof rules.netByNetRules !== "object" || Array.isArray(rules.netByNetRules) || !Array.isArray(nets) || new Set(nets).size !== nets.length) {
       throw new Error("Exact PCB rules reader omitted rules or nets.");
     }
     assertExactRecordKeys(
-      payload.rules.configuration,
+      rules.configuration,
       ["name", "config"],
       "Exact PCB rules configuration"
     );
-    assertCanonicalUniqueStrings(payload.nets, "Exact PCB rule net names");
-    const netSet = new Set(payload.nets);
+    assertCanonicalUniqueStrings(nets, "Exact PCB rule net names");
+    const netSet = new Set(nets);
     const ruleLeafNets = [];
     const visitRuleRow = (row, label) => {
-      if (!row || typeof row !== "object" || Array.isArray(row)) {
+      if (!isUnknownRecord(row)) {
         throw new Error(`${label} must be an object.`);
       }
-      if (row.type === "net") {
-        assertNonemptyString(row.name, `${label}.name`);
-        if (!netSet.has(row.name)) throw new Error(`${label} references an unknown net.`);
-        ruleLeafNets.push(row.name);
+      if (row["type"] === "net") {
+        assertNonemptyString(row["name"], `${label}.name`);
+        if (!netSet.has(row["name"])) throw new Error(`${label} references an unknown net.`);
+        ruleLeafNets.push(row["name"]);
       }
       if (Object.hasOwn(row, "sub")) {
-        if (!Array.isArray(row.sub)) throw new Error(`${label}.sub must be an array.`);
-        for (const [index, child] of row.sub.entries()) {
+        if (!Array.isArray(row["sub"])) throw new Error(`${label}.sub must be an array.`);
+        for (const [index, child] of row["sub"].entries()) {
           visitRuleRow(child, `${label}.sub[${index}]`);
         }
       }
     };
-    for (const [index, row] of payload.rules.netRules.entries()) {
+    for (const [index, row] of rules.netRules.entries()) {
       visitRuleRow(row, `Exact PCB net rule[${index}]`);
     }
-    if (new Set(ruleLeafNets).size !== ruleLeafNets.length || JSON.stringify([...ruleLeafNets].sort()) !== JSON.stringify(payload.nets)) {
+    if (new Set(ruleLeafNets).size !== ruleLeafNets.length || JSON.stringify([...ruleLeafNets].toSorted()) !== JSON.stringify(nets)) {
       throw new Error("Exact PCB rule leaves do not cover every live net exactly once.");
     }
-    for (const [key, rows] of Object.entries(payload.rules.netByNetRules)) {
+    for (const [key, rows] of Object.entries(rules.netByNetRules)) {
       if (!Array.isArray(rows)) {
-        throw new Error(`Exact PCB net-to-net rule ${key} must be an array.`);
+        throw new TypeError(`Exact PCB net-to-net rule ${key} must be an array.`);
       }
     }
-    const uniqueNames = (rows, label) => {
-      const names = rows.map((row) => row?.name);
-      if (names.some((name) => typeof name !== "string" || name.length === 0) || new Set(names).size !== names.length) {
-        throw new Error(`Exact PCB rules reader returned malformed or duplicate ${label} names.`);
-      }
-    };
-    uniqueNames(payload.rules.netClasses, "net class");
-    uniqueNames(payload.rules.differentialPairs, "differential pair");
-    uniqueNames(payload.rules.equalLengthGroups, "equal-length group");
-    uniqueNames(payload.rules.padPairGroups, "pad-pair group");
-    for (const [label, rows] of [
-      ["net class", payload.rules.netClasses],
-      ["equal-length group", payload.rules.equalLengthGroups]
-    ]) {
+    assertUniqueNames(rules.netClasses, "net class");
+    assertUniqueNames(rules.differentialPairs, "differential pair");
+    assertUniqueNames(rules.equalLengthGroups, "equal-length group");
+    assertUniqueNames(rules.padPairGroups, "pad-pair group");
+    const groupedRuleRows = [
+      ["net class", rules.netClasses],
+      ["equal-length group", rules.equalLengthGroups]
+    ];
+    for (const [label, rows] of groupedRuleRows) {
       for (const row of rows) {
         if (!Array.isArray(row.nets) || new Set(row.nets).size !== row.nets.length || row.nets.some((net) => typeof net !== "string" || !netSet.has(net))) {
           throw new Error(`Exact PCB rules reader returned a malformed ${label}.`);
         }
       }
     }
-    for (const pair of payload.rules.differentialPairs) {
+    for (const pair of rules.differentialPairs) {
       if (typeof pair.positiveNet !== "string" || typeof pair.negativeNet !== "string" || pair.positiveNet === pair.negativeNet || !netSet.has(pair.positiveNet) || !netSet.has(pair.negativeNet)) {
         throw new Error("Exact PCB rules reader returned a malformed differential pair.");
       }
     }
-    for (const group of payload.rules.padPairGroups) {
+    for (const group of rules.padPairGroups) {
       if (!Array.isArray(group.padPairs) || !Array.isArray(group.minimumWireLengths)) {
-        throw new Error("Exact PCB rules reader returned a malformed pad-pair group.");
+        throw new TypeError("Exact PCB rules reader returned a malformed pad-pair group.");
       }
       const pairKeys = group.padPairs.map((pair) => JSON.stringify(pair));
       const lengthKeys = group.minimumWireLengths.map((row) => JSON.stringify(row?.padPair));
@@ -34927,7 +35113,7 @@ function validateExactReadPayload(payload, request) {
   return payload;
 }
 function exactTargetAssertionPointer(primitiveId) {
-  const escaped = String(primitiveId).replaceAll("~", "~0").replaceAll("/", "~1");
+  const escaped = primitiveId.replaceAll("~", "~0").replaceAll("/", "~1");
   return `/byPrimitiveId/${escaped}/primitiveId`;
 }
 function buildExactReadCode(request) {
@@ -36103,47 +36289,131 @@ return await (async () => {
 })();`;
 }
 
-// server/src/engine.mjs
+// server/src/engine.ts
 import { randomUUID as randomUUID2 } from "node:crypto";
 import { isAbsolute as isAbsolute2 } from "node:path";
-var FORBIDDEN_APPLY_NAMES = /(^|_)(save|save_all|sync|import_changes|order|purchase)(_|$)/i;
-var DEDICATED_FACADE_NAME = /(^|_)(capture|export)(_|$)/i;
+var FORBIDDEN_APPLY_NAMES = /(^|_)(save|save_all|sync|import_changes|order|purchase)(_|$)/iu;
+var DEDICATED_FACADE_NAME = /(^|_)(capture|export)(_|$)/iu;
 var EXACT_COMPONENT_MUTATION_TOOL = "easyeda_control_exact_component_mutation";
 var ACTIVE_DOCUMENT_WRITE_ALLOWLIST = /* @__PURE__ */ new Map([[3, /* @__PURE__ */ new Set()]]);
+function isUnknownRecord2(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function isStringArray2(value) {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+function isContextProbePayload(value) {
+  return isUnknownRecord2(value) && isUnknownRecord2(value["project"]) && isUnknownRecord2(value["document"]);
+}
+function isProjectProbePayload(value) {
+  return isUnknownRecord2(value) && isUnknownRecord2(value["project"]);
+}
+function isOperationJournalRecord(value) {
+  return isUnknownRecord2(value);
+}
+function isMutationPlan(value) {
+  if (!isUnknownRecord2(value)) return false;
+  const expectedContext = value["expectedContext"];
+  return isUnknownRecord2(expectedContext) && isUnknownRecord2(expectedContext["project"]) && isUnknownRecord2(expectedContext["document"]) && isUnknownRecord2(value["applyCall"]) && isUnknownRecord2(value["checkpoint"]) && isUnknownRecord2(value["expectedFingerprint"]);
+}
+function isCompleteOperationJournal(value) {
+  return isUnknownRecord2(value) && typeof value["operationId"] === "string" && typeof value["planHash"] === "string" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["journalPath"] === "string" && typeof value["updatedAt"] === "string";
+}
+function operationSummary2(operation) {
+  const summary = operationSummary(operation);
+  if (!isCompleteOperationJournal(operation)) return summary;
+  return {
+    operationId: operation.operationId,
+    planHash: operation.planHash,
+    state: operation.state,
+    mutationState: operation.mutationState,
+    saved: operation.saved,
+    reopened: operation.reopened,
+    hardStop: operation.hardStop,
+    mutationMayHaveOccurred: operation.mutationMayHaveOccurred,
+    orphanedCallPossible: summary.orphanedCallPossible,
+    orphanedCallPhase: typeof summary.orphanedCallPhase === "string" ? summary.orphanedCallPhase : void 0,
+    runtimeRestartChallenge: typeof summary.runtimeRestartChallenge === "string" ? summary.runtimeRestartChallenge : void 0,
+    runtimeRestartChallengeIssuedAt: typeof summary.runtimeRestartChallengeIssuedAt === "string" ? summary.runtimeRestartChallengeIssuedAt : void 0,
+    runtimeRestartBoundary: operation.runtimeRestartBoundary,
+    nextSafeAction: operation.nextSafeAction,
+    unknownPhase: typeof summary.unknownPhase === "string" ? summary.unknownPhase : void 0,
+    lastError: summary.lastError,
+    journalPath: operation.journalPath,
+    checkpoints: summary.checkpoints,
+    artifacts: summary.artifacts,
+    updatedAt: operation.updatedAt
+  };
+}
+function annotatedError(message, options) {
+  return new Error(message, options);
+}
+function errorMetadata(error51) {
+  return error51 instanceof Error ? error51 : void 0;
+}
+function proofPayload(value) {
+  if (!isUnknownRecord2(value)) {
+    throw new Error("Exact proof payload must be an object.");
+  }
+  return value;
+}
+function contextPayload(value) {
+  if (!isContextProbePayload(value)) {
+    throw new Error("EasyEDA context probe returned a non-object context.");
+  }
+  return value;
+}
+function projectPayload(value) {
+  if (!isProjectProbePayload(value)) {
+    throw new Error("EasyEDA project probe returned a non-object project context.");
+  }
+  return value;
+}
+function asOperationJournal(value) {
+  if (!isOperationJournalRecord(value)) {
+    throw new TypeError("Operation journal must be an object.");
+  }
+  return value;
+}
+function asOperationJournals(value) {
+  return Array.isArray(value) ? value.map((item) => asOperationJournal(item)) : [];
+}
 function toolDocumentType(toolName) {
-  if (/^easyeda_schematic_/i.test(toolName)) return 1;
-  if (/^easyeda_(pcb|board)_/i.test(toolName)) return 3;
+  if (/^easyeda_schematic_/iu.test(toolName)) return 1;
+  if (/^easyeda_(pcb|board)_/iu.test(toolName)) return 3;
   return void 0;
 }
 function now() {
   return (/* @__PURE__ */ new Date()).toISOString();
 }
 function serializeError(error51) {
+  const metadata = errorMetadata(error51);
   return {
-    name: error51?.name ?? "Error",
-    message: error51?.message ?? String(error51),
-    mismatches: error51?.mismatches,
-    assertionResults: error51?.assertionResults,
-    upstreamResult: error51?.upstreamResult
+    name: metadata?.name ?? "Error",
+    message: metadata?.message ?? String(error51),
+    mismatches: metadata?.mismatches,
+    assertionResults: metadata?.assertionResults,
+    upstreamResult: metadata?.upstreamResult
   };
 }
 function assertAssertions(payload, assertions, label) {
-  const results = evaluateAssertions(payload, assertions ?? []);
+  const evaluate = evaluateAssertions;
+  const results = evaluate(payload, assertions ?? []);
   const failed = results.filter((result) => !result.passed);
   if (failed.length > 0) {
-    const error51 = new Error(`${label} failed ${failed.length} assertion(s).`);
+    const error51 = annotatedError(`${label} failed ${failed.length} assertion(s).`);
     error51.assertionResults = results;
     throw error51;
   }
   return results;
 }
 function normalizedProofPayload(value) {
-  if (Array.isArray(value)) return value.map(normalizedProofPayload);
-  if (!value || typeof value !== "object") return value;
+  if (Array.isArray(value)) return value.map((item) => normalizedProofPayload(item));
+  if (!isUnknownRecord2(value)) return value;
   return Object.fromEntries(
     Object.entries(value).map(([key, child]) => [
       key,
-      key === "read_consistency" && child && typeof child === "object" ? { stable: child.stable === true } : normalizedProofPayload(child)
+      key === "read_consistency" && isUnknownRecord2(child) ? { stable: child["stable"] === true } : normalizedProofPayload(child)
     ])
   );
 }
@@ -36157,22 +36427,24 @@ function snapshotHash(results) {
   );
 }
 function runtimeFingerprint(status) {
-  return status?.stableFingerprint;
+  return isUnknownRecord2(status) ? status["stableFingerprint"] : void 0;
 }
 function exactCalls(calls, kind) {
   return (calls ?? []).filter(
-    (call) => call.toolName === "easyeda_control_exact_read" && call.arguments?.kind === kind
+    (call) => call.toolName === "easyeda_control_exact_read" && call.arguments?.["kind"] === kind
   );
 }
 function assertRequiredPhaseReaders(calls, documentType, targetPrimitiveIds, label) {
   const componentKind = documentType === 1 ? "schematic-components" : "pcb-components";
   const componentCalls = exactCalls(calls, componentKind);
-  const summaryCalls = componentCalls.filter(
-    (call) => call.arguments?.selector?.all === true && call.arguments?.includePins === false && call.arguments?.includeBounds === false
-  );
+  const summaryCalls = componentCalls.filter((call) => {
+    const selector = call.arguments?.["selector"];
+    return isUnknownRecord2(selector) && selector["all"] === true && call.arguments?.["includePins"] === false && call.arguments?.["includeBounds"] === false;
+  });
   const targetCalls = componentCalls.filter((call) => {
-    const primitiveIds = call.arguments?.selector?.primitiveIds;
-    return Array.isArray(primitiveIds) && canonicalJson([...primitiveIds].sort()) === canonicalJson([...targetPrimitiveIds].sort()) && call.arguments?.includePins !== false && call.arguments?.includeBounds !== false;
+    const selector = call.arguments?.["selector"];
+    const primitiveIds = isUnknownRecord2(selector) ? selector["primitiveIds"] : void 0;
+    return isStringArray2(primitiveIds) && canonicalJson(primitiveIds.toSorted((left, right) => left.localeCompare(right))) === canonicalJson(targetPrimitiveIds.toSorted((left, right) => left.localeCompare(right))) && call.arguments?.["includePins"] !== false && call.arguments?.["includeBounds"] !== false;
   });
   if (componentCalls.length !== 2 || summaryCalls.length !== 1 || targetCalls.length !== 1) {
     throw new Error(
@@ -36191,28 +36463,35 @@ function assertRequiredPhaseReaders(calls, documentType, targetPrimitiveIds, lab
 }
 function resultForKind(results, kind) {
   const matches = (results ?? []).filter(
-    (result) => result.toolName === "easyeda_control_exact_read" && result.payload?.kind === kind
+    (result) => result.toolName === "easyeda_control_exact_read" && proofPayload(result.payload).kind === kind
   );
   if (matches.length !== 1) throw new Error(`Proof phase did not produce exactly one ${kind} result.`);
-  return matches[0].payload;
+  const [match] = matches;
+  if (!match) throw new Error(`Proof phase did not produce exactly one ${kind} result.`);
+  return proofPayload(match.payload);
 }
 function componentProofResults(results, kind, targetPrimitiveIds) {
   const matches = (results ?? []).filter(
-    (result) => result.toolName === "easyeda_control_exact_read" && result.payload?.kind === kind
-  ).map((result) => result.payload);
+    (result) => result.toolName === "easyeda_control_exact_read" && proofPayload(result.payload).kind === kind
+  ).map((result) => proofPayload(result.payload));
   const summary = matches.filter(
     (payload) => payload.detail?.pins === false && payload.detail?.bounds === false
   );
   const target = matches.filter(
-    (payload) => payload.detail?.pins === true && payload.detail?.bounds === true && canonicalJson(payload.primitiveIds) === canonicalJson([...targetPrimitiveIds].sort())
+    (payload) => payload.detail?.pins === true && payload.detail?.bounds === true && canonicalJson(payload.primitiveIds) === canonicalJson([...targetPrimitiveIds].toSorted())
   );
   if (matches.length !== 2 || summary.length !== 1 || target.length !== 1) {
     throw new Error(`Proof phase did not produce the required summary and target ${kind} results.`);
   }
-  return { summary: summary[0], target: target[0] };
+  const [summaryPayload] = summary;
+  const [targetPayload] = target;
+  if (!summaryPayload || !targetPayload) {
+    throw new Error(`Proof phase did not produce the required summary and target ${kind} results.`);
+  }
+  return { summary: summaryPayload, target: targetPayload };
 }
 function targetRecordPointer(primitiveId) {
-  return exactTargetAssertionPointer(primitiveId).replace(/\/primitiveId$/, "");
+  return exactTargetAssertionPointer(primitiveId).replace(/\/primitiveId$/u, "");
 }
 function targetChangeAssertions(plan, state) {
   return plan.targetChanges.map((change) => ({
@@ -36226,17 +36505,20 @@ function maskRelativePointer(root, pointer) {
   let owner = root;
   for (let index = 0; index < parts.length - 1; index += 1) {
     const key = parts[index];
-    owner = Array.isArray(owner) && /^\d+$/.test(key) ? owner[Number(key)] : owner?.[key];
-    if (!owner || typeof owner !== "object") {
+    if (key === void 0) {
+      throw new Error(`Declared target change pointer does not resolve: ${pointer}`);
+    }
+    owner = Array.isArray(owner) && /^\d+$/u.test(key) ? owner[Number(key)] : isUnknownRecord2(owner) ? owner[key] : void 0;
+    if (!isUnknownRecord2(owner) && !Array.isArray(owner)) {
       throw new Error(`Declared target change pointer does not resolve: ${pointer}`);
     }
   }
   const finalKey = parts.at(-1);
-  if (!finalKey || (Array.isArray(owner) ? !/^\d+$/.test(finalKey) || Number(finalKey) >= owner.length : !Object.hasOwn(owner, finalKey))) {
+  if (finalKey === void 0 || (Array.isArray(owner) ? !/^\d+$/u.test(finalKey) || Number(finalKey) >= owner.length : !isUnknownRecord2(owner) || !Object.hasOwn(owner, finalKey))) {
     throw new Error(`Declared target change pointer does not resolve: ${pointer}`);
   }
   if (Array.isArray(owner)) owner[Number(finalKey)] = "__DECLARED_TARGET_CHANGE__";
-  else owner[finalKey] = "__DECLARED_TARGET_CHANGE__";
+  else if (isUnknownRecord2(owner)) owner[finalKey] = "__DECLARED_TARGET_CHANGE__";
 }
 function targetComponentInvariantHash(payload, plan) {
   const records = structuredClone(payload?.byPrimitiveId ?? {});
@@ -36263,15 +36545,19 @@ function declaredTargetPadConsequences(plan, targetComponentPayload, stateName) 
   }
   const consequences = /* @__PURE__ */ new Map();
   for (const change of plan.targetChanges) {
-    const match = /^\/pads\/(0|[1-9]\d*)\/(x|y|rotation|layer)$/.exec(change.pointer);
+    const match = /^\/pads\/(0|[1-9]\d*)\/(x|y|rotation|layer)$/u.exec(change.pointer);
     if (!match) continue;
     const component = targetComponentPayload?.byPrimitiveId?.[change.primitiveId];
-    const padIndex = Number(match[1]);
+    const padIndexText = match[1];
+    const field = match[2];
+    if (padIndexText === void 0 || field === void 0) {
+      throw new Error(`Declared target pad consequence is malformed: ${change.pointer}`);
+    }
+    const padIndex = Number(padIndexText);
     const pad = component?.pads?.[padIndex];
     if (!pad || typeof pad !== "object") {
       throw new Error(`Declared target pad consequence does not resolve: ${change.primitiveId}${change.pointer}`);
     }
-    const field = match[2];
     const key = `${pad.primitiveId}\0${field}`;
     if (consequences.has(key)) {
       throw new Error(`Declared target pad consequence repeats direct pad ${pad.primitiveId}/${field}.`);
@@ -36286,20 +36572,27 @@ function declaredTargetPadConsequences(plan, targetComponentPayload, stateName) 
   return consequences;
 }
 function pcbInventoryInvariantHash(payload, plan, targetComponentPayload, stateName) {
-  const inventory = structuredClone(normalizedProofPayload(payload));
+  const normalizedInventory = normalizedProofPayload(payload);
+  if (!isUnknownRecord2(normalizedInventory)) {
+    throw new Error("PCB inventory invariant must be an object.");
+  }
+  const inventory = structuredClone(normalizedInventory);
   const targetSet = new Set(plan.targetPrimitiveIds);
   const declaredConsequences = declaredTargetPadConsequences(
     plan,
     targetComponentPayload,
     stateName
   );
-  const pads = inventory?.families?.pads?.byPrimitiveId;
-  if (!pads || typeof pads !== "object" || Array.isArray(pads)) {
+  const families = inventory["families"];
+  const padFamily = isUnknownRecord2(families) ? families["pads"] : void 0;
+  const padsCandidate = isUnknownRecord2(padFamily) ? padFamily["byPrimitiveId"] : void 0;
+  if (!isUnknownRecord2(padsCandidate)) {
     throw new Error("PCB inventory invariant omitted its direct pad state index.");
   }
+  const pads = padsCandidate;
   for (const consequence of declaredConsequences.values()) {
     const pad = pads[consequence.primitiveId];
-    if (!pad || !targetSet.has(pad.parentComponentPrimitiveId) || pad.parentComponentPrimitiveId !== consequence.parentComponentPrimitiveId) {
+    if (!isUnknownRecord2(pad) || typeof pad["parentComponentPrimitiveId"] !== "string" || !targetSet.has(pad["parentComponentPrimitiveId"]) || pad["parentComponentPrimitiveId"] !== consequence.parentComponentPrimitiveId) {
       throw new Error(
         `Declared target pad consequence ${consequence.primitiveId}/${consequence.field} has no matching target-owned direct pad.`
       );
@@ -36413,13 +36706,14 @@ function verifyPhaseInvariants(results, operation, label) {
   }
   return proof;
 }
-function ensurePlanShape(plan) {
-  if (!plan?.expectedContext?.project || !plan?.expectedContext?.document) {
-    throw new Error("Plan requires expectedContext.project and expectedContext.document.");
+function ensurePlanShape(value) {
+  if (!isMutationPlan(value)) {
+    throw new Error("Mutation plan must be an object.");
   }
+  const plan = value;
   const projectUuid = plan.expectedContext.project.uuid ?? plan.expectedContext.project.projectUuid;
   const documentUuid = plan.expectedContext.document.uuid ?? plan.expectedContext.document.documentUuid;
-  if (!projectUuid || !documentUuid || !Number.isInteger(plan.expectedContext.document.documentType)) {
+  if (typeof projectUuid !== "string" || projectUuid.length === 0 || typeof documentUuid !== "string" || documentUuid.length === 0 || !Number.isInteger(plan.expectedContext.document.documentType)) {
     throw new Error("Plan context requires project UUID, document UUID, and integer documentType.");
   }
   if (plan.expectedContext.document.documentType !== 3) {
@@ -36442,7 +36736,7 @@ function ensurePlanShape(plan) {
     if (!targetSet.has(change?.primitiveId)) {
       throw new Error("Every targetChanges primitiveId must be declared in targetPrimitiveIds.");
     }
-    if (typeof change.pointer !== "string" || !change.pointer.startsWith("/") || /^\/primitiveId(?:\/|$)/.test(change.pointer)) {
+    if (typeof change.pointer !== "string" || !change.pointer.startsWith("/") || /^\/primitiveId(?:\/|$)/u.test(change.pointer)) {
       throw new Error("Every target change requires a non-identity relative JSON pointer.");
     }
     if (canonicalJson(change.before) === canonicalJson(change.after)) {
@@ -36453,27 +36747,27 @@ function ensurePlanShape(plan) {
       throw new Error(`Target change ${change.primitiveId}${change.pointer} is declared more than once.`);
     }
     declaredChangeKeys.add(changeKey);
-    if (documentType === 3 && !/^\/(?:x|y|rotation|layer|primitiveLock|bounds\/(?:minX|minY|maxX|maxY)|pads\/\d+\/(?:x|y|rotation|layer))$/.test(
+    if (documentType === 3 && !/^\/(?:x|y|rotation|layer|primitiveLock|bounds\/(?:minX|minY|maxX|maxY)|pads\/\d+\/(?:x|y|rotation|layer))$/u.test(
       change.pointer
     )) {
       throw new Error(
         "Guarded PCB mutation currently permits component placement/lock state and the resulting declared bounds/pad transforms only. Pad/footprint geometry, nets, rules, routes, pours, and stack changes require a separately validated capability."
       );
     }
-    for (const [stateName, value] of [
+    for (const [stateName, stateValue] of [
       ["before", change.before],
       ["after", change.after]
     ]) {
       if (change.pointer === "/primitiveLock") {
-        if (typeof value !== "boolean") {
-          throw new Error(`Target ${change.primitiveId}${change.pointer} ${stateName} value must be boolean.`);
+        if (typeof stateValue !== "boolean") {
+          throw new TypeError(`Target ${change.primitiveId}${change.pointer} ${stateName} value must be boolean.`);
         }
       } else if (change.pointer === "/layer") {
-        if (![1, 2].includes(value)) {
+        if (typeof stateValue !== "number" || ![1, 2].includes(stateValue)) {
           throw new Error(`Target ${change.primitiveId}${change.pointer} ${stateName} value must be Top 1 or Bottom 2.`);
         }
-      } else if (typeof value !== "number" || !Number.isFinite(value)) {
-        throw new Error(`Target ${change.primitiveId}${change.pointer} ${stateName} value must be finite.`);
+      } else if (typeof stateValue !== "number" || !Number.isFinite(stateValue)) {
+        throw new TypeError(`Target ${change.primitiveId}${change.pointer} ${stateName} value must be finite.`);
       }
     }
   }
@@ -36481,7 +36775,7 @@ function ensurePlanShape(plan) {
     if (!plan.targetChanges.some((change) => change.primitiveId === primitiveId)) {
       throw new Error(`Target ${primitiveId} has no declared before/after change.`);
     }
-    const writablePattern = /^\/(x|y|rotation|layer|primitiveLock)$/;
+    const writablePattern = /^\/(x|y|rotation|layer|primitiveLock)$/u;
     if (!plan.targetChanges.some(
       (change) => change.primitiveId === primitiveId && writablePattern.test(change.pointer)
     )) {
@@ -36516,18 +36810,18 @@ function ensurePlanShape(plan) {
   if (!Array.isArray(plan.rollbackCalls) || plan.rollbackCalls.length === 0) {
     throw new Error("Plan requires at least one explicit rollback call.");
   }
-  if (!plan.applyCall) throw new Error("Plan requires exactly one applyCall.");
   if (plan.applyCall.toolName !== EXACT_COMPONENT_MUTATION_TOOL || canonicalJson(plan.applyCall.arguments ?? {}) !== canonicalJson({ state: "after" })) {
     throw new Error(
       `applyCall must be the facade-generated ${EXACT_COMPONENT_MUTATION_TOOL} with arguments.state=after.`
     );
   }
-  if (plan.rollbackCalls.length !== 1 || plan.rollbackCalls[0].toolName !== EXACT_COMPONENT_MUTATION_TOOL || canonicalJson(plan.rollbackCalls[0].arguments ?? {}) !== canonicalJson({ state: "before" })) {
+  const rollbackCall = plan.rollbackCalls[0];
+  if (plan.rollbackCalls.length !== 1 || rollbackCall === void 0 || rollbackCall.toolName !== EXACT_COMPONENT_MUTATION_TOOL || canonicalJson(rollbackCall.arguments ?? {}) !== canonicalJson({ state: "before" })) {
     throw new Error(
       `rollbackCalls must contain exactly one facade-generated ${EXACT_COMPONENT_MUTATION_TOOL} call with arguments.state=before.`
     );
   }
-  if (!plan.checkpoint?.source || !plan.checkpoint?.outputDir || !plan.checkpoint?.label) {
+  if (plan.checkpoint.source.length === 0 || plan.checkpoint.outputDir.length === 0 || plan.checkpoint.label.length === 0) {
     throw new Error("Plan requires source, outputDir, and label for durable checkpoints.");
   }
   if (!isAbsolute2(plan.checkpoint.source) || !isAbsolute2(plan.checkpoint.outputDir)) {
@@ -36539,7 +36833,7 @@ function ensurePlanShape(plan) {
       "checkpoint.source must be the exact .eprj2 path reported by expectedContext.project.path."
     );
   }
-  if (String(plan.checkpoint.label).length > 54) {
+  if (plan.checkpoint.label.length > 54) {
     throw new Error("Checkpoint label must be at most 54 characters.");
   }
   if (plan.capabilityLevel !== "private-version-pinned") {
@@ -36547,13 +36841,11 @@ function ensurePlanShape(plan) {
       "Guarded PCB component mutation remains private-version-pinned until connected sacrificial-board validation proves this installed modify path."
     );
   }
-  if (!plan.expectedFingerprint) {
-    throw new Error("Every mutation plan requires the exact stableFingerprint returned by status.");
-  }
   validateExpectedFingerprint(plan.expectedFingerprint);
   validatePrivateFingerprint(plan.expectedFingerprint);
 }
 var SerializedGate = class {
+  tail;
   constructor() {
     this.tail = Promise.resolve();
   }
@@ -36572,6 +36864,9 @@ var SerializedGate = class {
   }
 };
 var EasyedaControlEngine = class {
+  upstream;
+  privateComponentWriterValidated;
+  controlFingerprintPromise;
   constructor(upstream2, options = {}) {
     this.upstream = upstream2;
     this.privateComponentWriterValidated = options.privateComponentWriterValidated === true;
@@ -36588,7 +36883,7 @@ var EasyedaControlEngine = class {
     operation.orphanedCallPossible = true;
     operation.orphanedCallPhase = phase;
     operation.orphanedCallMarkedAt = now();
-    operation.runtimeRestartChallengeAttempt = Number(operation.runtimeRestartChallengeAttempt ?? 0) + 1;
+    operation.runtimeRestartChallengeAttempt = (operation.runtimeRestartChallengeAttempt ?? 0) + 1;
     operation.runtimeRestartChallenge = [
       "EASYEDA_RESTARTED_AND_RECONNECTED",
       operation.operationId,
@@ -36615,7 +36910,7 @@ var EasyedaControlEngine = class {
       return operation.runtimeRestartChallenge;
     }
     const phase = operation.orphanedCallPhase ?? operation.unknownPhase ?? "legacy-orphan";
-    operation.runtimeRestartChallengeAttempt = Number(operation.runtimeRestartChallengeAttempt ?? 0) + 1;
+    operation.runtimeRestartChallengeAttempt = (operation.runtimeRestartChallengeAttempt ?? 0) + 1;
     operation.runtimeRestartChallenge = [
       "EASYEDA_RESTARTED_AND_RECONNECTED",
       operation.operationId,
@@ -36639,10 +36934,10 @@ var EasyedaControlEngine = class {
     } catch (error51) {
       cause = error51;
     }
-    if (!verification?.ok) {
-      const error51 = new Error(
+    if (verification?.ok !== true) {
+      const error51 = annotatedError(
         `The durable baseline changed immediately before ${phase}; no ${phase} mutation was dispatched.`,
-        cause ? { cause } : void 0
+        cause === void 0 ? void 0 : { cause }
       );
       error51.journalStateRecorded = true;
       operation.state = failure2.state;
@@ -36684,35 +36979,41 @@ var EasyedaControlEngine = class {
     }
   }
   async assertBridgeDispatchAllowed() {
-    const blockingOperations = (await listOperations()).filter(
+    const blockingOperations = asOperationJournals(await listOperations()).filter(
       (operation) => operation?.state === "journal-unreadable" || operationHasOrphanedCallRisk(operation)
-    ).map(operationSummary);
+    ).map((operation) => operationSummary2(operation));
     if (blockingOperations.length === 0) return true;
     const labels = blockingOperations.map((operation) => `${operation.operationId}:${operation.state}`).join(", ");
-    const error51 = new Error(
+    const error51 = annotatedError(
       `EasyEDA bridge dispatch is quarantined by an orphan-risk or unreadable operation journal (${labels}). Use easyeda_control_recover_incomplete without an operationId to inspect the local journals. Do not run live status, context, reads, captures, exports, checkpoints, or writes until the nonce-bound restart/recovery gate clears every orphan risk; an unreadable journal requires manual restoration or review.`
     );
     error51.blockingOperations = blockingOperations;
     throw error51;
   }
   async assertRecoveryOperationIsolated(operationId) {
-    const blockingOperations = (await listOperations()).filter(
+    const blockingOperations = asOperationJournals(await listOperations()).filter(
       (operation) => operation?.operationId !== operationId && (!isTerminalOperation(operation) || operation?.state === "journal-unreadable" || operationHasOrphanedCallRisk(operation))
-    ).map(operationSummary);
+    ).map((operation) => operationSummary2(operation));
     if (blockingOperations.length === 0) return true;
     const labels = blockingOperations.map((operation) => `${operation.operationId}:${operation.state}`).join(", ");
-    const error51 = new Error(
+    const error51 = annotatedError(
       `Recovery operation ${operationId} is not isolated; another incomplete, unreadable, or orphan-risk journal exists (${labels}). Recovery may dispatch live bridge calls, so resolve or manually review the other journal first.`
     );
     error51.blockingOperations = blockingOperations;
     throw error51;
   }
   async status() {
-    const tools = await this.upstream.listTools();
+    const listTools = this.upstream.listTools?.bind(this.upstream);
+    const launcherFingerprint = this.upstream.launcherFingerprint?.bind(this.upstream);
+    if (listTools === void 0 || launcherFingerprint === void 0) {
+      throw new Error("The upstream client does not expose status and launcher probes.");
+    }
+    const tools = await listTools();
     const call = async (name) => {
       if (!tools.some((tool) => tool.name === name)) return { available: false };
       try {
-        return { available: true, payload: extractToolPayload(await this.upstream.callTool(name, {})) };
+        const payload = extractToolPayload(await this.upstream.callTool(name, {}));
+        return { available: true, payload: isUnknownRecord2(payload) ? payload : {} };
       } catch (error51) {
         return { available: true, error: serializeError(error51) };
       }
@@ -36723,18 +37024,26 @@ var EasyedaControlEngine = class {
       call("easyeda_bridge_probe_methods"),
       this.controlFingerprintPromise
     ]);
-    const upstreamServer = this.upstream.serverInfo();
+    const upstreamServer = this.upstream.serverInfo?.();
     let installedBundles;
+    const readInstalledBundles = this.upstream.installedEasyedaBundles?.bind(this.upstream);
     try {
-      installedBundles = this.upstream.installedEasyedaBundles ? await this.upstream.installedEasyedaBundles() : { available: false, error: { message: "Installed-bundle probe is unavailable." } };
+      installedBundles = readInstalledBundles === void 0 ? { available: false, error: { message: "Installed-bundle probe is unavailable." } } : await readInstalledBundles();
     } catch (error51) {
       installedBundles = { available: false, error: serializeError(error51) };
     }
-    const launcherState = this.upstream.launcherState ? await this.upstream.launcherState() : {
-      startup: await this.upstream.launcherFingerprint(),
-      current: await this.upstream.launcherFingerprint(),
-      drift: false
-    };
+    const readLauncherState = this.upstream.launcherState?.bind(this.upstream);
+    const launcherState = readLauncherState === void 0 ? await (async () => {
+      const startup = await launcherFingerprint();
+      const current = await launcherFingerprint();
+      return {
+        startup,
+        current,
+        startupSha256: sha256Json(startup),
+        currentSha256: sha256Json(current),
+        drift: false
+      };
+    })() : await readLauncherState();
     const upstreamLauncher = launcherState.startup;
     const toolCatalogSha256 = sha256Json(
       tools.map((tool) => ({
@@ -36757,30 +37066,30 @@ var EasyedaControlEngine = class {
       toolCatalogSha256,
       health: {
         payload: {
-          version: health.payload?.version,
-          node_version: health.payload?.node_version,
-          bridge_connected: health.payload?.bridge_connected,
-          easyeda_version: health.payload?.easyeda_version,
-          extension_version: health.payload?.extension_version,
-          extension_version_mismatch: health.payload?.extension_version_mismatch,
-          registry_mismatch: health.payload?.registry_mismatch
+          version: health.payload?.["version"],
+          node_version: health.payload?.["node_version"],
+          bridge_connected: health.payload?.["bridge_connected"],
+          easyeda_version: health.payload?.["easyeda_version"],
+          extension_version: health.payload?.["extension_version"],
+          extension_version_mismatch: health.payload?.["extension_version_mismatch"],
+          registry_mismatch: health.payload?.["registry_mismatch"]
         }
       },
       bridge: {
         payload: {
-          connected: bridge.payload?.connected,
-          bridge_version: bridge.payload?.bridge_version,
-          easyeda_version: bridge.payload?.easyeda_version,
+          connected: bridge.payload?.["connected"],
+          bridge_version: bridge.payload?.["bridge_version"],
+          easyeda_version: bridge.payload?.["easyeda_version"],
           diagnostics: {
-            method_registry_hash: bridge.payload?.diagnostics?.method_registry_hash
+            method_registry_hash: isUnknownRecord2(bridge.payload?.["diagnostics"]) ? bridge.payload["diagnostics"]["method_registry_hash"] : void 0
           }
         }
       },
       bridgeDispatcher: {
         payload: {
-          source: dispatcher.payload?.source,
-          dispatcher_build_id: dispatcher.payload?.dispatcher_build_id,
-          total: dispatcher.payload?.total
+          source: dispatcher.payload?.["source"],
+          dispatcher_build_id: dispatcher.payload?.["dispatcher_build_id"],
+          total: dispatcher.payload?.["total"]
         }
       }
     };
@@ -36790,7 +37099,7 @@ var EasyedaControlEngine = class {
       upstreamLauncherState: launcherState,
       installedBundles,
       toolCatalogSha256,
-      upstreamInstructions: this.upstream.instructions(),
+      upstreamInstructions: this.upstream.instructions?.(),
       toolCount: tools.length,
       health,
       bridge,
@@ -36808,14 +37117,14 @@ var EasyedaControlEngine = class {
     };
   }
   async context() {
-    const tool = await this.upstream.findTool("easyeda_execute");
+    const tool = await this.upstream.findTool?.("easyeda_execute");
     if (!tool) throw new Error("The upstream server does not expose easyeda_execute.");
     const result = await this.upstream.callTool(
       "easyeda_execute",
       { code: CONTEXT_PROBE_CODE, timeoutMs: 15e3, confirmWrite: true },
       25e3
     );
-    const payload = extractToolPayload(result);
+    const payload = contextPayload(extractToolPayload(result));
     const projectUuid = payload?.project?.uuid ?? payload?.project?.projectUuid;
     const projectPath = payload?.project?.path;
     const documentUuid = payload?.document?.uuid ?? payload?.document?.documentUuid;
@@ -36832,7 +37141,7 @@ var EasyedaControlEngine = class {
       if (schematicUuid !== documentUuid) {
         throw new Error("Schematic context UUID does not agree with the active document UUID.");
       }
-      if (payload?.schematic?.tabId && payload.schematic.tabId !== tabId) {
+      if (typeof payload.schematic?.tabId === "string" && payload.schematic.tabId.length > 0 && payload.schematic.tabId !== tabId) {
         throw new Error("Schematic context tab does not agree with the active document tab.");
       }
     }
@@ -36841,21 +37150,21 @@ var EasyedaControlEngine = class {
       if (pcbUuid !== documentUuid) {
         throw new Error("PCB context UUID does not agree with the active document UUID.");
       }
-      if (payload?.pcb?.tabId && payload.pcb.tabId !== tabId) {
+      if (typeof payload.pcb?.tabId === "string" && payload.pcb.tabId.length > 0 && payload.pcb.tabId !== tabId) {
         throw new Error("PCB context tab does not agree with the active document tab.");
       }
     }
     return payload;
   }
   async projectContext() {
-    const tool = await this.upstream.findTool("easyeda_execute");
+    const tool = await this.upstream.findTool?.("easyeda_execute");
     if (!tool) throw new Error("The upstream server does not expose easyeda_execute.");
     const result = await this.upstream.callTool(
       "easyeda_execute",
       { code: PROJECT_CONTEXT_PROBE_CODE, timeoutMs: 15e3, confirmWrite: true },
       25e3
     );
-    const payload = extractToolPayload(result);
+    const payload = projectPayload(extractToolPayload(result));
     const projectUuid = payload?.project?.uuid ?? payload?.project?.projectUuid;
     if (typeof projectUuid !== "string" || projectUuid.length === 0 || typeof payload?.project?.path !== "string" || payload.project.path.length === 0) {
       throw new Error("EasyEDA project probe did not prove a UUID and .eprj2 path.");
@@ -36866,7 +37175,7 @@ var EasyedaControlEngine = class {
   async assertProjectContext(expectedProject) {
     const actual = await this.projectContext();
     const expected = structuredClone(expectedProject);
-    delete expected.path;
+    delete expected["path"];
     assertSubset(actual.project, expected, "Active EasyEDA project");
     if (normalizeEasyedaProjectPath(actual.project.path) !== normalizeEasyedaProjectPath(expectedProject.path)) {
       throw new Error("Active EasyEDA project path does not match the expected .eprj2 database.");
@@ -36874,14 +37183,16 @@ var EasyedaControlEngine = class {
     return actual;
   }
   async assertContext(expectedContext, options = {}) {
-    const actual = await this.context();
+    const actual = contextPayload(await this.context());
     const expected = structuredClone(expectedContext);
     if (options.allowTabChange === true) {
-      if (expected?.document) delete expected.document.tabId;
-      if (expected?.pcb) delete expected.pcb.tabId;
-      if (expected?.schematic) delete expected.schematic.tabId;
+      for (const key of ["document", "pcb", "schematic"]) {
+        const document = expected[key];
+        if (isUnknownRecord2(document)) delete document["tabId"];
+      }
     }
-    if (expected?.project) delete expected.project.path;
+    const project = expected["project"];
+    if (isUnknownRecord2(project)) delete project["path"];
     assertSubset(actual, expected, "Active EasyEDA context");
     if (normalizeEasyedaProjectPath(actual.project.path) !== normalizeEasyedaProjectPath(expectedContext.project.path)) {
       throw new Error("Active EasyEDA project path does not match the expected .eprj2 database.");
@@ -36890,7 +37201,8 @@ var EasyedaControlEngine = class {
   }
   async rebindAfterLifecycle(expectedContext, payload, label) {
     const cleanContext = await this.assertContext(expectedContext, { allowTabChange: true });
-    const payloadTabId = payload?.document?.tabId;
+    const payloadDocument = isUnknownRecord2(payload) ? payload["document"] : void 0;
+    const payloadTabId = isUnknownRecord2(payloadDocument) ? payloadDocument["tabId"] : void 0;
     if (typeof payloadTabId !== "string" || payloadTabId.length === 0) {
       throw new Error(`${label} did not report the reopened tabId.`);
     }
@@ -36945,8 +37257,8 @@ var EasyedaControlEngine = class {
       operation.context = reboundContext;
       operation.planHash = buildPlanHash(operation.plan);
       if (acceptedRestartBoundary) {
-        acceptedRestartBoundary.contextReboundAt = now();
-        acceptedRestartBoundary.reboundTabId = reboundContext.document.tabId;
+        acceptedRestartBoundary["contextReboundAt"] = now();
+        acceptedRestartBoundary["reboundTabId"] = reboundContext.document.tabId;
         operation.runtimeRestartBoundary = acceptedRestartBoundary;
       }
       operation.sequence += 1;
@@ -36996,7 +37308,7 @@ var EasyedaControlEngine = class {
         { code: guardedSource, timeoutMs: 6e4, confirmWrite: true },
         7e4
       );
-      const payload = validateExactReadPayload(extractToolPayload(raw), parsed);
+      const payload = proofPayload(validateExactReadPayload(extractToolPayload(raw), parsed));
       await this.assertContext(boundContext);
       return payload;
     };
@@ -37005,7 +37317,7 @@ var EasyedaControlEngine = class {
     const firstHash = sha256Json(first);
     const secondHash = sha256Json(second);
     if (firstHash !== secondHash) {
-      const error51 = new Error(
+      const error51 = annotatedError(
         "Facade-owned exact read changed between two consecutive observations; no stable design proof was produced."
       );
       error51.mismatches = [{ pointer: "/", expected: firstHash, actual: secondHash }];
@@ -37026,12 +37338,12 @@ var EasyedaControlEngine = class {
     };
   }
   async invokeSpec(spec, expectedContext, expectedKind, options = {}) {
-    const { classification, exactRequest, exactComponentMutation } = await this.validateSpec(
+    const { exactRequest, exactComponentMutation } = await this.validateSpec(
       spec,
       expectedKind,
       expectedContext
     );
-    if (exactRequest) {
+    if (exactRequest !== void 0) {
       const payload2 = await this.exactRead(exactRequest, expectedContext, options);
       const assertions2 = assertAssertions(payload2, spec.assertions, spec.toolName);
       return {
@@ -37040,7 +37352,7 @@ var EasyedaControlEngine = class {
         assertions: assertions2
       };
     }
-    if (exactComponentMutation) {
+    if (exactComponentMutation !== void 0) {
       if (!Array.isArray(options.targetChanges) || options.targetChanges.length === 0) {
         throw new Error("Facade-generated component mutation has no journal-bound targetChanges.");
       }
@@ -37080,7 +37392,7 @@ var EasyedaControlEngine = class {
       };
     }
     const activeContext = await this.assertContext(expectedContext, options);
-    let args = structuredClone(spec.arguments ?? {});
+    const args = structuredClone(spec.arguments ?? {});
     let transmittedSourceSha256;
     const expectedProjectUuid = expectedContext.project.uuid ?? expectedContext.project.projectUuid;
     const expectedDocumentUuid = expectedContext.document.uuid ?? expectedContext.document.documentUuid;
@@ -37094,22 +37406,26 @@ var EasyedaControlEngine = class {
         throw new Error(`${spec.toolName} arguments.${key} does not match the proven document UUID.`);
       }
     }
-    if (args.tabId !== void 0 && args.tabId !== activeContext.document.tabId) {
+    if (args["tabId"] !== void 0 && args["tabId"] !== activeContext.document.tabId) {
       throw new Error(`${spec.toolName} arguments.tabId does not match the active proven tab.`);
     }
     if (spec.toolName !== "easyeda_execute" && expectedKind === "mutate-unsaved" && !["projectId", "projectUuid", "documentId", "documentUuid", "schematicUuid", "pcbUuid", "tabId"].some(
       (key) => args[key] !== void 0
-    ) && !ACTIVE_DOCUMENT_WRITE_ALLOWLIST.get(expectedContext.document.documentType)?.has(spec.toolName)) {
+    ) && ACTIVE_DOCUMENT_WRITE_ALLOWLIST.get(expectedContext.document.documentType)?.has(spec.toolName) !== true) {
       throw new Error(
         `${spec.toolName} has no exact project/document target argument and cannot be used for guarded mutation. Add a constrained facade writer instead.`
       );
     }
     if (spec.toolName === "easyeda_execute") {
-      const guarded2 = wrapWithContextGuard(args.code, expectedContext);
-      args.code = guarded2;
+      const code = args["code"];
+      if (typeof code !== "string") {
+        throw new TypeError("easyeda_execute arguments.code must be a string.");
+      }
+      const guarded2 = wrapWithContextGuard(code, expectedContext);
+      args["code"] = guarded2;
       transmittedSourceSha256 = sha256Text(guarded2);
     }
-    const timeoutMs = spec.toolName === "easyeda_execute" ? Math.min(7e4, Number(args.timeoutMs ?? 15e3) + 1e4) : 7e4;
+    const timeoutMs = spec.toolName === "easyeda_execute" ? Math.min(7e4, Number(args["timeoutMs"] ?? 15e3) + 1e4) : 7e4;
     if (expectedKind === "mutate-unsaved" && typeof options.beforeDispatch === "function") {
       await options.beforeDispatch();
     }
@@ -37151,20 +37467,22 @@ var EasyedaControlEngine = class {
       if (expectedKind !== "mutate-unsaved") {
         throw new Error(`${EXACT_COMPONENT_MUTATION_TOOL} can only be used as an unsaved mutation.`);
       }
-      const keys = Object.keys(spec.arguments ?? {}).sort();
-      if (canonicalJson(keys) !== canonicalJson(["state"]) || !["before", "after"].includes(spec.arguments.state)) {
+      const callArguments = spec.arguments ?? {};
+      const keys = Object.keys(callArguments).toSorted();
+      const state = callArguments["state"];
+      if (canonicalJson(keys) !== canonicalJson(["state"]) || state !== "before" && state !== "after") {
         throw new Error(`${EXACT_COMPONENT_MUTATION_TOOL} requires only arguments.state=before|after.`);
       }
-      if ((spec.assertions ?? []).length !== 0) {
+      if ((spec.assertions ?? []).length > 0) {
         throw new Error(`${EXACT_COMPONENT_MUTATION_TOOL} cannot substitute inline assertions for exact phase verification.`);
       }
       return {
         tool: { name: spec.toolName, annotations: { destructiveHint: true } },
         classification: { readOnly: false, write: true, hasConfirmWrite: true, idempotent: true },
-        exactComponentMutation: { state: spec.arguments.state }
+        exactComponentMutation: { state }
       };
     }
-    const tool = await this.upstream.findTool(spec.toolName);
+    const tool = await this.upstream.findTool?.(spec.toolName);
     if (!tool) throw new Error(`Unknown upstream EasyEDA tool: ${spec.toolName}`);
     if (spec.toolName !== "easyeda_execute" && DEDICATED_FACADE_NAME.test(spec.toolName)) {
       throw new Error(
@@ -37186,7 +37504,7 @@ var EasyedaControlEngine = class {
       if (!classification.write) {
         throw new Error(`${spec.toolName} is not classified as a write upstream tool.`);
       }
-      if (!ACTIVE_DOCUMENT_WRITE_ALLOWLIST.get(expectedContext?.document?.documentType)?.has(spec.toolName)) {
+      if (ACTIVE_DOCUMENT_WRITE_ALLOWLIST.get(expectedContext.document.documentType)?.has(spec.toolName) !== true) {
         throw new Error(
           `${spec.toolName} is not a reviewed writer for the plan's active document type. Use the facade-generated exact component mutation supported by this state machine.`
         );
@@ -37214,7 +37532,7 @@ var EasyedaControlEngine = class {
         "A mutation plan must first close/reopen the target without saving to bind its live baseline to the project database. Set confirmDiscardAnyUnsavedState=true only after authorizing discard of any unsaved target-document state."
       );
     }
-    const operations = await listOperations();
+    const operations = asOperationJournals(await listOperations());
     const unfinished = operations.filter((operation2) => !isTerminalOperation(operation2));
     if (unfinished.length > 0) {
       throw new Error(
@@ -37395,7 +37713,7 @@ var EasyedaControlEngine = class {
       operation.nextSafeAction = "Call easyeda_control_apply with this operationId and planHash.";
       operation.updatedAt = now();
       await updateOperation(operation);
-      return operationSummary(operation);
+      return operationSummary2(operation);
     } catch (error51) {
       operation.state = "plan-invalidated";
       operation.mutationState = "none";
@@ -37410,7 +37728,7 @@ var EasyedaControlEngine = class {
   }
   async apply(operationId, planHash) {
     this.requirePrivateComponentWriterEnabled();
-    const operation = await loadOperation(operationId);
+    const operation = asOperationJournal(await loadOperation(operationId));
     if (operation.state !== "preflight-proven") {
       throw new Error(`Operation ${operationId} is in state ${operation.state}, not preflight-proven.`);
     }
@@ -37525,7 +37843,9 @@ var EasyedaControlEngine = class {
             });
             await this.markOrphanedCallRisk(operation, "apply");
           },
-          afterDispatch: async () => await this.clearOrphanedCallRisk(operation, "apply")
+          afterDispatch: async () => {
+            await this.clearOrphanedCallRisk(operation, "apply");
+          }
         }
       );
       let durableVerification;
@@ -37542,8 +37862,8 @@ var EasyedaControlEngine = class {
         durableVerificationError
       });
       operation.artifacts.push(artifact);
-      if (!durableVerification?.ok) {
-        const error51 = new Error(
+      if (durableVerification?.ok !== true) {
+        const error51 = annotatedError(
           "The apply call returned, but the durable database no longer matches the pre-checkpoint; the edit cannot be classified as unsaved."
         );
         error51.journalStateRecorded = true;
@@ -37565,9 +37885,9 @@ var EasyedaControlEngine = class {
       operation.nextSafeAction = "Call easyeda_control_verify. Do not save manually.";
       operation.updatedAt = now();
       await updateOperation(operation);
-      return operationSummary(operation);
+      return operationSummary2(operation);
     } catch (error51) {
-      if (error51?.journalStateRecorded === true) throw error51;
+      if (errorMetadata(error51)?.journalStateRecorded === true) throw error51;
       operation.state = "unknown";
       operation.mutationState = "unknown";
       operation.hardStop = true;
@@ -37581,7 +37901,7 @@ var EasyedaControlEngine = class {
     }
   }
   async verify(operationId) {
-    const operation = await loadOperation(operationId);
+    const operation = asOperationJournal(await loadOperation(operationId));
     if (operation.state !== "applied-unsaved") {
       throw new Error(`Operation ${operationId} is in state ${operation.state}, not applied-unsaved.`);
     }
@@ -37620,8 +37940,8 @@ var EasyedaControlEngine = class {
         durableVerificationError
       });
       operation.artifacts.push(artifact);
-      if (!durableVerification?.ok) {
-        const error51 = new Error(
+      if (durableVerification?.ok !== true) {
+        const error51 = annotatedError(
           "Live assertions passed, but the durable database no longer matches the pre-checkpoint; live state cannot be classified as verified-unsaved."
         );
         error51.journalStateRecorded = true;
@@ -37641,9 +37961,9 @@ var EasyedaControlEngine = class {
       operation.nextSafeAction = "Call easyeda_control_save_reopen to persist, or easyeda_control_rollback to cancel after a fresh desired-state and durable-baseline proof.";
       operation.updatedAt = now();
       await updateOperation(operation);
-      return operationSummary(operation);
+      return operationSummary2(operation);
     } catch (error51) {
-      if (error51?.journalStateRecorded === true) throw error51;
+      if (errorMetadata(error51)?.journalStateRecorded === true) throw error51;
       operation.state = "verification-failed";
       operation.hardStop = true;
       operation.nextSafeAction = "Do not save. Call easyeda_control_rollback, or inspect before choosing recovery.";
@@ -37655,7 +37975,7 @@ var EasyedaControlEngine = class {
   }
   async rollback(operationId, planHash) {
     this.requirePrivateComponentWriterEnabled();
-    const operation = await loadOperation(operationId);
+    const operation = asOperationJournal(await loadOperation(operationId));
     if (!["applied-unsaved", "verification-failed", "live-verified"].includes(operation.state)) {
       throw new Error(
         `Operation ${operationId} cannot roll back safely from state ${operation.state}. Reconcile unknown state first.`
@@ -37698,7 +38018,7 @@ var EasyedaControlEngine = class {
                 "Rollback pre-dispatch desired-state proof"
               );
             } catch (cause) {
-              const error51 = new Error(
+              const error51 = annotatedError(
                 "Rollback was not dispatched because fresh exact readback could not prove the complete intended unsaved state.",
                 { cause }
               );
@@ -37743,7 +38063,9 @@ var EasyedaControlEngine = class {
             });
             await this.markOrphanedCallRisk(operation, "rollback");
           },
-          afterDispatch: async () => await this.clearOrphanedCallRisk(operation, "rollback")
+          afterDispatch: async () => {
+            await this.clearOrphanedCallRisk(operation, "rollback");
+          }
         }
       );
       const baseline = await this.runSpecs(
@@ -37780,9 +38102,9 @@ var EasyedaControlEngine = class {
       operation.nextSafeAction = "Operation ended without saving. Review the journal before replanning.";
       operation.updatedAt = now();
       await updateOperation(operation);
-      return operationSummary(operation);
+      return operationSummary2(operation);
     } catch (error51) {
-      if (error51?.journalStateRecorded === true) throw error51;
+      if (errorMetadata(error51)?.journalStateRecorded === true) throw error51;
       operation.state = "rollback-failed";
       operation.mutationState = "unknown";
       operation.hardStop = true;
@@ -37796,7 +38118,7 @@ var EasyedaControlEngine = class {
   }
   async saveReopen(operationId, planHash, options = {}) {
     this.requirePrivateComponentWriterEnabled();
-    const operation = await loadOperation(operationId);
+    const operation = asOperationJournal(await loadOperation(operationId));
     if (operation.planHash !== planHash) throw new Error("planHash does not match the journal.");
     if (![
       "live-verified",
@@ -37857,8 +38179,8 @@ var EasyedaControlEngine = class {
         } catch (error51) {
           preSaveDurableError = serializeError(error51);
         }
-        if (!preSaveDurableVerification?.ok) {
-          const error51 = new Error(
+        if (preSaveDurableVerification?.ok !== true) {
+          const error51 = annotatedError(
             "The durable project changed while the immediate pre-save verifier was running."
           );
           error51.durableBaselineFailure = true;
@@ -37884,11 +38206,11 @@ var EasyedaControlEngine = class {
         operation.updatedAt = now();
         await updateOperation(operation);
       } catch (error51) {
-        operation.state = error51?.durableBaselineFailure ? "durable-baseline-drift" : "pre-save-verification-failed";
-        operation.mutationState = error51?.durableBaselineFailure ? "unknown" : "applied-unsaved";
+        operation.state = errorMetadata(error51)?.durableBaselineFailure === true ? "durable-baseline-drift" : "pre-save-verification-failed";
+        operation.mutationState = errorMetadata(error51)?.durableBaselineFailure === true ? "unknown" : "applied-unsaved";
         operation.hardStop = true;
         operation.mutationMayHaveOccurred = true;
-        operation.nextSafeAction = error51?.durableBaselineFailure ? "Do not save. The live edit and durable project no longer share the proven baseline; inspect before recovery." : "Do not save. Live state changed after verification; inspect it and use recovery to prove either the baseline or intended unsaved state.";
+        operation.nextSafeAction = errorMetadata(error51)?.durableBaselineFailure === true ? "Do not save. The live edit and durable project no longer share the proven baseline; inspect before recovery." : "Do not save. Live state changed after verification; inspect it and use recovery to prove either the baseline or intended unsaved state.";
         operation.lastError = preSaveDurableError ?? serializeError(error51);
         operation.updatedAt = now();
         await updateOperation(operation);
@@ -37935,7 +38257,7 @@ var EasyedaControlEngine = class {
         operation.updatedAt = now();
         await updateOperation(operation);
       } catch (error51) {
-        if (error51?.journalStateRecorded === true) throw error51;
+        if (errorMetadata(error51)?.journalStateRecorded === true) throw error51;
         operation.state = "unknown";
         operation.mutationState = "unknown";
         operation.saved = false;
@@ -37987,8 +38309,8 @@ var EasyedaControlEngine = class {
           }
         );
         operation.artifacts.push(artifact);
-        if (!persistenceVerification?.checkpointMatchesReceipt || persistenceVerification.sourceEqualsCheckpoint !== false) {
-          const error51 = new Error(
+        if (persistenceVerification?.checkpointMatchesReceipt !== true || persistenceVerification.sourceEqualsCheckpoint) {
+          const error51 = annotatedError(
             "Reopened assertions passed, but logical persistence relative to the intact pre-checkpoint was not proved."
           );
           error51.persistenceProofFailure = true;
@@ -37998,9 +38320,9 @@ var EasyedaControlEngine = class {
         operation.updatedAt = now();
         await updateOperation(operation);
       } catch (error51) {
-        operation.state = error51?.persistenceProofFailure ? "persistence-verification-failed" : "reopen-verification-failed";
+        operation.state = errorMetadata(error51)?.persistenceProofFailure === true ? "persistence-verification-failed" : "reopen-verification-failed";
         operation.hardStop = true;
-        operation.nextSafeAction = error51?.persistenceProofFailure ? "The document was saved and reopened, but a logical database change from the intact pre-checkpoint was not proved. Stop and inspect the persisted project." : "The document was saved but reopened state failed verification. Stop and inspect the persisted project.";
+        operation.nextSafeAction = errorMetadata(error51)?.persistenceProofFailure === true ? "The document was saved and reopened, but a logical database change from the intact pre-checkpoint was not proved. Stop and inspect the persisted project." : "The document was saved but reopened state failed verification. Stop and inspect the persisted project.";
         operation.lastError = persistenceVerificationError ?? serializeError(error51);
         operation.updatedAt = now();
         await updateOperation(operation);
@@ -38102,7 +38424,7 @@ var EasyedaControlEngine = class {
       const persistenceVerification = await verifyCheckpoint(
         operation.preCheckpoint.receiptPath
       );
-      if (!persistenceVerification.checkpointMatchesReceipt || persistenceVerification.sourceEqualsCheckpoint !== false) {
+      if (!persistenceVerification.checkpointMatchesReceipt || persistenceVerification.sourceEqualsCheckpoint) {
         throw new Error(
           "Final verification did not prove a logical database change from the intact pre-checkpoint."
         );
@@ -38139,7 +38461,7 @@ var EasyedaControlEngine = class {
       operation.nextSafeAction = "Operation completed. Preserve its journal and checkpoint receipts.";
       operation.updatedAt = now();
       await updateOperation(operation);
-      return operationSummary(operation);
+      return operationSummary2(operation);
     } catch (error51) {
       operation.state = "final-checkpoint-failed";
       operation.hardStop = true;
@@ -38151,12 +38473,12 @@ var EasyedaControlEngine = class {
     }
   }
   async recover(operationId, resolution, options = {}) {
-    if (!operationId) {
-      return (await listOperations()).filter((operation2) => !isTerminalOperation(operation2)).map(operationSummary);
+    if (operationId === void 0 || operationId.length === 0) {
+      return asOperationJournals(await listOperations()).filter((operation2) => !isTerminalOperation(operation2)).map((operation2) => operationSummary2(operation2));
     }
     await this.assertRecoveryOperationIsolated(operationId);
-    const operation = await loadOperation(operationId);
-    if (isTerminalOperation(operation)) return operationSummary(operation);
+    const operation = asOperationJournal(await loadOperation(operationId));
+    if (isTerminalOperation(operation)) return operationSummary2(operation);
     const recoveryStartState = operation.recoveryActivationResumeState ?? operation.state;
     const recoveryStartUnknownPhase = operation.recoveryActivationPriorUnknownPhase === null ? void 0 : operation.recoveryActivationPriorUnknownPhase ?? operation.unknownPhase;
     const baselinePreparationStates = /* @__PURE__ */ new Set([
@@ -38211,8 +38533,8 @@ var EasyedaControlEngine = class {
         "unknown"
       ])
     };
+    if (!resolution) throw new Error("A supported recovery resolution is required.");
     const allowed = allowedStates[resolution];
-    if (!allowed) throw new Error("A supported recovery resolution is required.");
     if (!allowed.has(recoveryStartState)) {
       throw new Error(
         `Resolution ${resolution} is not legal from operation state ${recoveryStartState}.`
@@ -38226,7 +38548,7 @@ var EasyedaControlEngine = class {
     if (operationHasOrphanedCallRisk(operation)) {
       const requiredConfirmation = await this.ensureRuntimeRestartChallenge(operation);
       if (options.runtimeRestartConfirmation !== requiredConfirmation) {
-        const error51 = new Error(
+        const error51 = annotatedError(
           "Recovery is blocked because a timed-out or disconnected EasyEDA call may still be running. A person must deliberately terminate EasyEDA Pro, restart it, reconnect the bridge, and provide the current nonce-bound runtimeRestartChallenge from the incomplete-operation summary as runtimeRestartConfirmation. If EasyEDA prompts about unsaved changes, never choose Save; discard or force-quit only with explicit authority and a still-valid clean-baseline/no-concurrent-edit assumption, otherwise cancel and preserve the session for manual review."
         );
         error51.requiredRuntimeRestartConfirmation = requiredConfirmation;
@@ -38396,7 +38718,7 @@ var EasyedaControlEngine = class {
         aggregateAssertions
       };
     } else if (resolution === "reconciled-saved-reopened") {
-      if (!preCheckpointVerification.checkpointMatchesReceipt || preCheckpointVerification.sourceEqualsCheckpoint !== false) {
+      if (!preCheckpointVerification.checkpointMatchesReceipt || preCheckpointVerification.sourceEqualsCheckpoint) {
         throw new Error(
           "Saved recovery requires an intact pre-checkpoint and a demonstrably changed live project database."
         );
@@ -38415,7 +38737,7 @@ var EasyedaControlEngine = class {
       operation.mutationState = "unknown";
       operation.hardStop = true;
       operation.mutationMayHaveOccurred = true;
-      operation.recoveryAttemptCount = Number(operation.recoveryAttemptCount ?? 0) + 1;
+      operation.recoveryAttemptCount = (operation.recoveryAttemptCount ?? 0) + 1;
       operation.recoverySourceSha256 = sourceSha256;
       operation.nextSafeAction = "Wait for the destructive reopen-only recovery. Never repeat it after a timeout without a fresh reconciliation.";
       operation.updatedAt = now();
@@ -38503,7 +38825,7 @@ var EasyedaControlEngine = class {
         const persistenceVerification = await verifyCheckpoint(
           operation.preCheckpoint.receiptPath
         );
-        if (!persistenceVerification.checkpointMatchesReceipt || persistenceVerification.sourceEqualsCheckpoint !== false) {
+        if (!persistenceVerification.checkpointMatchesReceipt || persistenceVerification.sourceEqualsCheckpoint) {
           throw new Error(
             "Recovered reopened assertions passed, but logical persistence relative to the intact pre-checkpoint was not proved."
           );
@@ -38555,44 +38877,67 @@ var EasyedaControlEngine = class {
     operation.nextSafeAction = operation.state === "live-verified" ? "Call easyeda_control_save_reopen." : "Recovery is complete. Review the journal before planning another mutation.";
     operation.updatedAt = now();
     await updateOperation(operation);
-    return operationSummary(operation);
+    return operationSummary2(operation);
   }
-  async checkpoint(args) {
-    if (args.receiptPath) return await verifyCheckpoint(args.receiptPath);
-    return await createCheckpoint(args);
+  checkpoint(args) {
+    if (args.receiptPath !== void 0 && args.receiptPath.length > 0) {
+      return verifyCheckpoint(args.receiptPath);
+    }
+    const { source, outputDir, label } = args;
+    if (typeof source !== "string" || source.length === 0 || typeof outputDir !== "string" || outputDir.length === 0 || typeof label !== "string" || label.length === 0) {
+      throw new TypeError("Checkpoint creation requires nonempty source, outputDir, and label.");
+    }
+    return createCheckpoint({ source, outputDir, label });
   }
 };
 
-// server/src/lease.mjs
+// server/src/lease.ts
 import { randomUUID as randomUUID3 } from "node:crypto";
 import { readFileSync as readFileSync2, unlinkSync } from "node:fs";
 import { lstat as lstat2, mkdir as mkdir3, open as open3, readFile as readFile3, realpath as realpath2, unlink as unlink3 } from "node:fs/promises";
 import { join as join4, resolve as resolve4 } from "node:path";
 import process5 from "node:process";
+function isRecord2(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function errorCode(error51) {
+  return isRecord2(error51) && typeof error51["code"] === "string" ? error51["code"] : void 0;
+}
 function pidIsAlive(pid) {
   if (!Number.isInteger(pid) || pid <= 0) return false;
   try {
     process5.kill(pid, 0);
     return true;
   } catch (error51) {
-    return error51?.code === "EPERM";
+    return errorCode(error51) === "EPERM";
   }
 }
 async function parseLease(path) {
   const value = JSON.parse(await readFile3(path, "utf8"));
-  if (value?.schema !== "easyeda-pro-control.facade-lease.v1" || !Number.isInteger(value.pid) || typeof value.token !== "string" || value.token.length < 16) {
+  if (!isRecord2(value) || value["schema"] !== "easyeda-pro-control.facade-lease.v1" || typeof value["pid"] !== "number" || !Number.isInteger(value["pid"]) || typeof value["token"] !== "string" || value["token"].length < 16) {
     throw new Error("The EasyEDA facade lease is corrupt; refusing to remove it automatically.");
   }
-  return value;
+  return {
+    schema: "easyeda-pro-control.facade-lease.v1",
+    token: value["token"],
+    pid: value["pid"],
+    startedAt: value["startedAt"]
+  };
 }
 async function parseCleanupLease(path) {
   const value = JSON.parse(await readFile3(path, "utf8"));
-  if (value?.schema !== "easyeda-pro-control.facade-lease-cleanup.v1" || !Number.isInteger(value.pid) || typeof value.token !== "string" || value.token.length < 16 || typeof value.staleToken !== "string" || value.staleToken.length < 16) {
+  if (!isRecord2(value) || value["schema"] !== "easyeda-pro-control.facade-lease-cleanup.v1" || typeof value["pid"] !== "number" || !Number.isInteger(value["pid"]) || typeof value["token"] !== "string" || value["token"].length < 16 || typeof value["staleToken"] !== "string" || value["staleToken"].length < 16) {
     throw new Error(
       "The EasyEDA facade cleanup lease is corrupt; refusing to remove it automatically."
     );
   }
-  return value;
+  return {
+    schema: "easyeda-pro-control.facade-lease-cleanup.v1",
+    token: value["token"],
+    pid: value["pid"],
+    staleToken: value["staleToken"],
+    startedAt: value["startedAt"]
+  };
 }
 async function acquireCleanupLease(cleanupPath, staleToken) {
   const token = randomUUID3();
@@ -38612,35 +38957,49 @@ async function acquireCleanupLease(cleanupPath, staleToken) {
       await handle.close();
       return record2;
     } catch (error51) {
-      await handle?.close().catch(() => void 0);
-      if (error51?.code !== "EEXIST") throw error51;
+      await handle?.close().catch(() => {
+      });
+      if (errorCode(error51) !== "EEXIST") throw error51;
       let existing;
       try {
         existing = await parseCleanupLease(cleanupPath);
       } catch (parseError) {
-        if (parseError?.code === "ENOENT") continue;
+        if (errorCode(parseError) === "ENOENT") continue;
         throw parseError;
       }
       if (pidIsAlive(existing.pid)) {
         throw new Error(
-          `Another process is reconciling the stale EasyEDA facade lease (pid ${existing.pid}).`
+          `Another process is reconciling the stale EasyEDA facade lease (pid ${existing.pid}).`,
+          { cause: error51 }
         );
       }
       let current;
       try {
         current = await parseCleanupLease(cleanupPath);
       } catch (readError) {
-        if (readError?.code === "ENOENT") continue;
+        if (errorCode(readError) === "ENOENT") continue;
         throw readError;
       }
       if (current.token === existing.token && current.pid === existing.pid) {
         await unlink3(cleanupPath).catch((unlinkError) => {
-          if (unlinkError?.code !== "ENOENT") throw unlinkError;
+          if (errorCode(unlinkError) !== "ENOENT") throw unlinkError;
         });
       }
     }
   }
   throw new Error("Could not acquire the stale EasyEDA facade cleanup lease safely.");
+}
+async function releaseCleanupLease(cleanupPath, cleanupLease) {
+  let currentCleanup;
+  try {
+    currentCleanup = await parseCleanupLease(cleanupPath);
+  } catch (error51) {
+    if (errorCode(error51) === "ENOENT") return;
+    throw error51;
+  }
+  if (currentCleanup.token === cleanupLease.token && currentCleanup.pid === cleanupLease.pid) {
+    await unlink3(cleanupPath);
+  }
 }
 async function acquireFacadeLease(controlRoot) {
   const root = resolve4(controlRoot);
@@ -38670,13 +39029,15 @@ async function acquireFacadeLease(controlRoot) {
       handle = void 0;
       break;
     } catch (error51) {
-      await handle?.close().catch(() => void 0);
+      await handle?.close().catch(() => {
+      });
       handle = void 0;
-      if (error51?.code !== "EEXIST" || attempt > 0) throw error51;
+      if (errorCode(error51) !== "EEXIST" || attempt > 0) throw error51;
       const existing = await parseLease(path);
       if (pidIsAlive(existing.pid)) {
         throw new Error(
-          `Another EasyEDA control facade owns ${path} (pid ${existing.pid}). Reuse that MCP connection or close it first.`
+          `Another EasyEDA control facade owns ${path} (pid ${existing.pid}). Reuse that MCP connection or close it first.`,
+          { cause: error51 }
         );
       }
       const cleanupPath = `${path}.cleanup`;
@@ -38684,28 +39045,31 @@ async function acquireFacadeLease(controlRoot) {
       try {
         const current = await parseLease(path);
         if (current.token !== existing.token || current.pid !== existing.pid) {
-          throw new Error("EasyEDA facade lease changed during stale-owner reconciliation.");
+          throw new Error("EasyEDA facade lease changed during stale-owner reconciliation.", { cause: error51 });
         }
         await unlink3(path);
-      } finally {
+      } catch (reconciliationError) {
         try {
-          const currentCleanup = await parseCleanupLease(cleanupPath);
-          if (currentCleanup.token === cleanupLease.token && currentCleanup.pid === cleanupLease.pid) {
-            await unlink3(cleanupPath);
-          }
+          await releaseCleanupLease(cleanupPath, cleanupLease);
         } catch (cleanupError) {
-          if (cleanupError?.code !== "ENOENT") throw cleanupError;
+          throw new AggregateError(
+            [reconciliationError, cleanupError],
+            "EasyEDA facade lease reconciliation and cleanup both failed.",
+            { cause: cleanupError }
+          );
         }
+        throw reconciliationError;
       }
+      await releaseCleanupLease(cleanupPath, cleanupLease);
     }
   }
-  const ownsLease = (value) => value?.token === token && value?.pid === process5.pid;
+  const ownsLease = (value) => isRecord2(value) && value["token"] === token && value["pid"] === process5.pid;
   const release = async () => {
     let existing;
     try {
       existing = await parseLease(path);
     } catch (error51) {
-      if (error51?.code === "ENOENT") return;
+      if (errorCode(error51) === "ENOENT") return;
       throw error51;
     }
     if (!ownsLease(existing)) {
@@ -39015,8 +39379,8 @@ var Client = class extends Protocol {
       const wrappedHandler = async (request, extra) => {
         const validatedRequest = safeParse2(ElicitRequestSchema, request);
         if (!validatedRequest.success) {
-          const errorMessage = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid elicitation request: ${errorMessage}`);
+          const errorMessage2 = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid elicitation request: ${errorMessage2}`);
         }
         const { params } = validatedRequest.data;
         params.mode = params.mode ?? "form";
@@ -39031,15 +39395,15 @@ var Client = class extends Protocol {
         if (params.task) {
           const taskValidationResult = safeParse2(CreateTaskResultSchema, result);
           if (!taskValidationResult.success) {
-            const errorMessage = taskValidationResult.error instanceof Error ? taskValidationResult.error.message : String(taskValidationResult.error);
-            throw new McpError(ErrorCode.InvalidParams, `Invalid task creation result: ${errorMessage}`);
+            const errorMessage2 = taskValidationResult.error instanceof Error ? taskValidationResult.error.message : String(taskValidationResult.error);
+            throw new McpError(ErrorCode.InvalidParams, `Invalid task creation result: ${errorMessage2}`);
           }
           return taskValidationResult.data;
         }
         const validationResult = safeParse2(ElicitResultSchema, result);
         if (!validationResult.success) {
-          const errorMessage = validationResult.error instanceof Error ? validationResult.error.message : String(validationResult.error);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid elicitation result: ${errorMessage}`);
+          const errorMessage2 = validationResult.error instanceof Error ? validationResult.error.message : String(validationResult.error);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid elicitation result: ${errorMessage2}`);
         }
         const validatedResult = validationResult.data;
         const requestedSchema = params.mode === "form" ? params.requestedSchema : void 0;
@@ -39059,16 +39423,16 @@ var Client = class extends Protocol {
       const wrappedHandler = async (request, extra) => {
         const validatedRequest = safeParse2(CreateMessageRequestSchema, request);
         if (!validatedRequest.success) {
-          const errorMessage = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid sampling request: ${errorMessage}`);
+          const errorMessage2 = validatedRequest.error instanceof Error ? validatedRequest.error.message : String(validatedRequest.error);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid sampling request: ${errorMessage2}`);
         }
         const { params } = validatedRequest.data;
         const result = await Promise.resolve(handler(request, extra));
         if (params.task) {
           const taskValidationResult = safeParse2(CreateTaskResultSchema, result);
           if (!taskValidationResult.success) {
-            const errorMessage = taskValidationResult.error instanceof Error ? taskValidationResult.error.message : String(taskValidationResult.error);
-            throw new McpError(ErrorCode.InvalidParams, `Invalid task creation result: ${errorMessage}`);
+            const errorMessage2 = taskValidationResult.error instanceof Error ? taskValidationResult.error.message : String(taskValidationResult.error);
+            throw new McpError(ErrorCode.InvalidParams, `Invalid task creation result: ${errorMessage2}`);
           }
           return taskValidationResult.data;
         }
@@ -39076,8 +39440,8 @@ var Client = class extends Protocol {
         const resultSchema = hasTools ? CreateMessageResultWithToolsSchema : CreateMessageResultSchema;
         const validationResult = safeParse2(resultSchema, result);
         if (!validationResult.success) {
-          const errorMessage = validationResult.error instanceof Error ? validationResult.error.message : String(validationResult.error);
-          throw new McpError(ErrorCode.InvalidParams, `Invalid sampling result: ${errorMessage}`);
+          const errorMessage2 = validationResult.error instanceof Error ? validationResult.error.message : String(validationResult.error);
+          throw new McpError(ErrorCode.InvalidParams, `Invalid sampling result: ${errorMessage2}`);
         }
         return validationResult.data;
       };
@@ -39565,17 +39929,26 @@ var StdioClientTransport = class {
   }
 };
 
-// server/src/upstream.mjs
+// server/src/upstream.ts
 import { createHash as createHash4 } from "node:crypto";
 import { createReadStream as createReadStream2 } from "node:fs";
-import { readdir as readdir2, stat as stat3 } from "node:fs/promises";
-import { dirname as dirname4, isAbsolute as isAbsolute3, join as join5, relative as relative3, resolve as resolve5 } from "node:path";
+import { readdir as readdir2, stat as stat2 } from "node:fs/promises";
+import { dirname as dirname2, isAbsolute as isAbsolute3, join as join5, relative as relative3, resolve as resolve5 } from "node:path";
 import process7 from "node:process";
+function isRecord3(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function errorCode2(error51) {
+  return isRecord3(error51) && typeof error51["code"] === "string" ? error51["code"] : void 0;
+}
+function isStringArray3(value) {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
 function parseArgs() {
-  const raw = process7.env.EASYEDA_UPSTREAM_ARGS_JSON;
-  if (raw) {
+  const raw = process7.env["EASYEDA_UPSTREAM_ARGS_JSON"];
+  if (raw !== void 0 && raw.length > 0) {
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.some((value) => typeof value !== "string")) {
+    if (!isStringArray3(parsed)) {
       throw new Error("EASYEDA_UPSTREAM_ARGS_JSON must be a JSON array of strings.");
     }
     return parsed;
@@ -39583,35 +39956,44 @@ function parseArgs() {
   return ["-y", "easyeda-mcp-pro@1.0.0-rc.1"];
 }
 function upstreamEnvironment() {
-  const controlRoot = process7.env.EASYEDA_CONTROL_DATA_DIR || `${process7.env.HOME || "/tmp"}/.easyeda-pro-control`;
+  const inheritedEnvironment = Object.fromEntries(
+    Object.entries(process7.env).filter((entry) => entry[1] !== void 0)
+  );
+  const controlRoot = process7.env["EASYEDA_CONTROL_DATA_DIR"] ?? `${process7.env["HOME"] ?? "/tmp"}/.easyeda-pro-control`;
   return {
-    ...process7.env,
+    ...inheritedEnvironment,
     TRANSPORT: "stdio",
-    TOOL_PROFILE: process7.env.EASYEDA_TOOL_PROFILE ?? "dev",
-    BRIDGE_HOST: process7.env.EASYEDA_BRIDGE_HOST ?? "127.0.0.1",
-    BRIDGE_PORT: process7.env.EASYEDA_BRIDGE_PORT ?? "49621",
-    BRIDGE_PORT_SCAN: process7.env.EASYEDA_BRIDGE_PORT_SCAN ?? "49621",
-    BRIDGE_MAX_PAYLOAD_SIZE: process7.env.EASYEDA_BRIDGE_MAX_PAYLOAD_SIZE ?? "10485760",
-    BRIDGE_RAW_EXEC_ENABLED: process7.env.EASYEDA_RAW_EXEC_ENABLED ?? "true",
-    MCP_RAW_EXEC_EXPERIMENTAL: process7.env.EASYEDA_RAW_EXEC_EXPERIMENTAL ?? "true",
+    TOOL_PROFILE: process7.env["EASYEDA_TOOL_PROFILE"] ?? "dev",
+    BRIDGE_HOST: process7.env["EASYEDA_BRIDGE_HOST"] ?? "127.0.0.1",
+    BRIDGE_PORT: process7.env["EASYEDA_BRIDGE_PORT"] ?? "49621",
+    BRIDGE_PORT_SCAN: process7.env["EASYEDA_BRIDGE_PORT_SCAN"] ?? "49621",
+    BRIDGE_MAX_PAYLOAD_SIZE: process7.env["EASYEDA_BRIDGE_MAX_PAYLOAD_SIZE"] ?? "10485760",
+    BRIDGE_RAW_EXEC_ENABLED: process7.env["EASYEDA_RAW_EXEC_ENABLED"] ?? "true",
+    MCP_RAW_EXEC_EXPERIMENTAL: process7.env["EASYEDA_RAW_EXEC_EXPERIMENTAL"] ?? "true",
     BRIDGE_HOT_SWAP_ENABLED: "false",
-    LOG_LEVEL: process7.env.EASYEDA_UPSTREAM_LOG_LEVEL ?? "warn",
-    DATA_DIR: process7.env.EASYEDA_UPSTREAM_DATA_DIR ?? `${controlRoot}/upstream`
+    LOG_LEVEL: process7.env["EASYEDA_UPSTREAM_LOG_LEVEL"] ?? "warn",
+    DATA_DIR: process7.env["EASYEDA_UPSTREAM_DATA_DIR"] ?? `${controlRoot}/upstream`
   };
 }
 async function sha256File2(path) {
   const hash2 = createHash4("sha256");
-  for await (const chunk of createReadStream2(path)) hash2.update(chunk);
+  const source = createReadStream2(path);
+  for await (const chunk of source) {
+    if (typeof chunk !== "string" && !Buffer.isBuffer(chunk)) {
+      throw new TypeError("File hashing received a non-binary stream chunk.");
+    }
+    hash2.update(chunk);
+  }
   return hash2.digest("hex");
 }
 async function treeSha256(root) {
   const files = [];
   const visit = async (directory) => {
     const entries = await readdir2(directory, { withFileTypes: true });
-    for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const entry of entries.toSorted((a, b) => a.name.localeCompare(b.name))) {
       const path = join5(directory, entry.name);
       if (entry.isDirectory()) await visit(path);
-      else if (entry.isFile() && /\.(c?m?js|json)$/i.test(entry.name)) files.push(path);
+      else if (entry.isFile() && /\.(c?m?js|json)$/iu.test(entry.name)) files.push(path);
     }
   };
   await visit(root);
@@ -39625,7 +40007,7 @@ async function treeSha256(root) {
   return { root, fileCount: files.length, sha256: hash2.digest("hex") };
 }
 function upstreamCommand() {
-  return process7.env.EASYEDA_UPSTREAM_COMMAND ?? "/root/.nvm/versions/node/v24.18.0/bin/npx";
+  return process7.env["EASYEDA_UPSTREAM_COMMAND"] ?? "/root/.nvm/versions/node/v24.18.0/bin/npx";
 }
 async function dependencyLockFingerprint(cwd) {
   const candidates = [
@@ -39637,34 +40019,40 @@ async function dependencyLockFingerprint(cwd) {
   for (const [type, name] of candidates) {
     const path = join5(cwd, name);
     try {
-      const info = await stat3(path);
+      const info = await stat2(path);
       if (info.isFile()) {
         return { type, path, sha256: await sha256File2(path) };
       }
     } catch (error51) {
-      if (error51?.code !== "ENOENT") throw error51;
+      if (errorCode2(error51) !== "ENOENT") throw error51;
     }
   }
   throw new Error("The upstream dependency lockfile is unavailable.");
 }
 function requireVersionSegment(value, label) {
-  const version2 = String(value ?? "");
-  if (!/^[a-z0-9][a-z0-9._-]{2,80}$/i.test(version2)) {
+  if (typeof value !== "string" || !/^[a-z0-9][a-z0-9._-]{2,80}$/iu.test(value)) {
     throw new Error(`${label} must be configured as a filename-safe installed version.`);
   }
-  return version2;
+  return value;
 }
 function stableValue(value) {
   if (value === null || typeof value !== "object") return value;
-  if (Array.isArray(value)) return value.map(stableValue);
+  if (Array.isArray(value)) return value.map((item) => stableValue(item));
+  if (!isRecord3(value)) return value;
   return Object.fromEntries(
-    Object.keys(value).sort().map((key) => [key, stableValue(value[key])])
+    Object.keys(value).toSorted().map((key) => [key, stableValue(value[key])])
   );
 }
 function fingerprintSha256(value) {
   return createHash4("sha256").update(JSON.stringify(stableValue(value))).digest("hex");
 }
 var UpstreamEasyedaClient = class {
+  client;
+  transport;
+  connectPromise;
+  tools;
+  stderr;
+  startupLauncherFingerprint;
   constructor() {
     this.client = null;
     this.transport = null;
@@ -39687,13 +40075,15 @@ var UpstreamEasyedaClient = class {
     const command = upstreamCommand();
     const startupLauncherFingerprint = await this.launcherFingerprint();
     this.startupLauncherFingerprint = startupLauncherFingerprint;
-    const transport2 = new StdioClientTransport({
+    const upstreamCwd = process7.env["EASYEDA_UPSTREAM_CWD"];
+    const serverParameters = {
       command,
       args: parseArgs(),
-      cwd: process7.env.EASYEDA_UPSTREAM_CWD || void 0,
       env: upstreamEnvironment(),
-      stderr: "pipe"
-    });
+      stderr: "pipe",
+      ...upstreamCwd !== void 0 && upstreamCwd.length > 0 ? { cwd: upstreamCwd } : {}
+    };
+    const transport2 = new StdioClientTransport(serverParameters);
     transport2.stderr?.on("data", (chunk) => {
       this.stderr = `${this.stderr}${String(chunk)}`.slice(-32768);
     });
@@ -39704,7 +40094,8 @@ var UpstreamEasyedaClient = class {
     try {
       await client.connect(transport2);
     } catch (error51) {
-      await transport2.close().catch(() => void 0);
+      await transport2.close().catch(() => {
+      });
       this.startupLauncherFingerprint = null;
       throw error51;
     }
@@ -39725,11 +40116,12 @@ var UpstreamEasyedaClient = class {
   }
   async callTool(name, args, timeoutMs = 7e4) {
     const client = await this.connect();
-    return await client.callTool(
+    const result = await client.callTool(
       { name, arguments: args ?? {} },
-      void 0,
+      CallToolResultSchema,
       { timeout: timeoutMs, maxTotalTimeout: timeoutMs }
     );
+    return CallToolResultSchema.parse(result);
   }
   serverInfo() {
     return this.client?.getServerVersion?.() ?? void 0;
@@ -39743,21 +40135,24 @@ var UpstreamEasyedaClient = class {
       throw new Error("EASYEDA_UPSTREAM_COMMAND must be absolute for a reproducible launcher hash.");
     }
     const commandPath = resolve5(command);
-    const commandInfo = await stat3(commandPath);
+    const commandInfo = await stat2(commandPath);
     if (!commandInfo.isFile()) throw new Error("The upstream command is not a regular file.");
     const args = parseArgs();
     const entrypoint = args.find((argument) => isAbsolute3(argument));
-    if (!entrypoint) {
+    if (entrypoint === void 0) {
       throw new Error(
         "EASYEDA_UPSTREAM_ARGS_JSON must contain an absolute server entrypoint for a reproducible hash."
       );
     }
     const entrypointPath = resolve5(entrypoint);
-    const entrypointInfo = await stat3(entrypointPath);
+    const entrypointInfo = await stat2(entrypointPath);
     if (!entrypointInfo.isFile()) throw new Error("The upstream server entrypoint is not a regular file.");
-    const implementationTree = await treeSha256(dirname4(entrypointPath));
-    const cwd = process7.env.EASYEDA_UPSTREAM_CWD ? resolve5(process7.env.EASYEDA_UPSTREAM_CWD) : void 0;
-    if (!cwd) throw new Error("EASYEDA_UPSTREAM_CWD is required for a reproducible package lock hash.");
+    const implementationTree = await treeSha256(dirname2(entrypointPath));
+    const configuredCwd = process7.env["EASYEDA_UPSTREAM_CWD"];
+    const cwd = configuredCwd !== void 0 && configuredCwd.length > 0 ? resolve5(configuredCwd) : void 0;
+    if (cwd === void 0) {
+      throw new Error("EASYEDA_UPSTREAM_CWD is required for a reproducible package lock hash.");
+    }
     const dependencyLock = await dependencyLockFingerprint(cwd);
     return {
       command: commandPath,
@@ -39774,6 +40169,9 @@ var UpstreamEasyedaClient = class {
     if (!this.startupLauncherFingerprint) await this.connect();
     const current = await this.launcherFingerprint();
     const startup = this.startupLauncherFingerprint;
+    if (!startup) {
+      throw new Error("The connected upstream has no startup launcher fingerprint.");
+    }
     const startupSha256 = fingerprintSha256(startup);
     const currentSha256 = fingerprintSha256(current);
     return {
@@ -39786,14 +40184,14 @@ var UpstreamEasyedaClient = class {
   }
   async installedEasyedaBundles() {
     const assetsRoot = resolve5(
-      process7.env.EASYEDA_ASSETS_ROOT ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets"
+      process7.env["EASYEDA_ASSETS_ROOT"] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets"
     );
     const pcbVersion = requireVersionSegment(
-      process7.env.EASYEDA_PCB_BUNDLE_VERSION,
+      process7.env["EASYEDA_PCB_BUNDLE_VERSION"],
       "EASYEDA_PCB_BUNDLE_VERSION"
     );
     const apiVersion = requireVersionSegment(
-      process7.env.EASYEDA_PUBLIC_API_BUNDLE_VERSION,
+      process7.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"],
       "EASYEDA_PUBLIC_API_BUNDLE_VERSION"
     );
     const pcbImplementation = join5(assetsRoot, "pro-pcb", pcbVersion, "js", "pcb.js");
@@ -39801,7 +40199,7 @@ var UpstreamEasyedaClient = class {
     const apiAdapter = join5(assetsRoot, "pro-api", apiVersion, "api-types.js");
     const apiDeclarations = join5(assetsRoot, "pro-api", apiVersion, "api-types.d.ts");
     for (const path of [pcbImplementation, apiImplementation, apiAdapter, apiDeclarations]) {
-      const info = await stat3(path);
+      const info = await stat2(path);
       if (!info.isFile()) throw new Error(`Installed EasyEDA bundle file is unavailable: ${path}`);
     }
     const [
@@ -39838,14 +40236,16 @@ var UpstreamEasyedaClient = class {
     const client = this.client;
     this.client = null;
     this.tools = null;
-    if (client) await client.close().catch(() => void 0);
-    if (this.transport) await this.transport.close().catch(() => void 0);
+    if (client) await client.close().catch(() => {
+    });
+    if (this.transport) await this.transport.close().catch(() => {
+    });
     this.transport = null;
     this.startupLauncherFingerprint = null;
   }
 };
 
-// server/src/index.mjs
+// server/src/index.ts
 var MAX_INLINE_RESULT_BYTES = 256 * 1024;
 var EXPORT_TOOLS = /* @__PURE__ */ new Set([
   "easyeda_pcb_export_route_context"
@@ -39855,7 +40255,7 @@ var CAPTURE_TOOLS = /* @__PURE__ */ new Set([
   "easyeda_canvas_capture_region",
   "easyeda_schematic_capture_full_page"
 ]);
-var DEDICATED_FACADE_NAME2 = /(^|_)(capture|export)(_|$)/i;
+var DEDICATED_FACADE_NAME2 = /(^|_)(capture|export)(_|$)/iu;
 var UNBOUND_DIAGNOSTIC_READ_NAMES = /* @__PURE__ */ new Set([
   "easyeda_component_probe",
   "easyeda_live_smoke_report",
@@ -39867,7 +40267,9 @@ var UI_MUTATING_READ_NAMES = /* @__PURE__ */ new Set([
 ]);
 var validatedControlRoot = await ensureManagedDirectory(controlDataDirectory());
 var facadeLease = await acquireFacadeLease(validatedControlRoot);
-process8.once("exit", () => facadeLease.releaseSync());
+process8.once("exit", () => {
+  facadeLease.releaseSync();
+});
 var upstream = new UpstreamEasyedaClient();
 var engine = new EasyedaControlEngine(upstream);
 var bridgeGate = new SerializedGate();
@@ -39899,6 +40301,21 @@ var captureRequestSchema = external_exports.discriminatedUnion("upstreamTool", [
     }).strict()
   }).strict()
 ]);
+var capturePayloadSchema = external_exports.object({
+  byte_length: external_exports.unknown(),
+  captured: external_exports.boolean(),
+  deterministic_viewport: external_exports.unknown().optional(),
+  error: external_exports.unknown().optional(),
+  image_base64: external_exports.unknown().optional(),
+  image_dimensions: external_exports.unknown().optional(),
+  mime_type: external_exports.unknown(),
+  project_id: external_exports.unknown().optional(),
+  selection_overlays_removed: external_exports.unknown().optional(),
+  sheet: external_exports.unknown().optional(),
+  sheet_to_image_transform: external_exports.unknown().optional(),
+  viewport: external_exports.unknown().optional(),
+  warnings: external_exports.unknown().optional()
+}).catchall(external_exports.unknown());
 var exportBase = {
   projectId: external_exports.string().min(1),
   filePath: external_exports.string().min(1)
@@ -39907,18 +40324,26 @@ var exportRequestSchema = external_exports.object({
   upstreamTool: external_exports.literal("easyeda_pcb_export_route_context"),
   arguments: external_exports.object(exportBase).strict()
 }).strict();
+var dsnExportPayloadSchema = external_exports.object({
+  base64: external_exports.unknown(),
+  byteLength: external_exports.unknown(),
+  document: external_exports.record(external_exports.string(), external_exports.unknown()),
+  kind: external_exports.literal("pcb-dsn"),
+  ok: external_exports.literal(true),
+  project: external_exports.record(external_exports.string(), external_exports.unknown())
+}).catchall(external_exports.unknown());
 var checkpointRequestSchema = external_exports.discriminatedUnion("action", [
   external_exports.object({
     action: external_exports.literal("create"),
     source: external_exports.string().min(1),
     outputDir: external_exports.string().min(1),
-    label: external_exports.string().regex(/^[a-z0-9][a-z0-9._-]{0,53}$/i)
+    label: external_exports.string().regex(/^[a-z0-9][a-z0-9._-]{0,53}$/iu)
   }).strict(),
   external_exports.object({ action: external_exports.literal("verify"), receiptPath: external_exports.string().min(1) }).strict()
 ]);
-var operationIdSchema = external_exports.string().regex(/^[a-z0-9][a-z0-9-]{7,95}$/i);
-var planHashSchema = external_exports.string().regex(/^[a-f0-9]{64}$/);
-var sha256Schema = external_exports.string().regex(/^[a-f0-9]{64}$/i);
+var operationIdSchema = external_exports.string().regex(/^[a-z0-9][a-z0-9-]{7,95}$/iu);
+var planHashSchema = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+var sha256Schema = external_exports.string().regex(/^[a-f0-9]{64}$/iu);
 var installedBundleAvailableSchema = external_exports.object({
   available: external_exports.literal(true),
   assetsRoot: external_exports.string().min(1),
@@ -39936,10 +40361,6 @@ var installedBundleAvailableSchema = external_exports.object({
     declarationsPath: external_exports.string().min(1),
     declarationsSha256: sha256Schema
   }).catchall(external_exports.unknown())
-}).catchall(external_exports.unknown());
-var installedBundleUnavailableSchema = external_exports.object({
-  available: external_exports.literal(false),
-  error: external_exports.object({ message: external_exports.string().min(1) }).catchall(external_exports.unknown())
 }).catchall(external_exports.unknown());
 var expectedFingerprintBaseShape = {
   facadeImplementation: external_exports.object({
@@ -40088,25 +40509,25 @@ var assertionSchema = external_exports.discriminatedUnion("op", [
   }).strict()
 ]);
 var typedCallSpecSchema = external_exports.object({
-  toolName: external_exports.string().min(1).regex(/^(?!easyeda_execute$).+/),
+  toolName: external_exports.string().min(1).regex(/^(?!easyeda_execute$).+/u),
   arguments: recordSchema.default({}),
   assertions: external_exports.array(assertionSchema).max(100).default([])
 }).strict();
 var checkpointCreateSchema = external_exports.object({
   source: external_exports.string().min(1),
   outputDir: external_exports.string().min(1),
-  label: external_exports.string().regex(/^[a-z0-9][a-z0-9._-]{0,53}$/i)
+  label: external_exports.string().regex(/^[a-z0-9][a-z0-9._-]{0,53}$/iu)
 }).strict();
 var operationPlanCommonShape = {
   name: external_exports.string().min(4).max(120),
   intent: external_exports.string().min(12).max(1e3),
-  targetPrimitiveIds: external_exports.array(external_exports.string().min(1).max(160).regex(/^[A-Za-z0-9._:-]+$/)).length(1).refine((values) => new Set(values).size === values.length, {
+  targetPrimitiveIds: external_exports.array(external_exports.string().min(1).max(160).regex(/^[A-Za-z0-9._:-]+$/u)).length(1).refine((values) => new Set(values).size === values.length, {
     message: "targetPrimitiveIds must be unique."
   }),
   targetChanges: external_exports.array(
     external_exports.object({
-      primitiveId: external_exports.string().min(1).max(160).regex(/^[A-Za-z0-9._:-]+$/),
-      pointer: external_exports.string().min(2).max(512).regex(/^\/(?!primitiveId(?:\/|$)).+/),
+      primitiveId: external_exports.string().min(1).max(160).regex(/^[A-Za-z0-9._:-]+$/u),
+      pointer: external_exports.string().min(2).max(512).regex(/^\/(?!primitiveId(?:\/|$)).+/u),
       before: assertionValueSchema,
       after: assertionValueSchema
     }).strict()
@@ -40126,16 +40547,33 @@ var operationPlanSchema = external_exports.object({
   applyCall: typedCallSpecSchema,
   rollbackCalls: external_exports.array(typedCallSpecSchema).min(1).max(30)
 }).strict();
+function isImageBlock(value) {
+  return isRecord(value) && value["type"] === "image" && typeof value["data"] === "string" && typeof value["mimeType"] === "string";
+}
+function isJsonValue(value) {
+  if (value === null || typeof value === "boolean" || typeof value === "number" || typeof value === "string") {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.every((item) => isJsonValue(item));
+  }
+  return isRecord(value) && Object.values(value).every((item) => isJsonValue(item));
+}
 function jsonSafe(value) {
   const text = JSON.stringify(
     value,
     (_key, item) => typeof item === "bigint" ? item.toString() : item
   );
-  return text === void 0 ? null : JSON.parse(text);
+  if (text === void 0) return null;
+  const parsed = JSON.parse(text);
+  if (!isJsonValue(parsed)) {
+    throw new TypeError("JSON serialization produced a non-JSON value.");
+  }
+  return parsed;
 }
 function success2(value) {
   const safe = jsonSafe(value);
-  const structuredContent = safe && typeof safe === "object" && !Array.isArray(safe) ? safe : { value: safe };
+  const structuredContent = safe !== null && typeof safe === "object" && !Array.isArray(safe) ? safe : { value: safe };
   const encoded = JSON.stringify(structuredContent);
   const jsonBytes = Buffer.byteLength(encoded);
   if (jsonBytes > 512 * 1024) {
@@ -40159,20 +40597,21 @@ function success2(value) {
   };
 }
 function failure(error51) {
+  const errorRecord = isRecord(error51) ? error51 : {};
   const details = {
     ok: false,
     error: {
-      name: error51?.name ?? "Error",
-      message: error51?.message ?? String(error51),
-      mismatches: error51?.mismatches,
-      assertionResults: error51?.assertionResults,
-      blockingOperations: error51?.blockingOperations
+      name: errorRecord["name"] ?? "Error",
+      message: errorRecord["message"] ?? String(error51),
+      mismatches: errorRecord["mismatches"],
+      assertionResults: errorRecord["assertionResults"],
+      blockingOperations: errorRecord["blockingOperations"]
     }
   };
   return {
     isError: true,
     content: [{ type: "text", text: JSON.stringify(details, null, 2) }],
-    structuredContent: jsonSafe(details)
+    structuredContent: details
   };
 }
 function guarded(handler) {
@@ -40186,7 +40625,7 @@ function guarded(handler) {
 }
 function serializedGuarded(handler, options = {}) {
   return guarded(
-    async (input) => await bridgeGate.run(async () => {
+    (input) => bridgeGate.run(async () => {
       if (options.allowDuringOrphanRisk !== true) {
         await engine.assertBridgeDispatchAllowed();
       }
@@ -40220,7 +40659,7 @@ async function callReadOnly(upstreamTool, args) {
 }
 function resultSummary(result) {
   const json2 = JSON.stringify(jsonSafe(result));
-  const value = Array.isArray(result) ? { kind: "array", length: result.length } : result && typeof result === "object" ? { kind: "object", keys: Object.keys(result).slice(0, 40), keyCount: Object.keys(result).length } : { kind: typeof result };
+  const value = Array.isArray(result) ? { kind: "array", length: result.length } : result !== null && typeof result === "object" ? { kind: "object", keys: Object.keys(result).slice(0, 40), keyCount: Object.keys(result).length } : { kind: typeof result };
   return { ...value, jsonBytes: Buffer.byteLength(json2), sha256: sha256Text(json2) };
 }
 function assertTargetArguments(args, expectedContext, activeContext, label) {
@@ -40236,28 +40675,33 @@ function assertTargetArguments(args, expectedContext, activeContext, label) {
       throw new Error(`${label} arguments.${key} does not match the proven document UUID.`);
     }
   }
-  if (args.tabId !== void 0 && args.tabId !== activeContext.document.tabId) {
+  if (args["tabId"] !== void 0 && args["tabId"] !== activeContext.document.tabId) {
     throw new Error(`${label} arguments.tabId does not match the active proven tab.`);
   }
 }
 function assertToolFamilyContext(upstreamTool, activeContext) {
-  const requiredDocumentType = /^easyeda_(schematic|bom)_/i.test(upstreamTool) ? 1 : /^easyeda_(pcb|board)_/i.test(upstreamTool) ? 3 : void 0;
+  const requiredDocumentType = /^easyeda_(schematic|bom)_/iu.test(upstreamTool) ? 1 : /^easyeda_(pcb|board)_/iu.test(upstreamTool) ? 3 : void 0;
   if (requiredDocumentType !== void 0 && activeContext?.document?.documentType !== requiredDocumentType) {
     throw new Error(
       `${upstreamTool} reads the active document type ${requiredDocumentType}; the proven active document type is ${String(activeContext?.document?.documentType)}. PCB 3D preview type 15 is not a PCB editor context.`
     );
   }
 }
-function requiredExportDocumentType(upstreamTool, args) {
+function requiredExportDocumentType(upstreamTool) {
   if (upstreamTool === "easyeda_pcb_export_route_context") return 3;
   throw new Error(`No reviewed document binding exists for exporter ${upstreamTool}.`);
 }
-async function withEvidence(request, result, evidence, metadata = {}, { reservation, returnMode = "full", maxInlineBytes = 65536, attachments = [] } = {}) {
+async function withEvidence(request, result, evidence, metadata = {}, {
+  reservation,
+  returnMode = "full",
+  maxInlineBytes = 65536,
+  attachments = []
+} = {}) {
   let receipt;
-  if (evidence || reservation) {
+  if (evidence !== void 0 || reservation !== void 0) {
     receipt = await archiveExternalEvidence({
-      evidence,
-      reservation,
+      ...evidence === void 0 ? {} : { evidence },
+      ...reservation === void 0 ? {} : { reservation },
       request,
       result,
       metadata,
@@ -40266,16 +40710,22 @@ async function withEvidence(request, result, evidence, metadata = {}, { reservat
   }
   const summary = resultSummary(result);
   if (returnMode === "receipt-only") {
-    if (!receipt) throw new Error("receipt-only mode requires reserved evidence paths.");
+    if (receipt === void 0) {
+      throw new Error("receipt-only mode requires reserved evidence paths.");
+    }
     return { summary, evidence: receipt };
   }
   if (returnMode === "summary") {
-    if (!receipt) throw new Error("summary mode requires reserved evidence paths.");
+    if (receipt === void 0) {
+      throw new Error("summary mode requires reserved evidence paths.");
+    }
     return { summary, evidence: receipt };
   }
-  const limit = Math.min(MAX_INLINE_RESULT_BYTES, Number(maxInlineBytes));
+  const limit = Math.min(MAX_INLINE_RESULT_BYTES, maxInlineBytes);
   if (summary.jsonBytes > limit) {
-    if (receipt) return { summary, evidence: receipt, inlineResultOmitted: true };
+    if (receipt !== void 0) {
+      return { summary, evidence: receipt, inlineResultOmitted: true };
+    }
     throw new Error(
       `Full result is ${summary.jsonBytes} bytes, above the ${limit}-byte inline limit. Provide fresh evidence paths and use returnMode=receipt-only.`
     );
@@ -40283,7 +40733,8 @@ async function withEvidence(request, result, evidence, metadata = {}, { reservat
   return { result, summary, evidence: receipt };
 }
 async function finalizeDispatchedFailure(reservation, request, error51, metadata = {}, attachments = []) {
-  if (!reservation) return;
+  if (reservation === void 0) return void 0;
+  const errorRecord = isRecord(error51) ? error51 : {};
   try {
     return await archiveExternalEvidence({
       reservation,
@@ -40291,7 +40742,10 @@ async function finalizeDispatchedFailure(reservation, request, error51, metadata
       result: {
         ok: false,
         outcome: "dispatched-but-not-proven",
-        error: { name: error51?.name ?? "Error", message: error51?.message ?? String(error51) }
+        error: {
+          name: errorRecord["name"] ?? "Error",
+          message: errorRecord["message"] ?? String(error51)
+        }
       },
       metadata: { facadeVersion: CONTROL_VERSION, ...metadata },
       attachments
@@ -40299,14 +40753,36 @@ async function finalizeDispatchedFailure(reservation, request, error51, metadata
   } catch (archiveError) {
     throw new AggregateError(
       [error51, archiveError],
-      "The EasyEDA call failed and its reserved failure evidence could not be finalized."
+      "The EasyEDA call failed and its reserved failure evidence could not be finalized.",
+      { cause: archiveError }
     );
   }
 }
 async function sha256File3(path) {
   const hash2 = createHash5("sha256");
-  for await (const chunk of createReadStream3(path)) hash2.update(chunk);
+  for await (const streamChunk of createReadStream3(path)) {
+    const chunk = streamChunk;
+    if (!Buffer.isBuffer(chunk)) {
+      throw new TypeError(`Expected a binary stream while hashing ${path}.`);
+    }
+    hash2.update(chunk);
+  }
   return hash2.digest("hex");
+}
+function crc32(...buffers) {
+  let crc = 4294967295;
+  for (const buffer of buffers) {
+    for (const byte of buffer) {
+      crc ^= byte;
+      for (let bit = 0; bit < 8; bit += 1) {
+        crc = crc >>> 1 ^ (crc & 1 ? 3988292384 : 0);
+      }
+    }
+  }
+  return (crc ^ 4294967295) >>> 0;
+}
+function nearlyEqual(actual, expected) {
+  return Math.abs(actual - expected) <= Number.EPSILON * 8 * Math.max(1, Math.abs(actual), Math.abs(expected));
 }
 async function writeDurableExclusive(path, bytes) {
   let handle;
@@ -40317,9 +40793,10 @@ async function writeDurableExclusive(path, bytes) {
     await handle.writeFile(bytes);
     await handle.sync();
   } finally {
-    await handle?.close().catch(() => void 0);
+    await handle?.close().catch(() => {
+    });
     if (created) {
-      const directoryHandle = await open4(dirname5(path), "r");
+      const directoryHandle = await open4(dirname3(path), "r");
       try {
         await directoryHandle.sync();
       } finally {
@@ -40333,18 +40810,6 @@ function readPngDimensions(bytes) {
   if (bytes.length < 45 || !bytes.subarray(0, signature.length).equals(signature)) {
     throw new Error("Canvas capture PNG is missing its signature or complete chunk structure.");
   }
-  const crc32 = (...buffers) => {
-    let crc = 4294967295;
-    for (const buffer of buffers) {
-      for (const byte of buffer) {
-        crc ^= byte;
-        for (let bit = 0; bit < 8; bit += 1) {
-          crc = crc >>> 1 ^ (crc & 1 ? 3988292384 : 0);
-        }
-      }
-    }
-    return (crc ^ 4294967295) >>> 0;
-  };
   let offset = signature.length;
   let ihdr;
   let seenPalette = false;
@@ -40363,7 +40828,7 @@ function readPngDimensions(bytes) {
     }
     const typeBytes = bytes.subarray(offset + 4, offset + 8);
     const type = typeBytes.toString("ascii");
-    if (!/^[A-Za-z]{4}$/.test(type)) {
+    if (!/^[A-Za-z]{4}$/u.test(type)) {
       throw new Error("Canvas capture PNG contains an invalid chunk type.");
     }
     const data = bytes.subarray(offset + 8, offset + 8 + length);
@@ -40393,20 +40858,22 @@ function readPngDimensions(bytes) {
         4: /* @__PURE__ */ new Set([8, 16]),
         6: /* @__PURE__ */ new Set([8, 16])
       };
-      if (width < 1 || height < 1 || !validDepths[colorType]?.has(bitDepth) || compression !== 0 || filter !== 0 || interlace !== 0) {
+      if (width < 1 || height < 1 || bitDepth === void 0 || colorType === void 0 || validDepths[colorType]?.has(bitDepth) !== true || compression !== 0 || filter !== 0 || interlace !== 0) {
         throw new Error(
           "Canvas capture PNG has invalid dimensions, color settings, or an unsupported interlace mode."
         );
       }
       ihdr = { width, height, bitDepth, colorType };
     } else if (type === "PLTE") {
+      const header = ihdr;
+      if (!header) throw new Error("Canvas capture PNG is missing IHDR.");
       if (seenPalette || seenIdat || length < 3 || length > 768 || length % 3 !== 0) {
         throw new Error("Canvas capture PNG contains an invalid PLTE chunk.");
       }
-      if ([0, 4].includes(ihdr.colorType)) {
+      if ([0, 4].includes(header.colorType)) {
         throw new Error("Canvas capture PNG contains a forbidden PLTE chunk.");
       }
-      if (ihdr.colorType === 3 && length / 3 > 2 ** ihdr.bitDepth) {
+      if (header.colorType === 3 && length / 3 > 2 ** header.bitDepth) {
         throw new Error("Canvas capture PNG palette exceeds its indexed-color bit depth.");
       }
       seenPalette = true;
@@ -40421,7 +40888,8 @@ function readPngDimensions(bytes) {
       seenIend = true;
     } else {
       if (seenIdat) idatEnded = true;
-      if (type[0] === type[0].toUpperCase()) {
+      const firstTypeCharacter = type[0];
+      if (firstTypeCharacter !== void 0 && firstTypeCharacter === firstTypeCharacter.toUpperCase()) {
         throw new Error(`Canvas capture PNG contains unsupported critical chunk ${type}.`);
       }
     }
@@ -40433,7 +40901,16 @@ function readPngDimensions(bytes) {
   if (ihdr.colorType === 3 && !seenPalette) {
     throw new Error("Canvas capture indexed PNG is missing PLTE.");
   }
-  const channels = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }[ihdr.colorType];
+  const channels = (/* @__PURE__ */ new Map([
+    [0, 1],
+    [2, 3],
+    [3, 1],
+    [4, 2],
+    [6, 4]
+  ])).get(ihdr.colorType);
+  if (channels === void 0) {
+    throw new Error("Canvas capture PNG has an unsupported color type.");
+  }
   const scanlineBytes = Math.ceil(ihdr.width * channels * ihdr.bitDepth / 8);
   const decodedBytes = ihdr.height * (scanlineBytes + 1);
   if (!Number.isSafeInteger(decodedBytes) || decodedBytes > 512 * 1024 * 1024) {
@@ -40443,24 +40920,26 @@ function readPngDimensions(bytes) {
   try {
     decoded = inflateSync(Buffer.concat(idatParts), { maxOutputLength: decodedBytes });
   } catch (error51) {
-    throw new Error(`Canvas capture PNG IDAT stream is invalid: ${error51.message}`);
+    const message = error51 instanceof Error ? error51.message : String(error51);
+    throw new Error(`Canvas capture PNG IDAT stream is invalid: ${message}`, { cause: error51 });
   }
   if (decoded.length !== decodedBytes) {
     throw new Error("Canvas capture PNG decoded byte length does not match IHDR.");
   }
   for (let row = 0; row < ihdr.height; row += 1) {
-    if (decoded[row * (scanlineBytes + 1)] > 4) {
+    const filterByte = decoded[row * (scanlineBytes + 1)];
+    if (filterByte === void 0 || filterByte > 4) {
       throw new Error("Canvas capture PNG contains an invalid scanline filter.");
     }
   }
   return { width: ihdr.width, height: ihdr.height };
 }
 function assertExactObjectKeys(value, expectedKeys, label) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error(`${label} must be an object.`);
+  if (Array.isArray(value)) {
+    throw new TypeError(`${label} must be an object.`);
   }
-  const actual = Object.keys(value).sort();
-  const expected = [...expectedKeys].sort();
+  const actual = Object.keys(value).toSorted();
+  const expected = [...expectedKeys].toSorted();
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
     throw new Error(`${label} has unexpected or missing fields.`);
   }
@@ -40468,41 +40947,64 @@ function assertExactObjectKeys(value, expectedKeys, label) {
 function assertFiniteCaptureFields(value, fields, label) {
   for (const field of fields) {
     if (typeof value[field] !== "number" || !Number.isFinite(value[field])) {
-      throw new Error(`${label}.${field} must be a finite number.`);
+      throw new TypeError(`${label}.${field} must be a finite number.`);
     }
   }
 }
+function requireFullPageCapturePayload(payload) {
+  const sheet = payload["sheet"];
+  const viewport = payload["viewport"];
+  const imageDimensions = payload["image_dimensions"];
+  const transform2 = payload["sheet_to_image_transform"];
+  if (!isRecord(sheet) || !isRecord(viewport) || !isRecord(imageDimensions) || !isRecord(transform2) || payload["selection_overlays_removed"] !== true) {
+    throw new Error(
+      "Full-page capture did not return complete sheet, viewport, transform, dimensions, and cleared-selection evidence."
+    );
+  }
+  return {
+    image_dimensions: imageDimensions,
+    selection_overlays_removed: true,
+    sheet,
+    sheet_to_image_transform: transform2,
+    viewport,
+    warnings: payload["warnings"]
+  };
+}
 function validateFullPageCaptureGeometry(payload, padding, pngDimensions) {
-  assertExactObjectKeys(payload.sheet, ["width", "height", "unit", "source"], "Capture sheet");
-  assertFiniteCaptureFields(payload.sheet, ["width", "height"], "Capture sheet");
-  if (payload.sheet.width <= 0 || payload.sheet.height <= 0 || typeof payload.sheet.unit !== "string" || payload.sheet.unit.length === 0 || !["sheet-info", "default-a4-landscape"].includes(payload.sheet.source)) {
+  const sheet = payload.sheet;
+  const viewport = payload.viewport;
+  const imageDimensions = payload.image_dimensions;
+  const transform2 = payload.sheet_to_image_transform;
+  assertExactObjectKeys(sheet, ["width", "height", "unit", "source"], "Capture sheet");
+  assertFiniteCaptureFields(sheet, ["width", "height"], "Capture sheet");
+  if (sheet["width"] <= 0 || sheet["height"] <= 0 || typeof sheet["unit"] !== "string" || sheet["unit"].length === 0 || typeof sheet["source"] !== "string" || !["sheet-info", "default-a4-landscape"].includes(sheet["source"])) {
     throw new Error("Capture sheet has invalid dimensions, unit, or source.");
   }
   assertExactObjectKeys(
-    payload.viewport,
+    viewport,
     ["left", "right", "top", "bottom"],
     "Capture viewport"
   );
   assertFiniteCaptureFields(
-    payload.viewport,
+    viewport,
     ["left", "right", "top", "bottom"],
     "Capture viewport"
   );
   assertExactObjectKeys(
-    payload.image_dimensions,
+    imageDimensions,
     ["width", "height"],
     "Capture image dimensions"
   );
-  if (!Number.isSafeInteger(payload.image_dimensions.width) || payload.image_dimensions.width <= 0 || !Number.isSafeInteger(payload.image_dimensions.height) || payload.image_dimensions.height <= 0) {
+  if (typeof imageDimensions["width"] !== "number" || !Number.isSafeInteger(imageDimensions["width"]) || imageDimensions["width"] <= 0 || typeof imageDimensions["height"] !== "number" || !Number.isSafeInteger(imageDimensions["height"]) || imageDimensions["height"] <= 0) {
     throw new Error("Capture image dimensions must be positive safe integers.");
   }
   assertExactObjectKeys(
-    payload.sheet_to_image_transform,
+    transform2,
     ["scale_x", "scale_y", "offset_x", "offset_y"],
     "Capture sheet-to-image transform"
   );
   assertFiniteCaptureFields(
-    payload.sheet_to_image_transform,
+    transform2,
     ["scale_x", "scale_y", "offset_x", "offset_y"],
     "Capture sheet-to-image transform"
   );
@@ -40511,36 +41013,35 @@ function validateFullPageCaptureGeometry(payload, padding, pngDimensions) {
   }
   const expectedViewport = {
     left: -padding,
-    right: payload.sheet.width + padding,
-    top: payload.sheet.height + padding,
+    right: sheet["width"] + padding,
+    top: sheet["height"] + padding,
     bottom: -padding
   };
   for (const field of ["left", "right", "top", "bottom"]) {
-    if (payload.viewport[field] !== expectedViewport[field]) {
+    if (viewport[field] !== expectedViewport[field]) {
       throw new Error("Full-page capture viewport contradicts the sheet dimensions and padding.");
     }
   }
-  const regionWidth = payload.viewport.right - payload.viewport.left;
-  const regionHeight = payload.viewport.top - payload.viewport.bottom;
+  const regionWidth = viewport["right"] - viewport["left"];
+  const regionHeight = viewport["top"] - viewport["bottom"];
   if (regionWidth <= 0 || regionHeight <= 0) {
     throw new Error("Full-page capture viewport spans must be positive.");
   }
-  if (payload.image_dimensions.width !== pngDimensions.width || payload.image_dimensions.height !== pngDimensions.height) {
+  if (imageDimensions["width"] !== pngDimensions.width || imageDimensions["height"] !== pngDimensions.height) {
     throw new Error("Full-page capture dimensions do not match the PNG IHDR.");
   }
   const expectedTransform = {
     scale_x: pngDimensions.width / regionWidth,
     scale_y: -pngDimensions.height / regionHeight,
-    offset_x: -payload.viewport.left * (pngDimensions.width / regionWidth),
-    offset_y: payload.viewport.top * (pngDimensions.height / regionHeight)
+    offset_x: -viewport["left"] * (pngDimensions.width / regionWidth),
+    offset_y: viewport["top"] * (pngDimensions.height / regionHeight)
   };
-  const nearlyEqual = (actual, expected) => Math.abs(actual - expected) <= Number.EPSILON * 8 * Math.max(1, Math.abs(actual), Math.abs(expected));
   for (const field of ["scale_x", "scale_y", "offset_x", "offset_y"]) {
-    if (!nearlyEqual(payload.sheet_to_image_transform[field], expectedTransform[field])) {
+    if (!nearlyEqual(transform2[field], expectedTransform[field])) {
       throw new Error("Full-page capture transform contradicts its viewport and PNG dimensions.");
     }
   }
-  if (payload.sheet_to_image_transform.scale_x <= 0 || payload.sheet_to_image_transform.scale_y >= 0) {
+  if (transform2["scale_x"] <= 0 || transform2["scale_y"] >= 0) {
     throw new Error("Full-page capture transform has invalid axis direction.");
   }
 }
@@ -40551,7 +41052,9 @@ var server = new McpServer(
     instructions: "Use status, context, and conservative reads first. Audit, evidence, checkpoint, capture, draft DSN export, and recovery are the current production capabilities. The experimental PCB component writer is runtime-disabled pending connected sacrificial-board validation. Never retry a timed-out call. A boolean, toast, dialog, preview, or unsaved readback is not persistence. ECO/import dialogs, private APIs, library documents, and UI automation remain explicit capability gates."
   }
 );
-var registerFacadeTool = (name, config2, handler) => server.registerTool(name, { outputSchema: genericOutputSchema, ...config2 }, handler);
+function registerFacadeTool(name, config2, handler) {
+  server.registerTool(name, { outputSchema: genericOutputSchema, ...config2 }, handler);
+}
 registerFacadeTool(
   "easyeda_control_status",
   {
@@ -40597,7 +41100,7 @@ registerFacadeTool(
     inputSchema: {},
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
   },
-  serializedGuarded(async () => await engine.context())
+  serializedGuarded(() => engine.context())
 );
 registerFacadeTool(
   "easyeda_control_exact_read",
@@ -40615,10 +41118,10 @@ registerFacadeTool(
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true }
   },
   serializedGuarded(async (input) => {
-    if (input.returnMode !== "full" && !input.evidence) {
+    if (input.returnMode !== "full" && input.evidence === void 0) {
       throw new Error("summary and receipt-only exact reads require evidence paths.");
     }
-    const reservation = input.evidence ? await reserveEvidencePaths(input.evidence) : void 0;
+    const reservation = input.evidence === void 0 ? void 0 : await reserveEvidencePaths(input.evidence);
     let dispatched = false;
     const request = {
       reader: input.request,
@@ -40674,10 +41177,10 @@ registerFacadeTool(
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true }
   },
   serializedGuarded(async (input) => {
-    if (input.returnMode !== "full" && !input.evidence) {
+    if (input.returnMode !== "full" && input.evidence === void 0) {
       throw new Error("summary and receipt-only reads require evidence paths.");
     }
-    const reservation = input.evidence ? await reserveEvidencePaths(input.evidence) : void 0;
+    const reservation = input.evidence === void 0 ? void 0 : await reserveEvidencePaths(input.evidence);
     let dispatched = false;
     const request = {
       upstreamTool: input.upstreamTool,
@@ -40742,10 +41245,10 @@ registerFacadeTool(
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true }
   },
   serializedGuarded(async (input) => {
-    if (input.returnMode !== "full" && !input.evidence) {
+    if (input.returnMode !== "full" && input.evidence === void 0) {
       throw new Error("summary and receipt-only batches require evidence paths.");
     }
-    const reservation = input.evidence ? await reserveEvidencePaths(input.evidence) : void 0;
+    const reservation = input.evidence === void 0 ? void 0 : await reserveEvidencePaths(input.evidence);
     let dispatched = false;
     const request = {
       calls: input.calls,
@@ -40806,7 +41309,7 @@ registerFacadeTool(
     inputSchema: {},
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
   },
-  serializedGuarded(async () => {
+  serializedGuarded(() => {
     throw new Error(
       "Standalone unrestricted JavaScript is structurally disabled in this release; there is no environment opt-in."
     );
@@ -40825,13 +41328,15 @@ registerFacadeTool(
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
   },
-  async (input) => await bridgeGate.run(async () => {
-    input = { ...input, ...input.request };
+  (input) => bridgeGate.run(async () => {
+    const captureRequest = input.request;
     let reservation;
     let dispatched = false;
     try {
       await engine.assertBridgeDispatchAllowed();
-      if (!CAPTURE_TOOLS.has(input.upstreamTool)) throw new Error("Capture tool is not allowlisted.");
+      if (!CAPTURE_TOOLS.has(captureRequest.upstreamTool)) {
+        throw new Error("Capture tool is not allowlisted.");
+      }
       reservation = await reserveEvidencePaths(input.evidence);
       validateExpectedFingerprint(input.expectedFingerprint);
       const status = await engine.status();
@@ -40842,40 +41347,47 @@ registerFacadeTool(
       );
       const activeContext = await engine.assertContext(input.expectedContext);
       const expectedProjectUuid = input.expectedContext.project.uuid ?? input.expectedContext.project.projectUuid;
-      if (input.upstreamTool === "easyeda_schematic_capture_full_page" && activeContext.document.documentType !== 1) {
+      if (captureRequest.upstreamTool === "easyeda_schematic_capture_full_page" && activeContext.document.documentType !== 1) {
         throw new Error("A full-page schematic capture requires an active schematic document.");
       }
-      if (input.arguments.projectId !== void 0 && input.arguments.projectId !== expectedProjectUuid) {
+      if ("projectId" in captureRequest.arguments && captureRequest.arguments.projectId !== expectedProjectUuid) {
         throw new Error("Capture arguments.projectId must equal the proven project UUID.");
       }
-      if (typeof activeContext.document.tabId !== "string" || activeContext.document.tabId.length === 0 || input.arguments.tabId !== activeContext.document.tabId) {
+      if (typeof activeContext.document.tabId !== "string" || activeContext.document.tabId.length === 0 || captureRequest.arguments.tabId !== activeContext.document.tabId) {
         throw new Error("Capture requires arguments.tabId equal to the active proven tab id.");
       }
       dispatched = true;
-      const raw = await upstream.callTool(input.upstreamTool, input.arguments, 7e4);
-      const payload = extractToolPayload(raw);
-      if (payload?.captured !== true) {
-        throw new Error(`Canvas capture failed: ${payload?.error ?? "unknown reason"}`);
+      const raw = await upstream.callTool(
+        captureRequest.upstreamTool,
+        captureRequest.arguments,
+        7e4
+      );
+      const extractedPayload = extractToolPayload(raw);
+      if (!isRecord(extractedPayload)) {
+        throw new Error("Canvas capture returned a non-object payload.");
       }
-      if (input.upstreamTool === "easyeda_schematic_capture_full_page") {
+      if (extractedPayload["captured"] !== true) {
+        const captureError = extractedPayload["error"];
+        const reason = typeof captureError === "string" ? captureError : captureError === void 0 ? "unknown reason" : JSON.stringify(jsonSafe(captureError));
+        throw new Error(`Canvas capture failed: ${reason}`);
+      }
+      const payload = capturePayloadSchema.parse(extractedPayload);
+      if (captureRequest.upstreamTool === "easyeda_schematic_capture_full_page") {
         if (payload.project_id !== expectedProjectUuid) {
           throw new Error("Full-page capture result.project_id does not match the proven project.");
         }
-        if (input.arguments.allowInferredA4 !== true && payload.deterministic_viewport !== true) {
+        if (!captureRequest.arguments.allowInferredA4 && payload.deterministic_viewport !== true) {
           throw new Error(
             "Full-page capture did not prove runtime sheet geometry; inferred A4 was not authorized."
           );
         }
-        if (payload.deterministic_viewport === true && payload.sheet?.source !== "sheet-info") {
+        const fullPagePayload = requireFullPageCapturePayload(payload);
+        if (payload.deterministic_viewport === true && fullPagePayload.sheet["source"] !== "sheet-info") {
           throw new Error("Full-page capture reported contradictory viewport provenance.");
         }
-        if (!payload.sheet || !payload.viewport || !payload.image_dimensions || !payload.sheet_to_image_transform || payload.selection_overlays_removed !== true) {
-          throw new Error(
-            "Full-page capture did not return complete sheet, viewport, transform, dimensions, and cleared-selection evidence."
-          );
-        }
       }
-      const images = (raw.content ?? []).filter((item) => item?.type === "image");
+      const rawContent = isRecord(raw) && Array.isArray(raw.content) ? raw.content : [];
+      const images = rawContent.filter((item) => isImageBlock(item));
       if (images.length !== 1) {
         throw new Error("Canvas capture must return exactly one MCP image block.");
       }
@@ -40892,15 +41404,20 @@ registerFacadeTool(
         }
         if (Object.hasOwn(payload, "image_base64")) {
           if (typeof payload.image_base64 !== "string") {
-            throw new Error("Canvas capture payload image_base64 must be a string when present.");
+            throw new TypeError("Canvas capture payload image_base64 must be a string when present.");
           }
           if (!Buffer.from(payload.image_base64, "base64").equals(bytes)) {
             throw new Error("Canvas capture payload image bytes do not match its MCP image block.");
           }
         }
         const dimensions = readPngDimensions(bytes);
-        if (input.upstreamTool === "easyeda_schematic_capture_full_page") {
-          validateFullPageCaptureGeometry(payload, input.arguments.padding, dimensions);
+        if (captureRequest.upstreamTool === "easyeda_schematic_capture_full_page") {
+          const fullPagePayload = requireFullPageCapturePayload(payload);
+          validateFullPageCaptureGeometry(
+            fullPagePayload,
+            captureRequest.arguments.padding,
+            dimensions
+          );
         }
         return {
           mimeType: item.mimeType,
@@ -40913,8 +41430,8 @@ registerFacadeTool(
       const evidence = await archiveCaptureEvidence({
         reservation,
         request: {
-          upstreamTool: input.upstreamTool,
-          arguments: input.arguments,
+          upstreamTool: captureRequest.upstreamTool,
+          arguments: captureRequest.arguments,
           expectedContext: input.expectedContext,
           expectedFingerprint: input.expectedFingerprint
         },
@@ -40922,11 +41439,12 @@ registerFacadeTool(
         images: imageEvidence,
         metadata: { facadeVersion: CONTROL_VERSION, effect: "viewport-read" }
       });
-      const structuredContent = jsonSafe({
+      const safeStructuredContent = jsonSafe({
         ...capturePayload,
         images: evidence.images,
         evidence
       });
+      const structuredContent = isRecord(safeStructuredContent) ? safeStructuredContent : { value: safeStructuredContent };
       return {
         content: [
           {
@@ -40944,13 +41462,14 @@ registerFacadeTool(
       };
     } catch (error51) {
       if (reservation && !dispatched) {
-        await releaseEvidenceReservation(reservation).catch(() => void 0);
+        await releaseEvidenceReservation(reservation).catch(() => {
+        });
       } else if (reservation) {
         await finalizeDispatchedFailure(
           reservation,
           {
-            upstreamTool: input.upstreamTool,
-            arguments: input.arguments,
+            upstreamTool: captureRequest.upstreamTool,
+            arguments: captureRequest.arguments,
             expectedContext: input.expectedContext,
             expectedFingerprint: input.expectedFingerprint
           },
@@ -40976,14 +41495,17 @@ registerFacadeTool(
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
   },
   serializedGuarded(async (input) => {
-    input = { ...input, ...input.request };
-    if (!EXPORT_TOOLS.has(input.upstreamTool)) throw new Error("Export tool is not allowlisted.");
+    const exportRequest = input.request;
+    if (!EXPORT_TOOLS.has(exportRequest.upstreamTool)) {
+      throw new Error("Export tool is not allowlisted.");
+    }
     const reservation = await reserveEvidencePaths(input.evidence);
     let dispatched = false;
     let createdExportDirectory;
+    const requestedPath = resolve6(exportRequest.arguments.filePath);
     const request = {
-      upstreamTool: input.upstreamTool,
-      arguments: input.arguments,
+      upstreamTool: exportRequest.upstreamTool,
+      arguments: exportRequest.arguments,
       expectedContext: input.expectedContext,
       expectedFingerprint: input.expectedFingerprint
     };
@@ -40996,27 +41518,23 @@ registerFacadeTool(
         "EasyEDA runtime fingerprint"
       );
       const activeContext = await engine.assertContext(input.expectedContext);
-      const exportDocumentType = requiredExportDocumentType(
-        input.upstreamTool,
-        input.arguments
-      );
+      const exportDocumentType = requiredExportDocumentType(exportRequest.upstreamTool);
       if (activeContext.document.documentType !== exportDocumentType) {
         throw new Error(
-          `${input.upstreamTool} requires active document type ${exportDocumentType}; type ${String(activeContext.document.documentType)} cannot be used. PCB 3D preview type 15 is never an export target.`
+          `${exportRequest.upstreamTool} requires active document type ${exportDocumentType}; type ${String(activeContext.document.documentType)} cannot be used. PCB 3D preview type 15 is never an export target.`
         );
       }
       const expectedProjectUuid = input.expectedContext.project.uuid ?? input.expectedContext.project.projectUuid;
-      if (input.arguments.projectId !== expectedProjectUuid) {
+      if (exportRequest.arguments.projectId !== expectedProjectUuid) {
         throw new Error("Export arguments.projectId must equal the proven project UUID.");
       }
-      if (typeof input.arguments.filePath !== "string" || !isAbsolute4(input.arguments.filePath)) {
+      if (!isAbsolute4(exportRequest.arguments.filePath)) {
         throw new Error("Every export requires an explicit absolute arguments.filePath.");
       }
-      const requestedPath2 = resolve6(input.arguments.filePath);
       const exportRoot = resolve6(controlDataDirectory(), "upstream", "artifacts", "facade-exports");
       await ensureManagedDirectory(exportRoot);
-      const exportDirectory = dirname5(requestedPath2);
-      if (dirname5(exportDirectory) !== exportRoot || !/^export-[a-z0-9-]{8,80}$/i.test(basename3(exportDirectory)) || relative4(exportRoot, requestedPath2).startsWith("..")) {
+      const exportDirectory = dirname3(requestedPath);
+      if (dirname3(exportDirectory) !== exportRoot || !/^export-[a-z0-9-]{8,80}$/iu.test(basename3(exportDirectory)) || relative4(exportRoot, requestedPath).startsWith("..")) {
         throw new Error(
           `Export filePath must use a fresh ${exportRoot}/export-<unique>/ directory.`
         );
@@ -41024,27 +41542,30 @@ registerFacadeTool(
       await mkdir4(exportDirectory, { recursive: false, mode: 448 });
       await ensureManagedDirectory(exportDirectory);
       createdExportDirectory = exportDirectory;
-      if ([reservation.resultPath, reservation.receiptPath].includes(requestedPath2)) {
+      if ([reservation.resultPath, reservation.receiptPath].includes(requestedPath)) {
         throw new Error("Export artifact path must differ from its evidence and receipt paths.");
       }
       try {
-        await stat4(requestedPath2);
+        await stat3(requestedPath);
         throw new Error("Export artifact path already exists; refusing overwrite.");
       } catch (error51) {
-        if (error51?.code !== "ENOENT") throw error51;
+        const errorRecord = isRecord(error51) ? error51 : {};
+        if (errorRecord["code"] !== "ENOENT") throw error51;
       }
       const startedAtMs = Date.now();
       dispatched = true;
       const source = buildDsnExportCode(
-        basename3(requestedPath2),
+        basename3(requestedPath),
         input.expectedContext
       );
       const guardedSource = wrapWithContextGuard(source, input.expectedContext);
-      const generated = extractToolPayload(
-        await upstream.callTool(
-          "easyeda_execute",
-          { code: guardedSource, timeoutMs: 6e4, confirmWrite: true },
-          7e4
+      const generated = dsnExportPayloadSchema.parse(
+        extractToolPayload(
+          await upstream.callTool(
+            "easyeda_execute",
+            { code: guardedSource, timeoutMs: 6e4, confirmWrite: true },
+            7e4
+          )
         )
       );
       assertSubset(
@@ -41061,7 +41582,7 @@ registerFacadeTool(
         },
         "Facade-owned DSN export"
       );
-      if (typeof generated.base64 !== "string" || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
+      if (typeof generated.base64 !== "string" || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(
         generated.base64
       )) {
         throw new Error("Facade-owned DSN export returned malformed base64.");
@@ -41070,8 +41591,8 @@ registerFacadeTool(
       if (exportBytes.length === 0 || !Number.isInteger(generated.byteLength) || generated.byteLength !== exportBytes.length) {
         throw new Error("Facade-owned DSN export returned an empty or inconsistent byte count.");
       }
-      await writeDurableExclusive(requestedPath2, exportBytes);
-      const info = (await inspectManagedFile(requestedPath2, "Export artifact")).info;
+      await writeDurableExclusive(requestedPath, exportBytes);
+      const info = (await inspectManagedFile(requestedPath, "Export artifact")).info;
       if (info.isSymbolicLink() || !info.isFile() || info.size === 0) {
         throw new Error("Export artifact is missing, empty, or a symbolic link.");
       }
@@ -41092,10 +41613,10 @@ registerFacadeTool(
         sourceSha256: sha256Text(source),
         transmittedSourceSha256: sha256Text(guardedSource),
         artifact: {
-          path: requestedPath2,
+          path: requestedPath,
           bytes: info.size,
           mtimeMs: info.mtimeMs,
-          sha256: await sha256File3(requestedPath2)
+          sha256: await sha256File3(requestedPath)
         },
         fabricationRelease: false
       };
@@ -41117,10 +41638,7 @@ registerFacadeTool(
         }
       );
     } catch (error51) {
-      if (!dispatched) {
-        await releaseEvidenceReservation(reservation).catch(() => void 0);
-        if (createdExportDirectory) await rmdir(createdExportDirectory).catch(() => void 0);
-      } else {
+      if (dispatched) {
         const failureMetadata = {
           effect: "artifact-write",
           exportDirectory: createdExportDirectory
@@ -41128,7 +41646,7 @@ registerFacadeTool(
         const failureAttachments = [];
         try {
           const observed = await inspectManagedFile(requestedPath, "Failed export artifact");
-          failureMetadata.exportArtifactObserved = {
+          failureMetadata["exportArtifactObserved"] = {
             path: observed.absolute,
             bytes: observed.info.size,
             mtimeMs: observed.info.mtimeMs
@@ -41138,10 +41656,11 @@ registerFacadeTool(
             path: observed.absolute
           });
         } catch (inspectionError) {
-          if (inspectionError?.code !== "ENOENT") {
-            failureMetadata.exportArtifactInspectionError = {
-              name: inspectionError?.name ?? "Error",
-              message: inspectionError?.message ?? String(inspectionError)
+          const inspectionRecord = isRecord(inspectionError) ? inspectionError : {};
+          if (inspectionRecord["code"] !== "ENOENT") {
+            failureMetadata["exportArtifactInspectionError"] = {
+              name: inspectionRecord["name"] ?? "Error",
+              message: inspectionRecord["message"] ?? String(inspectionError)
             };
           }
         }
@@ -41152,6 +41671,13 @@ registerFacadeTool(
           failureMetadata,
           failureAttachments
         );
+      } else {
+        await releaseEvidenceReservation(reservation).catch(() => {
+        });
+        if (createdExportDirectory !== void 0 && createdExportDirectory.length > 0) {
+          await rmdir(createdExportDirectory).catch(() => {
+          });
+        }
       }
       throw error51;
     }
@@ -41169,7 +41695,7 @@ registerFacadeTool(
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
   },
   serializedGuarded(
-    async ({ plan, confirmDiscardAnyUnsavedState }) => await engine.plan(plan, { confirmDiscardAnyUnsavedState })
+    ({ plan, confirmDiscardAnyUnsavedState }) => engine.plan(plan, { confirmDiscardAnyUnsavedState })
   )
 );
 registerFacadeTool(
@@ -41184,7 +41710,7 @@ registerFacadeTool(
     },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
   },
-  serializedGuarded(async (input) => await engine.apply(input.operationId, input.planHash))
+  serializedGuarded((input) => engine.apply(input.operationId, input.planHash))
 );
 registerFacadeTool(
   "easyeda_control_verify",
@@ -41194,7 +41720,7 @@ registerFacadeTool(
     inputSchema: { operationId: operationIdSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
   },
-  serializedGuarded(async (input) => await engine.verify(input.operationId))
+  serializedGuarded((input) => engine.verify(input.operationId))
 );
 registerFacadeTool(
   "easyeda_control_rollback",
@@ -41208,7 +41734,7 @@ registerFacadeTool(
     },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
   },
-  serializedGuarded(async (input) => await engine.rollback(input.operationId, input.planHash))
+  serializedGuarded((input) => engine.rollback(input.operationId, input.planHash))
 );
 registerFacadeTool(
   "easyeda_control_save_reopen",
@@ -41224,7 +41750,7 @@ registerFacadeTool(
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
   },
   serializedGuarded(
-    async (input) => await engine.saveReopen(input.operationId, input.planHash, {
+    (input) => engine.saveReopen(input.operationId, input.planHash, {
       confirmDiscardAnyUnsavedState: input.confirmDiscardAnyUnsavedState
     })
   )
@@ -41239,12 +41765,17 @@ registerFacadeTool(
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
   },
-  serializedGuarded(async (input) => {
+  serializedGuarded((input) => {
     if (input.request.action === "verify") {
-      return await engine.checkpoint({ receiptPath: input.request.receiptPath });
+      return engine.checkpoint({ receiptPath: input.request.receiptPath });
     }
-    const { action: ignored, ...create } = input.request;
-    return await engine.checkpoint(checkpointCreateSchema.parse(create));
+    return engine.checkpoint(
+      checkpointCreateSchema.parse({
+        source: input.request.source,
+        outputDir: input.request.outputDir,
+        label: input.request.label
+      })
+    );
   })
 );
 registerFacadeTool(
@@ -41269,16 +41800,20 @@ registerFacadeTool(
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
   },
   serializedGuarded(
-    async (input) => {
-      if (!input.operationId) return await engine.recover();
-      if (!input.resolution) throw new Error("resolution is required when operationId is provided.");
+    (input) => {
+      if (input.operationId === void 0 || input.operationId.length === 0) {
+        return engine.recover();
+      }
+      if (input.resolution === void 0) {
+        throw new Error("resolution is required when operationId is provided.");
+      }
       if (input.confirmation !== `${input.operationId}:${input.resolution}`) {
         throw new Error("confirmation must exactly equal operationId:resolution.");
       }
-      return await engine.recover(input.operationId, input.resolution, {
+      return engine.recover(input.operationId, input.resolution, {
         confirmDiscardAnyUnsavedState: input.confirmDiscardAnyUnsavedState,
         confirmRepeatAfterUnknownRecovery: input.confirmRepeatAfterUnknownRecovery,
-        runtimeRestartConfirmation: input.runtimeRestartConfirmation
+        ...input.runtimeRestartConfirmation === void 0 ? {} : { runtimeRestartConfirmation: input.runtimeRestartConfirmation }
       });
     },
     { allowDuringOrphanRisk: true }
@@ -41293,7 +41828,7 @@ registerFacadeTool(
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
   },
   serializedGuarded(
-    async (input) => await verifyEvidenceReceipt(input.receiptPath),
+    (input) => verifyEvidenceReceipt(input.receiptPath),
     { allowDuringOrphanRisk: true }
   )
 );
@@ -41310,15 +41845,18 @@ registerFacadeTool(
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
   },
   serializedGuarded(
-    async (input) => await readArtifact(input.path, input.offset, input.length),
+    (input) => readArtifact(input.path, input.offset, input.length),
     { allowDuringOrphanRisk: true }
   )
 );
 var transport = new StdioServerTransport();
 var shutdown = async () => {
-  await upstream.close().catch(() => void 0);
-  await server.close().catch(() => void 0);
-  await facadeLease.release().catch(() => void 0);
+  await upstream.close().catch(() => {
+  });
+  await server.close().catch(() => {
+  });
+  await facadeLease.release().catch(() => {
+  });
 };
 process8.once("SIGINT", () => void shutdown().finally(() => process8.exit(0)));
 process8.once("SIGTERM", () => void shutdown().finally(() => process8.exit(0)));

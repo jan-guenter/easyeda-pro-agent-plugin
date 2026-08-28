@@ -1,10 +1,254 @@
 import { z } from 'zod';
 
+type UnknownRecord = Record<string, unknown>;
+
+interface ValidationRecord extends UnknownRecord {
+  addIntoBom?: unknown;
+  angles?: unknown;
+  arcPrecision?: unknown;
+  byPrimitiveId?: Record<string, ValidationRecord>;
+  bounds?: unknown;
+  cbb?: unknown;
+  cbbSymbol?: unknown;
+  complexPolygon?: unknown;
+  component?: unknown;
+  componentOtherPropertyFiltering?: unknown;
+  componentPadCorrelation?: unknown;
+  componentPadWrapper?: unknown;
+  componentPinOtherProperty?: unknown;
+  componentCorrelationSource?: unknown;
+  componentType?: unknown;
+  connectionMethod?: unknown;
+  connectivity?: unknown;
+  config?: unknown;
+  coordinatesAndLengths?: unknown;
+  count?: unknown;
+  cbbLibraryOwnership?: unknown;
+  designRuleBlindViaName?: unknown;
+  designator?: unknown;
+  fill?: unknown;
+  fillModes?: unknown;
+  footprint?: unknown;
+  heatWelding?: unknown;
+  hole?: unknown;
+  id?: unknown;
+  interactiveMode?: unknown;
+  layer?: unknown;
+  maxX?: unknown;
+  maxY?: unknown;
+  metallization?: unknown;
+  minWireLength?: unknown;
+  minX?: unknown;
+  minY?: unknown;
+  minimumWireLengths?: ValidationRecord[];
+  mirror?: unknown;
+  model3D?: unknown;
+  name?: unknown;
+  negativeNet?: unknown;
+  net?: unknown;
+  nets?: unknown[];
+  noConnected?: unknown;
+  otherProperty?: unknown;
+  pad?: unknown;
+  padPair?: unknown;
+  padNumber?: unknown;
+  padPairs?: unknown[];
+  padType?: unknown;
+  pads?: ValidationRecord[];
+  parentComponentPrimitiveId?: unknown;
+  path?: unknown;
+  pinColor?: unknown;
+  pinName?: unknown;
+  pinNumber?: unknown;
+  pinNumbers?: unknown[];
+  pinShape?: unknown;
+  pinType?: unknown;
+  pins?: ValidationRecord[];
+  polygon?: unknown;
+  positiveNet?: unknown;
+  pourFills?: ValidationRecord[];
+  pourName?: unknown;
+  pourPrimitiveId?: unknown;
+  preserveSilos?: unknown;
+  primitiveId?: unknown;
+  primitiveIds?: unknown[];
+  primitiveLock?: unknown;
+  primitiveType?: unknown;
+  regionName?: unknown;
+  regionRuleTypes?: unknown;
+  solderMaskAndPasteMaskExpansion?: unknown;
+  solderMaskExpansion?: unknown;
+  source?: unknown;
+  specialPad?: unknown;
+  status?: unknown;
+  sub?: ValidationRecord[];
+  subPartName?: unknown;
+  symbol?: unknown;
+  type?: unknown;
+  uniqueId?: unknown;
+  viaType?: unknown;
+  viaPrecision?: unknown;
+  wireGeometry?: unknown;
+}
+
+interface FamilyCandidate extends UnknownRecord {
+  status?: unknown;
+  count?: unknown;
+  primitiveIds?: unknown[];
+  byPrimitiveId?: Record<string, ValidationRecord>;
+  enumeratedPrimitiveCount?: unknown;
+}
+
+interface ComponentCorrelationCandidate extends UnknownRecord {
+  status?: unknown;
+  source?: unknown;
+  componentCount?: unknown;
+  pinCount?: unknown;
+  primitiveIds?: unknown[];
+  uniqueIds?: unknown[];
+  byUniqueId?: Record<string, ValidationRecord>;
+}
+
+interface ComponentPadCorrelationCandidate extends UnknownRecord {
+  status?: unknown;
+  count?: unknown;
+  primitiveIds?: unknown[];
+  byPrimitiveId?: Record<string, ValidationRecord>;
+  byComponentPrimitiveId?: Record<string, unknown[]>;
+}
+
+interface PouredCorrelationCandidate extends UnknownRecord {
+  status?: unknown;
+  count?: unknown;
+  pourPrimitiveIds?: unknown[];
+  byPourPrimitiveId?: Record<string, ValidationRecord>;
+}
+
+interface RulesCandidate extends UnknownRecord {
+  configurationName?: unknown;
+  configuration?: ValidationRecord;
+  netRules?: ValidationRecord[];
+  regionRules?: ValidationRecord[];
+  netByNetRules?: Record<string, unknown>;
+  netClasses?: ValidationRecord[];
+  differentialPairs?: ValidationRecord[];
+  equalLengthGroups?: ValidationRecord[];
+  padPairGroups?: ValidationRecord[];
+}
+
+interface ExactPayloadCandidate extends UnknownRecord {
+  ok?: unknown;
+  kind?: unknown;
+  documentType?: unknown;
+  primitiveIds?: unknown[];
+  detail?: { pins?: unknown; bounds?: unknown };
+  byPrimitiveId?: Record<string, ValidationRecord>;
+  limitations?: unknown[] | ValidationRecord;
+  authority?: ValidationRecord;
+  componentCorrelation?: ComponentCorrelationCandidate;
+  compiledConnectivity?: ValidationRecord[];
+  units?: ValidationRecord;
+  families?: Record<string, FamilyCandidate>;
+  componentPadCorrelation?: ComponentPadCorrelationCandidate;
+  pouredCorrelation?: PouredCorrelationCandidate;
+  physicalPadCount?: unknown;
+  standalonePadCount?: unknown;
+  pouredFillPieceCount?: unknown;
+  enumeratedPrimitiveCount?: unknown;
+  rules?: RulesCandidate;
+  nets?: unknown[];
+}
+
+const PCB_INVENTORY_FAMILY_NAMES = [
+  'arcs',
+  'attributes',
+  'components',
+  'dimensions',
+  'fills',
+  'images',
+  'lines',
+  'objects',
+  'pads',
+  'polylines',
+  'pours',
+  'regions',
+  'strings',
+  'vias',
+] as const;
+type PcbInventoryFamilyName = (typeof PCB_INVENTORY_FAMILY_NAMES)[number];
+
+const PCB_MONITORED_FAMILY_NAMES = [
+  'arcs',
+  'fills',
+  'lines',
+  'pads',
+  'polylines',
+  'pours',
+  'regions',
+  'vias',
+] as const;
+type PcbMonitoredFamilyName = (typeof PCB_MONITORED_FAMILY_NAMES)[number];
+
+interface ValidatedFamily {
+  count: number;
+  primitiveIds: string[];
+  byPrimitiveId?: Record<string, ValidationRecord>;
+}
+
+interface ValidatedMonitoredFamily extends ValidatedFamily {
+  byPrimitiveId: Record<string, ValidationRecord>;
+}
+
+function isUnknownRecord(value: unknown): value is UnknownRecord {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isUnknownArray(value: unknown): value is unknown[] {
+  return Array.isArray(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item: unknown) => typeof item === 'string');
+}
+
+function compareStrings(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function requireFiniteNumber(value: unknown, label: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new TypeError(`${label} must be finite.`);
+  }
+  return value;
+}
+
+function assertUniqueNames(rows: readonly ValidationRecord[], label: string): void {
+  const names = rows.map((row) => row.name);
+  if (
+    names.some((name) => typeof name !== 'string' || name.length === 0) ||
+    new Set(names).size !== names.length
+  ) {
+    throw new Error(`Exact PCB rules reader returned malformed or duplicate ${label} names.`);
+  }
+}
+
+function assertPayloadCandidate(value: unknown): asserts value is ExactPayloadCandidate {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Exact reader returned a non-object payload.');
+  }
+}
+
+interface ExpectedContext {
+  document?: {
+    documentType?: number;
+  };
+}
+
 const primitiveIdSchema = z
   .string()
   .min(1)
   .max(160)
-  .regex(/^[A-Za-z0-9._:-]+$/);
+  .regex(/^[A-Za-z0-9._:-]+$/u);
 const designatorSchema = z.string().min(1).max(160);
 
 const selectorSchema = z
@@ -18,17 +262,18 @@ const selectorSchema = z
     const choices = [value.all === true, value.primitiveIds !== undefined, value.designators !== undefined];
     if (choices.filter(Boolean).length !== 1) {
       context.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'selector requires exactly one of all=true, primitiveIds, or designators.',
       });
     }
-    for (const [key, items] of [
+    const selections: ReadonlyArray<readonly [string, readonly string[] | undefined]> = [
       ['primitiveIds', value.primitiveIds],
       ['designators', value.designators],
-    ]) {
-      if (items && new Set(items).size !== items.length) {
+    ];
+    for (const [key, items] of selections) {
+      if (items !== undefined && new Set(items).size !== items.length) {
         context.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: 'custom',
           path: [key],
           message: `${key} must not contain duplicates.`,
         });
@@ -60,13 +305,19 @@ export const exactReadRequestSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('pcb-rules') }).strict(),
 ]);
 
-export function exactReadDocumentType(kind) {
-  if (['schematic-components', 'schematic-topology'].includes(kind)) return 1;
-  if (['pcb-components', 'pcb-inventory', 'pcb-rules'].includes(kind)) return 3;
+export type ExactReadRequest = z.infer<typeof exactReadRequestSchema>;
+export type ExactReadKind = ExactReadRequest['kind'];
+
+export function exactReadDocumentType(kind: unknown): 1 | 3 {
+  if (kind === 'schematic-components' || kind === 'schematic-topology') return 1;
+  if (kind === 'pcb-components' || kind === 'pcb-inventory' || kind === 'pcb-rules') return 3;
   throw new Error(`Unsupported exact-reader kind: ${String(kind)}`);
 }
 
-export function validateExactReadRequest(request, expectedContext) {
+export function validateExactReadRequest(
+  request: unknown,
+  expectedContext: ExpectedContext,
+): ExactReadRequest {
   const parsed = exactReadRequestSchema.parse(request);
   const requiredType = exactReadDocumentType(parsed.kind);
   if (expectedContext?.document?.documentType !== requiredType) {
@@ -77,60 +328,74 @@ export function validateExactReadRequest(request, expectedContext) {
   return parsed;
 }
 
-function assertExactRecordKeys(value, requiredKeys, label) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+function assertExactRecordKeys(
+  value: unknown,
+  requiredKeys: readonly string[],
+  label: string,
+): asserts value is ValidationRecord {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`${label} must be an object.`);
   }
-  const actual = Object.keys(value).sort();
-  const expected = [...requiredKeys].sort();
+  const actual = Object.keys(value).toSorted();
+  const expected = [...requiredKeys].toSorted();
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
     throw new Error(`${label} has missing or unexpected fields.`);
   }
 }
 
-function assertFiniteFields(value, fields, label) {
+function assertFiniteFields(
+  value: UnknownRecord,
+  fields: readonly string[],
+  label: string,
+): void {
   for (const field of fields) {
     if (typeof value[field] !== 'number' || !Number.isFinite(value[field])) {
-      throw new Error(`${label}.${field} must be finite.`);
+      throw new TypeError(`${label}.${field} must be finite.`);
     }
   }
 }
 
-function assertNullableString(value, label) {
+function assertNullableString(value: unknown, label: string): void {
   if (value !== null && typeof value !== 'string') {
     throw new Error(`${label} must be a string or null.`);
   }
 }
 
-function assertBounds(value, label) {
+function assertBounds(value: unknown, label: string): void {
   assertExactRecordKeys(value, ['minX', 'minY', 'maxX', 'maxY'], label);
-  assertFiniteFields(value, ['minX', 'minY', 'maxX', 'maxY'], label);
-  if (value.minX > value.maxX || value.minY > value.maxY) {
+  const minX = requireFiniteNumber(value.minX, `${label}.minX`);
+  const minY = requireFiniteNumber(value.minY, `${label}.minY`);
+  const maxX = requireFiniteNumber(value.maxX, `${label}.maxX`);
+  const maxY = requireFiniteNumber(value.maxY, `${label}.maxY`);
+  if (minX > maxX || minY > maxY) {
     throw new Error(`${label} has inverted extents.`);
   }
 }
 
-function assertNonemptyString(value, label) {
+function assertNonemptyString(value: unknown, label: string): asserts value is string {
   if (typeof value !== 'string' || value.length === 0) {
     throw new Error(`${label} must be a nonempty string.`);
   }
 }
 
-function assertJsonContainer(value, label) {
-  if (!value || typeof value !== 'object') {
+function assertJsonContainer(value: unknown, label: string): void {
+  if (value === null || typeof value !== 'object') {
     throw new Error(`${label} must be a JSON object or array.`);
   }
 }
 
-function assertPadShape(value, label) {
+function assertPadShape(value: unknown, label: string): void {
   if (value === null) return;
-  if (!Array.isArray(value)) throw new Error(`${label} must be a pad-shape tuple or null.`);
+  if (!isUnknownArray(value)) throw new Error(`${label} must be a pad-shape tuple or null.`);
   const [shape] = value;
-  if (['ELLIPSE', 'OVAL', 'NGON'].includes(shape)) {
+  if (typeof shape === 'string' && ['ELLIPSE', 'OVAL', 'NGON'].includes(shape)) {
     if (value.length !== 3) throw new Error(`${label} has the wrong ${shape} tuple length.`);
     assertFiniteFields({ first: value[1], second: value[2] }, ['first', 'second'], label);
-    if (shape === 'NGON' && (!Number.isInteger(value[2]) || value[2] <= 2)) {
-      throw new Error(`${label} has an invalid regular-polygon side count.`);
+    if (shape === 'NGON') {
+      const sideCount = requireFiniteNumber(value[2], `${label}[2]`);
+      if (!Number.isInteger(sideCount) || sideCount <= 2) {
+        throw new Error(`${label} has an invalid regular-polygon side count.`);
+      }
     }
     return;
   }
@@ -151,7 +416,7 @@ function assertPadShape(value, label) {
   throw new Error(`${label} has an unknown pad-shape discriminator.`);
 }
 
-function assertSpecialPadShape(value, label) {
+function assertSpecialPadShape(value: unknown, label: string): void {
   if (value === null) return;
   if (!Array.isArray(value)) throw new Error(`${label} must be an array or null.`);
   for (const [index, layerShape] of value.entries()) {
@@ -170,9 +435,9 @@ function assertSpecialPadShape(value, label) {
   }
 }
 
-function assertPadHole(value, label) {
+function assertPadHole(value: unknown, label: string): void {
   if (value === null) return;
-  if (!Array.isArray(value)) throw new Error(`${label} must be a hole tuple or null.`);
+  if (!isUnknownArray(value)) throw new Error(`${label} must be a hole tuple or null.`);
   const [holeType] = value;
   const expectedLength = holeType === 'ROUND' ? 2 : holeType === 'SLOT' ? 3 : 0;
   if (!expectedLength || value.length !== expectedLength) {
@@ -180,15 +445,15 @@ function assertPadHole(value, label) {
   }
   for (let index = 1; index < value.length; index += 1) {
     if (typeof value[index] !== 'number' || !Number.isFinite(value[index])) {
-      throw new Error(`${label}[${index}] must be finite.`);
+      throw new TypeError(`${label}[${index}] must be finite.`);
     }
   }
 }
 
-function assertMaskExpansion(value, label) {
+function assertMaskExpansion(value: unknown, label: string): void {
   if (value === null) return;
   const fields = ['topSolderMask', 'bottomSolderMask', 'topPasteMask', 'bottomPasteMask'];
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!isUnknownRecord(value)) {
     throw new Error(`${label} must be a mask-expansion object or null.`);
   }
   if (Object.keys(value).some((key) => !fields.includes(key))) {
@@ -197,16 +462,17 @@ function assertMaskExpansion(value, label) {
   assertFiniteFields(value, Object.keys(value), label);
 }
 
-function assertHeatWelding(value, label) {
+function assertHeatWelding(value: unknown, label: string): void {
   if (value === null) return;
   const required = ['connectionMethod'];
   const optional = ['divergenceSpacing', 'divergenceLineWidth', 'divergenceAngle'];
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!isUnknownRecord(value)) {
     throw new Error(`${label} must be a thermal-connection object or null.`);
   }
   if (
     Object.keys(value).some((key) => ![...required, ...optional].includes(key)) ||
-    !['Divergent', 'Direct-connected', 'Non-connected'].includes(value.connectionMethod)
+    typeof value['connectionMethod'] !== 'string' ||
+    !['Divergent', 'Direct-connected', 'Non-connected'].includes(value['connectionMethod'])
   ) {
     throw new Error(`${label} has a malformed connection method or unexpected field.`);
   }
@@ -217,21 +483,29 @@ function assertHeatWelding(value, label) {
   );
 }
 
-function assertCanonicalUniqueStrings(value, label, { allowEmpty = true } = {}) {
+function assertCanonicalUniqueStrings(
+  value: unknown,
+  label: string,
+  { allowEmpty = true }: { allowEmpty?: boolean } = {},
+): asserts value is string[] {
   if (
-    !Array.isArray(value) ||
+    !isStringArray(value) ||
     (!allowEmpty && value.length === 0) ||
-    value.some((item) => typeof item !== 'string' || item.length === 0) ||
+    value.some((item) => item.length === 0) ||
     new Set(value).size !== value.length ||
-    JSON.stringify(value) !== JSON.stringify([...value].sort())
+    JSON.stringify(value) !== JSON.stringify(value.toSorted(compareStrings))
   ) {
     throw new Error(`${label} must be a sorted array of unique nonempty strings.`);
   }
 }
 
-function assertAssociation(value, label, kind = 'library') {
+function assertAssociation(
+  value: unknown,
+  label: string,
+  kind: 'library' | 'cbb' | 'cbb-symbol' = 'library',
+): void {
   if (value === null) return;
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!isUnknownRecord(value)) {
     throw new Error(`${label} must be a library association or null.`);
   }
   const allowed =
@@ -250,7 +524,7 @@ function assertAssociation(value, label, kind = 'library') {
   }
 }
 
-function assertOtherProperty(value, label) {
+function assertOtherProperty(value: unknown, label: string): void {
   if (value === null) return;
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`${label} must be a flat property object or null.`);
@@ -260,15 +534,13 @@ function assertOtherProperty(value, label) {
       throw new Error(`${label} contains a malformed property.`);
     }
     if (typeof fieldValue === 'number' && !Number.isFinite(fieldValue)) {
-      throw new Error(`${label} contains a non-finite property.`);
+      throw new TypeError(`${label} contains a non-finite property.`);
     }
   }
 }
 
-export function validateExactReadPayload(payload, request) {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-    throw new Error('Exact reader returned a non-object payload.');
-  }
+export function validateExactReadPayload<T>(payload: T, request: ExactReadRequest): T {
+  assertPayloadCandidate(payload);
   if (
     payload.ok !== true ||
     payload.kind !== request.kind ||
@@ -276,7 +548,7 @@ export function validateExactReadPayload(payload, request) {
   ) {
     throw new Error('Exact reader returned an inconsistent kind, document type, or success flag.');
   }
-  if (request.kind.endsWith('-components')) {
+  if (request.kind === 'schematic-components' || request.kind === 'pcb-components') {
     if (
       !Array.isArray(payload.primitiveIds) ||
       payload.detail?.pins !== request.includePins ||
@@ -287,15 +559,17 @@ export function validateExactReadPayload(payload, request) {
     ) {
       throw new Error('Exact component reader omitted its primitive index.');
     }
-    const keys = Object.keys(payload.byPrimitiveId).sort();
+    const componentByPrimitiveId = payload.byPrimitiveId;
+    const primitiveIds = payload.primitiveIds;
+    const keys = Object.keys(componentByPrimitiveId).toSorted();
     if (
-      new Set(payload.primitiveIds).size !== payload.primitiveIds.length ||
-      JSON.stringify(keys) !== JSON.stringify(payload.primitiveIds)
+      new Set(primitiveIds).size !== primitiveIds.length ||
+      JSON.stringify(keys) !== JSON.stringify(primitiveIds)
     ) {
       throw new Error('Exact component reader primitive index is internally inconsistent.');
     }
     for (const id of keys) {
-      const component = payload.byPrimitiveId[id];
+      const component = componentByPrimitiveId[id];
       if (component?.primitiveId !== id) {
         throw new Error(`Exact component reader returned a mismatched primitive record for ${id}.`);
       }
@@ -386,11 +660,11 @@ export function validateExactReadPayload(payload, request) {
           }
         }
         if (typeof component.mirror !== 'boolean') {
-          throw new Error(`Exact component ${id}.mirror must be boolean.`);
+          throw new TypeError(`Exact component ${id}.mirror must be boolean.`);
         }
         if (request.includePins) {
           if (!Array.isArray(component.pins)) {
-            throw new Error(`Exact component ${id}.pins must be an array.`);
+            throw new TypeError(`Exact component ${id}.pins must be an array.`);
           }
           const pinIds = [];
           for (const [index, pin] of component.pins.entries()) {
@@ -418,10 +692,10 @@ export function validateExactReadPayload(payload, request) {
             assertFiniteFields(pin, ['x', 'y', 'rotation', 'pinLength'], label);
             assertNullableString(pin.pinColor, `${label}.pinColor`);
             if (typeof pin.pinShape !== 'string' || typeof pin.pinType !== 'string') {
-              throw new Error(`${label} has malformed pin shape or type.`);
+              throw new TypeError(`${label} has malformed pin shape or type.`);
             }
             if (typeof pin.noConnected !== 'boolean') {
-              throw new Error(`${label}.noConnected must be boolean.`);
+              throw new TypeError(`${label}.noConnected must be boolean.`);
             }
             pinIds.push(pin.primitiveId);
           }
@@ -432,11 +706,11 @@ export function validateExactReadPayload(payload, request) {
       } else {
         assertAssociation(component.model3D, `Exact component ${id}.model3D`);
         if (typeof component.primitiveLock !== 'boolean' || typeof component.addIntoBom !== 'boolean') {
-          throw new Error(`Exact PCB component ${id} has malformed boolean state.`);
+          throw new TypeError(`Exact PCB component ${id} has malformed boolean state.`);
         }
         if (request.includePins) {
           if (!Array.isArray(component.pads)) {
-            throw new Error(`Exact PCB component ${id}.pads must be an array.`);
+            throw new TypeError(`Exact PCB component ${id}.pads must be an array.`);
           }
           const padIds = [];
           for (const [index, pad] of component.pads.entries()) {
@@ -476,35 +750,46 @@ export function validateExactReadPayload(payload, request) {
       }
     }
     if (request.selector.primitiveIds) {
-      const requested = [...request.selector.primitiveIds].sort();
+      const requested = [...request.selector.primitiveIds].toSorted();
       if (JSON.stringify(keys) !== JSON.stringify(requested)) {
         throw new Error('Exact component reader did not return every requested primitive ID exactly once.');
       }
     }
     if (request.selector.designators) {
-      const actual = keys.map((id) => payload.byPrimitiveId[id]?.designator).sort();
-      const requested = [...request.selector.designators].sort();
+      const actual = keys
+        .map((id) => {
+          const designator = componentByPrimitiveId[id]?.designator;
+          assertNonemptyString(designator, `Exact component ${id}.designator`);
+          return designator;
+        })
+        .toSorted(compareStrings);
+      const requested = request.selector.designators.toSorted(compareStrings);
       if (JSON.stringify(actual) !== JSON.stringify(requested)) {
         throw new Error('Exact component reader did not return every requested designator exactly once.');
       }
     }
+    const limitations = payload.limitations;
     if (request.kind === 'schematic-components') {
       if (
-        typeof payload.limitations?.componentPinOtherProperty !== 'string' ||
-        typeof payload.limitations?.componentOtherPropertyFiltering !== 'string' ||
-        typeof payload.limitations?.cbbLibraryOwnership !== 'string'
+        !isUnknownRecord(limitations) ||
+        typeof limitations['componentPinOtherProperty'] !== 'string' ||
+        typeof limitations['componentOtherPropertyFiltering'] !== 'string' ||
+        typeof limitations['cbbLibraryOwnership'] !== 'string'
       ) {
         throw new Error('Exact schematic component reader omitted adapter limitations.');
       }
       for (const id of keys) {
-        const component = payload.byPrimitiveId[id];
-        for (const pin of component.pins ?? []) {
+        const component = componentByPrimitiveId[id];
+        for (const pin of component?.pins ?? []) {
           if (Object.hasOwn(pin, 'otherProperty')) {
             throw new Error('Exact schematic component reader exposed unobservable pin properties.');
           }
         }
       }
-    } else if (typeof payload.limitations?.componentPadWrapper !== 'string') {
+    } else if (
+      !isUnknownRecord(limitations) ||
+      typeof limitations['componentPadWrapper'] !== 'string'
+    ) {
       throw new Error('Exact PCB component reader omitted its adapter limitation.');
     }
   } else if (request.kind === 'schematic-topology') {
@@ -515,6 +800,7 @@ export function validateExactReadPayload(payload, request) {
       payload.componentCorrelation?.status !== 'exact-match' ||
       payload.componentCorrelation?.source !==
         'sch_PrimitiveComponent.getAll(part,true)' ||
+      typeof payload.componentCorrelation?.pinCount !== 'number' ||
       !Number.isSafeInteger(payload.componentCorrelation?.pinCount) ||
       payload.componentCorrelation.pinCount < 0 ||
       !Array.isArray(payload.componentCorrelation?.uniqueIds) ||
@@ -556,7 +842,7 @@ export function validateExactReadPayload(payload, request) {
         'Exact schematic topology compiled component',
       );
       if (!Array.isArray(component.pins)) {
-        throw new Error('Exact schematic topology compiled connectivity is malformed.');
+        throw new TypeError('Exact schematic topology compiled connectivity is malformed.');
       }
       assertNonemptyString(component.uniqueId, 'Exact schematic topology compiled unique ID');
       assertNullableString(component.designator, 'Exact schematic topology compiled designator');
@@ -570,7 +856,7 @@ export function validateExactReadPayload(payload, request) {
       }
       if (
         new Set(compiledPinNumbers).size !== compiledPinNumbers.length ||
-        JSON.stringify(compiledPinNumbers) !== JSON.stringify([...compiledPinNumbers].sort())
+        JSON.stringify(compiledPinNumbers) !== JSON.stringify([...compiledPinNumbers].toSorted())
       ) {
         throw new Error('Exact schematic topology compiled pin numbers are not canonical and unique.');
       }
@@ -604,37 +890,39 @@ export function validateExactReadPayload(payload, request) {
     if (new Set(connectivityIds).size !== connectivityIds.length) {
       throw new Error('Exact schematic topology compiled connectivity has duplicate unique IDs.');
     }
-    const correlatedIds = [...payload.componentCorrelation.uniqueIds].sort();
+    const correlatedIds = [...payload.componentCorrelation.uniqueIds].toSorted();
     const compiledPinCount = payload.compiledConnectivity.reduce(
-      (total, component) => total + component.pins.length,
+      (total, component) => total + (component.pins?.length ?? 0),
       0,
     );
     if (
       payload.componentCorrelation.componentCount !== connectivityIds.length ||
       payload.componentCorrelation.pinCount !== compiledPinCount ||
       payload.componentCorrelation.primitiveIds.length !== connectivityIds.length ||
-      JSON.stringify(Object.keys(payload.componentCorrelation.byUniqueId).sort()) !==
-        JSON.stringify([...connectivityIds].sort()) ||
-      JSON.stringify(correlatedIds) !== JSON.stringify([...connectivityIds].sort()) ||
-      JSON.stringify([...correlatedPrimitiveIds].sort()) !==
+      JSON.stringify(Object.keys(payload.componentCorrelation.byUniqueId).toSorted()) !==
+        JSON.stringify([...connectivityIds].toSorted()) ||
+      JSON.stringify(correlatedIds) !== JSON.stringify([...connectivityIds].toSorted()) ||
+      JSON.stringify([...correlatedPrimitiveIds].toSorted()) !==
         JSON.stringify(payload.componentCorrelation.primitiveIds)
     ) {
       throw new Error('Exact schematic topology component correlation is inconsistent.');
     }
   } else if (request.kind === 'pcb-inventory') {
+    const limitations = payload.limitations;
     if (
       !payload.families ||
       typeof payload.families !== 'object' ||
       Array.isArray(payload.families) ||
       payload.units?.coordinatesAndLengths !== 'mil' ||
       payload.units?.angles !== 'degree' ||
-      typeof payload.limitations?.directPads !== 'string' ||
-      typeof payload.limitations?.componentPadCorrelation !== 'string' ||
-      typeof payload.limitations?.pouredCorrelation !== 'string' ||
-      typeof payload.limitations?.regionRuleTypes !== 'string' ||
-      typeof payload.limitations?.fillModes !== 'string' ||
-      typeof payload.limitations?.arcPrecision !== 'string' ||
-      typeof payload.limitations?.viaPrecision !== 'string' ||
+      !isUnknownRecord(limitations) ||
+      typeof limitations['directPads'] !== 'string' ||
+      typeof limitations['componentPadCorrelation'] !== 'string' ||
+      typeof limitations['pouredCorrelation'] !== 'string' ||
+      typeof limitations['regionRuleTypes'] !== 'string' ||
+      typeof limitations['fillModes'] !== 'string' ||
+      typeof limitations['arcPrecision'] !== 'string' ||
+      typeof limitations['viaPrecision'] !== 'string' ||
       payload.componentPadCorrelation?.status !== 'exact-subset' ||
       !Array.isArray(payload.componentPadCorrelation?.primitiveIds) ||
       !payload.componentPadCorrelation?.byPrimitiveId ||
@@ -651,38 +939,18 @@ export function validateExactReadPayload(payload, request) {
     ) {
       throw new Error('Exact PCB inventory omitted primitive families.');
     }
-    const requiredFamilies = [
-      'arcs',
-      'attributes',
-      'components',
-      'dimensions',
-      'fills',
-      'images',
-      'lines',
-      'objects',
-      'pads',
-      'polylines',
-      'pours',
-      'regions',
-      'strings',
-      'vias',
-    ];
-    if (JSON.stringify(Object.keys(payload.families).sort()) !== JSON.stringify(requiredFamilies)) {
+    const families = payload.families;
+    if (
+      JSON.stringify(Object.keys(families).toSorted()) !==
+      JSON.stringify(PCB_INVENTORY_FAMILY_NAMES)
+    ) {
       throw new Error('Exact PCB inventory primitive-family set is incomplete.');
     }
-    const monitoredFamilies = new Set([
-      'arcs',
-      'fills',
-      'lines',
-      'pads',
-      'polylines',
-      'pours',
-      'regions',
-      'vias',
-    ]);
-    const allFamilyPrimitiveIds = [];
-    for (const name of requiredFamilies) {
-      const family = payload.families[name];
+    const monitoredFamilies = new Set<PcbInventoryFamilyName>(PCB_MONITORED_FAMILY_NAMES);
+    const validatedFamilies = new Map<PcbInventoryFamilyName, ValidatedFamily>();
+    const allFamilyPrimitiveIds: string[] = [];
+    for (const name of PCB_INVENTORY_FAMILY_NAMES) {
+      const family = families[name];
       assertExactRecordKeys(
         family,
         monitoredFamilies.has(name)
@@ -690,150 +958,183 @@ export function validateExactReadPayload(payload, request) {
           : ['status', 'count', 'primitiveIds'],
         `Exact PCB inventory family ${name}`,
       );
+      assertCanonicalUniqueStrings(
+        family.primitiveIds,
+        `Exact PCB inventory family ${name} primitive IDs`,
+      );
+      const familyPrimitiveIds = family.primitiveIds;
       if (
-        family?.status !== 'adapter-enumerated' ||
-        family.count !== family.primitiveIds.length ||
+        family.status !== 'adapter-enumerated' ||
+        typeof family.count !== 'number' ||
+        family.count !== familyPrimitiveIds.length ||
         !Number.isSafeInteger(family.count) ||
         family.count < 0
       ) {
         throw new Error(`Exact PCB inventory family ${name} is internally inconsistent.`);
       }
-      assertCanonicalUniqueStrings(
-        family.primitiveIds,
-        `Exact PCB inventory family ${name} primitive IDs`,
-      );
-      allFamilyPrimitiveIds.push(...family.primitiveIds);
-      if (family.byPrimitiveId !== undefined) {
+      allFamilyPrimitiveIds.push(...familyPrimitiveIds);
+      const familyIndex: unknown = family.byPrimitiveId;
+      let validatedFamilyIndex: Record<string, ValidationRecord> | undefined;
+      if (familyIndex !== undefined) {
         if (
-          !family.byPrimitiveId ||
-          typeof family.byPrimitiveId !== 'object' ||
-          Array.isArray(family.byPrimitiveId) ||
-          JSON.stringify(Object.keys(family.byPrimitiveId).sort()) !==
-            JSON.stringify(family.primitiveIds)
+          !isUnknownRecord(familyIndex) ||
+          JSON.stringify(Object.keys(familyIndex).toSorted(compareStrings)) !==
+            JSON.stringify(familyPrimitiveIds)
         ) {
           throw new Error(`Exact PCB inventory family ${name} has an inconsistent state index.`);
         }
-        for (const id of family.primitiveIds) {
-          if (family.byPrimitiveId[id]?.primitiveId !== id) {
+        const indexEntries: Array<[string, ValidationRecord]> = [];
+        for (const id of familyPrimitiveIds) {
+          const state = familyIndex[id];
+          if (!isUnknownRecord(state) || state['primitiveId'] !== id) {
             throw new Error(`Exact PCB inventory family ${name} mismatched state for ${id}.`);
           }
+          indexEntries.push([id, state]);
         }
+        validatedFamilyIndex = Object.fromEntries(indexEntries);
       }
+      if (monitoredFamilies.has(name) && familyIndex === undefined) {
+        throw new Error(`Exact PCB inventory family ${name} has an inconsistent state index.`);
+      }
+      validatedFamilies.set(name, {
+        count: family.count,
+        primitiveIds: familyPrimitiveIds,
+        ...(validatedFamilyIndex === undefined ? {} : { byPrimitiveId: validatedFamilyIndex }),
+      });
     }
     if (
       new Set(allFamilyPrimitiveIds).size !== allFamilyPrimitiveIds.length ||
+      typeof payload.enumeratedPrimitiveCount !== 'number' ||
       !Number.isSafeInteger(payload.enumeratedPrimitiveCount) ||
       payload.enumeratedPrimitiveCount !== allFamilyPrimitiveIds.length
     ) {
       throw new Error('Exact PCB inventory family primitive identities overlap or have the wrong total.');
     }
 
-    const validatePrimitiveRecord = (name, row, id) => {
+    const getFamily = (name: PcbInventoryFamilyName): ValidatedFamily => {
+      const family = validatedFamilies.get(name);
+      if (!family) throw new Error(`Exact PCB inventory family ${name} is unavailable.`);
+      return family;
+    };
+    const getMonitoredFamily = (name: PcbMonitoredFamilyName): ValidatedMonitoredFamily => {
+      const family = getFamily(name);
+      if (!family.byPrimitiveId) {
+        throw new Error(`Exact PCB inventory family ${name} has an inconsistent state index.`);
+      }
+      return { ...family, byPrimitiveId: family.byPrimitiveId };
+    };
+
+    const primitiveSchemas: Record<PcbMonitoredFamilyName, readonly string[]> = {
+      pads: [
+        'primitiveId',
+        'primitiveType',
+        'layer',
+        'padNumber',
+        'x',
+        'y',
+        'rotation',
+        'pad',
+        'specialPad',
+        'net',
+        'hole',
+        'holeOffsetX',
+        'holeOffsetY',
+        'holeRotation',
+        'metallization',
+        'padType',
+        'solderMaskAndPasteMaskExpansion',
+        'heatWelding',
+        'primitiveLock',
+        'source',
+      ],
+      vias: [
+        'primitiveId',
+        'primitiveType',
+        'net',
+        'x',
+        'y',
+        'holeDiameter',
+        'diameter',
+        'viaType',
+        'designRuleBlindViaName',
+        'solderMaskExpansion',
+        'primitiveLock',
+      ],
+      lines: [
+        'primitiveId',
+        'primitiveType',
+        'net',
+        'layer',
+        'startX',
+        'startY',
+        'endX',
+        'endY',
+        'lineWidth',
+        'primitiveLock',
+      ],
+      arcs: [
+        'primitiveId',
+        'primitiveType',
+        'net',
+        'layer',
+        'startX',
+        'startY',
+        'endX',
+        'endY',
+        'lineWidth',
+        'primitiveLock',
+        'arcAngle',
+        'interactiveMode',
+      ],
+      polylines: [
+        'primitiveId',
+        'primitiveType',
+        'net',
+        'layer',
+        'polygon',
+        'lineWidth',
+        'primitiveLock',
+      ],
+      regions: [
+        'primitiveId',
+        'primitiveType',
+        'layer',
+        'complexPolygon',
+        'regionName',
+        'lineWidth',
+        'primitiveLock',
+      ],
+      pours: [
+        'primitiveId',
+        'primitiveType',
+        'net',
+        'layer',
+        'complexPolygon',
+        'pourFillMethod',
+        'preserveSilos',
+        'pourName',
+        'pourPriority',
+        'lineWidth',
+        'primitiveLock',
+      ],
+      fills: [
+        'primitiveId',
+        'primitiveType',
+        'net',
+        'layer',
+        'complexPolygon',
+        'lineWidth',
+        'primitiveLock',
+      ],
+    };
+    const validatePrimitiveRecord = (
+      name: PcbMonitoredFamilyName,
+      row: ValidationRecord | undefined,
+      id: string,
+    ): void => {
       const label = `Exact PCB inventory ${name} ${id}`;
-      const schemas = {
-        pads: [
-          'primitiveId',
-          'primitiveType',
-          'layer',
-          'padNumber',
-          'x',
-          'y',
-          'rotation',
-          'pad',
-          'specialPad',
-          'net',
-          'hole',
-          'holeOffsetX',
-          'holeOffsetY',
-          'holeRotation',
-          'metallization',
-          'padType',
-          'solderMaskAndPasteMaskExpansion',
-          'heatWelding',
-          'primitiveLock',
-          'source',
-        ],
-        vias: [
-          'primitiveId',
-          'primitiveType',
-          'net',
-          'x',
-          'y',
-          'holeDiameter',
-          'diameter',
-          'viaType',
-          'designRuleBlindViaName',
-          'solderMaskExpansion',
-          'primitiveLock',
-        ],
-        lines: [
-          'primitiveId',
-          'primitiveType',
-          'net',
-          'layer',
-          'startX',
-          'startY',
-          'endX',
-          'endY',
-          'lineWidth',
-          'primitiveLock',
-        ],
-        arcs: [
-          'primitiveId',
-          'primitiveType',
-          'net',
-          'layer',
-          'startX',
-          'startY',
-          'endX',
-          'endY',
-          'lineWidth',
-          'primitiveLock',
-          'arcAngle',
-          'interactiveMode',
-        ],
-        polylines: [
-          'primitiveId',
-          'primitiveType',
-          'net',
-          'layer',
-          'polygon',
-          'lineWidth',
-          'primitiveLock',
-        ],
-        regions: [
-          'primitiveId',
-          'primitiveType',
-          'layer',
-          'complexPolygon',
-          'regionName',
-          'lineWidth',
-          'primitiveLock',
-        ],
-        pours: [
-          'primitiveId',
-          'primitiveType',
-          'net',
-          'layer',
-          'complexPolygon',
-          'pourFillMethod',
-          'preserveSilos',
-          'pourName',
-          'pourPriority',
-          'lineWidth',
-          'primitiveLock',
-        ],
-        fills: [
-          'primitiveId',
-          'primitiveType',
-          'net',
-          'layer',
-          'complexPolygon',
-          'lineWidth',
-          'primitiveLock',
-        ],
-      };
-      const keys = [...schemas[name]];
+      if (!isUnknownRecord(row)) throw new Error(`${label} must be an object.`);
+      const keys = [...primitiveSchemas[name]];
       const hasParent = Object.hasOwn(row, 'parentComponentPrimitiveId');
       const hasCorrelationSource = Object.hasOwn(row, 'componentCorrelationSource');
       if (name === 'pads' && hasParent && hasCorrelationSource) {
@@ -854,7 +1155,7 @@ export function validateExactReadPayload(payload, request) {
           label,
         );
         if (typeof row.padNumber !== 'string' || !Number.isInteger(row.padType)) {
-          throw new Error(`${label} has a malformed pad number or type.`);
+          throw new TypeError(`${label} has a malformed pad number or type.`);
         }
         if (
           typeof row.metallization !== 'boolean' ||
@@ -876,7 +1177,7 @@ export function validateExactReadPayload(payload, request) {
         assertNullableString(row.designRuleBlindViaName, `${label}.designRuleBlindViaName`);
         assertFiniteFields(row, ['x', 'y', 'holeDiameter', 'diameter'], label);
         if (!Number.isInteger(row.viaType) || typeof row.primitiveLock !== 'boolean') {
-          throw new Error(`${label} has malformed via type or lock state.`);
+          throw new TypeError(`${label} has malformed via type or lock state.`);
         }
         assertMaskExpansion(row.solderMaskExpansion, `${label}.solderMaskExpansion`);
       } else if (name === 'lines' || name === 'arcs') {
@@ -913,7 +1214,7 @@ export function validateExactReadPayload(payload, request) {
         assertJsonContainer(row.complexPolygon, `${label}.complexPolygon`);
         assertNullableString(row.pourName, `${label}.pourName`);
         if (typeof row.preserveSilos !== 'boolean' || typeof row.primitiveLock !== 'boolean') {
-          throw new Error(`${label} has malformed pour flags.`);
+          throw new TypeError(`${label} has malformed pour flags.`);
         }
       } else if (name === 'fills') {
         assertFiniteFields(row, ['layer', 'lineWidth'], label);
@@ -921,22 +1222,33 @@ export function validateExactReadPayload(payload, request) {
         if (typeof row.primitiveLock !== 'boolean') throw new Error(`${label} has malformed lock state.`);
       }
     };
-    for (const name of monitoredFamilies) {
-      for (const id of payload.families[name].primitiveIds) {
-        validatePrimitiveRecord(name, payload.families[name].byPrimitiveId[id], id);
+    for (const name of PCB_MONITORED_FAMILY_NAMES) {
+      const family = getMonitoredFamily(name);
+      for (const id of family.primitiveIds) {
+        validatePrimitiveRecord(name, family.byPrimitiveId[id], id);
       }
     }
 
+    const componentsFamily = getFamily('components');
+    const padsFamily = getMonitoredFamily('pads');
+    const poursFamily = getMonitoredFamily('pours');
+    const regionsFamily = getMonitoredFamily('regions');
+    const fillsFamily = getMonitoredFamily('fills');
+    const componentPadCorrelation = payload.componentPadCorrelation;
+    const pouredCorrelation = payload.pouredCorrelation;
+
     if (
+      typeof payload.physicalPadCount !== 'number' ||
       !Number.isSafeInteger(payload.physicalPadCount) ||
+      typeof payload.standalonePadCount !== 'number' ||
       !Number.isSafeInteger(payload.standalonePadCount) ||
-      payload.physicalPadCount !== payload.families.pads.count ||
+      payload.physicalPadCount !== padsFamily.count ||
       payload.standalonePadCount < 0
     ) {
       throw new Error('Exact PCB inventory physical pad count is inconsistent.');
     }
     assertExactRecordKeys(
-      payload.componentPadCorrelation,
+      componentPadCorrelation,
       [
         'status',
         'count',
@@ -947,27 +1259,33 @@ export function validateExactReadPayload(payload, request) {
       'Exact PCB inventory component-pad correlation',
     );
     assertCanonicalUniqueStrings(
-      payload.componentPadCorrelation.primitiveIds,
+      componentPadCorrelation.primitiveIds,
       'Exact PCB inventory component-pad primitive IDs',
     );
-    const correlatedPadIds = [...payload.componentPadCorrelation.primitiveIds].sort();
-    const componentIds = payload.families.components.primitiveIds;
+    const componentPadByPrimitiveId = componentPadCorrelation.byPrimitiveId;
+    const padIdsByComponentPrimitiveId = componentPadCorrelation.byComponentPrimitiveId;
+    if (!componentPadByPrimitiveId || !padIdsByComponentPrimitiveId) {
+      throw new Error('Exact PCB inventory component-pad correlation is inconsistent.');
+    }
+    const correlatedPadIds = [...componentPadCorrelation.primitiveIds].toSorted();
+    const componentIds = componentsFamily.primitiveIds;
     if (
-      payload.componentPadCorrelation.count !== correlatedPadIds.length ||
-      !Number.isSafeInteger(payload.componentPadCorrelation.count) ||
+      typeof componentPadCorrelation.count !== 'number' ||
+      componentPadCorrelation.count !== correlatedPadIds.length ||
+      !Number.isSafeInteger(componentPadCorrelation.count) ||
       new Set(correlatedPadIds).size !== correlatedPadIds.length ||
-      payload.standalonePadCount !== payload.families.pads.count - correlatedPadIds.length ||
-      correlatedPadIds.some((id) => !payload.families.pads.byPrimitiveId[id]) ||
-      JSON.stringify(Object.keys(payload.componentPadCorrelation.byPrimitiveId).sort()) !==
+      payload.standalonePadCount !== padsFamily.count - correlatedPadIds.length ||
+      correlatedPadIds.some((id) => !padsFamily.byPrimitiveId[id]) ||
+      JSON.stringify(Object.keys(componentPadByPrimitiveId).toSorted()) !==
         JSON.stringify(correlatedPadIds) ||
-      JSON.stringify(Object.keys(payload.componentPadCorrelation.byComponentPrimitiveId).sort()) !==
+      JSON.stringify(Object.keys(padIdsByComponentPrimitiveId).toSorted()) !==
         JSON.stringify(componentIds)
     ) {
       throw new Error('Exact PCB inventory component-pad correlation is inconsistent.');
     }
     const mappedPadIds = [];
     for (const componentId of componentIds) {
-      const ids = payload.componentPadCorrelation.byComponentPrimitiveId[componentId];
+      const ids = padIdsByComponentPrimitiveId[componentId];
       assertCanonicalUniqueStrings(
         ids,
         `Exact PCB inventory component ${componentId} correlated pad IDs`,
@@ -976,13 +1294,13 @@ export function validateExactReadPayload(payload, request) {
     }
     if (
       new Set(mappedPadIds).size !== mappedPadIds.length ||
-      JSON.stringify([...mappedPadIds].sort()) !== JSON.stringify(correlatedPadIds)
+      JSON.stringify([...mappedPadIds].toSorted()) !== JSON.stringify(correlatedPadIds)
     ) {
       throw new Error('Exact PCB inventory component-to-pad index is inconsistent.');
     }
     for (const id of correlatedPadIds) {
-      const correlation = payload.componentPadCorrelation.byPrimitiveId[id];
-      const directPad = payload.families.pads.byPrimitiveId[id];
+      const correlation = componentPadByPrimitiveId[id];
+      const directPad = padsFamily.byPrimitiveId[id];
       assertExactRecordKeys(
         correlation,
         ['primitiveId', 'parentComponentPrimitiveId', 'padNumber', 'net', 'source'],
@@ -990,6 +1308,7 @@ export function validateExactReadPayload(payload, request) {
       );
       if (
         correlation.primitiveId !== id ||
+        typeof correlation.parentComponentPrimitiveId !== 'string' ||
         !componentIds.includes(correlation.parentComponentPrimitiveId) ||
         typeof correlation.padNumber !== 'string' ||
         correlation.source !== 'component-getState_Pads'
@@ -997,22 +1316,26 @@ export function validateExactReadPayload(payload, request) {
         throw new Error('Exact PCB inventory correlated pad has malformed identity or provenance.');
       }
       assertNullableString(correlation.net, `Exact PCB inventory pad correlation ${id}.net`);
+      if (!directPad) {
+        throw new Error('Exact PCB inventory correlated pad disagrees with direct pad state.');
+      }
+      const ownedPadIds = padIdsByComponentPrimitiveId[correlation.parentComponentPrimitiveId];
       if (
         directPad.parentComponentPrimitiveId !== correlation.parentComponentPrimitiveId ||
         directPad.componentCorrelationSource !== correlation.source ||
         directPad.padNumber !== correlation.padNumber ||
         directPad.net !== correlation.net ||
-        !payload.componentPadCorrelation.byComponentPrimitiveId[
-          correlation.parentComponentPrimitiveId
-        ].includes(id)
+        ownedPadIds === undefined ||
+        !ownedPadIds.includes(id)
       ) {
         throw new Error('Exact PCB inventory correlated pad disagrees with direct pad state.');
       }
     }
-    for (const id of payload.families.pads.primitiveIds) {
-      const directPad = payload.families.pads.byPrimitiveId[id];
-      const isCorrelated = payload.componentPadCorrelation.byPrimitiveId[id] !== undefined;
+    for (const id of padsFamily.primitiveIds) {
+      const directPad = padsFamily.byPrimitiveId[id];
+      const isCorrelated = componentPadByPrimitiveId[id] !== undefined;
       if (
+        !directPad ||
         isCorrelated !== Object.hasOwn(directPad, 'parentComponentPrimitiveId') ||
         isCorrelated !== Object.hasOwn(directPad, 'componentCorrelationSource')
       ) {
@@ -1020,27 +1343,32 @@ export function validateExactReadPayload(payload, request) {
       }
     }
     assertExactRecordKeys(
-      payload.pouredCorrelation,
+      pouredCorrelation,
       ['status', 'count', 'pourPrimitiveIds', 'byPourPrimitiveId'],
       'Exact PCB inventory poured-state correlation',
     );
     assertCanonicalUniqueStrings(
-      payload.pouredCorrelation.pourPrimitiveIds,
+      pouredCorrelation.pourPrimitiveIds,
       'Exact PCB inventory poured parent IDs',
     );
-    const pouredParentIds = [...payload.pouredCorrelation.pourPrimitiveIds].sort();
+    const pouredByPrimitiveId = pouredCorrelation.byPourPrimitiveId;
+    if (!pouredByPrimitiveId) {
+      throw new Error('Exact PCB inventory poured-state correlation is inconsistent.');
+    }
+    const pouredParentIds = [...pouredCorrelation.pourPrimitiveIds].toSorted();
     if (
-      payload.pouredCorrelation.count !== pouredParentIds.length ||
+      typeof pouredCorrelation.count !== 'number' ||
+      pouredCorrelation.count !== pouredParentIds.length ||
       new Set(pouredParentIds).size !== pouredParentIds.length ||
-      JSON.stringify(Object.keys(payload.pouredCorrelation.byPourPrimitiveId).sort()) !==
+      JSON.stringify(Object.keys(pouredByPrimitiveId).toSorted()) !==
         JSON.stringify(pouredParentIds) ||
-      pouredParentIds.some((id) => !payload.families.pours.byPrimitiveId[id])
+      pouredParentIds.some((id) => !poursFamily.byPrimitiveId[id])
     ) {
       throw new Error('Exact PCB inventory poured-state correlation is inconsistent.');
     }
     const pouredFillIds = [];
     for (const id of pouredParentIds) {
-      const row = payload.pouredCorrelation.byPourPrimitiveId[id];
+      const row = pouredByPrimitiveId[id];
       assertExactRecordKeys(
         row,
         ['primitiveId', 'primitiveType', 'pourPrimitiveId', 'pourFills'],
@@ -1062,7 +1390,7 @@ export function validateExactReadPayload(payload, request) {
       }
       if (
         new Set(rowFillIds).size !== rowFillIds.length ||
-        JSON.stringify(rowFillIds) !== JSON.stringify([...rowFillIds].sort())
+        JSON.stringify(rowFillIds) !== JSON.stringify([...rowFillIds].toSorted())
       ) {
         throw new Error('Exact PCB inventory poured fill-piece order or identity is inconsistent.');
       }
@@ -1076,98 +1404,93 @@ export function validateExactReadPayload(payload, request) {
     ) {
       throw new Error('Exact PCB inventory poured fill-piece identities are inconsistent.');
     }
-    for (const row of Object.values(payload.families.regions.byPrimitiveId)) {
+    for (const row of Object.values(regionsFamily.byPrimitiveId)) {
       if (Object.hasOwn(row, 'ruleType')) {
         throw new Error('Exact PCB inventory exposed incomplete region rule-type state.');
       }
     }
-    for (const row of Object.values(payload.families.fills.byPrimitiveId)) {
+    for (const row of Object.values(fillsFamily.byPrimitiveId)) {
       if (Object.hasOwn(row, 'fillMode')) {
         throw new Error('Exact PCB inventory exposed adapter-hardcoded fill-mode state.');
       }
     }
   } else if (request.kind === 'pcb-rules') {
+    const rules = payload.rules;
+    const nets = payload.nets;
     if (
-      !payload.rules ||
-      typeof payload.rules.configurationName !== 'string' ||
-      !Array.isArray(payload.rules.netRules) ||
-      !Array.isArray(payload.rules.regionRules) ||
-      !Array.isArray(payload.rules.netClasses) ||
-      !Array.isArray(payload.rules.equalLengthGroups) ||
-      !Array.isArray(payload.rules.padPairGroups) ||
-      !Array.isArray(payload.rules.differentialPairs) ||
-      !payload.rules.configuration ||
-      typeof payload.rules.configuration !== 'object' ||
-      Array.isArray(payload.rules.configuration) ||
-      typeof payload.rules.configuration.name !== 'string' ||
-      payload.rules.configuration.name !== payload.rules.configurationName ||
-      !payload.rules.configuration.config ||
-      typeof payload.rules.configuration.config !== 'object' ||
-      Array.isArray(payload.rules.configuration.config) ||
-      Object.keys(payload.rules.configuration.config).length === 0 ||
-      !payload.rules.netByNetRules ||
-      typeof payload.rules.netByNetRules !== 'object' ||
-      Array.isArray(payload.rules.netByNetRules) ||
-      !Array.isArray(payload.nets) ||
-      new Set(payload.nets).size !== payload.nets.length
+      !rules ||
+      typeof rules.configurationName !== 'string' ||
+      !Array.isArray(rules.netRules) ||
+      !Array.isArray(rules.regionRules) ||
+      !Array.isArray(rules.netClasses) ||
+      !Array.isArray(rules.equalLengthGroups) ||
+      !Array.isArray(rules.padPairGroups) ||
+      !Array.isArray(rules.differentialPairs) ||
+      !rules.configuration ||
+      typeof rules.configuration !== 'object' ||
+      Array.isArray(rules.configuration) ||
+      typeof rules.configuration.name !== 'string' ||
+      rules.configuration.name !== rules.configurationName ||
+      rules.configuration.config === undefined ||
+      rules.configuration.config === null ||
+      typeof rules.configuration.config !== 'object' ||
+      Array.isArray(rules.configuration.config) ||
+      Object.keys(rules.configuration.config).length === 0 ||
+      !rules.netByNetRules ||
+      typeof rules.netByNetRules !== 'object' ||
+      Array.isArray(rules.netByNetRules) ||
+      !Array.isArray(nets) ||
+      new Set(nets).size !== nets.length
     ) {
       throw new Error('Exact PCB rules reader omitted rules or nets.');
     }
     assertExactRecordKeys(
-      payload.rules.configuration,
+      rules.configuration,
       ['name', 'config'],
       'Exact PCB rules configuration',
     );
-    assertCanonicalUniqueStrings(payload.nets, 'Exact PCB rule net names');
-    const netSet = new Set(payload.nets);
-    const ruleLeafNets = [];
-    const visitRuleRow = (row, label) => {
-      if (!row || typeof row !== 'object' || Array.isArray(row)) {
+    assertCanonicalUniqueStrings(nets, 'Exact PCB rule net names');
+    const netSet = new Set(nets);
+    const ruleLeafNets: string[] = [];
+    const visitRuleRow = (row: unknown, label: string): void => {
+      if (!isUnknownRecord(row)) {
         throw new Error(`${label} must be an object.`);
       }
-      if (row.type === 'net') {
-        assertNonemptyString(row.name, `${label}.name`);
-        if (!netSet.has(row.name)) throw new Error(`${label} references an unknown net.`);
-        ruleLeafNets.push(row.name);
+      if (row['type'] === 'net') {
+        assertNonemptyString(row['name'], `${label}.name`);
+        if (!netSet.has(row['name'])) throw new Error(`${label} references an unknown net.`);
+        ruleLeafNets.push(row['name']);
       }
       if (Object.hasOwn(row, 'sub')) {
-        if (!Array.isArray(row.sub)) throw new Error(`${label}.sub must be an array.`);
-        for (const [index, child] of row.sub.entries()) {
+        if (!Array.isArray(row['sub'])) throw new Error(`${label}.sub must be an array.`);
+        for (const [index, child] of row['sub'].entries()) {
           visitRuleRow(child, `${label}.sub[${index}]`);
         }
       }
     };
-    for (const [index, row] of payload.rules.netRules.entries()) {
+    for (const [index, row] of rules.netRules.entries()) {
       visitRuleRow(row, `Exact PCB net rule[${index}]`);
     }
     if (
       new Set(ruleLeafNets).size !== ruleLeafNets.length ||
-      JSON.stringify([...ruleLeafNets].sort()) !== JSON.stringify(payload.nets)
+      JSON.stringify([...ruleLeafNets].toSorted()) !== JSON.stringify(nets)
     ) {
       throw new Error('Exact PCB rule leaves do not cover every live net exactly once.');
     }
-    for (const [key, rows] of Object.entries(payload.rules.netByNetRules)) {
+    for (const [key, rows] of Object.entries(rules.netByNetRules)) {
       if (!Array.isArray(rows)) {
-        throw new Error(`Exact PCB net-to-net rule ${key} must be an array.`);
+        throw new TypeError(`Exact PCB net-to-net rule ${key} must be an array.`);
       }
     }
-    const uniqueNames = (rows, label) => {
-      const names = rows.map((row) => row?.name);
-      if (
-        names.some((name) => typeof name !== 'string' || name.length === 0) ||
-        new Set(names).size !== names.length
-      ) {
-        throw new Error(`Exact PCB rules reader returned malformed or duplicate ${label} names.`);
-      }
-    };
-    uniqueNames(payload.rules.netClasses, 'net class');
-    uniqueNames(payload.rules.differentialPairs, 'differential pair');
-    uniqueNames(payload.rules.equalLengthGroups, 'equal-length group');
-    uniqueNames(payload.rules.padPairGroups, 'pad-pair group');
-    for (const [label, rows] of [
-      ['net class', payload.rules.netClasses],
-      ['equal-length group', payload.rules.equalLengthGroups],
-    ]) {
+    assertUniqueNames(rules.netClasses, 'net class');
+    assertUniqueNames(rules.differentialPairs, 'differential pair');
+    assertUniqueNames(rules.equalLengthGroups, 'equal-length group');
+    assertUniqueNames(rules.padPairGroups, 'pad-pair group');
+    const groupedRuleRows: ReadonlyArray<readonly [string, ValidationRecord[]]> = [
+      ['net class', rules.netClasses],
+      ['equal-length group', rules.equalLengthGroups],
+    ];
+    for (const [label, rows] of groupedRuleRows) {
       for (const row of rows) {
         if (
           !Array.isArray(row.nets) ||
@@ -1178,7 +1501,7 @@ export function validateExactReadPayload(payload, request) {
         }
       }
     }
-    for (const pair of payload.rules.differentialPairs) {
+    for (const pair of rules.differentialPairs) {
       if (
         typeof pair.positiveNet !== 'string' ||
         typeof pair.negativeNet !== 'string' ||
@@ -1189,9 +1512,9 @@ export function validateExactReadPayload(payload, request) {
         throw new Error('Exact PCB rules reader returned a malformed differential pair.');
       }
     }
-    for (const group of payload.rules.padPairGroups) {
+    for (const group of rules.padPairGroups) {
       if (!Array.isArray(group.padPairs) || !Array.isArray(group.minimumWireLengths)) {
-        throw new Error('Exact PCB rules reader returned a malformed pad-pair group.');
+        throw new TypeError('Exact PCB rules reader returned a malformed pad-pair group.');
       }
       const pairKeys = group.padPairs.map((pair) => JSON.stringify(pair));
       const lengthKeys = group.minimumWireLengths.map((row) => JSON.stringify(row?.padPair));
@@ -1215,12 +1538,12 @@ export function validateExactReadPayload(payload, request) {
   return payload;
 }
 
-export function exactTargetAssertionPointer(primitiveId) {
-  const escaped = String(primitiveId).replaceAll('~', '~0').replaceAll('/', '~1');
+export function exactTargetAssertionPointer(primitiveId: string): string {
+  const escaped = primitiveId.replaceAll('~', '~0').replaceAll('/', '~1');
   return `/byPrimitiveId/${escaped}/primitiveId`;
 }
 
-export function buildExactReadCode(request) {
+export function buildExactReadCode(request: unknown): string {
   const parsed = exactReadRequestSchema.parse(request);
   const serialized = JSON.stringify(parsed);
   return `

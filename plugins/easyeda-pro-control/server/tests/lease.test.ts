@@ -1,39 +1,83 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import type { ChildProcess } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, test } from 'node:test';
 
-import { acquireFacadeLease } from '../src/lease.mjs';
+import { acquireFacadeLease } from '../src/lease.ts';
 
-async function temporaryRoot(label) {
-  return await mkdtemp(join(tmpdir(), `easyeda-control-lease-${label}-`));
+type FacadeLease = Awaited<ReturnType<typeof acquireFacadeLease>>;
+
+interface StoredLease {
+  schema: 'easyeda-pro-control.facade-lease.v1';
+  pid: number;
+  token: string;
+  startedAt: unknown;
 }
 
-async function waitForReady(child) {
-  return await new Promise((resolveReady, reject) => {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseStoredLease(text: string): StoredLease {
+  const value: unknown = JSON.parse(text);
+  if (
+    !isRecord(value) ||
+    value['schema'] !== 'easyeda-pro-control.facade-lease.v1' ||
+    typeof value['pid'] !== 'number' ||
+    !Number.isInteger(value['pid']) ||
+    typeof value['token'] !== 'string'
+  ) {
+    throw new TypeError('Test fixture did not contain a valid facade lease.');
+  }
+  return {
+    schema: 'easyeda-pro-control.facade-lease.v1',
+    pid: value['pid'],
+    token: value['token'],
+    startedAt: value['startedAt'],
+  };
+}
+
+function hasErrorCode(error: unknown, code: string): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === code
+  );
+}
+
+async function temporaryRoot(label: string): Promise<string> {
+  return mkdtemp(join(tmpdir(), `easyeda-control-lease-${label}-`));
+}
+
+async function waitForReady(child: ChildProcess): Promise<void> {
+  if (!child.stdout || !child.stderr) throw new Error('Lease child requires piped output.');
+  const { stdout: childStdout, stderr: childStderr } = child;
+  await new Promise<void>((resolveReady, reject) => {
     let stdout = '';
     let stderr = '';
     const timeout = setTimeout(() => {
       reject(new Error(`Lease child did not become ready. stderr: ${stderr}`));
     }, 10000);
-    child.stdout.on('data', (chunk) => {
+    childStdout.on('data', (chunk: Buffer) => {
       stdout += chunk.toString('utf8');
       if (stdout.includes('READY\n')) {
         clearTimeout(timeout);
         resolveReady();
       }
     });
-    child.stderr.on('data', (chunk) => {
+    childStderr.on('data', (chunk: Buffer) => {
       stderr += chunk.toString('utf8');
     });
-    child.once('error', (error) => {
+    child.once('error', (error: Error) => {
       clearTimeout(timeout);
       reject(error);
     });
-    child.once('exit', (code, signal) => {
+    child.once('exit', (code: number | null, signal: NodeJS.Signals | null) => {
       if (!stdout.includes('READY\n')) {
         clearTimeout(timeout);
         reject(new Error(`Lease child exited before ready (${code ?? signal}). stderr: ${stderr}`));
@@ -42,51 +86,55 @@ async function waitForReady(child) {
   });
 }
 
-async function stopChild(child) {
+async function stopChild(child: ChildProcess): Promise<void> {
   if (child.exitCode !== null || child.signalCode !== null) return;
-  const exited = new Promise((resolveExit) => child.once('exit', resolveExit));
+  const exited = new Promise<void>((resolveExit) => {
+    child.once('exit', () => {
+      resolveExit();
+    });
+  });
   child.kill('SIGTERM');
   await exited;
 }
 
-describe('cross-process facade lease', { concurrency: false }, () => {
-  test('rejects a symlinked control root without creating a lock in its target', async () => {
+void describe('cross-process facade lease', { concurrency: false }, () => {
+  void test('rejects a symlinked control root without creating a lock in its target', async () => {
     const parent = await temporaryRoot('symlink-parent');
     const target = join(parent, 'target');
     const link = join(parent, 'control-link');
     try {
       await mkdir(target);
       await symlink(target, link, 'dir');
-      await assert.rejects(acquireFacadeLease(link), /real directory|symbolic-link/);
+      await assert.rejects(acquireFacadeLease(link), /real directory|symbolic-link/u);
       await assert.rejects(
         readFile(join(target, 'facade.lock'), 'utf8'),
-        (error) => error.code === 'ENOENT',
+        (error: unknown) => hasErrorCode(error, 'ENOENT'),
       );
     } finally {
       await rm(parent, { recursive: true, force: true });
     }
   });
 
-  test('allows one owner and rejects a second live owner', async () => {
+  void test('allows one owner and rejects a second live owner', async () => {
     const root = await temporaryRoot('same-process');
-    let lease;
+    let lease: FacadeLease | undefined;
     try {
       lease = await acquireFacadeLease(root);
-      const stored = JSON.parse(await readFile(lease.path, 'utf8'));
+      const stored = parseStoredLease(await readFile(lease.path, 'utf8'));
       assert.equal(stored.pid, process.pid);
       assert.equal(stored.token, lease.token);
-      await assert.rejects(acquireFacadeLease(root), /Another EasyEDA control facade owns/);
+      await assert.rejects(acquireFacadeLease(root), /Another EasyEDA control facade owns/u);
       await lease.release();
       lease = undefined;
       const replacement = await acquireFacadeLease(root);
       await replacement.release();
     } finally {
-      await lease?.release().catch(() => undefined);
+      await lease?.release().catch(() => {});
       await rm(root, { recursive: true, force: true });
     }
   });
 
-  test('removes a valid dead-PID lease but refuses a corrupt lease', async () => {
+  void test('removes a valid dead-PID lease but refuses a corrupt lease', async () => {
     const staleRoot = await temporaryRoot('stale');
     const corruptRoot = await temporaryRoot('corrupt');
     try {
@@ -101,11 +149,11 @@ describe('cross-process facade lease', { concurrency: false }, () => {
         'utf8',
       );
       const replacement = await acquireFacadeLease(staleRoot);
-      assert.equal(JSON.parse(await readFile(replacement.path, 'utf8')).pid, process.pid);
+      assert.equal(parseStoredLease(await readFile(replacement.path, 'utf8')).pid, process.pid);
       await replacement.release();
 
       await writeFile(join(corruptRoot, 'facade.lock'), '{not-json}\n', 'utf8');
-      await assert.rejects(acquireFacadeLease(corruptRoot), /Unexpected token|JSON/);
+      await assert.rejects(acquireFacadeLease(corruptRoot), /Unexpected token|JSON/u);
       assert.equal(await readFile(join(corruptRoot, 'facade.lock'), 'utf8'), '{not-json}\n');
     } finally {
       await rm(staleRoot, { recursive: true, force: true });
@@ -113,7 +161,7 @@ describe('cross-process facade lease', { concurrency: false }, () => {
     }
   });
 
-  test('reconciles a dead cleanup lease left by a crashed stale-owner cleanup', async () => {
+  void test('reconciles a dead cleanup lease left by a crashed stale-owner cleanup', async () => {
     const root = await temporaryRoot('cleanup-crash');
     const leasePath = join(root, 'facade.lock');
     const cleanupPath = `${leasePath}.cleanup`;
@@ -142,31 +190,37 @@ describe('cross-process facade lease', { concurrency: false }, () => {
       );
 
       const replacement = await acquireFacadeLease(root);
-      assert.equal(JSON.parse(await readFile(replacement.path, 'utf8')).pid, process.pid);
-      await assert.rejects(readFile(cleanupPath, 'utf8'), (error) => error.code === 'ENOENT');
+      assert.equal(parseStoredLease(await readFile(replacement.path, 'utf8')).pid, process.pid);
+      await assert.rejects(
+        readFile(cleanupPath, 'utf8'),
+        (error: unknown) => hasErrorCode(error, 'ENOENT'),
+      );
       await replacement.release();
     } finally {
       await rm(root, { recursive: true, force: true });
     }
   });
 
-  test('does not release a lease after its ownership token changes', async () => {
+  void test('does not release a lease after its ownership token changes', async () => {
     const root = await temporaryRoot('ownership');
     const lease = await acquireFacadeLease(root);
     try {
-      const stored = JSON.parse(await readFile(lease.path, 'utf8'));
+      const stored = parseStoredLease(await readFile(lease.path, 'utf8'));
       stored.token = 'replacement-owner-token';
       await writeFile(lease.path, `${JSON.stringify(stored)}\n`, 'utf8');
-      await assert.rejects(lease.release(), /ownership changed/);
-      assert.equal(JSON.parse(await readFile(lease.path, 'utf8')).token, 'replacement-owner-token');
+      await assert.rejects(lease.release(), /ownership changed/u);
+      assert.equal(
+        parseStoredLease(await readFile(lease.path, 'utf8')).token,
+        'replacement-owner-token',
+      );
     } finally {
       await rm(root, { recursive: true, force: true });
     }
   });
 
-  test('rejects a second facade process until the owner exits', async () => {
+  void test('rejects a second facade process until the owner exits', async () => {
     const root = await temporaryRoot('child');
-    const leaseUrl = pathToFileURL(resolve('server/src/lease.mjs')).href;
+    const leaseUrl = pathToFileURL(resolve('server/src/lease.ts')).href;
     const script = `
       import { acquireFacadeLease } from ${JSON.stringify(leaseUrl)};
       const lease = await acquireFacadeLease(${JSON.stringify(root)});
@@ -182,7 +236,7 @@ describe('cross-process facade lease', { concurrency: false }, () => {
     });
     try {
       await waitForReady(child);
-      await assert.rejects(acquireFacadeLease(root), /Another EasyEDA control facade owns/);
+      await assert.rejects(acquireFacadeLease(root), /Another EasyEDA control facade owns/u);
       await stopChild(child);
       const replacement = await acquireFacadeLease(root);
       await replacement.release();

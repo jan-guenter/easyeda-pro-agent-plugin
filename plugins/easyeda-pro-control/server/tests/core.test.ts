@@ -12,6 +12,7 @@ import {
   extractToolPayload,
   filterTools,
   getJsonPointer,
+  isRecord,
   isTerminalOperation,
   loadReviewedCompatibilityManifest,
   newOperationId,
@@ -29,7 +30,14 @@ import {
   validateExpectedFingerprint,
   validatePrivateFingerprint,
   validateRawExecutionInput,
-} from '../src/core.mjs';
+} from '../src/core.ts';
+
+function detailedError(error: unknown): Error & Record<string, unknown> {
+  if (!(error instanceof Error) || !isRecord(error)) {
+    throw new TypeError('Expected an Error with structured details.');
+  }
+  return error;
+}
 
 function reviewedFingerprintFixture() {
   const manifest = loadReviewedCompatibilityManifest();
@@ -103,8 +111,8 @@ function reviewedFingerprintFixture() {
   };
 }
 
-describe('canonical values and hashes', () => {
-  test('stable recursively sorts object keys without reordering arrays', () => {
+void describe('canonical values and hashes', () => {
+  void test('stable recursively sorts object keys without reordering arrays', () => {
     const input = {
       z: 1,
       nested: { beta: true, alpha: false },
@@ -123,15 +131,15 @@ describe('canonical values and hashes', () => {
     assert.equal(sha256Json({ b: 2, a: 1 }), sha256Json({ a: 1, b: 2 }));
   });
 
-  test('operation IDs carry a sortable UTC timestamp and a random suffix', () => {
+  void test('operation IDs carry a sortable UTC timestamp and a random suffix', () => {
     const operationId = newOperationId(new Date('2026-08-27T09:08:07.654Z'));
-    assert.match(operationId, /^easyeda-20260827t090807z-[0-9a-f]{8}$/);
+    assert.match(operationId, /^easyeda-20260827t090807z-[0-9a-f]{8}$/u);
     assert.equal(operationId, operationId.toLowerCase());
   });
 });
 
-describe('upstream result normalization and tool classification', () => {
-  test('normalization rejects every supported outer and nested failure signal', () => {
+void describe('upstream result normalization and tool classification', () => {
+  void test('normalization rejects every supported outer and nested failure signal', () => {
     const failures = [
       { isError: true },
       { structuredContent: { ok: false } },
@@ -142,10 +150,10 @@ describe('upstream result normalization and tool classification', () => {
 
     for (const failure of failures) assert.equal(normalizeToolResult(failure).ok, false);
     assert.equal(normalizeToolResult({ structuredContent: { ok: true } }).ok, true);
-    assert.equal(normalizeToolResult(undefined).ok, false);
+    assert.equal(normalizeToolResult().ok, false);
   });
 
-  test('payload extraction unwraps bounded result envelopes and parses text fallback', () => {
+  void test('payload extraction unwraps bounded result envelopes and parses text fallback', () => {
     assert.deepEqual(
       extractToolPayload({
         structuredContent: { ok: true, result: { success: true, result: { count: 608 } } },
@@ -162,11 +170,11 @@ describe('upstream result normalization and tool classification', () => {
     );
     assert.throws(
       () => extractToolPayload({ structuredContent: { result: { ok: false } } }),
-      /reported failure/,
+      /reported failure/u,
     );
   });
 
-  test('payload extraction rejects nested and text-only unavailable or unstable reads', () => {
+  void test('payload extraction rejects nested and text-only unavailable or unstable reads', () => {
     const rejected = [
       {
         structuredContent: {
@@ -201,7 +209,7 @@ describe('upstream result normalization and tool classification', () => {
       },
     ];
     for (const result of rejected) {
-      assert.throws(() => extractToolPayload(result), /failure|unavailability/);
+      assert.throws(() => extractToolPayload(result), /failure|unavailability/u);
     }
 
     assert.deepEqual(
@@ -220,7 +228,7 @@ describe('upstream result normalization and tool classification', () => {
     );
   });
 
-  test('classification is conservative when schemas or names imply a write', () => {
+  void test('classification is conservative when schemas or names imply a write', () => {
     assert.deepEqual(
       classifyTool({
         name: 'easyeda_get_document',
@@ -260,7 +268,7 @@ describe('upstream result normalization and tool classification', () => {
     });
   });
 
-  test('tool filtering respects classification, all query terms, limits, and schema opt-in', () => {
+  void test('tool filtering respects classification, all query terms, limits, and schema opt-in', () => {
     const tools = [
       {
         name: 'easyeda_get_document',
@@ -288,19 +296,23 @@ describe('upstream result normalization and tool classification', () => {
 
     const reads = filterTools(tools, { mode: 'read', query: 'read context', limit: 1 });
     assert.equal(reads.length, 1);
-    assert.equal(reads[0].name, 'easyeda_get_document');
-    assert.equal(Object.hasOwn(reads[0], 'inputSchema'), false);
+    const read = reads[0];
+    assert.ok(read);
+    assert.equal(read.name, 'easyeda_get_document');
+    assert.equal(Object.hasOwn(read, 'inputSchema'), false);
 
     const writes = filterTools(tools, { mode: 'write', includeSchemas: true });
     assert.deepEqual(writes.map((tool) => tool.name), ['easyeda_pcb_move_component']);
-    assert.deepEqual(writes[0].inputSchema, { properties: { confirmWrite: {} } });
-    assert.deepEqual(writes[0].outputSchema, {
+    const write = writes[0];
+    assert.ok(write);
+    assert.deepEqual(write.inputSchema, { properties: { confirmWrite: {} } });
+    assert.deepEqual(write.outputSchema, {
       properties: { moved: { type: 'boolean' } },
     });
   });
 });
 
-describe('raw execution and evidence input guards', () => {
+void describe('raw execution and evidence input guards', () => {
   const code = 'return { ok: true };';
   const sourceSha256 = sha256Text(code);
   const validRawInput = {
@@ -314,7 +326,7 @@ describe('raw execution and evidence input guards', () => {
     unrestrictedConfirmation: `UNRESTRICTED:${sourceSha256}`,
   };
 
-  test('raw execution accepts exactly one source and the hard timeout boundary', () => {
+  void test('raw execution accepts exactly one source and the hard timeout boundary', () => {
     assert.deepEqual(validateRawExecutionInput(validRawInput), {
       hasCode: true,
       hasPath: false,
@@ -326,7 +338,7 @@ describe('raw execution and evidence input guards', () => {
     );
   });
 
-  test('raw execution rejects ambiguous source, unsafe timeout, or incomplete unrestricted acknowledgement', () => {
+  void test('raw execution rejects ambiguous source, unsafe timeout, or incomplete unrestricted acknowledgement', () => {
     const invalid = [
       { ...validRawInput, scriptPath: '/tmp/a.js' },
       { ...validRawInput, code: undefined },
@@ -343,17 +355,17 @@ describe('raw execution and evidence input guards', () => {
     for (const input of invalid) assert.throws(() => validateRawExecutionInput(input));
   });
 
-  test('evidence paths must be absolute, distinct, and complete', () => {
-    assert.equal(validateEvidencePaths(undefined), undefined);
+  void test('evidence paths must be absolute, distinct, and complete', () => {
+    assert.equal(validateEvidencePaths(), undefined);
     assert.deepEqual(
       validateEvidencePaths({ resultPath: '/tmp/result.json', receiptPath: '/tmp/receipt.json' }),
       { resultPath: '/tmp/result.json', receiptPath: '/tmp/receipt.json' },
     );
-    assert.throws(() => validateEvidencePaths(null), /object/);
-    assert.throws(() => validateEvidencePaths({ resultPath: '/tmp/result.json' }), /requires/);
+    assert.throws(() => validateEvidencePaths(null), /object/u);
+    assert.throws(() => validateEvidencePaths({ resultPath: '/tmp/result.json' }), /requires/u);
     assert.throws(
       () => validateEvidencePaths({ resultPath: 'relative.json', receiptPath: '/tmp/receipt.json' }),
-      /absolute/,
+      /absolute/u,
     );
     assert.throws(
       () =>
@@ -361,11 +373,11 @@ describe('raw execution and evidence input guards', () => {
           resultPath: '/tmp/evidence/../same.json',
           receiptPath: '/tmp/same.json',
         }),
-      /distinct/,
+      /distinct/u,
     );
   });
 
-  test('normalizes POSIX, Windows, and file URI project paths to the same database identity', () => {
+  void test('normalizes POSIX, Windows, and file URI project paths to the same database identity', () => {
     assert.equal(
       normalizeEasyedaProjectPath('/mnt/c/Users/Fixture/Board%20Demo.eprj2'),
       '/mnt/c/Users/Fixture/Board%20Demo.eprj2',
@@ -378,32 +390,32 @@ describe('raw execution and evidence input guards', () => {
       normalizeEasyedaProjectPath('file:///C:/Users/Fixture/Board%20Demo.eprj2'),
       '/mnt/c/Users/Fixture/Board Demo.eprj2',
     );
-    assert.throws(() => normalizeEasyedaProjectPath('relative/project.eprj2'), /absolute/);
-    assert.throws(() => normalizeEasyedaProjectPath('/tmp/project.sqlite'), /\.eprj2/);
+    assert.throws(() => normalizeEasyedaProjectPath('relative/project.eprj2'), /absolute/u);
+    assert.throws(() => normalizeEasyedaProjectPath('/tmp/project.sqlite'), /\.eprj2/u);
     assert.throws(
       () => normalizeEasyedaProjectPath('file:///%E0%A4%A.eprj2'),
-      /invalid escaping/,
+      /invalid escaping/u,
     );
   });
 });
 
-describe('JSON pointers and postcondition assertions', () => {
+void describe('JSON pointers and postcondition assertions', () => {
   const value = {
     project: { uuid: 'project-1', name: 'Board Demo' },
     documents: [{ type: 3, nets: ['GND', '5V'] }],
     'escaped/key': { '~value': 'matched' },
   };
 
-  test('JSON pointers address objects, arrays, and escaped tokens', () => {
+  void test('JSON pointers address objects, arrays, and escaped tokens', () => {
     assert.equal(getJsonPointer(value, ''), value);
     assert.equal(getJsonPointer(value, '/'), value);
     assert.equal(getJsonPointer(value, '/documents/0/type'), 3);
     assert.equal(getJsonPointer(value, '/escaped~1key/~0value'), 'matched');
     assert.equal(getJsonPointer(value, '/missing/path'), undefined);
-    assert.throws(() => getJsonPointer(value, 'project/uuid'), /Invalid JSON pointer/);
+    assert.throws(() => getJsonPointer(value, 'project/uuid'), /Invalid JSON pointer/u);
   });
 
-  test('assertions report evidence without silently throwing on a failed condition', () => {
+  void test('assertions report evidence without silently throwing on a failed condition', () => {
     const results = evaluateAssertions(value, [
       { pointer: '/project/uuid', op: 'exists' },
       { pointer: '/project/name', op: 'equals', value: 'Board Demo' },
@@ -414,23 +426,26 @@ describe('JSON pointers and postcondition assertions', () => {
     ]);
 
     assert.deepEqual(results.map((result) => result.passed), [true, true, true, true, true, false]);
-    assert.equal(results[5].actual, 3);
-    assert.equal(results[5].expected, 2);
+    const failedResult = results[5];
+    assert.ok(failedResult);
+    assert.equal(failedResult.actual, 3);
+    assert.equal(failedResult.expected, 2);
     assert.throws(
       () => evaluateAssertions(value, [{ pointer: '/project/name', op: 'unknown' }]),
-      /Unsupported assertion operation/,
+      /Unsupported assertion operation/u,
     );
   });
 
-  test('not-equals fails when its pointer is missing', () => {
+  void test('not-equals fails when its pointer is missing', () => {
     const [result] = evaluateAssertions(value, [
       { pointer: '/project/missing', op: 'not-equals', value: 'anything' },
     ]);
+    assert.ok(result);
     assert.equal(result.passed, false);
     assert.equal(result.actual, undefined);
   });
 
-  test('subset comparison reports precise escaped pointers and assertion details', () => {
+  void test('subset comparison reports precise escaped pointers and assertion details', () => {
     const actual = {
       context: { project: { uuid: 'project-1', title: 'Board Demo' } },
       'path/key': { value: 3 },
@@ -443,9 +458,10 @@ describe('JSON pointers and postcondition assertions', () => {
 
     assert.throws(
       () => assertSubset(actual, { context: { project: { uuid: 'wrong' } } }, 'active context'),
-      (error) => {
-        assert.match(error.message, /active context does not match/);
-        assert.deepEqual(error.mismatches, [
+      (error: unknown) => {
+        const detailed = detailedError(error);
+        assert.match(detailed.message, /active context does not match/u);
+        assert.deepEqual(detailed['mismatches'], [
           { pointer: '/context/project/uuid', expected: 'wrong', actual: 'project-1' },
         ]);
         return true;
@@ -454,7 +470,7 @@ describe('JSON pointers and postcondition assertions', () => {
   });
 });
 
-describe('pinned raw call specifications', () => {
+void describe('pinned raw call specifications', () => {
   const code = 'return { ok: true };';
   const valid = {
     toolName: 'easyeda_execute',
@@ -464,9 +480,13 @@ describe('pinned raw call specifications', () => {
     acknowledgeUnrestrictedRaw: true,
   };
 
-  test('requires exact source hash, bounded timeout, confirmation, and safe operation mode', () => {
-    assert.equal(validateCallSource(valid), undefined);
-    assert.equal(validateCallSource({ toolName: 'easyeda_get_document' }), undefined);
+  void test('requires exact source hash, bounded timeout, confirmation, and safe operation mode', () => {
+    assert.doesNotThrow(() => {
+      validateCallSource(valid);
+    });
+    assert.doesNotThrow(() => {
+      validateCallSource({ toolName: 'easyeda_get_document' });
+    });
 
     const invalid = [
       { ...valid, arguments: { ...valid.arguments, code: '' } },
@@ -477,11 +497,15 @@ describe('pinned raw call specifications', () => {
       { ...valid, mode: 'persist' },
       { ...valid, acknowledgeUnrestrictedRaw: false },
     ];
-    for (const spec of invalid) assert.throws(() => validateCallSource(spec));
+    for (const spec of invalid) {
+      assert.throws(() => {
+        validateCallSource(spec);
+      });
+    }
   });
 });
 
-describe('stable runtime fingerprint validation', () => {
+void describe('stable runtime fingerprint validation', () => {
   const digest = 'a'.repeat(64);
   const valid = {
     facadeImplementation: {
@@ -490,8 +514,8 @@ describe('stable runtime fingerprint validation', () => {
       mode: 'source-tree',
       files: [
         {
-          path: '/opt/easyeda-control/server/src/engine.mjs',
-          relativePath: 'server/src/engine.mjs',
+          path: '/opt/easyeda-control/server/src/engine.ts',
+          relativePath: 'server/src/engine.ts',
           bytes: 1024,
           sha256: digest,
         },
@@ -567,16 +591,17 @@ describe('stable runtime fingerprint validation', () => {
     },
   };
 
-  test('requires the complete connected runtime and launcher identity', () => {
+  void test('requires the complete connected runtime and launcher identity', () => {
     assert.equal(validateExpectedFingerprint(valid), true);
     const incomplete = structuredClone(valid);
-    delete incomplete.upstreamLauncher.implementationTree.sha256;
+    Reflect.deleteProperty(incomplete.upstreamLauncher.implementationTree, 'sha256');
     incomplete.upstreamImplementationDrift = true;
     incomplete.bridge.payload.connected = false;
     assert.throws(
       () => validateExpectedFingerprint(incomplete),
-      (error) => {
-        assert.deepEqual(error.missingFingerprintFields, [
+      (error: unknown) => {
+        const detailed = detailedError(error);
+        assert.deepEqual(detailed['missingFingerprintFields'], [
           {
             pointer: '/upstreamLauncher/implementationTree/sha256',
             required: 'sha256',
@@ -589,10 +614,10 @@ describe('stable runtime fingerprint validation', () => {
     );
   });
 
-  test('requires the external reviewed compatibility tuple and installed bundle hashes', async () => {
+  void test('requires the external reviewed compatibility tuple and installed bundle hashes', async () => {
     const reviewed = reviewedFingerprintFixture();
     assert.equal(validatePrivateFingerprint(reviewed), true);
-    assert.match(reviewedCompatibilityManifestPath(), /reviewed-compatibility\.json$/);
+    assert.match(reviewedCompatibilityManifestPath(), /reviewed-compatibility\.json$/u);
 
     const implementation = await controlImplementationFingerprint();
     const reviewedFacade = loadReviewedCompatibilityManifest().facadeImplementation[implementation.mode];
@@ -615,9 +640,10 @@ describe('stable runtime fingerprint validation', () => {
     wrongPcb.installedBundles.pcbEditor.implementationSha256 = 'b'.repeat(64);
     assert.throws(
       () => validatePrivateFingerprint(wrongPcb),
-      (error) => {
-        assert.match(error.message, /compatibility tuple/);
-        assert.deepEqual(error.mismatches, [
+      (error: unknown) => {
+        const detailed = detailedError(error);
+        assert.match(detailed.message, /compatibility tuple/u);
+        assert.deepEqual(detailed['mismatches'], [
           {
             pointer: '/installedBundles/pcbEditor/implementationSha256',
             expected: '65401cdc0a8f244db2ff2d8da88fd835b6e1fb3a3ecdbcfd975781502cb04b54',
@@ -632,9 +658,10 @@ describe('stable runtime fingerprint validation', () => {
     wrongAdapter.installedBundles.publicApi.adapterSha256 = 'b'.repeat(64);
     assert.throws(
       () => validatePrivateFingerprint(wrongAdapter),
-      (error) => {
-        assert.match(error.message, /compatibility tuple/);
-        assert.deepEqual(error.mismatches, [
+      (error: unknown) => {
+        const detailed = detailedError(error);
+        assert.match(detailed.message, /compatibility tuple/u);
+        assert.deepEqual(detailed['mismatches'], [
           {
             pointer: '/installedBundles/publicApi/adapterSha256',
             expected: '4da5b5184a78e2d3aca843dad6b147d7feb7ec1368160d73f49c4acbcf97dfdb',
@@ -649,8 +676,9 @@ describe('stable runtime fingerprint validation', () => {
     wrongToolCount.toolCount += 1;
     assert.throws(
       () => validatePrivateFingerprint(wrongToolCount),
-      (error) => {
-        assert.deepEqual(error.mismatches, [
+      (error: unknown) => {
+        const detailed = detailedError(error);
+        assert.deepEqual(detailed['mismatches'], [
           {
             pointer: '/upstream/toolCatalog/count',
             expected: reviewed.toolCount,
@@ -665,8 +693,9 @@ describe('stable runtime fingerprint validation', () => {
     wrongFacade.facadeImplementation.sha256 = 'b'.repeat(64);
     assert.throws(
       () => validatePrivateFingerprint(wrongFacade),
-      (error) => {
-        assert.deepEqual(error.mismatches, [
+      (error: unknown) => {
+        const detailed = detailedError(error);
+        assert.deepEqual(detailed['mismatches'], [
           {
             pointer: '/facadeImplementation/sha256',
             expected: reviewed.facadeImplementation.sha256,
@@ -681,9 +710,10 @@ describe('stable runtime fingerprint validation', () => {
     wrongManifestDigest.reviewedCompatibilityManifest.sha256 = 'b'.repeat(64);
     assert.throws(
       () => validatePrivateFingerprint(wrongManifestDigest),
-      (error) => {
-        assert.match(error.message, /manifest fingerprint/);
-        assert.deepEqual(error.mismatches, [
+      (error: unknown) => {
+        const detailed = detailedError(error);
+        assert.match(detailed.message, /manifest fingerprint/u);
+        assert.deepEqual(detailed['mismatches'], [
           {
             pointer: '/sha256',
             expected: reviewed.reviewedCompatibilityManifest.sha256,
@@ -695,11 +725,15 @@ describe('stable runtime fingerprint validation', () => {
     );
 
     const missingApiDeclarations = structuredClone(reviewed);
-    delete missingApiDeclarations.installedBundles.publicApi.declarationsSha256;
+    Reflect.deleteProperty(
+      missingApiDeclarations.installedBundles.publicApi,
+      'declarationsSha256',
+    );
     assert.throws(
       () => validatePrivateFingerprint(missingApiDeclarations),
-      (error) => {
-        assert.deepEqual(error.missingFingerprintFields, [
+      (error: unknown) => {
+        const detailed = detailedError(error);
+        assert.deepEqual(detailed['missingFingerprintFields'], [
           {
             pointer: '/installedBundles/publicApi/declarationsSha256',
             required: 'sha256',
@@ -710,11 +744,12 @@ describe('stable runtime fingerprint validation', () => {
     );
 
     const missingApiAdapter = structuredClone(reviewed);
-    delete missingApiAdapter.installedBundles.publicApi.adapterSha256;
+    Reflect.deleteProperty(missingApiAdapter.installedBundles.publicApi, 'adapterSha256');
     assert.throws(
       () => validatePrivateFingerprint(missingApiAdapter),
-      (error) => {
-        assert.deepEqual(error.missingFingerprintFields, [
+      (error: unknown) => {
+        const detailed = detailedError(error);
+        assert.deepEqual(detailed['missingFingerprintFields'], [
           {
             pointer: '/installedBundles/publicApi/adapterSha256',
             required: 'sha256',
@@ -726,8 +761,8 @@ describe('stable runtime fingerprint validation', () => {
   });
 });
 
-describe('plan identity and operation summaries', () => {
-  test('plan hashes are key-order independent, but cover every execution-bearing field', () => {
+void describe('plan identity and operation summaries', () => {
+  void test('plan hashes are key-order independent, but cover every execution-bearing field', () => {
     const base = {
       name: 'Move R1',
       capabilityLevel: 'public-supported',
@@ -763,7 +798,7 @@ describe('plan identity and operation summaries', () => {
     assert.equal(buildPlanHash(base), buildPlanHash({ ...base, presentationOnly: 'ignored' }));
   });
 
-  test('operation summaries expose bounded diagnostics and managed evidence pointers', () => {
+  void test('operation summaries expose bounded diagnostics and managed evidence pointers', () => {
     const artifactDescriptors = Array.from({ length: 15 }, (_value, index) => ({
       path: `/control/operations/op/${index}.json`,
       sha256: String(index).padStart(64, '0'),
@@ -812,17 +847,24 @@ describe('plan identity and operation summaries', () => {
     assert.equal(summary.orphanedCallPhase, undefined);
     assert.equal(summary.runtimeRestartBoundary, undefined);
     assert.equal(summary.unknownPhase, 'recovery-reopen');
+    assert.ok(summary.lastError);
+    assert.ok(typeof summary.lastError.name === 'string');
+    assert.ok(typeof summary.lastError.message === 'string');
     assert.equal(summary.lastError.name.length, 128);
     assert.equal(summary.lastError.message.length, 2048);
-    assert.match(summary.lastError.message, /…$/);
+    assert.match(summary.lastError.message, /…$/u);
     assert.equal(summary.artifacts.count, 15);
     assert.equal(summary.artifacts.recent.length, 12);
-    assert.equal(summary.artifacts.recent[0].path, artifactDescriptors[3].path);
-    assert.equal(Object.hasOwn(summary.artifacts.recent[0], 'ignoredPayload'), false);
+    const recentArtifact = summary.artifacts.recent[0];
+    const expectedArtifact = artifactDescriptors[3];
+    assert.ok(recentArtifact);
+    assert.ok(expectedArtifact);
+    assert.equal(recentArtifact.path, expectedArtifact.path);
+    assert.equal(Object.hasOwn(recentArtifact, 'ignoredPayload'), false);
     assert.equal(Object.hasOwn(summary, 'secretPlan'), false);
   });
 
-  test('orphaned-call risk is explicit while remaining conservative for legacy journals', () => {
+  void test('orphaned-call risk is explicit while remaining conservative for legacy journals', () => {
     assert.equal(operationHasOrphanedCallRisk({ state: 'unknown' }), true);
     assert.equal(operationHasOrphanedCallRisk({ state: 'completed' }), false);
     assert.equal(
@@ -847,7 +889,7 @@ describe('plan identity and operation summaries', () => {
     });
   });
 
-  test('only fully reconciled end states are terminal', () => {
+  void test('only fully reconciled end states are terminal', () => {
     for (const state of ['completed', 'rolled-back', 'reconciled-no-mutation', 'plan-invalidated']) {
       assert.equal(isTerminalOperation({ state }), true);
     }

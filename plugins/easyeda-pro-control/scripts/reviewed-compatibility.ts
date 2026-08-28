@@ -1,20 +1,29 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve } from 'node:path';
+import { z } from 'zod';
 
-import { controlImplementationFingerprint } from '../server/src/core.mjs';
+import { controlImplementationFingerprint } from '../server/src/core.ts';
 
-const pluginRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const compatibilityManifestSchema = z.looseObject({
+  facadeImplementation: z.looseObject({
+    bundle: z.unknown(),
+    'source-tree': z.unknown(),
+  }),
+});
+
+const pluginRoot = resolve(import.meta.dirname, '..');
 const manifestPath = join(pluginRoot, 'reviewed-compatibility.json');
 const bundlePath = join(pluginRoot, 'server', 'dist', 'server.mjs');
 const mode = process.argv[2];
-if (!['--check', '--write'].includes(mode)) {
-  throw new Error('Usage: reviewed-compatibility.mjs --check|--write');
+if (mode !== '--check' && mode !== '--write') {
+  throw new Error('Usage: reviewed-compatibility.ts --check|--write');
 }
 
-const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+const manifest = compatibilityManifestSchema.parse(
+  JSON.parse(await readFile(manifestPath, 'utf8')),
+);
 const source = await controlImplementationFingerprint();
 const sourceProjection = {
   version: source.version,

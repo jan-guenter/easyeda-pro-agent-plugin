@@ -36,6 +36,14 @@ jobs:
         working-directory: plugins/easyeda-pro-control
         run: npm ci
 
+      - name: Type-check TypeScript
+        working-directory: plugins/easyeda-pro-control
+        run: npm run typecheck
+
+      - name: Run strict type-aware lint
+        working-directory: plugins/easyeda-pro-control
+        run: npm run lint
+
       - name: Build MCP bundle
         working-directory: plugins/easyeda-pro-control
         run: npm run build

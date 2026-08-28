@@ -10,14 +10,14 @@ import {
   newOperationId,
   normalizeEasyedaProjectPath,
   operationHasOrphanedCallRisk,
-  operationSummary,
+  operationSummary as untypedOperationSummary,
   reviewedCompatibilityManifestFingerprint,
   sha256Json,
   sha256Text,
   validateExpectedFingerprint,
   validatePrivateFingerprint,
   OPERATION_SCHEMA,
-} from './core.mjs';
+} from './core.ts';
 import {
   createOperation,
   listOperations,
@@ -25,8 +25,9 @@ import {
   operationPath,
   updateOperation,
   writePhaseArtifact,
-} from './artifacts.mjs';
-import { createCheckpoint, verifyCheckpoint } from './checkpoint.mjs';
+} from './artifacts.ts';
+import type { ArtifactDescriptor } from './artifacts.ts';
+import { createCheckpoint, verifyCheckpoint } from './checkpoint.ts';
 import {
   buildActivateRecoveryTargetCode,
   buildComponentMutationCode,
@@ -35,66 +36,622 @@ import {
   CONTEXT_PROBE_CODE,
   PROJECT_CONTEXT_PROBE_CODE,
   wrapWithContextGuard,
-} from './runtime-scripts.mjs';
+} from './runtime-scripts.ts';
 import {
   buildExactReadCode,
   exactTargetAssertionPointer,
   validateExactReadPayload,
   validateExactReadRequest,
-} from './exact-readers.mjs';
+} from './exact-readers.ts';
+import type { ExactReadRequest } from './exact-readers.ts';
 import { randomUUID } from 'node:crypto';
 import { isAbsolute } from 'node:path';
 
-const FORBIDDEN_APPLY_NAMES = /(^|_)(save|save_all|sync|import_changes|order|purchase)(_|$)/i;
-const DEDICATED_FACADE_NAME = /(^|_)(capture|export)(_|$)/i;
+const FORBIDDEN_APPLY_NAMES = /(^|_)(save|save_all|sync|import_changes|order|purchase)(_|$)/iu;
+const DEDICATED_FACADE_NAME = /(^|_)(capture|export)(_|$)/iu;
 const EXACT_COMPONENT_MUTATION_TOOL = 'easyeda_control_exact_component_mutation';
-const ACTIVE_DOCUMENT_WRITE_ALLOWLIST = new Map([[3, new Set()]]);
+const ACTIVE_DOCUMENT_WRITE_ALLOWLIST = new Map<number, Set<string>>([[3, new Set<string>()]]);
 
-function toolDocumentType(toolName) {
-  if (/^easyeda_schematic_/i.test(toolName)) return 1;
-  if (/^easyeda_(pcb|board)_/i.test(toolName)) return 3;
-  return undefined;
+type UnknownRecord = Record<string, unknown>;
+export type MutationStateName = 'before' | 'after';
+type ExpectedCallKind = 'read' | 'mutate-unsaved';
+export type RecoveryResolution =
+  | 'reconciled-no-mutation'
+  | 'reconciled-applied-unsaved'
+  | 'reconciled-saved-reopened';
+
+export interface AssertionSpec {
+  pointer: string;
+  op: 'exists' | 'equals' | 'not-equals' | 'matches' | 'length-equals';
+  value?: unknown;
 }
 
-function now() {
-  return new Date().toISOString();
+interface AssertionResult {
+  index: number;
+  pointer: string;
+  op: string;
+  passed: boolean;
+  expected: unknown;
+  actual: unknown;
 }
 
-function serializeError(error) {
-  return {
-    name: error?.name ?? 'Error',
-    message: error?.message ?? String(error),
-    mismatches: error?.mismatches,
-    assertionResults: error?.assertionResults,
-    upstreamResult: error?.upstreamResult,
+export interface SerializedError {
+  name: string;
+  message: string;
+  mismatches?: unknown;
+  assertionResults?: unknown;
+  upstreamResult?: unknown;
+}
+
+interface AnnotatedError extends Error {
+  mismatches?: unknown;
+  assertionResults?: unknown;
+  upstreamResult?: unknown;
+  journalStateRecorded?: boolean;
+  blockingOperations?: unknown;
+  durableBaselineFailure?: boolean;
+  persistenceProofFailure?: boolean;
+  requiredRuntimeRestartConfirmation?: string;
+  orphanedCallPhase?: unknown;
+}
+
+export type ProjectContext =
+  | (UnknownRecord & {
+      uuid: string;
+      projectUuid?: string | undefined;
+      path: string;
+    })
+  | (UnknownRecord & {
+      projectUuid: string;
+      uuid?: string | undefined;
+      path: string;
+    });
+
+export type ExpectedDocumentContext =
+  | (UnknownRecord & {
+      uuid: string;
+      documentUuid?: string | undefined;
+      documentType: number;
+      tabId?: string | undefined;
+    })
+  | (UnknownRecord & {
+      documentUuid: string;
+      uuid?: string | undefined;
+      documentType: number;
+      tabId?: string | undefined;
+    });
+
+export type LiveDocumentContext = ExpectedDocumentContext & { tabId: string };
+
+export interface AuxiliaryDocumentContext extends UnknownRecord {
+  uuid?: string | undefined;
+  documentUuid?: string | undefined;
+  tabId?: string | undefined;
+}
+
+export interface ExpectedContext extends UnknownRecord {
+  project: ProjectContext;
+  document: ExpectedDocumentContext;
+  pcb?: AuxiliaryDocumentContext | undefined;
+  schematic?: AuxiliaryDocumentContext | undefined;
+}
+
+interface ProjectProbePayload extends UnknownRecord {
+  project: ProjectContext;
+}
+
+export interface ContextProbePayload extends ProjectProbePayload {
+  document: LiveDocumentContext;
+  pcb?: AuxiliaryDocumentContext | undefined;
+  schematic?: AuxiliaryDocumentContext | undefined;
+}
+
+export interface TargetChange {
+  primitiveId: string;
+  pointer: string;
+  before: unknown;
+  after: unknown;
+}
+
+export interface ToolCallSpec {
+  toolName: string;
+  arguments?: UnknownRecord;
+  assertions?: AssertionSpec[];
+  sourceSha256?: string;
+}
+
+export interface CheckpointPlan {
+  source: string;
+  outputDir: string;
+  label: string;
+}
+
+export interface MutationPlan extends UnknownRecord {
+  expectedContext: ExpectedContext;
+  targetPrimitiveIds: string[];
+  targetChanges: TargetChange[];
+  preflightCalls: ToolCallSpec[];
+  applyCall: ToolCallSpec;
+  verifyCalls: ToolCallSpec[];
+  verifyAssertions?: AssertionSpec[];
+  rollbackCalls: ToolCallSpec[];
+  reopenedVerifyCalls: ToolCallSpec[];
+  reopenedAssertions?: AssertionSpec[];
+  checkpoint: CheckpointPlan;
+  capabilityLevel: string;
+  expectedFingerprint: UnknownRecord;
+}
+
+interface ProofDetail extends UnknownRecord {
+  pins?: boolean;
+  bounds?: boolean;
+}
+
+interface PadProofRecord extends UnknownRecord {
+  primitiveId: string;
+  parentComponentPrimitiveId: string;
+}
+
+interface ComponentProofRecord extends UnknownRecord {
+  pads?: PadProofRecord[];
+}
+
+interface ProofPayload extends UnknownRecord {
+  kind?: string;
+  detail?: ProofDetail;
+  primitiveIds?: string[];
+  byPrimitiveId?: Record<string, ComponentProofRecord>;
+}
+
+interface SpecResult {
+  toolName: string;
+  payload: unknown;
+  assertions: AssertionResult[];
+  sourceSha256?: string | undefined;
+  transmittedSourceSha256?: string | undefined;
+}
+
+interface BaselineInvariants {
+  componentKind: string;
+  nonTargetComponentStateSha256: string;
+  unchangedTargetStateSha256: string;
+  schematicTopologySha256?: string;
+  pcbInventorySha256?: string;
+  pcbRulesSha256?: string;
+}
+
+interface PhaseInvariantProof {
+  targetAssertions: AssertionResult[];
+  nonTargetComponentStateSha256: string;
+  unchangedTargetStateSha256: string;
+  schematicTopologySha256?: string;
+  pcbInventorySha256?: string;
+  pcbRulesSha256?: string;
+}
+
+interface PadConsequence {
+  primitiveId: string;
+  parentComponentPrimitiveId: string;
+  field: string;
+  value: unknown;
+}
+
+export interface CheckpointReceipt extends UnknownRecord {
+  receiptPath: string;
+  checkpoint?: string;
+  schema?: string;
+}
+
+export interface CheckpointVerification extends UnknownRecord {
+  ok: boolean;
+  checkpointMatchesReceipt?: boolean;
+  sourceEqualsCheckpoint?: boolean;
+}
+
+export interface RuntimeRestartBoundary extends UnknownRecord {
+  confirmationSha256?: string;
+  storedRuntimeFingerprintMatchedAfterReconnect?: boolean;
+  limitation?: string;
+  reboundTabId?: string;
+}
+
+export interface RuntimeGuardFailure extends UnknownRecord {
+  phase: string;
+  error: SerializedError;
+}
+
+export interface OperationJournal extends UnknownRecord {
+  schema: unknown;
+  operationId: string;
+  journalPath: string;
+  planHash: string;
+  plan: MutationPlan;
+  state: string;
+  mutationState: string;
+  saved: boolean;
+  reopened: boolean;
+  orphanedCallPossible: boolean;
+  orphanedCallPhase?: string | undefined;
+  orphanedCallMarkedAt?: string;
+  orphanedCallReturnedAt?: string;
+  runtimeRestartChallengeAttempt?: number;
+  runtimeRestartChallenge?: string;
+  runtimeRestartChallengeIssuedAt?: string;
+  runtimeRestartChallengeConsumedAt?: string;
+  runtimeRestartBoundary?: RuntimeRestartBoundary;
+  unsavedStateDiscardedByRestart?: boolean;
+  baselineDiscardAuthorized?: boolean;
+  hardStop: boolean;
+  mutationMayHaveOccurred: boolean;
+  nextSafeAction: string;
+  context: ExpectedContext;
+  runtimeStatus?: unknown;
+  facadeImplementation?: unknown;
+  preCheckpoint: CheckpointReceipt;
+  candidateFinalCheckpoint?: CheckpointReceipt | undefined;
+  finalCheckpoint?: CheckpointReceipt;
+  sequence: number;
+  createdAt?: string;
+  updatedAt: string;
+  artifacts: ArtifactDescriptor[];
+  baselineReopened?: boolean;
+  baselineHash?: string;
+  baselineInvariants?: BaselineInvariants;
+  unknownPhase?: string | undefined;
+  lastError?: SerializedError;
+  runtimeGuardFailure?: RuntimeGuardFailure;
+  recoveryActivationResumeState?: string;
+  recoveryActivationPriorUnknownPhase?: string | null;
+  recoveryAttemptCount?: number;
+  recoverySourceSha256?: string;
+}
+
+export interface OperationSummary {
+  operationId: string;
+  planHash: string;
+  state: string;
+  mutationState: string;
+  saved: boolean;
+  reopened: boolean;
+  hardStop: boolean;
+  mutationMayHaveOccurred: boolean;
+  orphanedCallPossible: boolean;
+  orphanedCallPhase?: string | undefined;
+  runtimeRestartChallenge?: string | undefined;
+  runtimeRestartChallengeIssuedAt?: string | undefined;
+  runtimeRestartBoundary?: RuntimeRestartBoundary | undefined;
+  nextSafeAction: string;
+  unknownPhase?: string | undefined;
+  lastError: unknown;
+  journalPath: string;
+  checkpoints: unknown;
+  artifacts: unknown;
+  updatedAt: string;
+}
+
+interface DurableBaselineFailure {
+  state: string;
+  mutationState: string;
+  hardStop: boolean;
+  mutationMayHaveOccurred: boolean;
+  nextSafeAction: string;
+}
+
+export interface ToolDescriptor {
+  name: string;
+  title?: string | undefined;
+  description?: string | undefined;
+  annotations?: {
+    title?: string | undefined;
+    readOnlyHint?: boolean | undefined;
+    destructiveHint?: boolean | undefined;
+    idempotentHint?: boolean | undefined;
+    openWorldHint?: boolean | undefined;
+  } | undefined;
+  inputSchema?: unknown;
+  outputSchema?: unknown;
+}
+
+export interface LauncherFingerprint {
+  command: string;
+  commandSha256: string;
+  args: string[];
+  cwd: string;
+  entrypoint: string;
+  entrypointSha256: string;
+  implementationTree: {
+    root: string;
+    sha256: string;
+    fileCount: number;
+  };
+  dependencyLock: {
+    type: string;
+    path: string;
+    sha256: string;
   };
 }
 
-function assertAssertions(payload, assertions, label) {
-  const results = evaluateAssertions(payload, assertions ?? []);
-  const failed = results.filter((result) => !result.passed);
+export interface LauncherState {
+  startup: LauncherFingerprint;
+  current: LauncherFingerprint;
+  startupSha256: string;
+  currentSha256: string;
+  drift: boolean;
+}
+
+export interface InstalledEasyedaBundles {
+  available: true;
+  assetsRoot: string;
+  pcbEditor: {
+    version: string;
+    implementationPath: string;
+    implementationSha256: string;
+  };
+  publicApi: {
+    version: string;
+    implementationPath: string;
+    implementationSha256: string;
+    adapterPath: string;
+    adapterSha256: string;
+    declarationsPath: string;
+    declarationsSha256: string;
+  };
+}
+
+export interface UpstreamClient {
+  listTools?(): Promise<ToolDescriptor[]>;
+  findTool?(name: string): Promise<ToolDescriptor | undefined>;
+  callTool(name: string, args: UnknownRecord | undefined, timeoutMs?: number): Promise<unknown>;
+  serverInfo?(): { name?: string; version?: unknown } | undefined;
+  instructions?(): unknown;
+  launcherFingerprint?(): Promise<LauncherFingerprint>;
+  launcherState?(): Promise<LauncherState>;
+  installedEasyedaBundles?(): Promise<InstalledEasyedaBundles>;
+}
+
+interface ContextOptions {
+  allowTabChange?: boolean;
+}
+
+interface InvokeOptions extends ContextOptions {
+  targetChanges?: TargetChange[];
+  beforeDispatch?: () => void | Promise<void>;
+  afterDispatch?: () => void | Promise<void>;
+}
+
+export interface EngineOptions {
+  privateComponentWriterValidated?: boolean | undefined;
+}
+
+export interface PlanOptions {
+  confirmDiscardAnyUnsavedState?: boolean | undefined;
+}
+
+export interface SaveReopenOptions {
+  confirmDiscardAnyUnsavedState?: boolean | undefined;
+}
+
+export interface RecoverOptions {
+  runtimeRestartConfirmation?: string | undefined;
+  confirmRepeatAfterUnknownRecovery?: boolean | undefined;
+  confirmDiscardAnyUnsavedState?: boolean | undefined;
+}
+
+interface ToolClassification {
+  readOnly: boolean;
+  write: boolean;
+  hasConfirmWrite: boolean;
+  idempotent: boolean;
+}
+
+interface ValidatedSpec {
+  tool: ToolDescriptor;
+  classification: ToolClassification;
+  exactRequest?: ExactReadRequest;
+  exactComponentMutation?: { state: MutationStateName };
+}
+
+interface StatusProbe {
+  available: boolean;
+  payload?: UnknownRecord;
+  error?: SerializedError;
+}
+
+interface CheckpointArgs {
+  receiptPath?: string;
+  source?: string;
+  outputDir?: string;
+  label?: string;
+}
+
+function isUnknownRecord(value: unknown): value is UnknownRecord {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+function isContextProbePayload(value: unknown): value is ContextProbePayload {
+  return (
+    isUnknownRecord(value) &&
+    isUnknownRecord(value['project']) &&
+    isUnknownRecord(value['document'])
+  );
+}
+
+function isProjectProbePayload(value: unknown): value is ProjectProbePayload {
+  return isUnknownRecord(value) && isUnknownRecord(value['project']);
+}
+
+function isOperationJournalRecord(value: unknown): value is OperationJournal {
+  return isUnknownRecord(value);
+}
+
+function isMutationPlan(value: unknown): value is MutationPlan {
+  if (!isUnknownRecord(value)) return false;
+  const expectedContext = value['expectedContext'];
+  return (
+    isUnknownRecord(expectedContext) &&
+    isUnknownRecord(expectedContext['project']) &&
+    isUnknownRecord(expectedContext['document']) &&
+    isUnknownRecord(value['applyCall']) &&
+    isUnknownRecord(value['checkpoint']) &&
+    isUnknownRecord(value['expectedFingerprint'])
+  );
+}
+
+function isCompleteOperationJournal(value: unknown): value is OperationJournal {
+  return (
+    isUnknownRecord(value) &&
+    typeof value['operationId'] === 'string' &&
+    typeof value['planHash'] === 'string' &&
+    typeof value['state'] === 'string' &&
+    typeof value['mutationState'] === 'string' &&
+    typeof value['saved'] === 'boolean' &&
+    typeof value['reopened'] === 'boolean' &&
+    typeof value['hardStop'] === 'boolean' &&
+    typeof value['mutationMayHaveOccurred'] === 'boolean' &&
+    typeof value['nextSafeAction'] === 'string' &&
+    typeof value['journalPath'] === 'string' &&
+    typeof value['updatedAt'] === 'string'
+  );
+}
+
+function operationSummary(operation: OperationJournal): OperationSummary;
+function operationSummary(
+  operation: Readonly<UnknownRecord>,
+): ReturnType<typeof untypedOperationSummary>;
+function operationSummary(
+  operation: Readonly<UnknownRecord>,
+): OperationSummary | ReturnType<typeof untypedOperationSummary> {
+  const summary = untypedOperationSummary(operation);
+  if (!isCompleteOperationJournal(operation)) return summary;
+  return {
+    operationId: operation.operationId,
+    planHash: operation.planHash,
+    state: operation.state,
+    mutationState: operation.mutationState,
+    saved: operation.saved,
+    reopened: operation.reopened,
+    hardStop: operation.hardStop,
+    mutationMayHaveOccurred: operation.mutationMayHaveOccurred,
+    orphanedCallPossible: summary.orphanedCallPossible,
+    orphanedCallPhase:
+      typeof summary.orphanedCallPhase === 'string' ? summary.orphanedCallPhase : undefined,
+    runtimeRestartChallenge:
+      typeof summary.runtimeRestartChallenge === 'string'
+        ? summary.runtimeRestartChallenge
+        : undefined,
+    runtimeRestartChallengeIssuedAt:
+      typeof summary.runtimeRestartChallengeIssuedAt === 'string'
+        ? summary.runtimeRestartChallengeIssuedAt
+        : undefined,
+    runtimeRestartBoundary: operation.runtimeRestartBoundary,
+    nextSafeAction: operation.nextSafeAction,
+    unknownPhase: typeof summary.unknownPhase === 'string' ? summary.unknownPhase : undefined,
+    lastError: summary.lastError,
+    journalPath: operation.journalPath,
+    checkpoints: summary.checkpoints,
+    artifacts: summary.artifacts,
+    updatedAt: operation.updatedAt,
+  };
+}
+
+function annotatedError(message: string, options?: ErrorOptions): AnnotatedError {
+  return new Error(message, options);
+}
+
+function errorMetadata(error: unknown): AnnotatedError | undefined {
+  return error instanceof Error ? (error) : undefined;
+}
+
+function proofPayload(value: unknown): ProofPayload {
+  if (!isUnknownRecord(value)) {
+    throw new Error('Exact proof payload must be an object.');
+  }
+  return value;
+}
+
+function contextPayload(value: unknown): ContextProbePayload {
+  if (!isContextProbePayload(value)) {
+    throw new Error('EasyEDA context probe returned a non-object context.');
+  }
+  return value;
+}
+
+function projectPayload(value: unknown): ProjectProbePayload {
+  if (!isProjectProbePayload(value)) {
+    throw new Error('EasyEDA project probe returned a non-object project context.');
+  }
+  return value;
+}
+
+function asOperationJournal(value: unknown): OperationJournal {
+  if (!isOperationJournalRecord(value)) {
+    throw new TypeError('Operation journal must be an object.');
+  }
+  return value;
+}
+
+function asOperationJournals(value: unknown): OperationJournal[] {
+  return Array.isArray(value) ? value.map((item) => asOperationJournal(item)) : [];
+}
+
+function toolDocumentType(toolName: string): number | undefined {
+  if (/^easyeda_schematic_/iu.test(toolName)) return 1;
+  if (/^easyeda_(pcb|board)_/iu.test(toolName)) return 3;
+  return undefined;
+}
+
+function now(): string {
+  return new Date().toISOString();
+}
+
+function serializeError(error: unknown): SerializedError {
+  const metadata = errorMetadata(error);
+  return {
+    name: metadata?.name ?? 'Error',
+    message: metadata?.message ?? String(error),
+    mismatches: metadata?.mismatches,
+    assertionResults: metadata?.assertionResults,
+    upstreamResult: metadata?.upstreamResult,
+  };
+}
+
+function assertAssertions(
+  payload: unknown,
+  assertions: AssertionSpec[] | undefined,
+  label: string,
+): AssertionResult[] {
+  const evaluate = evaluateAssertions as (
+    root: unknown,
+    specs: AssertionSpec[],
+  ) => AssertionResult[];
+  const results = evaluate(payload, assertions ?? []);
+  const failed = results.filter((result: AssertionResult) => !result.passed);
   if (failed.length > 0) {
-    const error = new Error(`${label} failed ${failed.length} assertion(s).`);
+    const error = annotatedError(`${label} failed ${failed.length} assertion(s).`);
     error.assertionResults = results;
     throw error;
   }
   return results;
 }
 
-function normalizedProofPayload(value) {
-  if (Array.isArray(value)) return value.map(normalizedProofPayload);
-  if (!value || typeof value !== 'object') return value;
+function normalizedProofPayload(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map((item) => normalizedProofPayload(item));
+  if (!isUnknownRecord(value)) return value;
   return Object.fromEntries(
     Object.entries(value).map(([key, child]) => [
       key,
-      key === 'read_consistency' && child && typeof child === 'object'
-        ? { stable: child.stable === true }
+      key === 'read_consistency' && isUnknownRecord(child)
+        ? { stable: child['stable'] === true }
         : normalizedProofPayload(child),
     ]),
   );
 }
 
-function snapshotHash(results) {
+function snapshotHash(results: SpecResult[]): string {
   return sha256Json(
     results.map((result) => ({
       toolName: result.toolName,
@@ -104,32 +661,43 @@ function snapshotHash(results) {
   );
 }
 
-function runtimeFingerprint(status) {
-  return status?.stableFingerprint;
+function runtimeFingerprint(status: unknown): unknown {
+  return isUnknownRecord(status) ? status['stableFingerprint'] : undefined;
 }
 
-function exactCalls(calls, kind) {
+function exactCalls(calls: ToolCallSpec[] | undefined, kind: string): ToolCallSpec[] {
   return (calls ?? []).filter(
-    (call) => call.toolName === 'easyeda_control_exact_read' && call.arguments?.kind === kind,
+    (call) =>
+      call.toolName === 'easyeda_control_exact_read' && call.arguments?.['kind'] === kind,
   );
 }
 
-function assertRequiredPhaseReaders(calls, documentType, targetPrimitiveIds, label) {
+function assertRequiredPhaseReaders(
+  calls: ToolCallSpec[],
+  documentType: number,
+  targetPrimitiveIds: string[],
+  label: string,
+): void {
   const componentKind = documentType === 1 ? 'schematic-components' : 'pcb-components';
   const componentCalls = exactCalls(calls, componentKind);
-  const summaryCalls = componentCalls.filter(
-    (call) =>
-      call.arguments?.selector?.all === true &&
-      call.arguments?.includePins === false &&
-      call.arguments?.includeBounds === false,
-  );
-  const targetCalls = componentCalls.filter((call) => {
-    const primitiveIds = call.arguments?.selector?.primitiveIds;
+  const summaryCalls = componentCalls.filter((call) => {
+    const selector = call.arguments?.['selector'];
     return (
-      Array.isArray(primitiveIds) &&
-      canonicalJson([...primitiveIds].sort()) === canonicalJson([...targetPrimitiveIds].sort()) &&
-      call.arguments?.includePins !== false &&
-      call.arguments?.includeBounds !== false
+      isUnknownRecord(selector) &&
+      selector['all'] === true &&
+      call.arguments?.['includePins'] === false &&
+      call.arguments?.['includeBounds'] === false
+    );
+  });
+  const targetCalls = componentCalls.filter((call) => {
+    const selector = call.arguments?.['selector'];
+    const primitiveIds = isUnknownRecord(selector) ? selector['primitiveIds'] : undefined;
+    return (
+      isStringArray(primitiveIds) &&
+      canonicalJson(primitiveIds.toSorted((left, right) => left.localeCompare(right))) ===
+        canonicalJson(targetPrimitiveIds.toSorted((left, right) => left.localeCompare(right))) &&
+      call.arguments?.['includePins'] !== false &&
+      call.arguments?.['includeBounds'] !== false
     );
   });
   if (componentCalls.length !== 2 || summaryCalls.length !== 1 || targetCalls.length !== 1) {
@@ -148,22 +716,28 @@ function assertRequiredPhaseReaders(calls, documentType, targetPrimitiveIds, lab
   }
 }
 
-function resultForKind(results, kind) {
+function resultForKind(results: SpecResult[], kind: string): ProofPayload {
   const matches = (results ?? []).filter(
     (result) =>
-      result.toolName === 'easyeda_control_exact_read' && result.payload?.kind === kind,
+      result.toolName === 'easyeda_control_exact_read' && proofPayload(result.payload).kind === kind,
   );
   if (matches.length !== 1) throw new Error(`Proof phase did not produce exactly one ${kind} result.`);
-  return matches[0].payload;
+  const [match] = matches;
+  if (!match) throw new Error(`Proof phase did not produce exactly one ${kind} result.`);
+  return proofPayload(match.payload);
 }
 
-function componentProofResults(results, kind, targetPrimitiveIds) {
+function componentProofResults(
+  results: SpecResult[],
+  kind: string,
+  targetPrimitiveIds: string[],
+): { summary: ProofPayload; target: ProofPayload } {
   const matches = (results ?? [])
     .filter(
       (result) =>
-        result.toolName === 'easyeda_control_exact_read' && result.payload?.kind === kind,
+        result.toolName === 'easyeda_control_exact_read' && proofPayload(result.payload).kind === kind,
     )
-    .map((result) => result.payload);
+    .map((result) => proofPayload(result.payload));
   const summary = matches.filter(
     (payload) => payload.detail?.pins === false && payload.detail?.bounds === false,
   );
@@ -171,19 +745,24 @@ function componentProofResults(results, kind, targetPrimitiveIds) {
     (payload) =>
       payload.detail?.pins === true &&
       payload.detail?.bounds === true &&
-      canonicalJson(payload.primitiveIds) === canonicalJson([...targetPrimitiveIds].sort()),
+      canonicalJson(payload.primitiveIds) === canonicalJson([...targetPrimitiveIds].toSorted()),
   );
   if (matches.length !== 2 || summary.length !== 1 || target.length !== 1) {
     throw new Error(`Proof phase did not produce the required summary and target ${kind} results.`);
   }
-  return { summary: summary[0], target: target[0] };
+  const [summaryPayload] = summary;
+  const [targetPayload] = target;
+  if (!summaryPayload || !targetPayload) {
+    throw new Error(`Proof phase did not produce the required summary and target ${kind} results.`);
+  }
+  return { summary: summaryPayload, target: targetPayload };
 }
 
-function targetRecordPointer(primitiveId) {
-  return exactTargetAssertionPointer(primitiveId).replace(/\/primitiveId$/, '');
+function targetRecordPointer(primitiveId: string): string {
+  return exactTargetAssertionPointer(primitiveId).replace(/\/primitiveId$/u, '');
 }
 
-function targetChangeAssertions(plan, state) {
+function targetChangeAssertions(plan: MutationPlan, state: MutationStateName): AssertionSpec[] {
   return plan.targetChanges.map((change) => ({
     pointer: `${targetRecordPointer(change.primitiveId)}${change.pointer}`,
     op: 'equals',
@@ -191,33 +770,40 @@ function targetChangeAssertions(plan, state) {
   }));
 }
 
-function maskRelativePointer(root, pointer) {
+function maskRelativePointer(root: UnknownRecord, pointer: string): void {
   const parts = pointer
     .slice(1)
     .split('/')
     .map((part) => part.replaceAll('~1', '/').replaceAll('~0', '~'));
-  let owner = root;
+  let owner: unknown = root;
   for (let index = 0; index < parts.length - 1; index += 1) {
     const key = parts[index];
-    owner = Array.isArray(owner) && /^\d+$/.test(key) ? owner[Number(key)] : owner?.[key];
-    if (!owner || typeof owner !== 'object') {
+    if (key === undefined) {
+      throw new Error(`Declared target change pointer does not resolve: ${pointer}`);
+    }
+    owner = Array.isArray(owner) && /^\d+$/u.test(key)
+      ? owner[Number(key)]
+      : isUnknownRecord(owner)
+        ? owner[key]
+        : undefined;
+    if (!isUnknownRecord(owner) && !Array.isArray(owner)) {
       throw new Error(`Declared target change pointer does not resolve: ${pointer}`);
     }
   }
   const finalKey = parts.at(-1);
   if (
-    !finalKey ||
+    finalKey === undefined ||
     (Array.isArray(owner)
-      ? !/^\d+$/.test(finalKey) || Number(finalKey) >= owner.length
-      : !Object.hasOwn(owner, finalKey))
+      ? !/^\d+$/u.test(finalKey) || Number(finalKey) >= owner.length
+      : !isUnknownRecord(owner) || !Object.hasOwn(owner, finalKey))
   ) {
     throw new Error(`Declared target change pointer does not resolve: ${pointer}`);
   }
   if (Array.isArray(owner)) owner[Number(finalKey)] = '__DECLARED_TARGET_CHANGE__';
-  else owner[finalKey] = '__DECLARED_TARGET_CHANGE__';
+  else if (isUnknownRecord(owner)) owner[finalKey] = '__DECLARED_TARGET_CHANGE__';
 }
 
-function targetComponentInvariantHash(payload, plan) {
+function targetComponentInvariantHash(payload: ProofPayload, plan: MutationPlan): string {
   const records = structuredClone(payload?.byPrimitiveId ?? {});
   for (const change of plan.targetChanges) {
     const record = records[change.primitiveId];
@@ -229,7 +815,7 @@ function targetComponentInvariantHash(payload, plan) {
   return sha256Json(records);
 }
 
-function nonTargetComponentHash(payload, targetPrimitiveIds) {
+function nonTargetComponentHash(payload: ProofPayload, targetPrimitiveIds: string[]): string {
   const targets = new Set(targetPrimitiveIds);
   return sha256Json(
     Object.fromEntries(
@@ -238,21 +824,29 @@ function nonTargetComponentHash(payload, targetPrimitiveIds) {
   );
 }
 
-function declaredTargetPadConsequences(plan, targetComponentPayload, stateName) {
+function declaredTargetPadConsequences(
+  plan: MutationPlan,
+  targetComponentPayload: ProofPayload,
+  stateName: MutationStateName,
+): Map<string, PadConsequence> {
   if (!['before', 'after'].includes(stateName)) {
     throw new Error('PCB pad consequence proof requires before or after state.');
   }
-  const consequences = new Map();
+  const consequences = new Map<string, PadConsequence>();
   for (const change of plan.targetChanges) {
-    const match = /^\/pads\/(0|[1-9]\d*)\/(x|y|rotation|layer)$/.exec(change.pointer);
+    const match = /^\/pads\/(0|[1-9]\d*)\/(x|y|rotation|layer)$/u.exec(change.pointer);
     if (!match) continue;
     const component = targetComponentPayload?.byPrimitiveId?.[change.primitiveId];
-    const padIndex = Number(match[1]);
+    const padIndexText = match[1];
+    const field = match[2];
+    if (padIndexText === undefined || field === undefined) {
+      throw new Error(`Declared target pad consequence is malformed: ${change.pointer}`);
+    }
+    const padIndex = Number(padIndexText);
     const pad = component?.pads?.[padIndex];
     if (!pad || typeof pad !== 'object') {
       throw new Error(`Declared target pad consequence does not resolve: ${change.primitiveId}${change.pointer}`);
     }
-    const field = match[2];
     const key = `${pad.primitiveId}\u0000${field}`;
     if (consequences.has(key)) {
       throw new Error(`Declared target pad consequence repeats direct pad ${pad.primitiveId}/${field}.`);
@@ -267,24 +861,37 @@ function declaredTargetPadConsequences(plan, targetComponentPayload, stateName) 
   return consequences;
 }
 
-function pcbInventoryInvariantHash(payload, plan, targetComponentPayload, stateName) {
-  const inventory = structuredClone(normalizedProofPayload(payload));
+function pcbInventoryInvariantHash(
+  payload: ProofPayload,
+  plan: MutationPlan,
+  targetComponentPayload: ProofPayload,
+  stateName: MutationStateName,
+): string {
+  const normalizedInventory = normalizedProofPayload(payload);
+  if (!isUnknownRecord(normalizedInventory)) {
+    throw new Error('PCB inventory invariant must be an object.');
+  }
+  const inventory = structuredClone(normalizedInventory);
   const targetSet = new Set(plan.targetPrimitiveIds);
   const declaredConsequences = declaredTargetPadConsequences(
     plan,
     targetComponentPayload,
     stateName,
   );
-  const pads = inventory?.families?.pads?.byPrimitiveId;
-  if (!pads || typeof pads !== 'object' || Array.isArray(pads)) {
+  const families = inventory['families'];
+  const padFamily = isUnknownRecord(families) ? families['pads'] : undefined;
+  const padsCandidate = isUnknownRecord(padFamily) ? padFamily['byPrimitiveId'] : undefined;
+  if (!isUnknownRecord(padsCandidate)) {
     throw new Error('PCB inventory invariant omitted its direct pad state index.');
   }
+  const pads = padsCandidate;
   for (const consequence of declaredConsequences.values()) {
     const pad = pads[consequence.primitiveId];
     if (
-      !pad ||
-      !targetSet.has(pad.parentComponentPrimitiveId) ||
-      pad.parentComponentPrimitiveId !== consequence.parentComponentPrimitiveId
+      !isUnknownRecord(pad) ||
+      typeof pad['parentComponentPrimitiveId'] !== 'string' ||
+      !targetSet.has(pad['parentComponentPrimitiveId']) ||
+      pad['parentComponentPrimitiveId'] !== consequence.parentComponentPrimitiveId
     ) {
       throw new Error(
         `Declared target pad consequence ${consequence.primitiveId}/${consequence.field} has no matching target-owned direct pad.`,
@@ -305,7 +912,7 @@ function pcbInventoryInvariantHash(payload, plan, targetComponentPayload, stateN
   return sha256Json(inventory);
 }
 
-function baselineInvariants(results, plan) {
+function baselineInvariants(results: SpecResult[], plan: MutationPlan): BaselineInvariants {
   const documentType = plan.expectedContext.document.documentType;
   const componentKind = documentType === 1 ? 'schematic-components' : 'pcb-components';
   const components = componentProofResults(results, componentKind, plan.targetPrimitiveIds);
@@ -314,7 +921,7 @@ function baselineInvariants(results, plan) {
     targetChangeAssertions(plan, 'before'),
     'Declared target baseline',
   );
-  const value = {
+  const value: BaselineInvariants = {
     componentKind,
     nonTargetComponentStateSha256: nonTargetComponentHash(
       components.summary,
@@ -338,7 +945,11 @@ function baselineInvariants(results, plan) {
   return value;
 }
 
-function verifyPhaseInvariants(results, operation, label) {
+function verifyPhaseInvariants(
+  results: SpecResult[],
+  operation: OperationJournal,
+  label: string,
+): PhaseInvariantProof {
   const baseline = operation.baselineInvariants;
   if (!baseline) throw new Error('Operation journal has no exact baseline invariant hashes.');
   const components = componentProofResults(
@@ -367,7 +978,7 @@ function verifyPhaseInvariants(results, operation, label) {
   if (unchangedTargetStateSha256 !== baseline.unchangedTargetStateSha256) {
     throw new Error(`${label} changed target state outside the explicitly declared targetChanges.`);
   }
-  const proof = {
+  const proof: PhaseInvariantProof = {
     targetAssertions,
     nonTargetComponentStateSha256,
     unchangedTargetStateSha256,
@@ -402,15 +1013,22 @@ function verifyPhaseInvariants(results, operation, label) {
   return proof;
 }
 
-function ensurePlanShape(plan) {
-  if (!plan?.expectedContext?.project || !plan?.expectedContext?.document) {
-    throw new Error('Plan requires expectedContext.project and expectedContext.document.');
+function ensurePlanShape(value: unknown): asserts value is MutationPlan {
+  if (!isMutationPlan(value)) {
+    throw new Error('Mutation plan must be an object.');
   }
+  const plan = value;
   const projectUuid =
     plan.expectedContext.project.uuid ?? plan.expectedContext.project.projectUuid;
   const documentUuid =
     plan.expectedContext.document.uuid ?? plan.expectedContext.document.documentUuid;
-  if (!projectUuid || !documentUuid || !Number.isInteger(plan.expectedContext.document.documentType)) {
+  if (
+    typeof projectUuid !== 'string' ||
+    projectUuid.length === 0 ||
+    typeof documentUuid !== 'string' ||
+    documentUuid.length === 0 ||
+    !Number.isInteger(plan.expectedContext.document.documentType)
+  ) {
     throw new Error('Plan context requires project UUID, document UUID, and integer documentType.');
   }
   if (plan.expectedContext.document.documentType !== 3) {
@@ -440,7 +1058,7 @@ function ensurePlanShape(plan) {
     if (
       typeof change.pointer !== 'string' ||
       !change.pointer.startsWith('/') ||
-      /^\/primitiveId(?:\/|$)/.test(change.pointer)
+      /^\/primitiveId(?:\/|$)/u.test(change.pointer)
     ) {
       throw new Error('Every target change requires a non-identity relative JSON pointer.');
     }
@@ -454,7 +1072,7 @@ function ensurePlanShape(plan) {
     declaredChangeKeys.add(changeKey);
     if (
       documentType === 3 &&
-      !/^\/(?:x|y|rotation|layer|primitiveLock|bounds\/(?:minX|minY|maxX|maxY)|pads\/\d+\/(?:x|y|rotation|layer))$/.test(
+      !/^\/(?:x|y|rotation|layer|primitiveLock|bounds\/(?:minX|minY|maxX|maxY)|pads\/\d+\/(?:x|y|rotation|layer))$/u.test(
         change.pointer,
       )
     ) {
@@ -462,20 +1080,20 @@ function ensurePlanShape(plan) {
         'Guarded PCB mutation currently permits component placement/lock state and the resulting declared bounds/pad transforms only. Pad/footprint geometry, nets, rules, routes, pours, and stack changes require a separately validated capability.',
       );
     }
-    for (const [stateName, value] of [
+    for (const [stateName, stateValue] of [
       ['before', change.before],
       ['after', change.after],
-    ]) {
+    ] as const) {
       if (change.pointer === '/primitiveLock') {
-        if (typeof value !== 'boolean') {
-          throw new Error(`Target ${change.primitiveId}${change.pointer} ${stateName} value must be boolean.`);
+        if (typeof stateValue !== 'boolean') {
+          throw new TypeError(`Target ${change.primitiveId}${change.pointer} ${stateName} value must be boolean.`);
         }
       } else if (change.pointer === '/layer') {
-        if (![1, 2].includes(value)) {
+        if (typeof stateValue !== 'number' || ![1, 2].includes(stateValue)) {
           throw new Error(`Target ${change.primitiveId}${change.pointer} ${stateName} value must be Top 1 or Bottom 2.`);
         }
-      } else if (typeof value !== 'number' || !Number.isFinite(value)) {
-        throw new Error(`Target ${change.primitiveId}${change.pointer} ${stateName} value must be finite.`);
+      } else if (typeof stateValue !== 'number' || !Number.isFinite(stateValue)) {
+        throw new TypeError(`Target ${change.primitiveId}${change.pointer} ${stateName} value must be finite.`);
       }
     }
   }
@@ -483,7 +1101,7 @@ function ensurePlanShape(plan) {
     if (!plan.targetChanges.some((change) => change.primitiveId === primitiveId)) {
       throw new Error(`Target ${primitiveId} has no declared before/after change.`);
     }
-    const writablePattern = /^\/(x|y|rotation|layer|primitiveLock)$/;
+    const writablePattern = /^\/(x|y|rotation|layer|primitiveLock)$/u;
     if (
       !plan.targetChanges.some(
         (change) => change.primitiveId === primitiveId && writablePattern.test(change.pointer),
@@ -512,7 +1130,7 @@ function ensurePlanShape(plan) {
     ['Preflight', plan.preflightCalls],
     ['Live verification', plan.verifyCalls],
     ['Reopened verification', plan.reopenedVerifyCalls],
-  ]) {
+  ] satisfies Array<[string, ToolCallSpec[]]>) {
     assertRequiredPhaseReaders(
       calls,
       plan.expectedContext.document.documentType,
@@ -523,7 +1141,6 @@ function ensurePlanShape(plan) {
   if (!Array.isArray(plan.rollbackCalls) || plan.rollbackCalls.length === 0) {
     throw new Error('Plan requires at least one explicit rollback call.');
   }
-  if (!plan.applyCall) throw new Error('Plan requires exactly one applyCall.');
   if (
     plan.applyCall.toolName !== EXACT_COMPONENT_MUTATION_TOOL ||
     canonicalJson(plan.applyCall.arguments ?? {}) !== canonicalJson({ state: 'after' })
@@ -532,16 +1149,22 @@ function ensurePlanShape(plan) {
       `applyCall must be the facade-generated ${EXACT_COMPONENT_MUTATION_TOOL} with arguments.state=after.`,
     );
   }
+  const rollbackCall = plan.rollbackCalls[0];
   if (
     plan.rollbackCalls.length !== 1 ||
-    plan.rollbackCalls[0].toolName !== EXACT_COMPONENT_MUTATION_TOOL ||
-    canonicalJson(plan.rollbackCalls[0].arguments ?? {}) !== canonicalJson({ state: 'before' })
+    rollbackCall === undefined ||
+    rollbackCall.toolName !== EXACT_COMPONENT_MUTATION_TOOL ||
+    canonicalJson(rollbackCall.arguments ?? {}) !== canonicalJson({ state: 'before' })
   ) {
     throw new Error(
       `rollbackCalls must contain exactly one facade-generated ${EXACT_COMPONENT_MUTATION_TOOL} call with arguments.state=before.`,
     );
   }
-  if (!plan.checkpoint?.source || !plan.checkpoint?.outputDir || !plan.checkpoint?.label) {
+  if (
+    plan.checkpoint.source.length === 0 ||
+    plan.checkpoint.outputDir.length === 0 ||
+    plan.checkpoint.label.length === 0
+  ) {
     throw new Error('Plan requires source, outputDir, and label for durable checkpoints.');
   }
   if (!isAbsolute(plan.checkpoint.source) || !isAbsolute(plan.checkpoint.outputDir)) {
@@ -553,7 +1176,7 @@ function ensurePlanShape(plan) {
       'checkpoint.source must be the exact .eprj2 path reported by expectedContext.project.path.',
     );
   }
-  if (String(plan.checkpoint.label).length > 54) {
+  if (plan.checkpoint.label.length > 54) {
     throw new Error('Checkpoint label must be at most 54 characters.');
   }
   if (plan.capabilityLevel !== 'private-version-pinned') {
@@ -561,21 +1184,20 @@ function ensurePlanShape(plan) {
       'Guarded PCB component mutation remains private-version-pinned until connected sacrificial-board validation proves this installed modify path.',
     );
   }
-  if (!plan.expectedFingerprint) {
-    throw new Error('Every mutation plan requires the exact stableFingerprint returned by status.');
-  }
   validateExpectedFingerprint(plan.expectedFingerprint);
   validatePrivateFingerprint(plan.expectedFingerprint);
 }
 
 export class SerializedGate {
+  private tail: Promise<void>;
+
   constructor() {
     this.tail = Promise.resolve();
   }
 
-  async run(task) {
+  async run<T>(task: () => T | Promise<T>): Promise<T> {
     const previous = this.tail;
-    let release;
+    let release!: () => void;
     this.tail = new Promise((resolve) => {
       release = resolve;
     });
@@ -589,13 +1211,17 @@ export class SerializedGate {
 }
 
 export class EasyedaControlEngine {
-  constructor(upstream, options = {}) {
+  readonly upstream: UpstreamClient;
+  readonly privateComponentWriterValidated: boolean;
+  readonly controlFingerprintPromise: ReturnType<typeof controlImplementationFingerprint>;
+
+  constructor(upstream: UpstreamClient, options: EngineOptions = {}) {
     this.upstream = upstream;
     this.privateComponentWriterValidated = options.privateComponentWriterValidated === true;
     this.controlFingerprintPromise = controlImplementationFingerprint();
   }
 
-  requirePrivateComponentWriterEnabled() {
+  requirePrivateComponentWriterEnabled(): void {
     if (!this.privateComponentWriterValidated) {
       throw new Error(
         'The private PCB component writer is runtime-disabled until a connected sacrificial-board test validates this installed modify path. Exact reads, evidence, checkpoints, capture, and draft DSN export remain available.',
@@ -603,12 +1229,12 @@ export class EasyedaControlEngine {
     }
   }
 
-  async markOrphanedCallRisk(operation, phase) {
+  async markOrphanedCallRisk(operation: OperationJournal, phase: string): Promise<void> {
     operation.orphanedCallPossible = true;
     operation.orphanedCallPhase = phase;
     operation.orphanedCallMarkedAt = now();
     operation.runtimeRestartChallengeAttempt =
-      Number(operation.runtimeRestartChallengeAttempt ?? 0) + 1;
+      (operation.runtimeRestartChallengeAttempt ?? 0) + 1;
     operation.runtimeRestartChallenge = [
       'EASYEDA_RESTARTED_AND_RECONNECTED',
       operation.operationId,
@@ -622,7 +1248,7 @@ export class EasyedaControlEngine {
     await updateOperation(operation);
   }
 
-  async clearOrphanedCallRisk(operation, phase) {
+  async clearOrphanedCallRisk(operation: OperationJournal, phase: string): Promise<void> {
     operation.orphanedCallPossible = false;
     operation.orphanedCallPhase = phase;
     operation.orphanedCallReturnedAt = now();
@@ -632,7 +1258,7 @@ export class EasyedaControlEngine {
     await updateOperation(operation);
   }
 
-  async ensureRuntimeRestartChallenge(operation) {
+  async ensureRuntimeRestartChallenge(operation: OperationJournal): Promise<string> {
     if (
       typeof operation.runtimeRestartChallenge === 'string' &&
       operation.runtimeRestartChallenge.length > 0
@@ -641,7 +1267,7 @@ export class EasyedaControlEngine {
     }
     const phase = operation.orphanedCallPhase ?? operation.unknownPhase ?? 'legacy-orphan';
     operation.runtimeRestartChallengeAttempt =
-      Number(operation.runtimeRestartChallengeAttempt ?? 0) + 1;
+      (operation.runtimeRestartChallengeAttempt ?? 0) + 1;
     operation.runtimeRestartChallenge = [
       'EASYEDA_RESTARTED_AND_RECONNECTED',
       operation.operationId,
@@ -655,9 +1281,13 @@ export class EasyedaControlEngine {
     return operation.runtimeRestartChallenge;
   }
 
-  async requireDurableBaselineBeforeDispatch(operation, phase, failure) {
-    let verification;
-    let cause;
+  async requireDurableBaselineBeforeDispatch(
+    operation: OperationJournal,
+    phase: string,
+    failure: DurableBaselineFailure,
+  ): Promise<CheckpointVerification> {
+    let verification: CheckpointVerification | undefined;
+    let cause: unknown;
     try {
       verification = await verifyCheckpoint(operation.preCheckpoint.receiptPath);
       if (!verification.ok) {
@@ -666,10 +1296,10 @@ export class EasyedaControlEngine {
     } catch (error) {
       cause = error;
     }
-    if (!verification?.ok) {
-      const error = new Error(
+    if (verification?.ok !== true) {
+      const error = annotatedError(
         `The durable baseline changed immediately before ${phase}; no ${phase} mutation was dispatched.`,
-        cause ? { cause } : undefined,
+        cause === undefined ? undefined : { cause },
       );
       error.journalStateRecorded = true;
       operation.state = failure.state;
@@ -686,7 +1316,7 @@ export class EasyedaControlEngine {
     return verification;
   }
 
-  async assertStoredRuntime(operation, phase) {
+  async assertStoredRuntime(operation: OperationJournal, phase: string): Promise<void> {
     try {
       validateExpectedFingerprint(operation.plan.expectedFingerprint);
       if (operation.plan.capabilityLevel === 'private-version-pinned') {
@@ -713,27 +1343,27 @@ export class EasyedaControlEngine {
     }
   }
 
-  async assertBridgeDispatchAllowed() {
-    const blockingOperations = (await listOperations())
+  async assertBridgeDispatchAllowed(): Promise<true> {
+    const blockingOperations = asOperationJournals(await listOperations())
       .filter(
         (operation) =>
           operation?.state === 'journal-unreadable' ||
           operationHasOrphanedCallRisk(operation),
       )
-      .map(operationSummary);
+      .map((operation) => operationSummary(operation));
     if (blockingOperations.length === 0) return true;
     const labels = blockingOperations
       .map((operation) => `${operation.operationId}:${operation.state}`)
       .join(', ');
-    const error = new Error(
+    const error = annotatedError(
       `EasyEDA bridge dispatch is quarantined by an orphan-risk or unreadable operation journal (${labels}). Use easyeda_control_recover_incomplete without an operationId to inspect the local journals. Do not run live status, context, reads, captures, exports, checkpoints, or writes until the nonce-bound restart/recovery gate clears every orphan risk; an unreadable journal requires manual restoration or review.`,
     );
     error.blockingOperations = blockingOperations;
     throw error;
   }
 
-  async assertRecoveryOperationIsolated(operationId) {
-    const blockingOperations = (await listOperations())
+  async assertRecoveryOperationIsolated(operationId: string): Promise<true> {
+    const blockingOperations = asOperationJournals(await listOperations())
       .filter(
         (operation) =>
           operation?.operationId !== operationId &&
@@ -741,12 +1371,12 @@ export class EasyedaControlEngine {
             operation?.state === 'journal-unreadable' ||
             operationHasOrphanedCallRisk(operation)),
       )
-      .map(operationSummary);
+      .map((operation) => operationSummary(operation));
     if (blockingOperations.length === 0) return true;
     const labels = blockingOperations
       .map((operation) => `${operation.operationId}:${operation.state}`)
       .join(', ');
-    const error = new Error(
+    const error = annotatedError(
       `Recovery operation ${operationId} is not isolated; another incomplete, unreadable, or orphan-risk journal exists (${labels}). Recovery may dispatch live bridge calls, so resolve or manually review the other journal first.`,
     );
     error.blockingOperations = blockingOperations;
@@ -754,11 +1384,17 @@ export class EasyedaControlEngine {
   }
 
   async status() {
-    const tools = await this.upstream.listTools();
-    const call = async (name) => {
+    const listTools = this.upstream.listTools?.bind(this.upstream);
+    const launcherFingerprint = this.upstream.launcherFingerprint?.bind(this.upstream);
+    if (listTools === undefined || launcherFingerprint === undefined) {
+      throw new Error('The upstream client does not expose status and launcher probes.');
+    }
+    const tools = await listTools();
+    const call = async (name: string): Promise<StatusProbe> => {
       if (!tools.some((tool) => tool.name === name)) return { available: false };
       try {
-        return { available: true, payload: extractToolPayload(await this.upstream.callTool(name, {})) };
+        const payload = extractToolPayload(await this.upstream.callTool(name, {}));
+        return { available: true, payload: isUnknownRecord(payload) ? payload : {} };
       } catch (error) {
         return { available: true, error: serializeError(error) };
       }
@@ -769,22 +1405,32 @@ export class EasyedaControlEngine {
       call('easyeda_bridge_probe_methods'),
       this.controlFingerprintPromise,
     ]);
-    const upstreamServer = this.upstream.serverInfo();
+    const upstreamServer = this.upstream.serverInfo?.();
     let installedBundles;
+    const readInstalledBundles = this.upstream.installedEasyedaBundles?.bind(this.upstream);
     try {
-      installedBundles = this.upstream.installedEasyedaBundles
-        ? await this.upstream.installedEasyedaBundles()
-        : { available: false, error: { message: 'Installed-bundle probe is unavailable.' } };
+      installedBundles =
+        readInstalledBundles === undefined
+          ? { available: false, error: { message: 'Installed-bundle probe is unavailable.' } }
+          : await readInstalledBundles();
     } catch (error) {
       installedBundles = { available: false, error: serializeError(error) };
     }
-    const launcherState = this.upstream.launcherState
-      ? await this.upstream.launcherState()
-      : {
-          startup: await this.upstream.launcherFingerprint(),
-          current: await this.upstream.launcherFingerprint(),
-          drift: false,
-        };
+    const readLauncherState = this.upstream.launcherState?.bind(this.upstream);
+    const launcherState =
+      readLauncherState === undefined
+        ? await (async (): Promise<LauncherState> => {
+          const startup = await launcherFingerprint();
+          const current = await launcherFingerprint();
+          return {
+            startup,
+            current,
+            startupSha256: sha256Json(startup),
+            currentSha256: sha256Json(current),
+            drift: false,
+          };
+        })()
+        : await readLauncherState();
     const upstreamLauncher = launcherState.startup;
     const toolCatalogSha256 = sha256Json(
       tools.map((tool) => ({
@@ -807,30 +1453,32 @@ export class EasyedaControlEngine {
       toolCatalogSha256,
       health: {
         payload: {
-          version: health.payload?.version,
-          node_version: health.payload?.node_version,
-          bridge_connected: health.payload?.bridge_connected,
-          easyeda_version: health.payload?.easyeda_version,
-          extension_version: health.payload?.extension_version,
-          extension_version_mismatch: health.payload?.extension_version_mismatch,
-          registry_mismatch: health.payload?.registry_mismatch,
+          version: health.payload?.['version'],
+          node_version: health.payload?.['node_version'],
+          bridge_connected: health.payload?.['bridge_connected'],
+          easyeda_version: health.payload?.['easyeda_version'],
+          extension_version: health.payload?.['extension_version'],
+          extension_version_mismatch: health.payload?.['extension_version_mismatch'],
+          registry_mismatch: health.payload?.['registry_mismatch'],
         },
       },
       bridge: {
         payload: {
-          connected: bridge.payload?.connected,
-          bridge_version: bridge.payload?.bridge_version,
-          easyeda_version: bridge.payload?.easyeda_version,
+          connected: bridge.payload?.['connected'],
+          bridge_version: bridge.payload?.['bridge_version'],
+          easyeda_version: bridge.payload?.['easyeda_version'],
           diagnostics: {
-            method_registry_hash: bridge.payload?.diagnostics?.method_registry_hash,
+            method_registry_hash: isUnknownRecord(bridge.payload?.['diagnostics'])
+              ? bridge.payload['diagnostics']['method_registry_hash']
+              : undefined,
           },
         },
       },
       bridgeDispatcher: {
         payload: {
-          source: dispatcher.payload?.source,
-          dispatcher_build_id: dispatcher.payload?.dispatcher_build_id,
-          total: dispatcher.payload?.total,
+          source: dispatcher.payload?.['source'],
+          dispatcher_build_id: dispatcher.payload?.['dispatcher_build_id'],
+          total: dispatcher.payload?.['total'],
         },
       },
     };
@@ -840,7 +1488,7 @@ export class EasyedaControlEngine {
       upstreamLauncherState: launcherState,
       installedBundles,
       toolCatalogSha256,
-      upstreamInstructions: this.upstream.instructions(),
+      upstreamInstructions: this.upstream.instructions?.(),
       toolCount: tools.length,
       health,
       bridge,
@@ -860,15 +1508,15 @@ export class EasyedaControlEngine {
     };
   }
 
-  async context() {
-    const tool = await this.upstream.findTool('easyeda_execute');
+  async context(): Promise<ExpectedContext> {
+    const tool = await this.upstream.findTool?.('easyeda_execute');
     if (!tool) throw new Error('The upstream server does not expose easyeda_execute.');
     const result = await this.upstream.callTool(
       'easyeda_execute',
       { code: CONTEXT_PROBE_CODE, timeoutMs: 15000, confirmWrite: true },
       25000,
     );
-    const payload = extractToolPayload(result);
+    const payload = contextPayload(extractToolPayload(result));
     const projectUuid = payload?.project?.uuid ?? payload?.project?.projectUuid;
     const projectPath = payload?.project?.path;
     const documentUuid = payload?.document?.uuid ?? payload?.document?.documentUuid;
@@ -896,7 +1544,11 @@ export class EasyedaControlEngine {
       if (schematicUuid !== documentUuid) {
         throw new Error('Schematic context UUID does not agree with the active document UUID.');
       }
-      if (payload?.schematic?.tabId && payload.schematic.tabId !== tabId) {
+      if (
+        typeof payload.schematic?.tabId === 'string' &&
+        payload.schematic.tabId.length > 0 &&
+        payload.schematic.tabId !== tabId
+      ) {
         throw new Error('Schematic context tab does not agree with the active document tab.');
       }
     }
@@ -905,7 +1557,11 @@ export class EasyedaControlEngine {
       if (pcbUuid !== documentUuid) {
         throw new Error('PCB context UUID does not agree with the active document UUID.');
       }
-      if (payload?.pcb?.tabId && payload.pcb.tabId !== tabId) {
+      if (
+        typeof payload.pcb?.tabId === 'string' &&
+        payload.pcb.tabId.length > 0 &&
+        payload.pcb.tabId !== tabId
+      ) {
         throw new Error('PCB context tab does not agree with the active document tab.');
       }
     }
@@ -913,14 +1569,14 @@ export class EasyedaControlEngine {
   }
 
   async projectContext() {
-    const tool = await this.upstream.findTool('easyeda_execute');
+    const tool = await this.upstream.findTool?.('easyeda_execute');
     if (!tool) throw new Error('The upstream server does not expose easyeda_execute.');
     const result = await this.upstream.callTool(
       'easyeda_execute',
       { code: PROJECT_CONTEXT_PROBE_CODE, timeoutMs: 15000, confirmWrite: true },
       25000,
     );
-    const payload = extractToolPayload(result);
+    const payload = projectPayload(extractToolPayload(result));
     const projectUuid = payload?.project?.uuid ?? payload?.project?.projectUuid;
     if (
       typeof projectUuid !== 'string' ||
@@ -934,10 +1590,10 @@ export class EasyedaControlEngine {
     return payload;
   }
 
-  async assertProjectContext(expectedProject) {
+  async assertProjectContext(expectedProject: ProjectContext): Promise<ProjectProbePayload> {
     const actual = await this.projectContext();
-    const expected = structuredClone(expectedProject);
-    delete expected.path;
+    const expected: UnknownRecord = structuredClone(expectedProject);
+    delete expected['path'];
     assertSubset(actual.project, expected, 'Active EasyEDA project');
     if (
       normalizeEasyedaProjectPath(actual.project.path) !==
@@ -948,15 +1604,20 @@ export class EasyedaControlEngine {
     return actual;
   }
 
-  async assertContext(expectedContext, options = {}) {
-    const actual = await this.context();
-    const expected = structuredClone(expectedContext);
+  async assertContext(
+    expectedContext: ExpectedContext,
+    options: ContextOptions = {},
+  ): Promise<ContextProbePayload> {
+    const actual = contextPayload(await this.context());
+    const expected: UnknownRecord = structuredClone(expectedContext);
     if (options.allowTabChange === true) {
-      if (expected?.document) delete expected.document.tabId;
-      if (expected?.pcb) delete expected.pcb.tabId;
-      if (expected?.schematic) delete expected.schematic.tabId;
+      for (const key of ['document', 'pcb', 'schematic']) {
+        const document = expected[key];
+        if (isUnknownRecord(document)) delete document['tabId'];
+      }
     }
-    if (expected?.project) delete expected.project.path;
+    const project = expected['project'];
+    if (isUnknownRecord(project)) delete project['path'];
     assertSubset(actual, expected, 'Active EasyEDA context');
     if (
       normalizeEasyedaProjectPath(actual.project.path) !==
@@ -967,9 +1628,14 @@ export class EasyedaControlEngine {
     return actual;
   }
 
-  async rebindAfterLifecycle(expectedContext, payload, label) {
+  async rebindAfterLifecycle(
+    expectedContext: ExpectedContext,
+    payload: unknown,
+    label: string,
+  ): Promise<ContextProbePayload> {
     const cleanContext = await this.assertContext(expectedContext, { allowTabChange: true });
-    const payloadTabId = payload?.document?.tabId;
+    const payloadDocument = isUnknownRecord(payload) ? payload['document'] : undefined;
+    const payloadTabId = isUnknownRecord(payloadDocument) ? payloadDocument['tabId'] : undefined;
     if (typeof payloadTabId !== 'string' || payloadTabId.length === 0) {
       throw new Error(`${label} did not report the reopened tabId.`);
     }
@@ -986,7 +1652,10 @@ export class EasyedaControlEngine {
     return cleanContext;
   }
 
-  async activateAndRebindRecoveryTarget(operation, resumeState) {
+  async activateAndRebindRecoveryTarget(
+    operation: OperationJournal,
+    resumeState: string,
+  ): Promise<ContextProbePayload> {
     await this.assertProjectContext(operation.plan.expectedContext.project);
     const source = buildActivateRecoveryTargetCode(operation.plan.expectedContext);
     const sourceSha256 = sha256Text(source);
@@ -1028,8 +1697,8 @@ export class EasyedaControlEngine {
       operation.context = reboundContext;
       operation.planHash = buildPlanHash(operation.plan);
       if (acceptedRestartBoundary) {
-        acceptedRestartBoundary.contextReboundAt = now();
-        acceptedRestartBoundary.reboundTabId = reboundContext.document.tabId;
+        acceptedRestartBoundary['contextReboundAt'] = now();
+        acceptedRestartBoundary['reboundTabId'] = reboundContext.document.tabId;
         operation.runtimeRestartBoundary = acceptedRestartBoundary;
       }
       operation.sequence += 1;
@@ -1067,7 +1736,11 @@ export class EasyedaControlEngine {
     }
   }
 
-  async exactRead(request, expectedContext, options = {}) {
+  async exactRead(
+    request: unknown,
+    expectedContext: ExpectedContext,
+    options: ContextOptions = {},
+  ): Promise<ProofPayload> {
     const parsed = validateExactReadRequest(request, expectedContext);
     const source = buildExactReadCode(parsed);
     const initialContext = await this.assertContext(expectedContext, options);
@@ -1081,7 +1754,7 @@ export class EasyedaControlEngine {
         { code: guardedSource, timeoutMs: 60000, confirmWrite: true },
         70000,
       );
-      const payload = validateExactReadPayload(extractToolPayload(raw), parsed);
+      const payload = proofPayload(validateExactReadPayload(extractToolPayload(raw), parsed));
       await this.assertContext(boundContext);
       return payload;
     };
@@ -1090,7 +1763,7 @@ export class EasyedaControlEngine {
     const firstHash = sha256Json(first);
     const secondHash = sha256Json(second);
     if (firstHash !== secondHash) {
-      const error = new Error(
+      const error = annotatedError(
         'Facade-owned exact read changed between two consecutive observations; no stable design proof was produced.',
       );
       error.mismatches = [{ pointer: '/', expected: firstHash, actual: secondHash }];
@@ -1111,13 +1784,18 @@ export class EasyedaControlEngine {
     };
   }
 
-  async invokeSpec(spec, expectedContext, expectedKind, options = {}) {
-    const { classification, exactRequest, exactComponentMutation } = await this.validateSpec(
+  async invokeSpec(
+    spec: ToolCallSpec,
+    expectedContext: ExpectedContext,
+    expectedKind: ExpectedCallKind,
+    options: InvokeOptions = {},
+  ): Promise<SpecResult> {
+    const { exactRequest, exactComponentMutation } = await this.validateSpec(
       spec,
       expectedKind,
       expectedContext,
     );
-    if (exactRequest) {
+    if (exactRequest !== undefined) {
       const payload = await this.exactRead(exactRequest, expectedContext, options);
       const assertions = assertAssertions(payload, spec.assertions, spec.toolName);
       return {
@@ -1126,7 +1804,7 @@ export class EasyedaControlEngine {
         assertions,
       };
     }
-    if (exactComponentMutation) {
+    if (exactComponentMutation !== undefined) {
       if (!Array.isArray(options.targetChanges) || options.targetChanges.length === 0) {
         throw new Error('Facade-generated component mutation has no journal-bound targetChanges.');
       }
@@ -1166,8 +1844,8 @@ export class EasyedaControlEngine {
       };
     }
     const activeContext = await this.assertContext(expectedContext, options);
-    let args = structuredClone(spec.arguments ?? {});
-    let transmittedSourceSha256;
+    const args: UnknownRecord = structuredClone(spec.arguments ?? {});
+    let transmittedSourceSha256: string | undefined;
 
     const expectedProjectUuid =
       expectedContext.project.uuid ?? expectedContext.project.projectUuid;
@@ -1183,7 +1861,7 @@ export class EasyedaControlEngine {
         throw new Error(`${spec.toolName} arguments.${key} does not match the proven document UUID.`);
       }
     }
-    if (args.tabId !== undefined && args.tabId !== activeContext.document.tabId) {
+    if (args['tabId'] !== undefined && args['tabId'] !== activeContext.document.tabId) {
       throw new Error(`${spec.toolName} arguments.tabId does not match the active proven tab.`);
     }
     if (
@@ -1192,9 +1870,9 @@ export class EasyedaControlEngine {
       !['projectId', 'projectUuid', 'documentId', 'documentUuid', 'schematicUuid', 'pcbUuid', 'tabId'].some(
         (key) => args[key] !== undefined,
       ) &&
-      !ACTIVE_DOCUMENT_WRITE_ALLOWLIST
+      ACTIVE_DOCUMENT_WRITE_ALLOWLIST
         .get(expectedContext.document.documentType)
-        ?.has(spec.toolName)
+        ?.has(spec.toolName) !== true
     ) {
       throw new Error(
         `${spec.toolName} has no exact project/document target argument and cannot be used for guarded mutation. Add a constrained facade writer instead.`,
@@ -1202,14 +1880,18 @@ export class EasyedaControlEngine {
     }
 
     if (spec.toolName === 'easyeda_execute') {
-      const guarded = wrapWithContextGuard(args.code, expectedContext);
-      args.code = guarded;
+      const code = args['code'];
+      if (typeof code !== 'string') {
+        throw new TypeError('easyeda_execute arguments.code must be a string.');
+      }
+      const guarded = wrapWithContextGuard(code, expectedContext);
+      args['code'] = guarded;
       transmittedSourceSha256 = sha256Text(guarded);
     }
 
     const timeoutMs =
       spec.toolName === 'easyeda_execute'
-        ? Math.min(70000, Number(args.timeoutMs ?? 15000) + 10000)
+        ? Math.min(70000, Number(args['timeoutMs'] ?? 15000) + 10000)
         : 70000;
     if (expectedKind === 'mutate-unsaved' && typeof options.beforeDispatch === 'function') {
       await options.beforeDispatch();
@@ -1230,7 +1912,11 @@ export class EasyedaControlEngine {
     };
   }
 
-  async validateSpec(spec, expectedKind, expectedContext) {
+  async validateSpec(
+    spec: ToolCallSpec,
+    expectedKind: ExpectedCallKind,
+    expectedContext: ExpectedContext,
+  ): Promise<ValidatedSpec> {
     if (spec.toolName === 'easyeda_execute') {
       throw new Error(
         'Guarded mutation plans reject caller-supplied JavaScript in every phase. Use the facade-generated exact component mutation.',
@@ -1253,23 +1939,25 @@ export class EasyedaControlEngine {
       if (expectedKind !== 'mutate-unsaved') {
         throw new Error(`${EXACT_COMPONENT_MUTATION_TOOL} can only be used as an unsaved mutation.`);
       }
-      const keys = Object.keys(spec.arguments ?? {}).sort();
+      const callArguments = spec.arguments ?? {};
+      const keys = Object.keys(callArguments).toSorted();
+      const state = callArguments['state'];
       if (
         canonicalJson(keys) !== canonicalJson(['state']) ||
-        !['before', 'after'].includes(spec.arguments.state)
+        (state !== 'before' && state !== 'after')
       ) {
         throw new Error(`${EXACT_COMPONENT_MUTATION_TOOL} requires only arguments.state=before|after.`);
       }
-      if ((spec.assertions ?? []).length !== 0) {
+      if ((spec.assertions ?? []).length > 0) {
         throw new Error(`${EXACT_COMPONENT_MUTATION_TOOL} cannot substitute inline assertions for exact phase verification.`);
       }
       return {
         tool: { name: spec.toolName, annotations: { destructiveHint: true } },
         classification: { readOnly: false, write: true, hasConfirmWrite: true, idempotent: true },
-        exactComponentMutation: { state: spec.arguments.state },
+        exactComponentMutation: { state },
       };
     }
-    const tool = await this.upstream.findTool(spec.toolName);
+    const tool = await this.upstream.findTool?.(spec.toolName);
     if (!tool) throw new Error(`Unknown upstream EasyEDA tool: ${spec.toolName}`);
     if (spec.toolName !== 'easyeda_execute' && DEDICATED_FACADE_NAME.test(spec.toolName)) {
       throw new Error(
@@ -1295,9 +1983,9 @@ export class EasyedaControlEngine {
         throw new Error(`${spec.toolName} is not classified as a write upstream tool.`);
       }
       if (
-        !ACTIVE_DOCUMENT_WRITE_ALLOWLIST
-          .get(expectedContext?.document?.documentType)
-          ?.has(spec.toolName)
+        ACTIVE_DOCUMENT_WRITE_ALLOWLIST
+          .get(expectedContext.document.documentType)
+          ?.has(spec.toolName) !== true
       ) {
         throw new Error(
           `${spec.toolName} is not a reviewed writer for the plan's active document type. Use the facade-generated exact component mutation supported by this state machine.`,
@@ -1312,15 +2000,20 @@ export class EasyedaControlEngine {
     return { tool, classification };
   }
 
-  async runSpecs(specs, expectedContext, expectedKind, options = {}) {
-    const results = [];
+  async runSpecs(
+    specs: ToolCallSpec[],
+    expectedContext: ExpectedContext,
+    expectedKind: ExpectedCallKind,
+    options: InvokeOptions = {},
+  ): Promise<SpecResult[]> {
+    const results: SpecResult[] = [];
     for (const spec of specs) {
       results.push(await this.invokeSpec(spec, expectedContext, expectedKind, options));
     }
     return results;
   }
 
-  async plan(plan, options = {}) {
+  async plan(plan: unknown, options: PlanOptions = {}) {
     this.requirePrivateComponentWriterEnabled();
     ensurePlanShape(plan);
     if (options.confirmDiscardAnyUnsavedState !== true) {
@@ -1328,7 +2021,7 @@ export class EasyedaControlEngine {
         'A mutation plan must first close/reopen the target without saving to bind its live baseline to the project database. Set confirmDiscardAnyUnsavedState=true only after authorizing discard of any unsaved target-document state.',
       );
     }
-    const operations = await listOperations();
+    const operations = asOperationJournals(await listOperations());
     const unfinished = operations.filter((operation) => !isTerminalOperation(operation));
     if (unfinished.length > 0) {
       throw new Error(
@@ -1381,7 +2074,7 @@ export class EasyedaControlEngine {
 
     const operationId = newOperationId();
     const createdAt = now();
-    const operation = {
+    const operation: OperationJournal = {
       schema: OPERATION_SCHEMA,
       operationId,
       journalPath: operationPath(operationId),
@@ -1535,9 +2228,9 @@ export class EasyedaControlEngine {
     }
   }
 
-  async apply(operationId, planHash) {
+  async apply(operationId: string, planHash: string) {
     this.requirePrivateComponentWriterEnabled();
-    const operation = await loadOperation(operationId);
+    const operation = asOperationJournal(await loadOperation(operationId));
     if (operation.state !== 'preflight-proven') {
       throw new Error(`Operation ${operationId} is in state ${operation.state}, not preflight-proven.`);
     }
@@ -1659,8 +2352,9 @@ export class EasyedaControlEngine {
             });
             await this.markOrphanedCallRisk(operation, 'apply');
           },
-          afterDispatch: async () =>
-            await this.clearOrphanedCallRisk(operation, 'apply'),
+          afterDispatch: async () => {
+            await this.clearOrphanedCallRisk(operation, 'apply');
+          },
         },
       );
       let durableVerification;
@@ -1677,8 +2371,8 @@ export class EasyedaControlEngine {
         durableVerificationError,
       });
       operation.artifacts.push(artifact);
-      if (!durableVerification?.ok) {
-        const error = new Error(
+      if (durableVerification?.ok !== true) {
+        const error = annotatedError(
           'The apply call returned, but the durable database no longer matches the pre-checkpoint; the edit cannot be classified as unsaved.',
         );
         error.journalStateRecorded = true;
@@ -1703,7 +2397,7 @@ export class EasyedaControlEngine {
       await updateOperation(operation);
       return operationSummary(operation);
     } catch (error) {
-      if (error?.journalStateRecorded === true) throw error;
+      if (errorMetadata(error)?.journalStateRecorded === true) throw error;
       operation.state = 'unknown';
       operation.mutationState = 'unknown';
       operation.hardStop = true;
@@ -1718,8 +2412,8 @@ export class EasyedaControlEngine {
     }
   }
 
-  async verify(operationId) {
-    const operation = await loadOperation(operationId);
+  async verify(operationId: string) {
+    const operation = asOperationJournal(await loadOperation(operationId));
     if (operation.state !== 'applied-unsaved') {
       throw new Error(`Operation ${operationId} is in state ${operation.state}, not applied-unsaved.`);
     }
@@ -1758,8 +2452,8 @@ export class EasyedaControlEngine {
         durableVerificationError,
       });
       operation.artifacts.push(artifact);
-      if (!durableVerification?.ok) {
-        const error = new Error(
+      if (durableVerification?.ok !== true) {
+        const error = annotatedError(
           'Live assertions passed, but the durable database no longer matches the pre-checkpoint; live state cannot be classified as verified-unsaved.',
         );
         error.journalStateRecorded = true;
@@ -1783,7 +2477,7 @@ export class EasyedaControlEngine {
       await updateOperation(operation);
       return operationSummary(operation);
     } catch (error) {
-      if (error?.journalStateRecorded === true) throw error;
+      if (errorMetadata(error)?.journalStateRecorded === true) throw error;
       operation.state = 'verification-failed';
       operation.hardStop = true;
       operation.nextSafeAction =
@@ -1795,9 +2489,9 @@ export class EasyedaControlEngine {
     }
   }
 
-  async rollback(operationId, planHash) {
+  async rollback(operationId: string, planHash: string) {
     this.requirePrivateComponentWriterEnabled();
-    const operation = await loadOperation(operationId);
+    const operation = asOperationJournal(await loadOperation(operationId));
     if (!['applied-unsaved', 'verification-failed', 'live-verified'].includes(operation.state)) {
       throw new Error(
         `Operation ${operationId} cannot roll back safely from state ${operation.state}. Reconcile unknown state first.`,
@@ -1840,7 +2534,7 @@ export class EasyedaControlEngine {
                 'Rollback pre-dispatch desired-state proof',
               );
             } catch (cause) {
-              const error = new Error(
+              const error = annotatedError(
                 'Rollback was not dispatched because fresh exact readback could not prove the complete intended unsaved state.',
                 { cause },
               );
@@ -1888,8 +2582,9 @@ export class EasyedaControlEngine {
             });
             await this.markOrphanedCallRisk(operation, 'rollback');
           },
-          afterDispatch: async () =>
-            await this.clearOrphanedCallRisk(operation, 'rollback'),
+          afterDispatch: async () => {
+            await this.clearOrphanedCallRisk(operation, 'rollback');
+          },
         },
       );
       const baseline = await this.runSpecs(
@@ -1928,7 +2623,7 @@ export class EasyedaControlEngine {
       await updateOperation(operation);
       return operationSummary(operation);
     } catch (error) {
-      if (error?.journalStateRecorded === true) throw error;
+      if (errorMetadata(error)?.journalStateRecorded === true) throw error;
       operation.state = 'rollback-failed';
       operation.mutationState = 'unknown';
       operation.hardStop = true;
@@ -1941,9 +2636,13 @@ export class EasyedaControlEngine {
     }
   }
 
-  async saveReopen(operationId, planHash, options = {}) {
+  async saveReopen(
+    operationId: string,
+    planHash: string,
+    options: SaveReopenOptions = {},
+  ) {
     this.requirePrivateComponentWriterEnabled();
-    const operation = await loadOperation(operationId);
+    const operation = asOperationJournal(await loadOperation(operationId));
     if (operation.planHash !== planHash) throw new Error('planHash does not match the journal.');
     if (
       ![
@@ -2008,8 +2707,8 @@ export class EasyedaControlEngine {
         } catch (error) {
           preSaveDurableError = serializeError(error);
         }
-        if (!preSaveDurableVerification?.ok) {
-          const error = new Error(
+        if (preSaveDurableVerification?.ok !== true) {
+          const error = annotatedError(
             'The durable project changed while the immediate pre-save verifier was running.',
           );
           error.durableBaselineFailure = true;
@@ -2035,13 +2734,15 @@ export class EasyedaControlEngine {
         operation.updatedAt = now();
         await updateOperation(operation);
       } catch (error) {
-        operation.state = error?.durableBaselineFailure
+        operation.state = errorMetadata(error)?.durableBaselineFailure === true
           ? 'durable-baseline-drift'
           : 'pre-save-verification-failed';
-        operation.mutationState = error?.durableBaselineFailure ? 'unknown' : 'applied-unsaved';
+        operation.mutationState = errorMetadata(error)?.durableBaselineFailure === true
+          ? 'unknown'
+          : 'applied-unsaved';
         operation.hardStop = true;
         operation.mutationMayHaveOccurred = true;
-        operation.nextSafeAction = error?.durableBaselineFailure
+        operation.nextSafeAction = errorMetadata(error)?.durableBaselineFailure === true
           ? 'Do not save. The live edit and durable project no longer share the proven baseline; inspect before recovery.'
           : 'Do not save. Live state changed after verification; inspect it and use recovery to prove either the baseline or intended unsaved state.';
         operation.lastError = preSaveDurableError ?? serializeError(error);
@@ -2091,7 +2792,7 @@ export class EasyedaControlEngine {
         operation.updatedAt = now();
         await updateOperation(operation);
       } catch (error) {
-        if (error?.journalStateRecorded === true) throw error;
+        if (errorMetadata(error)?.journalStateRecorded === true) throw error;
         operation.state = 'unknown';
         operation.mutationState = 'unknown';
         operation.saved = false;
@@ -2146,10 +2847,10 @@ export class EasyedaControlEngine {
         );
         operation.artifacts.push(artifact);
         if (
-          !persistenceVerification?.checkpointMatchesReceipt ||
-          persistenceVerification.sourceEqualsCheckpoint !== false
+          persistenceVerification?.checkpointMatchesReceipt !== true ||
+          persistenceVerification.sourceEqualsCheckpoint
         ) {
-          const error = new Error(
+          const error = annotatedError(
             'Reopened assertions passed, but logical persistence relative to the intact pre-checkpoint was not proved.',
           );
           error.persistenceProofFailure = true;
@@ -2159,12 +2860,12 @@ export class EasyedaControlEngine {
         operation.updatedAt = now();
         await updateOperation(operation);
       } catch (error) {
-        operation.state = error?.persistenceProofFailure
+        operation.state = errorMetadata(error)?.persistenceProofFailure === true
           ? 'persistence-verification-failed'
           : 'reopen-verification-failed';
         operation.hardStop = true;
         operation.nextSafeAction =
-          error?.persistenceProofFailure
+          errorMetadata(error)?.persistenceProofFailure === true
             ? 'The document was saved and reopened, but a logical database change from the intact pre-checkpoint was not proved. Stop and inspect the persisted project.'
             : 'The document was saved but reopened state failed verification. Stop and inspect the persisted project.';
         operation.lastError =
@@ -2276,7 +2977,7 @@ export class EasyedaControlEngine {
       );
       if (
         !persistenceVerification.checkpointMatchesReceipt ||
-        persistenceVerification.sourceEqualsCheckpoint !== false
+        persistenceVerification.sourceEqualsCheckpoint
       ) {
         throw new Error(
           'Final verification did not prove a logical database change from the intact pre-checkpoint.',
@@ -2327,14 +3028,29 @@ export class EasyedaControlEngine {
     }
   }
 
-  async recover(operationId, resolution, options = {}) {
-    if (!operationId) {
-      return (await listOperations())
+  async recover(): Promise<OperationSummary[]>;
+  async recover(
+    operationId: string,
+    resolution?: RecoveryResolution,
+    options?: RecoverOptions,
+  ): Promise<OperationSummary>;
+  async recover(
+    operationId: undefined,
+    resolution?: RecoveryResolution,
+    options?: RecoverOptions,
+  ): Promise<OperationSummary[]>;
+  async recover(
+    operationId?: string  ,
+    resolution?: RecoveryResolution  ,
+    options: RecoverOptions = {},
+  ): Promise<OperationSummary | OperationSummary[]> {
+    if (operationId === undefined || operationId.length === 0) {
+      return asOperationJournals(await listOperations())
         .filter((operation) => !isTerminalOperation(operation))
-        .map(operationSummary);
+        .map((operation) => operationSummary(operation));
     }
     await this.assertRecoveryOperationIsolated(operationId);
-    const operation = await loadOperation(operationId);
+    const operation = asOperationJournal(await loadOperation(operationId));
     if (isTerminalOperation(operation)) return operationSummary(operation);
     const recoveryStartState =
       operation.recoveryActivationResumeState ?? operation.state;
@@ -2395,8 +3111,8 @@ export class EasyedaControlEngine {
         'unknown',
       ]),
     };
+    if (!resolution) throw new Error('A supported recovery resolution is required.');
     const allowed = allowedStates[resolution];
-    if (!allowed) throw new Error('A supported recovery resolution is required.');
     if (!allowed.has(recoveryStartState)) {
       throw new Error(
         `Resolution ${resolution} is not legal from operation state ${recoveryStartState}.`,
@@ -2415,7 +3131,7 @@ export class EasyedaControlEngine {
     if (operationHasOrphanedCallRisk(operation)) {
       const requiredConfirmation = await this.ensureRuntimeRestartChallenge(operation);
       if (options.runtimeRestartConfirmation !== requiredConfirmation) {
-        const error = new Error(
+        const error = annotatedError(
           'Recovery is blocked because a timed-out or disconnected EasyEDA call may still be running. A person must deliberately terminate EasyEDA Pro, restart it, reconnect the bridge, and provide the current nonce-bound runtimeRestartChallenge from the incomplete-operation summary as runtimeRestartConfirmation. If EasyEDA prompts about unsaved changes, never choose Save; discard or force-quit only with explicit authority and a still-valid clean-baseline/no-concurrent-edit assumption, otherwise cancel and preserve the session for manual review.',
         );
         error.requiredRuntimeRestartConfirmation = requiredConfirmation;
@@ -2608,7 +3324,7 @@ export class EasyedaControlEngine {
     } else if (resolution === 'reconciled-saved-reopened') {
       if (
         !preCheckpointVerification.checkpointMatchesReceipt ||
-        preCheckpointVerification.sourceEqualsCheckpoint !== false
+        preCheckpointVerification.sourceEqualsCheckpoint
       ) {
         throw new Error(
           'Saved recovery requires an intact pre-checkpoint and a demonstrably changed live project database.',
@@ -2628,7 +3344,7 @@ export class EasyedaControlEngine {
       operation.mutationState = 'unknown';
       operation.hardStop = true;
       operation.mutationMayHaveOccurred = true;
-      operation.recoveryAttemptCount = Number(operation.recoveryAttemptCount ?? 0) + 1;
+      operation.recoveryAttemptCount = (operation.recoveryAttemptCount ?? 0) + 1;
       operation.recoverySourceSha256 = sourceSha256;
       operation.nextSafeAction =
         'Wait for the destructive reopen-only recovery. Never repeat it after a timeout without a fresh reconciliation.';
@@ -2720,7 +3436,7 @@ export class EasyedaControlEngine {
         );
         if (
           !persistenceVerification.checkpointMatchesReceipt ||
-          persistenceVerification.sourceEqualsCheckpoint !== false
+          persistenceVerification.sourceEqualsCheckpoint
         ) {
           throw new Error(
             'Recovered reopened assertions passed, but logical persistence relative to the intact pre-checkpoint was not proved.',
@@ -2782,16 +3498,30 @@ export class EasyedaControlEngine {
     return operationSummary(operation);
   }
 
-  async checkpoint(args) {
-    if (args.receiptPath) return await verifyCheckpoint(args.receiptPath);
-    return await createCheckpoint(args);
+  checkpoint(args: CheckpointArgs) {
+    if (args.receiptPath !== undefined && args.receiptPath.length > 0) {
+      return verifyCheckpoint(args.receiptPath);
+    }
+    const { source, outputDir, label } = args;
+    if (
+      typeof source !== 'string' ||
+      source.length === 0 ||
+      typeof outputDir !== 'string' ||
+      outputDir.length === 0 ||
+      typeof label !== 'string' ||
+      label.length === 0
+    ) {
+      throw new TypeError('Checkpoint creation requires nonempty source, outputDir, and label.');
+    }
+    return createCheckpoint({ source, outputDir, label });
   }
 }
 
-export function planHashFor(plan) {
+export function planHashFor(plan: unknown): string {
+  if (!isUnknownRecord(plan)) throw new Error('Plan hash input must be an object.');
   return buildPlanHash(plan);
 }
 
-export function canonicalSnapshotHash(results) {
+export function canonicalSnapshotHash(results: unknown): string {
   return sha256Text(canonicalJson(results));
 }

@@ -1,31 +1,273 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 
-import { EasyedaControlEngine } from '../src/engine.mjs';
+import {
+  type ContextProbePayload,
+  EasyedaControlEngine,
+  type ExpectedContext,
+} from '../src/engine.ts';
 import {
   buildExactReadCode,
   exactReadDocumentType,
   exactReadRequestSchema,
+  type ExactReadRequest,
   validateExactReadPayload,
   validateExactReadRequest,
-} from '../src/exact-readers.mjs';
+} from '../src/exact-readers.ts';
 
-const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+type UnknownRecord = Record<string, unknown>;
+type StateGetter = () => Promise<unknown>;
+type StateObject = Record<string, StateGetter>;
 
-async function executeReader(request, eda) {
-  return await new AsyncFunction('eda', buildExactReadCode(request))(eda);
+interface AsyncFunctionConstructor {
+  new (...parameters: string[]): (eda: unknown) => Promise<unknown>;
 }
 
-function stateObject(values) {
+interface FixtureRecord extends UnknownRecord {
+  arcPrecision: string;
+  bounds: FixtureRecord;
+  cbb: unknown;
+  cbbSymbol: unknown;
+  component: unknown;
+  componentOtherPropertyFiltering: string;
+  componentPadWrapper: string;
+  componentPinOtherProperty: string;
+  cbbLibraryOwnership: string;
+  compiledConnectivity: FixtureRecord[];
+  count: number;
+  designator: string | null;
+  directPads: string;
+  fillModes: string;
+  footprint: unknown;
+  heatWelding: unknown;
+  hole: unknown;
+  id: string;
+  length: number;
+  limitations: FixtureRecord;
+  minX: number;
+  netRules: FixtureRecord[];
+  noConnected: boolean;
+  pad: unknown;
+  padPairGroups: FixtureRecord[];
+  padPairMinimumWireLength: string;
+  pads: FixtureRecord[];
+  padType: number;
+  parentComponentPrimitiveId: string;
+  pinNumbers: string[];
+  pinColor: unknown;
+  pins: FixtureRecord[];
+  pourFills: FixtureRecord[];
+  pourPrimitiveId: string;
+  primitiveId: string;
+  primitiveIds: string[];
+  primitiveType: string;
+  regionRuleTypes: string;
+  solderMaskExpansion: unknown;
+  solderMaskAndPasteMaskExpansion: unknown;
+  source: string;
+  specialPad: unknown;
+  status: string;
+  sub: FixtureRecord[];
+  symbol: unknown;
+  unreviewed?: boolean;
+  viaPrecision: string;
+  viaType: number;
+  interactiveMode: number;
+  wireGeometry: string;
+  x: number;
+  y: number;
+}
+
+interface FixtureRecordIndex extends Record<string, FixtureRecord> {
+  'arcs-1': FixtureRecord;
+  'component-pad-1': FixtureRecord;
+  'fills-1': FixtureRecord;
+  'pad-standalone-1': FixtureRecord;
+  'pcb-u1': FixtureRecord;
+  'pours-1': FixtureRecord;
+  'regions-1': FixtureRecord;
+  'sch-r1': FixtureRecord;
+  'vias-1': FixtureRecord;
+}
+
+interface FixtureUniqueIdIndex extends Record<string, FixtureRecord> {
+  gge1: FixtureRecord;
+}
+
+interface FixtureFamily {
+  status: string;
+  count: number;
+  primitiveIds: string[];
+  byPrimitiveId: FixtureRecordIndex;
+}
+
+interface FixtureFamilies extends Record<string, FixtureFamily> {
+  arcs: FixtureFamily;
+  components: FixtureFamily;
+  fills: FixtureFamily;
+  pads: FixtureFamily;
+  pours: FixtureFamily;
+  regions: FixtureFamily;
+  vias: FixtureFamily;
+}
+
+interface FixturePayload extends UnknownRecord {
+  authority: FixtureRecord;
+  byPrimitiveId: FixtureRecordIndex;
+  compiledConnectivity: FixtureRecord[];
+  componentCorrelation: FixtureRecord & {
+    byUniqueId: FixtureUniqueIdIndex;
+    pinCount: number;
+  };
+  componentPadCorrelation: FixtureRecord & {
+    byComponentPrimitiveId: Record<string, string[]>;
+    byPrimitiveId: FixtureRecordIndex;
+  };
+  enumeratedPrimitiveCount: number;
+  families: FixtureFamilies;
+  limitations: FixtureRecord;
+  nets: string[];
+  physicalPadCount: number;
+  pouredCorrelation: FixtureRecord & {
+    byPourPrimitiveId: FixtureRecordIndex;
+    pourPrimitiveIds: string[];
+  };
+  pouredFillPieceCount: number;
+  primitiveIds: string[];
+  rules: FixtureRecord & {
+    differentialPairs: unknown[];
+    netRules: FixtureRecord[];
+    padPairGroups: FixtureRecord[];
+  };
+  standalonePadCount: number;
+  units: FixtureRecord;
+}
+
+interface SchematicApiOptions {
+  components?: StateObject[];
+  declaredIds?: string[];
+  pins?: StateObject[];
+  getAll?: () => Promise<unknown>;
+}
+
+interface SchematicApis {
+  sch_PrimitiveComponent: {
+    getAll: () => Promise<unknown>;
+    getAllPrimitiveId: () => Promise<unknown>;
+    getAllPinsByPrimitiveId: () => Promise<unknown>;
+  };
+  sch_Primitive: {
+    getPrimitivesBBox: () => Promise<unknown>;
+  };
+}
+
+interface PcbComponentApiOptions {
+  components?: StateObject[];
+  declaredIds?: string[];
+  pads?: StateObject[];
+  bbox?: { minX: number; minY: number; maxX: number; maxY: number };
+}
+
+interface PcbPadOptions {
+  primitiveId?: string;
+  primitiveType?: string;
+  parentComponentPrimitiveId?: string;
+  padType?: unknown;
+}
+
+interface InventoryOptions {
+  padType?: unknown;
+  viaType?: unknown;
+  interactiveMode?: unknown;
+}
+
+interface InventoryApi {
+  getAllPrimitiveId: () => Promise<unknown>;
+  getAll: () => Promise<unknown>;
+}
+
+type InventoryEda = Record<string, InventoryApi | undefined> & {
+  pcb_PrimitiveComponent: InventoryApi;
+  pcb_PrimitivePoured: InventoryApi;
+  pcb_PrimitiveImage?: InventoryApi;
+};
+
+interface RulesApis {
+  pcb_Drc: Record<string, () => Promise<unknown>> & {
+    getCurrentRuleConfiguration: () => Promise<unknown>;
+    getNetByNetRules: () => Promise<unknown>;
+    getNetRules: () => Promise<unknown>;
+  };
+  pcb_Net: { getAllNetsName: () => Promise<unknown> };
+}
+
+interface TopologyOptions {
+  onFormat?: ((format: string) => void) | undefined;
+  onComponentCall?: ((method: string, args: unknown[]) => void) | undefined;
+  componentUniqueId?: string;
+  componentDesignator?: string;
+  componentPinNumbers?: string[];
+  netlistUniqueId?: string;
+  netlistDesignator?: string;
+  netlistPinNumbers?: string[];
+}
+
+interface TopologyApis {
+  sch_PrimitiveComponent: Record<string, (...args: unknown[]) => Promise<unknown>>;
+  sch_Netlist: { getNetlist: (format: string) => Promise<unknown> };
+}
+
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion, typescript/no-unsafe-member-access -- The test must construct generated async programs through the runtime's AsyncFunction constructor.
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as AsyncFunctionConstructor;
+
+function required<T>(value: T | undefined, label: string): T {
+  if (value === undefined) throw new Error(`Missing fixture value: ${label}`);
+  return value;
+}
+
+function assertUnknownRecord(value: unknown): asserts value is UnknownRecord {
+  assert.equal(typeof value, 'object');
+  assert.notEqual(value, null);
+  assert.equal(Array.isArray(value), false);
+}
+
+function assertFixturePayload(value: unknown): asserts value is FixturePayload {
+  assertUnknownRecord(value);
+}
+
+function isFixtureFactory(value: unknown): value is () => unknown {
+  return typeof value === 'function';
+}
+
+function liveContext(expectedContext: ExpectedContext): ContextProbePayload {
+  const context = structuredClone(expectedContext);
+  const { tabId } = context.document;
+  if (tabId === undefined || tabId.length === 0) {
+    throw new Error('Fixture context requires a tab ID.');
+  }
+  return { ...context, document: { ...context.document, tabId } };
+}
+
+async function executeReader(request: unknown, eda: unknown): Promise<FixturePayload> {
+  const payload = await new AsyncFunction('eda', buildExactReadCode(request))(eda);
+  assertFixturePayload(payload);
+  return payload;
+}
+
+function stateObject(values: UnknownRecord): StateObject {
   return Object.fromEntries(
     Object.entries(values).map(([name, value]) => [
       `getState_${name}`,
-      async () => (typeof value === 'function' ? value() : structuredClone(value)),
+      async () => (isFixtureFactory(value) ? value() : structuredClone(value)),
     ]),
   );
 }
 
-function schematicComponent(primitiveId = 'sch-r1', designator = 'R1', uniqueId = 'gge1') {
+function schematicComponent(
+  primitiveId = 'sch-r1',
+  designator = 'R1',
+  uniqueId = 'gge1',
+): StateObject {
   return stateObject({
     PrimitiveId: primitiveId,
     PrimitiveType: 'Component',
@@ -52,7 +294,7 @@ function schematicComponent(primitiveId = 'sch-r1', designator = 'R1', uniqueId 
   });
 }
 
-function schematicPin(primitiveId = 'pin-1') {
+function schematicPin(primitiveId = 'pin-1'): StateObject {
   return stateObject({
     PrimitiveId: primitiveId,
     PinNumber: '1',
@@ -74,7 +316,7 @@ function schematicApis({
   declaredIds = ['sch-r1'],
   pins = [schematicPin()],
   getAll = async () => components,
-} = {}) {
+}: SchematicApiOptions = {}): SchematicApis {
   return {
     sch_PrimitiveComponent: {
       getAll,
@@ -87,7 +329,11 @@ function schematicApis({
   };
 }
 
-function pcbComponent(primitiveId = 'pcb-u1', designator = 'U1', padSummary = undefined) {
+function pcbComponent(
+  primitiveId = 'pcb-u1',
+  designator = 'U1',
+  padSummary?: unknown,
+): StateObject {
   return stateObject({
     PrimitiveId: primitiveId,
     PrimitiveType: 'Component',
@@ -117,7 +363,7 @@ function pcbPad({
   primitiveType = 'ComponentPad',
   parentComponentPrimitiveId = 'pcb-u1',
   padType = 1,
-} = {}) {
+}: PcbPadOptions = {}): StateObject {
   return stateObject({
     PrimitiveId: primitiveId,
     PrimitiveType: primitiveType,
@@ -157,7 +403,7 @@ function pcbComponentApis({
   declaredIds = ['pcb-u1'],
   pads,
   bbox = { minX: 558.2677165354326, minY: -7120.511811023622, maxX: 2841.732283464567, maxY: -6215 },
-} = {}) {
+}: PcbComponentApiOptions = {}): UnknownRecord {
   const directPads = pads ?? [pcbPad()];
   const directComponents =
     components ?? [pcbComponent('pcb-u1', 'U1', directPads.map(() => ({ primitiveId: 'pad-1' })))];
@@ -188,10 +434,14 @@ const inventoryDefinitions = [
   ['dimensions', 'pcb_PrimitiveDimension'],
   ['images', 'pcb_PrimitiveImage'],
   ['objects', 'pcb_PrimitiveObject'],
-];
+] as const;
 
-function inventoryApis({ padType = 1, viaType = 0, interactiveMode = 0 } = {}) {
-  const eda = {};
+function inventoryApis({
+  padType = 1,
+  viaType = 0,
+  interactiveMode = 0,
+}: InventoryOptions = {}): InventoryEda {
+  const eda: Record<string, InventoryApi | undefined> = {};
   const monitoredFamilies = new Set([
     'pads',
     'vias',
@@ -204,7 +454,7 @@ function inventoryApis({ padType = 1, viaType = 0, interactiveMode = 0 } = {}) {
   ]);
   for (const [family, apiName] of inventoryDefinitions) {
     const primitiveId = `${family}-1`;
-    let objects;
+    let objects: StateObject[];
     if (family === 'components') {
       objects = [
         stateObject({
@@ -313,7 +563,13 @@ function inventoryApis({ padType = 1, viaType = 0, interactiveMode = 0 } = {}) {
     }
     eda[apiName] = {
       getAllPrimitiveId: async () =>
-        await Promise.all(objects.map((object) => object.getState_PrimitiveId())),
+        Promise.all(
+          objects.map((object) => {
+            const getter = object['getState_PrimitiveId'];
+            if (!getter) throw new Error('Fixture primitive has no primitive-ID getter.');
+            return getter();
+          }),
+        ),
       getAll: async () => objects,
     };
   }
@@ -330,14 +586,19 @@ function inventoryApis({ padType = 1, viaType = 0, interactiveMode = 0 } = {}) {
       },
     ],
   });
-  eda.pcb_PrimitivePoured = {
+  eda['pcb_PrimitivePoured'] = {
     getAllPrimitiveId: async () => ['pours-1'],
     getAll: async () => [pouredObject],
   };
-  return eda;
+  const componentApi = eda['pcb_PrimitiveComponent'];
+  const pouredApi = eda['pcb_PrimitivePoured'];
+  if (componentApi === undefined || pouredApi === undefined) {
+    throw new Error('PCB inventory fixture omitted a required component or poured API.');
+  }
+  return { ...eda, pcb_PrimitiveComponent: componentApi, pcb_PrimitivePoured: pouredApi };
 }
 
-function rulesApis(differentialPairs) {
+function rulesApis(differentialPairs: unknown): RulesApis {
   return {
     pcb_Drc: {
       getCurrentRuleConfigurationName: async () => 'Fixture Six Layer',
@@ -381,19 +642,19 @@ function topologyApis({
   netlistUniqueId = 'gge1',
   netlistDesignator = 'R1',
   netlistPinNumbers = ['1'],
-} = {}) {
+}: TopologyOptions = {}): TopologyApis {
   const component = schematicComponent('sch-r1', componentDesignator, componentUniqueId);
   return {
     sch_PrimitiveComponent: {
-      getAll: async (...args) => {
+      getAll: async (...args: unknown[]) => {
         onComponentCall?.('getAll', args);
         return [component];
       },
-      getAllPrimitiveId: async (...args) => {
+      getAllPrimitiveId: async (...args: unknown[]) => {
         onComponentCall?.('getAllPrimitiveId', args);
         return ['sch-r1'];
       },
-      getAllPinsByPrimitiveId: async (...args) => {
+      getAllPinsByPrimitiveId: async (...args: unknown[]) => {
         onComponentCall?.('getAllPinsByPrimitiveId', args);
         return componentPinNumbers.map((pinNumber, index) =>
           stateObject({ PrimitiveId: `pin-${index + 1}`, PinNumber: pinNumber }),
@@ -401,7 +662,7 @@ function topologyApis({
       },
     },
     sch_Netlist: {
-      getNetlist: async (format) => {
+      getNetlist: async (format: string) => {
         onFormat?.(format);
         return JSON.stringify({
           components: {
@@ -424,11 +685,11 @@ function topologyApis({
   };
 }
 
-describe('facade-owned exact reader contracts', () => {
-  test('enforces strict request schemas, one selector, and the editor document type', () => {
+void describe('facade-owned exact reader contracts', () => {
+  void test('enforces strict request schemas, one selector, and the editor document type', () => {
     assert.throws(
       () => exactReadRequestSchema.parse({ kind: 'pcb-inventory', extra: true }),
-      /unrecognized key/i,
+      /unrecognized key/iu,
     );
     assert.throws(
       () =>
@@ -436,7 +697,7 @@ describe('facade-owned exact reader contracts', () => {
           kind: 'schematic-components',
           selector: { all: true, primitiveIds: ['sch-r1'] },
         }),
-      /exactly one/i,
+      /exactly one/iu,
     );
     assert.throws(
       () =>
@@ -444,7 +705,7 @@ describe('facade-owned exact reader contracts', () => {
           kind: 'pcb-components',
           selector: { primitiveIds: ['pcb-u1', 'pcb-u1'] },
         }),
-      /duplicates/i,
+      /duplicates/iu,
     );
     assert.throws(
       () =>
@@ -452,35 +713,35 @@ describe('facade-owned exact reader contracts', () => {
           { kind: 'schematic-components', selector: { all: true } },
           { document: { documentType: 3 } },
         ),
-      /requires document type 1, not 3/,
+      /requires document type 1, not 3/u,
     );
     assert.equal(exactReadDocumentType('pcb-rules'), 3);
-    assert.throws(() => exactReadDocumentType('library-components'), /Unsupported exact-reader kind/);
+    assert.throws(() => exactReadDocumentType('library-components'), /Unsupported exact-reader kind/u);
   });
 
-  test('uses only the declared lower-case EasyEDA API and fails on missing APIs', async () => {
-    const request = {
+  void test('uses only the declared lower-case EasyEDA API and fails on missing APIs', async () => {
+    const request: ExactReadRequest = {
       kind: 'schematic-components',
       selector: { all: true },
       includePins: false,
       includeBounds: false,
     };
     const source = buildExactReadCode(request);
-    assert.match(source, /const value = eda\[lower\]/);
-    assert.doesNotMatch(source, /eda\[_upper\]/);
+    assert.match(source, /const value = eda\[lower\]/u);
+    assert.doesNotMatch(source, /eda\[_upper\]/u);
 
     await assert.rejects(
       executeReader(request, {
         SCH_PrimitiveComponent: schematicApis().sch_PrimitiveComponent,
       }),
-      /sch_PrimitiveComponent API is unavailable/,
+      /sch_PrimitiveComponent API is unavailable/u,
     );
     const payload = await executeReader(request, schematicApis());
     assert.deepEqual(payload.primitiveIds, ['sch-r1']);
   });
 
-  test('rejects non-array enumerations and component ID-set mismatches', async () => {
-    const request = {
+  void test('rejects non-array enumerations and component ID-set mismatches', async () => {
+    const request: ExactReadRequest = {
       kind: 'schematic-components',
       selector: { all: true },
       includePins: false,
@@ -488,16 +749,16 @@ describe('facade-owned exact reader contracts', () => {
     };
     await assert.rejects(
       executeReader(request, schematicApis({ getAll: async () => ({}) })),
-      /component getAll did not return an array/,
+      /component getAll did not return an array/u,
     );
     await assert.rejects(
       executeReader(request, schematicApis({ declaredIds: ['different-id'] })),
-      /component ID and object enumerations disagree/,
+      /component ID and object enumerations disagree/u,
     );
   });
 
-  test('reports Component3-backed schematic fields while omitting unobservable pin properties', async () => {
-    const request = {
+  void test('reports Component3-backed schematic fields while omitting unobservable pin properties', async () => {
+    const request: ExactReadRequest = {
       kind: 'schematic-components',
       selector: { primitiveIds: ['sch-r1'] },
       includePins: true,
@@ -505,35 +766,39 @@ describe('facade-owned exact reader contracts', () => {
     };
     const payload = await executeReader(request, schematicApis());
     const component = payload.byPrimitiveId['sch-r1'];
+    const pin = required(component.pins[0], 'schematic pin');
     assert.equal(component.cbb, null);
     assert.equal(component.cbbSymbol, null);
-    assert.equal(component.pins[0].x, 95);
-    assert.equal(component.pins[0].y, 200);
-    assert.equal(component.pins[0].noConnected, false);
-    assert.equal(Object.hasOwn(component.pins[0], 'otherProperty'), false);
-    assert.match(payload.limitations.componentPinOtherProperty, /Omitted/);
-    assert.match(payload.limitations.componentOtherPropertyFiltering, /Adapter-filtered/);
-    assert.match(payload.limitations.cbbLibraryOwnership, /Unavailable/);
+    assert.equal(pin.x, 95);
+    assert.equal(pin.y, 200);
+    assert.equal(pin.noConnected, false);
+    assert.equal(Object.hasOwn(pin, 'otherProperty'), false);
+    assert.match(payload.limitations.componentPinOtherProperty, /Omitted/u);
+    assert.match(payload.limitations.componentOtherPropertyFiltering, /Adapter-filtered/u);
+    assert.match(payload.limitations.cbbLibraryOwnership, /Unavailable/u);
 
     const malformedPinColor = structuredClone(payload);
-    malformedPinColor.byPrimitiveId['sch-r1'].pins[0].pinColor = { red: 0 };
+    required(
+      malformedPinColor.byPrimitiveId['sch-r1'].pins[0],
+      'malformed schematic pin',
+    ).pinColor = { red: 0 };
     assert.throws(
       () => validateExactReadPayload(malformedPinColor, request),
-      /pinColor must be a string or null/,
+      /pinColor must be a string or null/u,
     );
   });
 
-  test('normalizes library-association placeholders without dropping real UUID identities', async () => {
+  void test('normalizes library-association placeholders without dropping real UUID identities', async () => {
     const component = schematicComponent();
-    component.getState_Component = async () => ({});
-    component.getState_Cbb = async () => ({ libraryUuid: '', uuid: '', name: '' });
-    component.getState_CbbSymbol = async () => ({
+    component['getState_Component'] = async () => ({});
+    component['getState_Cbb'] = async () => ({ libraryUuid: '', uuid: '', name: '' });
+    component['getState_CbbSymbol'] = async () => ({
       libraryUuid: '',
       cbbUuid: 'cbb-symbol-1',
       name: 'CBB symbol',
     });
-    component.getState_Symbol = async () => ({ uuid: '', name: '' });
-    component.getState_Footprint = async () => ({
+    component['getState_Symbol'] = async () => ({ uuid: '', name: '' });
+    component['getState_Footprint'] = async () => ({
       libraryUuid: 'library-1',
       uuid: 'footprint-1',
       name: 'Real footprint',
@@ -563,14 +828,14 @@ describe('facade-owned exact reader contracts', () => {
     });
   });
 
-  test('rejects observable partial library associations without an identity UUID', async () => {
+  void test('rejects observable partial library associations without an identity UUID', async () => {
     for (const association of [
       { libraryUuid: 'library-only' },
       { name: 'named but unidentified' },
       { libraryUuid: 'library-only', name: 'named but unidentified' },
     ]) {
       const component = schematicComponent();
-      component.getState_Component = async () => association;
+      component['getState_Component'] = async () => association;
       await assert.rejects(
         executeReader(
           {
@@ -581,14 +846,14 @@ describe('facade-owned exact reader contracts', () => {
           },
           schematicApis({ components: [component] }),
         ),
-        /nonidentity association fields without an observable UUID/,
+        /nonidentity association fields without an observable UUID/u,
       );
     }
   });
 
-  test('rejects string and object coercion for typed boolean and identity fields', async () => {
+  void test('rejects string and object coercion for typed boolean and identity fields', async () => {
     const stringBoolean = schematicComponent();
-    stringBoolean.getState_Mirror = async () => 'false';
+    stringBoolean['getState_Mirror'] = async () => 'false';
     await assert.rejects(
       executeReader(
         {
@@ -599,11 +864,11 @@ describe('facade-owned exact reader contracts', () => {
         },
         schematicApis({ components: [stringBoolean] }),
       ),
-      /schematic component mirror is not boolean/,
+      /schematic component mirror is not boolean/u,
     );
 
     const coercibleIdentity = schematicComponent();
-    coercibleIdentity.getState_PrimitiveId = async () => ({
+    coercibleIdentity['getState_PrimitiveId'] = async () => ({
       toString: () => 'sch-r1',
     });
     await assert.rejects(
@@ -616,11 +881,11 @@ describe('facade-owned exact reader contracts', () => {
         },
         schematicApis({ components: [coercibleIdentity] }),
       ),
-      /component primitive ID is not a valid string/,
+      /component primitive ID is not a valid string/u,
     );
 
     const pcbStringBoolean = pcbComponent();
-    pcbStringBoolean.getState_PrimitiveLock = async () => 'false';
+    pcbStringBoolean['getState_PrimitiveLock'] = async () => 'false';
     await assert.rejects(
       executeReader(
         {
@@ -631,12 +896,12 @@ describe('facade-owned exact reader contracts', () => {
         },
         pcbComponentApis({ components: [pcbStringBoolean], pads: [] }),
       ),
-      /PCB component lock state is not boolean/,
+      /PCB component lock state is not boolean/u,
     );
   });
 
-  test('preserves PCB pad identity, parentage, bounds, and raw transformed mil positions', async () => {
-    const request = {
+  void test('preserves PCB pad identity, parentage, bounds, and raw transformed mil positions', async () => {
+    const request: ExactReadRequest = {
       kind: 'pcb-components',
       selector: { all: true },
       includePins: true,
@@ -644,7 +909,7 @@ describe('facade-owned exact reader contracts', () => {
     };
     const payload = await executeReader(request, pcbComponentApis());
     const component = payload.byPrimitiveId['pcb-u1'];
-    const [pad] = component.pads;
+    const pad = required(component.pads[0], 'PCB component pad');
     assert.deepEqual(payload.units, {
       coordinates: 'mil',
       bounds: 'mil',
@@ -658,30 +923,30 @@ describe('facade-owned exact reader contracts', () => {
     assert.equal(pad.hole, undefined);
     assert.equal(pad.bounds, undefined);
     assert.equal(pad.source, 'component-pin-wrapper-transformed-placement-only');
-    assert.match(payload.limitations.componentPadWrapper, /0\.1 drill-scale defect/);
+    assert.match(payload.limitations.componentPadWrapper, /0\.1 drill-scale defect/u);
 
     await assert.rejects(
       executeReader(request, pcbComponentApis({ pads: [pcbPad({ primitiveType: 'Pad' })] })),
-      /pad type mismatch/,
+      /pad type mismatch/u,
     );
     await assert.rejects(
       executeReader(
         request,
         pcbComponentApis({ pads: [pcbPad({ parentComponentPrimitiveId: 'pcb-other' })] }),
       ),
-      /pad parent mismatch/,
+      /pad parent mismatch/u,
     );
     await assert.rejects(
       executeReader(request, pcbComponentApis({ pads: [pcbPad(), pcbPad()] })),
-      /duplicate primitive IDs/,
+      /duplicate primitive IDs/u,
     );
   });
 
-  test('enumerates direct pads once and models component pads and poured state as correlations', async () => {
+  void test('enumerates direct pads once and models component pads and poured state as correlations', async () => {
     const payload = await executeReader({ kind: 'pcb-inventory' }, inventoryApis());
     assert.deepEqual(
-      Object.keys(payload.families).sort(),
-      inventoryDefinitions.map(([family]) => family).sort(),
+      Object.keys(payload.families).toSorted(),
+      inventoryDefinitions.map(([family]) => family).toSorted(),
     );
     for (const family of Object.values(payload.families)) {
       assert.equal(family.status, 'adapter-enumerated');
@@ -728,10 +993,10 @@ describe('facade-owned exact reader contracts', () => {
       Object.hasOwn(payload.families.fills.byPrimitiveId['fills-1'], 'fillMode'),
       false,
     );
-    assert.match(payload.limitations.regionRuleTypes, /Omitted/);
-    assert.match(payload.limitations.fillModes, /Omitted/);
-    assert.match(payload.limitations.arcPrecision, /rounded to one decimal/);
-    assert.match(payload.limitations.viaPrecision, /rounded to one decimal/);
+    assert.match(payload.limitations.regionRuleTypes, /Omitted/u);
+    assert.match(payload.limitations.fillModes, /Omitted/u);
+    assert.match(payload.limitations.arcPrecision, /rounded to one decimal/u);
+    assert.match(payload.limitations.viaPrecision, /rounded to one decimal/u);
     assert.equal(
       payload.families.pads.byPrimitiveId['component-pad-1'].source,
       'pcb_PrimitivePad-direct-state',
@@ -749,8 +1014,8 @@ describe('facade-owned exact reader contracts', () => {
       'pours-1',
     );
     assert.deepEqual(
-      Object.keys(payload.pouredCorrelation.byPourPrimitiveId['pours-1']).sort(),
-      ['pourFills', 'pourPrimitiveId', 'primitiveId', 'primitiveType'].sort(),
+      Object.keys(payload.pouredCorrelation.byPourPrimitiveId['pours-1']).toSorted(),
+      ['pourFills', 'pourPrimitiveId', 'primitiveId', 'primitiveType'].toSorted(),
     );
     assert.deepEqual(
       payload.pouredCorrelation.byPourPrimitiveId['pours-1'].pourFills.map(({ id }) => id),
@@ -759,44 +1024,46 @@ describe('facade-owned exact reader contracts', () => {
     assert.equal(payload.pouredFillPieceCount, 1);
 
     const omittedPrecision = structuredClone(payload);
-    delete omittedPrecision.limitations.arcPrecision;
+    delete (omittedPrecision.limitations as Partial<FixtureRecord>).arcPrecision;
     assert.throws(
       () => validateExactReadPayload(omittedPrecision, { kind: 'pcb-inventory' }),
-      /omitted primitive families/,
+      /omitted primitive families/u,
     );
 
     const wrongComponentIndex = structuredClone(payload);
     wrongComponentIndex.componentPadCorrelation.byComponentPrimitiveId['components-1'] = [];
     assert.throws(
       () => validateExactReadPayload(wrongComponentIndex, { kind: 'pcb-inventory' }),
-      /component-to-pad index is inconsistent/,
+      /component-to-pad index is inconsistent/u,
     );
 
     const unexpectedFamilyState = structuredClone(payload);
     unexpectedFamilyState.families.vias.byPrimitiveId['vias-1'].unreviewed = true;
     assert.throws(
       () => validateExactReadPayload(unexpectedFamilyState, { kind: 'pcb-inventory' }),
-      /missing or unexpected fields/,
+      /missing or unexpected fields/u,
     );
 
-    const malformedHostShapes = [
+    const malformedHostShapes: ReadonlyArray<
+      readonly [(candidate: FixturePayload) => void, RegExp]
+    > = [
       [
         (candidate) => {
           candidate.families.pads.byPrimitiveId['component-pad-1'].pad = {};
         },
-        /pad-shape tuple/,
+        /pad-shape tuple/u,
       ],
       [
         (candidate) => {
           candidate.families.pads.byPrimitiveId['component-pad-1'].specialPad = [[1]];
         },
-        /malformed layer tuple/,
+        /malformed layer tuple/u,
       ],
       [
         (candidate) => {
           candidate.families.pads.byPrimitiveId['component-pad-1'].hole = ['SLOT', 126];
         },
-        /wrong tuple length/,
+        /wrong tuple length/u,
       ],
       [
         (candidate) => {
@@ -804,7 +1071,7 @@ describe('facade-owned exact reader contracts', () => {
             'component-pad-1'
           ].solderMaskAndPasteMaskExpansion = { topSolderMask: '4' };
         },
-        /topSolderMask must be finite/,
+        /topSolderMask must be finite/u,
       ],
       [
         (candidate) => {
@@ -812,13 +1079,13 @@ describe('facade-owned exact reader contracts', () => {
             enabled: false,
           };
         },
-        /malformed connection method or unexpected field/,
+        /malformed connection method or unexpected field/u,
       ],
       [
         (candidate) => {
           candidate.families.vias.byPrimitiveId['vias-1'].solderMaskExpansion = { top: 2 };
         },
-        /unexpected field/,
+        /unexpected field/u,
       ],
     ];
     for (const [mutate, expectedError] of malformedHostShapes) {
@@ -834,7 +1101,7 @@ describe('facade-owned exact reader contracts', () => {
     wrongGlobalTotal.enumeratedPrimitiveCount += 1;
     assert.throws(
       () => validateExactReadPayload(wrongGlobalTotal, { kind: 'pcb-inventory' }),
-      /wrong total/,
+      /wrong total/u,
     );
 
     const malformedPouredRow = structuredClone(payload);
@@ -842,7 +1109,7 @@ describe('facade-owned exact reader contracts', () => {
       'different-pour';
     assert.throws(
       () => validateExactReadPayload(malformedPouredRow, { kind: 'pcb-inventory' }),
-      /poured-state record is malformed/,
+      /poured-state record is malformed/u,
     );
 
     const missingComponentPad = inventoryApis();
@@ -854,7 +1121,7 @@ describe('facade-owned exact reader contracts', () => {
     ];
     await assert.rejects(
       executeReader({ kind: 'pcb-inventory' }, missingComponentPad),
-      /absent from pcb_PrimitivePad/,
+      /absent from pcb_PrimitivePad/u,
     );
 
     const orphanPouredState = inventoryApis();
@@ -868,14 +1135,14 @@ describe('facade-owned exact reader contracts', () => {
     orphanPouredState.pcb_PrimitivePoured.getAll = async () => [orphan];
     await assert.rejects(
       executeReader({ kind: 'pcb-inventory' }, orphanPouredState),
-      /parent absent from pcb_PrimitivePour/,
+      /parent absent from pcb_PrimitivePour/u,
     );
 
     const missingFamily = inventoryApis();
     delete missingFamily.pcb_PrimitiveImage;
     await assert.rejects(
       executeReader({ kind: 'pcb-inventory' }, missingFamily),
-      /pcb_PrimitiveImage API is unavailable/,
+      /pcb_PrimitiveImage API is unavailable/u,
     );
     for (const options of [
       { padType: 'ThroughHole' },
@@ -884,12 +1151,12 @@ describe('facade-owned exact reader contracts', () => {
     ]) {
       await assert.rejects(
         executeReader({ kind: 'pcb-inventory' }, inventoryApis(options)),
-        /is not finite|is not an integer enum/,
+        /is not finite|is not an integer enum/u,
       );
     }
   });
 
-  test('normalizes rule arrays and object-keyed branches while enforcing exact shapes', async () => {
+  void test('normalizes rule arrays and object-keyed branches while enforcing exact shapes', async () => {
     for (const differentialPairs of [
       [],
       [{ name: 'DP1', positiveNet: 'DP', negativeNet: 'DM' }],
@@ -913,17 +1180,17 @@ describe('facade-owned exact reader contracts', () => {
     badNetRules.pcb_Drc.getNetRules = async () => ({});
     await assert.rejects(
       executeReader({ kind: 'pcb-rules' }, badNetRules),
-      /PCB net rules did not return an array/,
+      /PCB net rules did not return an array/u,
     );
     const badNetByNet = rulesApis([]);
     badNetByNet.pcb_Drc.getNetByNetRules = async () => [];
     await assert.rejects(
       executeReader({ kind: 'pcb-rules' }, badNetByNet),
-      /PCB net-to-net rules did not return an object/,
+      /PCB net-to-net rules did not return an object/u,
     );
     await assert.rejects(
       executeReader({ kind: 'pcb-rules' }, rulesApis({ DP1: {} })),
-      /PCB differential pairs did not return an array/,
+      /PCB differential pairs did not return an array/u,
     );
 
     const mismatchedConfiguration = rulesApis([]);
@@ -933,7 +1200,7 @@ describe('facade-owned exact reader contracts', () => {
     });
     await assert.rejects(
       executeReader({ kind: 'pcb-rules' }, mismatchedConfiguration),
-      /configuration getters disagree/,
+      /configuration getters disagree/u,
     );
     const malformedConfiguration = rulesApis([]);
     malformedConfiguration.pcb_Drc.getCurrentRuleConfiguration = async () => ({
@@ -941,7 +1208,7 @@ describe('facade-owned exact reader contracts', () => {
     });
     await assert.rejects(
       executeReader({ kind: 'pcb-rules' }, malformedConfiguration),
-      /omitted its config object/,
+      /omitted its config object/u,
     );
     const emptyConfiguration = rulesApis([]);
     emptyConfiguration.pcb_Drc.getCurrentRuleConfiguration = async () => ({
@@ -950,7 +1217,7 @@ describe('facade-owned exact reader contracts', () => {
     });
     await assert.rejects(
       executeReader({ kind: 'pcb-rules' }, emptyConfiguration),
-      /configuration config is empty/,
+      /configuration config is empty/u,
     );
 
     const missingRuleLeaf = rulesApis([]);
@@ -960,7 +1227,7 @@ describe('facade-owned exact reader contracts', () => {
     ];
     await assert.rejects(
       executeReader({ kind: 'pcb-rules' }, missingRuleLeaf),
-      /rule leaves do not cover every live net exactly once/,
+      /rule leaves do not cover every live net exactly once/u,
     );
 
     const duplicateRuleLeaf = rulesApis([]);
@@ -972,7 +1239,7 @@ describe('facade-owned exact reader contracts', () => {
     ];
     await assert.rejects(
       executeReader({ kind: 'pcb-rules' }, duplicateRuleLeaf),
-      /duplicate net leaves/,
+      /duplicate net leaves/u,
     );
 
     const validPayload = await executeReader({ kind: 'pcb-rules' }, rulesApis([]));
@@ -988,25 +1255,29 @@ describe('facade-owned exact reader contracts', () => {
           },
           { kind: 'pcb-rules' },
         ),
-      /omitted rules or nets/,
+      /omitted rules or nets/u,
     );
     const missingValidatedLeaf = structuredClone(validPayload);
-    missingValidatedLeaf.rules.netRules[0].sub.pop();
+    required(missingValidatedLeaf.rules.netRules[0], 'first net-rule row').sub.pop();
     assert.throws(
       () => validateExactReadPayload(missingValidatedLeaf, { kind: 'pcb-rules' }),
-      /rule leaves do not cover every live net exactly once/,
+      /rule leaves do not cover every live net exactly once/u,
     );
   });
 
-  test('uses only compiled JLCEDA connectivity and disclaims unavailable wire geometry', async () => {
-    const request = { kind: 'schematic-topology' };
-    const formats = [];
-    const componentCalls = [];
+  void test('uses only compiled JLCEDA connectivity and disclaims unavailable wire geometry', async () => {
+    const request: ExactReadRequest = { kind: 'schematic-topology' };
+    const formats: string[] = [];
+    const componentCalls: Array<{ method: string; args: unknown[] }> = [];
     const rawPayload = await executeReader(
       request,
       topologyApis({
-        onFormat: (format) => formats.push(format),
-        onComponentCall: (method, args) => componentCalls.push({ method, args }),
+        onFormat: (format: string) => {
+          formats.push(format);
+        },
+        onComponentCall: (method: string, args: unknown[]) => {
+          componentCalls.push({ method, args });
+        },
       }),
     );
     assert.deepEqual(formats, ['JLCEDA']);
@@ -1052,14 +1323,16 @@ describe('facade-owned exact reader contracts', () => {
       },
     };
     const engine = new EasyedaControlEngine(upstream);
-    engine.assertContext = async (expectedContext) => structuredClone(expectedContext);
+    engine.assertContext = async (expectedContext) => liveContext(expectedContext);
     const compact = await engine.exactRead(request, {
       project: { uuid: 'project-1', path: '/tmp/project.eprj2' },
       document: { uuid: 'document-1', documentType: 1, tabId: 'tab-1' },
     });
-    assert.deepEqual(compact.compiledConnectivity, rawPayload.compiledConnectivity);
-    assert.equal(compact.read_consistency.stable, true);
-    assert.equal(compact.read_consistency.attempts, 2);
+    assert.deepEqual(compact['compiledConnectivity'], rawPayload.compiledConnectivity);
+    const readConsistency = compact['read_consistency'];
+    assertUnknownRecord(readConsistency);
+    assert.equal(readConsistency['stable'], true);
+    assert.equal(readConsistency['attempts'], 2);
 
     assert.throws(
       () =>
@@ -1070,7 +1343,7 @@ describe('facade-owned exact reader contracts', () => {
           },
           request,
         ),
-      /omitted compiled connectivity provenance/,
+      /omitted compiled connectivity provenance/u,
     );
     assert.throws(
       () =>
@@ -1089,29 +1362,29 @@ describe('facade-owned exact reader contracts', () => {
           },
           request,
         ),
-      /compiled and public component state disagree/,
+      /compiled and public component state disagree/u,
     );
     const malformed = topologyApis();
     malformed.sch_Netlist.getNetlist = async () => 'not JSON connectivity';
     await assert.rejects(
       executeReader(request, malformed),
-      /JSON sequence could not be parsed/,
+      /JSON sequence could not be parsed/u,
     );
     await assert.rejects(
       executeReader(
         request,
         topologyApis({ componentUniqueId: 'different-gge' }),
       ),
-      /netlist identity does not match all-page part components/,
+      /netlist identity does not match all-page part components/u,
     );
     await assert.rejects(
       executeReader(request, topologyApis({ componentPinNumbers: ['2'] })),
-      /netlist identity does not match all-page part components/,
+      /netlist identity does not match all-page part components/u,
     );
   });
 
-  test('accepts an exactly correlated zero-pin compiled-topology component', async () => {
-    const request = { kind: 'schematic-topology' };
+  void test('accepts an exactly correlated zero-pin compiled-topology component', async () => {
+    const request: ExactReadRequest = { kind: 'schematic-topology' };
     const payload = await executeReader(
       request,
       topologyApis({ componentPinNumbers: [], netlistPinNumbers: [] }),
@@ -1124,8 +1397,8 @@ describe('facade-owned exact reader contracts', () => {
     assert.equal(validateExactReadPayload(payload, request), payload);
   });
 
-  test('validates payload indexes and rejects unstable double reads', async () => {
-    const request = {
+  void test('validates payload indexes and rejects unstable double reads', async () => {
+    const request: ExactReadRequest = {
       kind: 'schematic-components',
       selector: { primitiveIds: ['sch-r1'] },
       includePins: true,
@@ -1139,14 +1412,16 @@ describe('facade-owned exact reader contracts', () => {
           { ...valid, primitiveIds: ['sch-r1', 'sch-r2'] },
           request,
         ),
-      /internally inconsistent/,
+      /internally inconsistent/u,
     );
 
     let observation = 0;
     const upstream = {
-      async callTool(name, argumentsValue) {
+      async callTool(name: string, argumentsValue: UnknownRecord | undefined) {
         assert.equal(name, 'easyeda_execute');
-        assert.match(argumentsValue.code, /"kind":"schematic-components"/);
+        const code = argumentsValue?.['code'];
+        if (typeof code !== 'string') throw new Error('Fixture call omitted generated code.');
+        assert.match(code, /"kind":"schematic-components"/u);
         observation += 1;
         return {
           structuredContent: {
@@ -1165,15 +1440,21 @@ describe('facade-owned exact reader contracts', () => {
       },
     };
     const engine = new EasyedaControlEngine(upstream);
-    engine.assertContext = async (expectedContext) => structuredClone(expectedContext);
+    engine.assertContext = async (expectedContext) => liveContext(expectedContext);
     await assert.rejects(
       engine.exactRead(request, {
         project: { uuid: 'project-1', path: '/tmp/project.eprj2' },
         document: { uuid: 'document-1', documentType: 1, tabId: 'tab-1' },
       }),
-      (error) => {
-        assert.match(error.message, /changed between two consecutive observations/);
-        assert.equal(error.mismatches[0].pointer, '/');
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.match(error.message, /changed between two consecutive observations/u);
+        assert.ok('mismatches' in error);
+        const mismatches = error.mismatches;
+        assert.ok(Array.isArray(mismatches));
+        const firstMismatch: unknown = mismatches[0];
+        assertUnknownRecord(firstMismatch);
+        assert.equal(firstMismatch['pointer'], '/');
         return true;
       },
     );

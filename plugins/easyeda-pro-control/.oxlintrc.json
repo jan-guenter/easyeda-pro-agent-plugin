@@ -1,0 +1,66 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "import", "node", "oxc", "promise", "typescript", "unicorn"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "pedantic": "error"
+  },
+  "rules": {
+    // These metrics would force safety-critical state machines and protocol facades
+    // apart without identifying a defect. Their behavior is covered by focused tests.
+    "eslint/max-lines": "off",
+    "eslint/max-lines-per-function": "off",
+
+    // Deep-readonly parameters are incompatible with the mutable MCP SDK payloads
+    // and EasyEDA bridge records accepted at these trust boundaries. Code still
+    // declares readonly fields where it owns the data shape.
+    "typescript/prefer-readonly-parameter-types": "off"
+  },
+  "overrides": [
+    {
+      "files": ["server/src/engine.ts", "server/tests/engine.test.ts"],
+      "rules": {
+        // The engine keeps small state and error types next to the transaction
+        // coordinator so its recovery contract can be reviewed as one unit.
+        "eslint/max-classes-per-file": "off"
+      }
+    },
+    {
+      "files": ["server/src/exact-readers.ts", "server/src/lease.ts"],
+      "rules": {
+        // These validators mirror nested external payloads and cleanup states;
+        // flattening their guards would obscure the fail-closed control flow.
+        "eslint/max-depth": "off"
+      }
+    },
+    {
+      "files": ["server/src/index.ts"],
+      "rules": {
+        // The MCP entrypoint deliberately composes every guarded capability.
+        // Splitting imports would hide the complete published control surface.
+        "import/max-dependencies": "off"
+      }
+    },
+    {
+      "files": [
+        "server/tests/engine.test.ts",
+        "server/tests/exact-readers.test.ts",
+        "server/tests/lease.test.ts",
+        "server/tests/runtime-scripts.test.ts"
+      ],
+      "rules": {
+        // These fixtures implement asynchronous EasyEDA interfaces. Removing
+        // async would stop them from matching rejection and scheduling behavior.
+        "eslint/require-await": "off",
+        "typescript/require-await": "off"
+      }
+    }
+  ],
+  "options": {
+    "typeAware": true,
+    "denyWarnings": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "ignorePatterns": ["node_modules/**", "server/dist/**"]
+}

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, describe, test } from 'node:test';
@@ -7,26 +7,84 @@ import { after, before, describe, test } from 'node:test';
 import {
   buildPlanHash,
   canonicalJson,
+  isErrnoException,
+  isRecord,
   OPERATION_SCHEMA,
   sha256Text,
-} from '../src/core.mjs';
+  type UnknownRecord,
+} from '../src/core.ts';
 
-let dataDir;
-let artifacts;
+let dataDir = '';
+let artifacts: typeof import('../src/artifacts.ts');
+
+const requiredArtifactFunctions = [
+  'archiveCaptureEvidence',
+  'archiveExternalEvidence',
+  'createOperation',
+  'ensureOperationStorage',
+  'listOperations',
+  'loadOperation',
+  'operationPath',
+  'readArtifact',
+  'releaseEvidenceReservation',
+  'reserveEvidencePaths',
+  'updateOperation',
+  'verifyEvidenceReceipt',
+  'writePhaseArtifact',
+] as const;
+
+function isArtifactsModule(value: unknown): value is typeof import('../src/artifacts.ts') {
+  return (
+    isRecord(value) &&
+    requiredArtifactFunctions.every((name) => typeof value[name] === 'function')
+  );
+}
+
+function parseJsonRecord(text: string): UnknownRecord {
+  const parsed: unknown = JSON.parse(text);
+  assert.ok(isRecord(parsed), 'Expected fixture JSON to contain an object.');
+  return parsed;
+}
+
+function isUnknownArray(value: unknown): value is unknown[] {
+  return Array.isArray(value);
+}
+
+function fixturePlan(name = 'Artifact test plan') {
+  return {
+    name,
+    intent: 'Provide a stable plan payload for journal integrity tests.',
+    capabilityLevel: 'public-supported',
+    expectedFingerprint: { fixture: true },
+    expectedContext: { project: { uuid: 'p' }, document: { uuid: 'd', documentType: 3 } },
+    preflightCalls: [],
+    applyCall: { toolName: 'apply' },
+    verifyCalls: [],
+    verifyAssertions: [],
+    rollbackCalls: [],
+    reopenedVerifyCalls: [],
+    reopenedAssertions: [],
+    checkpoint: { source: '/tmp/project.eprj2', outputDir: '/tmp/checkpoints', label: 'fixture' },
+  };
+}
 
 before(async () => {
   dataDir = await mkdtemp(join(tmpdir(), 'easyeda-control-artifacts-'));
-  process.env.EASYEDA_CONTROL_DATA_DIR = dataDir;
-  artifacts = await import(`../src/artifacts.mjs?test-dir=${encodeURIComponent(dataDir)}`);
+  process.env['EASYEDA_CONTROL_DATA_DIR'] = dataDir;
+  const loaded: unknown = await import(
+    `../src/artifacts.ts?test-dir=${encodeURIComponent(dataDir)}`
+  );
+  assert.ok(isArtifactsModule(loaded), 'Expected the artifact module to export its test contract.');
+  artifacts = loaded;
 });
 
 after(async () => {
-  delete process.env.EASYEDA_CONTROL_DATA_DIR;
+  delete process.env['EASYEDA_CONTROL_DATA_DIR'];
   if (dataDir) await rm(dataDir, { recursive: true, force: true });
 });
 
-describe('external evidence archives', () => {
-  test('writes an exclusive result and a self-hashed receipt', async () => {
+void describe('external evidence archives', () => {
+  void test('writes an exclusive result and a self-hashed receipt', async () => {
     const resultPath = join(dataDir, 'evidence', 'context.result.json');
     const receiptPath = join(dataDir, 'receipts', 'context.receipt.json');
     const request = { toolName: 'easyeda_get_document', args: {} };
@@ -39,27 +97,27 @@ describe('external evidence archives', () => {
       result,
       metadata,
     });
+    assert.ok(archived);
     const payloadText = await readFile(resultPath, 'utf8');
-    const payload = JSON.parse(payloadText);
-    const receipt = JSON.parse(await readFile(receiptPath, 'utf8'));
+    const payload = parseJsonRecord(payloadText);
+    const receipt = parseJsonRecord(await readFile(receiptPath, 'utf8'));
     const { receiptSha256, ...receiptCore } = receipt;
 
-    assert.equal(payload.schema, 'easyeda-pro-control.tool-result.v1');
-    assert.deepEqual(payload.request, request);
-    assert.deepEqual(payload.result, result);
-    assert.equal(receipt.requestSha256, sha256Text(canonicalJson(request)));
-    assert.equal(receipt.resultSha256, sha256Text(payloadText));
+    assert.equal(payload['schema'], 'easyeda-pro-control.tool-result.v1');
+    assert.deepEqual(payload['request'], request);
+    assert.deepEqual(payload['result'], result);
+    assert.equal(receipt['requestSha256'], sha256Text(canonicalJson(request)));
+    assert.equal(receipt['resultSha256'], sha256Text(payloadText));
     assert.equal(receiptSha256, sha256Text(canonicalJson(receiptCore)));
     assert.equal(archived.resultPath, resultPath);
     assert.equal(archived.receiptPath, receiptPath);
   });
 
-  test('refuses overwrite and removes a newly reserved peer after a partial pair failure', async () => {
+  void test('refuses overwrite and removes a newly reserved peer after a partial pair failure', async () => {
     const resultPath = join(dataDir, 'exclusive', 'result.json');
     const receiptPath = join(dataDir, 'exclusive', 'receipt.json');
-    await writeFile(receiptPath, 'preexisting\n', { encoding: 'utf8', flag: 'wx' }).catch(async (error) => {
-      if (error.code !== 'ENOENT') throw error;
-      const { mkdir } = await import('node:fs/promises');
+    await writeFile(receiptPath, 'preexisting\n', { encoding: 'utf8', flag: 'wx' }).catch(async (error: unknown) => {
+      if (!isErrnoException(error) || error.code !== 'ENOENT') throw error;
       await mkdir(join(dataDir, 'exclusive'), { recursive: true });
       await writeFile(receiptPath, 'preexisting\n', { encoding: 'utf8', flag: 'wx' });
     });
@@ -70,13 +128,16 @@ describe('external evidence archives', () => {
         request: { toolName: 'read' },
         result: { ok: true },
       }),
-      (error) => error.code === 'EEXIST',
+      (error: unknown) => isErrnoException(error) && error.code === 'EEXIST',
     );
-    await assert.rejects(readFile(resultPath, 'utf8'), (error) => error.code === 'ENOENT');
+    await assert.rejects(
+      readFile(resultPath, 'utf8'),
+      (error: unknown) => isErrnoException(error) && error.code === 'ENOENT',
+    );
     assert.equal(await readFile(receiptPath, 'utf8'), 'preexisting\n');
   });
 
-  test('reserves managed paths before dispatch and verifies the finalized evidence pair', async () => {
+  void test('reserves managed paths before dispatch and verifies the finalized evidence pair', async () => {
     const evidence = {
       resultPath: join(dataDir, 'reserved', 'read.result.json'),
       receiptPath: join(dataDir, 'reserved', 'read.receipt.json'),
@@ -85,7 +146,7 @@ describe('external evidence archives', () => {
 
     await assert.rejects(
       artifacts.reserveEvidencePaths(evidence),
-      (error) => error.code === 'EEXIST',
+      (error: unknown) => isErrnoException(error) && error.code === 'EEXIST',
     );
     await artifacts.archiveExternalEvidence({
       reservation,
@@ -102,7 +163,7 @@ describe('external evidence archives', () => {
     assert.equal(tampered.resultHashOk, false);
   });
 
-  test('refuses unmanaged evidence paths and reservation identity changes', async () => {
+  void test('refuses unmanaged evidence paths and reservation identity changes', async () => {
     const outside = await mkdtemp(join(tmpdir(), 'easyeda-control-outside-'));
     try {
       await assert.rejects(
@@ -110,7 +171,7 @@ describe('external evidence archives', () => {
           resultPath: join(outside, 'result.json'),
           receiptPath: join(outside, 'receipt.json'),
         }),
-        /must stay inside/,
+        /must stay inside/u,
       );
 
       const evidence = {
@@ -129,22 +190,28 @@ describe('external evidence archives', () => {
           request: { toolName: 'read' },
           result: { ok: true },
         }),
-        /reservation identity changed/,
+        /reservation identity changed/u,
       );
     } finally {
       await rm(outside, { recursive: true, force: true });
     }
   });
 
-  test('releases an undispatched reservation and rejects symlinked managed parents', async () => {
+  void test('releases an undispatched reservation and rejects symlinked managed parents', async () => {
     const evidence = {
       resultPath: join(dataDir, 'released', 'result.json'),
       receiptPath: join(dataDir, 'released', 'receipt.json'),
     };
     const reservation = await artifacts.reserveEvidencePaths(evidence);
     await artifacts.releaseEvidenceReservation(reservation);
-    await assert.rejects(readFile(evidence.resultPath), (error) => error.code === 'ENOENT');
-    await assert.rejects(readFile(evidence.receiptPath), (error) => error.code === 'ENOENT');
+    await assert.rejects(
+      readFile(evidence.resultPath),
+      (error: unknown) => isErrnoException(error) && error.code === 'ENOENT',
+    );
+    await assert.rejects(
+      readFile(evidence.receiptPath),
+      (error: unknown) => isErrnoException(error) && error.code === 'ENOENT',
+    );
 
     const outside = await mkdtemp(join(tmpdir(), 'easyeda-control-symlink-target-'));
     try {
@@ -154,14 +221,14 @@ describe('external evidence archives', () => {
           resultPath: join(dataDir, 'linked-parent', 'result.json'),
           receiptPath: join(dataDir, 'linked-parent', 'receipt.json'),
         }),
-        /not a real directory/,
+        /not a real directory/u,
       );
     } finally {
       await rm(outside, { recursive: true, force: true });
     }
   });
 
-  test('hashes capture images and detects image tampering', async () => {
+  void test('hashes capture images and detects image tampering', async () => {
     const evidence = {
       resultPath: join(dataDir, 'capture', 'capture.result.json'),
       receiptPath: join(dataDir, 'capture', 'capture.receipt.json'),
@@ -177,14 +244,18 @@ describe('external evidence archives', () => {
     const verified = await artifacts.verifyEvidenceReceipt(archived.receiptPath);
     assert.equal(verified.ok, true);
     assert.equal(verified.imageChecks.length, 1);
+    const verifiedImage = verified.imageChecks[0];
+    assert.ok(verifiedImage);
 
-    await writeFile(verified.imageChecks[0].path, 'changed-image', 'utf8');
+    await writeFile(verifiedImage.path, 'changed-image', 'utf8');
     const changed = await artifacts.verifyEvidenceReceipt(archived.receiptPath);
     assert.equal(changed.ok, false);
-    assert.equal(changed.imageChecks[0].ok, false);
+    const changedImage = changed.imageChecks[0];
+    assert.ok(changedImage);
+    assert.equal(changedImage.ok, false);
   });
 
-  test('rehashes export attachments and detects later artifact tampering', async () => {
+  void test('rehashes export attachments and detects later artifact tampering', async () => {
     const exportPath = join(dataDir, 'exports', 'board-gerbers.zip');
     await mkdir(join(dataDir, 'exports'), { recursive: true });
     await writeFile(exportPath, 'fresh-gerber-archive', 'utf8');
@@ -199,12 +270,19 @@ describe('external evidence archives', () => {
       metadata: { effect: 'artifact-write' },
       attachments: [{ kind: 'export-artifact', path: exportPath }],
     });
-    const receipt = JSON.parse(await readFile(archived.receiptPath, 'utf8'));
-    assert.equal(receipt.attachments.length, 1);
-    assert.equal(receipt.attachments[0].kind, 'export-artifact');
-    assert.equal(receipt.attachments[0].path, exportPath);
-    assert.equal(receipt.attachments[0].bytes, Buffer.byteLength('fresh-gerber-archive'));
-    assert.match(receipt.attachments[0].sha256, /^[a-f0-9]{64}$/);
+    assert.ok(archived);
+    const receipt = parseJsonRecord(await readFile(archived.receiptPath, 'utf8'));
+    const receiptAttachments = receipt['attachments'];
+    assert.ok(isUnknownArray(receiptAttachments));
+    assert.equal(receiptAttachments.length, 1);
+    const receiptAttachment = receiptAttachments[0];
+    assert.ok(isRecord(receiptAttachment));
+    assert.equal(receiptAttachment['kind'], 'export-artifact');
+    assert.equal(receiptAttachment['path'], exportPath);
+    assert.equal(receiptAttachment['bytes'], Buffer.byteLength('fresh-gerber-archive'));
+    const attachmentSha256 = receiptAttachment['sha256'];
+    assert.ok(typeof attachmentSha256 === 'string');
+    assert.match(attachmentSha256, /^[a-f0-9]{64}$/u);
 
     const verified = await artifacts.verifyEvidenceReceipt(archived.receiptPath);
     assert.equal(verified.ok, true);
@@ -218,7 +296,7 @@ describe('external evidence archives', () => {
     assert.deepEqual(tampered.attachmentChecks, [{ path: exportPath, ok: false }]);
   });
 
-  test('hashes a partially written export into dispatched-failure evidence', async () => {
+  void test('hashes a partially written export into dispatched-failure evidence', async () => {
     const exportPath = join(dataDir, 'exports-after-failure', 'partial.dsn');
     await mkdir(join(dataDir, 'exports-after-failure'), { recursive: true });
     await writeFile(exportPath, 'partial-export-bytes', 'utf8');
@@ -240,8 +318,9 @@ describe('external evidence archives', () => {
       },
       attachments: [{ kind: 'export-artifact-after-failure', path: exportPath }],
     });
-    const receipt = JSON.parse(await readFile(archived.receiptPath, 'utf8'));
-    assert.deepEqual(receipt.attachments, [
+    assert.ok(archived);
+    const receipt = parseJsonRecord(await readFile(archived.receiptPath, 'utf8'));
+    assert.deepEqual(receipt['attachments'], [
       {
         kind: 'export-artifact-after-failure',
         path: exportPath,
@@ -258,28 +337,10 @@ describe('external evidence archives', () => {
   });
 });
 
-describe('operation journals and phase artifacts', () => {
+void describe('operation journals and phase artifacts', () => {
   const operationId = 'easyeda-test-operation-0001';
 
-  function fixturePlan(name = 'Artifact test plan') {
-    return {
-      name,
-      intent: 'Provide a stable plan payload for journal integrity tests.',
-      capabilityLevel: 'public-supported',
-      expectedFingerprint: { fixture: true },
-      expectedContext: { project: { uuid: 'p' }, document: { uuid: 'd', documentType: 3 } },
-      preflightCalls: [],
-      applyCall: { toolName: 'apply' },
-      verifyCalls: [],
-      verifyAssertions: [],
-      rollbackCalls: [],
-      reopenedVerifyCalls: [],
-      reopenedAssertions: [],
-      checkpoint: { source: '/tmp/project.eprj2', outputDir: '/tmp/checkpoints', label: 'fixture' },
-    };
-  }
-
-  function fixtureOperation(id, overrides = {}) {
+  function fixtureOperation(id: string, overrides: UnknownRecord = {}) {
     const plan = fixturePlan(id);
     return {
       schema: OPERATION_SCHEMA,
@@ -293,89 +354,97 @@ describe('operation journals and phase artifacts', () => {
     };
   }
 
-  test('creates, validates, atomically updates, and lists operation journals', async () => {
+  void test('creates, validates, atomically updates, and lists operation journals', async () => {
     const operation = fixtureOperation(operationId);
     const path = await artifacts.createOperation(operation);
     assert.equal(path, artifacts.operationPath(operationId));
     assert.deepEqual(await artifacts.loadOperation(operationId), operation);
-    await assert.rejects(artifacts.createOperation(operation), (error) => error.code === 'EEXIST');
+    await assert.rejects(
+      artifacts.createOperation(operation),
+      (error: unknown) => isErrnoException(error) && error.code === 'EEXIST',
+    );
 
     const updated = { ...operation, state: 'applied-unsaved', updatedAt: '2026-08-27T10:01:00Z' };
     await artifacts.updateOperation(updated);
     assert.deepEqual(await artifacts.loadOperation(operationId), updated);
     await assert.rejects(
       artifacts.updateOperation({ ...updated, operationId: 'easyeda-missing-operation' }),
-      /does not exist/,
+      /does not exist/u,
     );
 
     const operationsDir = await artifacts.ensureOperationStorage();
     await writeFile(join(operationsDir, 'easyeda-broken-journal.json'), '{broken', 'utf8');
     const listed = await artifacts.listOperations();
-    assert.equal(listed.find((item) => item.operationId === operationId)?.state, 'applied-unsaved');
-    const unreadable = listed.find((item) => item.operationId === 'easyeda-broken-journal');
-    assert.equal(unreadable.state, 'journal-unreadable');
-    assert.equal(unreadable.mutationState, 'unknown');
-    assert.equal(unreadable.hardStop, true);
-    assert.equal(unreadable.mutationMayHaveOccurred, true);
+    assert.equal(listed.find((item) => item['operationId'] === operationId)?.['state'], 'applied-unsaved');
+    const unreadable = listed.find((item) => item['operationId'] === 'easyeda-broken-journal');
+    assert.ok(unreadable);
+    assert.equal(unreadable['state'], 'journal-unreadable');
+    assert.equal(unreadable['mutationState'], 'unknown');
+    assert.equal(unreadable['hardStop'], true);
+    assert.equal(unreadable['mutationMayHaveOccurred'], true);
     assert.equal(
-      unreadable.journalPath,
+      unreadable['journalPath'],
       join(operationsDir, 'easyeda-broken-journal.json'),
     );
-    assert.equal(typeof unreadable.lastError.name, 'string');
-    assert.equal(typeof unreadable.lastError.message, 'string');
-    assert.ok(unreadable.lastError.name.length <= 128);
-    assert.ok(unreadable.lastError.message.length <= 2048);
-    assert.match(unreadable.nextSafeAction, /named managed journal/);
+    const lastError = unreadable['lastError'];
+    assert.ok(isRecord(lastError));
+    assert.equal(typeof lastError['name'], 'string');
+    assert.equal(typeof lastError['message'], 'string');
+    assert.ok(typeof lastError['name'] === 'string' && lastError['name'].length <= 128);
+    assert.ok(typeof lastError['message'] === 'string' && lastError['message'].length <= 2048);
+    assert.match(String(unreadable['nextSafeAction']), /named managed journal/u);
   });
 
-  test('rejects unsafe journal identities and invalid stored identity', async () => {
-    assert.throws(() => artifacts.operationPath('../escape'), /Invalid operationId/);
-    assert.throws(() => artifacts.operationPath('short'), /Invalid operationId/);
+  void test('rejects unsafe journal identities and invalid stored identity', async () => {
+    assert.throws(() => artifacts.operationPath('../escape'), /Invalid operationId/u);
+    assert.throws(() => artifacts.operationPath('short'), /Invalid operationId/u);
 
     const badId = 'easyeda-invalid-identity';
     await artifacts.createOperation({
       ...fixtureOperation(badId),
     });
     const path = artifacts.operationPath(badId);
-    const stored = JSON.parse(await readFile(path, 'utf8'));
-    stored.operationId = 'easyeda-different-identity';
+    const stored = parseJsonRecord(await readFile(path, 'utf8'));
+    stored['operationId'] = 'easyeda-different-identity';
     await writeFile(path, `${JSON.stringify(stored)}\n`, 'utf8');
-    await assert.rejects(artifacts.loadOperation(badId), /invalid schema or identity/);
+    await assert.rejects(artifacts.loadOperation(badId), /invalid schema or identity/u);
   });
 
-  test('writes append-only, hashed phase artifacts with sanitized names', async () => {
+  void test('writes append-only, hashed phase artifacts with sanitized names', async () => {
     const first = await artifacts.writePhaseArtifact(operationId, 3, 'Verify Live/Readback', {
       ok: true,
       count: 608,
     });
-    assert.match(first.path, /03-verify-live-readback\.json$/);
+    assert.match(first.path, /03-verify-live-readback\.json$/u);
     const text = await readFile(first.path, 'utf8');
     assert.equal(first.sha256, sha256Text(text));
     assert.equal(first.bytes, Buffer.byteLength(text));
     await assert.rejects(
       artifacts.writePhaseArtifact(operationId, 3, 'Verify Live/Readback', { ok: false }),
-      (error) => error.code === 'EEXIST',
+      (error: unknown) => isErrnoException(error) && error.code === 'EEXIST',
     );
   });
 
-  test('rejects journal, plan, and phase-artifact hash tampering', async () => {
+  void test('rejects journal, plan, and phase-artifact hash tampering', async () => {
     const journalId = 'easyeda-journal-hash-tamper';
     await artifacts.createOperation(fixtureOperation(journalId));
     const journalPath = artifacts.operationPath(journalId);
-    const journal = JSON.parse(await readFile(journalPath, 'utf8'));
-    journal.state = 'completed';
+    const journal = parseJsonRecord(await readFile(journalPath, 'utf8'));
+    journal['state'] = 'completed';
     await writeFile(journalPath, `${JSON.stringify(journal, null, 2)}\n`, 'utf8');
-    await assert.rejects(artifacts.loadOperation(journalId), /failed its self-hash/);
+    await assert.rejects(artifacts.loadOperation(journalId), /failed its self-hash/u);
 
     const planId = 'easyeda-plan-hash-tamper';
     await artifacts.createOperation(fixtureOperation(planId));
     const planPath = artifacts.operationPath(planId);
-    const planJournal = JSON.parse(await readFile(planPath, 'utf8'));
-    planJournal.plan.intent = 'Tampered execution-bearing intent.';
-    const { journalSha256: ignoredPlanHash, ...planCore } = planJournal;
-    planJournal.journalSha256 = sha256Text(canonicalJson(planCore));
+    const planJournal = parseJsonRecord(await readFile(planPath, 'utf8'));
+    const storedPlan = planJournal['plan'];
+    assert.ok(isRecord(storedPlan));
+    storedPlan['intent'] = 'Tampered execution-bearing intent.';
+    delete planJournal['journalSha256'];
+    planJournal['journalSha256'] = sha256Text(canonicalJson(planJournal));
     await writeFile(planPath, `${JSON.stringify(planJournal, null, 2)}\n`, 'utf8');
-    await assert.rejects(artifacts.loadOperation(planId), /mismatched plan hash/);
+    await assert.rejects(artifacts.loadOperation(planId), /mismatched plan hash/u);
 
     const artifactId = 'easyeda-phase-hash-tamper';
     const descriptor = await artifacts.writePhaseArtifact(artifactId, 0, 'preflight', {
@@ -385,12 +454,12 @@ describe('operation journals and phase artifacts', () => {
       fixtureOperation(artifactId, { artifacts: [descriptor] }),
     );
     await writeFile(descriptor.path, '{"state":"changed"}\n', 'utf8');
-    await assert.rejects(artifacts.loadOperation(artifactId), /phase artifact failed hash/);
+    await assert.rejects(artifacts.loadOperation(artifactId), /phase artifact failed hash/u);
   });
 });
 
-describe('bounded artifact reads', () => {
-  test('supports offsets and caps a single read at 256 KiB', async () => {
+void describe('bounded artifact reads', () => {
+  void test('supports offsets and caps a single read at 256 KiB', async () => {
     const path = join(dataDir, 'large-artifact.txt');
     const payloadBytes = 512 * 1024;
     const text = `${'a'.repeat(payloadBytes)}tail`;
@@ -406,7 +475,7 @@ describe('bounded artifact reads', () => {
     assert.equal(tail.eof, true);
   });
 
-  test('rejects directories', async () => {
-    await assert.rejects(artifacts.readArtifact(dataDir), /regular non-symlink file/);
+  void test('rejects directories', async () => {
+    await assert.rejects(artifacts.readArtifact(dataDir), /regular non-symlink file/u);
   });
 });

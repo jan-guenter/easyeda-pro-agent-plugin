@@ -1,28 +1,60 @@
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { after, before, describe, test } from 'node:test';
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
-import { buildPlanHash, newOperationId, OPERATION_SCHEMA } from '../src/core.mjs';
+import { buildPlanHash, newOperationId, OPERATION_SCHEMA } from '../src/core.ts';
 
-const pluginRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const facadeEntrypoint = join(pluginRoot, 'server', 'src', 'index.mjs');
+type ToolCallResult = Awaited<ReturnType<Client['callTool']>>;
+type ArtifactModule = Pick<
+  typeof import('../src/artifacts.ts'),
+  'createOperation'
+>;
 
-let fixtureRoot;
-let controlRoot;
-let configPath;
-let projectPath;
-let client;
-let transport;
-let expectedFingerprint;
+interface FixtureConfig extends Record<string, unknown> {
+  readonly documentType?: number;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function requireRecord(value: unknown, label: string): Record<string, unknown> {
+  assert.ok(isRecord(value), `${label} must be an object.`);
+  return value;
+}
+
+function requireArray(value: unknown, label: string): unknown[] {
+  assert.ok(Array.isArray(value), `${label} must be an array.`);
+  return value;
+}
+
+function isArtifactModule(value: unknown): value is ArtifactModule {
+  return isRecord(value) && typeof value['createOperation'] === 'function';
+}
+
+function structured(result: ToolCallResult): Record<string, unknown> {
+  return requireRecord(result.structuredContent, 'structuredContent');
+}
+
+const pluginRoot = resolve(import.meta.dirname, '../..');
+const facadeEntrypoint = join(pluginRoot, 'server', 'src', 'index.ts');
+
+let fixtureRoot: string;
+let controlRoot: string;
+let configPath: string;
+let projectPath: string;
+let client: Client;
+let transport: StdioClientTransport;
+let expectedFingerprint: Record<string, unknown>;
 let evidenceSequence = 0;
 
-async function writeConfig(config = {}) {
+async function writeConfig(config: FixtureConfig = {}): Promise<void> {
   await writeFile(
     configPath,
     `${JSON.stringify({ documentType: 1, ...config })}\n`,
@@ -30,7 +62,7 @@ async function writeConfig(config = {}) {
   );
 }
 
-function expectedContext(documentType = 1) {
+function expectedContext(documentType = 1): Record<string, unknown> {
   return {
     project: { uuid: 'project-1', path: projectPath },
     document: {
@@ -41,7 +73,7 @@ function expectedContext(documentType = 1) {
   };
 }
 
-function freshEvidence(label) {
+function freshEvidence(label: string): { receiptPath: string; resultPath: string } {
   evidenceSequence += 1;
   const base = join(controlRoot, 'evidence', `${label}-${evidenceSequence}`);
   return {
@@ -50,10 +82,14 @@ function freshEvidence(label) {
   };
 }
 
-async function capture(config, label, requestOverrides = {}) {
+async function capture(
+  config: FixtureConfig,
+  label: string,
+  requestOverrides: Record<string, unknown> = {},
+): Promise<ToolCallResult> {
   await writeConfig(config);
   const documentType = config.documentType ?? 1;
-  return await client.callTool(
+  return client.callTool(
     {
       name: 'easyeda_control_capture',
       arguments: {
@@ -77,9 +113,9 @@ async function capture(config, label, requestOverrides = {}) {
   );
 }
 
-async function genericRead(documentType, upstreamTool) {
+async function genericRead(documentType: number, upstreamTool: string): Promise<ToolCallResult> {
   await writeConfig({ documentType });
-  return await client.callTool(
+  return client.callTool(
     {
       name: 'easyeda_control_read',
       arguments: {
@@ -96,10 +132,13 @@ async function genericRead(documentType, upstreamTool) {
   );
 }
 
-function failureMessage(result) {
+function failureMessage(result: ToolCallResult): string {
   assert.equal(result.isError, true);
-  assert.equal(result.structuredContent?.ok, false);
-  return result.structuredContent?.error?.message;
+  const payload = structured(result);
+  assert.equal(payload['ok'], false);
+  const error = requireRecord(payload['error'], 'structuredContent.error');
+  assert.equal(typeof error['message'], 'string');
+  return String(error['message']);
 }
 
 before(async () => {
@@ -377,56 +416,78 @@ before(async () => {
   await client.connect(transport);
   const status = await client.callTool({ name: 'easyeda_control_status', arguments: {} });
   assert.equal(status.isError, undefined);
-  expectedFingerprint = status.structuredContent.upstream.stableFingerprint;
+  const statusPayload = structured(status);
+  const upstreamStatus = requireRecord(statusPayload['upstream'], 'status.upstream');
+  expectedFingerprint = requireRecord(
+    upstreamStatus['stableFingerprint'],
+    'status.upstream.stableFingerprint',
+  );
 });
 
 after(async () => {
-  await client?.close().catch(() => undefined);
-  await transport?.close().catch(() => undefined);
+  await client?.close().catch(() => {});
+  await transport?.close().catch(() => {});
   if (fixtureRoot) await rm(fixtureRoot, { recursive: true, force: true });
 });
 
-describe('published facade contracts', { concurrency: false }, () => {
-  test('generated operation IDs satisfy the lowercase operation-id JSON Schema', async () => {
+void describe('published facade contracts', { concurrency: false }, () => {
+  void test('generated operation IDs satisfy the lowercase operation-id JSON Schema', async () => {
     const listed = await client.listTools();
     const apply = listed.tools.find((tool) => tool.name === 'easyeda_control_apply');
-    const pattern = apply?.inputSchema?.properties?.operationId?.pattern;
+    const applySchema = requireRecord(apply?.inputSchema, 'apply.inputSchema');
+    const applyProperties = requireRecord(applySchema['properties'], 'apply properties');
+    const operationIdSchema = requireRecord(
+      applyProperties['operationId'],
+      'apply operationId schema',
+    );
+    const pattern = operationIdSchema['pattern'];
+    assert.equal(typeof pattern, 'string');
     assert.equal(pattern, '^[a-z0-9][a-z0-9-]{7,95}$');
-    assert.match(newOperationId(new Date('2026-08-27T09:08:07.654Z')), new RegExp(pattern));
+    assert.match(newOperationId(new Date('2026-08-27T09:08:07.654Z')), new RegExp(pattern, 'u'));
 
     const saveReopen = listed.tools.find(
       (tool) => tool.name === 'easyeda_control_save_reopen',
     );
-    const discardConfirmation =
-      saveReopen?.inputSchema?.properties?.confirmDiscardAnyUnsavedState;
-    assert.equal(discardConfirmation?.type, 'boolean');
-    assert.equal(discardConfirmation?.default, false);
+    const saveReopenSchema = requireRecord(saveReopen?.inputSchema, 'save-reopen inputSchema');
+    const saveReopenProperties = requireRecord(
+      saveReopenSchema['properties'],
+      'save-reopen properties',
+    );
+    const discardConfirmation = requireRecord(
+      saveReopenProperties['confirmDiscardAnyUnsavedState'],
+      'save-reopen discard confirmation',
+    );
+    assert.equal(discardConfirmation['type'], 'boolean');
+    assert.equal(discardConfirmation['default'], false);
 
     const plan = listed.tools.find((tool) => tool.name === 'easyeda_control_plan');
-    assert.equal(
-      plan?.inputSchema?.properties?.confirmDiscardAnyUnsavedState?.const,
-      true,
+    const planSchema = requireRecord(plan?.inputSchema, 'plan inputSchema');
+    const planProperties = requireRecord(planSchema['properties'], 'plan properties');
+    const planDiscardConfirmation = requireRecord(
+      planProperties['confirmDiscardAnyUnsavedState'],
+      'plan discard confirmation',
     );
+    assert.equal(planDiscardConfirmation['const'], true);
 
     const raw = await client.callTool({
       name: 'easyeda_control_execute',
       arguments: {},
     });
-    assert.match(failureMessage(raw), /structurally disabled.*no environment opt-in/i);
+    assert.match(failureMessage(raw), /structurally disabled.*no environment opt-in/iu);
   });
 });
 
-describe('generic read context binding', { concurrency: false }, () => {
-  test('rejects diagnostic probes and every cross-editor read family before dispatch', async () => {
-    const rejected = [
-      [3, 'easyeda_component_probe', /diagnostic-only/],
-      [3, 'easyeda_live_smoke_report', /diagnostic-only/],
-      [1, 'easyeda_wire_probe', /diagnostic-only/],
-      [3, 'easyeda_schematic_components', /active document type 1.*type is 3/],
-      [1, 'easyeda_pcb_components', /active document type 3.*type is 1/],
-      [1, 'easyeda_board_dimensions', /active document type 3.*type is 1/],
-      [15, 'easyeda_pcb_components', /type is 15.*not a PCB editor context/],
-      [15, 'easyeda_board_dimensions', /type is 15.*not a PCB editor context/],
+void describe('generic read context binding', { concurrency: false }, () => {
+  void test('rejects diagnostic probes and every cross-editor read family before dispatch', async () => {
+    const rejected: ReadonlyArray<readonly [number, string, RegExp]> = [
+      [3, 'easyeda_component_probe', /diagnostic-only/u],
+      [3, 'easyeda_live_smoke_report', /diagnostic-only/u],
+      [1, 'easyeda_wire_probe', /diagnostic-only/u],
+      [3, 'easyeda_schematic_components', /active document type 1.*type is 3/u],
+      [1, 'easyeda_pcb_components', /active document type 3.*type is 1/u],
+      [1, 'easyeda_board_dimensions', /active document type 3.*type is 1/u],
+      [15, 'easyeda_pcb_components', /type is 15.*not a PCB editor context/u],
+      [15, 'easyeda_board_dimensions', /type is 15.*not a PCB editor context/u],
     ];
     for (const [documentType, upstreamTool, expectedError] of rejected) {
       const response = await genericRead(documentType, upstreamTool);
@@ -435,29 +496,31 @@ describe('generic read context binding', { concurrency: false }, () => {
 
     const schematic = await genericRead(1, 'easyeda_schematic_components');
     assert.notEqual(schematic.isError, true);
-    assert.equal(schematic.structuredContent.result.dispatched, true);
+    const schematicResult = requireRecord(structured(schematic)['result'], 'schematic result');
+    assert.equal(schematicResult['dispatched'], true);
     const pcb = await genericRead(3, 'easyeda_pcb_components');
     assert.notEqual(pcb.isError, true);
-    assert.equal(pcb.structuredContent.result.dispatched, true);
+    const pcbResult = requireRecord(structured(pcb)['result'], 'PCB result');
+    assert.equal(pcbResult['dispatched'], true);
   });
 });
 
-describe('full-page schematic capture facade', { concurrency: false }, () => {
-  test('requires a schematic document and binds the returned project identity', async () => {
+void describe('full-page schematic capture facade', { concurrency: false }, () => {
+  void test('requires a schematic document and binds the returned project identity', async () => {
     const wrongEditor = await capture({ documentType: 3 }, 'wrong-editor');
     assert.match(
       failureMessage(wrongEditor),
-      /requires an active schematic document/,
+      /requires an active schematic document/u,
     );
 
     const wrongProject = await capture(
       { capture: { project_id: 'other-project' } },
       'wrong-result-project',
     );
-    assert.match(failureMessage(wrongProject), /result\.project_id does not match/);
+    assert.match(failureMessage(wrongProject), /result\.project_id does not match/u);
   });
 
-  test('requires deterministic sheet provenance unless inferred A4 is authorized', async () => {
+  void test('requires deterministic sheet provenance unless inferred A4 is authorized', async () => {
     const inferred = {
       capture: {
         deterministic_viewport: false,
@@ -470,11 +533,11 @@ describe('full-page schematic capture facade', { concurrency: false }, () => {
       },
     };
     const rejected = await capture(inferred, 'inferred-rejected');
-    assert.match(failureMessage(rejected), /inferred A4 was not authorized/);
+    assert.match(failureMessage(rejected), /inferred A4 was not authorized/u);
 
     const allowed = await capture(inferred, 'inferred-allowed', { allowInferredA4: true });
     assert.notEqual(allowed.isError, true);
-    assert.equal(allowed.structuredContent.deterministic_viewport, false);
+    assert.equal(structured(allowed)['deterministic_viewport'], false);
 
     const contradictory = await capture(
       {
@@ -490,10 +553,10 @@ describe('full-page schematic capture facade', { concurrency: false }, () => {
       },
       'contradictory-provenance',
     );
-    assert.match(failureMessage(contradictory), /contradictory viewport provenance/);
+    assert.match(failureMessage(contradictory), /contradictory viewport provenance/u);
   });
 
-  test('requires complete sheet, viewport, dimensions, transform, and cleared-selection evidence', async () => {
+  void test('requires complete sheet, viewport, dimensions, transform, and cleared-selection evidence', async () => {
     for (const field of [
       'sheet',
       'viewport',
@@ -505,59 +568,64 @@ describe('full-page schematic capture facade', { concurrency: false }, () => {
         `missing-${field}`,
         { allowInferredA4: true },
       );
-      assert.match(failureMessage(rejected), /did not return complete sheet/);
+      assert.match(failureMessage(rejected), /did not return complete sheet/u);
     }
     const selected = await capture(
       { capture: { selection_overlays_removed: false } },
       'selection-not-cleared',
     );
-    assert.match(failureMessage(selected), /did not return complete sheet/);
+    assert.match(failureMessage(selected), /did not return complete sheet/u);
 
     const accepted = await capture({}, 'complete-capture');
     assert.notEqual(accepted.isError, true);
-    assert.equal(accepted.structuredContent.project_id, 'project-1');
-    assert.deepEqual(accepted.structuredContent.image_dimensions, { width: 2, height: 3 });
-    assert.equal(accepted.structuredContent.selection_overlays_removed, true);
-    assert.equal(Object.hasOwn(accepted.structuredContent, 'image_base64'), false);
-    const archived = JSON.parse(
-      await readFile(accepted.structuredContent.evidence.resultPath, 'utf8'),
+    const acceptedPayload = structured(accepted);
+    assert.equal(acceptedPayload['project_id'], 'project-1');
+    assert.deepEqual(acceptedPayload['image_dimensions'], { width: 2, height: 3 });
+    assert.equal(acceptedPayload['selection_overlays_removed'], true);
+    assert.equal(Object.hasOwn(acceptedPayload, 'image_base64'), false);
+    const evidence = requireRecord(acceptedPayload['evidence'], 'capture evidence');
+    assert.equal(typeof evidence['resultPath'], 'string');
+    const archived = requireRecord(
+      JSON.parse(await readFile(String(evidence['resultPath']), 'utf8')) as unknown,
+      'archived evidence',
     );
-    assert.equal(Object.hasOwn(archived.result.payload, 'image_base64'), false);
+    const archivedResult = requireRecord(archived['result'], 'archived result');
+    const archivedPayload = requireRecord(archivedResult['payload'], 'archived payload');
+    assert.equal(Object.hasOwn(archivedPayload, 'image_base64'), false);
   });
 
-  test('binds exactly one valid PNG to its payload metadata and IHDR dimensions', async () => {
-    const cases = [
-      [{ imageCount: 0 }, /exactly one MCP image block/],
-      [{ imageCount: 2 }, /exactly one MCP image block/],
-      [{ imageMimeType: 'image/jpeg' }, /missing, empty, or non-PNG image/],
-      [{ payloadMimeType: 'image/jpeg' }, /MIME type or byte length does not match/],
-      [{ payloadByteLength: 999 }, /MIME type or byte length does not match/],
-      [{ payloadByteLength: '69' }, /MIME type or byte length does not match/],
-      [{ payloadBase64: 'mismatch' }, /payload image bytes do not match/],
-      [{ capture: { image_base64: {} } }, /image_base64 must be a string/],
-      [{ validIhdr: false }, /IHDR/],
-      [{ corruptPngCrc: true }, /PNG.*CRC|CRC.*PNG/i],
+  void test('binds exactly one valid PNG to its payload metadata and IHDR dimensions', async () => {
+    const cases: ReadonlyArray<readonly [FixtureConfig, RegExp]> = [
+      [{ imageCount: 0 }, /exactly one MCP image block/u],
+      [{ imageCount: 2 }, /exactly one MCP image block/u],
+      [{ imageMimeType: 'image/jpeg' }, /missing, empty, or non-PNG image/u],
+      [{ payloadMimeType: 'image/jpeg' }, /MIME type or byte length does not match/u],
+      [{ payloadByteLength: 999 }, /MIME type or byte length does not match/u],
+      [{ payloadByteLength: '69' }, /MIME type or byte length does not match/u],
+      [{ payloadBase64: 'mismatch' }, /payload image bytes do not match/u],
+      [{ capture: { image_base64: {} } }, /image_base64 must be a string/u],
+      [{ validIhdr: false }, /IHDR/u],
+      [{ corruptPngCrc: true }, /PNG.*CRC|CRC.*PNG/iu],
       [
         { capture: { image_dimensions: { width: 99, height: 3 } } },
-        /dimensions do not match the PNG IHDR/,
+        /dimensions do not match the PNG IHDR/u,
       ],
     ];
-    for (let index = 0; index < cases.length; index += 1) {
-      const [config, expectedError] = cases[index];
+    for (const [index, [config, expectedError]] of cases.entries()) {
       const rejected = await capture(config, `png-binding-${index}`);
       assert.match(failureMessage(rejected), expectedError);
     }
   });
 
-  test('rejects malformed or contradictory full-page geometry evidence', async () => {
-    const cases = [
+  void test('rejects malformed or contradictory full-page geometry evidence', async () => {
+    const cases: ReadonlyArray<readonly [FixtureConfig, RegExp]> = [
       [
         { capture: { sheet: { source: 'sheet-info' } } },
-        /Capture sheet.*fields|Capture sheet.*finite/i,
+        /Capture sheet.*fields|Capture sheet.*finite/iu,
       ],
       [
         { capture: { viewport: { left: 0, right: 99, top: 80, bottom: 0 } } },
-        /viewport contradicts/,
+        /viewport contradicts/u,
       ],
       [
         {
@@ -570,9 +638,9 @@ describe('full-page schematic capture facade', { concurrency: false }, () => {
             },
           },
         },
-        /transform contradicts/,
+        /transform contradicts/u,
       ],
-      [{ capture: { warnings: 'not-an-array' } }, /warnings must be an array/],
+      [{ capture: { warnings: 'not-an-array' } }, /warnings must be an array/u],
       [
         {
           capture: {
@@ -584,26 +652,27 @@ describe('full-page schematic capture facade', { concurrency: false }, () => {
             },
           },
         },
-        /scale_x must be a finite number/,
+        /scale_x must be a finite number/u,
       ],
     ];
-    for (let index = 0; index < cases.length; index += 1) {
-      const [config, expectedError] = cases[index];
+    for (const [index, [config, expectedError]] of cases.entries()) {
       const rejected = await capture(config, `geometry-binding-${index}`);
       assert.match(failureMessage(rejected), expectedError);
     }
   });
 });
 
-describe('global orphan-risk quarantine', { concurrency: false }, () => {
-  test('blocks every live bridge path while local discovery and recovery listing remain available', async () => {
-    const previousControlRoot = process.env.EASYEDA_CONTROL_DATA_DIR;
-    process.env.EASYEDA_CONTROL_DATA_DIR = controlRoot;
-    const journalArtifacts = await import(
-      `../src/artifacts.mjs?facade-orphan=${encodeURIComponent(fixtureRoot)}`
+void describe('global orphan-risk quarantine', { concurrency: false }, () => {
+  void test('blocks every live bridge path while local discovery and recovery listing remain available', async () => {
+    const previousControlRoot = process.env['EASYEDA_CONTROL_DATA_DIR'];
+    process.env['EASYEDA_CONTROL_DATA_DIR'] = controlRoot;
+    const loadedArtifacts: unknown = await import(
+      `../src/artifacts.ts?facade-orphan=${encodeURIComponent(fixtureRoot)}`
     );
-    if (previousControlRoot === undefined) delete process.env.EASYEDA_CONTROL_DATA_DIR;
-    else process.env.EASYEDA_CONTROL_DATA_DIR = previousControlRoot;
+    assert.ok(isArtifactModule(loadedArtifacts), 'artifact fixture module must be valid');
+    const journalArtifacts = loadedArtifacts;
+    if (previousControlRoot === undefined) delete process.env['EASYEDA_CONTROL_DATA_DIR'];
+    else process.env['EASYEDA_CONTROL_DATA_DIR'] = previousControlRoot;
 
     const operationId = newOperationId();
     const plan = { name: 'facade-orphan-quarantine-fixture' };
@@ -633,11 +702,11 @@ describe('global orphan-risk quarantine', { concurrency: false }, () => {
       }),
     ];
     for (const result of liveCalls) {
-      assert.match(failureMessage(result), /bridge dispatch is quarantined/);
-      assert.equal(
-        result.structuredContent.error.blockingOperations[0].operationId,
-        operationId,
-      );
+      assert.match(failureMessage(result), /bridge dispatch is quarantined/u);
+      const error = requireRecord(structured(result)['error'], 'quarantine error');
+      const blocking = requireArray(error['blockingOperations'], 'blocking operations');
+      const firstBlocking = requireRecord(blocking[0], 'first blocking operation');
+      assert.equal(firstBlocking['operationId'], operationId);
     }
 
     const discover = await client.callTool({
@@ -649,11 +718,12 @@ describe('global orphan-risk quarantine', { concurrency: false }, () => {
       name: 'easyeda_control_recover_incomplete',
       arguments: {},
     });
-    assert.equal(
-      recovery.structuredContent.value.find((item) => item.operationId === operationId)
-        .orphanedCallPossible,
-      true,
+    const recoveryItems = requireArray(structured(recovery)['value'], 'recovery value');
+    const recoveredOperation = recoveryItems.find(
+      (item) => isRecord(item) && item['operationId'] === operationId,
     );
+    const recoveredRecord = requireRecord(recoveredOperation, 'recovered operation');
+    assert.equal(recoveredRecord['orphanedCallPossible'], true);
 
     const otherOperationId = newOperationId();
     const otherPlan = { name: 'foreign-incomplete-recovery-fixture' };
@@ -678,22 +748,38 @@ describe('global orphan-risk quarantine', { concurrency: false }, () => {
         confirmation: `${operationId}:reconciled-no-mutation`,
       },
     });
-    assert.match(failureMessage(unisolatedRecovery), /recovery operation.*not isolated/i);
-    assert.equal(
-      unisolatedRecovery.structuredContent.error.blockingOperations[0].operationId,
-      otherOperationId,
+    assert.match(failureMessage(unisolatedRecovery), /recovery operation.*not isolated/iu);
+    const unisolatedError = requireRecord(
+      structured(unisolatedRecovery)['error'],
+      'unisolated recovery error',
     );
+    const unisolatedBlocking = requireArray(
+      unisolatedError['blockingOperations'],
+      'unisolated blocking operations',
+    );
+    const unisolatedFirst = requireRecord(
+      unisolatedBlocking[0],
+      'first unisolated blocking operation',
+    );
+    assert.equal(unisolatedFirst['operationId'], otherOperationId);
 
     await writeFile(journalPath, '{broken journal', 'utf8');
     const unreadable = await genericRead(1, 'easyeda_schematic_components');
-    assert.match(failureMessage(unreadable), /journal-unreadable/);
+    assert.match(failureMessage(unreadable), /journal-unreadable/u);
     const unreadableRecovery = await client.callTool({
       name: 'easyeda_control_recover_incomplete',
       arguments: {},
     });
+    const unreadableItems = requireArray(
+      structured(unreadableRecovery)['value'],
+      'unreadable recovery value',
+    );
     assert.equal(
-      unreadableRecovery.structuredContent.value.some(
-        (item) => item.operationId === operationId && item.state === 'journal-unreadable',
+      unreadableItems.some(
+        (item) =>
+          isRecord(item) &&
+          item['operationId'] === operationId &&
+          item['state'] === 'journal-unreadable',
       ),
       true,
     );

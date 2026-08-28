@@ -5,8 +5,9 @@ import { mkdir, open, rmdir, stat } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { inflateSync } from 'node:zlib';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer, type ToolCallback } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import type { CallToolResult, ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import {
   archiveCaptureEvidence,
@@ -18,22 +19,22 @@ import {
   releaseEvidenceReservation,
   reserveEvidencePaths,
   verifyEvidenceReceipt,
-} from './artifacts.mjs';
+} from './artifacts.ts';
 import {
   assertSubset,
   CONTROL_VERSION,
   extractToolPayload,
   filterTools,
+  isRecord,
   sha256Text,
-  validateEvidencePaths,
   validateExpectedFingerprint,
   validatePrivateFingerprint,
-} from './core.mjs';
-import { EasyedaControlEngine, SerializedGate } from './engine.mjs';
-import { exactReadRequestSchema } from './exact-readers.mjs';
-import { acquireFacadeLease } from './lease.mjs';
-import { buildDsnExportCode, wrapWithContextGuard } from './runtime-scripts.mjs';
-import { UpstreamEasyedaClient } from './upstream.mjs';
+} from './core.ts';
+import { EasyedaControlEngine, SerializedGate } from './engine.ts';
+import { exactReadRequestSchema } from './exact-readers.ts';
+import { acquireFacadeLease } from './lease.ts';
+import { buildDsnExportCode, wrapWithContextGuard } from './runtime-scripts.ts';
+import { UpstreamEasyedaClient } from './upstream.ts';
 
 const MAX_INLINE_RESULT_BYTES = 256 * 1024;
 const EXPORT_TOOLS = new Set([
@@ -44,7 +45,7 @@ const CAPTURE_TOOLS = new Set([
   'easyeda_canvas_capture_region',
   'easyeda_schematic_capture_full_page',
 ]);
-const DEDICATED_FACADE_NAME = /(^|_)(capture|export)(_|$)/i;
+const DEDICATED_FACADE_NAME = /(^|_)(capture|export)(_|$)/iu;
 const UNBOUND_DIAGNOSTIC_READ_NAMES = new Set([
   'easyeda_component_probe',
   'easyeda_live_smoke_report',
@@ -56,7 +57,9 @@ const UI_MUTATING_READ_NAMES = new Set([
 ]);
 const validatedControlRoot = await ensureManagedDirectory(controlDataDirectory());
 const facadeLease = await acquireFacadeLease(validatedControlRoot);
-process.once('exit', () => facadeLease.releaseSync());
+process.once('exit', () => {
+  facadeLease.releaseSync();
+});
 const upstream = new UpstreamEasyedaClient();
 const engine = new EasyedaControlEngine(upstream);
 const bridgeGate = new SerializedGate();
@@ -101,6 +104,23 @@ const captureRequestSchema = z.discriminatedUnion('upstreamTool', [
     })
     .strict(),
 ]);
+const capturePayloadSchema = z
+  .object({
+    byte_length: z.unknown(),
+    captured: z.boolean(),
+    deterministic_viewport: z.unknown().optional(),
+    error: z.unknown().optional(),
+    image_base64: z.unknown().optional(),
+    image_dimensions: z.unknown().optional(),
+    mime_type: z.unknown(),
+    project_id: z.unknown().optional(),
+    selection_overlays_removed: z.unknown().optional(),
+    sheet: z.unknown().optional(),
+    sheet_to_image_transform: z.unknown().optional(),
+    viewport: z.unknown().optional(),
+    warnings: z.unknown().optional(),
+  })
+  .catchall(z.unknown());
 const exportBase = {
   projectId: z.string().min(1),
   filePath: z.string().min(1),
@@ -111,20 +131,30 @@ const exportRequestSchema = z
     arguments: z.object(exportBase).strict(),
   })
   .strict();
+const dsnExportPayloadSchema = z
+  .object({
+    base64: z.unknown(),
+    byteLength: z.unknown(),
+    document: z.record(z.string(), z.unknown()),
+    kind: z.literal('pcb-dsn'),
+    ok: z.literal(true),
+    project: z.record(z.string(), z.unknown()),
+  })
+  .catchall(z.unknown());
 const checkpointRequestSchema = z.discriminatedUnion('action', [
   z
     .object({
       action: z.literal('create'),
       source: z.string().min(1),
       outputDir: z.string().min(1),
-      label: z.string().regex(/^[a-z0-9][a-z0-9._-]{0,53}$/i),
+      label: z.string().regex(/^[a-z0-9][a-z0-9._-]{0,53}$/iu),
     })
     .strict(),
   z.object({ action: z.literal('verify'), receiptPath: z.string().min(1) }).strict(),
 ]);
-const operationIdSchema = z.string().regex(/^[a-z0-9][a-z0-9-]{7,95}$/i);
-const planHashSchema = z.string().regex(/^[a-f0-9]{64}$/);
-const sha256Schema = z.string().regex(/^[a-f0-9]{64}$/i);
+const operationIdSchema = z.string().regex(/^[a-z0-9][a-z0-9-]{7,95}$/iu);
+const planHashSchema = z.string().regex(/^[a-f0-9]{64}$/u);
+const sha256Schema = z.string().regex(/^[a-f0-9]{64}$/iu);
 const installedBundleAvailableSchema = z
   .object({
     available: z.literal(true),
@@ -147,12 +177,6 @@ const installedBundleAvailableSchema = z
         declarationsSha256: sha256Schema,
       })
       .catchall(z.unknown()),
-  })
-  .catchall(z.unknown());
-const installedBundleUnavailableSchema = z
-  .object({
-    available: z.literal(false),
-    error: z.object({ message: z.string().min(1) }).catchall(z.unknown()),
   })
   .catchall(z.unknown());
 const expectedFingerprintBaseShape = {
@@ -355,7 +379,7 @@ const assertionSchema = z.discriminatedUnion('op', [
 ]);
 const typedCallSpecSchema = z
   .object({
-    toolName: z.string().min(1).regex(/^(?!easyeda_execute$).+/),
+    toolName: z.string().min(1).regex(/^(?!easyeda_execute$).+/u),
     arguments: recordSchema.default({}),
     assertions: z.array(assertionSchema).max(100).default([]),
   })
@@ -364,14 +388,14 @@ const checkpointCreateSchema = z
   .object({
     source: z.string().min(1),
     outputDir: z.string().min(1),
-    label: z.string().regex(/^[a-z0-9][a-z0-9._-]{0,53}$/i),
+    label: z.string().regex(/^[a-z0-9][a-z0-9._-]{0,53}$/iu),
   })
   .strict();
 const operationPlanCommonShape = {
   name: z.string().min(4).max(120),
   intent: z.string().min(12).max(1000),
   targetPrimitiveIds: z
-    .array(z.string().min(1).max(160).regex(/^[A-Za-z0-9._:-]+$/))
+    .array(z.string().min(1).max(160).regex(/^[A-Za-z0-9._:-]+$/u))
     .length(1)
     .refine((values) => new Set(values).size === values.length, {
       message: 'targetPrimitiveIds must be unique.',
@@ -380,8 +404,8 @@ const operationPlanCommonShape = {
     .array(
       z
         .object({
-          primitiveId: z.string().min(1).max(160).regex(/^[A-Za-z0-9._:-]+$/),
-          pointer: z.string().min(2).max(512).regex(/^\/(?!primitiveId(?:\/|$)).+/),
+          primitiveId: z.string().min(1).max(160).regex(/^[A-Za-z0-9._:-]+$/u),
+          pointer: z.string().min(2).max(512).regex(/^\/(?!primitiveId(?:\/|$)).+/u),
           before: assertionValueSchema,
           after: assertionValueSchema,
         })
@@ -407,17 +431,105 @@ const operationPlanSchema = z
   })
   .strict();
 
-function jsonSafe(value) {
-  const text = JSON.stringify(value, (_key, item) =>
-      typeof item === 'bigint' ? item.toString() : item,
-    );
-  return text === undefined ? null : JSON.parse(text);
+type JsonPrimitive = boolean | null | number | string;
+type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
+type FacadeHandler<Input> = (input: Input) => unknown;
+type EvidencePaths = z.infer<typeof evidenceSchema>;
+type EvidenceReservation = Awaited<ReturnType<typeof reserveEvidencePaths>>;
+type ExpectedContext = z.infer<typeof contextSchema>;
+
+interface FullPageCapturePayload {
+  readonly image_dimensions: Record<string, unknown>;
+  readonly selection_overlays_removed: true;
+  readonly sheet: Record<string, unknown>;
+  readonly sheet_to_image_transform: Record<string, unknown>;
+  readonly viewport: Record<string, unknown>;
+  readonly warnings: unknown;
 }
 
-function success(value) {
+interface PngDimensions {
+  readonly height: number;
+  readonly width: number;
+}
+
+interface ImageBlock {
+  readonly data: string;
+  readonly mimeType: string;
+  readonly type: 'image';
+}
+
+function isImageBlock(value: unknown): value is ImageBlock {
+  return (
+    isRecord(value) &&
+    value['type'] === 'image' &&
+    typeof value['data'] === 'string' &&
+    typeof value['mimeType'] === 'string'
+  );
+}
+
+interface EvidenceAttachment {
+  readonly bytes?: number;
+  readonly kind: string;
+  readonly path: string;
+  readonly sha256?: string;
+}
+
+interface EvidenceOptions {
+  readonly attachments?: EvidenceAttachment[];
+  readonly maxInlineBytes?: number;
+  readonly reservation?: EvidenceReservation | undefined;
+  readonly returnMode?: 'full' | 'receipt-only' | 'summary';
+}
+
+interface SerializedGuardOptions {
+  readonly allowDuringOrphanRisk?: boolean;
+}
+
+interface FacadeToolConfig<InputArgs extends z.ZodRawShape> {
+  readonly annotations?: ToolAnnotations;
+  readonly description?: string;
+  readonly inputSchema: InputArgs;
+  readonly title?: string;
+}
+
+function isJsonValue(value: unknown): value is JsonValue {
+  if (
+    value === null ||
+    typeof value === 'boolean' ||
+    typeof value === 'number' ||
+    typeof value === 'string'
+  ) {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.every((item) => isJsonValue(item));
+  }
+  return (
+    isRecord(value) &&
+    Object.values(value).every((item) => isJsonValue(item))
+  );
+}
+
+function jsonSafe(value: unknown): JsonValue {
+  const text = JSON.stringify(
+    value,
+    (_key: string, item: unknown): unknown =>
+      typeof item === 'bigint' ? item.toString() : item,
+  );
+  if (text === undefined) return null;
+  const parsed: unknown = JSON.parse(text);
+  if (!isJsonValue(parsed)) {
+    throw new TypeError('JSON serialization produced a non-JSON value.');
+  }
+  return parsed;
+}
+
+function success(value: unknown): CallToolResult {
   const safe = jsonSafe(value);
   const structuredContent =
-    safe && typeof safe === 'object' && !Array.isArray(safe) ? safe : { value: safe };
+    safe !== null && typeof safe === 'object' && !Array.isArray(safe)
+      ? safe
+      : { value: safe };
   const encoded = JSON.stringify(structuredContent);
   const jsonBytes = Buffer.byteLength(encoded);
   if (jsonBytes > 512 * 1024) {
@@ -441,26 +553,27 @@ function success(value) {
   };
 }
 
-function failure(error) {
+function failure(error: unknown): CallToolResult {
+  const errorRecord = isRecord(error) ? error : {};
   const details = {
     ok: false,
     error: {
-      name: error?.name ?? 'Error',
-      message: error?.message ?? String(error),
-      mismatches: error?.mismatches,
-      assertionResults: error?.assertionResults,
-      blockingOperations: error?.blockingOperations,
+      name: errorRecord['name'] ?? 'Error',
+      message: errorRecord['message'] ?? String(error),
+      mismatches: errorRecord['mismatches'],
+      assertionResults: errorRecord['assertionResults'],
+      blockingOperations: errorRecord['blockingOperations'],
     },
   };
   return {
     isError: true,
     content: [{ type: 'text', text: JSON.stringify(details, null, 2) }],
-    structuredContent: jsonSafe(details),
+    structuredContent: details,
   };
 }
 
-function guarded(handler) {
-  return async (input) => {
+function guarded<Input>(handler: FacadeHandler<Input>): (input: Input) => Promise<CallToolResult> {
+  return async (input: Input): Promise<CallToolResult> => {
     try {
       return success(await handler(input));
     } catch (error) {
@@ -469,9 +582,12 @@ function guarded(handler) {
   };
 }
 
-function serializedGuarded(handler, options = {}) {
-  return guarded(async (input) =>
-    await bridgeGate.run(async () => {
+function serializedGuarded<Input>(
+  handler: FacadeHandler<Input>,
+  options: SerializedGuardOptions = {},
+): (input: Input) => Promise<CallToolResult> {
+  return guarded((input) =>
+    bridgeGate.run(async () => {
       if (options.allowDuringOrphanRisk !== true) {
         await engine.assertBridgeDispatchAllowed();
       }
@@ -480,7 +596,10 @@ function serializedGuarded(handler, options = {}) {
   );
 }
 
-async function callReadOnly(upstreamTool, args) {
+async function callReadOnly(
+  upstreamTool: string,
+  args: Record<string, unknown>,
+): Promise<unknown> {
   if (UI_MUTATING_READ_NAMES.has(upstreamTool)) {
     throw new Error(
       `${upstreamTool} is excluded from generic reads because its upstream handler can change the viewport or selection.`,
@@ -514,17 +633,29 @@ async function callReadOnly(upstreamTool, args) {
   return extractToolPayload(await upstream.callTool(upstreamTool, args ?? {}));
 }
 
-function resultSummary(result) {
+function resultSummary(result: unknown): {
+  readonly jsonBytes: number;
+  readonly kind: string;
+  readonly keyCount?: number;
+  readonly keys?: string[];
+  readonly length?: number;
+  readonly sha256: string;
+} {
   const json = JSON.stringify(jsonSafe(result));
   const value = Array.isArray(result)
     ? { kind: 'array', length: result.length }
-    : result && typeof result === 'object'
+    : result !== null && typeof result === 'object'
       ? { kind: 'object', keys: Object.keys(result).slice(0, 40), keyCount: Object.keys(result).length }
       : { kind: typeof result };
   return { ...value, jsonBytes: Buffer.byteLength(json), sha256: sha256Text(json) };
 }
 
-function assertTargetArguments(args, expectedContext, activeContext, label) {
+function assertTargetArguments(
+  args: Record<string, unknown>,
+  expectedContext: ExpectedContext,
+  activeContext: ExpectedContext,
+  label: string,
+): void {
   const expectedProjectUuid =
     expectedContext.project.uuid ?? expectedContext.project.projectUuid;
   const expectedDocumentUuid =
@@ -539,15 +670,15 @@ function assertTargetArguments(args, expectedContext, activeContext, label) {
       throw new Error(`${label} arguments.${key} does not match the proven document UUID.`);
     }
   }
-  if (args.tabId !== undefined && args.tabId !== activeContext.document.tabId) {
+  if (args['tabId'] !== undefined && args['tabId'] !== activeContext.document.tabId) {
     throw new Error(`${label} arguments.tabId does not match the active proven tab.`);
   }
 }
 
-function assertToolFamilyContext(upstreamTool, activeContext) {
-  const requiredDocumentType = /^easyeda_(schematic|bom)_/i.test(upstreamTool)
+function assertToolFamilyContext(upstreamTool: string, activeContext: ExpectedContext): void {
+  const requiredDocumentType = /^easyeda_(schematic|bom)_/iu.test(upstreamTool)
     ? 1
-    : /^easyeda_(pcb|board)_/i.test(upstreamTool)
+    : /^easyeda_(pcb|board)_/iu.test(upstreamTool)
       ? 3
       : undefined;
   if (
@@ -560,23 +691,28 @@ function assertToolFamilyContext(upstreamTool, activeContext) {
   }
 }
 
-function requiredExportDocumentType(upstreamTool, args) {
+function requiredExportDocumentType(upstreamTool: string): 3 {
   if (upstreamTool === 'easyeda_pcb_export_route_context') return 3;
   throw new Error(`No reviewed document binding exists for exporter ${upstreamTool}.`);
 }
 
 async function withEvidence(
-  request,
-  result,
-  evidence,
-  metadata = {},
-  { reservation, returnMode = 'full', maxInlineBytes = 65536, attachments = [] } = {},
-) {
+  request: unknown,
+  result: unknown,
+  evidence: EvidencePaths | undefined,
+  metadata: Record<string, unknown> = {},
+  {
+    reservation,
+    returnMode = 'full',
+    maxInlineBytes = 65536,
+    attachments = [],
+  }: EvidenceOptions = {},
+): Promise<unknown> {
   let receipt;
-  if (evidence || reservation) {
+  if (evidence !== undefined || reservation !== undefined) {
     receipt = await archiveExternalEvidence({
-      evidence,
-      reservation,
+      ...(evidence === undefined ? {} : { evidence }),
+      ...(reservation === undefined ? {} : { reservation }),
       request,
       result,
       metadata,
@@ -585,16 +721,22 @@ async function withEvidence(
   }
   const summary = resultSummary(result);
   if (returnMode === 'receipt-only') {
-    if (!receipt) throw new Error('receipt-only mode requires reserved evidence paths.');
+    if (receipt === undefined) {
+      throw new Error('receipt-only mode requires reserved evidence paths.');
+    }
     return { summary, evidence: receipt };
   }
   if (returnMode === 'summary') {
-    if (!receipt) throw new Error('summary mode requires reserved evidence paths.');
+    if (receipt === undefined) {
+      throw new Error('summary mode requires reserved evidence paths.');
+    }
     return { summary, evidence: receipt };
   }
-  const limit = Math.min(MAX_INLINE_RESULT_BYTES, Number(maxInlineBytes));
+  const limit = Math.min(MAX_INLINE_RESULT_BYTES, maxInlineBytes);
   if (summary.jsonBytes > limit) {
-    if (receipt) return { summary, evidence: receipt, inlineResultOmitted: true };
+    if (receipt !== undefined) {
+      return { summary, evidence: receipt, inlineResultOmitted: true };
+    }
     throw new Error(
       `Full result is ${summary.jsonBytes} bytes, above the ${limit}-byte inline limit. Provide fresh evidence paths and use returnMode=receipt-only.`,
     );
@@ -603,13 +745,14 @@ async function withEvidence(
 }
 
 async function finalizeDispatchedFailure(
-  reservation,
-  request,
-  error,
-  metadata = {},
-  attachments = [],
-) {
-  if (!reservation) return;
+  reservation: EvidenceReservation | undefined,
+  request: unknown,
+  error: unknown,
+  metadata: Record<string, unknown> = {},
+  attachments: EvidenceAttachment[] = [],
+): Promise<unknown> {
+  if (reservation === undefined) return undefined;
+  const errorRecord = isRecord(error) ? error : {};
   try {
     return await archiveExternalEvidence({
       reservation,
@@ -617,7 +760,10 @@ async function finalizeDispatchedFailure(
       result: {
         ok: false,
         outcome: 'dispatched-but-not-proven',
-        error: { name: error?.name ?? 'Error', message: error?.message ?? String(error) },
+        error: {
+          name: errorRecord['name'] ?? 'Error',
+          message: errorRecord['message'] ?? String(error),
+        },
       },
       metadata: { facadeVersion: CONTROL_VERSION, ...metadata },
       attachments,
@@ -625,18 +771,44 @@ async function finalizeDispatchedFailure(
   } catch (archiveError) {
     throw new AggregateError(
       [error, archiveError],
-      'The EasyEDA call failed and its reserved failure evidence could not be finalized.',
+      'The EasyEDA call failed and its reserved failure evidence could not be finalized.', { cause: archiveError },
     );
   }
 }
 
-async function sha256File(path) {
+async function sha256File(path: string): Promise<string> {
   const hash = createHash('sha256');
-  for await (const chunk of createReadStream(path)) hash.update(chunk);
+  for await (const streamChunk of createReadStream(path)) {
+    const chunk: unknown = streamChunk;
+    if (!Buffer.isBuffer(chunk)) {
+      throw new TypeError(`Expected a binary stream while hashing ${path}.`);
+    }
+    hash.update(chunk);
+  }
   return hash.digest('hex');
 }
 
-async function writeDurableExclusive(path, bytes) {
+function crc32(...buffers: readonly Buffer[]): number {
+  let crc = 0xffffffff;
+  for (const buffer of buffers) {
+    for (const byte of buffer) {
+      crc ^= byte;
+      for (let bit = 0; bit < 8; bit += 1) {
+        crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+      }
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function nearlyEqual(actual: number, expected: number): boolean {
+  return (
+    Math.abs(actual - expected) <=
+    Number.EPSILON * 8 * Math.max(1, Math.abs(actual), Math.abs(expected))
+  );
+}
+
+async function writeDurableExclusive(path: string, bytes: Uint8Array): Promise<void> {
   let handle;
   let created = false;
   try {
@@ -645,7 +817,7 @@ async function writeDurableExclusive(path, bytes) {
     await handle.writeFile(bytes);
     await handle.sync();
   } finally {
-    await handle?.close().catch(() => undefined);
+    await handle?.close().catch(() => {});
     if (created) {
       const directoryHandle = await open(dirname(path), 'r');
       try {
@@ -657,32 +829,26 @@ async function writeDurableExclusive(path, bytes) {
   }
 }
 
-function readPngDimensions(bytes) {
+function readPngDimensions(bytes: Buffer): PngDimensions {
   const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
   if (bytes.length < 45 || !bytes.subarray(0, signature.length).equals(signature)) {
     throw new Error('Canvas capture PNG is missing its signature or complete chunk structure.');
   }
 
-  const crc32 = (...buffers) => {
-    let crc = 0xffffffff;
-    for (const buffer of buffers) {
-      for (const byte of buffer) {
-        crc ^= byte;
-        for (let bit = 0; bit < 8; bit += 1) {
-          crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
-        }
-      }
-    }
-    return (crc ^ 0xffffffff) >>> 0;
-  };
-
   let offset = signature.length;
-  let ihdr;
+  let ihdr:
+    | {
+        readonly bitDepth: number;
+        readonly colorType: number;
+        readonly height: number;
+        readonly width: number;
+      }
+    | undefined;
   let seenPalette = false;
   let seenIdat = false;
   let idatEnded = false;
   let seenIend = false;
-  const idatParts = [];
+  const idatParts: Buffer[] = [];
   while (offset < bytes.length) {
     if (offset + 12 > bytes.length) {
       throw new Error('Canvas capture PNG contains a truncated chunk header.');
@@ -694,7 +860,7 @@ function readPngDimensions(bytes) {
     }
     const typeBytes = bytes.subarray(offset + 4, offset + 8);
     const type = typeBytes.toString('ascii');
-    if (!/^[A-Za-z]{4}$/.test(type)) {
+    if (!/^[A-Za-z]{4}$/u.test(type)) {
       throw new Error('Canvas capture PNG contains an invalid chunk type.');
     }
     const data = bytes.subarray(offset + 8, offset + 8 + length);
@@ -718,7 +884,7 @@ function readPngDimensions(bytes) {
       const compression = data[10];
       const filter = data[11];
       const interlace = data[12];
-      const validDepths = {
+      const validDepths: Partial<Record<number, ReadonlySet<number>>> = {
         0: new Set([1, 2, 4, 8, 16]),
         2: new Set([8, 16]),
         3: new Set([1, 2, 4, 8]),
@@ -728,7 +894,9 @@ function readPngDimensions(bytes) {
       if (
         width < 1 ||
         height < 1 ||
-        !validDepths[colorType]?.has(bitDepth) ||
+        bitDepth === undefined ||
+        colorType === undefined ||
+        validDepths[colorType]?.has(bitDepth) !== true ||
         compression !== 0 ||
         filter !== 0 ||
         interlace !== 0
@@ -739,13 +907,15 @@ function readPngDimensions(bytes) {
       }
       ihdr = { width, height, bitDepth, colorType };
     } else if (type === 'PLTE') {
+      const header = ihdr;
+      if (!header) throw new Error('Canvas capture PNG is missing IHDR.');
       if (seenPalette || seenIdat || length < 3 || length > 768 || length % 3 !== 0) {
         throw new Error('Canvas capture PNG contains an invalid PLTE chunk.');
       }
-      if ([0, 4].includes(ihdr.colorType)) {
+      if ([0, 4].includes(header.colorType)) {
         throw new Error('Canvas capture PNG contains a forbidden PLTE chunk.');
       }
-      if (ihdr.colorType === 3 && length / 3 > 2 ** ihdr.bitDepth) {
+      if (header.colorType === 3 && length / 3 > 2 ** header.bitDepth) {
         throw new Error('Canvas capture PNG palette exceeds its indexed-color bit depth.');
       }
       seenPalette = true;
@@ -760,7 +930,8 @@ function readPngDimensions(bytes) {
       seenIend = true;
     } else {
       if (seenIdat) idatEnded = true;
-      if (type[0] === type[0].toUpperCase()) {
+      const firstTypeCharacter = type[0];
+      if (firstTypeCharacter !== undefined && firstTypeCharacter === firstTypeCharacter.toUpperCase()) {
         throw new Error(`Canvas capture PNG contains unsupported critical chunk ${type}.`);
       }
     }
@@ -773,7 +944,16 @@ function readPngDimensions(bytes) {
     throw new Error('Canvas capture indexed PNG is missing PLTE.');
   }
 
-  const channels = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 }[ihdr.colorType];
+  const channels: number | undefined = new Map<number, number>([
+    [0, 1],
+    [2, 3],
+    [3, 1],
+    [4, 2],
+    [6, 4],
+  ]).get(ihdr.colorType);
+  if (channels === undefined) {
+    throw new Error('Canvas capture PNG has an unsupported color type.');
+  }
   const scanlineBytes = Math.ceil((ihdr.width * channels * ihdr.bitDepth) / 8);
   const decodedBytes = ihdr.height * (scanlineBytes + 1);
   if (!Number.isSafeInteger(decodedBytes) || decodedBytes > 512 * 1024 * 1024) {
@@ -783,129 +963,175 @@ function readPngDimensions(bytes) {
   try {
     decoded = inflateSync(Buffer.concat(idatParts), { maxOutputLength: decodedBytes });
   } catch (error) {
-    throw new Error(`Canvas capture PNG IDAT stream is invalid: ${error.message}`);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Canvas capture PNG IDAT stream is invalid: ${message}`, { cause: error });
   }
   if (decoded.length !== decodedBytes) {
     throw new Error('Canvas capture PNG decoded byte length does not match IHDR.');
   }
   for (let row = 0; row < ihdr.height; row += 1) {
-    if (decoded[row * (scanlineBytes + 1)] > 4) {
+    const filterByte = decoded[row * (scanlineBytes + 1)];
+    if (filterByte === undefined || filterByte > 4) {
       throw new Error('Canvas capture PNG contains an invalid scanline filter.');
     }
   }
   return { width: ihdr.width, height: ihdr.height };
 }
 
-function assertExactObjectKeys(value, expectedKeys, label) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error(`${label} must be an object.`);
+function assertExactObjectKeys(
+  value: object,
+  expectedKeys: readonly string[],
+  label: string,
+): void {
+  if (Array.isArray(value)) {
+    throw new TypeError(`${label} must be an object.`);
   }
-  const actual = Object.keys(value).sort();
-  const expected = [...expectedKeys].sort();
+  const actual = Object.keys(value).toSorted();
+  const expected = [...expectedKeys].toSorted();
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
     throw new Error(`${label} has unexpected or missing fields.`);
   }
 }
 
-function assertFiniteCaptureFields(value, fields, label) {
+function assertFiniteCaptureFields<Field extends string>(
+  value: Record<string, unknown>,
+  fields: readonly Field[],
+  label: string,
+): asserts value is Record<string, unknown> & Record<Field, number> {
   for (const field of fields) {
     if (typeof value[field] !== 'number' || !Number.isFinite(value[field])) {
-      throw new Error(`${label}.${field} must be a finite number.`);
+      throw new TypeError(`${label}.${field} must be a finite number.`);
     }
   }
 }
 
-function validateFullPageCaptureGeometry(payload, padding, pngDimensions) {
-  assertExactObjectKeys(payload.sheet, ['width', 'height', 'unit', 'source'], 'Capture sheet');
-  assertFiniteCaptureFields(payload.sheet, ['width', 'height'], 'Capture sheet');
+function requireFullPageCapturePayload(
+  payload: Record<string, unknown>,
+): FullPageCapturePayload {
+  const sheet = payload['sheet'];
+  const viewport = payload['viewport'];
+  const imageDimensions = payload['image_dimensions'];
+  const transform = payload['sheet_to_image_transform'];
   if (
-    payload.sheet.width <= 0 ||
-    payload.sheet.height <= 0 ||
-    typeof payload.sheet.unit !== 'string' ||
-    payload.sheet.unit.length === 0 ||
-    !['sheet-info', 'default-a4-landscape'].includes(payload.sheet.source)
+    !isRecord(sheet) ||
+    !isRecord(viewport) ||
+    !isRecord(imageDimensions) ||
+    !isRecord(transform) ||
+    payload['selection_overlays_removed'] !== true
+  ) {
+    throw new Error(
+      'Full-page capture did not return complete sheet, viewport, transform, dimensions, and cleared-selection evidence.',
+    );
+  }
+  return {
+    image_dimensions: imageDimensions,
+    selection_overlays_removed: true,
+    sheet,
+    sheet_to_image_transform: transform,
+    viewport,
+    warnings: payload['warnings'],
+  };
+}
+
+function validateFullPageCaptureGeometry(
+  payload: FullPageCapturePayload,
+  padding: number,
+  pngDimensions: PngDimensions,
+): void {
+  const sheet = payload.sheet;
+  const viewport = payload.viewport;
+  const imageDimensions = payload.image_dimensions;
+  const transform = payload.sheet_to_image_transform;
+  assertExactObjectKeys(sheet, ['width', 'height', 'unit', 'source'], 'Capture sheet');
+  assertFiniteCaptureFields(sheet, ['width', 'height'], 'Capture sheet');
+  if (
+    sheet['width'] <= 0 ||
+    sheet['height'] <= 0 ||
+    typeof sheet['unit'] !== 'string' ||
+    sheet['unit'].length === 0 ||
+    typeof sheet['source'] !== 'string' ||
+    !['sheet-info', 'default-a4-landscape'].includes(sheet['source'])
   ) {
     throw new Error('Capture sheet has invalid dimensions, unit, or source.');
   }
   assertExactObjectKeys(
-    payload.viewport,
+    viewport,
     ['left', 'right', 'top', 'bottom'],
     'Capture viewport',
   );
   assertFiniteCaptureFields(
-    payload.viewport,
+    viewport,
     ['left', 'right', 'top', 'bottom'],
     'Capture viewport',
   );
   assertExactObjectKeys(
-    payload.image_dimensions,
+    imageDimensions,
     ['width', 'height'],
     'Capture image dimensions',
   );
   if (
-    !Number.isSafeInteger(payload.image_dimensions.width) ||
-    payload.image_dimensions.width <= 0 ||
-    !Number.isSafeInteger(payload.image_dimensions.height) ||
-    payload.image_dimensions.height <= 0
+    typeof imageDimensions['width'] !== 'number' ||
+    !Number.isSafeInteger(imageDimensions['width']) ||
+    imageDimensions['width'] <= 0 ||
+    typeof imageDimensions['height'] !== 'number' ||
+    !Number.isSafeInteger(imageDimensions['height']) ||
+    imageDimensions['height'] <= 0
   ) {
     throw new Error('Capture image dimensions must be positive safe integers.');
   }
   assertExactObjectKeys(
-    payload.sheet_to_image_transform,
+    transform,
     ['scale_x', 'scale_y', 'offset_x', 'offset_y'],
     'Capture sheet-to-image transform',
   );
   assertFiniteCaptureFields(
-    payload.sheet_to_image_transform,
+    transform,
     ['scale_x', 'scale_y', 'offset_x', 'offset_y'],
     'Capture sheet-to-image transform',
   );
   if (
     !Array.isArray(payload.warnings) ||
-    payload.warnings.some((warning) => typeof warning !== 'string')
+    payload.warnings.some((warning: unknown) => typeof warning !== 'string')
   ) {
     throw new Error('Full-page capture warnings must be an array of strings.');
   }
 
   const expectedViewport = {
     left: -padding,
-    right: payload.sheet.width + padding,
-    top: payload.sheet.height + padding,
+    right: sheet['width'] + padding,
+    top: sheet['height'] + padding,
     bottom: -padding,
   };
-  for (const field of ['left', 'right', 'top', 'bottom']) {
-    if (payload.viewport[field] !== expectedViewport[field]) {
+  for (const field of ['left', 'right', 'top', 'bottom'] as const) {
+    if (viewport[field] !== expectedViewport[field]) {
       throw new Error('Full-page capture viewport contradicts the sheet dimensions and padding.');
     }
   }
-  const regionWidth = payload.viewport.right - payload.viewport.left;
-  const regionHeight = payload.viewport.top - payload.viewport.bottom;
+  const regionWidth = viewport['right'] - viewport['left'];
+  const regionHeight = viewport['top'] - viewport['bottom'];
   if (regionWidth <= 0 || regionHeight <= 0) {
     throw new Error('Full-page capture viewport spans must be positive.');
   }
   if (
-    payload.image_dimensions.width !== pngDimensions.width ||
-    payload.image_dimensions.height !== pngDimensions.height
+    imageDimensions['width'] !== pngDimensions.width ||
+    imageDimensions['height'] !== pngDimensions.height
   ) {
     throw new Error('Full-page capture dimensions do not match the PNG IHDR.');
   }
   const expectedTransform = {
     scale_x: pngDimensions.width / regionWidth,
     scale_y: -pngDimensions.height / regionHeight,
-    offset_x: -payload.viewport.left * (pngDimensions.width / regionWidth),
-    offset_y: payload.viewport.top * (pngDimensions.height / regionHeight),
+    offset_x: -viewport['left'] * (pngDimensions.width / regionWidth),
+    offset_y: viewport['top'] * (pngDimensions.height / regionHeight),
   };
-  const nearlyEqual = (actual, expected) =>
-    Math.abs(actual - expected) <=
-    Number.EPSILON * 8 * Math.max(1, Math.abs(actual), Math.abs(expected));
-  for (const field of ['scale_x', 'scale_y', 'offset_x', 'offset_y']) {
-    if (!nearlyEqual(payload.sheet_to_image_transform[field], expectedTransform[field])) {
+  for (const field of ['scale_x', 'scale_y', 'offset_x', 'offset_y'] as const) {
+    if (!nearlyEqual(transform[field], expectedTransform[field])) {
       throw new Error('Full-page capture transform contradicts its viewport and PNG dimensions.');
     }
   }
   if (
-    payload.sheet_to_image_transform.scale_x <= 0 ||
-    payload.sheet_to_image_transform.scale_y >= 0
+    transform['scale_x'] <= 0 ||
+    transform['scale_y'] >= 0
   ) {
     throw new Error('Full-page capture transform has invalid axis direction.');
   }
@@ -920,8 +1146,13 @@ const server = new McpServer(
   },
 );
 
-const registerFacadeTool = (name, config, handler) =>
+function registerFacadeTool<InputArgs extends z.ZodRawShape>(
+  name: string,
+  config: FacadeToolConfig<InputArgs>,
+  handler: ToolCallback<InputArgs>,
+): void {
   server.registerTool(name, { outputSchema: genericOutputSchema, ...config }, handler);
+}
 
 registerFacadeTool(
   'easyeda_control_status',
@@ -973,7 +1204,7 @@ registerFacadeTool(
     inputSchema: {},
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
   },
-  serializedGuarded(async () => await engine.context()),
+  serializedGuarded(() => engine.context()),
 );
 
 registerFacadeTool(
@@ -993,10 +1224,13 @@ registerFacadeTool(
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
   },
   serializedGuarded(async (input) => {
-    if (input.returnMode !== 'full' && !input.evidence) {
+    if (input.returnMode !== 'full' && input.evidence === undefined) {
       throw new Error('summary and receipt-only exact reads require evidence paths.');
     }
-    const reservation = input.evidence ? await reserveEvidencePaths(input.evidence) : undefined;
+    const reservation =
+      input.evidence === undefined
+        ? undefined
+        : await reserveEvidencePaths(input.evidence);
     let dispatched = false;
     const request = {
       reader: input.request,
@@ -1054,10 +1288,13 @@ registerFacadeTool(
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
   },
   serializedGuarded(async (input) => {
-    if (input.returnMode !== 'full' && !input.evidence) {
+    if (input.returnMode !== 'full' && input.evidence === undefined) {
       throw new Error('summary and receipt-only reads require evidence paths.');
     }
-    const reservation = input.evidence ? await reserveEvidencePaths(input.evidence) : undefined;
+    const reservation =
+      input.evidence === undefined
+        ? undefined
+        : await reserveEvidencePaths(input.evidence);
     let dispatched = false;
     const request = {
       upstreamTool: input.upstreamTool,
@@ -1129,10 +1366,13 @@ registerFacadeTool(
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
   },
   serializedGuarded(async (input) => {
-    if (input.returnMode !== 'full' && !input.evidence) {
+    if (input.returnMode !== 'full' && input.evidence === undefined) {
       throw new Error('summary and receipt-only batches require evidence paths.');
     }
-    const reservation = input.evidence ? await reserveEvidencePaths(input.evidence) : undefined;
+    const reservation =
+      input.evidence === undefined
+        ? undefined
+        : await reserveEvidencePaths(input.evidence);
     let dispatched = false;
     const request = {
       calls: input.calls,
@@ -1195,7 +1435,7 @@ registerFacadeTool(
     inputSchema: {},
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   },
-  serializedGuarded(async () => {
+  serializedGuarded(() => {
     throw new Error(
       'Standalone unrestricted JavaScript is structurally disabled in this release; there is no environment opt-in.',
     );
@@ -1216,13 +1456,15 @@ registerFacadeTool(
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   },
-  async (input) => await bridgeGate.run(async () => {
-    input = { ...input, ...input.request };
+  (input) => bridgeGate.run(async () => {
+    const captureRequest = input.request;
     let reservation;
     let dispatched = false;
     try {
       await engine.assertBridgeDispatchAllowed();
-      if (!CAPTURE_TOOLS.has(input.upstreamTool)) throw new Error('Capture tool is not allowlisted.');
+      if (!CAPTURE_TOOLS.has(captureRequest.upstreamTool)) {
+        throw new Error('Capture tool is not allowlisted.');
+      }
       reservation = await reserveEvidencePaths(input.evidence);
       validateExpectedFingerprint(input.expectedFingerprint);
       const status = await engine.status();
@@ -1235,61 +1477,68 @@ registerFacadeTool(
       const expectedProjectUuid =
         input.expectedContext.project.uuid ?? input.expectedContext.project.projectUuid;
       if (
-        input.upstreamTool === 'easyeda_schematic_capture_full_page' &&
+        captureRequest.upstreamTool === 'easyeda_schematic_capture_full_page' &&
         activeContext.document.documentType !== 1
       ) {
         throw new Error('A full-page schematic capture requires an active schematic document.');
       }
       if (
-        input.arguments.projectId !== undefined &&
-        input.arguments.projectId !== expectedProjectUuid
+        'projectId' in captureRequest.arguments &&
+        captureRequest.arguments.projectId !== expectedProjectUuid
       ) {
         throw new Error('Capture arguments.projectId must equal the proven project UUID.');
       }
       if (
         typeof activeContext.document.tabId !== 'string' ||
         activeContext.document.tabId.length === 0 ||
-        input.arguments.tabId !== activeContext.document.tabId
+        captureRequest.arguments.tabId !== activeContext.document.tabId
       ) {
         throw new Error('Capture requires arguments.tabId equal to the active proven tab id.');
       }
       dispatched = true;
-      const raw = await upstream.callTool(input.upstreamTool, input.arguments, 70000);
-      const payload = extractToolPayload(raw);
-      if (payload?.captured !== true) {
-        throw new Error(`Canvas capture failed: ${payload?.error ?? 'unknown reason'}`);
+      const raw = await upstream.callTool(
+        captureRequest.upstreamTool,
+        captureRequest.arguments,
+        70000,
+      );
+      const extractedPayload = extractToolPayload(raw);
+      if (!isRecord(extractedPayload)) {
+        throw new Error('Canvas capture returned a non-object payload.');
       }
-      if (input.upstreamTool === 'easyeda_schematic_capture_full_page') {
+      if (extractedPayload['captured'] !== true) {
+        const captureError = extractedPayload['error'];
+        const reason =
+          typeof captureError === 'string'
+            ? captureError
+            : captureError === undefined
+              ? 'unknown reason'
+              : JSON.stringify(jsonSafe(captureError));
+        throw new Error(`Canvas capture failed: ${reason}`);
+      }
+      const payload = capturePayloadSchema.parse(extractedPayload);
+      if (captureRequest.upstreamTool === 'easyeda_schematic_capture_full_page') {
         if (payload.project_id !== expectedProjectUuid) {
           throw new Error('Full-page capture result.project_id does not match the proven project.');
         }
         if (
-          input.arguments.allowInferredA4 !== true &&
+          !
+          captureRequest.arguments.allowInferredA4 &&
           payload.deterministic_viewport !== true
         ) {
           throw new Error(
             'Full-page capture did not prove runtime sheet geometry; inferred A4 was not authorized.',
           );
         }
+        const fullPagePayload = requireFullPageCapturePayload(payload);
         if (
           payload.deterministic_viewport === true &&
-          payload.sheet?.source !== 'sheet-info'
+          fullPagePayload.sheet['source'] !== 'sheet-info'
         ) {
           throw new Error('Full-page capture reported contradictory viewport provenance.');
         }
-        if (
-          !payload.sheet ||
-          !payload.viewport ||
-          !payload.image_dimensions ||
-          !payload.sheet_to_image_transform ||
-          payload.selection_overlays_removed !== true
-        ) {
-          throw new Error(
-            'Full-page capture did not return complete sheet, viewport, transform, dimensions, and cleared-selection evidence.',
-          );
-        }
       }
-      const images = (raw.content ?? []).filter((item) => item?.type === 'image');
+      const rawContent = isRecord(raw) && Array.isArray(raw.content) ? raw.content : [];
+      const images = rawContent.filter((item) => isImageBlock(item));
       if (images.length !== 1) {
         throw new Error('Canvas capture must return exactly one MCP image block.');
       }
@@ -1314,15 +1563,20 @@ registerFacadeTool(
         }
         if (Object.hasOwn(payload, 'image_base64')) {
           if (typeof payload.image_base64 !== 'string') {
-            throw new Error('Canvas capture payload image_base64 must be a string when present.');
+            throw new TypeError('Canvas capture payload image_base64 must be a string when present.');
           }
           if (!Buffer.from(payload.image_base64, 'base64').equals(bytes)) {
             throw new Error('Canvas capture payload image bytes do not match its MCP image block.');
           }
         }
         const dimensions = readPngDimensions(bytes);
-        if (input.upstreamTool === 'easyeda_schematic_capture_full_page') {
-          validateFullPageCaptureGeometry(payload, input.arguments.padding, dimensions);
+        if (captureRequest.upstreamTool === 'easyeda_schematic_capture_full_page') {
+          const fullPagePayload = requireFullPageCapturePayload(payload);
+          validateFullPageCaptureGeometry(
+            fullPagePayload,
+            captureRequest.arguments.padding,
+            dimensions,
+          );
         }
         return {
           mimeType: item.mimeType,
@@ -1335,8 +1589,8 @@ registerFacadeTool(
       const evidence = await archiveCaptureEvidence({
         reservation,
         request: {
-          upstreamTool: input.upstreamTool,
-          arguments: input.arguments,
+          upstreamTool: captureRequest.upstreamTool,
+          arguments: captureRequest.arguments,
           expectedContext: input.expectedContext,
           expectedFingerprint: input.expectedFingerprint,
         },
@@ -1344,11 +1598,14 @@ registerFacadeTool(
         images: imageEvidence,
         metadata: { facadeVersion: CONTROL_VERSION, effect: 'viewport-read' },
       });
-      const structuredContent = jsonSafe({
+      const safeStructuredContent = jsonSafe({
         ...capturePayload,
         images: evidence.images,
         evidence,
       });
+      const structuredContent = isRecord(safeStructuredContent)
+        ? safeStructuredContent
+        : { value: safeStructuredContent };
       return {
         content: [
           {
@@ -1366,13 +1623,13 @@ registerFacadeTool(
       };
     } catch (error) {
       if (reservation && !dispatched) {
-        await releaseEvidenceReservation(reservation).catch(() => undefined);
+        await releaseEvidenceReservation(reservation).catch(() => {});
       } else if (reservation) {
         await finalizeDispatchedFailure(
           reservation,
           {
-            upstreamTool: input.upstreamTool,
-            arguments: input.arguments,
+            upstreamTool: captureRequest.upstreamTool,
+            arguments: captureRequest.arguments,
             expectedContext: input.expectedContext,
             expectedFingerprint: input.expectedFingerprint,
           },
@@ -1400,14 +1657,17 @@ registerFacadeTool(
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   },
   serializedGuarded(async (input) => {
-    input = { ...input, ...input.request };
-    if (!EXPORT_TOOLS.has(input.upstreamTool)) throw new Error('Export tool is not allowlisted.');
+    const exportRequest = input.request;
+    if (!EXPORT_TOOLS.has(exportRequest.upstreamTool)) {
+      throw new Error('Export tool is not allowlisted.');
+    }
     const reservation = await reserveEvidencePaths(input.evidence);
     let dispatched = false;
-    let createdExportDirectory;
+    let createdExportDirectory: string | undefined;
+    const requestedPath = resolve(exportRequest.arguments.filePath);
     const request = {
-      upstreamTool: input.upstreamTool,
-      arguments: input.arguments,
+      upstreamTool: exportRequest.upstreamTool,
+      arguments: exportRequest.arguments,
       expectedContext: input.expectedContext,
       expectedFingerprint: input.expectedFingerprint,
     };
@@ -1420,30 +1680,26 @@ registerFacadeTool(
         'EasyEDA runtime fingerprint',
       );
       const activeContext = await engine.assertContext(input.expectedContext);
-      const exportDocumentType = requiredExportDocumentType(
-        input.upstreamTool,
-        input.arguments,
-      );
+      const exportDocumentType = requiredExportDocumentType(exportRequest.upstreamTool);
       if (activeContext.document.documentType !== exportDocumentType) {
         throw new Error(
-          `${input.upstreamTool} requires active document type ${exportDocumentType}; type ${String(activeContext.document.documentType)} cannot be used. PCB 3D preview type 15 is never an export target.`,
+          `${exportRequest.upstreamTool} requires active document type ${exportDocumentType}; type ${String(activeContext.document.documentType)} cannot be used. PCB 3D preview type 15 is never an export target.`,
         );
       }
       const expectedProjectUuid =
         input.expectedContext.project.uuid ?? input.expectedContext.project.projectUuid;
-      if (input.arguments.projectId !== expectedProjectUuid) {
+      if (exportRequest.arguments.projectId !== expectedProjectUuid) {
         throw new Error('Export arguments.projectId must equal the proven project UUID.');
       }
-      if (typeof input.arguments.filePath !== 'string' || !isAbsolute(input.arguments.filePath)) {
+      if (!isAbsolute(exportRequest.arguments.filePath)) {
         throw new Error('Every export requires an explicit absolute arguments.filePath.');
       }
-      const requestedPath = resolve(input.arguments.filePath);
       const exportRoot = resolve(controlDataDirectory(), 'upstream', 'artifacts', 'facade-exports');
       await ensureManagedDirectory(exportRoot);
       const exportDirectory = dirname(requestedPath);
       if (
         dirname(exportDirectory) !== exportRoot ||
-        !/^export-[a-z0-9-]{8,80}$/i.test(basename(exportDirectory)) ||
+        !/^export-[a-z0-9-]{8,80}$/iu.test(basename(exportDirectory)) ||
         relative(exportRoot, requestedPath).startsWith('..')
       ) {
         throw new Error(
@@ -1462,7 +1718,8 @@ registerFacadeTool(
         await stat(requestedPath);
         throw new Error('Export artifact path already exists; refusing overwrite.');
       } catch (error) {
-        if (error?.code !== 'ENOENT') throw error;
+        const errorRecord = isRecord(error) ? error : {};
+        if (errorRecord['code'] !== 'ENOENT') throw error;
       }
       const startedAtMs = Date.now();
       dispatched = true;
@@ -1471,11 +1728,13 @@ registerFacadeTool(
         input.expectedContext,
       );
       const guardedSource = wrapWithContextGuard(source, input.expectedContext);
-      const generated = extractToolPayload(
-        await upstream.callTool(
-          'easyeda_execute',
-          { code: guardedSource, timeoutMs: 60000, confirmWrite: true },
-          70000,
+      const generated = dsnExportPayloadSchema.parse(
+        extractToolPayload(
+          await upstream.callTool(
+            'easyeda_execute',
+            { code: guardedSource, timeoutMs: 60000, confirmWrite: true },
+            70000,
+          ),
         ),
       );
       assertSubset(
@@ -1496,7 +1755,7 @@ registerFacadeTool(
       );
       if (
         typeof generated.base64 !== 'string' ||
-        !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
+        !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(
           generated.base64,
         )
       ) {
@@ -1558,18 +1817,15 @@ registerFacadeTool(
         },
       );
     } catch (error) {
-      if (!dispatched) {
-        await releaseEvidenceReservation(reservation).catch(() => undefined);
-        if (createdExportDirectory) await rmdir(createdExportDirectory).catch(() => undefined);
-      } else {
-        const failureMetadata = {
+      if (dispatched) {
+        const failureMetadata: Record<string, unknown> = {
           effect: 'artifact-write',
           exportDirectory: createdExportDirectory,
         };
-        const failureAttachments = [];
+        const failureAttachments: EvidenceAttachment[] = [];
         try {
           const observed = await inspectManagedFile(requestedPath, 'Failed export artifact');
-          failureMetadata.exportArtifactObserved = {
+          failureMetadata['exportArtifactObserved'] = {
             path: observed.absolute,
             bytes: observed.info.size,
             mtimeMs: observed.info.mtimeMs,
@@ -1579,10 +1835,11 @@ registerFacadeTool(
             path: observed.absolute,
           });
         } catch (inspectionError) {
-          if (inspectionError?.code !== 'ENOENT') {
-            failureMetadata.exportArtifactInspectionError = {
-              name: inspectionError?.name ?? 'Error',
-              message: inspectionError?.message ?? String(inspectionError),
+          const inspectionRecord = isRecord(inspectionError) ? inspectionError : {};
+          if (inspectionRecord['code'] !== 'ENOENT') {
+            failureMetadata['exportArtifactInspectionError'] = {
+              name: inspectionRecord['name'] ?? 'Error',
+              message: inspectionRecord['message'] ?? String(inspectionError),
             };
           }
         }
@@ -1593,6 +1850,11 @@ registerFacadeTool(
           failureMetadata,
           failureAttachments,
         );
+      } else {
+        await releaseEvidenceReservation(reservation).catch(() => {});
+        if (createdExportDirectory !== undefined && createdExportDirectory.length > 0) {
+          await rmdir(createdExportDirectory).catch(() => {});
+        }
       }
       throw error;
     }
@@ -1611,8 +1873,8 @@ registerFacadeTool(
     },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   },
-  serializedGuarded(async ({ plan, confirmDiscardAnyUnsavedState }) =>
-    await engine.plan(plan, { confirmDiscardAnyUnsavedState }),
+  serializedGuarded(({ plan, confirmDiscardAnyUnsavedState }) =>
+    engine.plan(plan, { confirmDiscardAnyUnsavedState }),
   ),
 );
 
@@ -1629,7 +1891,7 @@ registerFacadeTool(
     },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   },
-  serializedGuarded(async (input) => await engine.apply(input.operationId, input.planHash)),
+  serializedGuarded((input) => engine.apply(input.operationId, input.planHash)),
 );
 
 registerFacadeTool(
@@ -1641,7 +1903,7 @@ registerFacadeTool(
     inputSchema: { operationId: operationIdSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   },
-  serializedGuarded(async (input) => await engine.verify(input.operationId)),
+  serializedGuarded((input) => engine.verify(input.operationId)),
 );
 
 registerFacadeTool(
@@ -1657,7 +1919,7 @@ registerFacadeTool(
     },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   },
-  serializedGuarded(async (input) => await engine.rollback(input.operationId, input.planHash)),
+  serializedGuarded((input) => engine.rollback(input.operationId, input.planHash)),
 );
 
 registerFacadeTool(
@@ -1674,8 +1936,8 @@ registerFacadeTool(
     },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   },
-  serializedGuarded(async (input) =>
-    await engine.saveReopen(input.operationId, input.planHash, {
+  serializedGuarded((input) =>
+    engine.saveReopen(input.operationId, input.planHash, {
       confirmDiscardAnyUnsavedState: input.confirmDiscardAnyUnsavedState,
     }),
   ),
@@ -1692,12 +1954,17 @@ registerFacadeTool(
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   },
-  serializedGuarded(async (input) => {
+  serializedGuarded((input) => {
     if (input.request.action === 'verify') {
-      return await engine.checkpoint({ receiptPath: input.request.receiptPath });
+      return engine.checkpoint({ receiptPath: input.request.receiptPath });
     }
-    const { action: ignored, ...create } = input.request;
-    return await engine.checkpoint(checkpointCreateSchema.parse(create));
+    return engine.checkpoint(
+      checkpointCreateSchema.parse({
+        source: input.request.source,
+        outputDir: input.request.outputDir,
+        label: input.request.label,
+      }),
+    );
   }),
 );
 
@@ -1729,16 +1996,22 @@ registerFacadeTool(
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   },
   serializedGuarded(
-    async (input) => {
-      if (!input.operationId) return await engine.recover();
-      if (!input.resolution) throw new Error('resolution is required when operationId is provided.');
+    (input) => {
+      if (input.operationId === undefined || input.operationId.length === 0) {
+        return engine.recover();
+      }
+      if (input.resolution === undefined) {
+        throw new Error('resolution is required when operationId is provided.');
+      }
       if (input.confirmation !== `${input.operationId}:${input.resolution}`) {
         throw new Error('confirmation must exactly equal operationId:resolution.');
       }
-      return await engine.recover(input.operationId, input.resolution, {
+      return engine.recover(input.operationId, input.resolution, {
         confirmDiscardAnyUnsavedState: input.confirmDiscardAnyUnsavedState,
         confirmRepeatAfterUnknownRecovery: input.confirmRepeatAfterUnknownRecovery,
-        runtimeRestartConfirmation: input.runtimeRestartConfirmation,
+        ...(input.runtimeRestartConfirmation === undefined
+          ? {}
+          : { runtimeRestartConfirmation: input.runtimeRestartConfirmation }),
       });
     },
     { allowDuringOrphanRisk: true },
@@ -1755,7 +2028,7 @@ registerFacadeTool(
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
   },
   serializedGuarded(
-    async (input) => await verifyEvidenceReceipt(input.receiptPath),
+    (input) => verifyEvidenceReceipt(input.receiptPath),
     { allowDuringOrphanRisk: true },
   ),
 );
@@ -1774,16 +2047,16 @@ registerFacadeTool(
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
   },
   serializedGuarded(
-    async (input) => await readArtifact(input.path, input.offset, input.length),
+    (input) => readArtifact(input.path, input.offset, input.length),
     { allowDuringOrphanRisk: true },
   ),
 );
 
 const transport = new StdioServerTransport();
 const shutdown = async () => {
-  await upstream.close().catch(() => undefined);
-  await server.close().catch(() => undefined);
-  await facadeLease.release().catch(() => undefined);
+  await upstream.close().catch(() => {});
+  await server.close().catch(() => {});
+  await facadeLease.release().catch(() => {});
 };
 process.once('SIGINT', () => void shutdown().finally(() => process.exit(0)));
 process.once('SIGTERM', () => void shutdown().finally(() => process.exit(0)));

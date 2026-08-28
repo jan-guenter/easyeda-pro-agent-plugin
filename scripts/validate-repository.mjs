@@ -66,14 +66,22 @@ check('manifest-repository', manifest.repository === 'https://github.com/jan-gue
 const required = [
   '.codex-plugin/plugin.json',
   '.mcp.json',
+  '.nvmrc',
   'package.json',
   'package-lock.json',
+  'tsconfig.json',
+  '.oxlintrc.json',
   'reviewed-compatibility.json',
   'licenses/model-context-protocol-sdk-MIT.txt',
   'licenses/zod-MIT.txt',
   'licenses/esbuild-MIT.txt',
+  'licenses/typescript-Apache-2.0.txt',
+  'licenses/typescript-NOTICE.txt',
+  'licenses/types-node-MIT.txt',
+  'licenses/oxlint-MIT.txt',
+  'licenses/oxlint-tsgolint-MIT.txt',
   'server/dist/server.mjs',
-  'server/src/index.mjs',
+  'server/src/index.ts',
   'skills/easyeda-pro-control/SKILL.md',
   'skills/easyeda-pro-control/agents/openai.yaml',
 ];
@@ -85,7 +93,7 @@ check('mcp-stdio', mcpServer?.type === 'stdio');
 check('raw-env-absent', !Object.hasOwn(mcpServer?.env ?? {}, 'EASYEDA_CONTROL_ALLOW_UNRESTRICTED_EXECUTE'));
 check('raw-tool-prompted', mcpServer?.tools?.easyeda_control_execute?.approval_mode === 'prompt');
 
-const indexSource = await readFile(join(pluginRoot, 'server', 'src', 'index.mjs'), 'utf8');
+const indexSource = await readFile(join(pluginRoot, 'server', 'src', 'index.ts'), 'utf8');
 const skillSource = await readFile(
   join(pluginRoot, 'skills', 'easyeda-pro-control', 'SKILL.md'),
   'utf8',
@@ -100,7 +108,7 @@ check('skill-declares-disabled-writer', /writer is experimental and runtime-disa
 
 const tree = await filesBelow(root);
 check('no-symlinks', tree.every((entryValue) => entryValue.symlink === false));
-const textExtensions = new Set(['.json', '.md', '.mjs', '.yaml', '.yml']);
+const textExtensions = new Set(['.json', '.md', '.mjs', '.ts', '.yaml', '.yml']);
 const secretPatterns = [
   /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
   /\bghp_[A-Za-z0-9]{30,}\b/,

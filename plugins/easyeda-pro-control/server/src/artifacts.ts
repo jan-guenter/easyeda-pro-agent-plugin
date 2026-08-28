@@ -1,4 +1,4 @@
-import { constants as fsConstants } from 'node:fs';
+import { constants as fsConstants, type Stats } from 'node:fs';
 import { createHash } from 'node:crypto';
 import {
   access,
@@ -8,26 +8,95 @@ import {
   realpath,
   readdir,
   rename,
-  stat,
   unlink,
-  writeFile,
+  type FileHandle,
 } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import {
   canonicalJson,
   buildPlanHash,
+  errorMessage,
+  errorName,
+  isErrnoException,
+  isRecord,
   OPERATION_SCHEMA,
   sha256Text,
+  type EvidencePaths,
+  type UnknownRecord,
   validateEvidencePaths,
-} from './core.mjs';
+} from './core.ts';
 
+const configuredControlDataDirectory = process.env['EASYEDA_CONTROL_DATA_DIR'];
+const configuredHomeDirectory = process.env['HOME'];
 const CONTROL_DATA_DIR = resolve(
-  process.env.EASYEDA_CONTROL_DATA_DIR || join(process.env.HOME || '/tmp', '.easyeda-pro-control'),
+  configuredControlDataDirectory !== undefined && configuredControlDataDirectory.length > 0
+    ? configuredControlDataDirectory
+    : join(
+        configuredHomeDirectory !== undefined && configuredHomeDirectory.length > 0
+          ? configuredHomeDirectory
+          : '/tmp',
+        '.easyeda-pro-control',
+      ),
 );
 const OPERATIONS_DIR = join(CONTROL_DATA_DIR, 'operations');
 
-function isWithin(root, candidate) {
+export interface EvidenceReservation extends EvidencePaths {
+  readonly token: string;
+}
+
+export interface EvidenceAttachment {
+  readonly path: string;
+  readonly bytes?: number;
+  readonly sha256?: string;
+  readonly kind?: string;
+}
+
+export interface CaptureImage {
+  readonly mimeType: string;
+  readonly bytes: Buffer;
+}
+
+export interface ArtifactDescriptor extends UnknownRecord {
+  path: string;
+  bytes: number;
+  sha256: string;
+}
+
+export interface OperationJournal extends UnknownRecord {
+  operationId: string;
+  plan: UnknownRecord;
+  planHash: string;
+  artifacts?: ArtifactDescriptor[];
+}
+
+interface ArchiveExternalEvidenceOptions {
+  readonly evidence?: EvidencePaths;
+  readonly reservation?: EvidenceReservation;
+  readonly request: unknown;
+  readonly result: unknown;
+  readonly metadata?: unknown;
+  readonly attachments?: readonly EvidenceAttachment[];
+}
+
+interface ArchiveCaptureEvidenceOptions {
+  readonly reservation?: EvidenceReservation;
+  readonly request: unknown;
+  readonly payload: unknown;
+  readonly images: readonly CaptureImage[];
+  readonly metadata?: unknown;
+}
+
+interface ManagedFile {
+  absolute: string;
+  info: Stats;
+}
+
+interface OpenManagedFile extends ManagedFile {
+  handle: FileHandle;
+}
+
+function isWithin(root: string, candidate: string): boolean {
   const normalizedRoot = resolve(root);
   const normalizedCandidate = resolve(candidate);
   return (
@@ -36,7 +105,7 @@ function isWithin(root, candidate) {
   );
 }
 
-function assertManagedPath(path, label = 'Artifact') {
+function assertManagedPath(path: string, label = 'Artifact'): string {
   const absolute = resolve(path);
   if (!isWithin(CONTROL_DATA_DIR, absolute)) {
     throw new Error(`${label} path must stay inside ${CONTROL_DATA_DIR}.`);
@@ -44,7 +113,7 @@ function assertManagedPath(path, label = 'Artifact') {
   return absolute;
 }
 
-async function assertSafeManagedDirectory(directory) {
+async function assertSafeManagedDirectory(directory: string): Promise<string> {
   const absolute = assertManagedPath(directory, 'Directory');
   await mkdir(CONTROL_DATA_DIR, { recursive: true, mode: 0o700 });
   const rootInfo = await lstat(CONTROL_DATA_DIR);
@@ -62,11 +131,11 @@ async function assertSafeManagedDirectory(directory) {
         throw new Error(`Managed parent ${current} is not a real directory.`);
       }
     } catch (error) {
-      if (error?.code !== 'ENOENT') throw error;
+      if (!isErrnoException(error) || error.code !== 'ENOENT') throw error;
       await mkdir(current, { mode: 0o700 });
       const created = await lstat(current);
       if (created.isSymbolicLink() || !created.isDirectory()) {
-        throw new Error(`Managed parent ${current} was replaced during creation.`);
+        throw new Error(`Managed parent ${current} was replaced during creation.`, { cause: error });
       }
     }
   }
@@ -80,7 +149,7 @@ async function assertSafeManagedDirectory(directory) {
   return absolute;
 }
 
-async function assertSafeManagedFile(path, label = 'Artifact') {
+async function assertSafeManagedFile(path: string, label = 'Artifact'): Promise<ManagedFile> {
   const absolute = assertManagedPath(path, label);
   const info = await lstat(absolute);
   if (info.isSymbolicLink() || !info.isFile()) {
@@ -94,7 +163,7 @@ async function assertSafeManagedFile(path, label = 'Artifact') {
   return { absolute, info };
 }
 
-function assertSameFileIdentity(expected, actual, label) {
+function assertSameFileIdentity(expected: Stats, actual: Stats, label: string): void {
   if (
     !actual.isFile() ||
     expected.dev !== actual.dev ||
@@ -104,7 +173,7 @@ function assertSameFileIdentity(expected, actual, label) {
   }
 }
 
-function assertFileStayedUnchanged(before, after, label) {
+function assertFileStayedUnchanged(before: Stats, after: Stats, label: string): void {
   if (
     before.dev !== after.dev ||
     before.ino !== after.ino ||
@@ -116,7 +185,7 @@ function assertFileStayedUnchanged(before, after, label) {
   }
 }
 
-async function openSafeManagedFile(path, label = 'Artifact') {
+async function openSafeManagedFile(path: string, label = 'Artifact'): Promise<OpenManagedFile> {
   const checked = await assertSafeManagedFile(path, label);
   const handle = await open(
     checked.absolute,
@@ -132,15 +201,15 @@ async function openSafeManagedFile(path, label = 'Artifact') {
   }
 }
 
-export async function ensureManagedDirectory(path) {
-  return await assertSafeManagedDirectory(path);
+export function ensureManagedDirectory(path: string): Promise<string> {
+  return assertSafeManagedDirectory(path);
 }
 
-export async function inspectManagedFile(path, label = 'Artifact') {
-  return await assertSafeManagedFile(path, label);
+export function inspectManagedFile(path: string, label = 'Artifact'): Promise<ManagedFile> {
+  return assertSafeManagedFile(path, label);
 }
 
-async function readManagedFile(path, label = 'Artifact') {
+async function readManagedFile(path: string, label = 'Artifact') {
   const opened = await openSafeManagedFile(path, label);
   try {
     const bytes = await opened.handle.readFile();
@@ -152,7 +221,10 @@ async function readManagedFile(path, label = 'Artifact') {
   }
 }
 
-async function hashManagedAttachment(path, label = 'Evidence attachment') {
+async function hashManagedAttachment(
+  path: string,
+  label = 'Evidence attachment',
+): Promise<ArtifactDescriptor> {
   const opened = await openSafeManagedFile(path, label);
   const { handle } = opened;
   try {
@@ -162,7 +234,12 @@ async function hashManagedAttachment(path, label = 'Evidence attachment') {
     await handle.sync();
     const before = await handle.stat();
     const hash = createHash('sha256');
-    for await (const chunk of handle.createReadStream({ autoClose: false })) hash.update(chunk);
+    for await (const chunk of handle.createReadStream({ autoClose: false })) {
+      if (!Buffer.isBuffer(chunk)) {
+        throw new TypeError('Evidence stream yielded a non-buffer chunk.');
+      }
+      hash.update(chunk);
+    }
     const after = await handle.stat();
     assertFileStayedUnchanged(before, after, label);
     const result = {
@@ -177,7 +254,7 @@ async function hashManagedAttachment(path, label = 'Evidence attachment') {
   }
 }
 
-async function pathExists(path) {
+async function pathExists(path: string): Promise<boolean> {
   try {
     await access(path, fsConstants.F_OK);
     return true;
@@ -186,7 +263,7 @@ async function pathExists(path) {
   }
 }
 
-async function syncDirectory(path) {
+async function syncDirectory(path: string): Promise<void> {
   const handle = await open(path, 'r');
   try {
     await handle.sync();
@@ -195,43 +272,14 @@ async function syncDirectory(path) {
   }
 }
 
-async function writeExclusivePair(resultPath, resultText, receiptPath, receiptText) {
-  let resultHandle;
-  let receiptHandle;
-  try {
-    await mkdir(dirname(resultPath), { recursive: true, mode: 0o700 });
-    await mkdir(dirname(receiptPath), { recursive: true, mode: 0o700 });
-    resultHandle = await open(resultPath, 'wx', 0o600);
-    receiptHandle = await open(receiptPath, 'wx', 0o600);
-    await resultHandle.writeFile(resultText, 'utf8');
-    await receiptHandle.writeFile(receiptText, 'utf8');
-    await resultHandle.sync();
-    await receiptHandle.sync();
-  } catch (error) {
-    await resultHandle?.close().catch(() => undefined);
-    await receiptHandle?.close().catch(() => undefined);
-    if (resultHandle) await unlink(resultPath).catch(() => undefined);
-    if (receiptHandle) await unlink(receiptPath).catch(() => undefined);
-    for (const directory of new Set([dirname(resultPath), dirname(receiptPath)])) {
-      await syncDirectory(directory).catch(() => undefined);
-    }
-    throw error;
-  } finally {
-    await resultHandle?.close().catch(() => undefined);
-    await receiptHandle?.close().catch(() => undefined);
-  }
-  for (const directory of new Set([dirname(resultPath), dirname(receiptPath)])) {
-    await syncDirectory(directory);
-  }
-}
-
-export async function reserveEvidencePaths(evidence) {
+export async function reserveEvidencePaths(evidence: unknown): Promise<EvidenceReservation> {
   const paths = validateEvidencePaths(evidence);
+  if (!paths) throw new Error('Evidence paths are required.');
   const resultPath = assertManagedPath(paths.resultPath, 'Evidence result');
   const receiptPath = assertManagedPath(paths.receiptPath, 'Evidence receipt');
   const token = `${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  let resultHandle;
-  let receiptHandle;
+  let resultHandle: FileHandle | undefined;
+  let receiptHandle: FileHandle | undefined;
   try {
     await assertSafeManagedDirectory(dirname(resultPath));
     await assertSafeManagedDirectory(dirname(receiptPath));
@@ -243,17 +291,17 @@ export async function reserveEvidencePaths(evidence) {
     await resultHandle.sync();
     await receiptHandle.sync();
   } catch (error) {
-    await resultHandle?.close().catch(() => undefined);
-    await receiptHandle?.close().catch(() => undefined);
-    if (resultHandle) await unlink(resultPath).catch(() => undefined);
-    if (receiptHandle) await unlink(receiptPath).catch(() => undefined);
+    await resultHandle?.close().catch(() => {});
+    await receiptHandle?.close().catch(() => {});
+    if (resultHandle) await unlink(resultPath).catch(() => {});
+    if (receiptHandle) await unlink(receiptPath).catch(() => {});
     for (const directory of new Set([dirname(resultPath), dirname(receiptPath)])) {
-      await syncDirectory(directory).catch(() => undefined);
+      await syncDirectory(directory).catch(() => {});
     }
     throw error;
   } finally {
-    await resultHandle?.close().catch(() => undefined);
-    await receiptHandle?.close().catch(() => undefined);
+    await resultHandle?.close().catch(() => {});
+    await receiptHandle?.close().catch(() => {});
   }
   for (const directory of new Set([dirname(resultPath), dirname(receiptPath)])) {
     await syncDirectory(directory);
@@ -261,21 +309,22 @@ export async function reserveEvidencePaths(evidence) {
   return { resultPath, receiptPath, token };
 }
 
-async function assertReservation(reservation) {
-  if (!reservation?.token) throw new Error('A valid evidence reservation is required.');
+async function assertReservation(reservation: EvidenceReservation): Promise<void> {
+  if (!reservation.token) throw new Error('A valid evidence reservation is required.');
   for (const path of [reservation.resultPath, reservation.receiptPath]) {
     const { bytes } = await readManagedFile(path, 'Evidence reservation');
-    const parsed = JSON.parse(bytes.toString('utf8'));
+    const parsed: unknown = JSON.parse(bytes.toString('utf8'));
     if (
-      parsed.schema !== 'easyeda-pro-control.evidence-reservation.v1' ||
-      parsed.token !== reservation.token
+      !isRecord(parsed) ||
+      parsed['schema'] !== 'easyeda-pro-control.evidence-reservation.v1' ||
+      parsed['token'] !== reservation.token
     ) {
       throw new Error('Evidence reservation identity changed before finalization.');
     }
   }
 }
 
-export async function releaseEvidenceReservation(reservation) {
+export async function releaseEvidenceReservation(reservation: EvidenceReservation): Promise<void> {
   await assertReservation(reservation);
   await Promise.all([
     unlink(reservation.resultPath),
@@ -289,9 +338,13 @@ export async function releaseEvidenceReservation(reservation) {
   }
 }
 
-async function finalizeReservedPair(reservation, resultText, receiptText) {
+async function finalizeReservedPair(
+  reservation: EvidenceReservation,
+  resultText: string,
+  receiptText: string,
+): Promise<void> {
   await assertReservation(reservation);
-  const replaceReservation = async (path, text) => {
+  const replaceReservation = async (path: string, text: string): Promise<void> => {
     const handle = await open(
       path,
       fsConstants.O_RDWR | fsConstants.O_NOFOLLOW,
@@ -299,8 +352,8 @@ async function finalizeReservedPair(reservation, resultText, receiptText) {
     );
     try {
       const existing = await handle.readFile('utf8');
-      const parsed = JSON.parse(existing);
-      if (parsed.token !== reservation.token) {
+      const parsed: unknown = JSON.parse(existing);
+      if (!isRecord(parsed) || parsed['token'] !== reservation.token) {
         throw new Error('Evidence reservation changed before final write.');
       }
       await handle.truncate(0);
@@ -338,8 +391,8 @@ export async function archiveExternalEvidence({
   result,
   metadata,
   attachments = [],
-}) {
-  if (!evidence && !reservation) return undefined;
+}: Readonly<ArchiveExternalEvidenceOptions>) {
+  if (evidence === undefined && reservation === undefined) return evidence;
   const held = reservation ?? (await reserveEvidencePaths(evidence));
   const createdAt = new Date().toISOString();
   const payload = {
@@ -350,7 +403,7 @@ export async function archiveExternalEvidence({
     metadata,
   };
   const resultText = `${JSON.stringify(payload)}\n`;
-  const archivedAttachments = [];
+  const archivedAttachments: Array<ArtifactDescriptor & { kind: string }> = [];
   for (const attachment of attachments) {
     const archived = await hashManagedAttachment(attachment.path);
     if (
@@ -360,7 +413,7 @@ export async function archiveExternalEvidence({
       throw new Error('Evidence attachment changed before its receipt was finalized.');
     }
     archivedAttachments.push({
-      kind: String(attachment.kind ?? 'artifact').slice(0, 64),
+      kind: (attachment.kind ?? 'artifact').slice(0, 64),
       path: archived.path,
       bytes: archived.bytes,
       sha256: archived.sha256,
@@ -380,16 +433,23 @@ export async function archiveExternalEvidence({
     receiptSha256: sha256Text(canonicalJson(receiptCore)),
   };
   await finalizeReservedPair(held, resultText, `${JSON.stringify(receipt, null, 2)}\n`);
-  return { resultPath: held.resultPath, receiptPath: held.receiptPath, ...receipt };
+  return { ...receipt, resultPath: held.resultPath, receiptPath: held.receiptPath };
 }
 
-export async function archiveCaptureEvidence({ reservation, request, payload, images, metadata }) {
+export async function archiveCaptureEvidence({
+  reservation,
+  request,
+  payload,
+  images,
+  metadata,
+}: Readonly<ArchiveCaptureEvidenceOptions>) {
   if (!reservation) throw new Error('Capture evidence must be reserved before dispatch.');
   await assertReservation(reservation);
-  const created = [];
+  const created: Array<ArtifactDescriptor & { mimeType: string }> = [];
   try {
     for (let index = 0; index < images.length; index += 1) {
       const image = images[index];
+      if (!image) throw new Error(`Capture image ${index + 1} is unavailable.`);
       const path = assertManagedPath(`${reservation.resultPath}.image-${index + 1}.png`, 'Capture image');
       await assertSafeManagedDirectory(dirname(path));
       const handle = await open(path, 'wx', 0o600);
@@ -437,56 +497,78 @@ export async function archiveCaptureEvidence({ reservation, request, payload, im
       resultText,
       `${JSON.stringify(receipt, null, 2)}\n`,
     );
-    return { resultPath: reservation.resultPath, receiptPath: reservation.receiptPath, ...receipt };
+    return {
+      ...receipt,
+      resultPath: reservation.resultPath,
+      receiptPath: reservation.receiptPath,
+    };
   } catch (error) {
-    for (const item of created) await unlink(item.path).catch(() => undefined);
+    for (const item of created) await unlink(item.path).catch(() => {});
     for (const directory of new Set(created.map((item) => dirname(item.path)))) {
-      await syncDirectory(directory).catch(() => undefined);
+      await syncDirectory(directory).catch(() => {});
     }
     throw error;
   }
 }
 
-export async function verifyEvidenceReceipt(receiptPathInput) {
+export async function verifyEvidenceReceipt(receiptPathInput: string) {
   const receiptPath = assertManagedPath(receiptPathInput, 'Evidence receipt');
-  const receipt = JSON.parse((await readManagedFile(receiptPath, 'Evidence receipt')).bytes.toString('utf8'));
+  const parsed: unknown = JSON.parse(
+    (await readManagedFile(receiptPath, 'Evidence receipt')).bytes.toString('utf8'),
+  );
+  if (!isRecord(parsed)) throw new Error('Evidence receipt must be an object.');
+  const receipt = parsed;
   if (
     ![
       'easyeda-pro-control.tool-receipt.v1',
       'easyeda-pro-control.capture-receipt.v1',
-    ].includes(receipt.schema)
+    ].includes(String(receipt['schema']))
   ) {
     throw new Error('Unsupported evidence receipt schema.');
   }
   const { receiptSha256, ...receiptCore } = receipt;
   const receiptHashOk = receiptSha256 === sha256Text(canonicalJson(receiptCore));
-  const resultPath = assertManagedPath(receipt.resultPath, 'Evidence result');
+  if (typeof receipt['resultPath'] !== 'string') {
+    throw new TypeError('Evidence receipt resultPath must be a string.');
+  }
+  const resultPath = assertManagedPath(receipt['resultPath'], 'Evidence result');
   const resultText = (await readManagedFile(resultPath, 'Evidence result')).bytes;
-  const resultHashOk = sha256Text(resultText) === receipt.resultSha256;
-  const imageChecks = [];
-  for (const image of receipt.images ?? []) {
-    const path = assertManagedPath(image.path, 'Capture image');
+  const resultHashOk = sha256Text(resultText) === receipt['resultSha256'];
+  const imageChecks: Array<{ path: string; ok: boolean }> = [];
+  const images = Array.isArray(receipt['images']) ? receipt['images'] : [];
+  for (const image of images) {
+    if (!isRecord(image) || typeof image['path'] !== 'string') {
+      throw new Error('Evidence receipt contains an invalid capture-image descriptor.');
+    }
+    const path = assertManagedPath(image['path'], 'Capture image');
     const bytes = (await readManagedFile(path, 'Capture image')).bytes;
     imageChecks.push({
       path,
       ok:
-        bytes.length === image.bytes &&
-        createHash('sha256').update(bytes).digest('hex') === image.sha256,
+        bytes.length === image['bytes'] &&
+        createHash('sha256').update(bytes).digest('hex') === image['sha256'],
     });
   }
-  const attachmentChecks = [];
-  for (const attachment of receipt.attachments ?? []) {
+  const attachmentChecks: Array<{ path: string | undefined; ok: boolean; error?: string }> = [];
+  const attachments = Array.isArray(receipt['attachments']) ? receipt['attachments'] : [];
+  for (const attachment of attachments) {
     try {
-      const actual = await hashManagedAttachment(attachment.path);
+      if (!isRecord(attachment) || typeof attachment['path'] !== 'string') {
+        throw new Error('Evidence receipt contains an invalid attachment descriptor.');
+      }
+      const actual = await hashManagedAttachment(attachment['path']);
       attachmentChecks.push({
         path: actual.path,
-        ok: actual.bytes === attachment.bytes && actual.sha256 === attachment.sha256,
+        ok: actual.bytes === attachment['bytes'] && actual.sha256 === attachment['sha256'],
       });
     } catch (error) {
       attachmentChecks.push({
-        path: attachment?.path,
+        path:
+          isRecord(attachment) && typeof attachment['path'] === 'string'
+            ? attachment['path']
+            : undefined,
         ok: false,
-        error: String(error?.message ?? error).slice(0, 2048),
+        error: errorMessage(error).slice(0, 2048),
       });
     }
   }
@@ -510,16 +592,18 @@ export async function ensureOperationStorage() {
   return OPERATIONS_DIR;
 }
 
-export function operationPath(operationId) {
-  if (!/^[a-z0-9][a-z0-9-]{7,95}$/i.test(operationId)) {
+export function operationPath(operationId: string): string {
+  if (!/^[a-z0-9][a-z0-9-]{7,95}$/iu.test(operationId)) {
     throw new Error('Invalid operationId.');
   }
   return join(OPERATIONS_DIR, `${operationId}.json`);
 }
 
-export async function createOperation(operation) {
+export async function createOperation(operation: UnknownRecord): Promise<string> {
   await ensureOperationStorage();
-  const path = operationPath(operation.operationId);
+  const operationId = operation['operationId'];
+  if (typeof operationId !== 'string') throw new Error('Operation requires an operationId.');
+  const path = operationPath(operationId);
   const handle = await open(path, 'wx', 0o600);
   try {
     const sealed = sealOperation(operation);
@@ -533,43 +617,75 @@ export async function createOperation(operation) {
   return path;
 }
 
-export async function loadOperation(operationId) {
+export async function loadOperation(operationId: string): Promise<OperationJournal> {
   const path = operationPath(operationId);
-  const parsed = JSON.parse((await readManagedFile(path, 'Operation journal')).bytes.toString('utf8'));
-  if (parsed.schema !== OPERATION_SCHEMA || parsed.operationId !== operationId) {
+  const value: unknown = JSON.parse(
+    (await readManagedFile(path, 'Operation journal')).bytes.toString('utf8'),
+  );
+  if (!isRecord(value)) throw new Error(`Operation journal ${operationId} must be an object.`);
+  const parsed = value;
+  if (parsed['schema'] !== OPERATION_SCHEMA || parsed['operationId'] !== operationId) {
     throw new Error(`Operation journal ${operationId} has an invalid schema or identity.`);
   }
   const { journalSha256, ...journalCore } = parsed;
   if (journalSha256 !== sha256Text(canonicalJson(journalCore))) {
     throw new Error(`Operation journal ${operationId} failed its self-hash.`);
   }
-  if (!parsed.plan || parsed.planHash !== buildPlanHash(parsed.plan)) {
+  const plan = parsed['plan'];
+  if (!isRecord(plan) || parsed['planHash'] !== buildPlanHash(plan)) {
     throw new Error(`Operation journal ${operationId} has a mismatched plan hash.`);
   }
-  for (const descriptor of parsed.artifacts ?? []) {
-    if (!isWithin(join(OPERATIONS_DIR, operationId), descriptor.path)) {
+  const artifactValues = parsed['artifacts'] ?? [];
+  if (!Array.isArray(artifactValues)) {
+    throw new TypeError(`Operation journal ${operationId} has an invalid artifacts list.`);
+  }
+  const artifacts: ArtifactDescriptor[] = [];
+  for (const descriptor of artifactValues) {
+    if (
+      !isRecord(descriptor) ||
+      typeof descriptor['path'] !== 'string' ||
+      typeof descriptor['bytes'] !== 'number' ||
+      typeof descriptor['sha256'] !== 'string'
+    ) {
+      throw new Error(`Operation ${operationId} has an invalid phase-artifact descriptor.`);
+    }
+    if (!isWithin(join(OPERATIONS_DIR, operationId), descriptor['path'])) {
       throw new Error(`Operation ${operationId} references an artifact outside its directory.`);
     }
-    const text = (await readManagedFile(descriptor.path, 'Operation phase artifact')).bytes;
-    if (text.length !== descriptor.bytes || sha256Text(text) !== descriptor.sha256) {
+    const text = (await readManagedFile(descriptor['path'], 'Operation phase artifact')).bytes;
+    if (text.length !== descriptor['bytes'] || sha256Text(text) !== descriptor['sha256']) {
       throw new Error(`Operation ${operationId} phase artifact failed hash verification.`);
     }
+    artifacts.push({
+      path: descriptor['path'],
+      bytes: descriptor['bytes'],
+      sha256: descriptor['sha256'],
+    });
   }
-  return parsed;
+  return {
+    ...parsed,
+    operationId,
+    plan,
+    planHash: parsed['planHash'],
+    artifacts,
+  };
 }
 
-function sealOperation(operation) {
-  const { journalSha256: ignored, ...journalCore } = operation;
+function sealOperation(operation: Readonly<UnknownRecord>): UnknownRecord {
+  const journalCore = { ...operation };
+  delete journalCore['journalSha256'];
   return { ...journalCore, journalSha256: sha256Text(canonicalJson(journalCore)) };
 }
 
-export async function updateOperation(operation) {
+export async function updateOperation(operation: UnknownRecord): Promise<string> {
   await ensureOperationStorage();
-  const path = operationPath(operation.operationId);
-  if (!(await pathExists(path))) throw new Error(`Operation ${operation.operationId} does not exist.`);
+  const operationId = operation['operationId'];
+  if (typeof operationId !== 'string') throw new Error('Operation requires an operationId.');
+  const path = operationPath(operationId);
+  if (!(await pathExists(path))) throw new Error(`Operation ${operationId} does not exist.`);
   const temporary = `${path}.tmp-${process.pid}-${Date.now()}`;
   const sealed = sealOperation(operation);
-  let handle;
+  let handle: FileHandle | undefined;
   try {
     handle = await open(temporary, 'wx', 0o600);
     await handle.writeFile(`${JSON.stringify(sealed, null, 2)}\n`, 'utf8');
@@ -580,19 +696,24 @@ export async function updateOperation(operation) {
     await syncDirectory(OPERATIONS_DIR);
     Object.assign(operation, sealed);
   } catch (error) {
-    await handle?.close().catch(() => undefined);
-    await unlink(temporary).catch(() => undefined);
+    await handle?.close().catch(() => {});
+    await unlink(temporary).catch(() => {});
     throw error;
   }
   return path;
 }
 
-export async function writePhaseArtifact(operationId, sequence, phase, value) {
+export async function writePhaseArtifact(
+  operationId: string,
+  sequence: number,
+  phase: string,
+  value: unknown,
+): Promise<ArtifactDescriptor> {
   await ensureOperationStorage();
   const directory = join(OPERATIONS_DIR, operationId);
   await assertSafeManagedDirectory(directory);
-  const safePhase = String(phase).replace(/[^a-z0-9_-]+/gi, '-').toLowerCase();
-  const path = join(directory, `${String(sequence).padStart(2, '0')}-${safePhase}.json`);
+  const safePhase = phase.replaceAll(/[^a-z0-9_-]+/giu, '-').toLowerCase();
+  const path = join(directory, `${sequence.toString().padStart(2, '0')}-${safePhase}.json`);
   const text = `${JSON.stringify(value)}\n`;
   const handle = await open(path, 'wx', 0o600);
   try {
@@ -605,26 +726,28 @@ export async function writePhaseArtifact(operationId, sequence, phase, value) {
   return { path, sha256: sha256Text(text), bytes: Buffer.byteLength(text) };
 }
 
-export async function listOperations() {
+export async function listOperations(): Promise<UnknownRecord[]> {
   await ensureOperationStorage();
-  const names = (await readdir(OPERATIONS_DIR)).filter((name) => name.endsWith('.json')).sort();
-  const output = [];
+  const names = (await readdir(OPERATIONS_DIR))
+    .filter((name) => name.endsWith('.json'))
+    .toSorted();
+  const output: UnknownRecord[] = [];
   for (const name of names) {
     try {
-      const operationId = name.replace(/\.json$/, '');
+      const operationId = name.replace(/\.json$/u, '');
       output.push(await loadOperation(operationId));
     } catch (error) {
       const journalPath = join(OPERATIONS_DIR, name);
-      const message = String(error?.message ?? error);
+      const message = errorMessage(error);
       output.push({
-        operationId: name.replace(/\.json$/, ''),
+        operationId: name.replace(/\.json$/u, ''),
         state: 'journal-unreadable',
         mutationState: 'unknown',
         hardStop: true,
         mutationMayHaveOccurred: true,
         journalPath,
         lastError: {
-          name: String(error?.name ?? 'Error').slice(0, 128),
+          name: errorName(error).slice(0, 128),
           message: message.length <= 2048 ? message : `${message.slice(0, 2047)}…`,
         },
         nextSafeAction: 'Inspect and restore the named managed journal before any new mutation.',
@@ -634,10 +757,10 @@ export async function listOperations() {
   return output;
 }
 
-export async function readArtifact(path, offset = 0, length = 65536) {
+export async function readArtifact(path: string, offset = 0, length = 65536) {
   const absolute = assertManagedPath(path);
-  const boundedOffset = Math.max(0, Number(offset));
-  const boundedLength = Math.max(1, Math.min(256 * 1024, Number(length)));
+  const boundedOffset = Math.max(0, offset);
+  const boundedLength = Math.max(1, Math.min(256 * 1024, length));
   const opened = await openSafeManagedFile(absolute);
   const { handle, info } = opened;
   try {
@@ -658,6 +781,6 @@ export async function readArtifact(path, offset = 0, length = 65536) {
   }
 }
 
-export function controlDataDirectory() {
+export function controlDataDirectory(): string {
   return CONTROL_DATA_DIR;
 }

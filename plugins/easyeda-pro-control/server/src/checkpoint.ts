@@ -1,72 +1,110 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { mkdir, open, readFile, stat, unlink } from 'node:fs/promises';
-import { basename, dirname, join, resolve } from 'node:path';
-import { spawn } from 'node:child_process';
-import { canonicalJson, sha256Text } from './core.mjs';
+import { mkdir, open, readFile, stat, unlink, type FileHandle } from 'node:fs/promises';
+import { basename, join, resolve } from 'node:path';
+import { spawn, type SpawnOptionsWithoutStdio } from 'node:child_process';
+import { canonicalJson, errorMessage, isRecord, sha256Text } from './core.ts';
 
-function safeLabel(value) {
-  const label = String(value ?? '').trim();
-  if (!/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(label)) {
+interface RunOptions extends SpawnOptionsWithoutStdio {
+  maxBuffer?: unknown;
+  maxStderrBuffer?: unknown;
+  timeoutMs?: unknown;
+}
+
+export interface CheckpointCreateInput {
+  readonly source: string;
+  readonly outputDir: string;
+  readonly label: string;
+}
+
+export interface CheckpointReceipt {
+  schema: 'easyeda-pro-control.checkpoint.v1';
+  createdAt: string;
+  source: string;
+  checkpoint: string;
+  sourceSha256: string;
+  checkpointSha256: string;
+  sourceDumpSha256: string;
+  checkpointDumpSha256: string;
+  receiptSha256: string;
+  receiptPath?: string;
+  [key: string]: unknown;
+}
+
+function safeLabel(value: string): string {
+  const label = value.trim();
+  if (!/^[a-z0-9][a-z0-9._-]{0,63}$/iu.test(label)) {
     throw new Error('Checkpoint label must be 1-64 filename-safe characters.');
   }
   return label;
 }
 
-function timestampForPath(date) {
-  return date.toISOString().replace(/[-:]/g, '').replace(/\.(\d{3})Z$/, '$1Z');
+function timestampForPath(date: Readonly<Date>): string {
+  return date.toISOString().replaceAll(/[-:]/gu, '').replace(/\.(\d{3})Z$/u, '$1Z');
 }
 
-function sqliteUri(path) {
+function sqliteUri(path: string): string {
   return `file:${path}?mode=ro`;
 }
 
-function positiveInteger(value, fallback) {
+function positiveInteger(value: unknown, fallback: number): number {
   const parsed = Number(value);
   return Number.isSafeInteger(parsed) && parsed > 0 && parsed <= 0x7fffffff
     ? parsed
     : fallback;
 }
 
-async function run(command, args, options = {}) {
-  return await new Promise((resolvePromise, reject) => {
+function run(
+  command: string,
+  args: readonly string[],
+  options: Readonly<RunOptions> = {},
+): Promise<Buffer> {
+  return new Promise<Buffer>((resolvePromise, reject) => {
     const {
       maxBuffer = 256 * 1024 * 1024,
-      maxStderrBuffer: requestedMaxStderrBuffer = process.env.EASYEDA_CHECKPOINT_STDERR_MAX_BYTES,
-      timeoutMs: requestedTimeoutMs = process.env.EASYEDA_CHECKPOINT_PROCESS_TIMEOUT_MS,
+      maxStderrBuffer: requestedMaxStderrBuffer =
+        process.env['EASYEDA_CHECKPOINT_STDERR_MAX_BYTES'],
+      timeoutMs: requestedTimeoutMs = process.env['EASYEDA_CHECKPOINT_PROCESS_TIMEOUT_MS'],
       ...spawnOptions
     } = options;
     const checkedMaxBuffer = positiveInteger(maxBuffer, 256 * 1024 * 1024);
     const maxStderrBuffer = positiveInteger(requestedMaxStderrBuffer, 1024 * 1024);
     const timeoutMs = positiveInteger(requestedTimeoutMs, 120000);
     const child = spawn(command, args, { ...spawnOptions, stdio: ['ignore', 'pipe', 'pipe'] });
-    const stdout = [];
-    const stderr = [];
+    const stdout: Buffer[] = [];
+    const stderr: Buffer[] = [];
     let stdoutBytes = 0;
     let stderrBytes = 0;
     let settled = false;
-    const finish = (callback, value) => {
+    let timer: NodeJS.Timeout;
+    const finish = (callback: () => void): void => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      callback(value);
+      callback();
     };
-    const abort = (message) => {
+    const fail = (error: unknown): void => {
+      finish(() => {
+        reject(error instanceof Error ? error : new Error(errorMessage(error)));
+      });
+    };
+    const abort = (message: string): void => {
       if (settled) return;
       child.kill('SIGKILL');
-      finish(reject, new Error(message));
+      fail(new Error(message));
     };
-    const timer = setTimeout(() => {
+    timer = setTimeout(() => {
       abort(`${command} timed out after ${timeoutMs} ms.`);
     }, timeoutMs);
-    child.stdout.on('data', (chunk) => {
+    child.stdout.on('data', (chunk: Buffer) => {
       stdoutBytes += chunk.length;
       if (stdoutBytes > checkedMaxBuffer) {
         abort(`${command} stdout exceeded ${checkedMaxBuffer} bytes.`);
+      } else {
+        stdout.push(chunk);
       }
-      else stdout.push(chunk);
     });
-    child.stderr.on('data', (chunk) => {
+    child.stderr.on('data', (chunk: Buffer) => {
       stderrBytes += chunk.length;
       if (stderrBytes > maxStderrBuffer) {
         abort(`${command} stderr exceeded ${maxStderrBuffer} bytes.`);
@@ -74,40 +112,46 @@ async function run(command, args, options = {}) {
         stderr.push(chunk);
       }
     });
-    child.once('error', (error) => finish(reject, error));
+    child.once('error', fail);
     child.once('close', (code, signal) => {
       if (settled) return;
-      if (code !== 0) {
-        finish(
-          reject,
+      if (code === 0) {
+        finish(() => {
+          resolvePromise(Buffer.concat(stdout));
+        });
+      } else {
+        fail(
           new Error(
             `${command} failed (${code ?? signal}): ${Buffer.concat(stderr).toString('utf8').trim()}`,
           ),
         );
-      } else finish(resolvePromise, Buffer.concat(stdout));
+      }
     });
   });
 }
 
-async function quickCheck(path) {
+async function quickCheck(path: string): Promise<'ok'> {
   const output = await run('sqlite3', [sqliteUri(path), 'PRAGMA query_only=ON; PRAGMA quick_check;']);
   const value = output.toString('utf8').trim();
   if (value !== 'ok') throw new Error(`SQLite quick_check failed for ${path}: ${value}`);
   return value;
 }
 
-async function sha256File(path) {
+async function sha256File(path: string): Promise<string> {
   const hash = createHash('sha256');
-  for await (const chunk of createReadStream(path)) hash.update(chunk);
+  for await (const chunk of createReadStream(path)) {
+    if (!Buffer.isBuffer(chunk)) throw new TypeError('File stream yielded a non-buffer chunk.');
+    hash.update(chunk);
+  }
   return hash.digest('hex');
 }
 
-async function dumpHash(path) {
+async function dumpHash(path: string): Promise<string> {
   const dump = await run('sqlite3', [sqliteUri(path), '.dump']);
   return createHash('sha256').update(dump).digest('hex');
 }
 
-async function syncFile(path) {
+async function syncFile(path: string): Promise<void> {
   const handle = await open(path, 'r');
   try {
     await handle.sync();
@@ -116,7 +160,7 @@ async function syncFile(path) {
   }
 }
 
-async function syncDirectory(path) {
+async function syncDirectory(path: string): Promise<void> {
   const handle = await open(path, 'r');
   try {
     await handle.sync();
@@ -125,7 +169,11 @@ async function syncDirectory(path) {
   }
 }
 
-export async function createCheckpoint({ source, outputDir, label }) {
+export async function createCheckpoint({
+  source,
+  outputDir,
+  label,
+}: Readonly<CheckpointCreateInput>) {
   const sourcePath = resolve(source);
   const destinationDir = resolve(outputDir);
   const checkedLabel = safeLabel(label);
@@ -136,12 +184,12 @@ export async function createCheckpoint({ source, outputDir, label }) {
   await mkdir(destinationDir, { recursive: true, mode: 0o700 });
   await quickCheck(sourcePath);
   const createdAt = new Date();
-  const sourceStem = basename(sourcePath).replace(/\.[^.]+$/, '') || 'EasyEDA';
+  const sourceStem = basename(sourcePath).replace(/\.[^.]+$/u, '') || 'EasyEDA';
   const stem = `${sourceStem}-${checkedLabel}-${timestampForPath(createdAt)}`;
   const checkpointPath = join(destinationDir, `${stem}.eprj2`);
   const receiptPath = join(destinationDir, `${stem}.checkpoint.json`);
-  let checkpointHandle;
-  let receiptHandle;
+  let checkpointHandle: FileHandle | undefined;
+  let receiptHandle: FileHandle | undefined;
   let checkpointCreated = false;
   let receiptCreated = false;
   try {
@@ -195,7 +243,7 @@ export async function createCheckpoint({ source, outputDir, label }) {
     await syncDirectory(destinationDir);
     return { ...receipt, receiptPath };
   } catch (error) {
-    const cleanupErrors = [];
+    const cleanupErrors: unknown[] = [];
     for (const handle of [receiptHandle, checkpointHandle]) {
       if (!handle) continue;
       try {
@@ -204,10 +252,11 @@ export async function createCheckpoint({ source, outputDir, label }) {
         cleanupErrors.push(cleanupError);
       }
     }
-    for (const [created, path] of [
+    const cleanupPaths: Array<readonly [boolean, string]> = [
       [receiptCreated, receiptPath],
       [checkpointCreated, checkpointPath],
-    ]) {
+    ];
+    for (const [created, path] of cleanupPaths) {
       if (!created) continue;
       try {
         await unlink(path);
@@ -223,7 +272,7 @@ export async function createCheckpoint({ source, outputDir, label }) {
     if (cleanupErrors.length > 0) {
       throw new AggregateError(
         [error, ...cleanupErrors],
-        `Checkpoint creation failed and cleanup was incomplete: ${error.message}`,
+        `Checkpoint creation failed and cleanup was incomplete: ${errorMessage(error)}`,
         { cause: error },
       );
     }
@@ -231,13 +280,32 @@ export async function createCheckpoint({ source, outputDir, label }) {
   }
 }
 
-export async function verifyCheckpoint(receiptPathInput) {
-  const receiptPath = resolve(receiptPathInput);
-  const receipt = JSON.parse(await readFile(receiptPath, 'utf8'));
-  if (receipt.schema !== 'easyeda-pro-control.checkpoint.v1') {
+function assertCheckpointReceipt(value: unknown): asserts value is CheckpointReceipt {
+  if (!isRecord(value) || value['schema'] !== 'easyeda-pro-control.checkpoint.v1') {
     throw new Error('Unexpected checkpoint receipt schema.');
   }
-  const { receiptSha256, receiptPath: ignoredReceiptPath, ...receiptCore } = receipt;
+  for (const key of [
+    'source',
+    'checkpoint',
+    'sourceSha256',
+    'checkpointSha256',
+    'sourceDumpSha256',
+    'checkpointDumpSha256',
+    'receiptSha256',
+  ]) {
+    if (typeof value[key] !== 'string' || value[key].length === 0) {
+      throw new Error(`Checkpoint receipt ${key} must be a nonempty string.`);
+    }
+  }
+}
+
+export async function verifyCheckpoint(receiptPathInput: string) {
+  const receiptPath = resolve(receiptPathInput);
+  const parsed: unknown = JSON.parse(await readFile(receiptPath, 'utf8'));
+  assertCheckpointReceipt(parsed);
+  const receipt = parsed;
+  const { receiptSha256, ...receiptCore } = receipt;
+  delete receiptCore['receiptPath'];
   if (receiptSha256 !== sha256Text(canonicalJson(receiptCore))) {
     throw new Error('Checkpoint receipt hash is invalid.');
   }

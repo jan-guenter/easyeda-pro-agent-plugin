@@ -1,14 +1,20 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { chmod, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, before, describe, test } from 'node:test';
 
-import { canonicalJson, sha256Text } from '../src/core.mjs';
-import { createCheckpoint, verifyCheckpoint } from '../src/checkpoint.mjs';
+import { canonicalJson, isRecord, sha256Text, type UnknownRecord } from '../src/core.ts';
+import { createCheckpoint, verifyCheckpoint } from '../src/checkpoint.ts';
 
-let testDir;
+let testDir = '';
+
+function parseJsonRecord(text: string): UnknownRecord {
+  const parsed: unknown = JSON.parse(text);
+  assert.ok(isRecord(parsed), 'Expected fixture JSON to contain an object.');
+  return parsed;
+}
 
 before(async () => {
   testDir = await mkdtemp(join(tmpdir(), 'easyeda-control-checkpoint-'));
@@ -18,36 +24,43 @@ after(async () => {
   if (testDir) await rm(testDir, { recursive: true, force: true });
 });
 
-function createFixtureDatabase(path) {
+function createFixtureDatabase(path: string): void {
   execFileSync('sqlite3', [
     path,
     'PRAGMA journal_mode=DELETE; CREATE TABLE evidence(id INTEGER PRIMARY KEY, value TEXT NOT NULL); INSERT INTO evidence(value) VALUES (\'baseline\');',
   ]);
 }
 
-describe('SQLite checkpoint creation and verification', () => {
-  test('creates a logically exact backup with a canonical self-hashed receipt', async () => {
+function restoreEnvironment(name: string, value: string | undefined): void {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}
+
+void describe('SQLite checkpoint creation and verification', () => {
+  void test('creates a logically exact backup with a canonical self-hashed receipt', async () => {
     const source = join(testDir, 'fixture.eprj2');
     const outputDir = join(testDir, 'checkpoints');
     createFixtureDatabase(source);
 
     const checkpoint = await createCheckpoint({ source, outputDir, label: 'pre-mutation' });
-    const receipt = JSON.parse(await readFile(checkpoint.receiptPath, 'utf8'));
+    const receipt = parseJsonRecord(await readFile(checkpoint.receiptPath, 'utf8'));
     const { receiptSha256, ...receiptCore } = receipt;
+    const quickCheck = receipt['quickCheck'];
+    assert.ok(isRecord(quickCheck));
 
-    assert.equal(receipt.schema, 'easyeda-pro-control.checkpoint.v1');
-    assert.notEqual(receipt.source, receipt.checkpoint);
-    assert.equal(receipt.sourceDumpSha256, receipt.checkpointDumpSha256);
-    assert.equal(receipt.quickCheck.sourceBefore, 'ok');
-    assert.equal(receipt.quickCheck.sourceAfter, 'ok');
-    assert.equal(receipt.quickCheck.checkpoint, 'ok');
+    assert.equal(receipt['schema'], 'easyeda-pro-control.checkpoint.v1');
+    assert.notEqual(receipt['source'], receipt['checkpoint']);
+    assert.equal(receipt['sourceDumpSha256'], receipt['checkpointDumpSha256']);
+    assert.equal(quickCheck['sourceBefore'], 'ok');
+    assert.equal(quickCheck['sourceAfter'], 'ok');
+    assert.equal(quickCheck['checkpoint'], 'ok');
     assert.equal(receiptSha256, sha256Text(canonicalJson(receiptCore)));
 
     const verified = await verifyCheckpoint(checkpoint.receiptPath);
     assert.equal(verified.ok, true);
   });
 
-  test('detects source mutation after checkpoint creation', async () => {
+  void test('detects source mutation after checkpoint creation', async () => {
     const source = join(testDir, 'mutable.eprj2');
     const outputDir = join(testDir, 'mutable-checkpoints');
     createFixtureDatabase(source);
@@ -60,7 +73,7 @@ describe('SQLite checkpoint creation and verification', () => {
     assert.equal(verified.checkpointDumpSha256, checkpoint.checkpointDumpSha256);
   });
 
-  test('distinguishes a physical-only rewrite from a logical SQLite change', async () => {
+  void test('distinguishes a physical-only rewrite from a logical SQLite change', async () => {
     const source = join(testDir, 'physical-rewrite.eprj2');
     const outputDir = join(testDir, 'physical-rewrite-checkpoints');
     createFixtureDatabase(source);
@@ -77,49 +90,49 @@ describe('SQLite checkpoint creation and verification', () => {
     assert.equal(verified.sourceDumpSha256, checkpoint.sourceDumpSha256);
   });
 
-  test('detects a tampered receipt even when database artifacts still match', async () => {
+  void test('detects a tampered receipt even when database artifacts still match', async () => {
     const source = join(testDir, 'receipt-source.eprj2');
     const outputDir = join(testDir, 'receipt-checkpoints');
     createFixtureDatabase(source);
     const checkpoint = await createCheckpoint({ source, outputDir, label: 'receipt-check' });
-    const receipt = JSON.parse(await readFile(checkpoint.receiptPath, 'utf8'));
-    receipt.createdAt = '2000-01-01T00:00:00.000Z';
+    const receipt = parseJsonRecord(await readFile(checkpoint.receiptPath, 'utf8'));
+    receipt['createdAt'] = '2000-01-01T00:00:00.000Z';
     await writeFile(checkpoint.receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8');
 
     await assert.rejects(
       verifyCheckpoint(checkpoint.receiptPath),
-      /Checkpoint receipt hash is invalid/,
+      /Checkpoint receipt hash is invalid/u,
     );
   });
 
-  test('rejects unsafe labels, empty source files, and unexpected receipt schemas', async () => {
+  void test('rejects unsafe labels, empty source files, and unexpected receipt schemas', async () => {
     const source = join(testDir, 'validation.eprj2');
     createFixtureDatabase(source);
     await assert.rejects(
       createCheckpoint({ source, outputDir: testDir, label: '../escape' }),
-      /filename-safe/,
+      /filename-safe/u,
     );
 
     const empty = join(testDir, 'empty.eprj2');
     await writeFile(empty, '');
     await assert.rejects(
       createCheckpoint({ source: empty, outputDir: testDir, label: 'empty' }),
-      /non-empty file/,
+      /non-empty file/u,
     );
 
     const invalidReceipt = join(testDir, 'invalid-receipt.json');
     await writeFile(invalidReceipt, '{"schema":"unexpected"}\n', 'utf8');
-    await assert.rejects(verifyCheckpoint(invalidReceipt), /Unexpected checkpoint receipt schema/);
+    await assert.rejects(verifyCheckpoint(invalidReceipt), /Unexpected checkpoint receipt schema/u);
   });
 });
 
-describe('checkpoint failure cleanup', () => {
-  test('does not leave a reserved empty checkpoint when SQLite backup fails', async () => {
+void describe('checkpoint failure cleanup', () => {
+  void test('does not leave a reserved empty checkpoint when SQLite backup fails', async () => {
     const source = join(testDir, 'fake-source.eprj2');
     const outputDir = join(testDir, 'failed-checkpoints');
     const fakeBin = join(testDir, 'fake-bin');
     const fakeSqlite = join(fakeBin, 'sqlite3');
-    await import('node:fs/promises').then(({ mkdir }) => mkdir(fakeBin, { recursive: true }));
+    await mkdir(fakeBin, { recursive: true });
     await writeFile(source, 'non-empty fixture');
     await writeFile(
       fakeSqlite,
@@ -128,26 +141,26 @@ describe('checkpoint failure cleanup', () => {
     );
     await chmod(fakeSqlite, 0o700);
 
-    const originalPath = process.env.PATH;
-    process.env.PATH = `${fakeBin}:${originalPath}`;
+    const originalPath = process.env['PATH'];
+    process.env['PATH'] = `${fakeBin}:${originalPath ?? ''}`;
     try {
       await assert.rejects(
         createCheckpoint({ source, outputDir, label: 'forced-failure' }),
-        /forced backup failure/,
+        /forced backup failure/u,
       );
     } finally {
-      process.env.PATH = originalPath;
+      restoreEnvironment('PATH', originalPath);
     }
 
     assert.deepEqual(await readdir(outputDir), []);
   });
 
-  test('removes the checkpoint when logical dump generation fails after backup', async () => {
+  void test('removes the checkpoint when logical dump generation fails after backup', async () => {
     const source = join(testDir, 'dump-failure-source.eprj2');
     const outputDir = join(testDir, 'dump-failure-checkpoints');
     const fakeBin = join(testDir, 'dump-failure-bin');
     const fakeSqlite = join(fakeBin, 'sqlite3');
-    await import('node:fs/promises').then(({ mkdir }) => mkdir(fakeBin, { recursive: true }));
+    await mkdir(fakeBin, { recursive: true });
     await writeFile(source, 'non-empty dump failure fixture');
     await writeFile(
       fakeSqlite,
@@ -168,30 +181,29 @@ esac
     );
     await chmod(fakeSqlite, 0o700);
 
-    const originalPath = process.env.PATH;
-    const originalSource = process.env.EASYEDA_TEST_CHECKPOINT_SOURCE;
-    process.env.PATH = `${fakeBin}:${originalPath}`;
-    process.env.EASYEDA_TEST_CHECKPOINT_SOURCE = source;
+    const originalPath = process.env['PATH'];
+    const originalSource = process.env['EASYEDA_TEST_CHECKPOINT_SOURCE'];
+    process.env['PATH'] = `${fakeBin}:${originalPath ?? ''}`;
+    process.env['EASYEDA_TEST_CHECKPOINT_SOURCE'] = source;
     try {
       await assert.rejects(
         createCheckpoint({ source, outputDir, label: 'forced-dump-failure' }),
-        /forced dump failure/,
+        /forced dump failure/u,
       );
     } finally {
-      process.env.PATH = originalPath;
-      if (originalSource === undefined) delete process.env.EASYEDA_TEST_CHECKPOINT_SOURCE;
-      else process.env.EASYEDA_TEST_CHECKPOINT_SOURCE = originalSource;
+      restoreEnvironment('PATH', originalPath);
+      restoreEnvironment('EASYEDA_TEST_CHECKPOINT_SOURCE', originalSource);
     }
 
     assert.deepEqual(await readdir(outputDir), []);
   });
 
-  test('removes its checkpoint but preserves a pre-existing receipt-path collision', async () => {
+  void test('removes its checkpoint but preserves a pre-existing receipt-path collision', async () => {
     const source = join(testDir, 'receipt-collision-source.eprj2');
     const outputDir = join(testDir, 'receipt-collision-checkpoints');
     const fakeBin = join(testDir, 'receipt-collision-bin');
     const fakeSqlite = join(fakeBin, 'sqlite3');
-    await import('node:fs/promises').then(({ mkdir }) => mkdir(fakeBin, { recursive: true }));
+    await mkdir(fakeBin, { recursive: true });
     await writeFile(source, 'non-empty receipt collision fixture');
     await writeFile(
       fakeSqlite,
@@ -214,66 +226,66 @@ esac
     );
     await chmod(fakeSqlite, 0o700);
 
-    const originalPath = process.env.PATH;
-    const originalSource = process.env.EASYEDA_TEST_CHECKPOINT_SOURCE;
-    process.env.PATH = `${fakeBin}:${originalPath}`;
-    process.env.EASYEDA_TEST_CHECKPOINT_SOURCE = source;
+    const originalPath = process.env['PATH'];
+    const originalSource = process.env['EASYEDA_TEST_CHECKPOINT_SOURCE'];
+    process.env['PATH'] = `${fakeBin}:${originalPath ?? ''}`;
+    process.env['EASYEDA_TEST_CHECKPOINT_SOURCE'] = source;
     try {
       await assert.rejects(
         createCheckpoint({ source, outputDir, label: 'receipt-collision' }),
-        /EEXIST|exist/i,
+        /EEXIST|exist/iu,
       );
     } finally {
-      process.env.PATH = originalPath;
-      if (originalSource === undefined) delete process.env.EASYEDA_TEST_CHECKPOINT_SOURCE;
-      else process.env.EASYEDA_TEST_CHECKPOINT_SOURCE = originalSource;
+      restoreEnvironment('PATH', originalPath);
+      restoreEnvironment('EASYEDA_TEST_CHECKPOINT_SOURCE', originalSource);
     }
 
     const remaining = await readdir(outputDir);
     assert.equal(remaining.length, 1);
-    assert.match(remaining[0], /\.checkpoint\.json$/);
+    const remainingReceipt = remaining[0];
+    assert.ok(typeof remainingReceipt === 'string');
+    assert.match(remainingReceipt, /\.checkpoint\.json$/u);
     assert.equal(
-      await readFile(join(outputDir, remaining[0]), 'utf8'),
+      await readFile(join(outputDir, remainingReceipt), 'utf8'),
       'pre-existing receipt collision',
     );
   });
 
-  test('terminates a wedged SQLite subprocess at the configured wall-clock limit', async () => {
+  void test('terminates a wedged SQLite subprocess at the configured wall-clock limit', async () => {
     const source = join(testDir, 'timeout-source.eprj2');
     const outputDir = join(testDir, 'timeout-checkpoints');
     const fakeBin = join(testDir, 'timeout-bin');
     const fakeSqlite = join(fakeBin, 'sqlite3');
-    await import('node:fs/promises').then(({ mkdir }) => mkdir(fakeBin, { recursive: true }));
+    await mkdir(fakeBin, { recursive: true });
     await writeFile(source, 'non-empty fixture');
     await writeFile(fakeSqlite, '#!/bin/sh\nexec sleep 5\n', 'utf8');
     await chmod(fakeSqlite, 0o700);
 
-    const originalPath = process.env.PATH;
-    const originalTimeout = process.env.EASYEDA_CHECKPOINT_PROCESS_TIMEOUT_MS;
-    process.env.PATH = `${fakeBin}:${originalPath}`;
-    process.env.EASYEDA_CHECKPOINT_PROCESS_TIMEOUT_MS = '100';
+    const originalPath = process.env['PATH'];
+    const originalTimeout = process.env['EASYEDA_CHECKPOINT_PROCESS_TIMEOUT_MS'];
+    process.env['PATH'] = `${fakeBin}:${originalPath ?? ''}`;
+    process.env['EASYEDA_CHECKPOINT_PROCESS_TIMEOUT_MS'] = '100';
     const startedAt = Date.now();
     try {
       await assert.rejects(
         createCheckpoint({ source, outputDir, label: 'forced-timeout' }),
-        /timed out after 100 ms/,
+        /timed out after 100 ms/u,
       );
     } finally {
-      process.env.PATH = originalPath;
-      if (originalTimeout === undefined) delete process.env.EASYEDA_CHECKPOINT_PROCESS_TIMEOUT_MS;
-      else process.env.EASYEDA_CHECKPOINT_PROCESS_TIMEOUT_MS = originalTimeout;
+      restoreEnvironment('PATH', originalPath);
+      restoreEnvironment('EASYEDA_CHECKPOINT_PROCESS_TIMEOUT_MS', originalTimeout);
     }
 
     assert.ok(Date.now() - startedAt < 2000);
     assert.deepEqual(await readdir(outputDir), []);
   });
 
-  test('terminates a SQLite subprocess whose stderr exceeds the configured bound', async () => {
+  void test('terminates a SQLite subprocess whose stderr exceeds the configured bound', async () => {
     const source = join(testDir, 'stderr-source.eprj2');
     const outputDir = join(testDir, 'stderr-checkpoints');
     const fakeBin = join(testDir, 'stderr-bin');
     const fakeSqlite = join(fakeBin, 'sqlite3');
-    await import('node:fs/promises').then(({ mkdir }) => mkdir(fakeBin, { recursive: true }));
+    await mkdir(fakeBin, { recursive: true });
     await writeFile(source, 'non-empty fixture');
     await writeFile(
       fakeSqlite,
@@ -282,19 +294,18 @@ esac
     );
     await chmod(fakeSqlite, 0o700);
 
-    const originalPath = process.env.PATH;
-    const originalLimit = process.env.EASYEDA_CHECKPOINT_STDERR_MAX_BYTES;
-    process.env.PATH = `${fakeBin}:${originalPath}`;
-    process.env.EASYEDA_CHECKPOINT_STDERR_MAX_BYTES = '128';
+    const originalPath = process.env['PATH'];
+    const originalLimit = process.env['EASYEDA_CHECKPOINT_STDERR_MAX_BYTES'];
+    process.env['PATH'] = `${fakeBin}:${originalPath ?? ''}`;
+    process.env['EASYEDA_CHECKPOINT_STDERR_MAX_BYTES'] = '128';
     try {
       await assert.rejects(
         createCheckpoint({ source, outputDir, label: 'forced-stderr-cap' }),
-        /stderr exceeded 128 bytes/,
+        /stderr exceeded 128 bytes/u,
       );
     } finally {
-      process.env.PATH = originalPath;
-      if (originalLimit === undefined) delete process.env.EASYEDA_CHECKPOINT_STDERR_MAX_BYTES;
-      else process.env.EASYEDA_CHECKPOINT_STDERR_MAX_BYTES = originalLimit;
+      restoreEnvironment('PATH', originalPath);
+      restoreEnvironment('EASYEDA_CHECKPOINT_STDERR_MAX_BYTES', originalLimit);
     }
 
     assert.deepEqual(await readdir(outputDir), []);

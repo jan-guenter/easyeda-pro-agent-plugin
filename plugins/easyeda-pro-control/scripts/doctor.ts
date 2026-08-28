@@ -3,87 +3,139 @@ import { createHash } from 'node:crypto';
 import { createReadStream, existsSync } from 'node:fs';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { z } from 'zod';
 import {
   controlImplementationFingerprint,
   loadReviewedCompatibilityManifest,
   reviewedCompatibilityManifestFingerprint,
-} from '../server/src/core.mjs';
+} from '../server/src/core.ts';
 
-const pluginRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+interface DoctorCheck {
+  readonly check: string;
+  readonly ok: boolean;
+}
+
+type ToolSummary = Awaited<ReturnType<Client['listTools']>>['tools'][number];
+
+const compatibilityManifestSchema = z.looseObject({
+  facadeImplementation: z.object({
+      bundle: z.unknown(),
+      'source-tree': z.unknown(),
+  }),
+});
+const pluginManifestSchema = z.object({
+  mcpServers: z.string(),
+  name: z.string(),
+});
+const mcpConfigurationSchema = z.object({
+  mcpServers: z.object({
+    easyeda_pro_control: z.object({
+      command: z.string(),
+      env: z.record(z.string(), z.string()),
+    }),
+  }),
+});
+const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+const pluginRoot = resolve(import.meta.dirname, '..');
 const required = [
   '.codex-plugin/plugin.json',
   '.mcp.json',
   'reviewed-compatibility.json',
-  'server/src/core.mjs',
+  'server/src/core.ts',
   'server/dist/server.mjs',
   'skills/easyeda-pro-control/SKILL.md',
   'skills/easyeda-pro-control/agents/openai.yaml',
 ];
-const checks = [];
+const checks: DoctorCheck[] = [];
 
 for (const relative of required) {
   checks.push({ check: `file:${relative}`, ok: existsSync(join(pluginRoot, relative)) });
 }
 
-let reviewedCompatibility;
-let reviewedCompatibilityFingerprint;
+let reviewedCompatibility:
+  | z.infer<typeof compatibilityManifestSchema>
+  | { readonly error: string };
+let reviewedCompatibilityFingerprint: unknown;
 try {
-  reviewedCompatibility = loadReviewedCompatibilityManifest();
+  reviewedCompatibility = compatibilityManifestSchema.parse(
+    loadReviewedCompatibilityManifest(),
+  );
   reviewedCompatibilityFingerprint = reviewedCompatibilityManifestFingerprint();
   checks.push({ check: 'reviewed-compatibility-schema', ok: true });
 } catch (error) {
-  reviewedCompatibility = { error: error?.message ?? String(error) };
+  reviewedCompatibility = { error: errorMessage(error) };
   checks.push({ check: 'reviewed-compatibility-schema', ok: false });
 }
 
-const manifest = JSON.parse(await readFile(join(pluginRoot, '.codex-plugin', 'plugin.json'), 'utf8'));
-const mcp = JSON.parse(await readFile(join(pluginRoot, '.mcp.json'), 'utf8'));
-const mcpConfig = mcp.mcpServers?.easyeda_pro_control;
-checks.push({ check: 'manifest-name', ok: manifest.name === 'easyeda-pro-control' });
-checks.push({ check: 'manifest-mcp', ok: manifest.mcpServers === './.mcp.json' });
-checks.push({ check: 'node-major-24', ok: Number(process.versions.node.split('.')[0]) === 24 });
-checks.push({ check: 'configured-node', ok: existsSync(mcpConfig?.command) });
-const upstreamArgs = JSON.parse(mcpConfig?.env?.EASYEDA_UPSTREAM_ARGS_JSON ?? '[]');
+const manifest = pluginManifestSchema.parse(
+  JSON.parse(await readFile(join(pluginRoot, '.codex-plugin', 'plugin.json'), 'utf8')),
+);
+const mcp = mcpConfigurationSchema.parse(
+  JSON.parse(await readFile(join(pluginRoot, '.mcp.json'), 'utf8')),
+);
+const mcpConfig = mcp.mcpServers.easyeda_pro_control;
+checks.push(
+  { check: 'manifest-name', ok: manifest.name === 'easyeda-pro-control' },
+  { check: 'manifest-mcp', ok: manifest.mcpServers === './.mcp.json' },
+  { check: 'node-major-24', ok: Number(process.versions.node.split('.')[0]) === 24 },
+  { check: 'configured-node', ok: existsSync(mcpConfig.command) },
+);
+const upstreamArgs = z
+  .array(z.string())
+  .parse(JSON.parse(mcpConfig.env['EASYEDA_UPSTREAM_ARGS_JSON'] ?? '[]'));
+const [upstreamEntrypoint] = upstreamArgs;
 checks.push({
   check: 'upstream-entrypoint',
-  ok: upstreamArgs.length === 1 && existsSync(upstreamArgs[0]),
+  ok:
+    upstreamArgs.length === 1 &&
+    upstreamEntrypoint !== undefined &&
+    existsSync(upstreamEntrypoint),
 });
-const upstreamCwd = mcpConfig?.env?.EASYEDA_UPSTREAM_CWD ?? '';
-const dependencyLock = [
+const upstreamCwd = mcpConfig.env['EASYEDA_UPSTREAM_CWD'] ?? '';
+const dependencyLock = ([
   ['pnpm', 'pnpm-lock.yaml'],
   ['npm', 'package-lock.json'],
   ['npm-shrinkwrap', 'npm-shrinkwrap.json'],
   ['yarn', 'yarn.lock'],
-]
+] as const)
   .map(([type, name]) => ({ type, path: join(upstreamCwd, name) }))
   .find((candidate) => existsSync(candidate.path));
 checks.push({ check: 'upstream-dependency-lock', ok: Boolean(dependencyLock) });
-const assetsRoot = mcpConfig?.env?.EASYEDA_ASSETS_ROOT ?? '';
-const pcbBundleVersion = mcpConfig?.env?.EASYEDA_PCB_BUNDLE_VERSION ?? '';
-const publicApiBundleVersion = mcpConfig?.env?.EASYEDA_PUBLIC_API_BUNDLE_VERSION ?? '';
+const assetsRoot = mcpConfig.env['EASYEDA_ASSETS_ROOT'] ?? '';
+const pcbBundleVersion = mcpConfig.env['EASYEDA_PCB_BUNDLE_VERSION'] ?? '';
+const publicApiBundleVersion = mcpConfig.env['EASYEDA_PUBLIC_API_BUNDLE_VERSION'] ?? '';
 const installedBundleFiles = {
   pcbImplementation: join(assetsRoot, 'pro-pcb', pcbBundleVersion, 'js', 'pcb.js'),
   publicApiImplementation: join(assetsRoot, 'pro-api', publicApiBundleVersion, 'api.js'),
   publicApiAdapter: join(assetsRoot, 'pro-api', publicApiBundleVersion, 'api-types.js'),
   publicApiDeclarations: join(assetsRoot, 'pro-api', publicApiBundleVersion, 'api-types.d.ts'),
 };
-checks.push({
-  check: 'installed-easyeda-bundles',
-  ok: Object.values(installedBundleFiles).every((path) => existsSync(path)),
-});
-checks.push({
-  check: 'sqlite3',
-  ok: spawnSync('sqlite3', ['--version'], { encoding: 'utf8' }).status === 0,
-});
+checks.push(
+  {
+    check: 'installed-easyeda-bundles',
+    ok: Object.values(installedBundleFiles).every((path) => existsSync(path)),
+  },
+  {
+    check: 'sqlite3',
+    ok: spawnSync('sqlite3', ['--version'], { encoding: 'utf8' }).status === 0,
+  },
+);
 
-async function sha256File(path) {
+async function sha256File(path: string): Promise<string> {
   const hash = createHash('sha256');
-  for await (const chunk of createReadStream(path)) hash.update(chunk);
+  for await (const streamChunk of createReadStream(path)) {
+    const chunk: unknown = streamChunk;
+    if (!Buffer.isBuffer(chunk)) {
+      throw new TypeError(`Expected a binary stream while hashing ${path}.`);
+    }
+    hash.update(chunk);
+  }
   return hash.digest('hex');
 }
 
@@ -110,7 +162,7 @@ if (Object.values(installedBundleFiles).every((path) => existsSync(path))) {
 }
 
 const distPath = join(pluginRoot, 'server', 'dist', 'server.mjs');
-if (!reviewedCompatibility.error && existsSync(distPath)) {
+if (!('error' in reviewedCompatibility) && existsSync(distPath)) {
   const source = await controlImplementationFingerprint();
   const sourceProjection = {
     version: source.version,
@@ -140,21 +192,29 @@ if (!reviewedCompatibility.error && existsSync(distPath)) {
       },
     ],
   };
-  checks.push({
-    check: 'reviewed-source-facade',
-    ok:
-      JSON.stringify(sourceProjection) ===
-      JSON.stringify(reviewedCompatibility.facadeImplementation['source-tree']),
-  });
-  checks.push({
-    check: 'reviewed-bundle-facade',
-    ok:
-      JSON.stringify(bundleProjection) ===
-      JSON.stringify(reviewedCompatibility.facadeImplementation.bundle),
-  });
+  checks.push(
+    {
+      check: 'reviewed-source-facade',
+      ok:
+        JSON.stringify(sourceProjection) ===
+        JSON.stringify(reviewedCompatibility.facadeImplementation['source-tree']),
+    },
+    {
+      check: 'reviewed-bundle-facade',
+      ok:
+        JSON.stringify(bundleProjection) ===
+        JSON.stringify(reviewedCompatibility.facadeImplementation.bundle),
+    },
+  );
 }
-let toolCatalog;
-let smokeDirectory;
+let toolCatalog:
+  | {
+      readonly allHaveOutputSchema: boolean;
+      readonly count: number;
+      readonly names: string[];
+    }
+  | { readonly error: string };
+let smokeDirectory: string | undefined;
 try {
   smokeDirectory = await mkdtemp(join(tmpdir(), 'easyeda-control-doctor-'));
   const transport = new StdioClientTransport({
@@ -170,13 +230,14 @@ try {
   );
   await client.connect(transport);
   const listed = await client.listTools();
+  const listedTools: ToolSummary[] = listed.tools;
   toolCatalog = {
-    count: listed.tools.length,
-    allHaveOutputSchema: listed.tools.every((tool) => tool.outputSchema),
-    names: listed.tools.map((tool) => tool.name).sort(),
+    count: listedTools.length,
+    allHaveOutputSchema: listedTools.every((tool) => tool.outputSchema),
+    names: listedTools.map((tool) => tool.name).toSorted(),
   };
   await client.close();
-  await transport.close().catch(() => undefined);
+  await transport.close().catch(() => {});
   checks.push({
     check: 'mcp-tool-catalog',
     ok:
@@ -185,10 +246,12 @@ try {
       toolCatalog.names.includes('easyeda_control_exact_read'),
   });
 } catch (error) {
-  toolCatalog = { error: error?.message ?? String(error) };
+  toolCatalog = { error: errorMessage(error) };
   checks.push({ check: 'mcp-tool-catalog', ok: false });
 } finally {
-  if (smokeDirectory) await rm(smokeDirectory, { recursive: true, force: true });
+  if (smokeDirectory !== undefined) {
+    await rm(smokeDirectory, { recursive: true, force: true });
+  }
 }
 const result = {
   ok: checks.every((item) => item.ok),

@@ -18,6 +18,8 @@ Use Node 24.x:
 ```bash
 cd plugins/easyeda-pro-control
 npm ci
+npm run typecheck
+npm run lint
 npm run build
 npm run compatibility:check
 npm test

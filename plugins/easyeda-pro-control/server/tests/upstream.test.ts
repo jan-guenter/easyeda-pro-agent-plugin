@@ -5,16 +5,23 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { after, before, describe, test } from 'node:test';
 
-import { sha256Text } from '../src/core.mjs';
-import { UpstreamEasyedaClient } from '../src/upstream.mjs';
+import { sha256Text } from '../src/core.ts';
+import { UpstreamEasyedaClient } from '../src/upstream.ts';
 
-let fixtureRoot;
-let implementationRoot;
-let entrypoint;
-let assetsRoot;
-let originalEnvironment;
+interface SavedEnvironmentValue {
+  present: boolean;
+  value?: string | undefined;
+}
 
-function rememberEnvironment(names) {
+type SavedEnvironment = Record<string, SavedEnvironmentValue>;
+
+let fixtureRoot = '';
+let implementationRoot = '';
+let entrypoint = '';
+let assetsRoot = '';
+let originalEnvironment: SavedEnvironment | undefined;
+
+function rememberEnvironment(names: readonly string[]): SavedEnvironment {
   return Object.fromEntries(
     names.map((name) => [
       name,
@@ -23,7 +30,7 @@ function rememberEnvironment(names) {
   );
 }
 
-function restoreEnvironment(saved) {
+function restoreEnvironment(saved: SavedEnvironment): void {
   for (const [name, record] of Object.entries(saved)) {
     if (record.present) process.env[name] = record.value;
     else delete process.env[name];
@@ -99,13 +106,13 @@ before(async () => {
     'EASYEDA_PUBLIC_API_BUNDLE_VERSION',
   ];
   originalEnvironment = rememberEnvironment(names);
-  process.env.EASYEDA_UPSTREAM_COMMAND = process.execPath;
-  process.env.EASYEDA_UPSTREAM_ARGS_JSON = JSON.stringify([entrypoint]);
-  process.env.EASYEDA_UPSTREAM_CWD = fixtureRoot;
-  process.env.EASYEDA_CONTROL_DATA_DIR = join(fixtureRoot, 'control-data');
-  process.env.EASYEDA_ASSETS_ROOT = assetsRoot;
-  process.env.EASYEDA_PCB_BUNDLE_VERSION = '3.2.149.fixture';
-  process.env.EASYEDA_PUBLIC_API_BUNDLE_VERSION = '0.2.53.fixture';
+  process.env['EASYEDA_UPSTREAM_COMMAND'] = process.execPath;
+  process.env['EASYEDA_UPSTREAM_ARGS_JSON'] = JSON.stringify([entrypoint]);
+  process.env['EASYEDA_UPSTREAM_CWD'] = fixtureRoot;
+  process.env['EASYEDA_CONTROL_DATA_DIR'] = join(fixtureRoot, 'control-data');
+  process.env['EASYEDA_ASSETS_ROOT'] = assetsRoot;
+  process.env['EASYEDA_PCB_BUNDLE_VERSION'] = '3.2.149.fixture';
+  process.env['EASYEDA_PUBLIC_API_BUNDLE_VERSION'] = '0.2.53.fixture';
 });
 
 after(async () => {
@@ -113,8 +120,8 @@ after(async () => {
   if (fixtureRoot) await rm(fixtureRoot, { recursive: true, force: true });
 });
 
-describe('running upstream implementation fingerprint', { concurrency: false }, () => {
-  test('keeps the startup fingerprint and reports later on-disk drift', async () => {
+void describe('running upstream implementation fingerprint', { concurrency: false }, () => {
+  void test('keeps the startup fingerprint and reports later on-disk drift', async () => {
     const upstream = new UpstreamEasyedaClient();
     try {
       assert.deepEqual(await upstream.listTools(), []);
@@ -148,7 +155,7 @@ describe('running upstream implementation fingerprint', { concurrency: false }, 
     }
   });
 
-  test('hashes the installed PCB and public API implementation files', async () => {
+  void test('hashes the installed PCB and public API implementation files', async () => {
     const upstream = new UpstreamEasyedaClient();
     const bundles = await upstream.installedEasyedaBundles();
     assert.equal(bundles.assetsRoot, assetsRoot);

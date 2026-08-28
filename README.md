@@ -69,9 +69,13 @@ If any call reports bridge quarantine, use `easyeda_control_recover_incomplete` 
 
 ## Development
 
+First-party MCP source, test, and plugin scripts are TypeScript. Node 24 runs the erasable TypeScript directly during development; `tsc --noEmit` performs the strict compiler check, and esbuild produces the committed JavaScript MCP bundle.
+
 ```bash
 cd plugins/easyeda-pro-control
 npm ci
+npm run typecheck
+npm run lint
 npm run build
 npm run compatibility:check
 npm test
@@ -84,7 +88,7 @@ Repository validation runs from the marketplace root:
 node scripts/validate-repository.mjs
 ```
 
-GitHub Actions repeats the build and all tests on every push and pull request, checks that the committed bundle is reproducible, validates marketplace safety metadata, and uploads the built plugin archive.
+GitHub Actions runs strict TypeScript checking, type-aware Oxlint, the build, and all tests on every push and pull request. It also checks that the committed bundle is reproducible, validates marketplace safety metadata, and uploads the built plugin archive.
 
 Read [`AGENTS.md`](AGENTS.md) before making agentic changes. Security-sensitive contribution rules are in [`SECURITY.md`](SECURITY.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md).
 

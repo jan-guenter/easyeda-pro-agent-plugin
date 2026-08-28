@@ -6,17 +6,118 @@ import {
   buildSaveReopenCode,
   CONTEXT_PROBE_CODE,
   wrapWithContextGuard,
-} from '../src/runtime-scripts.mjs';
-import { buildExactReadCode } from '../src/exact-readers.mjs';
+} from '../src/runtime-scripts.ts';
+import { buildExactReadCode } from '../src/exact-readers.ts';
 
-const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-
-async function runGenerated(code, eda) {
-  return await new AsyncFunction('eda', code)(eda);
+interface AsyncFunctionConstructor {
+  new (...parameters: string[]): (eda: unknown) => Promise<unknown>;
 }
 
-describe('compact context probe', () => {
-  test('uses public context APIs and returns scalar identifiers only', async () => {
+interface ContextOptions {
+  projectUuid?: string;
+  documentUuid?: string;
+  documentType?: number;
+  tabId?: string;
+}
+
+interface PcbEdaOptions {
+  beforeUuid?: string;
+  beforeType?: number;
+  afterUuid?: string;
+  afterType?: number;
+  saved?: boolean;
+  closed?: boolean;
+  openedTab?: string;
+  activated?: boolean;
+}
+
+interface PcbEdaFixture {
+  eda: {
+    dmt_SelectControl: {
+      getCurrentDocumentInfo: () => Promise<Record<string, unknown>>;
+    };
+    pcb_Document: {
+      save: (uuid: string) => Promise<boolean>;
+    };
+    dmt_EditorControl: {
+      closeDocument: (target: string) => Promise<boolean>;
+      openDocument: (uuid: string) => Promise<string>;
+      activateDocument?: ((tabId: string) => Promise<boolean>) | undefined;
+    };
+  };
+  calls: string[];
+}
+
+function contextEda({
+  projectUuid = 'project-1',
+  documentUuid = 'document-1',
+  documentType = 3,
+  tabId = 'tab-1',
+}: ContextOptions = {}): Record<string, unknown> {
+  return {
+    dmt_Project: { getCurrentProjectInfo: async () => ({ uuid: projectUuid }) },
+    dmt_SelectControl: {
+      getCurrentDocumentInfo: async () => ({ uuid: documentUuid, documentType, tabId }),
+    },
+  };
+}
+
+function pcbEda(options: PcbEdaOptions = {}): PcbEdaFixture {
+  const calls: string[] = [];
+  let reads = 0;
+  const before = {
+    uuid: options.beforeUuid ?? 'document-1',
+    documentType: options.beforeType ?? 3,
+    tabId: 'old-tab',
+    title: 'PCB',
+  };
+  const after = {
+    uuid: options.afterUuid ?? 'document-1',
+    documentType: options.afterType ?? 3,
+    tabId: 'new-tab',
+    title: 'PCB reopened',
+  };
+  const eda = {
+    dmt_SelectControl: {
+      getCurrentDocumentInfo: async () => {
+        calls.push('read-document');
+        reads += 1;
+        return reads === 1 ? before : after;
+      },
+    },
+    pcb_Document: {
+      save: async (uuid: string) => {
+        calls.push(`save:${uuid}`);
+        return options.saved ?? true;
+      },
+    },
+    dmt_EditorControl: {
+      closeDocument: async (target: string) => {
+        calls.push(`close:${target}`);
+        return options.closed ?? true;
+      },
+      openDocument: async (uuid: string) => {
+        calls.push(`open:${uuid}`);
+        return options.openedTab ?? 'new-tab';
+      },
+      activateDocument: async (tabId: string) => {
+        calls.push(`activate:${tabId}`);
+        return options.activated ?? true;
+      },
+    },
+  };
+  return { eda, calls };
+}
+
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion, typescript/no-unsafe-member-access -- The test must construct generated async programs through the runtime's AsyncFunction constructor.
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as AsyncFunctionConstructor;
+
+async function runGenerated(code: string, eda: unknown): Promise<unknown> {
+  return new AsyncFunction('eda', code)(eda);
+}
+
+void describe('compact context probe', () => {
+  void test('uses public context APIs and returns scalar identifiers only', async () => {
     const output = await runGenerated(CONTEXT_PROBE_CODE, {
       dmt_Project: {
         getCurrentProjectInfo: async () => ({
@@ -38,7 +139,7 @@ describe('compact context probe', () => {
       dmt_Pcb: {
         getCurrentPcbInfo: async () => ({ uuid: 'document-1', title: 'PCB', tabId: 'tab-1' }),
       },
-      dmt_Schematic: { getCurrentSchematicInfo: async () => undefined },
+      dmt_Schematic: { getCurrentSchematicInfo: async () => {} },
     });
 
     assert.deepEqual(output, {
@@ -50,13 +151,13 @@ describe('compact context probe', () => {
     });
   });
 
-  test('does not probe undeclared uppercase API aliases', async () => {
+  void test('does not probe undeclared uppercase API aliases', async () => {
     const output = await runGenerated(CONTEXT_PROBE_CODE, {
       DMT_Project: { getCurrentProjectInfo: async () => ({ projectUuid: 'project-2' }) },
       DMT_SelectControl: {
         getCurrentDocumentInfo: async () => ({ documentUuid: 'document-2', documentType: 1 }),
       },
-      DMT_Pcb: { getCurrentPcbInfo: async () => undefined },
+      DMT_Pcb: { getCurrentPcbInfo: async () => {} },
       DMT_Schematic: {
         getCurrentSchematicInfo: async () => ({ documentUuid: 'document-2', title: 'Sheet 01' }),
       },
@@ -72,43 +173,29 @@ describe('compact context probe', () => {
   });
 });
 
-describe('guarded runtime calls', () => {
+void describe('guarded runtime calls', () => {
   const expectedContext = {
     project: { uuid: 'project-1' },
     document: { uuid: 'document-1', documentType: 3, tabId: 'tab-1' },
   };
 
-  function contextEda({
-    projectUuid = 'project-1',
-    documentUuid = 'document-1',
-    documentType = 3,
-    tabId = 'tab-1',
-  } = {}) {
-    return {
-      dmt_Project: { getCurrentProjectInfo: async () => ({ uuid: projectUuid }) },
-      dmt_SelectControl: {
-        getCurrentDocumentInfo: async () => ({ uuid: documentUuid, documentType, tabId }),
-      },
-    };
-  }
-
-  test('executes the body only after exact project, document, and type proof', async () => {
+  void test('executes the body only after exact project, document, and type proof', async () => {
     const code = wrapWithContextGuard('return { ok: true, value: 42 };', expectedContext);
     assert.deepEqual(await runGenerated(code, contextEda()), { ok: true, value: 42 });
   });
 
-  test('rejects incomplete expected context and every active-context mismatch', async () => {
-    assert.throws(() => wrapWithContextGuard('return true;', {}), /requires project uuid/);
+  void test('rejects incomplete expected context and every active-context mismatch', async () => {
+    assert.throws(() => wrapWithContextGuard('return true;', {}), /requires project uuid/u);
     const code = wrapWithContextGuard('return { shouldNotRun: true };', expectedContext);
-    await assert.rejects(runGenerated(code, contextEda({ projectUuid: 'other' })), /does not match/);
-    await assert.rejects(runGenerated(code, contextEda({ documentUuid: 'other' })), /does not match/);
-    await assert.rejects(runGenerated(code, contextEda({ documentType: 1 })), /does not match/);
-    await assert.rejects(runGenerated(code, contextEda({ tabId: 'other-tab' })), /does not match/);
+    await assert.rejects(runGenerated(code, contextEda({ projectUuid: 'other' })), /does not match/u);
+    await assert.rejects(runGenerated(code, contextEda({ documentUuid: 'other' })), /does not match/u);
+    await assert.rejects(runGenerated(code, contextEda({ documentType: 1 })), /does not match/u);
+    await assert.rejects(runGenerated(code, contextEda({ tabId: 'other-tab' })), /does not match/u);
   });
 });
 
-describe('generated exact readers and component mutations', () => {
-  test('all five exact-reader programs parse as async JavaScript', () => {
+void describe('generated exact readers and component mutations', () => {
+  void test('all five exact-reader programs parse as async JavaScript', () => {
     for (const request of [
       {
         kind: 'schematic-components',
@@ -130,16 +217,16 @@ describe('generated exact readers and component mutations', () => {
     }
   });
 
-  test('generates the reviewed lower-case PCB component writer from declared changes', async () => {
+  void test('generates the reviewed lower-case PCB component writer from declared changes', async () => {
     const changes = [
       { primitiveId: 'U1', pointer: '/x', before: 100, after: 200 },
       { primitiveId: 'U1', pointer: '/bounds/minX', before: 90, after: 190 },
       { primitiveId: 'U1', pointer: '/pads/0/x', before: 101, after: 201 },
     ];
-    const calls = [];
+    const calls: unknown[] = [];
     const code = buildComponentMutationCode(3, changes, 'after');
-    assert.match(code, /eda\.pcb_PrimitiveComponent/);
-    assert.doesNotMatch(code, /PCB_PrimitiveComponent/);
+    assert.match(code, /eda\.pcb_PrimitiveComponent/u);
+    assert.doesNotMatch(code, /PCB_PrimitiveComponent/u);
     const guarded = wrapWithContextGuard(code, {
       project: { uuid: 'project-1' },
       document: { uuid: 'document-1', documentType: 3, tabId: 'tab-1' },
@@ -162,11 +249,11 @@ describe('generated exact readers and component mutations', () => {
         },
       },
       pcb_PrimitiveComponent: {
-        get: async (primitiveId) => {
+        get: async (primitiveId: string) => {
           calls.push({ get: primitiveId });
           return current;
         },
-        modify: async (component, patch) => {
+        modify: async (component: unknown, patch: unknown) => {
           assert.equal(component, current);
           calls.push({ modify: { samePreconditionedObject: component === current, patch } });
           return { getState_PrimitiveId: async () => 'U1' };
@@ -194,10 +281,10 @@ describe('generated exact readers and component mutations', () => {
     });
   });
 
-  test('rejects unsupported document types, states, fields, and values before dispatch', () => {
+  void test('rejects unsupported document types, states, fields, and values before dispatch', () => {
     const xChange = [{ primitiveId: 'U1', pointer: '/x', before: 100, after: 200 }];
-    assert.throws(() => buildComponentMutationCode(1, xChange, 'after'), /requires PCB type/);
-    assert.throws(() => buildComponentMutationCode(3, xChange, 'unknown'), /before\/after state/);
+    assert.throws(() => buildComponentMutationCode(1, xChange, 'after'), /requires PCB type/u);
+    assert.throws(() => buildComponentMutationCode(3, xChange, 'unknown'), /before\/after state/u);
     assert.throws(
       () =>
         buildComponentMutationCode(
@@ -205,7 +292,7 @@ describe('generated exact readers and component mutations', () => {
           [{ primitiveId: 'U1', pointer: '/bounds/minX', before: 90, after: 190 }],
           'after',
         ),
-      /at least one writable top-level field/,
+      /at least one writable top-level field/u,
     );
     assert.throws(
       () =>
@@ -214,7 +301,7 @@ describe('generated exact readers and component mutations', () => {
           [{ primitiveId: 'U1', pointer: '/layer', before: 1, after: 99 }],
           'after',
         ),
-      /layer must be exactly 1 \(Top\) or 2 \(Bottom\)/,
+      /layer must be exactly 1 \(Top\) or 2 \(Bottom\)/u,
     );
     assert.throws(
       () =>
@@ -223,7 +310,7 @@ describe('generated exact readers and component mutations', () => {
           [{ primitiveId: 'U1', pointer: '/x', before: '100', after: 200 }],
           'after',
         ),
-      /field x must be finite/,
+      /field x must be finite/u,
     );
     assert.throws(
       () =>
@@ -235,11 +322,11 @@ describe('generated exact readers and component mutations', () => {
           ],
           'after',
         ),
-      /limited to exactly one PCB component/,
+      /limited to exactly one PCB component/u,
     );
   });
 
-  test('rejects a context change after target read without calling modify', async () => {
+  void test('rejects a context change after target read without calling modify', async () => {
     const body = buildComponentMutationCode(
       3,
       [{ primitiveId: 'U1', pointer: '/x', before: 100, after: 200 }],
@@ -272,13 +359,13 @@ describe('generated exact readers and component mutations', () => {
           },
         },
       }),
-      /active EasyEDA context changed after component precondition read/,
+      /active EasyEDA context changed after component precondition read/u,
     );
     assert.equal(modifyCalls, 0);
     assert.equal(documentReads, 3);
   });
 
-  test('rejects a context change after the single modify call', async () => {
+  void test('rejects a context change after the single modify call', async () => {
     const body = buildComponentMutationCode(
       3,
       [{ primitiveId: 'U1', pointer: '/x', before: 100, after: 200 }],
@@ -311,13 +398,13 @@ describe('generated exact readers and component mutations', () => {
           },
         },
       }),
-      /active EasyEDA context changed after component modify/,
+      /active EasyEDA context changed after component modify/u,
     );
     assert.equal(modifyCalls, 1);
     assert.equal(documentReads, 4);
   });
 
-  test('rejects a stale journal-bound target precondition without calling modify', async () => {
+  void test('rejects a stale journal-bound target precondition without calling modify', async () => {
     const body = buildComponentMutationCode(
       3,
       [{ primitiveId: 'U1', pointer: '/x', before: 100, after: 200 }],
@@ -346,61 +433,14 @@ describe('generated exact readers and component mutations', () => {
           },
         },
       }),
-      /component precondition changed before modify for x/,
+      /component precondition changed before modify for x/u,
     );
     assert.equal(modifyCalls, 0);
   });
 });
 
-describe('exact save, close, reopen, activate, and identity proof', () => {
-  function pcbEda(options = {}) {
-    const calls = [];
-    let reads = 0;
-    const before = {
-      uuid: options.beforeUuid ?? 'document-1',
-      documentType: options.beforeType ?? 3,
-      tabId: 'old-tab',
-      title: 'PCB',
-    };
-    const after = {
-      uuid: options.afterUuid ?? 'document-1',
-      documentType: options.afterType ?? 3,
-      tabId: 'new-tab',
-      title: 'PCB reopened',
-    };
-    const eda = {
-      dmt_SelectControl: {
-        getCurrentDocumentInfo: async () => {
-          calls.push('read-document');
-          reads += 1;
-          return reads === 1 ? before : after;
-        },
-      },
-      pcb_Document: {
-        save: async (uuid) => {
-          calls.push(`save:${uuid}`);
-          return options.saved ?? true;
-        },
-      },
-      dmt_EditorControl: {
-        closeDocument: async (target) => {
-          calls.push(`close:${target}`);
-          return options.closed ?? true;
-        },
-        openDocument: async (uuid) => {
-          calls.push(`open:${uuid}`);
-          return options.openedTab ?? 'new-tab';
-        },
-        activateDocument: async (tabId) => {
-          calls.push(`activate:${tabId}`);
-          return options.activated ?? true;
-        },
-      },
-    };
-    return { eda, calls };
-  }
-
-  test('performs PCB persistence in strict order and verifies reopened identity', async () => {
+void describe('exact save, close, reopen, activate, and identity proof', () => {
+  void test('performs PCB persistence in strict order and verifies reopened identity', async () => {
     const { eda, calls } = pcbEda();
     const result = await runGenerated(
       buildSaveReopenCode({
@@ -431,18 +471,18 @@ describe('exact save, close, reopen, activate, and identity proof', () => {
     });
   });
 
-  test('refuses unsupported library types before generating a persistence script', () => {
+  void test('refuses unsupported library types before generating a persistence script', () => {
     assert.throws(
       () => buildSaveReopenCode({ document: { uuid: 'symbol-1', documentType: 2 } }),
-      /supports schematic \(1\) and PCB \(3\) documents only/,
+      /supports schematic \(1\) and PCB \(3\) documents only/u,
     );
     assert.throws(
       () => buildSaveReopenCode({ document: { uuid: 'footprint-1', documentType: 4 } }),
-      /supports schematic \(1\) and PCB \(3\) documents only/,
+      /supports schematic \(1\) and PCB \(3\) documents only/u,
     );
   });
 
-  test('stops before mutation on identity mismatch and before close on save failure', async () => {
+  void test('stops before mutation on identity mismatch and before close on save failure', async () => {
     const identityMismatch = pcbEda({ beforeUuid: 'other-document' });
     await assert.rejects(
       runGenerated(
@@ -451,7 +491,7 @@ describe('exact save, close, reopen, activate, and identity proof', () => {
         }),
         identityMismatch.eda,
       ),
-      /active document changed before save/,
+      /active document changed before save/u,
     );
     assert.deepEqual(identityMismatch.calls, ['read-document']);
 
@@ -463,12 +503,12 @@ describe('exact save, close, reopen, activate, and identity proof', () => {
         }),
         saveFailure.eda,
       ),
-      /save did not return exactly true/,
+      /save did not return exactly true/u,
     );
     assert.deepEqual(saveFailure.calls, ['read-document', 'save:document-1']);
   });
 
-  test('validates the complete editor lifecycle before saving', async () => {
+  void test('validates the complete editor lifecycle before saving', async () => {
     const missingActivation = pcbEda();
     delete missingActivation.eda.dmt_EditorControl.activateDocument;
 
@@ -479,18 +519,18 @@ describe('exact save, close, reopen, activate, and identity proof', () => {
         }),
         missingActivation.eda,
       ),
-      /editor open\/close\/activate API unavailable/,
+      /editor open\/close\/activate API unavailable/u,
     );
     assert.deepEqual(missingActivation.calls, ['read-document']);
   });
 
-  test('treats close, open, activate, and reopened identity failures as hard errors', async () => {
-    const cases = [
-      [{ closed: false }, /closeDocument did not return exactly true/],
-      [{ openedTab: '' }, /openDocument did not return a tab id/],
-      [{ activated: false }, /activateDocument did not return exactly true/],
-      [{ afterUuid: 'other-document' }, /reopened document identity mismatch/],
-      [{ afterType: 1 }, /reopened document identity mismatch/],
+  void test('treats close, open, activate, and reopened identity failures as hard errors', async () => {
+    const cases: ReadonlyArray<readonly [PcbEdaOptions, RegExp]> = [
+      [{ closed: false }, /closeDocument did not return exactly true/u],
+      [{ openedTab: '' }, /openDocument did not return a tab id/u],
+      [{ activated: false }, /activateDocument did not return exactly true/u],
+      [{ afterUuid: 'other-document' }, /reopened document identity mismatch/u],
+      [{ afterType: 1 }, /reopened document identity mismatch/u],
     ];
     for (const [options, pattern] of cases) {
       const { eda } = pcbEda(options);
