@@ -1604,9 +1604,12 @@ describe('durable mutation state machine', { concurrency: false }, () => {
     assert.equal(journal.orphanedCallPossible, false);
   });
 
-  test('binds the checkpoint to equivalent Windows and file URI project paths', async (context) => {
+  test('binds the checkpoint to an equivalent Windows project path', async (context) => {
     const windows = windowsPath(source);
-    if (!windows) context.skip('Fixture is not under a mounted Windows drive.');
+    if (!windows) {
+      context.skip('Fixture is not under a mounted Windows drive.');
+      return;
+    }
 
     const windowsUpstream = new MockUpstream({ contextPath: windows });
     const windowsEngine = new EasyedaControlEngine(windowsUpstream);
@@ -1621,7 +1624,9 @@ describe('durable mutation state machine', { concurrency: false }, () => {
       (await windowsEngine.recover(plannedWindows.operationId, 'reconciled-no-mutation')).state,
       'reconciled-no-mutation',
     );
+  });
 
+  test('binds the checkpoint to an equivalent file URI project path', async () => {
     const fileUri = `file://${source}`;
     const uriUpstream = new MockUpstream({ contextPath: fileUri });
     const uriEngine = new EasyedaControlEngine(uriUpstream);
