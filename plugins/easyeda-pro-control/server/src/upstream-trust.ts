@@ -20,6 +20,11 @@ import {
   loadReviewedCompatibilityManifest,
 } from "./core.ts";
 import type { UpstreamLauncherFingerprint } from "./core.ts";
+import {
+  DESCRIPTOR_SANITIZER_FILE_NAME,
+  DESCRIPTOR_SANITIZER_SCHEMA,
+  DESCRIPTOR_SANITIZER_SHA256,
+} from "./descriptor-sanitizer-identity.ts";
 import { captureUpstreamModuleGraph } from "./upstream-module-execution.ts";
 import type { CapturedUpstreamModuleGraph } from "./upstream-module-execution.ts";
 
@@ -88,6 +93,10 @@ const REQUIRED_SANDBOX_OPTIONS = [
   "--unshare-user",
 ] as const;
 const runtimeSha256Schema = z.string().regex(/^[a-f0-9]{64}$/u);
+const runtimeDescriptorSanitizerSchema = z.strictObject({
+  schema: z.literal(DESCRIPTOR_SANITIZER_SCHEMA),
+  sha256: z.literal(DESCRIPTOR_SANITIZER_SHA256),
+});
 const runtimeLauncherFingerprintSchema = z.strictObject({
   args: z.tuple([z.string().min(1)]),
   command: z.string().min(1),
@@ -123,6 +132,7 @@ const runtimeLauncherFingerprintSchema = z.strictObject({
   sandbox: z.strictObject({
     command: z.string().min(1),
     commandSha256: runtimeSha256Schema,
+    descriptorSanitizer: runtimeDescriptorSanitizerSchema,
     version: z.string().min(1),
   }),
 });
@@ -265,6 +275,7 @@ function sameIdentity(left: Stats, right: Stats): boolean {
   return (
     left.dev === right.dev &&
     left.ino === right.ino &&
+    left.nlink === right.nlink &&
     left.mode === right.mode &&
     left.size === right.size &&
     left.mtimeMs === right.mtimeMs &&
@@ -539,11 +550,20 @@ async function openReviewedExecutable(
   expectedSha256: string,
   label: string,
   allowRootOwner: boolean,
+  expectedMode?: number,
 ): Promise<ReviewedExecutable> {
   const absolute = resolve(path);
   const pathInfo = await lstat(absolute);
   if (pathInfo.isSymbolicLink() || !pathInfo.isFile()) {
     throw new Error(`${label} must be a regular non-symlink file.`);
+  }
+  if (
+    expectedMode !== undefined &&
+    ((pathInfo.mode & 0o7777) !== expectedMode || pathInfo.nlink !== 1)
+  ) {
+    throw new Error(
+      `${label} must be a single-link file with the exact reviewed executable mode.`,
+    );
   }
   assertTrustedOwnership(absolute, pathInfo, allowRootOwner);
   const handle = await open(
@@ -715,6 +735,149 @@ export function openReviewedNodeExecutable(
   );
 }
 
+function descriptorSanitizerPath(): string {
+  return resolve(
+    import.meta.dirname,
+    "..",
+    "bin",
+    DESCRIPTOR_SANITIZER_FILE_NAME,
+  );
+}
+
+export function openReviewedDescriptorSanitizerExecutable(): Promise<ReviewedExecutable> {
+  return openReviewedExecutable(
+    descriptorSanitizerPath(),
+    DESCRIPTOR_SANITIZER_SHA256,
+    "Reviewed descriptor sanitizer executable",
+    false,
+    0o755,
+  );
+}
+
+async function runDescriptorSanitizerProbe(
+  descriptorSanitizer: ReviewedExecutable,
+  sandbox: ReviewedExecutable,
+  expectedVersion: string,
+): Promise<void> {
+  const child = spawn(
+    descriptorSanitizer.executionPath,
+    [String(process.pid), sandbox.executionPath, "--version"],
+    {
+      cwd: "/",
+      env: { LANG: "C.UTF-8", LC_ALL: "C.UTF-8", PATH: "/usr/bin:/bin" },
+      killSignal: "SIGKILL",
+      shell: false,
+      stdio: [
+        "ignore",
+        "pipe",
+        "pipe",
+        "pipe",
+        "pipe",
+        "pipe",
+        "pipe",
+        "pipe",
+        "pipe",
+        "pipe",
+        sandbox.descriptor,
+      ],
+      timeout: 5000,
+      windowsHide: true,
+    },
+  );
+  if (child.stdout === null || child.stderr === null) {
+    child.kill("SIGKILL");
+    throw new Error("Reviewed descriptor-sanitizer probe pipes are unavailable.");
+  }
+  const childClosed = Promise.withResolvers<null>();
+  child.once("close", () => {
+    childClosed.resolve(null);
+  });
+  child.once("error", (error: Error) => {
+    childClosed.reject(error);
+  });
+  const results = await Promise.allSettled([
+    collectSandboxProbeOutput(
+      child.stdout,
+      "Reviewed descriptor-sanitizer stdout",
+    ),
+    collectSandboxProbeOutput(
+      child.stderr,
+      "Reviewed descriptor-sanitizer stderr",
+    ),
+    childClosed.promise,
+  ]);
+  const failures = results.flatMap((result) =>
+    result.status === "rejected" ? [result.reason as unknown] : [],
+  );
+  if (failures.length > 0) {
+    throw new AggregateError(
+      failures,
+      "Reviewed descriptor-sanitizer host probe failed.",
+    );
+  }
+  const stdout = results[0];
+  const stderr = results[1];
+  if (
+    stdout?.status !== "fulfilled" ||
+    stderr?.status !== "fulfilled" ||
+    stdout.value !== `bubblewrap ${expectedVersion}\n` ||
+    stderr.value.length > 0 ||
+    child.exitCode !== 0 ||
+    child.signalCode !== null
+  ) {
+    throw new Error(
+      "Reviewed descriptor sanitizer did not enter exact Bubblewrap cleanly.",
+    );
+  }
+}
+
+export async function probeReviewedDescriptorSanitizerRuntime(
+  expected: UpstreamLauncherFingerprint["sandbox"],
+): Promise<void> {
+  let descriptorSanitizer: ReviewedExecutable | undefined;
+  let sandbox: ReviewedExecutable | undefined;
+  let operationError: unknown;
+  try {
+    descriptorSanitizer =
+      await openReviewedDescriptorSanitizerExecutable();
+    sandbox = await openReviewedSandboxExecutable(expected);
+    await Promise.all([
+      descriptorSanitizer.assertCurrent(),
+      sandbox.assertCurrent(),
+    ]);
+    await runDescriptorSanitizerProbe(
+      descriptorSanitizer,
+      sandbox,
+      expected.version,
+    );
+  } catch (error) {
+    operationError = error;
+  }
+  const cleanup = await Promise.allSettled([
+    descriptorSanitizer?.dispose(),
+    sandbox?.dispose(),
+  ]);
+  const cleanupErrors = cleanup.flatMap((result) =>
+    result.status === "rejected" ? [result.reason as unknown] : [],
+  );
+  if (cleanupErrors.length > 0) {
+    throw new AggregateError(
+      operationError === undefined
+        ? cleanupErrors
+        : [operationError, ...cleanupErrors],
+      "Reviewed descriptor-sanitizer probe cleanup was incomplete.",
+      operationError === undefined ? undefined : { cause: operationError },
+    );
+  }
+  if (operationError !== undefined) {
+    throw operationError instanceof Error
+      ? operationError
+      : new Error("Reviewed descriptor-sanitizer host probe failed.", {
+          cause: operationError,
+        });
+  }
+}
+
 async function captureLauncherFingerprintAt(
   commandPath: string,
   args: [string],
@@ -751,11 +914,17 @@ async function captureLauncherFingerprintAt(
     dependencyLockPath,
   );
   const sandboxCommand = configuredSandboxCommand();
-  const [command, entrypoint, sandbox] = await Promise.all([
+  const [command, descriptorSanitizer, entrypoint, sandbox] = await Promise.all([
     captureTrustedFile(commandPath),
+    captureTrustedFile(descriptorSanitizerPath()),
     captureTrustedFile(entrypointPath),
     captureTrustedFile(sandboxCommand, true),
   ]);
+  if (descriptorSanitizer.sha256 !== DESCRIPTOR_SANITIZER_SHA256) {
+    throw new Error(
+      "The descriptor sanitizer differs from its reviewed static identity.",
+    );
+  }
   const sandboxExecutable = await openReviewedExecutable(
     sandboxCommand,
     sandbox.sha256,
@@ -808,6 +977,10 @@ async function captureLauncherFingerprintAt(
       sandbox: {
         command: sandboxCommand,
         commandSha256: sandbox.sha256,
+        descriptorSanitizer: {
+          schema: DESCRIPTOR_SANITIZER_SCHEMA,
+          sha256: descriptorSanitizer.sha256,
+        },
         version: REVIEWED_SANDBOX_VERSION,
       },
       cwd,
@@ -816,6 +989,7 @@ async function captureLauncherFingerprintAt(
     seals: [
       sealFor(cwd, cwdInfo, "directory"),
       command.seal,
+      descriptorSanitizer.seal,
       sandbox.seal,
       ...closure.seals,
     ],
@@ -857,9 +1031,15 @@ async function captureLauncherAdmissionAt(
   }
   if (
     expected.sandbox.command !== configuredSandboxCommand() ||
+    expected.sandbox.descriptorSanitizer.schema !==
+      DESCRIPTOR_SANITIZER_SCHEMA ||
+    expected.sandbox.descriptorSanitizer.sha256 !==
+      DESCRIPTOR_SANITIZER_SHA256 ||
     expected.sandbox.version !== REVIEWED_SANDBOX_VERSION
   ) {
-    throw new Error("The configured bubblewrap identity differs from review.");
+    throw new Error(
+      "The configured sandbox-launcher identity differs from review.",
+    );
   }
   if (
     (await realpath(normalizedCommand)) !== (await realpath(process.execPath))
@@ -884,15 +1064,23 @@ async function captureLauncherAdmissionAt(
       "The reviewed upstream entrypoint and lockfile must remain inside their cwd.",
     );
   }
-  const [commandCapture, entrypointCapture, lockCapture, sandboxCapture] =
-    await Promise.all([
+  const [
+    commandCapture,
+    descriptorSanitizerCapture,
+    entrypointCapture,
+    lockCapture,
+    sandboxCapture,
+  ] = await Promise.all([
     captureTrustedFile(normalizedCommand),
+    captureTrustedFile(descriptorSanitizerPath()),
     captureTrustedFile(normalizedEntrypoint),
     captureTrustedFile(expected.dependencyLock.path),
-      captureTrustedFile(expected.sandbox.command, true),
-    ]);
+    captureTrustedFile(expected.sandbox.command, true),
+  ]);
   if (
     commandCapture.sha256 !== expected.commandSha256 ||
+    descriptorSanitizerCapture.sha256 !==
+      expected.sandbox.descriptorSanitizer.sha256 ||
     entrypointCapture.sha256 !== expected.entrypointSha256 ||
     lockCapture.sha256 !== expected.dependencyLock.sha256 ||
     sandboxCapture.sha256 !== expected.sandbox.commandSha256
@@ -904,6 +1092,7 @@ async function captureLauncherAdmissionAt(
   const seals = [
     sealFor(normalizedCwd, cwdInfo, "directory"),
     commandCapture.seal,
+    descriptorSanitizerCapture.seal,
     entrypointCapture.seal,
     lockCapture.seal,
     sandboxCapture.seal,

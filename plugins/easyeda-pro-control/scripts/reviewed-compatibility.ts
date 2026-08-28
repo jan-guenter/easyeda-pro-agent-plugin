@@ -4,7 +4,10 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { z } from "zod";
 
-import { controlImplementationFingerprint } from "../server/src/core.ts";
+import {
+  DESCRIPTOR_SANITIZER_FILE_NAME,
+  controlImplementationFingerprint,
+} from "../server/src/core.ts";
 
 const compatibilityManifestSchema = z.looseObject({
   facadeImplementation: z.looseObject({
@@ -16,6 +19,12 @@ const compatibilityManifestSchema = z.looseObject({
 const pluginRoot = resolve(import.meta.dirname, "..");
 const manifestPath = join(pluginRoot, "reviewed-compatibility.json");
 const bundlePaths = [
+  join(
+    pluginRoot,
+    "server",
+    "bin",
+    DESCRIPTOR_SANITIZER_FILE_NAME,
+  ),
   join(pluginRoot, "server", "dist", "server.mjs"),
   join(pluginRoot, "server", "dist", "upstream-supervisor.mjs"),
 ];

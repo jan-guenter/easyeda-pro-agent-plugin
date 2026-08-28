@@ -6,4 +6,5 @@
 *.zip binary
 *.eprj2 binary
 *.epro2 binary
+plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer binary
 plugins/easyeda-pro-control/server/dist/*.mjs whitespace=-blank-at-eol

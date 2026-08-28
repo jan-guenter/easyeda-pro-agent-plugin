@@ -6,7 +6,12 @@ import { promisify } from "node:util";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { CONTROL_VERSION } from "../plugins/easyeda-pro-control/server/src/core.ts";
+import {
+  CONTROL_VERSION,
+  DESCRIPTOR_SANITIZER_BYTES,
+  DESCRIPTOR_SANITIZER_FILE_NAME,
+  DESCRIPTOR_SANITIZER_SHA256,
+} from "../plugins/easyeda-pro-control/server/src/core.ts";
 import { validateReleaseVersionParity } from "../plugins/easyeda-pro-control/scripts/release-version.ts";
 
 const execFileAsync = promisify(execFile);
@@ -16,6 +21,8 @@ const pluginRoot = join(root, "plugins", "easyeda-pro-control");
 const authenticatedBridgeDistPath =
   "plugins/easyeda-pro-control/easyeda-bridge-extension/dist";
 const authenticatedBridgeDistPrefix = `${authenticatedBridgeDistPath}/`;
+const descriptorSanitizerRelativePath =
+  `plugins/easyeda-pro-control/server/bin/${DESCRIPTOR_SANITIZER_FILE_NAME}`;
 const VALIDATION_CANDIDATE_BRIDGE_BUILD_ID = "ded07x99dcxb504";
 const REVIEWED_CONNECTED_BRIDGE_BUILD_ID = "d18b6xd531xe6ca";
 const checks = [];
@@ -177,18 +184,24 @@ const required = [
   "easyeda-bridge-extension/vitest.config.ts",
   "scripts/bridge-token.ts",
   "scripts/build-authenticated-bridge.ts",
+  "scripts/build-descriptor-sanitizer.ts",
   "scripts/bundled-runtime-license.ts",
   "scripts/provision-bridge-token.ts",
   "scripts/release-version.ts",
   "scripts/reviewed-bridge-source.ts",
+  "server/bin/easyeda-fd-sanitizer",
   "server/dist/server.mjs",
   "server/dist/upstream-supervisor.mjs",
+  "server/native/easyeda-fd-sanitizer.S",
+  "server/native/easyeda-fd-sanitizer.ld",
+  "server/src/descriptor-sanitizer-identity.ts",
   "server/src/index.ts",
   "server/src/upstream-environment.ts",
   "server/src/upstream-module-execution.ts",
   "server/src/upstream-supervisor.ts",
   "server/src/upstream-trust.ts",
   "server/tests/bundled-runtime-license.test.ts",
+  "server/tests/descriptor-sanitizer.test.ts",
   "server/tests/release-version.test.ts",
   "skills/easyeda-pro-control/SKILL.md",
   "skills/easyeda-pro-control/agents/openai.yaml",
@@ -269,6 +282,7 @@ const ciSource = await readFile(
   join(root, ".github", "workflows", "ci.yml"),
   "utf8",
 );
+const gitAttributesSource = await readFile(join(root, ".gitattributes"), "utf8");
 const skillSource = await readFile(
   join(pluginRoot, "skills", "easyeda-pro-control", "SKILL.md"),
   "utf8",
@@ -426,6 +440,39 @@ check(
   releaseVersionParity.ok,
   releaseVersionParity.detail,
 );
+const descriptorSanitizerPath = join(root, descriptorSanitizerRelativePath);
+const descriptorSanitizerInformation = await lstat(descriptorSanitizerPath);
+const descriptorSanitizerBytes = await readFile(descriptorSanitizerPath);
+const descriptorSanitizerGitEntry = await execFileAsync(
+  "git",
+  ["ls-files", "--stage", "--", descriptorSanitizerRelativePath],
+  { cwd: root, encoding: "utf8" },
+);
+check(
+  "descriptor-sanitizer-reviewed-identity",
+  descriptorSanitizerInformation.isFile() &&
+    !descriptorSanitizerInformation.isSymbolicLink() &&
+    descriptorSanitizerInformation.nlink === 1 &&
+    descriptorSanitizerInformation.mode % 4096 === 0o755 &&
+    descriptorSanitizerInformation.size === DESCRIPTOR_SANITIZER_BYTES &&
+    descriptorSanitizerBytes.length === DESCRIPTOR_SANITIZER_BYTES &&
+    createHash("sha256").update(descriptorSanitizerBytes).digest("hex") ===
+      DESCRIPTOR_SANITIZER_SHA256,
+  `${(descriptorSanitizerInformation.mode % 4096).toString(8)}:${String(descriptorSanitizerInformation.nlink)}:${String(descriptorSanitizerInformation.size)}`,
+);
+check(
+  "descriptor-sanitizer-git-mode",
+  /^100755 [0-9a-f]{40,64} 0\tplugins\/easyeda-pro-control\/server\/bin\/easyeda-fd-sanitizer\n$/u.test(
+    descriptorSanitizerGitEntry.stdout,
+  ),
+  descriptorSanitizerGitEntry.stdout.trim(),
+);
+check(
+  "descriptor-sanitizer-gitattributes",
+  gitAttributesSource
+    .split(/\r?\n/u)
+    .includes(`${descriptorSanitizerRelativePath} binary`),
+);
 check("plugin-license-self-contained", pluginLicenseSource === rootLicenseSource);
 check(
   "vendored-bridge-license-exact",
@@ -482,6 +529,16 @@ const bridgeUnsafeExemptFiles = new Set(
       bridgeUnsafeRuleNames.some((rule) => override.rules?.[rule] === "off"),
     )
     .flatMap((override) => override.files ?? []),
+);
+check(
+  "descriptor-sanitizer-build-scripts",
+  pluginPackageManifest.scripts?.["sanitizer:build"] ===
+    "node scripts/build-descriptor-sanitizer.ts --write" &&
+    pluginPackageManifest.scripts?.["sanitizer:check"] ===
+      "node scripts/build-descriptor-sanitizer.ts --check" &&
+    pluginPackageManifest.scripts?.build ===
+      "npm run sanitizer:check && node scripts/build-server.ts" &&
+    pluginPackageManifest.scripts?.verify?.includes("npm run build"),
 );
 check(
   "vendored-bridge-strict-type-aware-lint",
@@ -960,7 +1017,21 @@ check(
 );
 check(
   "ci-reproducible-facade-closure",
-  ciSource.includes("server/dist/server.mjs") &&
+  ciSource.includes("npm run sanitizer:check") &&
+    ciSource.includes("binutils") &&
+    ciSource.includes("exec 142</etc/hosts") &&
+    ciSource.includes("exec 145</etc/group") &&
+    ciSource.includes('test "$(readlink /proc/self/fd/142)" = "/etc/hosts"') &&
+    ciSource.includes('test "$(readlink /proc/self/fd/145)" = "/etc/group"') &&
+    ciSource.includes("server/bin/easyeda-fd-sanitizer") &&
+    ciSource.includes(
+      'test "$(git ls-tree HEAD plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer | awk \'{print $1}\')" = "100755"',
+    ) &&
+    ciSource.includes(
+      'test "$(stat -c \'%a:%h:%s\' "${packaged_sanitizer}")" = "755:1:1440"',
+    ) &&
+    ciSource.includes(DESCRIPTOR_SANITIZER_SHA256) &&
+    ciSource.includes("server/dist/server.mjs") &&
     ciSource.includes("server/dist/upstream-supervisor.mjs"),
 );
 check(
@@ -1158,6 +1229,15 @@ for (const relativePath of repositoryPaths) {
     placeholderHits.push(relativePath);
   }
 }
+const allowedBinaryPaths = [
+  "plugins/easyeda-pro-control/easyeda-bridge-extension/images/logo.png",
+  descriptorSanitizerRelativePath,
+].toSorted();
+check(
+  "only-reviewed-release-binaries",
+  JSON.stringify(binaryPaths.toSorted()) === JSON.stringify(allowedBinaryPaths),
+  binaryPaths.toSorted().join(", "),
+);
 check("no-prohibited-release-paths", prohibitedPaths.length === 0, prohibitedPaths.join(", "));
 
 async function collectTreeEntries(absoluteDirectory, relativeDirectory) {

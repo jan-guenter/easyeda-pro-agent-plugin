@@ -14,6 +14,9 @@ easyeda-pro-control safety facade ───► durable journals, evidence, check
     │                         │
     │                         └── HMAC gateway ◄──► private EasyEDA extension ◄──► EasyEDA Pro
     ▼
+native descriptor sanitizer
+    │
+    ▼
 Bubblewrap + Node permission boundary
     │
     ▼
@@ -25,6 +28,20 @@ checkout directly: it captures and hashes the statically reachable module
 graph, mounts that graph and the reviewed supervisor from retained descriptors,
 and starts the pinned upstream in a minimal sandbox. Do not run a second
 EasyEDA MCP process against the same bridge.
+
+The native Linux x86_64 sanitizer closes the descriptor-inheritance gap between
+Node and Bubblewrap. The facade gives it the expected facade PID and exactly
+this descriptor layout: MCP stdin/stdout/stderr on `0`–`2`, the data directory
+on `3`, module graph on `4`, supervisor on `5`, Bubblewrap status pipe on `6`,
+reviewed Node executable on `7`, startup block pipe on `8`, seccomp program on
+`9`, and the already hash-admitted Bubblewrap executable on `10`. The sanitizer
+requires every descriptor `0`–`10` to be present without `FD_CLOEXEC`, binds its
+lifetime to the unchanged expected parent with `PR_SET_PDEATHSIG(SIGKILL)`, and
+requires descriptor `10` to be a regular mode-`0755` file with no
+`security.capability` xattr. It then marks `10` close-on-exec, atomically closes
+all descriptors `11` and above with `close_range(2)`, and enters Bubblewrap from
+descriptor `10` with `execveat(2)`. Bubblewrap receives only descriptors `0`–`9`;
+an arbitrary descriptor inherited by the facade's shell cannot reach it.
 
 ## Implemented capabilities after connected admission
 
@@ -162,7 +179,19 @@ compatibility from the build receipt or import alone.
 
 This compatibility release is pinned to the local integration tuple recorded in [`reviewed-compatibility.json`](plugins/easyeda-pro-control/reviewed-compatibility.json):
 
-- Linux x86_64 with Node.js exactly `24.18.0`, the reviewed Node executable
+- Linux x86_64 on Linux 5.9 or newer. The sanitizer requires working
+  `close_range(2)` and `execveat(2)`, and the filesystem holding Bubblewrap must
+  expose a readable `security.capability` xattr namespace whose absent-attribute
+  result is `ENODATA`. An unavailable syscall, unreadable/unsupported xattr, or
+  present capability xattr fails closed.
+- The committed static descriptor sanitizer must be the regular, single-link,
+  mode-`0755` file named by
+  [`descriptor-sanitizer-identity.ts`](plugins/easyeda-pro-control/server/src/descriptor-sanitizer-identity.ts).
+  The current constants pin schema
+  `easyeda-pro-control.descriptor-sanitizer.v1`, 1,440 bytes, and SHA-256
+  `a8b52e8439bdb479a5621052ab03e9030d67b7948c6e2cc448ee5d7bb1dc9b41`.
+  Runtime and compatibility admission reject any other identity.
+- Node.js exactly `24.18.0`, the reviewed Node executable
   identity recorded in the compatibility manifest, and a soft `RLIMIT_CORE` of exactly `0`.
   The runtime's executable hash and complete file-
   descriptor baseline are exact compatibility inputs, not generic Node 24.x
@@ -226,6 +255,12 @@ descriptor-only payloads rather than mutable snapshot paths.
 
 First-party MCP source, test, and plugin scripts are TypeScript. The exact Node 24.18.0 runtime runs the erasable TypeScript directly during development; `tsc --noEmit` performs the strict compiler check, and esbuild produces the committed JavaScript MCP bundle. The vendored EasyEDA renderer bridge is checked separately against its ES2020/DOM production-source target with the same strict compiler family; that profile's only exception is `noPropertyAccessFromIndexSignature`, because reverse-engineered host values are intentionally dynamic records. Its test profile targets ES2023 and permits test-only parameter properties by disabling `erasableSyntaxOnly`; those tests are never emitted into the renderer bundle. Type-aware Oxlint treats the correctness, suspicious, pedantic, performance, style, and restriction categories as errors, denies warnings, and rejects unused suppressions. Root and renderer-bridge exceptions are narrowly documented next to their rationale in `.oxlintrc.json` and `.oxlintrc.bridge.json`.
 
+GNU binutils `/usr/bin/as` and `/usr/bin/ld` are development-only inputs for
+rebuilding and byte-verifying the static sanitizer. An installed release runs
+the committed reviewed binary and does not invoke binutils. `sanitizer:check`
+builds twice, requires byte-for-byte reproducibility, and compares the result
+with the identity constants and committed executable.
+
 ```bash
 cd plugins/easyeda-pro-control
 ulimit -c 0
@@ -236,6 +271,7 @@ npm ci
 npm ls --all
 npm audit signatures
 npm audit --audit-level=high
+npm run sanitizer:check
 npm run typecheck
 npm run bridge:typecheck
 npm run bridge:lint
@@ -253,12 +289,16 @@ Repository validation runs from the marketplace root:
 node scripts/validate-repository.mjs
 ```
 
-GitHub Actions builds the exact non-setuid Bubblewrap 0.11.2 source commit,
-proves an empty Linux file-capability set and soft core limit zero, runs strict
-TypeScript checking, type-aware Oxlint, the sandbox and bridge
-tests, and rebuilds both release payloads on every push and pull request. It
-also checks that the committed bundle is reproducible, validates marketplace
-safety metadata, and uploads the built plugin archive.
+GitHub Actions installs binutils, rebuilds the sanitizer twice, and requires its
+exact committed identity before building the plugin. The sandbox regression
+also injects otherwise valid high-numbered host descriptors and proves that
+they cannot reach Bubblewrap. CI separately builds the exact non-setuid
+Bubblewrap 0.11.2 source commit, proves that its `security.capability` xattr is
+absent and the soft core limit is zero, runs strict TypeScript checking,
+type-aware Oxlint, and the sandbox and bridge tests, and rebuilds both release
+payloads on every push and pull request. It also checks that the committed
+bundle is reproducible, validates marketplace safety metadata, and uploads the
+built plugin archive.
 
 Read [`AGENTS.md`](AGENTS.md) before making agentic changes. Security-sensitive contribution rules are in [`SECURITY.md`](SECURITY.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md).
 

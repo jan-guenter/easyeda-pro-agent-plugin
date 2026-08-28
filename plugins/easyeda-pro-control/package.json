@@ -11,7 +11,7 @@
   "packageManager": "npm@11.16.0",
   "type": "module",
   "scripts": {
-    "build": "node scripts/build-server.ts",
+    "build": "npm run sanitizer:check && node scripts/build-server.ts",
     "bridge:build": "node scripts/build-authenticated-bridge.ts",
     "bridge:lint": "oxlint --config .oxlintrc.bridge.json --type-aware --deny-warnings easyeda-bridge-extension/src easyeda-bridge-extension/tests easyeda-bridge-extension/scripts easyeda-bridge-extension/vitest.config.ts",
     "bridge:provision": "node scripts/provision-bridge-token.ts",
@@ -20,6 +20,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "oxlint --type-aware .",
     "lint:fix": "oxlint --type-aware . --fix",
+    "sanitizer:build": "node scripts/build-descriptor-sanitizer.ts --write",
+    "sanitizer:check": "node scripts/build-descriptor-sanitizer.ts --check",
     "test": "node --test server/tests/*.test.ts",
     "validate": "node scripts/validate-plugin.ts",
     "doctor": "node scripts/doctor.ts --offline",

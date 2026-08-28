@@ -24,6 +24,9 @@ import {
   captureVendoredSourceClosure,
 } from "./reviewed-bridge-source.ts";
 import {
+  DESCRIPTOR_SANITIZER_BYTES,
+  DESCRIPTOR_SANITIZER_FILE_NAME,
+  DESCRIPTOR_SANITIZER_SHA256,
   assertSelfSoftCoreLimitZero,
   controlImplementationFingerprint,
   loadReviewedCompatibilityManifest,
@@ -33,6 +36,7 @@ import {
   assertReviewedLauncherFingerprint,
   captureLauncherFingerprint,
   launcherFingerprintSha256,
+  probeReviewedDescriptorSanitizerRuntime,
 } from "../server/src/upstream-trust.ts";
 import {
   createPrivateTemporaryDirectory,
@@ -121,6 +125,7 @@ async function readStableRegularFile(
   maximumBytes: number,
 ): Promise<{
   readonly bytes: Buffer;
+  readonly links: number;
   readonly mode: number;
   readonly size: number;
 }> {
@@ -137,7 +142,11 @@ async function readStableRegularFile(
     if (
       opened.dev !== information.dev ||
       opened.ino !== information.ino ||
-      opened.size !== information.size
+      opened.mode !== information.mode ||
+      opened.nlink !== information.nlink ||
+      opened.size !== information.size ||
+      opened.mtimeMs !== information.mtimeMs ||
+      opened.ctimeMs !== information.ctimeMs
     ) {
       throw new Error(`${path} changed before it was opened.`);
     }
@@ -146,13 +155,20 @@ async function readStableRegularFile(
     if (
       after.dev !== opened.dev ||
       after.ino !== opened.ino ||
+      after.mode !== opened.mode ||
+      after.nlink !== opened.nlink ||
       after.size !== opened.size ||
       after.mtimeMs !== opened.mtimeMs ||
       after.ctimeMs !== opened.ctimeMs
     ) {
       throw new Error(`${path} changed while it was being read.`);
     }
-    return { bytes, mode: information.mode, size: information.size };
+    return {
+      bytes,
+      links: after.nlink,
+      mode: after.mode,
+      size: after.size,
+    };
   } finally {
     await handle.close();
   }
@@ -212,6 +228,12 @@ const pluginRoot = resolve(import.meta.dirname, "..");
 const manifestPath = join(pluginRoot, ".codex-plugin", "plugin.json");
 const mcpPath = join(pluginRoot, ".mcp.json");
 const distPaths = [
+  join(
+    pluginRoot,
+    "server",
+    "bin",
+    DESCRIPTOR_SANITIZER_FILE_NAME,
+  ),
   join(pluginRoot, "server", "dist", "server.mjs"),
   join(pluginRoot, "server", "dist", "upstream-supervisor.mjs"),
 ];
@@ -222,7 +244,11 @@ const required = [
   "reviewed-compatibility.json",
   "licenses/bundled-runtime.json",
   "server/src/core.ts",
+  "server/src/descriptor-sanitizer-identity.ts",
   "server/src/upstream-trust.ts",
+  "server/bin/easyeda-fd-sanitizer",
+  "server/native/easyeda-fd-sanitizer.S",
+  "server/native/easyeda-fd-sanitizer.ld",
   "server/dist/server.mjs",
   "server/dist/upstream-supervisor.mjs",
   "skills/easyeda-pro-control/SKILL.md",
@@ -241,6 +267,27 @@ for (const relativePath of required) {
   check(
     `file:${relativePath}`,
     await regularFileExists(join(pluginRoot, relativePath)),
+  );
+}
+
+try {
+  const sanitizer = await readStableRegularFile(
+    join(pluginRoot, "server", "bin", DESCRIPTOR_SANITIZER_FILE_NAME),
+    DESCRIPTOR_SANITIZER_BYTES,
+  );
+  check(
+    "reviewed-descriptor-sanitizer-identity",
+    sanitizer.size === DESCRIPTOR_SANITIZER_BYTES &&
+      sanitizer.links === 1 &&
+      sanitizer.mode % (0o7777 + 1) === 0o755 &&
+      createHash("sha256").update(sanitizer.bytes).digest("hex") ===
+        DESCRIPTOR_SANITIZER_SHA256,
+  );
+} catch (error) {
+  check(
+    "reviewed-descriptor-sanitizer-identity",
+    false,
+    errorMessage(error),
   );
 }
 
@@ -733,9 +780,26 @@ if (!("error" in reviewedCompatibility)) {
         reviewedCompatibility.upstream.launcher,
       ),
     );
+    try {
+      await probeReviewedDescriptorSanitizerRuntime(
+        captured.fingerprint.sandbox,
+      );
+      check("reviewed-descriptor-sanitizer-runtime", true);
+    } catch (error) {
+      check(
+        "reviewed-descriptor-sanitizer-runtime",
+        false,
+        errorMessage(error),
+      );
+    }
   } catch (error) {
     observedLauncher = { error: errorMessage(error) };
     check("reviewed-upstream-launcher", false, errorMessage(error));
+    check(
+      "reviewed-descriptor-sanitizer-runtime",
+      false,
+      errorMessage(error),
+    );
   } finally {
     for (const name of configuredNames) {
       const previous = previousEnvironment.get(name);

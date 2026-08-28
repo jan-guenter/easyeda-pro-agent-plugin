@@ -15,6 +15,8 @@ The first compatibility corpus for this skill came from this exact tuple:
 | Authenticated bridge extension manifest | `0.3.0` |
 | Bridge runtime protocol reported version | `1.0.0-rc.1` |
 | Node.js | `24.18.0` |
+| Descriptor sanitizer | schema and SHA-256 from `server/src/descriptor-sanitizer-identity.ts` |
+| Sandbox kernel boundary | Linux x86_64, Linux 5.9 or newer, working `close_range(2)`, `execveat(2)`, and readable `security.capability` xattr |
 
 This table records evidence. It does not make later builds compatible. On any mismatch, public reads may proceed after a bounded smoke test. Treat every private operation as unavailable until installed-source inspection and a sacrificial or reversible test reconfirm it.
 
@@ -30,9 +32,17 @@ smoke test against that fingerprint. Exact reads and private operations stay
 fail-closed until connected evidence is reviewed and this manifest is
 deliberately updated.
 
-`easyeda_control_status` gates the facade source/bundle hash and relative file set, the reviewed manifest's own path/size/schema/timestamp/SHA-256, upstream launcher and entrypoint, implementation tree, detected dependency lockfile, complete tool count/catalog hash, bridge extension, application version, method registry, dispatcher source/build/count, PCB editor implementation, public API entry, public API adapter, and declarations. Private plans journal that complete stable fingerprint, so replacing only the compatibility manifest invalidates an in-flight operation. They are accepted only when the tuple matches the runtime-loaded plugin-root `reviewed-compatibility.json`. That external manifest is deliberately excluded from the facade composite so it can pin both source-tree and built-bundle modes without a hash cycle; its separately pinned digest closes that cycle operationally.
+`easyeda_control_status` gates the facade source/bundle hash and relative file set, the reviewed manifest's own path/size/schema/timestamp/SHA-256, upstream launcher and entrypoint, descriptor-sanitizer schema/hash, Bubblewrap executable, implementation tree, detected dependency lockfile, complete tool count/catalog hash, bridge extension, application version, method registry, dispatcher source/build/count, PCB editor implementation, public API entry, public API adapter, and declarations. The upstream cannot report readiness unless its sanitized launch succeeds; the offline doctor separately runs the sanitizer directly against the reviewed Bubblewrap descriptor. Private plans journal that complete stable fingerprint, so replacing only the compatibility manifest invalidates an in-flight operation. They are accepted only when the tuple matches the runtime-loaded plugin-root `reviewed-compatibility.json`. That external manifest is deliberately excluded from the facade composite so it can pin both source-tree and built-bundle modes without a hash cycle; its separately pinned digest closes that cycle operationally.
 
 The manifest is a reviewed drift gate, not an attacker-authenticity boundary: it is unsigned and writable by the same user who owns the plugin. A same-user attacker who can replace both code and manifest is outside this trust model. A later build remains unavailable for private automation until installed evidence, this record, and both manifest modes are deliberately updated.
+
+The sanitizer identity is part of that drift gate. The facade supplies its exact
+reviewed Bubblewrap file descriptor as `10`; the sanitizer checks exact mode and
+absence of `security.capability`, closes descriptors `11` and above, and enters
+that descriptor with `execveat(2)`. Do not infer sanitizer compatibility from a
+successful pathname execution or from the Bubblewrap version string. A kernel,
+filesystem, binary, schema, hash, mode, xattr, or descriptor-contract mismatch
+fails closed and requires a deliberate compatibility review.
 
 ## Capability labels
 

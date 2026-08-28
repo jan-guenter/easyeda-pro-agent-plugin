@@ -3,7 +3,19 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 
+import {
+  DESCRIPTOR_SANITIZER_FILE_NAME,
+  DESCRIPTOR_SANITIZER_SCHEMA,
+  DESCRIPTOR_SANITIZER_SHA256,
+} from "./descriptor-sanitizer-identity.ts";
+
 export { assertSelfSoftCoreLimitZero } from "./soft-core-limit.ts";
+export {
+  DESCRIPTOR_SANITIZER_BYTES,
+  DESCRIPTOR_SANITIZER_FILE_NAME,
+  DESCRIPTOR_SANITIZER_SCHEMA,
+  DESCRIPTOR_SANITIZER_SHA256,
+} from "./descriptor-sanitizer-identity.ts";
 
 export const CONTROL_VERSION = "0.3.0";
 export const OPERATION_SCHEMA = "easyeda-pro-control.operation.v2";
@@ -73,6 +85,10 @@ export interface UpstreamLauncherFingerprint {
   sandbox: {
     command: string;
     commandSha256: string;
+    descriptorSanitizer: {
+      schema: "easyeda-pro-control.descriptor-sanitizer.v1";
+      sha256: string;
+    };
     version: string;
   };
   cwd: string;
@@ -322,9 +338,16 @@ export async function controlImplementationFingerprint(): Promise<ControlImpleme
   const bundleMode = basename(currentPath) === "server.mjs";
   let candidates: string[];
   if (bundleMode) {
-    candidates = ["server.mjs", "upstream-supervisor.mjs"].map((name) =>
-      join(sourceDirectory, name),
-    );
+    candidates = [
+      join(
+        sourceDirectory,
+        "..",
+        "bin",
+        DESCRIPTOR_SANITIZER_FILE_NAME,
+      ),
+      join(sourceDirectory, "server.mjs"),
+      join(sourceDirectory, "upstream-supervisor.mjs"),
+    ];
   } else {
     const sourceEntries = await readdir(sourceDirectory, {
       withFileTypes: true,
@@ -807,6 +830,8 @@ const EXPECTED_FINGERPRINT_REQUIREMENTS: readonly (readonly [
   ["/upstreamLauncher/moduleGraph/sha256", "sha256"],
   ["/upstreamLauncher/sandbox/command", "string"],
   ["/upstreamLauncher/sandbox/commandSha256", "sha256"],
+  ["/upstreamLauncher/sandbox/descriptorSanitizer/schema", "string"],
+  ["/upstreamLauncher/sandbox/descriptorSanitizer/sha256", "sha256"],
   ["/upstreamLauncher/sandbox/version", "string"],
   ["/upstreamImplementationDrift", "false"],
   ["/toolCatalogSha256", "sha256"],
@@ -1272,7 +1297,7 @@ function assertReviewedCompatibilityManifest(
   const sandbox = manifestObject(
     launcher["sandbox"],
     "/upstream/launcher/sandbox",
-    ["command", "commandSha256", "version"],
+    ["command", "commandSha256", "descriptorSanitizer", "version"],
   );
   const sandboxCommand = manifestString(
     sandbox["command"],
@@ -1287,6 +1312,19 @@ function assertReviewedCompatibilityManifest(
     sandbox["commandSha256"],
     "/upstream/launcher/sandbox/commandSha256",
   );
+  const descriptorSanitizer = manifestObject(
+    sandbox["descriptorSanitizer"],
+    "/upstream/launcher/sandbox/descriptorSanitizer",
+    ["schema", "sha256"],
+  );
+  if (
+    descriptorSanitizer["schema"] !== DESCRIPTOR_SANITIZER_SCHEMA ||
+    descriptorSanitizer["sha256"] !== DESCRIPTOR_SANITIZER_SHA256
+  ) {
+    throw new Error(
+      "Reviewed compatibility manifest descriptor-sanitizer identity is unsupported.",
+    );
+  }
   manifestString(sandbox["version"], "/upstream/launcher/sandbox/version");
   const toolCatalog = manifestObject(
     upstream["toolCatalog"],

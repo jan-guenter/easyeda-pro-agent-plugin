@@ -35,6 +35,10 @@ import {
   validateRawExecutionInput,
 } from "../src/core.ts";
 import type { ExpectedFingerprint } from "../src/core.ts";
+import {
+  DESCRIPTOR_SANITIZER_SCHEMA,
+  DESCRIPTOR_SANITIZER_SHA256,
+} from "../src/descriptor-sanitizer-identity.ts";
 
 function detailedError(error: unknown): Error & Record<string, unknown> {
   if (!(error instanceof Error) || !isRecord(error)) {
@@ -699,6 +703,10 @@ void describe("stable runtime fingerprint validation", () => {
       sandbox: {
         command: "/usr/sbin/bwrap",
         commandSha256: digest,
+        descriptorSanitizer: {
+          schema: DESCRIPTOR_SANITIZER_SCHEMA,
+          sha256: DESCRIPTOR_SANITIZER_SHA256,
+        },
         version: "0.11.2",
       },
     },
@@ -784,6 +792,89 @@ void describe("stable runtime fingerprint validation", () => {
           },
           { pointer: "/upstreamImplementationDrift", required: "false" },
           { pointer: "/bridge/payload/connected", required: "true" },
+        ]);
+        return true;
+      },
+    );
+  });
+
+  void test("requires the descriptor sanitizer identity and exact reviewed tuple", () => {
+    const missingSchema = structuredClone(valid);
+    Reflect.deleteProperty(
+      missingSchema.upstreamLauncher.sandbox.descriptorSanitizer,
+      "schema",
+    );
+    assert.throws(
+      () => validateExpectedFingerprint(missingSchema),
+      (error: unknown) => {
+        const detailed = detailedError(error);
+        assert.deepEqual(detailed["missingFingerprintFields"], [
+          {
+            pointer:
+              "/upstreamLauncher/sandbox/descriptorSanitizer/schema",
+            required: "string",
+          },
+        ]);
+        return true;
+      },
+    );
+
+    const missingSha256 = structuredClone(valid);
+    Reflect.deleteProperty(
+      missingSha256.upstreamLauncher.sandbox.descriptorSanitizer,
+      "sha256",
+    );
+    assert.throws(
+      () => validateExpectedFingerprint(missingSha256),
+      (error: unknown) => {
+        const detailed = detailedError(error);
+        assert.deepEqual(detailed["missingFingerprintFields"], [
+          {
+            pointer:
+              "/upstreamLauncher/sandbox/descriptorSanitizer/sha256",
+            required: "sha256",
+          },
+        ]);
+        return true;
+      },
+    );
+
+    const wrongSchema = reviewedFingerprintFixture();
+    Reflect.set(
+      wrongSchema.upstreamLauncher.sandbox.descriptorSanitizer,
+      "schema",
+      "easyeda-pro-control.descriptor-sanitizer.v2",
+    );
+    assert.throws(
+      () => validatePrivateFingerprint(wrongSchema),
+      (error: unknown) => {
+        const detailed = detailedError(error);
+        assert.deepEqual(detailed["mismatches"], [
+          {
+            pointer:
+              "/upstream/launcher/sandbox/descriptorSanitizer/schema",
+            expected: DESCRIPTOR_SANITIZER_SCHEMA,
+            actual: "easyeda-pro-control.descriptor-sanitizer.v2",
+          },
+        ]);
+        return true;
+      },
+    );
+
+    const wrongSha256 = reviewedFingerprintFixture();
+    wrongSha256.upstreamLauncher.sandbox.descriptorSanitizer.sha256 =
+      "b".repeat(64);
+    assert.throws(
+      () => validatePrivateFingerprint(wrongSha256),
+      (error: unknown) => {
+        const detailed = detailedError(error);
+        assert.deepEqual(detailed["mismatches"], [
+          {
+            pointer:
+              "/upstream/launcher/sandbox/descriptorSanitizer/sha256",
+            expected: DESCRIPTOR_SANITIZER_SHA256,
+            actual: "b".repeat(64),
+          },
         ]);
         return true;
       },

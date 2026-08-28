@@ -48,6 +48,9 @@ export interface SandboxedStdioClientTransportOptions {
     readonly descriptor: number;
     readonly dispose: () => Promise<void>;
   };
+  readonly descriptorSanitizer: DisposableSandboxResource & {
+    readonly executionPath: string;
+  };
   readonly graph: DisposableSandboxResource;
   readonly node: DisposableSandboxResource & {
     readonly handle: FileHandle;
@@ -534,6 +537,7 @@ export class SandboxedStdioClientTransport implements Transport {
   private async closeInheritedResources(): Promise<void> {
     const resources = [
       this.options.dataDirectory,
+      this.options.descriptorSanitizer,
       this.options.graph,
       this.options.node,
       this.options.sandbox,
@@ -739,11 +743,15 @@ export class SandboxedStdioClientTransport implements Transport {
       await this.options.beforeSpawn();
       await this.options.afterPreSpawnValidationForTesting?.();
       const child = spawn(
-        this.options.sandbox.executionPath,
-        bubblewrapArguments(
-          this.options.childEnvironment,
-          this.options.supervisorArguments,
-        ),
+        this.options.descriptorSanitizer.executionPath,
+        [
+          String(process.pid),
+          this.options.sandbox.executionPath,
+          ...bubblewrapArguments(
+            this.options.childEnvironment,
+            this.options.supervisorArguments,
+          ),
+        ],
         {
           cwd: "/",
           env: {
@@ -763,6 +771,7 @@ export class SandboxedStdioClientTransport implements Transport {
             this.options.node.descriptor,
             "pipe",
             this.options.seccomp.descriptor,
+            this.options.sandbox.descriptor,
           ],
           windowsHide: true,
         },

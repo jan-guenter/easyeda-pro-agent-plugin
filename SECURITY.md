@@ -32,17 +32,39 @@ The production component writer is disabled. Do not validate it on a real projec
 
 ## Runtime isolation
 
-The Linux x86_64 facade admits Node exactly `24.18.0`, the exact reviewed Node executable,
-Bubblewrap 0.11.2 executable, upstream entrypoint, dependency lock, and
-statically reachable module graph. It rejects symlinks, group/other-writable or
-setuid/setgid executable paths, identity drift, unsupported module formats,
-native addons, and unreviewed module resolution. Runtime admission does not
-invoke an external xattr utility.
-The reviewed local Bubblewrap binary and the exact source-built CI binary were
-separately validated to have an empty Linux file-capability set. Setting file
-capabilities requires root or `CAP_SETFCAP`, outside the same-user threat model.
-The upstream runs in a Bubblewrap namespace with a minimal descriptor-mounted
-runtime, an owner-only data directory, Node's permission boundary, no child
+The Linux x86_64 facade admits Node exactly `24.18.0`, the exact reviewed Node
+executable, descriptor sanitizer, Bubblewrap 0.11.2 executable, upstream
+entrypoint, dependency lock, and statically reachable module graph. It rejects
+symlinks, group/other-writable or setuid/setgid executable paths, identity
+drift, unsupported module formats, native addons, and unreviewed module
+resolution. The sanitizer itself is a static mode-`0755` ELF image admitted by
+the exact byte count and SHA-256 in
+`server/src/descriptor-sanitizer-identity.ts`; changing that identity is a
+fail-closed compatibility change.
+
+The facade passes only its reviewed launch authorities as descriptors `0`–`9`
+and the already hash-admitted Bubblewrap executable as descriptor `10`. Before
+it can enter Bubblewrap, the sanitizer verifies that the expected facade PID is
+still its parent, installs `PR_SET_PDEATHSIG(SIGKILL)`, and repeats the parent
+check to close the parent-death race. It requires all eleven descriptors to be
+present without close-on-exec, requires descriptor `10` to be a regular exact
+mode-`0755` file, and calls `fgetxattr(2)` on that descriptor. Only `ENODATA` for
+`security.capability` is accepted; a present, unreadable, or unsupported xattr
+fails closed. The check does not invoke an external xattr utility. The sanitizer
+then marks descriptor `10` close-on-exec, closes the entire range from `11`
+through `UINT_MAX` in one `close_range(2)` call, and executes descriptor `10`
+with `execveat(2)`. Bubblewrap therefore receives descriptors `0`–`9`, not the
+facade shell's unrelated inherited descriptors or its own executable
+descriptor.
+
+This boundary requires Linux 5.9 or newer for `close_range(2)`, Linux x86_64
+`execveat(2)`, and a filesystem that permits the unprivileged
+`security.capability` query. The reviewed local Bubblewrap binary and the exact
+source-built CI binary have no `security.capability` xattr. Adding one requires
+root or `CAP_SETFCAP`, outside the same-user threat model, but the runtime still
+checks every launch and rejects it. The upstream runs in a Bubblewrap namespace
+with a minimal descriptor-mounted runtime, an owner-only data directory, Node's
+permission boundary, no child
 processes, workers, addons, WASI, host `/proc`, host `/etc`, or source checkout
 mounts. Bubblewrap's JSON status is bound to the live monitor PID/start identity;
 the reported child must have that monitor as parent, the exact host/namespace
@@ -65,6 +87,15 @@ blocks high- and low-level client/datagram authority and permits the child to
 listen only on the exact facade-assigned private backend loopback port. That
 per-start backend listener is distinct from the extension-facing authenticated
 gateway at `127.0.0.1:49621`.
+
+The sanitizer tests exercise the real descriptor contract rather than only
+inspecting argv: data is exchanged through descriptors `0`–`9`, descriptor `10`
+is not visible after `execveat`, injected high-numbered descriptors are absent,
+and missing descriptors, parent drift, wrong mode, and exec failure stop before
+Bubblewrap. The real runtime probe exercises successful capability admission
+against the reviewed capability-free Bubblewrap descriptor. CI also runs the
+upstream suite from a shell with hostile descriptors `142` and `145` open. A
+regression that restores either descriptor to the sandbox is a release blocker.
 
 The long-lived HMAC key stays in the facade and the private EasyEDA extension.
 Only a fresh backend-session token crosses into the supervised child, framed on

@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "87023dc160fd89954343fa2886a494431f2a74957b33b59bf4cb43258b43fffa";
+const __easyedaBundlePairId = "f78d869e3d61912f3e003a605bd645e3d7f5a86891b0926dff558ad6ac91086f";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -35001,6 +35001,11 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFile as readFile2, readdir } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 
+// server/src/descriptor-sanitizer-identity.ts
+var DESCRIPTOR_SANITIZER_SCHEMA = "easyeda-pro-control.descriptor-sanitizer.v1";
+var DESCRIPTOR_SANITIZER_FILE_NAME = "easyeda-fd-sanitizer";
+var DESCRIPTOR_SANITIZER_SHA256 = "a8b52e8439bdb479a5621052ab03e9030d67b7948c6e2cc448ee5d7bb1dc9b41";
+
 // server/src/soft-core-limit.ts
 import { readFile } from "node:fs/promises";
 var SELF_LIMITS_PATH = "/proc/self/limits";
@@ -35077,9 +35082,16 @@ async function controlImplementationFingerprint() {
   const bundleMode = basename(currentPath) === "server.mjs";
   let candidates;
   if (bundleMode) {
-    candidates = ["server.mjs", "upstream-supervisor.mjs"].map(
-      (name) => join(sourceDirectory, name)
-    );
+    candidates = [
+      join(
+        sourceDirectory,
+        "..",
+        "bin",
+        DESCRIPTOR_SANITIZER_FILE_NAME
+      ),
+      join(sourceDirectory, "server.mjs"),
+      join(sourceDirectory, "upstream-supervisor.mjs")
+    ];
   } else {
     const sourceEntries = await readdir(sourceDirectory, {
       withFileTypes: true
@@ -35404,6 +35416,8 @@ var EXPECTED_FINGERPRINT_REQUIREMENTS = [
   ["/upstreamLauncher/moduleGraph/sha256", "sha256"],
   ["/upstreamLauncher/sandbox/command", "string"],
   ["/upstreamLauncher/sandbox/commandSha256", "sha256"],
+  ["/upstreamLauncher/sandbox/descriptorSanitizer/schema", "string"],
+  ["/upstreamLauncher/sandbox/descriptorSanitizer/sha256", "sha256"],
   ["/upstreamLauncher/sandbox/version", "string"],
   ["/upstreamImplementationDrift", "false"],
   ["/toolCatalogSha256", "sha256"],
@@ -35808,7 +35822,7 @@ function assertReviewedCompatibilityManifest(value) {
   const sandbox = manifestObject(
     launcher["sandbox"],
     "/upstream/launcher/sandbox",
-    ["command", "commandSha256", "version"]
+    ["command", "commandSha256", "descriptorSanitizer", "version"]
   );
   const sandboxCommand = manifestString(
     sandbox["command"],
@@ -35823,6 +35837,16 @@ function assertReviewedCompatibilityManifest(value) {
     sandbox["commandSha256"],
     "/upstream/launcher/sandbox/commandSha256"
   );
+  const descriptorSanitizer = manifestObject(
+    sandbox["descriptorSanitizer"],
+    "/upstream/launcher/sandbox/descriptorSanitizer",
+    ["schema", "sha256"]
+  );
+  if (descriptorSanitizer["schema"] !== DESCRIPTOR_SANITIZER_SCHEMA || descriptorSanitizer["sha256"] !== DESCRIPTOR_SANITIZER_SHA256) {
+    throw new Error(
+      "Reviewed compatibility manifest descriptor-sanitizer identity is unsupported."
+    );
+  }
   manifestString(sandbox["version"], "/upstream/launcher/sandbox/version");
   const toolCatalog = manifestObject(
     upstream2["toolCatalog"],
@@ -55351,6 +55375,10 @@ var REQUIRED_SANDBOX_OPTIONS = [
   "--unshare-user"
 ];
 var runtimeSha256Schema = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+var runtimeDescriptorSanitizerSchema = external_exports.strictObject({
+  schema: external_exports.literal(DESCRIPTOR_SANITIZER_SCHEMA),
+  sha256: external_exports.literal(DESCRIPTOR_SANITIZER_SHA256)
+});
 var runtimeLauncherFingerprintSchema = external_exports.strictObject({
   args: external_exports.tuple([external_exports.string().min(1)]),
   command: external_exports.string().min(1),
@@ -55386,6 +55414,7 @@ var runtimeLauncherFingerprintSchema = external_exports.strictObject({
   sandbox: external_exports.strictObject({
     command: external_exports.string().min(1),
     commandSha256: runtimeSha256Schema,
+    descriptorSanitizer: runtimeDescriptorSanitizerSchema,
     version: external_exports.string().min(1)
   })
 });
@@ -55461,7 +55490,7 @@ function sealFor(path, info, kind, linkTarget, sha256) {
   };
 }
 function sameIdentity4(left, right) {
-  return left.dev === right.dev && left.ino === right.ino && left.mode === right.mode && left.size === right.size && left.mtimeMs === right.mtimeMs && left.ctimeMs === right.ctimeMs;
+  return left.dev === right.dev && left.ino === right.ino && left.nlink === right.nlink && left.mode === right.mode && left.size === right.size && left.mtimeMs === right.mtimeMs && left.ctimeMs === right.ctimeMs;
 }
 async function hashOpenFile(path, expected) {
   let handle;
@@ -55676,11 +55705,16 @@ async function sha256OpenHandle(handle, expected, label) {
   }
   return hash2.digest("hex");
 }
-async function openReviewedExecutable(path, expectedSha256, label, allowRootOwner) {
+async function openReviewedExecutable(path, expectedSha256, label, allowRootOwner, expectedMode) {
   const absolute = resolve6(path);
   const pathInfo = await lstat8(absolute);
   if (pathInfo.isSymbolicLink() || !pathInfo.isFile()) {
     throw new Error(`${label} must be a regular non-symlink file.`);
+  }
+  if (expectedMode !== void 0 && ((pathInfo.mode & 4095) !== expectedMode || pathInfo.nlink !== 1)) {
+    throw new Error(
+      `${label} must be a single-link file with the exact reviewed executable mode.`
+    );
   }
   assertTrustedOwnership(absolute, pathInfo, allowRootOwner);
   const handle = await open8(
@@ -55819,6 +55853,23 @@ function openReviewedNodeExecutable(command, expectedSha256) {
     false
   );
 }
+function descriptorSanitizerPath() {
+  return resolve6(
+    import.meta.dirname,
+    "..",
+    "bin",
+    DESCRIPTOR_SANITIZER_FILE_NAME
+  );
+}
+function openReviewedDescriptorSanitizerExecutable() {
+  return openReviewedExecutable(
+    descriptorSanitizerPath(),
+    DESCRIPTOR_SANITIZER_SHA256,
+    "Reviewed descriptor sanitizer executable",
+    false,
+    493
+  );
+}
 async function captureLauncherFingerprintAt(commandPath, args, cwd) {
   const commandRealPath = await realpath2(commandPath);
   const currentNodeRealPath = await realpath2(process10.execPath);
@@ -55850,11 +55901,17 @@ async function captureLauncherFingerprintAt(commandPath, args, cwd) {
     dependencyLockPath
   );
   const sandboxCommand = configuredSandboxCommand();
-  const [command, entrypoint, sandbox] = await Promise.all([
+  const [command, descriptorSanitizer, entrypoint, sandbox] = await Promise.all([
     captureTrustedFile(commandPath),
+    captureTrustedFile(descriptorSanitizerPath()),
     captureTrustedFile(entrypointPath),
     captureTrustedFile(sandboxCommand, true)
   ]);
+  if (descriptorSanitizer.sha256 !== DESCRIPTOR_SANITIZER_SHA256) {
+    throw new Error(
+      "The descriptor sanitizer differs from its reviewed static identity."
+    );
+  }
   const sandboxExecutable = await openReviewedExecutable(
     sandboxCommand,
     sandbox.sha256,
@@ -55903,6 +55960,10 @@ async function captureLauncherFingerprintAt(commandPath, args, cwd) {
       sandbox: {
         command: sandboxCommand,
         commandSha256: sandbox.sha256,
+        descriptorSanitizer: {
+          schema: DESCRIPTOR_SANITIZER_SCHEMA,
+          sha256: descriptorSanitizer.sha256
+        },
         version: REVIEWED_SANDBOX_VERSION
       },
       cwd
@@ -55911,6 +55972,7 @@ async function captureLauncherFingerprintAt(commandPath, args, cwd) {
     seals: [
       sealFor(cwd, cwdInfo, "directory"),
       command.seal,
+      descriptorSanitizer.seal,
       sandbox.seal,
       ...closure.seals
     ]
@@ -55937,8 +55999,10 @@ async function captureLauncherAdmissionAt(expected, command, cwd, entrypoint) {
       "Configured upstream command, cwd, or entrypoint differs from the reviewed launcher."
     );
   }
-  if (expected.sandbox.command !== configuredSandboxCommand() || expected.sandbox.version !== REVIEWED_SANDBOX_VERSION) {
-    throw new Error("The configured bubblewrap identity differs from review.");
+  if (expected.sandbox.command !== configuredSandboxCommand() || expected.sandbox.descriptorSanitizer.schema !== DESCRIPTOR_SANITIZER_SCHEMA || expected.sandbox.descriptorSanitizer.sha256 !== DESCRIPTOR_SANITIZER_SHA256 || expected.sandbox.version !== REVIEWED_SANDBOX_VERSION) {
+    throw new Error(
+      "The configured sandbox-launcher identity differs from review."
+    );
   }
   if (await realpath2(normalizedCommand) !== await realpath2(process10.execPath)) {
     throw new Error(
@@ -55958,13 +56022,20 @@ async function captureLauncherAdmissionAt(expected, command, cwd, entrypoint) {
       "The reviewed upstream entrypoint and lockfile must remain inside their cwd."
     );
   }
-  const [commandCapture, entrypointCapture, lockCapture, sandboxCapture] = await Promise.all([
+  const [
+    commandCapture,
+    descriptorSanitizerCapture,
+    entrypointCapture,
+    lockCapture,
+    sandboxCapture
+  ] = await Promise.all([
     captureTrustedFile(normalizedCommand),
+    captureTrustedFile(descriptorSanitizerPath()),
     captureTrustedFile(normalizedEntrypoint),
     captureTrustedFile(expected.dependencyLock.path),
     captureTrustedFile(expected.sandbox.command, true)
   ]);
-  if (commandCapture.sha256 !== expected.commandSha256 || entrypointCapture.sha256 !== expected.entrypointSha256 || lockCapture.sha256 !== expected.dependencyLock.sha256 || sandboxCapture.sha256 !== expected.sandbox.commandSha256) {
+  if (commandCapture.sha256 !== expected.commandSha256 || descriptorSanitizerCapture.sha256 !== expected.sandbox.descriptorSanitizer.sha256 || entrypointCapture.sha256 !== expected.entrypointSha256 || lockCapture.sha256 !== expected.dependencyLock.sha256 || sandboxCapture.sha256 !== expected.sandbox.commandSha256) {
     throw new Error(
       "The runtime launcher command, entrypoint, or dependency lock differs from review."
     );
@@ -55972,6 +56043,7 @@ async function captureLauncherAdmissionAt(expected, command, cwd, entrypoint) {
   const seals = [
     sealFor(normalizedCwd, cwdInfo, "directory"),
     commandCapture.seal,
+    descriptorSanitizerCapture.seal,
     entrypointCapture.seal,
     lockCapture.seal,
     sandboxCapture.seal
@@ -56585,6 +56657,7 @@ var SandboxedStdioClientTransport = class {
   async closeInheritedResources() {
     const resources = [
       this.options.dataDirectory,
+      this.options.descriptorSanitizer,
       this.options.graph,
       this.options.node,
       this.options.sandbox,
@@ -56773,11 +56846,15 @@ var SandboxedStdioClientTransport = class {
       await this.options.beforeSpawn();
       await this.options.afterPreSpawnValidationForTesting?.();
       const child = spawn3(
-        this.options.sandbox.executionPath,
-        bubblewrapArguments(
-          this.options.childEnvironment,
-          this.options.supervisorArguments
-        ),
+        this.options.descriptorSanitizer.executionPath,
+        [
+          String(process.pid),
+          this.options.sandbox.executionPath,
+          ...bubblewrapArguments(
+            this.options.childEnvironment,
+            this.options.supervisorArguments
+          )
+        ],
         {
           cwd: "/",
           env: {
@@ -56796,7 +56873,8 @@ var SandboxedStdioClientTransport = class {
             "pipe",
             this.options.node.descriptor,
             "pipe",
-            this.options.seccomp.descriptor
+            this.options.seccomp.descriptor,
+            this.options.sandbox.descriptor
           ],
           windowsHide: true
         }
@@ -57443,6 +57521,7 @@ var UpstreamEasyedaClient = class {
     );
     const preparedSandbox = await (async () => {
       let bootstrapFrame2;
+      let descriptorSanitizerExecution2;
       let graphPayload2;
       let seccompPayload2;
       let supervisorExecution2;
@@ -57464,6 +57543,7 @@ var UpstreamEasyedaClient = class {
         supervisorExecution2 = await stageReviewedSupervisorExecution(
           preparedEnvironment.dataDirectory.handle
         );
+        descriptorSanitizerExecution2 = await openReviewedDescriptorSanitizerExecutable();
         sandboxExecution2 = await openReviewedSandboxExecutable(
           startupLauncherFingerprint.sandbox
         );
@@ -57473,6 +57553,7 @@ var UpstreamEasyedaClient = class {
         );
         return {
           bootstrapFrame: bootstrapFrame2,
+          descriptorSanitizerExecution: descriptorSanitizerExecution2,
           graphPayload: graphPayload2,
           nodeExecution: nodeExecution2,
           sandboxExecution: sandboxExecution2,
@@ -57484,6 +57565,7 @@ var UpstreamEasyedaClient = class {
         bootstrapFrame2?.fill(0);
         const cleanupErrors = [];
         for (const resource of [
+          descriptorSanitizerExecution2,
           graphPayload2,
           seccompPayload2,
           supervisorExecution2,
@@ -57514,6 +57596,7 @@ var UpstreamEasyedaClient = class {
     })();
     const {
       bootstrapFrame,
+      descriptorSanitizerExecution,
       graphPayload,
       nodeExecution,
       sandboxExecution,
@@ -57539,6 +57622,7 @@ var UpstreamEasyedaClient = class {
           "between graph capture and sandbox admission"
         ),
         graphPayload.assertCurrent(),
+        descriptorSanitizerExecution.assertCurrent(),
         supervisorExecution.assertCurrent(),
         sandboxExecution.assertCurrent(),
         seccompPayload.assertCurrent(),
@@ -57553,6 +57637,7 @@ var UpstreamEasyedaClient = class {
       bootstrapFrame,
       childEnvironment: preparedEnvironment.environment,
       dataDirectory: dataDirectoryResource,
+      descriptorSanitizer: descriptorSanitizerExecution,
       graph: graphPayload,
       node: nodeExecution,
       onBootstrapDelivered: (authority) => {

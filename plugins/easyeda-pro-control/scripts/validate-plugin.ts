@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { lstat, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { z } from "zod";
 
-import { CONTROL_VERSION } from "../server/src/core.ts";
+import {
+  CONTROL_VERSION,
+  DESCRIPTOR_SANITIZER_BYTES,
+  DESCRIPTOR_SANITIZER_FILE_NAME,
+  DESCRIPTOR_SANITIZER_SHA256,
+} from "../server/src/core.ts";
 import {
   assertContainedRegularFile,
   readContainedRegularFile,
@@ -171,11 +176,17 @@ const required = [
   "easyeda-bridge-extension/vitest.config.ts",
   "reviewed-compatibility.json",
   "licenses/bundled-runtime.json",
+  "scripts/build-descriptor-sanitizer.ts",
   "scripts/bundled-runtime-license.ts",
   "scripts/release-version.ts",
+  "server/bin/easyeda-fd-sanitizer",
   "server/dist/server.mjs",
   "server/dist/upstream-supervisor.mjs",
+  "server/native/easyeda-fd-sanitizer.S",
+  "server/native/easyeda-fd-sanitizer.ld",
+  "server/src/descriptor-sanitizer-identity.ts",
   "server/tests/bundled-runtime-license.test.ts",
+  "server/tests/descriptor-sanitizer.test.ts",
   "server/tests/release-version.test.ts",
   "skills/easyeda-pro-control/SKILL.md",
   "skills/easyeda-pro-control/agents/openai.yaml",
@@ -183,6 +194,29 @@ const required = [
 for (const path of required) {
   check(`file:${path}`, existsSync(join(pluginRoot, path)));
 }
+
+const descriptorSanitizerPath = join(
+  pluginRoot,
+  "server",
+  "bin",
+  DESCRIPTOR_SANITIZER_FILE_NAME,
+);
+const descriptorSanitizerInformation = await lstat(descriptorSanitizerPath);
+const descriptorSanitizerBytes = await readFile(descriptorSanitizerPath);
+const descriptorSanitizerSha256 = Buffer.from(
+  await globalThis.crypto.subtle.digest("SHA-256", descriptorSanitizerBytes),
+).toString("hex");
+check(
+  "descriptor-sanitizer-reviewed-identity",
+  descriptorSanitizerInformation.isFile() &&
+    !descriptorSanitizerInformation.isSymbolicLink() &&
+    descriptorSanitizerInformation.nlink === 1 &&
+    descriptorSanitizerInformation.mode % 4096 === 0o755 &&
+    descriptorSanitizerInformation.size === DESCRIPTOR_SANITIZER_BYTES &&
+    descriptorSanitizerBytes.length === DESCRIPTOR_SANITIZER_BYTES &&
+    descriptorSanitizerSha256 === DESCRIPTOR_SANITIZER_SHA256,
+  `${(descriptorSanitizerInformation.mode % 4096).toString(8)}:${String(descriptorSanitizerInformation.nlink)}:${String(descriptorSanitizerInformation.size)}`,
+);
 
 const manifestText = await readFile(manifestPath, "utf8");
 const manifest = pluginManifestSchema.parse(JSON.parse(manifestText));
@@ -394,6 +428,17 @@ check(
       join(configuredDataDirectory, "bridge-token"),
 );
 check("approval-default-prompt", mcpServer.default_tools_approval_mode === "prompt");
+check(
+  "descriptor-sanitizer-build-scripts",
+  packageScripts["sanitizer:build"] ===
+    "node scripts/build-descriptor-sanitizer.ts --write" &&
+    packageScripts["sanitizer:check"] ===
+      "node scripts/build-descriptor-sanitizer.ts --check" &&
+    packageScripts["build"] ===
+      "npm run sanitizer:check && node scripts/build-server.ts" &&
+    typeof packageScripts["verify"] === "string" &&
+    packageScripts["verify"].includes("npm run build"),
+);
 check(
   "bridge-type-aware-lint-script",
   packageScripts["bridge:lint"] ===

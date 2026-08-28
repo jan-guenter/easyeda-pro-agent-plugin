@@ -87,6 +87,7 @@
     {
       "files": [
         "scripts/build-authenticated-bridge.ts",
+        "scripts/build-descriptor-sanitizer.ts",
         "scripts/build-server.ts",
         "scripts/checkpoint.ts",
         "scripts/doctor.ts",
@@ -134,6 +135,7 @@
     {
       "files": [
         "scripts/build-authenticated-bridge.ts",
+        "scripts/build-descriptor-sanitizer.ts",
         "server/src/authenticated-bridge-build-identity.ts",
         "server/src/artifacts.ts",
         "server/src/checkpoint.ts",
@@ -169,6 +171,15 @@
         // environment, supervisor, and installed-runtime fingerprint in one file.
         "import/max-dependencies": "off",
         "eslint/max-classes-per-file": "off"
+      }
+    },
+    {
+      "files": ["server/src/upstream-trust.ts"],
+      "rules": {
+        // Launcher admission binds independent Node, Bubblewrap, native-sanitizer,
+        // module-graph, filesystem, process, and schema trust inputs atomically.
+        // Moving one import behind a pass-through module would hide that boundary.
+        "import/max-dependencies": "off"
       }
     },
     {

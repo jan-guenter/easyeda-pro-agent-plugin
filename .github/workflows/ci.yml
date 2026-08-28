@@ -69,7 +69,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install --yes build-essential git libcap-dev libcap2-bin libselinux1-dev meson ninja-build pkg-config sqlite3
+          sudo apt-get install --yes binutils build-essential git libcap-dev libcap2-bin libselinux1-dev meson ninja-build pkg-config sqlite3
           bwrap_commit="1b80120ef26a28e065e67f89bfef873f13bdd317"
           bwrap_source="$(mktemp -d)"
           git -C "${bwrap_source}" init --quiet
@@ -109,6 +109,10 @@ jobs:
           npm ls --all
           npm audit signatures
           npm audit --audit-level=high
+
+      - name: Check reproducible descriptor sanitizer
+        working-directory: plugins/easyeda-pro-control
+        run: npm run sanitizer:check
 
       - name: Type-check TypeScript
         working-directory: plugins/easyeda-pro-control
@@ -161,6 +165,10 @@ jobs:
         run: |
           ulimit -c 0
           test "$(ulimit -c)" = "0"
+          exec 142</etc/hosts
+          exec 145</etc/group
+          test "$(readlink /proc/self/fd/142)" = "/etc/hosts"
+          test "$(readlink /proc/self/fd/145)" = "/etc/group"
           npm test
 
       - name: Run offline plugin checks
@@ -199,8 +207,9 @@ jobs:
 
       - name: Require reproducible committed bundle
         run: |
-          git diff --exit-code -- plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs
-          test -z "$(git status --porcelain --untracked-files=all -- plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs)"
+          git diff --exit-code -- plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs
+          test -z "$(git status --porcelain --untracked-files=all -- plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs)"
+          test "$(git ls-tree HEAD plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer | awk '{print $1}')" = "100755"
 
       - name: Package plugin artifact
         shell: bash
@@ -218,6 +227,13 @@ jobs:
             | sed '\#/$#d' \
             | LC_ALL=C sort > archived-plugin-files.txt
           cmp expected-plugin-files.txt archived-plugin-files.txt
+          artifact_extract="$(mktemp -d)"
+          tar -xzf easyeda-pro-control.tar.gz --directory="${artifact_extract}"
+          packaged_sanitizer="${artifact_extract}/easyeda-pro-control/server/bin/easyeda-fd-sanitizer"
+          test -f "${packaged_sanitizer}"
+          test ! -L "${packaged_sanitizer}"
+          test "$(stat -c '%a:%h:%s' "${packaged_sanitizer}")" = "755:1:1440"
+          test "$(sha256sum "${packaged_sanitizer}" | cut -d ' ' -f 1)" = "a8b52e8439bdb479a5621052ab03e9030d67b7948c6e2cc448ee5d7bb1dc9b41"
 
       - name: Upload plugin artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

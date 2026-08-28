@@ -46,7 +46,7 @@ Do not infer current state from a timeout boundary. The extension may have compl
 
 ## Disconnects and stale bridges
 
-A bridge disconnect during a read invalidates that read. A disconnect during a write makes the result unknown. The facade-supervised upstream exits when its parent or stdio authority disappears, and the process lease binds the supervisor PID plus Linux process-start identity. This prevents a hard-killed facade from silently abandoning its bridge owner, but it does not resolve a design call already dispatched inside EasyEDA. If the journal marks an orphan risk, use the destructive human restart gate above before reconnecting through the single facade-owned child; merely reconnecting can leave the delayed call alive. Do not start a competing server.
+A bridge disconnect during a read invalidates that read. A disconnect during a write makes the result unknown. Before Bubblewrap starts, the native descriptor sanitizer binds itself to the exact facade parent with `PR_SET_PDEATHSIG(SIGKILL)` and repeats the parent check after installing the signal. The facade-supervised upstream also exits when facade stdio authority disappears, and the process lease binds the supervisor PID plus Linux process-start identity. These process controls prevent a hard-killed facade from silently leaving its supervised bridge owner running. They do not cancel or resolve a design call already dispatched inside EasyEDA. If the journal marks an orphan risk, use the destructive human restart gate above before reconnecting through the single facade-owned child; merely reconnecting can leave the delayed call alive. Do not start a competing server.
 
 ## Closing without save
 

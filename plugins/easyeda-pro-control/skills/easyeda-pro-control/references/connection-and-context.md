@@ -10,6 +10,7 @@ Start with `easyeda_control_status`. Require all of the following before a desig
 - exactly one server owns the extension-facing bridge;
 - the application, MCP, and extension versions are present;
 - the stable fingerprint pins the exact Node executable, entrypoint, complete built module tree, and the full upstream execution closure captured before launch: `dist`, `node_modules`, `package.json`, dependency lockfile, and in-tree symlink mappings;
+- the stable fingerprint pins the native descriptor-sanitizer schema/SHA-256 and exact Bubblewrap executable; the sanitized launch must succeed before the upstream can report readiness, and the offline doctor must also pass its direct runtime probe;
 - the authenticated extension and facade share an owner-only HMAC key used only for nonce challenge/response on the fixed extension-facing `127.0.0.1:49621` gateway; the raw key never crosses that socket, the extension does not scan adjacent ports or expose a remote relay, and the gateway forwards the private backend token to the separate facade-assigned private loopback listener only after the extension presents the exact index-build ID and credential epoch from the verified private archive receipt;
 - pre-authentication frames are parser-limited to 2 KiB, pending clients are bounded, and any HTTP `Origin` header is rejected. The reviewed EasyEDA `SYS_WebSocket` path is expected to omit `Origin`; do not substitute a browser or raw-WebSocket fallback if that assumption fails;
 - a session becomes active only after that exact bridge admission and the private backend's verified hello;
@@ -21,6 +22,19 @@ Start with `easyeda_control_status`. Require all of the following before a desig
 - no earlier incomplete write has an unresolved outcome.
 
 The status probe fingerprints the configured installed PCB implementation, public API entry, public API adapter, and public API declarations. A private plan additionally requires their versions and hashes, plus the application, dispatcher, extension, MCP, and Node versions, to match the reviewed compatibility baseline. Do not infer any bundle version from the application version.
+
+Before Bubblewrap starts, the Linux x86_64 descriptor sanitizer requires the
+unchanged expected facade parent and installs `PR_SET_PDEATHSIG(SIGKILL)`. Its
+entire inherited contract is MCP stdio `0`–`2`, data root `3`, captured module
+graph `4`, supervisor `5`, Bubblewrap status `6`, reviewed Node executable `7`,
+startup block `8`, seccomp program `9`, and the exact reviewed Bubblewrap
+executable `10`. It requires `0`–`10` to be present, admits descriptor `10` only
+as a regular exact mode-`0755` executable with no `security.capability` xattr,
+marks `10` close-on-exec, closes every descriptor at or above `11`, and enters
+Bubblewrap with `execveat(2)`. Bubblewrap therefore sees only `0`–`9`. A missing
+descriptor, unexpected capability xattr, parent race, unsupported xattr query,
+`close_range(2)` failure, or executable drift stops startup; do not bypass this
+gate or substitute a pathname launch.
 
 A listening port does not prove that EasyEDA connected to it. Do not start another MCP child to fix a stale bridge. Let the facade own the child. If EasyEDA needs a manual bridge reconnect, treat that as a visible application action, then repeat status and context checks.
 

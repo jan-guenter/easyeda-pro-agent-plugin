@@ -80,6 +80,32 @@ void describe("sandbox process lifetime", () => {
     );
   });
 
+  void test("binds every reviewed bubblewrap authority to its exact descriptor", () => {
+    const sandboxArguments = bubblewrapArguments({}, []);
+    const containsSequence = (expected: readonly string[]): boolean =>
+      sandboxArguments.some((_value, index) =>
+        expected.every(
+          (item, offset) => sandboxArguments[index + offset] === item,
+        ),
+      );
+    const reviewedDescriptorArguments = [
+      ["--bind-fd", "3", "/data"],
+      ["--ro-bind-data", "4", "/runtime/graph.json"],
+      ["--ro-bind-data", "5", "/runtime/upstream-supervisor.mjs"],
+      ["--json-status-fd", "6"],
+      ["--ro-bind-fd", "7", "/runtime/node"],
+      ["--block-fd", "8"],
+      ["--seccomp", "9"],
+    ] as const;
+    for (const expected of reviewedDescriptorArguments) {
+      assert.equal(
+        containsSequence(expected),
+        true,
+        `Missing exact Bubblewrap descriptor argument: ${expected.join(" ")}`,
+      );
+    }
+  });
+
   void test(
     "rejects a PID reused across authority capture",
     { skip: process.platform !== "linux" },

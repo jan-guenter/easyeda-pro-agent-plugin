@@ -12,6 +12,7 @@ Last updated: 2026-08-28 (Europe/Berlin)
 - The experimental PCB component writer is runtime-disabled. Unit tests do not authorize enabling it.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
+- The facade enters Bubblewrap only through the reviewed native x86_64 descriptor sanitizer. Bubblewrap inherits the deliberate authority set on descriptors `0`–`9`; its exact reviewed executable is admitted on `10`, marked close-on-exec, and entered by descriptor after `close_range(11, UINT_MAX, 0)`. Never add an inherited descriptor without updating the complete mapping, native contract, compatibility fingerprint, and hostile-descriptor tests together.
 - Fixed-receipt bridge build `ded07x99dcxb504` is an unconnected `validation-required` candidate, not a production-live build. The compatibility manifest retains historically connected dispatcher `d18b6xd531xe6ca`; status may collect the candidate fingerprint and narrowly reviewed public generic reads may proceed after a bounded smoke test, but exact reads and private operations remain fail-closed until connected review deliberately updates the manifest.
 - A boolean, toast, preview, unsaved readback, or file timestamp is never durable design proof.
 
@@ -36,6 +37,7 @@ Last updated: 2026-08-28 (Europe/Berlin)
 - Use append-only or exclusive evidence writes, bounded symlink-safe reads, file-descriptor identity checks, and durable directory synchronization.
 - Add adversarial tests for every safety fix. A test must fail on the unsafe implementation and prove that no downstream mutation was dispatched.
 - Keep source and committed bundle in sync. Do not hand-edit `server/dist/server.mjs`.
+- Keep `server/native/easyeda-fd-sanitizer.S`, its linker script, the committed binary, and `server/src/descriptor-sanitizer-identity.ts` synchronized. The exact sanitizer identity is a compatibility boundary, not generated metadata to refresh automatically.
 
 ## Required verification
 
@@ -50,6 +52,7 @@ npm ci
 npm ls --all
 npm audit signatures
 npm audit --audit-level=high
+npm run sanitizer:check
 npm run verify
 ```
 
@@ -66,7 +69,7 @@ The offline doctor validates the pinned local workstation and is not a substitut
 
 ## Compatibility manifest
 
-`plugins/easyeda-pro-control/reviewed-compatibility.json` is a drift gate, not a version wish list. Update it only after source and bundle are frozen:
+`plugins/easyeda-pro-control/reviewed-compatibility.json` is a drift gate, not a version wish list. Its launcher fingerprint includes the exact descriptor-sanitizer schema and SHA-256. Update it only after source, sanitizer, and bundle are frozen:
 
 ```bash
 npm run compatibility:update
@@ -74,6 +77,15 @@ npm run compatibility:check
 ```
 
 The update command changes only the facade source/bundle projections and review timestamp. Upstream, EasyEDA, bridge, tool-catalog, dispatcher, and installed-bundle values require separate evidence and must not be inferred or silently refreshed.
+
+The native boundary requires Linux x86_64 on Linux 5.9 or newer,
+`close_range(2)`, `execveat(2)`, and an unprivileged readable
+`security.capability` xattr namespace. The sanitizer requires descriptor `10` to
+be a regular mode-`0755` file whose capability xattr is absent, establishes
+`PR_SET_PDEATHSIG(SIGKILL)` against the unchanged expected facade parent, then
+closes every descriptor from `11` upward. GNU binutils `/usr/bin/as` and
+`/usr/bin/ld` are needed only to rebuild and verify the source; installed
+runtime does not invoke them.
 
 ## Release discipline
 
@@ -89,9 +101,9 @@ The update command changes only the facade source/bundle projections and review 
 - Node source/toolchain: TypeScript `7.0.2` with all strict compiler checks enabled; Oxlint `1.80.0` plus type-aware `oxlint-tsgolint` `7.0.2001`; correctness, suspicious, pedantic, performance, style, and restriction diagnostics are errors, warnings are denied, and unused suppressions are errors. Architectural exceptions for Node, async protocol control, typed named modules, generated bridge programs, sequential transactions, and audit-oriented test vectors are individually documented in `.oxlintrc.json`.
 - Connected production-writer validation: **not performed; writer disabled**.
 - Unrestricted raw bridge execution: **structurally disabled**.
-- Release payload commit, final GitHub Actions run, and Git-marketplace installation evidence are pending the final push. Initial run `33189714952` exposed Ubuntu SQLite CLI, setup-node executable-path, and x64-loader portability defects. Second run `33191248912` exposed two deeper problems: the added file-level loader bind retained Bubblewrap mount descriptors on Ubuntu, and `{dev, ino}` checkpoint receipts could accept a byte-identical replacement when the filesystem immediately reused the inode. Third run `33202470104` proved that replacing the file bind with a second directory bind retained the same descriptors. The sandbox now uses one read-only `/usr` bind with `/lib` and `/lib64` aliases, while Node's permission model limits application reads to the reviewed runtime and data paths. `checkpoint.v2` binds device, inode, creation time, and change time after closing the writable publication descriptor; it rejects old receipts, pathname replacements, and later hard-link events.
-- Local validation: strict TypeScript and the six-category type-aware Oxlint policies completed with zero diagnostics or warnings; the facade passed 346/346 tests across 40 suites and the authenticated bridge passed 404/404 tests across 28 files on exact Node `24.18.0`. Dependency audit, all 151 registry signatures, vulnerability audit, plugin, skill, compatibility, repository, privacy, actionlint, and reproducible-bundle checks passed. Sandbox admission brackets PID ownership capture and stops immediately if the child exits before exact Node identity admission.
-- The two deterministic facade bundles have composite SHA-256 `8cf38aed813d5ef7c48720fd5defb873e1aa27b4df741d04d600528ce5360424`: `server.mjs` is `3d3096c2f1f4a0d6f22efc48299915641254565d3969f774c67bfa7eb9038c29` and `upstream-supervisor.mjs` is `f4a3fddd946128435419ecc789c6ef1d6d36422ae44ed600932cbb51c0c9fa36`. The reviewed facade source projection is `af2615cbb444d67a5e42100cd6959f4dbb2e2b4f28e127b2cbf81830e8a555ac`.
+- Release payload commit, final GitHub Actions run, and Git-marketplace installation evidence are pending the final push. Initial run `33189714952` exposed Ubuntu SQLite CLI, setup-node executable-path, and x64-loader portability defects. Runs `33191248912`, `33202470104`, and `33203210507` exposed retained host descriptors in Bubblewrap when GitHub's runner shell entered the facade with descriptors `142` and `145` open. Bubblewrap and libuv both preserve arbitrary inherited descriptors; rearranging loader binds could not close that authority. The native descriptor sanitizer now makes the boundary explicit and fail-closed before Bubblewrap starts. A new full-suite and CI result is pending; do not describe this implementation as released or installed yet.
+- Current sanitizer identity, read from `server/src/descriptor-sanitizer-identity.ts`: schema `easyeda-pro-control.descriptor-sanitizer.v1`, file `easyeda-fd-sanitizer`, 1,440 bytes, SHA-256 `a8b52e8439bdb479a5621052ab03e9030d67b7948c6e2cc448ee5d7bb1dc9b41`, regular single-link mode `0755`. It is a static stripped ELF64 x86_64 image with one read/execute load segment, no interpreter, no dynamic section, no relocations, no writable load segment, and a non-executable stack. The FD contract, parent-death behavior, mode admission, exec failure, and hostile high-descriptor closure have dedicated adversarial tests; the offline doctor exercises successful no-capability admission against the real reviewed Bubblewrap descriptor. The production upstream regression with inherited descriptors `142` and `145` must pass before release.
+- The last complete pre-sanitizer local baseline had zero strict TypeScript or type-aware Oxlint diagnostics, 346/346 facade tests across 40 suites, 404/404 authenticated-bridge tests across 28 files, and passing dependency, registry-signature, vulnerability, plugin, skill, compatibility, repository, privacy, actionlint, and reproducible-bundle checks on Node `24.18.0`. Those counts and the prior two-file bundle/source hashes are superseded by the sanitizer integration and are not current release evidence.
 - The private authenticated bridge candidate was built twice reproducibly from closure `ce52ca1bf5b2d3d214454790a24516ae5182f1867851c2786c0269bbc7892680` (70 files, 847,709 bytes). Fixed receipt build `ded07x99dcxb504` selects authenticated index `ipamxAl7WLjoauIx5hQI-Sck8LB7JWeJMW_7DAXOcdcU` and archive SHA-256 `82cb8f241632ebed931a568085daf23f565960b71ac53cb4fb128e426b9abb0c` (138,874 bytes, mode 0600). It was not imported or connected; offline doctor is therefore fail-closed only on the intended reviewed-connected-build mismatch.
 - Marketplace `easyeda-pro-agent` remains configured from `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. The final installed version, payload equality, 19-tool stdio inventory, and GitHub CI evidence must replace this pending record after publication.
 

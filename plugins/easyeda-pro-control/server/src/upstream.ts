@@ -36,6 +36,7 @@ import {
   captureLauncherFingerprint,
   captureRuntimeLauncherExecution,
   launcherFingerprintSha256,
+  openReviewedDescriptorSanitizerExecutable,
   openReviewedNodeExecutable,
   openReviewedSandboxExecutable,
 } from "./upstream-trust.ts";
@@ -323,6 +324,9 @@ export class UpstreamEasyedaClient {
     );
     const preparedSandbox = await (async (): Promise<{
       readonly bootstrapFrame: Buffer;
+      readonly descriptorSanitizerExecution: Awaited<
+        ReturnType<typeof openReviewedDescriptorSanitizerExecutable>
+      >;
       readonly graphPayload: Awaited<ReturnType<typeof stagePrivateRuntimePayload>>;
       readonly nodeExecution: Awaited<ReturnType<typeof openReviewedNodeExecutable>>;
       readonly sandboxExecution: Awaited<ReturnType<typeof openReviewedSandboxExecutable>>;
@@ -330,6 +334,9 @@ export class UpstreamEasyedaClient {
       readonly supervisorExecution: Awaited<ReturnType<typeof stageReviewedSupervisorExecution>>;
     }> => {
       let bootstrapFrame: Buffer | undefined;
+      let descriptorSanitizerExecution:
+        | Awaited<ReturnType<typeof openReviewedDescriptorSanitizerExecutable>>
+        | undefined;
       let graphPayload: Awaited<ReturnType<typeof stagePrivateRuntimePayload>> | undefined;
       let seccompPayload: Awaited<ReturnType<typeof stagePrivateRuntimePayload>> | undefined;
       let supervisorExecution: Awaited<ReturnType<typeof stageReviewedSupervisorExecution>> | undefined;
@@ -351,6 +358,8 @@ export class UpstreamEasyedaClient {
         supervisorExecution = await stageReviewedSupervisorExecution(
           preparedEnvironment.dataDirectory.handle,
         );
+        descriptorSanitizerExecution =
+          await openReviewedDescriptorSanitizerExecutable();
         sandboxExecution = await openReviewedSandboxExecutable(
           startupLauncherFingerprint.sandbox,
         );
@@ -360,6 +369,7 @@ export class UpstreamEasyedaClient {
         );
         return {
           bootstrapFrame,
+          descriptorSanitizerExecution,
           graphPayload,
           nodeExecution,
           sandboxExecution,
@@ -375,6 +385,7 @@ export class UpstreamEasyedaClient {
         bootstrapFrame?.fill(0);
         const cleanupErrors: unknown[] = [];
         for (const resource of [
+          descriptorSanitizerExecution,
           graphPayload,
           seccompPayload,
           supervisorExecution,
@@ -407,6 +418,7 @@ export class UpstreamEasyedaClient {
     })();
     const {
       bootstrapFrame,
+      descriptorSanitizerExecution,
       graphPayload,
       nodeExecution,
       sandboxExecution,
@@ -432,6 +444,7 @@ export class UpstreamEasyedaClient {
           "between graph capture and sandbox admission",
         ),
         graphPayload.assertCurrent(),
+        descriptorSanitizerExecution.assertCurrent(),
         supervisorExecution.assertCurrent(),
         sandboxExecution.assertCurrent(),
         seccompPayload.assertCurrent(),
@@ -448,6 +461,7 @@ export class UpstreamEasyedaClient {
       bootstrapFrame,
       childEnvironment: preparedEnvironment.environment,
       dataDirectory: dataDirectoryResource,
+      descriptorSanitizer: descriptorSanitizerExecution,
       graph: graphPayload,
       node: nodeExecution,
       onBootstrapDelivered: (authority): Promise<void> => {

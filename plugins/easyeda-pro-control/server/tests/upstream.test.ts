@@ -23,6 +23,10 @@ import WebSocketClient from "ws";
 import type { RawData } from "ws";
 
 import { sha256Text } from "../src/core.ts";
+import {
+  DESCRIPTOR_SANITIZER_SCHEMA,
+  DESCRIPTOR_SANITIZER_SHA256,
+} from "../src/descriptor-sanitizer-identity.ts";
 import { AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY } from "../src/authenticated-bridge-build-identity.ts";
 import {
   BRIDGE_AUTHENTICATION_PROTOCOL,
@@ -37,6 +41,7 @@ import {
 import {
   assertPathSealsCurrent,
   captureLauncherFingerprint,
+  parseRuntimeLauncherFingerprint,
 } from "../src/upstream-trust.ts";
 import { UpstreamEasyedaClient } from "../src/upstream.ts";
 // oxlint-enable import/max-dependencies
@@ -229,6 +234,7 @@ before(async () => {
     import 'dotenv/config';
     import { createHash } from 'node:crypto';
     import dgram from 'node:dgram';
+    import { fstatSync } from 'node:fs';
     import { writeFile } from 'node:fs/promises';
     import { createServer } from 'node:http';
     import net from 'node:net';
@@ -269,6 +275,15 @@ before(async () => {
         ['127.0.0.1', expectedBridgePort + 1, 4, false, undefined, 0],
       )),
     };
+    const unexpectedInheritedDescriptors = [142, 145].filter((descriptor) => {
+      try {
+        fstatSync(descriptor);
+        return true;
+      } catch (error) {
+        if (error?.code === 'EBADF') return false;
+        throw error;
+      }
+    });
 
     function sendWebSocketJson(socket, value) {
       const payload = Buffer.from(JSON.stringify(value), 'utf8');
@@ -409,6 +424,7 @@ before(async () => {
             rawExecExperimental: process.env.MCP_RAW_EXEC_EXPERIMENTAL ?? null,
               networkPolicy: process.env.EASYEDA_SANDBOX_NETWORK_POLICY ?? null,
               networkDenials,
+              unexpectedInheritedDescriptors,
           }),
           annotations: { readOnlyHint: true, idempotentHint: true },
           inputSchema: { type: 'object', properties: {} },
@@ -562,6 +578,35 @@ void describe(
   "running upstream implementation fingerprint",
   { concurrency: false },
   () => {
+    void test("accepts only the exact descriptor sanitizer runtime identity", async () => {
+      const capture = await captureLauncherFingerprint();
+      const fingerprint = capture.fingerprint;
+      assert.deepEqual(fingerprint.sandbox.descriptorSanitizer, {
+        schema: DESCRIPTOR_SANITIZER_SCHEMA,
+        sha256: DESCRIPTOR_SANITIZER_SHA256,
+      });
+      assert.deepEqual(parseRuntimeLauncherFingerprint(fingerprint), fingerprint);
+
+      const missingSchema = structuredClone(fingerprint);
+      Reflect.deleteProperty(
+        missingSchema.sandbox.descriptorSanitizer,
+        "schema",
+      );
+      assert.throws(() => parseRuntimeLauncherFingerprint(missingSchema));
+
+      const wrongSchema = structuredClone(fingerprint);
+      Reflect.set(
+        wrongSchema.sandbox.descriptorSanitizer,
+        "schema",
+        "easyeda-pro-control.descriptor-sanitizer.v2",
+      );
+      assert.throws(() => parseRuntimeLauncherFingerprint(wrongSchema));
+
+      const wrongSha256 = structuredClone(fingerprint);
+      wrongSha256.sandbox.descriptorSanitizer.sha256 = "b".repeat(64);
+      assert.throws(() => parseRuntimeLauncherFingerprint(wrongSha256));
+    });
+
     void test("keeps the startup fingerprint and reports later on-disk drift", async () => {
       const trustedLauncher = await new UpstreamEasyedaClient().launcherFingerprint();
       const controlRoot = await openConfiguredControlRootCapability();
@@ -604,6 +649,7 @@ void describe(
           tcpWrongHost: true,
           tcpWrongPort: true,
         });
+        assert.deepEqual(environment["unexpectedInheritedDescriptors"], []);
 
         const lifecycle = upstream.bridgeSessionLifecycle();
         assert.ok(lifecycle);
@@ -665,6 +711,10 @@ void describe(
           implementationRoot,
         );
         assert.equal(initial.startup.executionClosure.root, fixtureRoot);
+        assert.deepEqual(initial.startup.sandbox.descriptorSanitizer, {
+          schema: DESCRIPTOR_SANITIZER_SCHEMA,
+          sha256: DESCRIPTOR_SANITIZER_SHA256,
+        });
         assert.ok(initial.startup.executionClosure.fileCount >= 6);
         assert.deepEqual(initial.startup.dependencyLock, {
           type: "pnpm",
