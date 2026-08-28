@@ -1,6 +1,6 @@
 {
   "name": "easyeda-pro-control-plugin",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "license": "MIT",
   "repository": {
@@ -8,9 +8,15 @@
     "url": "https://github.com/jan-guenter/easyeda-pro-agent-plugin.git",
     "directory": "plugins/easyeda-pro-control"
   },
+  "packageManager": "npm@11.16.0",
   "type": "module",
   "scripts": {
     "build": "node scripts/build-server.ts",
+    "bridge:build": "node scripts/build-authenticated-bridge.ts",
+    "bridge:lint": "oxlint --config .oxlintrc.bridge.json --type-aware --deny-warnings easyeda-bridge-extension/src easyeda-bridge-extension/tests easyeda-bridge-extension/scripts easyeda-bridge-extension/vitest.config.ts",
+    "bridge:provision": "node scripts/provision-bridge-token.ts",
+    "bridge:test": "vitest run --root easyeda-bridge-extension --config vitest.config.ts",
+    "bridge:typecheck": "tsc --noEmit -p easyeda-bridge-extension/tsconfig.json && tsc --noEmit -p easyeda-bridge-extension/tsconfig.test.json",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint --type-aware .",
     "lint:fix": "oxlint --type-aware . --fix",
@@ -19,20 +25,30 @@
     "doctor": "node scripts/doctor.ts --offline",
     "compatibility:check": "node scripts/reviewed-compatibility.ts --check",
     "compatibility:update": "node scripts/reviewed-compatibility.ts --write",
-    "verify": "npm run typecheck && npm run lint && npm run build && npm run compatibility:check && npm test && npm run validate"
+    "verify": "npm run typecheck && npm run bridge:typecheck && npm run bridge:lint && npm run lint && npm run build && npm run compatibility:check && npm test && npm run bridge:test && npm run validate"
   },
   "engines": {
-    "node": ">=24 <25"
+    "node": "24.18.0"
   },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
+    "acorn": "8.17.0",
+    "ws": "8.21.3",
     "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/node": "24.13.3",
-    "esbuild": "0.25.12",
+    "@types/ws": "8.18.1",
+    "esbuild": "0.28.2",
     "oxlint": "1.80.0",
     "oxlint-tsgolint": "7.0.2001",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vitest": "4.1.9"
   }
 }

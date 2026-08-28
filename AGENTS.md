@@ -8,10 +8,11 @@ Last updated: 2026-08-28 (Europe/Berlin)
 
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Production capabilities are live inspection, exact typed reads, managed evidence, SQLite checkpoints, validated capture, draft DSN route-context export, local artifact inspection, and conservative recovery.
+- Implemented facade capabilities are live inspection, exact typed reads, managed evidence, SQLite checkpoints, validated capture, draft DSN route-context export, local artifact inspection, and conservative recovery. Runtime use remains gated by the reviewed connected tuple.
 - The experimental PCB component writer is runtime-disabled. Unit tests do not authorize enabling it.
-- Unrestricted JavaScript is structurally disabled and has no environment opt-in.
+- Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
+- Fixed-receipt bridge build `ded07x99dcxb504` is an unconnected `validation-required` candidate, not a production-live build. The compatibility manifest retains historically connected dispatcher `d18b6xd531xe6ca`; status may collect the candidate fingerprint and narrowly reviewed public generic reads may proceed after a bounded smoke test, but exact reads and private operations remain fail-closed until connected review deliberately updates the manifest.
 - A boolean, toast, preview, unsaved readback, or file timestamp is never durable design proof.
 
 ## Non-negotiable safety rules
@@ -38,23 +39,27 @@ Last updated: 2026-08-28 (Europe/Berlin)
 
 ## Required verification
 
-Run with Node 24 from `plugins/easyeda-pro-control`:
+Run on Linux x86_64 with Node exactly `24.18.0`, npm exactly `11.16.0`, and a soft `RLIMIT_CORE` of zero from `plugins/easyeda-pro-control`:
 
 ```bash
+ulimit -c 0
+test "$(ulimit -c)" = "0"
+test "$(node --version)" = "v24.18.0"
+test "$(npm --version)" = "11.16.0"
 npm ci
-npm run typecheck
-npm run lint
-npm run build
-npm run compatibility:check
-npm test
-npm run validate
+npm ls --all
+npm audit signatures
+npm audit --audit-level=high
+npm run verify
 ```
 
 Then run from the repository root:
 
 ```bash
 node scripts/validate-repository.mjs
-git diff --exit-code -- plugins/easyeda-pro-control/server/dist/server.mjs
+python3 "$CODEX_HOME/skills/.system/plugin-creator/scripts/validate_plugin.py" plugins/easyeda-pro-control
+python3 "$CODEX_HOME/skills/.system/skill-creator/scripts/quick_validate.py" plugins/easyeda-pro-control/skills/easyeda-pro-control
+git diff --exit-code -- plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs
 ```
 
 The offline doctor validates the pinned local workstation and is not a substitute for a connected EasyEDA smoke test. Never run a connected mutation smoke test against a user project.
@@ -80,15 +85,15 @@ The update command changes only the facade source/bundle projections and review 
 
 ## Current validation record
 
-- Compatibility target: EasyEDA Pro `3.2.149.88089769`, PCB bundle `3.2.149.5378b690`, public API `0.2.53.aee2f57a`, upstream/bridge `1.0.0-rc.1`, Node `24.18.0`.
+- Compatibility target: EasyEDA Pro `3.2.149.88089769`, PCB bundle `3.2.149.5378b690`, public API `0.2.53.aee2f57a`, historically connected upstream MCP/health/extension/bridge `1.0.0-rc.1`, unconnected authenticated extension manifest `0.3.0`, and Node `24.18.0`.
 - Node source/toolchain: TypeScript `7.0.2` with all strict compiler checks enabled; Oxlint `1.80.0` plus type-aware `oxlint-tsgolint` `7.0.2001`; correctness, suspicious, pedantic, performance, style, and restriction diagnostics are errors, warnings are denied, and unused suppressions are errors. Architectural exceptions for Node, async protocol control, typed named modules, generated bridge programs, sequential transactions, and audit-oriented test vectors are individually documented in `.oxlintrc.json`.
 - Connected production-writer validation: **not performed; writer disabled**.
 - Unrestricted raw bridge execution: **structurally disabled**.
-- Release payload commit: `f66071b1910a864a04c2fee205e94d94c0d06a31` in `https://github.com/jan-guenter/easyeda-pro-agent-plugin`.
-- Local validation: strict TypeScript and the six-category type-aware Oxlint policy completed with zero diagnostics or warnings; 146/146 tests passed across 24 suites on exact Node `24.18.0`; plugin, skill, compatibility, repository, clean-install, offline-doctor, and privacy validators passed.
-- GitHub Actions run `33141544412` passed the clean checkout, dependency install, typecheck, expanded strict type-aware lint, build, compatibility gate, 146-test suite (145 pass and the Windows-mount-only case skipped on the Linux runner), plugin/repository validation, reproducible-bundle check, packaging, and artifact upload.
-- Marketplace `easyeda-pro-agent` is configured from `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. Installed plugin `easyeda-pro-control@easyeda-pro-agent` is enabled at `0.2.0+codex.20260828042005`; all 52 installed files match the release payload and current marketplace snapshot byte-for-byte.
-- The bundled installed MCP completed an actual stdio initialize and exposed all 18 declared tools. The former `easyeda-pro-control@personal` install, personal marketplace registration, source directory, and orphaned personal marketplace file were removed.
+- Release payload commit, GitHub Actions run, and Git-marketplace installation evidence are pending the final push.
+- Local validation: strict TypeScript and the six-category type-aware Oxlint policies completed with zero diagnostics or warnings; the facade passed 342/342 tests across 40 suites and the authenticated bridge passed 404/404 tests across 28 files on exact Node `24.18.0`. Dependency audit, registry signatures, plugin, skill, compatibility, repository, privacy, actionlint, and reproducible-bundle checks passed.
+- The two deterministic facade bundles have composite SHA-256 `99b427477e29b4f6a51dfd4b7e0f7ce6c3470db0f9212d18b7eaf1c8b434032e`: `server.mjs` is `c40a90bcfe92e0eec3ac2d90776c8e7c87a078eccb475e006c07951ea46cf2a8` and `upstream-supervisor.mjs` is `53c2c4f1005786d3288a171d28d45679c6b1f833264cf4039cb80f077ba68fd7`.
+- The private authenticated bridge candidate was built twice reproducibly from closure `ce52ca1bf5b2d3d214454790a24516ae5182f1867851c2786c0269bbc7892680` (70 files, 847,709 bytes). Fixed receipt build `ded07x99dcxb504` selects authenticated index `ipamxAl7WLjoauIx5hQI-Sck8LB7JWeJMW_7DAXOcdcU` and archive SHA-256 `82cb8f241632ebed931a568085daf23f565960b71ac53cb4fb128e426b9abb0c` (138,874 bytes, mode 0600). It was not imported or connected; offline doctor is therefore fail-closed only on the intended reviewed-connected-build mismatch.
+- Marketplace `easyeda-pro-agent` remains configured from `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. The final installed version, payload equality, 19-tool stdio inventory, and GitHub CI evidence must replace this pending record after publication.
 
 ## Open questions
 

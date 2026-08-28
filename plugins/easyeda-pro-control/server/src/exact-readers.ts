@@ -1893,11 +1893,11 @@ export function exactTargetAssertionPointer(primitiveId: string): string {
   return `/byPrimitiveId/${escaped}/primitiveId`;
 }
 
-export function buildExactReadCode(request: unknown): string {
+export function buildExactReadExpression(request: unknown): string {
   const parsed = exactReadRequestSchema.parse(request);
   const serialized = JSON.stringify(parsed);
   return `
-return await (async () => {
+(async () => {
   const REQUEST = ${serialized};
   const requiredApi = (lower, _upper, methods) => {
     const value = eda[lower];
@@ -3063,5 +3063,9 @@ return await (async () => {
   }
 
   throw new Error("unsupported exact-reader request");
-})();`;
+})()`;
+}
+
+export function buildExactReadCode(request: unknown): string {
+  return `return await ${buildExactReadExpression(request)};`;
 }

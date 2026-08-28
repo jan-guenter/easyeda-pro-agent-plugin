@@ -1,3 +1,5 @@
+import { buildExactReadExpression } from "./exact-readers.ts";
+
 export interface ExpectedContext {
   project?:
     | {
@@ -13,6 +15,11 @@ export interface ExpectedContext {
         tabId?: string | undefined;
       }
     | undefined;
+}
+
+export interface ExactSaveGuard {
+  readonly expectedSnapshotSha256: string;
+  readonly request: unknown;
 }
 
 type MutationState = "before" | "after";
@@ -31,6 +38,19 @@ function isWritableField(value: string | undefined): value is WritableField {
 
 function isMissingString(value: string | undefined): boolean {
   return value === undefined || value.length === 0;
+}
+
+function stringKind(value: unknown): string | undefined {
+  if (
+    value === null ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    !("kind" in value) ||
+    typeof value.kind !== "string"
+  ) {
+    return undefined;
+  }
+  return value.kind;
 }
 
 interface TargetChange {
@@ -108,6 +128,43 @@ return await (async () => {
     if (item !== undefined) project[key] = item;
   }
   return { ok: true, project };
+})();`;
+
+/**
+ * Establishes one immutable identity for the current EasyEDA renderer realm.
+ * A reload or process restart creates a new performance time origin and a new
+ * nonce, which lets orphan recovery prove that code from the former realm can
+ * no longer be running.
+ */
+export const RUNTIME_IDENTITY_PROBE_CODE = `
+return await (async () => {
+  const KEY = "__easyedaProControlRuntimeIdentityV1";
+  const host = globalThis;
+  const timeOrigin = Number(host.performance?.timeOrigin);
+  if (!Number.isFinite(timeOrigin) || timeOrigin <= 0) {
+    throw new Error("EasyEDA renderer performance.timeOrigin is unavailable");
+  }
+  let generation = host[KEY];
+  if (typeof generation !== "string" || generation.length < 24) {
+    const randomPart = typeof host.crypto?.randomUUID === "function"
+      ? host.crypto.randomUUID()
+      : [Date.now().toString(36), Math.random().toString(36).slice(2), Math.random().toString(36).slice(2)].join("-");
+    generation = ["easyeda-renderer", String(timeOrigin), randomPart].join(":");
+    Object.defineProperty(host, KEY, {
+      value: generation,
+      writable: false,
+      configurable: false,
+      enumerable: false,
+    });
+  }
+  const processId = Number(host.process?.pid);
+  return {
+    ok: true,
+    kind: "runtime-identity",
+    generation,
+    timeOrigin,
+    processId: Number.isInteger(processId) && processId > 0 ? processId : null,
+  };
 })();`;
 
 export function wrapWithContextGuard(
@@ -398,7 +455,10 @@ return await (async () => {
 })();`;
 }
 
-export function buildSaveReopenCode(expectedContext: ExpectedContext): string {
+export function buildSaveReopenCode(
+  expectedContext: ExpectedContext,
+  exactGuards: readonly ExactSaveGuard[],
+): string {
   const expectedUuid =
     expectedContext?.document?.uuid ?? expectedContext?.document?.documentUuid;
   const expectedType = expectedContext?.document?.documentType;
@@ -420,6 +480,21 @@ export function buildSaveReopenCode(expectedContext: ExpectedContext): string {
   if (isMissingString(expectedTabId)) {
     throw new Error("save/reopen requires expectedContext.document.tabId.");
   }
+  if (exactGuards.length === 0 || exactGuards.length > 8) {
+    throw new Error("save/reopen requires between one and eight exact guards.");
+  }
+  const guardReaders = exactGuards.map((guard, index) => {
+    if (!/^[a-f0-9]{64}$/u.test(guard.expectedSnapshotSha256)) {
+      throw new Error(`save/reopen exact guard ${index} has an invalid SHA-256.`);
+    }
+    return `async () => await ${buildExactReadExpression(guard.request)}`;
+  });
+  const expectedGuardHashes = exactGuards.map(
+    (guard) => guard.expectedSnapshotSha256,
+  );
+  const guardLabels = exactGuards.map(
+    (guard, index) => stringKind(guard.request) ?? `guard-${index}`,
+  );
   return `
 return await (async () => {
   const EXPECTED_UUID = ${jsString(expectedUuid)};
@@ -432,6 +507,44 @@ return await (async () => {
   };
   const uuidOf = (value) => String(value?.uuid ?? value?.documentUuid ?? value?.id ?? "");
   const typeOf = (value) => Number(value?.documentType ?? value?.docType);
+  const stable = (value) => {
+    if (value === null || typeof value !== "object") return value;
+    if (Array.isArray(value)) return value.map((item) => stable(item));
+    const result = {};
+    for (const key of Object.keys(value).sort()) result[key] = stable(value[key]);
+    return result;
+  };
+  const sha256Json = async (value) => {
+    if (!globalThis.crypto?.subtle || typeof globalThis.TextEncoder !== "function") {
+      throw new Error("Web Crypto SHA-256 is unavailable for the exact save guard");
+    }
+    const encoded = JSON.stringify(stable(value));
+    if (encoded === undefined) throw new Error("exact save guard returned a non-JSON root");
+    const digest = await globalThis.crypto.subtle.digest(
+      "SHA-256",
+      new globalThis.TextEncoder().encode(encoded),
+    );
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  };
+  const EXACT_GUARD_READERS = [${guardReaders.join(",\n")}];
+  const EXPECTED_GUARD_HASHES = ${JSON.stringify(expectedGuardHashes)};
+  const EXACT_GUARD_LABELS = ${JSON.stringify(guardLabels)};
+  const observedGuardHashes = [];
+  for (let pass = 0; pass < 2; pass += 1) {
+    const passHashes = [];
+    for (let index = 0; index < EXACT_GUARD_READERS.length; index += 1) {
+      const payload = await EXACT_GUARD_READERS[index]();
+      const hash = await sha256Json(payload);
+      if (hash !== EXPECTED_GUARD_HASHES[index]) {
+        throw new Error("exact save guard changed before save: " + EXACT_GUARD_LABELS[index]);
+      }
+      passHashes.push(hash);
+    }
+    observedGuardHashes.push(passHashes);
+  }
+  if (JSON.stringify(observedGuardHashes[0]) !== JSON.stringify(observedGuardHashes[1])) {
+    throw new Error("exact save guard was unstable across its two commit-bound passes");
+  }
   const before = await readDocument();
   if (uuidOf(before) !== EXPECTED_UUID || typeOf(before) !== EXPECTED_TYPE || String(before?.tabId ?? "") !== EXPECTED_TAB_ID) {
     throw new Error("active document changed before save");
@@ -452,7 +565,11 @@ return await (async () => {
   } else {
     throw new Error("exact save/reopen is unsupported for this document type");
   }
-  const saved = await saveDocument();
+  // Invoke save synchronously in this continuation after the second complete
+  // exact-guard pass and final context check. The public API exposes no CAS or
+  // editor lock, so the runtime-disabled writer still requires connected proof.
+  const savePending = saveDocument();
+  const saved = await savePending;
   if (saved !== true) throw new Error("document save did not return exactly true");
   const closeTarget = String(before?.tabId ?? EXPECTED_UUID);
   const closed = await editor.closeDocument(closeTarget);
@@ -470,6 +587,13 @@ return await (async () => {
     saved: true,
     closed: true,
     reopened: true,
+    exactSaveGuard: {
+      passes: 2,
+      labels: EXACT_GUARD_LABELS,
+      snapshotSha256: observedGuardHashes[1],
+      saveInvokedInSameExecution: true,
+      publicCompareAndSwapAvailable: false,
+    },
     document: {
       uuid: uuidOf(after),
       documentType: typeOf(after),

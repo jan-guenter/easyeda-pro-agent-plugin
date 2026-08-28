@@ -1,0 +1,394 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "extends": ["./.oxlintrc.json"],
+  "overrides": [
+    {
+      "files": [
+        "easyeda-bridge-extension/src/**/*.ts",
+        "easyeda-bridge-extension/tests/**/*.ts",
+        "easyeda-bridge-extension/scripts/**/*.mjs"
+      ],
+      "rules": {
+        // Dispatcher tables, EasyEDA callbacks, and adversarial fixtures have
+        // inferred signatures checked by TypeScript. Repeating hundreds of
+        // return annotations would obscure the reverse-engineered contracts.
+        "typescript/explicit-function-return-type": "off",
+
+        // The extension target is ES2020. `toSorted()` is not available in the
+        // pinned EasyEDA renderer, and every retained sort either owns its new
+        // array or intentionally establishes deterministic in-place order.
+        "unicorn/no-array-sort": "off",
+
+        // `Object.hasOwn()` and `String.prototype.replaceAll()` are ES2022 and
+        // ES2021 APIs. The renderer target is ES2020, so the reviewed compatible
+        // `hasOwnProperty.call()` and global-regexp replacement forms remain.
+        "eslint/prefer-object-has-own": "off",
+        "unicorn/prefer-string-replace-all": "off",
+
+        // Host strings can contain malformed UTF-16 code units. Preserving the
+        // reviewed code-unit regular-expression behavior avoids silently making
+        // those probes throw or match differently under Unicode mode.
+        "eslint/require-unicode-regexp": "off",
+
+        // Injected build constants, EasyEDA metadata (`__class`, `__methods`),
+        // and adversarial fixtures deliberately use externally fixed names.
+        "eslint/no-underscore-dangle": "off",
+
+        // Generic lookup helpers let each call state the expected shape while
+        // runtime guards remain authoritative at the undocumented host boundary.
+        "typescript/no-unnecessary-type-parameters": "off"
+      }
+    },
+    {
+      "files": [
+        "easyeda-bridge-extension/src/board-inspection.ts",
+        "easyeda-bridge-extension/src/dispatcher.ts",
+        "easyeda-bridge-extension/src/pcb-read-operations.ts",
+        "easyeda-bridge-extension/src/schematic-transaction-operations.ts",
+        "easyeda-bridge-extension/src/system-api-operations.ts"
+      ],
+      "rules": {
+        // These files directly enumerate undocumented, dynamically shaped EasyEDA
+        // host objects. Their runtime guards are authoritative; replacing honest
+        // `any` with unchecked casts would conceal the same boundary.
+        "typescript/no-explicit-any": "off"
+      }
+    },
+    {
+      "files": [
+        "easyeda-bridge-extension/src/dispatcher.ts",
+        "easyeda-bridge-extension/src/pcb-read-operations.ts"
+      ],
+      "rules": {
+        // Dynamic host calls cross into exact guarded dispatcher parameters.
+        "typescript/no-unsafe-argument": "off"
+      }
+    },
+    {
+      "files": [
+        "easyeda-bridge-extension/src/api-runtime.ts",
+        "easyeda-bridge-extension/src/board-inspection.ts",
+        "easyeda-bridge-extension/src/dispatcher.ts",
+        "easyeda-bridge-extension/src/pcb-primitive-state.ts",
+        "easyeda-bridge-extension/src/pcb-read-operations.ts",
+        "easyeda-bridge-extension/src/pcb-write-operations.ts",
+        "easyeda-bridge-extension/src/schematic-transaction-operations.ts",
+        "easyeda-bridge-extension/src/system-api-operations.ts"
+      ],
+      "rules": {
+        // These assignments capture values returned by the undocumented host API;
+        // the consuming runtime checks, rather than casts, establish their shape.
+        "typescript/no-unsafe-assignment": "off"
+      }
+    },
+    {
+      "files": [
+        "easyeda-bridge-extension/src/board-inspection.ts",
+        "easyeda-bridge-extension/src/dispatcher.ts",
+        "easyeda-bridge-extension/src/pcb-read-operations.ts",
+        "easyeda-bridge-extension/src/schematic-transaction-operations.ts",
+        "easyeda-bridge-extension/src/system-api-operations.ts"
+      ],
+      "rules": {
+        // Calls into dynamically discovered EasyEDA methods are guarded immediately
+        // before invocation and cannot be expressed by a stable vendor type.
+        "typescript/no-unsafe-call": "off",
+        "typescript/no-unsafe-member-access": "off"
+      }
+    },
+    {
+      "files": [
+        "easyeda-bridge-extension/src/board-inspection.ts",
+        "easyeda-bridge-extension/src/dispatcher.ts",
+        "easyeda-bridge-extension/src/schematic-transaction-operations.ts"
+      ],
+      "rules": {
+        // These functions return exact host values after runtime path admission.
+        "typescript/no-unsafe-return": "off"
+      }
+    },
+    {
+      "files": [
+        "easyeda-bridge-extension/src/api-introspection.ts",
+        "easyeda-bridge-extension/src/api-runtime.ts",
+        "easyeda-bridge-extension/src/canvas-operations.ts",
+        "easyeda-bridge-extension/src/design-rule-check-operations.ts",
+        "easyeda-bridge-extension/src/dispatcher.ts",
+        "easyeda-bridge-extension/src/dispatcher-domain-router.ts",
+        "easyeda-bridge-extension/src/pcb-mutation-operations.ts",
+        "easyeda-bridge-extension/src/pcb-read-operations.ts",
+        "easyeda-bridge-extension/src/schematic-transaction-operations.ts",
+        "easyeda-bridge-extension/src/system-api-operations.ts",
+        "easyeda-bridge-extension/src/utils.ts"
+      ],
+      "rules": {
+        // These assertions narrow values only at guarded undocumented-host seams.
+        "typescript/no-unsafe-type-assertion": "off"
+      }
+    },
+    {
+      "files": [
+        "easyeda-bridge-extension/src/api-introspection.ts",
+        "easyeda-bridge-extension/src/api-runtime.ts",
+        "easyeda-bridge-extension/src/board-inspection.ts",
+        "easyeda-bridge-extension/src/design-rule-check-operations.ts",
+        "easyeda-bridge-extension/src/dispatcher.ts",
+        "easyeda-bridge-extension/src/dispatcher-domain-router.ts",
+        "easyeda-bridge-extension/src/pcb-read-operations.ts",
+        "easyeda-bridge-extension/src/schematic-component-inspection.ts",
+        "easyeda-bridge-extension/src/schematic-inspection.ts",
+        "easyeda-bridge-extension/src/schematic-transaction-operations.ts",
+        "easyeda-bridge-extension/src/system-api-operations.ts"
+      ],
+      "rules": {
+        // Empty strings and other falsey host sentinels are meaningful at these
+        // inspected boundaries, so their reviewed truthiness checks remain exact.
+        "typescript/strict-boolean-expressions": "off"
+      }
+    },
+    {
+      "files": [
+        "easyeda-bridge-extension/tests/api-introspection.test.ts",
+        "easyeda-bridge-extension/tests/api-runtime.test.ts",
+        "easyeda-bridge-extension/tests/board-inspection.test.ts",
+        "easyeda-bridge-extension/tests/canvas-operations.test.ts",
+        "easyeda-bridge-extension/tests/design-rule-check-operations.test.ts",
+        "easyeda-bridge-extension/tests/dispatcher.test.ts",
+        "easyeda-bridge-extension/tests/export-operations.test.ts",
+        "easyeda-bridge-extension/tests/pcb-read-operations.test.ts",
+        "easyeda-bridge-extension/tests/pcb-write-operations.test.ts",
+        "easyeda-bridge-extension/tests/read-only-operations.test.ts",
+        "easyeda-bridge-extension/tests/runtime-timers.test.ts",
+        "easyeda-bridge-extension/tests/schematic-component-inspection.test.ts",
+        "easyeda-bridge-extension/tests/schematic-inspection.test.ts",
+        "easyeda-bridge-extension/tests/schematic-snapshot-recreation.test.ts",
+        "easyeda-bridge-extension/tests/schematic-transaction-operations.test.ts",
+        "easyeda-bridge-extension/tests/system-api-operations.test.ts"
+      ],
+      "rules": {
+        // These fixtures deliberately emulate the same untyped vendor objects as
+        // the host adapters. Authentication, lifecycle, and policy tests are not
+        // included and retain every type-aware unsafe rule.
+        "typescript/no-explicit-any": "off",
+        "typescript/no-unsafe-argument": "off",
+        "typescript/no-unsafe-assignment": "off",
+        "typescript/no-unsafe-call": "off",
+        "typescript/no-unsafe-member-access": "off",
+        "typescript/no-unsafe-return": "off",
+        "typescript/no-unsafe-type-assertion": "off",
+        "typescript/strict-boolean-expressions": "off"
+      }
+    },
+    {
+      "files": ["easyeda-bridge-extension/src/**/*.ts"],
+      "rules": {
+        // EasyEDA requires several promise-shaped callbacks even when a pinned
+        // branch completes synchronously; retaining async preserves host ABI.
+        "eslint/require-await": "off",
+        "typescript/require-await": "off",
+
+        // These interfaces mirror the host's method-shaped API declarations.
+        // Converting them to function properties would make comparison harder.
+        "typescript/method-signature-style": "off",
+
+        // Empty strings and other falsey host sentinels are distinct from null
+        // and undefined, so the existing truthiness fallbacks are intentional.
+        "typescript/prefer-nullish-coalescing": "off",
+
+        // Continue guards keep dispatcher and primitive scans flat and make
+        // unsupported host records visibly skip without nested control flow.
+        "eslint/no-continue": "off",
+
+        // EasyEDA's WebSocket facade is property-callback based; replacing its
+        // lifecycle-owned handlers with listeners changes teardown semantics.
+        "unicorn/prefer-add-event-listener": "off",
+
+        // These dependency bags contain already-bound closure functions, never
+        // instance methods. Method-shaped interface declarations mirror the host.
+        "typescript/unbound-method": "off",
+
+        // Loader callbacks close over constants and teardown functions that are
+        // initialized before invocation; moving declarations would obscure the
+        // runtime bootstrap and circular lifecycle relationships.
+        "eslint/no-use-before-define": "off",
+
+        // Unary conversion helpers are intentionally passed to array methods;
+        // their declarations ignore the iterator index and collection arguments.
+        "unicorn/no-array-callback-reference": "off",
+
+        // Awaited host calls are read once and immediately projected. Splitting
+        // them into throwaway variables does not strengthen the boundary checks.
+        "unicorn/no-await-expression-member": "off",
+
+        // Negative guards express fail-closed host probing and authentication
+        // branches more directly than inverted positive conditionals.
+        "eslint/no-negated-condition": "off",
+        "unicorn/no-negated-condition": "off",
+
+        // Counters are local monotonic indices, not shared mutable arithmetic.
+        "eslint/no-plusplus": "off"
+      }
+    },
+    {
+      "files": ["easyeda-bridge-extension/tests/**/*.ts"],
+      "rules": {
+        // Test doubles implement asynchronous EasyEDA interfaces and scheduled
+        // rejection paths even when an individual fixture resolves immediately.
+        "eslint/require-await": "off",
+        "typescript/require-await": "off",
+        "typescript/explicit-member-accessibility": "off",
+        "typescript/strict-void-return": "off",
+
+        // Empty callbacks and nested fixture helpers are deliberate protocol
+        // seams; hoisting or filling them would change scheduling behavior.
+        "eslint/no-empty-function": "off",
+        "unicorn/consistent-function-scoping": "off",
+
+        // Timer and socket test doubles intentionally expose callback-only APIs.
+        "promise/prefer-await-to-callbacks": "off",
+
+        // Test-only classes and nested expectations keep each adversarial fixture
+        // self-contained; metric-driven extraction would hide the protocol trace.
+        "eslint/class-methods-use-this": "off",
+        "eslint/max-classes-per-file": "off",
+        "unicorn/max-nested-calls": "off",
+        "typescript/parameter-properties": "off"
+      }
+    },
+    {
+      "files": [
+        "easyeda-bridge-extension/scripts/**/*.mjs",
+        "easyeda-bridge-extension/tests/**/*.ts"
+      ],
+      "rules": {
+        // These are local packaging probes and isolated fixtures. Their sync
+        // filesystem/process calls are never part of the EasyEDA render loop.
+        "node/no-sync": "off"
+      }
+    },
+    {
+      "files": [
+        "easyeda-bridge-extension/src/**/*.ts",
+        "easyeda-bridge-extension/scripts/**/*.mjs"
+      ],
+      "rules": {
+        // Extension diagnostics and command-line validators intentionally use
+        // their platform console rather than introducing a logging dependency.
+        "eslint/no-console": "off"
+      }
+    },
+    {
+      "files": [
+        "easyeda-bridge-extension/src/**/*.ts",
+        "easyeda-bridge-extension/tests/**/*.ts",
+        "easyeda-bridge-extension/scripts/**/*.mjs"
+      ],
+      "rules": {
+        // WebSocket, timer, stream, and process APIs expose callback-only event
+        // settlement; the Promise wrappers are the auditable cancellation seam.
+        "promise/avoid-new": "off"
+      }
+    },
+    {
+      "files": [
+        "easyeda-bridge-extension/src/dispatcher.ts",
+        "easyeda-bridge-extension/src/dispatcher-domain-router.ts"
+      ],
+      "rules": {
+        // These are the reviewed composition roots for the complete dispatcher
+        // surface; splitting imports would conceal the published method inventory.
+        "import/max-dependencies": "off"
+      }
+    },
+    {
+      "files": ["easyeda-bridge-extension/src/dispatcher.ts"],
+      "rules": {
+        // Nested fail-closed validation mirrors external payload structure and
+        // keeps each rejection adjacent to the field it validates.
+        "eslint/max-depth": "off"
+      }
+    },
+    {
+      "files": ["easyeda-bridge-extension/src/index.ts"],
+      "rules": {
+        // These build-injected and EasyEDA lexical globals may be undeclared at
+        // runtime. `typeof name` is the only lookup that cannot throw before the
+        // globalThis fallback or fail-closed build-identity check can run.
+        "unicorn/no-typeof-undefined": "off",
+
+        // Promise chaining is confined to EasyEDA lifecycle callbacks whose
+        // synchronous registration and rejection handlers must remain explicit.
+        "promise/always-return": "off",
+        "promise/prefer-await-to-callbacks": "off",
+        "promise/prefer-await-to-then": "off",
+
+        // The EasyEDA renderer target is ES2020, which has no Error `cause`
+        // option. The thrown message includes the caught value explicitly.
+        "eslint/preserve-caught-error": "off",
+
+        // Release Please requires its version marker on the literal's line;
+        // moving the comment would break the external version synchronization.
+        "eslint/no-inline-comments": "off"
+      }
+    },
+    {
+      "files": ["easyeda-bridge-extension/src/dispatcher.ts"],
+      "rules": {
+        // Source-level tests do not inject the esbuild build-id identifier.
+        // `typeof` preserves the reviewed baked-dev fallback without a
+        // ReferenceError while release bundles still replace the identifier.
+        "unicorn/no-typeof-undefined": "off",
+
+        // This iteration must snapshot Map entries because it deletes and
+        // reinserts keys while normalizing roots. Iterating the live Map could
+        // revisit inserted entries or skip a root depending on insertion order.
+        "unicorn/no-useless-spread": "off",
+
+        // The two native creation APIs have different signatures and distinct
+        // reverse-engineering notes. Branch form keeps each argument contract
+        // adjacent to its call without a nested conditional expression.
+        "unicorn/prefer-ternary": "off"
+      }
+    },
+    {
+      "files": ["easyeda-bridge-extension/src/schematic-transaction-operations.ts"],
+      "rules": {
+        // Each point tuple may contain undocumented trailing coordinates that
+        // rollback must preserve byte-for-byte. Copying the matched tuple in
+        // its map callback is the smallest safe way to update only x and y.
+        "oxc/no-map-spread": "off"
+      }
+    },
+    {
+      "files": [
+        "easyeda-bridge-extension/scripts/build.mjs",
+        "easyeda-bridge-extension/scripts/dev-watch.mjs",
+        "easyeda-bridge-extension/scripts/package.mjs"
+      ],
+      "rules": {
+        // These one-statement ESM entrypoints deliberately do nothing except
+        // fail closed before any credential-bearing standalone build can start.
+        "import/unambiguous": "off"
+      }
+    },
+    {
+      "files": ["easyeda-bridge-extension/src/runtime-timers.ts"],
+      "rules": {
+        // EasyEDA timer methods are invoked with their owning API object as the
+        // receiver; removing `.call()` breaks undocumented host implementations.
+        "eslint/no-useless-call": "off"
+      }
+    },
+    {
+      "files": ["easyeda-bridge-extension/vitest.config.ts"],
+      "rules": {
+        // Vitest configuration discovery requires its conventional default export.
+        "import/no-default-export": "off"
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "easyeda-bridge-extension/dist/**",
+    "easyeda-bridge-extension/node_modules/**"
+  ]
+}

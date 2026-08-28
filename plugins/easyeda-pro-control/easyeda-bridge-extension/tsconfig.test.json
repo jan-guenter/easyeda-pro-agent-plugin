@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM"],
+    "rootDir": ".",
+    // Test-only parameter properties model protocol fakes and are never emitted
+    // into the ES2020 EasyEDA renderer bundle.
+    "erasableSyntaxOnly": false
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}

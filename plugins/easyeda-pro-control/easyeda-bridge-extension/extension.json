@@ -1,0 +1,101 @@
+{
+  "name": "easyeda-pro-control-authenticated-bridge",
+  "uuid": "7e06d286b1ac846ef7eab9c7f2a9ee4",
+  "displayName": "EasyEDA Pro Control Authenticated Bridge",
+  "description": "Private mutually authenticated EasyEDA companion for the EasyEDA Pro Control facade.",
+  "version": "0.3.0",
+  "publisher": "JanGuenter",
+  "engines": {
+    "eda": "^3.0.0"
+  },
+  "license": "MIT",
+  "categories": "Other",
+  "keywords": [
+    "mcp",
+    "ai",
+    "bridge",
+    "schematic",
+    "pcb",
+    "bom",
+    "drc",
+    "erc",
+    "export",
+    "automation"
+  ],
+  "images": {
+    "logo": "./images/logo.png"
+  },
+  "activationEvents": {
+    "onStartupFinished": true
+  },
+  "entry": "./dist/index",
+  "allowExternalInteraction": true,
+  "dependentExtensions": {},
+  "headerMenus": {
+    "home": [
+      {
+        "id": "EasyEDAProControlAuthenticatedBridge",
+        "title": "Authenticated Control Bridge",
+        "menuItems": [
+          {
+            "id": "Connect",
+            "title": "Connect",
+            "registerFn": "connect"
+          },
+          {
+            "id": "Disconnect",
+            "title": "Disconnect",
+            "registerFn": "disconnect"
+          },
+          {
+            "id": "EnableAutoConnect",
+            "title": "Enable Auto-Connect",
+            "registerFn": "enableAutoConnect"
+          },
+          {
+            "id": "DisableAutoConnect",
+            "title": "Disable Auto-Connect",
+            "registerFn": "disableAutoConnect"
+          },
+          {
+            "id": "Status",
+            "title": "Status...",
+            "registerFn": "showStatus"
+          }
+        ]
+      }
+    ],
+    "sch": [
+      {
+        "id": "EasyEDAProControlAuthenticatedBridge",
+        "title": "Authenticated Control Bridge",
+        "menuItems": [
+          {
+            "id": "Status",
+            "title": "Status...",
+            "registerFn": "showStatus"
+          }
+        ]
+      }
+    ],
+    "pcb": [
+      {
+        "id": "EasyEDAProControlAuthenticatedBridge",
+        "title": "Authenticated Control Bridge",
+        "menuItems": [
+          {
+            "id": "Status",
+            "title": "Status...",
+            "registerFn": "showStatus"
+          }
+        ]
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jan-guenter/easyeda-pro-agent-plugin"
+  },
+  "homepage": "https://github.com/jan-guenter/easyeda-pro-agent-plugin#readme",
+  "bugs": "https://github.com/jan-guenter/easyeda-pro-agent-plugin/issues"
+}

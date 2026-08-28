@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import {
+  assertReviewedLocalGenericReadArguments,
   assertSubset,
   buildPlanHash,
   canonicalJson,
@@ -13,10 +14,12 @@ import {
   filterTools,
   getJsonPointer,
   isRecord,
+  isReviewedLocalGenericRead,
   isTerminalOperation,
   loadReviewedCompatibilityManifest,
   newOperationId,
   normalizeEasyedaProjectPath,
+  normalizeProofEnvelope,
   normalizeToolResult,
   operationHasOrphanedCallRisk,
   operationSummary,
@@ -159,6 +162,25 @@ void describe("upstream result normalization and tool classification", () => {
     assert.equal(normalizeToolResult().ok, false);
   });
 
+  void test("proof normalization removes only envelope retry metadata", () => {
+    const nestedDesignState = {
+      stable: false,
+      attempts: 99,
+      persistedMode: "design-owned",
+    };
+    assert.deepEqual(
+      normalizeProofEnvelope({
+        kind: "pcb-rules",
+        read_consistency: { stable: true, attempts: 2 },
+        configuration: { read_consistency: nestedDesignState },
+      }),
+      {
+        kind: "pcb-rules",
+        configuration: { read_consistency: nestedDesignState },
+      },
+    );
+  });
+
   void test("payload extraction unwraps bounded result envelopes and parses text fallback", () => {
     assert.deepEqual(
       extractToolPayload({
@@ -286,6 +308,47 @@ void describe("upstream result normalization and tool classification", () => {
       hasConfirmWrite: false,
       idempotent: true,
     });
+  });
+
+  void test("generic reads use an explicit local-only allowlist", () => {
+    assert.equal(isReviewedLocalGenericRead("easyeda_pcb_components"), true);
+    assert.equal(isReviewedLocalGenericRead("easyeda_bom_generate"), true);
+    assert.equal(isReviewedLocalGenericRead("easyeda_bom_validate"), false);
+    assert.equal(isReviewedLocalGenericRead("easyeda_bom_sourcing"), false);
+    assert.equal(
+      isReviewedLocalGenericRead("easyeda_catalog_verify_device"),
+      false,
+    );
+    assert.equal(
+      isReviewedLocalGenericRead("easyeda_jlcpcb_quote_workflow"),
+      false,
+    );
+    assert.equal(isReviewedLocalGenericRead("easyeda_unknown_read"), false);
+  });
+
+  void test("live PCB constraint readers reject every own boardData property", () => {
+    for (const name of [
+      "easyeda_pcb_constraint_check",
+      "easyeda_pcb_constraint_report",
+      "easyeda_pcb_production_review",
+    ]) {
+      assert.doesNotThrow(() => {
+        assertReviewedLocalGenericReadArguments(name, {
+          projectId: "project-1",
+        });
+      });
+      for (const boardData of [undefined, null, { widthMm: 1, heightMm: 1 }]) {
+        assert.throws(
+          () => {
+            assertReviewedLocalGenericReadArguments(name, {
+              boardData,
+              projectId: "project-1",
+            });
+          },
+          /arguments\.boardData is prohibited.*proven live board/u,
+        );
+      }
+    }
   });
 
   void test("tool filtering respects classification, all query terms, limits, and schema opt-in", () => {
@@ -587,7 +650,7 @@ void describe("stable runtime fingerprint validation", () => {
   const digest = "a".repeat(64);
   const valid = {
     facadeImplementation: {
-      version: "0.2.0",
+      version: "0.3.0",
       operationSchema: "easyeda-pro-control.operation.v1",
       mode: "source-tree",
       files: [
@@ -613,10 +676,30 @@ void describe("stable runtime fingerprint validation", () => {
         sha256: digest,
         fileCount: 12,
       },
+      executionClosure: {
+        root: "/opt/easyeda",
+        directoryCount: 40,
+        fileCount: 120,
+        symlinkCount: 0,
+        totalBytes: 4096,
+        sha256: digest,
+      },
       dependencyLock: {
         type: "pnpm",
         path: "/opt/easyeda/pnpm-lock.yaml",
         sha256: digest,
+      },
+      moduleGraph: {
+        schema: "easyeda-pro-control.module-graph.v1",
+        moduleCount: 120,
+        edgeCount: 240,
+        totalBytes: 4096,
+        sha256: digest,
+      },
+      sandbox: {
+        command: "/usr/sbin/bwrap",
+        commandSha256: digest,
+        version: "0.11.2",
       },
     },
     upstreamImplementationDrift: false,
@@ -680,6 +763,10 @@ void describe("stable runtime fingerprint validation", () => {
       incomplete.upstreamLauncher.implementationTree,
       "sha256",
     );
+    Reflect.deleteProperty(
+      incomplete.upstreamLauncher.executionClosure,
+      "sha256",
+    );
     incomplete.upstreamImplementationDrift = true;
     incomplete.bridge.payload.connected = false;
     assert.throws(
@@ -689,6 +776,10 @@ void describe("stable runtime fingerprint validation", () => {
         assert.deepEqual(detailed["missingFingerprintFields"], [
           {
             pointer: "/upstreamLauncher/implementationTree/sha256",
+            required: "sha256",
+          },
+          {
+            pointer: "/upstreamLauncher/executionClosure/sha256",
             required: "sha256",
           },
           { pointer: "/upstreamImplementationDrift", required: "false" },
@@ -708,6 +799,19 @@ void describe("stable runtime fingerprint validation", () => {
     );
 
     const implementation = await controlImplementationFingerprint();
+    if (implementation.mode === "source-tree") {
+      const reviewedSourceFiles = new Set(
+        implementation.files.map((file) => file.relativePath),
+      );
+      assert.equal(
+        reviewedSourceFiles.has("authenticated-bridge-gateway.ts"),
+        true,
+      );
+      assert.equal(
+        reviewedSourceFiles.has("backend-listener-authority.ts"),
+        true,
+      );
+    }
     const reviewedFacade =
       loadReviewedCompatibilityManifest().facadeImplementation[
         implementation.mode

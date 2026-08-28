@@ -3,11 +3,13 @@ import { describe, test } from "node:test";
 
 import {
   CONTEXT_PROBE_CODE,
+  RUNTIME_IDENTITY_PROBE_CODE,
   buildComponentMutationCode,
   buildSaveReopenCode,
   wrapWithContextGuard,
 } from "../src/runtime-scripts.ts";
 import { buildExactReadCode } from "../src/exact-readers.ts";
+import { normalizeProofEnvelope, sha256Json } from "../src/core.ts";
 
 type AsyncFunctionConstructor = new (
   ...parameters: string[]
@@ -39,6 +41,11 @@ interface PcbEdaFixture {
     pcb_Document: {
       save: (uuid: string) => Promise<boolean>;
     };
+    pcb_PrimitiveComponent: {
+      getAll: () => Promise<unknown[]>;
+      getAllPrimitiveId: () => Promise<string[]>;
+      getAllPinsByPrimitiveId: (primitiveId: string) => Promise<unknown[]>;
+    };
     dmt_EditorControl: {
       closeDocument: (target: string) => Promise<boolean>;
       openDocument: (uuid: string) => Promise<string>;
@@ -46,6 +53,10 @@ interface PcbEdaFixture {
     };
   };
   calls: string[];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function contextEda({
@@ -95,6 +106,14 @@ function pcbEda(options: PcbEdaOptions = {}): PcbEdaFixture {
         return options.saved ?? true;
       },
     },
+    pcb_PrimitiveComponent: {
+      getAll: async (): Promise<unknown[]> => {
+        calls.push("guard-components");
+        return [];
+      },
+      getAllPrimitiveId: async (): Promise<string[]> => [],
+      getAllPinsByPrimitiveId: async (): Promise<unknown[]> => [],
+    },
     dmt_EditorControl: {
       closeDocument: async (target: string): Promise<boolean> => {
         calls.push(`close:${target}`);
@@ -113,15 +132,77 @@ function pcbEda(options: PcbEdaOptions = {}): PcbEdaFixture {
   return { eda, calls };
 }
 
+const EMPTY_PCB_COMPONENT_REQUEST = {
+  kind: "pcb-components" as const,
+  selector: { all: true as const },
+  includePins: false,
+  includeBounds: false,
+};
+const EMPTY_PCB_COMPONENT_PAYLOAD = {
+  ok: true,
+  kind: "pcb-components",
+  documentType: 3,
+  detail: { pins: false, bounds: false },
+  units: {
+    coordinates: "mil",
+    bounds: "mil",
+    transformedPadCoordinates: "mil",
+  },
+  limitations: {
+    componentPadWrapper:
+      "Placed component-pad centers, identity, layer, number, and net only; pad/hole geometry is intentionally omitted because this pinned wrapper has a known 0.1 drill-scale defect.",
+  },
+  primitiveIds: [],
+  byPrimitiveId: {},
+};
+
+function emptyPcbSaveGuards(): readonly [
+  {
+    request: typeof EMPTY_PCB_COMPONENT_REQUEST;
+    expectedSnapshotSha256: string;
+  },
+] {
+  return [
+    {
+      request: EMPTY_PCB_COMPONENT_REQUEST,
+      expectedSnapshotSha256: sha256Json(
+        normalizeProofEnvelope({
+          ...EMPTY_PCB_COMPONENT_PAYLOAD,
+          read_consistency: { stable: true, attempts: 2 },
+        }),
+      ),
+    },
+  ];
+}
+
 async function resolveUndefined(): Promise<undefined> {
   return undefined;
 }
 
 // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The test must construct generated async programs through the runtime's AsyncFunction constructor.
-const AsyncFunction = Object.getPrototypeOf(
-  resolveUndefined,
-  // oxlint-disable-next-line typescript/no-unsafe-member-access -- Object.getPrototypeOf returns any even though this prototype is obtained from a known async function.
-).constructor as AsyncFunctionConstructor;
+const AsyncFunction = resolveUndefined.constructor as AsyncFunctionConstructor;
+
+function buildEmptyPcbSaveCode(): string {
+  return buildSaveReopenCode(
+    {
+      document: { uuid: "document-1", documentType: 3, tabId: "old-tab" },
+    },
+    emptyPcbSaveGuards(),
+  );
+}
+
+void describe("renderer runtime identity", () => {
+  void test("is immutable within one realm and carries the time origin", async () => {
+    const run = new AsyncFunction("eda", RUNTIME_IDENTITY_PROBE_CODE);
+    const first = await run({});
+    const second = await run({});
+    assert.deepEqual(second, first);
+    assert.ok(isRecord(first));
+    assert.equal(first["kind"], "runtime-identity");
+    assert.equal(typeof first["generation"], "string");
+    assert.equal(typeof first["timeOrigin"], "number");
+  });
+});
 
 async function runGenerated(code: string, eda: unknown): Promise<unknown> {
   return new AsyncFunction("eda", code)(eda);
@@ -536,13 +617,13 @@ void describe("exact save, close, reopen, activate, and identity proof", () => {
   void test("performs PCB persistence in strict order and verifies reopened identity", async () => {
     const { eda, calls } = pcbEda();
     const result = await runGenerated(
-      buildSaveReopenCode({
-        document: { uuid: "document-1", documentType: 3, tabId: "old-tab" },
-      }),
+      buildEmptyPcbSaveCode(),
       eda,
     );
 
     assert.deepEqual(calls, [
+      "guard-components",
+      "guard-components",
       "read-document",
       "save:document-1",
       "close:old-tab",
@@ -555,6 +636,13 @@ void describe("exact save, close, reopen, activate, and identity proof", () => {
       saved: true,
       closed: true,
       reopened: true,
+      exactSaveGuard: {
+        passes: 2,
+        labels: ["pcb-components"],
+        snapshotSha256: [sha256Json(EMPTY_PCB_COMPONENT_PAYLOAD)],
+        saveInvokedInSameExecution: true,
+        publicCompareAndSwapAvailable: false,
+      },
       document: {
         uuid: "document-1",
         documentType: 3,
@@ -569,58 +657,59 @@ void describe("exact save, close, reopen, activate, and identity proof", () => {
       () =>
         buildSaveReopenCode({
           document: { uuid: "symbol-1", documentType: 2 },
-        }),
+        }, []),
       /supports schematic \(1\) and PCB \(3\) documents only/u,
     );
     assert.throws(
       () =>
         buildSaveReopenCode({
           document: { uuid: "footprint-1", documentType: 4 },
-        }),
+        }, []),
       /supports schematic \(1\) and PCB \(3\) documents only/u,
     );
   });
 
   void test("stops before mutation on identity mismatch and before close on save failure", async () => {
     const identityMismatch = pcbEda({ beforeUuid: "other-document" });
+    const identityMismatchCode = buildEmptyPcbSaveCode();
     await assert.rejects(
-      runGenerated(
-        buildSaveReopenCode({
-          document: { uuid: "document-1", documentType: 3, tabId: "old-tab" },
-        }),
-        identityMismatch.eda,
-      ),
+      runGenerated(identityMismatchCode, identityMismatch.eda),
       /active document changed before save/u,
     );
-    assert.deepEqual(identityMismatch.calls, ["read-document"]);
+    assert.deepEqual(identityMismatch.calls, [
+      "guard-components",
+      "guard-components",
+      "read-document",
+    ]);
 
     const saveFailure = pcbEda({ saved: false });
+    const saveFailureCode = buildEmptyPcbSaveCode();
     await assert.rejects(
-      runGenerated(
-        buildSaveReopenCode({
-          document: { uuid: "document-1", documentType: 3, tabId: "old-tab" },
-        }),
-        saveFailure.eda,
-      ),
+      runGenerated(saveFailureCode, saveFailure.eda),
       /save did not return exactly true/u,
     );
-    assert.deepEqual(saveFailure.calls, ["read-document", "save:document-1"]);
+    assert.deepEqual(saveFailure.calls, [
+      "guard-components",
+      "guard-components",
+      "read-document",
+      "save:document-1",
+    ]);
   });
 
   void test("validates the complete editor lifecycle before saving", async () => {
     const missingActivation = pcbEda();
     delete missingActivation.eda.dmt_EditorControl.activateDocument;
+    const missingActivationCode = buildEmptyPcbSaveCode();
 
     await assert.rejects(
-      runGenerated(
-        buildSaveReopenCode({
-          document: { uuid: "document-1", documentType: 3, tabId: "old-tab" },
-        }),
-        missingActivation.eda,
-      ),
+      runGenerated(missingActivationCode, missingActivation.eda),
       /editor open\/close\/activate API unavailable/u,
     );
-    assert.deepEqual(missingActivation.calls, ["read-document"]);
+    assert.deepEqual(missingActivation.calls, [
+      "guard-components",
+      "guard-components",
+      "read-document",
+    ]);
   });
 
   void test("treats close, open, activate, and reopened identity failures as hard errors", async () => {
@@ -633,13 +722,9 @@ void describe("exact save, close, reopen, activate, and identity proof", () => {
     ];
     for (const [options, pattern] of cases) {
       const { eda } = pcbEda(options);
+      const code = buildEmptyPcbSaveCode();
       await assert.rejects(
-        runGenerated(
-          buildSaveReopenCode({
-            document: { uuid: "document-1", documentType: 3, tabId: "old-tab" },
-          }),
-          eda,
-        ),
+        runGenerated(code, eda),
         pattern,
       );
     }

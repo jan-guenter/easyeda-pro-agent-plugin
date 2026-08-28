@@ -13,12 +13,25 @@ Read [`AGENTS.md`](AGENTS.md) first. This project controls an EDA application, s
 
 ## Local checks
 
-Use Node 24.x:
+Use Linux x86_64, Node exactly 24.18.0, npm exactly 11.16.0, an inherited soft
+`RLIMIT_CORE` of zero, and the exact non-setuid Bubblewrap 0.11.2 runtime recorded in
+`reviewed-compatibility.json`. A different Node or Bubblewrap binary is a
+reviewed compatibility change, not a reason to relax or skip sandbox tests.
 
 ```bash
 cd plugins/easyeda-pro-control
+ulimit -c 0
+test "$(ulimit -c)" = "0"
+test "$(node --version)" = "v24.18.0"
+test "$(npm --version)" = "11.16.0"
 npm ci
+npm ls --all
+npm audit signatures
+npm audit --audit-level=high
 npm run typecheck
+npm run bridge:typecheck
+npm run bridge:lint
+npm run bridge:test
 npm run lint
 npm run build
 npm run compatibility:check

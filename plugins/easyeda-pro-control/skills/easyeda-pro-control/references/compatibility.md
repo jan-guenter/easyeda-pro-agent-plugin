@@ -11,15 +11,24 @@ The first compatibility corpus for this skill came from this exact tuple:
 | EasyEDA Pro application | `3.2.149.88089769` |
 | PCB editor bundle | `3.2.149.5378b690` |
 | Public API bundle | `0.2.53.aee2f57a` |
-| Upstream MCP | `1.0.0-rc.1` |
-| EasyEDA bridge extension | `1.0.0-rc.1` |
+| Upstream MCP server | `1.0.0-rc.1` |
+| Authenticated bridge extension manifest | `0.3.0` |
+| Bridge runtime protocol reported version | `1.0.0-rc.1` |
 | Node.js | `24.18.0` |
 
 This table records evidence. It does not make later builds compatible. On any mismatch, public reads may proceed after a bounded smoke test. Treat every private operation as unavailable until installed-source inspection and a sacrificial or reversible test reconfirm it.
 
 The pinned installed-file hashes are PCB `js/pcb.js` `65401cdc0a8f244db2ff2d8da88fd835b6e1fb3a3ecdbcfd975781502cb04b54`, public API entry `api.js` `5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc`, public API adapter `api-types.js` `4da5b5184a78e2d3aca843dad6b147d7feb7ec1368160d73f49c4acbcf97dfdb`, and declarations `api-types.d.ts` `32a0d2f8b4bc3d7b2b93b33499d9d768b0c23c77f45843a65166cf4e8ad6dab1`.
 
-Facade release `0.2.0` uses operation schema `easyeda-pro-control.operation.v2`. Its bridge probe requires loader-reported source `loader_status` and dispatcher build ID `d18b6xd531xe6ca`.
+Facade release `0.3.0` uses operation schema `easyeda-pro-control.operation.v2`.
+The reviewed connected baseline requires loader-reported source `loader_status`
+and dispatcher build ID `d18b6xd531xe6ca`. The current fixed-receipt bridge
+build `ded07x99dcxb504` is an unconnected `validation-required` candidate, not
+a production-live build. Status may collect its actual live fingerprint after
+import, and narrowly reviewed public generic reads may proceed after a bounded
+smoke test against that fingerprint. Exact reads and private operations stay
+fail-closed until connected evidence is reviewed and this manifest is
+deliberately updated.
 
 `easyeda_control_status` gates the facade source/bundle hash and relative file set, the reviewed manifest's own path/size/schema/timestamp/SHA-256, upstream launcher and entrypoint, implementation tree, detected dependency lockfile, complete tool count/catalog hash, bridge extension, application version, method registry, dispatcher source/build/count, PCB editor implementation, public API entry, public API adapter, and declarations. Private plans journal that complete stable fingerprint, so replacing only the compatibility manifest invalidates an in-flight operation. They are accepted only when the tuple matches the runtime-loaded plugin-root `reviewed-compatibility.json`. That external manifest is deliberately excluded from the facade composite so it can pin both source-tree and built-bundle modes without a hash cycle; its separately pinned digest closes that cycle operationally.
 

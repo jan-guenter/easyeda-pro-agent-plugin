@@ -10,6 +10,7 @@ import {
   isTerminalOperation,
   newOperationId,
   normalizeEasyedaProjectPath,
+  normalizeProofEnvelope,
   operationHasOrphanedCallRisk,
   reviewedCompatibilityManifestFingerprint,
   sha256Json,
@@ -19,6 +20,8 @@ import {
   validatePrivateFingerprint,
 } from "./core.ts";
 import {
+  controlDataDirectory,
+  controlRootCapability,
   createOperation,
   listOperations,
   loadOperation,
@@ -28,15 +31,21 @@ import {
 } from "./artifacts.ts";
 import type { ArtifactDescriptor } from "./artifacts.ts";
 import { createCheckpoint, verifyCheckpoint } from "./checkpoint.ts";
+import type {
+  CheckpointAccessPolicy,
+  CheckpointCreateInput,
+} from "./checkpoint.ts";
 import {
   CONTEXT_PROBE_CODE,
   PROJECT_CONTEXT_PROBE_CODE,
+  RUNTIME_IDENTITY_PROBE_CODE,
   buildActivateRecoveryTargetCode,
   buildComponentMutationCode,
   buildReopenOnlyCode,
   buildSaveReopenCode,
   wrapWithContextGuard,
 } from "./runtime-scripts.ts";
+import type { ExactSaveGuard } from "./runtime-scripts.ts";
 import {
   buildExactReadCode,
   exactTargetAssertionPointer,
@@ -45,7 +54,7 @@ import {
 } from "./exact-readers.ts";
 import type { ExactReadRequest } from "./exact-readers.ts";
 import { randomUUID } from "node:crypto";
-import { isAbsolute } from "node:path";
+import { dirname, isAbsolute, join } from "node:path";
 
 const FORBIDDEN_APPLY_NAMES =
   /(^|_)(save|save_all|sync|import_changes|order|purchase)(_|$)/iu;
@@ -55,6 +64,38 @@ const EXACT_COMPONENT_MUTATION_TOOL =
 const ACTIVE_DOCUMENT_WRITE_ALLOWLIST = new Map<number, Set<string>>([
   [3, new Set<string>()],
 ]);
+
+async function checkpointAccessPolicy(
+  source: string,
+): Promise<CheckpointAccessPolicy> {
+  const expectedSource = normalizeEasyedaProjectPath(source);
+  return {
+    expectedSource,
+    controlRoot: await controlRootCapability(),
+    artifactRoots: [
+      join(dirname(expectedSource), "backups"),
+      join(controlDataDirectory(), "checkpoints"),
+    ],
+  };
+}
+
+async function createAuthorizedCheckpoint(
+  input: Readonly<CheckpointCreateInput>,
+  expectedSource = input.source,
+): Promise<Awaited<ReturnType<typeof createCheckpoint>>> {
+  const source = normalizeEasyedaProjectPath(input.source);
+  return createCheckpoint(
+    { ...input, source },
+    await checkpointAccessPolicy(expectedSource),
+  );
+}
+
+async function verifyAuthorizedCheckpoint(
+  receiptPath: string,
+  source: string,
+): Promise<Awaited<ReturnType<typeof verifyCheckpoint>>> {
+  return verifyCheckpoint(receiptPath, await checkpointAccessPolicy(source));
+}
 
 type UnknownRecord = Record<string, unknown>;
 export type MutationStateName = "before" | "after";
@@ -148,6 +189,65 @@ export interface ContextProbePayload extends ProjectProbePayload {
   document: LiveDocumentContext;
   pcb?: AuxiliaryDocumentContext | undefined;
   schematic?: AuxiliaryDocumentContext | undefined;
+}
+
+export interface RuntimeIdentity extends UnknownRecord {
+  kind: "runtime-identity";
+  generation: string;
+  timeOrigin: number;
+  processId: number | null;
+}
+
+export interface AuthenticatedBridgeSessionIdentity extends UnknownRecord {
+  readonly authenticatedAtEpochMs: number;
+  readonly authenticationReceiptSha256: string;
+  readonly gatewayInstanceId: string;
+  readonly sequence: number;
+  readonly sessionId: string;
+}
+
+export interface AuthenticatedBridgeDispatchBinding {
+  readonly begunAtEpochMs: number;
+  readonly bindingReceipt: string;
+  readonly gatewayInstanceId: string;
+  readonly leaseId: string;
+  readonly schema: "easyeda-pro-control.bridge-dispatch-lease.v1";
+  readonly sessionId: string;
+  readonly sessionSequence: number;
+}
+
+export interface ClosedAuthenticatedBridgeSessionIdentity
+  extends AuthenticatedBridgeSessionIdentity {
+  readonly closeReason: string;
+  readonly closedAtEpochMs: number;
+}
+
+export interface ExecutionAuthorityProcessIdentity extends UnknownRecord {
+  readonly pid: number;
+  readonly role: string;
+  readonly startIdentity: string;
+}
+
+export interface ExecutionAuthorityEvidence extends UnknownRecord {
+  readonly authoritySha256: string;
+  readonly bindingSha256: string;
+  readonly capturedAt: string;
+  readonly policyId: string;
+  readonly policySha256: string;
+  readonly processes: readonly ExecutionAuthorityProcessIdentity[];
+  readonly processTreeSha256: string;
+  readonly schema: "easyeda-pro-control.execution-authority.v1";
+}
+
+export interface ExecutionAuthorityTerminationProof extends UnknownRecord {
+  readonly bindingSha256: string;
+  readonly checkedAt: string;
+  readonly noPriorExecutionAuthorityRemains: true;
+  readonly ok: true;
+  readonly policyId: string;
+  readonly policySha256: string;
+  readonly schema: "easyeda-pro-control.execution-authority-termination.v1";
+  readonly terminatedAuthoritySha256: string;
 }
 
 export interface TargetChange {
@@ -257,6 +357,11 @@ export interface RuntimeRestartBoundary extends UnknownRecord {
   storedRuntimeFingerprintMatchedAfterReconnect?: boolean;
   limitation?: string;
   reboundTabId?: string;
+  priorBridgeSession?: AuthenticatedBridgeSessionIdentity;
+  currentBridgeSession?: AuthenticatedBridgeSessionIdentity;
+  closedBridgeSession?: unknown;
+  priorBridgeDispatch?: AuthenticatedBridgeDispatchBinding;
+  executionAuthorityTerminationProof?: ExecutionAuthorityTerminationProof;
 }
 
 export interface RuntimeGuardFailure extends UnknownRecord {
@@ -283,6 +388,10 @@ export interface OperationJournal extends UnknownRecord {
   runtimeRestartChallengeIssuedAt?: string;
   runtimeRestartChallengeConsumedAt?: string;
   runtimeRestartBoundary?: RuntimeRestartBoundary;
+  runtimeIdentityBeforeOrphan?: RuntimeIdentity;
+  bridgeSessionBeforeOrphan?: AuthenticatedBridgeSessionIdentity;
+  bridgeDispatchBeforeOrphan?: AuthenticatedBridgeDispatchBinding;
+  executionAuthorityBeforeOrphan?: ExecutionAuthorityEvidence;
   unsavedStateDiscardedByRestart?: boolean;
   baselineDiscardAuthorized?: boolean;
   hardStop: boolean;
@@ -370,6 +479,14 @@ export interface LauncherFingerprint {
     sha256: string;
     fileCount: number;
   };
+  executionClosure: {
+    root: string;
+    directoryCount: number;
+    fileCount: number;
+    symlinkCount: number;
+    totalBytes: number;
+    sha256: string;
+  };
   dependencyLock: {
     type: string;
     path: string;
@@ -411,27 +528,106 @@ export interface UpstreamClient {
     name: string,
     args: UnknownRecord | undefined,
     timeoutMs?: number,
+    dispatchLease?: AuthenticatedBridgeDispatchBinding,
   ) => Promise<unknown>;
   serverInfo?: () => { name?: string; version?: unknown } | undefined;
   instructions?: () => unknown;
   launcherFingerprint?: () => Promise<LauncherFingerprint>;
   launcherState?: () => Promise<LauncherState>;
   installedEasyedaBundles?: () => Promise<InstalledEasyedaBundles>;
+  bridgeSessionLifecycle?: () => unknown;
+  closedAuthenticatedBridgeSession?: (sessionId: string) => unknown;
+  beginAuthenticatedBridgeDispatch?: (
+    expectedGatewayInstanceId: string,
+    expectedSessionId: string,
+  ) => AuthenticatedBridgeDispatchBinding;
+  endAuthenticatedBridgeDispatch?: (
+    binding: AuthenticatedBridgeDispatchBinding,
+  ) => void;
+  abortAuthenticatedBridgeDispatch?: (
+    binding: AuthenticatedBridgeDispatchBinding,
+    outcome: "not-dispatched" | "ambiguous-after-dispatch",
+  ) => { readonly released: boolean; readonly retainedUntilSessionClose: boolean };
+  currentAuthenticatedBridgeDispatchBinding?: () =>
+    | AuthenticatedBridgeDispatchBinding
+    | undefined;
 }
 
 interface ContextOptions {
   allowTabChange?: boolean;
 }
 
+interface OperationBridgeDispatch {
+  readonly binding: AuthenticatedBridgeDispatchBinding;
+  readonly ownedByAuthenticatedScope: boolean;
+}
+
 interface InvokeOptions extends ContextOptions {
   targetChanges?: TargetChange[];
-  beforeDispatch?: () => void | Promise<void>;
-  afterDispatch?: () => void | Promise<void>;
+  guardedDispatch?: (
+    name: string,
+    args: UnknownRecord,
+    timeoutMs: number,
+  ) => Promise<unknown>;
 }
 
 export interface EngineOptions {
   privateComponentWriterValidated?: boolean | undefined;
+  semanticPersistenceValidator?: SemanticPersistenceValidator | undefined;
+  executionAuthorityValidator?: RuntimeExecutionAuthorityValidator | undefined;
 }
+
+export interface ExecutionAuthorityCaptureInput {
+  readonly bindingSha256: string;
+  readonly bridgeSession: AuthenticatedBridgeSessionIdentity;
+  readonly challengeAttempt: number;
+  readonly operationId: string;
+  readonly orphanPhase: string;
+  readonly runtimeIdentity: RuntimeIdentity;
+}
+
+export interface ExecutionAuthorityTerminationInput {
+  readonly bindingSha256: string;
+  readonly challengeAttempt: number;
+  readonly currentBridgeSession: AuthenticatedBridgeSessionIdentity;
+  readonly currentRuntimeIdentity: RuntimeIdentity;
+  readonly operationId: string;
+  readonly orphanPhase: string;
+  readonly priorBridgeSession: AuthenticatedBridgeSessionIdentity;
+  readonly priorExecutionAuthority: ExecutionAuthorityEvidence;
+  readonly priorRuntimeIdentity: RuntimeIdentity;
+}
+
+export interface RuntimeExecutionAuthorityValidator {
+  readonly capture: (
+    input: ExecutionAuthorityCaptureInput,
+  ) => Promise<ExecutionAuthorityEvidence>;
+  readonly proveTerminated: (
+    input: ExecutionAuthorityTerminationInput,
+  ) => Promise<ExecutionAuthorityTerminationProof>;
+}
+
+export interface SemanticPersistenceValidationInput {
+  readonly bindingSha256: string;
+  readonly operationId: string;
+  readonly plan: MutationPlan;
+  readonly preCheckpoint: CheckpointReceipt;
+  readonly finalCheckpoint: CheckpointReceipt;
+  readonly reopenedProofSnapshotSha256: string;
+}
+
+export interface SemanticPersistenceProof extends UnknownRecord {
+  readonly bindingSha256: string;
+  readonly ok: true;
+  readonly observedDelta: UnknownRecord;
+  readonly policyId: string;
+  readonly policySha256: string;
+  readonly observedDeltaSha256: string;
+}
+
+export type SemanticPersistenceValidator = (
+  input: SemanticPersistenceValidationInput,
+) => Promise<SemanticPersistenceProof>;
 
 export interface PlanOptions {
   confirmDiscardAnyUnsavedState?: boolean | undefined;
@@ -522,6 +718,16 @@ interface CheckpointArgs {
 
 function isUnknownRecord(value: unknown): value is UnknownRecord {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function containsAsciiControlCharacter(value: string): boolean {
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.codePointAt(index);
+    if (code !== undefined && (code < 32 || code === 127)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function isStringArray(value: unknown): value is string[] {
@@ -659,6 +865,335 @@ function projectPayload(value: unknown): ProjectProbePayload {
   return value;
 }
 
+function runtimeIdentityPayload(value: unknown): RuntimeIdentity {
+  if (
+    !isUnknownRecord(value) ||
+    value["kind"] !== "runtime-identity" ||
+    typeof value["generation"] !== "string" ||
+    value["generation"].length < 24 ||
+    typeof value["timeOrigin"] !== "number" ||
+    !Number.isFinite(value["timeOrigin"]) ||
+    value["timeOrigin"] <= 0 ||
+    !(
+      value["processId"] === null ||
+      (typeof value["processId"] === "number" &&
+        Number.isInteger(value["processId"]) &&
+        value["processId"] > 0)
+    )
+  ) {
+    throw new Error("EasyEDA runtime identity probe returned invalid evidence.");
+  }
+  return {
+    ...value,
+    kind: "runtime-identity",
+    generation: value["generation"],
+    timeOrigin: value["timeOrigin"],
+    processId: value["processId"],
+  };
+}
+
+function base64UrlIdentity(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length === 43 &&
+    /^[A-Za-z0-9_-]+$/u.test(value)
+  );
+}
+
+function authenticatedBridgeSessionPayload(
+  value: unknown,
+  gatewayInstanceId: unknown,
+): AuthenticatedBridgeSessionIdentity {
+  if (
+    !isUnknownRecord(value) ||
+    !base64UrlIdentity(gatewayInstanceId) ||
+    !base64UrlIdentity(value["sessionId"]) ||
+    typeof value["authenticationReceiptSha256"] !== "string" ||
+    !/^[a-f0-9]{64}$/u.test(value["authenticationReceiptSha256"]) ||
+    typeof value["authenticatedAtEpochMs"] !== "number" ||
+    !Number.isSafeInteger(value["authenticatedAtEpochMs"]) ||
+    value["authenticatedAtEpochMs"] <= 0 ||
+    typeof value["sequence"] !== "number" ||
+    !Number.isSafeInteger(value["sequence"]) ||
+    value["sequence"] <= 0
+  ) {
+    throw new Error(
+      "The authenticated bridge did not return a strict active-session identity.",
+    );
+  }
+  return {
+    ...value,
+    gatewayInstanceId,
+    sessionId: value["sessionId"],
+    authenticationReceiptSha256: value["authenticationReceiptSha256"],
+    authenticatedAtEpochMs: value["authenticatedAtEpochMs"],
+    sequence: value["sequence"],
+  };
+}
+
+function bridgeLifecycleSession(value: unknown): AuthenticatedBridgeSessionIdentity {
+  if (
+    !isUnknownRecord(value) ||
+    value["schema"] !==
+      "easyeda-pro-control.authenticated-bridge-lifecycle.v1" ||
+    value["activeSession"] === null ||
+    value["activeSession"] === undefined
+  ) {
+    throw new Error(
+      "No fully authenticated EasyEDA bridge session is active.",
+    );
+  }
+  return authenticatedBridgeSessionPayload(
+    value["activeSession"],
+    value["gatewayInstanceId"],
+  );
+}
+
+function closedBridgeSessionPayload(
+  value: unknown,
+  prior: AuthenticatedBridgeSessionIdentity,
+): ClosedAuthenticatedBridgeSessionIdentity {
+  const session = authenticatedBridgeSessionPayload(
+    value,
+    prior.gatewayInstanceId,
+  );
+  if (
+    session.sessionId !== prior.sessionId ||
+    session.authenticationReceiptSha256 !==
+      prior.authenticationReceiptSha256 ||
+    session.authenticatedAtEpochMs !== prior.authenticatedAtEpochMs ||
+    session.sequence !== prior.sequence ||
+    !isUnknownRecord(value) ||
+    typeof value["closedAtEpochMs"] !== "number" ||
+    !Number.isSafeInteger(value["closedAtEpochMs"]) ||
+    value["closedAtEpochMs"] < session.authenticatedAtEpochMs ||
+    typeof value["closeReason"] !== "string" ||
+    value["closeReason"].length === 0 ||
+    value["closeReason"].length > 160
+  ) {
+    throw new Error(
+      "The prior authenticated bridge session has no exact closure record.",
+    );
+  }
+  return {
+    ...session,
+    closedAtEpochMs: value["closedAtEpochMs"],
+    closeReason: value["closeReason"],
+  };
+}
+
+function authenticatedBridgeDispatchPayload(
+  value: unknown,
+  session: AuthenticatedBridgeSessionIdentity,
+): AuthenticatedBridgeDispatchBinding {
+  if (
+    !isUnknownRecord(value) ||
+    canonicalJson(Object.keys(value).toSorted()) !==
+      canonicalJson(
+        [
+          "begunAtEpochMs",
+          "bindingReceipt",
+          "gatewayInstanceId",
+          "leaseId",
+          "schema",
+          "sessionId",
+          "sessionSequence",
+        ].toSorted(),
+      ) ||
+    value["schema"] !== "easyeda-pro-control.bridge-dispatch-lease.v1" ||
+    value["gatewayInstanceId"] !== session.gatewayInstanceId ||
+    value["sessionId"] !== session.sessionId ||
+    value["sessionSequence"] !== session.sequence ||
+    typeof value["begunAtEpochMs"] !== "number" ||
+    !Number.isSafeInteger(value["begunAtEpochMs"]) ||
+    value["begunAtEpochMs"] < session.authenticatedAtEpochMs ||
+    typeof value["leaseId"] !== "string" ||
+    !/^[A-Za-z0-9_-]{43}$/u.test(value["leaseId"]) ||
+    typeof value["bindingReceipt"] !== "string" ||
+    !/^[A-Za-z0-9_-]{43}$/u.test(value["bindingReceipt"])
+  ) {
+    throw new Error(
+      "The upstream did not bind dispatch to the exact authenticated EasyEDA bridge session.",
+    );
+  }
+  return {
+    begunAtEpochMs: value["begunAtEpochMs"],
+    bindingReceipt: value["bindingReceipt"],
+    gatewayInstanceId: value["gatewayInstanceId"],
+    leaseId: value["leaseId"],
+    schema: "easyeda-pro-control.bridge-dispatch-lease.v1",
+    sessionId: value["sessionId"],
+    sessionSequence: value["sessionSequence"],
+  };
+}
+
+function executionAuthorityPayload(
+  value: unknown,
+  expectedBindingSha256: string,
+): ExecutionAuthorityEvidence {
+  if (
+    !isUnknownRecord(value) ||
+    value["schema"] !== "easyeda-pro-control.execution-authority.v1" ||
+    value["bindingSha256"] !== expectedBindingSha256 ||
+    typeof value["policyId"] !== "string" ||
+    !/^[a-z0-9][a-z0-9._:-]{0,127}$/iu.test(value["policyId"]) ||
+    typeof value["policySha256"] !== "string" ||
+    !/^[a-f0-9]{64}$/u.test(value["policySha256"]) ||
+    typeof value["capturedAt"] !== "string" ||
+    !Number.isFinite(Date.parse(value["capturedAt"])) ||
+    !Array.isArray(value["processes"]) ||
+    value["processes"].length === 0 ||
+    value["processes"].length > 512
+  ) {
+    throw new Error(
+      "The execution-authority validator did not return a strict operation-bound process-tree capture.",
+    );
+  }
+  const processes = value["processes"].map((candidate: unknown) => {
+    if (
+      !isUnknownRecord(candidate) ||
+      typeof candidate["pid"] !== "number" ||
+      !Number.isSafeInteger(candidate["pid"]) ||
+      candidate["pid"] <= 0 ||
+      typeof candidate["role"] !== "string" ||
+      !/^[a-z0-9][a-z0-9._:-]{0,63}$/iu.test(candidate["role"]) ||
+      typeof candidate["startIdentity"] !== "string" ||
+      candidate["startIdentity"].length === 0 ||
+      candidate["startIdentity"].length > 256 ||
+      containsAsciiControlCharacter(candidate["startIdentity"])
+    ) {
+      throw new Error(
+        "The execution-authority process-tree capture contains an invalid process identity.",
+      );
+    }
+    return {
+      pid: candidate["pid"],
+      role: candidate["role"],
+      startIdentity: candidate["startIdentity"],
+    };
+  });
+  if (new Set(processes.map((process) => process.pid)).size !== processes.length) {
+    throw new Error(
+      "The execution-authority process tree contains duplicate process IDs.",
+    );
+  }
+  const processTreeSha256 = sha256Json(processes);
+  const authoritySha256 = sha256Json({
+    schema: "easyeda-pro-control.execution-authority.v1",
+    bindingSha256: expectedBindingSha256,
+    policyId: value["policyId"],
+    policySha256: value["policySha256"],
+    capturedAt: value["capturedAt"],
+    processes,
+    processTreeSha256,
+  });
+  if (
+    value["processTreeSha256"] !== processTreeSha256 ||
+    value["authoritySha256"] !== authoritySha256
+  ) {
+    throw new Error(
+      "The execution-authority capture hashes do not bind its exact process tree.",
+    );
+  }
+  return {
+    ...value,
+    schema: "easyeda-pro-control.execution-authority.v1",
+    bindingSha256: expectedBindingSha256,
+    policyId: value["policyId"],
+    policySha256: value["policySha256"],
+    capturedAt: value["capturedAt"],
+    processes,
+    processTreeSha256,
+    authoritySha256,
+  };
+}
+
+function executionAuthorityTerminationPayload(
+  value: unknown,
+  expectedBindingSha256: string,
+  expectedAuthoritySha256: string,
+  expectedPolicyId: string,
+  expectedPolicySha256: string,
+): ExecutionAuthorityTerminationProof {
+  if (
+    !isUnknownRecord(value) ||
+    value["schema"] !==
+      "easyeda-pro-control.execution-authority-termination.v1" ||
+    value["ok"] !== true ||
+    value["noPriorExecutionAuthorityRemains"] !== true ||
+    value["bindingSha256"] !== expectedBindingSha256 ||
+    value["terminatedAuthoritySha256"] !== expectedAuthoritySha256 ||
+    value["policyId"] !== expectedPolicyId ||
+    value["policySha256"] !== expectedPolicySha256 ||
+    typeof value["checkedAt"] !== "string" ||
+    !Number.isFinite(Date.parse(value["checkedAt"]))
+  ) {
+    throw new Error(
+      "The execution-authority validator did not prove termination of the exact prior process tree.",
+    );
+  }
+  return {
+    ...value,
+    schema: "easyeda-pro-control.execution-authority-termination.v1",
+    ok: true,
+    noPriorExecutionAuthorityRemains: true,
+    bindingSha256: expectedBindingSha256,
+    terminatedAuthoritySha256: expectedAuthoritySha256,
+    policyId: value["policyId"],
+    policySha256: value["policySha256"],
+    checkedAt: value["checkedAt"],
+  };
+}
+
+function semanticPersistenceBindingSha256(input: {
+  readonly operationId: string;
+  readonly plan: MutationPlan;
+  readonly preCheckpoint: CheckpointReceipt;
+  readonly finalCheckpoint: CheckpointReceipt;
+  readonly reopenedProofSnapshotSha256: string;
+}): string {
+  return sha256Json({
+    schema: "easyeda-pro-control.semantic-persistence-binding.v1",
+    operationId: input.operationId,
+    planHash: buildPlanHash(input.plan),
+    preCheckpointSha256: sha256Json(input.preCheckpoint),
+    finalCheckpointSha256: sha256Json(input.finalCheckpoint),
+    reopenedProofSnapshotSha256: input.reopenedProofSnapshotSha256,
+  });
+}
+
+function semanticPersistencePayload(
+  value: unknown,
+  expectedBindingSha256: string,
+): SemanticPersistenceProof {
+  if (
+    !isUnknownRecord(value) ||
+    value["ok"] !== true ||
+    value["bindingSha256"] !== expectedBindingSha256 ||
+    typeof value["policyId"] !== "string" ||
+    !/^[a-z0-9][a-z0-9._:-]{0,127}$/iu.test(value["policyId"]) ||
+    typeof value["policySha256"] !== "string" ||
+    !/^[a-f0-9]{64}$/u.test(value["policySha256"]) ||
+    typeof value["observedDeltaSha256"] !== "string" ||
+    !/^[a-f0-9]{64}$/u.test(value["observedDeltaSha256"]) ||
+    !isUnknownRecord(value["observedDelta"]) ||
+    sha256Json(value["observedDelta"]) !== value["observedDeltaSha256"]
+  ) {
+    throw new Error(
+      "Semantic persistence validator did not return a strict hash-bound proof.",
+    );
+  }
+  return {
+    ...value,
+    bindingSha256: expectedBindingSha256,
+    ok: true,
+    policyId: value["policyId"],
+    policySha256: value["policySha256"],
+    observedDelta: value["observedDelta"],
+    observedDeltaSha256: value["observedDeltaSha256"],
+  };
+}
+
 function asOperationJournal(value: unknown): OperationJournal {
   if (!isOperationJournalRecord(value)) {
     throw new TypeError("Operation journal must be an object.");
@@ -718,28 +1253,11 @@ function assertAssertions(
   return results;
 }
 
-function normalizedProofPayload(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map((item) => normalizedProofPayload(item));
-  }
-  if (!isUnknownRecord(value)) {
-    return value;
-  }
-  return Object.fromEntries(
-    Object.entries(value).map(([key, child]) => [
-      key,
-      key === "read_consistency" && isUnknownRecord(child)
-        ? { stable: child["stable"] === true }
-        : normalizedProofPayload(child),
-    ]),
-  );
-}
-
 function snapshotHash(results: SpecResult[]): string {
   return sha256Json(
     results.map((result) => ({
       toolName: result.toolName,
-      payload: normalizedProofPayload(result.payload),
+      payload: normalizeProofEnvelope(result.payload),
       assertions: result.assertions,
     })),
   );
@@ -1024,7 +1542,7 @@ function pcbInventoryInvariantHash(
   targetComponentPayload: ProofPayload,
   stateName: MutationStateName,
 ): string {
-  const normalizedInventory = normalizedProofPayload(payload);
+  const normalizedInventory = normalizeProofEnvelope(payload);
   if (!isUnknownRecord(normalizedInventory)) {
     throw new Error("PCB inventory invariant must be an object.");
   }
@@ -1106,7 +1624,7 @@ function baselineInvariants(
   };
   if (documentType === 1) {
     value.schematicTopologySha256 = sha256Json(
-      normalizedProofPayload(resultForKind(results, "schematic-topology")),
+      normalizeProofEnvelope(resultForKind(results, "schematic-topology")),
     );
   } else if (documentType === 3) {
     value.pcbInventorySha256 = pcbInventoryInvariantHash(
@@ -1116,7 +1634,7 @@ function baselineInvariants(
       "before",
     );
     value.pcbRulesSha256 = sha256Json(
-      normalizedProofPayload(resultForKind(results, "pcb-rules")),
+      normalizeProofEnvelope(resultForKind(results, "pcb-rules")),
     );
   }
   return value;
@@ -1170,7 +1688,7 @@ function verifyPhaseInvariants(
   };
   if (operation.plan.expectedContext.document.documentType === 1) {
     const topologyHash = sha256Json(
-      normalizedProofPayload(resultForKind(results, "schematic-topology")),
+      normalizeProofEnvelope(resultForKind(results, "schematic-topology")),
     );
     if (topologyHash !== baseline.schematicTopologySha256) {
       throw new Error(
@@ -1186,7 +1704,7 @@ function verifyPhaseInvariants(
       "after",
     );
     const rulesHash = sha256Json(
-      normalizedProofPayload(resultForKind(results, "pcb-rules")),
+      normalizeProofEnvelope(resultForKind(results, "pcb-rules")),
     );
     if (inventoryHash !== baseline.pcbInventorySha256) {
       throw new Error(
@@ -1425,13 +1943,44 @@ function ensurePlanShape(value: unknown): asserts value is MutationPlan {
 }
 
 export class SerializedGate {
-  private tail: Promise<void>;
+  private admissionOpen = true;
+  private tail: Promise<void> = Promise.resolve();
 
-  public constructor() {
-    this.tail = Promise.resolve();
+  public run<T>(task: () => T | Promise<T>): Promise<T> {
+    if (!this.admissionOpen) {
+      return Promise.reject(
+        new Error(
+          "The EasyEDA control facade is shutting down and no longer accepts operations.",
+        ),
+      );
+    }
+    return this.enqueue(task);
   }
 
-  public async run<T>(task: () => T | Promise<T>): Promise<T> {
+  /**
+   * Atomically reject every later operation before process shutdown closes the
+   * MCP transport. Work already admitted through run() remains ahead of the
+   * shutdown drain in the queue.
+   */
+  public closeAdmission(): void {
+    this.admissionOpen = false;
+  }
+
+  /** Queue the one shutdown drain after operation admission has been closed. */
+  public runAfterAdmissionClose<T>(
+    task: () => T | Promise<T>,
+  ): Promise<T> {
+    if (this.admissionOpen) {
+      return Promise.reject(
+        new Error(
+          "Serialized shutdown cannot run before operation admission closes.",
+        ),
+      );
+    }
+    return this.enqueue(task);
+  }
+
+  private async enqueue<T>(task: () => T | Promise<T>): Promise<T> {
     const previous = this.tail;
     let release!: () => void;
     this.tail = new Promise((resolve) => {
@@ -1449,6 +1998,12 @@ export class SerializedGate {
 export class EasyedaControlEngine {
   public readonly upstream: UpstreamClient;
   public readonly privateComponentWriterValidated: boolean;
+  public readonly semanticPersistenceValidator:
+    | SemanticPersistenceValidator
+    | undefined;
+  public readonly executionAuthorityValidator:
+    | RuntimeExecutionAuthorityValidator
+    | undefined;
   public readonly controlFingerprintPromise: ReturnType<
     typeof controlImplementationFingerprint
   >;
@@ -1457,43 +2012,181 @@ export class EasyedaControlEngine {
     this.upstream = upstream;
     this.privateComponentWriterValidated =
       options.privateComponentWriterValidated === true;
+    this.semanticPersistenceValidator = options.semanticPersistenceValidator;
+    this.executionAuthorityValidator = options.executionAuthorityValidator;
     this.controlFingerprintPromise = controlImplementationFingerprint();
   }
 
   public requirePrivateComponentWriterEnabled(): void {
-    if (!this.privateComponentWriterValidated) {
+    if (
+      !this.privateComponentWriterValidated ||
+      this.semanticPersistenceValidator === undefined ||
+      this.executionAuthorityValidator === undefined
+    ) {
       throw new Error(
-        "The private PCB component writer is runtime-disabled until a connected sacrificial-board test validates this installed modify path. Exact reads, evidence, checkpoints, capture, and draft DSN export remain available.",
+        "The private PCB component writer is runtime-disabled until a connected sacrificial-board test validates this installed modify path, a strict semantic persistence-delta validator is installed, and an operation-bound process-tree termination validator is installed for ambiguous-call recovery. Exact reads, evidence, checkpoints, capture, and draft DSN export remain available.",
       );
     }
+  }
+
+  private authenticatedBridgeSession(): AuthenticatedBridgeSessionIdentity {
+    const lifecycle = this.upstream.bridgeSessionLifecycle?.();
+    if (lifecycle === undefined) {
+      throw new Error(
+        "The upstream does not expose authenticated bridge-session lifecycle evidence.",
+      );
+    }
+    return bridgeLifecycleSession(lifecycle);
   }
 
   public async markOrphanedCallRisk(
     operation: OperationJournal,
     phase: string,
-  ): Promise<void> {
-    operation.orphanedCallPossible = true;
-    operation.orphanedCallPhase = phase;
-    operation.orphanedCallMarkedAt = now();
-    operation.runtimeRestartChallengeAttempt =
+  ): Promise<OperationBridgeDispatch> {
+    const validator = this.executionAuthorityValidator;
+    if (validator === undefined) {
+      throw new Error(
+        "Ambiguous-call recovery requires an installed operation-bound process-tree termination validator before dispatch.",
+      );
+    }
+    const beginDispatch = this.upstream.beginAuthenticatedBridgeDispatch;
+    const abortDispatch = this.upstream.abortAuthenticatedBridgeDispatch;
+    const scopedDispatch =
+      this.upstream.currentAuthenticatedBridgeDispatchBinding?.();
+    const ownedByAuthenticatedScope = scopedDispatch !== undefined;
+    if (
+      !ownedByAuthenticatedScope &&
+      (beginDispatch === undefined || abortDispatch === undefined)
+    ) {
+      throw new Error(
+        "Ambiguous-call recovery requires authenticated bridge dispatch-lease support.",
+      );
+    }
+    const challengeAttempt =
       (operation.runtimeRestartChallengeAttempt ?? 0) + 1;
-    operation.runtimeRestartChallenge = [
-      "EASYEDA_RESTARTED_AND_RECONNECTED",
-      operation.operationId,
-      phase,
-      operation.runtimeRestartChallengeAttempt,
-      randomUUID(),
-    ].join(":");
-    operation.runtimeRestartChallengeIssuedAt = now();
-    delete operation.runtimeRestartBoundary;
-    operation.updatedAt = now();
-    await updateOperation(operation);
+    const bridgeSession = this.authenticatedBridgeSession();
+    const bridgeDispatch = authenticatedBridgeDispatchPayload(
+      scopedDispatch ??
+        beginDispatch?.call(
+          this.upstream,
+          bridgeSession.gatewayInstanceId,
+          bridgeSession.sessionId,
+        ),
+      bridgeSession,
+    );
+    let journaled = false;
+    try {
+      const runtimeIdentity = await this.runtimeIdentity(bridgeDispatch);
+      if (
+        canonicalJson(this.authenticatedBridgeSession()) !==
+        canonicalJson(bridgeSession)
+      ) {
+        throw new Error(
+          "The authenticated EasyEDA bridge session changed while bound execution authority was being captured.",
+        );
+      }
+      const bindingSha256 = sha256Json({
+        schema: "easyeda-pro-control.execution-authority-binding.v1",
+        operationId: operation.operationId,
+        orphanPhase: phase,
+        challengeAttempt,
+        bridgeSession,
+        bridgeDispatch,
+        runtimeIdentity,
+      });
+      const executionAuthority = executionAuthorityPayload(
+        await validator.capture({
+          bindingSha256,
+          bridgeSession,
+          challengeAttempt,
+          operationId: operation.operationId,
+          orphanPhase: phase,
+          runtimeIdentity,
+        }),
+        bindingSha256,
+      );
+      operation.runtimeIdentityBeforeOrphan = runtimeIdentity;
+      operation.bridgeSessionBeforeOrphan = bridgeSession;
+      operation.bridgeDispatchBeforeOrphan = bridgeDispatch;
+      operation.executionAuthorityBeforeOrphan = executionAuthority;
+      operation.orphanedCallPossible = true;
+      operation.orphanedCallPhase = phase;
+      operation.orphanedCallMarkedAt = now();
+      operation.runtimeRestartChallengeAttempt = challengeAttempt;
+      operation.runtimeRestartChallenge = [
+        "EASYEDA_RESTARTED_AND_RECONNECTED",
+        operation.operationId,
+        phase,
+        operation.runtimeRestartChallengeAttempt,
+        randomUUID(),
+      ].join(":");
+      operation.runtimeRestartChallengeIssuedAt = now();
+      delete operation.runtimeRestartBoundary;
+      operation.updatedAt = now();
+      await updateOperation(operation);
+      journaled = true;
+
+      const boundRuntimeIdentity = await this.runtimeIdentity(bridgeDispatch);
+      if (
+        canonicalJson(boundRuntimeIdentity) !== canonicalJson(runtimeIdentity)
+      ) {
+        throw new Error(
+          "The EasyEDA runtime identity changed after dispatch was bound to its authenticated bridge session.",
+        );
+      }
+      return { binding: bridgeDispatch, ownedByAuthenticatedScope };
+    } catch (error) {
+      if (!ownedByAuthenticatedScope) {
+        try {
+          abortDispatch?.call(
+            this.upstream,
+            bridgeDispatch,
+            "not-dispatched",
+          );
+        } catch (abortError) {
+          throw new Error(
+            `Pre-dispatch authority capture failed (${serializeError(error).message}) and the authenticated bridge dispatch lease could not be released safely: ${serializeError(abortError).message}`,
+            { cause: abortError },
+          );
+        }
+      }
+      // The orphan marker is only justified once callTool starts.
+      // A post-journal authority reproof failure is provably pre-dispatch.
+      // Clear it even when an outer authenticated scope owns the lease lifecycle.
+      if (journaled) {
+        operation.orphanedCallPossible = false;
+        operation.orphanedCallPhase = phase;
+        operation.orphanedCallReturnedAt = now();
+        delete operation.runtimeRestartChallenge;
+        delete operation.runtimeRestartChallengeIssuedAt;
+        operation.updatedAt = now();
+        try {
+          await updateOperation(operation);
+        } catch (journalError) {
+          throw new Error(
+            `Pre-dispatch authority capture failed (${serializeError(error).message}) and its unused orphan marker could not be cleared: ${serializeError(journalError).message}`,
+            { cause: journalError },
+          );
+        }
+      }
+      throw error;
+    }
   }
 
   public async clearOrphanedCallRisk(
     operation: OperationJournal,
     phase: string,
+    dispatch: OperationBridgeDispatch,
   ): Promise<void> {
+    if (!dispatch.ownedByAuthenticatedScope) {
+      const endDispatch = this.upstream.endAuthenticatedBridgeDispatch;
+      if (endDispatch === undefined) {
+        throw new Error(
+          "The authenticated bridge dispatch lease cannot be completed.",
+        );
+      }
+      endDispatch.call(this.upstream, dispatch.binding);
+    }
     operation.orphanedCallPossible = false;
     operation.orphanedCallPhase = phase;
     operation.orphanedCallReturnedAt = now();
@@ -1501,6 +2194,54 @@ export class EasyedaControlEngine {
     delete operation.runtimeRestartChallengeIssuedAt;
     operation.updatedAt = now();
     await updateOperation(operation);
+  }
+
+  private async dispatchWithOrphanTracking(
+    operation: OperationJournal,
+    phase: string,
+    name: string,
+    args: UnknownRecord,
+    timeoutMs: number,
+  ): Promise<unknown> {
+    const dispatch = await this.markOrphanedCallRisk(operation, phase);
+    try {
+      const result = await this.upstream.callTool(
+        name,
+        args,
+        timeoutMs,
+        dispatch.binding,
+      );
+      await this.clearOrphanedCallRisk(operation, phase, dispatch);
+      return result;
+    } catch (error) {
+      if (
+        operation.orphanedCallPossible &&
+        !dispatch.ownedByAuthenticatedScope
+      ) {
+        const abortDispatch =
+          this.upstream.abortAuthenticatedBridgeDispatch;
+        if (abortDispatch === undefined) {
+          throw new AggregateError(
+            [error],
+            "The guarded EasyEDA call failed and its authenticated bridge dispatch lease cannot be retained safely.",
+            { cause: error },
+          );
+        }
+        try {
+          abortDispatch.call(
+            this.upstream,
+            dispatch.binding,
+            "ambiguous-after-dispatch",
+          );
+        } catch (abortError) {
+          throw new Error(
+            `The guarded EasyEDA call failed (${serializeError(error).message}) and its authenticated bridge dispatch lease could not be retained safely: ${serializeError(abortError).message}`,
+            { cause: abortError },
+          );
+        }
+      }
+      throw error;
+    }
   }
 
   public async ensureRuntimeRestartChallenge(
@@ -1537,8 +2278,9 @@ export class EasyedaControlEngine {
     let verification: Awaited<ReturnType<typeof verifyCheckpoint>> | undefined;
     let cause: unknown;
     try {
-      verification = await verifyCheckpoint(
+      verification = await verifyAuthorizedCheckpoint(
         operation.preCheckpoint.receiptPath,
+        operation.plan.expectedContext.project.path,
       );
       if (!verification.ok) {
         cause = new Error(
@@ -1781,11 +2523,17 @@ export class EasyedaControlEngine {
           level: "private-version-pinned-read-only",
         },
         privateComponentWriter: {
-          enabled: this.privateComponentWriterValidated,
+          enabled:
+            this.privateComponentWriterValidated &&
+            this.semanticPersistenceValidator !== undefined &&
+            this.executionAuthorityValidator !== undefined,
           level: "private-version-pinned",
-          reason: this.privateComponentWriterValidated
-            ? "Connected sacrificial-board validation is recorded by this facade build."
-            : "Runtime-disabled until a connected sacrificial-board test validates the installed modify path.",
+          reason:
+            this.privateComponentWriterValidated &&
+            this.semanticPersistenceValidator !== undefined &&
+            this.executionAuthorityValidator !== undefined
+              ? "Connected sacrificial-board validation, strict persisted-delta validation, and operation-bound process-tree termination proof are installed in this facade build."
+              : "Runtime-disabled until connected sacrificial-board validation, strict persisted-delta validation, and operation-bound process-tree termination proof cover the installed modify path.",
         },
       },
       stableFingerprint,
@@ -1892,6 +2640,26 @@ export class EasyedaControlEngine {
     }
     normalizeEasyedaProjectPath(payload.project.path);
     return payload;
+  }
+
+  public async runtimeIdentity(
+    bridgeDispatch?: AuthenticatedBridgeDispatchBinding,
+  ): Promise<RuntimeIdentity> {
+    const tool = await this.upstream.findTool?.("easyeda_execute");
+    if (!tool) {
+      throw new Error("The upstream server does not expose easyeda_execute.");
+    }
+    const result = await this.upstream.callTool(
+      "easyeda_execute",
+      {
+        code: RUNTIME_IDENTITY_PROBE_CODE,
+        timeoutMs: 15_000,
+        confirmWrite: true,
+      },
+      25_000,
+      bridgeDispatch,
+    );
+    return runtimeIdentityPayload(extractToolPayload(result));
   }
 
   public async assertProjectContext(
@@ -2004,13 +2772,13 @@ export class EasyedaControlEngine {
     operation.updatedAt = now();
     await updateOperation(operation);
     try {
-      await this.markOrphanedCallRisk(operation, "recovery-target-activation");
-      const raw = await this.upstream.callTool(
+      const raw = await this.dispatchWithOrphanTracking(
+        operation,
+        "recovery-target-activation",
         "easyeda_execute",
         { code: source, timeoutMs: 30_000, confirmWrite: true },
         40_000,
       );
-      await this.clearOrphanedCallRisk(operation, "recovery-target-activation");
       const payload = extractToolPayload(raw);
       assertSubset(
         payload,
@@ -2166,17 +2934,22 @@ export class EasyedaControlEngine {
         exactComponentMutation.state,
       );
       const guarded = wrapWithContextGuard(source, expectedContext);
-      if (typeof options.beforeDispatch === "function") {
-        await options.beforeDispatch();
-      }
-      const raw = await this.upstream.callTool(
-        "easyeda_execute",
-        { code: guarded, timeoutMs: 60_000, confirmWrite: true },
-        70_000,
-      );
-      if (typeof options.afterDispatch === "function") {
-        await options.afterDispatch();
-      }
+      const mutationArguments = {
+        code: guarded,
+        timeoutMs: 60_000,
+        confirmWrite: true,
+      };
+      const raw = options.guardedDispatch
+        ? await options.guardedDispatch(
+            "easyeda_execute",
+            mutationArguments,
+            70_000,
+          )
+        : await this.upstream.callTool(
+            "easyeda_execute",
+            mutationArguments,
+            70_000,
+          );
       const payload = extractToolPayload(raw);
       assertSubset(
         payload,
@@ -2272,19 +3045,10 @@ export class EasyedaControlEngine {
       spec.toolName === "easyeda_execute"
         ? Math.min(70_000, Number(args["timeoutMs"] ?? 15_000) + 10_000)
         : 70_000;
-    if (
-      expectedKind === "mutate-unsaved" &&
-      typeof options.beforeDispatch === "function"
-    ) {
-      await options.beforeDispatch();
-    }
-    const raw = await this.upstream.callTool(spec.toolName, args, timeoutMs);
-    if (
-      expectedKind === "mutate-unsaved" &&
-      typeof options.afterDispatch === "function"
-    ) {
-      await options.afterDispatch();
-    }
+    const raw =
+      expectedKind === "mutate-unsaved" && options.guardedDispatch
+        ? await options.guardedDispatch(spec.toolName, args, timeoutMs)
+        : await this.upstream.callTool(spec.toolName, args, timeoutMs);
     const payload = extractToolPayload(raw);
     const assertions = assertAssertions(
       payload,
@@ -2490,12 +3254,16 @@ export class EasyedaControlEngine {
       "EasyEDA runtime fingerprint",
     );
     const context = await this.assertContext(plan.expectedContext);
-    const preCheckpoint = await createCheckpoint({
-      ...plan.checkpoint,
-      label: `pre-${plan.checkpoint.label}`,
-    });
-    const checkpointVerification = await verifyCheckpoint(
+    const preCheckpoint = await createAuthorizedCheckpoint(
+      {
+        ...plan.checkpoint,
+        label: `pre-${plan.checkpoint.label}`,
+      },
+      plan.expectedContext.project.path,
+    );
+    const checkpointVerification = await verifyAuthorizedCheckpoint(
       preCheckpoint.receiptPath,
+      plan.expectedContext.project.path,
     );
     if (!checkpointVerification.ok) {
       throw new Error("Pre-mutation checkpoint verification failed.");
@@ -2544,8 +3312,9 @@ export class EasyedaControlEngine {
 
     try {
       await this.assertStoredRuntime(operation, "baseline-reopen");
-      const repeatedCheckpointVerification = await verifyCheckpoint(
+      const repeatedCheckpointVerification = await verifyAuthorizedCheckpoint(
         operation.preCheckpoint.receiptPath,
+        operation.plan.expectedContext.project.path,
       );
       if (!repeatedCheckpointVerification.ok) {
         throw new Error(
@@ -2554,13 +3323,13 @@ export class EasyedaControlEngine {
       }
       const source = buildReopenOnlyCode(plan.expectedContext);
       const sourceSha256 = sha256Text(source);
-      await this.markOrphanedCallRisk(operation, "baseline-reopen");
-      const raw = await this.upstream.callTool(
+      const raw = await this.dispatchWithOrphanTracking(
+        operation,
+        "baseline-reopen",
         "easyeda_execute",
         { code: source, timeoutMs: 60_000, confirmWrite: true },
         70_000,
       );
-      await this.clearOrphanedCallRisk(operation, "baseline-reopen");
       const payload = extractToolPayload(raw);
       assertSubset(
         payload,
@@ -2619,8 +3388,9 @@ export class EasyedaControlEngine {
       );
       const exactBaselineInvariants = baselineInvariants(preflight, plan);
       const baselineHash = snapshotHash(preflight);
-      const finalCheckpointVerification = await verifyCheckpoint(
+      const finalCheckpointVerification = await verifyAuthorizedCheckpoint(
         operation.preCheckpoint.receiptPath,
+        operation.plan.expectedContext.project.path,
       );
       if (!finalCheckpointVerification.ok) {
         throw new Error(
@@ -2687,8 +3457,9 @@ export class EasyedaControlEngine {
     );
     let preCheckpointVerification;
     try {
-      preCheckpointVerification = await verifyCheckpoint(
+      preCheckpointVerification = await verifyAuthorizedCheckpoint(
         operation.preCheckpoint.receiptPath,
+        operation.plan.expectedContext.project.path,
       );
       if (!preCheckpointVerification.ok) {
         throw new Error(
@@ -2743,8 +3514,9 @@ export class EasyedaControlEngine {
     }
 
     try {
-      const immediateCheckpointVerification = await verifyCheckpoint(
+      const immediateCheckpointVerification = await verifyAuthorizedCheckpoint(
         operation.preCheckpoint.receiptPath,
+        operation.plan.expectedContext.project.path,
       );
       if (!immediateCheckpointVerification.ok) {
         throw new Error(
@@ -2807,7 +3579,7 @@ export class EasyedaControlEngine {
         "mutate-unsaved",
         {
           targetChanges: operation.plan.targetChanges,
-          beforeDispatch: async () => {
+          guardedDispatch: async (name, args, timeoutMs) => {
             await this.requireDurableBaselineBeforeDispatch(
               operation,
               "apply",
@@ -2820,18 +3592,22 @@ export class EasyedaControlEngine {
                   "No apply was dispatched. Recreate the durable checkpoint and exact plan from fresh state.",
               },
             );
-            await this.markOrphanedCallRisk(operation, "apply");
-          },
-          afterDispatch: async () => {
-            await this.clearOrphanedCallRisk(operation, "apply");
+            return this.dispatchWithOrphanTracking(
+              operation,
+              "apply",
+              name,
+              args,
+              timeoutMs,
+            );
           },
         },
       );
       let durableVerification;
       let durableVerificationError;
       try {
-        durableVerification = await verifyCheckpoint(
+        durableVerification = await verifyAuthorizedCheckpoint(
           operation.preCheckpoint.receiptPath,
+          operation.plan.expectedContext.project.path,
         );
       } catch (error) {
         durableVerificationError = serializeError(error);
@@ -2893,6 +3669,7 @@ export class EasyedaControlEngine {
   }
 
   public async verify(operationId: string): Promise<OperationSummary> {
+    this.requirePrivateComponentWriterEnabled();
     const operation = asOperationJournal(await loadOperation(operationId));
     if (operation.state !== "applied-unsaved") {
       throw new Error(
@@ -2921,8 +3698,9 @@ export class EasyedaControlEngine {
       let durableVerification;
       let durableVerificationError;
       try {
-        durableVerification = await verifyCheckpoint(
+        durableVerification = await verifyAuthorizedCheckpoint(
           operation.preCheckpoint.receiptPath,
+          operation.plan.expectedContext.project.path,
         );
       } catch (error) {
         durableVerificationError = serializeError(error);
@@ -3013,7 +3791,7 @@ export class EasyedaControlEngine {
         "mutate-unsaved",
         {
           targetChanges: operation.plan.targetChanges,
-          beforeDispatch: async () => {
+          guardedDispatch: async (name, args, timeoutMs) => {
             let desiredResults;
             let exactInvariantProof;
             let aggregateAssertions;
@@ -3088,12 +3866,15 @@ export class EasyedaControlEngine {
                 mutationMayHaveOccurred: true,
                 nextSafeAction:
                   "Do not save or dispatch the inverse. Inspect the changed durable project, live desired state, and pre-checkpoint before recovery.",
-              },
+                },
+              );
+            return this.dispatchWithOrphanTracking(
+              operation,
+              "rollback",
+              name,
+              args,
+              timeoutMs,
             );
-            await this.markOrphanedCallRisk(operation, "rollback");
-          },
-          afterDispatch: async () => {
-            await this.clearOrphanedCallRisk(operation, "rollback");
           },
         },
       );
@@ -3117,8 +3898,9 @@ export class EasyedaControlEngine {
           "Rollback calls completed, but exact baseline invariants were not restored.",
         );
       }
-      const durableVerification = await verifyCheckpoint(
+      const durableVerification = await verifyAuthorizedCheckpoint(
         operation.preCheckpoint.receiptPath,
+        operation.plan.expectedContext.project.path,
       );
       if (!durableVerification.ok) {
         throw new Error(
@@ -3191,9 +3973,11 @@ export class EasyedaControlEngine {
 
     if (operation.state === "live-verified") {
       let preCheckpointVerification;
+      let exactSaveGuards: ExactSaveGuard[] = [];
       try {
-        preCheckpointVerification = await verifyCheckpoint(
+        preCheckpointVerification = await verifyAuthorizedCheckpoint(
           operation.preCheckpoint.receiptPath,
+          operation.plan.expectedContext.project.path,
         );
         if (!preCheckpointVerification.ok) {
           throw new Error(
@@ -3234,9 +4018,32 @@ export class EasyedaControlEngine {
           operation.plan.verifyAssertions,
           "Immediate pre-save live verification",
         );
+        exactSaveGuards = operation.plan.verifyCalls.map((spec, index) => {
+          if (spec.toolName !== "easyeda_control_exact_read") {
+            throw new Error(
+              "Immediate pre-save verification contained a non-exact reader.",
+            );
+          }
+          const result = preSaveResults[index];
+          if (result === undefined) {
+            throw new Error(
+              "Immediate pre-save verification omitted an exact-reader result.",
+            );
+          }
+          return {
+            request: validateExactReadRequest(
+              spec.arguments,
+              operation.plan.expectedContext,
+            ),
+            expectedSnapshotSha256: sha256Json(
+              normalizeProofEnvelope(result.payload),
+            ),
+          };
+        });
         try {
-          preSaveDurableVerification = await verifyCheckpoint(
+          preSaveDurableVerification = await verifyAuthorizedCheckpoint(
             operation.preCheckpoint.receiptPath,
+            operation.plan.expectedContext.project.path,
           );
         } catch (error) {
           preSaveDurableError = serializeError(error);
@@ -3289,7 +4096,10 @@ export class EasyedaControlEngine {
         throw error;
       }
       try {
-        const source = buildSaveReopenCode(operation.plan.expectedContext);
+        const source = buildSaveReopenCode(
+          operation.plan.expectedContext,
+          exactSaveGuards,
+        );
         const guarded = wrapWithContextGuard(
           source,
           operation.plan.expectedContext,
@@ -3306,13 +4116,13 @@ export class EasyedaControlEngine {
               "Do not save. The live edit and durable project no longer share the proven baseline; inspect both before recovery.",
           },
         );
-        await this.markOrphanedCallRisk(operation, "save-reopen");
-        const raw = await this.upstream.callTool(
+        const raw = await this.dispatchWithOrphanTracking(
+          operation,
+          "save-reopen",
           "easyeda_execute",
           { code: guarded, timeoutMs: 60_000, confirmWrite: true },
           70_000,
         );
-        await this.clearOrphanedCallRisk(operation, "save-reopen");
         const payload = extractToolPayload(raw);
         assertSubset(
           payload,
@@ -3334,6 +4144,10 @@ export class EasyedaControlEngine {
           {
             sourceSha256: sha256Text(source),
             transmittedSourceSha256: sha256Text(guarded),
+            exactSaveGuards: exactSaveGuards.map((guard) => ({
+              expectedSnapshotSha256: guard.expectedSnapshotSha256,
+              request: guard.request,
+            })),
             payload,
             context: reopenedContext,
           },
@@ -3384,8 +4198,9 @@ export class EasyedaControlEngine {
         );
         let persistenceVerification;
         try {
-          persistenceVerification = await verifyCheckpoint(
+          persistenceVerification = await verifyAuthorizedCheckpoint(
             operation.preCheckpoint.receiptPath,
+            operation.plan.expectedContext.project.path,
           );
         } catch (error) {
           persistenceVerificationError = serializeError(error);
@@ -3452,13 +4267,13 @@ export class EasyedaControlEngine {
       operation.updatedAt = now();
       await updateOperation(operation);
       try {
-        await this.markOrphanedCallRisk(operation, "final-reopen");
-        const raw = await this.upstream.callTool(
+        const raw = await this.dispatchWithOrphanTracking(
+          operation,
+          "final-reopen",
           "easyeda_execute",
           { code: source, timeoutMs: 60_000, confirmWrite: true },
           70_000,
         );
-        await this.clearOrphanedCallRisk(operation, "final-reopen");
         const payload = extractToolPayload(raw);
         assertSubset(
           payload,
@@ -3513,10 +4328,13 @@ export class EasyedaControlEngine {
     }
 
     try {
-      const finalCheckpoint = await createCheckpoint({
-        ...operation.plan.checkpoint,
-        label: `post-${operation.plan.checkpoint.label}`,
-      });
+      const finalCheckpoint = await createAuthorizedCheckpoint(
+        {
+          ...operation.plan.checkpoint,
+          label: `post-${operation.plan.checkpoint.label}`,
+        },
+        operation.plan.expectedContext.project.path,
+      );
       operation.candidateFinalCheckpoint = finalCheckpoint;
       operation.updatedAt = now();
       await updateOperation(operation);
@@ -3536,8 +4354,9 @@ export class EasyedaControlEngine {
         operation.plan.reopenedAssertions,
         "Final checkpoint-bound reopened verification",
       );
-      const persistenceVerification = await verifyCheckpoint(
+      const persistenceVerification = await verifyAuthorizedCheckpoint(
         operation.preCheckpoint.receiptPath,
+        operation.plan.expectedContext.project.path,
       );
       if (
         !persistenceVerification.checkpointMatchesReceipt ||
@@ -3547,12 +4366,81 @@ export class EasyedaControlEngine {
           "Final verification did not prove a logical database change from the intact pre-checkpoint.",
         );
       }
-      const checkpointVerification = await verifyCheckpoint(
+      const checkpointVerification = await verifyAuthorizedCheckpoint(
         finalCheckpoint.receiptPath,
+        operation.plan.expectedContext.project.path,
       );
       if (!checkpointVerification.ok) {
         throw new Error(
           "The live database changed after the candidate final checkpoint or that checkpoint failed verification.",
+        );
+      }
+      const semanticPersistenceValidator = this.semanticPersistenceValidator;
+      if (semanticPersistenceValidator === undefined) {
+        throw new Error(
+          "No semantic persistence-delta validator is installed; completion is forbidden.",
+        );
+      }
+      const reopenedProofSnapshotSha256 = snapshotHash(finalResults);
+      const semanticValidationInput = {
+        operationId,
+        plan: operation.plan,
+        preCheckpoint: operation.preCheckpoint,
+        finalCheckpoint,
+        reopenedProofSnapshotSha256,
+      };
+      const semanticValidationBindingSha256 =
+        semanticPersistenceBindingSha256(semanticValidationInput);
+      const semanticPersistenceProof = semanticPersistencePayload(
+        await semanticPersistenceValidator({
+          ...semanticValidationInput,
+          bindingSha256: semanticValidationBindingSha256,
+        }),
+        semanticValidationBindingSha256,
+      );
+      await this.assertContext(operation.plan.expectedContext);
+      const certificationResults = await this.runSpecs(
+        operation.plan.reopenedVerifyCalls,
+        operation.plan.expectedContext,
+        "read",
+      );
+      const certificationInvariantProof = verifyPhaseInvariants(
+        certificationResults,
+        operation,
+        "Post-policy completion certification",
+      );
+      const certificationAssertions = assertAssertions(
+        certificationResults.map((result) => result.payload),
+        operation.plan.reopenedAssertions,
+        "Post-policy completion certification",
+      );
+      const certifiedSnapshotSha256 = snapshotHash(certificationResults);
+      if (certifiedSnapshotSha256 !== snapshotHash(finalResults)) {
+        throw new Error(
+          "The reopened EasyEDA state changed while semantic persistence was being validated; completion is forbidden.",
+        );
+      }
+      const certificationPersistenceVerification =
+        await verifyAuthorizedCheckpoint(
+          operation.preCheckpoint.receiptPath,
+          operation.plan.expectedContext.project.path,
+        );
+      if (
+        !certificationPersistenceVerification.checkpointMatchesReceipt ||
+        certificationPersistenceVerification.sourceEqualsCheckpoint
+      ) {
+        throw new Error(
+          "The pre-checkpoint or durable logical delta changed during semantic persistence validation.",
+        );
+      }
+      const certificationCheckpointVerification =
+        await verifyAuthorizedCheckpoint(
+          finalCheckpoint.receiptPath,
+          operation.plan.expectedContext.project.path,
+        );
+      if (!certificationCheckpointVerification.ok) {
+        throw new Error(
+          "The live database changed during semantic persistence validation; completion is forbidden.",
         );
       }
       operation.sequence += 1;
@@ -3567,6 +4455,13 @@ export class EasyedaControlEngine {
           finalAssertions,
           checkpointVerification,
           persistenceVerification,
+          semanticPersistenceProof,
+          certificationResults,
+          certificationInvariantProof,
+          certificationAssertions,
+          certifiedSnapshotSha256,
+          certificationPersistenceVerification,
+          certificationCheckpointVerification,
         },
       );
       operation.artifacts.push(artifact);
@@ -3711,6 +4606,132 @@ export class EasyedaControlEngine {
           operation.orphanedCallPhase ?? operation.unknownPhase;
         throw error;
       }
+      const priorRuntimeIdentity = operation.runtimeIdentityBeforeOrphan;
+      const priorBridgeSession = operation.bridgeSessionBeforeOrphan;
+      const priorBridgeDispatch = operation.bridgeDispatchBeforeOrphan;
+      const priorExecutionAuthority = operation.executionAuthorityBeforeOrphan;
+      const challengeAttempt = operation.runtimeRestartChallengeAttempt;
+      const orphanedCallPhase =
+        operation.orphanedCallPhase ?? operation.unknownPhase;
+      if (
+        priorRuntimeIdentity === undefined ||
+        priorBridgeSession === undefined ||
+        priorBridgeDispatch === undefined ||
+        priorExecutionAuthority === undefined ||
+        challengeAttempt === undefined ||
+        orphanedCallPhase === undefined
+      ) {
+        throw new Error(
+          "Recovery cannot prove termination of the former EasyEDA execution authority because this operation lacks its complete pre-dispatch runtime, bridge-session, process-tree, phase, or challenge binding.",
+        );
+      }
+      if (
+        priorBridgeDispatch.gatewayInstanceId !==
+          priorBridgeSession.gatewayInstanceId ||
+        priorBridgeDispatch.sessionId !== priorBridgeSession.sessionId ||
+        priorBridgeDispatch.sessionSequence !== priorBridgeSession.sequence
+      ) {
+        throw new Error(
+          "Recovery cannot prove that the orphaned call was dispatched on its recorded authenticated bridge session.",
+        );
+      }
+      const currentBridgeSessionBeforeProbe =
+        this.authenticatedBridgeSession();
+      if (
+        currentBridgeSessionBeforeProbe.gatewayInstanceId !==
+        priorBridgeSession.gatewayInstanceId
+      ) {
+        throw new Error(
+          "The facade bridge gateway restarted and no longer owns authoritative closure history for the pre-dispatch session. Automatic recovery is forbidden.",
+        );
+      }
+      if (
+        currentBridgeSessionBeforeProbe.sessionId ===
+        priorBridgeSession.sessionId
+      ) {
+        throw new Error(
+          "The pre-dispatch authenticated EasyEDA bridge session is still active. Terminate EasyEDA Pro and reconnect before recovery.",
+        );
+      }
+      const currentRuntimeIdentity = await this.runtimeIdentity();
+      const currentBridgeSession = this.authenticatedBridgeSession();
+      if (
+        canonicalJson(currentBridgeSession) !==
+        canonicalJson(currentBridgeSessionBeforeProbe)
+      ) {
+        throw new Error(
+          "The authenticated bridge session changed while recovery identity was being proved.",
+        );
+      }
+      const closedSessionLookup =
+        this.upstream.closedAuthenticatedBridgeSession;
+      if (closedSessionLookup === undefined) {
+        throw new Error(
+          "The authenticated bridge does not expose exact closed-session history.",
+        );
+      }
+      const closedBridgeSession = closedBridgeSessionPayload(
+        closedSessionLookup.call(
+          this.upstream,
+          priorBridgeSession.sessionId,
+        ),
+        priorBridgeSession,
+      );
+      if (
+        currentBridgeSession.authenticatedAtEpochMs <
+        closedBridgeSession.closedAtEpochMs
+      ) {
+        throw new Error(
+          "The replacement bridge session was authenticated before the prior session closed.",
+        );
+      }
+      if (
+        currentRuntimeIdentity.generation === priorRuntimeIdentity.generation ||
+        currentRuntimeIdentity.timeOrigin === priorRuntimeIdentity.timeOrigin
+      ) {
+        throw new Error(
+          "The EasyEDA renderer generation did not change. Terminate or reload the EasyEDA renderer, reconnect the authenticated bridge, and retry with the still-current confirmation.",
+        );
+      }
+      const executionAuthorityValidator = this.executionAuthorityValidator;
+      if (executionAuthorityValidator === undefined) {
+        throw new Error(
+          "Recovery is forbidden without an operation-bound validator that proves the entire prior EasyEDA process tree and execution authority terminated.",
+        );
+      }
+      const terminationBindingSha256 = sha256Json({
+        schema:
+          "easyeda-pro-control.execution-authority-termination-binding.v1",
+        operationId,
+        orphanedCallPhase,
+        challengeAttempt,
+        priorBridgeSession,
+        priorBridgeDispatch,
+        currentBridgeSession,
+        closedBridgeSession,
+        priorRuntimeIdentity,
+        currentRuntimeIdentity,
+        priorExecutionAuthoritySha256:
+          priorExecutionAuthority.authoritySha256,
+      });
+      const executionAuthorityTerminationProof =
+        executionAuthorityTerminationPayload(
+          await executionAuthorityValidator.proveTerminated({
+            bindingSha256: terminationBindingSha256,
+            challengeAttempt,
+            currentBridgeSession,
+            currentRuntimeIdentity,
+            operationId,
+            orphanPhase: orphanedCallPhase,
+            priorBridgeSession,
+            priorExecutionAuthority,
+            priorRuntimeIdentity,
+          }),
+          terminationBindingSha256,
+          priorExecutionAuthority.authoritySha256,
+          priorExecutionAuthority.policyId,
+          priorExecutionAuthority.policySha256,
+        );
       await this.assertStoredRuntime(
         operation,
         "recovery-runtime-restart-boundary",
@@ -3719,15 +4740,22 @@ export class EasyedaControlEngine {
       operation.sequence += 1;
       const boundary = {
         attestedAt,
-        challengeAttempt: operation.runtimeRestartChallengeAttempt,
-        orphanedCallPhase:
-          operation.orphanedCallPhase ?? operation.unknownPhase,
+        challengeAttempt,
+        orphanedCallPhase,
         confirmationSha256: sha256Text(requiredConfirmation),
         storedRuntimeFingerprintMatchedAfterReconnect: true,
-        limitation:
-          "Caller-attested EasyEDA Pro restart/reconnect boundary; the facade cannot independently prove process generation.",
+        priorRuntimeIdentity,
+        currentRuntimeIdentity,
+        rendererGenerationChanged: true,
+        priorBridgeSession,
+        priorBridgeDispatch,
+        currentBridgeSession,
+        closedBridgeSession,
+        executionAuthorityTerminationProof,
       };
       operation.runtimeRestartBoundary = boundary;
+      operation.runtimeIdentityBeforeOrphan = currentRuntimeIdentity;
+      operation.bridgeSessionBeforeOrphan = currentBridgeSession;
       operation.unsavedStateDiscardedByRestart = true;
       operation.runtimeRestartChallengeConsumedAt = attestedAt;
       delete operation.runtimeRestartChallenge;
@@ -3787,8 +4815,9 @@ export class EasyedaControlEngine {
 
     let preCheckpointVerification;
     try {
-      preCheckpointVerification = await verifyCheckpoint(
+      preCheckpointVerification = await verifyAuthorizedCheckpoint(
         operation.preCheckpoint.receiptPath,
+        operation.plan.expectedContext.project.path,
       );
     } catch (error) {
       throw new Error(
@@ -3808,8 +4837,9 @@ export class EasyedaControlEngine {
         );
       }
       if (baselinePreparationStates.has(recoveryStartState)) {
-        const finalPreCheckpointVerification = await verifyCheckpoint(
+        const finalPreCheckpointVerification = await verifyAuthorizedCheckpoint(
           operation.preCheckpoint.receiptPath,
+          operation.plan.expectedContext.project.path,
         );
         if (!finalPreCheckpointVerification.ok) {
           throw new Error(
@@ -3848,8 +4878,9 @@ export class EasyedaControlEngine {
             "Live state does not match the stored exact baseline invariants.",
           );
         }
-        const finalPreCheckpointVerification = await verifyCheckpoint(
+        const finalPreCheckpointVerification = await verifyAuthorizedCheckpoint(
           operation.preCheckpoint.receiptPath,
+          operation.plan.expectedContext.project.path,
         );
         if (!finalPreCheckpointVerification.ok) {
           throw new Error(
@@ -3888,8 +4919,9 @@ export class EasyedaControlEngine {
         operation.plan.verifyAssertions,
         "Recovered live verification",
       );
-      const finalPreCheckpointVerification = await verifyCheckpoint(
+      const finalPreCheckpointVerification = await verifyAuthorizedCheckpoint(
         operation.preCheckpoint.receiptPath,
+        operation.plan.expectedContext.project.path,
       );
       if (!finalPreCheckpointVerification.ok) {
         throw new Error(
@@ -3938,13 +4970,13 @@ export class EasyedaControlEngine {
       operation.updatedAt = now();
       await updateOperation(operation);
       try {
-        await this.markOrphanedCallRisk(operation, "recovery-reopen");
-        const raw = await this.upstream.callTool(
+        const raw = await this.dispatchWithOrphanTracking(
+          operation,
+          "recovery-reopen",
           "easyeda_execute",
           { code: source, timeoutMs: 60_000, confirmWrite: true },
           70_000,
         );
-        await this.clearOrphanedCallRisk(operation, "recovery-reopen");
         const payload = extractToolPayload(raw);
         assertSubset(
           payload,
@@ -3996,10 +5028,13 @@ export class EasyedaControlEngine {
         throw error;
       }
       try {
-        const finalCheckpoint = await createCheckpoint({
-          ...operation.plan.checkpoint,
-          label: `post-${operation.plan.checkpoint.label}`,
-        });
+        const finalCheckpoint = await createAuthorizedCheckpoint(
+          {
+            ...operation.plan.checkpoint,
+            label: `post-${operation.plan.checkpoint.label}`,
+          },
+          operation.plan.expectedContext.project.path,
+        );
         operation.candidateFinalCheckpoint = finalCheckpoint;
         operation.updatedAt = now();
         await updateOperation(operation);
@@ -4019,8 +5054,9 @@ export class EasyedaControlEngine {
           operation.plan.reopenedAssertions,
           "Recovered reopened verification",
         );
-        const persistenceVerification = await verifyCheckpoint(
+        const persistenceVerification = await verifyAuthorizedCheckpoint(
           operation.preCheckpoint.receiptPath,
+          operation.plan.expectedContext.project.path,
         );
         if (
           !persistenceVerification.checkpointMatchesReceipt ||
@@ -4030,11 +5066,80 @@ export class EasyedaControlEngine {
             "Recovered reopened assertions passed, but logical persistence relative to the intact pre-checkpoint was not proved.",
           );
         }
-        const finalCheckpointVerification = await verifyCheckpoint(
+        const finalCheckpointVerification = await verifyAuthorizedCheckpoint(
           finalCheckpoint.receiptPath,
+          operation.plan.expectedContext.project.path,
         );
         if (!finalCheckpointVerification.ok) {
           throw new Error("Reconciled final checkpoint verification failed.");
+        }
+        const semanticPersistenceValidator = this.semanticPersistenceValidator;
+        if (semanticPersistenceValidator === undefined) {
+          throw new Error(
+            "No semantic persistence-delta validator is installed; recovered completion is forbidden.",
+          );
+        }
+        const reopenedProofSnapshotSha256 = snapshotHash(results);
+        const semanticValidationInput = {
+          operationId,
+          plan: operation.plan,
+          preCheckpoint: operation.preCheckpoint,
+          finalCheckpoint,
+          reopenedProofSnapshotSha256,
+        };
+        const semanticValidationBindingSha256 =
+          semanticPersistenceBindingSha256(semanticValidationInput);
+        const semanticPersistenceProof = semanticPersistencePayload(
+          await semanticPersistenceValidator({
+            ...semanticValidationInput,
+            bindingSha256: semanticValidationBindingSha256,
+          }),
+          semanticValidationBindingSha256,
+        );
+        await this.assertContext(operation.plan.expectedContext);
+        const certificationResults = await this.runSpecs(
+          operation.plan.reopenedVerifyCalls,
+          operation.plan.expectedContext,
+          "read",
+        );
+        const certificationInvariantProof = verifyPhaseInvariants(
+          certificationResults,
+          operation,
+          "Recovered post-policy completion certification",
+        );
+        const certificationAssertions = assertAssertions(
+          certificationResults.map((result) => result.payload),
+          operation.plan.reopenedAssertions,
+          "Recovered post-policy completion certification",
+        );
+        const certifiedSnapshotSha256 = snapshotHash(certificationResults);
+        if (certifiedSnapshotSha256 !== snapshotHash(results)) {
+          throw new Error(
+            "The recovered reopened EasyEDA state changed while semantic persistence was being validated; completion is forbidden.",
+          );
+        }
+        const certificationPersistenceVerification =
+          await verifyAuthorizedCheckpoint(
+            operation.preCheckpoint.receiptPath,
+            operation.plan.expectedContext.project.path,
+          );
+        if (
+          !certificationPersistenceVerification.checkpointMatchesReceipt ||
+          certificationPersistenceVerification.sourceEqualsCheckpoint
+        ) {
+          throw new Error(
+            "The recovered pre-checkpoint or durable logical delta changed during semantic persistence validation.",
+          );
+        }
+        const certificationCheckpointVerification =
+          await verifyAuthorizedCheckpoint(
+            finalCheckpoint.receiptPath,
+            operation.plan.expectedContext.project.path,
+          );
+        if (!certificationCheckpointVerification.ok) {
+          throw new Error(
+            "The recovered live database changed during semantic persistence validation; completion is forbidden.",
+          );
         }
         operation.finalCheckpoint = finalCheckpoint;
         operation.candidateFinalCheckpoint = undefined;
@@ -4051,6 +5156,13 @@ export class EasyedaControlEngine {
           persistenceVerification,
           finalCheckpoint,
           finalCheckpointVerification,
+          semanticPersistenceProof,
+          certificationResults,
+          certificationInvariantProof,
+          certificationAssertions,
+          certifiedSnapshotSha256,
+          certificationPersistenceVerification,
+          certificationCheckpointVerification,
         };
       } catch (error) {
         operation.state = "recovery-verification-failed";
@@ -4089,11 +5201,16 @@ export class EasyedaControlEngine {
     return operationSummary(operation);
   }
 
-  public checkpoint(
+  public async checkpoint(
     args: CheckpointArgs,
-  ): ReturnType<typeof verifyCheckpoint> | ReturnType<typeof createCheckpoint> {
+  ): Promise<
+    | Awaited<ReturnType<typeof verifyCheckpoint>>
+    | Awaited<ReturnType<typeof createCheckpoint>>
+  > {
+    const activeContext = await this.context();
+    const activeSource = activeContext.project.path;
     if (args.receiptPath !== undefined && args.receiptPath.length > 0) {
-      return verifyCheckpoint(args.receiptPath);
+      return verifyAuthorizedCheckpoint(args.receiptPath, activeSource);
     }
     const { source, outputDir, label } = args;
     if (
@@ -4108,7 +5225,10 @@ export class EasyedaControlEngine {
         "Checkpoint creation requires nonempty source, outputDir, and label.",
       );
     }
-    return createCheckpoint({ source, outputDir, label });
+    return createAuthorizedCheckpoint(
+      { source, outputDir, label },
+      activeSource,
+    );
   }
 }
 

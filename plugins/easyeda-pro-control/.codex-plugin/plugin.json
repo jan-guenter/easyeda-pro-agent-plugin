@@ -1,7 +1,7 @@
 {
   "name": "easyeda-pro-control",
-  "version": "0.2.0+codex.20260828042005",
-  "description": "Exact live audits, durable evidence, recovery, capture, and draft DSN export for EasyEDA Pro.",
+  "version": "0.3.0+codex.20260828160326",
+  "description": "Safety-gated EasyEDA validation, evidence, recovery, capture, and draft DSN export.",
   "author": {
     "name": "Jan G\u00fcnter",
     "url": "https://github.com/jan-guenter"
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "EasyEDA Pro Control",
     "shortDescription": "Audit EasyEDA with durable evidence",
-    "longDescription": "An EasyEDA Pro skill and MCP facade with version-pinned double-sampled readers, scoped durable evidence, canvas capture, draft DSN export, SQLite checkpoints, and conservative recovery. The included one-component writer is experimental and runtime-disabled pending connected sacrificial-board validation.",
+    "longDescription": "An EasyEDA Pro skill and MCP facade implementing version-pinned readers, scoped durable evidence, canvas capture, draft DSN export, SQLite checkpoints, and conservative recovery for an explicitly admitted connected tuple. The bundled private bridge is currently validation-required, so fresh installs keep exact and private operations fail-closed. The included one-component writer is experimental and runtime-disabled pending connected sacrificial-board validation.",
     "developerName": "JanGuenter",
     "category": "Developer Tools",
     "capabilities": [
@@ -32,9 +32,9 @@
     ],
     "websiteURL": "https://github.com/jan-guenter/easyeda-pro-agent-plugin",
     "defaultPrompt": [
-      "Audit the active EasyEDA document without changing it.",
-      "Capture hash-bound EasyEDA evidence or export draft PCB route context.",
-      "Diagnose an incomplete EasyEDA operation safely."
+      "Validate the EasyEDA bridge without bypassing compatibility gates.",
+      "Collect bounded public read evidence for connected candidate review.",
+      "Inspect local recovery journals and managed artifacts safely."
     ]
   },
   "mcpServers": "./.mcp.json"

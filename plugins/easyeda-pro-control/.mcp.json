@@ -8,6 +8,7 @@
       "enabled": true,
       "env": {
         "EASYEDA_CONTROL_DATA_DIR": "/root/.easyeda-pro-control",
+        "EASYEDA_BRIDGE_TOKEN_FILE": "/root/.easyeda-pro-control/bridge-token",
         "EASYEDA_UPSTREAM_COMMAND": "/root/.nvm/versions/node/v24.18.0/bin/node",
         "EASYEDA_UPSTREAM_ARGS_JSON": "[\"/root/work/easyeda-mcp-pro/dist/index.js\"]",
         "EASYEDA_UPSTREAM_CWD": "/root/work/easyeda-mcp-pro",
@@ -18,8 +19,11 @@
         "EASYEDA_BRIDGE_PORT": "49621",
         "EASYEDA_BRIDGE_PORT_SCAN": "49621"
       },
-      "default_tools_approval_mode": "approve",
+      "default_tools_approval_mode": "prompt",
       "tools": {
+        "easyeda_control_status": { "approval_mode": "approve" },
+        "easyeda_control_discover": { "approval_mode": "approve" },
+        "easyeda_control_context": { "approval_mode": "approve" },
         "easyeda_control_exact_read": { "approval_mode": "prompt" },
         "easyeda_control_read": { "approval_mode": "prompt" },
         "easyeda_control_read_batch": { "approval_mode": "prompt" },
@@ -32,7 +36,10 @@
         "easyeda_control_rollback": { "approval_mode": "prompt" },
         "easyeda_control_save_reopen": { "approval_mode": "prompt" },
         "easyeda_control_checkpoint": { "approval_mode": "prompt" },
-        "easyeda_control_recover_incomplete": { "approval_mode": "prompt" }
+        "easyeda_control_recover_incomplete": { "approval_mode": "prompt" },
+        "easyeda_control_evidence_recover": { "approval_mode": "prompt" },
+        "easyeda_control_evidence_verify": { "approval_mode": "approve" },
+        "easyeda_control_artifact_read": { "approval_mode": "approve" }
       },
       "startup_timeout_sec": 30,
       "tool_timeout_sec": 600

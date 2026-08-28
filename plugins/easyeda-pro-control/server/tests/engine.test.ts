@@ -3,12 +3,15 @@ import { after, before, beforeEach, describe, test } from "node:test";
 import {
   buildPlanHash,
   loadReviewedCompatibilityManifest,
+  normalizeProofEnvelope,
   reviewedCompatibilityManifestFingerprint,
   sha256Json,
   sha256Text,
 } from "../src/core.ts";
 import type {
+  AuthenticatedBridgeDispatchBinding,
   EngineStatus,
+  ExecutionAuthorityTerminationProof,
   InstalledEasyedaBundles,
   LauncherFingerprint,
   LauncherState,
@@ -22,7 +25,14 @@ import type {
   UpstreamClient,
 } from "../src/engine.ts";
 import { exactReadRequestSchema } from "../src/exact-readers.ts";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -32,6 +42,9 @@ type EngineInstance = InstanceType<SourceEngineConstructor>;
 type EngineConstructor = new (upstream: UpstreamClient) => EngineInstance;
 type ExactReadRequest = ReturnType<typeof exactReadRequestSchema.parse>;
 interface TypedArtifactsModule {
+  controlRootCapability: () => Promise<{
+    close: () => Promise<void>;
+  }>;
   listOperations: () => Promise<OperationJournal[]>;
   loadOperation: (operationId: string) => Promise<OperationJournal>;
   updateOperation: (operation: OperationJournal) => Promise<string>;
@@ -165,7 +178,10 @@ async function resetFixture(): Promise<void> {
   if (controlDataDirectory === undefined || controlDataDirectory.length === 0) {
     throw new Error("Fixture control-data directory is not configured.");
   }
-  await rm(controlDataDirectory, { recursive: true, force: true });
+  await mkdir(controlDataDirectory, { recursive: true, mode: 0o700 });
+  for (const name of await readdir(controlDataDirectory)) {
+    await rm(join(controlDataDirectory, name), { recursive: true, force: true });
+  }
   await rm(outputDir, { recursive: true, force: true });
   await rm(source, { force: true });
   createFixtureDatabase();
@@ -174,7 +190,7 @@ async function resetFixture(): Promise<void> {
 before(async () => {
   testDir = await mkdtemp(join(tmpdir(), "easyeda-control-engine-"));
   source = join(testDir, "mock-project.eprj2");
-  outputDir = join(testDir, "checkpoints");
+  outputDir = join(testDir, "backups");
   process.env["EASYEDA_CONTROL_DATA_DIR"] = join(testDir, "control-data");
   const engineModule: unknown = await import(
     `../src/engine.ts?engine-test=${encodeURIComponent(testDir)}`
@@ -185,7 +201,110 @@ before(async () => {
   RuntimeDisabledEasyedaControlEngine = SourceEngine;
   EasyedaControlEngine = class ManifestBoundFixtureEngine extends SourceEngine {
     public constructor(upstream: UpstreamClient) {
-      super(upstream, { privateComponentWriterValidated: true });
+      super(upstream, {
+        privateComponentWriterValidated: true,
+        // This is a unit-fixture policy. Production deliberately supplies no
+        // Validator until a connected EasyEDA database-delta profile exists.
+        semanticPersistenceValidator: async (input) => {
+          const optionsValue = isRecord(upstream)
+            ? upstream["options"]
+            : undefined;
+          const mockOptions = isMockOptions(optionsValue)
+            ? optionsValue
+            : undefined;
+          await mockOptions?.onSemanticPersistenceValidation?.();
+          const observedDelta = {
+            preCheckpointReceiptSha256: sha256Json(input.preCheckpoint),
+            finalCheckpointReceiptSha256: sha256Json(input.finalCheckpoint),
+            reopenedProofSnapshotSha256:
+              input.reopenedProofSnapshotSha256,
+          };
+          return {
+            ok: true,
+            bindingSha256:
+              mockOptions?.semanticPersistenceBindingOverride ??
+              input.bindingSha256,
+            policyId: "fixture.project-state-only.v1",
+            policySha256: sha256Json({
+              table: "project_state",
+              operation: "single-row-update",
+            }),
+            observedDelta,
+            observedDeltaSha256: sha256Json(observedDelta),
+          };
+        },
+        executionAuthorityValidator: {
+          capture: (input) => {
+            const rendererPid = input.runtimeIdentity.processId;
+            if (rendererPid === null) {
+              throw new Error("Fixture renderer PID is unavailable.");
+            }
+            const processes = [
+              {
+                pid: rendererPid,
+                role: "renderer",
+                startIdentity: `fixture-renderer-${String(input.runtimeIdentity.timeOrigin)}`,
+              },
+              {
+                pid:
+                  9000 +
+                  Math.trunc(input.runtimeIdentity.timeOrigin / 1000),
+                role: "easyeda-main",
+                startIdentity: `fixture-main-${String(input.runtimeIdentity.timeOrigin)}`,
+              },
+            ];
+            const processTreeSha256 = sha256Json(processes);
+            const capturedAt = "2026-08-28T00:00:00.000Z";
+            const policyId = "fixture.easyeda-process-tree.v1";
+            const policySha256 = sha256Json({
+              scope: "fixture-complete-easyeda-authority",
+            });
+            const authoritySha256 = sha256Json({
+              schema: "easyeda-pro-control.execution-authority.v1",
+              bindingSha256: input.bindingSha256,
+              policyId,
+              policySha256,
+              capturedAt,
+              processes,
+              processTreeSha256,
+            });
+            return Promise.resolve({
+              schema: "easyeda-pro-control.execution-authority.v1" as const,
+              bindingSha256: input.bindingSha256,
+              policyId,
+              policySha256,
+              capturedAt,
+              processes,
+              processTreeSha256,
+              authoritySha256,
+            });
+          },
+          proveTerminated: (
+            input,
+          ): Promise<ExecutionAuthorityTerminationProof> => {
+            const optionsValue = isRecord(upstream)
+              ? upstream["options"]
+              : undefined;
+            const mockOptions = isMockOptions(optionsValue)
+              ? optionsValue
+              : undefined;
+            return Promise.resolve({
+              schema:
+                "easyeda-pro-control.execution-authority-termination.v1" as const,
+              ok: true as const,
+              noPriorExecutionAuthorityRemains: true as const,
+              bindingSha256: input.bindingSha256,
+              terminatedAuthoritySha256:
+                input.priorExecutionAuthority.authoritySha256,
+              policyId:
+                mockOptions?.executionTerminationPolicyIdOverride ??
+                input.priorExecutionAuthority.policyId,
+              policySha256: input.priorExecutionAuthority.policySha256,
+              checkedAt: "2026-08-28T00:01:00.000Z",
+            });
+          },
+        },
+      });
     }
 
     public override async status(): Promise<EngineStatus> {
@@ -304,6 +423,8 @@ beforeEach(resetFixture);
 
 after(async () => {
   delete process.env["EASYEDA_CONTROL_DATA_DIR"];
+  const controlRoot = await artifacts.controlRootCapability();
+  await controlRoot.close();
   if (testDir.length > 0) {
     await rm(testDir, { recursive: true, force: true });
   }
@@ -326,6 +447,7 @@ interface MockCall {
   name: string;
   args: Record<string, unknown>;
   timeoutMs: number | undefined;
+  dispatchLease: AuthenticatedBridgeDispatchBinding | undefined;
 }
 
 interface JournalCapture {
@@ -351,6 +473,7 @@ interface MockOptions {
   contextPath?: string;
   documentType?: number;
   doubleReadMismatch?: boolean;
+  executionTerminationPolicyIdOverride?: string;
   implementationDrift?: boolean;
   lockOnlyTargetMutation?: boolean;
   onApply?: (mock: MockUpstream) => void | Promise<void>;
@@ -362,6 +485,8 @@ interface MockOptions {
   onReopen?: (mock: MockUpstream, count: number) => void | Promise<void>;
   onRollback?: (mock: MockUpstream) => void | Promise<void>;
   onSave?: () => void | Promise<void>;
+  onSemanticPersistenceValidation?: () => void | Promise<void>;
+  semanticPersistenceBindingOverride?: string;
   pcbEditorVersion?: string;
   pcbImplementationSha256?: string;
   persistOnSave?: boolean;
@@ -377,6 +502,7 @@ interface MockOptions {
   reopenedTabId?: string;
   reportedReopenTabId?: string;
   reportedSaveTabId?: string;
+  runtimeIdentityInvalidAtCall?: number;
   saveError?: Error;
   savePersistence?: "physical-only";
   serverVersion?: string;
@@ -409,6 +535,20 @@ class MockUpstream implements UpstreamClient {
   public calls: MockCall[];
   public events: string[];
   public tools: ToolDescriptor[];
+  public runtimeGeneration: number;
+  public runtimeIdentityCalls: number;
+  public runtimeTimeOrigin: number;
+  public readonly bridgeGatewayInstanceId: string;
+  public bridgeSessionSequence: number;
+  public bridgeSessionId: string;
+  public bridgeAuthenticatedAtEpochMs: number;
+  public closedBridgeSessions: Map<string, Record<string, unknown>>;
+  public activeBridgeDispatch: AuthenticatedBridgeDispatchBinding | null;
+  public releaseDispatchOnSessionClose: boolean;
+  public authenticatedScopeBinding: AuthenticatedBridgeDispatchBinding | null;
+  public beginDispatchCalls: number;
+  public endDispatchCalls: number;
+  public abortDispatchCalls: number;
 
   public constructor(options: MockOptions = {}) {
     this.options = options;
@@ -428,6 +568,20 @@ class MockUpstream implements UpstreamClient {
     this.lastApplyCode = undefined;
     this.calls = [];
     this.events = [];
+    this.runtimeGeneration = 1;
+    this.runtimeIdentityCalls = 0;
+    this.runtimeTimeOrigin = 1000;
+    this.bridgeGatewayInstanceId = Buffer.alloc(32, 21).toString("base64url");
+    this.bridgeSessionSequence = 1;
+    this.bridgeSessionId = Buffer.alloc(32, 22).toString("base64url");
+    this.bridgeAuthenticatedAtEpochMs = 10_000;
+    this.closedBridgeSessions = new Map();
+    this.activeBridgeDispatch = null;
+    this.releaseDispatchOnSessionClose = false;
+    this.authenticatedScopeBinding = null;
+    this.beginDispatchCalls = 0;
+    this.endDispatchCalls = 0;
+    this.abortDispatchCalls = 0;
     this.tools = [
       {
         name: "easyeda_execute",
@@ -568,6 +722,14 @@ class MockUpstream implements UpstreamClient {
         sha256: digest("3"),
         fileCount: 24,
       },
+      executionClosure: {
+        root: "/opt/easyeda",
+        directoryCount: 30,
+        fileCount: 240,
+        symlinkCount: 0,
+        totalBytes: 1_000_000,
+        sha256: digest("4"),
+      },
       dependencyLock: {
         type: "pnpm",
         path: "/opt/easyeda/pnpm-lock.yaml",
@@ -633,6 +795,123 @@ class MockUpstream implements UpstreamClient {
     ]);
   }
 
+  public restartRuntime(): void {
+    const closedAtEpochMs = this.bridgeAuthenticatedAtEpochMs + 500;
+    this.closedBridgeSessions.set(this.bridgeSessionId, {
+      ...this.activeBridgeSession(),
+      closeReason: "fixture-runtime-terminated",
+      closedAtEpochMs,
+    });
+    if (this.releaseDispatchOnSessionClose) {
+      this.activeBridgeDispatch = null;
+      this.releaseDispatchOnSessionClose = false;
+    }
+    this.runtimeGeneration += 1;
+    this.runtimeTimeOrigin += 1000;
+    this.bridgeSessionSequence += 1;
+    this.bridgeSessionId = Buffer.alloc(
+      32,
+      21 + this.bridgeSessionSequence,
+    ).toString("base64url");
+    this.bridgeAuthenticatedAtEpochMs = closedAtEpochMs + 500;
+  }
+
+  private activeBridgeSession(): Record<string, unknown> {
+    return {
+      authenticatedAtEpochMs: this.bridgeAuthenticatedAtEpochMs,
+      authenticationReceiptSha256: sha256Text(
+        `fixture-bridge-session-${this.bridgeSessionSequence}`,
+      ),
+      sequence: this.bridgeSessionSequence,
+      sessionId: this.bridgeSessionId,
+    };
+  }
+
+  public bridgeSessionLifecycle(): unknown {
+    return {
+      schema: "easyeda-pro-control.authenticated-bridge-lifecycle.v1",
+      gatewayInstanceId: this.bridgeGatewayInstanceId,
+      activeSession: this.activeBridgeSession(),
+      publicEndpoint: { host: "127.0.0.1", port: 49_621 },
+      recentClosedSessions: [...this.closedBridgeSessions.values()],
+    };
+  }
+
+  public closedAuthenticatedBridgeSession(sessionId: string): unknown {
+    return this.closedBridgeSessions.get(sessionId);
+  }
+
+  public beginAuthenticatedBridgeDispatch(
+    expectedGatewayInstanceId: string,
+    expectedSessionId: string,
+  ): AuthenticatedBridgeDispatchBinding {
+    this.beginDispatchCalls += 1;
+    if (
+      this.activeBridgeDispatch !== null ||
+      expectedGatewayInstanceId !== this.bridgeGatewayInstanceId ||
+      expectedSessionId !== this.bridgeSessionId
+    ) {
+      throw new Error("Fixture bridge dispatch lease cannot begin.");
+    }
+    const binding = {
+      schema: "easyeda-pro-control.bridge-dispatch-lease.v1" as const,
+      gatewayInstanceId: this.bridgeGatewayInstanceId,
+      leaseId: Buffer.alloc(32, 30 + this.bridgeSessionSequence).toString(
+        "base64url",
+      ),
+      sessionId: this.bridgeSessionId,
+      sessionSequence: this.bridgeSessionSequence,
+      begunAtEpochMs: this.bridgeAuthenticatedAtEpochMs + 1,
+      bindingReceipt: Buffer.alloc(
+        32,
+        40 + this.bridgeSessionSequence,
+      ).toString("base64url"),
+    };
+    this.activeBridgeDispatch = binding;
+    return { ...binding };
+  }
+
+  public endAuthenticatedBridgeDispatch(
+    binding: AuthenticatedBridgeDispatchBinding,
+  ): void {
+    this.endDispatchCalls += 1;
+    if (
+      this.activeBridgeDispatch === null ||
+      sha256Json(binding) !== sha256Json(this.activeBridgeDispatch) ||
+      binding.sessionId !== this.bridgeSessionId
+    ) {
+      throw new Error("Fixture bridge dispatch lease cannot complete.");
+    }
+    this.activeBridgeDispatch = null;
+  }
+
+  public abortAuthenticatedBridgeDispatch(
+    binding: AuthenticatedBridgeDispatchBinding,
+    outcome: "not-dispatched" | "ambiguous-after-dispatch",
+  ): { released: boolean; retainedUntilSessionClose: boolean } {
+    this.abortDispatchCalls += 1;
+    if (
+      this.activeBridgeDispatch === null ||
+      sha256Json(binding) !== sha256Json(this.activeBridgeDispatch)
+    ) {
+      throw new Error("Fixture bridge dispatch lease cannot abort.");
+    }
+    if (outcome === "not-dispatched") {
+      this.activeBridgeDispatch = null;
+      return { released: true, retainedUntilSessionClose: false };
+    }
+    this.releaseDispatchOnSessionClose = true;
+    return { released: false, retainedUntilSessionClose: true };
+  }
+
+  public currentAuthenticatedBridgeDispatchBinding():
+    | AuthenticatedBridgeDispatchBinding
+    | undefined {
+    return this.authenticatedScopeBinding === null
+      ? undefined
+      : Object.freeze({ ...this.authenticatedScopeBinding });
+  }
+
   public rewriteDatabaseWithoutLogicalChange(): void {
     execFileSync("sqlite3", [source, "VACUUM;"]);
   }
@@ -641,8 +920,26 @@ class MockUpstream implements UpstreamClient {
     name: string,
     args: Record<string, unknown> = {},
     timeoutMs?: number,
+    dispatchLease?: AuthenticatedBridgeDispatchBinding,
   ): Promise<unknown> {
-    this.calls.push({ name, args, timeoutMs });
+    const effectiveDispatchLease =
+      dispatchLease ?? this.authenticatedScopeBinding ?? undefined;
+    if (
+      this.activeBridgeDispatch !== null &&
+      (effectiveDispatchLease === undefined ||
+        sha256Json(effectiveDispatchLease) !==
+          sha256Json(this.activeBridgeDispatch))
+    ) {
+      throw new Error(
+        "Fixture call omitted or changed the authenticated bridge dispatch lease.",
+      );
+    }
+    this.calls.push({
+      name,
+      args,
+      timeoutMs,
+      dispatchLease: effectiveDispatchLease,
+    });
     if (name === "easyeda_health_check") {
       return toolResult({
         version: "1.0.0-rc.1",
@@ -692,6 +989,26 @@ class MockUpstream implements UpstreamClient {
 
     const codeValue = args["code"];
     const code = typeof codeValue === "string" ? codeValue : "";
+    if (code.includes('kind: "runtime-identity"')) {
+      this.runtimeIdentityCalls += 1;
+      if (
+        this.runtimeIdentityCalls ===
+        this.options.runtimeIdentityInvalidAtCall
+      ) {
+        return toolResult({
+          ok: true,
+          kind: "runtime-identity",
+          generation: "invalid-runtime-identity-fixture",
+        });
+      }
+      return toolResult({
+        ok: true,
+        kind: "runtime-identity",
+        generation: `easyeda-renderer:${this.runtimeTimeOrigin}:fixture-${this.runtimeGeneration.toString().padStart(12, "0")}`,
+        timeOrigin: this.runtimeTimeOrigin,
+        processId: 4242 + this.runtimeGeneration,
+      });
+    }
     if (
       code.includes('kind: "exact-component-mutation"') &&
       code.includes('state: "after"')
@@ -1239,6 +1556,36 @@ class MockUpstream implements UpstreamClient {
   }
 }
 
+function beginMockAuthenticatedScope(
+  upstream: MockUpstream,
+): AuthenticatedBridgeDispatchBinding {
+  const binding = upstream.beginAuthenticatedBridgeDispatch(
+    upstream.bridgeGatewayInstanceId,
+    upstream.bridgeSessionId,
+  );
+  upstream.authenticatedScopeBinding = binding;
+  return binding;
+}
+
+function endMockAuthenticatedScope(
+  upstream: MockUpstream,
+  binding: AuthenticatedBridgeDispatchBinding,
+): void {
+  upstream.authenticatedScopeBinding = null;
+  upstream.endAuthenticatedBridgeDispatch(binding);
+}
+
+function abortMockAuthenticatedScope(
+  upstream: MockUpstream,
+  binding: AuthenticatedBridgeDispatchBinding,
+): void {
+  upstream.authenticatedScopeBinding = null;
+  upstream.abortAuthenticatedBridgeDispatch(
+    binding,
+    "ambiguous-after-dispatch",
+  );
+}
+
 function rawSpec(marker: string): ToolCallSpec & {
   mode: "mutate-unsaved";
   acknowledgeUnrestrictedRaw: true;
@@ -1458,7 +1805,10 @@ function applyTimeout(): Error {
   return error;
 }
 
-async function restartConfirmation(operationId: string): Promise<string> {
+async function restartConfirmation(
+  operationId: string,
+  upstream: MockUpstream,
+): Promise<string> {
   const operation = await artifacts.loadOperation(operationId);
   const challenge = operation.runtimeRestartChallenge;
   if (typeof challenge !== "string") {
@@ -1470,6 +1820,7 @@ async function restartConfirmation(operationId: string): Promise<string> {
     challenge,
     new RegExp(`^EASYEDA_RESTARTED_AND_RECONNECTED:${operationId}:`, "u"),
   );
+  upstream.restartRuntime();
   return challenge;
 }
 
@@ -1551,7 +1902,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     assert.equal(status.capabilities.privateComponentWriter.enabled, false);
     assert.match(
       status.capabilities.privateComponentWriter.reason,
-      /sacrificial-board test/u,
+      /sacrificial-board (?:test|validation)/u,
     );
     await assert.rejects(
       engine.plan({}),
@@ -1574,6 +1925,10 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     journal.state = "applied-unsaved";
     journal.mutationState = "applied-unsaved";
     await artifacts.updateOperation(journal);
+    await assert.rejects(
+      engine.verify(planned.operationId),
+      /private PCB component writer is runtime-disabled/u,
+    );
     await assert.rejects(
       engine.rollback(planned.operationId, planned.planHash),
       /private PCB component writer is runtime-disabled/u,
@@ -1628,9 +1983,14 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     let dispatchCheckpointVerification: unknown;
     upstream.options.onBaselineReopen = async (): Promise<void> => {
       dispatchJournal = await onlyOperation();
-      dispatchCheckpointVerification = await engine.checkpoint({
-        receiptPath: dispatchJournal.preCheckpoint.receiptPath,
-      });
+      const receipt = parseJson(
+        await readFile(dispatchJournal.preCheckpoint.receiptPath, "utf8"),
+      );
+      dispatchCheckpointVerification = {
+        ok:
+          isRecord(receipt) &&
+          receipt["schema"] === "easyeda-pro-control.checkpoint.v1",
+      };
     };
     const planned = await planWithDiscard(engine, plan);
     const observedDispatchJournal = requireDefined(
@@ -1798,6 +2158,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
       {
         runtimeRestartConfirmation: await restartConfirmation(
           unknown.operationId,
+          upstream,
         ),
       },
     );
@@ -1818,6 +2179,62 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     );
     assert.equal(evidence["baselinePreparationInvalidated"], true);
     assert.equal(preCheckpointVerification["ok"], true);
+  });
+
+  void test("rejects an echoed recovery nonce from the same bridge session", async () => {
+    const upstream = new MockUpstream({ baselineReopenErrorsRemaining: 1 });
+    const engine = new EasyedaControlEngine(upstream);
+    await assert.rejects(
+      planWithDiscard(
+        engine,
+        await makePlan(engine, "same-renderer-recovery-echo"),
+      ),
+      /timed out/u,
+    );
+    const unknown = await onlyOperation();
+    const challenge = requireDefined(
+      unknown.runtimeRestartChallenge,
+      "runtime restart challenge",
+    );
+
+    await assert.rejects(
+      engine.recover(unknown.operationId, "reconciled-no-mutation", {
+        runtimeRestartConfirmation: challenge,
+      }),
+      /pre-dispatch authenticated EasyEDA bridge session is still active/u,
+    );
+    const stillBlocked = await artifacts.loadOperation(unknown.operationId);
+    assert.equal(stillBlocked.orphanedCallPossible, true);
+    assert.equal(stillBlocked.runtimeRestartChallenge, challenge);
+  });
+
+  void test("rejects a changed renderer identity on the same authenticated session", async () => {
+    const upstream = new MockUpstream({ baselineReopenErrorsRemaining: 1 });
+    const engine = new EasyedaControlEngine(upstream);
+    await assert.rejects(
+      planWithDiscard(
+        engine,
+        await makePlan(engine, "same-session-renderer-change"),
+      ),
+      /timed out/u,
+    );
+    const unknown = await onlyOperation();
+    const challenge = requireDefined(
+      unknown.runtimeRestartChallenge,
+      "runtime restart challenge",
+    );
+    upstream.runtimeGeneration += 1;
+    upstream.runtimeTimeOrigin += 1000;
+
+    await assert.rejects(
+      engine.recover(unknown.operationId, "reconciled-no-mutation", {
+        runtimeRestartConfirmation: challenge,
+      }),
+      /pre-dispatch authenticated EasyEDA bridge session is still active/u,
+    );
+    const stillBlocked = await artifacts.loadOperation(unknown.operationId);
+    assert.equal(stillBlocked.orphanedCallPossible, true);
+    assert.equal(stillBlocked.runtimeRestartChallenge, challenge);
   });
 
   void test("plan invalidates when the project source changes during clean-baseline preflight", async () => {
@@ -2208,6 +2625,32 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
       /checkpoint\.source must be the exact/u,
     );
     assert.deepEqual(await artifacts.listOperations(), []);
+  });
+
+  void test("confines public checkpoint creation and verification to the active project", async () => {
+    const engine = new EasyedaControlEngine(new MockUpstream());
+    await assert.rejects(
+      engine.checkpoint({
+        source: join(testDir, "other-project.eprj2"),
+        outputDir,
+        label: "wrong-active-project",
+      }),
+      /does not match the authorized active project/u,
+    );
+    await assert.rejects(
+      engine.checkpoint({
+        source,
+        outputDir: join(testDir, "unmanaged-checkpoints"),
+        label: "outside-authorized-root",
+      }),
+      /outside the authorized checkpoint roots/u,
+    );
+    await assert.rejects(
+      engine.checkpoint({
+        receiptPath: join(testDir, "foreign.checkpoint.json"),
+      }),
+      /outside the authorized checkpoint roots/u,
+    );
   });
 
   void test("rejects plans without declared target changes or mandatory exact phase readers", async () => {
@@ -2699,6 +3142,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
       engine.recover(planned.operationId, "reconciled-no-mutation", {
         runtimeRestartConfirmation: await restartConfirmation(
           planned.operationId,
+          upstream,
         ),
       }),
       /runtime fingerprint/u,
@@ -2813,6 +3257,24 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
         "u",
       ),
     );
+    const boundDispatch = requireDefined(
+      journal.bridgeDispatchBeforeOrphan,
+      "orphaned bridge dispatch binding",
+    );
+    assert.equal(
+      boundDispatch.sessionId,
+      requireDefined(
+        journal.bridgeSessionBeforeOrphan,
+        "orphaned bridge session",
+      ).sessionId,
+    );
+    assert.ok(
+      upstream.calls.some(
+        (call) =>
+          call.name === "easyeda_execute" &&
+          call.dispatchLease?.leaseId === boundDispatch.leaseId,
+      ),
+    );
 
     await assert.rejects(
       engine.apply(planned.operationId, planned.planHash),
@@ -2838,6 +3300,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
       }),
       /runtimeRestartConfirmation/u,
     );
+    upstream.restartRuntime();
     const recovered = await engine.recover(
       planned.operationId,
       "reconciled-no-mutation",
@@ -2862,15 +3325,56 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
       restartBoundary.storedRuntimeFingerprintMatchedAfterReconnect,
       true,
     );
-    assert.match(
-      requireDefined(restartBoundary.limitation, "restart-boundary limitation"),
-      /cannot independently prove/u,
+    assert.equal(
+      requireDefined(
+        restartBoundary.priorBridgeDispatch,
+        "restart-boundary prior dispatch",
+      ).sessionId,
+      requireDefined(
+        restartBoundary.priorBridgeSession,
+        "restart-boundary prior session",
+      ).sessionId,
+    );
+    assert.equal(
+      requireDefined(
+        restartBoundary.executionAuthorityTerminationProof,
+        "restart-boundary termination proof",
+      ).noPriorExecutionAuthorityRemains,
+      true,
     );
     assert.ok(
       recoveredJournal.artifacts.some((artifact) =>
         artifact.path.includes("runtime-restart-boundary"),
       ),
     );
+  });
+
+  void test("rejects termination proof from a different process-tree policy", async () => {
+    const upstream = new MockUpstream({
+      applyError: applyTimeout(),
+      executionTerminationPolicyIdOverride: "fixture.weaker-policy.v1",
+    });
+    const engine = new EasyedaControlEngine(upstream);
+    const planned = await planWithDiscard(
+      engine,
+      await makePlan(engine, "changed-termination-policy"),
+    );
+    await assert.rejects(
+      engine.apply(planned.operationId, planned.planHash),
+      /timed out/u,
+    );
+
+    await assert.rejects(
+      engine.recover(planned.operationId, "reconciled-no-mutation", {
+        runtimeRestartConfirmation: await restartConfirmation(
+          planned.operationId,
+          upstream,
+        ),
+      }),
+      /exact prior process tree/u,
+    );
+    const journal = await artifacts.loadOperation(planned.operationId);
+    assert.equal(journal.orphanedCallPossible, true);
   });
 
   void test("verification failure hard-stops and blocks save until explicit rollback", async () => {
@@ -2923,6 +3427,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
       {
         runtimeRestartConfirmation: await restartConfirmation(
           planned.operationId,
+          upstream,
         ),
       },
     );
@@ -2962,6 +3467,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
       engine.recover(planned.operationId, "reconciled-applied-unsaved", {
         runtimeRestartConfirmation: await restartConfirmation(
           planned.operationId,
+          upstream,
         ),
       }),
       /Applied-unsaved recovery is illegal after .* restart\/discard boundary/u,
@@ -3032,6 +3538,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
       {
         runtimeRestartConfirmation: await restartConfirmation(
           planned.operationId,
+          upstream,
         ),
         confirmDiscardAnyUnsavedState: true,
       },
@@ -3222,6 +3729,55 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     assert.equal(journal.hardStop, true);
   });
 
+  void test("normal save rejects durable drift during semantic validation", async () => {
+    const upstream = new MockUpstream({
+      onSemanticPersistenceValidation: (): void => {
+        execFileSync("sqlite3", [
+          source,
+          "UPDATE project_state SET value='concurrent-save' WHERE id=1;",
+        ]);
+      },
+    });
+    const engine = new EasyedaControlEngine(upstream);
+    const planned = await planWithDiscard(
+      engine,
+      await makePlan(engine, "semantic-validator-durable-race"),
+    );
+    await engine.apply(planned.operationId, planned.planHash);
+    await engine.verify(planned.operationId);
+
+    await assert.rejects(
+      engine.saveReopen(planned.operationId, planned.planHash),
+      /database changed during semantic persistence validation/iu,
+    );
+    const journal = await artifacts.loadOperation(planned.operationId);
+    assert.equal(journal.state, "final-checkpoint-failed");
+    assert.equal(journal.finalCheckpoint, undefined);
+    assert.equal(journal.hardStop, true);
+  });
+
+  void test("normal save rejects a semantic proof bound to another operation", async () => {
+    const upstream = new MockUpstream({
+      semanticPersistenceBindingOverride: digest("f"),
+    });
+    const engine = new EasyedaControlEngine(upstream);
+    const planned = await planWithDiscard(
+      engine,
+      await makePlan(engine, "stale-semantic-proof"),
+    );
+    await engine.apply(planned.operationId, planned.planHash);
+    await engine.verify(planned.operationId);
+
+    await assert.rejects(
+      engine.saveReopen(planned.operationId, planned.planHash),
+      /strict hash-bound proof/u,
+    );
+    const journal = await artifacts.loadOperation(planned.operationId);
+    assert.equal(journal.state, "final-checkpoint-failed");
+    assert.equal(journal.finalCheckpoint, undefined);
+    assert.equal(journal.hardStop, true);
+  });
+
   void test("rejects a complete but different runtime fingerprint before context or checkpoint", async () => {
     const upstream = new MockUpstream();
     const engine = new EasyedaControlEngine(upstream);
@@ -3347,6 +3903,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
       engine.recover(planned.operationId, "reconciled-no-mutation", {
         runtimeRestartConfirmation: await restartConfirmation(
           planned.operationId,
+          upstream,
         ),
       }),
       /pre-checkpoint integrity could not be proved/u,
@@ -3380,6 +3937,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
       {
         runtimeRestartConfirmation: await restartConfirmation(
           planned.operationId,
+          upstream,
         ),
       },
     );
@@ -3413,6 +3971,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
       engine.recover(planned.operationId, "reconciled-saved-reopened", {
         runtimeRestartConfirmation: await restartConfirmation(
           planned.operationId,
+          upstream,
         ),
       }),
       /confirmDiscardAnyUnsavedState=true/u,
@@ -3435,9 +3994,64 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
         .schema,
       "easyeda-pro-control.checkpoint.v1",
     );
+    const completedRecoveryArtifact = lastArtifact(completed);
     assert.match(
-      lastArtifact(completed).path,
+      completedRecoveryArtifact.path,
       /recovery-reconciled-saved-reopened-[a-f0-9-]{36}\.json$/u,
+    );
+    const recoveryArtifactText = await readFile(
+      completedRecoveryArtifact.path,
+      "utf8",
+    );
+    const recoveryArtifact = requireRecord(
+      parseJson(recoveryArtifactText),
+      "saved recovery artifact",
+    );
+    const recoveryPayload = recoveryArtifact;
+    const recoveryResults = recoveryPayload["results"];
+    assert.ok(Array.isArray(recoveryResults));
+    const reopenedProofSnapshotSha256 = sha256Json(
+      recoveryResults.map((candidate) => {
+        const result = requireRecord(candidate, "saved recovery result");
+        return {
+          toolName: result["toolName"],
+          payload: normalizeProofEnvelope(result["payload"]),
+          assertions: result["assertions"],
+        };
+      }),
+    );
+    const completedFinalCheckpoint = requireDefined(
+      completed.finalCheckpoint,
+      "completed final checkpoint",
+    );
+    const observedDelta = {
+      preCheckpointReceiptSha256: sha256Json(completed.preCheckpoint),
+      finalCheckpointReceiptSha256: sha256Json(completedFinalCheckpoint),
+      reopenedProofSnapshotSha256,
+    };
+    assert.deepEqual(
+      requireRecord(
+        recoveryPayload["semanticPersistenceProof"],
+        "saved recovery semantic persistence proof",
+      ),
+      {
+        ok: true,
+        bindingSha256: sha256Json({
+          schema: "easyeda-pro-control.semantic-persistence-binding.v1",
+          operationId: completed.operationId,
+          planHash: buildPlanHash(completed.plan),
+          preCheckpointSha256: sha256Json(completed.preCheckpoint),
+          finalCheckpointSha256: sha256Json(completedFinalCheckpoint),
+          reopenedProofSnapshotSha256,
+        }),
+        policyId: "fixture.project-state-only.v1",
+        policySha256: sha256Json({
+          table: "project_state",
+          operation: "single-row-update",
+        }),
+        observedDelta,
+        observedDeltaSha256: sha256Json(observedDelta),
+      },
     );
   });
 
@@ -3515,6 +4129,40 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     );
   });
 
+  void test("saved recovery cannot complete without a semantic persistence validator", async () => {
+    const upstream = new MockUpstream({ saveError: applyTimeout() });
+    const engine = new EasyedaControlEngine(upstream);
+    const planned = await planWithDiscard(
+      engine,
+      await makePlan(engine, "saved-recovery-semantic-policy-required"),
+    );
+    await engine.apply(planned.operationId, planned.planHash);
+    await engine.verify(planned.operationId);
+    await assert.rejects(
+      engine.saveReopen(planned.operationId, planned.planHash),
+      /timed out/u,
+    );
+    assert.equal(
+      Reflect.set(engine, "semanticPersistenceValidator", undefined),
+      true,
+    );
+
+    await assert.rejects(
+      engine.recover(planned.operationId, "reconciled-saved-reopened", {
+        confirmDiscardAnyUnsavedState: true,
+        runtimeRestartConfirmation: await restartConfirmation(
+          planned.operationId,
+          upstream,
+        ),
+      }),
+      /semantic persistence-delta validator.*forbidden/iu,
+    );
+    const journal = await artifacts.loadOperation(planned.operationId);
+    assert.equal(journal.state, "recovery-verification-failed");
+    assert.equal(journal.finalCheckpoint, undefined);
+    assert.equal(journal.hardStop, true);
+  });
+
   void test("saved recovery rejects a physical-only source rewrite", async () => {
     const upstream = new MockUpstream({
       savePersistence: "physical-only",
@@ -3537,6 +4185,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
         confirmDiscardAnyUnsavedState: true,
         runtimeRestartConfirmation: await restartConfirmation(
           planned.operationId,
+          upstream,
         ),
       }),
       /logical|demonstrably changed|database/iu,
@@ -3568,6 +4217,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
         confirmDiscardAnyUnsavedState: true,
         runtimeRestartConfirmation: await restartConfirmation(
           planned.operationId,
+          upstream,
         ),
       }),
       /intact pre-checkpoint|checkpoint|integrity/iu,
@@ -3593,6 +4243,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     );
     const firstRestartChallenge = await restartConfirmation(
       planned.operationId,
+      upstream,
     );
     await assert.rejects(
       engine.recover(planned.operationId, "reconciled-saved-reopened", {
@@ -3621,6 +4272,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     );
     assert.equal(upstream.reopenAttempts, 1);
 
+    upstream.restartRuntime();
     await assert.rejects(
       engine.recover(planned.operationId, "reconciled-saved-reopened", {
         confirmDiscardAnyUnsavedState: true,
@@ -3640,5 +4292,159 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     );
     assert.equal(recovered.state, "completed");
     assert.equal(upstream.reopenAttempts, 2);
+  });
+
+  void test("reuses a scope-owned dispatch while journaling before mutation and clearing on known return", async () => {
+    const upstream = new MockUpstream();
+    const engine = new EasyedaControlEngine(upstream);
+    const plan = await makePlan(engine, "scope-owned-known-return");
+    const planningBinding = beginMockAuthenticatedScope(upstream);
+    const planned = await planWithDiscard(engine, plan);
+    endMockAuthenticatedScope(upstream, planningBinding);
+
+    upstream.beginDispatchCalls = 0;
+    upstream.endDispatchCalls = 0;
+    upstream.abortDispatchCalls = 0;
+    upstream.calls = [];
+    const mutationJournal: JournalCapture = {};
+    upstream.options.onApply = captureOperationOnReopen(
+      planned.operationId,
+      mutationJournal,
+    );
+    const applyBinding = beginMockAuthenticatedScope(upstream);
+    const applied = await engine.apply(planned.operationId, planned.planHash);
+    assert.equal(upstream.beginDispatchCalls, 1);
+    assert.equal(upstream.endDispatchCalls, 0);
+    assert.equal(upstream.abortDispatchCalls, 0);
+    const journalAtMutation = requireDefined(
+      mutationJournal.journal,
+      "scope-owned mutation journal",
+    );
+    assert.equal(journalAtMutation.orphanedCallPossible, true);
+    assert.equal(journalAtMutation.orphanedCallPhase, "apply");
+    assert.deepEqual(journalAtMutation.bridgeDispatchBeforeOrphan, applyBinding);
+    const scopeBoundApplyCalls = upstream.calls.filter(
+      (call) => call.dispatchLease !== undefined,
+    );
+    assert.ok(scopeBoundApplyCalls.length > 0);
+    assert.ok(
+      scopeBoundApplyCalls.every(
+        (call) => sha256Json(call.dispatchLease) === sha256Json(applyBinding),
+      ),
+    );
+    endMockAuthenticatedScope(upstream, applyBinding);
+    assert.equal(upstream.beginDispatchCalls, 1);
+    assert.equal(upstream.endDispatchCalls, 1);
+    assert.equal(upstream.abortDispatchCalls, 0);
+    assert.equal(applied.state, "applied-unsaved");
+    const knownReturnJournal = await artifacts.loadOperation(
+      planned.operationId,
+    );
+    assert.equal(knownReturnJournal.orphanedCallPossible, false);
+    assert.equal(knownReturnJournal.runtimeRestartChallenge, undefined);
+  });
+
+  void test("leaves scoped ambiguous mutation risk journaled and recovers under the replacement session scope", async () => {
+    const upstream = new MockUpstream({ applyError: applyTimeout() });
+    const engine = new EasyedaControlEngine(upstream);
+    const plan = await makePlan(engine, "scope-owned-ambiguous-recovery");
+    const planningBinding = beginMockAuthenticatedScope(upstream);
+    const planned = await planWithDiscard(engine, plan);
+    endMockAuthenticatedScope(upstream, planningBinding);
+
+    upstream.beginDispatchCalls = 0;
+    upstream.endDispatchCalls = 0;
+    upstream.abortDispatchCalls = 0;
+    upstream.calls = [];
+    const applyBinding = beginMockAuthenticatedScope(upstream);
+    await assert.rejects(
+      engine.apply(planned.operationId, planned.planHash),
+      /timed out/u,
+    );
+    assert.equal(upstream.beginDispatchCalls, 1);
+    assert.equal(upstream.endDispatchCalls, 0);
+    assert.equal(upstream.abortDispatchCalls, 0);
+    let ambiguousJournal = await artifacts.loadOperation(planned.operationId);
+    assert.equal(ambiguousJournal.state, "unknown");
+    assert.equal(ambiguousJournal.orphanedCallPossible, true);
+    assert.equal(ambiguousJournal.orphanedCallPhase, "apply");
+    assert.deepEqual(
+      ambiguousJournal.bridgeDispatchBeforeOrphan,
+      applyBinding,
+    );
+    abortMockAuthenticatedScope(upstream, applyBinding);
+    assert.equal(upstream.abortDispatchCalls, 1);
+    assert.notEqual(upstream.activeBridgeDispatch, null);
+
+    const restartChallenge = requireDefined(
+      ambiguousJournal.runtimeRestartChallenge,
+      "scope-owned restart challenge",
+    );
+    upstream.restartRuntime();
+    assert.equal(upstream.activeBridgeDispatch, null);
+    upstream.beginDispatchCalls = 0;
+    upstream.endDispatchCalls = 0;
+    upstream.abortDispatchCalls = 0;
+    upstream.calls = [];
+    const recoveryBinding = beginMockAuthenticatedScope(upstream);
+    const recovered = await engine.recover(
+      planned.operationId,
+      "reconciled-no-mutation",
+      { runtimeRestartConfirmation: restartChallenge },
+    );
+    assert.equal(upstream.beginDispatchCalls, 1);
+    assert.equal(upstream.endDispatchCalls, 0);
+    assert.equal(upstream.abortDispatchCalls, 0);
+    endMockAuthenticatedScope(upstream, recoveryBinding);
+    assert.equal(upstream.beginDispatchCalls, 1);
+    assert.equal(upstream.endDispatchCalls, 1);
+    assert.equal(upstream.abortDispatchCalls, 0);
+    assert.equal(recovered.state, "reconciled-no-mutation");
+    ambiguousJournal = await artifacts.loadOperation(planned.operationId);
+    assert.equal(ambiguousJournal.orphanedCallPossible, false);
+    const scopeBoundRecoveryCalls = upstream.calls.filter(
+      (call) => call.dispatchLease?.sessionId === recoveryBinding.sessionId,
+    );
+    assert.ok(scopeBoundRecoveryCalls.length > 0);
+    assert.ok(
+      scopeBoundRecoveryCalls.every(
+        (call) =>
+          sha256Json(call.dispatchLease) === sha256Json(recoveryBinding),
+      ),
+    );
+  });
+
+  void test("clears a scope-owned marker when the second pre-dispatch runtime proof fails", async () => {
+    const upstream = new MockUpstream();
+    const engine = new EasyedaControlEngine(upstream);
+    const plan = await makePlan(engine, "scope-owned-second-runtime-proof");
+    const planningBinding = beginMockAuthenticatedScope(upstream);
+    const planned = await planWithDiscard(engine, plan);
+    endMockAuthenticatedScope(upstream, planningBinding);
+
+    upstream.beginDispatchCalls = 0;
+    upstream.endDispatchCalls = 0;
+    upstream.abortDispatchCalls = 0;
+    upstream.runtimeIdentityCalls = 0;
+    upstream.options.runtimeIdentityInvalidAtCall = 2;
+    const applyBinding = beginMockAuthenticatedScope(upstream);
+    await assert.rejects(
+      engine.apply(planned.operationId, planned.planHash),
+      /runtime identity/u,
+    );
+    assert.equal(upstream.runtimeIdentityCalls, 2);
+    assert.equal(upstream.applyAttempts, 0);
+    assert.equal(upstream.beginDispatchCalls, 1);
+    assert.equal(upstream.endDispatchCalls, 0);
+    assert.equal(upstream.abortDispatchCalls, 0);
+    endMockAuthenticatedScope(upstream, applyBinding);
+    assert.equal(upstream.endDispatchCalls, 1);
+
+    const failedProofJournal = await artifacts.loadOperation(
+      planned.operationId,
+    );
+    assert.equal(failedProofJournal.orphanedCallPossible, false);
+    assert.equal(failedProofJournal.runtimeRestartChallenge, undefined);
+    assert.equal(await engine.assertBridgeDispatchAllowed(), true);
   });
 });

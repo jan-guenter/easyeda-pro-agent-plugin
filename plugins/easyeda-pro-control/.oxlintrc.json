@@ -86,12 +86,15 @@
   "overrides": [
     {
       "files": [
+        "scripts/build-authenticated-bridge.ts",
         "scripts/build-server.ts",
         "scripts/checkpoint.ts",
         "scripts/doctor.ts",
+        "scripts/provision-bridge-token.ts",
         "scripts/reviewed-compatibility.ts",
         "scripts/validate-plugin.ts",
-        "server/src/index.ts"
+        "server/src/index.ts",
+        "server/src/upstream-supervisor.ts"
       ],
       "rules": {
         // These files are private ESM executables, never require()-loaded modules.
@@ -100,12 +103,25 @@
       }
     },
     {
+      "files": ["server/src/upstream-supervisor.ts"],
+      "rules": {
+        // A dead facade revokes the supervised process's bridge authority.
+        // Immediate exit is required because long-lived sockets defeat exitCode.
+        "unicorn/no-process-exit": "off"
+      }
+    },
+    {
       "files": [
+        "scripts/build-authenticated-bridge.ts",
         "scripts/doctor.ts",
         "scripts/validate-plugin.ts",
+        "server/src/control-root.ts",
         "server/src/core.ts",
         "server/src/index.ts",
         "server/src/lease.ts",
+        "server/src/upstream-bootstrap.ts",
+        "server/src/upstream-supervisor.ts",
+        "server/tests/bridge-auth.test.ts",
         "server/tests/checkpoint.test.ts",
         "server/tests/engine.test.ts"
       ],
@@ -116,7 +132,19 @@
       }
     },
     {
-      "files": ["server/src/artifacts.ts", "server/src/index.ts"],
+      "files": [
+        "scripts/build-authenticated-bridge.ts",
+        "server/src/authenticated-bridge-build-identity.ts",
+        "server/src/artifacts.ts",
+        "server/src/checkpoint.ts",
+        "server/src/control-root.ts",
+        "server/src/index.ts",
+        "server/src/lease.ts",
+        "server/src/private-runtime-payload.ts",
+        "server/src/upstream-environment.ts",
+        "server/src/upstream-supervisor.ts",
+        "server/src/upstream-trust.ts"
+      ],
       "rules": {
         // File-mode masks and PNG checksums require exact bitwise arithmetic.
         "eslint/no-bitwise": "off"
@@ -135,6 +163,15 @@
       }
     },
     {
+      "files": ["server/src/upstream.ts"],
+      "rules": {
+        // This boundary composes the SDK transport, reviewed closure, strict
+        // environment, supervisor, and installed-runtime fingerprint in one file.
+        "import/max-dependencies": "off",
+        "eslint/max-classes-per-file": "off"
+      }
+    },
+    {
       "files": [
         "server/src/checkpoint.ts",
         "server/src/engine.ts",
@@ -150,8 +187,12 @@
     {
       "files": [
         "server/src/checkpoint.ts",
+        "server/src/authenticated-bridge-gateway.ts",
         "server/src/engine.ts",
-        "server/tests/lease.test.ts"
+        "server/src/sandboxed-stdio-client-transport.ts",
+        "server/tests/authenticated-bridge-gateway.test.ts",
+        "server/tests/lease.test.ts",
+        "server/tests/upstream-supervisor.test.ts"
       ],
       "rules": {
         // Event and subprocess APIs need explicit Promise bridges with bounded
@@ -211,5 +252,9 @@
     "denyWarnings": true,
     "reportUnusedDisableDirectives": "error"
   },
-  "ignorePatterns": ["node_modules/**", "server/dist/**"]
+  "ignorePatterns": [
+    "easyeda-bridge-extension/**",
+    "node_modules/**",
+    "server/dist/**"
+  ]
 }

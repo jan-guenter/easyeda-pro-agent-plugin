@@ -1,4 +1,4 @@
 interface:
   display_name: "EasyEDA Pro Control"
-  short_description: "Audit EasyEDA with durable evidence"
-  default_prompt: "Use $easyeda-pro-control to audit the active EasyEDA Pro design, capture durable evidence, export draft route context, or inspect recovery journals."
+  short_description: "Validate and inspect EasyEDA safely"
+  default_prompt: "Use $easyeda-pro-control to validate the EasyEDA bridge, collect bounded read evidence, or inspect local recovery artifacts without bypassing compatibility gates."

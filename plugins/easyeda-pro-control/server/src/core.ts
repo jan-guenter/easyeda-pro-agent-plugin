@@ -1,9 +1,11 @@
 import { basename, isAbsolute, join, relative, resolve } from "node:path";
 import { createHash, randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 
-export const CONTROL_VERSION = "0.2.0";
+export { assertSelfSoftCoreLimitZero } from "./soft-core-limit.ts";
+
+export const CONTROL_VERSION = "0.3.0";
 export const OPERATION_SCHEMA = "easyeda-pro-control.operation.v2";
 
 export type UnknownRecord = Record<string, unknown>;
@@ -48,10 +50,30 @@ export interface UpstreamLauncherFingerprint {
     fileCount: number;
     sha256: string;
   };
+  executionClosure: {
+    root: string;
+    directoryCount: number;
+    fileCount: number;
+    symlinkCount: number;
+    totalBytes: number;
+    sha256: string;
+  };
   dependencyLock: {
     type: string;
     path: string;
     sha256: string;
+  };
+  moduleGraph: {
+    schema: "easyeda-pro-control.module-graph.v1";
+    moduleCount: number;
+    edgeCount: number;
+    totalBytes: number;
+    sha256: string;
+  };
+  sandbox: {
+    command: string;
+    commandSha256: string;
+    version: string;
   };
   cwd: string;
 }
@@ -298,19 +320,21 @@ export async function controlImplementationFingerprint(): Promise<ControlImpleme
   const currentPath = import.meta.filename;
   const sourceDirectory = import.meta.dirname;
   const bundleMode = basename(currentPath) === "server.mjs";
-  const candidates = bundleMode
-    ? [currentPath]
-    : [
-        "artifacts.ts",
-        "checkpoint.ts",
-        "core.ts",
-        "engine.ts",
-        "exact-readers.ts",
-        "index.ts",
-        "lease.ts",
-        "runtime-scripts.ts",
-        "upstream.ts",
-      ].map((name) => join(sourceDirectory, name));
+  let candidates: string[];
+  if (bundleMode) {
+    candidates = ["server.mjs", "upstream-supervisor.mjs"].map((name) =>
+      join(sourceDirectory, name),
+    );
+  } else {
+    const sourceEntries = await readdir(sourceDirectory, {
+      withFileTypes: true,
+    });
+    candidates = sourceEntries
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".ts"))
+      .map((entry) => entry.name)
+      .toSorted()
+      .map((name) => join(sourceDirectory, name));
+  }
   const files: ImplementationFileFingerprint[] = [];
   for (const path of candidates) {
     const bytes = await readFile(path);
@@ -422,6 +446,21 @@ export function normalizeToolResult(result?: unknown): NormalizedToolResult {
   };
 }
 
+/**
+ * Exact-reader retries add volatile metadata at the result-envelope level.
+ * Remove only that envelope metadata from invariant hashes. Recursing by
+ * property name would erase legitimate design data when a nested object uses
+ * the same key.
+ */
+export function normalizeProofEnvelope(value: unknown): unknown {
+  if (!isRecord(value)) {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value).filter(([key]) => key !== "read_consistency"),
+  );
+}
+
 export function extractToolPayload(result: unknown): unknown {
   const normalized = normalizeToolResult(result);
   if (!normalized.ok) {
@@ -488,6 +527,64 @@ export function classifyTool(tool: unknown): ToolClassification {
     hasConfirmWrite,
     idempotent: annotations["idempotentHint"] === true,
   };
+}
+
+const REVIEWED_LOCAL_GENERIC_READ_NAMES = new Set([
+  "easyeda_board_dimensions",
+  "easyeda_board_features",
+  "easyeda_board_layers",
+  "easyeda_board_stackup",
+  "easyeda_bom_generate",
+  "easyeda_design_rules_lookup",
+  "easyeda_pcb_components",
+  "easyeda_pcb_constraint_check",
+  "easyeda_pcb_constraint_report",
+  "easyeda_pcb_production_review",
+  "easyeda_pcb_tracks",
+  "easyeda_pcb_vias",
+  "easyeda_power_tree_analyze",
+  "easyeda_rule_check_summary",
+  "easyeda_schematic_check_collisions",
+  "easyeda_schematic_check_placement",
+  "easyeda_schematic_component_pins",
+  "easyeda_schematic_components",
+  "easyeda_schematic_connectivity_fingerprint",
+  "easyeda_schematic_net_detail",
+  "easyeda_schematic_nets",
+  "easyeda_schematic_plan_layout",
+  "easyeda_schematic_plan_safe_region",
+  "easyeda_schematic_primitive_bounds",
+  "easyeda_schematic_sheet_info",
+  "easyeda_schematic_validate_netlist",
+  "easyeda_schematic_wires",
+]);
+const LIVE_PCB_CONSTRAINT_READ_NAMES = new Set([
+  "easyeda_pcb_constraint_check",
+  "easyeda_pcb_constraint_report",
+  "easyeda_pcb_production_review",
+]);
+
+/**
+ * Generic reads are admitted by a reviewed local-only allowlist, not by
+ * upstream annotations. Supplier, catalog-ingestion, quote, simulation, and
+ * open-world tools need a separate consent and destination-aware facade.
+ */
+export function isReviewedLocalGenericRead(name: string): boolean {
+  return REVIEWED_LOCAL_GENERIC_READ_NAMES.has(name);
+}
+
+export function assertReviewedLocalGenericReadArguments(
+  name: string,
+  args: Readonly<Record<string, unknown>>,
+): void {
+  if (
+    LIVE_PCB_CONSTRAINT_READ_NAMES.has(name) &&
+    Object.hasOwn(args, "boardData")
+  ) {
+    throw new Error(
+      `${name} arguments.boardData is prohibited by the generic facade; PCB constraint evidence must be derived from the proven live board.`,
+    );
+  }
 }
 
 export function filterTools(
@@ -665,6 +762,7 @@ type FingerprintRequirementKind =
   | "string"
   | "sha256"
   | "positive-integer"
+  | "nonnegative-integer"
   | "nonempty-string-array"
   | "nonempty-array"
   | "loader-status"
@@ -690,9 +788,26 @@ const EXPECTED_FINGERPRINT_REQUIREMENTS: readonly (readonly [
   ["/upstreamLauncher/implementationTree/root", "string"],
   ["/upstreamLauncher/implementationTree/sha256", "sha256"],
   ["/upstreamLauncher/implementationTree/fileCount", "positive-integer"],
+  ["/upstreamLauncher/executionClosure/root", "string"],
+  ["/upstreamLauncher/executionClosure/directoryCount", "positive-integer"],
+  ["/upstreamLauncher/executionClosure/fileCount", "positive-integer"],
+  [
+    "/upstreamLauncher/executionClosure/symlinkCount",
+    "nonnegative-integer",
+  ],
+  ["/upstreamLauncher/executionClosure/totalBytes", "positive-integer"],
+  ["/upstreamLauncher/executionClosure/sha256", "sha256"],
   ["/upstreamLauncher/dependencyLock/type", "string"],
   ["/upstreamLauncher/dependencyLock/path", "string"],
   ["/upstreamLauncher/dependencyLock/sha256", "sha256"],
+  ["/upstreamLauncher/moduleGraph/schema", "string"],
+  ["/upstreamLauncher/moduleGraph/moduleCount", "positive-integer"],
+  ["/upstreamLauncher/moduleGraph/edgeCount", "nonnegative-integer"],
+  ["/upstreamLauncher/moduleGraph/totalBytes", "positive-integer"],
+  ["/upstreamLauncher/moduleGraph/sha256", "sha256"],
+  ["/upstreamLauncher/sandbox/command", "string"],
+  ["/upstreamLauncher/sandbox/commandSha256", "sha256"],
+  ["/upstreamLauncher/sandbox/version", "string"],
   ["/upstreamImplementationDrift", "false"],
   ["/toolCatalogSha256", "sha256"],
   ["/toolCount", "positive-integer"],
@@ -741,6 +856,9 @@ function fingerprintRequirementMissing(
   }
   if (kind === "positive-integer") {
     return !Number.isInteger(value) || Number(value) < 1;
+  }
+  if (kind === "nonnegative-integer") {
+    return !Number.isInteger(value) || Number(value) < 0;
   }
   if (kind === "nonempty-string-array") {
     return (
@@ -887,6 +1005,15 @@ function manifestPositiveInteger(value: unknown, pointer: string): number {
   return Number(value);
 }
 
+function manifestNonnegativeInteger(value: unknown, pointer: string): number {
+  if (!Number.isInteger(value) || Number(value) < 0) {
+    throw new Error(
+      `Reviewed compatibility manifest ${pointer} must be a nonnegative integer.`,
+    );
+  }
+  return Number(value);
+}
+
 function assertFacadeManifest(
   value: unknown,
   pointer: string,
@@ -997,7 +1124,10 @@ function assertReviewedCompatibilityManifest(
     "entrypoint",
     "entrypointSha256",
     "implementationTree",
+    "executionClosure",
     "dependencyLock",
+    "moduleGraph",
+    "sandbox",
     "cwd",
   ]);
   for (const key of ["command", "entrypoint", "cwd"]) {
@@ -1045,6 +1175,47 @@ function assertReviewedCompatibilityManifest(
     implementationTree["sha256"],
     "/upstream/launcher/implementationTree/sha256",
   );
+  const executionClosure = manifestObject(
+    launcher["executionClosure"],
+    "/upstream/launcher/executionClosure",
+    [
+      "root",
+      "directoryCount",
+      "fileCount",
+      "symlinkCount",
+      "totalBytes",
+      "sha256",
+    ],
+  );
+  const executionClosureRoot = manifestString(
+    executionClosure["root"],
+    "/upstream/launcher/executionClosure/root",
+  );
+  if (!isAbsolute(executionClosureRoot)) {
+    throw new Error(
+      "Reviewed compatibility manifest execution-closure root must be absolute.",
+    );
+  }
+  manifestPositiveInteger(
+    executionClosure["directoryCount"],
+    "/upstream/launcher/executionClosure/directoryCount",
+  );
+  manifestPositiveInteger(
+    executionClosure["fileCount"],
+    "/upstream/launcher/executionClosure/fileCount",
+  );
+  manifestNonnegativeInteger(
+    executionClosure["symlinkCount"],
+    "/upstream/launcher/executionClosure/symlinkCount",
+  );
+  manifestPositiveInteger(
+    executionClosure["totalBytes"],
+    "/upstream/launcher/executionClosure/totalBytes",
+  );
+  manifestSha256(
+    executionClosure["sha256"],
+    "/upstream/launcher/executionClosure/sha256",
+  );
   const dependencyLock = manifestObject(
     launcher["dependencyLock"],
     "/upstream/launcher/dependencyLock",
@@ -1067,6 +1238,56 @@ function assertReviewedCompatibilityManifest(
     dependencyLock["sha256"],
     "/upstream/launcher/dependencyLock/sha256",
   );
+  const moduleGraph = manifestObject(
+    launcher["moduleGraph"],
+    "/upstream/launcher/moduleGraph",
+    ["schema", "moduleCount", "edgeCount", "totalBytes", "sha256"],
+  );
+  if (
+    manifestString(
+      moduleGraph["schema"],
+      "/upstream/launcher/moduleGraph/schema",
+    ) !== "easyeda-pro-control.module-graph.v1"
+  ) {
+    throw new Error(
+      "Reviewed compatibility manifest module-graph schema is unsupported.",
+    );
+  }
+  manifestPositiveInteger(
+    moduleGraph["moduleCount"],
+    "/upstream/launcher/moduleGraph/moduleCount",
+  );
+  manifestNonnegativeInteger(
+    moduleGraph["edgeCount"],
+    "/upstream/launcher/moduleGraph/edgeCount",
+  );
+  manifestPositiveInteger(
+    moduleGraph["totalBytes"],
+    "/upstream/launcher/moduleGraph/totalBytes",
+  );
+  manifestSha256(
+    moduleGraph["sha256"],
+    "/upstream/launcher/moduleGraph/sha256",
+  );
+  const sandbox = manifestObject(
+    launcher["sandbox"],
+    "/upstream/launcher/sandbox",
+    ["command", "commandSha256", "version"],
+  );
+  const sandboxCommand = manifestString(
+    sandbox["command"],
+    "/upstream/launcher/sandbox/command",
+  );
+  if (!isAbsolute(sandboxCommand)) {
+    throw new Error(
+      "Reviewed compatibility manifest sandbox command must be absolute.",
+    );
+  }
+  manifestSha256(
+    sandbox["commandSha256"],
+    "/upstream/launcher/sandbox/commandSha256",
+  );
+  manifestString(sandbox["version"], "/upstream/launcher/sandbox/version");
   const toolCatalog = manifestObject(
     upstream["toolCatalog"],
     "/upstream/toolCatalog",

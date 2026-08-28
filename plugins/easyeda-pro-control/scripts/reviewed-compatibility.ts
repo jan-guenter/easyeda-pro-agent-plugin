@@ -15,7 +15,10 @@ const compatibilityManifestSchema = z.looseObject({
 
 const pluginRoot = resolve(import.meta.dirname, "..");
 const manifestPath = join(pluginRoot, "reviewed-compatibility.json");
-const bundlePath = join(pluginRoot, "server", "dist", "server.mjs");
+const bundlePaths = [
+  join(pluginRoot, "server", "dist", "server.mjs"),
+  join(pluginRoot, "server", "dist", "upstream-supervisor.mjs"),
+];
 const mode = process.argv[2];
 if (mode !== "--check" && mode !== "--write") {
   throw new Error("Usage: reviewed-compatibility.ts --check|--write");
@@ -36,22 +39,30 @@ const sourceProjection = {
     sha256,
   })),
 };
-const bundleBytes = await readFile(bundlePath);
-const bundleFileSha256 = createHash("sha256").update(bundleBytes).digest("hex");
+const bundleFiles = [];
+for (const bundlePath of bundlePaths) {
+  const bytes = await readFile(bundlePath);
+  bundleFiles.push({
+    relativePath: bundlePath.slice(bundlePath.lastIndexOf("/") + 1),
+    bytes: bytes.length,
+    sha256: createHash("sha256").update(bytes).digest("hex"),
+  });
+}
+bundleFiles.sort((left, right) =>
+  left.relativePath.localeCompare(right.relativePath),
+);
+const bundleComposite = bundleFiles
+  .map(
+    (file) =>
+      `${file.relativePath}\0${file.bytes}\0${file.sha256}\n`,
+  )
+  .join("");
 const bundleProjection = {
   version: source.version,
   operationSchema: source.operationSchema,
-  sha256: createHash("sha256")
-    .update(`server.mjs\0${bundleBytes.length}\0${bundleFileSha256}\n`)
-    .digest("hex"),
-  fileCount: 1,
-  files: [
-    {
-      relativePath: "server.mjs",
-      bytes: bundleBytes.length,
-      sha256: bundleFileSha256,
-    },
-  ],
+  sha256: createHash("sha256").update(bundleComposite).digest("hex"),
+  fileCount: bundleFiles.length,
+  files: bundleFiles,
 };
 
 if (mode === "--check") {

@@ -15,12 +15,28 @@ concurrency:
 
 jobs:
   test-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
 
     steps:
+      - name: Disable core dumps for the entire CI job
+        shell: bash
+        run: |
+          ulimit -S -c 0
+          ulimit -H -c 0
+          sudo prlimit --pid "${PPID}" --core=0:0
+          test "$(ulimit -S -c)" = "0"
+          test "$(ulimit -H -c)" = "0"
+          read -r parent_core_soft parent_core_hard < <(
+            prlimit --pid "${PPID}" --core --noheadings --output SOFT,HARD
+          )
+          test "${parent_core_soft}" = "0"
+          test "${parent_core_hard}" = "0"
+
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js 24
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -29,16 +45,86 @@ jobs:
           cache: npm
           cache-dependency-path: plugins/easyeda-pro-control/package-lock.json
 
-      - name: Install SQLite CLI
-        run: sudo apt-get update && sudo apt-get install --yes sqlite3
+      - name: Verify inherited core limit and exact Node/npm toolchain
+        working-directory: plugins/easyeda-pro-control
+        shell: bash
+        run: |
+          test "$(ulimit -S -c)" = "0"
+          test "$(ulimit -H -c)" = "0"
+          test "$(node --version)" = "v24.18.0"
+          test "$(npm --version)" = "11.16.0"
+          # Keep the JavaScript literal opaque to Bash.
+          # shellcheck disable=SC2016
+          node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            const row = readFileSync("/proc/self/limits", "utf8")
+              .split("\n")
+              .find((line) => line.startsWith("Max core file size"));
+            if (!row || !/^Max core file size\s+0\s+0\s+bytes\s*$/.test(row)) {
+              throw new Error(`Node did not inherit zero soft and hard core limits: ${String(row)}`);
+            }
+          '
+
+      - name: Install SQLite CLI and build reviewed Bubblewrap 0.11.2
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes build-essential git libcap-dev libcap2-bin libselinux1-dev meson ninja-build pkg-config sqlite3
+          bwrap_commit="1b80120ef26a28e065e67f89bfef873f13bdd317"
+          bwrap_source="$(mktemp -d)"
+          git -C "${bwrap_source}" init --quiet
+          git -C "${bwrap_source}" remote add origin https://github.com/containers/bubblewrap.git
+          git -C "${bwrap_source}" fetch --depth=1 --no-tags origin "${bwrap_commit}"
+          git -C "${bwrap_source}" checkout --quiet --detach FETCH_HEAD
+          test "$(git -C "${bwrap_source}" rev-parse HEAD)" = "${bwrap_commit}"
+          meson setup "${bwrap_source}/_build" "${bwrap_source}" \
+            -Dsupport_setuid=false \
+            -Dtests=false \
+            -Dman=disabled \
+            -Dbash_completion=disabled \
+            -Dzsh_completion=disabled
+          meson compile -C "${bwrap_source}/_build"
+          sudo install -o root -g root -m 0755 "${bwrap_source}/_build/bwrap" /usr/sbin/bwrap
+          test ! -L /usr/sbin/bwrap
+          test "$(/usr/sbin/bwrap --version)" = "bubblewrap 0.11.2"
+          test "$(stat -c '%a:%u:%g' /usr/sbin/bwrap)" = "755:0:0"
+          test -z "$(getcap -n /usr/sbin/bwrap)"
+          bwrap_help="$(/usr/sbin/bwrap --help)"
+          for option in --bind-fd --ro-bind-data --ro-bind-fd --json-status-fd --block-fd --disable-userns; do
+            grep --fixed-strings -- "${option} " <<<"${bwrap_help}"
+          done
+          if sysctl -N kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
 
       - name: Install dependencies
         working-directory: plugins/easyeda-pro-control
-        run: npm ci
+        run: |
+          test "$(npm --version)" = "11.16.0"
+          npm ci
+
+      - name: Audit runtime and build dependencies
+        working-directory: plugins/easyeda-pro-control
+        run: |
+          npm ls --all
+          npm audit signatures
+          npm audit --audit-level=high
 
       - name: Type-check TypeScript
         working-directory: plugins/easyeda-pro-control
         run: npm run typecheck
+
+      - name: Type-check authenticated bridge source
+        working-directory: plugins/easyeda-pro-control
+        run: npm run bridge:typecheck
+
+      - name: Lint authenticated bridge source
+        working-directory: plugins/easyeda-pro-control
+        run: npm run bridge:lint
+
+      - name: Test authenticated bridge source
+        working-directory: plugins/easyeda-pro-control
+        run: npm run bridge:test
 
       - name: Run strict type-aware lint
         working-directory: plugins/easyeda-pro-control
@@ -48,28 +134,90 @@ jobs:
         working-directory: plugins/easyeda-pro-control
         run: npm run build
 
+      - name: Build reproducible authenticated bridge fixture
+        working-directory: plugins/easyeda-pro-control
+        shell: bash
+        run: |
+          ulimit -c 0
+          test "$(ulimit -c)" = "0"
+          bridge_fixture_dir="$(mktemp -d)"
+          bridge_token_path="${bridge_fixture_dir}/bridge-token"
+          npm run bridge:provision -- --token-file "${bridge_token_path}"
+          first_build_json="$(npm run --silent bridge:build -- --token-file "${bridge_token_path}" --output "${bridge_fixture_dir}/first.eext")"
+          second_build_json="$(npm run --silent bridge:build -- --token-file "${bridge_token_path}" --output "${bridge_fixture_dir}/second.eext")"
+          first_output_path="$(node -e 'const fs = require("node:fs"); const built = JSON.parse(process.argv[1]); const fixed = JSON.parse(fs.readFileSync(process.argv[2], "utf8")); if (built.outputPath !== fixed.outputPath) throw new Error("first fixed receipt mismatch"); process.stdout.write(built.outputPath);' "${first_build_json}" "${bridge_fixture_dir}/first.eext.receipt.json")"
+          second_output_path="$(node -e 'const fs = require("node:fs"); const built = JSON.parse(process.argv[1]); const fixed = JSON.parse(fs.readFileSync(process.argv[2], "utf8")); if (built.outputPath !== fixed.outputPath) throw new Error("second fixed receipt mismatch"); process.stdout.write(built.outputPath);' "${second_build_json}" "${bridge_fixture_dir}/second.eext.receipt.json")"
+          test -f "${first_output_path}"
+          test -f "${second_output_path}"
+          cmp "${first_output_path}" "${second_output_path}"
+
       - name: Check reviewed facade fingerprint
         working-directory: plugins/easyeda-pro-control
         run: npm run compatibility:check
 
       - name: Run tests
         working-directory: plugins/easyeda-pro-control
-        run: npm test
+        shell: bash
+        run: |
+          ulimit -c 0
+          test "$(ulimit -c)" = "0"
+          npm test
 
       - name: Run offline plugin checks
         working-directory: plugins/easyeda-pro-control
-        run: npm run validate
+        shell: bash
+        run: |
+          ulimit -c 0
+          test "$(ulimit -c)" = "0"
+          npm run validate
 
       - name: Validate marketplace repository
         run: node scripts/validate-repository.mjs
 
+      - name: Run official Codex validators when installed
+        shell: bash
+        run: |
+          validator_found=false
+          for codex_root in "${CODEX_HOME:-}" "${HOME}/.codex"; do
+            if [[ -z "${codex_root}" ]]; then
+              continue
+            fi
+            plugin_validator="${codex_root}/skills/.system/plugin-creator/scripts/validate_plugin.py"
+            skill_validator="${codex_root}/skills/.system/skill-creator/scripts/quick_validate.py"
+            if [[ -f "${plugin_validator}" ]]; then
+              python3 "${plugin_validator}" plugins/easyeda-pro-control
+              validator_found=true
+            fi
+            if [[ -f "${skill_validator}" ]]; then
+              python3 "${skill_validator}" plugins/easyeda-pro-control/skills/easyeda-pro-control
+              validator_found=true
+            fi
+          done
+          if [[ "${validator_found}" == false ]]; then
+            echo "Official Codex validators are not installed on this runner; repository validators remain mandatory."
+          fi
+
       - name: Require reproducible committed bundle
-        run: git diff --exit-code -- plugins/easyeda-pro-control/server/dist/server.mjs
+        run: |
+          git diff --exit-code -- plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs
+          test -z "$(git status --porcelain --untracked-files=all -- plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs)"
 
       - name: Package plugin artifact
-        run: >-
-          git archive --format=tar.gz --output=easyeda-pro-control.tar.gz HEAD
-          plugins/easyeda-pro-control LICENSE THIRD_PARTY_NOTICES.md
+        shell: bash
+        run: |
+          git archive \
+            --format=tar.gz \
+            --prefix=easyeda-pro-control/ \
+            --output=easyeda-pro-control.tar.gz \
+            HEAD:plugins/easyeda-pro-control
+          git ls-tree -r --name-only HEAD:plugins/easyeda-pro-control \
+            | LC_ALL=C sort > expected-plugin-files.txt
+          tar -tzf easyeda-pro-control.tar.gz \
+            | sed -n 's#^easyeda-pro-control/##p' \
+            | sed '/^$/d' \
+            | sed '\#/$#d' \
+            | LC_ALL=C sort > archived-plugin-files.txt
+          cmp expected-plugin-files.txt archived-plugin-files.txt
 
       - name: Upload plugin artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

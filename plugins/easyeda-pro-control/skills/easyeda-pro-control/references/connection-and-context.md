@@ -9,13 +9,22 @@ Start with `easyeda_control_status`. Require all of the following before a desig
 - the EasyEDA bridge extension is connected to that child;
 - exactly one server owns the extension-facing bridge;
 - the application, MCP, and extension versions are present;
-- the stable fingerprint pins the upstream command and the implementation captured before child launch, entrypoint, complete built module tree, detected dependency lockfile type/path/hash, tool catalog, bridge method registry, and EasyEDA/extension versions;
+- the stable fingerprint pins the exact Node executable, entrypoint, complete built module tree, and the full upstream execution closure captured before launch: `dist`, `node_modules`, `package.json`, dependency lockfile, and in-tree symlink mappings;
+- the authenticated extension and facade share an owner-only HMAC key used only for nonce challenge/response on the fixed extension-facing `127.0.0.1:49621` gateway; the raw key never crosses that socket, the extension does not scan adjacent ports or expose a remote relay, and the gateway forwards the private backend token to the separate facade-assigned private loopback listener only after the extension presents the exact index-build ID and credential epoch from the verified private archive receipt;
+- pre-authentication frames are parser-limited to 2 KiB, pending clients are bounded, and any HTTP `Origin` header is rejected. The reviewed EasyEDA `SYS_WebSocket` path is expected to omit `Origin`; do not substitute a browser or raw-WebSocket fallback if that assumption fails;
+- a session becomes active only after that exact bridge admission and the private backend's verified hello;
+- the facade creates a separate ephemeral backend token and forwards it only after Linux PID, process-start-time, and established-socket-inode ownership prove that the exact supervised child owns the backend connection; this proof is Linux-only and fails closed elsewhere;
+- the strict child environment disables runtime `.env` loading, inherited credentials, remote sourcing, telemetry, OAuth, HTTP service, and ordering;
+- the supervised upstream shares one process with its bridge-owning server and exits when facade stdio or parent identity disappears;
+- the tool catalog, bridge method registry, installed EasyEDA bundles, and EasyEDA/extension versions match the reviewed tuple;
 - the current upstream files still match that startup fingerprint (`upstreamImplementationDrift` is false);
 - no earlier incomplete write has an unresolved outcome.
 
 The status probe fingerprints the configured installed PCB implementation, public API entry, public API adapter, and public API declarations. A private plan additionally requires their versions and hashes, plus the application, dispatcher, extension, MCP, and Node versions, to match the reviewed compatibility baseline. Do not infer any bundle version from the application version.
 
 A listening port does not prove that EasyEDA connected to it. Do not start another MCP child to fix a stale bridge. Let the facade own the child. If EasyEDA needs a manual bridge reconnect, treat that as a visible application action, then repeat status and context checks.
+
+Every live design facade acquires an authenticated dispatch lease for the exact proxying renderer session before its first EasyEDA call. The lease stays active across runtime and context probes, the design read/capture/export, the post-context proof, and durable evidence publication. A replacement renderer cannot inherit the call even when it reports the same project, document, and tab IDs. Mutation and recovery phases reuse that same lease for their journal-bound dispatches and verification. A disconnected status call is a narrow read-only bootstrap diagnostic; context, reads, capture, export, checkpoints, mutation, and live recovery require an active authenticated session.
 
 ## Prove the active target
 
@@ -48,15 +57,15 @@ There is no proven public open-by-UUID path that handles every schematic-sheet s
 
 ## Discover and read
 
-Use `easyeda_control_exact_read` when a claim must be complete enough for mutation proof. The facade generates the source, checks exact project/document/type/tab at generated entry and after each call, validates an explicit payload shape, runs it twice, and rejects unequal samples. It cannot detect a user switching away and back while awaited reader calls execute. Keep the active tab unchanged for the entire read or guarded operation. Exact field coverage and limitations are listed in [capability-matrix.md](capability-matrix.md).
+Use `easyeda_control_exact_read` when a claim must be complete enough for mutation proof. The facade generates the source, checks exact project/document/type/tab at generated entry and after each call, validates an explicit payload shape, runs it twice, and rejects unequal samples. Both samples are bound to one authenticated renderer session. It still cannot detect a user switching away and back inside that same renderer while an awaited reader executes. Keep the active tab unchanged for the entire read or guarded operation. Exact field coverage and limitations are listed in [capability-matrix.md](capability-matrix.md).
 
-Use `easyeda_control_discover` to inspect upstream tool schemas. Use `easyeda_control_read` or `easyeda_control_read_batch` for bounded advisory queries. They bind available project/document/tab arguments, enforce editor-family compatibility, and compare context before and after dispatch. That does not prevent an asynchronous upstream handler from sampling a different tab between those checks, including a switch away and back. Generic reads may supplement an audit but cannot satisfy guarded mutation phases.
+Use `easyeda_control_discover` to inspect upstream tool schemas. During orphan-risk quarantine it returns a conservative facade-local snapshot of the reviewed 116 tool names and classifications, marks live schemas unavailable, and does not start or connect the upstream process. After recovery it uses the live catalog. Use `easyeda_control_read` or `easyeda_control_read_batch` for bounded advisory queries. They bind available project/document/tab arguments, enforce editor-family compatibility, and compare context before and after dispatch. The admitted PCB constraint readers must derive their board data from the proven live board; the facade rejects any caller-supplied `boardData` property. Context checks do not prevent an asynchronous upstream handler from sampling a different tab between those checks, including a switch away and back. Generic reads may supplement an audit but cannot satisfy guarded mutation phases.
 
 The facade excludes upstream tools that are labeled read-only but mutate visible UI state. In the pinned upstream build, `easyeda_canvas_locate` changes the viewport and `easyeda_schematic_layout_qa` can capture with selection clearing by default; neither is admitted through generic reads. Use the guarded capture path for supported visual evidence.
 
 Every mutation phase must include the facade-owned exact readers required by the state machine, including exact all-component summary, detailed one-target state, PCB primitive inventory, and PCB rules. Health, catalog, guidance, transaction-status, fallback-empty, reduced-summary, and context-free calls are never design proof.
 
-For large output, choose `summary` or `receipt-only` and supply fresh result and receipt paths below the reported control data directory. The facade reserves both before dispatch and finalizes a failure receipt after an uncertain dispatched call. Use `easyeda_control_evidence_verify`, then page the managed result with `easyeda_control_artifact_read`.
+For large output, choose `summary` or `receipt-only` and supply fresh result and receipt paths below the reported control data directory. The facade reserves both before dispatch and finalizes a failure receipt after an uncertain dispatched call. If the facade process exits after publishing the result but before committing the receipt, call `easyeda_control_evidence_recover` with the same two paths. It reconstructs the reservation and never repeats the EasyEDA call. Then use `easyeda_control_evidence_verify` and page the managed result with `easyeda_control_artifact_read`.
 
 ## Raw execution
 

@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
 import {
+  link,
+  lstat,
   mkdir,
   mkdtemp,
   readFile,
+  readdir,
+  rename,
   rm,
   symlink,
+  unlink,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -22,12 +27,15 @@ import {
 import type {
   archiveCaptureEvidence,
   archiveExternalEvidence,
+  controlRootCapability,
   createOperation,
   ensureOperationStorage,
   listOperations,
   loadOperation,
   operationPath,
+  publishManagedAttachmentExclusive,
   readArtifact,
+  recoverPublishedEvidence,
   releaseEvidenceReservation,
   reserveEvidencePaths,
   updateOperation,
@@ -41,12 +49,15 @@ let dataDir = "";
 interface ArtifactsModule {
   archiveCaptureEvidence: typeof archiveCaptureEvidence;
   archiveExternalEvidence: typeof archiveExternalEvidence;
+  controlRootCapability: typeof controlRootCapability;
   createOperation: typeof createOperation;
   ensureOperationStorage: typeof ensureOperationStorage;
   listOperations: typeof listOperations;
   loadOperation: typeof loadOperation;
   operationPath: typeof operationPath;
+  publishManagedAttachmentExclusive: typeof publishManagedAttachmentExclusive;
   readArtifact: typeof readArtifact;
+  recoverPublishedEvidence: typeof recoverPublishedEvidence;
   releaseEvidenceReservation: typeof releaseEvidenceReservation;
   reserveEvidencePaths: typeof reserveEvidencePaths;
   updateOperation: typeof updateOperation;
@@ -59,12 +70,15 @@ let artifacts: ArtifactsModule;
 const requiredArtifactFunctions = [
   "archiveCaptureEvidence",
   "archiveExternalEvidence",
+  "controlRootCapability",
   "createOperation",
   "ensureOperationStorage",
   "listOperations",
   "loadOperation",
   "operationPath",
+  "publishManagedAttachmentExclusive",
   "readArtifact",
+  "recoverPublishedEvidence",
   "releaseEvidenceReservation",
   "reserveEvidencePaths",
   "updateOperation",
@@ -83,6 +97,19 @@ function parseJsonRecord(text: string): UnknownRecord {
   const parsed: unknown = JSON.parse(text);
   assert.ok(isRecord(parsed), "Expected fixture JSON to contain an object.");
   return parsed;
+}
+
+function reservationBinding(reservation: {
+  readonly token: string;
+  readonly resultPath: string;
+  readonly receiptPath: string;
+}): UnknownRecord {
+  return {
+    schema: "easyeda-pro-control.evidence-reservation-binding.v1",
+    tokenSha256: sha256Text(reservation.token),
+    resultPath: reservation.resultPath,
+    receiptPath: reservation.receiptPath,
+  };
 }
 
 function isUnknownArray(value: unknown): value is unknown[] {
@@ -115,7 +142,7 @@ function fixturePlan(name = "Artifact test plan"): UnknownRecord {
 }
 
 before(async () => {
-  dataDir = await mkdtemp(join(tmpdir(), "easyeda-control-artifacts-"));
+  dataDir = await mkdtemp(join("/tmp", "easyeda-control-artifacts-"));
   process.env["EASYEDA_CONTROL_DATA_DIR"] = dataDir;
   const loaded: unknown = await import(
     `../src/artifacts.ts?test-dir=${encodeURIComponent(dataDir)}`
@@ -130,6 +157,8 @@ before(async () => {
 after(async () => {
   delete process.env["EASYEDA_CONTROL_DATA_DIR"];
   if (dataDir) {
+    const controlRoot = await artifacts.controlRootCapability();
+    await controlRoot.close();
     await rm(dataDir, { recursive: true, force: true });
   }
 });
@@ -174,7 +203,10 @@ void describe("external evidence archives", () => {
       if (!isErrnoException(error) || error.code !== "ENOENT") {
         throw error;
       }
-      await mkdir(join(dataDir, "exclusive"), { recursive: true });
+      await mkdir(join(dataDir, "exclusive"), {
+        mode: 0o700,
+        recursive: true,
+      });
       await writeFile(receiptPath, "preexisting\n", {
         encoding: "utf8",
         flag: "wx",
@@ -202,6 +234,7 @@ void describe("external evidence archives", () => {
       receiptPath: join(dataDir, "reserved", "read.receipt.json"),
     };
     const reservation = await artifacts.reserveEvidencePaths(evidence);
+    assert.ok(Number.isFinite(Date.parse(reservation.createdAt)));
 
     await assert.rejects(
       artifacts.reserveEvidencePaths(evidence),
@@ -225,6 +258,180 @@ void describe("external evidence archives", () => {
     assert.equal(tampered.ok, false);
     assert.equal(tampered.receiptHashOk, true);
     assert.equal(tampered.resultHashOk, false);
+  });
+
+  void test("resumes and repeats evidence finalization without changing committed bytes", async () => {
+    const evidence = {
+      resultPath: join(dataDir, "resumable", "read.result.json"),
+      receiptPath: join(dataDir, "resumable", "read.receipt.json"),
+    };
+    const reservation = await artifacts.reserveEvidencePaths(evidence);
+    const request = { toolName: "easyeda_read_state" };
+    const result = { state: "stable" };
+    const expectedResult = `${JSON.stringify({
+      schema: "easyeda-pro-control.tool-result.v1",
+      createdAt: reservation.createdAt,
+      reservation: reservationBinding(reservation),
+      request,
+      result,
+    })}\n`;
+
+    // Simulate a crash after result publication but before receipt publication.
+    await writeFile(evidence.resultPath, expectedResult, "utf8");
+    const first = await artifacts.archiveExternalEvidence({
+      reservation,
+      request,
+      result,
+    });
+    assert.ok(first);
+    const firstReceipt = await readFile(evidence.receiptPath, "utf8");
+    assert.equal(await readFile(evidence.resultPath, "utf8"), expectedResult);
+
+    const second = await artifacts.archiveExternalEvidence({
+      reservation,
+      request,
+      result,
+    });
+    assert.deepEqual(second, first);
+    assert.equal(await readFile(evidence.resultPath, "utf8"), expectedResult);
+    assert.equal(await readFile(evidence.receiptPath, "utf8"), firstReceipt);
+    const verification = await artifacts.verifyEvidenceReceipt(
+      evidence.receiptPath,
+    );
+    assert.equal(verification.ok, true);
+  });
+
+  void test("reconstructs and commits a published result after process state is lost", async () => {
+    const evidence = {
+      resultPath: join(dataDir, "crash-recovery", "read.result.json"),
+      receiptPath: join(dataDir, "crash-recovery", "read.receipt.json"),
+    };
+    const reservation = await artifacts.reserveEvidencePaths(evidence);
+    const request = { toolName: "easyeda_read_state" };
+    const result = { state: "durably-published" };
+    const publishedResult = `${JSON.stringify({
+      schema: "easyeda-pro-control.tool-result.v1",
+      createdAt: reservation.createdAt,
+      reservation: reservationBinding(reservation),
+      request,
+      result,
+    })}\n`;
+    await writeFile(evidence.resultPath, publishedResult, "utf8");
+
+    const verification = await artifacts.recoverPublishedEvidence(evidence);
+    assert.equal(verification.ok, true);
+    assert.equal(await readFile(evidence.resultPath, "utf8"), publishedResult);
+    const receipt = parseJsonRecord(
+      await readFile(evidence.receiptPath, "utf8"),
+    );
+    assert.equal(
+      receipt["schema"],
+      "easyeda-pro-control.tool-receipt.v1",
+    );
+    assert.equal(receipt["resultSha256"], sha256Text(publishedResult));
+  });
+
+  void test("rejects a published result copied from a different reservation", async () => {
+    const firstEvidence = {
+      resultPath: join(dataDir, "cross-pair", "first.result.json"),
+      receiptPath: join(dataDir, "cross-pair", "first.receipt.json"),
+    };
+    const secondEvidence = {
+      resultPath: join(dataDir, "cross-pair", "second.result.json"),
+      receiptPath: join(dataDir, "cross-pair", "second.receipt.json"),
+    };
+    const firstReservation = await artifacts.reserveEvidencePaths(
+      firstEvidence,
+    );
+    const secondReservation = await artifacts.reserveEvidencePaths(
+      secondEvidence,
+    );
+    await artifacts.archiveExternalEvidence({
+      reservation: firstReservation,
+      request: { toolName: "easyeda_read_state" },
+      result: { state: "first" },
+    });
+    const copied = parseJsonRecord(
+      await readFile(firstEvidence.resultPath, "utf8"),
+    );
+    copied["createdAt"] = secondReservation.createdAt;
+    await writeFile(
+      secondEvidence.resultPath,
+      `${JSON.stringify(copied)}\n`,
+      "utf8",
+    );
+
+    await assert.rejects(
+      artifacts.recoverPublishedEvidence(secondEvidence),
+      /does not bind the recoverable reservation token and exact paths/u,
+    );
+  });
+
+  void test("rejects caller-supplied paths from different committed pairs", async () => {
+    const firstEvidence = {
+      resultPath: join(dataDir, "committed-cross-pair", "first.result.json"),
+      receiptPath: join(
+        dataDir,
+        "committed-cross-pair",
+        "first.receipt.json",
+      ),
+    };
+    const secondEvidence = {
+      resultPath: join(dataDir, "committed-cross-pair", "second.result.json"),
+      receiptPath: join(
+        dataDir,
+        "committed-cross-pair",
+        "second.receipt.json",
+      ),
+    };
+    await artifacts.archiveExternalEvidence({
+      evidence: firstEvidence,
+      request: { toolName: "easyeda_read_state" },
+      result: { state: "first" },
+    });
+    await artifacts.archiveExternalEvidence({
+      evidence: secondEvidence,
+      request: { toolName: "easyeda_read_state" },
+      result: { state: "second" },
+    });
+
+    await assert.rejects(
+      artifacts.recoverPublishedEvidence({
+        resultPath: firstEvidence.resultPath,
+        receiptPath: secondEvidence.receiptPath,
+      }),
+      /does not belong to the supplied result and receipt paths/u,
+    );
+  });
+
+  void test("rejects a committed receipt copied byte-for-byte to another path", async () => {
+    const evidence = {
+      resultPath: join(dataDir, "copied-receipt", "read.result.json"),
+      receiptPath: join(dataDir, "copied-receipt", "read.receipt.json"),
+    };
+    await artifacts.archiveExternalEvidence({
+      evidence,
+      request: { toolName: "easyeda_read_state" },
+      result: { state: "bound" },
+    });
+    const copiedReceiptPath = join(
+      dataDir,
+      "copied-receipt",
+      "copied.receipt.json",
+    );
+    await writeFile(copiedReceiptPath, await readFile(evidence.receiptPath));
+
+    await assert.rejects(
+      artifacts.verifyEvidenceReceipt(copiedReceiptPath),
+      /receipt path does not match the path opened/u,
+    );
+    await assert.rejects(
+      artifacts.recoverPublishedEvidence({
+        resultPath: evidence.resultPath,
+        receiptPath: copiedReceiptPath,
+      }),
+      /does not belong to the supplied result and receipt paths/u,
+    );
   });
 
   void test("refuses unmanaged evidence paths and reservation identity changes", async () => {
@@ -276,6 +483,16 @@ void describe("external evidence archives", () => {
       readFile(evidence.receiptPath),
       (error: unknown) => isErrnoException(error) && error.code === "ENOENT",
     );
+    await artifacts.releaseEvidenceReservation(reservation);
+
+    const partialEvidence = {
+      resultPath: join(dataDir, "released-partial", "result.json"),
+      receiptPath: join(dataDir, "released-partial", "receipt.json"),
+    };
+    const partial = await artifacts.reserveEvidencePaths(partialEvidence);
+    await unlink(partial.resultPath);
+    await artifacts.releaseEvidenceReservation(partial);
+    await artifacts.releaseEvidenceReservation(partial);
 
     const outside = await mkdtemp(
       join(tmpdir(), "easyeda-control-symlink-target-"),
@@ -315,6 +532,15 @@ void describe("external evidence archives", () => {
     const verifiedImage = verified.imageChecks[0];
     assert.ok(verifiedImage);
 
+    const repeated = await artifacts.archiveCaptureEvidence({
+      reservation,
+      request: { toolName: "easyeda_canvas_capture" },
+      payload: { width: 2, height: 1 },
+      images: [{ mimeType: "image/png", bytes: Buffer.from("fixture-png") }],
+      metadata: { projectUuid: "project-1" },
+    });
+    assert.deepEqual(repeated, archived);
+
     await writeFile(verifiedImage.path, "changed-image", "utf8");
     const changed = await artifacts.verifyEvidenceReceipt(archived.receiptPath);
     assert.equal(changed.ok, false);
@@ -323,9 +549,114 @@ void describe("external evidence archives", () => {
     assert.equal(changedImage.ok, false);
   });
 
+  void test("retains published capture images when receipt publication fails", async () => {
+    const evidence = {
+      resultPath: join(dataDir, "capture-recovery", "capture.result.json"),
+      receiptPath: join(dataDir, "capture-recovery", "capture.receipt.json"),
+    };
+    const reservation = await artifacts.reserveEvidencePaths(evidence);
+    const receiptMarker = await readFile(evidence.receiptPath, "utf8");
+    await writeFile(evidence.receiptPath, '{"changed":true}\n', "utf8");
+
+    await assert.rejects(
+      artifacts.archiveCaptureEvidence({
+        reservation,
+        request: { toolName: "easyeda_canvas_capture" },
+        payload: { width: 2, height: 1 },
+        images: [
+          { mimeType: "image/png", bytes: Buffer.from("recoverable-png") },
+        ],
+        metadata: { projectUuid: "project-recovery" },
+      }),
+      /reservation identity changed/u,
+    );
+
+    const published = parseJsonRecord(
+      await readFile(evidence.resultPath, "utf8"),
+    );
+    const result = published["result"];
+    assert.ok(isRecord(result));
+    const images = result["images"];
+    assert.ok(isUnknownArray(images));
+    const image = images[0];
+    assert.ok(isRecord(image));
+    assert.equal(
+      await readFile(String(image["path"]), "utf8"),
+      "recoverable-png",
+    );
+
+    await writeFile(evidence.receiptPath, receiptMarker, "utf8");
+    const recovered = await artifacts.recoverPublishedEvidence(evidence);
+    assert.equal(recovered.ok, true);
+  });
+
+  void test("does not redirect export bytes through a swapped symlink", async () => {
+    const parent = join(dataDir, "descriptor-bound-export");
+    const exportDirectory = join(parent, "export-swap-proof");
+    const movedDirectory = join(parent, "export-swap-proof-moved");
+    const outside = await mkdtemp(join(tmpdir(), "easyeda-export-swap-"));
+    await mkdir(exportDirectory, { mode: 0o700, recursive: true });
+    try {
+      await assert.rejects(
+        artifacts.publishManagedAttachmentExclusive(
+          join(exportDirectory, "board.dsn"),
+          "Descriptor-bound test export",
+          Buffer.from("bound-export-bytes"),
+          "export-artifact",
+          async () => {
+            await rename(exportDirectory, movedDirectory);
+            await symlink(outside, exportDirectory, "dir");
+          },
+        ),
+        /not a real directory/u,
+      );
+      await assert.rejects(readFile(join(outside, "board.dsn")), {
+        code: "ENOENT",
+      });
+      await assert.rejects(readFile(join(movedDirectory, "board.dsn")), {
+        code: "ENOENT",
+      });
+    } finally {
+      await rm(outside, { recursive: true, force: true });
+    }
+  });
+
+  void test("rejects a real-directory replacement after bound export publication", async () => {
+    const parent = join(dataDir, "post-publication-swap");
+    const exportDirectory = join(parent, "export-swap-proof");
+    const movedDirectory = join(parent, "export-swap-proof-moved");
+    const exportPath = join(exportDirectory, "board.dsn");
+    await mkdir(exportDirectory, { mode: 0o700, recursive: true });
+
+    await assert.rejects(
+      artifacts.publishManagedAttachmentExclusive(
+        exportPath,
+        "Post-publication swap export",
+        Buffer.from("generated-export-bytes"),
+        "export-artifact",
+        async () => {
+          await rename(exportDirectory, movedDirectory);
+          await mkdir(exportDirectory, { mode: 0o700 });
+          await writeFile(exportPath, "attacker-replacement-bytes", "utf8");
+        },
+      ),
+      /parent directory changed after bound publication/u,
+    );
+    assert.equal(
+      await readFile(exportPath, "utf8"),
+      "attacker-replacement-bytes",
+    );
+    await assert.rejects(readFile(join(movedDirectory, "board.dsn")), {
+      code: "ENOENT",
+    });
+  });
+
   void test("rehashes export attachments and detects later artifact tampering", async () => {
     const exportPath = join(dataDir, "exports", "board-gerbers.zip");
-    await mkdir(join(dataDir, "exports"), { recursive: true });
+    await mkdir(join(dataDir, "exports"), {
+      mode: 0o700,
+      recursive: true,
+    });
     await writeFile(exportPath, "fresh-gerber-archive", "utf8");
     const evidence = {
       resultPath: join(dataDir, "export-evidence", "result.json"),
@@ -379,7 +710,10 @@ void describe("external evidence archives", () => {
 
   void test("hashes a partially written export into dispatched-failure evidence", async () => {
     const exportPath = join(dataDir, "exports-after-failure", "partial.dsn");
-    await mkdir(join(dataDir, "exports-after-failure"), { recursive: true });
+    await mkdir(join(dataDir, "exports-after-failure"), {
+      mode: 0o700,
+      recursive: true,
+    });
     await writeFile(exportPath, "partial-export-bytes", "utf8");
     const evidence = {
       resultPath: join(dataDir, "failed-export-evidence", "result.json"),
@@ -640,5 +974,174 @@ void describe("bounded artifact reads", () => {
       artifacts.readArtifact(dataDir),
       /regular non-symlink file/u,
     );
+  });
+
+  void test("does not create missing parents while reading or verifying", async () => {
+    const missingReadParent = join(dataDir, "missing-read", "nested");
+    const missingReceiptParent = join(dataDir, "missing-receipt", "nested");
+
+    await assert.rejects(
+      artifacts.readArtifact(join(missingReadParent, "artifact.json")),
+      (error: unknown) => isErrnoException(error) && error.code === "ENOENT",
+    );
+    await assert.rejects(
+      artifacts.verifyEvidenceReceipt(
+        join(missingReceiptParent, "receipt.json"),
+      ),
+      (error: unknown) => isErrnoException(error) && error.code === "ENOENT",
+    );
+
+    await assert.rejects(lstat(missingReadParent), {
+      code: "ENOENT",
+    });
+    await assert.rejects(lstat(missingReceiptParent), {
+      code: "ENOENT",
+    });
+  });
+
+  void test("denies credentials, bridge builds, lease state, upstream-private data, and their hard-link aliases", async () => {
+    const tokenPath = join(dataDir, "bridge-token");
+    const bridgeBuildDirectory = join(dataDir, "bridge-build");
+    const bridgeBuildPaths = [
+      join(bridgeBuildDirectory, "authenticated.eext"),
+      join(bridgeBuildDirectory, "authenticated.eext.receipt.json"),
+      join(bridgeBuildDirectory, "sibling.txt"),
+    ];
+    const leasePath = join(dataDir, "facade.lock");
+    const upstreamPath = join(dataDir, "upstream", "private-state.json");
+    const exportDirectory = join(
+      dataDir,
+      "upstream",
+      "artifacts",
+      "facade-exports",
+      "export-fixture01",
+    );
+    const exportPath = join(exportDirectory, "board.dsn");
+    await writeFile(tokenPath, "bearer-secret\n", "utf8");
+    await mkdir(bridgeBuildDirectory, { mode: 0o700 });
+    for (const path of bridgeBuildPaths) {
+      await writeFile(path, "private-bridge-material\n", "utf8");
+    }
+    await writeFile(leasePath, '{"token":"lease-secret"}\n', "utf8");
+    await mkdir(join(dataDir, "upstream"), { mode: 0o700 });
+    await writeFile(upstreamPath, '{"private":true}\n', "utf8");
+    await mkdir(exportDirectory, { mode: 0o700, recursive: true });
+    await writeFile(exportPath, "public-export\n", "utf8");
+    const aliasDirectory = join(dataDir, "allowed-hard-link-aliases");
+    const tokenAlias = join(aliasDirectory, "token-copy.txt");
+    const buildAlias = join(aliasDirectory, "bridge-copy.eext");
+    await mkdir(aliasDirectory, { mode: 0o700 });
+    await link(tokenPath, tokenAlias);
+    await link(bridgeBuildPaths[0] ?? "", buildAlias);
+
+    for (const path of [
+      tokenPath,
+      ...bridgeBuildPaths,
+      leasePath,
+      upstreamPath,
+    ]) {
+      await assert.rejects(
+        artifacts.readArtifact(path),
+        /reserved for EasyEDA control credentials or process state/u,
+      );
+    }
+    await assert.rejects(
+      artifacts.reserveEvidencePaths({
+        resultPath: tokenPath,
+        receiptPath: join(dataDir, "token.receipt.json"),
+      }),
+      /reserved for EasyEDA control credentials or process state/u,
+    );
+    await assert.rejects(
+      artifacts.reserveEvidencePaths({
+        resultPath: bridgeBuildPaths[0] ?? "",
+        receiptPath: join(dataDir, "bridge-build-result.receipt.json"),
+      }),
+      /reserved for EasyEDA control credentials or process state/u,
+    );
+    await assert.rejects(
+      artifacts.reserveEvidencePaths({
+        resultPath: join(dataDir, "bridge-build-receipt.result.json"),
+        receiptPath: bridgeBuildPaths[1] ?? "",
+      }),
+      /reserved for EasyEDA control credentials or process state/u,
+    );
+    for (const alias of [tokenAlias, buildAlias]) {
+      await assert.rejects(
+        artifacts.readArtifact(alias),
+        /current-user-owned single-link regular file/u,
+      );
+    }
+    const exported = await artifacts.readArtifact(exportPath);
+    assert.equal(exported.text, "public-export\n");
+  });
+});
+
+void describe("control-root lifetime binding", { concurrency: false }, () => {
+  void test("rejects a post-validation control-root replacement without publishing into either directory", async () => {
+    const parent = await mkdtemp(
+      join("/tmp", "easyeda-control-artifact-root-swap-"),
+    );
+    const root = join(parent, "control");
+    const movedRoot = join(parent, "control-moved");
+    const previousRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
+    await mkdir(root, { mode: 0o700 });
+    process.env["EASYEDA_CONTROL_DATA_DIR"] = root;
+    let swappedArtifacts: ArtifactsModule | undefined;
+    try {
+      const loaded: unknown = await import(
+        `../src/artifacts.ts?root-swap=${encodeURIComponent(root)}`
+      );
+      assert.ok(isArtifactsModule(loaded));
+      swappedArtifacts = loaded;
+      await swappedArtifacts.controlRootCapability();
+      await rename(root, movedRoot);
+      await mkdir(root, { mode: 0o700 });
+
+      await assert.rejects(
+        swappedArtifacts.reserveEvidencePaths({
+          resultPath: join(root, "evidence", "result.json"),
+          receiptPath: join(root, "evidence", "receipt.json"),
+        }),
+        /control-root pathname changed/u,
+      );
+      assert.deepEqual(await readdir(root), []);
+      assert.deepEqual(await readdir(movedRoot), []);
+    } finally {
+      if (swappedArtifacts) {
+        const controlRoot = await swappedArtifacts.controlRootCapability();
+        await controlRoot.close();
+      }
+      if (previousRoot === undefined) {
+        delete process.env["EASYEDA_CONTROL_DATA_DIR"];
+      } else {
+        process.env["EASYEDA_CONTROL_DATA_DIR"] = previousRoot;
+      }
+      await rm(parent, { recursive: true, force: true });
+    }
+  });
+
+  void test("rejects an intermediate managed-parent symlink installed during reservation", async () => {
+    const parent = join(dataDir, "reservation-parent-swap");
+    const movedParent = join(dataDir, "reservation-parent-swap-moved");
+    const evidenceDirectory = join(parent, "evidence");
+    const evidence = {
+      resultPath: join(evidenceDirectory, "result.json"),
+      receiptPath: join(evidenceDirectory, "receipt.json"),
+    };
+    await mkdir(evidenceDirectory, { mode: 0o700, recursive: true });
+    try {
+      await assert.rejects(
+        artifacts.reserveEvidencePaths(evidence, async () => {
+          await rename(parent, movedParent);
+          await symlink(movedParent, parent, "dir");
+        }),
+        /not a real directory/u,
+      );
+      assert.deepEqual(await readdir(join(movedParent, "evidence")), []);
+    } finally {
+      await unlink(parent).catch(() => null);
+      await rm(movedParent, { recursive: true, force: true });
+    }
   });
 });

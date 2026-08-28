@@ -1,0 +1,13 @@
+EasyEDA Pro Control Authenticated Bridge derivative
+
+Original EasyEDA bridge-extension source:
+Copyright (c) 2026 oaslananka
+https://github.com/oaslananka/easyeda-mcp-pro
+Reviewed source commit: 964c05082f1c7c9e8b98f56e967e36bfc3f26128
+
+EasyEDA Pro Control derivative modifications:
+Copyright (c) 2026 Jan Günter
+https://github.com/jan-guenter/easyeda-pro-agent-plugin
+
+The original source and derivative modifications are distributed under the
+MIT License included in this archive as LICENSE.

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { after, before, describe, test } from "node:test";
 
@@ -13,7 +13,9 @@ import {
   OPERATION_SCHEMA,
   buildPlanHash,
   newOperationId,
+  sha256Text,
 } from "../src/core.ts";
+import type { UpstreamLauncherFingerprint } from "../src/core.ts";
 
 type ToolCallResult = Awaited<ReturnType<Client["callTool"]>>;
 interface ArtifactModule {
@@ -43,20 +45,85 @@ function isArtifactModule(value: unknown): value is ArtifactModule {
 }
 
 function structured(result: ToolCallResult): Record<string, unknown> {
-  return requireRecord(result.structuredContent, "structuredContent");
+  return requireRecord(
+    result.structuredContent,
+    `structuredContent (${JSON.stringify(result.content)})`,
+  );
 }
 
 const pluginRoot = resolve(import.meta.dirname, "../..");
-const facadeEntrypoint = join(pluginRoot, "server", "src", "index.ts");
+const facadeSourceEntrypoint = join(
+  pluginRoot,
+  "server",
+  "src",
+  "index.ts",
+);
 
 let fixtureRoot: string;
 let controlRoot: string;
 let configPath: string;
 let projectPath: string;
+let fabricatedBoardDataMarker: string;
 let client: Client;
 let transport: StdioClientTransport;
 let expectedFingerprint: Record<string, unknown>;
 let evidenceSequence = 0;
+let facadeEntrypoint: string;
+
+function replaceFacadeImport(
+  _match: string,
+  specifier: string,
+): string {
+  const absolute = resolve(dirname(facadeSourceEntrypoint), specifier);
+  return `from ${JSON.stringify(pathToFileURL(absolute).href)}`;
+}
+
+function replacePackageImport(
+  _match: string,
+  specifier: string,
+): string {
+  return `from ${JSON.stringify(import.meta.resolve(specifier))}`;
+}
+
+async function fixtureLauncherFingerprint(
+  upstreamEntrypoint: string,
+): Promise<UpstreamLauncherFingerprint> {
+  const names = [
+    "EASYEDA_UPSTREAM_COMMAND",
+    "EASYEDA_UPSTREAM_ARGS_JSON",
+    "EASYEDA_UPSTREAM_CWD",
+  ] as const;
+  const previous = new Map<string, string | undefined>();
+  try {
+    for (const name of names) {
+      previous.set(name, process.env[name]);
+    }
+    process.env["EASYEDA_UPSTREAM_COMMAND"] = process.execPath;
+    process.env["EASYEDA_UPSTREAM_ARGS_JSON"] = JSON.stringify([
+      upstreamEntrypoint,
+    ]);
+    process.env["EASYEDA_UPSTREAM_CWD"] = fixtureRoot;
+    const { captureLauncherFingerprint } = await import(
+      "../src/upstream-trust.ts"
+    );
+    const captured = await captureLauncherFingerprint();
+    assert.deepEqual(
+      [...captured.moduleGraph.modules.keys()],
+      [pathToFileURL(upstreamEntrypoint).href],
+      "the upstream fixture graph must remain self-contained under its cwd",
+    );
+    return captured.fingerprint;
+  } finally {
+    for (const name of names) {
+      const value = previous.get(name);
+      if (value === undefined) {
+        Reflect.deleteProperty(process.env, name);
+      } else {
+        process.env[name] = value;
+      }
+    }
+  }
+}
 
 async function writeConfig(config: FixtureConfig = {}): Promise<void> {
   await writeFile(
@@ -123,6 +190,7 @@ async function capture(
 async function genericRead(
   documentType: number,
   upstreamTool: string,
+  arguments_: Record<string, unknown> = {},
 ): Promise<ToolCallResult> {
   await writeConfig({ documentType });
   return client.callTool(
@@ -130,7 +198,7 @@ async function genericRead(
       name: "easyeda_control_read",
       arguments: {
         upstreamTool,
-        arguments: {},
+        arguments: arguments_,
         expectedContext: expectedContext(documentType),
         expectedFingerprint,
         returnMode: "full",
@@ -156,13 +224,31 @@ before(async () => {
     join(tmpdir(), "easyeda-control-facade-capture-"),
   );
   controlRoot = join(fixtureRoot, "control");
-  configPath = join(fixtureRoot, "capture-config.json");
   projectPath = join(fixtureRoot, "fixture.eprj2");
   const implementationRoot = join(fixtureRoot, "upstream-implementation");
   const upstreamEntrypoint = join(implementationRoot, "server.mjs");
   const assetsRoot = join(fixtureRoot, "assets");
+  const bridgeTokenPath = join(controlRoot, "bridge-token");
+  const bridgeBuildRoot = join(controlRoot, "bridge-build");
+  const upstreamDataRoot = join(controlRoot, "upstream-data");
+  configPath = join(upstreamDataRoot, "capture-config.json");
+  fabricatedBoardDataMarker = join(
+    upstreamDataRoot,
+    "fabricated-board-data-reached",
+  );
+  const bridgeToken = [
+    "capture",
+    "fixture",
+    "bridge",
+    "credential",
+    "0001",
+  ].join("-");
 
   await mkdir(implementationRoot, { recursive: true });
+  await mkdir(controlRoot, { mode: 0o700 });
+  await mkdir(bridgeBuildRoot, { mode: 0o700 });
+  await mkdir(upstreamDataRoot, { mode: 0o700 });
+  await mkdir(join(fixtureRoot, "node_modules"));
   await mkdir(join(assetsRoot, "pro-pcb", "3.2.149.fixture", "js"), {
     recursive: true,
   });
@@ -170,6 +256,67 @@ before(async () => {
     recursive: true,
   });
   await writeFile(projectPath, "fixture project identity", "utf8");
+  await writeFile(
+    join(fixtureRoot, "package.json"),
+    `${JSON.stringify({
+      name: "capture-fixture",
+      private: true,
+      type: "module",
+    })}\n`,
+    "utf8",
+  );
+  await writeFile(
+    bridgeTokenPath,
+    bridgeToken,
+    { encoding: "utf8", mode: 0o600 },
+  );
+  const bridgeArchiveBytes = Buffer.from(
+    "authenticated bridge fixture archive",
+    "utf8",
+  );
+  const bridgeArchiveSha256 = sha256Text(
+    bridgeArchiveBytes.toString("utf8"),
+  );
+  const bridgeArchivePath = join(
+    bridgeBuildRoot,
+    `easyeda-pro-control-authenticated-bridge.${bridgeArchiveSha256}.eext`,
+  );
+  await writeFile(bridgeArchivePath, bridgeArchiveBytes, { mode: 0o600 });
+  await writeFile(
+    join(
+      bridgeBuildRoot,
+      "easyeda-pro-control-authenticated-bridge.eext.receipt.json",
+    ),
+    `${JSON.stringify({
+      schema: "easyeda-pro-control.authenticated-bridge-build.v2",
+      buildId: "ded07x99dcxb504",
+      outputPath: bridgeArchivePath,
+      outputSha256: bridgeArchiveSha256,
+      outputBytes: bridgeArchiveBytes.length,
+      tokenSha256: sha256Text(bridgeToken),
+      authenticatedIndexBuildId: ["i", "A".repeat(43)].join(""),
+      indexSha256: bridgeArchiveSha256,
+      authentication: {
+        protocol: "easyeda-pro-control.bridge-auth.v1",
+        rawTokenTransmission: false,
+        adjacentPortFallback: false,
+        publicEndpoint: { host: "127.0.0.1", port: 49_621 },
+      },
+      source: {
+        repository: "https://github.com/oaslananka/easyeda-mcp-pro",
+        commit: "964c05082f1c7c9e8b98f56e967e36bfc3f26128",
+        upstreamTreeSha1: "cc8893215e736f9efca78e4216033469008ea8e9",
+        closureSha256:
+          "ce52ca1bf5b2d3d214454790a24516ae5182f1867851c2786c0269bbc7892680",
+        fileCount: 70,
+        totalBytes: 847_709,
+        builtFromPrivateSnapshot: true,
+        privateSnapshotSealed: true,
+        postConsumptionVerified: true,
+      },
+    })}\n`,
+    { encoding: "utf8", mode: 0o600 },
+  );
   await writeFile(
     join(fixtureRoot, "pnpm-lock.yaml"),
     "lockfileVersion: '9.0'\n",
@@ -197,36 +344,11 @@ before(async () => {
   );
   await writeConfig();
 
-  const serverUrl = pathToFileURL(
-    resolve(
-      pluginRoot,
-      "node_modules/@modelcontextprotocol/sdk/dist/esm/server/index.js",
-    ),
-  ).href;
-  const stdioUrl = pathToFileURL(
-    resolve(
-      pluginRoot,
-      "node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js",
-    ),
-  ).href;
-  const typesUrl = pathToFileURL(
-    resolve(
-      pluginRoot,
-      "node_modules/@modelcontextprotocol/sdk/dist/esm/types.js",
-    ),
-  ).href;
-
   await writeFile(
     upstreamEntrypoint,
     `
-      import { readFile } from 'node:fs/promises';
+      import { readFile, writeFile } from 'node:fs/promises';
       import { deflateSync } from 'node:zlib';
-      import { Server } from ${JSON.stringify(serverUrl)};
-      import { StdioServerTransport } from ${JSON.stringify(stdioUrl)};
-      import {
-        CallToolRequestSchema,
-        ListToolsRequestSchema,
-      } from ${JSON.stringify(typesUrl)};
 
       const tool = (name, annotations, properties = {}) => ({
         name,
@@ -249,6 +371,9 @@ before(async () => {
         ),
         tool('easyeda_schematic_components', { readOnlyHint: true, idempotentHint: true }),
         tool('easyeda_pcb_components', { readOnlyHint: true, idempotentHint: true }),
+        tool('easyeda_pcb_constraint_check', { readOnlyHint: true, idempotentHint: true }),
+        tool('easyeda_pcb_constraint_report', { readOnlyHint: true, idempotentHint: true }),
+        tool('easyeda_pcb_production_review', { readOnlyHint: true, idempotentHint: true }),
         tool('easyeda_board_dimensions', { readOnlyHint: true, idempotentHint: true }),
         tool('easyeda_component_probe', { readOnlyHint: true, idempotentHint: true }),
         tool('easyeda_live_smoke_report', { readOnlyHint: true, idempotentHint: true }),
@@ -281,11 +406,17 @@ before(async () => {
         chunk.writeUInt32BE(crc32(Buffer.concat([name, body])), 8 + body.length);
         return chunk;
       };
-      const makePng = (validIhdr, width, height) => {
+      const makePng = (
+        validIhdr,
+        width,
+        height,
+        headerWidth = width,
+        headerHeight = height,
+      ) => {
         const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
         const header = Buffer.alloc(13);
-        header.writeUInt32BE(width, 0);
-        header.writeUInt32BE(height, 4);
+        header.writeUInt32BE(headerWidth, 0);
+        header.writeUInt32BE(headerHeight, 4);
         header[8] = 8;
         header[9] = 6;
         header[10] = 0;
@@ -307,15 +438,9 @@ before(async () => {
         ]);
       };
       const readConfig = async () =>
-        JSON.parse(await readFile(process.env.CAPTURE_FIXTURE_CONFIG, 'utf8'));
+        JSON.parse(await readFile('/data/capture-config.json', 'utf8'));
 
-      const server = new Server(
-        { name: 'capture-fixture', version: '1.0.0-rc.1' },
-        { capabilities: { tools: {} } },
-      );
-      server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
-      server.setRequestHandler(CallToolRequestSchema, async (request) => {
-        const config = await readConfig();
+      const handleToolCall = async (request) => {
         if (request.params.name === 'easyeda_health_check') {
           return result({
             version: '1.0.0-rc.1',
@@ -342,6 +467,7 @@ before(async () => {
             total: 116,
           });
         }
+        const config = await readConfig();
         if (request.params.name === 'easyeda_execute') {
           const documentType = config.documentType ?? 1;
           return result({
@@ -368,7 +494,13 @@ before(async () => {
         if (request.params.name === 'easyeda_schematic_capture_full_page') {
           const width = config.pngWidth ?? 2;
           const height = config.pngHeight ?? 3;
-          const png = makePng(config.validIhdr !== false, width, height);
+          const png = makePng(
+            config.validIhdr !== false,
+            width,
+            height,
+            config.pngHeaderWidth ?? width,
+            config.pngHeaderHeight ?? height,
+          );
           if (config.corruptPngCrc === true) png[png.length - 1] ^= 1;
           const payload = {
             captured: true,
@@ -406,20 +538,108 @@ before(async () => {
           [
             'easyeda_schematic_components',
             'easyeda_pcb_components',
+            'easyeda_pcb_constraint_check',
+            'easyeda_pcb_constraint_report',
+            'easyeda_pcb_production_review',
             'easyeda_board_dimensions',
             'easyeda_component_probe',
             'easyeda_live_smoke_report',
             'easyeda_wire_probe',
           ].includes(request.params.name)
         ) {
+          if (
+            request.params.name.startsWith('easyeda_pcb_constraint_') ||
+            request.params.name === 'easyeda_pcb_production_review'
+          ) {
+            if (Object.hasOwn(request.params.arguments ?? {}, 'boardData')) {
+              await writeFile(
+                '/data/fabricated-board-data-reached',
+                request.params.name,
+                'utf8',
+              );
+            }
+          }
           return result({ dispatched: true, tool: request.params.name });
         }
         throw new Error('Unexpected fixture tool: ' + request.params.name);
-      });
-      await server.connect(new StdioServerTransport());
+      };
+
+      let bufferedInput = '';
+      for await (const chunk of process.stdin) {
+        bufferedInput += String(chunk);
+        let newline = bufferedInput.indexOf('\\n');
+        while (newline !== -1) {
+          const line = bufferedInput.slice(0, newline).trim();
+          bufferedInput = bufferedInput.slice(newline + 1);
+          newline = bufferedInput.indexOf('\\n');
+          if (line.length === 0) continue;
+          const request = JSON.parse(line);
+          if (!Object.hasOwn(request, 'id')) continue;
+          try {
+            let response;
+            if (request.method === 'initialize') {
+              response = {
+                protocolVersion: request.params.protocolVersion,
+                capabilities: { tools: {} },
+                serverInfo: { name: 'capture-fixture', version: '1.0.0-rc.1' },
+              };
+            } else if (request.method === 'ping') {
+              response = {};
+            } else if (request.method === 'tools/list') {
+              response = { tools };
+            } else if (request.method === 'tools/call') {
+              response = await handleToolCall(request);
+            } else {
+              throw new Error('Unexpected fixture request: ' + request.method);
+            }
+            process.stdout.write(JSON.stringify({
+              jsonrpc: '2.0',
+              id: request.id,
+              result: response,
+            }) + '\\n');
+          } catch (error) {
+            process.stdout.write(JSON.stringify({
+              jsonrpc: '2.0',
+              id: request.id,
+              error: {
+                code: -32603,
+                message: error instanceof Error ? error.message : String(error),
+              },
+            }) + '\\n');
+          }
+        }
+      }
     `,
     "utf8",
   );
+
+  const trustedLauncher = await fixtureLauncherFingerprint(
+    upstreamEntrypoint,
+  );
+  const facadeSource = await readFile(facadeSourceEntrypoint, "utf8");
+  const upstreamMarker = "const upstream = new UpstreamEasyedaClient({";
+  assert.ok(
+    facadeSource.includes(upstreamMarker),
+    "fixture must locate the facade upstream constructor",
+  );
+  const absoluteImports = facadeSource.replaceAll(
+    /from "(\.\/[^"]+\.ts)"/gu,
+    replaceFacadeImport,
+  );
+  const absolutePackages = absoluteImports.replaceAll(
+    /from "((?!node:|\.)[^"]+)"/gu,
+    replacePackageImport,
+  );
+  const engineMarker = "const engine = new EasyedaControlEngine(upstream);";
+  const transformedFacade = absolutePackages.replace(
+    upstreamMarker,
+    `${upstreamMarker}\n  trustedLauncher: ${JSON.stringify(trustedLauncher)},`,
+  ).replace(
+    engineMarker,
+    `upstream.withAuthenticatedBridgeDispatchScope = async (callback) => await callback(Object.freeze({}));\n${engineMarker}`,
+  );
+  facadeEntrypoint = join(fixtureRoot, "facade-index.ts");
+  await writeFile(facadeEntrypoint, transformedFacade, "utf8");
 
   transport = new StdioClientTransport({
     command: process.execPath,
@@ -431,10 +651,12 @@ before(async () => {
       EASYEDA_UPSTREAM_COMMAND: process.execPath,
       EASYEDA_UPSTREAM_ARGS_JSON: JSON.stringify([upstreamEntrypoint]),
       EASYEDA_UPSTREAM_CWD: fixtureRoot,
+      EASYEDA_UPSTREAM_DATA_DIR: upstreamDataRoot,
+      EASYEDA_BRIDGE_TOKEN_FILE: bridgeTokenPath,
+      EASYEDA_BRIDGE_MAX_PAYLOAD_SIZE: "1048576",
       EASYEDA_ASSETS_ROOT: assetsRoot,
       EASYEDA_PCB_BUNDLE_VERSION: "3.2.149.fixture",
       EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.2.53.fixture",
-      CAPTURE_FIXTURE_CONFIG: configPath,
     },
     stderr: "pipe",
   });
@@ -447,7 +669,11 @@ before(async () => {
     name: "easyeda_control_status",
     arguments: {},
   });
-  assert.equal(status.isError, undefined);
+  assert.equal(
+    status.isError,
+    undefined,
+    JSON.stringify(status.structuredContent),
+  );
   const statusPayload = structured(status);
   const upstreamStatus = requireRecord(
     statusPayload["upstream"],
@@ -468,6 +694,45 @@ after(async () => {
 });
 
 void describe("published facade contracts", { concurrency: false }, () => {
+  void test("keeps every live evidence facade inside one authenticated bridge scope", async () => {
+    const source = await readFile(facadeSourceEntrypoint, "utf8");
+    const expectedWrappers = new Map<string, string>([
+      ["easyeda_control_status", "serializedStatusGuarded"],
+      ["easyeda_control_context", "serializedLiveGuarded"],
+      ["easyeda_control_exact_read", "serializedLiveGuarded"],
+      ["easyeda_control_read", "serializedLiveGuarded"],
+      ["easyeda_control_read_batch", "serializedLiveGuarded"],
+      ["easyeda_control_capture", "serializedLiveResult"],
+      ["easyeda_control_export", "serializedLiveGuarded"],
+      ["easyeda_control_plan", "serializedLiveGuarded"],
+      ["easyeda_control_apply", "serializedLiveGuarded"],
+      ["easyeda_control_verify", "serializedLiveGuarded"],
+      ["easyeda_control_rollback", "serializedLiveGuarded"],
+      ["easyeda_control_save_reopen", "serializedLiveGuarded"],
+      ["easyeda_control_checkpoint", "serializedLiveGuarded"],
+      ["easyeda_control_recover_incomplete", "serializedGuarded"],
+    ]);
+    for (const [toolName, wrapper] of expectedWrappers) {
+      const marker = `registerFacadeTool(\n  "${toolName}"`;
+      const start = source.indexOf(marker);
+      assert.notEqual(start, -1, `${toolName} registration must exist`);
+      const next = source.indexOf("\nregisterFacadeTool(", start + marker.length);
+      const block = source.slice(start, next === -1 ? undefined : next);
+      assert.match(
+        block,
+        new RegExp(`\\b${wrapper}\\(`, "u"),
+        `${toolName} must hold its authenticated renderer lease through validation and evidence publication`,
+      );
+      if (toolName === "easyeda_control_recover_incomplete") {
+        assert.match(
+          block,
+          /withAuthenticatedBridgeDispatchScope\(/u,
+          "live recovery must acquire an authenticated renderer lease while local journal listing remains disconnected-safe",
+        );
+      }
+    }
+  });
+
   void test("generated operation IDs satisfy the lowercase operation-id JSON Schema", async () => {
     const listed = await client.listTools();
     const apply = listed.tools.find(
@@ -531,14 +796,20 @@ void describe("published facade contracts", { concurrency: false }, () => {
       /structurally disabled.*no environment opt-in/iu,
     );
   });
+
 });
 
 void describe("generic read context binding", { concurrency: false }, () => {
-  void test("rejects diagnostic probes and every cross-editor read family before dispatch", async () => {
+  void test("rejects excluded tools and every cross-editor read family before dispatch", async () => {
     const rejected: readonly (readonly [number, string, RegExp])[] = [
       [3, "easyeda_component_probe", /diagnostic-only/u],
       [3, "easyeda_live_smoke_report", /diagnostic-only/u],
       [1, "easyeda_wire_probe", /diagnostic-only/u],
+      [
+        1,
+        "easyeda_bom_validate",
+        /not on the reviewed local-only generic-read allowlist/u,
+      ],
       [3, "easyeda_schematic_components", /active document type 1.*type is 3/u],
       [1, "easyeda_pcb_components", /active document type 3.*type is 1/u],
       [1, "easyeda_board_dimensions", /active document type 3.*type is 1/u],
@@ -561,6 +832,39 @@ void describe("generic read context binding", { concurrency: false }, () => {
     assert.notEqual(pcb.isError, true);
     const pcbResult = requireRecord(structured(pcb)["result"], "PCB result");
     assert.equal(pcbResult["dispatched"], true);
+  });
+
+  void test("allows live PCB constraint reads but rejects every caller-supplied board snapshot", async () => {
+    for (const upstreamTool of [
+      "easyeda_pcb_constraint_check",
+      "easyeda_pcb_constraint_report",
+      "easyeda_pcb_production_review",
+    ]) {
+      const live = await genericRead(3, upstreamTool, {
+        projectId: "project-1",
+      });
+      assert.notEqual(
+        live.isError,
+        true,
+        JSON.stringify(live.structuredContent),
+      );
+      const liveResult = requireRecord(structured(live)["result"], "live constraint result");
+      assert.equal(liveResult["dispatched"], true);
+
+      for (const boardData of [null, { widthMm: 1, heightMm: 1 }]) {
+        const fabricated = await genericRead(3, upstreamTool, {
+          projectId: "project-1",
+          boardData,
+        });
+        assert.match(
+          failureMessage(fabricated),
+          /arguments\.boardData is prohibited.*proven live board/u,
+        );
+        await assert.rejects(readFile(fabricatedBoardDataMarker), {
+          code: "ENOENT",
+        });
+      }
+    }
   });
 });
 
@@ -696,12 +1000,20 @@ void describe(
         ],
         [
           { payloadByteLength: "69" },
-          /MIME type or byte length does not match/u,
+          /payload byte length is invalid/u,
         ],
         [{ payloadBase64: "mismatch" }, /payload image bytes do not match/u],
         [{ capture: { image_base64: {} } }, /image_base64 must be a string/u],
         [{ validIhdr: false }, /IHDR/u],
         [{ corruptPngCrc: true }, /PNG.*CRC|CRC.*PNG/iu],
+        [
+          { payloadByteLength: 16 * 1024 * 1024 + 1 },
+          /exceeds the 16 MiB compressed PNG limit/u,
+        ],
+        [
+          { pngHeaderWidth: 8192, pngHeaderHeight: 8192 },
+          /expands beyond the 64 MiB validation limit/u,
+        ],
         [
           { capture: { image_dimensions: { width: 99, height: 3 } } },
           /dimensions do not match the PNG IHDR/u,
