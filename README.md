@@ -35,6 +35,8 @@ Not production-enabled: schematic or PCB writes, ECO, library changes, routing, 
 
 ## Install from this GitHub marketplace
 
+The Codex marketplace manifest is [`/.agents/plugins/marketplace.json`](.agents/plugins/marketplace.json).
+
 ```bash
 codex plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-plugin
 codex plugin add easyeda-pro-control@easyeda-pro-agent

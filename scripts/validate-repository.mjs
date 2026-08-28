@@ -4,7 +4,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const marketplacePath = join(root, 'marketplace.json');
+const marketplacePath = join(root, '.agents', 'plugins', 'marketplace.json');
 const pluginRoot = join(root, 'plugins', 'easyeda-pro-control');
 const checks = [];
 
