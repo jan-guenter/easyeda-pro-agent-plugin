@@ -81,7 +81,11 @@ The update command changes only the facade source/bundle projections and review 
 - Compatibility target: EasyEDA Pro `3.2.149.88089769`, PCB bundle `3.2.149.5378b690`, public API `0.2.53.aee2f57a`, upstream/bridge `1.0.0-rc.1`, Node `24.18.0`.
 - Connected production-writer validation: **not performed; writer disabled**.
 - Unrestricted raw bridge execution: **structurally disabled**.
-- Final repository test/commit/install record: pending release completion.
+- Release payload commit: `c47e6bb67c59f745bdee3bc61fbec7d97f7d1ec5` in `https://github.com/jan-guenter/easyeda-pro-agent-plugin`.
+- Local validation: 146/146 tests passed across 24 suites on exact Node `24.18.0`; plugin, skill, compatibility, repository, clean-install, offline-doctor, and privacy validators passed.
+- GitHub Actions run `33135726177` passed the clean checkout, dependency install, build, compatibility gate, 146-test suite (145 pass and the Windows-mount-only case skipped on the Linux runner), plugin/repository validation, reproducible-bundle check, packaging, and artifact upload.
+- Marketplace `easyeda-pro-agent` is configured from `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. Installed plugin `easyeda-pro-control@easyeda-pro-agent` is enabled at `0.2.0+codex.20260828021249`; the marketplace snapshot is the release payload commit and key installed-file hashes match the repository exactly.
+- The bundled installed MCP completed an actual stdio initialize and exposed all 18 declared tools. The former `easyeda-pro-control@personal` install, personal marketplace registration, source directory, and orphaned personal marketplace file were removed.
 
 ## Open questions
 
