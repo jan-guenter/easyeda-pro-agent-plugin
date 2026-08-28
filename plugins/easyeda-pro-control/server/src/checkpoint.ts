@@ -566,7 +566,8 @@ async function runSqliteDump(
     const child = spawn(
       command,
       [
-        "-noinit",
+        "-init",
+        "/dev/null",
         "-batch",
         "-readonly",
         "-safe",

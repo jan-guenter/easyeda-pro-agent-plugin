@@ -59,12 +59,25 @@ export async function captureBackendProcessAuthority(
   if (!Number.isSafeInteger(pid) || pid <= 0) {
     throw new TypeError("The supervised backend PID is invalid.");
   }
-  const [startTimeTicks, status] = await Promise.all([
-    readProcessStartTime(pid),
-    readFile(`/proc/${pid}/status`, "utf8"),
-  ]);
+  const before = await readProcessStartTime(pid);
+  const status = await readFile(`/proc/${pid}/status`, "utf8");
+  const after = await readProcessStartTime(pid);
+  return validateBackendProcessAuthorityCapture(pid, before, status, after);
+}
+
+export function validateBackendProcessAuthorityCapture(
+  pid: number,
+  before: string,
+  status: string,
+  after: string,
+): BackendProcessAuthority {
+  if (before !== after) {
+    throw new Error(
+      "The supervised backend PID changed during authority capture.",
+    );
+  }
   assertLinuxProcessOwnership(status);
-  return { pid, startTimeTicks };
+  return { pid, startTimeTicks: after };
 }
 
 function numericDescriptorName(value: string): boolean {

@@ -1219,8 +1219,8 @@ void describe("bundled runtime license attribution", () => {
     const buildModuleUrl = pathToFileURL(
       join(import.meta.dirname, "../../scripts/build-server.ts"),
     ).href;
-    const childSource = `const { buildServer } = await import(${JSON.stringify(buildModuleUrl)}); await buildServer(process.argv[1]);`;
-    const result = await runChild("/usr/bin/node", [
+    const childSource = `const { buildServer } = await import(${JSON.stringify(buildModuleUrl)}); Object.defineProperty(process, "version", { value: "v0.0.0" }); await buildServer(process.argv[1]);`;
+    const result = await runChild(process.execPath, [
       "--input-type=module",
       "--eval",
       childSource,

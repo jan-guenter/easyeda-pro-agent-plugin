@@ -5,6 +5,7 @@ import { Writable } from "node:stream";
 import { describe, test } from "node:test";
 
 import {
+  bubblewrapArguments,
   classifySandboxStdoutLine,
   closeSandboxProcess,
   deliverSandboxBootstrap,
@@ -21,6 +22,7 @@ import {
   assertSandboxProcessTopology,
   assertZeroSoftCoreLimit,
   captureBackendProcessAuthority,
+  validateBackendProcessAuthorityCapture,
 } from "../src/backend-listener-authority.ts";
 import {
   UpstreamEasyedaClient,
@@ -52,6 +54,42 @@ function reviewedNodeDescriptorBaseline(): Map<number, string> {
 }
 
 void describe("sandbox process lifetime", () => {
+  void test("mounts the exact x64 ELF interpreter independently of distro library aliases", () => {
+    const sandboxArguments = bubblewrapArguments({}, []);
+    const loader = "/lib64/ld-linux-x86-64.so.2";
+    const loaderIndex = sandboxArguments.indexOf(loader);
+    assert.notEqual(loaderIndex, -1);
+    assert.deepEqual(sandboxArguments.slice(loaderIndex - 3, loaderIndex + 2), [
+      "--dir",
+      "/lib64",
+      "--ro-bind",
+      loader,
+      loader,
+    ]);
+  });
+
+  void test(
+    "rejects a PID reused across authority capture",
+    { skip: process.platform !== "linux" },
+    () => {
+      const getuid = process.getuid;
+      if (getuid === undefined) {
+        throw new TypeError("Linux process ownership requires getuid().");
+      }
+      const uid = getuid();
+      const status = `Name:\tfixture\nUid:\t${String(uid)}\t${String(uid)}\t${String(uid)}\t${String(uid)}\n`;
+      assert.deepEqual(
+        validateBackendProcessAuthorityCapture(123, "456", status, "456"),
+        { pid: 123, startTimeTicks: "456" },
+      );
+      assert.throws(
+        () =>
+          validateBackendProcessAuthorityCapture(123, "456", status, "457"),
+        /changed during authority capture/u,
+      );
+    },
+  );
+
   void test("waits for asynchronous write completion before secret zeroing", async () => {
     let consumed: Buffer | undefined;
     // oxlint-disable promise/prefer-await-to-callbacks -- The fixture deliberately delays Writable's callback to prove that a true-returning write is not yet complete.

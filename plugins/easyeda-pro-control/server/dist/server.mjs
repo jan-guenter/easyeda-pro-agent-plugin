@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "0914f7791cec91e1eacad86bca004ad20bbfbeb53e11951f0ad07a31c3510db5";
+const __easyedaBundlePairId = "140bb92758b0ae45038249677cf9e31421dd00f66f97288694171c989ad32b75";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -38310,7 +38310,8 @@ async function runSqliteDump(handle, options = {}) {
     const child = spawn(
       command,
       [
-        "-noinit",
+        "-init",
+        "/dev/null",
         "-batch",
         "-readonly",
         "-safe",
@@ -47437,12 +47438,19 @@ async function captureBackendProcessAuthority(pid) {
   if (!Number.isSafeInteger(pid) || pid <= 0) {
     throw new TypeError("The supervised backend PID is invalid.");
   }
-  const [startTimeTicks, status] = await Promise.all([
-    readProcessStartTime(pid),
-    readFile4(`/proc/${pid}/status`, "utf8")
-  ]);
+  const before = await readProcessStartTime(pid);
+  const status = await readFile4(`/proc/${pid}/status`, "utf8");
+  const after = await readProcessStartTime(pid);
+  return validateBackendProcessAuthorityCapture(pid, before, status, after);
+}
+function validateBackendProcessAuthorityCapture(pid, before, status, after) {
+  if (before !== after) {
+    throw new Error(
+      "The supervised backend PID changed during authority capture."
+    );
+  }
   assertLinuxProcessOwnership(status);
-  return { pid, startTimeTicks };
+  return { pid, startTimeTicks: after };
 }
 function numericDescriptorName(value) {
   return /^(?:0|[1-9]\d*)$/u.test(value) && Number.isSafeInteger(Number(value));
@@ -56353,9 +56361,14 @@ function bubblewrapArguments(environment, supervisorArguments) {
     "--symlink",
     "usr/lib",
     "/lib",
-    "--symlink",
-    "usr/lib",
+    "--dir",
     "/lib64",
+    // The reviewed x64 Node binary names this ELF interpreter.
+    // Arch exposes it in /usr/lib; Debian/Ubuntu use a multiarch target.
+    // Bind the host-resolved loader at the ABI path.
+    "--ro-bind",
+    "/lib64/ld-linux-x86-64.so.2",
+    "/lib64/ld-linux-x86-64.so.2",
     "--dir",
     "/dev",
     "--dev-bind",
@@ -56451,27 +56464,42 @@ async function closeSandboxProcess(child, closed, graceMs = CLOSE_GRACE_MS) {
     throw new Error("Bubblewrap did not reach its close/reap boundary.");
   }
 }
-async function waitForSandboxNodeIdentity(authority, nodeHandle, expectedCommandLine) {
-  const expectedNode = await nodeHandle.stat({ bigint: true });
+async function waitForSandboxNodeIdentity(authority, nodeHandle, expectedCommandLine, childClosed) {
+  let childHasClosed = false;
+  const closedBeforeIdentity = (async () => {
+    await childClosed;
+    childHasClosed = true;
+    throw new Error(
+      "The sandbox child closed before exact reviewed Node identity admission."
+    );
+  })();
+  const whileChildOpen = (operation) => Promise.race([operation, closedBeforeIdentity]);
+  const expectedNode = await whileChildOpen(
+    nodeHandle.stat({ bigint: true })
+  );
   const deadline = Date.now() + EXEC_IDENTITY_TIMEOUT_MS;
   let lastError;
   while (Date.now() < deadline) {
     let executable;
     try {
-      const currentAuthority = await captureBackendProcessAuthority(
-        authority.pid
+      const currentAuthority = await whileChildOpen(
+        captureBackendProcessAuthority(authority.pid)
       );
       if (currentAuthority.startTimeTicks !== authority.startTimeTicks) {
         throw new Error("Sandbox child PID changed before Node admission.");
       }
-      executable = await open10(
-        `/proc/${authority.pid}/exe`,
-        fsConstants10.O_RDONLY
+      executable = await whileChildOpen(
+        open10(`/proc/${authority.pid}/exe`, fsConstants10.O_RDONLY)
       );
       const actualNode = await executable.stat({ bigint: true });
-      const commandLineBytes = await readFile5(`/proc/${authority.pid}/cmdline`);
+      const commandLineBytes = await whileChildOpen(
+        readFile5(`/proc/${authority.pid}/cmdline`)
+      );
       const commandLine = commandLineBytes.toString("utf8").split("\0").filter((part) => part.length > 0);
       if (actualNode.dev === expectedNode.dev && actualNode.ino === expectedNode.ino && JSON.stringify(commandLine) === JSON.stringify(expectedCommandLine)) {
+        if (childHasClosed) {
+          await closedBeforeIdentity;
+        }
         return;
       }
       lastError = new Error(
@@ -56482,7 +56510,7 @@ async function waitForSandboxNodeIdentity(authority, nodeHandle, expectedCommand
     } finally {
       await executable?.close();
     }
-    await wait2(10, void 0, { ref: false });
+    await whileChildOpen(wait2(10, void 0, { ref: false }));
   }
   throw new Error(
     "Bubblewrap child did not become the exact reviewed Node command before the admission deadline.",
@@ -56818,7 +56846,8 @@ var SandboxedStdioClientTransport = class {
       await waitForSandboxNodeIdentity(
         authority,
         this.options.node.handle,
-        childArguments
+        childArguments,
+        childClose.promise
       );
       await Promise.race([
         this.supervisorReadySignal.promise,

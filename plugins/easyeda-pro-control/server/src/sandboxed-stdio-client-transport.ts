@@ -250,7 +250,7 @@ function sandboxNodeArguments(
   ];
 }
 
-function bubblewrapArguments(
+export function bubblewrapArguments(
   environment: Readonly<Record<string, string>>,
   supervisorArguments: readonly string[],
 ): readonly string[] {
@@ -297,9 +297,14 @@ function bubblewrapArguments(
     "--symlink",
     "usr/lib",
     "/lib",
-    "--symlink",
-    "usr/lib",
+    "--dir",
     "/lib64",
+    // The reviewed x64 Node binary names this ELF interpreter.
+    // Arch exposes it in /usr/lib; Debian/Ubuntu use a multiarch target.
+    // Bind the host-resolved loader at the ABI path.
+    "--ro-bind",
+    "/lib64/ld-linux-x86-64.so.2",
+    "/lib64/ld-linux-x86-64.so.2",
     "--dir",
     "/dev",
     "--dev-bind",
@@ -419,29 +424,43 @@ export async function closeSandboxProcess(
   }
 }
 
-async function waitForSandboxNodeIdentity(
+export async function waitForSandboxNodeIdentity(
   authority: BackendProcessAuthority,
   nodeHandle: FileHandle,
   expectedCommandLine: readonly string[],
+  childClosed: Promise<unknown>,
 ): Promise<void> {
-  const expectedNode = await nodeHandle.stat({ bigint: true });
+  let childHasClosed = false;
+  const closedBeforeIdentity = (async (): Promise<never> => {
+    await childClosed;
+    childHasClosed = true;
+    throw new Error(
+      "The sandbox child closed before exact reviewed Node identity admission.",
+    );
+  })();
+  const whileChildOpen = <Value>(operation: Promise<Value>): Promise<Value> =>
+    Promise.race([operation, closedBeforeIdentity]);
+  const expectedNode = await whileChildOpen(
+    nodeHandle.stat({ bigint: true }),
+  );
   const deadline = Date.now() + EXEC_IDENTITY_TIMEOUT_MS;
   let lastError: unknown;
   while (Date.now() < deadline) {
     let executable: FileHandle | undefined;
     try {
-      const currentAuthority = await captureBackendProcessAuthority(
-        authority.pid,
+      const currentAuthority = await whileChildOpen(
+        captureBackendProcessAuthority(authority.pid),
       );
       if (currentAuthority.startTimeTicks !== authority.startTimeTicks) {
         throw new Error("Sandbox child PID changed before Node admission.");
       }
-      executable = await open(
-        `/proc/${authority.pid}/exe`,
-        fsConstants.O_RDONLY,
+      executable = await whileChildOpen(
+        open(`/proc/${authority.pid}/exe`, fsConstants.O_RDONLY),
       );
       const actualNode = await executable.stat({ bigint: true });
-      const commandLineBytes = await readFile(`/proc/${authority.pid}/cmdline`);
+      const commandLineBytes = await whileChildOpen(
+        readFile(`/proc/${authority.pid}/cmdline`),
+      );
       const commandLine = commandLineBytes
         .toString("utf8")
         .split("\0")
@@ -451,6 +470,9 @@ async function waitForSandboxNodeIdentity(
         actualNode.ino === expectedNode.ino &&
         JSON.stringify(commandLine) === JSON.stringify(expectedCommandLine)
       ) {
+        if (childHasClosed) {
+          await closedBeforeIdentity;
+        }
         return;
       }
       lastError = new Error(
@@ -461,7 +483,7 @@ async function waitForSandboxNodeIdentity(
     } finally {
       await executable?.close();
     }
-    await wait(10, undefined, { ref: false });
+    await whileChildOpen(wait(10, undefined, { ref: false }));
   }
   throw new Error(
     "Bubblewrap child did not become the exact reviewed Node command before the admission deadline.",
@@ -831,6 +853,7 @@ export class SandboxedStdioClientTransport implements Transport {
         authority,
         this.options.node.handle,
         childArguments,
+        childClose.promise,
       );
       await Promise.race([
         this.supervisorReadySignal.promise,
