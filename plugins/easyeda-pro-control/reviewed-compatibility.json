@@ -1,0 +1,125 @@
+{
+  "schema": "easyeda-pro-control.reviewed-compatibility.v1",
+  "reviewedAt": "2026-08-28T02:02:34.887Z",
+  "facadeImplementation": {
+    "source-tree": {
+      "version": "0.2.0",
+      "operationSchema": "easyeda-pro-control.operation.v2",
+      "sha256": "6d84ba72c34e3f017b341dd32bfc8bdf27f6e3f13b4c7c97b4601b09d9bad4d3",
+      "fileCount": 9,
+      "files": [
+        {
+          "relativePath": "artifacts.mjs",
+          "bytes": 22871,
+          "sha256": "e36da2b8881e0540ce9499d4a2eb7e69d14776f998adf3ff0fd57307ae5b2cfc"
+        },
+        {
+          "relativePath": "checkpoint.mjs",
+          "bytes": 9336,
+          "sha256": "65f718727b3533498899f51beb9bb846a6a0ccac15d5ee9f7f6e31c4692f485e"
+        },
+        {
+          "relativePath": "core.mjs",
+          "bytes": 39137,
+          "sha256": "6701c7fd6a9a9fb7a89cd730adffe0ca87ff507331fa3753b90277bd70f1f175"
+        },
+        {
+          "relativePath": "engine.mjs",
+          "bytes": 111613,
+          "sha256": "7e16b8004d6a4a8cf0a55ca77dd9a1b09b6b66334eb0564890380d5786d151b7"
+        },
+        {
+          "relativePath": "exact-readers.mjs",
+          "bytes": 105523,
+          "sha256": "b3ab56e04ee605a002b98241ca03b4d4dd369c6151045ca0c62e61958bc729ed"
+        },
+        {
+          "relativePath": "index.mjs",
+          "bytes": 64420,
+          "sha256": "52d41f3bf0118ee1389eaf2e2b629f76da8fca59ebbde2a8ba008d7c725bcb12"
+        },
+        {
+          "relativePath": "lease.mjs",
+          "bytes": 5872,
+          "sha256": "0450b2aaac303104898736046cbc89991a2082866de92f676f69871a7171c45b"
+        },
+        {
+          "relativePath": "runtime-scripts.mjs",
+          "bytes": 23836,
+          "sha256": "b55beb06b4b1df8c153bcb868b11fb86b6870494b3f14109db7de73015ac32e1"
+        },
+        {
+          "relativePath": "upstream.mjs",
+          "bytes": 10591,
+          "sha256": "a48615aa935bc33649c422c8216d63763f05864ca106763b11c1290a7b732ad5"
+        }
+      ]
+    },
+    "bundle": {
+      "version": "0.2.0",
+      "operationSchema": "easyeda-pro-control.operation.v2",
+      "sha256": "1a190658b25aab217b92431b89aaa016d957ee4ef67b8c5029aa2d1427af498d",
+      "fileCount": 1,
+      "files": [
+        {
+          "relativePath": "server.mjs",
+          "bytes": 1569784,
+          "sha256": "91fa7692762ce9ba2a368d2880e64ad4436af787f7286e57a5f08dd10e7c153c"
+        }
+      ]
+    }
+  },
+  "upstream": {
+    "serverVersion": "1.0.0-rc.1",
+    "launcher": {
+      "command": "/root/.nvm/versions/node/v24.18.0/bin/node",
+      "commandSha256": "41a74efb34cbde5c7632cdac0cf8bd1a14d0b8d73dc1e82755014d9a9ce70f5c",
+      "args": [
+        "/root/work/easyeda-mcp-pro/dist/index.js"
+      ],
+      "entrypoint": "/root/work/easyeda-mcp-pro/dist/index.js",
+      "entrypointSha256": "3df04439d08d15459ddc57c2947e8fec43e71c87f411db670b656318cf98a2b4",
+      "implementationTree": {
+        "root": "/root/work/easyeda-mcp-pro/dist",
+        "fileCount": 195,
+        "sha256": "d8335ae0ce52bd3bb2b62d72261499587df598265076a797dbd6e9300bbaa9c0"
+      },
+      "dependencyLock": {
+        "type": "pnpm",
+        "path": "/root/work/easyeda-mcp-pro/pnpm-lock.yaml",
+        "sha256": "c4d62ad71edfca6a7961fe88d52e74e629785c6d408bf6ef65155a273834add2"
+      },
+      "cwd": "/root/work/easyeda-mcp-pro"
+    },
+    "toolCatalog": {
+      "count": 116,
+      "sha256": "25d2575d98934d0b975b84bd235b5c263ce7b61279ba106a0fe330de7d5a7c45"
+    }
+  },
+  "connectedRuntime": {
+    "healthVersion": "1.0.0-rc.1",
+    "nodeVersion": "24.18.0",
+    "easyedaVersion": "3.2.149.88089769",
+    "extensionVersion": "1.0.0-rc.1",
+    "bridgeVersion": "1.0.0-rc.1",
+    "bridgeEasyedaVersion": "3.2.149.88089769",
+    "methodRegistryHash": "34f1dcf29ebdf3cf",
+    "dispatcher": {
+      "source": "loader_status",
+      "buildId": "d18b6xd531xe6ca",
+      "total": 67
+    }
+  },
+  "installedBundles": {
+    "pcbEditor": {
+      "version": "3.2.149.5378b690",
+      "implementationSha256": "65401cdc0a8f244db2ff2d8da88fd835b6e1fb3a3ecdbcfd975781502cb04b54"
+    },
+    "publicApi": {
+      "version": "0.2.53.aee2f57a",
+      "implementationSha256": "5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc",
+      "adapterSha256": "4da5b5184a78e2d3aca843dad6b147d7feb7ec1368160d73f49c4acbcf97dfdb",
+      "declarationsSha256": "32a0d2f8b4bc3d7b2b93b33499d9d768b0c23c77f45843a65166cf4e8ad6dab1"
+    }
+  }
+}

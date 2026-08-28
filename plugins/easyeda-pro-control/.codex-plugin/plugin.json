@@ -1,0 +1,41 @@
+{
+  "name": "easyeda-pro-control",
+  "version": "0.2.0+codex.20260828021249",
+  "description": "Exact live audits, durable evidence, recovery, capture, and draft DSN export for EasyEDA Pro.",
+  "author": {
+    "name": "Jan G\u00fcnter",
+    "url": "https://github.com/jan-guenter"
+  },
+  "homepage": "https://github.com/jan-guenter/easyeda-pro-agent-plugin#readme",
+  "repository": "https://github.com/jan-guenter/easyeda-pro-agent-plugin",
+  "license": "MIT",
+  "keywords": [
+    "easyeda",
+    "pcb",
+    "schematic",
+    "mcp",
+    "eda"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "EasyEDA Pro Control",
+    "shortDescription": "Audit EasyEDA with durable evidence",
+    "longDescription": "An EasyEDA Pro skill and MCP facade with version-pinned double-sampled readers, scoped durable evidence, canvas capture, draft DSN export, SQLite checkpoints, and conservative recovery. The included one-component writer is experimental and runtime-disabled pending connected sacrificial-board validation.",
+    "developerName": "JanGuenter",
+    "category": "Developer Tools",
+    "capabilities": [
+      "EasyEDA",
+      "MCP",
+      "Read",
+      "Evidence",
+      "Recovery"
+    ],
+    "websiteURL": "https://github.com/jan-guenter/easyeda-pro-agent-plugin",
+    "defaultPrompt": [
+      "Audit the active EasyEDA document without changing it.",
+      "Capture hash-bound EasyEDA evidence or export draft PCB route context.",
+      "Diagnose an incomplete EasyEDA operation safely."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

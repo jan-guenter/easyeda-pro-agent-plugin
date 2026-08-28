@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          cache: npm
+          cache-dependency-path: plugins/easyeda-pro-control/package-lock.json
+
+      - name: Install SQLite CLI
+        run: sudo apt-get update && sudo apt-get install --yes sqlite3
+
+      - name: Install dependencies
+        working-directory: plugins/easyeda-pro-control
+        run: npm ci
+
+      - name: Build MCP bundle
+        working-directory: plugins/easyeda-pro-control
+        run: npm run build
+
+      - name: Check reviewed facade fingerprint
+        working-directory: plugins/easyeda-pro-control
+        run: npm run compatibility:check
+
+      - name: Run tests
+        working-directory: plugins/easyeda-pro-control
+        run: npm test
+
+      - name: Run offline plugin checks
+        working-directory: plugins/easyeda-pro-control
+        run: npm run validate
+
+      - name: Validate marketplace repository
+        run: node scripts/validate-repository.mjs
+
+      - name: Require reproducible committed bundle
+        run: git diff --exit-code -- plugins/easyeda-pro-control/server/dist/server.mjs
+
+      - name: Package plugin artifact
+        run: >-
+          git archive --format=tar.gz --output=easyeda-pro-control.tar.gz HEAD
+          plugins/easyeda-pro-control LICENSE THIRD_PARTY_NOTICES.md
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: easyeda-pro-control-${{ github.sha }}
+          path: easyeda-pro-control.tar.gz
+          if-no-files-found: error
+          retention-days: 14

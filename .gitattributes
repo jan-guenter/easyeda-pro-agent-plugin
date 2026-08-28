@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.zip binary
+*.eprj2 binary
+*.epro2 binary
+plugins/easyeda-pro-control/server/dist/server.mjs whitespace=-blank-at-eol

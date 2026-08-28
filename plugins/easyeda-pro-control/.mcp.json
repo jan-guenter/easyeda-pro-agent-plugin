@@ -1,0 +1,41 @@
+{
+  "mcpServers": {
+    "easyeda_pro_control": {
+      "type": "stdio",
+      "command": "/root/.nvm/versions/node/v24.18.0/bin/node",
+      "args": ["server/dist/server.mjs"],
+      "cwd": ".",
+      "enabled": true,
+      "env": {
+        "EASYEDA_CONTROL_DATA_DIR": "/root/.easyeda-pro-control",
+        "EASYEDA_UPSTREAM_COMMAND": "/root/.nvm/versions/node/v24.18.0/bin/node",
+        "EASYEDA_UPSTREAM_ARGS_JSON": "[\"/root/work/easyeda-mcp-pro/dist/index.js\"]",
+        "EASYEDA_UPSTREAM_CWD": "/root/work/easyeda-mcp-pro",
+        "EASYEDA_ASSETS_ROOT": "/mnt/c/Program Files/easyeda-pro/resources/app/assets",
+        "EASYEDA_PCB_BUNDLE_VERSION": "3.2.149.5378b690",
+        "EASYEDA_PUBLIC_API_BUNDLE_VERSION": "0.2.53.aee2f57a",
+        "EASYEDA_BRIDGE_HOST": "127.0.0.1",
+        "EASYEDA_BRIDGE_PORT": "49621",
+        "EASYEDA_BRIDGE_PORT_SCAN": "49621"
+      },
+      "default_tools_approval_mode": "approve",
+      "tools": {
+        "easyeda_control_exact_read": { "approval_mode": "prompt" },
+        "easyeda_control_read": { "approval_mode": "prompt" },
+        "easyeda_control_read_batch": { "approval_mode": "prompt" },
+        "easyeda_control_execute": { "approval_mode": "prompt" },
+        "easyeda_control_capture": { "approval_mode": "prompt" },
+        "easyeda_control_export": { "approval_mode": "prompt" },
+        "easyeda_control_plan": { "approval_mode": "prompt" },
+        "easyeda_control_apply": { "approval_mode": "prompt" },
+        "easyeda_control_verify": { "approval_mode": "prompt" },
+        "easyeda_control_rollback": { "approval_mode": "prompt" },
+        "easyeda_control_save_reopen": { "approval_mode": "prompt" },
+        "easyeda_control_checkpoint": { "approval_mode": "prompt" },
+        "easyeda_control_recover_incomplete": { "approval_mode": "prompt" }
+      },
+      "startup_timeout_sec": 30,
+      "tool_timeout_sec": 600
+    }
+  }
+}

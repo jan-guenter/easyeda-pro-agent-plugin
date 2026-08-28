@@ -1,0 +1,31 @@
+{
+  "name": "easyeda-pro-control-plugin",
+  "version": "0.2.0",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jan-guenter/easyeda-pro-agent-plugin.git",
+    "directory": "plugins/easyeda-pro-control"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-server.mjs",
+    "test": "node --test server/tests/*.test.mjs",
+    "validate": "node scripts/validate-plugin.mjs",
+    "doctor": "node scripts/doctor.mjs --offline",
+    "compatibility:check": "node scripts/reviewed-compatibility.mjs --check",
+    "compatibility:update": "node scripts/reviewed-compatibility.mjs --write",
+    "verify": "npm run build && npm run compatibility:check && npm test && npm run validate"
+  },
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}

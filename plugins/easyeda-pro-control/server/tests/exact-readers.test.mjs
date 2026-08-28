@@ -1,0 +1,1181 @@
+import assert from 'node:assert/strict';
+import { describe, test } from 'node:test';
+
+import { EasyedaControlEngine } from '../src/engine.mjs';
+import {
+  buildExactReadCode,
+  exactReadDocumentType,
+  exactReadRequestSchema,
+  validateExactReadPayload,
+  validateExactReadRequest,
+} from '../src/exact-readers.mjs';
+
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+
+async function executeReader(request, eda) {
+  return await new AsyncFunction('eda', buildExactReadCode(request))(eda);
+}
+
+function stateObject(values) {
+  return Object.fromEntries(
+    Object.entries(values).map(([name, value]) => [
+      `getState_${name}`,
+      async () => (typeof value === 'function' ? value() : structuredClone(value)),
+    ]),
+  );
+}
+
+function schematicComponent(primitiveId = 'sch-r1', designator = 'R1', uniqueId = 'gge1') {
+  return stateObject({
+    PrimitiveId: primitiveId,
+    PrimitiveType: 'Component',
+    ComponentType: 'Normal',
+    Component: { uuid: 'device-1' },
+    Symbol: { uuid: 'symbol-1' },
+    Footprint: { uuid: 'footprint-1' },
+    X: 100,
+    Y: 200,
+    Rotation: 90,
+    Mirror: false,
+    SubPartName: null,
+    AddIntoBom: true,
+    AddIntoPcb: true,
+    Net: null,
+    Designator: designator,
+    Name: '10k',
+    UniqueId: uniqueId,
+    Manufacturer: 'Fixture Inc.',
+    ManufacturerId: 'FIX-10K',
+    Supplier: 'Fixture Supply',
+    SupplierId: 'C1',
+    OtherProperty: { tolerance: '1%' },
+  });
+}
+
+function schematicPin(primitiveId = 'pin-1') {
+  return stateObject({
+    PrimitiveId: primitiveId,
+    PinNumber: '1',
+    PinName: 'A',
+    X: 95,
+    Y: 200,
+    Rotation: 0,
+    PinLength: 10,
+    PinColor: '#000000',
+    PinShape: 'Line',
+    pinType: 'Passive',
+    NoConnected: false,
+    OtherProperty: {},
+  });
+}
+
+function schematicApis({
+  components = [schematicComponent()],
+  declaredIds = ['sch-r1'],
+  pins = [schematicPin()],
+  getAll = async () => components,
+} = {}) {
+  return {
+    sch_PrimitiveComponent: {
+      getAll,
+      getAllPrimitiveId: async () => declaredIds,
+      getAllPinsByPrimitiveId: async () => pins,
+    },
+    sch_Primitive: {
+      getPrimitivesBBox: async () => ({ minX: 90, minY: 190, maxX: 110, maxY: 210 }),
+    },
+  };
+}
+
+function pcbComponent(primitiveId = 'pcb-u1', designator = 'U1', padSummary = undefined) {
+  return stateObject({
+    PrimitiveId: primitiveId,
+    PrimitiveType: 'Component',
+    Component: { uuid: 'device-1' },
+    Footprint: { uuid: 'land-1' },
+    Model3D: { uuid: 'model-1' },
+    Layer: 1,
+    X: 2650,
+    Y: -6265,
+    Rotation: 180,
+    PrimitiveLock: true,
+    AddIntoBom: true,
+    Designator: designator,
+    Pads: padSummary,
+    Name: 'Fixture IC',
+    UniqueId: 'gge2',
+    Manufacturer: 'Fixture Inc.',
+    ManufacturerId: 'FIX-IC',
+    Supplier: 'Fixture Supply',
+    SupplierId: 'C2',
+    OtherProperty: {},
+  });
+}
+
+function pcbPad({
+  primitiveId = 'pad-1',
+  primitiveType = 'ComponentPad',
+  parentComponentPrimitiveId = 'pcb-u1',
+  padType = 1,
+} = {}) {
+  return stateObject({
+    PrimitiveId: primitiveId,
+    PrimitiveType: primitiveType,
+    ParentComponentPrimitiveId: parentComponentPrimitiveId,
+    Layer: 99,
+    PadNumber: '1',
+    X: 2841.732283464567,
+    Y: -6215,
+    Rotation: 0,
+    Pad: ['ELLIPSE', 67, 67],
+    SpecialPad: [[1, 1, ['RECT', 60, 40, 0]]],
+    Net: 'GND',
+    Hole: ['ROUND', 126],
+    HoleOffsetX: 0,
+    HoleOffsetY: 0,
+    HoleRotation: 0,
+    Metallization: true,
+    PadType: padType,
+    SolderMaskAndPasteMaskExpansion: {
+      topSolderMask: 4,
+      bottomSolderMask: 4,
+      topPasteMask: 0,
+      bottomPasteMask: 0,
+    },
+    HeatWelding: {
+      connectionMethod: 'Divergent',
+      divergenceSpacing: 8,
+      divergenceLineWidth: 10,
+      divergenceAngle: 45,
+    },
+    PrimitiveLock: true,
+  });
+}
+
+function pcbComponentApis({
+  components,
+  declaredIds = ['pcb-u1'],
+  pads,
+  bbox = { minX: 558.2677165354326, minY: -7120.511811023622, maxX: 2841.732283464567, maxY: -6215 },
+} = {}) {
+  const directPads = pads ?? [pcbPad()];
+  const directComponents =
+    components ?? [pcbComponent('pcb-u1', 'U1', directPads.map(() => ({ primitiveId: 'pad-1' })))];
+  return {
+    pcb_PrimitiveComponent: {
+      getAll: async () => directComponents,
+      getAllPrimitiveId: async () => declaredIds,
+      getAllPinsByPrimitiveId: async () => directPads,
+    },
+    pcb_Primitive: {
+      getPrimitivesBBox: async () => bbox,
+    },
+  };
+}
+
+const inventoryDefinitions = [
+  ['components', 'pcb_PrimitiveComponent'],
+  ['pads', 'pcb_PrimitivePad'],
+  ['vias', 'pcb_PrimitiveVia'],
+  ['lines', 'pcb_PrimitiveLine'],
+  ['arcs', 'pcb_PrimitiveArc'],
+  ['strings', 'pcb_PrimitiveString'],
+  ['attributes', 'pcb_PrimitiveAttribute'],
+  ['polylines', 'pcb_PrimitivePolyline'],
+  ['regions', 'pcb_PrimitiveRegion'],
+  ['pours', 'pcb_PrimitivePour'],
+  ['fills', 'pcb_PrimitiveFill'],
+  ['dimensions', 'pcb_PrimitiveDimension'],
+  ['images', 'pcb_PrimitiveImage'],
+  ['objects', 'pcb_PrimitiveObject'],
+];
+
+function inventoryApis({ padType = 1, viaType = 0, interactiveMode = 0 } = {}) {
+  const eda = {};
+  const monitoredFamilies = new Set([
+    'pads',
+    'vias',
+    'lines',
+    'arcs',
+    'polylines',
+    'regions',
+    'pours',
+    'fills',
+  ]);
+  for (const [family, apiName] of inventoryDefinitions) {
+    const primitiveId = `${family}-1`;
+    let objects;
+    if (family === 'components') {
+      objects = [
+        stateObject({
+          PrimitiveId: primitiveId,
+          Pads: [{ primitiveId: 'component-pad-1', padNumber: '1', net: 'GND' }],
+        }),
+      ];
+    } else if (family === 'pads') {
+      objects = [
+        pcbPad({
+          primitiveId: 'component-pad-1',
+          primitiveType: 'ComponentPad',
+          parentComponentPrimitiveId: 'components-1',
+          padType,
+        }),
+        pcbPad({
+          primitiveId: 'pad-standalone-1',
+          primitiveType: 'Pad',
+          parentComponentPrimitiveId: '',
+          padType,
+        }),
+      ];
+    } else if (family === 'vias') {
+      objects = [
+        stateObject({
+          PrimitiveId: primitiveId,
+          PrimitiveType: 'Via',
+          Net: 'GND',
+          X: 100,
+          Y: 200,
+          HoleDiameter: 12,
+          Diameter: 24,
+          ViaType: viaType,
+          DesignRuleBlindViaName: null,
+          SolderMaskExpansion: { topSolderMask: 2, bottomSolderMask: 2 },
+          PrimitiveLock: false,
+        }),
+      ];
+    } else if (family === 'arcs') {
+      objects = [
+        stateObject({
+          PrimitiveId: primitiveId,
+          PrimitiveType: 'Arc',
+          Net: 'GND',
+          Layer: 1,
+          StartX: 0,
+          StartY: 0,
+          EndX: 10,
+          EndY: 10,
+          LineWidth: 5,
+          PrimitiveLock: false,
+          ArcAngle: 90,
+          InteractiveMode: interactiveMode,
+        }),
+      ];
+    } else if (family === 'pours') {
+      objects = [
+        stateObject({
+          PrimitiveId: primitiveId,
+          PrimitiveType: 'Pour',
+          Net: 'GND',
+          Layer: 1,
+          ComplexPolygon: () => ({ getSource: () => ({ paths: [[0, 0, 20, 20]] }) }),
+          PourFillMethod: { mode: 'solid' },
+          PreserveSilos: true,
+          PourName: 'GND plane',
+          PourPriority: 1,
+          LineWidth: 5,
+          PrimitiveLock: false,
+        }),
+      ];
+    } else if (family === 'regions') {
+      objects = [
+        stateObject({
+          PrimitiveId: primitiveId,
+          PrimitiveType: 'Region',
+          Layer: 1,
+          ComplexPolygon: () => ({ getSource: () => ({ paths: [[0, 0, 10, 10]] }) }),
+          RuleType: () => {
+            throw new Error('unreliable region RuleType getter must not be called');
+          },
+          RegionName: 'Keepout',
+          LineWidth: 5,
+          PrimitiveLock: false,
+        }),
+      ];
+    } else if (family === 'fills') {
+      objects = [
+        stateObject({
+          PrimitiveId: primitiveId,
+          PrimitiveType: 'Fill',
+          Net: 'GND',
+          Layer: 1,
+          ComplexPolygon: () => ({ getSource: () => ({ paths: [[0, 0, 5, 5]] }) }),
+          FillMode: () => {
+            throw new Error('hardcoded FillMode getter must not be called');
+          },
+          LineWidth: 5,
+          PrimitiveLock: false,
+        }),
+      ];
+    } else if (monitoredFamilies.has(family)) {
+      objects = [];
+    } else {
+      objects = [stateObject({ PrimitiveId: primitiveId })];
+    }
+    eda[apiName] = {
+      getAllPrimitiveId: async () =>
+        await Promise.all(objects.map((object) => object.getState_PrimitiveId())),
+      getAll: async () => objects,
+    };
+  }
+  const pouredObject = stateObject({
+    PrimitiveId: 'pours-1',
+    PrimitiveType: 'Poured',
+    PourPrimitiveId: 'pours-1',
+    PourFills: () => [
+      {
+        id: 'poured-fill-piece-1',
+        path: { getSource: () => ({ paths: [[0, 0, 20, 20]] }) },
+        lineWidth: 5,
+        fill: true,
+      },
+    ],
+  });
+  eda.pcb_PrimitivePoured = {
+    getAllPrimitiveId: async () => ['pours-1'],
+    getAll: async () => [pouredObject],
+  };
+  return eda;
+}
+
+function rulesApis(differentialPairs) {
+  return {
+    pcb_Drc: {
+      getCurrentRuleConfigurationName: async () => 'Fixture Six Layer',
+      getCurrentRuleConfiguration: async () => ({
+        name: 'Fixture Six Layer',
+        config: { id: 'configuration-1' },
+      }),
+      getNetRules: async () => [
+        {
+          type: 'group',
+          name: 'USB',
+          sub: [
+            { type: 'net', name: 'DM', rule: 'default' },
+            { type: 'net', name: 'DP', rule: 'default' },
+          ],
+        },
+        { type: 'net', name: 'GND', rule: 'default' },
+      ],
+      getNetByNetRules: async () => ({ GND: [] }),
+      getRegionRules: async () => [{ id: 'region-1' }],
+      getAllNetClasses: async () => [{ name: 'Ground', nets: ['GND'], color: null }],
+      getAllDifferentialPairs: async () => differentialPairs,
+      getAllEqualLengthNetGroups: async () => [],
+      getAllPadPairGroups: async () => [
+        { name: 'Length fixture', padPairs: [['U1.1', 'U2.1']] },
+      ],
+      getPadPairGroupMinWireLength: async () => [
+        { padPair: ['U1.1', 'U2.1'], minWireLength: 1250 },
+      ],
+    },
+    pcb_Net: { getAllNetsName: async () => ['DM', 'DP', 'GND'] },
+  };
+}
+
+function topologyApis({
+  onFormat,
+  onComponentCall,
+  componentUniqueId = 'gge1',
+  componentDesignator = 'R1',
+  componentPinNumbers = ['1'],
+  netlistUniqueId = 'gge1',
+  netlistDesignator = 'R1',
+  netlistPinNumbers = ['1'],
+} = {}) {
+  const component = schematicComponent('sch-r1', componentDesignator, componentUniqueId);
+  return {
+    sch_PrimitiveComponent: {
+      getAll: async (...args) => {
+        onComponentCall?.('getAll', args);
+        return [component];
+      },
+      getAllPrimitiveId: async (...args) => {
+        onComponentCall?.('getAllPrimitiveId', args);
+        return ['sch-r1'];
+      },
+      getAllPinsByPrimitiveId: async (...args) => {
+        onComponentCall?.('getAllPinsByPrimitiveId', args);
+        return componentPinNumbers.map((pinNumber, index) =>
+          stateObject({ PrimitiveId: `pin-${index + 1}`, PinNumber: pinNumber }),
+        );
+      },
+    },
+    sch_Netlist: {
+      getNetlist: async (format) => {
+        onFormat?.(format);
+        return JSON.stringify({
+          components: {
+            [netlistUniqueId]: {
+              props: {
+                'Unique ID': netlistUniqueId,
+                Designator: netlistDesignator,
+              },
+              pinInfoMap: Object.fromEntries(
+                netlistPinNumbers.map((pinNumber) => [
+                  pinNumber,
+                  { number: pinNumber, net: 'GND' },
+                ]),
+              ),
+            },
+          },
+        });
+      },
+    },
+  };
+}
+
+describe('facade-owned exact reader contracts', () => {
+  test('enforces strict request schemas, one selector, and the editor document type', () => {
+    assert.throws(
+      () => exactReadRequestSchema.parse({ kind: 'pcb-inventory', extra: true }),
+      /unrecognized key/i,
+    );
+    assert.throws(
+      () =>
+        exactReadRequestSchema.parse({
+          kind: 'schematic-components',
+          selector: { all: true, primitiveIds: ['sch-r1'] },
+        }),
+      /exactly one/i,
+    );
+    assert.throws(
+      () =>
+        exactReadRequestSchema.parse({
+          kind: 'pcb-components',
+          selector: { primitiveIds: ['pcb-u1', 'pcb-u1'] },
+        }),
+      /duplicates/i,
+    );
+    assert.throws(
+      () =>
+        validateExactReadRequest(
+          { kind: 'schematic-components', selector: { all: true } },
+          { document: { documentType: 3 } },
+        ),
+      /requires document type 1, not 3/,
+    );
+    assert.equal(exactReadDocumentType('pcb-rules'), 3);
+    assert.throws(() => exactReadDocumentType('library-components'), /Unsupported exact-reader kind/);
+  });
+
+  test('uses only the declared lower-case EasyEDA API and fails on missing APIs', async () => {
+    const request = {
+      kind: 'schematic-components',
+      selector: { all: true },
+      includePins: false,
+      includeBounds: false,
+    };
+    const source = buildExactReadCode(request);
+    assert.match(source, /const value = eda\[lower\]/);
+    assert.doesNotMatch(source, /eda\[_upper\]/);
+
+    await assert.rejects(
+      executeReader(request, {
+        SCH_PrimitiveComponent: schematicApis().sch_PrimitiveComponent,
+      }),
+      /sch_PrimitiveComponent API is unavailable/,
+    );
+    const payload = await executeReader(request, schematicApis());
+    assert.deepEqual(payload.primitiveIds, ['sch-r1']);
+  });
+
+  test('rejects non-array enumerations and component ID-set mismatches', async () => {
+    const request = {
+      kind: 'schematic-components',
+      selector: { all: true },
+      includePins: false,
+      includeBounds: false,
+    };
+    await assert.rejects(
+      executeReader(request, schematicApis({ getAll: async () => ({}) })),
+      /component getAll did not return an array/,
+    );
+    await assert.rejects(
+      executeReader(request, schematicApis({ declaredIds: ['different-id'] })),
+      /component ID and object enumerations disagree/,
+    );
+  });
+
+  test('reports Component3-backed schematic fields while omitting unobservable pin properties', async () => {
+    const request = {
+      kind: 'schematic-components',
+      selector: { primitiveIds: ['sch-r1'] },
+      includePins: true,
+      includeBounds: false,
+    };
+    const payload = await executeReader(request, schematicApis());
+    const component = payload.byPrimitiveId['sch-r1'];
+    assert.equal(component.cbb, null);
+    assert.equal(component.cbbSymbol, null);
+    assert.equal(component.pins[0].x, 95);
+    assert.equal(component.pins[0].y, 200);
+    assert.equal(component.pins[0].noConnected, false);
+    assert.equal(Object.hasOwn(component.pins[0], 'otherProperty'), false);
+    assert.match(payload.limitations.componentPinOtherProperty, /Omitted/);
+    assert.match(payload.limitations.componentOtherPropertyFiltering, /Adapter-filtered/);
+    assert.match(payload.limitations.cbbLibraryOwnership, /Unavailable/);
+
+    const malformedPinColor = structuredClone(payload);
+    malformedPinColor.byPrimitiveId['sch-r1'].pins[0].pinColor = { red: 0 };
+    assert.throws(
+      () => validateExactReadPayload(malformedPinColor, request),
+      /pinColor must be a string or null/,
+    );
+  });
+
+  test('normalizes library-association placeholders without dropping real UUID identities', async () => {
+    const component = schematicComponent();
+    component.getState_Component = async () => ({});
+    component.getState_Cbb = async () => ({ libraryUuid: '', uuid: '', name: '' });
+    component.getState_CbbSymbol = async () => ({
+      libraryUuid: '',
+      cbbUuid: 'cbb-symbol-1',
+      name: 'CBB symbol',
+    });
+    component.getState_Symbol = async () => ({ uuid: '', name: '' });
+    component.getState_Footprint = async () => ({
+      libraryUuid: 'library-1',
+      uuid: 'footprint-1',
+      name: 'Real footprint',
+    });
+
+    const payload = await executeReader(
+      {
+        kind: 'schematic-components',
+        selector: { primitiveIds: ['sch-r1'] },
+        includePins: false,
+        includeBounds: false,
+      },
+      schematicApis({ components: [component] }),
+    );
+    const record = payload.byPrimitiveId['sch-r1'];
+    assert.equal(record.component, null);
+    assert.equal(record.cbb, null);
+    assert.equal(record.symbol, null);
+    assert.deepEqual(record.cbbSymbol, {
+      cbbUuid: 'cbb-symbol-1',
+      name: 'CBB symbol',
+    });
+    assert.deepEqual(record.footprint, {
+      libraryUuid: 'library-1',
+      uuid: 'footprint-1',
+      name: 'Real footprint',
+    });
+  });
+
+  test('rejects observable partial library associations without an identity UUID', async () => {
+    for (const association of [
+      { libraryUuid: 'library-only' },
+      { name: 'named but unidentified' },
+      { libraryUuid: 'library-only', name: 'named but unidentified' },
+    ]) {
+      const component = schematicComponent();
+      component.getState_Component = async () => association;
+      await assert.rejects(
+        executeReader(
+          {
+            kind: 'schematic-components',
+            selector: { all: true },
+            includePins: false,
+            includeBounds: false,
+          },
+          schematicApis({ components: [component] }),
+        ),
+        /nonidentity association fields without an observable UUID/,
+      );
+    }
+  });
+
+  test('rejects string and object coercion for typed boolean and identity fields', async () => {
+    const stringBoolean = schematicComponent();
+    stringBoolean.getState_Mirror = async () => 'false';
+    await assert.rejects(
+      executeReader(
+        {
+          kind: 'schematic-components',
+          selector: { all: true },
+          includePins: false,
+          includeBounds: false,
+        },
+        schematicApis({ components: [stringBoolean] }),
+      ),
+      /schematic component mirror is not boolean/,
+    );
+
+    const coercibleIdentity = schematicComponent();
+    coercibleIdentity.getState_PrimitiveId = async () => ({
+      toString: () => 'sch-r1',
+    });
+    await assert.rejects(
+      executeReader(
+        {
+          kind: 'schematic-components',
+          selector: { all: true },
+          includePins: false,
+          includeBounds: false,
+        },
+        schematicApis({ components: [coercibleIdentity] }),
+      ),
+      /component primitive ID is not a valid string/,
+    );
+
+    const pcbStringBoolean = pcbComponent();
+    pcbStringBoolean.getState_PrimitiveLock = async () => 'false';
+    await assert.rejects(
+      executeReader(
+        {
+          kind: 'pcb-components',
+          selector: { all: true },
+          includePins: false,
+          includeBounds: false,
+        },
+        pcbComponentApis({ components: [pcbStringBoolean], pads: [] }),
+      ),
+      /PCB component lock state is not boolean/,
+    );
+  });
+
+  test('preserves PCB pad identity, parentage, bounds, and raw transformed mil positions', async () => {
+    const request = {
+      kind: 'pcb-components',
+      selector: { all: true },
+      includePins: true,
+      includeBounds: true,
+    };
+    const payload = await executeReader(request, pcbComponentApis());
+    const component = payload.byPrimitiveId['pcb-u1'];
+    const [pad] = component.pads;
+    assert.deepEqual(payload.units, {
+      coordinates: 'mil',
+      bounds: 'mil',
+      transformedPadCoordinates: 'mil',
+    });
+    assert.equal(pad.primitiveId, 'pad-1');
+    assert.equal(pad.primitiveType, 'ComponentPad');
+    assert.equal(pad.parentComponentPrimitiveId, 'pcb-u1');
+    assert.equal(pad.x, 2841.732283464567);
+    assert.equal(component.bounds.minX, 558.2677165354326);
+    assert.equal(pad.hole, undefined);
+    assert.equal(pad.bounds, undefined);
+    assert.equal(pad.source, 'component-pin-wrapper-transformed-placement-only');
+    assert.match(payload.limitations.componentPadWrapper, /0\.1 drill-scale defect/);
+
+    await assert.rejects(
+      executeReader(request, pcbComponentApis({ pads: [pcbPad({ primitiveType: 'Pad' })] })),
+      /pad type mismatch/,
+    );
+    await assert.rejects(
+      executeReader(
+        request,
+        pcbComponentApis({ pads: [pcbPad({ parentComponentPrimitiveId: 'pcb-other' })] }),
+      ),
+      /pad parent mismatch/,
+    );
+    await assert.rejects(
+      executeReader(request, pcbComponentApis({ pads: [pcbPad(), pcbPad()] })),
+      /duplicate primitive IDs/,
+    );
+  });
+
+  test('enumerates direct pads once and models component pads and poured state as correlations', async () => {
+    const payload = await executeReader({ kind: 'pcb-inventory' }, inventoryApis());
+    assert.deepEqual(
+      Object.keys(payload.families).sort(),
+      inventoryDefinitions.map(([family]) => family).sort(),
+    );
+    for (const family of Object.values(payload.families)) {
+      assert.equal(family.status, 'adapter-enumerated');
+      assert.equal(family.count, family.primitiveIds.length);
+    }
+    assert.equal(Object.hasOwn(payload.families, 'componentPads'), false);
+    assert.equal(Object.hasOwn(payload.families, 'poured'), false);
+    assert.equal(payload.componentPadCorrelation.status, 'exact-subset');
+    assert.equal(payload.componentPadCorrelation.count, 1);
+    assert.deepEqual(payload.componentPadCorrelation.byPrimitiveId['component-pad-1'], {
+      primitiveId: 'component-pad-1',
+      parentComponentPrimitiveId: 'components-1',
+      padNumber: '1',
+      net: 'GND',
+      source: 'component-getState_Pads',
+    });
+    assert.deepEqual(payload.componentPadCorrelation.byComponentPrimitiveId, {
+      'components-1': ['component-pad-1'],
+    });
+    assert.equal(
+      payload.families.pads.byPrimitiveId['component-pad-1'].parentComponentPrimitiveId,
+      'components-1',
+    );
+    assert.deepEqual(payload.families.pads.byPrimitiveId['component-pad-1'].pad, [
+      'ELLIPSE',
+      67,
+      67,
+    ]);
+    assert.deepEqual(payload.families.pads.byPrimitiveId['component-pad-1'].specialPad, [
+      [1, 1, ['RECT', 60, 40, 0]],
+    ]);
+    assert.deepEqual(payload.families.pads.byPrimitiveId['component-pad-1'].hole, [
+      'ROUND',
+      126,
+    ]);
+    assert.equal(payload.families.pads.byPrimitiveId['pad-standalone-1'].padType, 1);
+    assert.equal(payload.families.vias.byPrimitiveId['vias-1'].viaType, 0);
+    assert.equal(payload.families.arcs.byPrimitiveId['arcs-1'].interactiveMode, 0);
+    assert.equal(
+      Object.hasOwn(payload.families.regions.byPrimitiveId['regions-1'], 'ruleType'),
+      false,
+    );
+    assert.equal(
+      Object.hasOwn(payload.families.fills.byPrimitiveId['fills-1'], 'fillMode'),
+      false,
+    );
+    assert.match(payload.limitations.regionRuleTypes, /Omitted/);
+    assert.match(payload.limitations.fillModes, /Omitted/);
+    assert.match(payload.limitations.arcPrecision, /rounded to one decimal/);
+    assert.match(payload.limitations.viaPrecision, /rounded to one decimal/);
+    assert.equal(
+      payload.families.pads.byPrimitiveId['component-pad-1'].source,
+      'pcb_PrimitivePad-direct-state',
+    );
+    assert.equal(payload.physicalPadCount, 2);
+    assert.equal(payload.standalonePadCount, 1);
+    assert.equal(
+      payload.enumeratedPrimitiveCount,
+      Object.values(payload.families).reduce((count, family) => count + family.count, 0),
+    );
+    assert.equal(payload.pouredCorrelation.status, 'derived-subset');
+    assert.deepEqual(payload.pouredCorrelation.pourPrimitiveIds, ['pours-1']);
+    assert.equal(
+      payload.pouredCorrelation.byPourPrimitiveId['pours-1'].pourPrimitiveId,
+      'pours-1',
+    );
+    assert.deepEqual(
+      Object.keys(payload.pouredCorrelation.byPourPrimitiveId['pours-1']).sort(),
+      ['pourFills', 'pourPrimitiveId', 'primitiveId', 'primitiveType'].sort(),
+    );
+    assert.deepEqual(
+      payload.pouredCorrelation.byPourPrimitiveId['pours-1'].pourFills.map(({ id }) => id),
+      ['poured-fill-piece-1'],
+    );
+    assert.equal(payload.pouredFillPieceCount, 1);
+
+    const omittedPrecision = structuredClone(payload);
+    delete omittedPrecision.limitations.arcPrecision;
+    assert.throws(
+      () => validateExactReadPayload(omittedPrecision, { kind: 'pcb-inventory' }),
+      /omitted primitive families/,
+    );
+
+    const wrongComponentIndex = structuredClone(payload);
+    wrongComponentIndex.componentPadCorrelation.byComponentPrimitiveId['components-1'] = [];
+    assert.throws(
+      () => validateExactReadPayload(wrongComponentIndex, { kind: 'pcb-inventory' }),
+      /component-to-pad index is inconsistent/,
+    );
+
+    const unexpectedFamilyState = structuredClone(payload);
+    unexpectedFamilyState.families.vias.byPrimitiveId['vias-1'].unreviewed = true;
+    assert.throws(
+      () => validateExactReadPayload(unexpectedFamilyState, { kind: 'pcb-inventory' }),
+      /missing or unexpected fields/,
+    );
+
+    const malformedHostShapes = [
+      [
+        (candidate) => {
+          candidate.families.pads.byPrimitiveId['component-pad-1'].pad = {};
+        },
+        /pad-shape tuple/,
+      ],
+      [
+        (candidate) => {
+          candidate.families.pads.byPrimitiveId['component-pad-1'].specialPad = [[1]];
+        },
+        /malformed layer tuple/,
+      ],
+      [
+        (candidate) => {
+          candidate.families.pads.byPrimitiveId['component-pad-1'].hole = ['SLOT', 126];
+        },
+        /wrong tuple length/,
+      ],
+      [
+        (candidate) => {
+          candidate.families.pads.byPrimitiveId[
+            'component-pad-1'
+          ].solderMaskAndPasteMaskExpansion = { topSolderMask: '4' };
+        },
+        /topSolderMask must be finite/,
+      ],
+      [
+        (candidate) => {
+          candidate.families.pads.byPrimitiveId['component-pad-1'].heatWelding = {
+            enabled: false,
+          };
+        },
+        /malformed connection method or unexpected field/,
+      ],
+      [
+        (candidate) => {
+          candidate.families.vias.byPrimitiveId['vias-1'].solderMaskExpansion = { top: 2 };
+        },
+        /unexpected field/,
+      ],
+    ];
+    for (const [mutate, expectedError] of malformedHostShapes) {
+      const candidate = structuredClone(payload);
+      mutate(candidate);
+      assert.throws(
+        () => validateExactReadPayload(candidate, { kind: 'pcb-inventory' }),
+        expectedError,
+      );
+    }
+
+    const wrongGlobalTotal = structuredClone(payload);
+    wrongGlobalTotal.enumeratedPrimitiveCount += 1;
+    assert.throws(
+      () => validateExactReadPayload(wrongGlobalTotal, { kind: 'pcb-inventory' }),
+      /wrong total/,
+    );
+
+    const malformedPouredRow = structuredClone(payload);
+    malformedPouredRow.pouredCorrelation.byPourPrimitiveId['pours-1'].pourPrimitiveId =
+      'different-pour';
+    assert.throws(
+      () => validateExactReadPayload(malformedPouredRow, { kind: 'pcb-inventory' }),
+      /poured-state record is malformed/,
+    );
+
+    const missingComponentPad = inventoryApis();
+    missingComponentPad.pcb_PrimitiveComponent.getAll = async () => [
+      stateObject({
+        PrimitiveId: 'components-1',
+        Pads: [{ primitiveId: 'missing-component-pad', padNumber: '1', net: 'GND' }],
+      }),
+    ];
+    await assert.rejects(
+      executeReader({ kind: 'pcb-inventory' }, missingComponentPad),
+      /absent from pcb_PrimitivePad/,
+    );
+
+    const orphanPouredState = inventoryApis();
+    const orphan = stateObject({
+      PrimitiveId: 'missing-pour',
+      PrimitiveType: 'Poured',
+      PourPrimitiveId: 'missing-pour',
+      PourFills: [],
+    });
+    orphanPouredState.pcb_PrimitivePoured.getAllPrimitiveId = async () => ['missing-pour'];
+    orphanPouredState.pcb_PrimitivePoured.getAll = async () => [orphan];
+    await assert.rejects(
+      executeReader({ kind: 'pcb-inventory' }, orphanPouredState),
+      /parent absent from pcb_PrimitivePour/,
+    );
+
+    const missingFamily = inventoryApis();
+    delete missingFamily.pcb_PrimitiveImage;
+    await assert.rejects(
+      executeReader({ kind: 'pcb-inventory' }, missingFamily),
+      /pcb_PrimitiveImage API is unavailable/,
+    );
+    for (const options of [
+      { padType: 'ThroughHole' },
+      { viaType: 1.5 },
+      { interactiveMode: 'interactive' },
+    ]) {
+      await assert.rejects(
+        executeReader({ kind: 'pcb-inventory' }, inventoryApis(options)),
+        /is not finite|is not an integer enum/,
+      );
+    }
+  });
+
+  test('normalizes rule arrays and object-keyed branches while enforcing exact shapes', async () => {
+    for (const differentialPairs of [
+      [],
+      [{ name: 'DP1', positiveNet: 'DP', negativeNet: 'DM' }],
+    ]) {
+      const payload = await executeReader({ kind: 'pcb-rules' }, rulesApis(differentialPairs));
+      assert.deepEqual(payload.rules.differentialPairs, differentialPairs);
+      assert.deepEqual(payload.nets, ['DM', 'DP', 'GND']);
+      assert.deepEqual(payload.rules.padPairGroups, [
+        {
+          name: 'Length fixture',
+          padPairs: [['U1.1', 'U2.1']],
+          minimumWireLengths: [
+            { padPair: ['U1.1', 'U2.1'], minWireLength: 1250 },
+          ],
+        },
+      ]);
+      assert.equal(payload.units.padPairMinimumWireLength, 'mil');
+    }
+
+    const badNetRules = rulesApis([]);
+    badNetRules.pcb_Drc.getNetRules = async () => ({});
+    await assert.rejects(
+      executeReader({ kind: 'pcb-rules' }, badNetRules),
+      /PCB net rules did not return an array/,
+    );
+    const badNetByNet = rulesApis([]);
+    badNetByNet.pcb_Drc.getNetByNetRules = async () => [];
+    await assert.rejects(
+      executeReader({ kind: 'pcb-rules' }, badNetByNet),
+      /PCB net-to-net rules did not return an object/,
+    );
+    await assert.rejects(
+      executeReader({ kind: 'pcb-rules' }, rulesApis({ DP1: {} })),
+      /PCB differential pairs did not return an array/,
+    );
+
+    const mismatchedConfiguration = rulesApis([]);
+    mismatchedConfiguration.pcb_Drc.getCurrentRuleConfiguration = async () => ({
+      name: 'Different configuration',
+      config: {},
+    });
+    await assert.rejects(
+      executeReader({ kind: 'pcb-rules' }, mismatchedConfiguration),
+      /configuration getters disagree/,
+    );
+    const malformedConfiguration = rulesApis([]);
+    malformedConfiguration.pcb_Drc.getCurrentRuleConfiguration = async () => ({
+      name: 'Fixture Six Layer',
+    });
+    await assert.rejects(
+      executeReader({ kind: 'pcb-rules' }, malformedConfiguration),
+      /omitted its config object/,
+    );
+    const emptyConfiguration = rulesApis([]);
+    emptyConfiguration.pcb_Drc.getCurrentRuleConfiguration = async () => ({
+      name: 'Fixture Six Layer',
+      config: {},
+    });
+    await assert.rejects(
+      executeReader({ kind: 'pcb-rules' }, emptyConfiguration),
+      /configuration config is empty/,
+    );
+
+    const missingRuleLeaf = rulesApis([]);
+    missingRuleLeaf.pcb_Drc.getNetRules = async () => [
+      { type: 'net', name: 'DM', rule: 'default' },
+      { type: 'net', name: 'GND', rule: 'default' },
+    ];
+    await assert.rejects(
+      executeReader({ kind: 'pcb-rules' }, missingRuleLeaf),
+      /rule leaves do not cover every live net exactly once/,
+    );
+
+    const duplicateRuleLeaf = rulesApis([]);
+    duplicateRuleLeaf.pcb_Drc.getNetRules = async () => [
+      { type: 'net', name: 'DM', rule: 'default' },
+      { type: 'net', name: 'DP', rule: 'default' },
+      { type: 'net', name: 'GND', rule: 'default' },
+      { type: 'net', name: 'GND', rule: 'duplicate' },
+    ];
+    await assert.rejects(
+      executeReader({ kind: 'pcb-rules' }, duplicateRuleLeaf),
+      /duplicate net leaves/,
+    );
+
+    const validPayload = await executeReader({ kind: 'pcb-rules' }, rulesApis([]));
+    assert.throws(
+      () =>
+        validateExactReadPayload(
+          {
+            ...validPayload,
+            rules: {
+              ...validPayload.rules,
+              configuration: { name: 'Different configuration', config: {} },
+            },
+          },
+          { kind: 'pcb-rules' },
+        ),
+      /omitted rules or nets/,
+    );
+    const missingValidatedLeaf = structuredClone(validPayload);
+    missingValidatedLeaf.rules.netRules[0].sub.pop();
+    assert.throws(
+      () => validateExactReadPayload(missingValidatedLeaf, { kind: 'pcb-rules' }),
+      /rule leaves do not cover every live net exactly once/,
+    );
+  });
+
+  test('uses only compiled JLCEDA connectivity and disclaims unavailable wire geometry', async () => {
+    const request = { kind: 'schematic-topology' };
+    const formats = [];
+    const componentCalls = [];
+    const rawPayload = await executeReader(
+      request,
+      topologyApis({
+        onFormat: (format) => formats.push(format),
+        onComponentCall: (method, args) => componentCalls.push({ method, args }),
+      }),
+    );
+    assert.deepEqual(formats, ['JLCEDA']);
+    assert.deepEqual(componentCalls, [
+      { method: 'getAll', args: ['part', true] },
+      { method: 'getAllPrimitiveId', args: ['part', true] },
+      { method: 'getAllPinsByPrimitiveId', args: ['sch-r1'] },
+    ]);
+    assert.deepEqual(rawPayload.authority, {
+      connectivity: 'sch_Netlist.getNetlist(JLCEDA)',
+      wireGeometry: 'unavailable',
+    });
+    assert.equal(rawPayload.limitations.length, 2);
+    assert.equal(Object.hasOwn(rawPayload, 'wires'), false);
+    assert.equal(Object.hasOwn(rawPayload, 'netNames'), false);
+    assert.equal(Object.hasOwn(rawPayload, 'netTree'), false);
+    assert.deepEqual(rawPayload.compiledConnectivity, [
+      {
+        uniqueId: 'gge1',
+        designator: 'R1',
+        pins: [{ pinNumber: '1', net: 'GND' }],
+      },
+    ]);
+    assert.deepEqual(rawPayload.componentCorrelation, {
+      status: 'exact-match',
+      source: 'sch_PrimitiveComponent.getAll(part,true)',
+      componentCount: 1,
+      pinCount: 1,
+      primitiveIds: ['sch-r1'],
+      uniqueIds: ['gge1'],
+      byUniqueId: {
+        gge1: {
+          primitiveId: 'sch-r1',
+          designator: 'R1',
+          pinNumbers: ['1'],
+        },
+      },
+    });
+
+    const upstream = {
+      async callTool() {
+        return { structuredContent: { ok: true, result: structuredClone(rawPayload) } };
+      },
+    };
+    const engine = new EasyedaControlEngine(upstream);
+    engine.assertContext = async (expectedContext) => structuredClone(expectedContext);
+    const compact = await engine.exactRead(request, {
+      project: { uuid: 'project-1', path: '/tmp/project.eprj2' },
+      document: { uuid: 'document-1', documentType: 1, tabId: 'tab-1' },
+    });
+    assert.deepEqual(compact.compiledConnectivity, rawPayload.compiledConnectivity);
+    assert.equal(compact.read_consistency.stable, true);
+    assert.equal(compact.read_consistency.attempts, 2);
+
+    assert.throws(
+      () =>
+        validateExactReadPayload(
+          {
+            ...rawPayload,
+            authority: { ...rawPayload.authority, wireGeometry: 'complete' },
+          },
+          request,
+        ),
+      /omitted compiled connectivity provenance/,
+    );
+    assert.throws(
+      () =>
+        validateExactReadPayload(
+          {
+            ...rawPayload,
+            componentCorrelation: {
+              ...rawPayload.componentCorrelation,
+              byUniqueId: {
+                gge1: {
+                  ...rawPayload.componentCorrelation.byUniqueId.gge1,
+                  pinNumbers: ['2'],
+                },
+              },
+            },
+          },
+          request,
+        ),
+      /compiled and public component state disagree/,
+    );
+    const malformed = topologyApis();
+    malformed.sch_Netlist.getNetlist = async () => 'not JSON connectivity';
+    await assert.rejects(
+      executeReader(request, malformed),
+      /JSON sequence could not be parsed/,
+    );
+    await assert.rejects(
+      executeReader(
+        request,
+        topologyApis({ componentUniqueId: 'different-gge' }),
+      ),
+      /netlist identity does not match all-page part components/,
+    );
+    await assert.rejects(
+      executeReader(request, topologyApis({ componentPinNumbers: ['2'] })),
+      /netlist identity does not match all-page part components/,
+    );
+  });
+
+  test('accepts an exactly correlated zero-pin compiled-topology component', async () => {
+    const request = { kind: 'schematic-topology' };
+    const payload = await executeReader(
+      request,
+      topologyApis({ componentPinNumbers: [], netlistPinNumbers: [] }),
+    );
+    assert.deepEqual(payload.compiledConnectivity, [
+      { uniqueId: 'gge1', designator: 'R1', pins: [] },
+    ]);
+    assert.equal(payload.componentCorrelation.pinCount, 0);
+    assert.deepEqual(payload.componentCorrelation.byUniqueId.gge1.pinNumbers, []);
+    assert.equal(validateExactReadPayload(payload, request), payload);
+  });
+
+  test('validates payload indexes and rejects unstable double reads', async () => {
+    const request = {
+      kind: 'schematic-components',
+      selector: { primitiveIds: ['sch-r1'] },
+      includePins: true,
+      includeBounds: true,
+    };
+    const valid = await executeReader(request, schematicApis());
+    assert.equal(validateExactReadPayload(valid, request), valid);
+    assert.throws(
+      () =>
+        validateExactReadPayload(
+          { ...valid, primitiveIds: ['sch-r1', 'sch-r2'] },
+          request,
+        ),
+      /internally inconsistent/,
+    );
+
+    let observation = 0;
+    const upstream = {
+      async callTool(name, argumentsValue) {
+        assert.equal(name, 'easyeda_execute');
+        assert.match(argumentsValue.code, /"kind":"schematic-components"/);
+        observation += 1;
+        return {
+          structuredContent: {
+            ok: true,
+            result: {
+              ...structuredClone(valid),
+              byPrimitiveId: {
+                'sch-r1': {
+                  ...valid.byPrimitiveId['sch-r1'],
+                  x: observation,
+                },
+              },
+            },
+          },
+        };
+      },
+    };
+    const engine = new EasyedaControlEngine(upstream);
+    engine.assertContext = async (expectedContext) => structuredClone(expectedContext);
+    await assert.rejects(
+      engine.exactRead(request, {
+        project: { uuid: 'project-1', path: '/tmp/project.eprj2' },
+        document: { uuid: 'document-1', documentType: 1, tabId: 'tab-1' },
+      }),
+      (error) => {
+        assert.match(error.message, /changed between two consecutive observations/);
+        assert.equal(error.mismatches[0].pointer, '/');
+        return true;
+      },
+    );
+  });
+});
