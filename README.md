@@ -69,7 +69,7 @@ If any call reports bridge quarantine, use `easyeda_control_recover_incomplete` 
 
 ## Development
 
-First-party MCP source, test, and plugin scripts are TypeScript. Node 24 runs the erasable TypeScript directly during development; `tsc --noEmit` performs the strict compiler check, and esbuild produces the committed JavaScript MCP bundle.
+First-party MCP source, test, and plugin scripts are TypeScript. Node 24 runs the erasable TypeScript directly during development; `tsc --noEmit` performs the strict compiler check, and esbuild produces the committed JavaScript MCP bundle. Type-aware Oxlint treats the correctness, suspicious, pedantic, performance, style, and restriction categories as errors, denies warnings, and rejects unused suppressions. The few project-level rule exceptions are documented next to their configuration rationale in `.oxlintrc.json`.
 
 ```bash
 cd plugins/easyeda-pro-control

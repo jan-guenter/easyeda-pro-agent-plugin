@@ -1,16 +1,82 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["eslint", "import", "node", "oxc", "promise", "typescript", "unicorn"],
+  "plugins": [
+    "eslint",
+    "import",
+    "node",
+    "oxc",
+    "promise",
+    "typescript",
+    "unicorn"
+  ],
   "categories": {
     "correctness": "error",
     "suspicious": "error",
-    "pedantic": "error"
+    "pedantic": "error",
+    "perf": "error",
+    "style": "error",
+    "restriction": "error"
   },
   "rules": {
-    // These metrics would force safety-critical state machines and protocol facades
-    // apart without identifying a defect. Their behavior is covered by focused tests.
+    // This project rejects threshold metrics as defect proxies. Splitting cohesive
+    // validators, state machines, scripts, and adversarial tests by size alone would
+    // make their behavior harder to audit; focused tests cover the actual contracts.
+    "eslint/complexity": "off",
     "eslint/max-lines": "off",
     "eslint/max-lines-per-function": "off",
+    "eslint/max-params": "off",
+    "eslint/max-statements": "off",
+
+    // Node APIs and environment configuration are part of this package's runtime
+    // contract. Narrow sync-I/O and top-level-await exceptions live in overrides.
+    "import/no-nodejs-modules": "off",
+    "node/no-process-env": "off",
+
+    // Node 24 supports these language features. The MCP facade depends on async
+    // sequencing, optional-field checks, and concise protocol-object assembly.
+    "oxc/no-async-await": "off",
+    "oxc/no-optional-chaining": "off",
+    "oxc/no-rest-spread-properties": "off",
+
+    // The package uses named modules with colocated declarations and relative
+    // imports. Default-only exports and export blocks would obscure ownership.
+    "import/exports-last": "off",
+    "import/group-exports": "off",
+    "import/no-named-export": "off",
+    "import/no-relative-parent-imports": "off",
+    "import/prefer-default-export": "off",
+    "unicorn/import-style": "off",
+
+    // These syntax bans make protocol objects, test vectors, and optional JSON
+    // values harder to audit. Nested ternaries remain prohibited separately.
+    "eslint/func-style": "off",
+    "eslint/id-length": "off",
+    "eslint/no-magic-numbers": "off",
+    "eslint/no-ternary": "off",
+    "eslint/no-undefined": "off",
+    "eslint/no-duplicate-imports": [
+      "error",
+      { "allowSeparateTypeImports": true }
+    ],
+    "eslint/no-use-before-define": ["error", { "functions": false }],
+    "eslint/no-void": "off",
+    "eslint/one-var": "off",
+    // Keep members sorted without forcing Node, package, and local imports into
+    // the rule's member-count order. Blank-line import groups remain readable.
+    "eslint/sort-imports": ["error", { "ignoreDeclarationSort": true }],
+    "eslint/sort-keys": "off",
+    "unicorn/no-null": "off",
+
+    // Exact bridge operations must remain sequential. Delayed declarations and
+    // direct access to named fields keep transaction code explicit and auditable.
+    "eslint/init-declarations": "off",
+    "eslint/no-await-in-loop": "off",
+    "eslint/prefer-destructuring": "off",
+
+    // Protocol and path validators deliberately retain concise numbered captures.
+    // Narrow callback and Promise-construction exceptions live in overrides.
+    "eslint/prefer-named-capture-group": "off",
+    "typescript/promise-function-async": "off",
 
     // Deep-readonly parameters are incompatible with the mutable MCP SDK payloads
     // and EasyEDA bridge records accepted at these trust boundaries. Code still
@@ -18,6 +84,89 @@
     "typescript/prefer-readonly-parameter-types": "off"
   },
   "overrides": [
+    {
+      "files": [
+        "scripts/build-server.ts",
+        "scripts/checkpoint.ts",
+        "scripts/doctor.ts",
+        "scripts/reviewed-compatibility.ts",
+        "scripts/validate-plugin.ts",
+        "server/src/index.ts"
+      ],
+      "rules": {
+        // These files are private ESM executables, never require()-loaded modules.
+        // Top-level await keeps their startup and failure propagation linear.
+        "node/no-top-level-await": "off"
+      }
+    },
+    {
+      "files": [
+        "scripts/doctor.ts",
+        "scripts/validate-plugin.ts",
+        "server/src/core.ts",
+        "server/src/index.ts",
+        "server/src/lease.ts",
+        "server/tests/checkpoint.test.ts",
+        "server/tests/engine.test.ts"
+      ],
+      "rules": {
+        // Sync calls are confined to startup probes, fixture setup, binary decode,
+        // compatibility reads, and process-exit cleanup where awaiting is unsafe.
+        "node/no-sync": "off"
+      }
+    },
+    {
+      "files": ["server/src/artifacts.ts", "server/src/index.ts"],
+      "rules": {
+        // File-mode masks and PNG checksums require exact bitwise arithmetic.
+        "eslint/no-bitwise": "off"
+      }
+    },
+    {
+      "files": [
+        "server/src/engine.ts",
+        "server/src/upstream.ts",
+        "server/tests/engine.test.ts"
+      ],
+      "rules": {
+        // Adapter methods and coordinator helper hooks stay instance-shaped to
+        // preserve substitution and test seams even when no field is read.
+        "eslint/class-methods-use-this": "off"
+      }
+    },
+    {
+      "files": [
+        "server/src/checkpoint.ts",
+        "server/src/engine.ts",
+        "server/src/lease.ts",
+        "server/src/runtime-scripts.ts"
+      ],
+      "rules": {
+        // Continue guards keep cleanup retries and generated transaction scans
+        // visibly fail-closed without adding deeply nested branches.
+        "eslint/no-continue": "off"
+      }
+    },
+    {
+      "files": [
+        "server/src/checkpoint.ts",
+        "server/src/engine.ts",
+        "server/tests/lease.test.ts"
+      ],
+      "rules": {
+        // Event and subprocess APIs need explicit Promise bridges with bounded
+        // settlement, timeout, and error handling.
+        "promise/avoid-new": "off"
+      }
+    },
+    {
+      "files": ["server/src/checkpoint.ts", "server/tests/core.test.ts"],
+      "rules": {
+        // Subprocess settlement and synchronous assertion predicates expose
+        // callback-only APIs; there is no awaitable equivalent to substitute.
+        "promise/prefer-await-to-callbacks": "off"
+      }
+    },
     {
       "files": ["server/src/engine.ts", "server/tests/engine.test.ts"],
       "rules": {

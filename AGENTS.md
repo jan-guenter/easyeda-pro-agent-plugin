@@ -81,7 +81,7 @@ The update command changes only the facade source/bundle projections and review 
 ## Current validation record
 
 - Compatibility target: EasyEDA Pro `3.2.149.88089769`, PCB bundle `3.2.149.5378b690`, public API `0.2.53.aee2f57a`, upstream/bridge `1.0.0-rc.1`, Node `24.18.0`.
-- Node source/toolchain: TypeScript `7.0.2` with all strict compiler checks enabled; Oxlint `1.80.0` plus type-aware `oxlint-tsgolint` `7.0.2001`; correctness, suspicious, and pedantic diagnostics are errors and warnings are denied.
+- Node source/toolchain: TypeScript `7.0.2` with all strict compiler checks enabled; Oxlint `1.80.0` plus type-aware `oxlint-tsgolint` `7.0.2001`; correctness, suspicious, pedantic, performance, style, and restriction diagnostics are errors, warnings are denied, and unused suppressions are errors. Architectural exceptions for Node, async protocol control, typed named modules, generated bridge programs, sequential transactions, and audit-oriented test vectors are individually documented in `.oxlintrc.json`.
 - Connected production-writer validation: **not performed; writer disabled**.
 - Unrestricted raw bridge execution: **structurally disabled**.
 - Release payload commit: `34299ac48fd68cffb56f10ac93db293ac1509a72` in `https://github.com/jan-guenter/easyeda-pro-agent-plugin`.

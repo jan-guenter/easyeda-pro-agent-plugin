@@ -1,27 +1,31 @@
 export interface ExpectedContext {
-  project?: {
-    uuid?: string | undefined;
-    projectUuid?: string | undefined;
-  } | undefined;
-  document?: {
-    uuid?: string | undefined;
-    documentUuid?: string | undefined;
-    documentType?: number | undefined;
-    tabId?: string | undefined;
-  } | undefined;
+  project?:
+    | {
+        uuid?: string | undefined;
+        projectUuid?: string | undefined;
+      }
+    | undefined;
+  document?:
+    | {
+        uuid?: string | undefined;
+        documentUuid?: string | undefined;
+        documentType?: number | undefined;
+        tabId?: string | undefined;
+      }
+    | undefined;
 }
 
-type MutationState = 'before' | 'after';
-type WritableField = 'layer' | 'x' | 'y' | 'rotation' | 'primitiveLock';
+type MutationState = "before" | "after";
+type WritableField = "layer" | "x" | "y" | "rotation" | "primitiveLock";
 type ComponentPatch = Partial<Record<WritableField, unknown>>;
 
 function isWritableField(value: string | undefined): value is WritableField {
   return (
-    value === 'layer' ||
-    value === 'x' ||
-    value === 'y' ||
-    value === 'rotation' ||
-    value === 'primitiveLock'
+    value === "layer" ||
+    value === "x" ||
+    value === "y" ||
+    value === "rotation" ||
+    value === "primitiveLock"
   );
 }
 
@@ -43,7 +47,7 @@ interface ReopenOptions {
 function jsString(value: unknown): string {
   const encoded = JSON.stringify(String(value));
   if (encoded === undefined) {
-    throw new Error('String serialization unexpectedly returned undefined.');
+    throw new Error("String serialization unexpectedly returned undefined.");
   }
   return encoded;
 }
@@ -106,13 +110,20 @@ return await (async () => {
   return { ok: true, project };
 })();`;
 
-export function wrapWithContextGuard(source: string, expectedContext: ExpectedContext): string {
+export function wrapWithContextGuard(
+  source: string,
+  expectedContext: ExpectedContext,
+): string {
   const expectedProjectUuid =
-    expectedContext?.project?.uuid ?? expectedContext?.project?.projectUuid ?? '';
+    expectedContext?.project?.uuid ??
+    expectedContext?.project?.projectUuid ??
+    "";
   const expectedDocumentUuid =
-    expectedContext?.document?.uuid ?? expectedContext?.document?.documentUuid ?? '';
+    expectedContext?.document?.uuid ??
+    expectedContext?.document?.documentUuid ??
+    "";
   const expectedDocumentType = expectedContext?.document?.documentType;
-  const expectedTabId = expectedContext?.document?.tabId ?? '';
+  const expectedTabId = expectedContext?.document?.tabId ?? "";
   if (
     !expectedProjectUuid ||
     !expectedDocumentUuid ||
@@ -120,7 +131,7 @@ export function wrapWithContextGuard(source: string, expectedContext: ExpectedCo
     !expectedTabId
   ) {
     throw new Error(
-      'A guarded runtime call requires project uuid, document uuid, integer documentType, and tabId.',
+      "A guarded runtime call requires project uuid, document uuid, integer documentType, and tabId.",
     );
   }
   return `
@@ -154,46 +165,59 @@ export function buildComponentMutationCode(
   targetChanges: readonly TargetChange[],
   stateName: unknown,
 ): string {
-  if (documentType !== 3 || (stateName !== 'before' && stateName !== 'after')) {
-    throw new Error('Exact component mutation currently requires PCB type and before/after state.');
+  if (documentType !== 3 || (stateName !== "before" && stateName !== "after")) {
+    throw new Error(
+      "Exact component mutation currently requires PCB type and before/after state.",
+    );
   }
   const mutationState: MutationState = stateName;
   if (targetChanges.length === 0) {
-    throw new Error('Exact component mutation requires declared target changes.');
+    throw new Error(
+      "Exact component mutation requires declared target changes.",
+    );
   }
   const patches = new Map<string, ComponentPatch>();
   const preconditions = new Map<string, ComponentPatch>();
-  const preconditionStateName = mutationState === 'after' ? 'before' : 'after';
+  const preconditionStateName = mutationState === "after" ? "before" : "after";
   for (const change of targetChanges) {
-    const pointer = typeof change.pointer === 'string' ? change.pointer : '';
+    const pointer = typeof change.pointer === "string" ? change.pointer : "";
     const match = /^\/([^/]+)$/u.exec(pointer);
     const field = match?.[1];
-    if (!isWritableField(field)) continue;
-    const primitiveId = typeof change.primitiveId === 'string' ? change.primitiveId : '';
+    if (!isWritableField(field)) {
+      continue;
+    }
+    const primitiveId =
+      typeof change.primitiveId === "string" ? change.primitiveId : "";
     if (!/^[A-Za-z0-9._:-]{1,160}$/u.test(primitiveId)) {
-      throw new Error('Exact component mutation contains an invalid primitive ID.');
+      throw new Error(
+        "Exact component mutation contains an invalid primitive ID.",
+      );
     }
     const writableField = field;
     const value = change[mutationState];
     const preconditionValue = change[preconditionStateName];
     for (const candidate of [value, preconditionValue]) {
       if (
-        ['x', 'y', 'rotation'].includes(writableField) &&
-        (typeof candidate !== 'number' || !Number.isFinite(candidate))
+        ["x", "y", "rotation"].includes(writableField) &&
+        (typeof candidate !== "number" || !Number.isFinite(candidate))
       ) {
         throw new Error(`PCB component field ${writableField} must be finite.`);
       }
-      if (writableField === 'layer' && candidate !== 1 && candidate !== 2) {
-        throw new Error('PCB component layer must be exactly 1 (Top) or 2 (Bottom).');
+      if (writableField === "layer" && candidate !== 1 && candidate !== 2) {
+        throw new Error(
+          "PCB component layer must be exactly 1 (Top) or 2 (Bottom).",
+        );
       }
-      if (writableField === 'primitiveLock' && typeof candidate !== 'boolean') {
-        throw new Error('PCB component primitiveLock must be boolean.');
+      if (writableField === "primitiveLock" && typeof candidate !== "boolean") {
+        throw new Error("PCB component primitiveLock must be boolean.");
       }
     }
     const patch = patches.get(primitiveId) ?? {};
     const precondition = preconditions.get(primitiveId) ?? {};
     if (Object.hasOwn(patch, writableField)) {
-      throw new Error(`Exact component mutation repeats ${primitiveId}${pointer}.`);
+      throw new Error(
+        `Exact component mutation repeats ${primitiveId}${pointer}.`,
+      );
     }
     patch[writableField] = value;
     precondition[writableField] = preconditionValue;
@@ -208,15 +232,17 @@ export function buildComponentMutationCode(
       precondition: preconditions.get(primitiveId),
     }));
   if (records.length === 0) {
-    throw new Error('Every exact component mutation needs at least one writable top-level field.');
+    throw new Error(
+      "Every exact component mutation needs at least one writable top-level field.",
+    );
   }
   if (records.length !== 1) {
     throw new Error(
-      'A guarded component mutation is limited to exactly one PCB component so a failed modify cannot leave an unclassified partial multi-component state.',
+      "A guarded component mutation is limited to exactly one PCB component so a failed modify cannot leave an unclassified partial multi-component state.",
     );
   }
   const serialized = JSON.stringify(records);
-  const apiName = 'pcb_PrimitiveComponent';
+  const apiName = "pcb_PrimitiveComponent";
   return `
 return await (async () => {
   const PATCHES = ${serialized};
@@ -297,7 +323,10 @@ return await (async () => {
 })();`;
 }
 
-export function buildDsnExportCode(fileName: string, expectedContext: ExpectedContext): string {
+export function buildDsnExportCode(
+  fileName: string,
+  expectedContext: ExpectedContext,
+): string {
   const expectedProjectUuid =
     expectedContext?.project?.uuid ?? expectedContext?.project?.projectUuid;
   const expectedDocumentUuid =
@@ -309,11 +338,13 @@ export function buildDsnExportCode(fileName: string, expectedContext: ExpectedCo
     isMissingString(expectedDocumentUuid) ||
     expectedDocumentType !== 3 ||
     isMissingString(expectedTabId) ||
-    typeof fileName !== 'string' ||
+    typeof fileName !== "string" ||
     fileName.length === 0 ||
     fileName.length > 180
   ) {
-    throw new Error('Facade DSN export requires exact type-3 context and a bounded file name.');
+    throw new Error(
+      "Facade DSN export requires exact type-3 context and a bounded file name.",
+    );
   }
   return `
 return await (async () => {
@@ -368,23 +399,26 @@ return await (async () => {
 }
 
 export function buildSaveReopenCode(expectedContext: ExpectedContext): string {
-  const expectedUuid = expectedContext?.document?.uuid ?? expectedContext?.document?.documentUuid;
+  const expectedUuid =
+    expectedContext?.document?.uuid ?? expectedContext?.document?.documentUuid;
   const expectedType = expectedContext?.document?.documentType;
   const expectedTabId = expectedContext?.document?.tabId;
   if (
     isMissingString(expectedUuid) ||
-    typeof expectedType !== 'number' ||
+    typeof expectedType !== "number" ||
     !Number.isInteger(expectedType)
   ) {
-    throw new Error('save/reopen requires expectedContext.document uuid and documentType.');
+    throw new Error(
+      "save/reopen requires expectedContext.document uuid and documentType.",
+    );
   }
   if (![1, 3].includes(expectedType)) {
     throw new Error(
-      'exact save/reopen currently supports schematic (1) and PCB (3) documents only; library documents require a version-pinned library workflow.',
+      "exact save/reopen currently supports schematic (1) and PCB (3) documents only; library documents require a version-pinned library workflow.",
     );
   }
   if (isMissingString(expectedTabId)) {
-    throw new Error('save/reopen requires expectedContext.document.tabId.');
+    throw new Error("save/reopen requires expectedContext.document.tabId.");
   }
   return `
 return await (async () => {
@@ -446,19 +480,24 @@ return await (async () => {
 })();`;
 }
 
-export function buildActivateRecoveryTargetCode(expectedContext: ExpectedContext): string {
+export function buildActivateRecoveryTargetCode(
+  expectedContext: ExpectedContext,
+): string {
   const expectedProjectUuid =
     expectedContext?.project?.uuid ?? expectedContext?.project?.projectUuid;
-  const expectedUuid = expectedContext?.document?.uuid ?? expectedContext?.document?.documentUuid;
+  const expectedUuid =
+    expectedContext?.document?.uuid ?? expectedContext?.document?.documentUuid;
   const expectedType = expectedContext?.document?.documentType;
   if (
     isMissingString(expectedProjectUuid) ||
     isMissingString(expectedUuid) ||
-    typeof expectedType !== 'number' ||
+    typeof expectedType !== "number" ||
     !Number.isInteger(expectedType) ||
     ![1, 2, 3, 4].includes(expectedType)
   ) {
-    throw new Error('recovery target activation requires an exact supported document identity.');
+    throw new Error(
+      "recovery target activation requires an exact supported document identity.",
+    );
   }
   return `
 return await (async () => {
@@ -506,29 +545,33 @@ export function buildReopenOnlyCode(
   expectedContext: ExpectedContext,
   options: ReopenOptions = {},
 ): string {
-  const expectedUuid = expectedContext?.document?.uuid ?? expectedContext?.document?.documentUuid;
+  const expectedUuid =
+    expectedContext?.document?.uuid ?? expectedContext?.document?.documentUuid;
   const expectedType = expectedContext?.document?.documentType;
   const expectedProjectUuid =
     expectedContext?.project?.uuid ?? expectedContext?.project?.projectUuid;
   const expectedTabId = expectedContext?.document?.tabId;
-  const allowDifferentActiveDocument = options.allowDifferentActiveDocument === true;
+  const allowDifferentActiveDocument =
+    options.allowDifferentActiveDocument === true;
   if (
     isMissingString(expectedProjectUuid) ||
     isMissingString(expectedUuid) ||
-    typeof expectedType !== 'number' ||
+    typeof expectedType !== "number" ||
     !Number.isInteger(expectedType) ||
     ![1, 2, 3, 4].includes(expectedType) ||
     (!allowDifferentActiveDocument && isMissingString(expectedTabId))
   ) {
-    throw new Error('reopen-only recovery requires an exact supported document identity.');
+    throw new Error(
+      "reopen-only recovery requires an exact supported document identity.",
+    );
   }
   return `
 return await (async () => {
   const EXPECTED_PROJECT_UUID = ${jsString(expectedProjectUuid)};
   const EXPECTED_UUID = ${jsString(expectedUuid)};
   const EXPECTED_TYPE = ${expectedType};
-  const EXPECTED_TAB_ID = ${jsString(expectedTabId ?? '')};
-  const ALLOW_DIFFERENT_ACTIVE_DOCUMENT = ${allowDifferentActiveDocument ? 'true' : 'false'};
+  const EXPECTED_TAB_ID = ${jsString(expectedTabId ?? "")};
+  const ALLOW_DIFFERENT_ACTIVE_DOCUMENT = ${allowDifferentActiveDocument ? "true" : "false"};
   const projectApi = eda.dmt_Project;
   const documentApi = eda.dmt_SelectControl;
   const editor = eda.dmt_EditorControl;

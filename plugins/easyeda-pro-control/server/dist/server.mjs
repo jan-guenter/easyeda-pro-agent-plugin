@@ -2987,7 +2987,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve7.call(this, root, ref);
+      let _sch = resolve6.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref];
         const { schemaId } = this.opts;
@@ -3014,7 +3014,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve7(root, ref) {
+    function resolve6(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3839,7 +3839,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve7(baseURI, relativeURI, options) {
+    function resolve6(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const {
         parsed: baseParsed,
@@ -4201,7 +4201,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve7,
+      resolve: resolve6,
       resolveComponent,
       equal,
       serialize,
@@ -7284,12 +7284,12 @@ var require_isexe = __commonJS({
         if (typeof Promise !== "function") {
           throw new TypeError("callback not provided");
         }
-        return new Promise(function(resolve7, reject) {
+        return new Promise(function(resolve6, reject) {
           isexe(path, options || {}, function(er, is) {
             if (er) {
               reject(er);
             } else {
-              resolve7(is);
+              resolve6(is);
             }
           });
         });
@@ -7355,27 +7355,27 @@ var require_which = __commonJS({
         opt = {};
       const { pathEnv, pathExt, pathExtExe } = getPathInfo(cmd, opt);
       const found = [];
-      const step = (i) => new Promise((resolve7, reject) => {
+      const step = (i) => new Promise((resolve6, reject) => {
         if (i === pathEnv.length)
-          return opt.all && found.length ? resolve7(found) : reject(getNotFoundError(cmd));
+          return opt.all && found.length ? resolve6(found) : reject(getNotFoundError(cmd));
         const ppRaw = pathEnv[i];
         const pathPart = /^".*"$/.test(ppRaw) ? ppRaw.slice(1, -1) : ppRaw;
         const pCmd = path.join(pathPart, cmd);
         const p = !pathPart && /^\.[\\\/]/.test(cmd) ? cmd.slice(0, 2) + pCmd : pCmd;
-        resolve7(subStep(p, i, 0));
+        resolve6(subStep(p, i, 0));
       });
-      const subStep = (p, i, ii) => new Promise((resolve7, reject) => {
+      const subStep = (p, i, ii) => new Promise((resolve6, reject) => {
         if (ii === pathExt.length)
-          return resolve7(step(i + 1));
+          return resolve6(step(i + 1));
         const ext = pathExt[ii];
         isexe(p + ext, { pathExt: pathExtExe }, (er, is) => {
           if (!er && is) {
             if (opt.all)
               found.push(p + ext);
             else
-              return resolve7(p + ext);
+              return resolve6(p + ext);
           }
-          return resolve7(subStep(p, i, ii + 1));
+          return resolve6(subStep(p, i, ii + 1));
         });
       });
       return cb ? step(0).then((res) => cb(null, res), cb) : step(0);
@@ -7691,7 +7691,7 @@ var require_cross_spawn = __commonJS({
 import { createHash as createHash5 } from "node:crypto";
 import { createReadStream as createReadStream3 } from "node:fs";
 import { mkdir as mkdir4, open as open4, rmdir, stat as stat3 } from "node:fs/promises";
-import { basename as basename3, dirname as dirname3, isAbsolute as isAbsolute4, relative as relative4, resolve as resolve6 } from "node:path";
+import { basename as basename3, dirname as dirname3, isAbsolute as isAbsolute4, relative as relative4, resolve as resolve5 } from "node:path";
 import process8 from "node:process";
 import { inflateSync } from "node:zlib";
 
@@ -29638,7 +29638,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve7) => setTimeout(resolve7, pollInterval));
+        await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error51) {
@@ -29655,7 +29655,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve7, reject) => {
+    return new Promise((resolve6, reject) => {
       const earlyReject = (error51) => {
         reject(error51);
       };
@@ -29733,7 +29733,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve7(parseResult.data);
+            resolve6(parseResult.data);
           }
         } catch (error51) {
           reject(error51);
@@ -29994,12 +29994,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve7, reject) => {
+    return new Promise((resolve6, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve7, interval);
+      const timeoutId = setTimeout(resolve6, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -31099,7 +31099,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve7) => setTimeout(resolve7, pollInterval));
+      await new Promise((resolve6) => setTimeout(resolve6, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -31748,12 +31748,12 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve7) => {
+    return new Promise((resolve6) => {
       const json2 = serializeMessage(message);
       if (this._stdout.write(json2)) {
-        resolve7();
+        resolve6();
       } else {
-        this._stdout.once("drain", resolve7);
+        this._stdout.once("drain", resolve6);
       }
     });
   }
@@ -31764,11 +31764,11 @@ import { constants as fsConstants } from "node:fs";
 import { createHash as createHash2 } from "node:crypto";
 import {
   access,
+  lstat,
   mkdir,
   open,
-  lstat,
-  realpath,
   readdir,
+  realpath,
   rename,
   unlink
 } from "node:fs/promises";
@@ -31776,10 +31776,10 @@ import { dirname, join as join2, relative as relative2, resolve as resolve2 } fr
 import process4 from "node:process";
 
 // server/src/core.ts
-import { createHash, randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { readFile } from "node:fs/promises";
 import { basename, isAbsolute, join, relative, resolve } from "node:path";
+import { createHash, randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 var CONTROL_VERSION = "0.2.0";
 var OPERATION_SCHEMA = "easyeda-pro-control.operation.v2";
 function errorWithDetails(message, details) {
@@ -31842,9 +31842,15 @@ async function controlImplementationFingerprint() {
   };
 }
 function stable(value) {
-  if (value === null || typeof value !== "object") return value;
-  if (Array.isArray(value)) return value.map((item) => stable(item));
-  if (!isRecord(value)) return value;
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => stable(item));
+  }
+  if (!isRecord(value)) {
+    return value;
+  }
   return Object.fromEntries(
     Object.keys(value).toSorted().map((key) => [key, stable(value[key])])
   );
@@ -31852,7 +31858,9 @@ function stable(value) {
 function canonicalJson(value) {
   const encoded = JSON.stringify(stable(value));
   if (encoded === void 0) {
-    throw new TypeError("Canonical JSON requires a JSON-serializable root value.");
+    throw new TypeError(
+      "Canonical JSON requires a JSON-serializable root value."
+    );
   }
   return encoded;
 }
@@ -31867,12 +31875,16 @@ function newOperationId(now2 = /* @__PURE__ */ new Date()) {
   return `easyeda-${stamp}-${randomUUID().slice(0, 8)}`;
 }
 function reportsExplicitFailure(value, depth = 0) {
-  if (!isRecord(value) || depth > 6) return false;
+  if (!isRecord(value) || depth > 6) {
+    return false;
+  }
   if (value["ok"] === false || value["success"] === false || value["not_available"] === true) {
     return true;
   }
   const readConsistency = value["read_consistency"];
-  if (isRecord(readConsistency) && readConsistency["stable"] === false) return true;
+  if (isRecord(readConsistency) && readConsistency["stable"] === false) {
+    return true;
+  }
   return Object.hasOwn(value, "result") && reportsExplicitFailure(value["result"], depth + 1);
 }
 function normalizeToolResult(result) {
@@ -31917,9 +31929,15 @@ function extractToolPayload(result) {
     );
   }
   for (let depth = 0; depth < 4; depth += 1) {
-    if (!isRecord(value) || !Object.hasOwn(value, "result")) break;
-    const keys = Object.keys(value).filter((key) => !["ok", "success", "result"].includes(key));
-    if (keys.length > 0) break;
+    if (!isRecord(value) || !Object.hasOwn(value, "result")) {
+      break;
+    }
+    const keys = Object.keys(value).filter(
+      (key) => !["ok", "success", "result"].includes(key)
+    );
+    if (keys.length > 0) {
+      break;
+    }
     value = value["result"];
   }
   return value;
@@ -31932,7 +31950,9 @@ function classifyTool(tool) {
   const hasConfirmWrite = Object.hasOwn(properties, "confirmWrite");
   const name = stringValue(record2["name"]);
   const pinnedReadException = name === "easyeda_schematic_verify_write";
-  const knownWriteName = !pinnedReadException && /(^|_)(add|apply|begin_transaction|commit|create|delete|export|import|modify|move|place|recover|rollback|route|save|set|sync|update|write)(_|$)/iu.test(name);
+  const knownWriteName = !pinnedReadException && /(^|_)(add|apply|begin_transaction|commit|create|delete|export|import|modify|move|place|recover|rollback|route|save|set|sync|update|write)(_|$)/iu.test(
+    name
+  );
   const destructive = annotations["destructiveHint"] === true;
   const explicitlyReadOnly = annotations["readOnlyHint"] === true && !destructive && !hasConfirmWrite;
   return {
@@ -31949,10 +31969,18 @@ function filterTools(tools, options = {}) {
   const includeSchemas = options.includeSchemas === true;
   return tools.filter((tool) => {
     const classification = classifyTool(tool);
-    if (mode === "read" && !classification.readOnly) return false;
-    if (mode === "write" && !classification.write) return false;
-    if (!query) return true;
-    const haystack = [tool.name, tool.title, tool.description].filter((value) => typeof value === "string" && value.length > 0).join(" ").toLowerCase();
+    if (mode === "read" && !classification.readOnly) {
+      return false;
+    }
+    if (mode === "write" && !classification.write) {
+      return false;
+    }
+    if (!query) {
+      return true;
+    }
+    const haystack = [tool.name, tool.title, tool.description].filter(
+      (value) => typeof value === "string" && value.length > 0
+    ).join(" ").toLowerCase();
     return query.split(/\s+/u).every((term) => haystack.includes(term));
   }).slice(0, limit).map((tool) => {
     const classification = classifyTool(tool);
@@ -31972,7 +32000,9 @@ function filterTools(tools, options = {}) {
 }
 function normalizeEasyedaProjectPath(value) {
   let text = stringValue(value).trim();
-  if (!text) throw new Error("EasyEDA project path is required.");
+  if (!text) {
+    throw new Error("EasyEDA project path is required.");
+  }
   if (/^file:\/\//iu.test(text)) {
     try {
       text = decodeURIComponent(text.replace(/^file:\/+/iu, "/"));
@@ -31990,7 +32020,9 @@ function normalizeEasyedaProjectPath(value) {
     text = `/mnt/${drive[1].toLowerCase()}/${drive[2]}`;
   }
   if (!isAbsolute(text)) {
-    throw new Error("EasyEDA project path must be an absolute POSIX or Windows path.");
+    throw new Error(
+      "EasyEDA project path must be an absolute POSIX or Windows path."
+    );
   }
   const normalized = resolve(text);
   if (!/\.eprj2$/iu.test(normalized)) {
@@ -31999,8 +32031,12 @@ function normalizeEasyedaProjectPath(value) {
   return normalized;
 }
 function validateEvidencePaths(evidence) {
-  if (evidence === void 0) return void 0;
-  if (!isRecord(evidence)) throw new Error("evidence must be an object.");
+  if (evidence === void 0) {
+    return void 0;
+  }
+  if (!isRecord(evidence)) {
+    throw new Error("evidence must be an object.");
+  }
   const resultPath = stringValue(evidence["resultPath"]);
   const receiptPath = stringValue(evidence["receiptPath"]);
   if (!resultPath || !receiptPath) {
@@ -32071,32 +32107,66 @@ var EXPECTED_FINGERPRINT_REQUIREMENTS = [
   ["/installedBundles/publicApi/declarationsSha256", "sha256"]
 ];
 function fingerprintRequirementMissing(value, kind) {
-  if (kind === "string") return typeof value !== "string" || value.length === 0;
-  if (kind === "sha256") return !isSha256(value);
-  if (kind === "positive-integer") return !Number.isInteger(value) || Number(value) < 1;
+  if (kind === "string") {
+    return typeof value !== "string" || value.length === 0;
+  }
+  if (kind === "sha256") {
+    return !isSha256(value);
+  }
+  if (kind === "positive-integer") {
+    return !Number.isInteger(value) || Number(value) < 1;
+  }
   if (kind === "nonempty-string-array") {
     return !Array.isArray(value) || value.length === 0 || value.some((item) => typeof item !== "string" || item.length === 0);
   }
-  if (kind === "nonempty-array") return !Array.isArray(value) || value.length === 0;
-  if (kind === "loader-status") return value !== "loader_status";
-  if (kind === "true") return value !== true;
+  if (kind === "nonempty-array") {
+    return !Array.isArray(value) || value.length === 0;
+  }
+  if (kind === "loader-status") {
+    return value !== "loader_status";
+  }
+  if (kind === "true") {
+    return value !== true;
+  }
   return value !== false;
 }
+function getJsonPointer(root, pointer) {
+  if (pointer === "" || pointer === "/") {
+    return root;
+  }
+  if (typeof pointer !== "string" || !pointer.startsWith("/")) {
+    throw new Error(`Invalid JSON pointer: ${String(pointer)}`);
+  }
+  const parts = pointer.slice(1).split("/").map((part) => part.replaceAll("~1", "/").replaceAll("~0", "~"));
+  let value = root;
+  for (const key of parts) {
+    if (Array.isArray(value) && /^\d+$/u.test(key)) {
+      value = value[Number(key)];
+    } else if (isRecord(value)) {
+      value = value[key];
+    } else {
+      return void 0;
+    }
+  }
+  return value;
+}
 function assertExpectedFingerprint(fingerprint) {
-  if (!isRecord(fingerprint)) throw new Error("expectedFingerprint must be an object.");
+  if (!isRecord(fingerprint)) {
+    throw new Error("expectedFingerprint must be an object.");
+  }
   const missing = EXPECTED_FINGERPRINT_REQUIREMENTS.filter(
     ([pointer, kind]) => fingerprintRequirementMissing(getJsonPointer(fingerprint, pointer), kind)
   ).map(([pointer, kind]) => ({ pointer, required: kind }));
   const files = getJsonPointer(fingerprint, "/facadeImplementation/files");
   if (Array.isArray(files)) {
-    files.forEach((file2, index) => {
+    for (const [index, file2] of files.entries()) {
       if (!isRecord(file2) || typeof file2["path"] !== "string" || file2["path"].length === 0 || typeof file2["relativePath"] !== "string" || file2["relativePath"].length === 0 || !Number.isInteger(file2["bytes"]) || Number(file2["bytes"]) < 1 || !isSha256(file2["sha256"])) {
         missing.push({
           pointer: `/facadeImplementation/files/${index}`,
           required: "exact implementation file fingerprint"
         });
       }
-    });
+    }
   }
   if (missing.length > 0) {
     throw errorWithDetails(
@@ -32119,7 +32189,11 @@ function reviewedCompatibilityManifestPath() {
   );
 }
 function manifestObject(value, pointer, keys) {
-  if (!isRecord(value)) throw new Error(`Reviewed compatibility manifest ${pointer} must be an object.`);
+  if (!isRecord(value)) {
+    throw new Error(
+      `Reviewed compatibility manifest ${pointer} must be an object.`
+    );
+  }
   const actual = Object.keys(value).toSorted();
   const expected = [...keys].toSorted();
   if (canonicalJson(actual) !== canonicalJson(expected)) {
@@ -32131,19 +32205,25 @@ function manifestObject(value, pointer, keys) {
 }
 function manifestString(value, pointer) {
   if (typeof value !== "string" || value.length === 0) {
-    throw new Error(`Reviewed compatibility manifest ${pointer} must be a nonempty string.`);
+    throw new Error(
+      `Reviewed compatibility manifest ${pointer} must be a nonempty string.`
+    );
   }
   return value;
 }
 function manifestSha256(value, pointer) {
   if (!isSha256(value)) {
-    throw new Error(`Reviewed compatibility manifest ${pointer} must be a SHA-256 digest.`);
+    throw new Error(
+      `Reviewed compatibility manifest ${pointer} must be a SHA-256 digest.`
+    );
   }
   return value;
 }
 function manifestPositiveInteger(value, pointer) {
   if (!Number.isInteger(value) || Number(value) < 1) {
-    throw new Error(`Reviewed compatibility manifest ${pointer} must be a positive integer.`);
+    throw new Error(
+      `Reviewed compatibility manifest ${pointer} must be a positive integer.`
+    );
   }
   return Number(value);
 }
@@ -32158,15 +32238,24 @@ function assertFacadeManifest(value, pointer) {
   manifestString(record2["version"], `${pointer}/version`);
   manifestString(record2["operationSchema"], `${pointer}/operationSchema`);
   manifestSha256(record2["sha256"], `${pointer}/sha256`);
-  const fileCount = manifestPositiveInteger(record2["fileCount"], `${pointer}/fileCount`);
+  const fileCount = manifestPositiveInteger(
+    record2["fileCount"],
+    `${pointer}/fileCount`
+  );
   const files = record2["files"];
   if (!Array.isArray(files) || files.length !== fileCount) {
-    throw new Error(`Reviewed compatibility manifest ${pointer}/files must match fileCount.`);
+    throw new Error(
+      `Reviewed compatibility manifest ${pointer}/files must match fileCount.`
+    );
   }
   const relativePaths = [];
-  files.forEach((file2, index) => {
+  for (const [index, file2] of files.entries()) {
     const filePointer = `${pointer}/files/${index}`;
-    const fileRecord = manifestObject(file2, filePointer, ["relativePath", "bytes", "sha256"]);
+    const fileRecord = manifestObject(file2, filePointer, [
+      "relativePath",
+      "bytes",
+      "sha256"
+    ]);
     const relativePath = manifestString(
       fileRecord["relativePath"],
       `${filePointer}/relativePath`
@@ -32179,7 +32268,7 @@ function assertFacadeManifest(value, pointer) {
     manifestPositiveInteger(fileRecord["bytes"], `${filePointer}/bytes`);
     manifestSha256(fileRecord["sha256"], `${filePointer}/sha256`);
     relativePaths.push(relativePath);
-  });
+  }
   if (new Set(relativePaths).size !== relativePaths.length || canonicalJson(relativePaths) !== canonicalJson([...relativePaths].toSorted())) {
     throw new Error(
       `Reviewed compatibility manifest ${pointer}/files must have unique sorted relative paths.`
@@ -32196,25 +32285,29 @@ function assertReviewedCompatibilityManifest(value) {
     "installedBundles"
   ]);
   if (root["schema"] !== REVIEWED_COMPATIBILITY_SCHEMA) {
-    throw new Error(`Unsupported reviewed compatibility manifest schema ${String(root["schema"])}.`);
+    throw new Error(
+      `Unsupported reviewed compatibility manifest schema ${String(root["schema"])}.`
+    );
   }
   const reviewedAt = manifestString(root["reviewedAt"], "/reviewedAt");
   if (!Number.isFinite(Date.parse(reviewedAt))) {
-    throw new TypeError("Reviewed compatibility manifest /reviewedAt must be an ISO date-time.");
+    throw new TypeError(
+      "Reviewed compatibility manifest /reviewedAt must be an ISO date-time."
+    );
   }
   const facadeImplementation = manifestObject(
     root["facadeImplementation"],
     "/facadeImplementation",
-    [
-      "source-tree",
-      "bundle"
-    ]
+    ["source-tree", "bundle"]
   );
   assertFacadeManifest(
     facadeImplementation["source-tree"],
     "/facadeImplementation/source-tree"
   );
-  assertFacadeManifest(facadeImplementation["bundle"], "/facadeImplementation/bundle");
+  assertFacadeManifest(
+    facadeImplementation["bundle"],
+    "/facadeImplementation/bundle"
+  );
   const upstream2 = manifestObject(root["upstream"], "/upstream", [
     "serverVersion",
     "launcher",
@@ -32234,30 +32327,35 @@ function assertReviewedCompatibilityManifest(value) {
   for (const key of ["command", "entrypoint", "cwd"]) {
     const path = manifestString(launcher[key], `/upstream/launcher/${key}`);
     if (!isAbsolute(path)) {
-      throw new Error(`Reviewed compatibility manifest /upstream/launcher/${key} must be absolute.`);
+      throw new Error(
+        `Reviewed compatibility manifest /upstream/launcher/${key} must be absolute.`
+      );
     }
   }
   manifestSha256(launcher["commandSha256"], "/upstream/launcher/commandSha256");
-  manifestSha256(launcher["entrypointSha256"], "/upstream/launcher/entrypointSha256");
+  manifestSha256(
+    launcher["entrypointSha256"],
+    "/upstream/launcher/entrypointSha256"
+  );
   const launcherArgs = launcher["args"];
   if (!Array.isArray(launcherArgs) || launcherArgs.length === 0 || launcherArgs.some((item) => typeof item !== "string" || item.length === 0)) {
-    throw new Error("Reviewed compatibility manifest /upstream/launcher/args is malformed.");
+    throw new Error(
+      "Reviewed compatibility manifest /upstream/launcher/args is malformed."
+    );
   }
   const implementationTree = manifestObject(
     launcher["implementationTree"],
     "/upstream/launcher/implementationTree",
-    [
-      "root",
-      "fileCount",
-      "sha256"
-    ]
+    ["root", "fileCount", "sha256"]
   );
   const implementationRoot = manifestString(
     implementationTree["root"],
     "/upstream/launcher/implementationTree/root"
   );
   if (!isAbsolute(implementationRoot)) {
-    throw new Error("Reviewed compatibility manifest implementation-tree root must be absolute.");
+    throw new Error(
+      "Reviewed compatibility manifest implementation-tree root must be absolute."
+    );
   }
   manifestPositiveInteger(
     implementationTree["fileCount"],
@@ -32270,37 +32368,46 @@ function assertReviewedCompatibilityManifest(value) {
   const dependencyLock = manifestObject(
     launcher["dependencyLock"],
     "/upstream/launcher/dependencyLock",
-    [
-      "type",
-      "path",
-      "sha256"
-    ]
+    ["type", "path", "sha256"]
   );
-  manifestString(dependencyLock["type"], "/upstream/launcher/dependencyLock/type");
+  manifestString(
+    dependencyLock["type"],
+    "/upstream/launcher/dependencyLock/type"
+  );
   const dependencyLockPath = manifestString(
     dependencyLock["path"],
     "/upstream/launcher/dependencyLock/path"
   );
   if (!isAbsolute(dependencyLockPath)) {
-    throw new Error("Reviewed compatibility manifest dependency-lock path must be absolute.");
+    throw new Error(
+      "Reviewed compatibility manifest dependency-lock path must be absolute."
+    );
   }
-  manifestSha256(dependencyLock["sha256"], "/upstream/launcher/dependencyLock/sha256");
-  const toolCatalog = manifestObject(upstream2["toolCatalog"], "/upstream/toolCatalog", [
-    "count",
-    "sha256"
-  ]);
+  manifestSha256(
+    dependencyLock["sha256"],
+    "/upstream/launcher/dependencyLock/sha256"
+  );
+  const toolCatalog = manifestObject(
+    upstream2["toolCatalog"],
+    "/upstream/toolCatalog",
+    ["count", "sha256"]
+  );
   manifestPositiveInteger(toolCatalog["count"], "/upstream/toolCatalog/count");
   manifestSha256(toolCatalog["sha256"], "/upstream/toolCatalog/sha256");
-  const runtime = manifestObject(root["connectedRuntime"], "/connectedRuntime", [
-    "healthVersion",
-    "nodeVersion",
-    "easyedaVersion",
-    "extensionVersion",
-    "bridgeVersion",
-    "bridgeEasyedaVersion",
-    "methodRegistryHash",
-    "dispatcher"
-  ]);
+  const runtime = manifestObject(
+    root["connectedRuntime"],
+    "/connectedRuntime",
+    [
+      "healthVersion",
+      "nodeVersion",
+      "easyedaVersion",
+      "extensionVersion",
+      "bridgeVersion",
+      "bridgeEasyedaVersion",
+      "methodRegistryHash",
+      "dispatcher"
+    ]
+  );
   for (const key of [
     "healthVersion",
     "nodeVersion",
@@ -32312,37 +32419,47 @@ function assertReviewedCompatibilityManifest(value) {
   ]) {
     manifestString(runtime[key], `/connectedRuntime/${key}`);
   }
-  const dispatcher = manifestObject(runtime["dispatcher"], "/connectedRuntime/dispatcher", [
-    "source",
-    "buildId",
-    "total"
-  ]);
+  const dispatcher = manifestObject(
+    runtime["dispatcher"],
+    "/connectedRuntime/dispatcher",
+    ["source", "buildId", "total"]
+  );
   if (dispatcher["source"] !== "loader_status") {
-    throw new Error("Reviewed compatibility manifest dispatcher source must be loader_status.");
+    throw new Error(
+      "Reviewed compatibility manifest dispatcher source must be loader_status."
+    );
   }
   manifestString(dispatcher["buildId"], "/connectedRuntime/dispatcher/buildId");
-  manifestPositiveInteger(dispatcher["total"], "/connectedRuntime/dispatcher/total");
-  const bundles = manifestObject(root["installedBundles"], "/installedBundles", [
-    "pcbEditor",
-    "publicApi"
-  ]);
-  const pcbEditor = manifestObject(bundles["pcbEditor"], "/installedBundles/pcbEditor", [
-    "version",
-    "implementationSha256"
-  ]);
+  manifestPositiveInteger(
+    dispatcher["total"],
+    "/connectedRuntime/dispatcher/total"
+  );
+  const bundles = manifestObject(
+    root["installedBundles"],
+    "/installedBundles",
+    ["pcbEditor", "publicApi"]
+  );
+  const pcbEditor = manifestObject(
+    bundles["pcbEditor"],
+    "/installedBundles/pcbEditor",
+    ["version", "implementationSha256"]
+  );
   manifestString(pcbEditor["version"], "/installedBundles/pcbEditor/version");
   manifestSha256(
     pcbEditor["implementationSha256"],
     "/installedBundles/pcbEditor/implementationSha256"
   );
-  const publicApi = manifestObject(bundles["publicApi"], "/installedBundles/publicApi", [
-    "version",
+  const publicApi = manifestObject(
+    bundles["publicApi"],
+    "/installedBundles/publicApi",
+    ["version", "implementationSha256", "adapterSha256", "declarationsSha256"]
+  );
+  manifestString(publicApi["version"], "/installedBundles/publicApi/version");
+  for (const key of [
     "implementationSha256",
     "adapterSha256",
     "declarationsSha256"
-  ]);
-  manifestString(publicApi["version"], "/installedBundles/publicApi/version");
-  for (const key of ["implementationSha256", "adapterSha256", "declarationsSha256"]) {
+  ]) {
     manifestSha256(publicApi[key], `/installedBundles/publicApi/${key}`);
   }
 }
@@ -32354,9 +32471,12 @@ function readReviewedCompatibilityManifest() {
     bytes = readFileSync(path);
     parsed = JSON.parse(bytes.toString("utf8"));
   } catch (error51) {
-    throw new Error(`Reviewed compatibility manifest is unavailable or invalid JSON: ${path}`, {
-      cause: error51
-    });
+    throw new Error(
+      `Reviewed compatibility manifest is unavailable or invalid JSON: ${path}`,
+      {
+        cause: error51
+      }
+    );
   }
   assertReviewedCompatibilityManifest(parsed);
   const manifest = parsed;
@@ -32373,6 +32493,35 @@ function readReviewedCompatibilityManifest() {
 }
 function reviewedCompatibilityManifestFingerprint() {
   return readReviewedCompatibilityManifest().fingerprint;
+}
+function compareSubset(actual, expected, pointer = "") {
+  const mismatches = [];
+  const visit = (actualValue, expectedValue, currentPointer) => {
+    if (isRecord(expectedValue)) {
+      if (!isRecord(actualValue)) {
+        mismatches.push({
+          pointer: currentPointer || "/",
+          expected: expectedValue,
+          actual: actualValue
+        });
+        return;
+      }
+      for (const [key, child] of Object.entries(expectedValue)) {
+        const encoded = key.replaceAll("~", "~0").replaceAll("/", "~1");
+        visit(actualValue[key], child, `${currentPointer}/${encoded}`);
+      }
+      return;
+    }
+    if (canonicalJson(actualValue) !== canonicalJson(expectedValue)) {
+      mismatches.push({
+        pointer: currentPointer || "/",
+        expected: expectedValue,
+        actual: actualValue
+      });
+    }
+  };
+  visit(actual, expected, pointer);
+  return mismatches;
 }
 function validatePrivateFingerprint(fingerprint) {
   assertExpectedFingerprint(fingerprint);
@@ -32400,7 +32549,9 @@ function validatePrivateFingerprint(fingerprint) {
         relativePath: file2.relativePath,
         bytes: file2.bytes,
         sha256: file2.sha256
-      })).toSorted((left, right) => left.relativePath.localeCompare(right.relativePath))
+      })).toSorted(
+        (left, right) => left.relativePath.localeCompare(right.relativePath)
+      )
     },
     upstream: {
       serverVersion: fingerprint.upstreamServer?.version,
@@ -32452,46 +32603,36 @@ function validatePrivateFingerprint(fingerprint) {
   }
   return true;
 }
-function getJsonPointer(root, pointer) {
-  if (pointer === "" || pointer === "/") return root;
-  if (typeof pointer !== "string" || !pointer.startsWith("/")) {
-    throw new Error(`Invalid JSON pointer: ${String(pointer)}`);
-  }
-  const parts = pointer.slice(1).split("/").map((part) => part.replaceAll("~1", "/").replaceAll("~0", "~"));
-  let value = root;
-  for (const key of parts) {
-    if (Array.isArray(value) && /^\d+$/u.test(key)) {
-      value = value[Number(key)];
-    } else if (isRecord(value)) {
-      value = value[key];
-    } else {
-      return void 0;
-    }
-  }
-  return value;
-}
 function evaluateAssertions(root, assertions = []) {
   return assertions.map((assertion, index) => {
     const actual = getJsonPointer(root, assertion.pointer);
     let passed = false;
     switch (assertion.op) {
-      case "exists":
+      case "exists": {
         passed = actual !== void 0;
         break;
-      case "equals":
+      }
+      case "equals": {
         passed = actual !== void 0 && canonicalJson(actual) === canonicalJson(assertion.value);
         break;
-      case "not-equals":
+      }
+      case "not-equals": {
         passed = actual !== void 0 && canonicalJson(actual) !== canonicalJson(assertion.value);
         break;
-      case "matches":
+      }
+      case "matches": {
         passed = typeof actual === "string" && new RegExp(stringValue(assertion.value), "u").test(actual);
         break;
-      case "length-equals":
+      }
+      case "length-equals": {
         passed = (Array.isArray(actual) || typeof actual === "string") && actual.length === assertion.value;
         break;
-      default:
-        throw new Error(`Unsupported assertion operation at index ${index}: ${assertion.op}`);
+      }
+      default: {
+        throw new Error(
+          `Unsupported assertion operation at index ${index}: ${assertion.op}`
+        );
+      }
     }
     return {
       index,
@@ -32503,31 +32644,12 @@ function evaluateAssertions(root, assertions = []) {
     };
   });
 }
-function compareSubset(actual, expected, pointer = "") {
-  const mismatches = [];
-  const visit = (actualValue, expectedValue, currentPointer) => {
-    if (isRecord(expectedValue)) {
-      if (!isRecord(actualValue)) {
-        mismatches.push({ pointer: currentPointer || "/", expected: expectedValue, actual: actualValue });
-        return;
-      }
-      for (const [key, child] of Object.entries(expectedValue)) {
-        const encoded = key.replaceAll("~", "~0").replaceAll("/", "~1");
-        visit(actualValue[key], child, `${currentPointer}/${encoded}`);
-      }
-      return;
-    }
-    if (canonicalJson(actualValue) !== canonicalJson(expectedValue)) {
-      mismatches.push({ pointer: currentPointer || "/", expected: expectedValue, actual: actualValue });
-    }
-  };
-  visit(actual, expected, pointer);
-  return mismatches;
-}
 function assertSubset(actual, expected, label = "value") {
   const mismatches = compareSubset(actual, expected);
   if (mismatches.length > 0) {
-    throw errorWithDetails(`${label} does not match the expected subset.`, { mismatches });
+    throw errorWithDetails(`${label} does not match the expected subset.`, {
+      mismatches
+    });
   }
   return true;
 }
@@ -32551,7 +32673,9 @@ function buildPlanHash(plan) {
   });
 }
 function boundedText(value, maximum = 2048) {
-  if (typeof value !== "string") return void 0;
+  if (typeof value !== "string") {
+    return void 0;
+  }
   return value.length <= maximum ? value : `${value.slice(0, maximum - 1)}\u2026`;
 }
 function checkpointPointer(checkpoint) {
@@ -32567,6 +32691,30 @@ function summarizeArtifact(artifact) {
     sha256: record2["sha256"],
     bytes: record2["bytes"]
   };
+}
+var LEGACY_ORPHAN_RISK_STATES = /* @__PURE__ */ new Set([
+  "baseline-reopen-dispatching",
+  "baseline-reopen-unknown",
+  "applying",
+  "unknown",
+  "rolling-back",
+  "rollback-failed",
+  "saving",
+  "final-reopen-dispatching",
+  "final-reopen-unknown",
+  "recovery-reopen-dispatching",
+  "recovery-reopen-unknown",
+  "recovery-target-activation-dispatching",
+  "recovery-target-activation-unknown"
+]);
+function operationHasOrphanedCallRisk(operation) {
+  if (!isRecord(operation)) {
+    return false;
+  }
+  if (typeof operation["orphanedCallPossible"] === "boolean") {
+    return operation["orphanedCallPossible"];
+  }
+  return LEGACY_ORPHAN_RISK_STATES.has(String(operation["state"]));
 }
 function operationSummary(operation) {
   const artifacts = Array.isArray(operation["artifacts"]) ? operation["artifacts"] : [];
@@ -32603,33 +32751,14 @@ function operationSummary(operation) {
     updatedAt: operation["updatedAt"]
   };
 }
-var LEGACY_ORPHAN_RISK_STATES = /* @__PURE__ */ new Set([
-  "baseline-reopen-dispatching",
-  "baseline-reopen-unknown",
-  "applying",
-  "unknown",
-  "rolling-back",
-  "rollback-failed",
-  "saving",
-  "final-reopen-dispatching",
-  "final-reopen-unknown",
-  "recovery-reopen-dispatching",
-  "recovery-reopen-unknown",
-  "recovery-target-activation-dispatching",
-  "recovery-target-activation-unknown"
-]);
-function operationHasOrphanedCallRisk(operation) {
-  if (!isRecord(operation)) return false;
-  if (typeof operation["orphanedCallPossible"] === "boolean") {
-    return operation["orphanedCallPossible"];
-  }
-  return LEGACY_ORPHAN_RISK_STATES.has(String(operation["state"]));
-}
 function isTerminalOperation(operation) {
   const state = isRecord(operation) ? operation["state"] : void 0;
-  return ["completed", "rolled-back", "reconciled-no-mutation", "plan-invalidated"].includes(
-    String(state)
-  );
+  return [
+    "completed",
+    "rolled-back",
+    "reconciled-no-mutation",
+    "plan-invalidated"
+  ].includes(String(state));
 }
 
 // server/src/artifacts.ts
@@ -32642,6 +32771,9 @@ var CONTROL_DATA_DIR = resolve2(
   )
 );
 var OPERATIONS_DIR = join2(CONTROL_DATA_DIR, "operations");
+function ignoreCleanupError(error51) {
+  void error51;
+}
 function isWithin(root, candidate) {
   const normalizedRoot = resolve2(root);
   const normalizedCandidate = resolve2(candidate);
@@ -32659,10 +32791,14 @@ async function assertSafeManagedDirectory(directory) {
   await mkdir(CONTROL_DATA_DIR, { recursive: true, mode: 448 });
   const rootInfo = await lstat(CONTROL_DATA_DIR);
   if (rootInfo.isSymbolicLink() || !rootInfo.isDirectory()) {
-    throw new Error("EasyEDA control data root must be a real directory, not a symlink.");
+    throw new Error(
+      "EasyEDA control data root must be a real directory, not a symlink."
+    );
   }
   const relativePath = relative2(CONTROL_DATA_DIR, absolute);
-  if (relativePath.startsWith("..")) throw new Error("Directory escapes the control data root.");
+  if (relativePath.startsWith("..")) {
+    throw new Error("Directory escapes the control data root.");
+  }
   let current = CONTROL_DATA_DIR;
   for (const segment of relativePath.split("/").filter(Boolean)) {
     current = join2(current, segment);
@@ -32672,11 +32808,16 @@ async function assertSafeManagedDirectory(directory) {
         throw new Error(`Managed parent ${current} is not a real directory.`);
       }
     } catch (error51) {
-      if (!isErrnoException(error51) || error51.code !== "ENOENT") throw error51;
+      if (!isErrnoException(error51) || error51.code !== "ENOENT") {
+        throw error51;
+      }
       await mkdir(current, { mode: 448 });
       const created = await lstat(current);
       if (created.isSymbolicLink() || !created.isDirectory()) {
-        throw new Error(`Managed parent ${current} was replaced during creation.`, { cause: error51 });
+        throw new Error(
+          `Managed parent ${current} was replaced during creation.`,
+          { cause: error51 }
+        );
       }
     }
   }
@@ -32685,7 +32826,9 @@ async function assertSafeManagedDirectory(directory) {
     realpath(absolute)
   ]);
   if (!isWithin(realRoot, realDirectory)) {
-    throw new Error("Managed directory resolves outside the control data root.");
+    throw new Error(
+      "Managed directory resolves outside the control data root."
+    );
   }
   return absolute;
 }
@@ -32699,7 +32842,9 @@ async function assertSafeManagedFile(path, label = "Artifact") {
     realpath(CONTROL_DATA_DIR),
     realpath(absolute)
   ]);
-  if (!isWithin(realRoot, realFile)) throw new Error(`${label} resolves outside the control root.`);
+  if (!isWithin(realRoot, realFile)) {
+    throw new Error(`${label} resolves outside the control root.`);
+  }
   return { absolute, info };
 }
 function assertSameFileIdentity(expected, actual, label) {
@@ -32788,7 +32933,9 @@ async function syncDirectory(path) {
 }
 async function reserveEvidencePaths(evidence) {
   const paths = validateEvidencePaths(evidence);
-  if (!paths) throw new Error("Evidence paths are required.");
+  if (!paths) {
+    throw new Error("Evidence paths are required.");
+  }
   const resultPath = assertManagedPath(paths.resultPath, "Evidence result");
   const receiptPath = assertManagedPath(paths.receiptPath, "Evidence receipt");
   const token = `${process4.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -32806,37 +32953,44 @@ async function reserveEvidencePaths(evidence) {
     await resultHandle.sync();
     await receiptHandle.sync();
   } catch (error51) {
-    await resultHandle?.close().catch(() => {
-    });
-    await receiptHandle?.close().catch(() => {
-    });
-    if (resultHandle) await unlink(resultPath).catch(() => {
-    });
-    if (receiptHandle) await unlink(receiptPath).catch(() => {
-    });
-    for (const directory of /* @__PURE__ */ new Set([dirname(resultPath), dirname(receiptPath)])) {
-      await syncDirectory(directory).catch(() => {
-      });
+    await resultHandle?.close().catch(ignoreCleanupError);
+    await receiptHandle?.close().catch(ignoreCleanupError);
+    if (resultHandle) {
+      await unlink(resultPath).catch(ignoreCleanupError);
+    }
+    if (receiptHandle) {
+      await unlink(receiptPath).catch(ignoreCleanupError);
+    }
+    for (const directory of /* @__PURE__ */ new Set([
+      dirname(resultPath),
+      dirname(receiptPath)
+    ])) {
+      await syncDirectory(directory).catch(ignoreCleanupError);
     }
     throw error51;
   } finally {
-    await resultHandle?.close().catch(() => {
-    });
-    await receiptHandle?.close().catch(() => {
-    });
+    await resultHandle?.close().catch(ignoreCleanupError);
+    await receiptHandle?.close().catch(ignoreCleanupError);
   }
-  for (const directory of /* @__PURE__ */ new Set([dirname(resultPath), dirname(receiptPath)])) {
+  for (const directory of /* @__PURE__ */ new Set([
+    dirname(resultPath),
+    dirname(receiptPath)
+  ])) {
     await syncDirectory(directory);
   }
   return { resultPath, receiptPath, token };
 }
 async function assertReservation(reservation) {
-  if (!reservation.token) throw new Error("A valid evidence reservation is required.");
+  if (!reservation.token) {
+    throw new Error("A valid evidence reservation is required.");
+  }
   for (const path of [reservation.resultPath, reservation.receiptPath]) {
     const { bytes } = await readManagedFile(path, "Evidence reservation");
     const parsed = JSON.parse(bytes.toString("utf8"));
     if (!isRecord(parsed) || parsed["schema"] !== "easyeda-pro-control.evidence-reservation.v1" || parsed["token"] !== reservation.token) {
-      throw new Error("Evidence reservation identity changed before finalization.");
+      throw new Error(
+        "Evidence reservation identity changed before finalization."
+      );
     }
   }
 }
@@ -32877,7 +33031,9 @@ async function finalizeReservedPair(reservation, resultText, receiptText) {
           bytes.length - offset,
           offset
         );
-        if (bytesWritten <= 0) throw new Error("Evidence finalization made no write progress.");
+        if (bytesWritten <= 0) {
+          throw new Error("Evidence finalization made no write progress.");
+        }
         offset += bytesWritten;
       }
       await handle.sync();
@@ -32902,7 +33058,9 @@ async function archiveExternalEvidence({
   metadata,
   attachments = []
 }) {
-  if (evidence === void 0 && reservation === void 0) return evidence;
+  if (evidence === void 0 && reservation === void 0) {
+    return evidence;
+  }
   const held = reservation ?? await reserveEvidencePaths(evidence);
   const createdAt = (/* @__PURE__ */ new Date()).toISOString();
   const payload = {
@@ -32918,7 +33076,9 @@ async function archiveExternalEvidence({
   for (const attachment of attachments) {
     const archived = await hashManagedAttachment(attachment.path);
     if (attachment.bytes !== void 0 && attachment.bytes !== archived.bytes || attachment.sha256 !== void 0 && attachment.sha256 !== archived.sha256) {
-      throw new Error("Evidence attachment changed before its receipt was finalized.");
+      throw new Error(
+        "Evidence attachment changed before its receipt was finalized."
+      );
     }
     archivedAttachments.push({
       kind: (attachment.kind ?? "artifact").slice(0, 64),
@@ -32940,9 +33100,17 @@ async function archiveExternalEvidence({
     ...receiptCore,
     receiptSha256: sha256Text(canonicalJson(receiptCore))
   };
-  await finalizeReservedPair(held, resultText, `${JSON.stringify(receipt, null, 2)}
-`);
-  return { ...receipt, resultPath: held.resultPath, receiptPath: held.receiptPath };
+  await finalizeReservedPair(
+    held,
+    resultText,
+    `${JSON.stringify(receipt, null, 2)}
+`
+  );
+  return {
+    ...receipt,
+    resultPath: held.resultPath,
+    receiptPath: held.receiptPath
+  };
 }
 async function archiveCaptureEvidence({
   reservation,
@@ -32951,14 +33119,21 @@ async function archiveCaptureEvidence({
   images,
   metadata
 }) {
-  if (!reservation) throw new Error("Capture evidence must be reserved before dispatch.");
+  if (!reservation) {
+    throw new Error("Capture evidence must be reserved before dispatch.");
+  }
   await assertReservation(reservation);
   const created = [];
   try {
     for (let index = 0; index < images.length; index += 1) {
       const image = images[index];
-      if (!image) throw new Error(`Capture image ${index + 1} is unavailable.`);
-      const path = assertManagedPath(`${reservation.resultPath}.image-${index + 1}.png`, "Capture image");
+      if (!image) {
+        throw new Error(`Capture image ${index + 1} is unavailable.`);
+      }
+      const path = assertManagedPath(
+        `${reservation.resultPath}.image-${index + 1}.png`,
+        "Capture image"
+      );
       await assertSafeManagedDirectory(dirname(path));
       const handle = await open(path, "wx", 384);
       try {
@@ -32974,7 +33149,9 @@ async function archiveCaptureEvidence({
         sha256: createHash2("sha256").update(image.bytes).digest("hex")
       });
     }
-    for (const directory of new Set(created.map((item) => dirname(item.path)))) {
+    for (const directory of new Set(
+      created.map((item) => dirname(item.path))
+    )) {
       await syncDirectory(directory);
     }
     const createdAt = (/* @__PURE__ */ new Date()).toISOString();
@@ -33013,21 +33190,24 @@ async function archiveCaptureEvidence({
       receiptPath: reservation.receiptPath
     };
   } catch (error51) {
-    for (const item of created) await unlink(item.path).catch(() => {
-    });
-    for (const directory of new Set(created.map((item) => dirname(item.path)))) {
-      await syncDirectory(directory).catch(() => {
-      });
+    for (const item of created) {
+      await unlink(item.path).catch(ignoreCleanupError);
+    }
+    for (const directory of new Set(
+      created.map((item) => dirname(item.path))
+    )) {
+      await syncDirectory(directory).catch(ignoreCleanupError);
     }
     throw error51;
   }
 }
 async function verifyEvidenceReceipt(receiptPathInput) {
   const receiptPath = assertManagedPath(receiptPathInput, "Evidence receipt");
-  const parsed = JSON.parse(
-    (await readManagedFile(receiptPath, "Evidence receipt")).bytes.toString("utf8")
-  );
-  if (!isRecord(parsed)) throw new Error("Evidence receipt must be an object.");
+  const receiptFile = await readManagedFile(receiptPath, "Evidence receipt");
+  const parsed = JSON.parse(receiptFile.bytes.toString("utf8"));
+  if (!isRecord(parsed)) {
+    throw new Error("Evidence receipt must be an object.");
+  }
   const receipt = parsed;
   if (![
     "easyeda-pro-control.tool-receipt.v1",
@@ -33040,17 +33220,24 @@ async function verifyEvidenceReceipt(receiptPathInput) {
   if (typeof receipt["resultPath"] !== "string") {
     throw new TypeError("Evidence receipt resultPath must be a string.");
   }
-  const resultPath = assertManagedPath(receipt["resultPath"], "Evidence result");
-  const resultText = (await readManagedFile(resultPath, "Evidence result")).bytes;
+  const resultPath = assertManagedPath(
+    receipt["resultPath"],
+    "Evidence result"
+  );
+  const resultFile = await readManagedFile(resultPath, "Evidence result");
+  const resultText = resultFile.bytes;
   const resultHashOk = sha256Text(resultText) === receipt["resultSha256"];
   const imageChecks = [];
   const images = Array.isArray(receipt["images"]) ? receipt["images"] : [];
   for (const image of images) {
     if (!isRecord(image) || typeof image["path"] !== "string") {
-      throw new Error("Evidence receipt contains an invalid capture-image descriptor.");
+      throw new Error(
+        "Evidence receipt contains an invalid capture-image descriptor."
+      );
     }
     const path = assertManagedPath(image["path"], "Capture image");
-    const bytes = (await readManagedFile(path, "Capture image")).bytes;
+    const imageFile = await readManagedFile(path, "Capture image");
+    const bytes = imageFile.bytes;
     imageChecks.push({
       path,
       ok: bytes.length === image["bytes"] && createHash2("sha256").update(bytes).digest("hex") === image["sha256"]
@@ -33061,7 +33248,9 @@ async function verifyEvidenceReceipt(receiptPathInput) {
   for (const attachment of attachments) {
     try {
       if (!isRecord(attachment) || typeof attachment["path"] !== "string") {
-        throw new Error("Evidence receipt contains an invalid attachment descriptor.");
+        throw new Error(
+          "Evidence receipt contains an invalid attachment descriptor."
+        );
       }
       const actual = await hashManagedAttachment(attachment["path"]);
       attachmentChecks.push({
@@ -33099,7 +33288,9 @@ function operationPath(operationId) {
 async function createOperation(operation) {
   await ensureOperationStorage();
   const operationId = operation["operationId"];
-  if (typeof operationId !== "string") throw new Error("Operation requires an operationId.");
+  if (typeof operationId !== "string") {
+    throw new TypeError("Operation requires an operationId.");
+  }
   const path = operationPath(operationId);
   const handle = await open(path, "wx", 384);
   try {
@@ -33116,13 +33307,16 @@ async function createOperation(operation) {
 }
 async function loadOperation(operationId) {
   const path = operationPath(operationId);
-  const value = JSON.parse(
-    (await readManagedFile(path, "Operation journal")).bytes.toString("utf8")
-  );
-  if (!isRecord(value)) throw new Error(`Operation journal ${operationId} must be an object.`);
+  const journalFile = await readManagedFile(path, "Operation journal");
+  const value = JSON.parse(journalFile.bytes.toString("utf8"));
+  if (!isRecord(value)) {
+    throw new Error(`Operation journal ${operationId} must be an object.`);
+  }
   const parsed = value;
   if (parsed["schema"] !== OPERATION_SCHEMA || parsed["operationId"] !== operationId) {
-    throw new Error(`Operation journal ${operationId} has an invalid schema or identity.`);
+    throw new Error(
+      `Operation journal ${operationId} has an invalid schema or identity.`
+    );
   }
   const { journalSha256, ...journalCore } = parsed;
   if (journalSha256 !== sha256Text(canonicalJson(journalCore))) {
@@ -33130,23 +33324,37 @@ async function loadOperation(operationId) {
   }
   const plan = parsed["plan"];
   if (!isRecord(plan) || parsed["planHash"] !== buildPlanHash(plan)) {
-    throw new Error(`Operation journal ${operationId} has a mismatched plan hash.`);
+    throw new Error(
+      `Operation journal ${operationId} has a mismatched plan hash.`
+    );
   }
   const artifactValues = parsed["artifacts"] ?? [];
   if (!Array.isArray(artifactValues)) {
-    throw new TypeError(`Operation journal ${operationId} has an invalid artifacts list.`);
+    throw new TypeError(
+      `Operation journal ${operationId} has an invalid artifacts list.`
+    );
   }
   const artifacts = [];
   for (const descriptor of artifactValues) {
     if (!isRecord(descriptor) || typeof descriptor["path"] !== "string" || typeof descriptor["bytes"] !== "number" || typeof descriptor["sha256"] !== "string") {
-      throw new Error(`Operation ${operationId} has an invalid phase-artifact descriptor.`);
+      throw new Error(
+        `Operation ${operationId} has an invalid phase-artifact descriptor.`
+      );
     }
     if (!isWithin(join2(OPERATIONS_DIR, operationId), descriptor["path"])) {
-      throw new Error(`Operation ${operationId} references an artifact outside its directory.`);
+      throw new Error(
+        `Operation ${operationId} references an artifact outside its directory.`
+      );
     }
-    const text = (await readManagedFile(descriptor["path"], "Operation phase artifact")).bytes;
+    const artifactFile = await readManagedFile(
+      descriptor["path"],
+      "Operation phase artifact"
+    );
+    const text = artifactFile.bytes;
     if (text.length !== descriptor["bytes"] || sha256Text(text) !== descriptor["sha256"]) {
-      throw new Error(`Operation ${operationId} phase artifact failed hash verification.`);
+      throw new Error(
+        `Operation ${operationId} phase artifact failed hash verification.`
+      );
     }
     artifacts.push({
       path: descriptor["path"],
@@ -33165,14 +33373,21 @@ async function loadOperation(operationId) {
 function sealOperation(operation) {
   const journalCore = { ...operation };
   delete journalCore["journalSha256"];
-  return { ...journalCore, journalSha256: sha256Text(canonicalJson(journalCore)) };
+  return {
+    ...journalCore,
+    journalSha256: sha256Text(canonicalJson(journalCore))
+  };
 }
 async function updateOperation(operation) {
   await ensureOperationStorage();
   const operationId = operation["operationId"];
-  if (typeof operationId !== "string") throw new Error("Operation requires an operationId.");
+  if (typeof operationId !== "string") {
+    throw new TypeError("Operation requires an operationId.");
+  }
   const path = operationPath(operationId);
-  if (!await pathExists(path)) throw new Error(`Operation ${operationId} does not exist.`);
+  if (!await pathExists(path)) {
+    throw new Error(`Operation ${operationId} does not exist.`);
+  }
   const temporary = `${path}.tmp-${process4.pid}-${Date.now()}`;
   const sealed = sealOperation(operation);
   let handle;
@@ -33187,10 +33402,8 @@ async function updateOperation(operation) {
     await syncDirectory(OPERATIONS_DIR);
     Object.assign(operation, sealed);
   } catch (error51) {
-    await handle?.close().catch(() => {
-    });
-    await unlink(temporary).catch(() => {
-    });
+    await handle?.close().catch(ignoreCleanupError);
+    await unlink(temporary).catch(ignoreCleanupError);
     throw error51;
   }
   return path;
@@ -33200,7 +33413,10 @@ async function writePhaseArtifact(operationId, sequence, phase, value) {
   const directory = join2(OPERATIONS_DIR, operationId);
   await assertSafeManagedDirectory(directory);
   const safePhase = phase.replaceAll(/[^a-z0-9_-]+/giu, "-").toLowerCase();
-  const path = join2(directory, `${sequence.toString().padStart(2, "0")}-${safePhase}.json`);
+  const path = join2(
+    directory,
+    `${sequence.toString().padStart(2, "0")}-${safePhase}.json`
+  );
   const text = `${JSON.stringify(value)}
 `;
   const handle = await open(path, "wx", 384);
@@ -33215,7 +33431,8 @@ async function writePhaseArtifact(operationId, sequence, phase, value) {
 }
 async function listOperations() {
   await ensureOperationStorage();
-  const names = (await readdir(OPERATIONS_DIR)).filter((name) => name.endsWith(".json")).toSorted();
+  const directoryEntries = await readdir(OPERATIONS_DIR);
+  const names = directoryEntries.filter((name) => name.endsWith(".json")).toSorted();
   const output = [];
   for (const name of names) {
     try {
@@ -33248,8 +33465,15 @@ async function readArtifact(path, offset = 0, length = 65536) {
   const opened = await openSafeManagedFile(absolute);
   const { handle, info } = opened;
   try {
-    const buffer = Buffer.alloc(Math.min(boundedLength, Math.max(0, info.size - boundedOffset)));
-    const { bytesRead } = await handle.read(buffer, 0, buffer.length, boundedOffset);
+    const buffer = Buffer.alloc(
+      Math.min(boundedLength, Math.max(0, info.size - boundedOffset))
+    );
+    const { bytesRead } = await handle.read(
+      buffer,
+      0,
+      buffer.length,
+      boundedOffset
+    );
     const after = await handle.stat();
     assertFileStayedUnchanged(info, after, "Artifact");
     return {
@@ -33272,7 +33496,7 @@ function controlDataDirectory() {
 import { createHash as createHash3 } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir as mkdir2, open as open2, readFile as readFile2, stat, unlink as unlink2 } from "node:fs/promises";
-import { basename as basename2, join as join3, resolve as resolve3 } from "node:path";
+import { basename as basename2, join as join3, resolve as resolvePath } from "node:path";
 import { spawn } from "node:child_process";
 function safeLabel(value) {
   const label = value.trim();
@@ -33292,7 +33516,7 @@ function positiveInteger(value, fallback) {
   return Number.isSafeInteger(parsed) && parsed > 0 && parsed <= 2147483647 ? parsed : fallback;
 }
 function run(command, args, options = {}) {
-  return new Promise((resolvePromise, reject) => {
+  return new Promise((resolve6, reject) => {
     const {
       maxBuffer = 256 * 1024 * 1024,
       maxStderrBuffer: requestedMaxStderrBuffer = process.env["EASYEDA_CHECKPOINT_STDERR_MAX_BYTES"],
@@ -33300,19 +33524,29 @@ function run(command, args, options = {}) {
       ...spawnOptions
     } = options;
     const checkedMaxBuffer = positiveInteger(maxBuffer, 256 * 1024 * 1024);
-    const maxStderrBuffer = positiveInteger(requestedMaxStderrBuffer, 1024 * 1024);
+    const maxStderrBuffer = positiveInteger(
+      requestedMaxStderrBuffer,
+      1024 * 1024
+    );
     const timeoutMs = positiveInteger(requestedTimeoutMs, 12e4);
-    const child = spawn(command, args, { ...spawnOptions, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(command, args, {
+      ...spawnOptions,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
     const stdout = [];
     const stderr = [];
     let stdoutBytes = 0;
     let stderrBytes = 0;
     let settled = false;
-    let timer;
+    const timerState = {};
     const finish = (callback) => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       settled = true;
-      clearTimeout(timer);
+      if (timerState.value !== void 0) {
+        clearTimeout(timerState.value);
+      }
       callback();
     };
     const fail = (error51) => {
@@ -33321,11 +33555,13 @@ function run(command, args, options = {}) {
       });
     };
     const abort = (message) => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       child.kill("SIGKILL");
       fail(new Error(message));
     };
-    timer = setTimeout(() => {
+    timerState.value = setTimeout(() => {
       abort(`${command} timed out after ${timeoutMs} ms.`);
     }, timeoutMs);
     child.stdout.on("data", (chunk) => {
@@ -33346,10 +33582,12 @@ function run(command, args, options = {}) {
     });
     child.once("error", fail);
     child.once("close", (code, signal) => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       if (code === 0) {
         finish(() => {
-          resolvePromise(Buffer.concat(stdout));
+          resolve6(Buffer.concat(stdout));
         });
       } else {
         fail(
@@ -33362,15 +33600,22 @@ function run(command, args, options = {}) {
   });
 }
 async function quickCheck(path) {
-  const output = await run("sqlite3", [sqliteUri(path), "PRAGMA query_only=ON; PRAGMA quick_check;"]);
+  const output = await run("sqlite3", [
+    sqliteUri(path),
+    "PRAGMA query_only=ON; PRAGMA quick_check;"
+  ]);
   const value = output.toString("utf8").trim();
-  if (value !== "ok") throw new Error(`SQLite quick_check failed for ${path}: ${value}`);
+  if (value !== "ok") {
+    throw new Error(`SQLite quick_check failed for ${path}: ${value}`);
+  }
   return value;
 }
 async function sha256File(path) {
   const hash2 = createHash3("sha256");
   for await (const chunk of createReadStream(path)) {
-    if (!Buffer.isBuffer(chunk)) throw new TypeError("File stream yielded a non-buffer chunk.");
+    if (!Buffer.isBuffer(chunk)) {
+      throw new TypeError("File stream yielded a non-buffer chunk.");
+    }
     hash2.update(chunk);
   }
   return hash2.digest("hex");
@@ -33400,8 +33645,8 @@ async function createCheckpoint({
   outputDir,
   label
 }) {
-  const sourcePath = resolve3(source);
-  const destinationDir = resolve3(outputDir);
+  const sourcePath = resolvePath(source);
+  const destinationDir = resolvePath(outputDir);
   const checkedLabel = safeLabel(label);
   const sourceInfoBefore = await stat(sourcePath);
   if (!sourceInfoBefore.isFile() || sourceInfoBefore.size === 0) {
@@ -33446,8 +33691,14 @@ async function createCheckpoint({
       createdAt: createdAt.toISOString(),
       source: sourcePath,
       checkpoint: checkpointPath,
-      sourceStatBefore: { size: sourceInfoBefore.size, mtimeMs: sourceInfoBefore.mtimeMs },
-      sourceStatAfter: { size: sourceInfoAfter.size, mtimeMs: sourceInfoAfter.mtimeMs },
+      sourceStatBefore: {
+        size: sourceInfoBefore.size,
+        mtimeMs: sourceInfoBefore.mtimeMs
+      },
+      sourceStatAfter: {
+        size: sourceInfoAfter.size,
+        mtimeMs: sourceInfoAfter.mtimeMs
+      },
       sourceSha256: await sha256File(sourcePath),
       checkpointSha256: await sha256File(checkpointPath),
       sourceDumpSha256,
@@ -33460,8 +33711,11 @@ async function createCheckpoint({
     };
     receiptHandle = await open2(receiptPath, "wx", 384);
     receiptCreated = true;
-    await receiptHandle.writeFile(`${JSON.stringify(receipt, null, 2)}
-`, "utf8");
+    await receiptHandle.writeFile(
+      `${JSON.stringify(receipt, null, 2)}
+`,
+      "utf8"
+    );
     await receiptHandle.sync();
     await receiptHandle.close();
     receiptHandle = void 0;
@@ -33470,7 +33724,9 @@ async function createCheckpoint({
   } catch (error51) {
     const cleanupErrors = [];
     for (const handle of [receiptHandle, checkpointHandle]) {
-      if (!handle) continue;
+      if (!handle) {
+        continue;
+      }
       try {
         await handle.close();
       } catch (cleanupError) {
@@ -33482,7 +33738,9 @@ async function createCheckpoint({
       [checkpointCreated, checkpointPath]
     ];
     for (const [created, path] of cleanupPaths) {
-      if (!created) continue;
+      if (!created) {
+        continue;
+      }
       try {
         await unlink2(path);
       } catch (cleanupError) {
@@ -33523,18 +33781,23 @@ function assertCheckpointReceipt(value) {
   }
 }
 async function verifyCheckpoint(receiptPathInput) {
-  const receiptPath = resolve3(receiptPathInput);
+  const receiptPath = resolvePath(receiptPathInput);
   const parsed = JSON.parse(await readFile2(receiptPath, "utf8"));
   assertCheckpointReceipt(parsed);
   const receipt = parsed;
   const { receiptSha256, ...receiptCore } = receipt;
-  delete receiptCore["receiptPath"];
+  delete receiptCore.receiptPath;
   if (receiptSha256 !== sha256Text(canonicalJson(receiptCore))) {
     throw new Error("Checkpoint receipt hash is invalid.");
   }
   await quickCheck(receipt.source);
   await quickCheck(receipt.checkpoint);
-  const [sourceSha256, checkpointSha256, sourceDumpSha256, checkpointDumpSha256] = await Promise.all([
+  const [
+    sourceSha256,
+    checkpointSha256,
+    sourceDumpSha256,
+    checkpointDumpSha256
+  ] = await Promise.all([
     sha256File(receipt.source),
     sha256File(receipt.checkpoint),
     dumpHash(receipt.source),
@@ -33667,11 +33930,15 @@ ${source}
 }
 function buildComponentMutationCode(documentType, targetChanges, stateName) {
   if (documentType !== 3 || stateName !== "before" && stateName !== "after") {
-    throw new Error("Exact component mutation currently requires PCB type and before/after state.");
+    throw new Error(
+      "Exact component mutation currently requires PCB type and before/after state."
+    );
   }
   const mutationState = stateName;
   if (targetChanges.length === 0) {
-    throw new Error("Exact component mutation requires declared target changes.");
+    throw new Error(
+      "Exact component mutation requires declared target changes."
+    );
   }
   const patches = /* @__PURE__ */ new Map();
   const preconditions = /* @__PURE__ */ new Map();
@@ -33680,10 +33947,14 @@ function buildComponentMutationCode(documentType, targetChanges, stateName) {
     const pointer = typeof change.pointer === "string" ? change.pointer : "";
     const match = /^\/([^/]+)$/u.exec(pointer);
     const field = match?.[1];
-    if (!isWritableField(field)) continue;
+    if (!isWritableField(field)) {
+      continue;
+    }
     const primitiveId = typeof change.primitiveId === "string" ? change.primitiveId : "";
     if (!/^[A-Za-z0-9._:-]{1,160}$/u.test(primitiveId)) {
-      throw new Error("Exact component mutation contains an invalid primitive ID.");
+      throw new Error(
+        "Exact component mutation contains an invalid primitive ID."
+      );
     }
     const writableField = field;
     const value = change[mutationState];
@@ -33693,7 +33964,9 @@ function buildComponentMutationCode(documentType, targetChanges, stateName) {
         throw new Error(`PCB component field ${writableField} must be finite.`);
       }
       if (writableField === "layer" && candidate !== 1 && candidate !== 2) {
-        throw new Error("PCB component layer must be exactly 1 (Top) or 2 (Bottom).");
+        throw new Error(
+          "PCB component layer must be exactly 1 (Top) or 2 (Bottom)."
+        );
       }
       if (writableField === "primitiveLock" && typeof candidate !== "boolean") {
         throw new Error("PCB component primitiveLock must be boolean.");
@@ -33702,7 +33975,9 @@ function buildComponentMutationCode(documentType, targetChanges, stateName) {
     const patch = patches.get(primitiveId) ?? {};
     const precondition = preconditions.get(primitiveId) ?? {};
     if (Object.hasOwn(patch, writableField)) {
-      throw new Error(`Exact component mutation repeats ${primitiveId}${pointer}.`);
+      throw new Error(
+        `Exact component mutation repeats ${primitiveId}${pointer}.`
+      );
     }
     patch[writableField] = value;
     precondition[writableField] = preconditionValue;
@@ -33715,7 +33990,9 @@ function buildComponentMutationCode(documentType, targetChanges, stateName) {
     precondition: preconditions.get(primitiveId)
   }));
   if (records.length === 0) {
-    throw new Error("Every exact component mutation needs at least one writable top-level field.");
+    throw new Error(
+      "Every exact component mutation needs at least one writable top-level field."
+    );
   }
   if (records.length !== 1) {
     throw new Error(
@@ -33809,7 +34086,9 @@ function buildDsnExportCode(fileName, expectedContext) {
   const expectedDocumentType = expectedContext?.document?.documentType;
   const expectedTabId = expectedContext?.document?.tabId;
   if (isMissingString(expectedProjectUuid) || isMissingString(expectedDocumentUuid) || expectedDocumentType !== 3 || isMissingString(expectedTabId) || typeof fileName !== "string" || fileName.length === 0 || fileName.length > 180) {
-    throw new Error("Facade DSN export requires exact type-3 context and a bounded file name.");
+    throw new Error(
+      "Facade DSN export requires exact type-3 context and a bounded file name."
+    );
   }
   return `
 return await (async () => {
@@ -33867,7 +34146,9 @@ function buildSaveReopenCode(expectedContext) {
   const expectedType = expectedContext?.document?.documentType;
   const expectedTabId = expectedContext?.document?.tabId;
   if (isMissingString(expectedUuid) || typeof expectedType !== "number" || !Number.isInteger(expectedType)) {
-    throw new Error("save/reopen requires expectedContext.document uuid and documentType.");
+    throw new Error(
+      "save/reopen requires expectedContext.document uuid and documentType."
+    );
   }
   if (![1, 3].includes(expectedType)) {
     throw new Error(
@@ -33941,7 +34222,9 @@ function buildActivateRecoveryTargetCode(expectedContext) {
   const expectedUuid = expectedContext?.document?.uuid ?? expectedContext?.document?.documentUuid;
   const expectedType = expectedContext?.document?.documentType;
   if (isMissingString(expectedProjectUuid) || isMissingString(expectedUuid) || typeof expectedType !== "number" || !Number.isInteger(expectedType) || ![1, 2, 3, 4].includes(expectedType)) {
-    throw new Error("recovery target activation requires an exact supported document identity.");
+    throw new Error(
+      "recovery target activation requires an exact supported document identity."
+    );
   }
   return `
 return await (async () => {
@@ -33991,7 +34274,9 @@ function buildReopenOnlyCode(expectedContext, options = {}) {
   const expectedTabId = expectedContext?.document?.tabId;
   const allowDifferentActiveDocument = options.allowDifferentActiveDocument === true;
   if (isMissingString(expectedProjectUuid) || isMissingString(expectedUuid) || typeof expectedType !== "number" || !Number.isInteger(expectedType) || ![1, 2, 3, 4].includes(expectedType) || !allowDifferentActiveDocument && isMissingString(expectedTabId)) {
-    throw new Error("reopen-only recovery requires an exact supported document identity.");
+    throw new Error(
+      "reopen-only recovery requires an exact supported document identity."
+    );
   }
   return `
 return await (async () => {
@@ -34088,7 +34373,13 @@ function isStringArray(value) {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 function compareStrings(left, right) {
-  return left < right ? -1 : left > right ? 1 : 0;
+  if (left < right) {
+    return -1;
+  }
+  if (left > right) {
+    return 1;
+  }
+  return 0;
 }
 function requireFiniteNumber(value, label) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -34099,7 +34390,9 @@ function requireFiniteNumber(value, label) {
 function assertUniqueNames(rows, label) {
   const names = rows.map((row) => row.name);
   if (names.some((name) => typeof name !== "string" || name.length === 0) || new Set(names).size !== names.length) {
-    throw new Error(`Exact PCB rules reader returned malformed or duplicate ${label} names.`);
+    throw new Error(
+      `Exact PCB rules reader returned malformed or duplicate ${label} names.`
+    );
   }
 }
 function assertPayloadCandidate(value) {
@@ -34114,7 +34407,11 @@ var selectorSchema = external_exports.object({
   primitiveIds: external_exports.array(primitiveIdSchema).min(1).max(100).optional(),
   designators: external_exports.array(designatorSchema).min(1).max(100).optional()
 }).strict().superRefine((value, context) => {
-  const choices = [value.all === true, value.primitiveIds !== void 0, value.designators !== void 0];
+  const choices = [
+    value.all === true,
+    value.primitiveIds !== void 0,
+    value.designators !== void 0
+  ];
   if (choices.filter(Boolean).length !== 1) {
     context.addIssue({
       code: "custom",
@@ -34154,8 +34451,12 @@ var exactReadRequestSchema = external_exports.discriminatedUnion("kind", [
   external_exports.object({ kind: external_exports.literal("pcb-rules") }).strict()
 ]);
 function exactReadDocumentType(kind) {
-  if (kind === "schematic-components" || kind === "schematic-topology") return 1;
-  if (kind === "pcb-components" || kind === "pcb-inventory" || kind === "pcb-rules") return 3;
+  if (kind === "schematic-components" || kind === "schematic-topology") {
+    return 1;
+  }
+  if (kind === "pcb-components" || kind === "pcb-inventory" || kind === "pcb-rules") {
+    return 3;
+  }
   throw new Error(`Unsupported exact-reader kind: ${String(kind)}`);
 }
 function validateExactReadRequest(request, expectedContext) {
@@ -34211,12 +34512,22 @@ function assertJsonContainer(value, label) {
   }
 }
 function assertPadShape(value, label) {
-  if (value === null) return;
-  if (!isUnknownArray2(value)) throw new Error(`${label} must be a pad-shape tuple or null.`);
+  if (value === null) {
+    return;
+  }
+  if (!isUnknownArray2(value)) {
+    throw new Error(`${label} must be a pad-shape tuple or null.`);
+  }
   const [shape] = value;
   if (typeof shape === "string" && ["ELLIPSE", "OVAL", "NGON"].includes(shape)) {
-    if (value.length !== 3) throw new Error(`${label} has the wrong ${shape} tuple length.`);
-    assertFiniteFields({ first: value[1], second: value[2] }, ["first", "second"], label);
+    if (value.length !== 3) {
+      throw new Error(`${label} has the wrong ${shape} tuple length.`);
+    }
+    assertFiniteFields(
+      { first: value[1], second: value[2] },
+      ["first", "second"],
+      label
+    );
     if (shape === "NGON") {
       const sideCount = requireFiniteNumber(value[2], `${label}[2]`);
       if (!Number.isInteger(sideCount) || sideCount <= 2) {
@@ -34226,7 +34537,9 @@ function assertPadShape(value, label) {
     return;
   }
   if (shape === "RECT") {
-    if (value.length !== 4) throw new Error(`${label} has the wrong rectangle tuple length.`);
+    if (value.length !== 4) {
+      throw new Error(`${label} has the wrong rectangle tuple length.`);
+    }
     assertFiniteFields(
       { width: value[1], height: value[2], round: value[3] },
       ["width", "height", "round"],
@@ -34235,15 +34548,21 @@ function assertPadShape(value, label) {
     return;
   }
   if (shape === "POLYGON") {
-    if (value.length !== 2) throw new Error(`${label} has the wrong polygon tuple length.`);
+    if (value.length !== 2) {
+      throw new Error(`${label} has the wrong polygon tuple length.`);
+    }
     assertJsonContainer(value[1], `${label}[1]`);
     return;
   }
   throw new Error(`${label} has an unknown pad-shape discriminator.`);
 }
 function assertSpecialPadShape(value, label) {
-  if (value === null) return;
-  if (!Array.isArray(value)) throw new Error(`${label} must be an array or null.`);
+  if (value === null) {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    throw new TypeError(`${label} must be an array or null.`);
+  }
   for (const [index, layerShape] of value.entries()) {
     if (!Array.isArray(layerShape) || layerShape.length !== 3 || !Number.isInteger(layerShape[0]) || !Number.isInteger(layerShape[1])) {
       throw new Error(`${label}[${index}] has a malformed layer tuple.`);
@@ -34255,10 +34574,19 @@ function assertSpecialPadShape(value, label) {
   }
 }
 function assertPadHole(value, label) {
-  if (value === null) return;
-  if (!isUnknownArray2(value)) throw new Error(`${label} must be a hole tuple or null.`);
+  if (value === null) {
+    return;
+  }
+  if (!isUnknownArray2(value)) {
+    throw new Error(`${label} must be a hole tuple or null.`);
+  }
   const [holeType] = value;
-  const expectedLength = holeType === "ROUND" ? 2 : holeType === "SLOT" ? 3 : 0;
+  let expectedLength = 0;
+  if (holeType === "ROUND") {
+    expectedLength = 2;
+  } else if (holeType === "SLOT") {
+    expectedLength = 3;
+  }
   if (!expectedLength || value.length !== expectedLength) {
     throw new Error(`${label} has an unknown type or the wrong tuple length.`);
   }
@@ -34269,25 +34597,44 @@ function assertPadHole(value, label) {
   }
 }
 function assertMaskExpansion(value, label) {
-  if (value === null) return;
-  const fields = ["topSolderMask", "bottomSolderMask", "topPasteMask", "bottomPasteMask"];
+  if (value === null) {
+    return;
+  }
+  const fields = /* @__PURE__ */ new Set([
+    "topSolderMask",
+    "bottomSolderMask",
+    "topPasteMask",
+    "bottomPasteMask"
+  ]);
   if (!isUnknownRecord(value)) {
     throw new Error(`${label} must be a mask-expansion object or null.`);
   }
-  if (Object.keys(value).some((key) => !fields.includes(key))) {
+  if (Object.keys(value).some((key) => !fields.has(key))) {
     throw new Error(`${label} has an unexpected field.`);
   }
   assertFiniteFields(value, Object.keys(value), label);
 }
 function assertHeatWelding(value, label) {
-  if (value === null) return;
+  if (value === null) {
+    return;
+  }
   const required2 = ["connectionMethod"];
-  const optional2 = ["divergenceSpacing", "divergenceLineWidth", "divergenceAngle"];
+  const optional2 = [
+    "divergenceSpacing",
+    "divergenceLineWidth",
+    "divergenceAngle"
+  ];
   if (!isUnknownRecord(value)) {
     throw new Error(`${label} must be a thermal-connection object or null.`);
   }
-  if (Object.keys(value).some((key) => ![...required2, ...optional2].includes(key)) || typeof value["connectionMethod"] !== "string" || !["Divergent", "Direct-connected", "Non-connected"].includes(value["connectionMethod"])) {
-    throw new Error(`${label} has a malformed connection method or unexpected field.`);
+  if (Object.keys(value).some(
+    (key) => ![...required2, ...optional2].includes(key)
+  ) || typeof value["connectionMethod"] !== "string" || !["Divergent", "Direct-connected", "Non-connected"].includes(
+    value["connectionMethod"]
+  )) {
+    throw new Error(
+      `${label} has a malformed connection method or unexpected field.`
+    );
   }
   assertFiniteFields(
     value,
@@ -34297,11 +34644,15 @@ function assertHeatWelding(value, label) {
 }
 function assertCanonicalUniqueStrings(value, label, { allowEmpty = true } = {}) {
   if (!isStringArray(value) || !allowEmpty && value.length === 0 || value.some((item) => item.length === 0) || new Set(value).size !== value.length || JSON.stringify(value) !== JSON.stringify(value.toSorted(compareStrings))) {
-    throw new Error(`${label} must be a sorted array of unique nonempty strings.`);
+    throw new Error(
+      `${label} must be a sorted array of unique nonempty strings.`
+    );
   }
 }
 function assertAssociation(value, label, kind = "library") {
-  if (value === null) return;
+  if (value === null) {
+    return;
+  }
   if (!isUnknownRecord(value)) {
     throw new Error(`${label} must be a library association or null.`);
   }
@@ -34314,11 +34665,15 @@ function assertAssociation(value, label, kind = "library") {
     throw new Error(`${label} has no observable association identity.`);
   }
   for (const key of allowed) {
-    if (Object.hasOwn(value, key)) assertNonemptyString(value[key], `${label}.${key}`);
+    if (Object.hasOwn(value, key)) {
+      assertNonemptyString(value[key], `${label}.${key}`);
+    }
   }
 }
 function assertOtherProperty(value, label) {
-  if (value === null) return;
+  if (value === null) {
+    return;
+  }
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`${label} must be a flat property object or null.`);
   }
@@ -34334,7 +34689,9 @@ function assertOtherProperty(value, label) {
 function validateExactReadPayload(payload, request) {
   assertPayloadCandidate(payload);
   if (payload.ok !== true || payload.kind !== request.kind || payload.documentType !== exactReadDocumentType(request.kind)) {
-    throw new Error("Exact reader returned an inconsistent kind, document type, or success flag.");
+    throw new Error(
+      "Exact reader returned an inconsistent kind, document type, or success flag."
+    );
   }
   if (request.kind === "schematic-components" || request.kind === "pcb-components") {
     if (!Array.isArray(payload.primitiveIds) || payload.detail?.pins !== request.includePins || payload.detail?.bounds !== request.includeBounds || !payload.byPrimitiveId || typeof payload.byPrimitiveId !== "object" || Array.isArray(payload.byPrimitiveId)) {
@@ -34344,12 +34701,16 @@ function validateExactReadPayload(payload, request) {
     const primitiveIds = payload.primitiveIds;
     const keys = Object.keys(componentByPrimitiveId).toSorted();
     if (new Set(primitiveIds).size !== primitiveIds.length || JSON.stringify(keys) !== JSON.stringify(primitiveIds)) {
-      throw new Error("Exact component reader primitive index is internally inconsistent.");
+      throw new Error(
+        "Exact component reader primitive index is internally inconsistent."
+      );
     }
     for (const id of keys) {
       const component = componentByPrimitiveId[id];
       if (component?.primitiveId !== id) {
-        throw new Error(`Exact component reader returned a mismatched primitive record for ${id}.`);
+        throw new Error(
+          `Exact component reader returned a mismatched primitive record for ${id}.`
+        );
       }
       const schematic = request.kind === "schematic-components";
       const baseKeys = schematic ? [
@@ -34398,16 +34759,29 @@ function validateExactReadPayload(payload, request) {
         "supplierId",
         "otherProperty"
       ];
-      if (request.includePins) baseKeys.push(schematic ? "pins" : "pads");
-      if (request.includeBounds) baseKeys.push("bounds");
+      if (request.includePins) {
+        baseKeys.push(schematic ? "pins" : "pads");
+      }
+      if (request.includeBounds) {
+        baseKeys.push("bounds");
+      }
       assertExactRecordKeys(component, baseKeys, `Exact component ${id}`);
-      assertNonemptyString(component.primitiveType, `Exact component ${id}.primitiveType`);
-      assertFiniteFields(component, schematic ? ["x", "y", "rotation"] : ["layer", "x", "y", "rotation"], `Exact component ${id}`);
+      assertNonemptyString(
+        component.primitiveType,
+        `Exact component ${id}.primitiveType`
+      );
+      assertFiniteFields(
+        component,
+        schematic ? ["x", "y", "rotation"] : ["layer", "x", "y", "rotation"],
+        `Exact component ${id}`
+      );
       if (!schematic && !Number.isInteger(component.layer)) {
         throw new Error(`Exact component ${id}.layer must be an integer enum.`);
       }
       if (component.designator !== null && typeof component.designator !== "string") {
-        throw new Error(`Exact component ${id}.designator must be a string or null.`);
+        throw new Error(
+          `Exact component ${id}.designator must be a string or null.`
+        );
       }
       for (const field of [
         "name",
@@ -34417,22 +34791,42 @@ function validateExactReadPayload(payload, request) {
         "supplier",
         "supplierId"
       ]) {
-        assertNullableString(component[field], `Exact component ${id}.${field}`);
+        assertNullableString(
+          component[field],
+          `Exact component ${id}.${field}`
+        );
       }
       assertAssociation(component.component, `Exact component ${id}.component`);
       assertAssociation(component.footprint, `Exact component ${id}.footprint`);
-      assertOtherProperty(component.otherProperty, `Exact component ${id}.otherProperty`);
-      if (request.includeBounds) assertBounds(component.bounds, `Exact component ${id}.bounds`);
+      assertOtherProperty(
+        component.otherProperty,
+        `Exact component ${id}.otherProperty`
+      );
+      if (request.includeBounds) {
+        assertBounds(component.bounds, `Exact component ${id}.bounds`);
+      }
       if (schematic) {
-        assertNonemptyString(component.componentType, `Exact component ${id}.componentType`);
+        assertNonemptyString(
+          component.componentType,
+          `Exact component ${id}.componentType`
+        );
         assertAssociation(component.cbb, `Exact component ${id}.cbb`, "cbb");
-        assertAssociation(component.cbbSymbol, `Exact component ${id}.cbbSymbol`, "cbb-symbol");
+        assertAssociation(
+          component.cbbSymbol,
+          `Exact component ${id}.cbbSymbol`,
+          "cbb-symbol"
+        );
         assertAssociation(component.symbol, `Exact component ${id}.symbol`);
-        assertNullableString(component.subPartName, `Exact component ${id}.subPartName`);
+        assertNullableString(
+          component.subPartName,
+          `Exact component ${id}.subPartName`
+        );
         assertNullableString(component.net, `Exact component ${id}.net`);
         for (const field of ["addIntoBom", "addIntoPcb"]) {
           if (component[field] !== null && typeof component[field] !== "boolean") {
-            throw new Error(`Exact component ${id}.${field} must be boolean or null.`);
+            throw new Error(
+              `Exact component ${id}.${field} must be boolean or null.`
+            );
           }
         }
         if (typeof component.mirror !== "boolean") {
@@ -34464,7 +34858,9 @@ function validateExactReadPayload(payload, request) {
             );
             assertNonemptyString(pin.primitiveId, `${label}.primitiveId`);
             assertNonemptyString(pin.pinNumber, `${label}.pinNumber`);
-            if (typeof pin.pinName !== "string") throw new Error(`${label}.pinName must be a string.`);
+            if (typeof pin.pinName !== "string") {
+              throw new TypeError(`${label}.pinName must be a string.`);
+            }
             assertFiniteFields(pin, ["x", "y", "rotation", "pinLength"], label);
             assertNullableString(pin.pinColor, `${label}.pinColor`);
             if (typeof pin.pinShape !== "string" || typeof pin.pinType !== "string") {
@@ -34476,17 +34872,23 @@ function validateExactReadPayload(payload, request) {
             pinIds.push(pin.primitiveId);
           }
           if (new Set(pinIds).size !== pinIds.length) {
-            throw new Error(`Exact component ${id}.pins contains duplicate primitive IDs.`);
+            throw new Error(
+              `Exact component ${id}.pins contains duplicate primitive IDs.`
+            );
           }
         }
       } else {
         assertAssociation(component.model3D, `Exact component ${id}.model3D`);
         if (typeof component.primitiveLock !== "boolean" || typeof component.addIntoBom !== "boolean") {
-          throw new TypeError(`Exact PCB component ${id} has malformed boolean state.`);
+          throw new TypeError(
+            `Exact PCB component ${id} has malformed boolean state.`
+          );
         }
         if (request.includePins) {
           if (!Array.isArray(component.pads)) {
-            throw new TypeError(`Exact PCB component ${id}.pads must be an array.`);
+            throw new TypeError(
+              `Exact PCB component ${id}.pads must be an array.`
+            );
           }
           const padIds = [];
           for (const [index, pad] of component.pads.entries()) {
@@ -34512,7 +34914,9 @@ function validateExactReadPayload(payload, request) {
               throw new Error(`${label} has the wrong type or parent.`);
             }
             assertFiniteFields(pad, ["layer", "x", "y", "rotation"], label);
-            if (typeof pad.padNumber !== "string") throw new Error(`${label}.padNumber must be a string.`);
+            if (typeof pad.padNumber !== "string") {
+              throw new TypeError(`${label}.padNumber must be a string.`);
+            }
             assertNullableString(pad.net, `${label}.net`);
             if (pad.source !== "component-pin-wrapper-transformed-placement-only") {
               throw new Error(`${label} has the wrong source marker.`);
@@ -34520,7 +34924,9 @@ function validateExactReadPayload(payload, request) {
             padIds.push(pad.primitiveId);
           }
           if (new Set(padIds).size !== padIds.length) {
-            throw new Error(`Exact PCB component ${id}.pads contains duplicate primitive IDs.`);
+            throw new Error(
+              `Exact PCB component ${id}.pads contains duplicate primitive IDs.`
+            );
           }
         }
       }
@@ -34528,7 +34934,9 @@ function validateExactReadPayload(payload, request) {
     if (request.selector.primitiveIds) {
       const requested = [...request.selector.primitiveIds].toSorted();
       if (JSON.stringify(keys) !== JSON.stringify(requested)) {
-        throw new Error("Exact component reader did not return every requested primitive ID exactly once.");
+        throw new Error(
+          "Exact component reader did not return every requested primitive ID exactly once."
+        );
       }
     }
     if (request.selector.designators) {
@@ -34539,28 +34947,38 @@ function validateExactReadPayload(payload, request) {
       }).toSorted(compareStrings);
       const requested = request.selector.designators.toSorted(compareStrings);
       if (JSON.stringify(actual) !== JSON.stringify(requested)) {
-        throw new Error("Exact component reader did not return every requested designator exactly once.");
+        throw new Error(
+          "Exact component reader did not return every requested designator exactly once."
+        );
       }
     }
     const limitations = payload.limitations;
     if (request.kind === "schematic-components") {
-      if (!isUnknownRecord(limitations) || typeof limitations["componentPinOtherProperty"] !== "string" || typeof limitations["componentOtherPropertyFiltering"] !== "string" || typeof limitations["cbbLibraryOwnership"] !== "string") {
-        throw new Error("Exact schematic component reader omitted adapter limitations.");
+      if (!isUnknownRecord(limitations) || typeof limitations.componentPinOtherProperty !== "string" || typeof limitations.componentOtherPropertyFiltering !== "string" || typeof limitations.cbbLibraryOwnership !== "string") {
+        throw new Error(
+          "Exact schematic component reader omitted adapter limitations."
+        );
       }
       for (const id of keys) {
         const component = componentByPrimitiveId[id];
         for (const pin of component?.pins ?? []) {
           if (Object.hasOwn(pin, "otherProperty")) {
-            throw new Error("Exact schematic component reader exposed unobservable pin properties.");
+            throw new Error(
+              "Exact schematic component reader exposed unobservable pin properties."
+            );
           }
         }
       }
-    } else if (!isUnknownRecord(limitations) || typeof limitations["componentPadWrapper"] !== "string") {
-      throw new Error("Exact PCB component reader omitted its adapter limitation.");
+    } else if (!isUnknownRecord(limitations) || typeof limitations.componentPadWrapper !== "string") {
+      throw new Error(
+        "Exact PCB component reader omitted its adapter limitation."
+      );
     }
   } else if (request.kind === "schematic-topology") {
     if (!Array.isArray(payload.compiledConnectivity) || payload.authority?.connectivity !== "sch_Netlist.getNetlist(JLCEDA)" || payload.authority?.wireGeometry !== "unavailable" || payload.componentCorrelation?.status !== "exact-match" || payload.componentCorrelation?.source !== "sch_PrimitiveComponent.getAll(part,true)" || typeof payload.componentCorrelation?.pinCount !== "number" || !Number.isSafeInteger(payload.componentCorrelation?.pinCount) || payload.componentCorrelation.pinCount < 0 || !Array.isArray(payload.componentCorrelation?.uniqueIds) || !Array.isArray(payload.componentCorrelation?.primitiveIds) || !payload.componentCorrelation?.byUniqueId || typeof payload.componentCorrelation.byUniqueId !== "object" || Array.isArray(payload.componentCorrelation.byUniqueId) || !Array.isArray(payload.limitations)) {
-      throw new Error("Exact schematic topology reader omitted compiled connectivity provenance.");
+      throw new Error(
+        "Exact schematic topology reader omitted compiled connectivity provenance."
+      );
     }
     assertExactRecordKeys(
       payload.componentCorrelation,
@@ -34592,10 +35010,18 @@ function validateExactReadPayload(payload, request) {
         "Exact schematic topology compiled component"
       );
       if (!Array.isArray(component.pins)) {
-        throw new TypeError("Exact schematic topology compiled connectivity is malformed.");
+        throw new TypeError(
+          "Exact schematic topology compiled connectivity is malformed."
+        );
       }
-      assertNonemptyString(component.uniqueId, "Exact schematic topology compiled unique ID");
-      assertNullableString(component.designator, "Exact schematic topology compiled designator");
+      assertNonemptyString(
+        component.uniqueId,
+        "Exact schematic topology compiled unique ID"
+      );
+      assertNullableString(
+        component.designator,
+        "Exact schematic topology compiled designator"
+      );
       const compiledPinNumbers = [];
       for (const [index, pin] of component.pins.entries()) {
         const pinLabel = `Exact schematic topology ${component.uniqueId} pin[${index}]`;
@@ -34605,7 +35031,9 @@ function validateExactReadPayload(payload, request) {
         compiledPinNumbers.push(pin.pinNumber);
       }
       if (new Set(compiledPinNumbers).size !== compiledPinNumbers.length || JSON.stringify(compiledPinNumbers) !== JSON.stringify([...compiledPinNumbers].toSorted())) {
-        throw new Error("Exact schematic topology compiled pin numbers are not canonical and unique.");
+        throw new Error(
+          "Exact schematic topology compiled pin numbers are not canonical and unique."
+        );
       }
       const correlation = payload.componentCorrelation.byUniqueId[component.uniqueId];
       assertExactRecordKeys(
@@ -34626,32 +35054,46 @@ function validateExactReadPayload(payload, request) {
         `Exact schematic topology correlation ${component.uniqueId}.pinNumbers`
       );
       if (correlation.designator !== component.designator || JSON.stringify(correlation.pinNumbers) !== JSON.stringify(compiledPinNumbers)) {
-        throw new Error("Exact schematic topology compiled and public component state disagree.");
+        throw new Error(
+          "Exact schematic topology compiled and public component state disagree."
+        );
       }
       connectivityIds.push(component.uniqueId);
       correlatedPrimitiveIds.push(correlation.primitiveId);
     }
     if (new Set(connectivityIds).size !== connectivityIds.length) {
-      throw new Error("Exact schematic topology compiled connectivity has duplicate unique IDs.");
+      throw new Error(
+        "Exact schematic topology compiled connectivity has duplicate unique IDs."
+      );
     }
-    const correlatedIds = [...payload.componentCorrelation.uniqueIds].toSorted();
+    const correlatedIds = [
+      ...payload.componentCorrelation.uniqueIds
+    ].toSorted();
     const compiledPinCount = payload.compiledConnectivity.reduce(
       (total, component) => total + (component.pins?.length ?? 0),
       0
     );
-    if (payload.componentCorrelation.componentCount !== connectivityIds.length || payload.componentCorrelation.pinCount !== compiledPinCount || payload.componentCorrelation.primitiveIds.length !== connectivityIds.length || JSON.stringify(Object.keys(payload.componentCorrelation.byUniqueId).toSorted()) !== JSON.stringify([...connectivityIds].toSorted()) || JSON.stringify(correlatedIds) !== JSON.stringify([...connectivityIds].toSorted()) || JSON.stringify([...correlatedPrimitiveIds].toSorted()) !== JSON.stringify(payload.componentCorrelation.primitiveIds)) {
-      throw new Error("Exact schematic topology component correlation is inconsistent.");
+    if (payload.componentCorrelation.componentCount !== connectivityIds.length || payload.componentCorrelation.pinCount !== compiledPinCount || payload.componentCorrelation.primitiveIds.length !== connectivityIds.length || JSON.stringify(
+      Object.keys(payload.componentCorrelation.byUniqueId).toSorted()
+    ) !== JSON.stringify([...connectivityIds].toSorted()) || JSON.stringify(correlatedIds) !== JSON.stringify([...connectivityIds].toSorted()) || JSON.stringify([...correlatedPrimitiveIds].toSorted()) !== JSON.stringify(payload.componentCorrelation.primitiveIds)) {
+      throw new Error(
+        "Exact schematic topology component correlation is inconsistent."
+      );
     }
   } else if (request.kind === "pcb-inventory") {
     const limitations = payload.limitations;
-    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations) || typeof limitations["directPads"] !== "string" || typeof limitations["componentPadCorrelation"] !== "string" || typeof limitations["pouredCorrelation"] !== "string" || typeof limitations["regionRuleTypes"] !== "string" || typeof limitations["fillModes"] !== "string" || typeof limitations["arcPrecision"] !== "string" || typeof limitations["viaPrecision"] !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
+    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations) || typeof limitations["directPads"] !== "string" || typeof limitations.componentPadCorrelation !== "string" || typeof limitations["pouredCorrelation"] !== "string" || typeof limitations.regionRuleTypes !== "string" || typeof limitations.fillModes !== "string" || typeof limitations.arcPrecision !== "string" || typeof limitations.viaPrecision !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
       throw new Error("Exact PCB inventory omitted primitive families.");
     }
     const families = payload.families;
     if (JSON.stringify(Object.keys(families).toSorted()) !== JSON.stringify(PCB_INVENTORY_FAMILY_NAMES)) {
-      throw new Error("Exact PCB inventory primitive-family set is incomplete.");
+      throw new Error(
+        "Exact PCB inventory primitive-family set is incomplete."
+      );
     }
-    const monitoredFamilies = new Set(PCB_MONITORED_FAMILY_NAMES);
+    const monitoredFamilies = new Set(
+      PCB_MONITORED_FAMILY_NAMES
+    );
     const validatedFamilies = /* @__PURE__ */ new Map();
     const allFamilyPrimitiveIds = [];
     for (const name of PCB_INVENTORY_FAMILY_NAMES) {
@@ -34667,27 +35109,35 @@ function validateExactReadPayload(payload, request) {
       );
       const familyPrimitiveIds = family.primitiveIds;
       if (family.status !== "adapter-enumerated" || typeof family.count !== "number" || family.count !== familyPrimitiveIds.length || !Number.isSafeInteger(family.count) || family.count < 0) {
-        throw new Error(`Exact PCB inventory family ${name} is internally inconsistent.`);
+        throw new Error(
+          `Exact PCB inventory family ${name} is internally inconsistent.`
+        );
       }
       allFamilyPrimitiveIds.push(...familyPrimitiveIds);
       const familyIndex = family.byPrimitiveId;
       let validatedFamilyIndex;
       if (familyIndex !== void 0) {
         if (!isUnknownRecord(familyIndex) || JSON.stringify(Object.keys(familyIndex).toSorted(compareStrings)) !== JSON.stringify(familyPrimitiveIds)) {
-          throw new Error(`Exact PCB inventory family ${name} has an inconsistent state index.`);
+          throw new Error(
+            `Exact PCB inventory family ${name} has an inconsistent state index.`
+          );
         }
         const indexEntries = [];
         for (const id of familyPrimitiveIds) {
           const state = familyIndex[id];
           if (!isUnknownRecord(state) || state["primitiveId"] !== id) {
-            throw new Error(`Exact PCB inventory family ${name} mismatched state for ${id}.`);
+            throw new Error(
+              `Exact PCB inventory family ${name} mismatched state for ${id}.`
+            );
           }
           indexEntries.push([id, state]);
         }
         validatedFamilyIndex = Object.fromEntries(indexEntries);
       }
       if (monitoredFamilies.has(name) && familyIndex === void 0) {
-        throw new Error(`Exact PCB inventory family ${name} has an inconsistent state index.`);
+        throw new Error(
+          `Exact PCB inventory family ${name} has an inconsistent state index.`
+        );
       }
       validatedFamilies.set(name, {
         count: family.count,
@@ -34696,17 +35146,23 @@ function validateExactReadPayload(payload, request) {
       });
     }
     if (new Set(allFamilyPrimitiveIds).size !== allFamilyPrimitiveIds.length || typeof payload.enumeratedPrimitiveCount !== "number" || !Number.isSafeInteger(payload.enumeratedPrimitiveCount) || payload.enumeratedPrimitiveCount !== allFamilyPrimitiveIds.length) {
-      throw new Error("Exact PCB inventory family primitive identities overlap or have the wrong total.");
+      throw new Error(
+        "Exact PCB inventory family primitive identities overlap or have the wrong total."
+      );
     }
     const getFamily = (name) => {
       const family = validatedFamilies.get(name);
-      if (!family) throw new Error(`Exact PCB inventory family ${name} is unavailable.`);
+      if (!family) {
+        throw new Error(`Exact PCB inventory family ${name} is unavailable.`);
+      }
       return family;
     };
     const getMonitoredFamily = (name) => {
       const family = getFamily(name);
       if (!family.byPrimitiveId) {
-        throw new Error(`Exact PCB inventory family ${name} has an inconsistent state index.`);
+        throw new Error(
+          `Exact PCB inventory family ${name} has an inconsistent state index.`
+        );
       }
       return { ...family, byPrimitiveId: family.byPrimitiveId };
     };
@@ -34815,10 +35271,15 @@ function validateExactReadPayload(payload, request) {
     };
     const validatePrimitiveRecord = (name, row, id) => {
       const label = `Exact PCB inventory ${name} ${id}`;
-      if (!isUnknownRecord(row)) throw new Error(`${label} must be an object.`);
+      if (!isUnknownRecord(row)) {
+        throw new Error(`${label} must be an object.`);
+      }
       const keys = [...primitiveSchemas[name]];
       const hasParent = Object.hasOwn(row, "parentComponentPrimitiveId");
-      const hasCorrelationSource = Object.hasOwn(row, "componentCorrelationSource");
+      const hasCorrelationSource = Object.hasOwn(
+        row,
+        "componentCorrelationSource"
+      );
       if (name === "pads" && hasParent && hasCorrelationSource) {
         keys.push("parentComponentPrimitiveId", "componentCorrelationSource");
       } else if (name === "pads" && hasParent !== hasCorrelationSource) {
@@ -34833,7 +35294,15 @@ function validateExactReadPayload(payload, request) {
       if (name === "pads") {
         assertFiniteFields(
           row,
-          ["layer", "x", "y", "rotation", "holeOffsetX", "holeOffsetY", "holeRotation"],
+          [
+            "layer",
+            "x",
+            "y",
+            "rotation",
+            "holeOffsetX",
+            "holeOffsetY",
+            "holeRotation"
+          ],
           label
         );
         if (typeof row.padNumber !== "string" || !Number.isInteger(row.padType)) {
@@ -34852,12 +35321,18 @@ function validateExactReadPayload(payload, request) {
         assertHeatWelding(row.heatWelding, `${label}.heatWelding`);
       } else if (name === "vias") {
         assertNullableString(row.net, `${label}.net`);
-        assertNullableString(row.designRuleBlindViaName, `${label}.designRuleBlindViaName`);
+        assertNullableString(
+          row.designRuleBlindViaName,
+          `${label}.designRuleBlindViaName`
+        );
         assertFiniteFields(row, ["x", "y", "holeDiameter", "diameter"], label);
         if (!Number.isInteger(row.viaType) || typeof row.primitiveLock !== "boolean") {
           throw new TypeError(`${label} has malformed via type or lock state.`);
         }
-        assertMaskExpansion(row.solderMaskExpansion, `${label}.solderMaskExpansion`);
+        assertMaskExpansion(
+          row.solderMaskExpansion,
+          `${label}.solderMaskExpansion`
+        );
       } else if (name === "lines" || name === "arcs") {
         assertFiniteFields(
           row,
@@ -34878,12 +35353,16 @@ function validateExactReadPayload(payload, request) {
       } else if (name === "polylines") {
         assertFiniteFields(row, ["layer", "lineWidth"], label);
         assertJsonContainer(row.polygon, `${label}.polygon`);
-        if (typeof row.primitiveLock !== "boolean") throw new Error(`${label} has malformed lock state.`);
+        if (typeof row.primitiveLock !== "boolean") {
+          throw new TypeError(`${label} has malformed lock state.`);
+        }
       } else if (name === "regions") {
         assertFiniteFields(row, ["layer", "lineWidth"], label);
         assertJsonContainer(row.complexPolygon, `${label}.complexPolygon`);
         assertNullableString(row.regionName, `${label}.regionName`);
-        if (typeof row.primitiveLock !== "boolean") throw new Error(`${label} has malformed lock state.`);
+        if (typeof row.primitiveLock !== "boolean") {
+          throw new TypeError(`${label} has malformed lock state.`);
+        }
       } else if (name === "pours") {
         assertFiniteFields(row, ["layer", "pourPriority", "lineWidth"], label);
         assertJsonContainer(row.complexPolygon, `${label}.complexPolygon`);
@@ -34894,7 +35373,9 @@ function validateExactReadPayload(payload, request) {
       } else if (name === "fills") {
         assertFiniteFields(row, ["layer", "lineWidth"], label);
         assertJsonContainer(row.complexPolygon, `${label}.complexPolygon`);
-        if (typeof row.primitiveLock !== "boolean") throw new Error(`${label} has malformed lock state.`);
+        if (typeof row.primitiveLock !== "boolean") {
+          throw new TypeError(`${label} has malformed lock state.`);
+        }
       }
     };
     for (const name of PCB_MONITORED_FAMILY_NAMES) {
@@ -34911,7 +35392,9 @@ function validateExactReadPayload(payload, request) {
     const componentPadCorrelation = payload.componentPadCorrelation;
     const pouredCorrelation = payload.pouredCorrelation;
     if (typeof payload.physicalPadCount !== "number" || !Number.isSafeInteger(payload.physicalPadCount) || typeof payload.standalonePadCount !== "number" || !Number.isSafeInteger(payload.standalonePadCount) || payload.physicalPadCount !== padsFamily.count || payload.standalonePadCount < 0) {
-      throw new Error("Exact PCB inventory physical pad count is inconsistent.");
+      throw new Error(
+        "Exact PCB inventory physical pad count is inconsistent."
+      );
     }
     assertExactRecordKeys(
       componentPadCorrelation,
@@ -34931,12 +35414,18 @@ function validateExactReadPayload(payload, request) {
     const componentPadByPrimitiveId = componentPadCorrelation.byPrimitiveId;
     const padIdsByComponentPrimitiveId = componentPadCorrelation.byComponentPrimitiveId;
     if (!componentPadByPrimitiveId || !padIdsByComponentPrimitiveId) {
-      throw new Error("Exact PCB inventory component-pad correlation is inconsistent.");
+      throw new Error(
+        "Exact PCB inventory component-pad correlation is inconsistent."
+      );
     }
-    const correlatedPadIds = [...componentPadCorrelation.primitiveIds].toSorted();
+    const correlatedPadIds = [
+      ...componentPadCorrelation.primitiveIds
+    ].toSorted();
     const componentIds = componentsFamily.primitiveIds;
     if (typeof componentPadCorrelation.count !== "number" || componentPadCorrelation.count !== correlatedPadIds.length || !Number.isSafeInteger(componentPadCorrelation.count) || new Set(correlatedPadIds).size !== correlatedPadIds.length || payload.standalonePadCount !== padsFamily.count - correlatedPadIds.length || correlatedPadIds.some((id) => !padsFamily.byPrimitiveId[id]) || JSON.stringify(Object.keys(componentPadByPrimitiveId).toSorted()) !== JSON.stringify(correlatedPadIds) || JSON.stringify(Object.keys(padIdsByComponentPrimitiveId).toSorted()) !== JSON.stringify(componentIds)) {
-      throw new Error("Exact PCB inventory component-pad correlation is inconsistent.");
+      throw new Error(
+        "Exact PCB inventory component-pad correlation is inconsistent."
+      );
     }
     const mappedPadIds = [];
     for (const componentId of componentIds) {
@@ -34948,33 +35437,52 @@ function validateExactReadPayload(payload, request) {
       mappedPadIds.push(...ids);
     }
     if (new Set(mappedPadIds).size !== mappedPadIds.length || JSON.stringify([...mappedPadIds].toSorted()) !== JSON.stringify(correlatedPadIds)) {
-      throw new Error("Exact PCB inventory component-to-pad index is inconsistent.");
+      throw new Error(
+        "Exact PCB inventory component-to-pad index is inconsistent."
+      );
     }
     for (const id of correlatedPadIds) {
       const correlation = componentPadByPrimitiveId[id];
       const directPad = padsFamily.byPrimitiveId[id];
       assertExactRecordKeys(
         correlation,
-        ["primitiveId", "parentComponentPrimitiveId", "padNumber", "net", "source"],
+        [
+          "primitiveId",
+          "parentComponentPrimitiveId",
+          "padNumber",
+          "net",
+          "source"
+        ],
         `Exact PCB inventory pad correlation ${id}`
       );
       if (correlation.primitiveId !== id || typeof correlation.parentComponentPrimitiveId !== "string" || !componentIds.includes(correlation.parentComponentPrimitiveId) || typeof correlation.padNumber !== "string" || correlation.source !== "component-getState_Pads") {
-        throw new Error("Exact PCB inventory correlated pad has malformed identity or provenance.");
+        throw new Error(
+          "Exact PCB inventory correlated pad has malformed identity or provenance."
+        );
       }
-      assertNullableString(correlation.net, `Exact PCB inventory pad correlation ${id}.net`);
+      assertNullableString(
+        correlation.net,
+        `Exact PCB inventory pad correlation ${id}.net`
+      );
       if (!directPad) {
-        throw new Error("Exact PCB inventory correlated pad disagrees with direct pad state.");
+        throw new Error(
+          "Exact PCB inventory correlated pad disagrees with direct pad state."
+        );
       }
       const ownedPadIds = padIdsByComponentPrimitiveId[correlation.parentComponentPrimitiveId];
       if (directPad.parentComponentPrimitiveId !== correlation.parentComponentPrimitiveId || directPad.componentCorrelationSource !== correlation.source || directPad.padNumber !== correlation.padNumber || directPad.net !== correlation.net || ownedPadIds === void 0 || !ownedPadIds.includes(id)) {
-        throw new Error("Exact PCB inventory correlated pad disagrees with direct pad state.");
+        throw new Error(
+          "Exact PCB inventory correlated pad disagrees with direct pad state."
+        );
       }
     }
     for (const id of padsFamily.primitiveIds) {
       const directPad = padsFamily.byPrimitiveId[id];
       const isCorrelated = componentPadByPrimitiveId[id] !== void 0;
       if (!directPad || isCorrelated !== Object.hasOwn(directPad, "parentComponentPrimitiveId") || isCorrelated !== Object.hasOwn(directPad, "componentCorrelationSource")) {
-        throw new Error("Exact PCB inventory direct pad has unexpected component ownership state.");
+        throw new Error(
+          "Exact PCB inventory direct pad has unexpected component ownership state."
+        );
       }
     }
     assertExactRecordKeys(
@@ -34988,11 +35496,15 @@ function validateExactReadPayload(payload, request) {
     );
     const pouredByPrimitiveId = pouredCorrelation.byPourPrimitiveId;
     if (!pouredByPrimitiveId) {
-      throw new Error("Exact PCB inventory poured-state correlation is inconsistent.");
+      throw new Error(
+        "Exact PCB inventory poured-state correlation is inconsistent."
+      );
     }
     const pouredParentIds = [...pouredCorrelation.pourPrimitiveIds].toSorted();
     if (typeof pouredCorrelation.count !== "number" || pouredCorrelation.count !== pouredParentIds.length || new Set(pouredParentIds).size !== pouredParentIds.length || JSON.stringify(Object.keys(pouredByPrimitiveId).toSorted()) !== JSON.stringify(pouredParentIds) || pouredParentIds.some((id) => !poursFamily.byPrimitiveId[id])) {
-      throw new Error("Exact PCB inventory poured-state correlation is inconsistent.");
+      throw new Error(
+        "Exact PCB inventory poured-state correlation is inconsistent."
+      );
     }
     const pouredFillIds = [];
     for (const id of pouredParentIds) {
@@ -35003,35 +35515,54 @@ function validateExactReadPayload(payload, request) {
         `Exact PCB inventory poured state ${id}`
       );
       if (row.primitiveId !== id || row.pourPrimitiveId !== id || !Array.isArray(row.pourFills)) {
-        throw new Error("Exact PCB inventory poured-state record is malformed.");
+        throw new Error(
+          "Exact PCB inventory poured-state record is malformed."
+        );
       }
-      assertNonemptyString(row.primitiveType, `Exact PCB inventory poured state ${id}.primitiveType`);
+      assertNonemptyString(
+        row.primitiveType,
+        `Exact PCB inventory poured state ${id}.primitiveType`
+      );
       const rowFillIds = [];
       for (const [index, fill] of row.pourFills.entries()) {
         const fillLabel = `Exact PCB inventory poured state ${id} fill[${index}]`;
-        assertExactRecordKeys(fill, ["id", "path", "lineWidth", "fill"], fillLabel);
+        assertExactRecordKeys(
+          fill,
+          ["id", "path", "lineWidth", "fill"],
+          fillLabel
+        );
         assertNonemptyString(fill.id, `${fillLabel}.id`);
         assertJsonContainer(fill.path, `${fillLabel}.path`);
         assertFiniteFields(fill, ["lineWidth"], fillLabel);
-        if (typeof fill.fill !== "boolean") throw new Error(`${fillLabel}.fill must be boolean.`);
+        if (typeof fill.fill !== "boolean") {
+          throw new TypeError(`${fillLabel}.fill must be boolean.`);
+        }
         rowFillIds.push(fill.id);
       }
       if (new Set(rowFillIds).size !== rowFillIds.length || JSON.stringify(rowFillIds) !== JSON.stringify([...rowFillIds].toSorted())) {
-        throw new Error("Exact PCB inventory poured fill-piece order or identity is inconsistent.");
+        throw new Error(
+          "Exact PCB inventory poured fill-piece order or identity is inconsistent."
+        );
       }
       pouredFillIds.push(...rowFillIds);
     }
     if (pouredFillIds.some((id) => typeof id !== "string" || id.length === 0) || new Set(pouredFillIds).size !== pouredFillIds.length || !Number.isSafeInteger(payload.pouredFillPieceCount) || payload.pouredFillPieceCount !== pouredFillIds.length) {
-      throw new Error("Exact PCB inventory poured fill-piece identities are inconsistent.");
+      throw new Error(
+        "Exact PCB inventory poured fill-piece identities are inconsistent."
+      );
     }
     for (const row of Object.values(regionsFamily.byPrimitiveId)) {
       if (Object.hasOwn(row, "ruleType")) {
-        throw new Error("Exact PCB inventory exposed incomplete region rule-type state.");
+        throw new Error(
+          "Exact PCB inventory exposed incomplete region rule-type state."
+        );
       }
     }
     for (const row of Object.values(fillsFamily.byPrimitiveId)) {
       if (Object.hasOwn(row, "fillMode")) {
-        throw new Error("Exact PCB inventory exposed adapter-hardcoded fill-mode state.");
+        throw new Error(
+          "Exact PCB inventory exposed adapter-hardcoded fill-mode state."
+        );
       }
     }
   } else if (request.kind === "pcb-rules") {
@@ -35054,11 +35585,15 @@ function validateExactReadPayload(payload, request) {
       }
       if (row["type"] === "net") {
         assertNonemptyString(row["name"], `${label}.name`);
-        if (!netSet.has(row["name"])) throw new Error(`${label} references an unknown net.`);
+        if (!netSet.has(row["name"])) {
+          throw new Error(`${label} references an unknown net.`);
+        }
         ruleLeafNets.push(row["name"]);
       }
       if (Object.hasOwn(row, "sub")) {
-        if (!Array.isArray(row["sub"])) throw new Error(`${label}.sub must be an array.`);
+        if (!Array.isArray(row["sub"])) {
+          throw new TypeError(`${label}.sub must be an array.`);
+        }
         for (const [index, child] of row["sub"].entries()) {
           visitRuleRow(child, `${label}.sub[${index}]`);
         }
@@ -35068,11 +35603,15 @@ function validateExactReadPayload(payload, request) {
       visitRuleRow(row, `Exact PCB net rule[${index}]`);
     }
     if (new Set(ruleLeafNets).size !== ruleLeafNets.length || JSON.stringify([...ruleLeafNets].toSorted()) !== JSON.stringify(nets)) {
-      throw new Error("Exact PCB rule leaves do not cover every live net exactly once.");
+      throw new Error(
+        "Exact PCB rule leaves do not cover every live net exactly once."
+      );
     }
     for (const [key, rows] of Object.entries(rules.netByNetRules)) {
       if (!Array.isArray(rows)) {
-        throw new TypeError(`Exact PCB net-to-net rule ${key} must be an array.`);
+        throw new TypeError(
+          `Exact PCB net-to-net rule ${key} must be an array.`
+        );
       }
     }
     assertUniqueNames(rules.netClasses, "net class");
@@ -35086,27 +35625,37 @@ function validateExactReadPayload(payload, request) {
     for (const [label, rows] of groupedRuleRows) {
       for (const row of rows) {
         if (!Array.isArray(row.nets) || new Set(row.nets).size !== row.nets.length || row.nets.some((net) => typeof net !== "string" || !netSet.has(net))) {
-          throw new Error(`Exact PCB rules reader returned a malformed ${label}.`);
+          throw new Error(
+            `Exact PCB rules reader returned a malformed ${label}.`
+          );
         }
       }
     }
     for (const pair of rules.differentialPairs) {
       if (typeof pair.positiveNet !== "string" || typeof pair.negativeNet !== "string" || pair.positiveNet === pair.negativeNet || !netSet.has(pair.positiveNet) || !netSet.has(pair.negativeNet)) {
-        throw new Error("Exact PCB rules reader returned a malformed differential pair.");
+        throw new Error(
+          "Exact PCB rules reader returned a malformed differential pair."
+        );
       }
     }
     for (const group of rules.padPairGroups) {
       if (!Array.isArray(group.padPairs) || !Array.isArray(group.minimumWireLengths)) {
-        throw new TypeError("Exact PCB rules reader returned a malformed pad-pair group.");
+        throw new TypeError(
+          "Exact PCB rules reader returned a malformed pad-pair group."
+        );
       }
       const pairKeys = group.padPairs.map((pair) => JSON.stringify(pair));
-      const lengthKeys = group.minimumWireLengths.map((row) => JSON.stringify(row?.padPair));
+      const lengthKeys = group.minimumWireLengths.map(
+        (row) => JSON.stringify(row?.padPair)
+      );
       if (group.padPairs.some(
         (pair) => !Array.isArray(pair) || pair.length !== 2 || pair.some((pad) => typeof pad !== "string" || pad.length === 0)
       ) || group.minimumWireLengths.some(
         (row) => typeof row?.minWireLength !== "number" || !Number.isFinite(row.minWireLength)
       ) || new Set(pairKeys).size !== pairKeys.length || JSON.stringify(pairKeys) !== JSON.stringify(lengthKeys)) {
-        throw new Error("Exact PCB rules reader returned inconsistent pad-pair lengths.");
+        throw new Error(
+          "Exact PCB rules reader returned inconsistent pad-pair lengths."
+        );
       }
     }
   }
@@ -36295,7 +36844,9 @@ import { isAbsolute as isAbsolute2 } from "node:path";
 var FORBIDDEN_APPLY_NAMES = /(^|_)(save|save_all|sync|import_changes|order|purchase)(_|$)/iu;
 var DEDICATED_FACADE_NAME = /(^|_)(capture|export)(_|$)/iu;
 var EXACT_COMPONENT_MUTATION_TOOL = "easyeda_control_exact_component_mutation";
-var ACTIVE_DOCUMENT_WRITE_ALLOWLIST = /* @__PURE__ */ new Map([[3, /* @__PURE__ */ new Set()]]);
+var ACTIVE_DOCUMENT_WRITE_ALLOWLIST = /* @__PURE__ */ new Map([
+  [3, /* @__PURE__ */ new Set()]
+]);
 function isUnknownRecord2(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -36312,7 +36863,9 @@ function isOperationJournalRecord(value) {
   return isUnknownRecord2(value);
 }
 function isMutationPlan(value) {
-  if (!isUnknownRecord2(value)) return false;
+  if (!isUnknownRecord2(value)) {
+    return false;
+  }
   const expectedContext = value["expectedContext"];
   return isUnknownRecord2(expectedContext) && isUnknownRecord2(expectedContext["project"]) && isUnknownRecord2(expectedContext["document"]) && isUnknownRecord2(value["applyCall"]) && isUnknownRecord2(value["checkpoint"]) && isUnknownRecord2(value["expectedFingerprint"]);
 }
@@ -36321,7 +36874,9 @@ function isCompleteOperationJournal(value) {
 }
 function operationSummary2(operation) {
   const summary = operationSummary(operation);
-  if (!isCompleteOperationJournal(operation)) return summary;
+  if (!isCompleteOperationJournal(operation)) {
+    return summary;
+  }
   return {
     operationId: operation.operationId,
     planHash: operation.planHash,
@@ -36365,7 +36920,9 @@ function contextPayload(value) {
 }
 function projectPayload(value) {
   if (!isProjectProbePayload(value)) {
-    throw new Error("EasyEDA project probe returned a non-object project context.");
+    throw new Error(
+      "EasyEDA project probe returned a non-object project context."
+    );
   }
   return value;
 }
@@ -36379,8 +36936,12 @@ function asOperationJournals(value) {
   return Array.isArray(value) ? value.map((item) => asOperationJournal(item)) : [];
 }
 function toolDocumentType(toolName) {
-  if (/^easyeda_schematic_/iu.test(toolName)) return 1;
-  if (/^easyeda_(pcb|board)_/iu.test(toolName)) return 3;
+  if (/^easyeda_schematic_/iu.test(toolName)) {
+    return 1;
+  }
+  if (/^easyeda_(pcb|board)_/iu.test(toolName)) {
+    return 3;
+  }
   return void 0;
 }
 function now() {
@@ -36401,15 +36962,21 @@ function assertAssertions(payload, assertions, label) {
   const results = evaluate(payload, assertions ?? []);
   const failed = results.filter((result) => !result.passed);
   if (failed.length > 0) {
-    const error51 = annotatedError(`${label} failed ${failed.length} assertion(s).`);
+    const error51 = annotatedError(
+      `${label} failed ${failed.length} assertion(s).`
+    );
     error51.assertionResults = results;
     throw error51;
   }
   return results;
 }
 function normalizedProofPayload(value) {
-  if (Array.isArray(value)) return value.map((item) => normalizedProofPayload(item));
-  if (!isUnknownRecord2(value)) return value;
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizedProofPayload(item));
+  }
+  if (!isUnknownRecord2(value)) {
+    return value;
+  }
   return Object.fromEntries(
     Object.entries(value).map(([key, child]) => [
       key,
@@ -36444,7 +37011,13 @@ function assertRequiredPhaseReaders(calls, documentType, targetPrimitiveIds, lab
   const targetCalls = componentCalls.filter((call) => {
     const selector = call.arguments?.["selector"];
     const primitiveIds = isUnknownRecord2(selector) ? selector["primitiveIds"] : void 0;
-    return isStringArray2(primitiveIds) && canonicalJson(primitiveIds.toSorted((left, right) => left.localeCompare(right))) === canonicalJson(targetPrimitiveIds.toSorted((left, right) => left.localeCompare(right))) && call.arguments?.["includePins"] !== false && call.arguments?.["includeBounds"] !== false;
+    return isStringArray2(primitiveIds) && canonicalJson(
+      primitiveIds.toSorted((left, right) => left.localeCompare(right))
+    ) === canonicalJson(
+      targetPrimitiveIds.toSorted(
+        (left, right) => left.localeCompare(right)
+      )
+    ) && call.arguments?.["includePins"] !== false && call.arguments?.["includeBounds"] !== false;
   });
   if (componentCalls.length !== 2 || summaryCalls.length !== 1 || targetCalls.length !== 1) {
     throw new Error(
@@ -36454,20 +37027,28 @@ function assertRequiredPhaseReaders(calls, documentType, targetPrimitiveIds, lab
   if (documentType === 3) {
     for (const kind of ["pcb-inventory", "pcb-rules"]) {
       if (exactCalls(calls, kind).length !== 1) {
-        throw new Error(`${label} requires exactly one facade-owned ${kind} invariant read.`);
+        throw new Error(
+          `${label} requires exactly one facade-owned ${kind} invariant read.`
+        );
       }
     }
   } else if (exactCalls(calls, "schematic-topology").length !== 1) {
-    throw new Error(`${label} requires exactly one facade-owned schematic-topology invariant read.`);
+    throw new Error(
+      `${label} requires exactly one facade-owned schematic-topology invariant read.`
+    );
   }
 }
 function resultForKind(results, kind) {
   const matches = (results ?? []).filter(
     (result) => result.toolName === "easyeda_control_exact_read" && proofPayload(result.payload).kind === kind
   );
-  if (matches.length !== 1) throw new Error(`Proof phase did not produce exactly one ${kind} result.`);
+  if (matches.length !== 1) {
+    throw new Error(`Proof phase did not produce exactly one ${kind} result.`);
+  }
   const [match] = matches;
-  if (!match) throw new Error(`Proof phase did not produce exactly one ${kind} result.`);
+  if (!match) {
+    throw new Error(`Proof phase did not produce exactly one ${kind} result.`);
+  }
   return proofPayload(match.payload);
 }
 function componentProofResults(results, kind, targetPrimitiveIds) {
@@ -36481,17 +37062,24 @@ function componentProofResults(results, kind, targetPrimitiveIds) {
     (payload) => payload.detail?.pins === true && payload.detail?.bounds === true && canonicalJson(payload.primitiveIds) === canonicalJson([...targetPrimitiveIds].toSorted())
   );
   if (matches.length !== 2 || summary.length !== 1 || target.length !== 1) {
-    throw new Error(`Proof phase did not produce the required summary and target ${kind} results.`);
+    throw new Error(
+      `Proof phase did not produce the required summary and target ${kind} results.`
+    );
   }
   const [summaryPayload] = summary;
   const [targetPayload] = target;
   if (!summaryPayload || !targetPayload) {
-    throw new Error(`Proof phase did not produce the required summary and target ${kind} results.`);
+    throw new Error(
+      `Proof phase did not produce the required summary and target ${kind} results.`
+    );
   }
   return { summary: summaryPayload, target: targetPayload };
 }
 function targetRecordPointer(primitiveId) {
-  return exactTargetAssertionPointer(primitiveId).replace(/\/primitiveId$/u, "");
+  return exactTargetAssertionPointer(primitiveId).replace(
+    /\/primitiveId$/u,
+    ""
+  );
 }
 function targetChangeAssertions(plan, state) {
   return plan.targetChanges.map((change) => ({
@@ -36506,26 +37094,43 @@ function maskRelativePointer(root, pointer) {
   for (let index = 0; index < parts.length - 1; index += 1) {
     const key = parts[index];
     if (key === void 0) {
-      throw new Error(`Declared target change pointer does not resolve: ${pointer}`);
+      throw new Error(
+        `Declared target change pointer does not resolve: ${pointer}`
+      );
     }
-    owner = Array.isArray(owner) && /^\d+$/u.test(key) ? owner[Number(key)] : isUnknownRecord2(owner) ? owner[key] : void 0;
+    if (Array.isArray(owner) && /^\d+$/u.test(key)) {
+      owner = owner[Number(key)];
+    } else if (isUnknownRecord2(owner)) {
+      owner = owner[key];
+    } else {
+      owner = void 0;
+    }
     if (!isUnknownRecord2(owner) && !Array.isArray(owner)) {
-      throw new Error(`Declared target change pointer does not resolve: ${pointer}`);
+      throw new Error(
+        `Declared target change pointer does not resolve: ${pointer}`
+      );
     }
   }
   const finalKey = parts.at(-1);
   if (finalKey === void 0 || (Array.isArray(owner) ? !/^\d+$/u.test(finalKey) || Number(finalKey) >= owner.length : !isUnknownRecord2(owner) || !Object.hasOwn(owner, finalKey))) {
-    throw new Error(`Declared target change pointer does not resolve: ${pointer}`);
+    throw new Error(
+      `Declared target change pointer does not resolve: ${pointer}`
+    );
   }
-  if (Array.isArray(owner)) owner[Number(finalKey)] = "__DECLARED_TARGET_CHANGE__";
-  else if (isUnknownRecord2(owner)) owner[finalKey] = "__DECLARED_TARGET_CHANGE__";
+  if (Array.isArray(owner)) {
+    owner[Number(finalKey)] = "__DECLARED_TARGET_CHANGE__";
+  } else if (isUnknownRecord2(owner)) {
+    owner[finalKey] = "__DECLARED_TARGET_CHANGE__";
+  }
 }
 function targetComponentInvariantHash(payload, plan) {
   const records = structuredClone(payload?.byPrimitiveId ?? {});
   for (const change of plan.targetChanges) {
     const record2 = records[change.primitiveId];
     if (!record2 || typeof record2 !== "object") {
-      throw new Error(`Exact component snapshot omitted declared target ${change.primitiveId}.`);
+      throw new Error(
+        `Exact component snapshot omitted declared target ${change.primitiveId}.`
+      );
     }
     maskRelativePointer(record2, change.pointer);
   }
@@ -36535,32 +37140,46 @@ function nonTargetComponentHash(payload, targetPrimitiveIds) {
   const targets = new Set(targetPrimitiveIds);
   return sha256Json(
     Object.fromEntries(
-      Object.entries(payload?.byPrimitiveId ?? {}).filter(([primitiveId]) => !targets.has(primitiveId))
+      Object.entries(payload?.byPrimitiveId ?? {}).filter(
+        ([primitiveId]) => !targets.has(primitiveId)
+      )
     )
   );
 }
 function declaredTargetPadConsequences(plan, targetComponentPayload, stateName) {
   if (!["before", "after"].includes(stateName)) {
-    throw new Error("PCB pad consequence proof requires before or after state.");
+    throw new Error(
+      "PCB pad consequence proof requires before or after state."
+    );
   }
   const consequences = /* @__PURE__ */ new Map();
   for (const change of plan.targetChanges) {
-    const match = /^\/pads\/(0|[1-9]\d*)\/(x|y|rotation|layer)$/u.exec(change.pointer);
-    if (!match) continue;
+    const match = /^\/pads\/(0|[1-9]\d*)\/(x|y|rotation|layer)$/u.exec(
+      change.pointer
+    );
+    if (!match) {
+      continue;
+    }
     const component = targetComponentPayload?.byPrimitiveId?.[change.primitiveId];
     const padIndexText = match[1];
     const field = match[2];
     if (padIndexText === void 0 || field === void 0) {
-      throw new Error(`Declared target pad consequence is malformed: ${change.pointer}`);
+      throw new Error(
+        `Declared target pad consequence is malformed: ${change.pointer}`
+      );
     }
     const padIndex = Number(padIndexText);
     const pad = component?.pads?.[padIndex];
     if (!pad || typeof pad !== "object") {
-      throw new Error(`Declared target pad consequence does not resolve: ${change.primitiveId}${change.pointer}`);
+      throw new Error(
+        `Declared target pad consequence does not resolve: ${change.primitiveId}${change.pointer}`
+      );
     }
     const key = `${pad.primitiveId}\0${field}`;
     if (consequences.has(key)) {
-      throw new Error(`Declared target pad consequence repeats direct pad ${pad.primitiveId}/${field}.`);
+      throw new Error(
+        `Declared target pad consequence repeats direct pad ${pad.primitiveId}/${field}.`
+      );
     }
     consequences.set(key, {
       primitiveId: pad.primitiveId,
@@ -36587,7 +37206,9 @@ function pcbInventoryInvariantHash(payload, plan, targetComponentPayload, stateN
   const padFamily = isUnknownRecord2(families) ? families["pads"] : void 0;
   const padsCandidate = isUnknownRecord2(padFamily) ? padFamily["byPrimitiveId"] : void 0;
   if (!isUnknownRecord2(padsCandidate)) {
-    throw new Error("PCB inventory invariant omitted its direct pad state index.");
+    throw new Error(
+      "PCB inventory invariant omitted its direct pad state index."
+    );
   }
   const pads = padsCandidate;
   for (const consequence of declaredConsequences.values()) {
@@ -36614,7 +37235,11 @@ function pcbInventoryInvariantHash(payload, plan, targetComponentPayload, stateN
 function baselineInvariants(results, plan) {
   const documentType = plan.expectedContext.document.documentType;
   const componentKind = documentType === 1 ? "schematic-components" : "pcb-components";
-  const components = componentProofResults(results, componentKind, plan.targetPrimitiveIds);
+  const components = componentProofResults(
+    results,
+    componentKind,
+    plan.targetPrimitiveIds
+  );
   assertAssertions(
     components.target,
     targetChangeAssertions(plan, "before"),
@@ -36626,7 +37251,10 @@ function baselineInvariants(results, plan) {
       components.summary,
       plan.targetPrimitiveIds
     ),
-    unchangedTargetStateSha256: targetComponentInvariantHash(components.target, plan)
+    unchangedTargetStateSha256: targetComponentInvariantHash(
+      components.target,
+      plan
+    )
   };
   if (documentType === 1) {
     value.schematicTopologySha256 = sha256Json(
@@ -36639,13 +37267,19 @@ function baselineInvariants(results, plan) {
       components.target,
       "before"
     );
-    value.pcbRulesSha256 = sha256Json(normalizedProofPayload(resultForKind(results, "pcb-rules")));
+    value.pcbRulesSha256 = sha256Json(
+      normalizedProofPayload(resultForKind(results, "pcb-rules"))
+    );
   }
   return value;
 }
 function verifyPhaseInvariants(results, operation, label) {
   const baseline = operation.baselineInvariants;
-  if (!baseline) throw new Error("Operation journal has no exact baseline invariant hashes.");
+  if (!baseline) {
+    throw new Error(
+      "Operation journal has no exact baseline invariant hashes."
+    );
+  }
   const components = componentProofResults(
     results,
     baseline.componentKind,
@@ -36670,7 +37304,9 @@ function verifyPhaseInvariants(results, operation, label) {
     operation.plan
   );
   if (unchangedTargetStateSha256 !== baseline.unchangedTargetStateSha256) {
-    throw new Error(`${label} changed target state outside the explicitly declared targetChanges.`);
+    throw new Error(
+      `${label} changed target state outside the explicitly declared targetChanges.`
+    );
   }
   const proof = {
     targetAssertions,
@@ -36682,7 +37318,9 @@ function verifyPhaseInvariants(results, operation, label) {
       normalizedProofPayload(resultForKind(results, "schematic-topology"))
     );
     if (topologyHash !== baseline.schematicTopologySha256) {
-      throw new Error(`${label} changed compiled schematic pin connectivity or component correlation.`);
+      throw new Error(
+        `${label} changed compiled schematic pin connectivity or component correlation.`
+      );
     }
     proof.schematicTopologySha256 = topologyHash;
   } else if (operation.plan.expectedContext.document.documentType === 3) {
@@ -36692,14 +37330,18 @@ function verifyPhaseInvariants(results, operation, label) {
       components.target,
       "after"
     );
-    const rulesHash = sha256Json(normalizedProofPayload(resultForKind(results, "pcb-rules")));
+    const rulesHash = sha256Json(
+      normalizedProofPayload(resultForKind(results, "pcb-rules"))
+    );
     if (inventoryHash !== baseline.pcbInventorySha256) {
       throw new Error(
         `${label} changed the PCB primitive inventory or adapter-observable pad/via/track/region/pour/fill state.`
       );
     }
     if (rulesHash !== baseline.pcbRulesSha256) {
-      throw new Error(`${label} changed PCB rules, net classes, pairs, groups, or net names.`);
+      throw new Error(
+        `${label} changed PCB rules, net classes, pairs, groups, or net names.`
+      );
     }
     proof.pcbInventorySha256 = inventoryHash;
     proof.pcbRulesSha256 = rulesHash;
@@ -36714,7 +37356,9 @@ function ensurePlanShape(value) {
   const projectUuid = plan.expectedContext.project.uuid ?? plan.expectedContext.project.projectUuid;
   const documentUuid = plan.expectedContext.document.uuid ?? plan.expectedContext.document.documentUuid;
   if (typeof projectUuid !== "string" || projectUuid.length === 0 || typeof documentUuid !== "string" || documentUuid.length === 0 || !Number.isInteger(plan.expectedContext.document.documentType)) {
-    throw new Error("Plan context requires project UUID, document UUID, and integer documentType.");
+    throw new Error(
+      "Plan context requires project UUID, document UUID, and integer documentType."
+    );
   }
   if (plan.expectedContext.document.documentType !== 3) {
     throw new Error(
@@ -36727,24 +37371,34 @@ function ensurePlanShape(value) {
     );
   }
   if (!Array.isArray(plan.targetChanges) || plan.targetChanges.length === 0) {
-    throw new Error("Mutation plans require explicit before/after targetChanges.");
+    throw new Error(
+      "Mutation plans require explicit before/after targetChanges."
+    );
   }
   const targetSet = new Set(plan.targetPrimitiveIds);
   const documentType = plan.expectedContext.document.documentType;
   const declaredChangeKeys = /* @__PURE__ */ new Set();
   for (const change of plan.targetChanges) {
     if (!targetSet.has(change?.primitiveId)) {
-      throw new Error("Every targetChanges primitiveId must be declared in targetPrimitiveIds.");
+      throw new Error(
+        "Every targetChanges primitiveId must be declared in targetPrimitiveIds."
+      );
     }
     if (typeof change.pointer !== "string" || !change.pointer.startsWith("/") || /^\/primitiveId(?:\/|$)/u.test(change.pointer)) {
-      throw new Error("Every target change requires a non-identity relative JSON pointer.");
+      throw new Error(
+        "Every target change requires a non-identity relative JSON pointer."
+      );
     }
     if (canonicalJson(change.before) === canonicalJson(change.after)) {
-      throw new Error("Every target change must declare distinct before and after values.");
+      throw new Error(
+        "Every target change must declare distinct before and after values."
+      );
     }
     const changeKey = `${change.primitiveId}\0${change.pointer}`;
     if (declaredChangeKeys.has(changeKey)) {
-      throw new Error(`Target change ${change.primitiveId}${change.pointer} is declared more than once.`);
+      throw new Error(
+        `Target change ${change.primitiveId}${change.pointer} is declared more than once.`
+      );
     }
     declaredChangeKeys.add(changeKey);
     if (documentType === 3 && !/^\/(?:x|y|rotation|layer|primitiveLock|bounds\/(?:minX|minY|maxX|maxY)|pads\/\d+\/(?:x|y|rotation|layer))$/u.test(
@@ -36760,32 +37414,44 @@ function ensurePlanShape(value) {
     ]) {
       if (change.pointer === "/primitiveLock") {
         if (typeof stateValue !== "boolean") {
-          throw new TypeError(`Target ${change.primitiveId}${change.pointer} ${stateName} value must be boolean.`);
+          throw new TypeError(
+            `Target ${change.primitiveId}${change.pointer} ${stateName} value must be boolean.`
+          );
         }
       } else if (change.pointer === "/layer") {
         if (typeof stateValue !== "number" || ![1, 2].includes(stateValue)) {
-          throw new Error(`Target ${change.primitiveId}${change.pointer} ${stateName} value must be Top 1 or Bottom 2.`);
+          throw new Error(
+            `Target ${change.primitiveId}${change.pointer} ${stateName} value must be Top 1 or Bottom 2.`
+          );
         }
       } else if (typeof stateValue !== "number" || !Number.isFinite(stateValue)) {
-        throw new TypeError(`Target ${change.primitiveId}${change.pointer} ${stateName} value must be finite.`);
+        throw new TypeError(
+          `Target ${change.primitiveId}${change.pointer} ${stateName} value must be finite.`
+        );
       }
     }
   }
   for (const primitiveId of plan.targetPrimitiveIds) {
     if (!plan.targetChanges.some((change) => change.primitiveId === primitiveId)) {
-      throw new Error(`Target ${primitiveId} has no declared before/after change.`);
+      throw new Error(
+        `Target ${primitiveId} has no declared before/after change.`
+      );
     }
     const writablePattern = /^\/(x|y|rotation|layer|primitiveLock)$/u;
     if (!plan.targetChanges.some(
       (change) => change.primitiveId === primitiveId && writablePattern.test(change.pointer)
     )) {
-      throw new Error(`Target ${primitiveId} has no facade-writable top-level component change.`);
+      throw new Error(
+        `Target ${primitiveId} has no facade-writable top-level component change.`
+      );
     }
   }
   if (typeof plan.expectedContext.document.tabId !== "string" || plan.expectedContext.document.tabId.length === 0) {
     throw new Error("Mutation plans require the exact active document tabId.");
   }
-  const expectedProjectPath = normalizeEasyedaProjectPath(plan.expectedContext.project.path);
+  const expectedProjectPath = normalizeEasyedaProjectPath(
+    plan.expectedContext.project.path
+  );
   if (!Array.isArray(plan.preflightCalls) || plan.preflightCalls.length === 0) {
     throw new Error("Plan requires at least one read-only preflight call.");
   }
@@ -36793,7 +37459,9 @@ function ensurePlanShape(value) {
     throw new Error("Plan requires at least one live verification call.");
   }
   if (!Array.isArray(plan.reopenedVerifyCalls) || plan.reopenedVerifyCalls.length === 0) {
-    throw new Error("Plan requires at least one reopened-state verification call.");
+    throw new Error(
+      "Plan requires at least one reopened-state verification call."
+    );
   }
   for (const [label, calls] of [
     ["Preflight", plan.preflightCalls],
@@ -36822,7 +37490,9 @@ function ensurePlanShape(value) {
     );
   }
   if (plan.checkpoint.source.length === 0 || plan.checkpoint.outputDir.length === 0 || plan.checkpoint.label.length === 0) {
-    throw new Error("Plan requires source, outputDir, and label for durable checkpoints.");
+    throw new Error(
+      "Plan requires source, outputDir, and label for durable checkpoints."
+    );
   }
   if (!isAbsolute2(plan.checkpoint.source) || !isAbsolute2(plan.checkpoint.outputDir)) {
     throw new Error("Checkpoint source and outputDir must be absolute paths.");
@@ -36852,8 +37522,8 @@ var SerializedGate = class {
   async run(task) {
     const previous = this.tail;
     let release;
-    this.tail = new Promise((resolve7) => {
-      release = resolve7;
+    this.tail = new Promise((resolve6) => {
+      release = resolve6;
     });
     await previous;
     try {
@@ -36927,9 +37597,13 @@ var EasyedaControlEngine = class {
     let verification;
     let cause;
     try {
-      verification = await verifyCheckpoint(operation.preCheckpoint.receiptPath);
+      verification = await verifyCheckpoint(
+        operation.preCheckpoint.receiptPath
+      );
       if (!verification.ok) {
-        cause = new Error("The durable project database no longer matches the pre-checkpoint.");
+        cause = new Error(
+          "The durable project database no longer matches the pre-checkpoint."
+        );
       }
     } catch (error51) {
       cause = error51;
@@ -36982,7 +37656,9 @@ var EasyedaControlEngine = class {
     const blockingOperations = asOperationJournals(await listOperations()).filter(
       (operation) => operation?.state === "journal-unreadable" || operationHasOrphanedCallRisk(operation)
     ).map((operation) => operationSummary2(operation));
-    if (blockingOperations.length === 0) return true;
+    if (blockingOperations.length === 0) {
+      return true;
+    }
     const labels = blockingOperations.map((operation) => `${operation.operationId}:${operation.state}`).join(", ");
     const error51 = annotatedError(
       `EasyEDA bridge dispatch is quarantined by an orphan-risk or unreadable operation journal (${labels}). Use easyeda_control_recover_incomplete without an operationId to inspect the local journals. Do not run live status, context, reads, captures, exports, checkpoints, or writes until the nonce-bound restart/recovery gate clears every orphan risk; an unreadable journal requires manual restoration or review.`
@@ -36994,7 +37670,9 @@ var EasyedaControlEngine = class {
     const blockingOperations = asOperationJournals(await listOperations()).filter(
       (operation) => operation?.operationId !== operationId && (!isTerminalOperation(operation) || operation?.state === "journal-unreadable" || operationHasOrphanedCallRisk(operation))
     ).map((operation) => operationSummary2(operation));
-    if (blockingOperations.length === 0) return true;
+    if (blockingOperations.length === 0) {
+      return true;
+    }
     const labels = blockingOperations.map((operation) => `${operation.operationId}:${operation.state}`).join(", ");
     const error51 = annotatedError(
       `Recovery operation ${operationId} is not isolated; another incomplete, unreadable, or orphan-risk journal exists (${labels}). Recovery may dispatch live bridge calls, so resolve or manually review the other journal first.`
@@ -37004,16 +37682,27 @@ var EasyedaControlEngine = class {
   }
   async status() {
     const listTools = this.upstream.listTools?.bind(this.upstream);
-    const launcherFingerprint = this.upstream.launcherFingerprint?.bind(this.upstream);
+    const launcherFingerprint = this.upstream.launcherFingerprint?.bind(
+      this.upstream
+    );
     if (listTools === void 0 || launcherFingerprint === void 0) {
-      throw new Error("The upstream client does not expose status and launcher probes.");
+      throw new Error(
+        "The upstream client does not expose status and launcher probes."
+      );
     }
     const tools = await listTools();
     const call = async (name) => {
-      if (!tools.some((tool) => tool.name === name)) return { available: false };
+      if (!tools.some((tool) => tool.name === name)) {
+        return { available: false };
+      }
       try {
-        const payload = extractToolPayload(await this.upstream.callTool(name, {}));
-        return { available: true, payload: isUnknownRecord2(payload) ? payload : {} };
+        const payload = extractToolPayload(
+          await this.upstream.callTool(name, {})
+        );
+        return {
+          available: true,
+          payload: isUnknownRecord2(payload) ? payload : {}
+        };
       } catch (error51) {
         return { available: true, error: serializeError(error51) };
       }
@@ -37026,9 +37715,14 @@ var EasyedaControlEngine = class {
     ]);
     const upstreamServer = this.upstream.serverInfo?.();
     let installedBundles;
-    const readInstalledBundles = this.upstream.installedEasyedaBundles?.bind(this.upstream);
+    const readInstalledBundles = this.upstream.installedEasyedaBundles?.bind(
+      this.upstream
+    );
     try {
-      installedBundles = readInstalledBundles === void 0 ? { available: false, error: { message: "Installed-bundle probe is unavailable." } } : await readInstalledBundles();
+      installedBundles = readInstalledBundles === void 0 ? {
+        available: false,
+        error: { message: "Installed-bundle probe is unavailable." }
+      } : await readInstalledBundles();
     } catch (error51) {
       installedBundles = { available: false, error: serializeError(error51) };
     }
@@ -37081,7 +37775,9 @@ var EasyedaControlEngine = class {
           bridge_version: bridge.payload?.["bridge_version"],
           easyeda_version: bridge.payload?.["easyeda_version"],
           diagnostics: {
-            method_registry_hash: isUnknownRecord2(bridge.payload?.["diagnostics"]) ? bridge.payload["diagnostics"]["method_registry_hash"] : void 0
+            method_registry_hash: isUnknownRecord2(
+              bridge.payload?.["diagnostics"]
+            ) ? bridge.payload["diagnostics"]["method_registry_hash"] : void 0
           }
         }
       },
@@ -37106,7 +37802,10 @@ var EasyedaControlEngine = class {
       dispatcher,
       facadeImplementation,
       capabilities: {
-        exactReads: { enabled: true, level: "private-version-pinned-read-only" },
+        exactReads: {
+          enabled: true,
+          level: "private-version-pinned-read-only"
+        },
         privateComponentWriter: {
           enabled: this.privateComponentWriterValidated,
           level: "private-version-pinned",
@@ -37118,7 +37817,9 @@ var EasyedaControlEngine = class {
   }
   async context() {
     const tool = await this.upstream.findTool?.("easyeda_execute");
-    if (!tool) throw new Error("The upstream server does not expose easyeda_execute.");
+    if (!tool) {
+      throw new Error("The upstream server does not expose easyeda_execute.");
+    }
     const result = await this.upstream.callTool(
       "easyeda_execute",
       { code: CONTEXT_PROBE_CODE, timeoutMs: 15e3, confirmWrite: true },
@@ -37139,35 +37840,51 @@ var EasyedaControlEngine = class {
     if (documentType === 1) {
       const schematicUuid = payload?.schematic?.uuid ?? payload?.schematic?.documentUuid;
       if (schematicUuid !== documentUuid) {
-        throw new Error("Schematic context UUID does not agree with the active document UUID.");
+        throw new Error(
+          "Schematic context UUID does not agree with the active document UUID."
+        );
       }
       if (typeof payload.schematic?.tabId === "string" && payload.schematic.tabId.length > 0 && payload.schematic.tabId !== tabId) {
-        throw new Error("Schematic context tab does not agree with the active document tab.");
+        throw new Error(
+          "Schematic context tab does not agree with the active document tab."
+        );
       }
     }
     if (documentType === 3) {
       const pcbUuid = payload?.pcb?.uuid ?? payload?.pcb?.documentUuid;
       if (pcbUuid !== documentUuid) {
-        throw new Error("PCB context UUID does not agree with the active document UUID.");
+        throw new Error(
+          "PCB context UUID does not agree with the active document UUID."
+        );
       }
       if (typeof payload.pcb?.tabId === "string" && payload.pcb.tabId.length > 0 && payload.pcb.tabId !== tabId) {
-        throw new Error("PCB context tab does not agree with the active document tab.");
+        throw new Error(
+          "PCB context tab does not agree with the active document tab."
+        );
       }
     }
     return payload;
   }
   async projectContext() {
     const tool = await this.upstream.findTool?.("easyeda_execute");
-    if (!tool) throw new Error("The upstream server does not expose easyeda_execute.");
+    if (!tool) {
+      throw new Error("The upstream server does not expose easyeda_execute.");
+    }
     const result = await this.upstream.callTool(
       "easyeda_execute",
-      { code: PROJECT_CONTEXT_PROBE_CODE, timeoutMs: 15e3, confirmWrite: true },
+      {
+        code: PROJECT_CONTEXT_PROBE_CODE,
+        timeoutMs: 15e3,
+        confirmWrite: true
+      },
       25e3
     );
     const payload = projectPayload(extractToolPayload(result));
     const projectUuid = payload?.project?.uuid ?? payload?.project?.projectUuid;
     if (typeof projectUuid !== "string" || projectUuid.length === 0 || typeof payload?.project?.path !== "string" || payload.project.path.length === 0) {
-      throw new Error("EasyEDA project probe did not prove a UUID and .eprj2 path.");
+      throw new Error(
+        "EasyEDA project probe did not prove a UUID and .eprj2 path."
+      );
     }
     normalizeEasyedaProjectPath(payload.project.path);
     return payload;
@@ -37178,7 +37895,9 @@ var EasyedaControlEngine = class {
     delete expected["path"];
     assertSubset(actual.project, expected, "Active EasyEDA project");
     if (normalizeEasyedaProjectPath(actual.project.path) !== normalizeEasyedaProjectPath(expectedProject.path)) {
-      throw new Error("Active EasyEDA project path does not match the expected .eprj2 database.");
+      throw new Error(
+        "Active EasyEDA project path does not match the expected .eprj2 database."
+      );
     }
     return actual;
   }
@@ -37188,26 +37907,36 @@ var EasyedaControlEngine = class {
     if (options.allowTabChange === true) {
       for (const key of ["document", "pcb", "schematic"]) {
         const document = expected[key];
-        if (isUnknownRecord2(document)) delete document["tabId"];
+        if (isUnknownRecord2(document)) {
+          delete document["tabId"];
+        }
       }
     }
     const project = expected["project"];
-    if (isUnknownRecord2(project)) delete project["path"];
+    if (isUnknownRecord2(project)) {
+      delete project["path"];
+    }
     assertSubset(actual, expected, "Active EasyEDA context");
     if (normalizeEasyedaProjectPath(actual.project.path) !== normalizeEasyedaProjectPath(expectedContext.project.path)) {
-      throw new Error("Active EasyEDA project path does not match the expected .eprj2 database.");
+      throw new Error(
+        "Active EasyEDA project path does not match the expected .eprj2 database."
+      );
     }
     return actual;
   }
   async rebindAfterLifecycle(expectedContext, payload, label) {
-    const cleanContext = await this.assertContext(expectedContext, { allowTabChange: true });
+    const cleanContext = await this.assertContext(expectedContext, {
+      allowTabChange: true
+    });
     const payloadDocument = isUnknownRecord2(payload) ? payload["document"] : void 0;
     const payloadTabId = isUnknownRecord2(payloadDocument) ? payloadDocument["tabId"] : void 0;
     if (typeof payloadTabId !== "string" || payloadTabId.length === 0) {
       throw new Error(`${label} did not report the reopened tabId.`);
     }
     if (cleanContext.document.tabId !== payloadTabId) {
-      throw new Error(`${label} reopened tab does not match the active context tab.`);
+      throw new Error(
+        `${label} reopened tab does not match the active context tab.`
+      );
     }
     expectedContext.document.tabId = payloadTabId;
     if (expectedContext.pcb && expectedContext.document.documentType === 3) {
@@ -37220,7 +37949,9 @@ var EasyedaControlEngine = class {
   }
   async activateAndRebindRecoveryTarget(operation, resumeState) {
     await this.assertProjectContext(operation.plan.expectedContext.project);
-    const source = buildActivateRecoveryTargetCode(operation.plan.expectedContext);
+    const source = buildActivateRecoveryTargetCode(
+      operation.plan.expectedContext
+    );
     const sourceSha256 = sha256Text(source);
     const acceptedRestartBoundary = operation.runtimeRestartBoundary ? structuredClone(operation.runtimeRestartBoundary) : void 0;
     if (!Object.hasOwn(operation, "recoveryActivationResumeState")) {
@@ -37258,7 +37989,7 @@ var EasyedaControlEngine = class {
       operation.planHash = buildPlanHash(operation.plan);
       if (acceptedRestartBoundary) {
         acceptedRestartBoundary["contextReboundAt"] = now();
-        acceptedRestartBoundary["reboundTabId"] = reboundContext.document.tabId;
+        acceptedRestartBoundary.reboundTabId = reboundContext.document.tabId;
         operation.runtimeRestartBoundary = acceptedRestartBoundary;
       }
       operation.sequence += 1;
@@ -37266,7 +37997,12 @@ var EasyedaControlEngine = class {
         operation.operationId,
         operation.sequence,
         `recovery-target-rebind-${Date.now()}`,
-        { sourceSha256, payload, context: reboundContext, planHash: operation.planHash }
+        {
+          sourceSha256,
+          payload,
+          context: reboundContext,
+          planHash: operation.planHash
+        }
       );
       operation.artifacts.push(artifact);
       operation.state = resumeState;
@@ -37308,7 +38044,9 @@ var EasyedaControlEngine = class {
         { code: guardedSource, timeoutMs: 6e4, confirmWrite: true },
         7e4
       );
-      const payload = proofPayload(validateExactReadPayload(extractToolPayload(raw), parsed));
+      const payload = proofPayload(
+        validateExactReadPayload(extractToolPayload(raw), parsed)
+      );
       await this.assertContext(boundContext);
       return payload;
     };
@@ -37320,7 +38058,9 @@ var EasyedaControlEngine = class {
       const error51 = annotatedError(
         "Facade-owned exact read changed between two consecutive observations; no stable design proof was produced."
       );
-      error51.mismatches = [{ pointer: "/", expected: firstHash, actual: secondHash }];
+      error51.mismatches = [
+        { pointer: "/", expected: firstHash, actual: secondHash }
+      ];
       throw error51;
     }
     return {
@@ -37344,8 +38084,16 @@ var EasyedaControlEngine = class {
       expectedContext
     );
     if (exactRequest !== void 0) {
-      const payload2 = await this.exactRead(exactRequest, expectedContext, options);
-      const assertions2 = assertAssertions(payload2, spec.assertions, spec.toolName);
+      const payload2 = await this.exactRead(
+        exactRequest,
+        expectedContext,
+        options
+      );
+      const assertions2 = assertAssertions(
+        payload2,
+        spec.assertions,
+        spec.toolName
+      );
       return {
         toolName: spec.toolName,
         payload: payload2,
@@ -37354,7 +38102,9 @@ var EasyedaControlEngine = class {
     }
     if (exactComponentMutation !== void 0) {
       if (!Array.isArray(options.targetChanges) || options.targetChanges.length === 0) {
-        throw new Error("Facade-generated component mutation has no journal-bound targetChanges.");
+        throw new Error(
+          "Facade-generated component mutation has no journal-bound targetChanges."
+        );
       }
       await this.assertContext(expectedContext);
       const source = buildComponentMutationCode(
@@ -37363,13 +38113,17 @@ var EasyedaControlEngine = class {
         exactComponentMutation.state
       );
       const guarded2 = wrapWithContextGuard(source, expectedContext);
-      if (typeof options.beforeDispatch === "function") await options.beforeDispatch();
+      if (typeof options.beforeDispatch === "function") {
+        await options.beforeDispatch();
+      }
       const raw2 = await this.upstream.callTool(
         "easyeda_execute",
         { code: guarded2, timeoutMs: 6e4, confirmWrite: true },
         7e4
       );
-      if (typeof options.afterDispatch === "function") await options.afterDispatch();
+      if (typeof options.afterDispatch === "function") {
+        await options.afterDispatch();
+      }
       const payload2 = extractToolPayload(raw2);
       assertSubset(
         payload2,
@@ -37381,7 +38135,11 @@ var EasyedaControlEngine = class {
         },
         "Facade-generated component mutation"
       );
-      const assertions2 = assertAssertions(payload2, spec.assertions, spec.toolName);
+      const assertions2 = assertAssertions(
+        payload2,
+        spec.assertions,
+        spec.toolName
+      );
       await this.assertContext(expectedContext);
       return {
         toolName: spec.toolName,
@@ -37398,20 +38156,39 @@ var EasyedaControlEngine = class {
     const expectedDocumentUuid = expectedContext.document.uuid ?? expectedContext.document.documentUuid;
     for (const key of ["projectId", "projectUuid"]) {
       if (args[key] !== void 0 && args[key] !== expectedProjectUuid) {
-        throw new Error(`${spec.toolName} arguments.${key} does not match the proven project UUID.`);
+        throw new Error(
+          `${spec.toolName} arguments.${key} does not match the proven project UUID.`
+        );
       }
     }
-    for (const key of ["documentId", "documentUuid", "schematicUuid", "pcbUuid"]) {
+    for (const key of [
+      "documentId",
+      "documentUuid",
+      "schematicUuid",
+      "pcbUuid"
+    ]) {
       if (args[key] !== void 0 && args[key] !== expectedDocumentUuid) {
-        throw new Error(`${spec.toolName} arguments.${key} does not match the proven document UUID.`);
+        throw new Error(
+          `${spec.toolName} arguments.${key} does not match the proven document UUID.`
+        );
       }
     }
     if (args["tabId"] !== void 0 && args["tabId"] !== activeContext.document.tabId) {
-      throw new Error(`${spec.toolName} arguments.tabId does not match the active proven tab.`);
+      throw new Error(
+        `${spec.toolName} arguments.tabId does not match the active proven tab.`
+      );
     }
-    if (spec.toolName !== "easyeda_execute" && expectedKind === "mutate-unsaved" && !["projectId", "projectUuid", "documentId", "documentUuid", "schematicUuid", "pcbUuid", "tabId"].some(
-      (key) => args[key] !== void 0
-    ) && ACTIVE_DOCUMENT_WRITE_ALLOWLIST.get(expectedContext.document.documentType)?.has(spec.toolName) !== true) {
+    if (spec.toolName !== "easyeda_execute" && expectedKind === "mutate-unsaved" && ![
+      "projectId",
+      "projectUuid",
+      "documentId",
+      "documentUuid",
+      "schematicUuid",
+      "pcbUuid",
+      "tabId"
+    ].some((key) => args[key] !== void 0) && ACTIVE_DOCUMENT_WRITE_ALLOWLIST.get(
+      expectedContext.document.documentType
+    )?.has(spec.toolName) !== true) {
       throw new Error(
         `${spec.toolName} has no exact project/document target argument and cannot be used for guarded mutation. Add a constrained facade writer instead.`
       );
@@ -37434,7 +38211,11 @@ var EasyedaControlEngine = class {
       await options.afterDispatch();
     }
     const payload = extractToolPayload(raw);
-    const assertions = assertAssertions(payload, spec.assertions, spec.toolName);
+    const assertions = assertAssertions(
+      payload,
+      spec.assertions,
+      spec.toolName
+    );
     await this.assertContext(expectedContext, options);
     return {
       toolName: spec.toolName,
@@ -37452,38 +38233,58 @@ var EasyedaControlEngine = class {
     }
     if (spec.toolName === "easyeda_control_exact_read") {
       if (expectedKind !== "read") {
-        throw new Error("easyeda_control_exact_read can only be used as a read.");
+        throw new Error(
+          "easyeda_control_exact_read can only be used as a read."
+        );
       }
       return {
         tool: {
           name: spec.toolName,
           annotations: { readOnlyHint: true, idempotentHint: true }
         },
-        classification: { readOnly: true, write: false, hasConfirmWrite: false, idempotent: true },
+        classification: {
+          readOnly: true,
+          write: false,
+          hasConfirmWrite: false,
+          idempotent: true
+        },
         exactRequest: validateExactReadRequest(spec.arguments, expectedContext)
       };
     }
     if (spec.toolName === EXACT_COMPONENT_MUTATION_TOOL) {
       if (expectedKind !== "mutate-unsaved") {
-        throw new Error(`${EXACT_COMPONENT_MUTATION_TOOL} can only be used as an unsaved mutation.`);
+        throw new Error(
+          `${EXACT_COMPONENT_MUTATION_TOOL} can only be used as an unsaved mutation.`
+        );
       }
       const callArguments = spec.arguments ?? {};
       const keys = Object.keys(callArguments).toSorted();
       const state = callArguments["state"];
       if (canonicalJson(keys) !== canonicalJson(["state"]) || state !== "before" && state !== "after") {
-        throw new Error(`${EXACT_COMPONENT_MUTATION_TOOL} requires only arguments.state=before|after.`);
+        throw new Error(
+          `${EXACT_COMPONENT_MUTATION_TOOL} requires only arguments.state=before|after.`
+        );
       }
       if ((spec.assertions ?? []).length > 0) {
-        throw new Error(`${EXACT_COMPONENT_MUTATION_TOOL} cannot substitute inline assertions for exact phase verification.`);
+        throw new Error(
+          `${EXACT_COMPONENT_MUTATION_TOOL} cannot substitute inline assertions for exact phase verification.`
+        );
       }
       return {
         tool: { name: spec.toolName, annotations: { destructiveHint: true } },
-        classification: { readOnly: false, write: true, hasConfirmWrite: true, idempotent: true },
+        classification: {
+          readOnly: false,
+          write: true,
+          hasConfirmWrite: true,
+          idempotent: true
+        },
         exactComponentMutation: { state }
       };
     }
     const tool = await this.upstream.findTool?.(spec.toolName);
-    if (!tool) throw new Error(`Unknown upstream EasyEDA tool: ${spec.toolName}`);
+    if (!tool) {
+      throw new Error(`Unknown upstream EasyEDA tool: ${spec.toolName}`);
+    }
     if (spec.toolName !== "easyeda_execute" && DEDICATED_FACADE_NAME.test(spec.toolName)) {
       throw new Error(
         `${spec.toolName} must use its dedicated capture or export facade gate and cannot appear in a mutation plan.`
@@ -37502,9 +38303,13 @@ var EasyedaControlEngine = class {
       );
     } else {
       if (!classification.write) {
-        throw new Error(`${spec.toolName} is not classified as a write upstream tool.`);
+        throw new Error(
+          `${spec.toolName} is not classified as a write upstream tool.`
+        );
       }
-      if (ACTIVE_DOCUMENT_WRITE_ALLOWLIST.get(expectedContext.document.documentType)?.has(spec.toolName) !== true) {
+      if (ACTIVE_DOCUMENT_WRITE_ALLOWLIST.get(
+        expectedContext.document.documentType
+      )?.has(spec.toolName) !== true) {
         throw new Error(
           `${spec.toolName} is not a reviewed writer for the plan's active document type. Use the facade-generated exact component mutation supported by this state machine.`
         );
@@ -37520,7 +38325,9 @@ var EasyedaControlEngine = class {
   async runSpecs(specs, expectedContext, expectedKind, options = {}) {
     const results = [];
     for (const spec of specs) {
-      results.push(await this.invokeSpec(spec, expectedContext, expectedKind, options));
+      results.push(
+        await this.invokeSpec(spec, expectedContext, expectedKind, options)
+      );
     }
     return results;
   }
@@ -37533,7 +38340,9 @@ var EasyedaControlEngine = class {
       );
     }
     const operations = asOperationJournals(await listOperations());
-    const unfinished = operations.filter((operation2) => !isTerminalOperation(operation2));
+    const unfinished = operations.filter(
+      (operation2) => !isTerminalOperation(operation2)
+    );
     if (unfinished.length > 0) {
       throw new Error(
         `An incomplete EasyEDA operation already exists: ${unfinished.map((operation2) => operation2.operationId).join(", ")}. Recover it before planning another mutation.`
@@ -37553,7 +38362,11 @@ var EasyedaControlEngine = class {
     for (const spec of plan.preflightCalls) {
       await this.validateSpec(spec, "read", plan.expectedContext);
     }
-    await this.validateSpec(plan.applyCall, "mutate-unsaved", plan.expectedContext);
+    await this.validateSpec(
+      plan.applyCall,
+      "mutate-unsaved",
+      plan.expectedContext
+    );
     for (const spec of plan.verifyCalls) {
       await this.validateSpec(spec, "read", plan.expectedContext);
     }
@@ -37574,8 +38387,12 @@ var EasyedaControlEngine = class {
       ...plan.checkpoint,
       label: `pre-${plan.checkpoint.label}`
     });
-    const checkpointVerification = await verifyCheckpoint(preCheckpoint.receiptPath);
-    if (!checkpointVerification.ok) throw new Error("Pre-mutation checkpoint verification failed.");
+    const checkpointVerification = await verifyCheckpoint(
+      preCheckpoint.receiptPath
+    );
+    if (!checkpointVerification.ok) {
+      throw new Error("Pre-mutation checkpoint verification failed.");
+    }
     const operationId = newOperationId();
     const createdAt = now();
     const operation = {
@@ -37603,11 +38420,16 @@ var EasyedaControlEngine = class {
       artifacts: []
     };
     await createOperation(operation);
-    const checkpointArtifact = await writePhaseArtifact(operationId, 0, "baseline-checkpoint", {
-      context,
-      preCheckpoint,
-      checkpointVerification
-    });
+    const checkpointArtifact = await writePhaseArtifact(
+      operationId,
+      0,
+      "baseline-checkpoint",
+      {
+        context,
+        preCheckpoint,
+        checkpointVerification
+      }
+    );
     operation.artifacts.push(checkpointArtifact);
     await updateOperation(operation);
     try {
@@ -37616,7 +38438,9 @@ var EasyedaControlEngine = class {
         operation.preCheckpoint.receiptPath
       );
       if (!repeatedCheckpointVerification.ok) {
-        throw new Error("The durable database changed before baseline reopen dispatch.");
+        throw new Error(
+          "The durable database changed before baseline reopen dispatch."
+        );
       }
       const source = buildReopenOnlyCode(plan.expectedContext);
       const sourceSha256 = sha256Text(source);
@@ -37730,9 +38554,13 @@ var EasyedaControlEngine = class {
     this.requirePrivateComponentWriterEnabled();
     const operation = asOperationJournal(await loadOperation(operationId));
     if (operation.state !== "preflight-proven") {
-      throw new Error(`Operation ${operationId} is in state ${operation.state}, not preflight-proven.`);
+      throw new Error(
+        `Operation ${operationId} is in state ${operation.state}, not preflight-proven.`
+      );
     }
-    if (operation.planHash !== planHash) throw new Error("planHash does not match the journal.");
+    if (operation.planHash !== planHash) {
+      throw new Error("planHash does not match the journal.");
+    }
     assertSubset(
       runtimeFingerprint(await this.status()),
       operation.plan.expectedFingerprint,
@@ -37740,9 +38568,13 @@ var EasyedaControlEngine = class {
     );
     let preCheckpointVerification;
     try {
-      preCheckpointVerification = await verifyCheckpoint(operation.preCheckpoint.receiptPath);
+      preCheckpointVerification = await verifyCheckpoint(
+        operation.preCheckpoint.receiptPath
+      );
       if (!preCheckpointVerification.ok) {
-        throw new Error("The durable project database no longer matches the pre-checkpoint.");
+        throw new Error(
+          "The durable project database no longer matches the pre-checkpoint."
+        );
       }
     } catch (error51) {
       operation.state = "plan-invalidated";
@@ -37767,7 +38599,9 @@ var EasyedaControlEngine = class {
     const repeatedHash = snapshotHash(repeated);
     const repeatedInvariants = baselineInvariants(repeated, operation.plan);
     if (repeatedHash !== operation.baselineHash) {
-      const error51 = new Error("Preflight state changed after planning; no mutation was applied.");
+      const error51 = new Error(
+        "Preflight state changed after planning; no mutation was applied."
+      );
       operation.state = "plan-invalidated";
       operation.mutationState = "none";
       operation.hardStop = false;
@@ -37779,14 +38613,18 @@ var EasyedaControlEngine = class {
       throw error51;
     }
     if (canonicalJson(repeatedInvariants) !== canonicalJson(operation.baselineInvariants)) {
-      throw new Error("Exact baseline invariants changed after planning; no mutation was applied.");
+      throw new Error(
+        "Exact baseline invariants changed after planning; no mutation was applied."
+      );
     }
     try {
       const immediateCheckpointVerification = await verifyCheckpoint(
         operation.preCheckpoint.receiptPath
       );
       if (!immediateCheckpointVerification.ok) {
-        throw new Error("The durable database changed during repeated preflight.");
+        throw new Error(
+          "The durable database changed during repeated preflight."
+        );
       }
     } catch (error51) {
       operation.state = "plan-invalidated";
@@ -37797,9 +38635,12 @@ var EasyedaControlEngine = class {
       operation.lastError = serializeError(error51);
       operation.updatedAt = now();
       await updateOperation(operation);
-      throw new Error("The durable baseline changed during preflight; no mutation was applied.", {
-        cause: error51
-      });
+      throw new Error(
+        "The durable baseline changed during preflight; no mutation was applied.",
+        {
+          cause: error51
+        }
+      );
     }
     try {
       assertSubset(
@@ -37816,9 +38657,12 @@ var EasyedaControlEngine = class {
       operation.lastError = serializeError(error51);
       operation.updatedAt = now();
       await updateOperation(operation);
-      throw new Error("The runtime fingerprint changed during preflight; no mutation was applied.", {
-        cause: error51
-      });
+      throw new Error(
+        "The runtime fingerprint changed during preflight; no mutation was applied.",
+        {
+          cause: error51
+        }
+      );
     }
     operation.state = "applying";
     operation.hardStop = true;
@@ -37834,13 +38678,17 @@ var EasyedaControlEngine = class {
         {
           targetChanges: operation.plan.targetChanges,
           beforeDispatch: async () => {
-            await this.requireDurableBaselineBeforeDispatch(operation, "apply", {
-              state: "plan-invalidated",
-              mutationState: "none",
-              hardStop: false,
-              mutationMayHaveOccurred: false,
-              nextSafeAction: "No apply was dispatched. Recreate the durable checkpoint and exact plan from fresh state."
-            });
+            await this.requireDurableBaselineBeforeDispatch(
+              operation,
+              "apply",
+              {
+                state: "plan-invalidated",
+                mutationState: "none",
+                hardStop: false,
+                mutationMayHaveOccurred: false,
+                nextSafeAction: "No apply was dispatched. Recreate the durable checkpoint and exact plan from fresh state."
+              }
+            );
             await this.markOrphanedCallRisk(operation, "apply");
           },
           afterDispatch: async () => {
@@ -37851,16 +38699,23 @@ var EasyedaControlEngine = class {
       let durableVerification;
       let durableVerificationError;
       try {
-        durableVerification = await verifyCheckpoint(operation.preCheckpoint.receiptPath);
+        durableVerification = await verifyCheckpoint(
+          operation.preCheckpoint.receiptPath
+        );
       } catch (error51) {
         durableVerificationError = serializeError(error51);
       }
       operation.sequence += 1;
-      const artifact = await writePhaseArtifact(operationId, operation.sequence, "apply", {
-        result,
-        durableVerification,
-        durableVerificationError
-      });
+      const artifact = await writePhaseArtifact(
+        operationId,
+        operation.sequence,
+        "apply",
+        {
+          result,
+          durableVerification,
+          durableVerificationError
+        }
+      );
       operation.artifacts.push(artifact);
       if (durableVerification?.ok !== true) {
         const error51 = annotatedError(
@@ -37887,7 +38742,9 @@ var EasyedaControlEngine = class {
       await updateOperation(operation);
       return operationSummary2(operation);
     } catch (error51) {
-      if (errorMetadata(error51)?.journalStateRecorded === true) throw error51;
+      if (errorMetadata(error51)?.journalStateRecorded === true) {
+        throw error51;
+      }
       operation.state = "unknown";
       operation.mutationState = "unknown";
       operation.hardStop = true;
@@ -37903,7 +38760,9 @@ var EasyedaControlEngine = class {
   async verify(operationId) {
     const operation = asOperationJournal(await loadOperation(operationId));
     if (operation.state !== "applied-unsaved") {
-      throw new Error(`Operation ${operationId} is in state ${operation.state}, not applied-unsaved.`);
+      throw new Error(
+        `Operation ${operationId} is in state ${operation.state}, not applied-unsaved.`
+      );
     }
     await this.assertStoredRuntime(operation, "verify");
     try {
@@ -37927,18 +38786,25 @@ var EasyedaControlEngine = class {
       let durableVerification;
       let durableVerificationError;
       try {
-        durableVerification = await verifyCheckpoint(operation.preCheckpoint.receiptPath);
+        durableVerification = await verifyCheckpoint(
+          operation.preCheckpoint.receiptPath
+        );
       } catch (error51) {
         durableVerificationError = serializeError(error51);
       }
       operation.sequence += 1;
-      const artifact = await writePhaseArtifact(operationId, operation.sequence, "verify-live", {
-        results,
-        exactInvariantProof,
-        aggregateAssertions,
-        durableVerification,
-        durableVerificationError
-      });
+      const artifact = await writePhaseArtifact(
+        operationId,
+        operation.sequence,
+        "verify-live",
+        {
+          results,
+          exactInvariantProof,
+          aggregateAssertions,
+          durableVerification,
+          durableVerificationError
+        }
+      );
       operation.artifacts.push(artifact);
       if (durableVerification?.ok !== true) {
         const error51 = annotatedError(
@@ -37963,7 +38829,9 @@ var EasyedaControlEngine = class {
       await updateOperation(operation);
       return operationSummary2(operation);
     } catch (error51) {
-      if (errorMetadata(error51)?.journalStateRecorded === true) throw error51;
+      if (errorMetadata(error51)?.journalStateRecorded === true) {
+        throw error51;
+      }
       operation.state = "verification-failed";
       operation.hardStop = true;
       operation.nextSafeAction = "Do not save. Call easyeda_control_rollback, or inspect before choosing recovery.";
@@ -37976,12 +38844,16 @@ var EasyedaControlEngine = class {
   async rollback(operationId, planHash) {
     this.requirePrivateComponentWriterEnabled();
     const operation = asOperationJournal(await loadOperation(operationId));
-    if (!["applied-unsaved", "verification-failed", "live-verified"].includes(operation.state)) {
+    if (!["applied-unsaved", "verification-failed", "live-verified"].includes(
+      operation.state
+    )) {
       throw new Error(
         `Operation ${operationId} cannot roll back safely from state ${operation.state}. Reconcile unknown state first.`
       );
     }
-    if (operation.planHash !== planHash) throw new Error("planHash does not match the journal.");
+    if (operation.planHash !== planHash) {
+      throw new Error("planHash does not match the journal.");
+    }
     await this.assertStoredRuntime(operation, "rollback");
     await this.assertContext(operation.plan.expectedContext);
     operation.state = "rolling-back";
@@ -38017,21 +38889,21 @@ var EasyedaControlEngine = class {
                 operation.plan.verifyAssertions,
                 "Rollback pre-dispatch desired-state proof"
               );
-            } catch (cause) {
-              const error51 = annotatedError(
+            } catch (error51) {
+              const rollbackError = annotatedError(
                 "Rollback was not dispatched because fresh exact readback could not prove the complete intended unsaved state.",
-                { cause }
+                { cause: error51 }
               );
-              error51.journalStateRecorded = true;
+              rollbackError.journalStateRecorded = true;
               operation.state = "verification-failed";
               operation.mutationState = "unknown";
               operation.hardStop = true;
               operation.mutationMayHaveOccurred = true;
               operation.nextSafeAction = "Do not save or apply an inverse. Reconcile the live state before another rollback attempt.";
-              operation.lastError = serializeError(error51);
+              operation.lastError = serializeError(rollbackError);
               operation.updatedAt = now();
               await updateOperation(operation);
-              throw error51;
+              throw rollbackError;
             }
             const durableVerification2 = await this.requireDurableBaselineBeforeDispatch(
               operation,
@@ -38049,18 +38921,27 @@ var EasyedaControlEngine = class {
               operationId,
               operation.sequence,
               `rollback-pre-dispatch-${Date.now()}`,
-              { desiredResults, exactInvariantProof, aggregateAssertions, durableVerification: durableVerification2 }
+              {
+                desiredResults,
+                exactInvariantProof,
+                aggregateAssertions,
+                durableVerification: durableVerification2
+              }
             );
             operation.artifacts.push(proofArtifact);
             operation.updatedAt = now();
             await updateOperation(operation);
-            await this.requireDurableBaselineBeforeDispatch(operation, "rollback", {
-              state: "durable-baseline-drift",
-              mutationState: "unknown",
-              hardStop: true,
-              mutationMayHaveOccurred: true,
-              nextSafeAction: "Do not save or dispatch the inverse. Inspect the changed durable project, live desired state, and pre-checkpoint before recovery."
-            });
+            await this.requireDurableBaselineBeforeDispatch(
+              operation,
+              "rollback",
+              {
+                state: "durable-baseline-drift",
+                mutationState: "unknown",
+                hardStop: true,
+                mutationMayHaveOccurred: true,
+                nextSafeAction: "Do not save or dispatch the inverse. Inspect the changed durable project, live desired state, and pre-checkpoint before recovery."
+              }
+            );
             await this.markOrphanedCallRisk(operation, "rollback");
           },
           afterDispatch: async () => {
@@ -38076,24 +38957,35 @@ var EasyedaControlEngine = class {
       const restoredInvariants = baselineInvariants(baseline, operation.plan);
       const restoredHash = snapshotHash(baseline);
       if (restoredHash !== operation.baselineHash) {
-        throw new Error("Rollback calls completed, but the exact baseline hash was not restored.");
+        throw new Error(
+          "Rollback calls completed, but the exact baseline hash was not restored."
+        );
       }
       if (canonicalJson(restoredInvariants) !== canonicalJson(operation.baselineInvariants)) {
-        throw new Error("Rollback calls completed, but exact baseline invariants were not restored.");
+        throw new Error(
+          "Rollback calls completed, but exact baseline invariants were not restored."
+        );
       }
-      const durableVerification = await verifyCheckpoint(operation.preCheckpoint.receiptPath);
+      const durableVerification = await verifyCheckpoint(
+        operation.preCheckpoint.receiptPath
+      );
       if (!durableVerification.ok) {
         throw new Error(
           "Live rollback restored the baseline, but the durable database no longer matches the pre-checkpoint."
         );
       }
       operation.sequence += 1;
-      const artifact = await writePhaseArtifact(operationId, operation.sequence, "rollback", {
-        rollback,
-        restoredHash,
-        restoredInvariants,
-        durableVerification
-      });
+      const artifact = await writePhaseArtifact(
+        operationId,
+        operation.sequence,
+        "rollback",
+        {
+          rollback,
+          restoredHash,
+          restoredInvariants,
+          durableVerification
+        }
+      );
       operation.artifacts.push(artifact);
       operation.state = "rolled-back";
       operation.mutationState = "rolled-back";
@@ -38104,7 +38996,9 @@ var EasyedaControlEngine = class {
       await updateOperation(operation);
       return operationSummary2(operation);
     } catch (error51) {
-      if (errorMetadata(error51)?.journalStateRecorded === true) throw error51;
+      if (errorMetadata(error51)?.journalStateRecorded === true) {
+        throw error51;
+      }
       operation.state = "rollback-failed";
       operation.mutationState = "unknown";
       operation.hardStop = true;
@@ -38119,7 +39013,9 @@ var EasyedaControlEngine = class {
   async saveReopen(operationId, planHash, options = {}) {
     this.requirePrivateComponentWriterEnabled();
     const operation = asOperationJournal(await loadOperation(operationId));
-    if (operation.planHash !== planHash) throw new Error("planHash does not match the journal.");
+    if (operation.planHash !== planHash) {
+      throw new Error("planHash does not match the journal.");
+    }
     if (![
       "live-verified",
       "reopened-verified",
@@ -38135,9 +39031,13 @@ var EasyedaControlEngine = class {
     if (operation.state === "live-verified") {
       let preCheckpointVerification;
       try {
-        preCheckpointVerification = await verifyCheckpoint(operation.preCheckpoint.receiptPath);
+        preCheckpointVerification = await verifyCheckpoint(
+          operation.preCheckpoint.receiptPath
+        );
         if (!preCheckpointVerification.ok) {
-          throw new Error("The durable project database no longer matches the pre-checkpoint.");
+          throw new Error(
+            "The durable project database no longer matches the pre-checkpoint."
+          );
         }
       } catch (error51) {
         operation.state = "durable-baseline-drift";
@@ -38218,14 +39118,21 @@ var EasyedaControlEngine = class {
       }
       try {
         const source = buildSaveReopenCode(operation.plan.expectedContext);
-        const guarded2 = wrapWithContextGuard(source, operation.plan.expectedContext);
-        await this.requireDurableBaselineBeforeDispatch(operation, "save-reopen", {
-          state: "durable-baseline-drift",
-          mutationState: "unknown",
-          hardStop: true,
-          mutationMayHaveOccurred: true,
-          nextSafeAction: "Do not save. The live edit and durable project no longer share the proven baseline; inspect both before recovery."
-        });
+        const guarded2 = wrapWithContextGuard(
+          source,
+          operation.plan.expectedContext
+        );
+        await this.requireDurableBaselineBeforeDispatch(
+          operation,
+          "save-reopen",
+          {
+            state: "durable-baseline-drift",
+            mutationState: "unknown",
+            hardStop: true,
+            mutationMayHaveOccurred: true,
+            nextSafeAction: "Do not save. The live edit and durable project no longer share the proven baseline; inspect both before recovery."
+          }
+        );
         await this.markOrphanedCallRisk(operation, "save-reopen");
         const raw = await this.upstream.callTool(
           "easyeda_execute",
@@ -38234,7 +39141,11 @@ var EasyedaControlEngine = class {
         );
         await this.clearOrphanedCallRisk(operation, "save-reopen");
         const payload = extractToolPayload(raw);
-        assertSubset(payload, { ok: true, saved: true, reopened: true }, "Save/reopen result");
+        assertSubset(
+          payload,
+          { ok: true, saved: true, reopened: true },
+          "Save/reopen result"
+        );
         const reopenedContext = await this.rebindAfterLifecycle(
           operation.plan.expectedContext,
           payload,
@@ -38243,12 +39154,17 @@ var EasyedaControlEngine = class {
         operation.context = reopenedContext;
         operation.planHash = buildPlanHash(operation.plan);
         operation.sequence += 1;
-        const artifact = await writePhaseArtifact(operationId, operation.sequence, "save-reopen", {
-          sourceSha256: sha256Text(source),
-          transmittedSourceSha256: sha256Text(guarded2),
-          payload,
-          context: reopenedContext
-        });
+        const artifact = await writePhaseArtifact(
+          operationId,
+          operation.sequence,
+          "save-reopen",
+          {
+            sourceSha256: sha256Text(source),
+            transmittedSourceSha256: sha256Text(guarded2),
+            payload,
+            context: reopenedContext
+          }
+        );
         operation.artifacts.push(artifact);
         operation.state = "document-saved";
         operation.mutationState = "saved";
@@ -38257,7 +39173,9 @@ var EasyedaControlEngine = class {
         operation.updatedAt = now();
         await updateOperation(operation);
       } catch (error51) {
-        if (errorMetadata(error51)?.journalStateRecorded === true) throw error51;
+        if (errorMetadata(error51)?.journalStateRecorded === true) {
+          throw error51;
+        }
         operation.state = "unknown";
         operation.mutationState = "unknown";
         operation.saved = false;
@@ -38291,7 +39209,9 @@ var EasyedaControlEngine = class {
         );
         let persistenceVerification;
         try {
-          persistenceVerification = await verifyCheckpoint(operation.preCheckpoint.receiptPath);
+          persistenceVerification = await verifyCheckpoint(
+            operation.preCheckpoint.receiptPath
+          );
         } catch (error51) {
           persistenceVerificationError = serializeError(error51);
         }
@@ -38370,7 +39290,12 @@ var EasyedaControlEngine = class {
           operationId,
           operation.sequence,
           `final-reopen-${Date.now()}`,
-          { sourceSha256, transmittedSourceSha256: sourceSha256, payload, context: reopenedContext }
+          {
+            sourceSha256,
+            transmittedSourceSha256: sourceSha256,
+            payload,
+            context: reopenedContext
+          }
         );
         operation.artifacts.push(artifact);
         operation.state = "final-reopened";
@@ -38429,7 +39354,9 @@ var EasyedaControlEngine = class {
           "Final verification did not prove a logical database change from the intact pre-checkpoint."
         );
       }
-      const checkpointVerification = await verifyCheckpoint(finalCheckpoint.receiptPath);
+      const checkpointVerification = await verifyCheckpoint(
+        finalCheckpoint.receiptPath
+      );
       if (!checkpointVerification.ok) {
         throw new Error(
           "The live database changed after the candidate final checkpoint or that checkpoint failed verification."
@@ -38478,7 +39405,9 @@ var EasyedaControlEngine = class {
     }
     await this.assertRecoveryOperationIsolated(operationId);
     const operation = asOperationJournal(await loadOperation(operationId));
-    if (isTerminalOperation(operation)) return operationSummary2(operation);
+    if (isTerminalOperation(operation)) {
+      return operationSummary2(operation);
+    }
     const recoveryStartState = operation.recoveryActivationResumeState ?? operation.state;
     const recoveryStartUnknownPhase = operation.recoveryActivationPriorUnknownPhase === null ? void 0 : operation.recoveryActivationPriorUnknownPhase ?? operation.unknownPhase;
     const baselinePreparationStates = /* @__PURE__ */ new Set([
@@ -38533,7 +39462,9 @@ var EasyedaControlEngine = class {
         "unknown"
       ])
     };
-    if (!resolution) throw new Error("A supported recovery resolution is required.");
+    if (!resolution) {
+      throw new Error("A supported recovery resolution is required.");
+    }
     const allowed = allowedStates[resolution];
     if (!allowed.has(recoveryStartState)) {
       throw new Error(
@@ -38555,7 +39486,10 @@ var EasyedaControlEngine = class {
         error51.orphanedCallPhase = operation.orphanedCallPhase ?? operation.unknownPhase;
         throw error51;
       }
-      await this.assertStoredRuntime(operation, "recovery-runtime-restart-boundary");
+      await this.assertStoredRuntime(
+        operation,
+        "recovery-runtime-restart-boundary"
+      );
       const attestedAt = now();
       operation.sequence += 1;
       const boundary = {
@@ -38611,11 +39545,16 @@ var EasyedaControlEngine = class {
     }
     let preCheckpointVerification;
     try {
-      preCheckpointVerification = await verifyCheckpoint(operation.preCheckpoint.receiptPath);
+      preCheckpointVerification = await verifyCheckpoint(
+        operation.preCheckpoint.receiptPath
+      );
     } catch (error51) {
-      throw new Error("Stored pre-checkpoint integrity could not be proved; recovery is blocked.", {
-        cause: error51
-      });
+      throw new Error(
+        "Stored pre-checkpoint integrity could not be proved; recovery is blocked.",
+        {
+          cause: error51
+        }
+      );
     }
     let recoveryEvidence;
     if (resolution === "reconciled-no-mutation") {
@@ -38653,10 +39592,14 @@ var EasyedaControlEngine = class {
           operation.plan
         );
         if (snapshotHash(baseline) !== operation.baselineHash) {
-          throw new Error("Live state does not match the stored preflight baseline.");
+          throw new Error(
+            "Live state does not match the stored preflight baseline."
+          );
         }
         if (canonicalJson(recoveredBaselineInvariants) !== canonicalJson(operation.baselineInvariants)) {
-          throw new Error("Live state does not match the stored exact baseline invariants.");
+          throw new Error(
+            "Live state does not match the stored exact baseline invariants."
+          );
         }
         const finalPreCheckpointVerification = await verifyCheckpoint(
           operation.preCheckpoint.receiptPath
@@ -38830,7 +39773,9 @@ var EasyedaControlEngine = class {
             "Recovered reopened assertions passed, but logical persistence relative to the intact pre-checkpoint was not proved."
           );
         }
-        const finalCheckpointVerification = await verifyCheckpoint(finalCheckpoint.receiptPath);
+        const finalCheckpointVerification = await verifyCheckpoint(
+          finalCheckpoint.receiptPath
+        );
         if (!finalCheckpointVerification.ok) {
           throw new Error("Reconciled final checkpoint verification failed.");
         }
@@ -38885,7 +39830,9 @@ var EasyedaControlEngine = class {
     }
     const { source, outputDir, label } = args;
     if (typeof source !== "string" || source.length === 0 || typeof outputDir !== "string" || outputDir.length === 0 || typeof label !== "string" || label.length === 0) {
-      throw new TypeError("Checkpoint creation requires nonempty source, outputDir, and label.");
+      throw new TypeError(
+        "Checkpoint creation requires nonempty source, outputDir, and label."
+      );
     }
     return createCheckpoint({ source, outputDir, label });
   }
@@ -38894,8 +39841,15 @@ var EasyedaControlEngine = class {
 // server/src/lease.ts
 import { randomUUID as randomUUID3 } from "node:crypto";
 import { readFileSync as readFileSync2, unlinkSync } from "node:fs";
-import { lstat as lstat2, mkdir as mkdir3, open as open3, readFile as readFile3, realpath as realpath2, unlink as unlink3 } from "node:fs/promises";
-import { join as join4, resolve as resolve4 } from "node:path";
+import {
+  lstat as lstat2,
+  mkdir as mkdir3,
+  open as open3,
+  readFile as readFile3,
+  realpath as realpath2,
+  unlink as unlink3
+} from "node:fs/promises";
+import { join as join4, resolve as resolve3 } from "node:path";
 import process5 from "node:process";
 function isRecord2(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -38904,7 +39858,9 @@ function errorCode(error51) {
   return isRecord2(error51) && typeof error51["code"] === "string" ? error51["code"] : void 0;
 }
 function pidIsAlive(pid) {
-  if (!Number.isInteger(pid) || pid <= 0) return false;
+  if (!Number.isInteger(pid) || pid <= 0) {
+    return false;
+  }
   try {
     process5.kill(pid, 0);
     return true;
@@ -38915,7 +39871,9 @@ function pidIsAlive(pid) {
 async function parseLease(path) {
   const value = JSON.parse(await readFile3(path, "utf8"));
   if (!isRecord2(value) || value["schema"] !== "easyeda-pro-control.facade-lease.v1" || typeof value["pid"] !== "number" || !Number.isInteger(value["pid"]) || typeof value["token"] !== "string" || value["token"].length < 16) {
-    throw new Error("The EasyEDA facade lease is corrupt; refusing to remove it automatically.");
+    throw new Error(
+      "The EasyEDA facade lease is corrupt; refusing to remove it automatically."
+    );
   }
   return {
     schema: "easyeda-pro-control.facade-lease.v1",
@@ -38957,14 +39915,17 @@ async function acquireCleanupLease(cleanupPath, staleToken) {
       await handle.close();
       return record2;
     } catch (error51) {
-      await handle?.close().catch(() => {
-      });
-      if (errorCode(error51) !== "EEXIST") throw error51;
+      await handle?.close().catch(() => null);
+      if (errorCode(error51) !== "EEXIST") {
+        throw error51;
+      }
       let existing;
       try {
         existing = await parseCleanupLease(cleanupPath);
       } catch (parseError) {
-        if (errorCode(parseError) === "ENOENT") continue;
+        if (errorCode(parseError) === "ENOENT") {
+          continue;
+        }
         throw parseError;
       }
       if (pidIsAlive(existing.pid)) {
@@ -38977,24 +39938,32 @@ async function acquireCleanupLease(cleanupPath, staleToken) {
       try {
         current = await parseCleanupLease(cleanupPath);
       } catch (readError) {
-        if (errorCode(readError) === "ENOENT") continue;
+        if (errorCode(readError) === "ENOENT") {
+          continue;
+        }
         throw readError;
       }
       if (current.token === existing.token && current.pid === existing.pid) {
         await unlink3(cleanupPath).catch((unlinkError) => {
-          if (errorCode(unlinkError) !== "ENOENT") throw unlinkError;
+          if (errorCode(unlinkError) !== "ENOENT") {
+            throw unlinkError;
+          }
         });
       }
     }
   }
-  throw new Error("Could not acquire the stale EasyEDA facade cleanup lease safely.");
+  throw new Error(
+    "Could not acquire the stale EasyEDA facade cleanup lease safely."
+  );
 }
 async function releaseCleanupLease(cleanupPath, cleanupLease) {
   let currentCleanup;
   try {
     currentCleanup = await parseCleanupLease(cleanupPath);
   } catch (error51) {
-    if (errorCode(error51) === "ENOENT") return;
+    if (errorCode(error51) === "ENOENT") {
+      return;
+    }
     throw error51;
   }
   if (currentCleanup.token === cleanupLease.token && currentCleanup.pid === cleanupLease.pid) {
@@ -39002,14 +39971,18 @@ async function releaseCleanupLease(cleanupPath, cleanupLease) {
   }
 }
 async function acquireFacadeLease(controlRoot) {
-  const root = resolve4(controlRoot);
+  const root = resolve3(controlRoot);
   await mkdir3(root, { recursive: true, mode: 448 });
   const rootInfo = await lstat2(root);
   if (rootInfo.isSymbolicLink() || !rootInfo.isDirectory()) {
-    throw new Error("EasyEDA facade lease root must be a real directory, not a symlink.");
+    throw new Error(
+      "EasyEDA facade lease root must be a real directory, not a symlink."
+    );
   }
   if (await realpath2(root) !== root) {
-    throw new Error("EasyEDA facade lease root must not traverse a symbolic-link path.");
+    throw new Error(
+      "EasyEDA facade lease root must not traverse a symbolic-link path."
+    );
   }
   const path = join4(root, "facade.lock");
   const token = randomUUID3();
@@ -39029,10 +40002,11 @@ async function acquireFacadeLease(controlRoot) {
       handle = void 0;
       break;
     } catch (error51) {
-      await handle?.close().catch(() => {
-      });
+      await handle?.close().catch(() => null);
       handle = void 0;
-      if (errorCode(error51) !== "EEXIST" || attempt > 0) throw error51;
+      if (errorCode(error51) !== "EEXIST" || attempt > 0) {
+        throw error51;
+      }
       const existing = await parseLease(path);
       if (pidIsAlive(existing.pid)) {
         throw new Error(
@@ -39041,11 +40015,17 @@ async function acquireFacadeLease(controlRoot) {
         );
       }
       const cleanupPath = `${path}.cleanup`;
-      const cleanupLease = await acquireCleanupLease(cleanupPath, existing.token);
+      const cleanupLease = await acquireCleanupLease(
+        cleanupPath,
+        existing.token
+      );
       try {
         const current = await parseLease(path);
         if (current.token !== existing.token || current.pid !== existing.pid) {
-          throw new Error("EasyEDA facade lease changed during stale-owner reconciliation.", { cause: error51 });
+          throw new Error(
+            "EasyEDA facade lease changed during stale-owner reconciliation.",
+            { cause: error51 }
+          );
         }
         await unlink3(path);
       } catch (reconciliationError) {
@@ -39069,18 +40049,24 @@ async function acquireFacadeLease(controlRoot) {
     try {
       existing = await parseLease(path);
     } catch (error51) {
-      if (errorCode(error51) === "ENOENT") return;
+      if (errorCode(error51) === "ENOENT") {
+        return;
+      }
       throw error51;
     }
     if (!ownsLease(existing)) {
-      throw new Error("EasyEDA facade lease ownership changed; refusing to unlink it.");
+      throw new Error(
+        "EasyEDA facade lease ownership changed; refusing to unlink it."
+      );
     }
     await unlink3(path);
   };
   const releaseSync = () => {
     try {
       const existing = JSON.parse(readFileSync2(path, "utf8"));
-      if (ownsLease(existing)) unlinkSync(path);
+      if (ownsLease(existing)) {
+        unlinkSync(path);
+      }
     } catch {
     }
   };
@@ -39812,7 +40798,7 @@ var StdioClientTransport = class {
     if (this._process) {
       throw new Error("StdioClientTransport already started! If using Client class, note that connect() calls start() automatically.");
     }
-    return new Promise((resolve7, reject) => {
+    return new Promise((resolve6, reject) => {
       this._process = (0, import_cross_spawn.default)(this._serverParams.command, this._serverParams.args ?? [], {
         // merge default env with server env because mcp server needs some env vars
         env: {
@@ -39829,7 +40815,7 @@ var StdioClientTransport = class {
         this.onerror?.(error51);
       });
       this._process.on("spawn", () => {
-        resolve7();
+        resolve6();
       });
       this._process.on("close", (_code) => {
         this._process = void 0;
@@ -39888,22 +40874,22 @@ var StdioClientTransport = class {
     if (this._process) {
       const processToClose = this._process;
       this._process = void 0;
-      const closePromise = new Promise((resolve7) => {
+      const closePromise = new Promise((resolve6) => {
         processToClose.once("close", () => {
-          resolve7();
+          resolve6();
         });
       });
       try {
         processToClose.stdin?.end();
       } catch {
       }
-      await Promise.race([closePromise, new Promise((resolve7) => setTimeout(resolve7, 2e3).unref())]);
+      await Promise.race([closePromise, new Promise((resolve6) => setTimeout(resolve6, 2e3).unref())]);
       if (processToClose.exitCode === null) {
         try {
           processToClose.kill("SIGTERM");
         } catch {
         }
-        await Promise.race([closePromise, new Promise((resolve7) => setTimeout(resolve7, 2e3).unref())]);
+        await Promise.race([closePromise, new Promise((resolve6) => setTimeout(resolve6, 2e3).unref())]);
       }
       if (processToClose.exitCode === null) {
         try {
@@ -39915,15 +40901,15 @@ var StdioClientTransport = class {
     this._readBuffer.clear();
   }
   send(message) {
-    return new Promise((resolve7) => {
+    return new Promise((resolve6) => {
       if (!this._process?.stdin) {
         throw new Error("Not connected");
       }
       const json2 = serializeMessage(message);
       if (this._process.stdin.write(json2)) {
-        resolve7();
+        resolve6();
       } else {
-        this._process.stdin.once("drain", resolve7);
+        this._process.stdin.once("drain", resolve6);
       }
     });
   }
@@ -39933,7 +40919,7 @@ var StdioClientTransport = class {
 import { createHash as createHash4 } from "node:crypto";
 import { createReadStream as createReadStream2 } from "node:fs";
 import { readdir as readdir2, stat as stat2 } from "node:fs/promises";
-import { dirname as dirname2, isAbsolute as isAbsolute3, join as join5, relative as relative3, resolve as resolve5 } from "node:path";
+import { dirname as dirname2, isAbsolute as isAbsolute3, join as join5, relative as relative3, resolve as resolve4 } from "node:path";
 import process7 from "node:process";
 function isRecord3(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -39949,7 +40935,9 @@ function parseArgs() {
   if (raw !== void 0 && raw.length > 0) {
     const parsed = JSON.parse(raw);
     if (!isStringArray3(parsed)) {
-      throw new Error("EASYEDA_UPSTREAM_ARGS_JSON must be a JSON array of strings.");
+      throw new Error(
+        "EASYEDA_UPSTREAM_ARGS_JSON must be a JSON array of strings."
+      );
     }
     return parsed;
   }
@@ -39957,7 +40945,9 @@ function parseArgs() {
 }
 function upstreamEnvironment() {
   const inheritedEnvironment = Object.fromEntries(
-    Object.entries(process7.env).filter((entry) => entry[1] !== void 0)
+    Object.entries(process7.env).filter(
+      (entry) => entry[1] !== void 0
+    )
   );
   const controlRoot = process7.env["EASYEDA_CONTROL_DATA_DIR"] ?? `${process7.env["HOME"] ?? "/tmp"}/.easyeda-pro-control`;
   return {
@@ -39990,10 +40980,15 @@ async function treeSha256(root) {
   const files = [];
   const visit = async (directory) => {
     const entries = await readdir2(directory, { withFileTypes: true });
-    for (const entry of entries.toSorted((a, b) => a.name.localeCompare(b.name))) {
+    for (const entry of entries.toSorted(
+      (a, b) => a.name.localeCompare(b.name)
+    )) {
       const path = join5(directory, entry.name);
-      if (entry.isDirectory()) await visit(path);
-      else if (entry.isFile() && /\.(c?m?js|json)$/iu.test(entry.name)) files.push(path);
+      if (entry.isDirectory()) {
+        await visit(path);
+      } else if (entry.isFile() && /\.(c?m?js|json)$/iu.test(entry.name)) {
+        files.push(path);
+      }
     }
   };
   await visit(root);
@@ -40024,21 +41019,31 @@ async function dependencyLockFingerprint(cwd) {
         return { type, path, sha256: await sha256File2(path) };
       }
     } catch (error51) {
-      if (errorCode2(error51) !== "ENOENT") throw error51;
+      if (errorCode2(error51) !== "ENOENT") {
+        throw error51;
+      }
     }
   }
   throw new Error("The upstream dependency lockfile is unavailable.");
 }
 function requireVersionSegment(value, label) {
   if (typeof value !== "string" || !/^[a-z0-9][a-z0-9._-]{2,80}$/iu.test(value)) {
-    throw new Error(`${label} must be configured as a filename-safe installed version.`);
+    throw new Error(
+      `${label} must be configured as a filename-safe installed version.`
+    );
   }
   return value;
 }
 function stableValue(value) {
-  if (value === null || typeof value !== "object") return value;
-  if (Array.isArray(value)) return value.map((item) => stableValue(item));
-  if (!isRecord3(value)) return value;
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => stableValue(item));
+  }
+  if (!isRecord3(value)) {
+    return value;
+  }
   return Object.fromEntries(
     Object.keys(value).toSorted().map((key) => [key, stableValue(value[key])])
   );
@@ -40046,24 +41051,26 @@ function stableValue(value) {
 function fingerprintSha256(value) {
   return createHash4("sha256").update(JSON.stringify(stableValue(value))).digest("hex");
 }
-var UpstreamEasyedaClient = class {
-  client;
-  transport;
-  connectPromise;
-  tools;
-  stderr;
-  startupLauncherFingerprint;
-  constructor() {
-    this.client = null;
-    this.transport = null;
-    this.connectPromise = null;
-    this.tools = null;
-    this.stderr = "";
-    this.startupLauncherFingerprint = null;
+async function closeIgnoringFailure(resource) {
+  try {
+    await resource.close();
+  } catch {
   }
+}
+var UpstreamEasyedaClient = class {
+  client = null;
+  transport = null;
+  connectPromise = null;
+  tools = null;
+  stderr = "";
+  startupLauncherFingerprint = null;
   async connect() {
-    if (this.client) return this.client;
-    if (this.connectPromise) return this.connectPromise;
+    if (this.client) {
+      return this.client;
+    }
+    if (this.connectPromise) {
+      return this.connectPromise;
+    }
     this.connectPromise = this.#connect();
     try {
       return await this.connectPromise;
@@ -40094,8 +41101,7 @@ var UpstreamEasyedaClient = class {
     try {
       await client.connect(transport2);
     } catch (error51) {
-      await transport2.close().catch(() => {
-      });
+      await closeIgnoringFailure(transport2);
       this.startupLauncherFingerprint = null;
       throw error51;
     }
@@ -40104,7 +41110,9 @@ var UpstreamEasyedaClient = class {
     return client;
   }
   async listTools(force = false) {
-    if (!force && this.tools) return this.tools;
+    if (!force && this.tools) {
+      return this.tools;
+    }
     const client = await this.connect();
     const response = await client.listTools();
     this.tools = Array.isArray(response.tools) ? response.tools : [];
@@ -40132,11 +41140,15 @@ var UpstreamEasyedaClient = class {
   async launcherFingerprint() {
     const command = upstreamCommand();
     if (!isAbsolute3(command)) {
-      throw new Error("EASYEDA_UPSTREAM_COMMAND must be absolute for a reproducible launcher hash.");
+      throw new Error(
+        "EASYEDA_UPSTREAM_COMMAND must be absolute for a reproducible launcher hash."
+      );
     }
-    const commandPath = resolve5(command);
+    const commandPath = resolve4(command);
     const commandInfo = await stat2(commandPath);
-    if (!commandInfo.isFile()) throw new Error("The upstream command is not a regular file.");
+    if (!commandInfo.isFile()) {
+      throw new Error("The upstream command is not a regular file.");
+    }
     const args = parseArgs();
     const entrypoint = args.find((argument) => isAbsolute3(argument));
     if (entrypoint === void 0) {
@@ -40144,14 +41156,18 @@ var UpstreamEasyedaClient = class {
         "EASYEDA_UPSTREAM_ARGS_JSON must contain an absolute server entrypoint for a reproducible hash."
       );
     }
-    const entrypointPath = resolve5(entrypoint);
+    const entrypointPath = resolve4(entrypoint);
     const entrypointInfo = await stat2(entrypointPath);
-    if (!entrypointInfo.isFile()) throw new Error("The upstream server entrypoint is not a regular file.");
+    if (!entrypointInfo.isFile()) {
+      throw new Error("The upstream server entrypoint is not a regular file.");
+    }
     const implementationTree = await treeSha256(dirname2(entrypointPath));
     const configuredCwd = process7.env["EASYEDA_UPSTREAM_CWD"];
-    const cwd = configuredCwd !== void 0 && configuredCwd.length > 0 ? resolve5(configuredCwd) : void 0;
+    const cwd = configuredCwd !== void 0 && configuredCwd.length > 0 ? resolve4(configuredCwd) : void 0;
     if (cwd === void 0) {
-      throw new Error("EASYEDA_UPSTREAM_CWD is required for a reproducible package lock hash.");
+      throw new Error(
+        "EASYEDA_UPSTREAM_CWD is required for a reproducible package lock hash."
+      );
     }
     const dependencyLock = await dependencyLockFingerprint(cwd);
     return {
@@ -40166,11 +41182,15 @@ var UpstreamEasyedaClient = class {
     };
   }
   async launcherState() {
-    if (!this.startupLauncherFingerprint) await this.connect();
+    if (!this.startupLauncherFingerprint) {
+      await this.connect();
+    }
     const current = await this.launcherFingerprint();
     const startup = this.startupLauncherFingerprint;
     if (!startup) {
-      throw new Error("The connected upstream has no startup launcher fingerprint.");
+      throw new Error(
+        "The connected upstream has no startup launcher fingerprint."
+      );
     }
     const startupSha256 = fingerprintSha256(startup);
     const currentSha256 = fingerprintSha256(current);
@@ -40183,7 +41203,7 @@ var UpstreamEasyedaClient = class {
     };
   }
   async installedEasyedaBundles() {
-    const assetsRoot = resolve5(
+    const assetsRoot = resolve4(
       process7.env["EASYEDA_ASSETS_ROOT"] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets"
     );
     const pcbVersion = requireVersionSegment(
@@ -40194,13 +41214,33 @@ var UpstreamEasyedaClient = class {
       process7.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"],
       "EASYEDA_PUBLIC_API_BUNDLE_VERSION"
     );
-    const pcbImplementation = join5(assetsRoot, "pro-pcb", pcbVersion, "js", "pcb.js");
+    const pcbImplementation = join5(
+      assetsRoot,
+      "pro-pcb",
+      pcbVersion,
+      "js",
+      "pcb.js"
+    );
     const apiImplementation = join5(assetsRoot, "pro-api", apiVersion, "api.js");
     const apiAdapter = join5(assetsRoot, "pro-api", apiVersion, "api-types.js");
-    const apiDeclarations = join5(assetsRoot, "pro-api", apiVersion, "api-types.d.ts");
-    for (const path of [pcbImplementation, apiImplementation, apiAdapter, apiDeclarations]) {
+    const apiDeclarations = join5(
+      assetsRoot,
+      "pro-api",
+      apiVersion,
+      "api-types.d.ts"
+    );
+    for (const path of [
+      pcbImplementation,
+      apiImplementation,
+      apiAdapter,
+      apiDeclarations
+    ]) {
       const info = await stat2(path);
-      if (!info.isFile()) throw new Error(`Installed EasyEDA bundle file is unavailable: ${path}`);
+      if (!info.isFile()) {
+        throw new Error(
+          `Installed EasyEDA bundle file is unavailable: ${path}`
+        );
+      }
     }
     const [
       pcbImplementationSha256,
@@ -40236,10 +41276,12 @@ var UpstreamEasyedaClient = class {
     const client = this.client;
     this.client = null;
     this.tools = null;
-    if (client) await client.close().catch(() => {
-    });
-    if (this.transport) await this.transport.close().catch(() => {
-    });
+    if (client) {
+      await closeIgnoringFailure(client);
+    }
+    if (this.transport) {
+      await closeIgnoringFailure(this.transport);
+    }
     this.transport = null;
     this.startupLauncherFingerprint = null;
   }
@@ -40247,9 +41289,7 @@ var UpstreamEasyedaClient = class {
 
 // server/src/index.ts
 var MAX_INLINE_RESULT_BYTES = 256 * 1024;
-var EXPORT_TOOLS = /* @__PURE__ */ new Set([
-  "easyeda_pcb_export_route_context"
-]);
+var EXPORT_TOOLS = /* @__PURE__ */ new Set(["easyeda_pcb_export_route_context"]);
 var CAPTURE_TOOLS = /* @__PURE__ */ new Set([
   "easyeda_canvas_capture",
   "easyeda_canvas_capture_region",
@@ -40265,7 +41305,9 @@ var UI_MUTATING_READ_NAMES = /* @__PURE__ */ new Set([
   "easyeda_canvas_locate",
   "easyeda_schematic_layout_qa"
 ]);
-var validatedControlRoot = await ensureManagedDirectory(controlDataDirectory());
+var validatedControlRoot = await ensureManagedDirectory(
+  controlDataDirectory()
+);
 var facadeLease = await acquireFacadeLease(validatedControlRoot);
 process8.once("exit", () => {
   facadeLease.releaseSync();
@@ -40276,29 +41318,39 @@ var bridgeGate = new SerializedGate();
 var recordSchema = external_exports.record(external_exports.string(), external_exports.unknown());
 var genericOutputSchema = external_exports.object({}).catchall(external_exports.unknown());
 var evidenceSchema = external_exports.object({ resultPath: external_exports.string().min(1), receiptPath: external_exports.string().min(1) }).strict();
+var nonEmptyStringSchema = external_exports.string().min(1);
+var readBatchCallSchema = external_exports.object({
+  upstreamTool: nonEmptyStringSchema,
+  arguments: recordSchema.default({})
+}).strict();
+var capturePaddingSchema = external_exports.number().nonnegative().default(0);
+var captureInferredA4Schema = external_exports.boolean().default(false);
+var captureTabArgumentsSchema = external_exports.object({ tabId: nonEmptyStringSchema }).strict();
+var captureRegionArgumentsSchema = external_exports.object({
+  tabId: nonEmptyStringSchema,
+  left: external_exports.number(),
+  right: external_exports.number(),
+  top: external_exports.number(),
+  bottom: external_exports.number()
+}).strict();
+var captureFullPageArgumentsSchema = external_exports.object({
+  projectId: nonEmptyStringSchema,
+  tabId: nonEmptyStringSchema,
+  padding: capturePaddingSchema,
+  allowInferredA4: captureInferredA4Schema
+}).strict();
 var captureRequestSchema = external_exports.discriminatedUnion("upstreamTool", [
   external_exports.object({
     upstreamTool: external_exports.literal("easyeda_canvas_capture"),
-    arguments: external_exports.object({ tabId: external_exports.string().min(1) }).strict()
+    arguments: captureTabArgumentsSchema
   }).strict(),
   external_exports.object({
     upstreamTool: external_exports.literal("easyeda_canvas_capture_region"),
-    arguments: external_exports.object({
-      tabId: external_exports.string().min(1),
-      left: external_exports.number(),
-      right: external_exports.number(),
-      top: external_exports.number(),
-      bottom: external_exports.number()
-    }).strict()
+    arguments: captureRegionArgumentsSchema
   }).strict(),
   external_exports.object({
     upstreamTool: external_exports.literal("easyeda_schematic_capture_full_page"),
-    arguments: external_exports.object({
-      projectId: external_exports.string().min(1),
-      tabId: external_exports.string().min(1),
-      padding: external_exports.number().nonnegative().default(0),
-      allowInferredA4: external_exports.boolean().default(false)
-    }).strict()
+    arguments: captureFullPageArgumentsSchema
   }).strict()
 ]);
 var capturePayloadSchema = external_exports.object({
@@ -40362,19 +41414,20 @@ var installedBundleAvailableSchema = external_exports.object({
     declarationsSha256: sha256Schema
   }).catchall(external_exports.unknown())
 }).catchall(external_exports.unknown());
+var facadeImplementationFileSchema = external_exports.object({
+  path: nonEmptyStringSchema,
+  relativePath: nonEmptyStringSchema,
+  bytes: external_exports.number().int().positive(),
+  sha256: sha256Schema
+}).strict();
+var facadeImplementationFilesSchema = external_exports.array(facadeImplementationFileSchema).min(1);
+var bridgeDiagnosticsSchema = external_exports.object({ method_registry_hash: nonEmptyStringSchema }).catchall(external_exports.unknown());
 var expectedFingerprintBaseShape = {
   facadeImplementation: external_exports.object({
     version: external_exports.string().min(1),
     operationSchema: external_exports.string().min(1),
     mode: external_exports.enum(["bundle", "source-tree"]),
-    files: external_exports.array(
-      external_exports.object({
-        path: external_exports.string().min(1),
-        relativePath: external_exports.string().min(1),
-        bytes: external_exports.number().int().positive(),
-        sha256: sha256Schema
-      }).strict()
-    ).min(1),
+    files: facadeImplementationFilesSchema,
     sha256: sha256Schema
   }).strict(),
   reviewedCompatibilityManifest: external_exports.object({
@@ -40422,7 +41475,7 @@ var expectedFingerprintBaseShape = {
       connected: external_exports.literal(true),
       bridge_version: external_exports.string().min(1),
       easyeda_version: external_exports.string().min(1),
-      diagnostics: external_exports.object({ method_registry_hash: external_exports.string().min(1) }).catchall(external_exports.unknown())
+      diagnostics: bridgeDiagnosticsSchema
     }).catchall(external_exports.unknown())
   }).catchall(external_exports.unknown()),
   bridgeDispatcher: external_exports.object({
@@ -40485,7 +41538,10 @@ var operationDocumentIdentitySchema = external_exports.union([
     tabId: external_exports.string().min(1)
   }).catchall(external_exports.unknown())
 ]);
-var operationContextSchema = external_exports.object({ project: projectIdentitySchema, document: operationDocumentIdentitySchema }).catchall(external_exports.unknown());
+var operationContextSchema = external_exports.object({
+  project: projectIdentitySchema,
+  document: operationDocumentIdentitySchema
+}).catchall(external_exports.unknown());
 var assertionValueSchema = external_exports.union([
   external_exports.string(),
   external_exports.number(),
@@ -40501,7 +41557,11 @@ var assertionSchema = external_exports.discriminatedUnion("op", [
     op: external_exports.enum(["equals", "not-equals"]),
     value: assertionValueSchema
   }).strict(),
-  external_exports.object({ pointer: external_exports.string(), op: external_exports.literal("matches"), value: external_exports.string() }).strict(),
+  external_exports.object({
+    pointer: external_exports.string(),
+    op: external_exports.literal("matches"),
+    value: external_exports.string()
+  }).strict(),
   external_exports.object({
     pointer: external_exports.string(),
     op: external_exports.literal("length-equals"),
@@ -40521,7 +41581,9 @@ var checkpointCreateSchema = external_exports.object({
 var operationPlanCommonShape = {
   name: external_exports.string().min(4).max(120),
   intent: external_exports.string().min(12).max(1e3),
-  targetPrimitiveIds: external_exports.array(external_exports.string().min(1).max(160).regex(/^[A-Za-z0-9._:-]+$/u)).length(1).refine((values) => new Set(values).size === values.length, {
+  targetPrimitiveIds: external_exports.array(
+    external_exports.string().min(1).max(160).regex(/^[A-Za-z0-9._:-]+$/u)
+  ).length(1).refine((values) => new Set(values).size === values.length, {
     message: "targetPrimitiveIds must be unique."
   }),
   targetChanges: external_exports.array(
@@ -40564,7 +41626,9 @@ function jsonSafe(value) {
     value,
     (_key, item) => typeof item === "bigint" ? item.toString() : item
   );
-  if (text === void 0) return null;
+  if (text === void 0) {
+    return null;
+  }
   const parsed = JSON.parse(text);
   if (!isJsonValue(parsed)) {
     throw new TypeError("JSON serialization produced a non-JSON value.");
@@ -40640,7 +41704,9 @@ async function callReadOnly(upstreamTool, args) {
     );
   }
   if (upstreamTool === "easyeda_execute" || DEDICATED_FACADE_NAME2.test(upstreamTool) || CAPTURE_TOOLS.has(upstreamTool) || EXPORT_TOOLS.has(upstreamTool)) {
-    throw new Error(`${upstreamTool} must use its dedicated guarded facade tool.`);
+    throw new Error(
+      `${upstreamTool} must use its dedicated guarded facade tool.`
+    );
   }
   const tools = await upstream.listTools();
   const tool = tools.find((candidate) => candidate.name === upstreamTool);
@@ -40659,28 +41725,56 @@ async function callReadOnly(upstreamTool, args) {
 }
 function resultSummary(result) {
   const json2 = JSON.stringify(jsonSafe(result));
-  const value = Array.isArray(result) ? { kind: "array", length: result.length } : result !== null && typeof result === "object" ? { kind: "object", keys: Object.keys(result).slice(0, 40), keyCount: Object.keys(result).length } : { kind: typeof result };
-  return { ...value, jsonBytes: Buffer.byteLength(json2), sha256: sha256Text(json2) };
+  let value;
+  if (Array.isArray(result)) {
+    value = { kind: "array", length: result.length };
+  } else if (result !== null && typeof result === "object") {
+    const keys = Object.keys(result);
+    value = { kind: "object", keys: keys.slice(0, 40), keyCount: keys.length };
+  } else {
+    value = { kind: typeof result };
+  }
+  return {
+    ...value,
+    jsonBytes: Buffer.byteLength(json2),
+    sha256: sha256Text(json2)
+  };
 }
 function assertTargetArguments(args, expectedContext, activeContext, label) {
   const expectedProjectUuid = expectedContext.project.uuid ?? expectedContext.project.projectUuid;
   const expectedDocumentUuid = expectedContext.document.uuid ?? expectedContext.document.documentUuid;
   for (const key of ["projectId", "projectUuid"]) {
     if (args[key] !== void 0 && args[key] !== expectedProjectUuid) {
-      throw new Error(`${label} arguments.${key} does not match the proven project UUID.`);
+      throw new Error(
+        `${label} arguments.${key} does not match the proven project UUID.`
+      );
     }
   }
-  for (const key of ["documentId", "documentUuid", "schematicUuid", "pcbUuid"]) {
+  for (const key of [
+    "documentId",
+    "documentUuid",
+    "schematicUuid",
+    "pcbUuid"
+  ]) {
     if (args[key] !== void 0 && args[key] !== expectedDocumentUuid) {
-      throw new Error(`${label} arguments.${key} does not match the proven document UUID.`);
+      throw new Error(
+        `${label} arguments.${key} does not match the proven document UUID.`
+      );
     }
   }
   if (args["tabId"] !== void 0 && args["tabId"] !== activeContext.document.tabId) {
-    throw new Error(`${label} arguments.tabId does not match the active proven tab.`);
+    throw new Error(
+      `${label} arguments.tabId does not match the active proven tab.`
+    );
   }
 }
 function assertToolFamilyContext(upstreamTool, activeContext) {
-  const requiredDocumentType = /^easyeda_(schematic|bom)_/iu.test(upstreamTool) ? 1 : /^easyeda_(pcb|board)_/iu.test(upstreamTool) ? 3 : void 0;
+  let requiredDocumentType;
+  if (/^easyeda_(schematic|bom)_/iu.test(upstreamTool)) {
+    requiredDocumentType = 1;
+  } else if (/^easyeda_(pcb|board)_/iu.test(upstreamTool)) {
+    requiredDocumentType = 3;
+  }
   if (requiredDocumentType !== void 0 && activeContext?.document?.documentType !== requiredDocumentType) {
     throw new Error(
       `${upstreamTool} reads the active document type ${requiredDocumentType}; the proven active document type is ${String(activeContext?.document?.documentType)}. PCB 3D preview type 15 is not a PCB editor context.`
@@ -40688,8 +41782,12 @@ function assertToolFamilyContext(upstreamTool, activeContext) {
   }
 }
 function requiredExportDocumentType(upstreamTool) {
-  if (upstreamTool === "easyeda_pcb_export_route_context") return 3;
-  throw new Error(`No reviewed document binding exists for exporter ${upstreamTool}.`);
+  if (upstreamTool === "easyeda_pcb_export_route_context") {
+    return 3;
+  }
+  throw new Error(
+    `No reviewed document binding exists for exporter ${upstreamTool}.`
+  );
 }
 async function withEvidence(request, result, evidence, metadata = {}, {
   reservation,
@@ -40733,7 +41831,9 @@ async function withEvidence(request, result, evidence, metadata = {}, {
   return { result, summary, evidence: receipt };
 }
 async function finalizeDispatchedFailure(reservation, request, error51, metadata = {}, attachments = []) {
-  if (reservation === void 0) return void 0;
+  if (reservation === void 0) {
+    return void 0;
+  }
   const errorRecord = isRecord(error51) ? error51 : {};
   try {
     return await archiveExternalEvidence({
@@ -40770,19 +41870,27 @@ async function sha256File3(path) {
   return hash2.digest("hex");
 }
 function crc32(...buffers) {
-  let crc = 4294967295;
+  const initialValue = 4294967295;
+  const polynomial = 3988292384;
+  let crc = initialValue;
   for (const buffer of buffers) {
     for (const byte of buffer) {
       crc ^= byte;
       for (let bit = 0; bit < 8; bit += 1) {
-        crc = crc >>> 1 ^ (crc & 1 ? 3988292384 : 0);
+        crc = crc >>> 1 ^ (crc & 1 ? polynomial : 0);
       }
     }
   }
-  return (crc ^ 4294967295) >>> 0;
+  return (crc ^ initialValue) >>> 0;
 }
 function nearlyEqual(actual, expected) {
   return Math.abs(actual - expected) <= Number.EPSILON * 8 * Math.max(1, Math.abs(actual), Math.abs(expected));
+}
+async function ignoreCleanupFailure(promise2) {
+  try {
+    await promise2;
+  } catch {
+  }
 }
 async function writeDurableExclusive(path, bytes) {
   let handle;
@@ -40793,8 +41901,9 @@ async function writeDurableExclusive(path, bytes) {
     await handle.writeFile(bytes);
     await handle.sync();
   } finally {
-    await handle?.close().catch(() => {
-    });
+    if (handle !== void 0) {
+      await ignoreCleanupFailure(handle.close());
+    }
     if (created) {
       const directoryHandle = await open4(dirname3(path), "r");
       try {
@@ -40808,7 +41917,9 @@ async function writeDurableExclusive(path, bytes) {
 function readPngDimensions(bytes) {
   const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
   if (bytes.length < 45 || !bytes.subarray(0, signature.length).equals(signature)) {
-    throw new Error("Canvas capture PNG is missing its signature or complete chunk structure.");
+    throw new Error(
+      "Canvas capture PNG is missing its signature or complete chunk structure."
+    );
   }
   let offset = signature.length;
   let ihdr;
@@ -40824,7 +41935,9 @@ function readPngDimensions(bytes) {
     const length = bytes.readUInt32BE(offset);
     const chunkEnd = offset + 12 + length;
     if (!Number.isSafeInteger(chunkEnd) || chunkEnd > bytes.length) {
-      throw new Error("Canvas capture PNG contains a truncated or oversized chunk.");
+      throw new Error(
+        "Canvas capture PNG contains a truncated or oversized chunk."
+      );
     }
     const typeBytes = bytes.subarray(offset + 4, offset + 8);
     const type = typeBytes.toString("ascii");
@@ -40839,10 +41952,14 @@ function readPngDimensions(bytes) {
     if (!ihdr && type !== "IHDR") {
       throw new Error("Canvas capture PNG does not begin with IHDR.");
     }
-    if (seenIend) throw new Error("Canvas capture PNG contains data after IEND.");
+    if (seenIend) {
+      throw new Error("Canvas capture PNG contains data after IEND.");
+    }
     if (type === "IHDR") {
       if (ihdr || length !== 13) {
-        throw new Error("Canvas capture PNG is missing a unique, valid IHDR chunk.");
+        throw new Error(
+          "Canvas capture PNG is missing a unique, valid IHDR chunk."
+        );
       }
       const width = data.readUInt32BE(0);
       const height = data.readUInt32BE(4);
@@ -40866,7 +41983,9 @@ function readPngDimensions(bytes) {
       ihdr = { width, height, bitDepth, colorType };
     } else if (type === "PLTE") {
       const header = ihdr;
-      if (!header) throw new Error("Canvas capture PNG is missing IHDR.");
+      if (!header) {
+        throw new Error("Canvas capture PNG is missing IHDR.");
+      }
       if (seenPalette || seenIdat || length < 3 || length > 768 || length % 3 !== 0) {
         throw new Error("Canvas capture PNG contains an invalid PLTE chunk.");
       }
@@ -40874,23 +41993,33 @@ function readPngDimensions(bytes) {
         throw new Error("Canvas capture PNG contains a forbidden PLTE chunk.");
       }
       if (header.colorType === 3 && length / 3 > 2 ** header.bitDepth) {
-        throw new Error("Canvas capture PNG palette exceeds its indexed-color bit depth.");
+        throw new Error(
+          "Canvas capture PNG palette exceeds its indexed-color bit depth."
+        );
       }
       seenPalette = true;
     } else if (type === "IDAT") {
-      if (idatEnded) throw new Error("Canvas capture PNG has non-consecutive IDAT chunks.");
+      if (idatEnded) {
+        throw new Error("Canvas capture PNG has non-consecutive IDAT chunks.");
+      }
       seenIdat = true;
       idatParts.push(data);
     } else if (type === "IEND") {
       if (length !== 0 || !seenIdat) {
-        throw new Error("Canvas capture PNG contains an invalid IEND sequence.");
+        throw new Error(
+          "Canvas capture PNG contains an invalid IEND sequence."
+        );
       }
       seenIend = true;
     } else {
-      if (seenIdat) idatEnded = true;
+      if (seenIdat) {
+        idatEnded = true;
+      }
       const firstTypeCharacter = type[0];
       if (firstTypeCharacter !== void 0 && firstTypeCharacter === firstTypeCharacter.toUpperCase()) {
-        throw new Error(`Canvas capture PNG contains unsupported critical chunk ${type}.`);
+        throw new Error(
+          `Canvas capture PNG contains unsupported critical chunk ${type}.`
+        );
       }
     }
     offset = chunkEnd;
@@ -40914,22 +42043,32 @@ function readPngDimensions(bytes) {
   const scanlineBytes = Math.ceil(ihdr.width * channels * ihdr.bitDepth / 8);
   const decodedBytes = ihdr.height * (scanlineBytes + 1);
   if (!Number.isSafeInteger(decodedBytes) || decodedBytes > 512 * 1024 * 1024) {
-    throw new Error("Canvas capture PNG expands beyond the 512 MiB validation limit.");
+    throw new Error(
+      "Canvas capture PNG expands beyond the 512 MiB validation limit."
+    );
   }
   let decoded;
   try {
-    decoded = inflateSync(Buffer.concat(idatParts), { maxOutputLength: decodedBytes });
+    decoded = inflateSync(Buffer.concat(idatParts), {
+      maxOutputLength: decodedBytes
+    });
   } catch (error51) {
     const message = error51 instanceof Error ? error51.message : String(error51);
-    throw new Error(`Canvas capture PNG IDAT stream is invalid: ${message}`, { cause: error51 });
+    throw new Error(`Canvas capture PNG IDAT stream is invalid: ${message}`, {
+      cause: error51
+    });
   }
   if (decoded.length !== decodedBytes) {
-    throw new Error("Canvas capture PNG decoded byte length does not match IHDR.");
+    throw new Error(
+      "Canvas capture PNG decoded byte length does not match IHDR."
+    );
   }
   for (let row = 0; row < ihdr.height; row += 1) {
     const filterByte = decoded[row * (scanlineBytes + 1)];
     if (filterByte === void 0 || filterByte > 4) {
-      throw new Error("Canvas capture PNG contains an invalid scanline filter.");
+      throw new Error(
+        "Canvas capture PNG contains an invalid scanline filter."
+      );
     }
   }
   return { width: ihdr.width, height: ihdr.height };
@@ -40975,7 +42114,11 @@ function validateFullPageCaptureGeometry(payload, padding, pngDimensions) {
   const viewport = payload.viewport;
   const imageDimensions = payload.image_dimensions;
   const transform2 = payload.sheet_to_image_transform;
-  assertExactObjectKeys(sheet, ["width", "height", "unit", "source"], "Capture sheet");
+  assertExactObjectKeys(
+    sheet,
+    ["width", "height", "unit", "source"],
+    "Capture sheet"
+  );
   assertFiniteCaptureFields(sheet, ["width", "height"], "Capture sheet");
   if (sheet["width"] <= 0 || sheet["height"] <= 0 || typeof sheet["unit"] !== "string" || sheet["unit"].length === 0 || typeof sheet["source"] !== "string" || !["sheet-info", "default-a4-landscape"].includes(sheet["source"])) {
     throw new Error("Capture sheet has invalid dimensions, unit, or source.");
@@ -41019,7 +42162,9 @@ function validateFullPageCaptureGeometry(payload, padding, pngDimensions) {
   };
   for (const field of ["left", "right", "top", "bottom"]) {
     if (viewport[field] !== expectedViewport[field]) {
-      throw new Error("Full-page capture viewport contradicts the sheet dimensions and padding.");
+      throw new Error(
+        "Full-page capture viewport contradicts the sheet dimensions and padding."
+      );
     }
   }
   const regionWidth = viewport["right"] - viewport["left"];
@@ -41038,7 +42183,9 @@ function validateFullPageCaptureGeometry(payload, padding, pngDimensions) {
   };
   for (const field of ["scale_x", "scale_y", "offset_x", "offset_y"]) {
     if (!nearlyEqual(transform2[field], expectedTransform[field])) {
-      throw new Error("Full-page capture transform contradicts its viewport and PNG dimensions.");
+      throw new Error(
+        "Full-page capture transform contradicts its viewport and PNG dimensions."
+      );
     }
   }
   if (transform2["scale_x"] <= 0 || transform2["scale_y"] >= 0) {
@@ -41053,7 +42200,11 @@ var server = new McpServer(
   }
 );
 function registerFacadeTool(name, config2, handler) {
-  server.registerTool(name, { outputSchema: genericOutputSchema, ...config2 }, handler);
+  server.registerTool(
+    name,
+    { outputSchema: genericOutputSchema, ...config2 },
+    handler
+  );
 }
 registerFacadeTool(
   "easyeda_control_status",
@@ -41061,7 +42212,11 @@ registerFacadeTool(
     title: "EasyEDA control status",
     description: "Report facade, upstream MCP, bridge, EasyEDA runtime, tool inventory, and durable-journal status without changing a design.",
     inputSchema: {},
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true
+    }
   },
   serializedGuarded(async () => ({
     facade: {
@@ -41085,7 +42240,11 @@ registerFacadeTool(
       limit: external_exports.number().int().min(1).max(100).default(30),
       includeSchemas: external_exports.boolean().default(false)
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true
+    }
   },
   serializedGuarded(
     async (input) => filterTools(await upstream.listTools(), input),
@@ -41098,7 +42257,11 @@ registerFacadeTool(
     title: "Prove active EasyEDA context",
     description: "Read a compact project/document identity using the live EasyEDA runtime. Establish this before any scoped audit or operation.",
     inputSchema: {},
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true
+    }
   },
   serializedGuarded(() => engine.context())
 );
@@ -41115,11 +42278,17 @@ registerFacadeTool(
       returnMode: external_exports.enum(["full", "summary", "receipt-only"]).default("full"),
       maxInlineBytes: external_exports.number().int().min(1024).max(MAX_INLINE_RESULT_BYTES).default(65536)
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true }
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true
+    }
   },
   serializedGuarded(async (input) => {
     if (input.returnMode !== "full" && input.evidence === void 0) {
-      throw new Error("summary and receipt-only exact reads require evidence paths.");
+      throw new Error(
+        "summary and receipt-only exact reads require evidence paths."
+      );
     }
     const reservation = input.evidence === void 0 ? void 0 : await reserveEvidencePaths(input.evidence);
     let dispatched = false;
@@ -41137,7 +42306,10 @@ registerFacadeTool(
         "EasyEDA runtime fingerprint"
       );
       dispatched = true;
-      const result = await engine.exactRead(input.request, input.expectedContext);
+      const result = await engine.exactRead(
+        input.request,
+        input.expectedContext
+      );
       return await withEvidence(
         request,
         result,
@@ -41150,8 +42322,9 @@ registerFacadeTool(
         }
       );
     } catch (error51) {
-      if (reservation && !dispatched) await releaseEvidenceReservation(reservation);
-      else if (reservation) {
+      if (reservation && !dispatched) {
+        await releaseEvidenceReservation(reservation);
+      } else if (reservation) {
         await finalizeDispatchedFailure(reservation, request, error51, {
           effect: "facade-owned-exact-read"
         });
@@ -41174,7 +42347,11 @@ registerFacadeTool(
       returnMode: external_exports.enum(["full", "summary", "receipt-only"]).default("full"),
       maxInlineBytes: external_exports.number().int().min(1024).max(MAX_INLINE_RESULT_BYTES).default(65536)
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true }
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true
+    }
   },
   serializedGuarded(async (input) => {
     if (input.returnMode !== "full" && input.evidence === void 0) {
@@ -41219,9 +42396,12 @@ registerFacadeTool(
         }
       );
     } catch (error51) {
-      if (reservation && !dispatched) await releaseEvidenceReservation(reservation);
-      else if (reservation) {
-        await finalizeDispatchedFailure(reservation, request, error51, { effect: "read" });
+      if (reservation && !dispatched) {
+        await releaseEvidenceReservation(reservation);
+      } else if (reservation) {
+        await finalizeDispatchedFailure(reservation, request, error51, {
+          effect: "read"
+        });
       }
       throw error51;
     }
@@ -41233,20 +42413,24 @@ registerFacadeTool(
     title: "Call a read-only EasyEDA batch",
     description: "Invoke a bounded sequence of conservatively classified read-only tools and optionally archive the complete batch with a receipt.",
     inputSchema: {
-      calls: external_exports.array(
-        external_exports.object({ upstreamTool: external_exports.string().min(1), arguments: recordSchema.default({}) }).strict()
-      ).min(1).max(25),
+      calls: external_exports.array(readBatchCallSchema).min(1).max(25),
       expectedContext: contextSchema,
       expectedFingerprint: expectedFingerprintSchema,
       evidence: evidenceSchema.optional(),
       returnMode: external_exports.enum(["full", "summary", "receipt-only"]).default("full"),
       maxInlineBytes: external_exports.number().int().min(1024).max(MAX_INLINE_RESULT_BYTES).default(65536)
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true }
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true
+    }
   },
   serializedGuarded(async (input) => {
     if (input.returnMode !== "full" && input.evidence === void 0) {
-      throw new Error("summary and receipt-only batches require evidence paths.");
+      throw new Error(
+        "summary and receipt-only batches require evidence paths."
+      );
     }
     const reservation = input.evidence === void 0 ? void 0 : await reserveEvidencePaths(input.evidence);
     let dispatched = false;
@@ -41293,9 +42477,12 @@ registerFacadeTool(
         }
       );
     } catch (error51) {
-      if (reservation && !dispatched) await releaseEvidenceReservation(reservation);
-      else if (reservation) {
-        await finalizeDispatchedFailure(reservation, request, error51, { effect: "read-batch" });
+      if (reservation && !dispatched) {
+        await releaseEvidenceReservation(reservation);
+      } else if (reservation) {
+        await finalizeDispatchedFailure(reservation, request, error51, {
+          effect: "read-batch"
+        });
       }
       throw error51;
     }
@@ -41307,7 +42494,11 @@ registerFacadeTool(
     title: "Unrestricted EasyEDA execution (disabled)",
     description: "Structurally disabled in this release. Arbitrary JavaScript cannot be dispatched through the facade because its collateral effects and ambiguous-timeout recovery cannot be bounded.",
     inputSchema: {},
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false
+    }
   },
   serializedGuarded(() => {
     throw new Error(
@@ -41326,7 +42517,11 @@ registerFacadeTool(
       expectedFingerprint: expectedFingerprintSchema,
       evidence: evidenceSchema
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false
+    }
   },
   (input) => bridgeGate.run(async () => {
     const captureRequest = input.request;
@@ -41348,13 +42543,19 @@ registerFacadeTool(
       const activeContext = await engine.assertContext(input.expectedContext);
       const expectedProjectUuid = input.expectedContext.project.uuid ?? input.expectedContext.project.projectUuid;
       if (captureRequest.upstreamTool === "easyeda_schematic_capture_full_page" && activeContext.document.documentType !== 1) {
-        throw new Error("A full-page schematic capture requires an active schematic document.");
+        throw new Error(
+          "A full-page schematic capture requires an active schematic document."
+        );
       }
       if ("projectId" in captureRequest.arguments && captureRequest.arguments.projectId !== expectedProjectUuid) {
-        throw new Error("Capture arguments.projectId must equal the proven project UUID.");
+        throw new Error(
+          "Capture arguments.projectId must equal the proven project UUID."
+        );
       }
       if (typeof activeContext.document.tabId !== "string" || activeContext.document.tabId.length === 0 || captureRequest.arguments.tabId !== activeContext.document.tabId) {
-        throw new Error("Capture requires arguments.tabId equal to the active proven tab id.");
+        throw new Error(
+          "Capture requires arguments.tabId equal to the active proven tab id."
+        );
       }
       dispatched = true;
       const raw = await upstream.callTool(
@@ -41368,13 +42569,22 @@ registerFacadeTool(
       }
       if (extractedPayload["captured"] !== true) {
         const captureError = extractedPayload["error"];
-        const reason = typeof captureError === "string" ? captureError : captureError === void 0 ? "unknown reason" : JSON.stringify(jsonSafe(captureError));
+        let reason;
+        if (typeof captureError === "string") {
+          reason = captureError;
+        } else if (captureError === void 0) {
+          reason = "unknown reason";
+        } else {
+          reason = JSON.stringify(jsonSafe(captureError));
+        }
         throw new Error(`Canvas capture failed: ${reason}`);
       }
       const payload = capturePayloadSchema.parse(extractedPayload);
       if (captureRequest.upstreamTool === "easyeda_schematic_capture_full_page") {
         if (payload.project_id !== expectedProjectUuid) {
-          throw new Error("Full-page capture result.project_id does not match the proven project.");
+          throw new Error(
+            "Full-page capture result.project_id does not match the proven project."
+          );
         }
         if (!captureRequest.arguments.allowInferredA4 && payload.deterministic_viewport !== true) {
           throw new Error(
@@ -41383,19 +42593,25 @@ registerFacadeTool(
         }
         const fullPagePayload = requireFullPageCapturePayload(payload);
         if (payload.deterministic_viewport === true && fullPagePayload.sheet["source"] !== "sheet-info") {
-          throw new Error("Full-page capture reported contradictory viewport provenance.");
+          throw new Error(
+            "Full-page capture reported contradictory viewport provenance."
+          );
         }
       }
       const rawContent = isRecord(raw) && Array.isArray(raw.content) ? raw.content : [];
       const images = rawContent.filter((item) => isImageBlock(item));
       if (images.length !== 1) {
-        throw new Error("Canvas capture must return exactly one MCP image block.");
+        throw new Error(
+          "Canvas capture must return exactly one MCP image block."
+        );
       }
       const imageEvidence = images.map((item) => {
         const bytes = Buffer.from(item.data, "base64");
         const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
         if (item.mimeType !== "image/png" || bytes.length <= pngSignature.length || !bytes.subarray(0, pngSignature.length).equals(pngSignature)) {
-          throw new Error("Canvas capture returned a missing, empty, or non-PNG image.");
+          throw new Error(
+            "Canvas capture returned a missing, empty, or non-PNG image."
+          );
         }
         if (payload.mime_type !== item.mimeType || !Number.isSafeInteger(payload.byte_length) || payload.byte_length !== bytes.length) {
           throw new Error(
@@ -41404,10 +42620,14 @@ registerFacadeTool(
         }
         if (Object.hasOwn(payload, "image_base64")) {
           if (typeof payload.image_base64 !== "string") {
-            throw new TypeError("Canvas capture payload image_base64 must be a string when present.");
+            throw new TypeError(
+              "Canvas capture payload image_base64 must be a string when present."
+            );
           }
           if (!Buffer.from(payload.image_base64, "base64").equals(bytes)) {
-            throw new Error("Canvas capture payload image bytes do not match its MCP image block.");
+            throw new Error(
+              "Canvas capture payload image bytes do not match its MCP image block."
+            );
           }
         }
         const dimensions = readPngDimensions(bytes);
@@ -41462,8 +42682,7 @@ registerFacadeTool(
       };
     } catch (error51) {
       if (reservation && !dispatched) {
-        await releaseEvidenceReservation(reservation).catch(() => {
-        });
+        await ignoreCleanupFailure(releaseEvidenceReservation(reservation));
       } else if (reservation) {
         await finalizeDispatchedFailure(
           reservation,
@@ -41492,7 +42711,11 @@ registerFacadeTool(
       expectedFingerprint: privateFingerprintSchema,
       evidence: evidenceSchema
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false
+    }
   },
   serializedGuarded(async (input) => {
     const exportRequest = input.request;
@@ -41502,7 +42725,7 @@ registerFacadeTool(
     const reservation = await reserveEvidencePaths(input.evidence);
     let dispatched = false;
     let createdExportDirectory;
-    const requestedPath = resolve6(exportRequest.arguments.filePath);
+    const requestedPath = resolve5(exportRequest.arguments.filePath);
     const request = {
       upstreamTool: exportRequest.upstreamTool,
       arguments: exportRequest.arguments,
@@ -41518,7 +42741,9 @@ registerFacadeTool(
         "EasyEDA runtime fingerprint"
       );
       const activeContext = await engine.assertContext(input.expectedContext);
-      const exportDocumentType = requiredExportDocumentType(exportRequest.upstreamTool);
+      const exportDocumentType = requiredExportDocumentType(
+        exportRequest.upstreamTool
+      );
       if (activeContext.document.documentType !== exportDocumentType) {
         throw new Error(
           `${exportRequest.upstreamTool} requires active document type ${exportDocumentType}; type ${String(activeContext.document.documentType)} cannot be used. PCB 3D preview type 15 is never an export target.`
@@ -41526,12 +42751,21 @@ registerFacadeTool(
       }
       const expectedProjectUuid = input.expectedContext.project.uuid ?? input.expectedContext.project.projectUuid;
       if (exportRequest.arguments.projectId !== expectedProjectUuid) {
-        throw new Error("Export arguments.projectId must equal the proven project UUID.");
+        throw new Error(
+          "Export arguments.projectId must equal the proven project UUID."
+        );
       }
       if (!isAbsolute4(exportRequest.arguments.filePath)) {
-        throw new Error("Every export requires an explicit absolute arguments.filePath.");
+        throw new Error(
+          "Every export requires an explicit absolute arguments.filePath."
+        );
       }
-      const exportRoot = resolve6(controlDataDirectory(), "upstream", "artifacts", "facade-exports");
+      const exportRoot = resolve5(
+        controlDataDirectory(),
+        "upstream",
+        "artifacts",
+        "facade-exports"
+      );
       await ensureManagedDirectory(exportRoot);
       const exportDirectory = dirname3(requestedPath);
       if (dirname3(exportDirectory) !== exportRoot || !/^export-[a-z0-9-]{8,80}$/iu.test(basename3(exportDirectory)) || relative4(exportRoot, requestedPath).startsWith("..")) {
@@ -41542,15 +42776,23 @@ registerFacadeTool(
       await mkdir4(exportDirectory, { recursive: false, mode: 448 });
       await ensureManagedDirectory(exportDirectory);
       createdExportDirectory = exportDirectory;
-      if ([reservation.resultPath, reservation.receiptPath].includes(requestedPath)) {
-        throw new Error("Export artifact path must differ from its evidence and receipt paths.");
+      if ([reservation.resultPath, reservation.receiptPath].includes(
+        requestedPath
+      )) {
+        throw new Error(
+          "Export artifact path must differ from its evidence and receipt paths."
+        );
       }
       try {
         await stat3(requestedPath);
-        throw new Error("Export artifact path already exists; refusing overwrite.");
+        throw new Error(
+          "Export artifact path already exists; refusing overwrite."
+        );
       } catch (error51) {
         const errorRecord = isRecord(error51) ? error51 : {};
-        if (errorRecord["code"] !== "ENOENT") throw error51;
+        if (errorRecord["code"] !== "ENOENT") {
+          throw error51;
+        }
       }
       const startedAtMs = Date.now();
       dispatched = true;
@@ -41589,17 +42831,29 @@ registerFacadeTool(
       }
       const exportBytes = Buffer.from(generated.base64, "base64");
       if (exportBytes.length === 0 || !Number.isInteger(generated.byteLength) || generated.byteLength !== exportBytes.length) {
-        throw new Error("Facade-owned DSN export returned an empty or inconsistent byte count.");
+        throw new Error(
+          "Facade-owned DSN export returned an empty or inconsistent byte count."
+        );
       }
       await writeDurableExclusive(requestedPath, exportBytes);
-      const info = (await inspectManagedFile(requestedPath, "Export artifact")).info;
+      const inspection = await inspectManagedFile(
+        requestedPath,
+        "Export artifact"
+      );
+      const { info } = inspection;
       if (info.isSymbolicLink() || !info.isFile() || info.size === 0) {
-        throw new Error("Export artifact is missing, empty, or a symbolic link.");
+        throw new Error(
+          "Export artifact is missing, empty, or a symbolic link."
+        );
       }
       if (info.mtimeMs + 2e3 < startedAtMs) {
-        throw new Error("Export artifact timestamp predates this export dispatch.");
+        throw new Error(
+          "Export artifact timestamp predates this export dispatch."
+        );
       }
-      if (generated.byteLength !== info.size) throw new Error("Export byte length changed after write.");
+      if (generated.byteLength !== info.size) {
+        throw new Error("Export byte length changed after write.");
+      }
       await engine.assertContext(input.expectedContext);
       const verified = {
         exported: true,
@@ -41645,7 +42899,10 @@ registerFacadeTool(
         };
         const failureAttachments = [];
         try {
-          const observed = await inspectManagedFile(requestedPath, "Failed export artifact");
+          const observed = await inspectManagedFile(
+            requestedPath,
+            "Failed export artifact"
+          );
           failureMetadata["exportArtifactObserved"] = {
             path: observed.absolute,
             bytes: observed.info.size,
@@ -41672,11 +42929,9 @@ registerFacadeTool(
           failureAttachments
         );
       } else {
-        await releaseEvidenceReservation(reservation).catch(() => {
-        });
+        await ignoreCleanupFailure(releaseEvidenceReservation(reservation));
         if (createdExportDirectory !== void 0 && createdExportDirectory.length > 0) {
-          await rmdir(createdExportDirectory).catch(() => {
-          });
+          await ignoreCleanupFailure(rmdir(createdExportDirectory));
         }
       }
       throw error51;
@@ -41692,7 +42947,11 @@ registerFacadeTool(
       plan: operationPlanSchema,
       confirmDiscardAnyUnsavedState: external_exports.literal(true)
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false
+    }
   },
   serializedGuarded(
     ({ plan, confirmDiscardAnyUnsavedState }) => engine.plan(plan, { confirmDiscardAnyUnsavedState })
@@ -41708,7 +42967,11 @@ registerFacadeTool(
       planHash: planHashSchema,
       confirmApply: external_exports.literal(true)
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false
+    }
   },
   serializedGuarded((input) => engine.apply(input.operationId, input.planHash))
 );
@@ -41718,7 +42981,11 @@ registerFacadeTool(
     title: "Experimental PCB mutation verification (disabled)",
     description: "Runtime-disabled with the experimental writer. Retained to test journaled exact readback and invariant assertions.",
     inputSchema: { operationId: operationIdSchema },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false
+    }
   },
   serializedGuarded((input) => engine.verify(input.operationId))
 );
@@ -41732,9 +42999,15 @@ registerFacadeTool(
       planHash: planHashSchema,
       confirmRollback: external_exports.literal(true)
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false
+    }
   },
-  serializedGuarded((input) => engine.rollback(input.operationId, input.planHash))
+  serializedGuarded(
+    (input) => engine.rollback(input.operationId, input.planHash)
+  )
 );
 registerFacadeTool(
   "easyeda_control_save_reopen",
@@ -41747,7 +43020,11 @@ registerFacadeTool(
       confirmPersist: external_exports.literal(true),
       confirmDiscardAnyUnsavedState: external_exports.boolean().default(false)
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false
+    }
   },
   serializedGuarded(
     (input) => engine.saveReopen(input.operationId, input.planHash, {
@@ -41763,7 +43040,11 @@ registerFacadeTool(
     inputSchema: {
       request: checkpointRequestSchema
     },
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false
+    }
   },
   serializedGuarded((input) => {
     if (input.request.action === "verify") {
@@ -41797,7 +43078,11 @@ registerFacadeTool(
       confirmDiscardAnyUnsavedState: external_exports.boolean().default(false),
       confirmRepeatAfterUnknownRecovery: external_exports.boolean().default(false)
     },
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false
+    }
   },
   serializedGuarded(
     (input) => {
@@ -41808,7 +43093,9 @@ registerFacadeTool(
         throw new Error("resolution is required when operationId is provided.");
       }
       if (input.confirmation !== `${input.operationId}:${input.resolution}`) {
-        throw new Error("confirmation must exactly equal operationId:resolution.");
+        throw new Error(
+          "confirmation must exactly equal operationId:resolution."
+        );
       }
       return engine.recover(input.operationId, input.resolution, {
         confirmDiscardAnyUnsavedState: input.confirmDiscardAnyUnsavedState,
@@ -41825,12 +43112,15 @@ registerFacadeTool(
     title: "Verify EasyEDA evidence receipt",
     description: "Recompute the self-hash, result hash, captured PNG hashes, and exported-artifact hashes for a managed EasyEDA control receipt.",
     inputSchema: { receiptPath: external_exports.string().min(1) },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true
+    }
   },
-  serializedGuarded(
-    (input) => verifyEvidenceReceipt(input.receiptPath),
-    { allowDuringOrphanRisk: true }
-  )
+  serializedGuarded((input) => verifyEvidenceReceipt(input.receiptPath), {
+    allowDuringOrphanRisk: true
+  })
 );
 registerFacadeTool(
   "easyeda_control_artifact_read",
@@ -41842,7 +43132,11 @@ registerFacadeTool(
       offset: external_exports.number().int().min(0).default(0),
       length: external_exports.number().int().min(1).max(256 * 1024).default(65536)
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true
+    }
   },
   serializedGuarded(
     (input) => readArtifact(input.path, input.offset, input.length),
@@ -41851,14 +43145,18 @@ registerFacadeTool(
 );
 var transport = new StdioServerTransport();
 var shutdown = async () => {
-  await upstream.close().catch(() => {
-  });
-  await server.close().catch(() => {
-  });
-  await facadeLease.release().catch(() => {
-  });
+  await ignoreCleanupFailure(upstream.close());
+  await ignoreCleanupFailure(server.close());
+  await ignoreCleanupFailure(facadeLease.release());
 };
-process8.once("SIGINT", () => void shutdown().finally(() => process8.exit(0)));
-process8.once("SIGTERM", () => void shutdown().finally(() => process8.exit(0)));
-process8.stdin.once("end", () => void shutdown().finally(() => process8.exit(0)));
+var shutdownAndExit = async () => {
+  await shutdown();
+  process8.exit(0);
+};
+var scheduleShutdown = () => {
+  void shutdownAndExit();
+};
+process8.once("SIGINT", scheduleShutdown);
+process8.once("SIGTERM", scheduleShutdown);
+process8.stdin.once("end", scheduleShutdown);
 await server.connect(transport);

@@ -1,27 +1,24 @@
-import assert from 'node:assert/strict';
-import { describe, test } from 'node:test';
+import assert from "node:assert/strict";
+import { describe, test } from "node:test";
 
-import {
-  type ContextProbePayload,
-  EasyedaControlEngine,
-  type ExpectedContext,
-} from '../src/engine.ts';
+import { EasyedaControlEngine } from "../src/engine.ts";
+import type { ContextProbePayload, ExpectedContext } from "../src/engine.ts";
 import {
   buildExactReadCode,
   exactReadDocumentType,
   exactReadRequestSchema,
-  type ExactReadRequest,
   validateExactReadPayload,
   validateExactReadRequest,
-} from '../src/exact-readers.ts';
+} from "../src/exact-readers.ts";
+import type { ExactReadRequest } from "../src/exact-readers.ts";
 
 type UnknownRecord = Record<string, unknown>;
 type StateGetter = () => Promise<unknown>;
 type StateObject = Record<string, StateGetter>;
 
-interface AsyncFunctionConstructor {
-  new (...parameters: string[]): (eda: unknown) => Promise<unknown>;
-}
+type AsyncFunctionConstructor = new (
+  ...parameters: string[]
+) => (eda: unknown) => Promise<unknown>;
 
 interface FixtureRecord extends UnknownRecord {
   arcPrecision: string;
@@ -79,15 +76,15 @@ interface FixtureRecord extends UnknownRecord {
 }
 
 interface FixtureRecordIndex extends Record<string, FixtureRecord> {
-  'arcs-1': FixtureRecord;
-  'component-pad-1': FixtureRecord;
-  'fills-1': FixtureRecord;
-  'pad-standalone-1': FixtureRecord;
-  'pcb-u1': FixtureRecord;
-  'pours-1': FixtureRecord;
-  'regions-1': FixtureRecord;
-  'sch-r1': FixtureRecord;
-  'vias-1': FixtureRecord;
+  "arcs-1": FixtureRecord;
+  "component-pad-1": FixtureRecord;
+  "fills-1": FixtureRecord;
+  "pad-standalone-1": FixtureRecord;
+  "pcb-u1": FixtureRecord;
+  "pours-1": FixtureRecord;
+  "regions-1": FixtureRecord;
+  "sch-r1": FixtureRecord;
+  "vias-1": FixtureRecord;
 }
 
 interface FixtureUniqueIdIndex extends Record<string, FixtureRecord> {
@@ -213,20 +210,28 @@ interface TopologyOptions {
 }
 
 interface TopologyApis {
-  sch_PrimitiveComponent: Record<string, (...args: unknown[]) => Promise<unknown>>;
+  sch_PrimitiveComponent: Record<
+    string,
+    (...args: unknown[]) => Promise<unknown>
+  >;
   sch_Netlist: { getNetlist: (format: string) => Promise<unknown> };
 }
 
-// oxlint-disable-next-line typescript/no-unsafe-type-assertion, typescript/no-unsafe-member-access -- The test must construct generated async programs through the runtime's AsyncFunction constructor.
-const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as AsyncFunctionConstructor;
+/* oxlint-disable typescript/no-unsafe-type-assertion, typescript/no-unsafe-member-access -- The test must construct generated async programs through the runtime's AsyncFunction constructor. */
+const AsyncFunction = Object.getPrototypeOf(
+  async (): Promise<void> => undefined,
+).constructor as AsyncFunctionConstructor;
+/* oxlint-enable typescript/no-unsafe-type-assertion, typescript/no-unsafe-member-access */
 
 function required<T>(value: T | undefined, label: string): T {
-  if (value === undefined) throw new Error(`Missing fixture value: ${label}`);
+  if (value === undefined) {
+    throw new Error(`Missing fixture value: ${label}`);
+  }
   return value;
 }
 
 function assertUnknownRecord(value: unknown): asserts value is UnknownRecord {
-  assert.equal(typeof value, 'object');
+  assert.equal(typeof value, "object");
   assert.notEqual(value, null);
   assert.equal(Array.isArray(value), false);
 }
@@ -236,20 +241,25 @@ function assertFixturePayload(value: unknown): asserts value is FixturePayload {
 }
 
 function isFixtureFactory(value: unknown): value is () => unknown {
-  return typeof value === 'function';
+  return typeof value === "function";
 }
 
 function liveContext(expectedContext: ExpectedContext): ContextProbePayload {
   const context = structuredClone(expectedContext);
   const { tabId } = context.document;
   if (tabId === undefined || tabId.length === 0) {
-    throw new Error('Fixture context requires a tab ID.');
+    throw new Error("Fixture context requires a tab ID.");
   }
   return { ...context, document: { ...context.document, tabId } };
 }
 
-async function executeReader(request: unknown, eda: unknown): Promise<FixturePayload> {
-  const payload = await new AsyncFunction('eda', buildExactReadCode(request))(eda);
+async function executeReader(
+  request: unknown,
+  eda: unknown,
+): Promise<FixturePayload> {
+  const payload = await new AsyncFunction("eda", buildExactReadCode(request))(
+    eda,
+  );
   assertFixturePayload(payload);
   return payload;
 }
@@ -264,17 +274,17 @@ function stateObject(values: UnknownRecord): StateObject {
 }
 
 function schematicComponent(
-  primitiveId = 'sch-r1',
-  designator = 'R1',
-  uniqueId = 'gge1',
+  primitiveId = "sch-r1",
+  designator = "R1",
+  uniqueId = "gge1",
 ): StateObject {
   return stateObject({
     PrimitiveId: primitiveId,
-    PrimitiveType: 'Component',
-    ComponentType: 'Normal',
-    Component: { uuid: 'device-1' },
-    Symbol: { uuid: 'symbol-1' },
-    Footprint: { uuid: 'footprint-1' },
+    PrimitiveType: "Component",
+    ComponentType: "Normal",
+    Component: { uuid: "device-1" },
+    Symbol: { uuid: "symbol-1" },
+    Footprint: { uuid: "footprint-1" },
     X: 100,
     Y: 200,
     Rotation: 90,
@@ -284,28 +294,28 @@ function schematicComponent(
     AddIntoPcb: true,
     Net: null,
     Designator: designator,
-    Name: '10k',
+    Name: "10k",
     UniqueId: uniqueId,
-    Manufacturer: 'Fixture Inc.',
-    ManufacturerId: 'FIX-10K',
-    Supplier: 'Fixture Supply',
-    SupplierId: 'C1',
-    OtherProperty: { tolerance: '1%' },
+    Manufacturer: "Fixture Inc.",
+    ManufacturerId: "FIX-10K",
+    Supplier: "Fixture Supply",
+    SupplierId: "C1",
+    OtherProperty: { tolerance: "1%" },
   });
 }
 
-function schematicPin(primitiveId = 'pin-1'): StateObject {
+function schematicPin(primitiveId = "pin-1"): StateObject {
   return stateObject({
     PrimitiveId: primitiveId,
-    PinNumber: '1',
-    PinName: 'A',
+    PinNumber: "1",
+    PinName: "A",
     X: 95,
     Y: 200,
     Rotation: 0,
     PinLength: 10,
-    PinColor: '#000000',
-    PinShape: 'Line',
-    pinType: 'Passive',
+    PinColor: "#000000",
+    PinShape: "Line",
+    pinType: "Passive",
     NoConnected: false,
     OtherProperty: {},
   });
@@ -313,7 +323,7 @@ function schematicPin(primitiveId = 'pin-1'): StateObject {
 
 function schematicApis({
   components = [schematicComponent()],
-  declaredIds = ['sch-r1'],
+  declaredIds = ["sch-r1"],
   pins = [schematicPin()],
   getAll = async () => components,
 }: SchematicApiOptions = {}): SchematicApis {
@@ -324,22 +334,27 @@ function schematicApis({
       getAllPinsByPrimitiveId: async () => pins,
     },
     sch_Primitive: {
-      getPrimitivesBBox: async () => ({ minX: 90, minY: 190, maxX: 110, maxY: 210 }),
+      getPrimitivesBBox: async () => ({
+        minX: 90,
+        minY: 190,
+        maxX: 110,
+        maxY: 210,
+      }),
     },
   };
 }
 
 function pcbComponent(
-  primitiveId = 'pcb-u1',
-  designator = 'U1',
+  primitiveId = "pcb-u1",
+  designator = "U1",
   padSummary?: unknown,
 ): StateObject {
   return stateObject({
     PrimitiveId: primitiveId,
-    PrimitiveType: 'Component',
-    Component: { uuid: 'device-1' },
-    Footprint: { uuid: 'land-1' },
-    Model3D: { uuid: 'model-1' },
+    PrimitiveType: "Component",
+    Component: { uuid: "device-1" },
+    Footprint: { uuid: "land-1" },
+    Model3D: { uuid: "model-1" },
     Layer: 1,
     X: 2650,
     Y: -6265,
@@ -348,20 +363,20 @@ function pcbComponent(
     AddIntoBom: true,
     Designator: designator,
     Pads: padSummary,
-    Name: 'Fixture IC',
-    UniqueId: 'gge2',
-    Manufacturer: 'Fixture Inc.',
-    ManufacturerId: 'FIX-IC',
-    Supplier: 'Fixture Supply',
-    SupplierId: 'C2',
+    Name: "Fixture IC",
+    UniqueId: "gge2",
+    Manufacturer: "Fixture Inc.",
+    ManufacturerId: "FIX-IC",
+    Supplier: "Fixture Supply",
+    SupplierId: "C2",
     OtherProperty: {},
   });
 }
 
 function pcbPad({
-  primitiveId = 'pad-1',
-  primitiveType = 'ComponentPad',
-  parentComponentPrimitiveId = 'pcb-u1',
+  primitiveId = "pad-1",
+  primitiveType = "ComponentPad",
+  parentComponentPrimitiveId = "pcb-u1",
   padType = 1,
 }: PcbPadOptions = {}): StateObject {
   return stateObject({
@@ -369,14 +384,14 @@ function pcbPad({
     PrimitiveType: primitiveType,
     ParentComponentPrimitiveId: parentComponentPrimitiveId,
     Layer: 99,
-    PadNumber: '1',
+    PadNumber: "1",
     X: 2841.732283464567,
     Y: -6215,
     Rotation: 0,
-    Pad: ['ELLIPSE', 67, 67],
-    SpecialPad: [[1, 1, ['RECT', 60, 40, 0]]],
-    Net: 'GND',
-    Hole: ['ROUND', 126],
+    Pad: ["ELLIPSE", 67, 67],
+    SpecialPad: [[1, 1, ["RECT", 60, 40, 0]]],
+    Net: "GND",
+    Hole: ["ROUND", 126],
     HoleOffsetX: 0,
     HoleOffsetY: 0,
     HoleRotation: 0,
@@ -389,7 +404,7 @@ function pcbPad({
       bottomPasteMask: 0,
     },
     HeatWelding: {
-      connectionMethod: 'Divergent',
+      connectionMethod: "Divergent",
       divergenceSpacing: 8,
       divergenceLineWidth: 10,
       divergenceAngle: 45,
@@ -400,13 +415,23 @@ function pcbPad({
 
 function pcbComponentApis({
   components,
-  declaredIds = ['pcb-u1'],
+  declaredIds = ["pcb-u1"],
   pads,
-  bbox = { minX: 558.2677165354326, minY: -7120.511811023622, maxX: 2841.732283464567, maxY: -6215 },
+  bbox = {
+    minX: 558.2677165354326,
+    minY: -7120.511811023622,
+    maxX: 2841.732283464567,
+    maxY: -6215,
+  },
 }: PcbComponentApiOptions = {}): UnknownRecord {
   const directPads = pads ?? [pcbPad()];
-  const directComponents =
-    components ?? [pcbComponent('pcb-u1', 'U1', directPads.map(() => ({ primitiveId: 'pad-1' })))];
+  const directComponents = components ?? [
+    pcbComponent(
+      "pcb-u1",
+      "U1",
+      directPads.map(() => ({ primitiveId: "pad-1" })),
+    ),
+  ];
   return {
     pcb_PrimitiveComponent: {
       getAll: async () => directComponents,
@@ -420,20 +445,20 @@ function pcbComponentApis({
 }
 
 const inventoryDefinitions = [
-  ['components', 'pcb_PrimitiveComponent'],
-  ['pads', 'pcb_PrimitivePad'],
-  ['vias', 'pcb_PrimitiveVia'],
-  ['lines', 'pcb_PrimitiveLine'],
-  ['arcs', 'pcb_PrimitiveArc'],
-  ['strings', 'pcb_PrimitiveString'],
-  ['attributes', 'pcb_PrimitiveAttribute'],
-  ['polylines', 'pcb_PrimitivePolyline'],
-  ['regions', 'pcb_PrimitiveRegion'],
-  ['pours', 'pcb_PrimitivePour'],
-  ['fills', 'pcb_PrimitiveFill'],
-  ['dimensions', 'pcb_PrimitiveDimension'],
-  ['images', 'pcb_PrimitiveImage'],
-  ['objects', 'pcb_PrimitiveObject'],
+  ["components", "pcb_PrimitiveComponent"],
+  ["pads", "pcb_PrimitivePad"],
+  ["vias", "pcb_PrimitiveVia"],
+  ["lines", "pcb_PrimitiveLine"],
+  ["arcs", "pcb_PrimitiveArc"],
+  ["strings", "pcb_PrimitiveString"],
+  ["attributes", "pcb_PrimitiveAttribute"],
+  ["polylines", "pcb_PrimitivePolyline"],
+  ["regions", "pcb_PrimitiveRegion"],
+  ["pours", "pcb_PrimitivePour"],
+  ["fills", "pcb_PrimitiveFill"],
+  ["dimensions", "pcb_PrimitiveDimension"],
+  ["images", "pcb_PrimitiveImage"],
+  ["objects", "pcb_PrimitiveObject"],
 ] as const;
 
 function inventoryApis({
@@ -443,46 +468,48 @@ function inventoryApis({
 }: InventoryOptions = {}): InventoryEda {
   const eda: Record<string, InventoryApi | undefined> = {};
   const monitoredFamilies = new Set([
-    'pads',
-    'vias',
-    'lines',
-    'arcs',
-    'polylines',
-    'regions',
-    'pours',
-    'fills',
+    "pads",
+    "vias",
+    "lines",
+    "arcs",
+    "polylines",
+    "regions",
+    "pours",
+    "fills",
   ]);
   for (const [family, apiName] of inventoryDefinitions) {
     const primitiveId = `${family}-1`;
     let objects: StateObject[];
-    if (family === 'components') {
+    if (family === "components") {
       objects = [
         stateObject({
           PrimitiveId: primitiveId,
-          Pads: [{ primitiveId: 'component-pad-1', padNumber: '1', net: 'GND' }],
+          Pads: [
+            { primitiveId: "component-pad-1", padNumber: "1", net: "GND" },
+          ],
         }),
       ];
-    } else if (family === 'pads') {
+    } else if (family === "pads") {
       objects = [
         pcbPad({
-          primitiveId: 'component-pad-1',
-          primitiveType: 'ComponentPad',
-          parentComponentPrimitiveId: 'components-1',
+          primitiveId: "component-pad-1",
+          primitiveType: "ComponentPad",
+          parentComponentPrimitiveId: "components-1",
           padType,
         }),
         pcbPad({
-          primitiveId: 'pad-standalone-1',
-          primitiveType: 'Pad',
-          parentComponentPrimitiveId: '',
+          primitiveId: "pad-standalone-1",
+          primitiveType: "Pad",
+          parentComponentPrimitiveId: "",
           padType,
         }),
       ];
-    } else if (family === 'vias') {
+    } else if (family === "vias") {
       objects = [
         stateObject({
           PrimitiveId: primitiveId,
-          PrimitiveType: 'Via',
-          Net: 'GND',
+          PrimitiveType: "Via",
+          Net: "GND",
           X: 100,
           Y: 200,
           HoleDiameter: 12,
@@ -493,12 +520,12 @@ function inventoryApis({
           PrimitiveLock: false,
         }),
       ];
-    } else if (family === 'arcs') {
+    } else if (family === "arcs") {
       objects = [
         stateObject({
           PrimitiveId: primitiveId,
-          PrimitiveType: 'Arc',
-          Net: 'GND',
+          PrimitiveType: "Arc",
+          Net: "GND",
           Layer: 1,
           StartX: 0,
           StartY: 0,
@@ -510,47 +537,55 @@ function inventoryApis({
           InteractiveMode: interactiveMode,
         }),
       ];
-    } else if (family === 'pours') {
+    } else if (family === "pours") {
       objects = [
         stateObject({
           PrimitiveId: primitiveId,
-          PrimitiveType: 'Pour',
-          Net: 'GND',
+          PrimitiveType: "Pour",
+          Net: "GND",
           Layer: 1,
-          ComplexPolygon: () => ({ getSource: () => ({ paths: [[0, 0, 20, 20]] }) }),
-          PourFillMethod: { mode: 'solid' },
+          ComplexPolygon: (): UnknownRecord => ({
+            getSource: () => ({ paths: [[0, 0, 20, 20]] }),
+          }),
+          PourFillMethod: { mode: "solid" },
           PreserveSilos: true,
-          PourName: 'GND plane',
+          PourName: "GND plane",
           PourPriority: 1,
           LineWidth: 5,
           PrimitiveLock: false,
         }),
       ];
-    } else if (family === 'regions') {
+    } else if (family === "regions") {
       objects = [
         stateObject({
           PrimitiveId: primitiveId,
-          PrimitiveType: 'Region',
+          PrimitiveType: "Region",
           Layer: 1,
-          ComplexPolygon: () => ({ getSource: () => ({ paths: [[0, 0, 10, 10]] }) }),
+          ComplexPolygon: (): UnknownRecord => ({
+            getSource: () => ({ paths: [[0, 0, 10, 10]] }),
+          }),
           RuleType: () => {
-            throw new Error('unreliable region RuleType getter must not be called');
+            throw new Error(
+              "unreliable region RuleType getter must not be called",
+            );
           },
-          RegionName: 'Keepout',
+          RegionName: "Keepout",
           LineWidth: 5,
           PrimitiveLock: false,
         }),
       ];
-    } else if (family === 'fills') {
+    } else if (family === "fills") {
       objects = [
         stateObject({
           PrimitiveId: primitiveId,
-          PrimitiveType: 'Fill',
-          Net: 'GND',
+          PrimitiveType: "Fill",
+          Net: "GND",
           Layer: 1,
-          ComplexPolygon: () => ({ getSource: () => ({ paths: [[0, 0, 5, 5]] }) }),
+          ComplexPolygon: (): UnknownRecord => ({
+            getSource: () => ({ paths: [[0, 0, 5, 5]] }),
+          }),
           FillMode: () => {
-            throw new Error('hardcoded FillMode getter must not be called');
+            throw new Error("hardcoded FillMode getter must not be called");
           },
           LineWidth: 5,
           PrimitiveLock: false,
@@ -562,102 +597,119 @@ function inventoryApis({
       objects = [stateObject({ PrimitiveId: primitiveId })];
     }
     eda[apiName] = {
-      getAllPrimitiveId: async () =>
+      getAllPrimitiveId: async (): Promise<unknown[]> =>
         Promise.all(
           objects.map((object) => {
-            const getter = object['getState_PrimitiveId'];
-            if (!getter) throw new Error('Fixture primitive has no primitive-ID getter.');
+            const getter = object["getState_PrimitiveId"];
+            if (!getter) {
+              throw new Error("Fixture primitive has no primitive-ID getter.");
+            }
             return getter();
           }),
         ),
-      getAll: async () => objects,
+      getAll: async (): Promise<StateObject[]> => objects,
     };
   }
   const pouredObject = stateObject({
-    PrimitiveId: 'pours-1',
-    PrimitiveType: 'Poured',
-    PourPrimitiveId: 'pours-1',
+    PrimitiveId: "pours-1",
+    PrimitiveType: "Poured",
+    PourPrimitiveId: "pours-1",
     PourFills: () => [
       {
-        id: 'poured-fill-piece-1',
-        path: { getSource: () => ({ paths: [[0, 0, 20, 20]] }) },
+        id: "poured-fill-piece-1",
+        path: { getSource: (): UnknownRecord => ({ paths: [[0, 0, 20, 20]] }) },
         lineWidth: 5,
         fill: true,
       },
     ],
   });
-  eda['pcb_PrimitivePoured'] = {
-    getAllPrimitiveId: async () => ['pours-1'],
-    getAll: async () => [pouredObject],
+  eda["pcb_PrimitivePoured"] = {
+    getAllPrimitiveId: async (): Promise<string[]> => ["pours-1"],
+    getAll: async (): Promise<StateObject[]> => [pouredObject],
   };
-  const componentApi = eda['pcb_PrimitiveComponent'];
-  const pouredApi = eda['pcb_PrimitivePoured'];
+  const componentApi = eda["pcb_PrimitiveComponent"];
+  const pouredApi = eda["pcb_PrimitivePoured"];
   if (componentApi === undefined || pouredApi === undefined) {
-    throw new Error('PCB inventory fixture omitted a required component or poured API.');
+    throw new Error(
+      "PCB inventory fixture omitted a required component or poured API.",
+    );
   }
-  return { ...eda, pcb_PrimitiveComponent: componentApi, pcb_PrimitivePoured: pouredApi };
+  return {
+    ...eda,
+    pcb_PrimitiveComponent: componentApi,
+    pcb_PrimitivePoured: pouredApi,
+  };
 }
 
 function rulesApis(differentialPairs: unknown): RulesApis {
   return {
     pcb_Drc: {
-      getCurrentRuleConfigurationName: async () => 'Fixture Six Layer',
+      getCurrentRuleConfigurationName: async () => "Fixture Six Layer",
       getCurrentRuleConfiguration: async () => ({
-        name: 'Fixture Six Layer',
-        config: { id: 'configuration-1' },
+        name: "Fixture Six Layer",
+        config: { id: "configuration-1" },
       }),
       getNetRules: async () => [
         {
-          type: 'group',
-          name: 'USB',
+          type: "group",
+          name: "USB",
           sub: [
-            { type: 'net', name: 'DM', rule: 'default' },
-            { type: 'net', name: 'DP', rule: 'default' },
+            { type: "net", name: "DM", rule: "default" },
+            { type: "net", name: "DP", rule: "default" },
           ],
         },
-        { type: 'net', name: 'GND', rule: 'default' },
+        { type: "net", name: "GND", rule: "default" },
       ],
       getNetByNetRules: async () => ({ GND: [] }),
-      getRegionRules: async () => [{ id: 'region-1' }],
-      getAllNetClasses: async () => [{ name: 'Ground', nets: ['GND'], color: null }],
+      getRegionRules: async () => [{ id: "region-1" }],
+      getAllNetClasses: async () => [
+        { name: "Ground", nets: ["GND"], color: null },
+      ],
       getAllDifferentialPairs: async () => differentialPairs,
       getAllEqualLengthNetGroups: async () => [],
       getAllPadPairGroups: async () => [
-        { name: 'Length fixture', padPairs: [['U1.1', 'U2.1']] },
+        { name: "Length fixture", padPairs: [["U1.1", "U2.1"]] },
       ],
       getPadPairGroupMinWireLength: async () => [
-        { padPair: ['U1.1', 'U2.1'], minWireLength: 1250 },
+        { padPair: ["U1.1", "U2.1"], minWireLength: 1250 },
       ],
     },
-    pcb_Net: { getAllNetsName: async () => ['DM', 'DP', 'GND'] },
+    pcb_Net: { getAllNetsName: async () => ["DM", "DP", "GND"] },
   };
 }
 
 function topologyApis({
   onFormat,
   onComponentCall,
-  componentUniqueId = 'gge1',
-  componentDesignator = 'R1',
-  componentPinNumbers = ['1'],
-  netlistUniqueId = 'gge1',
-  netlistDesignator = 'R1',
-  netlistPinNumbers = ['1'],
+  componentUniqueId = "gge1",
+  componentDesignator = "R1",
+  componentPinNumbers = ["1"],
+  netlistUniqueId = "gge1",
+  netlistDesignator = "R1",
+  netlistPinNumbers = ["1"],
 }: TopologyOptions = {}): TopologyApis {
-  const component = schematicComponent('sch-r1', componentDesignator, componentUniqueId);
+  const component = schematicComponent(
+    "sch-r1",
+    componentDesignator,
+    componentUniqueId,
+  );
   return {
     sch_PrimitiveComponent: {
       getAll: async (...args: unknown[]) => {
-        onComponentCall?.('getAll', args);
+        onComponentCall?.("getAll", args);
         return [component];
       },
       getAllPrimitiveId: async (...args: unknown[]) => {
-        onComponentCall?.('getAllPrimitiveId', args);
-        return ['sch-r1'];
+        onComponentCall?.("getAllPrimitiveId", args);
+        return ["sch-r1"];
       },
       getAllPinsByPrimitiveId: async (...args: unknown[]) => {
-        onComponentCall?.('getAllPinsByPrimitiveId', args);
+        onComponentCall?.("getAllPinsByPrimitiveId", args);
         return componentPinNumbers.map((pinNumber, index) =>
-          stateObject({ PrimitiveId: `pin-${index + 1}`, PinNumber: pinNumber }),
+          stateObject({
+            PrimitiveId: `pin-${index + 1}`,
+            PinNumber: pinNumber,
+          }),
         );
       },
     },
@@ -668,13 +720,13 @@ function topologyApis({
           components: {
             [netlistUniqueId]: {
               props: {
-                'Unique ID': netlistUniqueId,
+                "Unique ID": netlistUniqueId,
                 Designator: netlistDesignator,
               },
               pinInfoMap: Object.fromEntries(
                 netlistPinNumbers.map((pinNumber) => [
                   pinNumber,
-                  { number: pinNumber, net: 'GND' },
+                  { number: pinNumber, net: "GND" },
                 ]),
               ),
             },
@@ -685,43 +737,47 @@ function topologyApis({
   };
 }
 
-void describe('facade-owned exact reader contracts', () => {
-  void test('enforces strict request schemas, one selector, and the editor document type', () => {
+void describe("facade-owned exact reader contracts", () => {
+  void test("enforces strict request schemas, one selector, and the editor document type", () => {
     assert.throws(
-      () => exactReadRequestSchema.parse({ kind: 'pcb-inventory', extra: true }),
+      () =>
+        exactReadRequestSchema.parse({ kind: "pcb-inventory", extra: true }),
       /unrecognized key/iu,
     );
     assert.throws(
       () =>
         exactReadRequestSchema.parse({
-          kind: 'schematic-components',
-          selector: { all: true, primitiveIds: ['sch-r1'] },
+          kind: "schematic-components",
+          selector: { all: true, primitiveIds: ["sch-r1"] },
         }),
       /exactly one/iu,
     );
     assert.throws(
       () =>
         exactReadRequestSchema.parse({
-          kind: 'pcb-components',
-          selector: { primitiveIds: ['pcb-u1', 'pcb-u1'] },
+          kind: "pcb-components",
+          selector: { primitiveIds: ["pcb-u1", "pcb-u1"] },
         }),
       /duplicates/iu,
     );
     assert.throws(
       () =>
         validateExactReadRequest(
-          { kind: 'schematic-components', selector: { all: true } },
+          { kind: "schematic-components", selector: { all: true } },
           { document: { documentType: 3 } },
         ),
       /requires document type 1, not 3/u,
     );
-    assert.equal(exactReadDocumentType('pcb-rules'), 3);
-    assert.throws(() => exactReadDocumentType('library-components'), /Unsupported exact-reader kind/u);
+    assert.equal(exactReadDocumentType("pcb-rules"), 3);
+    assert.throws(
+      () => exactReadDocumentType("library-components"),
+      /Unsupported exact-reader kind/u,
+    );
   });
 
-  void test('uses only the declared lower-case EasyEDA API and fails on missing APIs', async () => {
+  void test("uses only the declared lower-case EasyEDA API and fails on missing APIs", async () => {
     const request: ExactReadRequest = {
-      kind: 'schematic-components',
+      kind: "schematic-components",
       selector: { all: true },
       includePins: false,
       includeBounds: false,
@@ -737,12 +793,12 @@ void describe('facade-owned exact reader contracts', () => {
       /sch_PrimitiveComponent API is unavailable/u,
     );
     const payload = await executeReader(request, schematicApis());
-    assert.deepEqual(payload.primitiveIds, ['sch-r1']);
+    assert.deepEqual(payload.primitiveIds, ["sch-r1"]);
   });
 
-  void test('rejects non-array enumerations and component ID-set mismatches', async () => {
+  void test("rejects non-array enumerations and component ID-set mismatches", async () => {
     const request: ExactReadRequest = {
-      kind: 'schematic-components',
+      kind: "schematic-components",
       selector: { all: true },
       includePins: false,
       includeBounds: false,
@@ -752,35 +808,38 @@ void describe('facade-owned exact reader contracts', () => {
       /component getAll did not return an array/u,
     );
     await assert.rejects(
-      executeReader(request, schematicApis({ declaredIds: ['different-id'] })),
+      executeReader(request, schematicApis({ declaredIds: ["different-id"] })),
       /component ID and object enumerations disagree/u,
     );
   });
 
-  void test('reports Component3-backed schematic fields while omitting unobservable pin properties', async () => {
+  void test("reports Component3-backed schematic fields while omitting unobservable pin properties", async () => {
     const request: ExactReadRequest = {
-      kind: 'schematic-components',
-      selector: { primitiveIds: ['sch-r1'] },
+      kind: "schematic-components",
+      selector: { primitiveIds: ["sch-r1"] },
       includePins: true,
       includeBounds: false,
     };
     const payload = await executeReader(request, schematicApis());
-    const component = payload.byPrimitiveId['sch-r1'];
-    const pin = required(component.pins[0], 'schematic pin');
+    const component = payload.byPrimitiveId["sch-r1"];
+    const pin = required(component.pins[0], "schematic pin");
     assert.equal(component.cbb, null);
     assert.equal(component.cbbSymbol, null);
     assert.equal(pin.x, 95);
     assert.equal(pin.y, 200);
     assert.equal(pin.noConnected, false);
-    assert.equal(Object.hasOwn(pin, 'otherProperty'), false);
+    assert.equal(Object.hasOwn(pin, "otherProperty"), false);
     assert.match(payload.limitations.componentPinOtherProperty, /Omitted/u);
-    assert.match(payload.limitations.componentOtherPropertyFiltering, /Adapter-filtered/u);
+    assert.match(
+      payload.limitations.componentOtherPropertyFiltering,
+      /Adapter-filtered/u,
+    );
     assert.match(payload.limitations.cbbLibraryOwnership, /Unavailable/u);
 
     const malformedPinColor = structuredClone(payload);
     required(
-      malformedPinColor.byPrimitiveId['sch-r1'].pins[0],
-      'malformed schematic pin',
+      malformedPinColor.byPrimitiveId["sch-r1"].pins[0],
+      "malformed schematic pin",
     ).pinColor = { red: 0 };
     assert.throws(
       () => validateExactReadPayload(malformedPinColor, request),
@@ -788,58 +847,66 @@ void describe('facade-owned exact reader contracts', () => {
     );
   });
 
-  void test('normalizes library-association placeholders without dropping real UUID identities', async () => {
+  void test("normalizes library-association placeholders without dropping real UUID identities", async () => {
     const component = schematicComponent();
-    component['getState_Component'] = async () => ({});
-    component['getState_Cbb'] = async () => ({ libraryUuid: '', uuid: '', name: '' });
-    component['getState_CbbSymbol'] = async () => ({
-      libraryUuid: '',
-      cbbUuid: 'cbb-symbol-1',
-      name: 'CBB symbol',
+    component["getState_Component"] = async (): Promise<unknown> => ({});
+    component["getState_Cbb"] = async (): Promise<unknown> => ({
+      libraryUuid: "",
+      uuid: "",
+      name: "",
     });
-    component['getState_Symbol'] = async () => ({ uuid: '', name: '' });
-    component['getState_Footprint'] = async () => ({
-      libraryUuid: 'library-1',
-      uuid: 'footprint-1',
-      name: 'Real footprint',
+    component["getState_CbbSymbol"] = async (): Promise<unknown> => ({
+      libraryUuid: "",
+      cbbUuid: "cbb-symbol-1",
+      name: "CBB symbol",
+    });
+    component["getState_Symbol"] = async (): Promise<unknown> => ({
+      uuid: "",
+      name: "",
+    });
+    component["getState_Footprint"] = async (): Promise<unknown> => ({
+      libraryUuid: "library-1",
+      uuid: "footprint-1",
+      name: "Real footprint",
     });
 
     const payload = await executeReader(
       {
-        kind: 'schematic-components',
-        selector: { primitiveIds: ['sch-r1'] },
+        kind: "schematic-components",
+        selector: { primitiveIds: ["sch-r1"] },
         includePins: false,
         includeBounds: false,
       },
       schematicApis({ components: [component] }),
     );
-    const record = payload.byPrimitiveId['sch-r1'];
+    const record = payload.byPrimitiveId["sch-r1"];
     assert.equal(record.component, null);
     assert.equal(record.cbb, null);
     assert.equal(record.symbol, null);
     assert.deepEqual(record.cbbSymbol, {
-      cbbUuid: 'cbb-symbol-1',
-      name: 'CBB symbol',
+      cbbUuid: "cbb-symbol-1",
+      name: "CBB symbol",
     });
     assert.deepEqual(record.footprint, {
-      libraryUuid: 'library-1',
-      uuid: 'footprint-1',
-      name: 'Real footprint',
+      libraryUuid: "library-1",
+      uuid: "footprint-1",
+      name: "Real footprint",
     });
   });
 
-  void test('rejects observable partial library associations without an identity UUID', async () => {
+  void test("rejects observable partial library associations without an identity UUID", async () => {
     for (const association of [
-      { libraryUuid: 'library-only' },
-      { name: 'named but unidentified' },
-      { libraryUuid: 'library-only', name: 'named but unidentified' },
+      { libraryUuid: "library-only" },
+      { name: "named but unidentified" },
+      { libraryUuid: "library-only", name: "named but unidentified" },
     ]) {
       const component = schematicComponent();
-      component['getState_Component'] = async () => association;
+      component["getState_Component"] = async (): Promise<unknown> =>
+        association;
       await assert.rejects(
         executeReader(
           {
-            kind: 'schematic-components',
+            kind: "schematic-components",
             selector: { all: true },
             includePins: false,
             includeBounds: false,
@@ -851,13 +918,13 @@ void describe('facade-owned exact reader contracts', () => {
     }
   });
 
-  void test('rejects string and object coercion for typed boolean and identity fields', async () => {
+  void test("rejects string and object coercion for typed boolean and identity fields", async () => {
     const stringBoolean = schematicComponent();
-    stringBoolean['getState_Mirror'] = async () => 'false';
+    stringBoolean["getState_Mirror"] = async (): Promise<unknown> => "false";
     await assert.rejects(
       executeReader(
         {
-          kind: 'schematic-components',
+          kind: "schematic-components",
           selector: { all: true },
           includePins: false,
           includeBounds: false,
@@ -868,13 +935,13 @@ void describe('facade-owned exact reader contracts', () => {
     );
 
     const coercibleIdentity = schematicComponent();
-    coercibleIdentity['getState_PrimitiveId'] = async () => ({
-      toString: () => 'sch-r1',
+    coercibleIdentity["getState_PrimitiveId"] = async (): Promise<unknown> => ({
+      toString: (): string => "sch-r1",
     });
     await assert.rejects(
       executeReader(
         {
-          kind: 'schematic-components',
+          kind: "schematic-components",
           selector: { all: true },
           includePins: false,
           includeBounds: false,
@@ -885,11 +952,12 @@ void describe('facade-owned exact reader contracts', () => {
     );
 
     const pcbStringBoolean = pcbComponent();
-    pcbStringBoolean['getState_PrimitiveLock'] = async () => 'false';
+    pcbStringBoolean["getState_PrimitiveLock"] = async (): Promise<unknown> =>
+      "false";
     await assert.rejects(
       executeReader(
         {
-          kind: 'pcb-components',
+          kind: "pcb-components",
           selector: { all: true },
           includePins: false,
           includeBounds: false,
@@ -900,97 +968,128 @@ void describe('facade-owned exact reader contracts', () => {
     );
   });
 
-  void test('preserves PCB pad identity, parentage, bounds, and raw transformed mil positions', async () => {
+  void test("preserves PCB pad identity, parentage, bounds, and raw transformed mil positions", async () => {
     const request: ExactReadRequest = {
-      kind: 'pcb-components',
+      kind: "pcb-components",
       selector: { all: true },
       includePins: true,
       includeBounds: true,
     };
     const payload = await executeReader(request, pcbComponentApis());
-    const component = payload.byPrimitiveId['pcb-u1'];
-    const pad = required(component.pads[0], 'PCB component pad');
+    const component = payload.byPrimitiveId["pcb-u1"];
+    const pad = required(component.pads[0], "PCB component pad");
     assert.deepEqual(payload.units, {
-      coordinates: 'mil',
-      bounds: 'mil',
-      transformedPadCoordinates: 'mil',
+      coordinates: "mil",
+      bounds: "mil",
+      transformedPadCoordinates: "mil",
     });
-    assert.equal(pad.primitiveId, 'pad-1');
-    assert.equal(pad.primitiveType, 'ComponentPad');
-    assert.equal(pad.parentComponentPrimitiveId, 'pcb-u1');
+    assert.equal(pad.primitiveId, "pad-1");
+    assert.equal(pad.primitiveType, "ComponentPad");
+    assert.equal(pad.parentComponentPrimitiveId, "pcb-u1");
     assert.equal(pad.x, 2841.732283464567);
     assert.equal(component.bounds.minX, 558.2677165354326);
     assert.equal(pad.hole, undefined);
     assert.equal(pad.bounds, undefined);
-    assert.equal(pad.source, 'component-pin-wrapper-transformed-placement-only');
-    assert.match(payload.limitations.componentPadWrapper, /0\.1 drill-scale defect/u);
+    assert.equal(
+      pad.source,
+      "component-pin-wrapper-transformed-placement-only",
+    );
+    assert.match(
+      payload.limitations.componentPadWrapper,
+      /0\.1 drill-scale defect/u,
+    );
 
+    const wrongTypePad = pcbPad({ primitiveType: "Pad" });
+    const wrongTypeApis = pcbComponentApis({ pads: [wrongTypePad] });
     await assert.rejects(
-      executeReader(request, pcbComponentApis({ pads: [pcbPad({ primitiveType: 'Pad' })] })),
+      executeReader(request, wrongTypeApis),
       /pad type mismatch/u,
     );
+    const wrongParentPad = pcbPad({ parentComponentPrimitiveId: "pcb-other" });
+    const wrongParentApis = pcbComponentApis({ pads: [wrongParentPad] });
     await assert.rejects(
-      executeReader(
-        request,
-        pcbComponentApis({ pads: [pcbPad({ parentComponentPrimitiveId: 'pcb-other' })] }),
-      ),
+      executeReader(request, wrongParentApis),
       /pad parent mismatch/u,
     );
+    const firstDuplicatePad = pcbPad();
+    const secondDuplicatePad = pcbPad();
+    const duplicatePadApis = pcbComponentApis({
+      pads: [firstDuplicatePad, secondDuplicatePad],
+    });
     await assert.rejects(
-      executeReader(request, pcbComponentApis({ pads: [pcbPad(), pcbPad()] })),
+      executeReader(request, duplicatePadApis),
       /duplicate primitive IDs/u,
     );
   });
 
-  void test('enumerates direct pads once and models component pads and poured state as correlations', async () => {
-    const payload = await executeReader({ kind: 'pcb-inventory' }, inventoryApis());
+  void test("enumerates direct pads once and models component pads and poured state as correlations", async () => {
+    const payload = await executeReader(
+      { kind: "pcb-inventory" },
+      inventoryApis(),
+    );
     assert.deepEqual(
       Object.keys(payload.families).toSorted(),
       inventoryDefinitions.map(([family]) => family).toSorted(),
     );
     for (const family of Object.values(payload.families)) {
-      assert.equal(family.status, 'adapter-enumerated');
+      assert.equal(family.status, "adapter-enumerated");
       assert.equal(family.count, family.primitiveIds.length);
     }
-    assert.equal(Object.hasOwn(payload.families, 'componentPads'), false);
-    assert.equal(Object.hasOwn(payload.families, 'poured'), false);
-    assert.equal(payload.componentPadCorrelation.status, 'exact-subset');
+    assert.equal(Object.hasOwn(payload.families, "componentPads"), false);
+    assert.equal(Object.hasOwn(payload.families, "poured"), false);
+    assert.equal(payload.componentPadCorrelation.status, "exact-subset");
     assert.equal(payload.componentPadCorrelation.count, 1);
-    assert.deepEqual(payload.componentPadCorrelation.byPrimitiveId['component-pad-1'], {
-      primitiveId: 'component-pad-1',
-      parentComponentPrimitiveId: 'components-1',
-      padNumber: '1',
-      net: 'GND',
-      source: 'component-getState_Pads',
-    });
-    assert.deepEqual(payload.componentPadCorrelation.byComponentPrimitiveId, {
-      'components-1': ['component-pad-1'],
-    });
-    assert.equal(
-      payload.families.pads.byPrimitiveId['component-pad-1'].parentComponentPrimitiveId,
-      'components-1',
+    assert.deepEqual(
+      payload.componentPadCorrelation.byPrimitiveId["component-pad-1"],
+      {
+        primitiveId: "component-pad-1",
+        parentComponentPrimitiveId: "components-1",
+        padNumber: "1",
+        net: "GND",
+        source: "component-getState_Pads",
+      },
     );
-    assert.deepEqual(payload.families.pads.byPrimitiveId['component-pad-1'].pad, [
-      'ELLIPSE',
-      67,
-      67,
-    ]);
-    assert.deepEqual(payload.families.pads.byPrimitiveId['component-pad-1'].specialPad, [
-      [1, 1, ['RECT', 60, 40, 0]],
-    ]);
-    assert.deepEqual(payload.families.pads.byPrimitiveId['component-pad-1'].hole, [
-      'ROUND',
-      126,
-    ]);
-    assert.equal(payload.families.pads.byPrimitiveId['pad-standalone-1'].padType, 1);
-    assert.equal(payload.families.vias.byPrimitiveId['vias-1'].viaType, 0);
-    assert.equal(payload.families.arcs.byPrimitiveId['arcs-1'].interactiveMode, 0);
+    assert.deepEqual(payload.componentPadCorrelation.byComponentPrimitiveId, {
+      "components-1": ["component-pad-1"],
+    });
     assert.equal(
-      Object.hasOwn(payload.families.regions.byPrimitiveId['regions-1'], 'ruleType'),
+      payload.families.pads.byPrimitiveId["component-pad-1"]
+        .parentComponentPrimitiveId,
+      "components-1",
+    );
+    assert.deepEqual(
+      payload.families.pads.byPrimitiveId["component-pad-1"].pad,
+      ["ELLIPSE", 67, 67],
+    );
+    assert.deepEqual(
+      payload.families.pads.byPrimitiveId["component-pad-1"].specialPad,
+      [[1, 1, ["RECT", 60, 40, 0]]],
+    );
+    assert.deepEqual(
+      payload.families.pads.byPrimitiveId["component-pad-1"].hole,
+      ["ROUND", 126],
+    );
+    assert.equal(
+      payload.families.pads.byPrimitiveId["pad-standalone-1"].padType,
+      1,
+    );
+    assert.equal(payload.families.vias.byPrimitiveId["vias-1"].viaType, 0);
+    assert.equal(
+      payload.families.arcs.byPrimitiveId["arcs-1"].interactiveMode,
+      0,
+    );
+    assert.equal(
+      Object.hasOwn(
+        payload.families.regions.byPrimitiveId["regions-1"],
+        "ruleType",
+      ),
       false,
     );
     assert.equal(
-      Object.hasOwn(payload.families.fills.byPrimitiveId['fills-1'], 'fillMode'),
+      Object.hasOwn(
+        payload.families.fills.byPrimitiveId["fills-1"],
+        "fillMode",
+      ),
       false,
     );
     assert.match(payload.limitations.regionRuleTypes, /Omitted/u);
@@ -998,92 +1097,122 @@ void describe('facade-owned exact reader contracts', () => {
     assert.match(payload.limitations.arcPrecision, /rounded to one decimal/u);
     assert.match(payload.limitations.viaPrecision, /rounded to one decimal/u);
     assert.equal(
-      payload.families.pads.byPrimitiveId['component-pad-1'].source,
-      'pcb_PrimitivePad-direct-state',
+      payload.families.pads.byPrimitiveId["component-pad-1"].source,
+      "pcb_PrimitivePad-direct-state",
     );
     assert.equal(payload.physicalPadCount, 2);
     assert.equal(payload.standalonePadCount, 1);
     assert.equal(
       payload.enumeratedPrimitiveCount,
-      Object.values(payload.families).reduce((count, family) => count + family.count, 0),
+      Object.values(payload.families).reduce(
+        (count, family) => count + family.count,
+        0,
+      ),
     );
-    assert.equal(payload.pouredCorrelation.status, 'derived-subset');
-    assert.deepEqual(payload.pouredCorrelation.pourPrimitiveIds, ['pours-1']);
+    assert.equal(payload.pouredCorrelation.status, "derived-subset");
+    assert.deepEqual(payload.pouredCorrelation.pourPrimitiveIds, ["pours-1"]);
     assert.equal(
-      payload.pouredCorrelation.byPourPrimitiveId['pours-1'].pourPrimitiveId,
-      'pours-1',
+      payload.pouredCorrelation.byPourPrimitiveId["pours-1"].pourPrimitiveId,
+      "pours-1",
     );
     assert.deepEqual(
-      Object.keys(payload.pouredCorrelation.byPourPrimitiveId['pours-1']).toSorted(),
-      ['pourFills', 'pourPrimitiveId', 'primitiveId', 'primitiveType'].toSorted(),
+      Object.keys(
+        payload.pouredCorrelation.byPourPrimitiveId["pours-1"],
+      ).toSorted(),
+      [
+        "pourFills",
+        "pourPrimitiveId",
+        "primitiveId",
+        "primitiveType",
+      ].toSorted(),
     );
     assert.deepEqual(
-      payload.pouredCorrelation.byPourPrimitiveId['pours-1'].pourFills.map(({ id }) => id),
-      ['poured-fill-piece-1'],
+      payload.pouredCorrelation.byPourPrimitiveId["pours-1"].pourFills.map(
+        ({ id }) => id,
+      ),
+      ["poured-fill-piece-1"],
     );
     assert.equal(payload.pouredFillPieceCount, 1);
 
     const omittedPrecision = structuredClone(payload);
-    delete (omittedPrecision.limitations as Partial<FixtureRecord>).arcPrecision;
+    delete (omittedPrecision.limitations as Partial<FixtureRecord>)
+      .arcPrecision;
     assert.throws(
-      () => validateExactReadPayload(omittedPrecision, { kind: 'pcb-inventory' }),
+      () =>
+        validateExactReadPayload(omittedPrecision, { kind: "pcb-inventory" }),
       /omitted primitive families/u,
     );
 
     const wrongComponentIndex = structuredClone(payload);
-    wrongComponentIndex.componentPadCorrelation.byComponentPrimitiveId['components-1'] = [];
+    wrongComponentIndex.componentPadCorrelation.byComponentPrimitiveId[
+      "components-1"
+    ] = [];
     assert.throws(
-      () => validateExactReadPayload(wrongComponentIndex, { kind: 'pcb-inventory' }),
+      () =>
+        validateExactReadPayload(wrongComponentIndex, {
+          kind: "pcb-inventory",
+        }),
       /component-to-pad index is inconsistent/u,
     );
 
     const unexpectedFamilyState = structuredClone(payload);
-    unexpectedFamilyState.families.vias.byPrimitiveId['vias-1'].unreviewed = true;
+    unexpectedFamilyState.families.vias.byPrimitiveId["vias-1"].unreviewed =
+      true;
     assert.throws(
-      () => validateExactReadPayload(unexpectedFamilyState, { kind: 'pcb-inventory' }),
+      () =>
+        validateExactReadPayload(unexpectedFamilyState, {
+          kind: "pcb-inventory",
+        }),
       /missing or unexpected fields/u,
     );
 
-    const malformedHostShapes: ReadonlyArray<
-      readonly [(candidate: FixturePayload) => void, RegExp]
-    > = [
+    const malformedHostShapes: readonly (readonly [
+      (candidate: FixturePayload) => void,
+      RegExp,
+    ])[] = [
       [
         (candidate) => {
-          candidate.families.pads.byPrimitiveId['component-pad-1'].pad = {};
+          candidate.families.pads.byPrimitiveId["component-pad-1"].pad = {};
         },
         /pad-shape tuple/u,
       ],
       [
         (candidate) => {
-          candidate.families.pads.byPrimitiveId['component-pad-1'].specialPad = [[1]];
+          candidate.families.pads.byPrimitiveId["component-pad-1"].specialPad =
+            [[1]];
         },
         /malformed layer tuple/u,
       ],
       [
         (candidate) => {
-          candidate.families.pads.byPrimitiveId['component-pad-1'].hole = ['SLOT', 126];
+          candidate.families.pads.byPrimitiveId["component-pad-1"].hole = [
+            "SLOT",
+            126,
+          ];
         },
         /wrong tuple length/u,
       ],
       [
         (candidate) => {
           candidate.families.pads.byPrimitiveId[
-            'component-pad-1'
-          ].solderMaskAndPasteMaskExpansion = { topSolderMask: '4' };
+            "component-pad-1"
+          ].solderMaskAndPasteMaskExpansion = { topSolderMask: "4" };
         },
         /topSolderMask must be finite/u,
       ],
       [
         (candidate) => {
-          candidate.families.pads.byPrimitiveId['component-pad-1'].heatWelding = {
-            enabled: false,
-          };
+          candidate.families.pads.byPrimitiveId["component-pad-1"].heatWelding =
+            {
+              enabled: false,
+            };
         },
         /malformed connection method or unexpected field/u,
       ],
       [
         (candidate) => {
-          candidate.families.vias.byPrimitiveId['vias-1'].solderMaskExpansion = { top: 2 };
+          candidate.families.vias.byPrimitiveId["vias-1"].solderMaskExpansion =
+            { top: 2 };
         },
         /unexpected field/u,
       ],
@@ -1092,7 +1221,7 @@ void describe('facade-owned exact reader contracts', () => {
       const candidate = structuredClone(payload);
       mutate(candidate);
       assert.throws(
-        () => validateExactReadPayload(candidate, { kind: 'pcb-inventory' }),
+        () => validateExactReadPayload(candidate, { kind: "pcb-inventory" }),
         expectedError,
       );
     }
@@ -1100,149 +1229,170 @@ void describe('facade-owned exact reader contracts', () => {
     const wrongGlobalTotal = structuredClone(payload);
     wrongGlobalTotal.enumeratedPrimitiveCount += 1;
     assert.throws(
-      () => validateExactReadPayload(wrongGlobalTotal, { kind: 'pcb-inventory' }),
+      () =>
+        validateExactReadPayload(wrongGlobalTotal, { kind: "pcb-inventory" }),
       /wrong total/u,
     );
 
     const malformedPouredRow = structuredClone(payload);
-    malformedPouredRow.pouredCorrelation.byPourPrimitiveId['pours-1'].pourPrimitiveId =
-      'different-pour';
+    malformedPouredRow.pouredCorrelation.byPourPrimitiveId[
+      "pours-1"
+    ].pourPrimitiveId = "different-pour";
     assert.throws(
-      () => validateExactReadPayload(malformedPouredRow, { kind: 'pcb-inventory' }),
+      () =>
+        validateExactReadPayload(malformedPouredRow, { kind: "pcb-inventory" }),
       /poured-state record is malformed/u,
     );
 
     const missingComponentPad = inventoryApis();
-    missingComponentPad.pcb_PrimitiveComponent.getAll = async () => [
-      stateObject({
-        PrimitiveId: 'components-1',
-        Pads: [{ primitiveId: 'missing-component-pad', padNumber: '1', net: 'GND' }],
-      }),
-    ];
+    missingComponentPad.pcb_PrimitiveComponent.getAll =
+      async (): Promise<unknown> => [
+        stateObject({
+          PrimitiveId: "components-1",
+          Pads: [
+            {
+              primitiveId: "missing-component-pad",
+              padNumber: "1",
+              net: "GND",
+            },
+          ],
+        }),
+      ];
     await assert.rejects(
-      executeReader({ kind: 'pcb-inventory' }, missingComponentPad),
+      executeReader({ kind: "pcb-inventory" }, missingComponentPad),
       /absent from pcb_PrimitivePad/u,
     );
 
     const orphanPouredState = inventoryApis();
     const orphan = stateObject({
-      PrimitiveId: 'missing-pour',
-      PrimitiveType: 'Poured',
-      PourPrimitiveId: 'missing-pour',
+      PrimitiveId: "missing-pour",
+      PrimitiveType: "Poured",
+      PourPrimitiveId: "missing-pour",
       PourFills: [],
     });
-    orphanPouredState.pcb_PrimitivePoured.getAllPrimitiveId = async () => ['missing-pour'];
-    orphanPouredState.pcb_PrimitivePoured.getAll = async () => [orphan];
+    orphanPouredState.pcb_PrimitivePoured.getAllPrimitiveId =
+      async (): Promise<unknown> => ["missing-pour"];
+    orphanPouredState.pcb_PrimitivePoured.getAll =
+      async (): Promise<unknown> => [orphan];
     await assert.rejects(
-      executeReader({ kind: 'pcb-inventory' }, orphanPouredState),
+      executeReader({ kind: "pcb-inventory" }, orphanPouredState),
       /parent absent from pcb_PrimitivePour/u,
     );
 
     const missingFamily = inventoryApis();
     delete missingFamily.pcb_PrimitiveImage;
     await assert.rejects(
-      executeReader({ kind: 'pcb-inventory' }, missingFamily),
+      executeReader({ kind: "pcb-inventory" }, missingFamily),
       /pcb_PrimitiveImage API is unavailable/u,
     );
     for (const options of [
-      { padType: 'ThroughHole' },
+      { padType: "ThroughHole" },
       { viaType: 1.5 },
-      { interactiveMode: 'interactive' },
+      { interactiveMode: "interactive" },
     ]) {
       await assert.rejects(
-        executeReader({ kind: 'pcb-inventory' }, inventoryApis(options)),
+        executeReader({ kind: "pcb-inventory" }, inventoryApis(options)),
         /is not finite|is not an integer enum/u,
       );
     }
   });
 
-  void test('normalizes rule arrays and object-keyed branches while enforcing exact shapes', async () => {
+  void test("normalizes rule arrays and object-keyed branches while enforcing exact shapes", async () => {
     for (const differentialPairs of [
       [],
-      [{ name: 'DP1', positiveNet: 'DP', negativeNet: 'DM' }],
+      [{ name: "DP1", positiveNet: "DP", negativeNet: "DM" }],
     ]) {
-      const payload = await executeReader({ kind: 'pcb-rules' }, rulesApis(differentialPairs));
+      const payload = await executeReader(
+        { kind: "pcb-rules" },
+        rulesApis(differentialPairs),
+      );
       assert.deepEqual(payload.rules.differentialPairs, differentialPairs);
-      assert.deepEqual(payload.nets, ['DM', 'DP', 'GND']);
+      assert.deepEqual(payload.nets, ["DM", "DP", "GND"]);
       assert.deepEqual(payload.rules.padPairGroups, [
         {
-          name: 'Length fixture',
-          padPairs: [['U1.1', 'U2.1']],
+          name: "Length fixture",
+          padPairs: [["U1.1", "U2.1"]],
           minimumWireLengths: [
-            { padPair: ['U1.1', 'U2.1'], minWireLength: 1250 },
+            { padPair: ["U1.1", "U2.1"], minWireLength: 1250 },
           ],
         },
       ]);
-      assert.equal(payload.units.padPairMinimumWireLength, 'mil');
+      assert.equal(payload.units.padPairMinimumWireLength, "mil");
     }
 
     const badNetRules = rulesApis([]);
-    badNetRules.pcb_Drc.getNetRules = async () => ({});
+    badNetRules.pcb_Drc.getNetRules = async (): Promise<unknown> => ({});
     await assert.rejects(
-      executeReader({ kind: 'pcb-rules' }, badNetRules),
+      executeReader({ kind: "pcb-rules" }, badNetRules),
       /PCB net rules did not return an array/u,
     );
     const badNetByNet = rulesApis([]);
-    badNetByNet.pcb_Drc.getNetByNetRules = async () => [];
+    badNetByNet.pcb_Drc.getNetByNetRules = async (): Promise<unknown> => [];
     await assert.rejects(
-      executeReader({ kind: 'pcb-rules' }, badNetByNet),
+      executeReader({ kind: "pcb-rules" }, badNetByNet),
       /PCB net-to-net rules did not return an object/u,
     );
     await assert.rejects(
-      executeReader({ kind: 'pcb-rules' }, rulesApis({ DP1: {} })),
+      executeReader({ kind: "pcb-rules" }, rulesApis({ DP1: {} })),
       /PCB differential pairs did not return an array/u,
     );
 
     const mismatchedConfiguration = rulesApis([]);
-    mismatchedConfiguration.pcb_Drc.getCurrentRuleConfiguration = async () => ({
-      name: 'Different configuration',
-      config: {},
-    });
+    mismatchedConfiguration.pcb_Drc.getCurrentRuleConfiguration =
+      async (): Promise<unknown> => ({
+        name: "Different configuration",
+        config: {},
+      });
     await assert.rejects(
-      executeReader({ kind: 'pcb-rules' }, mismatchedConfiguration),
+      executeReader({ kind: "pcb-rules" }, mismatchedConfiguration),
       /configuration getters disagree/u,
     );
     const malformedConfiguration = rulesApis([]);
-    malformedConfiguration.pcb_Drc.getCurrentRuleConfiguration = async () => ({
-      name: 'Fixture Six Layer',
-    });
+    malformedConfiguration.pcb_Drc.getCurrentRuleConfiguration =
+      async (): Promise<unknown> => ({
+        name: "Fixture Six Layer",
+      });
     await assert.rejects(
-      executeReader({ kind: 'pcb-rules' }, malformedConfiguration),
+      executeReader({ kind: "pcb-rules" }, malformedConfiguration),
       /omitted its config object/u,
     );
     const emptyConfiguration = rulesApis([]);
-    emptyConfiguration.pcb_Drc.getCurrentRuleConfiguration = async () => ({
-      name: 'Fixture Six Layer',
-      config: {},
-    });
+    emptyConfiguration.pcb_Drc.getCurrentRuleConfiguration =
+      async (): Promise<unknown> => ({
+        name: "Fixture Six Layer",
+        config: {},
+      });
     await assert.rejects(
-      executeReader({ kind: 'pcb-rules' }, emptyConfiguration),
+      executeReader({ kind: "pcb-rules" }, emptyConfiguration),
       /configuration config is empty/u,
     );
 
     const missingRuleLeaf = rulesApis([]);
-    missingRuleLeaf.pcb_Drc.getNetRules = async () => [
-      { type: 'net', name: 'DM', rule: 'default' },
-      { type: 'net', name: 'GND', rule: 'default' },
+    missingRuleLeaf.pcb_Drc.getNetRules = async (): Promise<unknown> => [
+      { type: "net", name: "DM", rule: "default" },
+      { type: "net", name: "GND", rule: "default" },
     ];
     await assert.rejects(
-      executeReader({ kind: 'pcb-rules' }, missingRuleLeaf),
+      executeReader({ kind: "pcb-rules" }, missingRuleLeaf),
       /rule leaves do not cover every live net exactly once/u,
     );
 
     const duplicateRuleLeaf = rulesApis([]);
-    duplicateRuleLeaf.pcb_Drc.getNetRules = async () => [
-      { type: 'net', name: 'DM', rule: 'default' },
-      { type: 'net', name: 'DP', rule: 'default' },
-      { type: 'net', name: 'GND', rule: 'default' },
-      { type: 'net', name: 'GND', rule: 'duplicate' },
+    duplicateRuleLeaf.pcb_Drc.getNetRules = async (): Promise<unknown> => [
+      { type: "net", name: "DM", rule: "default" },
+      { type: "net", name: "DP", rule: "default" },
+      { type: "net", name: "GND", rule: "default" },
+      { type: "net", name: "GND", rule: "duplicate" },
     ];
     await assert.rejects(
-      executeReader({ kind: 'pcb-rules' }, duplicateRuleLeaf),
+      executeReader({ kind: "pcb-rules" }, duplicateRuleLeaf),
       /duplicate net leaves/u,
     );
 
-    const validPayload = await executeReader({ kind: 'pcb-rules' }, rulesApis([]));
+    const validPayload = await executeReader(
+      { kind: "pcb-rules" },
+      rulesApis([]),
+    );
     assert.throws(
       () =>
         validateExactReadPayload(
@@ -1250,25 +1400,29 @@ void describe('facade-owned exact reader contracts', () => {
             ...validPayload,
             rules: {
               ...validPayload.rules,
-              configuration: { name: 'Different configuration', config: {} },
+              configuration: { name: "Different configuration", config: {} },
             },
           },
-          { kind: 'pcb-rules' },
+          { kind: "pcb-rules" },
         ),
       /omitted rules or nets/u,
     );
     const missingValidatedLeaf = structuredClone(validPayload);
-    required(missingValidatedLeaf.rules.netRules[0], 'first net-rule row').sub.pop();
+    required(
+      missingValidatedLeaf.rules.netRules[0],
+      "first net-rule row",
+    ).sub.pop();
     assert.throws(
-      () => validateExactReadPayload(missingValidatedLeaf, { kind: 'pcb-rules' }),
+      () =>
+        validateExactReadPayload(missingValidatedLeaf, { kind: "pcb-rules" }),
       /rule leaves do not cover every live net exactly once/u,
     );
   });
 
-  void test('uses only compiled JLCEDA connectivity and disclaims unavailable wire geometry', async () => {
-    const request: ExactReadRequest = { kind: 'schematic-topology' };
+  void test("uses only compiled JLCEDA connectivity and disclaims unavailable wire geometry", async () => {
+    const request: ExactReadRequest = { kind: "schematic-topology" };
     const formats: string[] = [];
-    const componentCalls: Array<{ method: string; args: unknown[] }> = [];
+    const componentCalls: { method: string; args: unknown[] }[] = [];
     const rawPayload = await executeReader(
       request,
       topologyApis({
@@ -1280,66 +1434,73 @@ void describe('facade-owned exact reader contracts', () => {
         },
       }),
     );
-    assert.deepEqual(formats, ['JLCEDA']);
+    assert.deepEqual(formats, ["JLCEDA"]);
     assert.deepEqual(componentCalls, [
-      { method: 'getAll', args: ['part', true] },
-      { method: 'getAllPrimitiveId', args: ['part', true] },
-      { method: 'getAllPinsByPrimitiveId', args: ['sch-r1'] },
+      { method: "getAll", args: ["part", true] },
+      { method: "getAllPrimitiveId", args: ["part", true] },
+      { method: "getAllPinsByPrimitiveId", args: ["sch-r1"] },
     ]);
     assert.deepEqual(rawPayload.authority, {
-      connectivity: 'sch_Netlist.getNetlist(JLCEDA)',
-      wireGeometry: 'unavailable',
+      connectivity: "sch_Netlist.getNetlist(JLCEDA)",
+      wireGeometry: "unavailable",
     });
     assert.equal(rawPayload.limitations.length, 2);
-    assert.equal(Object.hasOwn(rawPayload, 'wires'), false);
-    assert.equal(Object.hasOwn(rawPayload, 'netNames'), false);
-    assert.equal(Object.hasOwn(rawPayload, 'netTree'), false);
+    assert.equal(Object.hasOwn(rawPayload, "wires"), false);
+    assert.equal(Object.hasOwn(rawPayload, "netNames"), false);
+    assert.equal(Object.hasOwn(rawPayload, "netTree"), false);
     assert.deepEqual(rawPayload.compiledConnectivity, [
       {
-        uniqueId: 'gge1',
-        designator: 'R1',
-        pins: [{ pinNumber: '1', net: 'GND' }],
+        uniqueId: "gge1",
+        designator: "R1",
+        pins: [{ pinNumber: "1", net: "GND" }],
       },
     ]);
     assert.deepEqual(rawPayload.componentCorrelation, {
-      status: 'exact-match',
-      source: 'sch_PrimitiveComponent.getAll(part,true)',
+      status: "exact-match",
+      source: "sch_PrimitiveComponent.getAll(part,true)",
       componentCount: 1,
       pinCount: 1,
-      primitiveIds: ['sch-r1'],
-      uniqueIds: ['gge1'],
+      primitiveIds: ["sch-r1"],
+      uniqueIds: ["gge1"],
       byUniqueId: {
         gge1: {
-          primitiveId: 'sch-r1',
-          designator: 'R1',
-          pinNumbers: ['1'],
+          primitiveId: "sch-r1",
+          designator: "R1",
+          pinNumbers: ["1"],
         },
       },
     });
 
     const upstream = {
-      async callTool() {
-        return { structuredContent: { ok: true, result: structuredClone(rawPayload) } };
+      async callTool(): Promise<unknown> {
+        return {
+          structuredContent: { ok: true, result: structuredClone(rawPayload) },
+        };
       },
     };
     const engine = new EasyedaControlEngine(upstream);
-    engine.assertContext = async (expectedContext) => liveContext(expectedContext);
+    engine.assertContext = async (
+      expectedContext,
+    ): Promise<ContextProbePayload> => liveContext(expectedContext);
     const compact = await engine.exactRead(request, {
-      project: { uuid: 'project-1', path: '/tmp/project.eprj2' },
-      document: { uuid: 'document-1', documentType: 1, tabId: 'tab-1' },
+      project: { uuid: "project-1", path: "/tmp/project.eprj2" },
+      document: { uuid: "document-1", documentType: 1, tabId: "tab-1" },
     });
-    assert.deepEqual(compact['compiledConnectivity'], rawPayload.compiledConnectivity);
-    const readConsistency = compact['read_consistency'];
+    assert.deepEqual(
+      compact["compiledConnectivity"],
+      rawPayload.compiledConnectivity,
+    );
+    const readConsistency = compact["read_consistency"];
     assertUnknownRecord(readConsistency);
-    assert.equal(readConsistency['stable'], true);
-    assert.equal(readConsistency['attempts'], 2);
+    assert.equal(readConsistency["stable"], true);
+    assert.equal(readConsistency["attempts"], 2);
 
     assert.throws(
       () =>
         validateExactReadPayload(
           {
             ...rawPayload,
-            authority: { ...rawPayload.authority, wireGeometry: 'complete' },
+            authority: { ...rawPayload.authority, wireGeometry: "complete" },
           },
           request,
         ),
@@ -1355,7 +1516,7 @@ void describe('facade-owned exact reader contracts', () => {
               byUniqueId: {
                 gge1: {
                   ...rawPayload.componentCorrelation.byUniqueId.gge1,
-                  pinNumbers: ['2'],
+                  pinNumbers: ["2"],
                 },
               },
             },
@@ -1365,7 +1526,8 @@ void describe('facade-owned exact reader contracts', () => {
       /compiled and public component state disagree/u,
     );
     const malformed = topologyApis();
-    malformed.sch_Netlist.getNetlist = async () => 'not JSON connectivity';
+    malformed.sch_Netlist.getNetlist = async (): Promise<unknown> =>
+      "not JSON connectivity";
     await assert.rejects(
       executeReader(request, malformed),
       /JSON sequence could not be parsed/u,
@@ -1373,34 +1535,37 @@ void describe('facade-owned exact reader contracts', () => {
     await assert.rejects(
       executeReader(
         request,
-        topologyApis({ componentUniqueId: 'different-gge' }),
+        topologyApis({ componentUniqueId: "different-gge" }),
       ),
       /netlist identity does not match all-page part components/u,
     );
     await assert.rejects(
-      executeReader(request, topologyApis({ componentPinNumbers: ['2'] })),
+      executeReader(request, topologyApis({ componentPinNumbers: ["2"] })),
       /netlist identity does not match all-page part components/u,
     );
   });
 
-  void test('accepts an exactly correlated zero-pin compiled-topology component', async () => {
-    const request: ExactReadRequest = { kind: 'schematic-topology' };
+  void test("accepts an exactly correlated zero-pin compiled-topology component", async () => {
+    const request: ExactReadRequest = { kind: "schematic-topology" };
     const payload = await executeReader(
       request,
       topologyApis({ componentPinNumbers: [], netlistPinNumbers: [] }),
     );
     assert.deepEqual(payload.compiledConnectivity, [
-      { uniqueId: 'gge1', designator: 'R1', pins: [] },
+      { uniqueId: "gge1", designator: "R1", pins: [] },
     ]);
     assert.equal(payload.componentCorrelation.pinCount, 0);
-    assert.deepEqual(payload.componentCorrelation.byUniqueId.gge1.pinNumbers, []);
+    assert.deepEqual(
+      payload.componentCorrelation.byUniqueId.gge1.pinNumbers,
+      [],
+    );
     assert.equal(validateExactReadPayload(payload, request), payload);
   });
 
-  void test('validates payload indexes and rejects unstable double reads', async () => {
+  void test("validates payload indexes and rejects unstable double reads", async () => {
     const request: ExactReadRequest = {
-      kind: 'schematic-components',
-      selector: { primitiveIds: ['sch-r1'] },
+      kind: "schematic-components",
+      selector: { primitiveIds: ["sch-r1"] },
       includePins: true,
       includeBounds: true,
     };
@@ -1409,7 +1574,7 @@ void describe('facade-owned exact reader contracts', () => {
     assert.throws(
       () =>
         validateExactReadPayload(
-          { ...valid, primitiveIds: ['sch-r1', 'sch-r2'] },
+          { ...valid, primitiveIds: ["sch-r1", "sch-r2"] },
           request,
         ),
       /internally inconsistent/u,
@@ -1417,10 +1582,15 @@ void describe('facade-owned exact reader contracts', () => {
 
     let observation = 0;
     const upstream = {
-      async callTool(name: string, argumentsValue: UnknownRecord | undefined) {
-        assert.equal(name, 'easyeda_execute');
-        const code = argumentsValue?.['code'];
-        if (typeof code !== 'string') throw new Error('Fixture call omitted generated code.');
+      async callTool(
+        name: string,
+        argumentsValue: UnknownRecord | undefined,
+      ): Promise<unknown> {
+        assert.equal(name, "easyeda_execute");
+        const code = argumentsValue?.["code"];
+        if (typeof code !== "string") {
+          throw new TypeError("Fixture call omitted generated code.");
+        }
         assert.match(code, /"kind":"schematic-components"/u);
         observation += 1;
         return {
@@ -1429,8 +1599,8 @@ void describe('facade-owned exact reader contracts', () => {
             result: {
               ...structuredClone(valid),
               byPrimitiveId: {
-                'sch-r1': {
-                  ...valid.byPrimitiveId['sch-r1'],
+                "sch-r1": {
+                  ...valid.byPrimitiveId["sch-r1"],
                   x: observation,
                 },
               },
@@ -1440,21 +1610,26 @@ void describe('facade-owned exact reader contracts', () => {
       },
     };
     const engine = new EasyedaControlEngine(upstream);
-    engine.assertContext = async (expectedContext) => liveContext(expectedContext);
+    engine.assertContext = async (
+      expectedContext,
+    ): Promise<ContextProbePayload> => liveContext(expectedContext);
     await assert.rejects(
       engine.exactRead(request, {
-        project: { uuid: 'project-1', path: '/tmp/project.eprj2' },
-        document: { uuid: 'document-1', documentType: 1, tabId: 'tab-1' },
+        project: { uuid: "project-1", path: "/tmp/project.eprj2" },
+        document: { uuid: "document-1", documentType: 1, tabId: "tab-1" },
       }),
       (error: unknown) => {
         assert.ok(error instanceof Error);
-        assert.match(error.message, /changed between two consecutive observations/u);
-        assert.ok('mismatches' in error);
+        assert.match(
+          error.message,
+          /changed between two consecutive observations/u,
+        );
+        assert.ok("mismatches" in error);
         const mismatches = error.mismatches;
         assert.ok(Array.isArray(mismatches));
         const firstMismatch: unknown = mismatches[0];
         assertUnknownRecord(firstMismatch);
-        assert.equal(firstMismatch['pointer'], '/');
+        assert.equal(firstMismatch["pointer"], "/");
         return true;
       },
     );
