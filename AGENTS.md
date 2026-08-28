@@ -87,7 +87,7 @@ The update command changes only the facade source/bundle projections and review 
 - Release payload commit: `34299ac48fd68cffb56f10ac93db293ac1509a72` in `https://github.com/jan-guenter/easyeda-pro-agent-plugin`.
 - Local validation: strict TypeScript and type-aware Oxlint completed with zero diagnostics or warnings; 146/146 tests passed across 24 suites on exact Node `24.18.0`; plugin, skill, compatibility, repository, clean-install, offline-doctor, and privacy validators passed.
 - GitHub Actions run `33139782529` passed the clean checkout, dependency install, typecheck, strict type-aware lint, build, compatibility gate, 146-test suite (145 pass and the Windows-mount-only case skipped on the Linux runner), plugin/repository validation, reproducible-bundle check, packaging, and artifact upload.
-- Marketplace `easyeda-pro-agent` is configured from `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. Installed plugin `easyeda-pro-control@easyeda-pro-agent` is enabled at `0.2.0+codex.20260828034319`; the marketplace snapshot is the release payload commit and key installed-file hashes match the repository exactly.
+- Marketplace `easyeda-pro-agent` is configured from `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. Installed plugin `easyeda-pro-control@easyeda-pro-agent` is enabled at `0.2.0+codex.20260828034319`; the installed cache, release payload and current marketplace snapshot contain the identical plugin subtree.
 - The bundled installed MCP completed an actual stdio initialize and exposed all 18 declared tools. The former `easyeda-pro-control@personal` install, personal marketplace registration, source directory, and orphaned personal marketplace file were removed.
 
 ## Open questions
