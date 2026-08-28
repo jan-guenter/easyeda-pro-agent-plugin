@@ -54,15 +54,18 @@ function reviewedNodeDescriptorBaseline(): Map<number, string> {
 }
 
 void describe("sandbox process lifetime", () => {
-  void test("mounts both host library roots behind stable ABI aliases", () => {
+  void test("mounts one host usr tree behind stable library aliases", () => {
     const sandboxArguments = bubblewrapArguments({}, []);
-    const lib64Index = sandboxArguments.indexOf("/usr/lib64");
-    assert.notEqual(lib64Index, -1);
-    assert.deepEqual(sandboxArguments.slice(lib64Index - 1, lib64Index + 3), [
+    const readOnlyBinds = sandboxArguments.flatMap((value, index) =>
+      value === "--ro-bind" ? [index] : [],
+    );
+    assert.equal(readOnlyBinds.length, 1);
+    const usrBindIndex = readOnlyBinds[0];
+    assert.ok(usrBindIndex !== undefined);
+    assert.deepEqual(sandboxArguments.slice(usrBindIndex, usrBindIndex + 3), [
       "--ro-bind",
-      "/usr/lib64",
-      "/usr/lib64",
-      "--symlink",
+      "/usr",
+      "/usr",
     ]);
     const aliasIndex = sandboxArguments.indexOf("usr/lib64");
     assert.notEqual(aliasIndex, -1);

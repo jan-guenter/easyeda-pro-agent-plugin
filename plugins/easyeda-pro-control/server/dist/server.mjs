@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "507c85149d2ab96445f5c674eb320542d7287732099014471fc231171a269d81";
+const __easyedaBundlePairId = "87023dc160fd89954343fa2886a494431f2a74957b33b59bf4cb43258b43fffa";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -56385,14 +56385,9 @@ function bubblewrapArguments(environment, supervisorArguments) {
     ...environmentArguments,
     "--dir",
     "/runtime",
-    "--dir",
+    "--ro-bind",
     "/usr",
-    "--ro-bind",
-    "/usr/lib",
-    "/usr/lib",
-    "--ro-bind",
-    "/usr/lib64",
-    "/usr/lib64",
+    "/usr",
     "--symlink",
     "usr/lib",
     "/lib",
