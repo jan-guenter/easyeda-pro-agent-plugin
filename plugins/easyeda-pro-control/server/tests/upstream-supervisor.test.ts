@@ -54,18 +54,27 @@ function reviewedNodeDescriptorBaseline(): Map<number, string> {
 }
 
 void describe("sandbox process lifetime", () => {
-  void test("mounts the exact x64 ELF interpreter independently of distro library aliases", () => {
+  void test("mounts both host library roots behind stable ABI aliases", () => {
     const sandboxArguments = bubblewrapArguments({}, []);
-    const loader = "/lib64/ld-linux-x86-64.so.2";
-    const loaderIndex = sandboxArguments.indexOf(loader);
-    assert.notEqual(loaderIndex, -1);
-    assert.deepEqual(sandboxArguments.slice(loaderIndex - 3, loaderIndex + 2), [
-      "--dir",
-      "/lib64",
+    const lib64Index = sandboxArguments.indexOf("/usr/lib64");
+    assert.notEqual(lib64Index, -1);
+    assert.deepEqual(sandboxArguments.slice(lib64Index - 1, lib64Index + 3), [
       "--ro-bind",
-      loader,
-      loader,
+      "/usr/lib64",
+      "/usr/lib64",
+      "--symlink",
     ]);
+    const aliasIndex = sandboxArguments.indexOf("usr/lib64");
+    assert.notEqual(aliasIndex, -1);
+    assert.deepEqual(sandboxArguments.slice(aliasIndex - 1, aliasIndex + 2), [
+      "--symlink",
+      "usr/lib64",
+      "/lib64",
+    ]);
+    assert.equal(
+      sandboxArguments.includes("/lib64/ld-linux-x86-64.so.2"),
+      false,
+    );
   });
 
   void test(

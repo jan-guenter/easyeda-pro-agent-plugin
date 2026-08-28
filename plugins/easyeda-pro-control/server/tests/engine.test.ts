@@ -1989,7 +1989,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
       dispatchCheckpointVerification = {
         ok:
           isRecord(receipt) &&
-          receipt["schema"] === "easyeda-pro-control.checkpoint.v1",
+          receipt["schema"] === "easyeda-pro-control.checkpoint.v2",
       };
     };
     const planned = await planWithDiscard(engine, plan);
@@ -2332,11 +2332,11 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     assert.notEqual(journal.planHash, planned.planHash);
     assert.equal(
       journal.preCheckpoint.schema,
-      "easyeda-pro-control.checkpoint.v1",
+      "easyeda-pro-control.checkpoint.v2",
     );
     assert.equal(
       requireDefined(journal.finalCheckpoint, "final checkpoint").schema,
-      "easyeda-pro-control.checkpoint.v1",
+      "easyeda-pro-control.checkpoint.v2",
     );
     assert.equal(journal.artifacts.length, 9);
     assert.deepEqual(
@@ -3992,7 +3992,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     assert.equal(
       requireDefined(completed.finalCheckpoint, "completed final checkpoint")
         .schema,
-      "easyeda-pro-control.checkpoint.v1",
+      "easyeda-pro-control.checkpoint.v2",
     );
     const completedRecoveryArtifact = lastArtifact(completed);
     assert.match(

@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "140bb92758b0ae45038249677cf9e31421dd00f66f97288694171c989ad32b75";
+const __easyedaBundlePairId = "507c85149d2ab96445f5c674eb320542d7287732099014471fc231171a269d81";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -38047,7 +38047,12 @@ function positiveInteger(value, fallback) {
   return Number.isSafeInteger(parsed) && parsed > 0 && parsed <= 2147483647 ? parsed : fallback;
 }
 function identityOf(info) {
-  return { dev: info.dev.toString(), ino: info.ino.toString() };
+  return {
+    birthtimeNs: info.birthtimeNs.toString(),
+    ctimeNs: info.ctimeNs.toString(),
+    dev: info.dev.toString(),
+    ino: info.ino.toString()
+  };
 }
 function isSameIdentity(left, right) {
   return left.isFile() && right.isFile() && left.dev === right.dev && left.ino === right.ino;
@@ -38516,6 +38521,26 @@ async function publishBoundFile(staging, name, label) {
     throw error51;
   }
 }
+async function reopenPublishedFileReadOnly(file2, label) {
+  const writableInformation = await file2.handle.stat({ bigint: true });
+  await file2.handle.close();
+  const before = await lstat3(file2.boundPath, { bigint: true });
+  assertSameIdentity(writableInformation, before, label);
+  assertManagedFileAuthority2(file2.directory, before, label);
+  const handle = await open3(
+    file2.boundPath,
+    fsConstants3.O_RDONLY | fsConstants3.O_NOFOLLOW
+  );
+  try {
+    const information = await handle.stat({ bigint: true });
+    assertSameIdentity(before, information, label);
+    assertManagedFileAuthority2(file2.directory, information, label);
+    return { ...file2, handle, info: information };
+  } catch (error51) {
+    await handle.close();
+    throw error51;
+  }
+}
 async function stableSourceSnapshot(sourceFile, sourceDatabase, targetDirectory) {
   for (let attempt = 1; attempt <= MAX_STABLE_SNAPSHOT_ATTEMPTS; attempt += 1) {
     const versionBefore = dataVersion(sourceDatabase);
@@ -38602,13 +38627,19 @@ function checkpointStat(info) {
 }
 function storedIdentity(receipt, key) {
   const value = receipt[key];
-  if (!isRecord(value) || typeof value.dev !== "string" || typeof value.ino !== "string") {
+  const decimal = /^(?:0|[1-9][0-9]*)$/u;
+  if (!isRecord(value) || typeof value.birthtimeNs !== "string" || !decimal.test(value.birthtimeNs) || typeof value.ctimeNs !== "string" || !decimal.test(value.ctimeNs) || typeof value.dev !== "string" || !decimal.test(value.dev) || typeof value.ino !== "string" || !decimal.test(value.ino)) {
     throw new Error(`Checkpoint receipt ${key} is invalid.`);
   }
-  return { dev: value.dev, ino: value.ino };
+  return {
+    birthtimeNs: value.birthtimeNs,
+    ctimeNs: value.ctimeNs,
+    dev: value.dev,
+    ino: value.ino
+  };
 }
 function identityMatches(expected, actual) {
-  return expected.dev === actual.dev.toString() && expected.ino === actual.ino.toString();
+  return expected.birthtimeNs === actual.birthtimeNs.toString() && expected.ctimeNs === actual.ctimeNs.toString() && expected.dev === actual.dev.toString() && expected.ino === actual.ino.toString();
 }
 async function createCheckpoint({
   source,
@@ -38661,6 +38692,10 @@ async function createCheckpoint({
       checkpointName,
       "checkpoint"
     );
+    checkpointFile = await reopenPublishedFileReadOnly(
+      checkpointFile,
+      "Published checkpoint"
+    );
     quickCheck(sourceDatabase, sourcePath);
     if (dataVersion(sourceDatabase) !== snapshot.dataVersion) {
       throw new Error(
@@ -38673,12 +38708,12 @@ async function createCheckpoint({
       "Checkpoint"
     );
     const receiptCore = {
-      schema: "easyeda-pro-control.checkpoint.v1",
+      schema: "easyeda-pro-control.checkpoint.v2",
       createdAt: createdAt.toISOString(),
       source: sourcePath,
       checkpoint: checkpointFile.absolute,
       receiptPath,
-      sourceIdentity: identityOf(sourceFile.info),
+      sourceIdentity: identityOf(snapshot.stat),
       checkpointIdentity: identityOf(checkpointHash.info),
       sourceStatBefore: checkpointStat(sourceFile.info),
       sourceStatAfter: checkpointStat(snapshot.stat),
@@ -38756,7 +38791,7 @@ async function createCheckpoint({
   }
 }
 function assertCheckpointReceipt(value) {
-  if (!isRecord(value) || value["schema"] !== "easyeda-pro-control.checkpoint.v1") {
+  if (!isRecord(value) || value["schema"] !== "easyeda-pro-control.checkpoint.v2") {
     throw new Error("Unexpected checkpoint receipt schema.");
   }
   for (const key of [
@@ -56355,20 +56390,15 @@ function bubblewrapArguments(environment, supervisorArguments) {
     "--ro-bind",
     "/usr/lib",
     "/usr/lib",
-    "--symlink",
-    "lib",
+    "--ro-bind",
+    "/usr/lib64",
     "/usr/lib64",
     "--symlink",
     "usr/lib",
     "/lib",
-    "--dir",
+    "--symlink",
+    "usr/lib64",
     "/lib64",
-    // The reviewed x64 Node binary names this ELF interpreter.
-    // Arch exposes it in /usr/lib; Debian/Ubuntu use a multiarch target.
-    // Bind the host-resolved loader at the ABI path.
-    "--ro-bind",
-    "/lib64/ld-linux-x86-64.so.2",
-    "/lib64/ld-linux-x86-64.so.2",
     "--dir",
     "/dev",
     "--dev-bind",
@@ -59125,7 +59155,7 @@ var recoverSuccessOutputSchema = external_exports.object({
 var checkpointSuccessOutputSchema = external_exports.object({
   checkpoint: nonEmptyStringSchema.optional(),
   receiptPath: nonEmptyStringSchema.optional(),
-  schema: external_exports.literal("easyeda-pro-control.checkpoint.v1").optional(),
+  schema: external_exports.literal("easyeda-pro-control.checkpoint.v2").optional(),
   ok: external_exports.boolean().optional(),
   receiptSha256: sha256Schema2.optional(),
   error: errorOutputSchema.optional()

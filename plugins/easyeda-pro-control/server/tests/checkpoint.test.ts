@@ -74,7 +74,7 @@ void describe("SQLite checkpoint creation and verification", () => {
     const quickCheck = receipt["quickCheck"];
     assert.ok(isRecord(quickCheck));
 
-    assert.equal(receipt["schema"], "easyeda-pro-control.checkpoint.v1");
+    assert.equal(receipt["schema"], "easyeda-pro-control.checkpoint.v2");
     assert.notEqual(receipt["source"], receipt["checkpoint"]);
     assert.equal(receipt["sourceDumpSha256"], receipt["checkpointDumpSha256"]);
     assert.equal(quickCheck["sourceBefore"], "ok");
@@ -218,7 +218,7 @@ void describe("SQLite checkpoint creation and verification", () => {
     );
   });
 
-  void test("rejects unsafe labels, empty source files, and unexpected receipt schemas", async () => {
+  void test("rejects unsafe labels, empty source files, and legacy receipt schemas", async () => {
     const source = join(testDir, "validation.eprj2");
     createFixtureDatabase(source);
     await assert.rejects(
@@ -234,7 +234,11 @@ void describe("SQLite checkpoint creation and verification", () => {
     );
 
     const invalidReceipt = join(testDir, "invalid-receipt.json");
-    await writeFile(invalidReceipt, '{"schema":"unexpected"}\n', "utf8");
+    await writeFile(
+      invalidReceipt,
+      '{"schema":"easyeda-pro-control.checkpoint.v1"}\n',
+      "utf8",
+    );
     await assert.rejects(
       verifyCheckpoint(invalidReceipt),
       /Unexpected checkpoint receipt schema/u,
@@ -321,7 +325,7 @@ void describe("adversarial checkpoint path and identity handling", () => {
     }
   });
 
-  void test("binds verification to the original checkpoint inode", async () => {
+  void test("binds verification to the original checkpoint inode incarnation", async () => {
     const source = join(testDir, "inode-source.eprj2");
     const outputDir = join(testDir, "inode-checkpoints");
     createFixtureDatabase(source);
@@ -376,6 +380,39 @@ void describe("adversarial checkpoint path and identity handling", () => {
     );
     delete receipt["sourceIdentity"];
     delete receipt["checkpointIdentity"];
+    delete receipt["receiptSha256"];
+    receipt["receiptSha256"] = sha256Text(canonicalJson(receipt));
+    await writeFile(
+      checkpoint.receiptPath,
+      `${JSON.stringify(receipt, null, 2)}\n`,
+      "utf8",
+    );
+
+    await assert.rejects(
+      verifyCheckpoint(checkpoint.receiptPath),
+      /sourceIdentity is invalid/u,
+    );
+  });
+
+  void test("rejects legacy inode identities without incarnation timestamps", async () => {
+    const source = join(testDir, "legacy-identity-source.eprj2");
+    const outputDir = join(testDir, "legacy-identity-checkpoints");
+    createFixtureDatabase(source);
+    const checkpoint = await createCheckpoint({
+      source,
+      outputDir,
+      label: "legacy-identity",
+    });
+    const receipt = parseJsonRecord(
+      await readFile(checkpoint.receiptPath, "utf8"),
+    );
+    const sourceIdentity = parseJsonRecord(
+      JSON.stringify(receipt["sourceIdentity"]),
+    );
+    receipt["sourceIdentity"] = {
+      dev: sourceIdentity["dev"],
+      ino: sourceIdentity["ino"],
+    };
     delete receipt["receiptSha256"];
     receipt["receiptSha256"] = sha256Text(canonicalJson(receipt));
     await writeFile(
@@ -587,7 +624,8 @@ void describe("adversarial checkpoint path and identity handling", () => {
       );
       await unlink(receiptAlias);
       const verified = await verifyCheckpoint(checkpoint.receiptPath, policy);
-      assert.equal(verified.ok, true);
+      assert.equal(verified.ok, false);
+      assert.equal(verified.checkpointMatchesReceipt, false);
     } finally {
       await controlRoot.close();
       await rm(parent, { recursive: true, force: true });

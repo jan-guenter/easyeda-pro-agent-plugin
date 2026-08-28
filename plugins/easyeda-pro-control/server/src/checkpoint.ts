@@ -31,6 +31,8 @@ interface RunOptions {
 }
 
 interface FileIdentity {
+  readonly birthtimeNs: string;
+  readonly ctimeNs: string;
   readonly dev: string;
   readonly ino: string;
 }
@@ -71,7 +73,7 @@ export interface CheckpointAccessPolicy {
 }
 
 export interface CheckpointReceipt {
-  schema: "easyeda-pro-control.checkpoint.v1";
+  schema: "easyeda-pro-control.checkpoint.v2";
   createdAt: string;
   source: string;
   checkpoint: string;
@@ -204,7 +206,12 @@ function positiveInteger(value: unknown, fallback: number): number {
 }
 
 function identityOf(info: BigIntStats): FileIdentity {
-  return { dev: info.dev.toString(), ino: info.ino.toString() };
+  return {
+    birthtimeNs: info.birthtimeNs.toString(),
+    ctimeNs: info.ctimeNs.toString(),
+    dev: info.dev.toString(),
+    ino: info.ino.toString(),
+  };
 }
 
 function isSameIdentity(left: BigIntStats, right: BigIntStats): boolean {
@@ -810,6 +817,30 @@ async function publishBoundFile(
   }
 }
 
+async function reopenPublishedFileReadOnly(
+  file: BoundFile,
+  label: string,
+): Promise<BoundFile> {
+  const writableInformation = await file.handle.stat({ bigint: true });
+  await file.handle.close();
+  const before = await lstat(file.boundPath, { bigint: true });
+  assertSameIdentity(writableInformation, before, label);
+  assertManagedFileAuthority(file.directory, before, label);
+  const handle = await open(
+    file.boundPath,
+    fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
+  );
+  try {
+    const information = await handle.stat({ bigint: true });
+    assertSameIdentity(before, information, label);
+    assertManagedFileAuthority(file.directory, information, label);
+    return { ...file, handle, info: information };
+  } catch (error) {
+    await handle.close();
+    throw error;
+  }
+}
+
 async function stableSourceSnapshot(
   sourceFile: BoundFile,
   sourceDatabase: DatabaseSync,
@@ -921,14 +952,26 @@ function storedIdentity(
   key: "sourceIdentity" | "checkpointIdentity",
 ): FileIdentity {
   const value = receipt[key];
+  const decimal = /^(?:0|[1-9][0-9]*)$/u;
   if (
     !isRecord(value) ||
+    typeof value.birthtimeNs !== "string" ||
+    !decimal.test(value.birthtimeNs) ||
+    typeof value.ctimeNs !== "string" ||
+    !decimal.test(value.ctimeNs) ||
     typeof value.dev !== "string" ||
-    typeof value.ino !== "string"
+    !decimal.test(value.dev) ||
+    typeof value.ino !== "string" ||
+    !decimal.test(value.ino)
   ) {
     throw new Error(`Checkpoint receipt ${key} is invalid.`);
   }
-  return { dev: value.dev, ino: value.ino };
+  return {
+    birthtimeNs: value.birthtimeNs,
+    ctimeNs: value.ctimeNs,
+    dev: value.dev,
+    ino: value.ino,
+  };
 }
 
 function identityMatches(
@@ -936,6 +979,8 @@ function identityMatches(
   actual: BigIntStats,
 ): boolean {
   return (
+    expected.birthtimeNs === actual.birthtimeNs.toString() &&
+    expected.ctimeNs === actual.ctimeNs.toString() &&
     expected.dev === actual.dev.toString() &&
     expected.ino === actual.ino.toString()
   );
@@ -995,6 +1040,12 @@ export async function createCheckpoint({
       checkpointName,
       "checkpoint",
     );
+    // Close the writable publication descriptor before recording metadata.
+    // Some filesystems defer ctime until this close.
+    checkpointFile = await reopenPublishedFileReadOnly(
+      checkpointFile,
+      "Published checkpoint",
+    );
     quickCheck(sourceDatabase, sourcePath);
     if (dataVersion(sourceDatabase) !== snapshot.dataVersion) {
       throw new Error(
@@ -1007,12 +1058,12 @@ export async function createCheckpoint({
       "Checkpoint",
     );
     const receiptCore = {
-      schema: "easyeda-pro-control.checkpoint.v1" as const,
+      schema: "easyeda-pro-control.checkpoint.v2" as const,
       createdAt: createdAt.toISOString(),
       source: sourcePath,
       checkpoint: checkpointFile.absolute,
       receiptPath,
-      sourceIdentity: identityOf(sourceFile.info),
+      sourceIdentity: identityOf(snapshot.stat),
       checkpointIdentity: identityOf(checkpointHash.info),
       sourceStatBefore: checkpointStat(sourceFile.info),
       sourceStatAfter: checkpointStat(snapshot.stat),
@@ -1095,7 +1146,7 @@ function assertCheckpointReceipt(
 ): asserts value is CheckpointReceipt {
   if (
     !isRecord(value) ||
-    value["schema"] !== "easyeda-pro-control.checkpoint.v1"
+    value["schema"] !== "easyeda-pro-control.checkpoint.v2"
   ) {
     throw new Error("Unexpected checkpoint receipt schema.");
   }

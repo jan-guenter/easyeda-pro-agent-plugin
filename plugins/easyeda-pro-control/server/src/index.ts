@@ -1501,7 +1501,7 @@ const checkpointSuccessOutputSchema = z
     checkpoint: nonEmptyStringSchema.optional(),
     receiptPath: nonEmptyStringSchema.optional(),
     schema: z
-      .literal("easyeda-pro-control.checkpoint.v1")
+      .literal("easyeda-pro-control.checkpoint.v2")
       .optional(),
     ok: z.boolean().optional(),
     receiptSha256: sha256Schema.optional(),
