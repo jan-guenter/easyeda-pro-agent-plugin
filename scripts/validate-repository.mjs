@@ -1019,6 +1019,7 @@ check(
   "ci-reproducible-facade-closure",
   ciSource.includes("npm run sanitizer:check") &&
     ciSource.includes("binutils") &&
+    ciSource.includes("git -c tar.umask=0022 archive") &&
     ciSource.includes("exec 142</etc/hosts") &&
     ciSource.includes("exec 145</etc/group") &&
     ciSource.includes('test "$(readlink /proc/self/fd/142)" = "/etc/hosts"') &&

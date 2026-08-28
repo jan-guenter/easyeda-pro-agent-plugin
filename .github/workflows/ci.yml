@@ -214,7 +214,7 @@ jobs:
       - name: Package plugin artifact
         shell: bash
         run: |
-          git archive \
+          git -c tar.umask=0022 archive \
             --format=tar.gz \
             --prefix=easyeda-pro-control/ \
             --output=easyeda-pro-control.tar.gz \
