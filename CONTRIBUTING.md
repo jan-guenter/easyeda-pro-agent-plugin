@@ -36,7 +36,7 @@ test "$(npm --version)" = "11.16.0"
 npm ci
 npm ls --all
 npm audit signatures
-npm audit --audit-level=high
+npm audit --audit-level=moderate
 npm run sanitizer:check
 npm run typecheck
 npm run bridge:typecheck
@@ -48,8 +48,12 @@ npm run compatibility:check
 npm test
 npm run validate
 cd ../..
-node scripts/validate-repository.mjs
+npm --prefix plugins/easyeda-pro-control run repository:validate
 ```
+
+The plugin's `.npmrc` disables dependency install hooks. Explicit `npm run`
+commands still run the reviewed project scripts. Keep the matching esbuild
+optional platform package installed; do not enable a download fallback.
 
 Run the full facade suite once with unrelated high-numbered shell descriptors
 open. This is the regression for the boundary that retains only descriptors

@@ -25,7 +25,7 @@ function failureMessage(result: unknown): string {
 const pluginRoot = resolve(import.meta.dirname, "../..");
 const facadeEntrypoint = join(pluginRoot, "server", "src", "index.ts");
 
-void test("rejects the disabled writer before malformed upstream configuration", async () => {
+void test("local discovery and the disabled writer gate work before upstream configuration", async () => {
   const fixtureRoot = await mkdtemp(
     join(tmpdir(), "easyeda-control-disabled-writer-"),
   );
@@ -48,6 +48,19 @@ void test("rejects the disabled writer before malformed upstream configuration",
   );
   try {
     await client.connect(transport);
+    const discovery = await client.callTool({
+      name: "easyeda_control_discover",
+      arguments: { query: "pcb_components", includeSchemas: true },
+    });
+    assert.notEqual(discovery.isError, true);
+    assert.ok(isRecord(discovery.structuredContent));
+    const entries = discovery.structuredContent["value"];
+    assert.ok(Array.isArray(entries));
+    assert.equal(entries.length, 1);
+    assert.ok(isRecord(entries[0]));
+    assert.equal(entries[0]["catalogSource"], "local");
+    assert.equal(entries[0]["schemasAvailable"], false);
+    assert.equal(entries[0]["facadeTool"], "easyeda_control_read");
     const response = await client.callTool({
       name: "easyeda_control_apply",
       arguments: {

@@ -58,6 +58,7 @@ const BRIDGE_BUILD_DIR = join(CONTROL_DATA_DIR, "bridge-build");
 const FACADE_LEASE_PATH = join(CONTROL_DATA_DIR, "facade.lock");
 const EVIDENCE_INTEGRITY_MODEL =
   "Unkeyed SHA-256 values detect accidental corruption. They do not authenticate files against a writer with access to the control-data directory.";
+const MAX_MANAGED_JSON_BYTES = 64 * 1024 * 1024;
 let retainedControlRoot: Promise<ControlRootCapability> | undefined;
 
 export interface EvidenceReservation extends EvidencePaths {
@@ -247,6 +248,14 @@ function assertManagedPath(path: string, label = "Artifact"): string {
     throw new Error(
       `${label} path is reserved for EasyEDA control credentials or process state.`,
     );
+  }
+  return absolute;
+}
+
+function assertEvidenceOutputPath(path: string, label: string): string {
+  const absolute = assertManagedPath(path, label);
+  if (isWithin(OPERATIONS_DIR, absolute)) {
+    throw new Error(`${label} path is reserved for operation journals.`);
   }
   return absolute;
 }
@@ -579,6 +588,7 @@ async function replaceManagedBytes(
   label: string,
   bytes: Buffer,
 ): Promise<void> {
+  assertManagedJsonByteLimit(bytes.length, label);
   const current = await openSafeManagedFile(path, label);
   let temporary: OpenManagedFile;
   try {
@@ -690,10 +700,11 @@ async function removeManagedFileIfExact(
   let failure: unknown;
   try {
     const before = await file.handle.stat();
-    const actual = await file.handle.readFile();
-    const after = await file.handle.stat();
-    assertFileStayedUnchanged(before, after, label);
-    if (!actual.equals(expected)) {
+    if (before.size !== expected.length) {
+      throw new Error(`${label} changed before cleanup.`);
+    }
+    const actual = await hashOpenManagedAttachment(file, label);
+    if (actual.sha256 !== createHash("sha256").update(expected).digest("hex")) {
       throw new Error(`${label} changed before cleanup.`);
     }
     await unlinkManagedFile(file, label);
@@ -740,7 +751,7 @@ async function readManagedFile(
 ): Promise<ManagedFileContents> {
   const opened = await openSafeManagedFile(path, label);
   try {
-    const bytes = await opened.handle.readFile();
+    const bytes = await readOpenManagedBytes(opened, label);
     const after = await opened.handle.stat();
     assertFileStayedUnchanged(opened.info, after, label);
     assertManagedFileAuthority(after, label);
@@ -750,28 +761,65 @@ async function readManagedFile(
   }
 }
 
+function assertManagedJsonByteLimit(bytes: number, label: string): void {
+  if (!Number.isSafeInteger(bytes) || bytes < 0 || bytes > MAX_MANAGED_JSON_BYTES) {
+    throw new Error(`${label} exceeds the ${MAX_MANAGED_JSON_BYTES}-byte limit.`);
+  }
+}
+
+async function readOpenManagedBytes(
+  file: OpenManagedFile,
+  label: string,
+): Promise<Buffer> {
+  const before = await file.handle.stat();
+  assertManagedJsonByteLimit(before.size, label);
+  // Admit one bounded allocation and detect growth with an extra byte.
+  const bytes = Buffer.alloc(before.size + 1);
+  let offset = 0;
+  while (offset < bytes.length) {
+    const { bytesRead } = await file.handle.read(bytes, offset, bytes.length - offset, offset);
+    if (bytesRead === 0) {
+      break;
+    }
+    offset += bytesRead;
+  }
+  const after = await file.handle.stat();
+  assertFileStayedUnchanged(before, after, label);
+  assertManagedFileAuthority(after, label);
+  if (offset !== before.size) {
+    throw new Error(`${label} changed while it was being read.`);
+  }
+  return bytes.subarray(0, offset);
+}
+
 async function hashOpenManagedAttachment(
   opened: OpenManagedFile,
   label: string,
 ): Promise<HashedManagedAttachment> {
   const { handle } = opened;
-  // The upstream producer may have only dirtied the page cache. Flush the
-  // Artifact bytes stay on this descriptor throughout hashing.
+  // Flush possible producer page-cache writes before hashing.
+  // The artifact stays on this descriptor throughout hashing.
   await handle.sync();
   const before = await handle.stat();
   const hash = createHash("sha256");
+  let bytesRead = 0;
   for await (const chunk of handle.createReadStream({
     autoClose: false,
     start: 0,
+    end: Math.max(0, before.size - 1),
   })) {
     if (!Buffer.isBuffer(chunk)) {
       throw new TypeError("Evidence stream yielded a non-buffer chunk.");
     }
+    bytesRead += chunk.length;
     hash.update(chunk);
   }
   const after = await handle.stat();
   assertFileStayedUnchanged(before, after, label);
   assertManagedFileAuthority(after, label);
+  if (bytesRead !== before.size) {
+    throw new Error(`${label} changed while it was being read.`);
+  }
   return {
     path: opened.absolute,
     bytes: after.size,
@@ -900,8 +948,8 @@ export async function reserveEvidencePaths(
   if (!paths) {
     throw new Error("Evidence paths are required.");
   }
-  const resultPath = assertManagedPath(paths.resultPath, "Evidence result");
-  const receiptPath = assertManagedPath(paths.receiptPath, "Evidence receipt");
+  const resultPath = assertEvidenceOutputPath(paths.resultPath, "Evidence result");
+  const receiptPath = assertEvidenceOutputPath(paths.receiptPath, "Evidence receipt");
   const token = randomUUID();
   const createdAt = new Date().toISOString();
   let resultFile: OpenManagedFile | undefined;
@@ -1079,11 +1127,8 @@ async function readOpenManagedText(
   file: OpenManagedFile,
   label: string,
 ): Promise<string> {
-  const before = await file.handle.stat();
-  const text = await file.handle.readFile("utf8");
-  const after = await file.handle.stat();
-  assertFileStayedUnchanged(before, after, label);
-  return text;
+  const bytes = await readOpenManagedBytes(file, label);
+  return bytes.toString("utf8");
 }
 
 export async function releaseEvidenceReservation(
@@ -1129,6 +1174,8 @@ async function finalizeReservedPair(
   receiptText: string,
 ): Promise<void> {
   assertReservationIdentity(reservation);
+  assertManagedJsonByteLimit(Buffer.byteLength(resultText), "Evidence result");
+  assertManagedJsonByteLimit(Buffer.byteLength(receiptText), "Evidence receipt");
   const replaceReservation = async (
     path: string,
     text: string,
@@ -1665,12 +1712,37 @@ export async function verifyEvidenceReceipt(
   }
   const receipt = parsed;
   if (
-    ![
-      "easyeda-pro-control.tool-receipt.v1",
-      "easyeda-pro-control.capture-receipt.v1",
-    ].includes(String(receipt["schema"]))
+    receipt["schema"] !== "easyeda-pro-control.tool-receipt.v1" &&
+    receipt["schema"] !== "easyeda-pro-control.capture-receipt.v1"
   ) {
     throw new Error("Unsupported evidence receipt schema.");
+  }
+  const captureReceipt = receipt["schema"] === "easyeda-pro-control.capture-receipt.v1";
+  for (const field of ["requestSha256", "resultSha256", "receiptSha256"]) {
+    if (typeof receipt[field] !== "string" || !/^[a-f0-9]{64}$/u.test(receipt[field])) {
+      throw new TypeError(`Evidence receipt ${field} must be a SHA-256 digest.`);
+    }
+  }
+  if (typeof receipt["createdAt"] !== "string" || !Number.isFinite(Date.parse(receipt["createdAt"]))) {
+    throw new TypeError("Evidence receipt creation time is invalid.");
+  }
+  const descriptorField = captureReceipt ? "images" : "attachments";
+  const descriptors = receipt[descriptorField];
+  if (!Array.isArray(descriptors)) {
+    throw new TypeError(`Evidence receipt ${descriptorField} must be an array.`);
+  }
+  if (Object.hasOwn(receipt, captureReceipt ? "attachments" : "images")) {
+    throw new Error("Evidence receipt contains descriptors for a different result schema.");
+  }
+  for (const descriptor of descriptors) {
+    recoveredArtifactDescriptor(descriptor, `Evidence receipt ${descriptorField}`);
+    const descriptorType = captureReceipt ? "mimeType" : "kind";
+    if (!isRecord(descriptor) || typeof descriptor[descriptorType] !== "string" || descriptor[descriptorType].length === 0 || descriptor[descriptorType].length > 64) {
+      throw new Error(`Evidence receipt ${descriptorType} is invalid.`);
+    }
+    if (captureReceipt && !/^image\/[a-z0-9.+-]+$/iu.test(descriptor[descriptorType])) {
+      throw new Error("Evidence receipt capture MIME type is invalid.");
+    }
   }
   if (typeof receipt["receiptPath"] !== "string") {
     throw new TypeError("Evidence receipt receiptPath must be a string.");
@@ -1712,6 +1784,26 @@ export async function verifyEvidenceReceipt(
       resultPath,
       receiptPath,
     );
+    const resultSchema = captureReceipt
+      ? "easyeda-pro-control.capture-result.v1"
+      : "easyeda-pro-control.tool-result.v1";
+    if (resultPayload["schema"] !== resultSchema) {
+      throw new Error("Evidence receipt and result schemas do not match.");
+    }
+    if (!Object.hasOwn(resultPayload, "request") || sha256Text(canonicalJson(resultPayload["request"])) !== receipt["requestSha256"]) {
+      throw new Error("Evidence receipt request digest does not match the published request.");
+    }
+    if (canonicalJson({ metadata: resultPayload["metadata"] }) !== canonicalJson({ metadata: receipt["metadata"] })) {
+      throw new Error("Evidence receipt metadata does not match the published result.");
+    }
+    const result = resultPayload["result"];
+    let resultDescriptors: unknown = resultPayload["attachments"] ?? [];
+    if (captureReceipt) {
+      resultDescriptors = isRecord(result) ? result["images"] : undefined;
+    }
+    if (!Array.isArray(resultDescriptors) || canonicalJson(resultDescriptors) !== canonicalJson(descriptors)) {
+      throw new Error(`Evidence receipt ${descriptorField} do not match the published result.`);
+    }
   }
   const imageChecks: { path: string; ok: boolean }[] = [];
   const images = Array.isArray(receipt["images"]) ? receipt["images"] : [];
@@ -1722,13 +1814,12 @@ export async function verifyEvidenceReceipt(
       );
     }
     const path = assertManagedPath(image["path"], "Capture image");
-    const imageFile = await readManagedFile(path, "Capture image");
-    const bytes = imageFile.bytes;
+    const actual = await hashManagedAttachment(path, "Capture image");
     imageChecks.push({
       path,
       ok:
-        bytes.length === image["bytes"] &&
-        createHash("sha256").update(bytes).digest("hex") === image["sha256"],
+        actual.bytes === image["bytes"] &&
+        actual.sha256 === image["sha256"],
     });
   }
   const attachmentChecks: {
@@ -1802,6 +1893,7 @@ export async function createOperation(
   const path = operationPath(operationId);
   const sealed = sealOperation(operation);
   const text = Buffer.from(`${JSON.stringify(sealed, null, 2)}\n`);
+  assertManagedJsonByteLimit(text.length, "Operation journal");
   await publishManagedBytesExclusive(
     path,
     "Operation journal",
@@ -1948,6 +2040,7 @@ export async function writePhaseArtifact(
     `${sequence.toString().padStart(2, "0")}-${safePhase}.json`,
   );
   const text = `${JSON.stringify(value)}\n`;
+  assertManagedJsonByteLimit(Buffer.byteLength(text), "Operation phase artifact");
   await publishManagedBytesExclusive(
     path,
     "Operation phase artifact",

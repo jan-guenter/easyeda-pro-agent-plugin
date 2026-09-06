@@ -101,14 +101,15 @@ jobs:
         working-directory: plugins/easyeda-pro-control
         run: |
           test "$(npm --version)" = "11.16.0"
-          npm ci
+          test "$(npm config get ignore-scripts)" = "true"
+          npm ci --ignore-scripts
 
       - name: Audit runtime and build dependencies
         working-directory: plugins/easyeda-pro-control
         run: |
           npm ls --all
           npm audit signatures
-          npm audit --audit-level=high
+          npm audit --audit-level=moderate
 
       - name: Check reproducible descriptor sanitizer
         working-directory: plugins/easyeda-pro-control
@@ -180,7 +181,8 @@ jobs:
           npm run validate
 
       - name: Validate marketplace repository
-        run: node scripts/validate-repository.mjs
+        working-directory: plugins/easyeda-pro-control
+        run: npm run repository:validate
 
       - name: Run official Codex validators when installed
         shell: bash

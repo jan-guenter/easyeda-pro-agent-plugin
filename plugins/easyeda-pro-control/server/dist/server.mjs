@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "f78d869e3d61912f3e003a605bd645e3d7f5a86891b0926dff558ad6ac91086f";
+const __easyedaBundlePairId = "4cf674a241262b742f9114b5a17aedffc0fa538ce87dc3f3bb1883546f51aed9";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -36509,6 +36509,7 @@ var UPSTREAM_PUBLIC_ARTIFACT_DIR = join3(
 var BRIDGE_BUILD_DIR = join3(CONTROL_DATA_DIR, "bridge-build");
 var FACADE_LEASE_PATH = join3(CONTROL_DATA_DIR, "facade.lock");
 var EVIDENCE_INTEGRITY_MODEL = "Unkeyed SHA-256 values detect accidental corruption. They do not authenticate files against a writer with access to the control-data directory.";
+var MAX_MANAGED_JSON_BYTES = 64 * 1024 * 1024;
 var retainedControlRoot;
 function isWithin2(root, candidate) {
   const normalizedRoot = resolve3(root);
@@ -36530,6 +36531,13 @@ function assertManagedPath(path, label = "Artifact") {
     throw new Error(
       `${label} path is reserved for EasyEDA control credentials or process state.`
     );
+  }
+  return absolute;
+}
+function assertEvidenceOutputPath(path, label) {
+  const absolute = assertManagedPath(path, label);
+  if (isWithin2(OPERATIONS_DIR, absolute)) {
+    throw new Error(`${label} path is reserved for operation journals.`);
   }
   return absolute;
 }
@@ -36784,6 +36792,7 @@ async function publishManagedBytesExclusive(path, label, bytes, acceptMatchingEx
   return created;
 }
 async function replaceManagedBytes(path, label, bytes) {
+  assertManagedJsonByteLimit(bytes.length, label);
   const current2 = await openSafeManagedFile(path, label);
   let temporary;
   try {
@@ -36885,10 +36894,11 @@ async function removeManagedFileIfExact(path, label, expected) {
   let failure2;
   try {
     const before = await file2.handle.stat();
-    const actual = await file2.handle.readFile();
-    const after = await file2.handle.stat();
-    assertFileStayedUnchanged(before, after, label);
-    if (!actual.equals(expected)) {
+    if (before.size !== expected.length) {
+      throw new Error(`${label} changed before cleanup.`);
+    }
+    const actual = await hashOpenManagedAttachment(file2, label);
+    if (actual.sha256 !== createHash2("sha256").update(expected).digest("hex")) {
       throw new Error(`${label} changed before cleanup.`);
     }
     await unlinkManagedFile(file2, label);
@@ -36922,7 +36932,7 @@ function inspectManagedFile(path, label = "Artifact") {
 async function readManagedFile(path, label = "Artifact") {
   const opened = await openSafeManagedFile(path, label);
   try {
-    const bytes = await opened.handle.readFile();
+    const bytes = await readOpenManagedBytes(opened, label);
     const after = await opened.handle.stat();
     assertFileStayedUnchanged(opened.info, after, label);
     assertManagedFileAuthority(after, label);
@@ -36931,23 +36941,54 @@ async function readManagedFile(path, label = "Artifact") {
     await closeManagedFile(opened);
   }
 }
+function assertManagedJsonByteLimit(bytes, label) {
+  if (!Number.isSafeInteger(bytes) || bytes < 0 || bytes > MAX_MANAGED_JSON_BYTES) {
+    throw new Error(`${label} exceeds the ${MAX_MANAGED_JSON_BYTES}-byte limit.`);
+  }
+}
+async function readOpenManagedBytes(file2, label) {
+  const before = await file2.handle.stat();
+  assertManagedJsonByteLimit(before.size, label);
+  const bytes = Buffer.alloc(before.size + 1);
+  let offset2 = 0;
+  while (offset2 < bytes.length) {
+    const { bytesRead } = await file2.handle.read(bytes, offset2, bytes.length - offset2, offset2);
+    if (bytesRead === 0) {
+      break;
+    }
+    offset2 += bytesRead;
+  }
+  const after = await file2.handle.stat();
+  assertFileStayedUnchanged(before, after, label);
+  assertManagedFileAuthority(after, label);
+  if (offset2 !== before.size) {
+    throw new Error(`${label} changed while it was being read.`);
+  }
+  return bytes.subarray(0, offset2);
+}
 async function hashOpenManagedAttachment(opened, label) {
   const { handle } = opened;
   await handle.sync();
   const before = await handle.stat();
   const hash2 = createHash2("sha256");
+  let bytesRead = 0;
   for await (const chunk of handle.createReadStream({
     autoClose: false,
-    start: 0
+    start: 0,
+    end: Math.max(0, before.size - 1)
   })) {
     if (!Buffer.isBuffer(chunk)) {
       throw new TypeError("Evidence stream yielded a non-buffer chunk.");
     }
+    bytesRead += chunk.length;
     hash2.update(chunk);
   }
   const after = await handle.stat();
   assertFileStayedUnchanged(before, after, label);
   assertManagedFileAuthority(after, label);
+  if (bytesRead !== before.size) {
+    throw new Error(`${label} changed while it was being read.`);
+  }
   return {
     path: opened.absolute,
     bytes: after.size,
@@ -37050,8 +37091,8 @@ async function reserveEvidencePaths(evidence, beforeFinalPathValidation) {
   if (!paths) {
     throw new Error("Evidence paths are required.");
   }
-  const resultPath = assertManagedPath(paths.resultPath, "Evidence result");
-  const receiptPath = assertManagedPath(paths.receiptPath, "Evidence receipt");
+  const resultPath = assertEvidenceOutputPath(paths.resultPath, "Evidence result");
+  const receiptPath = assertEvidenceOutputPath(paths.receiptPath, "Evidence receipt");
   const token = randomUUID2();
   const createdAt = (/* @__PURE__ */ new Date()).toISOString();
   let resultFile;
@@ -37175,11 +37216,8 @@ async function resultRemainsReservationMarker(reservation) {
   }
 }
 async function readOpenManagedText(file2, label) {
-  const before = await file2.handle.stat();
-  const text = await file2.handle.readFile("utf8");
-  const after = await file2.handle.stat();
-  assertFileStayedUnchanged(before, after, label);
-  return text;
+  const bytes = await readOpenManagedBytes(file2, label);
+  return bytes.toString("utf8");
 }
 async function releaseEvidenceReservation(reservation) {
   assertReservationIdentity(reservation);
@@ -37217,6 +37255,8 @@ async function releaseEvidenceReservation(reservation) {
 }
 async function finalizeReservedPair(reservation, resultText, receiptText) {
   assertReservationIdentity(reservation);
+  assertManagedJsonByteLimit(Buffer.byteLength(resultText), "Evidence result");
+  assertManagedJsonByteLimit(Buffer.byteLength(receiptText), "Evidence receipt");
   const replaceReservation = async (path, text) => {
     const current2 = await openSafeManagedFile(path, "Evidence reservation");
     let temporary;
@@ -37666,11 +37706,35 @@ async function verifyEvidenceReceipt(receiptPathInput) {
     throw new Error("Evidence receipt must be an object.");
   }
   const receipt = parsed;
-  if (![
-    "easyeda-pro-control.tool-receipt.v1",
-    "easyeda-pro-control.capture-receipt.v1"
-  ].includes(String(receipt["schema"]))) {
+  if (receipt["schema"] !== "easyeda-pro-control.tool-receipt.v1" && receipt["schema"] !== "easyeda-pro-control.capture-receipt.v1") {
     throw new Error("Unsupported evidence receipt schema.");
+  }
+  const captureReceipt = receipt["schema"] === "easyeda-pro-control.capture-receipt.v1";
+  for (const field of ["requestSha256", "resultSha256", "receiptSha256"]) {
+    if (typeof receipt[field] !== "string" || !/^[a-f0-9]{64}$/u.test(receipt[field])) {
+      throw new TypeError(`Evidence receipt ${field} must be a SHA-256 digest.`);
+    }
+  }
+  if (typeof receipt["createdAt"] !== "string" || !Number.isFinite(Date.parse(receipt["createdAt"]))) {
+    throw new TypeError("Evidence receipt creation time is invalid.");
+  }
+  const descriptorField = captureReceipt ? "images" : "attachments";
+  const descriptors = receipt[descriptorField];
+  if (!Array.isArray(descriptors)) {
+    throw new TypeError(`Evidence receipt ${descriptorField} must be an array.`);
+  }
+  if (Object.hasOwn(receipt, captureReceipt ? "attachments" : "images")) {
+    throw new Error("Evidence receipt contains descriptors for a different result schema.");
+  }
+  for (const descriptor of descriptors) {
+    recoveredArtifactDescriptor(descriptor, `Evidence receipt ${descriptorField}`);
+    const descriptorType = captureReceipt ? "mimeType" : "kind";
+    if (!isRecord(descriptor) || typeof descriptor[descriptorType] !== "string" || descriptor[descriptorType].length === 0 || descriptor[descriptorType].length > 64) {
+      throw new Error(`Evidence receipt ${descriptorType} is invalid.`);
+    }
+    if (captureReceipt && !/^image\/[a-z0-9.+-]+$/iu.test(descriptor[descriptorType])) {
+      throw new Error("Evidence receipt capture MIME type is invalid.");
+    }
   }
   if (typeof receipt["receiptPath"] !== "string") {
     throw new TypeError("Evidence receipt receiptPath must be a string.");
@@ -37708,6 +37772,24 @@ async function verifyEvidenceReceipt(receiptPathInput) {
       resultPath,
       receiptPath
     );
+    const resultSchema = captureReceipt ? "easyeda-pro-control.capture-result.v1" : "easyeda-pro-control.tool-result.v1";
+    if (resultPayload["schema"] !== resultSchema) {
+      throw new Error("Evidence receipt and result schemas do not match.");
+    }
+    if (!Object.hasOwn(resultPayload, "request") || sha256Text(canonicalJson(resultPayload["request"])) !== receipt["requestSha256"]) {
+      throw new Error("Evidence receipt request digest does not match the published request.");
+    }
+    if (canonicalJson({ metadata: resultPayload["metadata"] }) !== canonicalJson({ metadata: receipt["metadata"] })) {
+      throw new Error("Evidence receipt metadata does not match the published result.");
+    }
+    const result = resultPayload["result"];
+    let resultDescriptors = resultPayload["attachments"] ?? [];
+    if (captureReceipt) {
+      resultDescriptors = isRecord(result) ? result["images"] : void 0;
+    }
+    if (!Array.isArray(resultDescriptors) || canonicalJson(resultDescriptors) !== canonicalJson(descriptors)) {
+      throw new Error(`Evidence receipt ${descriptorField} do not match the published result.`);
+    }
   }
   const imageChecks = [];
   const images = Array.isArray(receipt["images"]) ? receipt["images"] : [];
@@ -37718,11 +37800,10 @@ async function verifyEvidenceReceipt(receiptPathInput) {
       );
     }
     const path = assertManagedPath(image["path"], "Capture image");
-    const imageFile = await readManagedFile(path, "Capture image");
-    const bytes = imageFile.bytes;
+    const actual = await hashManagedAttachment(path, "Capture image");
     imageChecks.push({
       path,
-      ok: bytes.length === image["bytes"] && createHash2("sha256").update(bytes).digest("hex") === image["sha256"]
+      ok: actual.bytes === image["bytes"] && actual.sha256 === image["sha256"]
     });
   }
   const attachmentChecks = [];
@@ -37777,6 +37858,7 @@ async function createOperation(operation) {
   const sealed = sealOperation(operation);
   const text = Buffer.from(`${JSON.stringify(sealed, null, 2)}
 `);
+  assertManagedJsonByteLimit(text.length, "Operation journal");
   await publishManagedBytesExclusive(
     path,
     "Operation journal",
@@ -37900,6 +37982,7 @@ async function writePhaseArtifact(operationId, sequence, phase, value) {
   );
   const text = `${JSON.stringify(value)}
 `;
+  assertManagedJsonByteLimit(Buffer.byteLength(text), "Operation phase artifact");
   await publishManagedBytesExclusive(
     path,
     "Operation phase artifact",
@@ -38276,11 +38359,26 @@ async function closeBoundFile(file2) {
 }
 async function readStableText(file2, label) {
   const before = await file2.handle.stat({ bigint: true });
-  const text = await file2.handle.readFile("utf8");
+  const maximumBytes = 1024 * 1024;
+  if (before.size < 0n || before.size > BigInt(maximumBytes)) {
+    throw new Error(`${label} exceeds the ${maximumBytes}-byte limit.`);
+  }
+  const bytes = Buffer.alloc(Number(before.size) + 1);
+  let offset2 = 0;
+  while (offset2 < bytes.length) {
+    const { bytesRead } = await file2.handle.read(bytes, offset2, bytes.length - offset2, offset2);
+    if (bytesRead === 0) {
+      break;
+    }
+    offset2 += bytesRead;
+  }
   const after = await file2.handle.stat({ bigint: true });
   assertStableFile(before, after, label);
   assertManagedFileAuthority2(file2.directory, after, label);
-  return text;
+  if (BigInt(offset2) !== before.size) {
+    throw new Error(`${label} changed while it was being read.`);
+  }
+  return bytes.subarray(0, offset2).toString("utf8");
 }
 async function sha256Handle(handle, label) {
   const before = await handle.stat({ bigint: true });
@@ -38620,6 +38718,14 @@ async function stableSourceSnapshot(sourceFile, sourceDatabase, targetDirectory)
     "Checkpoint source kept changing during three online-backup attempts."
   );
 }
+async function assertSourceSnapshotCurrent(sourceFile, sourceDatabase, snapshot) {
+  await assertBoundPathIdentity(sourceFile, "Checkpoint source");
+  const current2 = await sourceFile.handle.stat({ bigint: true });
+  assertStableFile(snapshot.stat, current2, "Checkpoint source");
+  if (dataVersion(sourceDatabase) !== snapshot.dataVersion) {
+    throw new Error("Checkpoint source changed after its stable snapshot was created.");
+  }
+}
 function openTemporarySnapshotDirectory() {
   return openBoundDirectory(tmpdir(), false);
 }
@@ -38773,6 +38879,7 @@ async function createCheckpoint({
     await assertBoundPathIdentity(checkpointFile, "Checkpoint");
     await assertBoundPathIdentity(receiptFile, "Checkpoint receipt");
     await destination.handle.sync();
+    await assertSourceSnapshotCurrent(sourceFile, sourceDatabase, snapshot);
     completed = true;
     return receipt;
   } catch (error51) {
@@ -38937,6 +39044,13 @@ async function verifyCheckpoint(receiptPathInput, policy, beforeTemporarySnapsho
     const sourceEqualsCheckpoint = sourceDumpSha256 === checkpointDumpSha256;
     const ok = sourceMatchesReceipt && checkpointMatchesReceipt && sourceEqualsCheckpoint;
     await beforeTemporarySnapshotCleanup?.();
+    await assertBoundPathIdentity(checkpointFile, "Checkpoint artifact");
+    assertStableFile(
+      checkpointHash.info,
+      await checkpointFile.handle.stat({ bigint: true }),
+      "Checkpoint artifact"
+    );
+    await assertSourceSnapshotCurrent(sourceFile, sourceDatabase, sourceSnapshot);
     return {
       ok,
       receiptPath,
@@ -46734,7 +46848,7 @@ function reviewedUpstreamToolCatalog() {
     return {
       name,
       title: name,
-      description: "Reviewed static catalog entry. Live tool descriptions and schemas are unavailable while orphan-risk quarantine is active. This lookup does not start the upstream process or connect to EasyEDA.",
+      description: "Reviewed static catalog entry, not a callable facade tool. Live descriptions and schemas require explicit live discovery after startup succeeds. This lookup does not start the upstream process or connect to EasyEDA.",
       annotations: {
         readOnlyHint: readOnly,
         destructiveHint: !readOnly,
@@ -46743,18 +46857,45 @@ function reviewedUpstreamToolCatalog() {
       },
       inputSchema: {
         type: "object",
-        description: "Static quarantine catalog only; query live discovery after recovery for the exact input schema."
+        description: "Static catalog only; no argument schema is available. Use explicit live discovery after startup and recovery for the exact input schema."
       }
     };
   });
 }
-async function discoverReviewedOrLiveTools(assertLiveDispatchAllowed, listLiveTools, options) {
-  try {
-    await assertLiveDispatchAllowed();
-  } catch {
-    return filterTools(reviewedUpstreamToolCatalog(), options);
+function facadeRoute(name, readOnly) {
+  if (typeof name !== "string") {
+    return { facadeTool: null, availability: "unavailable" };
   }
-  return filterTools(await listLiveTools(), options);
+  if (isReviewedLocalGenericRead(name) && readOnly) {
+    return { facadeTool: "easyeda_control_read", availability: "advisory-read" };
+  }
+  if (["easyeda_canvas_capture", "easyeda_canvas_capture_region", "easyeda_schematic_capture_full_page"].includes(name)) {
+    return { facadeTool: "easyeda_control_capture", availability: "gated-capture" };
+  }
+  if (name === "easyeda_pcb_export_route_context") {
+    return { facadeTool: "easyeda_control_export", availability: "gated-export" };
+  }
+  return { facadeTool: null, availability: "unavailable" };
+}
+async function discoverReviewedOrLiveTools(assertLiveDispatchAllowed, listLiveTools, options) {
+  let catalog = reviewedUpstreamToolCatalog();
+  let catalogSource = "local";
+  if (options.source === "live") {
+    let allowed = false;
+    try {
+      await assertLiveDispatchAllowed();
+      allowed = true;
+    } catch {
+    }
+    if (allowed) {
+      catalog = await listLiveTools();
+      catalogSource = "live";
+    }
+  }
+  return filterTools(catalog, { ...options, mode: options.mode ?? "read" }).map((tool) => Object.assign(tool, facadeRoute(tool.name, tool.classification.readOnly), {
+    catalogSource,
+    schemasAvailable: catalogSource === "live" && options.includeSchemas === true && isRecord(tool.inputSchema)
+  }));
 }
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/client.js
@@ -47737,6 +47878,7 @@ var NORMAL_CLOSE_CODE = 1e3;
 var POLICY_CLOSE_CODE = 4008;
 var PROTOCOL_CLOSE_CODE = 4007;
 var WEBSOCKET_CLOSE_GRACE_MS = 250;
+var PRIVATE_PORT_ALLOCATION_ATTEMPTS = 8;
 var websocketCloseTimers = /* @__PURE__ */ new WeakMap();
 function isRecord3(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -47944,24 +48086,34 @@ function closeWebSocketServer(server2) {
     }
   });
 }
-async function allocatePrivateLoopbackPort() {
-  const reservation = createServer();
-  reservation.unref();
-  reservation.listen({ exclusive: true, host: LOOPBACK_HOST, port: 0 });
-  try {
-    await waitForNetServerListening(reservation);
-    const address = reservation.address();
-    if (address === null || typeof address === "string") {
-      throw new Error("The private bridge port reservation has no TCP address.");
-    }
-    return address.port;
-  } finally {
-    await new Promise((resolve10) => {
-      reservation.close(() => {
-        resolve10();
-      });
-    });
+async function allocatePrivateLoopbackPort(excludedPublicPort = 49621) {
+  if (!validPort(excludedPublicPort, true)) {
+    throw new Error("The excluded public bridge port is invalid.");
   }
+  for (let attempt = 0; attempt < PRIVATE_PORT_ALLOCATION_ATTEMPTS; attempt += 1) {
+    const reservation = createServer();
+    reservation.unref();
+    try {
+      reservation.listen({ exclusive: true, host: LOOPBACK_HOST, port: 0 });
+      await waitForNetServerListening(reservation);
+      const address = reservation.address();
+      if (address === null || typeof address === "string") {
+        throw new Error("The private bridge port reservation has no TCP address.");
+      }
+      if (address.port !== excludedPublicPort) {
+        return address.port;
+      }
+    } finally {
+      await new Promise((resolve10) => {
+        reservation.close(() => {
+          resolve10();
+        });
+      });
+    }
+  }
+  throw new Error(
+    `The private bridge port allocation exhausted ${String(PRIVATE_PORT_ALLOCATION_ATTEMPTS)} attempts because every reservation matched the public gateway port.`
+  );
 }
 var AuthenticatedBridgeGateway = class {
   #authenticationKey;
@@ -56585,9 +56737,10 @@ async function waitForSandboxNodeIdentity(authority, nodeHandle, expectedCommand
       if (currentAuthority.startTimeTicks !== authority.startTimeTicks) {
         throw new Error("Sandbox child PID changed before Node admission.");
       }
-      executable = await whileChildOpen(
-        open10(`/proc/${authority.pid}/exe`, fsConstants10.O_RDONLY)
-      );
+      executable = await open10(`/proc/${authority.pid}/exe`, fsConstants10.O_RDONLY);
+      if (childHasClosed) {
+        await closedBeforeIdentity;
+      }
       const actualNode = await executable.stat({ bigint: true });
       const commandLineBytes = await whileChildOpen(
         readFile5(`/proc/${authority.pid}/cmdline`)
@@ -56628,6 +56781,10 @@ var SandboxedStdioClientTransport = class {
   protocolFailed = false;
   protocolAdmitted = false;
   started = false;
+  startupStage = "pre-spawn-validation";
+  monitorExitCode = null;
+  monitorSignal = null;
+  sandboxExitCode = null;
   stdoutBufferedBytes = 0;
   stdoutChunks = [];
   startupBlocker;
@@ -56642,6 +56799,15 @@ var SandboxedStdioClientTransport = class {
   }
   get pid() {
     return this.childPid;
+  }
+  startupDiagnostics() {
+    return {
+      schema: "easyeda-pro-control.sandbox-startup-diagnostics.v1",
+      stage: this.startupStage,
+      monitorExitCode: this.monitorExitCode,
+      monitorSignal: this.monitorSignal,
+      sandboxExitCode: this.sandboxExitCode
+    };
   }
   notifyClose() {
     if (!this.closeNotified) {
@@ -56807,6 +56973,7 @@ var SandboxedStdioClientTransport = class {
             lineBytes.toString("utf8"),
             state
           );
+          this.sandboxExitCode = state.exitCode;
           if (childPid !== void 0 && !settled) {
             const namespaces = state.childNamespaces;
             if (namespaces === null) {
@@ -56845,6 +57012,7 @@ var SandboxedStdioClientTransport = class {
     try {
       await this.options.beforeSpawn();
       await this.options.afterPreSpawnValidationForTesting?.();
+      this.startupStage = "process-spawn";
       const child = spawn3(
         this.options.descriptorSanitizer.executionPath,
         [
@@ -56880,6 +57048,10 @@ var SandboxedStdioClientTransport = class {
         }
       );
       this.child = child;
+      child.once("exit", (code, signal) => {
+        this.monitorExitCode = code;
+        this.monitorSignal = signal;
+      });
       const childClose = Promise.withResolvers();
       this.childClosed = childClose.promise;
       child.once("close", () => {
@@ -56925,6 +57097,7 @@ var SandboxedStdioClientTransport = class {
       this.startupBlocker = blocker;
       const childPidPromise = this.monitorStatus(status);
       await once(child, "spawn");
+      this.startupStage = "pid-admission";
       const monitorPid = child.pid;
       if (monitorPid === void 0) {
         throw new Error("Bubblewrap monitor PID is unavailable after spawn.");
@@ -56946,12 +57119,14 @@ var SandboxedStdioClientTransport = class {
       await writeComplete(blocker, Buffer.from([1]));
       blocker.end();
       this.startupBlocker = void 0;
+      this.startupStage = "node-admission";
       await waitForSandboxNodeIdentity(
         authority,
         this.options.node.handle,
         childArguments,
         childClose.promise
       );
+      this.startupStage = "supervisor-readiness";
       await Promise.race([
         this.supervisorReadySignal.promise,
         childClose.promise.then(() => {
@@ -56968,6 +57143,7 @@ var SandboxedStdioClientTransport = class {
       if (child.exitCode !== null || child.signalCode !== null) {
         throw new Error("Bubblewrap monitor exited before sandbox admission.");
       }
+      this.startupStage = "post-ready-validation";
       await this.options.beforePostReadyValidationForTesting?.();
       await assertSandboxProcessTopology(
         authority,
@@ -56980,6 +57156,7 @@ var SandboxedStdioClientTransport = class {
         throw new Error("The sandbox status or protocol failed during admission.");
       }
       this.childPid = childPid;
+      this.startupStage = "bootstrap-delivery";
       await deliverSandboxBootstrap(
         child.stdin,
         this.options.bootstrapFrame,
@@ -57008,6 +57185,7 @@ var SandboxedStdioClientTransport = class {
         throw new Error("The sandbox protocol failed before authority admission.");
       }
       this.protocolAdmitted = true;
+      this.startupStage = "mcp-initialization";
     } catch (error51) {
       this.options.bootstrapFrame.fill(0);
       const failures = [error51];
@@ -57339,10 +57517,24 @@ function createReviewedUpstreamSeccompProgram() {
 }
 
 // server/src/upstream.ts
-function startupFailureWithStderr(error51, diagnosticBytes, diagnosticSha256) {
-  return diagnosticBytes === 0 ? error51 : new Error(
-    `EasyEDA upstream emitted ${String(diagnosticBytes)} private diagnostic bytes (SHA-256 ${diagnosticSha256}); content is withheld.`,
-    { cause: error51 }
+var UpstreamStartupError = class extends Error {
+  startupDiagnostics;
+  constructor(cause, diagnosticBytes, diagnosticSha256, startupDiagnostics) {
+    const stage = startupDiagnostics === void 0 ? "" : ` Startup stage: ${startupDiagnostics.stage}.`;
+    super(
+      `EasyEDA upstream startup failed.${stage} Emitted ${String(diagnosticBytes)} private diagnostic bytes (SHA-256 ${diagnosticSha256}); content is withheld.`,
+      { cause }
+    );
+    this.name = "UpstreamStartupError";
+    this.startupDiagnostics = startupDiagnostics;
+  }
+};
+function startupFailureWithStderr(error51, diagnosticBytes, diagnosticSha256, startupDiagnostics) {
+  return diagnosticBytes === 0 && startupDiagnostics === void 0 ? error51 : new UpstreamStartupError(
+    error51,
+    diagnosticBytes,
+    diagnosticSha256,
+    startupDiagnostics
   );
 }
 async function sha256File(path) {
@@ -57411,7 +57603,7 @@ async function prepareAuthenticatedBridgeGateway(testingPublicPort, controlRoot)
   const maximumPayloadBytes = Number(
     process14.env["EASYEDA_BRIDGE_MAX_PAYLOAD_SIZE"] ?? "10485760"
   );
-  const backendPort = await allocatePrivateLoopbackPort();
+  const backendPort = await allocatePrivateLoopbackPort(publicPort);
   const backendSessionToken = randomBytes2(48).toString("base64url");
   return {
     backendPort,
@@ -57459,13 +57651,13 @@ var UpstreamEasyedaClient = class {
     if (this.client) {
       return this.client;
     }
+    if (this.connectPromise) {
+      return this.connectPromise;
+    }
     if (this.transport !== null || this.bridgeGateway !== null) {
       throw new Error(
         "The prior EasyEDA upstream generation has incomplete cleanup; call close() before retrying."
       );
-    }
-    if (this.connectPromise) {
-      return this.connectPromise;
     }
     this.connectPromise = this.#connect();
     try {
@@ -57704,7 +57896,8 @@ var UpstreamEasyedaClient = class {
       const startupError = startupFailureWithStderr(
         error51,
         this.stderrBytes,
-        this.stderrDigest.copy().digest("hex")
+        this.stderrDigest.copy().digest("hex"),
+        transport2.startupDiagnostics()
       );
       this.stderrBytes = 0;
       this.stderrDigest = createHash10("sha256");
@@ -58598,7 +58791,8 @@ function failure(error51) {
       message: errorRecord["message"] ?? String(error51),
       mismatches: errorRecord["mismatches"],
       assertionResults: errorRecord["assertionResults"],
-      blockingOperations: errorRecord["blockingOperations"]
+      blockingOperations: errorRecord["blockingOperations"],
+      ...error51 instanceof UpstreamStartupError ? { startupDiagnostics: error51.startupDiagnostics } : {}
     }
   };
   return {
@@ -59323,10 +59517,11 @@ registerFacadeTool(
   "easyeda_control_discover",
   {
     title: "Discover EasyEDA capabilities",
-    description: "Search the upstream EasyEDA tool catalog and show conservative read/write classification, annotations, and optionally schemas.",
+    description: "Search the reviewed upstream catalog locally by default, without starting a bridge. Each entry names its admitted facade route or marks it unavailable; upstream read-only annotations are not facade permission. Explicit source=live retrieves current schemas after startup succeeds.",
     inputSchema: {
       query: external_exports.string().default(""),
-      mode: external_exports.enum(["all", "read", "write"]).default("all"),
+      mode: external_exports.enum(["all", "read", "write"]).default("read"),
+      source: external_exports.enum(["local", "live"]).default("local"),
       limit: external_exports.number().int().min(1).max(100).default(30),
       includeSchemas: external_exports.boolean().default(false)
     },

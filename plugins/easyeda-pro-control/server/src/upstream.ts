@@ -45,6 +45,7 @@ import { encodeBridgeBootstrapSecret } from "./upstream-bootstrap.ts";
 import { serializeCapturedUpstreamModuleGraph } from "./upstream-module-execution.ts";
 import { stagePrivateRuntimePayload } from "./private-runtime-payload.ts";
 import { SandboxedStdioClientTransport } from "./sandboxed-stdio-client-transport.ts";
+import type { SandboxStartupDiagnostics } from "./sandboxed-stdio-client-transport.ts";
 import { stageReviewedSupervisorExecution } from "./supervisor-execution.ts";
 import { createReviewedUpstreamSeccompProgram } from "./upstream-seccomp.ts";
 import type { UpstreamLauncherFingerprint } from "./core.ts";
@@ -94,16 +95,40 @@ interface InstalledBundleFingerprint {
   };
 }
 
+export class UpstreamStartupError extends Error {
+  public readonly startupDiagnostics: SandboxStartupDiagnostics | undefined;
+
+  public constructor(
+    cause: unknown,
+    diagnosticBytes: number,
+    diagnosticSha256: string,
+    startupDiagnostics?: SandboxStartupDiagnostics,
+  ) {
+    const stage = startupDiagnostics === undefined
+      ? ""
+      : ` Startup stage: ${startupDiagnostics.stage}.`;
+    super(
+      `EasyEDA upstream startup failed.${stage} Emitted ${String(diagnosticBytes)} private diagnostic bytes (SHA-256 ${diagnosticSha256}); content is withheld.`,
+      { cause },
+    );
+    this.name = "UpstreamStartupError";
+    this.startupDiagnostics = startupDiagnostics;
+  }
+}
+
 export function startupFailureWithStderr(
   error: unknown,
   diagnosticBytes: number,
   diagnosticSha256: string,
+  startupDiagnostics?: SandboxStartupDiagnostics,
 ): unknown {
-  return diagnosticBytes === 0
+  return diagnosticBytes === 0 && startupDiagnostics === undefined
     ? error
-    : new Error(
-        `EasyEDA upstream emitted ${String(diagnosticBytes)} private diagnostic bytes (SHA-256 ${diagnosticSha256}); content is withheld.`,
-        { cause: error },
+    : new UpstreamStartupError(
+        error,
+        diagnosticBytes,
+        diagnosticSha256,
+        startupDiagnostics,
       );
 }
 
@@ -206,7 +231,7 @@ async function prepareAuthenticatedBridgeGateway(
   const maximumPayloadBytes = Number(
     process.env["EASYEDA_BRIDGE_MAX_PAYLOAD_SIZE"] ?? "10485760",
   );
-  const backendPort = await allocatePrivateLoopbackPort();
+  const backendPort = await allocatePrivateLoopbackPort(publicPort);
   const backendSessionToken = randomBytes(48).toString("base64url");
   return {
     backendPort,
@@ -260,13 +285,13 @@ export class UpstreamEasyedaClient {
     if (this.client) {
       return this.client;
     }
+    if (this.connectPromise) {
+      return this.connectPromise;
+    }
     if (this.transport !== null || this.bridgeGateway !== null) {
       throw new Error(
         "The prior EasyEDA upstream generation has incomplete cleanup; call close() before retrying.",
       );
-    }
-    if (this.connectPromise) {
-      return this.connectPromise;
     }
     this.connectPromise = this.#connect();
     try {
@@ -529,6 +554,7 @@ export class UpstreamEasyedaClient {
         error,
         this.stderrBytes,
         this.stderrDigest.copy().digest("hex"),
+        transport.startupDiagnostics(),
       );
       this.stderrBytes = 0;
       this.stderrDigest = createHash("sha256");

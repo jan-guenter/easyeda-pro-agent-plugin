@@ -494,11 +494,26 @@ async function closeBoundFile(file: BoundFile): Promise<void> {
 
 async function readStableText(file: BoundFile, label: string): Promise<string> {
   const before = await file.handle.stat({ bigint: true });
-  const text = await file.handle.readFile("utf8");
+  const maximumBytes = 1024 * 1024;
+  if (before.size < 0n || before.size > BigInt(maximumBytes)) {
+    throw new Error(`${label} exceeds the ${maximumBytes}-byte limit.`);
+  }
+  const bytes = Buffer.alloc(Number(before.size) + 1);
+  let offset = 0;
+  while (offset < bytes.length) {
+    const { bytesRead } = await file.handle.read(bytes, offset, bytes.length - offset, offset);
+    if (bytesRead === 0) {
+      break;
+    }
+    offset += bytesRead;
+  }
   const after = await file.handle.stat({ bigint: true });
   assertStableFile(before, after, label);
   assertManagedFileAuthority(file.directory, after, label);
-  return text;
+  if (BigInt(offset) !== before.size) {
+    throw new Error(`${label} changed while it was being read.`);
+  }
+  return bytes.subarray(0, offset).toString("utf8");
 }
 
 async function sha256Handle(
@@ -901,6 +916,21 @@ async function stableSourceSnapshot(
   );
 }
 
+async function assertSourceSnapshotCurrent(
+  sourceFile: BoundFile,
+  sourceDatabase: DatabaseSync,
+  snapshot: Readonly<SourceSnapshot>,
+): Promise<void> {
+  await assertBoundPathIdentity(sourceFile, "Checkpoint source");
+  const current = await sourceFile.handle.stat({ bigint: true });
+  assertStableFile(snapshot.stat, current, "Checkpoint source");
+  // A WAL commit need not change the main database inode or timestamps. Check
+  // SQLite's connection-local generation after the last awaited source check.
+  if (dataVersion(sourceDatabase) !== snapshot.dataVersion) {
+    throw new Error("Checkpoint source changed after its stable snapshot was created.");
+  }
+}
+
 function openTemporarySnapshotDirectory(): Promise<BoundDirectory> {
   return openBoundDirectory(tmpdir(), false);
 }
@@ -1099,6 +1129,7 @@ export async function createCheckpoint({
     await assertBoundPathIdentity(checkpointFile, "Checkpoint");
     await assertBoundPathIdentity(receiptFile, "Checkpoint receipt");
     await destination.handle.sync();
+    await assertSourceSnapshotCurrent(sourceFile, sourceDatabase, snapshot);
     completed = true;
     return receipt;
   } catch (error) {
@@ -1283,6 +1314,13 @@ export async function verifyCheckpoint(
     const ok =
       sourceMatchesReceipt && checkpointMatchesReceipt && sourceEqualsCheckpoint;
     await beforeTemporarySnapshotCleanup?.();
+    await assertBoundPathIdentity(checkpointFile, "Checkpoint artifact");
+    assertStableFile(
+      checkpointHash.info,
+      await checkpointFile.handle.stat({ bigint: true }),
+      "Checkpoint artifact",
+    );
+    await assertSourceSnapshotCurrent(sourceFile, sourceDatabase, sourceSnapshot);
     return {
       ok,
       receiptPath,

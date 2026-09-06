@@ -1,8 +1,25 @@
 # Connection and context
 
+## Setup and startup diagnosis
+
+Marketplace installation does not provision a token or import an EasyEDA extension. This release requires the locally built, private mutually authenticated bridge extension. From a trusted plugin checkout with the pinned Node/npm installed, run `ulimit -c 0`, verify `test "$(ulimit -c)" = "0"`, then run `npm run bridge:provision` and `npm run bridge:build`. Import only the exact content-addressed `.eext` path reported as `outputPath` through EasyEDA's Extension Manager. The fixed `.eext.receipt.json` selects the current generation. Never choose an archive by wildcard. Treat the key and generated `.eext` as credentials: do not print, share, commit, or loosen their permissions. The fixed loopback handshake never transmits the HMAC key. Restart the MCP after import and require authenticated status evidence. Do not substitute the unauthenticated stock bridge.
+
+Distinguish these failure layers before changing anything:
+
+| Observation | What it proves | Next step |
+|---|---|---|
+| Tool is absent or host rejects dispatch as unavailable | No facade handler result | Check the installed plugin's enabled state and use a new task after reinstall. Do not bypass the host by starting another bridge owner. |
+| Structured status error during upstream startup | Facade handler ran, but startup failed | Run `npm run doctor` offline from the trusted checkout. Use reported stage/exit details and failed checks; private stderr remains withheld. Do not infer the cause from its hash or length. |
+| Status succeeds but has no authenticated session | Upstream responded; extension connection is unproven | Verify the selected receipt/import and bridge connection. Do not call context or design readers yet. |
+| Authenticated session with `validation-required` tuple | Connection succeeded; compatibility remains unadmitted | Collect bounded status/context/public-read evidence for review. Exact/private calls remain blocked. |
+
+Local `easyeda_control_discover` is available independently of upstream startup. It defaults to `source: "local"`, `mode: "read"`, reports `catalogSource` and `schemasAvailable`, and identifies an admitted `facadeTool` or `availability: "unavailable"`. It never starts an upstream process in local mode. For current argument schemas, explicitly request `source: "live", includeSchemas: true` only after startup succeeds. During quarantine that request falls back to the marked local catalog. A catalog entry is not proof that its operation is allowed or that an extension is connected.
+
+Passing the offline doctor does not prove startup under the model host's process environment and does not clear a failed live status. Older installed snapshots may report only the private stderr length/hash; do not invent missing stage or exit evidence.
+
 ## Prove the chain
 
-Start with `easyeda_control_status`. Require all of the following before a design call:
+Start with `easyeda_control_status`. The following describe a fully admitted connection. Candidate validation may collect status, context, and narrowly reviewed public generic reads with the actual fingerprint while the connected build ID is `validation-required`. That exception never admits exact/private operations or bypasses authentication, launcher identity, quarantine, or context checks:
 
 - the control facade is responsive;
 - the upstream MCP child is responsive;
@@ -73,7 +90,7 @@ There is no proven public open-by-UUID path that handles every schematic-sheet s
 
 Use `easyeda_control_exact_read` when a claim must be complete enough for mutation proof. The facade generates the source, checks exact project/document/type/tab at generated entry and after each call, validates an explicit payload shape, runs it twice, and rejects unequal samples. Both samples are bound to one authenticated renderer session. It still cannot detect a user switching away and back inside that same renderer while an awaited reader executes. Keep the active tab unchanged for the entire read or guarded operation. Exact field coverage and limitations are listed in [capability-matrix.md](capability-matrix.md).
 
-Use `easyeda_control_discover` to inspect upstream tool schemas. During orphan-risk quarantine it returns a conservative facade-local snapshot of the reviewed 116 tool names and classifications, marks live schemas unavailable, and does not start or connect the upstream process. After recovery it uses the live catalog. Use `easyeda_control_read` or `easyeda_control_read_batch` for bounded advisory queries. They bind available project/document/tab arguments, enforce editor-family compatibility, and compare context before and after dispatch. The admitted PCB constraint readers must derive their board data from the proven live board; the facade rejects any caller-supplied `boardData` property. Context checks do not prevent an asynchronous upstream handler from sampling a different tab between those checks, including a switch away and back. Generic reads may supplement an audit but cannot satisfy guarded mutation phases.
+Use explicit live `easyeda_control_discover` to inspect current upstream tool schemas. Its default local mode uses the reviewed 116-tool snapshot without starting a bridge. Use `easyeda_control_read` or `easyeda_control_read_batch` for bounded advisory queries. They bind available project/document/tab arguments, enforce editor-family compatibility, and compare context before and after dispatch. The admitted PCB constraint readers must derive their board data from the proven live board; the facade rejects any caller-supplied `boardData` property. Context checks do not prevent an asynchronous upstream handler from sampling a different tab between those checks, including a switch away and back. Generic reads may supplement an audit but cannot satisfy guarded mutation phases.
 
 The facade excludes upstream tools that are labeled read-only but mutate visible UI state. In the pinned upstream build, `easyeda_canvas_locate` changes the viewport and `easyeda_schematic_layout_qa` can capture with selection clearing by default; neither is admitted through generic reads. Use the guarded capture path for supported visual evidence.
 
