@@ -3,19 +3,44 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { lstat, readFile, readdir } from "node:fs/promises";
 import { promisify } from "node:util";
-import { dirname, extname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { extname, join, resolve } from "node:path";
 
 import {
   CONTROL_VERSION,
   DESCRIPTOR_SANITIZER_BYTES,
   DESCRIPTOR_SANITIZER_FILE_NAME,
   DESCRIPTOR_SANITIZER_SHA256,
-} from "../plugins/easyeda-pro-control/server/src/core.ts";
-import { validateReleaseVersionParity } from "../plugins/easyeda-pro-control/scripts/release-version.ts";
+} from "../server/src/core.ts";
+import { validateReleaseVersionParity } from "./release-version.ts";
 
+import {
+  bridgeExtensionManifestSchema,
+  bundledRuntimeInventorySchema,
+  hasSafeNpmInstallConfiguration,
+  hasStrictBridgeCompilerOptions,
+  lintConfigurationSchema,
+  marketplaceSchema,
+  mcpConfigurationSchema,
+  packageLockSchema,
+  packageManifestSchema,
+  parseRepositoryJson,
+  pluginManifestSchema,
+  readRepositoryJson,
+  reviewedCompatibilitySchema,
+  safeRepositoryPath,
+  typescriptConfigurationSchema,
+  unreviewedJavaScriptPaths,
+} from "./repository-validation.ts";
+
+interface CheckResult {
+  readonly name: string;
+  readonly ok: boolean;
+  readonly detail?: string;
+}
+
+// oxlint-disable-next-line typescript/strict-void-return -- Node execFile returns its ChildProcess while promisify consumes only its callback.
 const execFileAsync = promisify(execFile);
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(import.meta.dirname, "../../..");
 const marketplacePath = join(root, ".agents", "plugins", "marketplace.json");
 const pluginRoot = join(root, "plugins", "easyeda-pro-control");
 const authenticatedBridgeDistPath =
@@ -25,7 +50,7 @@ const descriptorSanitizerRelativePath =
   `plugins/easyeda-pro-control/server/bin/${DESCRIPTOR_SANITIZER_FILE_NAME}`;
 const VALIDATION_CANDIDATE_BRIDGE_BUILD_ID = "ded07x99dcxb504";
 const REVIEWED_CONNECTED_BRIDGE_BUILD_ID = "d18b6xd531xe6ca";
-const checks = [];
+const checks: CheckResult[] = [];
 const MAX_REPOSITORY_FILE_BYTES = 8 * 1024 * 1024;
 const EXPECTED_TOOL_NAMES = [
   "easyeda_control_status",
@@ -47,7 +72,7 @@ const EXPECTED_TOOL_NAMES = [
   "easyeda_control_evidence_recover",
   "easyeda_control_evidence_verify",
   "easyeda_control_artifact_read",
-].sort();
+].toSorted();
 const AUTO_APPROVED_TOOLS = new Set([
   "easyeda_control_status",
   "easyeda_control_discover",
@@ -56,7 +81,7 @@ const AUTO_APPROVED_TOOLS = new Set([
   "easyeda_control_artifact_read",
 ]);
 
-function check(name, condition, detail) {
+function check(name: string, condition: unknown, detail?: string): void {
   checks.push({
     name,
     ok: Boolean(condition),
@@ -64,24 +89,16 @@ function check(name, condition, detail) {
   });
 }
 
-async function exists(path) {
+async function exists(path: string): Promise<boolean> {
   try {
-    return (await lstat(path)).isFile();
+    const information = await lstat(path);
+    return information.isFile();
   } catch {
     return false;
   }
 }
 
-function safeRepositoryPath(path) {
-  return (
-    path.length > 0 &&
-    !path.includes("\0") &&
-    !path.startsWith("/") &&
-    path.split("/").every((segment) => segment !== ".." && segment !== "")
-  );
-}
-
-const marketplace = JSON.parse(await readFile(marketplacePath, "utf8"));
+const marketplace = await readRepositoryJson(marketplaceSchema, marketplacePath);
 const entry = marketplace.plugins?.find(
   (plugin) => plugin.name === "easyeda-pro-control",
 );
@@ -104,11 +121,11 @@ check(
 );
 
 const manifestPath = join(pluginRoot, ".codex-plugin", "plugin.json");
-const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+const manifest = await readRepositoryJson(pluginManifestSchema, manifestPath);
 check("manifest-name", manifest.name === "easyeda-pro-control");
 check(
   "manifest-version",
-  /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(
+  /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u.test(
     manifest.version,
   ),
 );
@@ -126,17 +143,17 @@ check(
 );
 check(
   "manifest-disabled-writer",
-  /writer is experimental and runtime-disabled/i.test(
-    String(manifest.interface?.longDescription),
+  /writer is experimental and runtime-disabled/iu.test(
+    manifest.interface.longDescription,
   ),
 );
 check(
   "manifest-validation-required-truth",
-  String(manifest.description).includes("Safety-gated") &&
-    String(manifest.interface?.longDescription).includes(
+  manifest.description.includes("Safety-gated") &&
+    manifest.interface.longDescription.includes(
       "currently validation-required",
     ) &&
-    String(manifest.interface?.longDescription).includes(
+    manifest.interface.longDescription.includes(
       "exact and private operations fail-closed",
     ),
 );
@@ -157,11 +174,13 @@ const required = [
   ".codex-plugin/plugin.json",
   ".mcp.json",
   ".nvmrc",
+  ".npmrc",
   "LICENSE",
   "THIRD_PARTY_NOTICES.md",
   "package.json",
   "package-lock.json",
   "tsconfig.json",
+  "tsconfig.bridge-stubs.json",
   ".oxlintrc.json",
   ".oxlintrc.bridge.json",
   "reviewed-compatibility.json",
@@ -188,7 +207,9 @@ const required = [
   "scripts/bundled-runtime-license.ts",
   "scripts/provision-bridge-token.ts",
   "scripts/release-version.ts",
+  "scripts/repository-validation.ts",
   "scripts/reviewed-bridge-source.ts",
+  "scripts/validate-repository.ts",
   "server/bin/easyeda-fd-sanitizer",
   "server/dist/server.mjs",
   "server/dist/upstream-supervisor.mjs",
@@ -203,6 +224,7 @@ const required = [
   "server/tests/bundled-runtime-license.test.ts",
   "server/tests/descriptor-sanitizer.test.ts",
   "server/tests/release-version.test.ts",
+  "server/tests/repository-validation.test.ts",
   "skills/easyeda-pro-control/SKILL.md",
   "skills/easyeda-pro-control/agents/openai.yaml",
 ];
@@ -210,7 +232,7 @@ for (const path of required) {
   check(`required:${path}`, await exists(join(pluginRoot, path)));
 }
 
-const mcp = JSON.parse(await readFile(join(pluginRoot, ".mcp.json"), "utf8"));
+const mcp = await readRepositoryJson(mcpConfigurationSchema, join(pluginRoot, ".mcp.json"));
 const mcpServer = mcp.mcpServers?.easyeda_pro_control;
 check("mcp-stdio", mcpServer?.type === "stdio");
 check(
@@ -226,11 +248,11 @@ check(
 );
 check(
   "mcp-bridge-token-path",
-  typeof mcpServer?.env?.EASYEDA_CONTROL_DATA_DIR === "string" &&
-    mcpServer?.env?.EASYEDA_BRIDGE_TOKEN_FILE ===
-      join(mcpServer.env.EASYEDA_CONTROL_DATA_DIR, "bridge-token"),
+  typeof mcpServer?.env?.["EASYEDA_CONTROL_DATA_DIR"] === "string" &&
+    mcpServer?.env?.["EASYEDA_BRIDGE_TOKEN_FILE"] ===
+      join(mcpServer.env["EASYEDA_CONTROL_DATA_DIR"], "bridge-token"),
 );
-const policyNames = Object.keys(mcpServer?.tools ?? {}).sort();
+const policyNames = Object.keys(mcpServer?.tools ?? {}).toSorted();
 check(
   "mcp-exact-policy-tools",
   JSON.stringify(policyNames) === JSON.stringify(EXPECTED_TOOL_NAMES),
@@ -272,12 +294,7 @@ const thirdPartyNoticeSource = await readFile(
   join(root, "THIRD_PARTY_NOTICES.md"),
   "utf8",
 );
-const bundledRuntimeInventory = JSON.parse(
-  await readFile(
-    join(pluginRoot, "licenses", "bundled-runtime.json"),
-    "utf8",
-  ),
-);
+const bundledRuntimeInventory = await readRepositoryJson(bundledRuntimeInventorySchema, join(pluginRoot, "licenses", "bundled-runtime.json"));
 const ciSource = await readFile(
   join(root, ".github", "workflows", "ci.yml"),
   "utf8",
@@ -287,6 +304,11 @@ const skillSource = await readFile(
   join(pluginRoot, "skills", "easyeda-pro-control", "SKILL.md"),
   "utf8",
 );
+const connectionReferenceSource = await readFile(
+  join(pluginRoot, "skills", "easyeda-pro-control", "references", "connection-and-context.md"),
+  "utf8",
+);
+const skillSetupSources = `${skillSource}\n${connectionReferenceSource}`;
 const compatibilityReferenceSource = await readFile(
   join(
     pluginRoot,
@@ -297,9 +319,7 @@ const compatibilityReferenceSource = await readFile(
   ),
   "utf8",
 );
-const reviewedCompatibilityManifest = JSON.parse(
-  await readFile(join(pluginRoot, "reviewed-compatibility.json"), "utf8"),
-);
+const reviewedCompatibilityManifest = await readRepositoryJson(reviewedCompatibilitySchema, join(pluginRoot, "reviewed-compatibility.json"));
 const agentSource = await readFile(
   join(
     pluginRoot,
@@ -361,55 +381,21 @@ const vendoredBridgeWatchSource = await readFile(
   ),
   "utf8",
 );
-const vendoredBridgePackageManifest = JSON.parse(
-  await readFile(
-    join(pluginRoot, "easyeda-bridge-extension", "package.json"),
-    "utf8",
-  ),
-);
-const vendoredBridgeExtensionManifest = JSON.parse(
-  await readFile(
-    join(pluginRoot, "easyeda-bridge-extension", "extension.json"),
-    "utf8",
-  ),
-);
-const pluginPackageManifest = JSON.parse(
-  await readFile(join(pluginRoot, "package.json"), "utf8"),
-);
-const pluginNvmVersion = (
-  await readFile(join(pluginRoot, ".nvmrc"), "utf8")
-).trim();
-const pluginPackageLockManifest = JSON.parse(
-  await readFile(join(pluginRoot, "package-lock.json"), "utf8"),
-);
+const vendoredBridgePackageManifest = await readRepositoryJson(packageManifestSchema, join(pluginRoot, "easyeda-bridge-extension", "package.json"));
+const vendoredBridgeExtensionManifest = await readRepositoryJson(bridgeExtensionManifestSchema, join(pluginRoot, "easyeda-bridge-extension", "extension.json"));
+const pluginPackageManifest = await readRepositoryJson(packageManifestSchema, join(pluginRoot, "package.json"));
+const pluginNvmSource = await readFile(join(pluginRoot, ".nvmrc"), "utf8");
+const pluginNvmVersion = pluginNvmSource.trim();
+const pluginNpmConfiguration = await readFile(join(pluginRoot, ".npmrc"), "utf8");
+const pluginPackageLockManifest = await readRepositoryJson(packageLockSchema, join(pluginRoot, "package-lock.json"));
 const bridgeLintConfigSource = await readFile(
   join(pluginRoot, ".oxlintrc.bridge.json"),
   "utf8",
 );
-const bridgeLintConfig = JSON.parse(
-  bridgeLintConfigSource
-    .split("\n")
-    .filter((line) => !line.trimStart().startsWith("//"))
-    .join("\n"),
-);
-const bridgeTsconfig = JSON.parse(
-  (await readFile(
-    join(pluginRoot, "easyeda-bridge-extension", "tsconfig.json"),
-    "utf8",
-  ))
-    .split("\n")
-    .filter((line) => !line.trimStart().startsWith("//"))
-    .join("\n"),
-);
-const bridgeTestTsconfig = JSON.parse(
-  (await readFile(
-    join(pluginRoot, "easyeda-bridge-extension", "tsconfig.test.json"),
-    "utf8",
-  ))
-    .split("\n")
-    .filter((line) => !line.trimStart().startsWith("//"))
-    .join("\n"),
-);
+const bridgeLintConfig = parseRepositoryJson(lintConfigurationSchema, bridgeLintConfigSource, true);
+const bridgeTsconfig = await readRepositoryJson(typescriptConfigurationSchema, join(pluginRoot, "easyeda-bridge-extension", "tsconfig.json"), true);
+const bridgeTestTsconfig = await readRepositoryJson(typescriptConfigurationSchema, join(pluginRoot, "easyeda-bridge-extension", "tsconfig.test.json"), true);
+const bridgeStubTsconfig = await readRepositoryJson(typescriptConfigurationSchema, join(pluginRoot, "tsconfig.bridge-stubs.json"));
 const vendoredBridgeLicense = await readFile(
   join(pluginRoot, "easyeda-bridge-extension", "LICENSE"),
   "utf8",
@@ -536,15 +522,15 @@ check(
     "node scripts/build-descriptor-sanitizer.ts --write" &&
     pluginPackageManifest.scripts?.["sanitizer:check"] ===
       "node scripts/build-descriptor-sanitizer.ts --check" &&
-    pluginPackageManifest.scripts?.build ===
+    pluginPackageManifest.scripts?.["build"] ===
       "npm run sanitizer:check && node scripts/build-server.ts" &&
-    pluginPackageManifest.scripts?.verify?.includes("npm run build"),
+    pluginPackageManifest.scripts?.["verify"]?.includes("npm run build"),
 );
 check(
   "vendored-bridge-strict-type-aware-lint",
   pluginPackageManifest.scripts?.["bridge:lint"] ===
     "oxlint --config .oxlintrc.bridge.json --type-aware --deny-warnings easyeda-bridge-extension/src easyeda-bridge-extension/tests easyeda-bridge-extension/scripts easyeda-bridge-extension/vitest.config.ts" &&
-    pluginPackageManifest.scripts?.verify?.includes("npm run bridge:lint") &&
+    pluginPackageManifest.scripts?.["verify"]?.includes("npm run bridge:lint") === true &&
     JSON.stringify(bridgeLintConfig.extends) ===
       JSON.stringify(["./.oxlintrc.json"]) &&
     JSON.stringify(bridgeLintConfig.ignorePatterns) ===
@@ -564,72 +550,60 @@ check(
     ].some((path) => bridgeUnsafeExemptFiles.has(path)),
   JSON.stringify([...bridgeUnsafeExemptFiles].toSorted()),
 );
-const bridgeStrictFlags = [
-  "strict",
-  "allowUnreachableCode",
-  "allowUnusedLabels",
-  "exactOptionalPropertyTypes",
-  "forceConsistentCasingInFileNames",
-  "isolatedModules",
-  "noFallthroughCasesInSwitch",
-  "noImplicitOverride",
-  "noImplicitReturns",
-  "noUncheckedIndexedAccess",
-  "noUncheckedSideEffectImports",
-  "noUnusedLocals",
-  "noUnusedParameters",
-  "noImplicitAny",
-  "skipLibCheck",
-  "useUnknownInCatchVariables",
-  "verbatimModuleSyntax",
-  "erasableSyntaxOnly",
-];
 check(
   "vendored-bridge-strict-typescript-coverage",
   pluginPackageManifest.scripts?.["bridge:typecheck"] ===
     "tsc --noEmit -p easyeda-bridge-extension/tsconfig.json && tsc --noEmit -p easyeda-bridge-extension/tsconfig.test.json" &&
-    vendoredBridgePackageManifest.scripts?.typecheck ===
+    vendoredBridgePackageManifest.scripts?.["typecheck"] ===
       "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json" &&
     bridgeTsconfig.compilerOptions?.target === "ES2020" &&
     JSON.stringify(bridgeTsconfig.include) === JSON.stringify(["src/**/*.ts"]) &&
     bridgeTestTsconfig.extends === "./tsconfig.json" &&
     JSON.stringify(bridgeTestTsconfig.include) ===
       JSON.stringify(["src/**/*.ts", "tests/**/*.ts", "vitest.config.ts"]) &&
-    bridgeStrictFlags.every((flag) =>
-      Object.hasOwn(bridgeTsconfig.compilerOptions ?? {}, flag),
-    ),
+    hasStrictBridgeCompilerOptions(bridgeTsconfig.compilerOptions),
+);
+check(
+  "vendored-bridge-fail-closed-stubs-strict-checkjs",
+  pluginPackageManifest.scripts["typecheck"] ===
+    "tsc --noEmit && tsc --noEmit -p tsconfig.bridge-stubs.json" &&
+    bridgeStubTsconfig.extends === "./tsconfig.json" &&
+    bridgeStubTsconfig.compilerOptions?.["allowJs"] === true &&
+    bridgeStubTsconfig.compilerOptions["checkJs"] === true &&
+    JSON.stringify(bridgeStubTsconfig.include) ===
+      JSON.stringify(["easyeda-bridge-extension/scripts/*.mjs"]),
 );
 check(
   "vendored-bridge-single-pinned-toolchain",
   vendoredBridgePackageManifest.name ===
     "easyeda-pro-control-authenticated-bridge" &&
-    vendoredBridgePackageManifest.private === true &&
-    vendoredBridgePackageManifest.devDependencies?.esbuild === "0.28.2" &&
-    vendoredBridgePackageManifest.devDependencies?.typescript === "7.0.2" &&
-    vendoredBridgePackageManifest.devDependencies?.vitest === "4.1.9" &&
-    vendoredBridgePackageManifest.devDependencies?.esbuild ===
-      pluginPackageManifest.devDependencies?.esbuild &&
-    vendoredBridgePackageManifest.devDependencies?.typescript ===
-      pluginPackageManifest.devDependencies?.typescript &&
-    vendoredBridgePackageManifest.devDependencies?.vitest ===
-      pluginPackageManifest.devDependencies?.vitest &&
+    
+    vendoredBridgePackageManifest.private &&
+    vendoredBridgePackageManifest.devDependencies?.["esbuild"] === "0.28.2" &&
+    vendoredBridgePackageManifest.devDependencies?.["typescript"] === "7.0.2" &&
+    vendoredBridgePackageManifest.devDependencies?.["vitest"] === "4.1.9" &&
+    vendoredBridgePackageManifest.devDependencies?.["esbuild"] ===
+      pluginPackageManifest.devDependencies?.["esbuild"] &&
+    vendoredBridgePackageManifest.devDependencies?.["typescript"] ===
+      pluginPackageManifest.devDependencies?.["typescript"] &&
+    vendoredBridgePackageManifest.devDependencies?.["vitest"] ===
+      pluginPackageManifest.devDependencies?.["vitest"] &&
     !Object.hasOwn(vendoredBridgePackageManifest.devDependencies ?? {}, "archiver") &&
     !(await exists(
       join(pluginRoot, "easyeda-bridge-extension", "package-lock.json"),
     )),
 );
 const bundledRuntimeDependencies = bundledRuntimeInventory.dependencies ?? [];
-const bundledRuntimeNoticePathsComplete = (
-  await Promise.all(
+const bundledRuntimeNoticeResults = await Promise.all(
     bundledRuntimeDependencies.map(
-      (dependency) =>
+      async (dependency): Promise<boolean> =>
         typeof dependency.noticePath === "string" &&
         safeRepositoryPath(dependency.noticePath) &&
         dependency.noticePath.startsWith("licenses/") &&
-        exists(join(pluginRoot, dependency.noticePath)),
+        await exists(join(pluginRoot, dependency.noticePath)),
     ),
-  )
-).every(Boolean);
+  );
+const bundledRuntimeNoticePathsComplete = bundledRuntimeNoticeResults.every(Boolean);
 check(
   "bundled-runtime-notice-inventory-unique",
   bundledRuntimeDependencies.length > 0 &&
@@ -827,7 +801,7 @@ check(
       !source.includes("execFile") &&
       !source.includes("from 'esbuild'"),
   ) &&
-    vendoredBridgePackageManifest.scripts?.build ===
+    vendoredBridgePackageManifest.scripts?.["build"] ===
       "node scripts/build.mjs" &&
     vendoredBridgePackageManifest.scripts?.["build:dev"] ===
       "node scripts/build.mjs" &&
@@ -850,7 +824,7 @@ check(
 check(
   "readme-authenticated-bridge-bootstrap",
   readmeSource.includes(
-    "npm ci\nnpm ls --all\nnpm audit signatures\nnpm audit --audit-level=high\nnpm run bridge:provision\nnpm run bridge:build",
+    "npm ci\nnpm ls --all\nnpm audit signatures\nnpm audit --audit-level=moderate\nnpm run bridge:provision\nnpm run bridge:build",
   ) &&
     readmeSource.includes("From\na trusted checkout of this repository") &&
     readmeSource.includes("Advanced") &&
@@ -861,12 +835,13 @@ check(
 );
 check(
   "skill-authenticated-bridge-required",
-  skillSource.includes(
+  skillSetupSources.includes(
     "requires the locally built, private mutually authenticated bridge",
   ) &&
-    skillSource.includes("never transmits the HMAC key") &&
-    skillSource.includes("generated `.eext` as credentials") &&
-    skillSource.includes("unauthenticated stock bridge"),
+    skillSetupSources.includes("never transmits the HMAC key") &&
+    skillSetupSources.includes("generated `.eext` as credentials") &&
+    skillSetupSources.includes("unauthenticated stock bridge") &&
+    skillSource.includes("references/connection-and-context.md"),
 );
 check(
   "doctor-does-not-trust-path-sqlite",
@@ -890,7 +865,6 @@ const bridgeCandidateTruthSources = [
   readmeSource,
   securitySource,
   engineeringRecordSource,
-  skillSource,
   compatibilityReferenceSource,
 ];
 check(
@@ -910,9 +884,8 @@ check(
     readmeSource.includes(
       "exact and private operations remain unavailable",
     ) &&
-    skillSource.includes(
-      "Do not call `easyeda_control_exact_read` while the candidate remains `validation-required`",
-    ) &&
+    skillSource.includes("references/compatibility.md") &&
+    skillSource.includes("validation-required") &&
     doctorSource.includes(
       '"authenticated-bridge-connected-build-id"',
     ) &&
@@ -922,7 +895,7 @@ check(
     doctorSource.includes(
       "differs from reviewed connected dispatcher build",
     ),
-  `reviewed=${String(reviewedCompatibilityManifest.connectedRuntime?.dispatcher?.buildId)}`,
+  `reviewed=${reviewedCompatibilityManifest.connectedRuntime.dispatcher.buildId}`,
 );
 check(
   "ci-pinned-environment",
@@ -975,9 +948,15 @@ check(
   "ci-audits-all-dependencies",
   ciSource.includes("npm ls --all") &&
     ciSource.includes("npm audit signatures") &&
-    ciSource.includes("npm audit --audit-level=high") &&
-    readmeSource.includes("npm audit --audit-level=high") &&
+    ciSource.includes("npm audit --audit-level=moderate") &&
+    readmeSource.includes("npm audit --audit-level=moderate") &&
     !ciSource.includes("npm audit --omit=dev"),
+);
+check(
+  "dependency-lifecycle-hooks-disabled",
+  hasSafeNpmInstallConfiguration(pluginNpmConfiguration) &&
+    ciSource.includes('test "$(npm config get ignore-scripts)" = "true"') &&
+    ciSource.includes("npm ci --ignore-scripts"),
 );
 check(
   "ci-packages-marketplace-subtree",
@@ -1048,7 +1027,7 @@ check(
 );
 check(
   "skill-declares-disabled-writer",
-  /writer is experimental and runtime-disabled/i.test(skillSource),
+  /writer is experimental and runtime-disabled/iu.test(skillSource),
 );
 check(
   "agent-default-prompt",
@@ -1065,10 +1044,16 @@ const gitFiles = await execFileAsync(
 const repositoryPaths = gitFiles.stdout
   .split("\0")
   .filter((path) => path.length > 0)
-  .sort();
+  .toSorted();
 check(
   "repository-paths-normalized",
   repositoryPaths.every((path) => safeRepositoryPath(path)),
+);
+const untypedJavaScriptPaths = unreviewedJavaScriptPaths(repositoryPaths);
+check(
+  "no-unreviewed-untyped-javascript",
+  untypedJavaScriptPaths.length === 0,
+  untypedJavaScriptPaths.join(", "),
 );
 const prohibitedExtensions = new Set([
   ".7z",
@@ -1111,14 +1096,14 @@ const prohibitedExactNames = new Set([
   "secrets.json",
   "token",
 ]);
-const prohibitedPaths = [];
-const symlinkPaths = [];
-const oversizedPaths = [];
-const binaryPaths = [];
-const secretHits = [];
-const privacyHits = [];
-const placeholderHits = [];
-const secretPatterns = [
+const prohibitedPaths: string[] = [];
+const symlinkPaths: string[] = [];
+const oversizedPaths: string[] = [];
+const binaryPaths: string[] = [];
+const secretHits: string[] = [];
+const privacyHits: string[] = [];
+const placeholderHits: string[] = [];
+const secretPatterns: readonly (readonly [string, RegExp])[] = [
   ["private-key", /-----BEGIN (?:DSA |EC |OPENSSH |PGP |RSA )?PRIVATE KEY-----/u],
   ["github-classic", /\bgh[opsu]_[A-Za-z0-9]{30,255}\b/u],
   ["github-fine-grained", /\bgithub_pat_[A-Za-z0-9_]{40,255}\b/u],
@@ -1150,7 +1135,7 @@ check(
 );
 const privateDesignName = ["Piano", "Pi"].join("");
 const privateDesignPath = ["/root/work/", "piano", "pi"].join("");
-const privacyPatterns = [
+const privacyPatterns: readonly (readonly [string, RegExp])[] = [
   ["private-design-name", new RegExp(`\\b${privateDesignName}\\b`, "u")],
   ["private-design-path", new RegExp(`${privateDesignPath}(?:/|\\b)`, "u")],
   [
@@ -1183,7 +1168,7 @@ for (const relativePath of repositoryPaths) {
     segments.some((segment) =>
       prohibitedDirectoryNames.has(segment.toLowerCase()),
     ) ||
-    prohibitedExactNames.has(basename) ||
+    (prohibitedExactNames.has(basename) && relativePath !== "plugins/easyeda-pro-control/.npmrc") ||
     basename.endsWith(".eext.receipt.json") ||
     (basename.startsWith(".env.") &&
       ![".env.example", ".env.sample"].includes(basename))
@@ -1241,7 +1226,7 @@ check(
 );
 check("no-prohibited-release-paths", prohibitedPaths.length === 0, prohibitedPaths.join(", "));
 
-async function collectTreeEntries(absoluteDirectory, relativeDirectory) {
+async function collectTreeEntries(absoluteDirectory: string, relativeDirectory: string): Promise<string[]> {
   let information;
   try {
     information = await lstat(absoluteDirectory);
@@ -1259,8 +1244,9 @@ async function collectTreeEntries(absoluteDirectory, relativeDirectory) {
   if (!information.isDirectory() || information.isSymbolicLink()) {
     return [relativeDirectory];
   }
-  const entries = [];
-  for (const child of (await readdir(absoluteDirectory)).toSorted()) {
+  const entries: string[] = [];
+  const children = await readdir(absoluteDirectory);
+  for (const child of children.toSorted()) {
     entries.push(
       ...(await collectTreeEntries(
         join(absoluteDirectory, child),

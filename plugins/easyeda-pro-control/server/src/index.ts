@@ -54,7 +54,7 @@ import { exactReadRequestSchema } from "./exact-readers.ts";
 import { acquireFacadeLease } from "./lease.ts";
 import { discoverReviewedOrLiveTools } from "./reviewed-upstream-tools.ts";
 import { buildDsnExportCode, wrapWithContextGuard } from "./runtime-scripts.ts";
-import { UpstreamEasyedaClient } from "./upstream.ts";
+import { UpstreamEasyedaClient, UpstreamStartupError } from "./upstream.ts";
 import { createSerializedShutdown } from "./shutdown.ts";
 
 const MAX_INLINE_RESULT_BYTES = 256 * 1024;
@@ -667,6 +667,9 @@ function failure(error: unknown): CallToolResult {
       mismatches: errorRecord["mismatches"],
       assertionResults: errorRecord["assertionResults"],
       blockingOperations: errorRecord["blockingOperations"],
+      ...(error instanceof UpstreamStartupError
+        ? { startupDiagnostics: error.startupDiagnostics }
+        : {}),
     },
   };
   return {
@@ -1606,10 +1609,11 @@ registerFacadeTool(
   {
     title: "Discover EasyEDA capabilities",
     description:
-      "Search the upstream EasyEDA tool catalog and show conservative read/write classification, annotations, and optionally schemas.",
+      "Search the reviewed upstream catalog locally by default, without starting a bridge. Each entry names its admitted facade route or marks it unavailable; upstream read-only annotations are not facade permission. Explicit source=live retrieves current schemas after startup succeeds.",
     inputSchema: {
       query: z.string().default(""),
-      mode: z.enum(["all", "read", "write"]).default("all"),
+      mode: z.enum(["all", "read", "write"]).default("read"),
+      source: z.enum(["local", "live"]).default("local"),
       limit: z.number().int().min(1).max(100).default(30),
       includeSchemas: z.boolean().default(false),
     },

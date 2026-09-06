@@ -1,6 +1,6 @@
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 
-import { filterTools } from "./core.ts";
+import { filterTools, isRecord, isReviewedLocalGenericRead } from "./core.ts";
 import type { FilterToolsOptions, ToolDescriptor } from "./core.ts";
 
 const REVIEWED_TOOL_NAMES = [
@@ -194,7 +194,7 @@ export function reviewedUpstreamToolCatalog(): Tool[] {
       name,
       title: name,
       description:
-        "Reviewed static catalog entry. Live tool descriptions and schemas are unavailable while orphan-risk quarantine is active. This lookup does not start the upstream process or connect to EasyEDA.",
+        "Reviewed static catalog entry, not a callable facade tool. Live descriptions and schemas require explicit live discovery after startup succeeds. This lookup does not start the upstream process or connect to EasyEDA.",
       annotations: {
         readOnlyHint: readOnly,
         destructiveHint: !readOnly,
@@ -204,21 +204,59 @@ export function reviewedUpstreamToolCatalog(): Tool[] {
       inputSchema: {
         type: "object",
         description:
-          "Static quarantine catalog only; query live discovery after recovery for the exact input schema.",
+          "Static catalog only; no argument schema is available. Use explicit live discovery after startup and recovery for the exact input schema.",
       },
     };
   });
 }
 
+interface DiscoveryOptions extends FilterToolsOptions {
+  readonly source?: "live" | "local";
+}
+
+interface FacadeRoute {
+  readonly facadeTool: string | null;
+  readonly availability: "advisory-read" | "gated-capture" | "gated-export" | "unavailable";
+}
+
+function facadeRoute(name: unknown, readOnly: boolean): FacadeRoute {
+  if (typeof name !== "string") {
+    return { facadeTool: null, availability: "unavailable" };
+  }
+  if (isReviewedLocalGenericRead(name) && readOnly) {
+    return { facadeTool: "easyeda_control_read", availability: "advisory-read" };
+  }
+  if (["easyeda_canvas_capture", "easyeda_canvas_capture_region", "easyeda_schematic_capture_full_page"].includes(name)) {
+    return { facadeTool: "easyeda_control_capture", availability: "gated-capture" };
+  }
+  if (name === "easyeda_pcb_export_route_context") {
+    return { facadeTool: "easyeda_control_export", availability: "gated-export" };
+  }
+  return { facadeTool: null, availability: "unavailable" };
+}
+
 export async function discoverReviewedOrLiveTools(
   assertLiveDispatchAllowed: () => Promise<unknown>,
   listLiveTools: () => Promise<readonly ToolDescriptor[]>,
-  options: Readonly<FilterToolsOptions>,
-): Promise<ReturnType<typeof filterTools>> {
-  try {
-    await assertLiveDispatchAllowed();
-  } catch {
-    return filterTools(reviewedUpstreamToolCatalog(), options);
+  options: Readonly<DiscoveryOptions>,
+): Promise<(ReturnType<typeof filterTools>[number] & FacadeRoute & { catalogSource: "live" | "local"; schemasAvailable: boolean })[]> {
+  let catalog: readonly ToolDescriptor[] = reviewedUpstreamToolCatalog();
+  let catalogSource: "live" | "local" = "local";
+  if (options.source === "live") {
+    let allowed = false;
+    try {
+      await assertLiveDispatchAllowed();
+      allowed = true;
+    } catch {
+      // Quarantine permits local discovery only; do not touch the upstream.
+    }
+    if (allowed) {
+      catalog = await listLiveTools();
+      catalogSource = "live";
+    }
   }
-  return filterTools(await listLiveTools(), options);
+  return filterTools(catalog, { ...options, mode: options.mode ?? "read" }).map((tool) => Object.assign(tool, facadeRoute(tool.name, tool.classification.readOnly), {
+    catalogSource,
+    schemasAvailable: catalogSource === "live" && options.includeSchemas === true && isRecord(tool.inputSchema),
+  }));
 }

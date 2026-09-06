@@ -36,6 +36,7 @@ const NORMAL_CLOSE_CODE = 1000;
 const POLICY_CLOSE_CODE = 4008;
 const PROTOCOL_CLOSE_CODE = 4007;
 const WEBSOCKET_CLOSE_GRACE_MS = 250;
+const PRIVATE_PORT_ALLOCATION_ATTEMPTS = 8;
 
 const websocketCloseTimers = new WeakMap<
   WebSocketClient,
@@ -453,24 +454,36 @@ function closeWebSocketServer(server: WebSocketServer): Promise<void> {
   });
 }
 
-export async function allocatePrivateLoopbackPort(): Promise<number> {
-  const reservation = createServer();
-  reservation.unref();
-  reservation.listen({ exclusive: true, host: LOOPBACK_HOST, port: 0 });
-  try {
-    await waitForNetServerListening(reservation);
-    const address = reservation.address();
-    if (address === null || typeof address === "string") {
-      throw new Error("The private bridge port reservation has no TCP address.");
-    }
-    return address.port;
-  } finally {
-    await new Promise<void>((resolve) => {
-      reservation.close(() => {
-        resolve();
-      });
-    });
+export async function allocatePrivateLoopbackPort(
+  excludedPublicPort = 49_621,
+): Promise<number> {
+  if (!validPort(excludedPublicPort, true)) {
+    throw new Error("The excluded public bridge port is invalid.");
   }
+  for (let attempt = 0; attempt < PRIVATE_PORT_ALLOCATION_ATTEMPTS; attempt += 1) {
+    const reservation = createServer();
+    reservation.unref();
+    try {
+      reservation.listen({ exclusive: true, host: LOOPBACK_HOST, port: 0 });
+      await waitForNetServerListening(reservation);
+      const address = reservation.address();
+      if (address === null || typeof address === "string") {
+        throw new Error("The private bridge port reservation has no TCP address.");
+      }
+      if (address.port !== excludedPublicPort) {
+        return address.port;
+      }
+    } finally {
+      await new Promise<void>((resolve) => {
+        reservation.close(() => {
+          resolve();
+        });
+      });
+    }
+  }
+  throw new Error(
+    `The private bridge port allocation exhausted ${String(PRIVATE_PORT_ALLOCATION_ATTEMPTS)} attempts because every reservation matched the public gateway port.`,
+  );
 }
 
 export class AuthenticatedBridgeGateway {

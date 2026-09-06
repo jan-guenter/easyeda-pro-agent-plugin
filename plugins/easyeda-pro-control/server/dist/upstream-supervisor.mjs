@@ -9,7 +9,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "f78d869e3d61912f3e003a605bd645e3d7f5a86891b0926dff558ad6ac91086f";
+const __easyedaBundlePairId = "4cf674a241262b742f9114b5a17aedffc0fa538ce87dc3f3bb1883546f51aed9";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -185,7 +185,8 @@ function blockCallableIfPresent(target, property) {
 function validListenArguments(arguments_, expectedPort) {
   const backlog = arguments_[2];
   const callback = arguments_[3];
-  return arguments_.length >= 2 && arguments_.length <= 4 && arguments_[0] === expectedPort && arguments_[1] === LOOPBACK_HOST && (backlog === void 0 || typeof backlog === "function" || typeof backlog === "number" && Number.isSafeInteger(backlog) && backlog > 0) && (callback === void 0 || typeof callback === "function") && !(typeof backlog === "function" && callback !== void 0);
+  return arguments_.length >= 2 && arguments_.length <= 4 && arguments_[0] === expectedPort && arguments_[1] === LOOPBACK_HOST && (backlog === void 0 || // The reviewed ws constructor passes null to select Node's default backlog.
+  backlog === null || typeof backlog === "function" || typeof backlog === "number" && Number.isSafeInteger(backlog) && backlog > 0) && (callback === void 0 || typeof callback === "function") && !(typeof backlog === "function" && callback !== void 0);
 }
 function restrictServerListen(expectedPort) {
   const serverPrototype = net.Server.prototype;
@@ -210,7 +211,8 @@ function restrictServerListen(expectedPort) {
   }
   const restrictedServerListen2 = function restrictedServerListen22(...arguments_) {
     const backlog = arguments_[3];
-    if (arguments_.length !== 6 || arguments_[0] !== LOOPBACK_HOST || arguments_[1] !== expectedPort || arguments_[2] !== 4 || backlog !== void 0 && backlog !== false && (typeof backlog !== "number" || !Number.isSafeInteger(backlog) || backlog <= 0) || arguments_[4] !== void 0 || arguments_[5] !== 0 && arguments_[5] !== false) {
+    if (arguments_.length !== 6 || arguments_[0] !== LOOPBACK_HOST || arguments_[1] !== expectedPort || arguments_[2] !== 4 || backlog !== void 0 && backlog !== false && // Node 24 normalizes ws's null default backlog to zero at _listen2.
+    backlog !== 0 && (typeof backlog !== "number" || !Number.isSafeInteger(backlog) || backlog <= 0) || arguments_[4] !== void 0 || arguments_[5] !== 0 && arguments_[5] !== false) {
       throw new Error(
         `The upstream sandbox low-level listener is restricted to ${LOOPBACK_HOST}:${String(expectedPort)} without an inherited descriptor.`
       );

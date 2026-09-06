@@ -28,6 +28,7 @@ bridge-token
 !.env.example
 !.env.sample
 .npmrc
+!/plugins/easyeda-pro-control/.npmrc
 credentials
 credentials.json
 secrets

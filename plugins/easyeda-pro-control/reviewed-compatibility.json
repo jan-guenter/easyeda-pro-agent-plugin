@@ -3,13 +3,13 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "c19e0d8233618069f3eecadb8a9b8966a4eb86546bb158e472e9db1acd6a3a12",
+      "sha256": "b10d35c1173522c2a26e1b25937712e34e64b9bdfce5f54a2d197942739ef103",
       "fileCount": 27,
       "files": [
         {
           "relativePath": "artifacts.ts",
-          "bytes": 62199,
-          "sha256": "e86864d29b9093aea4b34b3f89c1fa5747449a2162874c446fbc1d726785953d"
+          "bytes": 66737,
+          "sha256": "826f0b32f8e7a8426abc67bbcd05f69699a7f705b02fa0c93cb66fc76d5b7143"
         },
         {
           "relativePath": "authenticated-bridge-build-identity.ts",
@@ -18,8 +18,8 @@
         },
         {
           "relativePath": "authenticated-bridge-gateway.ts",
-          "bytes": 41109,
-          "sha256": "74cbcf373278af9029c6ddc9c8d778127ef47c18f08c56a49e16097a93ec0a04"
+          "bytes": 41674,
+          "sha256": "c9c9d7fb26571837cd8be1e7ef4e4f82c019dd3f6e665fadf7ca43f42874f6c0"
         },
         {
           "relativePath": "backend-listener-authority.ts",
@@ -28,8 +28,8 @@
         },
         {
           "relativePath": "checkpoint.ts",
-          "bytes": 39453,
-          "sha256": "0c65eed7d86359433a6feb96c1118d25e5fb69d27213f211ae6a6352fe24b145"
+          "bytes": 41053,
+          "sha256": "858e65a7f7fc891b4328c280c155b60c54b38057831139bf1288ab4e1eadedac"
         },
         {
           "relativePath": "control-root.ts",
@@ -58,8 +58,8 @@
         },
         {
           "relativePath": "index.ts",
-          "bytes": 86529,
-          "sha256": "e4e7a15c60bbd5e5cdf024fb80b4db653ff81e2d6d7cd149fd44ddec64a538b6"
+          "bytes": 86886,
+          "sha256": "3df89b42fb2c05b5db6705b21876e1b3e881c5f4c85f8b1d2147505d54576d7e"
         },
         {
           "relativePath": "lease.ts",
@@ -73,8 +73,8 @@
         },
         {
           "relativePath": "reviewed-upstream-tools.ts",
-          "bytes": 7422,
-          "sha256": "b36fc65bc116360e37fb7435fc16c1bf2f46bd40f958eb28a4cdeebe144e6042"
+          "bytes": 9168,
+          "sha256": "b09fb48a3e65551b9ae81bc97f4878b6fe3b53c0851fb5585e79c3eed5c1ebd1"
         },
         {
           "relativePath": "runtime-scripts.ts",
@@ -83,8 +83,8 @@
         },
         {
           "relativePath": "sandboxed-stdio-client-transport.ts",
-          "bytes": 30824,
-          "sha256": "50955ab2d289b78e4cc4c5f5308f1b86acf8a2060df0df0ab960a9a51a0b8dce"
+          "bytes": 32576,
+          "sha256": "beae2e132d0f16ae01f61bd45df80535a7e61422a41c88a8780f228525063716"
         },
         {
           "relativePath": "shutdown.ts",
@@ -118,8 +118,8 @@
         },
         {
           "relativePath": "upstream-network-policy.ts",
-          "bytes": 9264,
-          "sha256": "5f71a0f01161d1e2493f9de682ab74bf0556c910fa964c9dd1268f8ec6890d93"
+          "bytes": 9475,
+          "sha256": "4989dacedc3fe303b35e7289e7a12bc9266c17ffb230a7bdce1edaacf6afdead"
         },
         {
           "relativePath": "upstream-seccomp.ts",
@@ -138,15 +138,15 @@
         },
         {
           "relativePath": "upstream.ts",
-          "bytes": 33451,
-          "sha256": "d7d3de5fb9c4542adb5889979e0171744c07bf201b4b84f9a92d553dccda59bc"
+          "bytes": 34317,
+          "sha256": "e17172621b6cd6f70a96c0b9431f1e8a5a515a904a262a52d891b9e8d8b2d2e8"
         }
       ]
     },
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "7e51f95b61007529a96ea4aae4fba87bf218baa21f48c0c7a7db2bbcc3dd6a4e",
+      "sha256": "4489fab0d3754cf12712e55abb4cd8b816b030665d0cb063feb271b4108968fc",
       "fileCount": 3,
       "files": [
         {
@@ -156,19 +156,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 2226838,
-          "sha256": "a2ed5dd18f925d2dfb6c18d43a0021c75b8bc75d41cc2948aed27d10265dbe9f"
+          "bytes": 2236207,
+          "sha256": "78873364253f6241d0750463e7d5a1dba5140406fcd21bcf69ef1adc9ead12eb"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
-          "bytes": 786171,
-          "sha256": "be235b20ac577150dcf450b3c3890731fcd52e5d5b3eb219fd9524797379e4a0"
+          "bytes": 786360,
+          "sha256": "bb51ae92ce269e6bd97c6f3ce6c83f0038327564ed538230eac4af9cadd2f15e"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-08-28T20:16:48.125Z",
+  "reviewedAt": "2026-09-06T04:12:02.639Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

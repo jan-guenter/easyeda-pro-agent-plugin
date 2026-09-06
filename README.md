@@ -62,6 +62,15 @@ the compatibility manifest.
 
 Not production-enabled: schematic or PCB writes, ECO, library changes, routing, rules, stack-up changes, manufacturing export, unrestricted JavaScript, or fabrication submission.
 
+For startup trouble, use `easyeda_control_discover` in its default local mode.
+It works without starting the upstream and marks each catalog entry with its
+admitted facade route or `unavailable`. Upstream annotations are not permission
+to call a tool. Request `source: "live", includeSchemas: true` for current
+argument schemas only after startup succeeds. Startup errors report a fixed
+launch stage and observed exit status while keeping private diagnostic text
+withheld. The skill's connection reference distinguishes host dispatch failure,
+upstream startup failure, an unauthenticated extension, and compatibility drift.
+
 ## Install from this GitHub marketplace
 
 The Codex marketplace manifest is [`.agents/plugins/marketplace.json`](.agents/plugins/marketplace.json).
@@ -86,7 +95,7 @@ test "$(npm --version)" = "11.16.0"
 npm ci
 npm ls --all
 npm audit signatures
-npm audit --audit-level=high
+npm audit --audit-level=moderate
 npm run bridge:provision
 npm run bridge:build
 ```
@@ -270,7 +279,7 @@ test "$(npm --version)" = "11.16.0"
 npm ci
 npm ls --all
 npm audit signatures
-npm audit --audit-level=high
+npm audit --audit-level=moderate
 npm run sanitizer:check
 npm run typecheck
 npm run bridge:typecheck
@@ -286,7 +295,7 @@ npm run validate
 Repository validation runs from the marketplace root:
 
 ```bash
-node scripts/validate-repository.mjs
+npm --prefix plugins/easyeda-pro-control run repository:validate
 ```
 
 GitHub Actions installs binutils, rebuilds the sanitizer twice, and requires its

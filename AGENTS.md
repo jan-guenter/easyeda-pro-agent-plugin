@@ -2,7 +2,7 @@
 
 This file is the durable engineering record and common ground for every human or agent working in this repository. Keep it current whenever a requirement, assumption, interface, compatibility tuple, safety boundary, or test result changes. Do not silently turn an open question into a requirement.
 
-Last updated: 2026-08-28 (Europe/Berlin)
+Last updated: 2026-09-06 (Europe/Berlin)
 
 ## Product truth
 
@@ -51,7 +51,7 @@ test "$(npm --version)" = "11.16.0"
 npm ci
 npm ls --all
 npm audit signatures
-npm audit --audit-level=high
+npm audit --audit-level=moderate
 npm run sanitizer:check
 npm run verify
 ```
@@ -59,7 +59,7 @@ npm run verify
 Then run from the repository root:
 
 ```bash
-node scripts/validate-repository.mjs
+npm --prefix plugins/easyeda-pro-control run repository:validate
 python3 "$CODEX_HOME/skills/.system/plugin-creator/scripts/validate_plugin.py" plugins/easyeda-pro-control
 python3 "$CODEX_HOME/skills/.system/skill-creator/scripts/quick_validate.py" plugins/easyeda-pro-control/skills/easyeda-pro-control
 git diff --exit-code -- plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs
@@ -95,7 +95,18 @@ runtime does not invoke them.
 - Record the test count, commit, marketplace URL, and local installation result in this file and the originating project record.
 - Use a new Codex task after installing a new marketplace snapshot.
 
-## Current validation record
+## 2026-09-06 review update
+
+- Review and fixed findings are recorded in `docs/review-2026-09-06.md`. The real upstream startup failure was reproduced in isolation: `ws` passes a null backlog and the pinned Node normalizes it to zero. Both default forms are now admitted without changing the exact loopback address, port, flag, or inherited-descriptor restrictions. The actual captured upstream then initialized and listed 116 tools with no authenticated EasyEDA session and no design call.
+- Startup now joins concurrent callers correctly, closes executable descriptors acquired during child exit, excludes the public gateway port from backend allocation with eight bounded OS-assigned attempts, and reports fixed stage/exit diagnostics without disclosing private stderr or nested causes. Diagnostic exit values may reflect cleanup; they are not automatically a root-cause claim.
+- Checkpoint creation/verification rechecks source generation and identity after its final awaited work, including WAL commits; verification also rejects checkpoint drift after hashing. Evidence verifies request/schema/metadata/descriptor agreement, bounds managed JSON at 64 MiB and checkpoint receipts at 1 MiB, streams binary hashes over the admitted size, and rejects caller evidence output in the journal directory. Checkpoint proof is point-in-time and does not replace the no-concurrent-edit condition.
+- Discovery defaults to `source: local`, `mode: read` and never starts the upstream. Explicit live discovery remains quarantine-gated. Entries report their source, actual schema availability, and an admitted facade route or `unavailable`. An allowlisted name with live write metadata cannot advertise a generic-read route. The existing 19-tool API is retained; six disabled raw/writer endpoints remain explicit refusals for compatibility.
+- The release validator now lives in `plugins/easyeda-pro-control/scripts/validate-repository.ts` under the same strict TypeScript and type-aware Oxlint configuration as the facade. Metadata is schema-parsed and strict compiler gates check values, not property presence. Three frozen one-statement bridge `.mjs` refusal stubs are the only maintained-source extension exception and now receive strict `checkJs` coverage. They were already linted; the historical claim that every script was TypeScript was too broad. No private bridge source closure or connected tuple changed.
+- The dependency lock updates only `qs` 6.15.3 to 6.16.0. All 151 registry signatures and 39 attestations verify and the audit reports zero vulnerabilities. CI now rejects moderate findings. The exact reviewed plugin `.npmrc` disables dependency install hooks; CI verifies its effective value, and the matching optional esbuild binary builds successfully without a postinstall/download fallback.
+- The installed old release's status handler was reached, superseding the earlier host-level unavailable result. It returned a startup error and no authenticated/session/context evidence. The isolated fixed-upstream test is not connected EasyEDA proof. Candidate `ded07x99dcxb504` remains validation-required; exact/private admission and disposable-project writer validation remain open. No EasyEDA project, document, component, net, rule, route, via, pour, fill, stack, library asset, private credential or imported extension changed.
+- Final local validation on exact Node `24.18.0` and npm `11.16.0` passed strict TypeScript, both type-aware lint gates with zero diagnostics, reproducible sanitizer/bundles, compatibility, plugin/skill validators, actionlint, and 155 repository/privacy checks. With hostile descriptors 142/145 open, the facade suite passed 397 tests across 44 suites and skipped only its Windows-drive fixture; that exact case passed separately on a mounted Windows drive, covering all 398 cases. All 404 bridge tests passed across 28 files. The release manifest is `0.3.0+codex.20260906040125`; GitHub CI and Git-marketplace installation are the remaining release steps.
+
+## Historical validation record, 2026-08-28
 
 - Compatibility target: EasyEDA Pro `3.2.149.88089769`, PCB bundle `3.2.149.5378b690`, public API `0.2.53.aee2f57a`, historically connected upstream MCP/health/extension/bridge `1.0.0-rc.1`, unconnected authenticated extension manifest `0.3.0`, and Node `24.18.0`.
 - Node source/toolchain: TypeScript `7.0.2` with all strict compiler checks enabled; Oxlint `1.80.0` plus type-aware `oxlint-tsgolint` `7.0.2001`; correctness, suspicious, pedantic, performance, style, and restriction diagnostics are errors, warnings are denied, and unused suppressions are errors. Architectural exceptions for Node, async protocol control, typed named modules, generated bridge programs, sequential transactions, and audit-oriented test vectors are individually documented in `.oxlintrc.json`.

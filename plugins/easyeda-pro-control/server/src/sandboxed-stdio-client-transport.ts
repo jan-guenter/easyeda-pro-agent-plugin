@@ -33,6 +33,24 @@ const MAXIMUM_STATUS_BYTES = 16 * 1024;
 const MAXIMUM_STATUS_LINE_BYTES = 4096;
 const MAXIMUM_MCP_STDOUT_BUFFER_BYTES = 32 * 1024 * 1024;
 
+type SandboxStartupStage =
+  | "pre-spawn-validation"
+  | "process-spawn"
+  | "pid-admission"
+  | "node-admission"
+  | "supervisor-readiness"
+  | "post-ready-validation"
+  | "bootstrap-delivery"
+  | "mcp-initialization";
+
+export interface SandboxStartupDiagnostics {
+  readonly schema: "easyeda-pro-control.sandbox-startup-diagnostics.v1";
+  readonly stage: SandboxStartupStage;
+  readonly monitorExitCode: number | null;
+  readonly monitorSignal: NodeJS.Signals | null;
+  readonly sandboxExitCode: number | null;
+}
+
 interface InheritedSandboxDescriptor {
   readonly descriptor: number;
 }
@@ -447,9 +465,12 @@ export async function waitForSandboxNodeIdentity(
       if (currentAuthority.startTimeTicks !== authority.startTimeTicks) {
         throw new Error("Sandbox child PID changed before Node admission.");
       }
-      executable = await whileChildOpen(
-        open(`/proc/${authority.pid}/exe`, fsConstants.O_RDONLY),
-      );
+      // Descriptor acquisition must settle before observing child closure.
+      // Racing open() loses the owned handle if process exit wins the race.
+      executable = await open(`/proc/${authority.pid}/exe`, fsConstants.O_RDONLY);
+      if (childHasClosed) {
+        await closedBeforeIdentity;
+      }
       const actualNode = await executable.stat({ bigint: true });
       const commandLineBytes = await whileChildOpen(
         readFile(`/proc/${authority.pid}/cmdline`),
@@ -499,6 +520,10 @@ export class SandboxedStdioClientTransport implements Transport {
   private protocolFailed = false;
   private protocolAdmitted = false;
   private started = false;
+  private startupStage: SandboxStartupStage = "pre-spawn-validation";
+  private monitorExitCode: number | null = null;
+  private monitorSignal: NodeJS.Signals | null = null;
+  private sandboxExitCode: number | null = null;
   private stdoutBufferedBytes = 0;
   private stdoutChunks: Buffer[] = [];
   private startupBlocker: Writable | undefined;
@@ -519,6 +544,16 @@ export class SandboxedStdioClientTransport implements Transport {
 
   public get pid(): number | null {
     return this.childPid;
+  }
+
+  public startupDiagnostics(): SandboxStartupDiagnostics {
+    return {
+      schema: "easyeda-pro-control.sandbox-startup-diagnostics.v1",
+      stage: this.startupStage,
+      monitorExitCode: this.monitorExitCode,
+      monitorSignal: this.monitorSignal,
+      sandboxExitCode: this.sandboxExitCode,
+    };
   }
 
   private notifyClose(): void {
@@ -703,6 +738,7 @@ export class SandboxedStdioClientTransport implements Transport {
             lineBytes.toString("utf8"),
             state,
           );
+          this.sandboxExitCode = state.exitCode;
           if (childPid !== undefined && !settled) {
             const namespaces = state.childNamespaces;
             if (namespaces === null) {
@@ -742,6 +778,7 @@ export class SandboxedStdioClientTransport implements Transport {
     try {
       await this.options.beforeSpawn();
       await this.options.afterPreSpawnValidationForTesting?.();
+      this.startupStage = "process-spawn";
       const child = spawn(
         this.options.descriptorSanitizer.executionPath,
         [
@@ -777,6 +814,10 @@ export class SandboxedStdioClientTransport implements Transport {
         },
       );
       this.child = child;
+      child.once("exit", (code, signal) => {
+        this.monitorExitCode = code;
+        this.monitorSignal = signal;
+      });
       const childClose = Promise.withResolvers<null>();
       this.childClosed = childClose.promise;
       child.once("close", () => {
@@ -827,6 +868,7 @@ export class SandboxedStdioClientTransport implements Transport {
       this.startupBlocker = blocker;
       const childPidPromise = this.monitorStatus(status);
       await once(child, "spawn");
+      this.startupStage = "pid-admission";
       const monitorPid = child.pid;
       if (monitorPid === undefined) {
         throw new Error("Bubblewrap monitor PID is unavailable after spawn.");
@@ -848,12 +890,14 @@ export class SandboxedStdioClientTransport implements Transport {
       await writeComplete(blocker, Buffer.from([1]));
       blocker.end();
       this.startupBlocker = undefined;
+      this.startupStage = "node-admission";
       await waitForSandboxNodeIdentity(
         authority,
         this.options.node.handle,
         childArguments,
         childClose.promise,
       );
+      this.startupStage = "supervisor-readiness";
       await Promise.race([
         this.supervisorReadySignal.promise,
         childClose.promise.then(() => {
@@ -870,6 +914,7 @@ export class SandboxedStdioClientTransport implements Transport {
       if (child.exitCode !== null || child.signalCode !== null) {
         throw new Error("Bubblewrap monitor exited before sandbox admission.");
       }
+      this.startupStage = "post-ready-validation";
       await this.options.beforePostReadyValidationForTesting?.();
       await assertSandboxProcessTopology(
         authority,
@@ -882,6 +927,7 @@ export class SandboxedStdioClientTransport implements Transport {
         throw new Error("The sandbox status or protocol failed during admission.");
       }
       this.childPid = childPid;
+      this.startupStage = "bootstrap-delivery";
       await deliverSandboxBootstrap(
         child.stdin,
         this.options.bootstrapFrame,
@@ -910,6 +956,7 @@ export class SandboxedStdioClientTransport implements Transport {
         throw new Error("The sandbox protocol failed before authority admission.");
       }
       this.protocolAdmitted = true;
+      this.startupStage = "mcp-initialization";
     } catch (error) {
       this.options.bootstrapFrame.fill(0);
       const failures: unknown[] = [error];

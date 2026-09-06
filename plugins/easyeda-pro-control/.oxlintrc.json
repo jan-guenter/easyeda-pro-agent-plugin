@@ -94,6 +94,7 @@
         "scripts/provision-bridge-token.ts",
         "scripts/reviewed-compatibility.ts",
         "scripts/validate-plugin.ts",
+        "scripts/validate-repository.ts",
         "server/src/index.ts",
         "server/src/upstream-supervisor.ts"
       ],
@@ -193,6 +194,16 @@
         // Continue guards keep cleanup retries and generated transaction scans
         // visibly fail-closed without adding deeply nested branches.
         "eslint/no-continue": "off"
+      }
+    },
+    {
+      "files": ["scripts/validate-repository.ts"],
+      "rules": {
+        // Skip unsafe entries before their contents are read, keeping every
+        // release scan rejection visible without nesting the remaining checks.
+        "eslint/no-continue": "off",
+        // These assertions inspect literal Bash parameter expansions in CI.
+        "eslint/no-template-curly-in-string": "off"
       }
     },
     {

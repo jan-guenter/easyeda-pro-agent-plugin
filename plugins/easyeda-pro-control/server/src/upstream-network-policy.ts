@@ -47,6 +47,8 @@ function validListenArguments(
     arguments_[0] === expectedPort &&
     arguments_[1] === LOOPBACK_HOST &&
     (backlog === undefined ||
+      // The reviewed ws constructor passes null to select Node's default backlog.
+      backlog === null ||
       typeof backlog === "function" ||
       (typeof backlog === "number" && Number.isSafeInteger(backlog) && backlog > 0)) &&
     (callback === undefined || typeof callback === "function") &&
@@ -90,6 +92,8 @@ function restrictServerListen(expectedPort: number): void {
       arguments_[2] !== 4 ||
       (backlog !== undefined &&
         backlog !== false &&
+        // Node 24 normalizes ws's null default backlog to zero at _listen2.
+        backlog !== 0 &&
         (typeof backlog !== "number" ||
           !Number.isSafeInteger(backlog) ||
           backlog <= 0)) ||
