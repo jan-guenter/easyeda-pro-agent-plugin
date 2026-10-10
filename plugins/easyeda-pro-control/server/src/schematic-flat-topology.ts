@@ -254,7 +254,26 @@ const pages=docs.map(page=>{
  if(page.projectMgr!==project||page.isSchSheetDoc?.()!==true||page.isBlockSymbolInstancePage!==false||page.readonlyMode===true||page.tabId!==page.uuid+'@'+scope.projectUuid)fail('PAGE_KIND');
  if(page.consistencyImpl?.state!=='initialized')fail('PAGE_NOT_INITIALIZED');
  const shapes=page.shapeManager;if(typeof shapes?.getModels!=='function'||${internalAction === undefined ? "shapes.actionRunner?.running!==false" : "!flatDisplayActionMatches(page,shapes)"}||typeof shapes.netPointManager?.getNetPoint!=='function')fail('SHAPES');
- const handler=page.consistencyImpl?.decodeAndRealTimeSyncHandler;if(typeof handler?.getSourceCodeIdMap!=='function'||page.idManager!==shapes.idManager)fail('SOURCE_INVENTORY');const sourceIds=handler.getSourceCodeIdMap();if(!(sourceIds instanceof Map)||sourceIds.size>100000)fail('SOURCE_INVENTORY');const serializable=new Set(['Symbol','NetGroup','Wire','Attr','NetName','noConnect','Text','Polyline','Circle','Arc','Rect','Bezier','Ellipse']);for(const sourceId of sourceIds.keys()){const model=page.idManager.idMap?.get(sourceId);if(!model||model.id!==sourceId||!serializable.has(model.modelType))fail('SOURCE_MODEL_KIND');}
+ const handler=page.consistencyImpl?.decodeAndRealTimeSyncHandler;if(typeof handler?.getSourceCodeIdMap!=='function'||page.idManager!==shapes.idManager)fail('SOURCE_INVENTORY');const sourceIds=handler.getSourceCodeIdMap();if(!(sourceIds instanceof Map)||sourceIds.size>100000)fail('SOURCE_INVENTORY');
+ // Pinned sch.js 3f50136f: ad (4272450) inherits xb.modelType='NetLabel'
+ // (4267994), but tagName='NetName' and keyInSourceCode='NET'. Only its
+ // reciprocal, source-indexed child of a root wire NetGroup is admitted here.
+ const wireModels=array(shapes.getModels('NetGroup'),20000),wireNames=new Map(),admittedNames=new Set();
+ const root=shapes.root,rootChildren=wireModels.length?array(root?.children,100000):[],rootMembers=new Set(rootChildren);
+ if(new Set(wireModels).size!==wireModels.length||rootMembers.size!==rootChildren.length)fail('NET_NAME_MEMBERSHIP');
+ let totalWireChildren=0;
+ for(const model of wireModels){
+  if(root?.id!=='$$root'||root.modelType!=='Root'||root.shapeManager!==shapes||root.parent!=null||root.isConnected!==true||model?.modelType!=='NetGroup'||model.tagName!=='NetGroup'||model.type!=='wire'||model.combination||model.parent!==root||model.shapeManager!==shapes||!rootMembers.has(model)||!sourceIds.has(id(model.id))||page.idManager.idMap?.get(model.id)!==model||shapes.idManager.get?.(model.id)!==model)fail('NET_NAME_OWNER');
+  const names=array(model.netNames,4096),children=array(model.children,100000),nameMembers=new Set(names),childMembers=new Set(children);
+  totalWireChildren+=children.length;if(totalWireChildren>100000||nameMembers.size!==names.length||childMembers.size!==children.length)fail('NET_NAME_MEMBERSHIP');
+  for(const item of names){
+   if(item?.modelType!=='NetLabel'||item.tagName!=='NetName'||item.cmdKey!=='netlabel'||item.key!=='Name'||item.keyInSourceCode!=='NET'||item.parent!==model||item.shapeManager!==shapes||item.combination||!childMembers.has(item)||!sourceIds.has(id(item.id))||page.idManager.idMap?.get(item.id)!==item||shapes.idManager.get?.(item.id)!==item||admittedNames.has(item))fail('NET_NAME_MEMBERSHIP');
+   admittedNames.add(item);
+  }
+  for(const child of children)if((child?.modelType==='NetLabel'||child?.tagName==='NetName')&&!nameMembers.has(child))fail('NET_NAME_MEMBERSHIP');
+  wireNames.set(model,names);
+ }
+ const serializable=new Set(['Symbol','NetGroup','Wire','Attr','noConnect','Text','Polyline','Circle','Arc','Rect','Bezier','Ellipse']);for(const sourceId of sourceIds.keys()){const model=page.idManager.idMap?.get(sourceId);if(!model||model.id!==sourceId||(!serializable.has(model.modelType)&&!(model.modelType==='NetLabel'&&admittedNames.has(model))))fail('SOURCE_MODEL_KIND');}
  for(const type of ['BusEntry','MaskRegion','NetLabel','Combination','Image','Table'])if(array(shapes.getModels(type),20000).length)fail('UNSUPPORTED_FAMILY');
  const points=new Map();const remember=value=>{const key=JSON.stringify(pair(value));if(!points.has(key)){if(++totalPoints>100000)fail('POINT_TOTAL');points.set(key,value);}};
  const symbols=array(shapes.getModels('Symbol'),20000).map(model=>{
@@ -265,9 +284,9 @@ const pages=docs.map(page=>{
   const pins=pinModels.map(item=>{if(++totalPins>100000||item.parent!==model||typeof item.isNoConnectShow!=='boolean')fail('PIN_OWNER');const attrs=attr(item);remember(item.origin);return{id:id(item.id),number:get(attrs,'Pin Number'),origin:pair(item.origin),noConnect:item.isNoConnectShow,noConnectAttribute:item.noConnect?attribute(item.noConnect):null,body:body(item),attributes:attrs};});
   return{id:id(model.id),kind:model.cmdKey,body:body(model),partCount:1,partNumber:1,attributes,pins};
  });
- const wires=array(shapes.getModels('NetGroup'),20000).map(model=>{
+ const wires=wireModels.map(model=>{
   if(model.type!=='wire'||model.combination)fail('WIRE_KIND');
-  const names=array(model.netNames,4096).map(item=>({id:id(item.id),key:id(item.key),value:copy(item.value),body:body(item)}));
+  const names=wireNames.get(model).map(item=>({id:id(item.id),key:id(item.key),value:copy(item.value),body:body(item)}));
   const lines=array(model.lines,20000).map(item=>{if(++totalLines>20000||item.parent!==model)fail('LINE_OWNER');const coordinates=array(item.points,2);if(coordinates.length!==2)fail('LINE_ARITY');coordinates.forEach(remember);return{id:id(item.id),body:body(item),points:coordinates.map(pair)};});
   return{id:id(model.id),body:body(model),names,lines};
  });

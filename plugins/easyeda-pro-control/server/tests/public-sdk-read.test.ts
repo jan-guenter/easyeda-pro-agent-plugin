@@ -1,15 +1,163 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { runInThisContext } from "node:vm";
+import { runInNewContext, runInThisContext } from "node:vm";
 
 import { extensionApiSnapshots } from "../src/extension-api-catalog-data.ts";
 import { decodeExactReadEnvelope, encodeExactReadEnvelope } from "../src/exact-readers.ts";
 import { PUBLIC_SDK_READ_MAX_BYTES, buildPublicSdkReadCode, publicSdkReadDescriptors, publicSdkReadRequestSchema, validatePublicSdkReadPayload, validatePublicSdkReadRequest } from "../src/public-sdk-read.ts";
 import type { PublicSdkReadDescriptor, PublicSdkReadRequest } from "../src/public-sdk-read.ts";
+import { SCHEMATIC_NETGROUP_READ_METHODS } from "../src/schematic-netgroup-read.ts";
+import { PCB_NET_MEMBERSHIP_METHOD } from "../src/pcb-net-membership.ts";
+import { EasyedaControlEngine } from "../src/engine.ts";
+import type { ContextProbePayload, ExpectedContext } from "../src/engine.ts";
+import { wrapWithContextGuard } from "../src/runtime-scripts.ts";
 
 const descriptors = publicSdkReadDescriptors();
 // oxlint-disable-next-line eslint/no-template-curly-in-string -- This is the SDK's literal translation placeholder, not JavaScript interpolation.
 const TRANSLATION_TAG = "Net ${1}";
+const netGroupContext: ExpectedContext = { project: { uuid: "fixture-project", path: "/tmp/fixture.eprj2" },
+  document: { uuid: "fixture-page", documentType: 1, tabId: "fixture-page@fixture-project" } };
+const forbidden = (): never => assert.fail("Public NetGroup wrapper, compiler, serializer or display accessor was invoked.");
+
+function netGroupFixture(): { scope: Record<string, unknown>; lines: Record<string, unknown>[] } {
+  const groups: Record<string, unknown>[] = [], index = new Map<string, Record<string, unknown>>(), lines: Record<string, unknown>[] = [], sources = new Map<string, number>();
+  const handler = { getSourceCodeIdMap: (): Map<string, number> => new Map(sources) }, ids = { idMap: index };
+  const shapes: Record<string, unknown> = { idManager: ids, actionRunner: { running: false }, getModels: (): Record<string, unknown>[] => [...groups] };
+  const root = { id: "$$root", modelType: "Root", shapeManager: shapes, isConnected: true, children: groups };
+  shapes["root"] = root;
+  const page = { uuid: "fixture-page", project_uuid: "fixture-project", tabId: "fixture-page@fixture-project", projectMgr: { uuid: "fixture-project" },
+    isSchSheetDoc: (): boolean => true, isBlockSymbolInstancePage: false, shapeManager: shapes, idManager: ids, getSourceCode: forbidden,
+    consistencyImpl: { state: "initialized", decodeAndRealTimeSyncHandler: handler, handler } };
+  shapes["docManager"] = page; Reflect.set(ids, "docManager", page);
+  Reflect.set(page.consistencyImpl, "docManager", page); Reflect.set(handler, "docManager", page); Reflect.set(handler, "consistencyImpl", page.consistencyImpl);
+  for (const kind of ["wire", "bus"]) {
+    const group: Record<string, unknown> = { id: kind, modelType: "NetGroup", tagName: "NetGroup", cmdKey: "netGroup", type: kind,
+      parent: root, shapeManager: shapes, isConnected: true, netNames: [] };
+    const line = { id: `${kind}-line`, modelType: kind === "wire" ? "Wire" : "Bus", tagName: "NetGroupLine", cmdKey: kind, type: kind,
+      parent: group, shapeManager: shapes, isConnected: true, points: [{ x: -0, y: -30 }, { x: 20, y: -30 }],
+      strokeColor: null, strokeWidth: null, strokeStyle: null, getApiShapeData: forbidden, getConsistencyData: forbidden };
+    for (const field of ["displayStrokeColor", "displayStrokeWidth", "displayStrokeStyle"]) { Object.defineProperty(line, field, { get: forbidden }); }
+    group["lines"] = [line]; group["children"] = [line]; groups.push(group); lines.push(line);
+    index.set(kind, group); index.set(line.id, line); sources.set(kind, 1); sources.set(line.id, 1);
+  }
+  shapes["modelMap"] = new Map([["NetGroup", new Set(groups)]]);
+  const eda = { dmt_Project: { getCurrentProjectInfo: (): Promise<unknown> => Promise.resolve(netGroupContext.project) },
+    dmt_SelectControl: { getCurrentDocumentInfo: (): Promise<unknown> => Promise.resolve(netGroupContext.document) } };
+  for (const namespace of ["sch_PrimitiveWire", "sch_PrimitiveBus", "sch_Netlist"]) { Object.defineProperty(eda, namespace, { get: forbidden }); }
+  return { lines, scope: { Map, Set, TextEncoder, eda, SCH: { docMemoryManager: { getActiveDoc: (): unknown => page } },
+    UI: { tabBar: { getActiveTab: (): string => "fixture-page@fixture-project" } } } };
+}
+
+void test("registered NetGroup readers execute their native DTO wrapper without any public family lookup", async () => {
+  for (const method of SCHEMATIC_NETGROUP_READ_METHODS) {
+    const kind = method.includes("PrimitiveWire") ? "wire" : "bus";
+    const request = { method, arguments: method.endsWith(".get") ? { primitiveIds: kind } : {} };
+    const descriptor = descriptors.find((entry) => entry.path === method); assert.ok(descriptor);
+    assert.equal(descriptor.implementation.kind, "native-task-equivalent"); assert.deepEqual(descriptor.documentTypes, [1]);
+    assert.equal(descriptor.implementation.source, "server/src/schematic-netgroup-read.ts"); assert.equal(descriptor.implementation.test, "server/tests/schematic-netgroup-read.test.ts");
+    assert.equal(descriptor.parameterSupport, "narrowed"); assert.equal(descriptor.liveValidation, "not-yet-validated");
+    assert.deepEqual(validatePublicSdkReadRequest(request, 1), request);
+    for (const documentType of [2, 3, 4, 15]) { assert.throws(() => validatePublicSdkReadRequest(request, documentType)); }
+    const code = wrapWithContextGuard(buildPublicSdkReadCode(request), netGroupContext);
+    const envelope: unknown = await runInNewContext(`(async()=>{${code}})()`, netGroupFixture().scope);
+    const result = validatePublicSdkReadPayload(decodeExactReadEnvelope(envelope), request);
+    assert.equal(result["implementationKind"], "native-task-equivalent");
+    assert.equal(result["assurance"], "bounded-native-netgroup-state-observation-not-complete-source-connectivity-or-persistence-proof");
+    assert.deepEqual(result["value"], [{ primitiveId: kind, modelType: "NetGroup", kind,
+      lines: [{ primitiveId: `${kind}-line`, points: [[0, -30], [20, -30]], color: null, width: null, strokeStyle: null }], names: [], customAttributeIds: [] }]);
+  }
+});
+
+void test("registered NetGroup host validation rejects wrong family, selector, structure and undefined fields", () => {
+  for (const method of SCHEMATIC_NETGROUP_READ_METHODS) {
+    const kind = method.includes("PrimitiveWire") ? "wire" : "bus";
+    const request = { method, arguments: method.endsWith(".get") ? { primitiveIds: "group" } : {} };
+    const line = { primitiveId: "line", points: [[0, -10]], color: null, width: null, strokeStyle: null };
+    const row = { primitiveId: "group", modelType: "NetGroup", kind, lines: [line], names: [{ primitiveId: "name", value: "GND" }], customAttributeIds: ["attr"] };
+    const payload = { ok: true, kind: "public-sdk-read", method, present: true, value: [row], undefinedPaths: [] };
+    assert.deepEqual(validatePublicSdkReadPayload(payload, request)["value"], [row]);
+    for (const value of [[{ ...row, kind: kind === "wire" ? "bus" : "wire" }], [{ ...row, modelType: "Wire" }], [row, row], [{ ...row, lines: [] }],
+      [{ ...row, lines: [{ ...line, strokeStyle: 0 }] }], [{ ...row, names: [{ primitiveId: "line", value: "alias" }] }], [{ ...row, customAttributeIds: ["attr", "attr"] }],
+      [{ ...row, publicNet: "GND" }], [{ ...row, lines: [{ ...line, color: undefined }] }]]) {
+      assert.throws(() => validatePublicSdkReadPayload({ ...payload, value }, request));
+    }
+    for (const undefinedPaths of [["/value"], ["/value/0/lines/0/color"], ["/value/0/names/0/value"], ["/private"]]) {
+      assert.throws(() => validatePublicSdkReadPayload({ ...payload, undefinedPaths }, request));
+    }
+    assert.throws(() => validatePublicSdkReadPayload({ ...payload, present: false }, request));
+    if (method.endsWith(".get")) {
+      for (const value of [[], [{ ...row, primitiveId: "wrong" }]]) { assert.throws(() => validatePublicSdkReadPayload({ ...payload, value }, request)); }
+      for (const primitiveIds of [[], ["same", "same"], ["bad\n"], Array.from({ length: 257 }, (_, index) => String(index)), null]) {
+        assert.equal(publicSdkReadRequestSchema.safeParse({ method, arguments: { primitiveIds } }).success, false);
+      }
+    } else {
+      assert.deepEqual(validatePublicSdkReadPayload({ ...payload, value: [] }, request)["value"], []);
+      assert.equal(publicSdkReadRequestSchema.safeParse({ method, arguments: { primitiveIds: "group" } }).success, false);
+    }
+  }
+});
+
+void test("the NetGroup wrapper retains fixed guard codes without inspecting native exception text", async () => {
+  const request = { method: SCHEMATIC_NETGROUP_READ_METHODS[1], arguments: {} };
+  for (const failure of ["guard", "exception"]) {
+    const current = netGroupFixture(), line = current.lines[0]; assert.ok(line);
+    if (failure === "guard") { line["strokeWidth"] = Number.NaN; }
+    else {
+      Object.defineProperty(line, "strokeWidth", { get: (): never => {
+        throw Object.defineProperty(new Error("private native error"), "message", { get: (): never => assert.fail("Native exception content was inspected.") });
+      } });
+    }
+    const code = wrapWithContextGuard(buildPublicSdkReadCode(request), netGroupContext);
+    const invoke = async (): Promise<unknown> => await runInNewContext(`(async()=>{${code}})()`, current.scope) as unknown;
+    await assert.rejects(invoke, { message: `Public SDK read could not produce a complete bounded observation; method=${request.method}|stage=call|code=${failure === "guard" ? "SCH_NETGROUP_STATE" : "native-error"}|getter=none` });
+  }
+});
+
+void test("PCB net membership cannot execute or validate through the generic SDK adapter", async () => {
+  const request = { method: PCB_NET_MEMBERSHIP_METHOD, arguments: { net: "GND", primitiveTypes: ["Line", "ComponentPad"] } };
+  assert.deepEqual(validatePublicSdkReadRequest(request, 3), request);
+  for (const documentType of [1, 2, 4]) { assert.throws(() => validatePublicSdkReadRequest(request, documentType)); }
+  assert.throws(() => buildPublicSdkReadCode(request), /source\/inventory\/source specialized reader/u);
+  const payload = { ok: true, kind: "public-sdk-read", method: request.method, present: true, value: [], undefinedPaths: [] };
+  assert.throws(() => validatePublicSdkReadPayload(payload, request), /specialized verifier/u);
+  let calls = 0;
+  const engine = new EasyedaControlEngine({ callTool: (): Promise<unknown> => {
+    calls += 1; return Promise.reject(new Error("Generic PCB membership dispatch must never run."));
+  } });
+  engine.assertBridgeDispatchAllowed = (): Promise<true> => { calls += 1; return Promise.reject(new Error("Generic PCB membership admission must never run.")); };
+  const context = { ...netGroupContext, document: { ...netGroupContext.document, documentType: 3 } };
+  await assert.rejects(engine.publicSdkRead(request, context), /source\/inventory coordinator/u);
+  assert.equal(calls, 0);
+});
+
+void test("real NetGroup coordinator distinguishes native authority and refuses second-sample context, profile, quarantine and state drift", async () => {
+  for (const failure of ["none", "context", "profile", "quarantine", "state"]) {
+    const current = netGroupFixture(); let calls = 0, contexts = 0, gates = 0, profiles = 0;
+    const request = { method: SCHEMATIC_NETGROUP_READ_METHODS[1], arguments: {} };
+    class FixtureEngine extends EasyedaControlEngine {
+      // oxlint-disable-next-line eslint/class-methods-use-this -- Instance override intercepts the production implementation-admission seam.
+      protected override assertPublicSdkImplementation(): Promise<void> {
+        profiles += 1; return failure === "profile" && profiles === 2 ? Promise.reject(new Error("fixture profile drift")) : Promise.resolve();
+      }
+    }
+    const engine = new FixtureEngine({ async callTool(name, args): Promise<unknown> {
+      assert.equal(name, "easyeda_execute"); assert.ok(typeof args?.["code"] === "string"); calls += 1;
+      if (failure === "state" && calls === 2) { const line = current.lines[0]; assert.ok(line); line["strokeWidth"] = 2; }
+      const result: unknown = await runInNewContext(`(async()=>{${args["code"]}})()`, current.scope); return { structuredContent: { ok: true, result } };
+    } });
+    engine.assertBridgeDispatchAllowed = (): Promise<true> => { gates += 1; return failure === "quarantine" && gates === 3 ? Promise.reject(new Error("fixture quarantine")) : Promise.resolve(true); };
+    engine.assertContext = (expected): Promise<ContextProbePayload> => {
+      contexts += 1; return failure === "context" && contexts === 3 ? Promise.reject(new Error("fixture context drift")) : Promise.resolve({ ...structuredClone(expected), document: { ...structuredClone(expected.document), tabId: "fixture-page@fixture-project" } });
+    };
+    if (failure === "none") {
+      const result = await engine.publicSdkRead(request, netGroupContext);
+      assert.equal(result["authority"], "native-netgroup-state-observation-not-complete-source-connectivity-or-persistence-proof"); assert.equal(calls, 2);
+    } else {
+      await assert.rejects(engine.publicSdkRead(request, netGroupContext), /fixture|changed between consecutive samples/u);
+      assert.equal(calls, ["profile", "state"].includes(failure) ? 2 : 1);
+    }
+  }
+});
 
 function argumentsFor(descriptor: PublicSdkReadDescriptor): Record<string, unknown> {
   const parts = descriptor.path.split(".");

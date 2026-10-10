@@ -10,9 +10,9 @@ The inventory covers 774 distinct method paths. The reviewed installed SDK has
 697, the newer official reference has 773, and one older dialog method appears
 only in the reviewed SDK. These counts are method paths, not overload counts.
 The original 749 and 806 declaration signatures remain in the inventory.
-The current source inventory has 191 public subsets, 81 native equivalents,
-two lifecycle-only methods, eight blocked methods and 492 omissions. The fixed
-SDK-read catalog has 168 routes. These are implementation counts, not live-test
+The current source inventory has 191 public subsets, 86 native equivalents,
+two lifecycle-only methods, eight blocked methods and 487 omissions. The fixed
+SDK-read catalog has 173 routes. These are implementation counts, not live-test
 counts.
 
 Component-property names have a separate fixed native equivalent for the exact
@@ -32,7 +32,28 @@ and collection wrappers disagree on alignment and can return before their
 callbacks finish. Complete bounded tree/index/source/family ownership and two
 scalar captures guard the replacement. Descendant Text, symbol editors,
 structural GROUP records and incomplete selected-ID sets refuse. Source and
-adversarial tests pass; connected validation remains pending.
+adversarial tests pass. Installed223200 returned the expected fourteen fields for
+one root Text through both methods, with complete native and saved-project
+invariance. Coverage is that null-style/alignment fixture, not arbitrary rendering
+or later-generation admission.
+
+Four native Wire/Bus `get/getAll` routes return group identities, every line's
+native points and nullable style, every literal NET name and custom attribute
+identities. They do not collapse heterogeneous styles or choose a first net name.
+Complete tree/index/source/child membership, two captures and late scalar/type
+reproof replace the swallowed-error public wrappers. No compiler or serializer
+is called; connected nonempty Wire/Bus DTO validation remains pending.
+
+`pcb_Net.getAllPrimitivesByNet` now has a filtered native identity adapter for
+Line, Arc, Via, standalone Pad and ComponentPad. Filters and a nonempty net are
+required. Two complete source/inventory/source cycles prove every requested
+family before net filtering, including PAD_NET/component ownership. Unfiltered
+membership and other native shapes remain unsupported; this is not SDK class
+parity, connectivity or persistence proof. Connected validation remains pending.
+Ordinary text and reviewed metadata records are admitted; BOARD records refuse
+because their decoder creates registered Line/Arc controllers with unproven
+inventory ownership. This is a concrete remaining shape-ownership limitation,
+not a claim that all ordinary boards are covered.
 
 ## What the statuses mean
 

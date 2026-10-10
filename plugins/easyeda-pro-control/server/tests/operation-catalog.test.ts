@@ -4,6 +4,7 @@ import { z } from "zod";
 import { designActionSchema } from "../src/design-action.ts";
 import { libraryOperationSchema } from "../src/library-operations.ts";
 import { operationCatalogQuerySchema, queryOperationCatalog, validateCatalogOperation } from "../src/operation-catalog.ts";
+import { FLAT_DISPLAY_TRANSACTION_PROFILE } from "../src/flat-display-binding.ts";
 
 void test("schematic operation discovery exposes the current type-1 topology execution restriction", () => {
   const restricted = queryOperationCatalog({ family: "design", operationAction: "sch.wire.modify" });
@@ -14,6 +15,31 @@ void test("schematic operation discovery exposes the current type-1 topology exe
   const pcb = queryOperationCatalog({ family: "design", operationAction: "pcb.via.modify" });
   const pcbEntries = z.array(z.record(z.string(), z.unknown())).parse(pcb["entries"]);
   assert.equal(Object.hasOwn(pcbEntries[0] ?? {}, "executionRestrictions"), false);
+});
+
+void test("layout discovery describes only the sealed display exception without admitting other schematic edits", () => {
+  const restrictionSchema = z.object({
+    documentType: z.literal(1), reason: z.string(), exception: z.record(z.string(), z.unknown()).optional(),
+  });
+  const descriptorSchema = z.object({ executionRestrictions: z.array(restrictionSchema) });
+  const entriesSchema = z.array(descriptorSchema);
+  for (const action of ["sch.layout.batch", "sch.wire.modify", "sch.component.create", "sch.text.modify"]) {
+    const result = queryOperationCatalog({ family: "design", operationAction: action });
+    const [entry] = entriesSchema.parse(result["entries"]);
+    assert.ok(entry);
+    const [restriction] = entry.executionRestrictions;
+    assert.ok(restriction);
+    assert.match(restriction.reason, /invoke Save All/u);
+    if (action === "sch.layout.batch") {
+      assert.equal(restriction.exception?.["profile"], FLAT_DISPLAY_TRANSACTION_PROFILE);
+      assert.deepEqual(restriction.exception["allowedSteps"], ["sch.attribute.display", "sch.text.display"]);
+      assert.equal(restriction.exception["executionAuthorized"], false);
+      assert.equal(restriction.exception["electricalEdits"], false);
+      assert.match(String(restriction.exception["targets"]), /stored.*literal primitiveId/u);
+    } else {
+      assert.equal(restriction.exception, undefined);
+    }
+  }
 });
 
 void test("catalog pagination covers every strict design and library discriminator once", () => {

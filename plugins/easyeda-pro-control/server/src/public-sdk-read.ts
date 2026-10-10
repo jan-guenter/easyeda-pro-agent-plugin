@@ -7,6 +7,8 @@ import { SCHEMATIC_NATIVE_ID_METHODS, buildSchematicNativeIdsExpression, isSchem
 import { SCHEMATIC_COMPONENT_PROPERTY_METHOD, buildSchematicComponentPropertyNamesExpression, schematicComponentPropertyNamesSchema } from "./schematic-component-properties.ts";
 import { SYMBOL_PIN_ENUMERATION_METHOD, SYMBOL_PIN_GETTER_FIELDS, buildSymbolPinEnumerationExpression } from "./symbol-pin-enumeration.ts";
 import { buildSchematicTextReadExpression, isSchematicTextReadMethod, schematicTextReadRequestSchema, validateSchematicTextStates } from "./schematic-text-read.ts";
+import { buildSchematicNetGroupReadExpression, isSchematicNetGroupReadMethod, schematicNetGroupReadRequestSchema, validateSchematicNetGroupStates } from "./schematic-netgroup-read.ts";
+import { PCB_NET_MEMBERSHIP_LIMITATIONS, PCB_NET_MEMBERSHIP_METHOD, pcbNetMembershipArgumentsSchema } from "./pcb-net-membership.ts";
 
 /** This fixed allowlist is independent of the declaration catalog. Public entries
  * were reviewed against this implementation, including delegated getters.
@@ -173,6 +175,9 @@ add("eda.pcb_Drc.getPadPairGroupMinWireLength", [3], "records", z.object({ padPa
 add("eda.pcb_Layer.getAllLayers", PCB_DOCUMENTS, "records");
 add("eda.pcb_Layer.getTheNumberOfCopperLayers", PCB_DOCUMENTS, "number");
 add("eda.pcb_Net.getAllNets", [3], "records");
+add(PCB_NET_MEMBERSHIP_METHOD, [3], "records", pcbNetMembershipArgumentsSchema, ["net", "primitiveTypes"], {
+  implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [...PCB_NET_MEMBERSHIP_LIMITATIONS],
+});
 for (const method of ["getAllNetName", "getAllNetsName"]) { add(`eda.pcb_Net.${method}`, [3], "strings"); }
 for (const [method, output] of [["getNet", "record"], ["getNetColor", "json"], ["getNetLength", "number"]] as const) {
   add(`eda.pcb_Net.${method}`, [3], output, z.object({ net: text }).strict(), ["net"], { optionalResult: true });
@@ -217,6 +222,21 @@ for (const schema of schematicTextReadRequestSchema.options) {
       "hAlign is null or 0/1/2 for left/center/right; vAlign is null or 0/1/2 for top/middle/bottom. No AlignMode is fabricated: installed get uses display alignment, getAll a different raw formula. No style coercion from getApiSchTextData.",
       "Reciprocal full tree/ID-index/source membership, family identity, locks and all Text scalar fields are rechecked synchronously. Native signed zero remains distinct during reproof, but JSON transport normalizes it. Values are at most 65536 UTF-16 units, font/color strings 4096, total Text strings 262144; transport bounds also apply.",
       "No callback/public Text wrapper, serializer, compiler, display getter, settings, RPC, navigation or Save. This is bounded native Text state, not complete source/connectivity/persistence proof or proof of unrelated field invariance.",
+    ],
+  });
+}
+for (const schema of schematicNetGroupReadRequestSchema.options) {
+  let parameters: string[] = [];
+  if (schema.shape.method.value.endsWith(".get")) { parameters = ["primitiveIds"]; }
+  if (schema.shape.method.value === "eda.sch_PrimitiveWire.getAll") { parameters = ["net"]; }
+  add(schema.shape.method.value, [1], "records", schema.shape.arguments, parameters, {
+    implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [
+      "Native root Wire/Bus NetGroup DTOs on an ordinary active SCH_PAGE, not public SDK getter parity. Symbol/block-instance pages, structural GROUP records, descendant selectors and net filters refuse.",
+      "get and getAll return arrays sorted by primitiveId, including singular get. Selected get accepts one ID or 1-256 distinct IDs; any missing or wrong-family target refuses. Complete Wire and Bus ownership is checked even for a selected read.",
+      "Each group returns primitiveId, modelType=NetGroup, kind, lines, names and customAttributeIds. Every line retains its identity, one or two native XY pairs, nullable color/width/strokeStyle. Y is not inverted. Styles are raw null or SOLID/SHORT_DASH/DOT/DOT_DASH, not public numeric enums or theme defaults.",
+      "Every source-backed NET child returns its identity and literal value, including empty or conflicting values. No first-name selection, net compilation or connectivity claim. Custom attributes are identity-only; generated junction/disconnection markers are ownership-checked but omitted from DTOs.",
+      "Complete reciprocal tree/index/source/root-family and child-collection proof; at most 20000 models/source IDs, 256 groups and across both families 1024 lines, 1024 names, 1024 custom attributes, 262144 string units. Limits apply before selection. Native signed zero is checked but JSON transport normalizes it.",
+      "Two scalar captures plus final scalar reproof; no public wrappers, serializers, compiler, AST/name lookup, RPC, display getters, settings, navigation or Save. This is bounded group state, not complete source, resolved nets or durable-state proof.",
     ],
   });
 }
@@ -390,12 +410,20 @@ export function publicSdkReadDescriptors(): PublicSdkReadDescriptor[] {
     parameterSupport: entry.parameterSupport, limitations: [...entry.limitations],
     implementation: { kind: entry.implementationKind,
       source: `server/src/${readImplementationName(entry.path)}.ts`,
-      test: `server/tests/${entry.path === SPLIT_POLYGON_METHOD ? "public-sdk-polygon-split" : readImplementationName(entry.path)}.test.ts`, publicApiSha256: PUBLIC_SDK_READ_API_SHA256 },
+      test: `server/tests/${readImplementationTestName(entry.path)}.test.ts`, publicApiSha256: PUBLIC_SDK_READ_API_SHA256 },
     liveValidation: "not-yet-validated", parameters: [...entry.parameters], membership: entry.membership === undefined ? null : { ...entry.membership }, restParameter: entry.restParameter ?? null,
     result: { kind: entry.output, optional: entry.optionalResult, getterFields: [...entry.getters], primitiveType: entry.primitiveType ?? null } }));
 }
 
+function readImplementationTestName(path: string): string {
+  if (path === SPLIT_POLYGON_METHOD) { return "public-sdk-polygon-split"; }
+  if (path === PCB_NET_MEMBERSHIP_METHOD) { return "pcb-net-membership"; }
+  return readImplementationName(path);
+}
+
 function readImplementationName(path: string): string {
+  if (path === PCB_NET_MEMBERSHIP_METHOD) { return "pcb-net-membership-read"; }
+  if (isSchematicNetGroupReadMethod(path)) { return "schematic-netgroup-read"; }
   if (isSchematicTextReadMethod(path)) { return "schematic-text-read"; }
   if (isSchematicNativeIdMethod(path)) { return "schematic-native-ids"; }
   if (path === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { return "schematic-component-properties"; }
@@ -449,6 +477,7 @@ function splitPolygonExpression(request: PublicSdkReadRequest): string {
 export function buildPublicSdkReadCode(input: unknown): string {
   const request = publicSdkReadRequestSchema.parse(input);
   if (isEditorTabLookupMethod(request.method)) { throw new Error("Owned editor lookups require the checkpoint-bound specialized reader."); }
+  if (request.method === PCB_NET_MEMBERSHIP_METHOD) { throw new Error("PCB net membership requires the source/inventory/source specialized reader."); }
   const definition = definitions.get(request.method);
   if (definition === undefined) { throw new Error("Unsupported fixed SDK method."); }
   const args = definition.parameters.map((key) => {
@@ -460,6 +489,7 @@ export function buildPublicSdkReadCode(input: unknown): string {
   else if (definition.path === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { expression = buildSchematicComponentPropertyNamesExpression("sdk-failure-code"); }
   else if (definition.path === SYMBOL_PIN_ENUMERATION_METHOD) { expression = buildSymbolPinEnumerationExpression("sdk-failure-code"); }
   else if (isSchematicTextReadMethod(definition.path)) { expression = buildSchematicTextReadExpression(request, "sdk-failure-code"); }
+  else if (isSchematicNetGroupReadMethod(definition.path)) { expression = buildSchematicNetGroupReadExpression(request, "sdk-failure-code"); }
   else if (definition.path === SPLIT_POLYGON_METHOD) { expression = splitPolygonExpression(request); }
   const membership = definition.membership === undefined ? "" : `
   stage = "membership";
@@ -631,6 +661,7 @@ function validatePrimitiveFields(row: Record<string, unknown>, rowIndex: number,
 export function validatePublicSdkReadPayload(input: unknown, requestInput: unknown): Record<string, unknown> {
   const request = publicSdkReadRequestSchema.parse(requestInput);
   if (isEditorTabLookupMethod(request.method)) { throw new Error("Owned editor lookup results require the checkpoint-bound specialized verifier."); }
+  if (request.method === PCB_NET_MEMBERSHIP_METHOD) { throw new Error("PCB net membership results require the complete source/inventory specialized verifier."); }
   const definition = definitions.get(request.method);
   if (definition === undefined) { throw new Error("Unsupported fixed SDK method."); }
   assertExactTransportValue(input);
@@ -650,6 +681,10 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
     if (isSchematicTextReadMethod(request.method)) {
       if (payload.undefinedPaths.length > 0) { throw new Error("Native Text state cannot contain undefined fields."); }
       validateSchematicTextStates(payload.value, request);
+    }
+    if (isSchematicNetGroupReadMethod(request.method)) {
+      if (payload.undefinedPaths.length > 0) { throw new Error("Native NetGroup state cannot contain undefined fields."); }
+      validateSchematicNetGroupStates(payload.value, request);
     }
     if (request.method === SYMBOL_PIN_ENUMERATION_METHOD) {
       const rows = symbolPinRows.parse(payload.value);
@@ -704,6 +739,7 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
   if (request.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { assurance = "bounded-native-property-name-observation-not-complete-source-connectivity-or-persistence-proof"; }
   if (request.method === SYMBOL_PIN_ENUMERATION_METHOD) { assurance = "bounded-native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof"; }
   if (isSchematicTextReadMethod(request.method)) { assurance = "bounded-native-text-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
+  if (isSchematicNetGroupReadMethod(request.method)) { assurance = "bounded-native-netgroup-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
   return { ...payload, assurance,
     ...(definition.implementationKind === "native-task-equivalent" ? { implementationKind: definition.implementationKind } : {}),
     publicApiSha256: PUBLIC_SDK_READ_API_SHA256, liveValidation: "not-yet-validated", limitations: [...definition.limitations] };

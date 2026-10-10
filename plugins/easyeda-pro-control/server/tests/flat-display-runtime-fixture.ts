@@ -19,11 +19,14 @@ export function runtimeFixture(value = fixture()) {
       try { await perform(); return true; } finally { runner.currentAction = undefined; }
     } };
   const ids = new Map<string, object>(), pins: object[] = [], symbols: object[] = [], wires: object[] = [];
+  const rootChildren: object[] = [];
+  const root = { id: "$$root", modelType: "Root", parent: null, isConnected: true, children: rootChildren };
   const contacts = new Map<string, object>();
-  const shapes = { actionRunner: runner, idManager: { idMap: ids, get: (id: string): object | undefined => ids.get(id) },
+  const shapes = { root, actionRunner: runner, idManager: { idMap: ids, get: (id: string): object | undefined => ids.get(id) },
     modelHelpers: { pin: { getSchPinNet: (): string => "SIGNAL" } },
     getModels: (kind: string): object[] => { if (kind === "Symbol") { return symbols; } return kind === "NetGroup" ? wires : []; },
     netPointManager: { getNetPoint: (point: { x: number; y: number }): object | undefined => contacts.get(JSON.stringify([point.x, point.y])) } };
+  Object.assign(root, { shapeManager: shapes });
   const attributes = (items: typeof partData.attributes): object[] => items.map((item) => ({ ...item, symbolValue: item.value, blockValue: item.value,
     getValue: (): unknown => item.value, getInstanceValue: (): null => null, getConsistencyData: (): object => item.body }));
   const part = { id: partData.id, modelType: "Symbol", cmdKey: "part", locked: false, symbolUuid: "symbol", partId: "A", shapeManager: shapes,
@@ -32,15 +35,21 @@ export function runtimeFixture(value = fixture()) {
   const pin = { id: pinData.id, parent: part, shapeManager: shapes, isNoConnectShow: false, origin: { x: 0, y: 0 },
     getAttr: (): object[] => attributes(pinData.attributes), getConsistencyData: (): object => pinData.body };
   pins.push(pin); symbols.push(part); ids.set(part.id, part); ids.set(pin.id, pin);
-  const lines: object[] = [];
-  const wire = { id: wireData.id, modelType: "NetGroup", type: "wire", combination: null, lines, netNames: attributes(wireData.names),
+  const children: object[] = [], lines: object[] = [], netNames: object[] = [];
+  const wire = { id: wireData.id, modelType: "NetGroup", tagName: "NetGroup", type: "wire", combination: null,
+    shapeManager: shapes, parent: root, children, lines, netNames,
     getConsistencyData: (): object => wireData.body };
+  for (const item of wireData.names) {
+    const name = { ...item, modelType: "NetLabel", tagName: "NetName", cmdKey: "netlabel", keyInSourceCode: "NET", parent: wire, shapeManager: shapes,
+      getConsistencyData: (): object => item.body };
+    netNames.push(name); children.push(name); ids.set(name.id, name);
+  }
   const line = { id: lineData.id, modelType: "Wire", parent: wire, shapeManager: shapes, points: [{ x: 0, y: 0 }, { x: 10, y: 0 }],
     getConsistencyData: (): object => lineData.body };
-  lines.push(line); wires.push(wire); ids.set(wire.id, wire); ids.set(line.id, line);
+  lines.push(line); children.push(line); wires.push(wire); rootChildren.push(part, wire); ids.set(wire.id, wire); ids.set(line.id, line);
   const sourceIds = new Map(parseDocumentSource(page.source).objects.filter((row) => row.type !== "META").map((row) => [row.id, 1]));
   for (const record of parseDocumentSource(page.source).objects) {
-    if (record.type === "ATTR" || record.type === "TEXT") { ids.set(record.id, { id: record.id, modelType: record.type === "ATTR" ? "Attr" : "Text" }); }
+    if ((record.type === "ATTR" || record.type === "TEXT") && !ids.has(record.id)) { ids.set(record.id, { id: record.id, modelType: record.type === "ATTR" ? "Attr" : "Text" }); }
   }
   contacts.set("[0,0]", { x: 0, y: 0, Wire: new Set([line]), Pin: new Set([pin]), Bus: new Set(), BusEntry: new Set() });
   contacts.set("[10,0]", { x: 10, y: 0, Wire: new Set([line]), Pin: new Set(), Bus: new Set(), BusEntry: new Set() });

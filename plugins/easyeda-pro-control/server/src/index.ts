@@ -79,6 +79,9 @@ import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
 import { SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
 import { SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
 import { isSchematicTextReadMethod } from "./schematic-text-read.ts";
+import { isSchematicNetGroupReadMethod } from "./schematic-netgroup-read.ts";
+import { PCB_NET_MEMBERSHIP_METHOD } from "./pcb-net-membership.ts";
+import { readPcbNetMembership } from "./pcb-net-membership-read.ts";
 import { publicSdkCatalogQuerySchema, publicSdkValidationQuerySchema, queryPublicSdkReads, validatePublicSdkArguments } from "./public-sdk-catalog.ts";
 import { operationCatalogQuerySchema, operationValidationRequestSchema, queryOperationCatalog, validateCatalogOperation } from "./operation-catalog.ts";
 
@@ -1958,7 +1961,7 @@ registerFacadeTool(
   "easyeda_control_sdk_read",
   {
     title: "Read reviewed EasyEDA SDK methods",
-    description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity-only, property-name, Pin-getter or Text-state observations; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
+    description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity, property-name, Pin-getter, Text, Wire/Bus and filtered PCB net-membership observations; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
     inputSchema: {
       request: z.unknown().pipe(publicSdkReadRequestSchema),
       expectedContext: contextSchema,
@@ -1983,12 +1986,16 @@ registerFacadeTool(
     if (input.request.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { reader = "fixed-native-property-name-observation"; effect = "fixed-native-property-name-read"; }
     if (input.request.method === SYMBOL_PIN_ENUMERATION_METHOD) { reader = "fixed-native-pin-getter-observation"; effect = "fixed-native-pin-getter-read"; }
     if (isSchematicTextReadMethod(input.request.method)) { reader = "fixed-native-text-state-observation"; effect = "fixed-native-text-state-read"; }
+    if (isSchematicNetGroupReadMethod(input.request.method)) { reader = "fixed-native-netgroup-state-observation"; effect = "fixed-native-netgroup-state-read"; }
+    if (input.request.method === PCB_NET_MEMBERSHIP_METHOD) { reader = "fixed-native-net-membership-observation"; effect = "fixed-native-net-membership-read"; }
     try {
       validatePrivateFingerprint(input.expectedFingerprint);
       const status = await engine.status();
       assertSubset(status.stableFingerprint, input.expectedFingerprint, "EasyEDA SDK read runtime fingerprint");
       dispatched = true;
-      const result = await engine.publicSdkRead(input.request, input.expectedContext);
+      const result = input.request.method === PCB_NET_MEMBERSHIP_METHOD
+        ? await readPcbNetMembership(engine, input.request, input.expectedContext, input.expectedFingerprint)
+        : await engine.publicSdkRead(input.request, input.expectedContext);
       return await withEvidence(request, result, input.evidence,
         { facadeVersion: CONTROL_VERSION, reader },
         { reservation, returnMode: input.returnMode, maxInlineBytes: input.maxInlineBytes });

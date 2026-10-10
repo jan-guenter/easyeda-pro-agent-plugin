@@ -147,8 +147,51 @@ alignment is null or 0/1/2 for top/middle/bottom. This is not public SDK getter
 parity or resolved theme/default rendering. Two synchronous scalar captures and
 two facade observations detect drift, with signed zero normalized only by JSON
 transport. No public Text callback, compiler, serializer, RPC or Save is called.
-Connected validation is pending. Use complete source and checkpoint evidence
-separately when a task needs invariance or persistence proof.
+Installed223200 passed both methods on one root Text with null styles/alignment,
+with complete native and saved-project invariance. Other style/alignment cases
+and later generations remain unvalidated. Use complete source and checkpoint
+evidence separately when a task needs invariance or persistence proof.
+
+`eda.sch_PrimitiveWire.get/getAll` and `eda.sch_PrimitiveBus.get/getAll` return
+native group-state arrays, never public primitive handles. `get` accepts one
+literal `primitiveIds` string or up to 256 distinct strings; `getAll` takes `{}`.
+Wire net filters refuse. Only root groups on an ordinary active page are admitted;
+complete Wire and Bus membership is checked even when selecting one group.
+
+Each group has `primitiveId`, `modelType: "NetGroup"`, `kind`, `lines`, `names`
+and `customAttributeIds`. Each line retains its own ID, one or two native XY
+pairs, nullable `color`, `width` and `strokeStyle`. Styles are native
+`SOLID/SHORT_DASH/DOT/DOT_DASH`, not public numeric enums. Names retain every
+source-backed NET child's ID and literal value; conflicting or empty strings
+are not interpreted as resolved nets. Custom attributes are IDs only. Generated
+junction/disconnection markers are ownership-checked but not returned.
+
+The entire scene must fit 20,000 tree/source entries; both group families together
+must fit 256 groups, 1,024 lines, 1,024 names, 1,024 custom attributes and 262,144
+string units. Unsupported children, structural groups or incomplete selections
+refuse before returning partial data. Two scalar captures and final field/type
+reproof avoid serializers, compiler, public wrappers, RPC and Save. These routes
+have adversarial tests, not connected Wire/Bus DTO acceptance.
+
+`eda.pcb_Net.getAllPrimitivesByNet` requires a nonempty `net` and an explicit
+nonempty unique `primitiveTypes` subset of `Line`, `Arc`, `Via`, `Pad` and
+`ComponentPad`. Pad means standalone; ComponentPad means a physical pad owned by
+a component. The returned sorted identity records include `primitiveId`,
+`primitiveType`, original `net` spelling, `parentComponentPrimitiveId`,
+`sourceRecordId` and `sourceType`. Net matching uses uppercase keys.
+
+This native equivalent avoids the installed broken type filter and public-class
+projection. It proves complete requested families across all nets before
+filtering, and correlates component pads against canonical PAD_NET records and
+their owners. Two matching source/inventory/source cycles retain exact runtime
+and context. Only the pinned project-owned type-3 PCB/source editVersion is
+supported; unfiltered/empty-net queries, other shapes, partitions and unmodeled
+source records refuse. It is source-tested, not yet connected-validated, and
+does not establish electrical connectivity or saved-file invariance.
+Ordinary STRING text and FONT/RULE_TEMPLATE/PRIMITIVE/PREFERENCE/SILK_OPTS
+metadata are admitted. BOARD records remain refused: their decoder registers
+generated Line/Arc controllers, whose complete inventory ownership has not
+been proved by this profile. A PCB with such a record is not an admitted fixture.
 
 `eda.pcb_MathPolygon.splitPolygon` accepts JSON `complexPolygons`: one to eight
 groups, each a source array or one to eight source arrays, each at most 1024 tokens.

@@ -54,8 +54,15 @@ the immediate rollback correctly stopped. This is delayed-persistence evidence,
 not successful immediate rollback or a Save/reopen lifecycle. A separate210100
 single-text transaction subsequently passed one Save/close/reopen, exact native
 readback and complete nine-document persistence proof with eight unchanged peers.
-Attribute edits and nonempty electrical topology still require separate connected
-fixtures. Historical evidence does not admit the new candidate.
+Installed223200 separately passed one stored frame Version attribute x717-to722
+edit, complete native readback and nine-document/eight-peer saved proof, with
+one explicit Save/close/reopen. Independent comparison verified the exact field
+effect plus the maintained zIndex/strikeout storage initialization. The effect
+had already persisted before explicit Save; Save acknowledgment and persistence
+are separate evidence. The editor then closed normally and final offline
+checkpoint verification passed. This zero-electrical-part fixture does not
+validate nonempty electrical topology or other attribute fields. Historical
+evidence does not admit the new candidate.
 
 Do not use `easyeda_schematic_verify_write` for component proof in the pinned upstream build. Its handler expects an array while the bridge returns `{ total, items }`, so it can report `components_available: false` despite live components. Its name does not make its payload trustworthy.
 

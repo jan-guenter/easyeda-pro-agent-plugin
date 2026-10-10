@@ -4,6 +4,7 @@ import { designActionSchema } from "./design-action.ts";
 import { libraryOperationSchema } from "./library-operations.ts";
 import { listLibraryExecutionCapabilities } from "./library-execution.ts";
 import { SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL } from "./exact-readers.ts";
+import { FLAT_DISPLAY_TRANSACTION_PROFILE } from "./flat-display-binding.ts";
 
 const familySchema = z.enum(["design", "library"]);
 export const operationCatalogQuerySchema = z.object({
@@ -69,7 +70,18 @@ export function queryOperationCatalog(input: unknown): Record<string, unknown> {
       } : {}),
       liveValidation: "operation-specific;see-capability-matrix",
       ...(query.family === "design" && entry.action.startsWith("sch.") ? {
-        executionRestrictions: [{ documentType: 1, reason: SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL }],
+        executionRestrictions: [{ documentType: 1, reason: SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL,
+          ...(entry.action === "sch.layout.batch" ? { exception: {
+            profile: FLAT_DISPLAY_TRANSACTION_PROFILE,
+            allowedSteps: ["sch.attribute.display", "sch.text.display"],
+            targets: "existing stored records with literal primitiveId selectors",
+            scope: "one ordinary fully represented page; complete checkpoint-bound project membership and flat topology",
+            requiredProof: "exact nonempty display effect and inverse, unchanged peers, one-shot Save/reopen and complete durable delta",
+            electricalEdits: false,
+            executionAuthorized: false,
+            liveValidation: "generation-and-operation-specific;see-capability-matrix",
+          } } : {}),
+        }],
       } : {}),
       ...(schema === undefined ? {} : { inputSchema: schema,
         inputSchemaSha256: createHash("sha256").update(JSON.stringify(schema)).digest("hex") }),

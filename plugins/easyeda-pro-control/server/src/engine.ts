@@ -62,6 +62,8 @@ import { SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-prope
 import { SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
 import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
 import { isSchematicTextReadMethod } from "./schematic-text-read.ts";
+import { isSchematicNetGroupReadMethod } from "./schematic-netgroup-read.ts";
+import { PCB_NET_MEMBERSHIP_METHOD } from "./pcb-net-membership.ts";
 import { isEditorTabLookupMethod, readEditorTabLookup } from "./editor-tab-lookups.ts";
 import { buildSchematicNativeReadExpression } from "./schematic-native-adapter.ts";
 import { readSchematicFlatTopology } from "./schematic-flat-read.ts";
@@ -3267,6 +3269,7 @@ export class EasyedaControlEngine {
   public async publicSdkRead(request: unknown, expectedContext: ExpectedContext): Promise<ProofPayload> {
     const boundContext = structuredClone(expectedContext);
     const parsed = validatePublicSdkReadRequest(request, boundContext.document.documentType);
+    if (parsed.method === PCB_NET_MEMBERSHIP_METHOD) { throw new Error("PCB net membership requires its exact-runtime source/inventory coordinator."); }
     if (isEditorTabLookupMethod(parsed.method)) { return readEditorTabLookup(this, parsed, boundContext); }
     await this.assertBridgeDispatchAllowed();
     await this.assertPublicSdkImplementation();
@@ -3296,6 +3299,7 @@ export class EasyedaControlEngine {
     if (parsed.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { authority = "native-property-name-observation-not-complete-source-connectivity-or-persistence-proof"; }
     if (parsed.method === SYMBOL_PIN_ENUMERATION_METHOD) { authority = "native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof"; }
     if (isSchematicTextReadMethod(parsed.method)) { authority = "native-text-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    if (isSchematicNetGroupReadMethod(parsed.method)) { authority = "native-netgroup-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
     return { ...second, authority, read_consistency: {
       stable: true, attempts: 2, snapshotSha256,
       contextBinding: { level: "active-context-stability-required", preAndPostChecked: true, switchAwayAndBackDetectable: false },

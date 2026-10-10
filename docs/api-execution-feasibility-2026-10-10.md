@@ -458,12 +458,14 @@ The file APIs explicitly include arbitrary filesystem reading, writing and
 deletion, not only export downloads.
 [Official filesystem reference](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_filesystem.html).
 
-### Remaining local getter implementation review
+### Public-wrapper defects and replacement adapters
 
 A further read-only review of the pinned installed code found specific defects
-beyond the generic class-instance serialization limitation. These methods remain
-omitted. No execution status or live-validation count changes because of this
-review.
+beyond the generic class-instance serialization limitation. The original public
+wrappers remain excluded. Subsequent bounded native adapters now cover Text,
+Wire/Bus and filtered PCB net membership; their narrowed contracts and connected
+evidence are listed in the [current inventory](api-coverage-inventory-2026-10-10.md).
+The defect evidence below does not itself validate those replacements.
 
 - In `pro-api/0.2.53.aee2f57a/api.js`, `SCH_PrimitiveBus.get` and `getAll`,
   and `SCH_PrimitiveWire.get` and `getAll`, catch RPC exceptions. The singular

@@ -119,7 +119,11 @@ void test("fixed flat capture contains no compiled-cache, export or mutation dis
 function runtimeFixture(includeFrame = false): { readonly runtime: object; readonly running: { running: boolean }; readonly wireContacts: Set<object>;
   readonly project: { setting: { universal: { defaultNetName: boolean } }; netLabelInterPageConnection: boolean }; readonly libraryParts: object[];
   readonly unsupportedModels: Map<string, object[]>; readonly nativeIds: Map<string, object>;
-  readonly pageConsistency: { state: string }; readonly templateConsistency: { state: string }; readonly frameValues: { date: string; time: string } } {
+  readonly pageConsistency: { state: string }; readonly templateConsistency: { state: string }; readonly frameValues: { date: string; time: string };
+  readonly wireNames: object[]; readonly wireChildren: object[]; readonly wireModels: object[]; readonly rootChildren: object[];
+  readonly sourceIds: Map<string, number>; readonly calls: string[];
+  readonly root: { id: string; modelType: string; shapeManager?: object; parent: object | null; isConnected: boolean };
+  readonly nativeIndex: { get: (id: string) => object | undefined } } {
   const value = fixture();
   const page = pageOf(value);
   const partData = page.symbols[0];
@@ -135,11 +139,14 @@ function runtimeFixture(includeFrame = false): { readonly runtime: object; reado
   const running = { running: false };
   const ids = new Map<string, object>();
   const symbolModels: object[] = [], wireModels: object[] = [];
+  const calls: string[] = [], rootChildren: object[] = [];
+  const root = { id: "$$root", modelType: "Root", parent: null, isConnected: true, children: rootChildren };
   const unsupportedModels = new Map<string, object[]>();
   const contacts = new Map<string, object>();
-  const shapes = { actionRunner: running, idManager: { idMap: ids, get: (id: string): object | undefined => ids.get(id) },
+  const shapes = { root, actionRunner: running, idManager: { idMap: ids, get: (id: string): object | undefined => ids.get(id) },
     getModels: (kind: string): object[] => { if (kind === "Symbol") { return symbolModels; } if (kind === "NetGroup") { return wireModels; } return unsupportedModels.get(kind) ?? []; },
     netPointManager: { getNetPoint: (position: { x: number; y: number }): object | undefined => contacts.get(JSON.stringify([position.x, position.y])) } };
+  Object.assign(root, { shapeManager: shapes });
   const attrs = (values: typeof partData.attributes): object[] => values.map((item) => ({ ...item, getInstanceValue: (): null => null,
     getConsistencyData: (): object => structuredClone(item.body) }));
   const nativePins: object[] = [];
@@ -151,12 +158,19 @@ function runtimeFixture(includeFrame = false): { readonly runtime: object; reado
   const nativePin = { id: pinData.id, parent: part, shapeManager: shapes, isNoConnectShow: false, origin: { x: 0, y: 0 },
     getAttr: (): object[] => attrs(pinData.attributes), getConsistencyData: (): object => structuredClone(pinData.body) };
   nativePins.push(nativePin); symbolModels.push(part); ids.set(nativePin.id, nativePin); ids.set(part.id, part);
-  const nativeLines: object[] = [];
-  const nativeWire = { id: wireData.id, modelType: "NetGroup", type: "wire", combination: null, lines: nativeLines, netNames: attrs(wireData.names),
+  const nativeLines: object[] = [], wireChildren: object[] = [], wireNames: object[] = [];
+  const nativeWire = { id: wireData.id, modelType: "NetGroup", tagName: "NetGroup", type: "wire", combination: null,
+    shapeManager: shapes, parent: root, children: wireChildren, lines: nativeLines, netNames: wireNames,
     getConsistencyData: (): object => structuredClone(wireData.body) };
+  for (const item of wireData.names) {
+    const name = { ...item, modelType: "NetLabel", tagName: "NetName", cmdKey: "netlabel", keyInSourceCode: "NET", parent: nativeWire, shapeManager: shapes,
+      getConsistencyData: (): object => { calls.push("name-body"); return structuredClone(item.body); } };
+    wireNames.push(name); wireChildren.push(name); ids.set(name.id, name);
+  }
   const nativeLine = { id: lineData.id, modelType: "Wire", parent: nativeWire, shapeManager: shapes, points: [{ x: 0, y: 0 }, { x: 10, y: 0 }],
     getConsistencyData: (): object => structuredClone(lineData.body) };
-  nativeLines.push(nativeLine); wireModels.push(nativeWire); ids.set(nativeLine.id, nativeLine); ids.set(nativeWire.id, nativeWire);
+  nativeLines.push(nativeLine); wireChildren.push(nativeLine); wireModels.push(nativeWire); rootChildren.push(part, nativeWire);
+  ids.set(nativeLine.id, nativeLine); ids.set(nativeWire.id, nativeWire);
   const frameValues = { date: "2026-10-10", time: "12:00:00" };
   if (includeFrame) {
     const frameBody = { partId: "frame-template", x: 0, y: 0 };
@@ -167,21 +181,25 @@ function runtimeFixture(includeFrame = false): { readonly runtime: object; reado
       getAttr: (): object[] => frameAttributes.map((item) => ({ ...item, value: item.key === "@Update Date" ? frameValues.date : frameValues.time,
         getInstanceValue: (): null => null, getConsistencyData: (): object => structuredClone(item.body) })),
       getConsistencyData: (): object => frameBody };
-    symbolModels.push(frame); ids.set(frame.id, frame);
+    symbolModels.push(frame); rootChildren.push(frame); ids.set(frame.id, frame);
     rewriteSource(value, (records) => { records.push({ id: "frame", type: "COMPONENT", body: frameBody }, ...frameAttributes.map((item) => ({ id: item.id, type: "ATTR", body: item.body }))); });
   }
   const sourceIds = new Map(parseDocumentSource(page.source).objects.map((record) => [record.id, 1]));
-  for (const record of parseDocumentSource(page.source).objects.filter((entry) => entry.type === "ATTR")) { ids.set(record.id, { id: record.id, modelType: "Attr" }); }
+  for (const record of parseDocumentSource(page.source).objects.filter((entry) => entry.type === "ATTR")) {
+    if (!ids.has(record.id)) { ids.set(record.id, { id: record.id, modelType: "Attr" }); }
+  }
   const wireContacts = new Set<object>([nativeLine]);
   contacts.set("[0,0]", { x: 0, y: 0, Wire: wireContacts, Pin: new Set([nativePin]), Bus: new Set(), BusEntry: new Set() });
   contacts.set("[10,0]", { x: 10, y: 0, Wire: new Set([nativeLine]), Pin: new Set(), Bus: new Set(), BusEntry: new Set() });
   const source = page.source.replace('"uuid":"page"', '"uuid":"page","client":"0123456789abcdef","updateTime":100,"version":"100"');
-  const pageConsistency = { state: "initialized", decodeAndRealTimeSyncHandler: { getSourceCodeIdMap: (): Map<string, number> => sourceIds }, getSourceCode: (): string => source };
+  const pageConsistency = { state: "initialized", decodeAndRealTimeSyncHandler: { getSourceCodeIdMap: (): Map<string, number> => sourceIds },
+    getSourceCode: (): string => { calls.push("source"); return source; } };
   const document = { uuid: "page", tabId: "page@project", project_uuid: "project", schematicUuid: "schematic", projectMgr: project,
     isSchSheetDoc: (): true => true, isBlockSymbolInstancePage: false, shapeManager: shapes, idManager: shapes.idManager,
     consistencyImpl: pageConsistency };
   const runtime = { SCH: { docMemoryManager: { getActiveDoc: (): object => document, getSchDocs: (): object[] => [document] } } };
-  return { runtime, running, wireContacts, project, libraryParts, unsupportedModels, nativeIds: ids, pageConsistency, templateConsistency, frameValues };
+  return { runtime, running, wireContacts, project, libraryParts, unsupportedModels, nativeIds: ids, pageConsistency, templateConsistency, frameValues,
+    wireNames, wireChildren, wireModels, rootChildren, sourceIds, calls, root, nativeIndex: shapes.idManager };
 }
 function capture(runtime: object): unknown {
   // oxlint-disable-next-line no-new-func, typescript/no-implied-eval -- Execute this fixed maintained builder against synthetic native objects only.
@@ -191,7 +209,111 @@ function capture(runtime: object): unknown {
 }
 void test("fixed flat capture executes on synchronous native model and proves its complete result", () => {
   const scene = runtimeFixture();
+  const name = scene.nativeIds.get("net-name"); assert.ok(name);
+  assert.equal(Reflect.get(name, "modelType"), "NetLabel");
+  assert.equal(Reflect.get(name, "tagName"), "NetName");
   assert.deepEqual(verifySchematicFlatTopology(capture(scene.runtime)).topology, verifySchematicFlatTopology(fixture()).topology);
+  assert.deepEqual(scene.calls, ["name-body", "source"]);
+});
+
+type FlatRuntime = ReturnType<typeof runtimeFixture>;
+function nativeObject(scene: FlatRuntime, id: string): object {
+  const result = scene.nativeIds.get(id); assert.ok(result); return result;
+}
+function setNative(scene: FlatRuntime, id: string, key: string, value: unknown): void {
+  assert.equal(Reflect.set(nativeObject(scene, id), key, value), true);
+}
+function rejectsNetNameScene(mutate: (scene: FlatRuntime) => void, reason: RegExp): void {
+  const scene = runtimeFixture(); mutate(scene);
+  assert.throws(() => capture(scene.runtime), reason);
+  assert.deepEqual(scene.calls, [], "Reject before invoking any NET body or source serializer.");
+}
+
+for (const [key, replacement] of [["modelType", "NetName"], ["modelType", "Attr"], ["tagName", "NetLabel"],
+  ["cmdKey", "attr"], ["key", "NET"], ["keyInSourceCode", "_NETLABEL_"], ["id", "unindexed-name"]] as const) {
+  void test(`fixed capture refuses an unproved wire NET discriminator ${key}=${replacement}`, () => {
+    rejectsNetNameScene((scene) => { setNative(scene, "net-name", key, replacement); }, /NET_NAME_MEMBERSHIP/u);
+  });
+}
+for (const [label, mutate] of [
+  ["foreign shape manager", (scene: FlatRuntime): void => { setNative(scene, "net-name", "shapeManager", {}); }],
+  ["absent parent", (scene: FlatRuntime): void => { setNative(scene, "net-name", "parent", null); }],
+  ["inherited symbol parent", (scene: FlatRuntime): void => { setNative(scene, "net-name", "parent", nativeObject(scene, "part")); }],
+  ["grouped name", (scene: FlatRuntime): void => { setNative(scene, "net-name", "combination", {}); }],
+  ["missing source ID", (scene: FlatRuntime): void => { scene.sourceIds.delete("net-name"); }],
+  ["missing ID index", (scene: FlatRuntime): void => { scene.nativeIds.delete("net-name"); }],
+  ["aliased ID index", (scene: FlatRuntime): void => { scene.nativeIds.set("net-name", { ...nativeObject(scene, "net-name") }); }],
+  ["contradictory native lookup", (scene: FlatRuntime): void => {
+    scene.nativeIndex.get = (id): object | undefined => id === "net-name" ? {} : scene.nativeIds.get(id);
+  }],
+  ["missing reciprocal child", (scene: FlatRuntime): void => { scene.wireChildren.splice(0, 1); }],
+  ["aliased reciprocal child", (scene: FlatRuntime): void => { scene.wireChildren[0] = { ...nativeObject(scene, "net-name") }; }],
+  ["duplicate reciprocal child", (scene: FlatRuntime): void => { scene.wireChildren.push(nativeObject(scene, "net-name")); }],
+  ["duplicate net-name enumeration", (scene: FlatRuntime): void => { scene.wireNames.push(nativeObject(scene, "net-name")); }],
+  ["missing reciprocal enumeration", (scene: FlatRuntime): void => { scene.wireNames.length = 0; }],
+  ["unindexed extra child", (scene: FlatRuntime): void => { scene.wireChildren.push({ modelType: "NetLabel", tagName: "NetName", id: "extra" }); }],
+  ["generic ATTR enumeration alias", (scene: FlatRuntime): void => { scene.wireNames[0] = nativeObject(scene, "attribute0"); }],
+] as const) {
+  void test(`fixed capture refuses wire NET ${label} before serialization`, () => {
+    rejectsNetNameScene(mutate, /NET_NAME_MEMBERSHIP/u);
+  });
+}
+for (const [label, mutate] of [
+  ["non-wire group", (scene: FlatRuntime): void => { setNative(scene, "wire", "type", "bus"); }],
+  ["foreign model kind", (scene: FlatRuntime): void => { setNative(scene, "wire", "modelType", "Symbol"); }],
+  ["foreign tag", (scene: FlatRuntime): void => { setNative(scene, "wire", "tagName", "PartSymbol"); }],
+  ["foreign shape manager", (scene: FlatRuntime): void => { setNative(scene, "wire", "shapeManager", {}); }],
+  ["inherited owner", (scene: FlatRuntime): void => { setNative(scene, "wire", "parent", nativeObject(scene, "part")); }],
+  ["grouped owner", (scene: FlatRuntime): void => { setNative(scene, "wire", "combination", {}); }],
+  ["missing root membership", (scene: FlatRuntime): void => { scene.rootChildren.splice(1, 1); }],
+  ["root alias", (scene: FlatRuntime): void => { scene.rootChildren[1] = { ...nativeObject(scene, "wire") }; }],
+  ["missing source owner", (scene: FlatRuntime): void => { scene.sourceIds.delete("wire"); }],
+  ["index alias", (scene: FlatRuntime): void => { scene.nativeIds.set("wire", { ...nativeObject(scene, "wire") }); }],
+  ["contradictory native lookup", (scene: FlatRuntime): void => {
+    scene.nativeIndex.get = (id): object | undefined => id === "wire" ? {} : scene.nativeIds.get(id);
+  }],
+  ["foreign root identity", (scene: FlatRuntime): void => { scene.root.id = "inherited-root"; }],
+  ["foreign root kind", (scene: FlatRuntime): void => { scene.root.modelType = "Symbol"; }],
+  ["foreign root manager", (scene: FlatRuntime): void => { scene.root.shapeManager = {}; }],
+  ["nested root", (scene: FlatRuntime): void => { scene.root.parent = nativeObject(scene, "part"); }],
+  ["disconnected root", (scene: FlatRuntime): void => { scene.root.isConnected = false; }],
+] as const) {
+  void test(`fixed capture refuses NET wire owner with ${label} before serialization`, () => {
+    rejectsNetNameScene(mutate, /NET_NAME_OWNER/u);
+  });
+}
+void test("fixed capture refuses duplicate root or wire-family ownership", () => {
+  rejectsNetNameScene((scene) => { scene.rootChildren.push(nativeObject(scene, "wire")); }, /NET_NAME_MEMBERSHIP/u);
+  rejectsNetNameScene((scene) => { scene.wireModels.push(nativeObject(scene, "wire")); }, /NET_NAME_MEMBERSHIP/u);
+});
+void test("fixed capture bounds complete NET ownership inventories before serialization", () => {
+  rejectsNetNameScene((scene) => { scene.wireChildren.length = 100_001; }, /ARRAY/u);
+  rejectsNetNameScene((scene) => { scene.wireNames.length = 4097; }, /ARRAY/u);
+  rejectsNetNameScene((scene) => { scene.rootChildren.length = 100_001; }, /ARRAY/u);
+  rejectsNetNameScene((scene) => {
+    const extraChildren = Array.from({ length: 50_000 }, () => ({}));
+    scene.wireChildren.push(...extraChildren);
+    const wire = { ...nativeObject(scene, "wire"), id: "wire2", children: extraChildren, netNames: [] };
+    scene.sourceIds.set(wire.id, 1); scene.nativeIds.set(wire.id, wire); scene.rootChildren.push(wire); scene.wireModels.push(wire);
+  }, /NET_NAME_MEMBERSHIP/u);
+});
+void test("fixed capture refuses persisted unrelated NetLabel and impossible NetName models", () => {
+  for (const modelType of ["NetLabel", "NetName"]) {
+    rejectsNetNameScene((scene) => {
+      scene.nativeIds.set("attribute0", { id: "attribute0", modelType, tagName: "NetName", parent: nativeObject(scene, "part") });
+    }, /SOURCE_MODEL_KIND/u);
+  }
+  rejectsNetNameScene((scene) => {
+    scene.sourceIds.set("name-alias", 1); scene.nativeIds.set("name-alias", nativeObject(scene, "net-name"));
+  }, /SOURCE_MODEL_KIND/u);
+});
+void test("fixed capture still refuses native root NetLabel before serialization", () => {
+  rejectsNetNameScene((scene) => {
+    const label = { id: "standalone", modelType: "NetLabel", tagName: "NetLabel", keyInSourceCode: "_NETLABEL_" };
+    scene.sourceIds.set(label.id, 1); scene.nativeIds.set(label.id, label); scene.rootChildren.push(label);
+    scene.unsupportedModels.set("NetLabel", [label]);
+  }, /SOURCE_MODEL_KIND/u);
+  rejectsNetNameScene((scene) => { scene.unsupportedModels.set("NetLabel", [{ modelType: "NetLabel", tagName: "NetLabel" }]); }, /UNSUPPORTED_FAMILY/u);
 });
 void test("fixed flat capture refuses native transaction and naming-setting drift", () => {
   const scene = runtimeFixture(); scene.running.running = true;

@@ -8,6 +8,23 @@ import { SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES, SCHEMATIC_COMPONENT_PROPERTY_
 import { METADATA_NATIVE_GUARD_CODES } from "../src/metadata-native-diagnostics.ts";
 import { SYMBOL_PIN_ENUMERATION_GUARD_CODES, SYMBOL_PIN_ENUMERATION_METHOD } from "../src/symbol-pin-enumeration.ts";
 import { SCHEMATIC_TEXT_GUARD_CODES, SCHEMATIC_TEXT_READ_METHODS } from "../src/schematic-text-read.ts";
+// oxlint-disable-next-line import/max-dependencies -- This diagnostic matrix covers every fixed native classifier using its production guard inventory.
+import { SCHEMATIC_NETGROUP_GUARD_CODES, SCHEMATIC_NETGROUP_READ_METHODS } from "../src/schematic-netgroup-read.ts";
+
+void test("native NetGroup diagnostics admit only exact fixed method/stage/code tuples", () => {
+  for (const method of SCHEMATIC_NETGROUP_READ_METHODS) {
+    for (const [code, label] of [...SCHEMATIC_NETGROUP_GUARD_CODES.map((entry) => [`SCH_NETGROUP_${entry}`, entry]), ["native-error", "EXCEPTION"]]) {
+      const message = `Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`;
+      const category = `native-schematic-netgroup:${method}:${label}`;
+      assert.equal(nativeFailureCategory(message), category);
+      assert.throws(() => extractToolPayload({ structuredContent: { ok: false, error: message } }), { message: `The upstream EasyEDA tool reported failure [${category}].` });
+      for (const invalid of [`${message} private suffix`, `${message}\n`, `private ${message}`, message.replace("stage=call", "stage=projection"),
+        message.replace("getter=none", "getter=net"), message.replace(method, "eda.private.method"), message.replace(`code=${code}`, "code=PRIVATE_SECRET")]) {
+        assert.equal(nativeFailureCategory(invalid), null);
+      }
+    }
+  }
+});
 
 void test("native Text diagnostics admit only exact fixed method/stage/code tuples", () => {
   for (const method of SCHEMATIC_TEXT_READ_METHODS) {

@@ -27,7 +27,11 @@ flags, with complete bounded model membership checks. An ordinary project-symbol
 Pin equivalent independently proves membership and matches all twelve explicit
 getter fields; custom attributes and multipart symbols refuse. Native Text
 `get/getAll` return bounded root-Text state with native coordinates and nullable
-styles, not public-getter parity. The fixed read catalog has 168 routes, including
+styles, not public-getter parity. Wire/Bus `get/getAll` preserve every line's native
+geometry/style and all literal names instead of flattening them to one style/net.
+Filtered PCB net membership derives identity records from complete requested-family
+source/inventory agreement, with explicit standalone/component pad roles.
+The fixed read catalog has 173 routes, including
 bounded polygon splitting that preserves input source arrays and their order. It
 accepts no arbitrary method path, caller code, callbacks, navigation or writes.
 None of these observations replaces complete design or persistence proof.
@@ -49,8 +53,11 @@ state but stopped before Save on a raw source-format comparison defect. Installe
 `210100` recovered that journal after one inverse and delayed native persistence,
 with complete nine-document restoration proof and no Save. This does not validate
 an immediate inverse. A separate `210100` single-text transaction passed Save,
-close, reopen and complete saved-project verification. The new source still needs
-its own connected admission.
+close, reopen and complete saved-project verification. Installed `223200` also
+passed both native Text-state readers and one stored frame-attribute display
+edit with complete nine-document saved proof and one Save/close/reopen. These
+fixtures contain no electrical parts. The new source still needs its own
+connected admission, including nonempty flat topology and the new read routes.
 Native discovery handles minimized windows, and
 bounded recovery-history caches preserve fresh content verification.
 Offline tests do not establish connected validation for this release.

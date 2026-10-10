@@ -6,6 +6,50 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Restarted223200 acceptance and next source candidate
+
+- Fresh facade1829230 admitted installed223200 bundled75d864d/manifest14c02f1f
+  with the unchanged external tuple. Only the flat disposable fixture opened.
+  Both native Text readers returned exact14fields for one root Text; complete
+  native and all9saved documents stayed unchanged. Independent receipts/source
+  review passes. Null styles/alignment are tested; no public-getter parity claim.
+- Stored frame Version display x717-to722 completed864d3092 once. Exact live
+  effect and all9documents/8unchanged peers independently verify. Saved target
+  additionally initializes zIndex11-to12/strikeoutfalse and native header fields.
+  One Save intent/ack and close/reopen pass; auto-persistence preceded explicit
+  Save. Terminal13 SHA11ab2835, checkpointd44183a4, logical0829119a.
+  Never replay the edit or Save. This fixture has no electrical parts/pins.
+- Fresh managed native receipt593a9148 and pre-close checkpoint verify pass.
+  Desktop capturee4803b0a shows the fixture. Normal-close and empty discovery
+  prove the editor exited. Post-close MCP checkpoint call refused absent bridge;
+  direct maintained offline verification passes final source13b54112/logical
+  0829119a. No pending CAD/recovery. No production access.
+- New source adds four bounded Wire/Bus NetGroup DTO routes and filtered PCB
+  net-membership identities. Fixed reads173; coverage774paths191public/86native/
+  2lifecycle/8blocked/487omitted. Source-only flat reader fix admits the actual
+  NetLabel discriminator only through reciprocal source-bound NetName ownership.
+  No compiler gate relaxed. These additions require connected fixtures.
+- Source integration and strict offline regressions are complete; full local
+  verification passes below. Publication/installation are pending; installed223200 is unchanged.
+  Overall API work remains unfinished and PR9 stays draft.
+
+### Candidate233100 local verification
+
+- Clean pinned Node24.18.0/npm11.16.0 dependencies,151 registry signatures/
+  40attestations and zero-vulnerability audit pass. Full verification with
+  inherited descriptors142/145 passes2,423 facade tests/one platform skip/zero
+  failures or cancellations and424 bridge tests. Strict types/type-aware lint
+  have zero diagnostics. Independent final focused156 tests also pass.
+- Package/seven skills, all seven official skill checks, repository/privacy,
+  actionlint and offline doctor pass. First doctor overlapped guarded bundle
+  rebuilding and failed catalog startup; the retained second run passes all26
+  tools. No failed check is counted as success. Optional external plugin-creator
+  validator is unavailable; maintained packaging/MCP checks pass.
+- Explicit rebuild comparison proves identical facade/supervisor/license bytes.
+  Source165filesf49e6cad, bundle1fcd6225, manifest25e191a4. Root/independent deep
+  comparison preserves all external/native/sanitizer pins. New adapter and
+  flat-topology changes remain source-tested, not connected-validated.
+
 ### Restarted214400 acceptance and candidate223200
 
 - Fresh host1791770 admitted installed214400 bundle815f22a5 and manifestde80d703

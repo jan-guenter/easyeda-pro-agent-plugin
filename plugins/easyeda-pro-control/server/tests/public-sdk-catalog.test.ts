@@ -3,6 +3,8 @@ import { test } from "node:test";
 import { z } from "zod";
 import { queryPublicSdkReads, validatePublicSdkArguments } from "../src/public-sdk-catalog.ts";
 import { publicSdkReadDescriptors } from "../src/public-sdk-read.ts";
+import { SCHEMATIC_NETGROUP_READ_METHODS } from "../src/schematic-netgroup-read.ts";
+import { PCB_NET_MEMBERSHIP_METHOD } from "../src/pcb-net-membership.ts";
 
 void test("offline SDK-read pages cover the exact executable descriptor set", () => {
   const paths: string[] = [];
@@ -66,6 +68,33 @@ void test("SDK catalog distinguishes native-only, public-only and mixed discover
     assert.equal(result["authority"], "native-text-state-observation-not-complete-source-connectivity-or-persistence-proof");
     assert.equal(result["executionAuthorized"], false);
   }
+  for (const method of SCHEMATIC_NETGROUP_READ_METHODS) {
+    const result = queryPublicSdkReads({ method, includeSchemas: true });
+    assert.equal(result["authority"], "native-netgroup-state-observation-not-complete-source-connectivity-or-persistence-proof");
+    assert.equal(result["executionAuthorized"], false);
+    assert.equal(result["matched"], 1);
+  }
+  const netMembership = queryPublicSdkReads({ method: PCB_NET_MEMBERSHIP_METHOD, includeSchemas: true });
+  assert.equal(netMembership["authority"], "native-filtered-net-membership-not-connectivity-or-persistence-proof");
+  assert.equal(netMembership["executionAuthorized"], false);
+  assert.equal(netMembership["matched"], 1);
   assert.equal(queryPublicSdkReads()["authority"], "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof");
   assert.equal(queryPublicSdkReads({ limit: 1, offset: 0 })["authority"], "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof");
+});
+
+void test("offline native NetGroup and PCB membership validation retain strict narrowed selectors", () => {
+  for (const method of SCHEMATIC_NETGROUP_READ_METHODS) {
+    const argumentsData = method.endsWith(".get") ? { primitiveIds: ["fixture-a", "fixture-b"] } : {};
+    const result = validatePublicSdkArguments({ request: { method, arguments: argumentsData } });
+    assert.equal(result["valid"], true); assert.equal(result["executionAuthorized"], false); assert.equal(result["nativePreflightPerformed"], false);
+    for (const invalid of [{ ...argumentsData, net: "GND" }, { ...argumentsData, allSchematicPages: true }, { ...argumentsData, code: "private()" }]) {
+      assert.equal(validatePublicSdkArguments({ request: { method, arguments: invalid } })["valid"], false);
+    }
+  }
+  const method = PCB_NET_MEMBERSHIP_METHOD;
+  assert.equal(validatePublicSdkArguments({ request: { method, arguments: { net: "gnd", primitiveTypes: ["Line", "ComponentPad"] } } })["valid"], true);
+  for (const argumentsData of [{}, { net: "GND" }, { net: "", primitiveTypes: ["Line"] }, { net: "GND", primitiveTypes: [] },
+    { net: "GND", primitiveTypes: ["Line", "Line"] }, { net: "GND", primitiveTypes: ["Text"] }]) {
+    assert.equal(validatePublicSdkArguments({ request: { method, arguments: argumentsData } })["valid"], false);
+  }
 });

@@ -22,7 +22,9 @@ its narrow boundary and pending live validation are listed separately below.
 | Schematic Text/Wire/Bus IDs | sdk_read, getAllPrimitiveId | Native ID-only equivalent on an ordinary active type-1 page; empty arguments only, no Wire net filters or symbol/block-instance scenes. Complete reciprocal tree/index proof and source-backed root-family membership; generated frame descendants excluded, structural GROUP records refused. Two stable observations, no callback/compiler/Save. Group IDs are not LINE IDs. Offline-tested; connected validation pending |
 | Schematic component property names | sdk_read, sch_PrimitiveComponent.getAllPropertyNames | Native key-only equivalent on one ordinary page; complete root Symbol/attribute-map/tree/index proof, including inherited/generated frame/flag keys. No values, compiler, source serializer or Save; unsupported ownership/groups refuse. Exact sorted bounded strings, not all-pages or persistence proof. Connected validation pending |
 | Ordinary symbol Pin enumeration | sdk_read, sch_PrimitivePin.getAll | Native single-PART membership plus explicit public-getter parity; 256-Pin bound, exact standard attributes, generated-dot ownership and reproof around awaits. Custom attributes/multipart/device/no-connect/junction cases refuse. Getter rotation is not stored rotation; JSON normalizes signed zero. Connected validation pending |
-| Schematic Text state | sdk_read, sch_PrimitiveText.get/getAll | Complete bounded ordinary page-root Text membership and 14 native scalar fields. Exact selected IDs or all roots; sorted arrays, native Y/null/style/alignment semantics, no public-getter parity. Synchronous reproof plus two facade observations; no compiler, serializer or Save. Connected validation pending |
+| Schematic Text state | sdk_read, sch_PrimitiveText.get/getAll | Complete bounded ordinary page-root Text membership and 14 native scalar fields. Exact selected IDs or all roots; sorted arrays, native Y/null/style/alignment semantics, no public-getter parity. Synchronous reproof plus two facade observations; no compiler, serializer or Save. Installed223200 fixture evidence below; new-generation connected admission pending |
+| Schematic Wire/Bus state | sdk_read, sch_PrimitiveWire/Bus.get/getAll | Root NetGroup DTOs retain every line's native points/styles, all literal NET names and custom attribute IDs. Complete bounded reciprocal tree/index/source/child proof; no public wrappers/compiler/serializer/Save, no net filters or resolved-net claim. Source/adversarial tests only; connected acceptance pending |
+| Filtered PCB net membership | sdk_read, pcb_Net.getAllPrimitivesByNet | Explicit Line/Arc/Via/standalone-Pad/ComponentPad filters and nonempty net only. Complete requested-family source/inventory correspondence before filtering, component-pad ownership and two matching source/inventory/source cycles. Identity records, not public classes/connectivity/persistence. Connected acceptance pending |
 | Polygon splitting | sdk_read, pcb_MathPolygon.splitPolygon | Bounded JSON complex-polygon groups, temporary SDK constructors and exact ordered source-array output with duplicates retained. No native handles or CAD mutation; shared aggregate limits apply. Offline-tested including pinned constructor bodies; connected validation pending |
 | Owned editor tab/split-screen lookup | sdk_read, getSplitScreenIdByTabId / getTabsBySplitScreenId | Exact existing selector, complete bounded owned tree and saved project membership; identity-only direct result checked against the tree before/after, two matching samples and unchanged checkpoint/context. No foreign projects, empty leaves, title/data export, navigation or current-generation live claim |
 | Single-page stored display changes | design sch.layout.batch, sealed flat-display profile | Existing literal-ID attribute/text display patches only; complete inverse, unchanged endpoint topology, sole page of one ordinary schematic and full saved-project proof. No electrical edits, NO_CONNECT, creation/deletion, translation, non-display steps or historical repair/page loading. Source/offline-tested; new connected lifecycle pending. See schematic.md |
@@ -73,6 +75,22 @@ its narrow boundary and pending live validation are listed separately below.
 | Raw JavaScript, automatic database restore, fabrication submission | unsupported | No unrestricted-code switch or implicit purchasing/manufacturing authority |
 
 ## Reported live coverage
+
+Installed223200 Text get/getAll returned exactly one root Text and all fourteen
+native fields. Raw null/null alignment agrees with the stored null alignment
+under the pinned admitted domain; coordinates/styles remain native. Complete
+before/after native state and all nine saved documents stayed unchanged. This
+validates that fixture, not other style combinations or a newer facade build.
+
+The same generation passed one stored frame Version display edit x717-to722,
+complete native effect and nine-document/eight-unchanged-peer saved proof. The
+durable target also has the reviewed zIndex/strikeout initialization and native
+header bookkeeping. One explicit Save/close/reopen completed; the effect had
+already auto-persisted before Save. Independent retained-proof review and a
+fresh native capture passed, followed by normal close, empty process discovery
+and final offline checkpoint verification. This zero-electrical-part fixture
+does not validate nonempty flat topology or other attribute fields. Never
+replay the completed edit or Save.
 
 Installed214400 also enumerated two ordinary-symbol Pins with exact twelve-field
 getter parity, explicit OtherProperty absence and unchanged complete symbol

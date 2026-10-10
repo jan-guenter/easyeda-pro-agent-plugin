@@ -137,17 +137,39 @@ void test("hidden Save and unsupported-editor exports have no callable route", (
   assert.match(rows.get("eda.pcb_Net.getNetlist")?.omission?.nextRequirement ?? "", /also refused/u);
 });
 
-void test("omitted geometric getters retain proven callback, projection and filter defects", () => {
+void test("NetGroup and filtered PCB membership reads expose narrow native routes without claiming public parity", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   for (const family of ["Bus", "Wire"]) {
     for (const method of ["get", "getAll"]) {
-      const row = rows.get(`eda.sch_Primitive${family}.${method}`);
-      assert.ok(row);
-      assert.equal(row.status, "omitted");
-      assert.equal(row.omission?.code, "lossy-or-unawaited-public-reader");
-      assert.equal(row.routes.length, 0);
+      const path = `eda.sch_Primitive${family}.${method}`, row = rows.get(path); assert.ok(row);
+      assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
+      assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+      assert.equal(row.runtimeAdmission, "not-granted-by-inventory"); assert.equal(row.routes.length, 1);
+      const route = row.routes[0]; assert.ok(route);
+      assert.equal(route.tool, "easyeda_control_sdk_read"); assert.equal(route.selector, path);
+      assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [1]);
+      assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+      assert.deepEqual(route.source, ["schematic-netgroup-read.ts"]); assert.deepEqual(route.tests, ["schematic-netgroup-read.test.ts"]);
+      assert.match(route.scope, /not public SDK getter parity/u); assert.match(route.scope, /net filters refuse/u);
+      assert.match(route.scope, /nullable color\/width\/strokeStyle/u); assert.match(route.scope, /literal value/u);
     }
   }
+  const net = rows.get("eda.pcb_Net.getAllPrimitivesByNet"); assert.ok(net);
+  assert.equal(net.status, "implemented-native-equivalent"); assert.equal(net.omission, null);
+  assert.equal(net.completeDeclaredContractSupported, false); assert.equal(net.currentGenerationLiveValidation, "not-recorded");
+  assert.equal(net.runtimeAdmission, "not-granted-by-inventory"); assert.equal(net.routes.length, 1);
+  const route = net.routes[0]; assert.ok(route);
+  assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [3]);
+  assert.deepEqual(route.source, ["pcb-net-membership-read.ts"]); assert.deepEqual(route.tests, ["pcb-net-membership.test.ts"]);
+  assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
+  assert.match(route.scope, /source\/inventory\/source/u);
+  assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
+    "implemented-public-subset": 191, "implemented-native-equivalent": 86, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 487,
+  });
+});
+
+void test("omitted heterogeneous geometric getters retain proven projection defects", () => {
+  const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   for (const path of ["eda.pcb_Document.getPrimitiveAtPoint", "eda.pcb_Document.getPrimitivesInRegion", "eda.pcb_SelectControl.getAllSelectedPrimitives"]) {
     const row = rows.get(path);
     assert.ok(row);
@@ -156,16 +178,6 @@ void test("omitted geometric getters retain proven callback, projection and filt
     assert.match(row.omission.reason, /Text/u);
     assert.equal(row.routes.length, 0);
   }
-  const net = rows.get("eda.pcb_Net.getAllPrimitivesByNet");
-  assert.ok(net);
-  assert.equal(net.status, "omitted");
-  assert.equal(net.omission?.code, "broken-net-type-filter-and-result-abi");
-  assert.match(net.omission.reason, /model object/u);
-  assert.match(net.omission.reason, /DTO/u);
-  assert.equal(net.routes.length, 0);
-  assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 191, "implemented-native-equivalent": 81, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 492,
-  });
 });
 
 void test("polygon splitting is bounded public data, Pin enumeration is a native equivalent and discretize remains a stub", () => {

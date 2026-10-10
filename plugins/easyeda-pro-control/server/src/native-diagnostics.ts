@@ -6,6 +6,7 @@ import { SCHEMATIC_NATIVE_ID_GUARD_CODES, SCHEMATIC_NATIVE_ID_METHODS } from "./
 import { SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES, SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
 import { SYMBOL_PIN_ENUMERATION_GUARD_CODES, SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
 import { SCHEMATIC_TEXT_GUARD_CODES, SCHEMATIC_TEXT_READ_METHODS } from "./schematic-text-read.ts";
+import { SCHEMATIC_NETGROUP_GUARD_CODES, SCHEMATIC_NETGROUP_READ_METHODS } from "./schematic-netgroup-read.ts";
 
 /** Fixed literal errors emitted by reviewed code builders. Never echo unknown
  * native exception text, dynamic suffixes, stack traces or caller values.
@@ -210,8 +211,15 @@ const schematicTextCategories = new Map<string, string>(SCHEMATIC_TEXT_READ_METH
     .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
       `native-schematic-text:${method}:${label}`] as const)));
 
+const schematicNetGroupCategories = new Map<string, string>(SCHEMATIC_NETGROUP_READ_METHODS.flatMap((method) =>
+  [...SCHEMATIC_NETGROUP_GUARD_CODES.map((code) => [`SCH_NETGROUP_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
+      `native-schematic-netgroup:${method}:${label}`] as const)));
+
 export function nativeFailureCategory(message: unknown): string | null {
   if (typeof message !== "string") { return null; }
+  const schematicNetGroupCategory = message.length <= 288 ? schematicNetGroupCategories.get(message) : undefined;
+  if (schematicNetGroupCategory !== undefined) { return schematicNetGroupCategory; }
   const schematicTextCategory = message.length <= 288 ? schematicTextCategories.get(message) : undefined;
   if (schematicTextCategory !== undefined) { return schematicTextCategory; }
   const symbolPinCategory = message.length <= 288 ? symbolPinCategories.get(message) : undefined;
