@@ -3,6 +3,7 @@ import { z } from "zod";
 import { designActionSchema } from "./design-action.ts";
 import { libraryOperationSchema } from "./library-operations.ts";
 import { listLibraryExecutionCapabilities } from "./library-execution.ts";
+import { SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL } from "./exact-readers.ts";
 
 const familySchema = z.enum(["design", "library"]);
 export const operationCatalogQuerySchema = z.object({
@@ -56,14 +57,20 @@ export function queryOperationCatalog(input: unknown): Record<string, unknown> {
   const matched = all.filter((entry) =>
     (query.operationAction === undefined || entry.action === query.operationAction) &&
     (query.prefix === undefined || entry.action.startsWith(query.prefix)));
-  const libraryStatuses = new Map(listLibraryExecutionCapabilities().map((entry) => [entry["action"], entry["status"]]));
+  const libraryStatuses = new Map(listLibraryExecutionCapabilities().map((entry) => [entry["action"], entry]));
   const entries: Record<string, unknown>[] = [];
   for (const entry of matched.slice(query.offset, query.offset + query.limit)) {
     const schema = query.includeSchemas ? z.toJSONSchema(entry.parser, { io: "input", target: "draft-7" }) : undefined;
     const descriptor: Record<string, unknown> = {
       action: entry.action,
-      status: query.family === "library" ? libraryStatuses.get(entry.action) : "typed-operation-specific-native-preflight",
+      status: query.family === "library" ? libraryStatuses.get(entry.action)?.["status"] : "typed-operation-specific-native-preflight",
+      ...(query.family === "library" && libraryStatuses.get(entry.action)?.["executionRefusal"] !== undefined ? {
+        executionRefusal: libraryStatuses.get(entry.action)?.["executionRefusal"],
+      } : {}),
       liveValidation: "operation-specific;see-capability-matrix",
+      ...(query.family === "design" && entry.action.startsWith("sch.") ? {
+        executionRestrictions: [{ documentType: 1, reason: SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL }],
+      } : {}),
       ...(schema === undefined ? {} : { inputSchema: schema,
         inputSchemaSha256: createHash("sha256").update(JSON.stringify(schema)).digest("hex") }),
     };

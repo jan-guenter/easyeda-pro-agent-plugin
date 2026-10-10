@@ -15,8 +15,28 @@ export type LibraryExecutionKind = "metadata-read" | "file-export" | "project-fo
 const openScopeSchema = z.object({ projectUuid: z.string().min(1).max(256), uuid: z.string().min(1).max(256), documentType: z.number().int().min(1).max(4), metadataOwnerUuid: z.string().min(1).max(256).optional() }).strict();
 export type LibraryOpenScope = z.infer<typeof openScopeSchema>;
 
+// Returning a File does not make an export read-only. These installed paths
+// Save unrelated dirty tabs (and schematic netlists can annotate parts first).
+// A post-export comparison is too late to authorize or undo that hidden Save.
+// Exact source chains and hashes: docs/api-coverage-review-2026-10-10.md.
+const unsafeExportReasons = new Map<string, string>([
+  ["export.schematic.netlist", "The installed schematic netlist exporter can annotate designators/Unique IDs and invoke SaveAll; no read-only or no-repeat Save lifecycle is implemented."],
+  ["export.schematic.bom", "The installed schematic BOM exporter invokes SaveAll before generating the file; a project-scoped file export cannot authorize saving unrelated dirty tabs."],
+  ["export.pcb.bom", "The installed PCB BOM exporter invokes SaveAll before generating the file; a project-scoped file export cannot authorize saving unrelated dirty tabs."],
+  ["export.schematic.document", "The installed schematic document exporter invokes SaveAll before rendering; no explicit all-tab Save lifecycle is implemented."],
+  ["export.pcb.pdf", "The installed PCB PDF exporter invokes SaveAll before rendering; no explicit all-tab Save lifecycle is implemented."],
+  ["export.pcb.netlist", "The installed PCB netlist exporter invokes SaveAll whenever any editor tab is dirty; no atomic all-tab clean-state guard or Save lifecycle is implemented."],
+  ["export.schematic.simulation", "The installed simulation-netlist exporter requires an NGSPICE document, outside the admitted schematic/symbol/PCB/footprint document types 1–4."],
+]);
+
+export function libraryExportRefusalReason(action: string): string | undefined {
+  return unsafeExportReasons.get(action);
+}
+
 export function libraryExecutionKind(input: unknown): LibraryExecutionKind {
   const operation = libraryOperationSchema.parse(input);
+  const exportRefusal = libraryExportRefusalReason(operation.action);
+  if (exportRefusal !== undefined) { throw new Error(exportRefusal); }
   const compiled = compileLibraryOperation(operation);
   if (compiled.scope === "library" && compiled.effect.identity === "read") { return "metadata-read"; }
   if (compiled.scope === "export" && "maxBytes" in operation) {

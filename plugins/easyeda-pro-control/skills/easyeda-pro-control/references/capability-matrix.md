@@ -2,12 +2,21 @@
 
 Use supported typed APIs first. Native controls cover genuine API stubs and dialogs. This matrix describes the current source package; an older installed snapshot may not contain these tools. The reviewed tuple is connected-read-admitted, and exact reads and typed operations still require their pinned implementation identities.
 
+Current safety restriction (October 10): schematic compiled topology is disabled.
+The installed netlist File getter can annotate components and invoke Save All.
+All schematic transactions or recovery paths needing that reader stop at the
+missing proof; do not bypass it with UI export or a generic SDK call. Schematic
+netlist/BOM/document and PCB netlist/BOM/PDF exports are also refused because of
+hidden Save All. Simulation export requires an unsupported NGSPICE editor.
+Historical observations below do not override these current restrictions.
+
 | Capability | Controlled path | Current boundary |
 |---|---|---|
 | Offline SDK and exact operation reference | api sdk/operations/validate | 749 reviewed / 806 latest official declaration signatures; exact strict design/library schemas and offline custom-refinement validation; no SDK invocation or runtime admission |
 | Connection and active context | status, context | Authenticated responsive session, exact project path/UUID and document/type/tab |
 | Existing project/document open | runtime open-existing | Saved PCB or schematic page; exact registry/checkpoint membership, exclusive-tab guard and complete unchanged SQLite proof; no creation, save, discard or replacement |
-| Exact schematic components/topology | exact_read | Stable double samples; all declared pages must be loaded for topology; correlates compiled part/pin identity, not complete wire geometry |
+| Exact schematic components | exact_read | Stable double samples with fixed public projections; schematic-topology disabled pending a verified non-mutating replacement |
+| API coverage and fixed public reads | api coverage/sdk-reads/sdk-validate, sdk_read | Complete per-method inventory; fixed schemas and bounded public observations, not native or persistence proof; current-generation live validation pending |
 | Presentation-only schematic batch | design sch.layout.batch | Typed translation, display, wire/label edits and checkpoint-bound flag cloning; selected private design batches passed save/reopen and all 850 durable documents with 604 parts / 2,042 pin assignments preserved; newly added baseline profiles still need fresh-runtime validation |
 | Existing schematic wire geometry | design sch.wire.modify | Native adapter with explicit cardinal geometry/style, net omitted, exact graph-derived child indices and awaited history; identity-only unstored-attribute alignment on reopen; exact source/topology and complete durable proof; disposable 16-document lifecycle and retained-Save recovery completed Sept25; no general inverse or arbitrary WIRE shape support |
 | Retained split-wire layout repair | design repair-layout-wire-groups | Exact original island/drop/flag identities only; S06 correction and retained Save reconciliation completed live with original topology restored; consumed repairs must never be replayed |
@@ -33,7 +42,7 @@ Use supported typed APIs first. Native controls cover genuine API stubs and dial
 | Project footprint geometry | design, footprint operations | Exact-owner native history handlers, no full-source decoder; actual created IDs; identity-preserving modifies and explicit shape delete/create; full source/save/reopen proof; PAD tool-default effects documented |
 | Project symbol geometry | design, type-2 schematic graphics | Existing single-part circle/rectangle/text/pin/attribute edits; explicit compiler save and exact library reopen; unsupported pin rotations refused |
 | Other library and project lifecycle operations | library capabilities | Asset import/copy/delete and metadata changes outside supported profiles remain refused; inspect the actual execution-enabled action |
-| File exports | library, supported export entries | Bounded in-memory file transfer to exclusive managed artifacts; fabricationApproved is false; availability is operation-specific |
+| File exports | library, supported export entries | Bounded in-memory file transfer to exclusive managed artifacts; hidden-Save routes listed above refused; fabricationApproved is false; inspect actual capabilities |
 | Draft PCB DSN route context | export | Active-context/best-effort descriptor-bound artifact; not route/fabrication approval |
 | Native windows/dialogs | native_ui | Discover exact installed process, inspect current handles, confirmed focus/input/normal-close; guarded right-click is source-tested, not yet live-validated; no bridge needed for bootstrap; observed-unowned is not Job authority |
 | Itemized native ERC/DRC | check run | Fixed reviewed calculation, complete live calculation-scope snapshot, full saved SQLite invariance, itemized managed report; both fixture paths passed, current enabled rules only |

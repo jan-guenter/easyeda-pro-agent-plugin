@@ -2,7 +2,7 @@
 
 Use `easyeda_control_api` before guessing a method, argument name, unit or nested
 operation shape. It does not start the bridge, invoke EasyEDA or change journals.
-Its three request actions separate documentation from execution:
+Its request actions separate documentation from execution:
 
 ```json
 {"request":{"action":"sdk","query":{"reference":"reviewed-installed","namespace":"sch_PrimitiveComponent","limit":25,"detail":true}}}
@@ -21,6 +21,64 @@ non-executable. Latest methods can be missing, stubbed or differently implemente
 in the installed application. A method name that appears harmless can mutate
 cache, UI, calculation or storage. Do not turn catalog entries into raw scripts,
 private calls, compatibility changes or newly granted permission.
+
+## Per-method coverage and omissions
+
+```json
+{"request":{"action":"coverage","query":{"namespace":"sch_PrimitiveWire","detail":true,"limit":25}}}
+```
+
+Coverage uses distinct mounted method paths, not overload counts. Every method
+in either pinned snapshot has a row. A row can name a direct public call, a
+narrower native task equivalent, an internal lifecycle dependency, or a concrete
+omission with the evidence and work required to support it. A native equivalent
+does not prove the public wrapper works. An internal Save call is not a new
+standalone Save capability. Follow the returned route and its exact scope.
+
+An omission marked as needing a scoped adapter is remaining implementation work,
+not a claim that the method is impossible. Newer-only declarations require a
+reviewed installed implementation. Known native stubs must not return fabricated
+empty success. Current live validation is tracked separately from historical
+proofs and offline contract tests.
+
+The October source audit disabled `schematic-topology`: its netlist exporter
+can annotate designators/Unique IDs and invoke Save All. Dependent schematic
+transactions must stop at that proof requirement. Schematic netlist/BOM/document
+and PCB netlist/BOM/PDF exports are also refused for hidden Save All. Simulation
+export needs an unsupported NGSPICE editor. A File-returning method is not
+necessarily read-only; never bypass these refusals with another dispatcher.
+
+## Fixed SDK reads and calculations
+
+```json
+{"request":{"action":"sdk-reads","query":{"method":"eda.pcb_PrimitivePad.get","includeSchemas":true}}}
+```
+
+```json
+{"request":{"action":"sdk-validate","query":{"request":{"method":"eda.sys_Environment.getEditorCurrentVersion","arguments":{}}}}}
+```
+
+`sdk-reads` reports the exact fixed allowlist and per-method input schema used by
+`easyeda_control_sdk_read`. `sdk-validate` checks those arguments offline. Neither
+dispatches a method. Class-returning methods use maintained state projections;
+callers cannot select arbitrary getters, callbacks or prototype members.
+
+For live execution, pass the validated `request`, fresh `expectedContext` and
+`expectedFingerprint` to `easyeda_control_sdk_read`. The facade serializes the
+call within one authenticated session, enforces the editor family, proves context
+before and after each observation, and requires two equal results. A failed call
+stops without retry. Exact delegated UI, project-manager/worker and schematic
+implementation hashes are checked before dispatch and before releasing results;
+the public wrapper hash alone is not sufficient. Use managed evidence with
+`summary` or `receipt-only` for large results. Undefined results remain distinct from an
+empty collection.
+
+These are public SDK observations. Stable output can still reflect a documented
+SDK mapping limitation, so it cannot replace complete native-source, connectivity,
+lock, collateral or saved-project proof in a design transaction. The fixed
+reader excludes writes, file/network transfers, navigation and resource creation.
+
+## Typed design and library operations
 
 ```json
 {"request":{"action":"operations","query":{"family":"design","prefix":"sch.","includeSchemas":true,"limit":10}}}

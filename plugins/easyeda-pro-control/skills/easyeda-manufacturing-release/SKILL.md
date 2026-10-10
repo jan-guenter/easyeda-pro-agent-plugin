@@ -9,6 +9,12 @@ Prepare a reproducible file set from one identified saved design revision. Prove
 
 For live exports or checks, read the sibling [control skill](../easyeda-pro-control/SKILL.md) and inspect actual export capabilities. Offline release files can be checked without an editor connection. Export format support and live validation vary by installed version.
 
+Some installed File getters invoke Save All internally. The current facade
+refuses schematic netlist/BOM/document and PCB netlist/BOM/PDF exports for this
+reason. Do not retry them through raw SDK calls or UI as a refusal workaround;
+report the missing controlled export path. Simulation export also requires an
+NGSPICE editor outside the admitted document types.
+
 ## Task references
 
 - For readiness, artifact scope and fabrication data, read [fabrication package](references/fabrication-package.md).

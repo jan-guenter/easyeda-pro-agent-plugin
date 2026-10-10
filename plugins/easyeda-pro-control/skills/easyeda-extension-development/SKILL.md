@@ -19,6 +19,10 @@ before changing compatibility pins, publishing or importing an extension.
 2. Use `easyeda_control_api` SDK queries for separately pinned reviewed/latest
    signatures, then operation queries for exact typed argument schemas and
    separately reported execution availability. Schema presence is not admission.
+   Query `coverage` for each exact mounted method before implementing it. Preserve
+   the distinction between direct calls, native task equivalents and internal
+   lifecycle use. Update the exhaustive inventory and its regression tests with
+   every added route or changed omission reason.
    Read the relevant official declaration and method page, including overloads,
    union branches, stability tags, units and completion promises.
 3. Classify the operation: local metadata read, navigation, design write,

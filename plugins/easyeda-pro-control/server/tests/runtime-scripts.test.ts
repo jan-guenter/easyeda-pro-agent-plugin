@@ -446,7 +446,7 @@ void describe("guarded runtime calls", () => {
 });
 
 void describe("generated exact readers and component mutations", () => {
-  void test("all five exact-reader programs parse as async JavaScript", () => {
+  void test("enabled exact-reader programs parse as async JavaScript", () => {
     for (const request of [
       {
         kind: "schematic-components",
@@ -454,7 +454,6 @@ void describe("generated exact readers and component mutations", () => {
         includePins: true,
         includeBounds: true,
       },
-      { kind: "schematic-topology" },
       {
         kind: "pcb-components",
         selector: { all: true },

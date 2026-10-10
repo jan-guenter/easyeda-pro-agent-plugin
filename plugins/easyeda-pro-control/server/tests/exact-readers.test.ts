@@ -206,28 +206,6 @@ interface RulesApis {
   pcb_Net: { getAllNetsName: () => Promise<unknown> };
 }
 
-interface TopologyOptions {
-  onFormat?: ((format: string) => void) | undefined;
-  onFileName?: ((fileName: string) => void) | undefined;
-  onComponentCall?: ((method: string, args: unknown[]) => void) | undefined;
-  componentUniqueId?: string;
-  componentDesignator?: string;
-  componentPinNumbers?: string[];
-  netlistUniqueId?: string;
-  netlistDesignator?: string;
-  netlistPinNumbers?: string[];
-}
-
-interface TopologyApis {
-  dmt_Schematic: { getCurrentSchematicInfo: () => unknown };
-  sch_PrimitiveComponent: Record<
-    string,
-    (...args: unknown[]) => Promise<unknown>
-  >;
-  sch_ManufactureData: { getNetlistFile: (fileName: string, format: string) => Promise<unknown> };
-}
-
-const topologyGlobals = new WeakMap<object, unknown>();
 
 /* oxlint-disable typescript/no-unsafe-type-assertion, typescript/no-unsafe-member-access -- The test must construct generated async programs through the runtime's AsyncFunction constructor. */
 const AsyncFunction = Object.getPrototypeOf(
@@ -269,10 +247,8 @@ async function executeReader(
   request: unknown,
   eda: unknown,
 ): Promise<FixturePayload> {
-  const dmt: unknown = typeof eda === "object" && eda !== null ? Reflect.get(eda, "dmt_Schematic") : undefined;
-  const globals = typeof dmt === "object" && dmt !== null ? topologyGlobals.get(dmt) : undefined;
   const payload = await new AsyncFunction("eda", "globalThis", `return await ${buildExactReadExpression(request)};`)(
-    eda, globals ?? globalThis,
+    eda, globalThis,
   );
   assertFixturePayload(payload);
   return payload;
@@ -772,84 +748,52 @@ function rulesApis(differentialPairs: unknown): RulesApis {
   };
 }
 
-function topologyApis({
-  onFormat,
-  onFileName,
-  onComponentCall,
-  componentUniqueId = "gge1",
-  componentDesignator = "R1",
-  componentPinNumbers = ["1"],
-  netlistUniqueId = "gge1",
-  netlistDesignator = "R1",
-  netlistPinNumbers = ["1"],
-}: TopologyOptions = {}): TopologyApis {
-  const component = schematicComponent(
-    "sch-r1",
-    componentDesignator,
-    componentUniqueId,
-  );
-  const dmt_Schematic: TopologyApis["dmt_Schematic"] = { getCurrentSchematicInfo: () => ({
-    uuid: "schematic", parentProjectUuid: "project",
-    page: [{ uuid: "page", parentSchematicUuid: "schematic" }],
-  }) };
-  const nativePart = {
-    id: "sch-r1", cmdKey: "part",
-    getAttr: (key: string): { value: string } => ({ value: key === "Unique ID" ? componentUniqueId : componentDesignator }),
-    pins: componentPinNumbers.map((number) => ({ getAttr: (): { value: string } => ({ value: number }) })),
-  };
-  const page = { uuid: "page", project_uuid: "project", schematicUuid: "schematic",
-    isSchSheetDoc: (): boolean => true, shapeManager: { getModels: (): unknown[] => [nativePart] } };
-  topologyGlobals.set(dmt_Schematic, { SCH: { docMemoryManager: {
-    getActiveDoc: (): unknown => page, getSchDocs: (): unknown[] => [page],
-  } } });
-  return {
-    dmt_Schematic,
-    sch_PrimitiveComponent: {
-      getAll: async (...args: unknown[]) => {
-        onComponentCall?.("getAll", args);
-        return [component];
-      },
-      getAllPrimitiveId: async (...args: unknown[]) => {
-        onComponentCall?.("getAllPrimitiveId", args);
-        return ["sch-r1"];
-      },
-      getAllPinsByPrimitiveId: async (...args: unknown[]) => {
-        onComponentCall?.("getAllPinsByPrimitiveId", args);
-        return componentPinNumbers.map((pinNumber, index) =>
-          stateObject({
-            PrimitiveId: `pin-${index + 1}`,
-            PinNumber: pinNumber,
-          }),
-        );
-      },
-    },
-    sch_ManufactureData: {
-      getNetlistFile: async (fileName: string, format: string) => {
-        onFormat?.(format);
-        onFileName?.(fileName);
-        const text = JSON.stringify({
-          components: {
-            [netlistUniqueId]: {
-              props: {
-                "Unique ID": netlistUniqueId,
-                Designator: netlistDesignator,
-              },
-              pinInfoMap: Object.fromEntries(
-                netlistPinNumbers.map((pinNumber) => [
-                  pinNumber,
-                  { number: pinNumber, net: "GND" },
-                ]),
-              ),
-            },
-          },
-        });
-        return new File([text], `${fileName}.enet`, { type: "text/plain" });
-      },
-    },
-  };
-}
 
 void describe("facade-owned exact reader contracts", () => {
+  void test("refuses annotation-and-Save-All topology at validation, compilation and engine entry before any upstream call", async () => {
+    const request = { kind: "schematic-topology" };
+    const context: ExpectedContext = {
+      project: { uuid: "disposable-project", path: "/tmp/disposable.eprj2" },
+      document: { uuid: "disposable-sheet", documentType: 1, tabId: "disposable-tab" },
+    };
+    const refusal = /can annotate Designator\/Unique ID and invoke Save All/u;
+    assert.equal(exactReadRequestSchema.parse(request).kind, "schematic-topology");
+    assert.throws(() => validateExactReadRequest(request, context), refusal);
+    assert.throws(() => buildExactReadExpression(request), refusal);
+    assert.throws(() => buildExactReadCode(request), refusal);
+    let calls = 0;
+    const engine = new EasyedaControlEngine({ callTool: (): Promise<never> => {
+      calls += 1;
+      return Promise.reject(new Error("No context or execution call is permitted."));
+    } });
+    await assert.rejects(engine.exactRead(request, context), refusal);
+    assert.equal(calls, 0);
+    const otherReader = buildExactReadCode({ kind: "pcb-inventory" });
+    assert.equal(/\.getNetlistFile\s*\(/u.test(otherReader), false);
+    assert.equal(/\.sch_Netlist\./u.test(otherReader), false);
+  });
+
+  void test("retains historical topology receipt validation without enabling execution", () => {
+    const payload = {
+      ok: true, kind: "schematic-topology", documentType: 1,
+      authority: { connectivity: "sch_ManufactureData.getNetlistFile(JLCEDA)", wireGeometry: "unavailable" },
+      limitations: ["Historical receipt: current execution is disabled."],
+      compiledConnectivity: [{ uniqueId: "gge1", designator: "R1", pins: [{ pinNumber: "1", net: "GND" }] }],
+      componentCorrelation: { status: "exact-match", source: "sch_PrimitiveComponent.getAll(part,true)+complete-declared-page-native-pins",
+        componentCount: 1, pinCount: 1, primitiveIds: ["sch-r1"], uniqueIds: ["gge1"],
+        byUniqueId: { gge1: { primitiveId: "sch-r1", designator: "R1", pinNumbers: ["1"] } } },
+    };
+    assert.equal(validateExactReadPayload(payload, { kind: "schematic-topology" }), payload);
+    const invalid = structuredClone(payload);
+    invalid.componentCorrelation.byUniqueId.gge1.pinNumbers = ["2"];
+    assert.throws(() => validateExactReadPayload(invalid, { kind: "schematic-topology" }), /compiled and public component state disagree/u);
+    const zeroPin = structuredClone(payload);
+    zeroPin.compiledConnectivity[0]?.pins.splice(0);
+    zeroPin.componentCorrelation.byUniqueId.gge1.pinNumbers = [];
+    zeroPin.componentCorrelation.pinCount = 0;
+    assert.equal(validateExactReadPayload(zeroPin, { kind: "schematic-topology" }), zeroPin);
+  });
+
   void test("correlates PCB physical pads by global wrapper identity, never local pad/via summaries", async () => {
     const component = pcbComponent("pcb-u1", "U1", [
       { primitiveId: "local-pad", padNumber: "1", net: "GND" },
@@ -1631,186 +1575,6 @@ void describe("facade-owned exact reader contracts", () => {
     );
   });
 
-  void test("uses only compiled JLCEDA connectivity and disclaims unavailable wire geometry", async () => {
-    const request: ExactReadRequest = { kind: "schematic-topology" };
-    const formats: string[] = [];
-    const fileNames: string[] = [];
-    const componentCalls: { method: string; args: unknown[] }[] = [];
-    const rawPayload = await executeReader(
-      request,
-      topologyApis({
-        onFileName: (fileName) => { fileNames.push(fileName); },
-        onFormat: (format: string) => {
-          formats.push(format);
-        },
-        onComponentCall: (method: string, args: unknown[]) => {
-          componentCalls.push({ method, args });
-        },
-      }),
-    );
-    assert.deepEqual(formats, ["JLCEDA"]);
-    assert.deepEqual(fileNames, ["easyeda-control-topology"]);
-    assert.deepEqual(componentCalls, [
-      { method: "getAll", args: ["part", true] },
-      { method: "getAllPrimitiveId", args: ["part", true] },
-    ]);
-    assert.deepEqual(rawPayload.authority, {
-      connectivity: "sch_ManufactureData.getNetlistFile(JLCEDA)",
-      wireGeometry: "unavailable",
-    });
-    assert.equal(rawPayload.limitations.length, 4);
-    assert.equal(Object.hasOwn(rawPayload, "wires"), false);
-    assert.equal(Object.hasOwn(rawPayload, "netNames"), false);
-    assert.equal(Object.hasOwn(rawPayload, "netTree"), false);
-    assert.deepEqual(rawPayload.compiledConnectivity, [
-      {
-        uniqueId: "gge1",
-        designator: "R1",
-        pins: [{ pinNumber: "1", net: "GND" }],
-      },
-    ]);
-    assert.deepEqual(rawPayload.componentCorrelation, {
-      status: "exact-match",
-      source: "sch_PrimitiveComponent.getAll(part,true)+complete-declared-page-native-pins",
-      componentCount: 1,
-      pinCount: 1,
-      primitiveIds: ["sch-r1"],
-      uniqueIds: ["gge1"],
-      byUniqueId: {
-        gge1: {
-          primitiveId: "sch-r1",
-          designator: "R1",
-          pinNumbers: ["1"],
-        },
-      },
-    });
-
-    let dispatched = false;
-    const upstream = {
-      async callTool(): Promise<unknown> {
-        dispatched = true;
-        return {
-          structuredContent: { ok: true, result: encodeExactReadEnvelope(rawPayload) },
-        };
-      },
-    };
-    const engine = new EasyedaControlEngine(upstream);
-    engine.assertContext = async (
-      expectedContext,
-    ): Promise<ContextProbePayload> => liveContext(expectedContext);
-    await assert.rejects(engine.exactRead(request, {
-      project: { uuid: "project-1", path: "/tmp/project.eprj2" },
-      document: { uuid: "document-1", documentType: 1, tabId: "tab-1" },
-    }), /Installed schematic asset identity is unavailable/u);
-    assert.equal(dispatched, false);
-
-    assert.throws(
-      () =>
-        validateExactReadPayload(
-          {
-            ...rawPayload,
-            authority: { ...rawPayload.authority, wireGeometry: "complete" },
-          },
-          request,
-        ),
-      /omitted compiled connectivity provenance/u,
-    );
-    assert.throws(
-      () =>
-        validateExactReadPayload(
-          {
-            ...rawPayload,
-            componentCorrelation: {
-              ...rawPayload.componentCorrelation,
-              byUniqueId: {
-                gge1: {
-                  ...rawPayload.componentCorrelation.byUniqueId.gge1,
-                  pinNumbers: ["2"],
-                },
-              },
-            },
-          },
-          request,
-        ),
-      /compiled and public component state disagree/u,
-    );
-    const malformed = topologyApis();
-    malformed.sch_ManufactureData.getNetlistFile = async (): Promise<unknown> =>
-      new File(["not JSON connectivity"], "easyeda-control-topology.enet", { type: "text/plain" });
-    await assert.rejects(
-      executeReader(request, malformed),
-      /JSON sequence could not be parsed/u,
-    );
-    await assert.rejects(
-      executeReader(
-        request,
-        topologyApis({ componentUniqueId: "different-gge" }),
-      ),
-      /netlist identity does not match all-page part components/u,
-    );
-    await assert.rejects(
-      executeReader(request, topologyApis({ componentPinNumbers: ["2"] })),
-      /netlist identity does not match all-page part components/u,
-    );
-  });
-
-  void test("accepts an exactly correlated zero-pin compiled-topology component", async () => {
-    const request: ExactReadRequest = { kind: "schematic-topology" };
-    const payload = await executeReader(
-      request,
-      topologyApis({ componentPinNumbers: [], netlistPinNumbers: [] }),
-    );
-    assert.deepEqual(payload.compiledConnectivity, [
-      { uniqueId: "gge1", designator: "R1", pins: [] },
-    ]);
-    assert.equal(payload.componentCorrelation.pinCount, 0);
-    assert.deepEqual(
-      payload.componentCorrelation.byUniqueId.gge1.pinNumbers,
-      [],
-    );
-    assert.equal(validateExactReadPayload(payload, request), payload);
-  });
-
-  void test("rejects missing, malformed, oversized or inconsistent netlist files without a legacy fallback", async () => {
-    let legacyCalls = 0;
-    let oversizedReads = 0;
-    const apis = {
-      ...topologyApis(),
-      sch_Netlist: { getNetlist: (): never => {
-        legacyCalls += 1;
-        throw new Error("legacy netlist getter must not run");
-      } },
-    };
-    const fileShape = {
-      name: "easyeda-control-topology.enet", type: "text/plain", size: 2,
-      text: (): Promise<unknown> => Promise.resolve("{}"),
-    };
-    const oversized = { ...fileShape, size: 16 * 1024 * 1024 + 1, text: (): Promise<unknown> => {
-      oversizedReads += 1;
-      return Promise.resolve("{}");
-    } };
-    const changed = { ...fileShape, text: (): Promise<unknown> => {
-      changed.size = 3;
-      return Promise.resolve("{}");
-    } };
-    const invalidFiles = [
-      undefined, {},
-      new File([], fileShape.name, { type: fileShape.type }),
-      { ...fileShape, type: "application/json" },
-      { ...fileShape, name: "unexpected.enet" },
-      { ...fileShape, size: Number.NaN },
-      { ...fileShape, text: "not-callable" },
-      { ...fileShape, text: (): Promise<unknown> => Promise.resolve(42) },
-      { ...fileShape, size: 1 },
-      oversized, changed,
-    ];
-    for (const file of invalidFiles) {
-      apis.sch_ManufactureData.getNetlistFile = (): Promise<unknown> => Promise.resolve(file);
-      await assert.rejects(executeReader({ kind: "schematic-topology" }, apis), /netlist file/u);
-    }
-    assert.equal(oversizedReads, 0);
-    assert.equal(legacyCalls, 0);
-  });
 
   void test("validates payload indexes and rejects unstable double reads", async () => {
     const request: ExactReadRequest = {

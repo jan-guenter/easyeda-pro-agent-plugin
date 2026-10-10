@@ -7,7 +7,7 @@ import type { DispatchOperationJournal, EasyedaControlEngine, ExpectedContext } 
 import type { CheckpointReceipt } from "./checkpoint.ts";
 import { compileLibraryOperation, libraryOperationSchema, listLibraryOperationCapabilities } from "./library-operations.ts";
 import type { LibraryOperation } from "./library-operations.ts";
-import { LIBRARY_EXECUTION_PROFILE, LIBRARY_FILE_EXECUTION_MAX_BYTES, buildLibraryExecutionExpression, decodeLibraryFileResult, libraryExecutionKind, validateLibraryMetadata } from "./library-runtime.ts";
+import { LIBRARY_EXECUTION_PROFILE, LIBRARY_FILE_EXECUTION_MAX_BYTES, buildLibraryExecutionExpression, decodeLibraryFileResult, libraryExecutionKind, libraryExportRefusalReason, validateLibraryMetadata } from "./library-runtime.ts";
 import type { LibraryOpenScope } from "./library-runtime.ts";
 import { assertProjectLibraryWriteTarget, libraryProjectRecordsHash, projectLibraryOpenTarget, verifyProjectLibraryEffect, verifyProjectLibraryMetadata } from "./library-persistence-proof.ts";
 import { readNativeHistoryCheckpoint } from "./native-history.ts";
@@ -288,14 +288,16 @@ export function listLibraryExecutionCapabilities(): Value[] {
   for (const entry of listLibraryOperationCapabilities()) {
     const action = entry.action;
     let status: string = entry.status;
-    if (action.endsWith(".get") && action.startsWith("library.")) { status = "implemented-double-sampled-metadata"; }
+    const executionRefusal = libraryExportRefusalReason(action);
+    if (executionRefusal !== undefined) { status = "unavailable-installed-export-side-effect-or-editor-contract"; }
+    else if (action.endsWith(".get") && action.startsWith("library.")) { status = "implemented-double-sampled-metadata"; }
     else if (action.startsWith("export.") && entry.status === "typed-descriptor-awaiting-executor-validation") { status = "implemented-bounded-file-export"; }
     else if (["library.footprint.create", "library.footprint.modify"].includes(action)) { status = "implemented-project-library-checkpoint-proof"; }
     else if (action === "library.device.modify") { status = "implemented-project-local-association-proof"; }
     else if (action === "library.device.create") { status = "implemented-project-local-device-addition-proof"; }
     else if (action === "library.device.model-transform") { status = "implemented-project-device-transform-checkpoint-proof"; }
     else if (["document.open", "library.footprint.open", "library.symbol.open"].includes(action)) { status = "implemented-current-project-document-open"; }
-    results.push({ action, status, connectedValidation: "see-capability-matrix;catalog-not-live-proof", ...(status === "implemented-bounded-file-export" ? { maxBytes: LIBRARY_FILE_EXECUTION_MAX_BYTES, autoGenerateModels: false } : {}), ...(["library.device.modify", "library.device.create"].includes(action) ? { supportedBindings: "existing project-local symbol/footprint; existing external 32-hex model identity after stable native metadata reads; explicit footprint/model clearing for modify", model3DAssignment: true, implicitEco: false, createsSymbolOrFootprint: false } : {}), ...(action === "library.device.model-transform" ? { inheritedInstances: "exact checkpoint inventory required", modelBindingChanged: false, implicitEco: false } : {}) });
+    results.push({ action, status, ...(executionRefusal === undefined ? {} : { executionRefusal }), connectedValidation: "see-capability-matrix;catalog-not-live-proof", ...(status === "implemented-bounded-file-export" ? { maxBytes: LIBRARY_FILE_EXECUTION_MAX_BYTES, autoGenerateModels: false } : {}), ...(["library.device.modify", "library.device.create"].includes(action) ? { supportedBindings: "existing project-local symbol/footprint; existing external 32-hex model identity after stable native metadata reads; explicit footprint/model clearing for modify", model3DAssignment: true, implicitEco: false, createsSymbolOrFootprint: false } : {}), ...(action === "library.device.model-transform" ? { inheritedInstances: "exact checkpoint inventory required", modelBindingChanged: false, implicitEco: false } : {}) });
   }
   return results;
 }

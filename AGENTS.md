@@ -4,6 +4,44 @@ This file is the durable engineering record and common ground for every human or
 
 Last updated: 2026-10-10 (Europe/Berlin)
 
+## 2026-10-10 API execution follow-through, in progress
+
+- The user explicitly authorized exhaustive API coverage inventory, additional
+  feasible implementations and tests, disposable-project validation, publication
+  and installation. The user's production project must remain untouched. Earlier offline-only revamp
+  scope does not prohibit the newly authorized disposable tests.
+- Branch `feature/api-execution-coverage` starts at merged main `9a33523`.
+  Count distinct mounted methods separately from overload signatures, typed
+  schemas, direct public calls, task-equivalent native adapters and live evidence.
+  Each omission must identify a concrete version, representation, lifecycle,
+  authority or verification requirement. Missing implementation alone does not
+  make an API infeasible.
+- Read-only process inspection still finds host-owned PID1318872 loading the
+  September `24225913` snapshot. No live calls, process termination, cache patch
+  or competing bridge owner are authorized as a shortcut. Install the tested
+  update and require supported fresh-chat pickup for new live fixture evidence.
+  Offline tests are not connected or saved/reopened validation.
+
+- Candidate `0.3.0+codex.20261010135410` inventories774 methods and adds158
+  fixed SDK read/calculation routes. Coverage is186public subsets/70native
+  equivalents/4internal lifecycle/8implemented-but-blocked/506omitted. No
+  generic unreviewed plain-read/pure gap remains; stateful writer work is listed.
+- Source review proved hidden annotation+SaveAll in schematic netlist and
+  hidden SaveAll in six exports. Those paths and dependent type1 transactions
+  are refused before dispatch, including retained commit/inverse/repair paths.
+  Existing receipt parsers remain; inspection and bounded authority recovery
+  do not authorize another Save. No historical project operation was replayed.
+- Clean npmci, strict types and type-aware lint pass with zero diagnostics.
+  Full `verify` with hostile descriptors142/145 passes1170facade tests plus
+  one platform skip, zero failures, and424bridge tests. All seven skills,
+  package/repository/privacy checks, actionlint and offline doctor pass.
+  Audit:zero vulnerabilities,151 signatures/40 attestations.
+- Frozen source138files/e9917ba6 and bundlec1116e11 are reproducible. Existing
+  external/runtime/native/sanitizer pins are unchanged. New SDK observations
+  additionally verify delegated UI/manager/worker/schematic hashes. Draft
+  publication and Git-marketplace candidate installation follow; connected
+  acceptance and merge remain pending fresh-runtime disposable tests.
+
 PR8 final payload9f7ddb9 passed required CI38054290993 and is installed/enabled
 as125449 with exact443-file/configured-startup proof. Only root engineering
 evidence follows before protected merge. Retained-Node handoff, timeout-shaped

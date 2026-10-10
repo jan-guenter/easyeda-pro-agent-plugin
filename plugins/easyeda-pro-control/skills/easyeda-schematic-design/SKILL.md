@@ -9,6 +9,12 @@ Make the schematic explain the circuit and preserve the intended electrical grap
 
 For a live EasyEDA task, read the sibling [control skill](../easyeda-pro-control/SKILL.md) before application actions. For supplied files, PDFs or screenshots, work offline; do not connect to the editor just to review them. Screenshots alone cannot prove connectivity.
 
+The current compiled-topology reader is disabled because its installed netlist
+exporter can annotate parts and invoke Save All. Schematic transactions needing
+that proof are blocked pending a verified non-mutating replacement. Native
+per-page pin observations are useful, but do not substitute for complete
+hierarchical connectivity. Do not bypass the refusal or replay historical edits.
+
 ## Choose the work
 
 - For new circuits or functional changes, read [capture and circuit checks](references/capture-and-circuit-checks.md). Identify exact devices, supply limits, interface requirements and unresolved choices before committing to connections.

@@ -1,0 +1,257 @@
+import { z } from "zod";
+import { extensionApiSnapshots } from "./extension-api-catalog-data.ts";
+import type { ApiDeclarationMethod, ApiDeclarationSnapshot } from "./extension-api-declarations.ts";
+import { maintainedApiCoverageRoutes } from "./extension-api-coverage-routes.ts";
+import type { ApiCoverageRoute } from "./extension-api-coverage-routes.ts";
+import { publicSdkReadDescriptors } from "./public-sdk-read.ts";
+
+export type ApiCoverageStatus = "implemented-public-subset" | "implemented-native-equivalent" | "internal-lifecycle-only" | "implemented-but-blocked" | "omitted";
+export interface ApiCoverageOmission {
+  readonly code: string;
+  readonly reason: string;
+  readonly nextRequirement: string;
+  readonly evidence: readonly string[];
+}
+export interface ApiCoverageEntry {
+  readonly path: string;
+  readonly namespace: string;
+  readonly method: string;
+  readonly declarations: readonly {
+    readonly reference: ApiDeclarationSnapshot["reference"];
+    readonly className: string;
+    readonly signature: string;
+    readonly sourceLine: number;
+    readonly documentationUrl: string;
+  }[];
+  readonly reviewedRuntimeDeclaration: boolean;
+  readonly status: ApiCoverageStatus;
+  readonly routes: readonly ApiCoverageRoute[];
+  readonly omission: ApiCoverageOmission | null;
+  readonly completeDeclaredContractSupported: false;
+  readonly currentGenerationLiveValidation: "not-recorded";
+  readonly runtimeAdmission: "not-granted-by-inventory";
+}
+
+const statusSchema = z.enum(["implemented-public-subset", "implemented-native-equivalent", "internal-lifecycle-only", "implemented-but-blocked", "omitted"]);
+export const extensionApiCoverageInputSchema = z.object({
+  reference: z.enum(["all", "reviewed-installed", "official-latest"]).default("all"),
+  namespace: z.string().regex(/^(?:dmt|lib|pcb|pnl|sch|sys)_[A-Za-z0-9]+$/u).optional(),
+  search: z.string().min(1).max(128).optional(),
+  status: statusSchema.optional(),
+  offset: z.number().int().min(0).max(10_000).default(0),
+  limit: z.number().int().min(1).max(100).default(25),
+  detail: z.boolean().default(false),
+}).strict();
+export const extensionApiCoverageQuerySchema = z.custom<Record<string, unknown>>((input) => {
+  if (input === null || typeof input !== "object" || Array.isArray(input)) { return false; }
+  const prototype: unknown = Object.getPrototypeOf(input);
+  return (prototype === Object.prototype || prototype === null) && !["__proto__", "constructor", "prototype"].some((key) => Object.hasOwn(input, key));
+}).pipe(extensionApiCoverageInputSchema);
+
+const stubs: Readonly<Record<string, string>> = {
+  "dmt_Project.modifyProjectFriendlyName": "Installed project friendly-name setter is a native stub; no durable project rename is performed.",
+  "dmt_Project.modifyProjectDescription": "Installed project description setter is a native stub.",
+  "dmt_Project.copyProject": "Installed project copy method is a native stub; no complete new-project ownership or asset-copy proof exists.",
+  "dmt_Project.deleteProject": "Installed project delete method is a native stub; no deletion, dependency or backup contract exists.",
+  "pcb_Layer.getCurrentLayer": "Installed method has an empty body and cannot identify the selected layer.",
+  "pcb_Layer.getCurrentPhysicalStackingConfigurationName": "Installed method has an empty body and returns no stack identity.",
+  "pcb_Layer.getCurrentPhysicalStackingConfiguration": "Installed method has an empty body and returns no stack data; use the maintained native stack source reader.",
+  "pcb_Layer.getPhysicalStackingConfiguration": "Installed method has an empty body and returns no named stack data.",
+  "pcb_Layer.getDefaultPhysicalStackingConfigurationName": "Installed method has an empty body and returns no default stack identity.",
+  "pcb_Layer.getAllPhysicalStackingConfigurations": "Installed method returns a constant empty array rather than enumerating stored stacks.",
+  "pcb_Layer.savePhysicalStackingConfiguration": "Installed method returns constant false and does not save a stack preset.",
+  "pcb_Layer.renamePhysicalStackingConfiguration": "Installed method returns constant false and does not rename a stack preset.",
+  "pcb_Layer.deletePhysicalStackingConfiguration": "Installed method returns constant false and does not delete a stack preset.",
+  "pcb_Layer.setAsDefaultPhysicalStackingConfiguration": "Installed method returns constant false and does not select a default stack preset.",
+  "pcb_Drc.getRealTimeDrcStatus": "Installed method returns constant false rather than observing real-time DRC state.",
+  "pcb_Drc.startRealTimeDrc": "Installed method returns constant false rather than starting real-time DRC.",
+  "pcb_Drc.stopRealTimeDrc": "Installed method returns constant false rather than stopping real-time DRC.",
+  "sch_Document.getCurrentFilterConfiguration": "Installed method has an empty body and cannot report filter configuration.",
+  "sch_Document.getPrimitiveAtPoint": "Installed method has an empty body and does not inspect a schematic point.",
+  "sch_Document.getPrimitivesInRegion": "Installed method returns a constant empty array rather than inspecting a schematic region.",
+  "sch_Net.getAllNets": "Installed method returns a constant empty array. Scoped source/native component observations exist, but they do not establish a complete net graph; the former compiled topology reader is refused because of hidden annotation and SaveAll.",
+  "sch_Net.getAllNetsName": "Installed method returns a constant empty array. Scoped source/native observations are not a complete net-name enumeration; the former compiled topology reader is refused because of hidden annotation and SaveAll.",
+  "sch_Net.getCurrentProjectAllNets": "Installed method returns a constant empty array. Document-bound source/native observations do not establish the whole-project graph; the former compiled topology reader is refused because of hidden annotation and SaveAll.",
+  "sch_Net.getNet": "Installed method has an empty body and does not look up a net.",
+  "pcb_Primitive.getPrimitiveTypeByPrimitiveId": "Installed method has an empty body and cannot identify primitive type.",
+  "pcb_Primitive.getPrimitiveByPrimitiveId": "Installed method has an empty body and cannot return a primitive.",
+  "pcb_Primitive.getPrimitiveBoardLine": "Installed method has an empty body and cannot return the board outline.",
+  "pcb_Primitive.getPrimitivesByPrimitiveId": "Installed method delegates to the empty singular getter; the declared array result is not useful coverage.",
+};
+const lossyReaders: Readonly<Record<string, string>> = {
+  "sys_FontManager.getFontsList": "The installed wrapper catches native failures and returns an empty array, so a failed read is indistinguishable from an empty font set.",
+  "sch_PrimitiveBus.getAllPrimitiveId": "The installed callback wrapper catches errors as an empty array; no exact bus identity reader is implemented.",
+  "sch_PrimitiveWire.getAllPrimitiveId": "The installed callback wrapper catches errors as an empty array; exact wire source is available through schematic-source instead.",
+  "sch_PrimitiveText.getAllPrimitiveId": "The installed wrapper publishes its callback without awaiting completion; an empty result can precede actual enumeration.",
+};
+function omitted(code: string, reason: string, nextRequirement: string, evidence: readonly string[] = []): ApiCoverageOmission {
+  return { code, reason, nextRequirement, evidence };
+}
+const concreteOmissions: Readonly<Record<string, ApiCoverageOmission>> = {
+  "lib_Symbol.modify": omitted("candidate-not-live-admitted", "The installed wrapper destructures classification without a default and can substitute the normalized search title for the display title. The disabled project-symbol-metadata candidate supplies a fixed empty classification object and the exact preserved display title, but has only offline regression tests.", "Review the exact candidate and complete an identified disposable project metadata edit, whole-project persistence comparison and inverse before adding it to the live library execution switch.", ["project-symbol-metadata.ts", "project-symbol-metadata.test.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
+  "lib_Symbol.create": omitted("symbol-template-effect-model-needed", "Creating a symbol also creates type-specific canvas/template records and META defaults, not just one metadata row. Existing symbol geometry edits require an already owned single-part asset.", "Implement exact generated template/META and child-identity expectations, returned-ID ownership, asset dependency checks and complete saved-project addition proof.", ["library-operations.ts", "library-runtime.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
+  "lib_Symbol.updateDocumentSource": omitted("source-decoder-and-save-lifecycle", "Replacing symbol source runs a decoder that can rewrite complete child identities and compiler state; a string schema does not define a safe exact source replacement.", "Add format validation, complete intended decoded delta, inherited-instance effects, no-repeat compiler Save evidence and disposable reopen/inverse proof.", ["library-operations.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
+  "lib_Footprint.updateDocumentSource": omitted("source-decoder-and-save-lifecycle", "The footprint source wrapper can create an editor iframe, decode a complete asset and invoke compiler Save. This is not a stateless text replacement and cannot share a generic metadata transaction.", "Add owned iframe lifecycle, exact decoded asset/placed-instance delta, a Save-intent boundary before the hidden compiler save, and disposable saved/reopened recovery proof.", ["library-operations.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
+  "pcb_ManufactureData.getInteractiveBomFile": omitted("interactive-export-resource-lifecycle", "The installed interactive BOM path starts a hidden welding iframe, changes a global download flag and URL hash, and waits for an event subscription without bounded cancellation/cleanup.", "Implement explicit iframe/subscription/flag ownership, deadline and cleanup with a verified complete File result; never route it through the ordinary stateless export adapter.", ["library-operations.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
+  "sys_Window.getUrlParam": omitted("private-url-state-projection-needed", "Window query parameters are outside the disposable design and can contain account/session or extension secrets. No allowlisted public-key projection exists.", "Define exact safe parameter names, sensitive-value redaction and URL ownership before exposing selected values; never return the complete query map by default."),
+  "sys_Window.getUrlAnchor": omitted("private-url-state-projection-needed", "The global URL fragment can contain project navigation and extension state, including temporary export state; no method-specific public projection or stable owner check exists.", "Define bounded allowlisted fragment fields and ownership; raw URL state is not necessary to inspect the active CAD document."),
+  "dmt_EditorControl.getSplitScreenIdByTabId": omitted("cross-project-tab-scope-needed", "A caller-selected tab can belong to another open project. The SDK lookup does not bind it to the current disposable project's checkpoint or document identity.", "Resolve and validate exact tab ownership against all editor groups before and after the lookup; existing internal editor ownership checks do not expose arbitrary tab reads.", ["editor-tabs.ts", "runtime-scripts.ts"]),
+  "dmt_EditorControl.getTabsBySplitScreenId": omitted("cross-project-tab-scope-needed", "A split screen can contain tabs from unrelated open projects. Returning its whole tab list requires a policy for every referenced document, not only the active tab.", "Add a bounded tab projection with complete owner/identity validation or an explicitly authorized all-open-project scope.", ["editor-tabs.ts", "runtime-scripts.ts"]),
+  "dmt_Panel.getCurrentPanelInfo": omitted("panel-context-not-admitted", "Panel document type 26 is outside the guarded engine's supported schematic, symbol, PCB and footprint context types.", "Add exact panel owner/source/checkpoint context support and a disposable panel fixture before declaring this reader callable."),
+  "lib_Cbb.get": omitted("shared-asset-owner-projection-needed", "CBB lookup can resolve external/shared component-block assets; the existing project symbol/footprint/device metadata verifier does not prove their owner or hierarchical descendants.", "Implement explicit collection ownership, bounded CBB metadata/child projection and failure handling, with no implicit external-library write authority."),
+  "lib_PanelLibrary.get": omitted("shared-asset-owner-projection-needed", "Panel-library metadata can refer to external assets and panel document types outside current project-library proof profiles.", "Add explicit library ownership and a bounded panel metadata projection; current-project PCB or footprint guards do not prove panel asset scope."),
+  "lib_SelectControl.getSelectedLibraryRowInfo": omitted("shared-asset-owner-projection-needed", "The selected library row is UI state and may point at a cloud/shared library unrelated to the active project. The result has no admitted current-project owner binding.", "Define exact visible row and library scope, validate the selected asset owner, and expose only reviewed metadata fields."),
+  "sch_SelectControl.getSelectedPrimitives": omitted("lossy-logging-selection-reader", "The installed selected-primitive wrapper catches failures as an empty array and logs selected primitives or the full native reply. It is not an exact quiet read.", "Use a fixed native selection projection with awaited completion and no private-data logging; retain exact project/document identity and distinguish errors from empty selection."),
+  "sch_PrimitiveComponent.getAllPropertyNames": omitted("divergent-public-result-abi", "Installed implementation branches use different raw component result shapes; the newer branch calls getAttr on raw RPC rows without a verified class ABI.", "Implement an explicit field-name projection from an independently validated component/native representation, or prove both installed result branches with scoped fixtures."),
+  "pcb_Net.getNetlist": omitted("cross-tab-netlist-export-scope", "The installed method invokes getAllPCBTabData and builds a time-derived filename. Its input includes other PCB tabs rather than only the exact bound board.", "Use a dedicated nonmutating export adapter that proves every included tab/project and deterministic format. The separate managed PCB netlist export is also refused because of hidden Save; scoped PCB inventory is available but is not a compiled netlist."),
+  "sch_Netlist.getNetlist": omitted("implicit-annotation-and-save-all", "The installed netlist path runs schematic annotation, can update DESIGNATOR/UNIQUEID records, then calls saveAllFiles. It is a mutation and global Save path despite its getter name.", "Implement an explicit annotation transaction with a complete multi-document intended delta and pre-dispatch no-repeat Save boundary, or a separately reviewed nonmutating native netlist reader. Never call this during SDK read validation.", ["docs/api-execution-feasibility-2026-10-10.md", "assets/pro-sch/3.2.149.35ae2987/js/sch.js:w3"]),
+  "pcb_SelectControl.getSelectedPrimitives": omitted("lossy-selected-object-projection", "The installed raw selection projection drops selected objects without toJSON, so its returned list can silently omit valid selected primitives.", "Bind complete selected IDs first, project every supported object type, and prove identity parity across both samples; reject unknown selected object types instead of dropping them."),
+  "sch_ManufactureData.getNetlistFile": omitted("implicit-annotation-and-save-all", "The installed export calls the same netlist compiler that updates DESIGNATOR/UNIQUEID and invokes saveAllFiles. Both export.schematic.netlist and the former schematic-topology path are refused before dispatch.", "Replace with a reviewed nonmutating reader/exporter, or implement a separately authorized full annotation/global-Save lifecycle. Do not restore the old read classification from a successful historical export.", ["library-runtime.ts", "exact-readers.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
+  "sch_ManufactureData.getBomFile": omitted("implicit-save-before-export", "The schematic BOM wrapper reaches native exportBomHandler/getExportFileData, whose paths call saveAllFiles before generating data.", "Add a separately reviewed nonmutating BOM projection or an explicit whole-scope no-repeat Save transaction; the ordinary file-export executor cannot treat this as read-only.", ["library-runtime.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
+  "pcb_ManufactureData.getBomFile": omitted("implicit-save-before-export", "The PCB BOM wrapper reaches shared schematic exportBomHandler/getExportFileData paths that call saveAllFiles.", "Add a separately reviewed nonmutating BOM projection or an explicit whole-scope no-repeat Save transaction; an unchanged result file cannot prove the export avoided Save.", ["library-runtime.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
+  "pcb_ManufactureData.getNetlistFile": omitted("implicit-save-before-export", "The installed PCB netlist exporter calls the global Save path when any editor tab is unsaved, including tabs outside the requested board.", "Implement a nonmutating single-board netlist exporter or an explicitly scoped global-Save lifecycle. Do not permit a hidden Save based on a getter name or caller claim that the board is clean.", ["library-runtime.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
+  "pcb_ManufactureData.getPdfFile": omitted("implicit-save-before-export", "The PCB PDF wrapper reaches getPDFFile/T5e and the UI global SaveAll helper before export.", "Implement a separately reviewed nonmutating render/export adapter or an explicit no-repeat Save lifecycle with complete project scope.", ["library-runtime.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
+  "sch_ManufactureData.getExportDocumentFile": omitted("implicit-save-before-export", "The schematic document export wrapper immediately awaits the UI global SaveAll helper before producing PDF, PNG or SVG.", "Add a nonmutating render/export adapter or explicitly authorized full Save lifecycle; do not present this wrapper as a read-only file getter.", ["library-runtime.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
+  "sch_ManufactureData.getSimulationNetlistFile": omitted("simulation-editor-not-admitted", "The native getNGspiceNetlist handler returns data only in the NGSPICE editor; the current library export route admits ordinary schematic type 1, where this cannot produce the required File.", "Implement exact simulation-editor ownership and a bounded verified export result on a supported disposable simulation fixture; ordinary schematic context is insufficient.", ["library-runtime.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
+};
+
+/** These rules classify a gap, never enable execution. Known implementation
+ * defects override declaration shapes. The remaining category explicitly says
+ * implementation is still missing; absence is not an assertion of infeasibility.
+ */
+function omissionFor(namespace: string, method: string, declarations: readonly ApiDeclarationMethod[], reviewed: boolean): ApiCoverageOmission {
+  const short = `${namespace}.${method}`;
+  if (!reviewed) { return omitted("not-in-reviewed-runtime", `${short} is declared only by the newer official reference and is absent from the pinned installed declaration.`, "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.", ["reviewed-compatibility.json", "extension-api-catalog-data.ts"]); }
+  const concrete = concreteOmissions[short];
+  if (concrete !== undefined) { return structuredClone(concrete); }
+  const stub = stubs[short];
+  if (stub !== undefined) { return omitted("reviewed-native-stub", stub, "Implement a separately reviewed native task adapter with exact effects, or validate a newer runtime where the public method works.", ["assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"]); }
+  const lossy = lossyReaders[short];
+  if (lossy !== undefined) { return omitted("lossy-or-unawaited-public-reader", lossy, "Use an independently complete native reader with awaited completion, source parity and failure tests; do not report a swallowed error as an empty result.", ["assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"]); }
+  if (/^place.*Order$/u.test(method)) { return omitted("external-commercial-action", `${short} submits a board, component, assembly or enclosure order and is outside disposable local CAD validation.`, "A separate explicit purchasing/submission contract, destination review, confirmation and non-production test service are required; do not invoke during a coverage test."); }
+  if (["sys_ClientUrl", "sys_WebSocket", "sys_MessageBus", "sys_ExternalApi"].includes(namespace)) {
+    return omitted("unrestricted-transport-or-service", `${short} exposes destinations, channels or service endpoints rather than a bounded CAD operation. Some declarations carry callbacks or arbitrary message data.`, "Implement fixed destination/channel adapters with authority, lifetime, cancellation and response schemas. Existing internal private transport is not caller access to this public method.");
+  }
+  if (namespace.endsWith("_Event") || namespace === "sys_Timer" || /(?:EventListener|ShortcutKey|register|unregister)/u.test(method)) {
+    return omitted("callback-or-registration-lifecycle", `${short} creates, removes or observes extension-owned callbacks or registrations; JSON arguments cannot transfer executable closures or safely own persistent handles.`, "Implement typed subscriptions with bounded event buffers, lease ownership, cancellation, disconnect cleanup and no caller code; registration state must not be shared implicitly.");
+  }
+  if (["sys_HeaderMenu", "sys_RightClickMenu", "sys_Dialog", "sys_MessageBox", "sys_IFrame", "sys_LoadingAndProgressBar", "sys_Message", "sys_ToastMessage", "sys_PanelControl"].includes(namespace)) {
+    return omitted("interactive-ui-resource", `${short} controls an interactive dialog, menu, frame, notification or panel resource; successful return does not establish completion or user choice.`, "Add a process-bound typed UI-resource owner, observable result/cancellation and cleanup. Existing native_ui can inspect and operate visible controls but does not implement this API method.");
+  }
+  if (namespace === "sys_Storage" || namespace === "sys_Setting" || namespace === "sys_Log" || namespace === "sys_FontManager" || method === "setKeepProjectHasOnlyOneBoard") {
+    return omitted("extension-or-global-settings-state", `${short} reads or changes extension/global application state that is not bounded by a disposable project checkpoint.`, "Define named key/font/log/config scopes, secret filtering, backups for mutation and cleanup before exposing this method. Project rollback cannot undo these effects.");
+  }
+  if (namespace === "sys_FileSystem" || namespace === "sys_FormatConversion" || namespace === "sys_FileManager" || /(?:File|RenderImage)$/u.test(method) || /^(?:upload|import).*File/u.test(method)) {
+    return omitted("managed-file-contract-needed", `${short} consumes or produces File/Blob, filesystem paths, project archives or image data without an implemented method-specific managed-artifact contract.`, "Add bounded hash-bound artifact transfer, exact input ownership/format checks, exclusive output publication and any associated import effect proof. A filename or Blob handle is not a verified file.");
+  }
+  if (["dmt_Team", "dmt_Workspace", "dmt_Folder", "lib_LibrariesList", "lib_Classification"].includes(namespace) || /(?:UserInfo|ProjectInfo|ProjectsUuid|search|getByLcscIds|Collaborat|moveProject)/u.test(method)) {
+    return omitted("account-or-library-scope-needed", `${short} reaches account, workspace, folder, project or shared-library metadata outside the active disposable document.`, "Define explicit owner, collection/search bounds and privacy rules; mutations also need cloud/shared-asset authority and a durable independent verifier. Read-only catalog discovery is still feasible without granting writes.");
+  }
+  if (namespace === "pcb_RayTracerEngine" || namespace === "pcb_ImageTool" || namespace === "sch_SimulationEngine" || method.includes("WithMouse") || method.startsWith("placeCbb")) {
+    return omitted("interactive-engine-lifecycle", `${short} starts or controls rendering, image processing, simulation or interactive placement rather than returning a completed JSON CAD effect.`, "Add cancellable job ownership, bounded progress/results and process/context reproof; placement or generated geometry also needs an exact source/connectivity effect model.");
+  }
+  if (method === "importChanges" || method === "autoRouting" || method === "autoLayout" || method === "clearRouting" || method === "setNetlist") {
+    return omitted("multi-object-electrical-effect", `${short} can replace connectivity or alter many placed/routed objects; current per-record transactions do not define its complete intended delta.`, "Implement a previewed explicit change set, preserved component/pad/net identities, complete-project source verifier and saved/reopened disposable validation. ECO dialogs are not an API completion receipt.");
+  }
+  if (method === "generateIndicatorMarkers" || method.startsWith("doCrossProbe") || method === "doSelectPrimitives" || method === "urlPushState" || method === "urlReplaceState") {
+    return omitted("selection-marker-or-history-mutation", `${short} changes selected objects, indicator markers, cross-probe state or browser navigation history; it is not a read or pure calculation.`, "Implement typed exact target/state ownership, observe completion and preserve or explicitly restore prior selection, markers or history. Cross-probe can affect another document and needs both contexts bound.");
+  }
+  if (/^(?:create|delete|remove|modify|set|overwrite|copy|move|reorder|update|add|rename|save|restore|start|stop|clear|lock|unlock|highlight|unhighlight|select|unselect|toggle|switch|push|import|upload|rebuild|trigger|dispose)/u.test(method)) {
+    return omitted("scoped-effect-adapter-needed", `${short} has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.`, "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.");
+  }
+  if (/^(?:open|close|activate|zoom|navigate|tile|merge)/u.test(method)) {
+    return omitted("navigation-or-viewport-adapter-needed", `${short} changes editor, viewport or window state without a maintained method-specific one-shot completion/ownership proof.`, "Add strict target/viewport arguments, original owner/context proof, non-replayed dispatch and bounded observable completion; closing must never imply Save or discard.");
+  }
+  if (declarations.some((entry) => /(?:=>|\bFunction\b|\bFile\b|\bBlob\b|\bElement\b|\bComponent\b|\bI(?:PCB|SCH)_Primitive\w*\b|\bIPCB_(?:Complex)?Polygon\b)/u.test(entry.signature))) {
+    return omitted("non-json-result-or-callback", `${short} includes executable callbacks, browser/file objects or extension class state whose serialization is not defined by a JSON method call.`, "Create a fixed data projection or managed resource/file adapter with receiver-bound access and complete failure tests. Never serialize methods, prototype state or arbitrary callback source.");
+  }
+  return omitted("bounded-read-or-pure-adapter-needed", `${short} has no reviewed fixed read/pure adapter yet. Its declaration alone does not establish JSON-safe results, completed callbacks or absence of side effects.`, "Review the installed implementation, define exact bounded arguments/result projection and stability policy, then add source/contract and disposable connected tests. This is remaining implementation work, not a safety-based claim of infeasibility.");
+}
+
+interface MethodGroup { namespace: string; method: string; declarations: ApiCoverageEntry["declarations"][number][]; methods: ApiDeclarationMethod[] }
+
+export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
+  const methods = new Map<string, MethodGroup>();
+  for (const snapshot of extensionApiSnapshots) {
+    for (const namespace of snapshot.namespaces) {
+      for (const method of namespace.methods) {
+        const path = `eda.${namespace.name}.${method.name}`;
+        const group = methods.get(path) ?? { namespace: namespace.name, method: method.name, declarations: [], methods: [] };
+        group.declarations.push({ reference: snapshot.reference, className: method.className, signature: method.signature, sourceLine: method.sourceLine,
+          documentationUrl: `https://prodocs.easyeda.com/en/api/reference/pro-api.${method.className.toLowerCase()}.${method.name.toLowerCase()}.html` });
+        group.methods.push(method);
+        methods.set(path, group);
+      }
+    }
+  }
+  const routes = new Map(maintainedApiCoverageRoutes());
+  for (const descriptor of publicSdkReadDescriptors()) {
+    const existing = routes.get(descriptor.path) ?? [];
+    routes.set(descriptor.path, [...existing, {
+      tool: "easyeda_control_sdk_read", selector: descriptor.path, implementation: "public-method",
+      scope: `Fixed ${descriptor.parameterSupport} argument subset; bounded double-sampled public SDK observation, not complete native-source/connectivity/persistence proof. ${descriptor.limitations.join(" ")}`.trim(),
+      documentTypes: descriptor.documentTypes,
+      source: [descriptor.implementation.source.replace(/^server\/src\//u, "")], tests: [descriptor.implementation.test.replace(/^server\/tests\//u, "")],
+      validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+      inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "sdk-reads", query: { method: descriptor.path, includeSchemas: true } } } },
+    }]);
+  }
+  for (const path of routes.keys()) {
+    if (!methods.has(path)) { throw new Error(`Coverage route references undeclared method: ${path}`); }
+  }
+  return [...methods].toSorted(([left], [right]) => left.localeCompare(right, "en")).map(([path, group]) => {
+    const reviewed = group.declarations.some((entry) => entry.reference === "reviewed-installed");
+    const supported = routes.get(path) ?? [];
+    let status: ApiCoverageStatus = "omitted";
+    if (supported.length > 0 && supported.every((entry) => entry.executionState === "blocked")) { status = "implemented-but-blocked"; }
+    else if (supported.some((entry) => entry.executionState !== "blocked" && entry.implementation === "public-method")) { status = "implemented-public-subset"; }
+    else if (supported.some((entry) => entry.executionState !== "blocked" && entry.implementation === "native-task-equivalent")) { status = "implemented-native-equivalent"; }
+    else if (supported.length > 0) { status = "internal-lifecycle-only"; }
+    return { path, namespace: group.namespace, method: group.method, declarations: group.declarations, reviewedRuntimeDeclaration: reviewed, status, routes: supported,
+      omission: supported.length === 0 ? omissionFor(group.namespace, group.method, group.methods, reviewed) : null,
+      completeDeclaredContractSupported: false, currentGenerationLiveValidation: "not-recorded", runtimeAdmission: "not-granted-by-inventory" };
+  });
+}
+
+export function extensionApiCoverageSummary(entries = inventoryExtensionApiCoverage()): Record<string, unknown> {
+  const count = (predicate: (entry: ApiCoverageEntry) => boolean): number => entries.filter((entry) => predicate(entry)).length;
+  return { totalDistinctMethods: entries.length, reviewedDistinctMethods: count((entry) => entry.reviewedRuntimeDeclaration),
+    latestDistinctMethods: count((entry) => entry.declarations.some((declaration) => declaration.reference === "official-latest")),
+    statuses: Object.fromEntries(statusSchema.options.map((status) => [status, count((entry) => entry.status === status)])),
+    executionRoutes: Object.fromEntries(["available-with-runtime-guards", "blocked", "partially-blocked"].map((state) => [state, entries.flatMap((entry) => entry.routes).filter((route) => route.executionState === state).length])),
+    omissions: Object.fromEntries([...new Set(entries.flatMap((entry) => entry.omission === null ? [] : [entry.omission.code]))].toSorted().map((code) => [code, count((entry) => entry.omission?.code === code)])),
+    currentGenerationLiveValidatedMethods: 0,
+    declarationSignatures: extensionApiSnapshots.map((snapshot) => ({ reference: snapshot.reference, version: snapshot.version, sourceSha256: snapshot.sourceSha256, signatures: snapshot.namespaces.reduce((sum, namespace) => sum + namespace.methods.length, 0) })) };
+}
+
+/** Offline coverage discovery. It grants no method dispatch, runtime admission,
+ * transaction authority or inheritance of a historical live validation record.
+ */
+export function queryExtensionApiCoverage(input: unknown = {}): Record<string, unknown> {
+  const query = extensionApiCoverageQuerySchema.parse(input);
+  const all = inventoryExtensionApiCoverage();
+  if (query.namespace !== undefined && !all.some((entry) => entry.namespace === query.namespace)) { throw new Error("Unknown API coverage namespace."); }
+  const search = query.search?.toLowerCase();
+  const matched = all.filter((entry) => (query.reference === "all" || entry.declarations.some((declaration) => declaration.reference === query.reference)) &&
+    (query.namespace === undefined || entry.namespace === query.namespace) && (query.status === undefined || entry.status === query.status) &&
+    (search === undefined || `${entry.path} ${entry.omission?.reason ?? ""} ${entry.routes.map((route) => route.selector).join(" ")}`.toLowerCase().includes(search)));
+  const page: unknown[] = [];
+  for (const entry of matched.slice(query.offset, query.offset + query.limit)) {
+    const row = query.detail ? entry : { path: entry.path, status: entry.status, reviewedRuntimeDeclaration: entry.reviewedRuntimeDeclaration,
+      routes: entry.routes.map(({ tool, selector, implementation, executionState, blockedReason, blockedDocumentTypes, inputDiscovery }) => ({ tool, selector, implementation, executionState,
+        ...(blockedReason === undefined ? {} : { blockedReason, blockedDocumentTypes }), ...(inputDiscovery === undefined ? {} : { inputDiscovery }) })), omission: entry.omission,
+      currentGenerationLiveValidation: entry.currentGenerationLiveValidation, runtimeAdmission: entry.runtimeAdmission };
+    if (Buffer.byteLength(JSON.stringify([...page, row]), "utf8") > 49_152) {
+      if (page.length === 0) { throw new Error("Coverage row exceeds the bounded response budget."); }
+      break;
+    }
+    page.push(row);
+  }
+  const next = query.offset + page.length;
+  const result = { schema: "easyeda-pro-control.extension-api-coverage.v1", offline: true, invocationEnabled: false,
+    scope: "Distinct mounted method paths; overloads and both snapshots retained. Supported routes expose documented subsets, not every declared contract.",
+    summary: extensionApiCoverageSummary(all), page: { offset: query.offset, limit: query.limit, totalMatched: matched.length, returned: page.length,
+      nextOffset: next < matched.length ? next : null, maxEntriesBytes: 49_152, maxResponseBytes: 65_536 }, entries: page };
+  if (Buffer.byteLength(JSON.stringify(result), "utf8") > 65_536) { throw new Error("Coverage response exceeds budget."); }
+  return result;
+}

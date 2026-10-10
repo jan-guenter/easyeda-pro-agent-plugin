@@ -1,0 +1,146 @@
+/** Reviewed links from public SDK methods to actual maintained execution paths.
+ * A native task equivalent does not claim to invoke the public wrapper, support
+ * every overload, or validate that wrapper's implementation.
+ */
+export interface ApiCoverageRoute {
+  readonly tool: string;
+  readonly selector: string;
+  readonly implementation: "public-method" | "native-task-equivalent" | "internal-lifecycle-only";
+  readonly scope: string;
+  readonly source: readonly string[];
+  readonly tests: readonly string[];
+  readonly validation: "offline-regression;current-live-unclaimed";
+  readonly executionState: "available-with-runtime-guards" | "blocked" | "partially-blocked";
+  readonly blockedReason?: string;
+  readonly blockedDocumentTypes?: readonly number[];
+  readonly inputDiscovery?: { readonly tool: "easyeda_control_api"; readonly arguments: Readonly<Record<string, unknown>> };
+  readonly documentTypes?: readonly number[];
+}
+
+interface RouteGroup {
+  readonly namespace: string;
+  readonly methods: readonly string[];
+  readonly route: ApiCoverageRoute;
+}
+const groups: RouteGroup[] = [];
+const topologyBlock = "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.";
+
+function add(namespace: string, methods: readonly string[], tool: string, selector: string,
+  implementation: ApiCoverageRoute["implementation"], scope: string, source: readonly string[], tests: readonly string[]): void {
+  let inputDiscovery: ApiCoverageRoute["inputDiscovery"];
+  const action = selector.split(";")[0] ?? "";
+  const family = tool === "easyeda_control_library" ? "library" : "design";
+  if (tool === "easyeda_control_library" || (tool === "easyeda_control_design" && /^(?:pcb|sch|footprint)\./u.test(action))) {
+    const selectorQuery = action.endsWith(".*") ? { prefix: action.slice(0, -1) } : { operationAction: action };
+    inputDiscovery = { tool: "easyeda_control_api", arguments: { request: { action: "operations", query: { family, ...selectorQuery, includeSchemas: true } } } };
+  }
+  const schematicWrite = tool === "easyeda_control_design" && action.startsWith("sch.") && !selector.includes("documentType=2");
+  const sharedLifecycle = implementation === "internal-lifecycle-only" && namespace !== "pcb_Document";
+  let executionState: ApiCoverageRoute["executionState"] = "available-with-runtime-guards";
+  if (schematicWrite) { executionState = "blocked"; }
+  else if (sharedLifecycle) { executionState = "partially-blocked"; }
+  let documentTypes: readonly number[] | undefined;
+  if (selector.includes("documentType=2")) { documentTypes = [2]; }
+  else if (schematicWrite) { documentTypes = [1]; }
+  const blocked = schematicWrite || sharedLifecycle;
+  groups.push({ namespace, methods, route: { tool, selector, implementation, scope, source: blocked ? [...source, "design-execution.ts", "design-topology.ts", "exact-readers.ts"] : source,
+    tests, validation: "offline-regression;current-live-unclaimed", executionState,
+    ...(blocked ? { blockedReason: topologyBlock, blockedDocumentTypes: [1] } : {}),
+    ...(documentTypes === undefined ? {} : { documentTypes }),
+    ...(inputDiscovery === undefined ? {} : { inputDiscovery }) } });
+}
+
+add("sys_FileManager", ["getDocumentSource"], "easyeda_control_exact_read", "*-source", "public-method",
+  "Complete active schematic, symbol, PCB or footprint source, bounded and normalized only for volatile DOCHEAD export fields.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
+for (const family of ["sch", "pcb"]) {
+  add(`${family}_PrimitiveComponent`, ["getAll", "getAllPrimitiveId", "getAllPinsByPrimitiveId"], "easyeda_control_exact_read", `${family === "sch" ? "schematic" : "pcb"}-components`, "public-method",
+    "Double-sampled complete component identities and selected state fields; mapper omissions remain reported.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
+  add(`${family}_Primitive`, ["getPrimitivesBBox"], "easyeda_control_exact_read", `${family === "sch" ? "schematic" : "pcb"}-components;includeBounds`, "public-method",
+    "Bounds for selected components only; not a generic arbitrary primitive invocation.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
+}
+for (const family of ["Arc", "Attribute", "Component", "Dimension", "Fill", "Image", "Line", "Object", "Pad", "Polyline", "Pour", "Poured", "Region", "String", "Via"]) {
+  add(`pcb_Primitive${family}`, ["getAll", "getAllPrimitiveId"], "easyeda_control_exact_read", "pcb-inventory", "public-method",
+    "Cross-checked ID enumeration; only monitored families have full typed state serialization. Enumeration does not prove unmonitored property completeness.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
+}
+add("pcb_Drc", ["getCurrentRuleConfigurationName", "getCurrentRuleConfiguration", "getNetRules", "getNetByNetRules", "getRegionRules", "getAllNetClasses", "getAllDifferentialPairs", "getAllEqualLengthNetGroups", "getAllPadPairGroups", "getPadPairGroupMinWireLength"], "easyeda_control_exact_read", "pcb-rules", "public-method",
+  "Complete bounded double-sampled supported PCB rule collections, retaining documented normalized/default behavior.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
+add("pcb_Net", ["getAllNetsName"], "easyeda_control_exact_read", "pcb-rules", "public-method", "Net-name inventory as part of exact rule reads.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
+
+for (const family of ["line", "arc", "via", "pad", "polyline", "region", "pour", "fill", "component"]) {
+  const className = `${family[0]?.toUpperCase() ?? ""}${family.slice(1)}`;
+  for (const method of ["create", "modify", "delete"]) {
+    add(`pcb_Primitive${className}`, [method], "easyeda_control_design", `pcb.${family}.${method}`, "native-task-equivalent",
+      "Operation-specific public/native transaction for representable reviewed PCB records; exact source delta, lock ancestry and persistence guards. Does not expose arbitrary public class instances or every declared property.",
+      ["design-action.ts", "design-native-adapter.ts", "design-source-proof.ts"], ["design-native-adapter.test.ts", "design-source-proof.test.ts"]);
+  }
+}
+add("pcb_PrimitivePour", ["rebuildCopperRegions"], "easyeda_control_design", "pcb.pour.rebuild", "native-task-equivalent",
+  "Selected-parent derived copper rebuild with complete scoped effect proof; no global uncontrolled rebuild.", ["design-copper-adapter.ts", "copper-persistence.ts"], ["design-copper-adapter.test.ts", "design-persistence.test.ts"]);
+const ruleMethods: Readonly<Record<string, string>> = {
+  createNetClass: "netclass.create", deleteNetClass: "netclass.delete", modifyNetClassName: "netclass.rename", addNetToNetClass: "netclass.add-nets", removeNetFromNetClass: "netclass.remove-nets",
+  createEqualLengthNetGroup: "equal-length.create", deleteEqualLengthNetGroup: "equal-length.delete", modifyEqualLengthNetGroupName: "equal-length.rename", addNetToEqualLengthNetGroup: "equal-length.add-nets", removeNetFromEqualLengthNetGroup: "equal-length.remove-nets",
+  createDifferentialPair: "differential-pair.create", deleteDifferentialPair: "differential-pair.delete", modifyDifferentialPairName: "differential-pair.rename", modifyDifferentialPairPositiveNet: "differential-pair.set-positive", modifyDifferentialPairNegativeNet: "differential-pair.set-negative",
+  overwriteCurrentRuleConfiguration: "rules.configuration.replace", overwriteNetRules: "rules.net.replace", overwriteNetByNetRules: "rules.net-to-net.replace", overwriteRegionRules: "rules.region.replace",
+};
+for (const [method, action] of Object.entries(ruleMethods)) {
+  add("pcb_Drc", [method], "easyeda_control_design", `pcb.${action}`, "native-task-equivalent",
+    "Typed source-bound rule effect; refuses member override resets, unpreserved pair selectors, derived copper or blind-via collateral. Global preset behavior is not exposed.", ["design-rule-public-adapter.ts", "design-rule-collections.ts"], ["design-rule-public-adapter.test.ts", "design-source-proof.test.ts"]);
+}
+add("pcb_Layer", ["overwriteCurrentPhysicalStackingConfiguration", "setTheNumberOfCopperLayers"], "easyeda_control_design", "pcb.stack.replace", "native-task-equivalent",
+  "Atomic complete typed physical stack and enabled copper IDs; individual public setters are not exposed as independent writes.", ["design-stack-adapter.ts", "stack-persistence.ts"], ["design-stack-adapter.test.ts", "stack-native-persistence.test.ts"]);
+for (const family of ["circle", "rectangle", "text", "pin", "attribute"]) {
+  const className = `${family[0]?.toUpperCase() ?? ""}${family.slice(1)}`;
+  add(`sch_Primitive${className}`, ["create", "modify", "delete"], "easyeda_control_design", `sch.${family}.*;documentType=2`, "native-task-equivalent",
+    "Existing single-part project SYMBOL only, with exact child/source/persistence proof. This does not admit the same geometry operations on schematic pages.", ["symbol-action.ts", "symbol-persistence.ts"], ["symbol-action.test.ts", "symbol-persistence.test.ts"]);
+}
+for (const method of ["create", "modify", "delete"]) {
+  add("sch_PrimitiveComponent", [method], "easyeda_control_design", `sch.component.${method}`, "native-task-equivalent",
+    "Type-1 ordinary parts only; creation uses existing project single-part assets, modification preserves hidden/inherited properties and refuses unsupported rotations or new attributes.", ["schematic-component-create.ts", "schematic-native-adapter.ts", "schematic-electrical-adapter.ts", "schematic-source-proof.ts"], ["schematic-component-create.test.ts", "schematic-electrical-adapter.test.ts", "schematic-source-proof.test.ts"]);
+  add("sch_PrimitiveWire", [method], "easyeda_control_design", `sch.wire.${method}`, method === "modify" ? "native-task-equivalent" : "public-method",
+    method === "modify" ? "Existing unlocked cardinal wire with explicit style and omitted net; awaited native completion and full topology/persistence proof. Historical wire-v2 disposable lifecycle does not validate this facade generation." : "Source-supported cardinal wire transaction only; new named-net defaults are refused. No claim of public wrapper correctness for every declared shape.",
+    ["schematic-source-proof.ts", "schematic-native-wire.ts"], ["schematic-source-proof.test.ts", "schematic-native-wire.test.ts"]);
+}
+add("sch_PrimitiveAttribute", ["createNetLabel"], "easyeda_control_design", "sch.net-label.create", "native-task-equivalent", "Exact standalone native label and topology effect; public stub is not dispatched.", ["schematic-electrical-adapter.ts"], ["schematic-electrical-adapter.test.ts"]);
+add("sch_PrimitivePin", ["modify"], "easyeda_control_design", "sch.component-pin.no-connect", "native-task-equivalent", "Exact ordinary component pin no-connect marker only; arbitrary placed-pin property changes remain unavailable.", ["schematic-electrical-adapter.ts"], ["schematic-electrical-adapter.test.ts"]);
+add("sch_PrimitiveComponent", ["createNetFlag"], "easyeda_control_design", "sch.layout.batch;checkpoint-bound-netflag-clone", "native-task-equivalent", "Clone of an existing loaded checkpoint-bound flag template only; not general new library flag creation.", ["schematic-layout-netflag.ts", "schematic-layout-batch.ts"], ["schematic-layout-netflag.test.ts", "schematic-layout-batch.test.ts"]);
+
+for (const [family, api] of [["symbol", "lib_Symbol"], ["footprint", "lib_Footprint"], ["device", "lib_Device"], ["model3d", "lib_3DModel"]] as const) {
+  add(api, ["get"], "easyeda_control_library", `library.${family}.get`, "public-method", "Exact identity/owner metadata, bounded double-sampled result; not complete library inventory or asset geometry.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
+}
+for (const method of ["create", "modify"]) {
+  add("lib_Footprint", [method], "easyeda_control_library", `library.footprint.${method}`, "public-method", "Current-project footprint metadata only; classifications and lossy null-description cases refused; complete selected-branch persistence proof.", ["library-runtime.ts", "library-persistence-proof.ts"], ["library-execution.test.ts"]);
+  add("lib_Device", [method], "easyeda_control_library", `library.device.${method}`, "native-task-equivalent", "Project-local device addition or association patch to existing assets; no asset import/copy or implicit ECO.", ["device-create.ts", "device-association.ts"], ["device-create.test.ts", "device-association.test.ts"]);
+}
+add("lib_Symbol", ["openInEditor"], "easyeda_control_library", "library.symbol.open", "public-method", "Existing exact current-project symbol; waits for coherent library editor context and proves unchanged selected branch.", ["library-runtime.ts"], ["library-execution.test.ts"]);
+add("lib_Footprint", ["openInEditor"], "easyeda_control_library", "library.footprint.open", "native-task-equivalent", "Uses maintained dmt_EditorControl.openLibraryDocument path for an existing exact current-project footprint.", ["library-runtime.ts", "library-operations.ts"], ["library-execution.test.ts"]);
+add("dmt_EditorControl", ["openDocument"], "easyeda_control_library", "document.open", "public-method", "Checkpoint-member current-project document only, with one-shot navigation and complete unchanged saved-state proof.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
+add("dmt_EditorControl", ["openLibraryDocument"], "easyeda_control_library", "library.footprint.open", "public-method", "Existing checkpoint-member current-project footprint only, with one-shot navigation and complete unchanged saved-state proof.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
+
+const exports: Readonly<Record<string, string>> = {
+  getDxfFile: "dxf", getFlyingProbeTestFile: "flying-probe", getIpcD356AFile: "ipcd356a", getOpenDatabaseDoublePlusFile: "odb", getDsnFile: "dsn", getAutoRouteJsonFile: "autoroute-json", getAutoRouteJsonFileForJRouter: "autoroute-jrouter", getAutoLayoutJsonFile: "autolayout-json", getAltiumDesignerFile: "altium", getPadsFile: "pads", getPcbInfoFile: "info", getIdxFile: "idx", getGerberFile: "gerber", get3DFile: "model3d", getPickAndPlaceFile: "pick-and-place", getTestPointFile: "test-points", getIpc2581CFile: "ipc2581c",
+};
+for (const [method, selector] of Object.entries(exports)) {
+  add("pcb_ManufactureData", [method], "easyeda_control_library", `export.pcb.${selector}`, "public-method", "Bounded actual File result up to 2 MiB, exclusive managed artifact, unchanged source/context; no model generation, arbitrary path, order or fabrication approval.", ["library-operations.ts", "library-runtime.ts"], ["library-operations.test.ts", "library-execution.test.ts"]);
+}
+for (const family of ["pcb", "sch"]) {
+  add(`${family}_Drc`, ["check"], "easyeda_control_check", "run", "native-task-equivalent", "Fixed reviewed native calculation/report, scoped complete state and saved SQLite invariance; SDK boolean alone is not accepted.", ["native-rule-report.ts", "check-execution.ts"], ["native-rule-report.test.ts", "check-execution.test.ts"]);
+  add(`${family}_Document`, ["save"], "easyeda_control_design", "execute/commit", "internal-lifecycle-only", "Save is available only inside an original journal's verified no-repeat commit lifecycle; never an unrestricted standalone Save.", ["runtime-scripts.ts", "design-save-attempt.ts", "design-execution.ts"], ["design-save-attempt.test.ts", "design-execute.test.ts"]);
+}
+add("dmt_EditorControl", ["activateDocument", "closeDocument"], "easyeda_control_design", "commit/recovery lifecycle", "internal-lifecycle-only", "Exact target-bound lifecycle only, no standalone close/discard or arbitrary activation.", ["runtime-scripts.ts", "native-document-lifecycle.ts"], ["runtime-scripts.test.ts", "native-document-lifecycle.test.ts"]);
+add("dmt_Project", ["getCurrentProjectInfo"], "easyeda_control_context", "context", "public-method", "Exact active project identity used before and after guarded operations.", ["runtime-scripts.ts"], ["runtime-scripts.test.ts"]);
+add("dmt_SelectControl", ["getCurrentDocumentInfo"], "easyeda_control_context", "context", "public-method", "Exact active document/type/tab identity used before and after guarded operations.", ["runtime-scripts.ts"], ["runtime-scripts.test.ts"]);
+add("dmt_EditorControl", ["getSplitScreenTree"], "easyeda_control_context", "context/editor ownership", "public-method", "Bounded editor tab ownership and exclusivity checks, not navigation authority.", ["editor-tabs.ts", "runtime-scripts.ts"], ["editor-tabs.test.ts", "runtime-scripts.test.ts"]);
+add("dmt_Project", ["openProject"], "easyeda_control_runtime", "open-existing", "native-task-equivalent", "Existing saved checkpoint-member project only in empty editor; no repeated navigation or implicit Save/discard.", ["project-open-execution.ts"], ["project-open-execution.test.ts"]);
+
+export function maintainedApiCoverageRoutes(): ReadonlyMap<string, readonly ApiCoverageRoute[]> {
+  const result = new Map<string, ApiCoverageRoute[]>();
+  for (const group of groups) {
+    for (const method of group.methods) {
+      const path = `eda.${group.namespace}.${method}`;
+      const routes = result.get(path) ?? [];
+      routes.push(structuredClone(group.route));
+      result.set(path, routes);
+    }
+  }
+  return result;
+}

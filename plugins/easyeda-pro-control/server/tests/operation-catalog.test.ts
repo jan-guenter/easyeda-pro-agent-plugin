@@ -5,6 +5,17 @@ import { designActionSchema } from "../src/design-action.ts";
 import { libraryOperationSchema } from "../src/library-operations.ts";
 import { operationCatalogQuerySchema, queryOperationCatalog, validateCatalogOperation } from "../src/operation-catalog.ts";
 
+void test("schematic operation discovery exposes the current type-1 topology execution restriction", () => {
+  const restricted = queryOperationCatalog({ family: "design", operationAction: "sch.wire.modify" });
+  const restriction = z.object({ documentType: z.literal(1), reason: z.string() });
+  const descriptor = z.object({ executionRestrictions: z.array(restriction) });
+  const entries = z.array(descriptor).parse(restricted["entries"]);
+  assert.match(entries[0]?.executionRestrictions[0]?.reason ?? "", /invoke Save All/u);
+  const pcb = queryOperationCatalog({ family: "design", operationAction: "pcb.via.modify" });
+  const pcbEntries = z.array(z.record(z.string(), z.unknown())).parse(pcb["entries"]);
+  assert.equal(Object.hasOwn(pcbEntries[0] ?? {}, "executionRestrictions"), false);
+});
+
 void test("catalog pagination covers every strict design and library discriminator once", () => {
   for (const family of ["design", "library"] as const) {
     const actions: string[] = [];

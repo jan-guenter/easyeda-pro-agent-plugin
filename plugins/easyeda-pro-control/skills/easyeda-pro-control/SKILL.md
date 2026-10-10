@@ -9,9 +9,15 @@ Use the typed MCP tools for supported design work. Native controls supplement ac
 
 This source package has typed design transactions, operation-specific library/export execution, and native Windows control. Installed snapshots may expose older tools. Consult the actual catalog and [capability matrix](references/capability-matrix.md); an implemented descriptor is not proof of a completed live test.
 
+Current restriction: schematic topology and transactions depending on it are
+disabled because the installed netlist getter can annotate parts and Save All.
+Several File exports are refused for the same hidden-Save issue. Inspect current
+coverage/capabilities; do not bypass these refusals or replay historical work.
+
 ## Connect and choose a path
 
 - Look up methods and exact operation arguments with offline `easyeda_control_api`; read [api-reference.md](references/api-reference.md). Its latest SDK snapshot is documentation, not execution authority. Validate assembled operations offline before a live preflight.
+- Use its `coverage` action to distinguish direct SDK calls, narrower native task equivalents, lifecycle-only calls and omissions. `easyeda_control_sdk_read` exposes fixed typed local getters and calculations. Matching samples are public SDK observations, not complete native design or persistence proof.
 - For setup, missing tools or connection trouble, read [connection-and-context.md](references/connection-and-context.md). The bundled portable launcher loads a private machine profile. The checkout-only foreground client uses the same facade when no other owner is running.
 - For API edits, inspect `easyeda_control_runtime`. Editing requires EasyEDA launched by `launch-contained`, with retained Windows Job and authenticated process proof. An ordinary PID or a newly connected renderer is not that proof.
 - From Start Page, establish authenticated status and use runtime `open-existing` for an exact saved PCB or schematic-page target; see the connection reference. An unfinished design or library journal uses its own `open-target` recovery instead.

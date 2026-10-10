@@ -119,6 +119,10 @@ jobs:
         working-directory: plugins/easyeda-pro-control
         run: npm run typecheck
 
+      - name: Verify exhaustive API coverage inventory
+        working-directory: plugins/easyeda-pro-control
+        run: npm run api:coverage:check
+
       - name: Type-check authenticated bridge source
         working-directory: plugins/easyeda-pro-control
         run: npm run bridge:typecheck

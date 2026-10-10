@@ -10,13 +10,26 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-The source catalog has 25 tools. `easyeda_control_api` exposes 93 reviewed
+The source catalog has 26 tools. `easyeda_control_api` exposes 93 reviewed
 namespaces / 749 declared signatures and 99 latest official namespaces / 806
-signatures. It does not invoke SDK methods. Latest declarations are not runtime
-admission; callable actions remain limited by the existing typed executors and
-operation-specific proof. Exact schemas and offline argument validation cover
+signatures. Its `coverage` action inventories all 774 distinct mounted method
+paths, linking each to a direct public call, narrower native task equivalent,
+internal lifecycle use, or a concrete omission reason and required work.
+`sdk-reads` and `sdk-validate` expose the exact schemas and offline argument
+checks for the fixed `easyeda_control_sdk_read` allowlist. That separate live
+tool performs local getters, fixed primitive-state projections and bounded pure
+calculations with authenticated context checks and two matching samples. It
+accepts no arbitrary method path, caller code, callbacks, navigation or writes.
+Public SDK observations do not replace native design or persistence proof.
+
+Latest declarations are not runtime admission. Exact operation schemas cover
 105 design actions and 68 library/lifecycle actions; schema availability does
-not guarantee execution support. See the [API research](docs/easyeda-extension-interface-research-2026-10-10.md)
+not guarantee execution support. The [coverage inventory](docs/api-coverage-inventory-2026-10-10.md)
+and [feasibility review](docs/api-execution-feasibility-2026-10-10.md) name the
+remaining work, including a disabled project-symbol metadata candidate that
+must pass disposable saved/reopened validation before runtime enablement.
+Offline tests do not establish connected validation for this release.
+See the [API research](docs/easyeda-extension-interface-research-2026-10-10.md)
 and [reliability review](docs/revamp-reliability-review-2026-10-10.md).
 The [independent review follow-up](docs/revamp-final-review-2026-10-10.md)
 also covers descriptor-bound Node launch, timeout-envelope classification and
@@ -100,13 +113,21 @@ an arbitrary descriptor inherited by the facade's shell cannot reach it.
 The live evidence in this section is historical and operation-specific. It is
 not a connected test of the October facade generation.
 
+The October API audit found hidden annotation and Save All in the previously
+used schematic netlist path. Current code refuses `schematic-topology` and
+dependent schematic transactions before dispatch. It also refuses schematic
+netlist/BOM/document and PCB netlist/BOM/PDF exports that can save dirty tabs,
+plus simulation export outside its required NGSPICE editor. Historical matching
+outputs did not establish read-only execution. See the
+[source-backed safety review](docs/api-coverage-review-2026-10-10.md).
+
 The current tuple is connected-read-admitted following authenticated status,
 PCB and schematic public-read smoke tests against an independently decoded,
 saved disposable project, plus installed-source review. Exact reads require
 that complete pinned tuple on every call; later mismatches remain fail-closed.
 Admission does not claim every reader variant or typed writer has passed a live test.
 
-Live validation now includes schematic components and compiled topology. The
+Historical live validation included schematic components and compiled topology. The
 in-memory `getNetlistFile` topology route returned the four expected fixture
 endpoints in two identical samples. Revised PCB component and inventory readers
 also passed with two components, four direct pads and one outline; all four
@@ -117,7 +138,7 @@ bounded, shallow JSON envelope so the bridge cannot replace nested rule data
 with depth-limit markers; earlier placeholder-bearing rule results are invalid
 as complete evidence.
 
-- Exact double-sampled schematic component and compiled connectivity reads, with explicit adapter limitations.
+- Exact double-sampled schematic component reads. Compiled topology is currently disabled for the hidden-Save reason above.
 - Exact PCB component, direct-pad, primitive-inventory, net, rule, class, differential-pair, and equal-length-group reads.
 - Conservative generic reads with project, document, editor-type, and tab binding.
 - SQLite online checkpoints with `quick_check`, logical database comparison, and self-hashed receipts.

@@ -22,7 +22,7 @@ import { deriveDesignBaselineTargets, verifyDesignBaseline, verifyDesignPersiste
 import { designTopologySchema, readDesignTopology, verifyDesignTopology } from "./design-topology.ts";
 import type { DesignTopology } from "./design-topology.ts";
 import type { SchematicComponentCreateAdapter } from "./schematic-component-create.ts";
-import { decodeExactReadEnvelope } from "./exact-readers.ts";
+import { SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL, decodeExactReadEnvelope } from "./exact-readers.ts";
 import { prepareRecoveryNavigation } from "./recovery-navigation.ts";
 import { projectFootprintScope } from "./footprint-action.ts";
 import { buildFootprintReopenCode, buildFootprintSaveCode } from "./footprint-lifecycle.ts";
@@ -183,6 +183,17 @@ export interface DesignApplyInput {
   readonly expectedFingerprint: RecordValue;
   readonly confirmWrite: true;
   readonly expectedTopology?: DesignTopology | undefined;
+}
+
+/** Every schematic transaction depends on compiled connectivity proof. The
+ * former reader can annotate and Save All, so refuse before any side effect,
+ * including navigation and upload barriers. Check both current and sealed
+ * contexts: a recovery tab rebind must not remove the original restriction.
+ */
+function assertDesignTopologyExecutionAvailable(...contexts: readonly ExpectedContext[]): void {
+  if (contexts.some((context) => context.document.documentType === 1)) {
+    throw new Error(SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL);
+  }
 }
 
 function sourceRequest(context: ExpectedContext): { kind: "pcb-source" | "schematic-source" | "symbol-source" | "footprint-source" } {
@@ -505,6 +516,7 @@ export class DesignExecutor {
   }
 
   private async call(journal: DesignJournal, phase: string, code: string, lifecycle = false): Promise<unknown> {
+    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
     await this.assertRuntime(journal.plan, journal.context, journal.runtimeFingerprint);
     const nativeLifecycle = ["save-reopen", "footprint-reopen", "footprint-reopen-recovery", "symbol-reopen", "symbol-reopen-recovery"].includes(phase);
     const persistenceNative = nativeLifecycle ? await this.engine.upstream.installedEasyedaBundles?.() : undefined;
@@ -566,6 +578,7 @@ export class DesignExecutor {
 
   public async apply(input: DesignApplyInput): Promise<RecordValue> {
     if (!input.confirmWrite) { throw new Error("Typed design writes need explicit confirmation."); }
+    assertDesignTopologyExecutionAvailable(input.expectedContext);
     const operation = designActionSchema.parse(input.operation);
     if (operation.action === "sch.layout.batch" && input.expectedTopology !== undefined) { throw new Error("Schematic layout preserves the complete original compiled topology; an override is not allowed."); }
     if (operation.action === "sch.component.create" && input.expectedTopology !== undefined) { throw new Error("This component-create profile derives exact initially-unconnected topology using journal-owned identities; connect it in a subsequent typed operation."); }
@@ -699,6 +712,7 @@ export class DesignExecutor {
    */
   public async openTarget(operationId: string): Promise<RecordValue> {
     const journal = journalPayload(await loadOperation(operationId));
+    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
     if (isTerminalOperation(journal) || journal.orphanedCallPossible) { throw new Error("Recovery navigation requires an isolated unresolved journal with no prior execution uncertainty."); }
     await this.engine.assertRecoveryOperationIsolated(operationId);
     const fingerprint = journal.runtimeFingerprint ?? journal.plan.expectedFingerprint;
@@ -759,6 +773,7 @@ export class DesignExecutor {
   }
 
   private async loadLayoutPagesForJournal(journal: DesignJournal, baseline: NativeHistorySnapshot): Promise<DesignTopology> {
+    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
     const bundles = await this.engine.upstream.installedEasyedaBundles?.();
     if (bundles === undefined) { throw new Error("Layout page loading requires the pinned native implementation."); }
     await verifySchematicNativeProfile(bundles.assetsRoot);
@@ -784,6 +799,7 @@ export class DesignExecutor {
   public async loadLayoutPages(operationId: string, confirmOpen: true): Promise<RecordValue> {
     if (!confirmOpen) { throw new Error("Recovery page loading needs explicit navigation confirmation."); }
     const journal = journalPayload(await loadOperation(operationId));
+    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
     const wireRecovery = journal.plan.operation.action === "sch.wire.modify";
     if ((!wireRecovery && journal.plan.operation.action !== "sch.layout.batch") || journal.context.document.documentType !== 1 || isTerminalOperation(journal) || journal.orphanedCallPossible) {
       throw new Error("Recovery page loading requires one unresolved, settled schematic layout or restored wire baseline.");
@@ -818,6 +834,7 @@ export class DesignExecutor {
   public async repairLayoutNetLabels(operationId: string, confirmWrite: true): Promise<RecordValue> {
     if (!confirmWrite) { throw new Error("Layout net-label repair needs explicit write confirmation."); }
     const journal = journalPayload(await loadOperation(operationId));
+    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
     const saveEvidence = await inspectDesignSaveAttempts(journal);
     if (saveEvidence.attempted) { throw new Error("A design Save was already attempted; a layout repair cannot reclassify it as unsaved."); }
     const originalPreparation = await DesignExecutor.phase(journal, "prepared");
@@ -888,6 +905,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
   public async repairLayoutLabelVisibility(operationId: string, confirmWrite: true): Promise<RecordValue> {
     if (!confirmWrite) { throw new Error("Layout visibility repair needs explicit write confirmation."); }
     const journal = journalPayload(await loadOperation(operationId));
+    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
     const saveEvidence = await inspectDesignSaveAttempts(journal);
     if (saveEvidence.attempted) { throw new Error("A design Save was already attempted; a layout repair cannot reclassify it as unsaved."); }
     const originalPreparation = await DesignExecutor.phase(journal, "prepared");
@@ -962,6 +980,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
   public async repairLayoutWireGroups(operationId: string, confirmWrite: true): Promise<RecordValue> {
     if (!confirmWrite) { throw new Error("Wire-group correction needs explicit write confirmation."); }
     const journal = journalPayload(await loadOperation(operationId));
+    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
     const saveEvidence = await inspectDesignSaveAttempts(journal);
     if (saveEvidence.attempted) { throw new Error("A design Save was already attempted; a layout repair cannot reclassify it as unsaved."); }
     const originalPreparation = await DesignExecutor.phase(journal, "prepared");
@@ -1048,6 +1067,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
   /** Classify a returned-but-failed call without executing its action again. */
   public async reconcile(operationId: string): Promise<RecordValue> {
     const journal = journalPayload(await loadOperation(operationId));
+    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
     if (isTerminalOperation(journal)) { return summary(journal); }
     if (journal.orphanedCallPossible) { throw new Error("Prior execution may still be running. Prove retained runtime termination before reconciliation."); }
     const saveEvidence = await inspectDesignSaveAttempts(journal);
@@ -1259,6 +1279,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
 
   public async commit(operationId: string): Promise<RecordValue> {
     const journal = journalPayload(await loadOperation(operationId));
+    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
     const saveEvidence = await inspectDesignSaveAttempts(journal);
     const resumeSaved = DesignExecutor.hasLibrarySaveEvidence(journal);
     if (saveEvidence.attempted && !(resumeSaved && journal.state === "saved-awaiting-reopen")) { throw new Error("A design Save was already attempted; reconcile its retained evidence without repeating Save."); }
@@ -1404,6 +1425,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
 
   public async rollback(operationId: string): Promise<RecordValue> {
     const journal = journalPayload(await loadOperation(operationId));
+    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
     const saveEvidence = await inspectDesignSaveAttempts(journal);
     if (saveEvidence.attempted) { throw new Error("A design Save was already attempted; an unsaved inverse is not authorized."); }
     if (journal.state !== "applied-unsaved" || journal.inverse === undefined || journal.after === undefined || journal.orphanedCallPossible) { throw new Error("Transaction has no safely dispatchable inverse."); }

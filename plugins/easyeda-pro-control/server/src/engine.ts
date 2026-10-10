@@ -57,6 +57,7 @@ import {
   validateExactReadRequest,
 } from "./exact-readers.ts";
 import type { ExactReadRequest } from "./exact-readers.ts";
+import { buildPublicSdkReadCode, validatePublicSdkReadPayload, validatePublicSdkReadRequest } from "./public-sdk-read.ts";
 import { buildSchematicNativeReadExpression } from "./schematic-native-adapter.ts";
 import { buildSchematicNativeTransportCode, decodeSchematicNativeEnvelope } from "./schematic-native-transport.ts";
 import type { SchematicNativeSnapshot } from "./schematic-native-adapter.ts";
@@ -3184,6 +3185,48 @@ export class EasyedaControlEngine {
         },
       },
     };
+  }
+
+  protected async assertPublicSdkImplementation(): Promise<void> {
+    const bundles = await this.upstream.installedEasyedaBundles?.();
+    if (bundles === undefined) { throw new Error("SDK read requires the reviewed installed UI, manager and schematic implementations."); }
+    // API wrapper hashes alone do not pin the delegated UI/worker behavior.
+    // Reuse exact existing native profiles rather than accepting caller hashes.
+    await Promise.all([verifyDeviceAssociationNativeProfile(bundles.assetsRoot), verifySchematicNativeProfile(bundles.assetsRoot)]);
+  }
+
+  /** Fixed public SDK observations are not native source or persistence proof.
+   * The outer facade retains the authenticated session and full runtime gate.
+   * There is no caller code, retry, mutation or lifecycle action in this route.
+   */
+  public async publicSdkRead(request: unknown, expectedContext: ExpectedContext): Promise<ProofPayload> {
+    const boundContext = structuredClone(expectedContext);
+    const parsed = validatePublicSdkReadRequest(request, boundContext.document.documentType);
+    await this.assertBridgeDispatchAllowed();
+    await this.assertPublicSdkImplementation();
+    const initialContext = await this.assertContext(boundContext);
+    boundContext.document.tabId = initialContext.document.tabId;
+    const source = wrapWithContextGuard(buildPublicSdkReadCode(parsed), boundContext);
+    const observe = async (): Promise<Record<string, unknown>> => {
+      await this.assertBridgeDispatchAllowed();
+      await this.assertContext(boundContext);
+      const raw = await this.upstream.callTool("easyeda_execute", { code: source, timeoutMs: 60_000, confirmWrite: true }, 70_000);
+      assertUpstreamReplySettled(raw);
+      const payload = validatePublicSdkReadPayload(decodeExactReadEnvelope(extractToolPayload(raw)), parsed);
+      await this.assertContext(boundContext);
+      return payload;
+    };
+    const first = await observe();
+    const second = await observe();
+    await this.assertPublicSdkImplementation();
+    const snapshotSha256 = sha256Json(second);
+    if (sha256Json(first) !== snapshotSha256) {
+      throw new Error("Public SDK observation changed between consecutive samples; no stable result was produced.");
+    }
+    return { ...second, authority: "public-sdk-observation-not-complete-design-proof", read_consistency: {
+      stable: true, attempts: 2, snapshotSha256,
+      contextBinding: { level: "active-context-stability-required", preAndPostChecked: true, switchAwayAndBackDetectable: false },
+    } };
   }
 
   public async schematicNativeRead(expectedContext: ExpectedContext): Promise<ProofPayload> {

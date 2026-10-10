@@ -73,6 +73,9 @@ import { buildDsnExportCode, wrapWithContextGuard } from "./runtime-scripts.ts";
 import { UpstreamEasyedaClient, UpstreamStartupError } from "./upstream.ts";
 import { createSerializedShutdown } from "./shutdown.ts";
 import { extensionApiCatalogInputSchema, queryExtensionApiCatalog } from "./extension-api-catalog.ts";
+import { extensionApiCoverageInputSchema, queryExtensionApiCoverage } from "./extension-api-coverage.ts";
+import { publicSdkReadRequestSchema } from "./public-sdk-read.ts";
+import { publicSdkCatalogQuerySchema, publicSdkValidationQuerySchema, queryPublicSdkReads, validatePublicSdkArguments } from "./public-sdk-catalog.ts";
 import { operationCatalogQuerySchema, operationValidationRequestSchema, queryOperationCatalog, validateCatalogOperation } from "./operation-catalog.ts";
 
 const MAX_INLINE_RESULT_BYTES = 256 * 1024;
@@ -1576,6 +1579,7 @@ const artifactReadSuccessOutputSchema = z
   .strict();
 const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_api: z.object({ offline: z.boolean().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_sdk_read: evidenceSuccessOutputSchema,
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_runtime: z.object({ action: z.string().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1658,6 +1662,9 @@ registerFacadeTool(
 
 const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("sdk"), query: extensionApiCatalogInputSchema.optional() }).strict(),
+  z.object({ action: z.literal("coverage"), query: extensionApiCoverageInputSchema.optional() }).strict(),
+  z.object({ action: z.literal("sdk-reads"), query: publicSdkCatalogQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("sdk-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("operations"), query: operationCatalogQuerySchema }).strict(),
   z.object({ action: z.literal("validate"), query: operationValidationRequestSchema }).strict(),
 ]);
@@ -1665,7 +1672,7 @@ registerFacadeTool(
   "easyeda_control_api",
   {
     title: "EasyEDA offline API reference and argument validation",
-    description: "Query hash-pinned reviewed or latest official SDK declarations; retrieve the exact typed design/library operation schemas; validate arguments including custom refinements. Entirely offline: no bridge calls, design changes, journal writes or execution authority. SDK declarations do not imply an admitted or live-validated route.",
+    description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library or SDK-read schemas; validate arguments including refinements. Entirely offline: no bridge calls, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
     inputSchema: { request: apiRequestSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
   },
@@ -1673,6 +1680,9 @@ registerFacadeTool(
     let result: unknown;
     switch (request.action) {
       case "sdk": { result = queryExtensionApiCatalog(request.query ?? {}); break; }
+      case "coverage": { result = queryExtensionApiCoverage(request.query ?? {}); break; }
+      case "sdk-reads": { result = queryPublicSdkReads(request.query ?? {}); break; }
+      case "sdk-validate": { result = validatePublicSdkArguments(request.query); break; }
       case "operations": { result = queryOperationCatalog(request.query); break; }
       case "validate": { result = validateCatalogOperation(request.query); break; }
       default: { throw new Error("Unknown offline API reference action."); }
@@ -1943,11 +1953,50 @@ registerFacadeTool(
 );
 
 registerFacadeTool(
+  "easyeda_control_sdk_read",
+  {
+    title: "Read reviewed EasyEDA SDK methods",
+    description: "Run a fixed typed local SDK getter or pure calculation with exact runtime/context and authenticated-session guards. Two matching observations are required. The result is public SDK data, not complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
+    inputSchema: {
+      request: z.unknown().pipe(publicSdkReadRequestSchema),
+      expectedContext: contextSchema,
+      expectedFingerprint: privateFingerprintSchema,
+      evidence: evidenceSchema.optional(),
+      returnMode: z.enum(["full", "summary", "receipt-only"]).default("full"),
+      maxInlineBytes: z.number().int().min(1024).max(MAX_INLINE_RESULT_BYTES).default(65_536),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+  },
+  serializedLiveGuarded(async (input) => {
+    if (input.returnMode !== "full" && input.evidence === undefined) {
+      throw new Error("summary and receipt-only SDK reads require evidence paths.");
+    }
+    const reservation = input.evidence === undefined ? undefined : await reserveEvidencePaths(input.evidence);
+    let dispatched = false;
+    const request = { reader: input.request, expectedContext: input.expectedContext, expectedFingerprint: input.expectedFingerprint };
+    try {
+      validatePrivateFingerprint(input.expectedFingerprint);
+      const status = await engine.status();
+      assertSubset(status.stableFingerprint, input.expectedFingerprint, "EasyEDA SDK read runtime fingerprint");
+      dispatched = true;
+      const result = await engine.publicSdkRead(input.request, input.expectedContext);
+      return await withEvidence(request, result, input.evidence,
+        { facadeVersion: CONTROL_VERSION, reader: "fixed-public-sdk-observation" },
+        { reservation, returnMode: input.returnMode, maxInlineBytes: input.maxInlineBytes });
+    } catch (error) {
+      if (reservation && !dispatched) { await releaseEvidenceReservation(reservation); }
+      else if (reservation) { await finalizeDispatchedFailure(reservation, request, error, { effect: "fixed-public-sdk-read" }); }
+      throw error;
+    }
+  }),
+);
+
+registerFacadeTool(
   "easyeda_control_exact_read",
   {
     title: "Read exact EasyEDA design state",
     description:
-      "Run a facade-owned, fail-closed field reader twice and return data only when both observations are byte-for-byte stable. Exact context is checked at entry and after each run, but the active tab must remain unchanged while awaited calls execute. Nested component-pad drill geometry is excluded because the pinned wrapper has a scale defect.",
+      "Run a facade-owned field reader twice and return data only when both observations are stable. The schematic-topology kind is disabled because its installed netlist path can annotate and Save All; historical schema presence does not admit execution. Exact context is checked at entry and after each run, but the active tab must remain unchanged during awaited calls. Nested component-pad drill geometry is excluded because the pinned wrapper has a scale defect.",
     inputSchema: {
       request: exactReadRequestSchema,
       expectedContext: contextSchema,
