@@ -5,9 +5,11 @@ import { libraryProjectRecordsHash } from "./library-persistence-proof.ts";
 import { isNativeDocumentDeleted } from "./native-history.ts";
 import type { NativeDocumentSnapshot, NativeHistorySnapshot } from "./native-history.ts";
 import { DEVICE_NATIVE_HOST_GUARD } from "./device-runtime-guard.ts";
+import { buildEditorTargetAbsentExpression } from "./editor-tabs.ts";
+import type { ExpectedContext } from "./engine.ts";
 
-/** Candidate adapter, deliberately not registered with LibraryExecutor until
- * a disposable symbol passes complete durable and reopened verification.
+/** Fixed project-local adapter. Connected and reopened validation are separate
+ * from this compiler and its complete-project effect comparison.
  */
 export const PROJECT_SYMBOL_METADATA_PROFILE = "easyeda-pro-control.project-symbol-metadata.v1";
 const boundedId = z.string().min(1).max(256);
@@ -24,6 +26,17 @@ const planSchema = z.object({
   desiredDescription: z.string().max(65_536),
 }).strict();
 export type ProjectSymbolMetadataPlan = z.infer<typeof planSchema>;
+
+export function projectSymbolMetadataOperation(input: unknown): Extract<ReturnType<typeof libraryOperationSchema.parse>, { action: "library.symbol.modify" }> {
+  const operation = libraryOperationSchema.parse(input);
+  if (operation.action !== "library.symbol.modify" || !("uuid" in operation.target)) {
+    throw new Error("Symbol metadata editing requires one exact existing symbol identity.");
+  }
+  if (operation.patch.classification !== undefined || operation.patch.description === null) {
+    throw new Error("Symbol metadata editing accepts name and non-null description only; native classification/null behavior is not an exact patch.");
+  }
+  return operation;
+}
 
 function symbol(history: NativeHistorySnapshot, uuid: string): NativeDocumentSnapshot {
   const entries = history.documents.filter((entry) => entry.uuid === uuid);
@@ -47,19 +60,17 @@ function projectIdentity(history: NativeHistorySnapshot, plan: ProjectSymbolMeta
 function normalizedTitle(value: string): string { return value.trim().toLowerCase(); }
 
 export function prepareProjectSymbolMetadata(input: unknown, history: NativeHistorySnapshot): ProjectSymbolMetadataPlan {
-  const operation = libraryOperationSchema.parse(input);
-  if (operation.action !== "library.symbol.modify" || !("uuid" in operation.target) || operation.libraryUuid !== history.projectUuid || history.projectOwnerUuid === undefined || history.projectOwnerUuid.length === 0) {
+  const operation = projectSymbolMetadataOperation(input);
+  if (!("uuid" in operation.target) || operation.libraryUuid !== history.projectUuid || history.projectOwnerUuid === undefined || history.projectOwnerUuid.length === 0) {
     throw new Error("Symbol metadata editing requires an exact current-project symbol and owner.");
-  }
-  if (operation.patch.classification !== undefined || operation.patch.description === null) {
-    throw new Error("Symbol metadata candidate accepts name and non-null description only; native classification/null behavior is not an exact patch.");
   }
   const target = symbol(history, operation.target.uuid);
   const before = metadata(target);
   if (before["docType"] !== 2 || typeof before["title"] !== "string" || typeof before["description"] !== "string") {
-    throw new Error("Symbol metadata candidate requires ordinary META.docType 2 with stored title and description.");
+    throw new Error("Symbol metadata editing requires ordinary META.docType 2 with stored title and description.");
   }
   const desiredTitle = operation.patch.name ?? before["title"];
+  if (normalizedTitle(desiredTitle).length === 0) { throw new Error("Symbol metadata requires a nonblank display title."); }
   for (const document of history.documents) {
     if (document.docType === "SYMBOL" && document.uuid !== target.uuid && !isNativeDocumentDeleted(document)) {
       const title = metadata(document)["title"];
@@ -75,32 +86,53 @@ export function prepareProjectSymbolMetadata(input: unknown, history: NativeHist
 /** The pinned UI's LIB_Symbol.modify destructures classification without a
  * default and otherwise reuses its lowercased search title. Always supply a
  * fixed empty classification object and the checkpoint's exact display title.
- * This compiler is internal candidate code, not a caller-selectable SDK path.
+ * This compiler is internal transaction code, not a caller-selectable SDK path.
  */
-export function buildProjectSymbolMetadataExpression(input: ProjectSymbolMetadataPlan): string {
+export function buildProjectSymbolMetadataExpression(input: ProjectSymbolMetadataPlan, context: ExpectedContext): string {
   const plan = planSchema.parse(input);
+  if ((context.project.uuid ?? context.project.projectUuid) !== plan.projectUuid ||
+      (context.project.uuid !== undefined && context.project.projectUuid !== undefined && context.project.uuid !== context.project.projectUuid) ||
+      (context.document.uuid !== undefined && context.document.documentUuid !== undefined && context.document.uuid !== context.document.documentUuid)) {
+    throw new Error("Symbol closed-target context differs from its exact project/document identity.");
+  }
+  const active = { uuid: context.document.uuid ?? context.document.documentUuid ?? "", documentType: context.document.documentType, tabId: context.document.tabId ?? "" };
+  const ownership = { parentProjectUuid: context.document["parentProjectUuid"], parentLibraryUuid: context.document["parentLibraryUuid"] };
+  if ((ownership.parentProjectUuid !== undefined && ownership.parentProjectUuid !== plan.projectUuid) ||
+      (ownership.parentLibraryUuid !== undefined && (![2, 4].includes(active.documentType) || ownership.parentLibraryUuid !== plan.ownerUuid))) {
+    throw new Error("Symbol closed-target context has contradictory active-document ownership.");
+  }
+  const targetClosed = buildEditorTargetAbsentExpression({ targetUuid: plan.targetUuid, projectUuid: plan.projectUuid, ownerUuid: plan.ownerUuid, active });
   return `(async()=>{let stage='host';try{
-const PLAN=${JSON.stringify(plan)};
+const PLAN=${JSON.stringify(plan)},ACTIVE=${JSON.stringify(active)},OWNERSHIP=${JSON.stringify(ownership)};
 ${DEVICE_NATIVE_HOST_GUARD}
-const assertProject=async()=>{const project=await eda.dmt_Project.getCurrentProjectInfo();if(project?.uuid!==PLAN.projectUuid||host.currentProject?.projectId!==PLAN.projectUuid)throw new Error('PROJECT_DRIFT');};
-await assertProject();
+const assertContext=async()=>{
+const project=await eda.dmt_Project.getCurrentProjectInfo();
+const document=await eda.dmt_SelectControl.getCurrentDocumentInfo();
+if((project?.uuid??project?.projectUuid)!==PLAN.projectUuid||(project.uuid!==undefined&&project.projectUuid!==undefined&&project.uuid!==project.projectUuid)||host.currentProject?.projectId!==PLAN.projectUuid)throw new Error('PROJECT_DRIFT');
+if((document?.uuid??document?.documentUuid)!==ACTIVE.uuid||(document.uuid!==undefined&&document.documentUuid!==undefined&&document.uuid!==document.documentUuid)||document.documentType!==ACTIVE.documentType||document.tabId!==ACTIVE.tabId)throw new Error('ACTIVE_DOCUMENT_DRIFT');
+if((document.parentProjectUuid!==undefined&&document.parentProjectUuid!==PLAN.projectUuid)||(document.parentLibraryUuid!==undefined&&(![2,4].includes(ACTIVE.documentType)||document.parentLibraryUuid!==PLAN.ownerUuid))||(OWNERSHIP.parentProjectUuid!==undefined&&document.parentProjectUuid!==OWNERSHIP.parentProjectUuid)||(OWNERSHIP.parentLibraryUuid!==undefined&&document.parentLibraryUuid!==OWNERSHIP.parentLibraryUuid))throw new Error('ACTIVE_DOCUMENT_OWNER_DRIFT');
+};
+await assertContext();
 stage='before-read';
 const before=(await bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])).message;
-await assertProject();
+await assertContext();
 if(before?.uuid!==PLAN.targetUuid||before?.project_uuid!==PLAN.projectUuid||before?.owner?.uuid!==PLAN.ownerUuid||before?.docType!==2||before?.display_title!==PLAN.beforeTitle||before?.description!==PLAN.beforeDescription)throw new Error('SYMBOL_METADATA_DRIFT');
+stage='target-closed';
+await ${targetClosed};
+await assertContext();
 stage='modify';
 const api=eda.lib_Symbol;
 if(typeof api?.modify!=='function')throw new Error('METHOD_MISSING');
 const result=await api.modify(PLAN.targetUuid,PLAN.projectUuid,PLAN.desiredTitle,{},PLAN.desiredDescription);
 if(result!==true)throw new Error('ACK_INVALID');
 stage='after-read';
-await assertProject();
+await assertContext();
 const after=(await bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])).message;
-await assertProject();
+await assertContext();
 if(after?.uuid!==PLAN.targetUuid||after?.project_uuid!==PLAN.projectUuid||after?.owner?.uuid!==PLAN.ownerUuid||after?.docType!==2||after?.display_title!==PLAN.desiredTitle||after?.description!==PLAN.desiredDescription)throw new Error('SYMBOL_METADATA_DRIFT');
 const payload={kind:'project-symbol-metadata',targetId:PLAN.targetUuid,createdId:null};
 const json=JSON.stringify(payload);return {schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};
-}catch(_){throw new Error('Symbol metadata candidate refused at '+stage);}})()`;
+}catch(_){throw new Error('Symbol metadata operation refused at '+stage);}})()`;
 }
 
 function recordProjection(document: NativeDocumentSnapshot): unknown {
@@ -133,4 +165,15 @@ export function verifyProjectSymbolMetadataEffect(input: ProjectSymbolMetadataPl
   return { profile: PROJECT_SYMBOL_METADATA_PROFILE, targetId: plan.targetUuid, beforeProjectSha256: plan.beforeProjectSha256,
     afterProjectSha256: libraryProjectRecordsHash(after), documentCount: after.documents.length,
     effectVerified: true, persistenceEvidence: "supplied-history-comparison", reopened: false };
+}
+
+/** Build data for a new transaction only after proving the complete forward
+ * effect. This does not dispatch, restore a checkpoint or reuse a journal.
+ */
+export function projectSymbolMetadataInverse(input: ProjectSymbolMetadataPlan, before: NativeHistorySnapshot,
+  after: NativeHistorySnapshot, operationId: string): ReturnType<typeof projectSymbolMetadataOperation> {
+  const plan = planSchema.parse(input);
+  verifyProjectSymbolMetadataEffect(plan, before, after);
+  return projectSymbolMetadataOperation({ id: operationId, action: "library.symbol.modify", libraryUuid: plan.projectUuid,
+    target: { uuid: plan.targetUuid }, patch: { name: plan.beforeTitle, description: plan.beforeDescription } });
 }

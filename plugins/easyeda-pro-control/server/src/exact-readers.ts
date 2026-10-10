@@ -389,6 +389,7 @@ export const exactReadRequestSchema = z.discriminatedUnion("kind", [
     })
     .strict(),
   z.object({ kind: z.literal("schematic-topology") }).strict(),
+  z.object({ kind: z.literal("schematic-flat-topology") }).strict(),
   z.object({ kind: z.literal("pcb-inventory") }).strict(),
   z.object({ kind: z.literal("pcb-rules") }).strict(),
   z.object({ kind: z.literal("schematic-source") }).strict(),
@@ -412,7 +413,7 @@ function assertExactReadExecutionSupported(request: ExactReadRequest): void {
 }
 
 export function exactReadDocumentType(kind: unknown): 1 | 2 | 3 | 4 {
-  if (kind === "schematic-components" || kind === "schematic-topology" || kind === "schematic-source" || kind === "schematic-native") {
+  if (kind === "schematic-components" || kind === "schematic-topology" || kind === "schematic-flat-topology" || kind === "schematic-source" || kind === "schematic-native") {
     return 1;
   }
   if (kind === "symbol-source") { return 2; }
@@ -1990,6 +1991,7 @@ export function exactTargetAssertionPointer(primitiveId: string): string {
 export function buildExactReadExpression(request: unknown): string {
   const parsed = exactReadRequestSchema.parse(request);
   assertExactReadExecutionSupported(parsed);
+  if (parsed.kind === "schematic-flat-topology") { throw new Error("Flat topology requires the checkpoint-bound native coordinator."); }
   const serialized = JSON.stringify(parsed);
   return `
 (async () => {

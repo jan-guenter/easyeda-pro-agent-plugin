@@ -112,8 +112,14 @@ for (const method of ["create", "modify"]) {
   add("lib_Device", [method], "easyeda_control_library", `library.device.${method}`, "native-task-equivalent", "Project-local device addition or association patch to existing assets; no asset import/copy or implicit ECO.", ["device-create.ts", "device-association.ts"], ["device-create.test.ts", "device-association.test.ts"]);
 }
 add("lib_Symbol", ["openInEditor"], "easyeda_control_library", "library.symbol.open", "public-method", "Existing exact current-project symbol; waits for coherent library editor context and proves unchanged selected branch.", ["library-runtime.ts"], ["library-execution.test.ts"]);
+add("lib_Symbol", ["modify"], "easyeda_control_library", "library.symbol.modify", "public-method",
+  "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Fixed classification object preserves the exact display title. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate.",
+  ["project-symbol-metadata.ts", "library-execution.ts", "library-recovery-state.ts", "editor-tabs.ts"], ["project-symbol-metadata.test.ts", "project-symbol-transaction.test.ts", "library-recovery.test.ts"]);
 add("lib_Footprint", ["openInEditor"], "easyeda_control_library", "library.footprint.open", "native-task-equivalent", "Uses maintained dmt_EditorControl.openLibraryDocument path for an existing exact current-project footprint.", ["library-runtime.ts", "library-operations.ts"], ["library-execution.test.ts"]);
 add("dmt_EditorControl", ["openDocument"], "easyeda_control_library", "document.open", "public-method", "Checkpoint-member current-project document only, with one-shot navigation and complete unchanged saved-state proof.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
+add("dmt_EditorControl", ["activateDocument"], "easyeda_control_library", "document.activate", "public-method",
+  "One already-open checkpoint-member current-project tab only, with complete tab ownership, retained preparation and one activation. Two coherent target observations and unchanged complete durable project; recovery never activates, opens, closes or saves. Current-generation live validation is unclaimed.",
+  ["document-activation.ts", "library-execution.ts", "library-recovery.ts"], ["document-activation.test.ts", "document-activation-transaction.test.ts"]);
 add("dmt_EditorControl", ["openLibraryDocument"], "easyeda_control_library", "library.footprint.open", "public-method", "Existing checkpoint-member current-project footprint only, with one-shot navigation and complete unchanged saved-state proof.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
 
 const exports: Readonly<Record<string, string>> = {

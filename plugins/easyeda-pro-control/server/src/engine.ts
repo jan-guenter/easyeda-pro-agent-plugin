@@ -25,9 +25,9 @@ import {
   controlDataDirectory,
   controlRootCapability,
   createOperation,
+  createOperationScanner,
   loadOperation,
   operationPath,
-  scanOperations,
   updateOperation,
   writePhaseArtifact,
 } from "./artifacts.ts";
@@ -59,6 +59,7 @@ import {
 import type { ExactReadRequest } from "./exact-readers.ts";
 import { buildPublicSdkReadCode, validatePublicSdkReadPayload, validatePublicSdkReadRequest } from "./public-sdk-read.ts";
 import { buildSchematicNativeReadExpression } from "./schematic-native-adapter.ts";
+import { readSchematicFlatTopology } from "./schematic-flat-read.ts";
 import { buildSchematicNativeTransportCode, decodeSchematicNativeEnvelope } from "./schematic-native-transport.ts";
 import type { SchematicNativeSnapshot } from "./schematic-native-adapter.ts";
 import { firstJsonDifference } from "./reader-diagnostics.ts";
@@ -2023,6 +2024,23 @@ export class SerializedGate {
   }
 }
 
+const scanBridgeBlockingOperations = createOperationScanner((value) => {
+  const operation = asOperationJournal(value);
+  return operation.state === "journal-unreadable" || operationHasOrphanedCallRisk(operation)
+    ? operationSummary(operation) : undefined;
+});
+
+const scanRecoveryBlockingOperations = createOperationScanner((value) => {
+  const operation = asOperationJournal(value);
+  return !isTerminalOperation(operation) || operation.state === "journal-unreadable" || operationHasOrphanedCallRisk(operation)
+    ? operationSummary(operation) : undefined;
+});
+
+const scanUnfinishedOperations = createOperationScanner((value) => {
+  const operation = asOperationJournal(value);
+  return isTerminalOperation(operation) ? undefined : operationSummary(operation);
+});
+
 export class EasyedaControlEngine {
   public readonly upstream: UpstreamClient;
   public readonly privateComponentWriterValidated: boolean;
@@ -2587,12 +2605,7 @@ export class EasyedaControlEngine {
   }
 
   public async assertBridgeDispatchAllowed(): Promise<true> {
-    const blockingOperations = await scanOperations((value) => {
-      const operation = asOperationJournal(value);
-      return operation.state === "journal-unreadable" ||
-        operationHasOrphanedCallRisk(operation)
-        ? operationSummary(operation) : undefined;
-    });
+    const blockingOperations = await scanBridgeBlockingOperations();
     if (blockingOperations.length === 0) {
       return true;
     }
@@ -2609,14 +2622,9 @@ export class EasyedaControlEngine {
   public async assertRecoveryOperationIsolated(
     operationId: string,
   ): Promise<true> {
-    const blockingOperations = await scanOperations((value) => {
-      const operation = asOperationJournal(value);
-      return operation.operationId !== operationId &&
-        (!isTerminalOperation(operation) ||
-          operation.state === "journal-unreadable" ||
-          operationHasOrphanedCallRisk(operation))
-        ? operationSummary(operation) : undefined;
-    });
+    const recoveryBlockingOperations = await scanRecoveryBlockingOperations();
+    const blockingOperations = recoveryBlockingOperations
+      .filter((operation) => operation.operationId !== operationId);
     if (blockingOperations.length === 0) {
       return true;
     }
@@ -3130,6 +3138,7 @@ export class EasyedaControlEngine {
   ): Promise<ProofPayload> {
     const parsed = validateExactReadRequest(request, expectedContext);
     if (parsed.kind === "schematic-native") { return this.schematicNativeRead(expectedContext); }
+    if (parsed.kind === "schematic-flat-topology") { return readSchematicFlatTopology(this, expectedContext); }
     const source = buildExactReadCode(parsed);
     const initialContext = await this.assertContext(expectedContext, options);
     const boundContext = structuredClone(expectedContext);
@@ -3571,10 +3580,8 @@ export class EasyedaControlEngine {
         "A mutation plan must first close/reopen the target without saving to bind its live baseline to the project database. Set confirmDiscardAnyUnsavedState=true only after authorizing discard of any unsaved target-document state.",
       );
     }
-    const unfinished = await scanOperations((value) => {
-      const operation = asOperationJournal(value);
-      return isTerminalOperation(operation) ? undefined : operation.operationId;
-    });
+    const unfinishedOperations = await scanUnfinishedOperations();
+    const unfinished = unfinishedOperations.map((operation) => operation.operationId);
     if (unfinished.length > 0) {
       throw new Error(
         `An incomplete EasyEDA operation already exists: ${unfinished
@@ -4876,10 +4883,7 @@ export class EasyedaControlEngine {
     options: RecoverOptions = {},
   ): Promise<OperationSummary | OperationSummary[]> {
     if (operationId === undefined || operationId.length === 0) {
-      return scanOperations((value) => {
-        const operation = asOperationJournal(value);
-        return isTerminalOperation(operation) ? undefined : operationSummary(operation);
-      });
+      return scanUnfinishedOperations();
     }
     await this.assertRecoveryOperationIsolated(operationId);
     const operation = asOperationJournal(await loadOperation(operationId));

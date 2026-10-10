@@ -22,7 +22,7 @@ This table records evidence. It does not make later builds compatible. On any mi
 
 The pinned installed-file hashes are PCB `js/pcb.js` `65401cdc0a8f244db2ff2d8da88fd835b6e1fb3a3ecdbcfd975781502cb04b54`, public API entry `api.js` `5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc`, public API adapter `api-types.js` `4da5b5184a78e2d3aca843dad6b147d7feb7ec1368160d73f49c4acbcf97dfdb`, and declarations `api-types.d.ts` `32a0d2f8b4bc3d7b2b93b33499d9d768b0c23c77f45843a65166cf4e8ad6dab1`.
 
-## Current read admission, 2026-09-11
+## Historical read admission, 2026-09-11
 
 Facade release `0.3.0` uses operation schema `easyeda-pro-control.operation.v2`.
 Dispatcher `ded07x99dcxb504` with source `loader_status` and 67 methods is
@@ -31,16 +31,19 @@ The observed application is `3.2.149.88089769` and bridge protocol is `1.0.0`.
 Upstream server and health extension identity remain `1.0.0-rc.1`. The installed
 bundle hashes above are unchanged. Authentication, exact context and PCB and
 schematic public reads passed against an independently decoded saved disposable
-project. Installed-source review supports the existing exact-reader paths;
-each live exact-reader result must still meet its own double-sample contract.
+project. This records the paths reviewed at that time; the topology admission
+below was withdrawn on 2026-10-10 after source review found hidden writes.
+Each currently enabled exact-reader result must still meet its own double-sample contract.
 Exact reads require the complete runtime and installed-file fingerprint.
 The legacy writer remains runtime-disabled. The source package's separate typed
 executor uses operation-specific source/durable and retained execution-authority
 proof. Its reported live coverage is in capability-matrix.md. Native UI proof is
 separate. Future mismatches fail closed.
 
-Live schematic-component and in-memory topology checks passed, with four
-expected topology endpoints and two equal samples. The revised PCB component and
+Historical schematic-component and topology checks returned four
+expected topology endpoints and two equal samples. Those topology checks did
+not observe the exporter's internal annotation or Save All and do not establish
+a non-mutating reader. The revised PCB component and
 inventory readers passed with two components, four direct pads, one outline,
 four exact global-ID pad-parent correlations and the expected net endpoints.
 Both samples matched and the evidence receipt verified. The lossless rule
@@ -97,7 +100,19 @@ Common adapter differences include:
 
 Known pinned adapter behaviors and defects are part of the contract: `sch_Net.getAllNets` and `getAllNetsName` are unconditional empty stubs; `sch_PrimitiveWire.getAll*` converts RPC failures to empty arrays; the Component3 mapper filters `3D Model`, title/transform, Channel ID, Group ID, Reuse Block, supplier, and supplierId from component `OtherProperty`, omits pin `OtherProperty`, and exposes CBB UUIDs while setting both `libraryUuid` fields to undefined; PCB and Component3 association mappers can emit blank placeholder objects, which exact readers canonicalize to `null`; PCB `getState_Pads` summaries expose footprint-local IDs and can include footprint vias, so exact readers instead correlate global physical-pad IDs through `getAllPinsByPrimitiveId`; `pcb_PrimitivePad` contains both component-owned and standalone pads; `pcb_PrimitivePoured` reuses parent pour IDs for derived fill groups; the PCB region mapper drops raw `NO_VIAS`; the PCB fill mapper hardcodes `fillMode`; arc coordinates/angles and via radii are rounded before exposure; and the transformed PCB component-pin wrapper has scaled at least one drill field by 0.1. Exact readers omit, correlate, label, or narrowly canonicalize those sources instead of turning them into false authority.
 
-Schematic topology now uses the documented in-memory `SCH_ManufactureData.getNetlistFile(fileName, netlistType)` route with an explicit neutral name and `JLCEDA`. It shares the compiler with the deprecated getter but omits that getter's per-footprint `Footprint Name` lookups. File metadata/content and existing compiled UID/pin correlation remain strict. No file is saved and no fallback getter is called. This alternative passed the connected disposable-fixture check described above.
+The former schematic topology reader used
+`SCH_ManufactureData.getNetlistFile(fileName, netlistType)` with a fixed filename
+and `JLCEDA`. That path is disabled as of 2026-10-10: the pinned implementation
+can annotate Designator and Unique ID attributes and invoke Save All. Returning
+an in-memory File does not make it read-only. The related type-1 design
+transactions and affected manufacturing exports refuse before dispatch.
+Historical matching netlist samples do not override this restriction.
+
+The native page reader remains a scoped observation. Its `getSchPinNet` result
+comes from the compiled page cache; it does not establish complete, current
+hierarchical connectivity. A replacement must prove complete membership,
+source-to-compiler freshness, instance identities and native net naming without
+the export/annotation path before dependent transactions can resume.
 
 Normalize only the forms proven for the installed version. Then query the target collection independently.
 

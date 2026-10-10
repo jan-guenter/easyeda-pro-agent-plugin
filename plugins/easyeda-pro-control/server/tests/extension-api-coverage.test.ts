@@ -40,6 +40,11 @@ void test("coverage does not promote schema-only, native equivalent, stub, lates
   assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.routes[0]?.implementation, "native-task-equivalent");
   assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.currentGenerationLiveValidation, "not-recorded");
   assert.equal(rows.get("eda.lib_Symbol.create")?.status, "omitted");
+  assert.equal(rows.get("eda.lib_Symbol.modify")?.status, "implemented-public-subset");
+  assert.equal(rows.get("eda.lib_Symbol.modify")?.routes[0]?.selector, "library.symbol.modify");
+  assert.equal(rows.get("eda.lib_Symbol.modify")?.currentGenerationLiveValidation, "not-recorded");
+  assert.equal(rows.get("eda.dmt_EditorControl.activateDocument")?.status, "implemented-public-subset");
+  assert.equal(rows.get("eda.dmt_EditorControl.activateDocument")?.routes.some((route) => route.selector === "document.activate"), true);
   assert.equal(rows.get("eda.dmt_Project.createProject")?.status, "omitted");
   assert.equal(rows.get("eda.sch_PrimitiveBus.create")?.status, "omitted");
   assert.equal(rows.get("eda.pcb_Document.save")?.status, "internal-lifecycle-only");

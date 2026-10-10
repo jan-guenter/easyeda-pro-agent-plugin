@@ -26,8 +26,12 @@ Latest declarations are not runtime admission. Exact operation schemas cover
 105 design actions and 68 library/lifecycle actions; schema availability does
 not guarantee execution support. The [coverage inventory](docs/api-coverage-inventory-2026-10-10.md)
 and [feasibility review](docs/api-execution-feasibility-2026-10-10.md) name the
-remaining work, including a disabled project-symbol metadata candidate that
-must pass disposable saved/reopened validation before runtime enablement.
+remaining work. Closed ordinary project-symbol metadata edits and existing-tab
+activation now have tracked executor and recovery paths; connected lifecycle
+validation remains outstanding. A separate checkpoint-bound flat-topology
+diagnostic avoids the mutating netlist exporter without re-enabling the old
+schematic transaction paths. Native discovery handles minimized windows, and
+bounded recovery-history caches preserve fresh content verification.
 Offline tests do not establish connected validation for this release.
 See the [API research](docs/easyeda-extension-interface-research-2026-10-10.md)
 and [reliability review](docs/revamp-reliability-review-2026-10-10.md).

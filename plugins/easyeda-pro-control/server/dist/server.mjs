@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "aacc41c74946b9eee97adf63137cd75d5149a9b70748e7bfa611fbdffee3774b";
+const __easyedaBundlePairId = "fa98d0c2229b2a25c83a93914484a370df60734ed054a3dd0e5a1f29ac35efc0";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -1847,8 +1847,8 @@ var init_doc = __esm({
         const lines3 = content.split("\n").filter((x) => x);
         const minIndent = Math.min(...lines3.map((x) => x.length - x.trimStart().length));
         const dedented = lines3.map((x) => x.slice(minIndent)).map((x) => " ".repeat(this.indent * 2) + x);
-        for (const line4 of dedented) {
-          this.content.push(line4);
+        for (const line5 of dedented) {
+          this.content.push(line5);
         }
       }
       compile() {
@@ -11306,12 +11306,12 @@ function describe(description) {
   return ch;
 }
 // @__NO_SIDE_EFFECTS__
-function meta(metadata) {
+function meta(metadata2) {
   const ch = new $ZodCheck({ check: "meta" });
   ch._zod.onattach = [
     (inst) => {
       const existing = globalRegistry.get(inst) ?? {};
-      globalRegistry.add(inst, { ...existing, ...metadata });
+      globalRegistry.add(inst, { ...existing, ...metadata2 });
     }
   ];
   ch._zod.check = () => {
@@ -15426,7 +15426,7 @@ function assertZeroSoftCoreLimit(limits) {
   if (Buffer.byteLength(limits, "utf8") > MAXIMUM_LIMITS_BYTES) {
     throw new Error("The process limits record exceeds the supported size.");
   }
-  const coreRows = limits.split("\n").filter((line4) => line4.startsWith("Max core file size"));
+  const coreRows = limits.split("\n").filter((line5) => line5.startsWith("Max core file size"));
   if (coreRows.length !== 1) {
     throw new Error(
       "The process must expose exactly one zero soft core-file limit."
@@ -24056,13 +24056,13 @@ var require_scope = __commonJS({
       }
     };
     exports2.ValueScopeName = ValueScopeName;
-    var line4 = (0, code_1._)`\n`;
+    var line5 = (0, code_1._)`\n`;
     var ValueScope = class extends Scope3 {
       constructor(opts) {
         super(opts);
         this._values = {};
         this._scope = opts.scope;
-        this.opts = { ...opts, _n: opts.lines ? line4 : code_1.nil };
+        this.opts = { ...opts, _n: opts.lines ? line5 : code_1.nil };
       }
       get() {
         return this._scope;
@@ -24730,10 +24730,10 @@ var require_codegen = __commonJS({
         return this._leafNode(new Throw(error51));
       }
       // start self-balancing block
-      block(body2, nodeCount) {
+      block(body3, nodeCount) {
         this._blockStarts.push(this._nodes.length);
-        if (body2)
-          this.code(body2).endBlock(nodeCount);
+        if (body3)
+          this.code(body3).endBlock(nodeCount);
         return this;
       }
       // end the current self-balancing block
@@ -26158,15 +26158,15 @@ var require_validate = __commonJS({
       validateFunction(it, () => (0, boolSchema_1.topBoolOrEmptySchema)(it));
     }
     exports2.validateFunctionCode = validateFunctionCode;
-    function validateFunction({ gen, validateName, schema, schemaEnv, opts }, body2) {
+    function validateFunction({ gen, validateName, schema, schemaEnv, opts }, body3) {
       if (opts.code.es5) {
         gen.func(validateName, (0, codegen_1._)`${names_1.default.data}, ${names_1.default.valCxt}`, schemaEnv.$async, () => {
           gen.code((0, codegen_1._)`"use strict"; ${funcSourceUrl(schema, opts)}`);
           destructureValCxtES5(gen, opts);
-          gen.code(body2);
+          gen.code(body3);
         });
       } else {
-        gen.func(validateName, (0, codegen_1._)`${names_1.default.data}, ${destructureValCxt(opts)}`, schemaEnv.$async, () => gen.code(funcSourceUrl(schema, opts)).code(body2));
+        gen.func(validateName, (0, codegen_1._)`${names_1.default.data}, ${destructureValCxt(opts)}`, schemaEnv.$async, () => gen.code(funcSourceUrl(schema, opts)).code(body3));
       }
     }
     function destructureValCxt(opts) {
@@ -32348,16 +32348,16 @@ var init_mcp = __esm({
         this._promptHandlersInitialized = true;
       }
       resource(name6, uriOrTemplate, ...rest) {
-        let metadata;
+        let metadata2;
         if (typeof rest[0] === "object") {
-          metadata = rest.shift();
+          metadata2 = rest.shift();
         }
         const readCallback = rest[0];
         if (typeof uriOrTemplate === "string") {
           if (this._registeredResources[uriOrTemplate]) {
             throw new Error(`Resource ${uriOrTemplate} is already registered`);
           }
-          const registeredResource = this._createRegisteredResource(name6, void 0, uriOrTemplate, metadata, readCallback);
+          const registeredResource = this._createRegisteredResource(name6, void 0, uriOrTemplate, metadata2, readCallback);
           this.setResourceRequestHandlers();
           this.sendResourceListChanged();
           return registeredResource;
@@ -32365,7 +32365,7 @@ var init_mcp = __esm({
           if (this._registeredResourceTemplates[name6]) {
             throw new Error(`Resource template ${name6} is already registered`);
           }
-          const registeredResourceTemplate = this._createRegisteredResourceTemplate(name6, void 0, uriOrTemplate, metadata, readCallback);
+          const registeredResourceTemplate = this._createRegisteredResourceTemplate(name6, void 0, uriOrTemplate, metadata2, readCallback);
           this.setResourceRequestHandlers();
           this.sendResourceListChanged();
           return registeredResourceTemplate;
@@ -32390,11 +32390,11 @@ var init_mcp = __esm({
           return registeredResourceTemplate;
         }
       }
-      _createRegisteredResource(name6, title, uri, metadata, readCallback) {
+      _createRegisteredResource(name6, title, uri, metadata2, readCallback) {
         const registeredResource = {
           name: name6,
           title,
-          metadata,
+          metadata: metadata2,
           readCallback,
           enabled: true,
           disable: () => registeredResource.update({ enabled: false }),
@@ -32422,11 +32422,11 @@ var init_mcp = __esm({
         this._registeredResources[uri] = registeredResource;
         return registeredResource;
       }
-      _createRegisteredResourceTemplate(name6, title, template, metadata, readCallback) {
+      _createRegisteredResourceTemplate(name6, title, template, metadata2, readCallback) {
         const registeredResourceTemplate = {
           resourceTemplate: template,
           title,
-          metadata,
+          metadata: metadata2,
           readCallback,
           enabled: true,
           disable: () => registeredResourceTemplate.update({ enabled: false }),
@@ -32676,8 +32676,8 @@ var init_mcp = __esm({
 });
 
 // node_modules/@modelcontextprotocol/sdk/dist/esm/shared/stdio.js
-function deserializeMessage(line4) {
-  return JSONRPCMessageSchema.parse(JSON.parse(line4));
+function deserializeMessage(line5) {
+  return JSONRPCMessageSchema.parse(JSON.parse(line5));
 }
 function serializeMessage(message) {
   return JSON.stringify(message) + "\n";
@@ -32707,9 +32707,9 @@ var init_stdio = __esm({
         if (index === -1) {
           return null;
         }
-        const line4 = this._buffer.toString("utf8", 0, index).replace(/\r$/, "");
+        const line5 = this._buffer.toString("utf8", 0, index).replace(/\r$/, "");
         this._buffer = this._buffer.subarray(index + 1);
-        return deserializeMessage(line4);
+        return deserializeMessage(line5);
       }
       clear() {
         this._buffer = void 0;
@@ -34953,6 +34953,36 @@ async function readManagedFile(path5, label = "Artifact") {
     await closeManagedFile(opened);
   }
 }
+async function hashManagedJsonFile(path5, label) {
+  const opened = await openSafeManagedFile(path5, label);
+  try {
+    const before = await opened.handle.stat();
+    assertFileStayedUnchanged(opened.info, before, label);
+    assertManagedJsonByteLimit(before.size, label);
+    const hash8 = createHash3("sha256");
+    const buffer = Buffer.alloc(Math.min(1024 * 1024, before.size + 1));
+    let total = 0;
+    while (total <= before.size) {
+      const length = Math.min(buffer.length, before.size + 1 - total);
+      const { bytesRead } = await opened.handle.read(buffer, 0, length, total);
+      if (bytesRead === 0) {
+        break;
+      }
+      total += bytesRead;
+      hash8.update(buffer.subarray(0, bytesRead));
+    }
+    const after = await opened.handle.stat();
+    assertFileStayedUnchanged(before, after, label);
+    assertManagedFileAuthority(after, label);
+    if (total !== before.size) {
+      throw new Error(`${label} changed while it was being read.`);
+    }
+    await assertManagedFilePathCurrent(opened.absolute, opened.directory, after, label);
+    return { bytes: total, sha256: hash8.digest("hex") };
+  } finally {
+    await closeManagedFile(opened);
+  }
+}
 function assertManagedJsonByteLimit(bytes, label) {
   if (!Number.isSafeInteger(bytes) || bytes < 0 || bytes > MAX_MANAGED_JSON_BYTES) {
     throw new Error(`${label} exceeds the ${MAX_MANAGED_JSON_BYTES}-byte limit.`);
@@ -35546,7 +35576,7 @@ async function archiveExternalEvidence({
   reservation,
   request,
   result,
-  metadata,
+  metadata: metadata2,
   attachments = []
 }) {
   if (evidence === void 0 && reservation === void 0) {
@@ -35575,7 +35605,7 @@ async function archiveExternalEvidence({
     reservation: evidenceReservationBinding(held),
     request,
     result,
-    metadata,
+    metadata: metadata2,
     ...archivedAttachments.length === 0 ? {} : { attachments: archivedAttachments }
   };
   const resultText = `${JSON.stringify(payload)}
@@ -35588,7 +35618,7 @@ async function archiveExternalEvidence({
     requestSha256: sha256Text(canonicalJson(request)),
     resultSha256: sha256Text(resultText),
     attachments: archivedAttachments,
-    metadata,
+    metadata: metadata2,
     integrityModel: EVIDENCE_INTEGRITY_MODEL
   };
   const receipt2 = {
@@ -35612,7 +35642,7 @@ async function archiveCaptureEvidence({
   request,
   payload,
   images,
-  metadata
+  metadata: metadata2
 }) {
   if (!reservation) {
     throw new Error("Capture evidence must be reserved before dispatch.");
@@ -35657,7 +35687,7 @@ async function archiveCaptureEvidence({
       reservation: evidenceReservationBinding(reservation),
       request,
       result,
-      metadata
+      metadata: metadata2
     };
     const resultText = `${JSON.stringify(resultPayload)}
 `;
@@ -35669,7 +35699,7 @@ async function archiveCaptureEvidence({
       requestSha256: sha256Text(canonicalJson(request)),
       resultSha256: sha256Text(resultText),
       images: created,
-      metadata,
+      metadata: metadata2,
       integrityModel: EVIDENCE_INTEGRITY_MODEL
     };
     const receipt2 = {
@@ -35880,10 +35910,8 @@ async function createOperation(operation) {
   Object.assign(operation, sealed);
   return path5;
 }
-async function loadOperation(operationId) {
-  const path5 = operationPath(operationId);
-  const journalFile = await readManagedFile(path5, "Operation journal");
-  const value = JSON.parse(journalFile.bytes.toString("utf8"));
+function parseOperationJournal(operationId, bytes, previouslyValidated) {
+  const value = JSON.parse(bytes.toString("utf8"));
   if (!isRecord(value)) {
     throw new Error(`Operation journal ${operationId} must be an object.`);
   }
@@ -35894,13 +35922,14 @@ async function loadOperation(operationId) {
     );
   }
   const { journalSha256, ...journalCore } = parsed2;
-  if (journalSha256 !== sha256Text(canonicalJson(journalCore))) {
+  if (!previouslyValidated && journalSha256 !== sha256Text(canonicalJson(journalCore))) {
     throw new Error(
       `Operation journal ${operationId} failed its self-hash, which is an unkeyed corruption-detection hash rather than authentication.`
     );
   }
   const plan = parsed2["plan"];
-  if (!isRecord(plan) || parsed2["planHash"] !== buildPlanHash(plan)) {
+  const planHash = parsed2["planHash"];
+  if (!isRecord(plan) || typeof planHash !== "string" || !previouslyValidated && planHash !== buildPlanHash(plan)) {
     throw new Error(
       `Operation journal ${operationId} has a mismatched plan hash.`
     );
@@ -35923,16 +35952,6 @@ async function loadOperation(operationId) {
         `Operation ${operationId} references an artifact outside its directory.`
       );
     }
-    const artifactFile = await readManagedFile(
-      descriptor["path"],
-      "Operation phase artifact"
-    );
-    const text7 = artifactFile.bytes;
-    if (text7.length !== descriptor["bytes"] || sha256Text(text7) !== descriptor["sha256"]) {
-      throw new Error(
-        `Operation ${operationId} phase artifact failed hash verification.`
-      );
-    }
     artifacts.push({
       path: descriptor["path"],
       bytes: descriptor["bytes"],
@@ -35943,9 +35962,55 @@ async function loadOperation(operationId) {
     ...parsed2,
     operationId,
     plan,
-    planHash: parsed2["planHash"],
+    planHash,
     artifacts
   };
+}
+async function verifyOperationArtifacts(operationId, artifacts) {
+  for (const descriptor of artifacts) {
+    const actual = await hashManagedJsonFile(descriptor.path, "Operation phase artifact");
+    if (actual.bytes !== descriptor.bytes || actual.sha256 !== descriptor.sha256) {
+      throw new Error(`Operation ${operationId} phase artifact failed hash verification.`);
+    }
+  }
+}
+function retainOperationValidation(operationId, bytesSha256, artifacts) {
+  const previous = validatedOperationBytes.get(operationId);
+  if (previous !== void 0) {
+    validatedOperationCacheBytes -= previous.cacheBytes;
+    validatedOperationBytes.delete(operationId);
+  }
+  const copied = artifacts.map((artifact) => ({ ...artifact }));
+  const cacheBytes = Buffer.byteLength(JSON.stringify(copied)) + operationId.length + 64;
+  const validation = { artifacts: copied, bytesSha256, cacheBytes };
+  if (cacheBytes > MAX_OPERATION_PROOF_CACHE_BYTES) {
+    return validation;
+  }
+  validatedOperationBytes.set(operationId, validation);
+  validatedOperationCacheBytes += cacheBytes;
+  while (validatedOperationBytes.size > MAX_OPERATION_CACHE_ENTRIES || validatedOperationCacheBytes > MAX_OPERATION_PROOF_CACHE_BYTES) {
+    const oldest = validatedOperationBytes.entries().next().value;
+    if (oldest === void 0) {
+      break;
+    }
+    validatedOperationBytes.delete(oldest[0]);
+    validatedOperationCacheBytes -= oldest[1].cacheBytes;
+  }
+  return validation;
+}
+async function loadValidatedOperation(operationId) {
+  const journalFile = await readManagedFile(operationPath(operationId), "Operation journal");
+  const bytesSha256 = createHash3("sha256").update(journalFile.bytes).digest("hex");
+  const previous = validatedOperationBytes.get(operationId);
+  const operation = parseOperationJournal(operationId, journalFile.bytes, previous?.bytesSha256 === bytesSha256);
+  const artifacts = operation.artifacts ?? [];
+  await verifyOperationArtifacts(operationId, artifacts);
+  const validation = retainOperationValidation(operationId, bytesSha256, artifacts);
+  return { operation, validation };
+}
+async function loadOperation(operationId) {
+  const loaded = await loadValidatedOperation(operationId);
+  return loaded.operation;
 }
 function sealOperation(operation) {
   const journalCore = { ...operation };
@@ -36013,13 +36078,130 @@ async function listOperationIds() {
   }
   return directoryEntries.filter((name6) => name6.endsWith(".json")).toSorted().map((name6) => name6.replace(/\.json$/u, ""));
 }
-async function scanOperations(select) {
+function scanOperations(select) {
+  return scanOperationProjections(select);
+}
+function createOperationScanner(select) {
+  const cache = { bytes: 0, entries: /* @__PURE__ */ new Map() };
+  return () => scanOperationProjections(select, cache);
+}
+function projectionCacheEncoding(value) {
+  let units = 0;
+  function admit(item2, depth) {
+    units += 4;
+    if (units > MAX_OPERATION_PROJECTION_BYTES || depth > 32) {
+      return false;
+    }
+    if (item2 === null || item2 === void 0 || typeof item2 === "boolean") {
+      return true;
+    }
+    if (typeof item2 === "string") {
+      units += item2.length;
+      return units <= MAX_OPERATION_PROJECTION_BYTES;
+    }
+    if (typeof item2 === "number") {
+      return Number.isFinite(item2);
+    }
+    if (typeof item2 !== "object") {
+      return false;
+    }
+    const array2 = Array.isArray(item2);
+    const prototype = Object.getPrototypeOf(item2);
+    if (array2 ? prototype !== Array.prototype : prototype !== Object.prototype && prototype !== null) {
+      return false;
+    }
+    if (array2 && item2.length > MAX_OPERATION_PROJECTION_BYTES / 4) {
+      return false;
+    }
+    const keys2 = Reflect.ownKeys(item2);
+    if (keys2.length > MAX_OPERATION_PROJECTION_BYTES / 4) {
+      return false;
+    }
+    for (const key of keys2) {
+      if (typeof key !== "string") {
+        return false;
+      }
+      if (!array2 || key !== "length") {
+        if (array2 && (!/^(?:0|[1-9][0-9]*)$/u.test(key) || Number(key) >= item2.length)) {
+          return false;
+        }
+        const descriptor = Object.getOwnPropertyDescriptor(item2, key);
+        if (descriptor === void 0 || descriptor.enumerable !== true || !("value" in descriptor)) {
+          return false;
+        }
+        units += key.length + 4;
+        const child = descriptor.value;
+        if (!admit(child, depth + 1)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  if (!admit(value, 0)) {
+    return void 0;
+  }
+  return JSON.stringify(value, (_key, item2) => item2 === void 0 ? null : item2);
+}
+function retainOperationProjection(cache, operationId, bytesSha256, value) {
+  let copy;
+  let cacheBytes;
+  try {
+    const encoded = projectionCacheEncoding(value);
+    if (encoded === void 0) {
+      return;
+    }
+    cacheBytes = Buffer.byteLength(encoded) + operationId.length + 64;
+    if (cacheBytes > MAX_OPERATION_PROJECTION_BYTES) {
+      return;
+    }
+    copy = structuredClone(value);
+  } catch {
+    return;
+  }
+  const previous = cache.entries.get(operationId);
+  if (previous !== void 0) {
+    cache.bytes -= previous.cacheBytes;
+    cache.entries.delete(operationId);
+  }
+  cache.entries.set(operationId, { bytesSha256, cacheBytes, value: copy });
+  cache.bytes += cacheBytes;
+  while (cache.entries.size > MAX_OPERATION_CACHE_ENTRIES || cache.bytes > MAX_OPERATION_PROJECTION_CACHE_BYTES) {
+    const oldest = cache.entries.entries().next().value;
+    if (oldest === void 0) {
+      break;
+    }
+    cache.entries.delete(oldest[0]);
+    cache.bytes -= oldest[1].cacheBytes;
+  }
+}
+async function verifiedOperationProjection(operationId, cache) {
+  const projection = cache?.entries.get(operationId);
+  const validation = validatedOperationBytes.get(operationId);
+  if (projection === void 0 || validation?.bytesSha256 !== projection.bytesSha256) {
+    return void 0;
+  }
+  const current2 = await hashManagedJsonFile(operationPath(operationId), "Operation journal");
+  if (current2.sha256 !== validation.bytesSha256) {
+    return void 0;
+  }
+  await verifyOperationArtifacts(operationId, validation.artifacts);
+  return { value: structuredClone(projection.value) };
+}
+async function scanOperationProjections(select, cache) {
   const operationIds = await listOperationIds();
   const output = [];
   for (const operationId of operationIds) {
     let operation;
+    let cached2;
+    let currentValidation;
     try {
-      operation = await loadOperation(operationId);
+      cached2 = await verifiedOperationProjection(operationId, cache);
+      if (cached2 === void 0) {
+        const loaded = await loadValidatedOperation(operationId);
+        operation = loaded.operation;
+        currentValidation = loaded.validation;
+      }
     } catch (error51) {
       const journalPath = join4(OPERATIONS_DIR, `${operationId}.json`);
       const message = errorMessage(error51);
@@ -36037,19 +36219,18 @@ async function scanOperations(select) {
         nextSafeAction: "Inspect and restore the named managed journal before any new mutation."
       };
     }
-    const selected = select(operation);
+    const selected = operation === void 0 ? cached2?.value : select(operation);
+    if (cache !== void 0 && currentValidation !== void 0) {
+      retainOperationProjection(cache, operationId, currentValidation.bytesSha256, selected);
+    }
     if (selected !== void 0) {
       output.push(selected);
     }
   }
   return output;
 }
-async function listOperationStates() {
-  const operations = await scanOperations((operation) => ({
-    operationId: operation["operationId"],
-    state: operation["state"]
-  }));
-  return operations;
+function listOperationStates() {
+  return scanOperationStates();
 }
 async function readArtifact(path5, offset2 = 0, length = 65536) {
   const absolute = assertManagedPath(path5);
@@ -36084,7 +36265,7 @@ async function readArtifact(path5, offset2 = 0, length = 65536) {
 function controlDataDirectory() {
   return CONTROL_DATA_DIR;
 }
-var configuredControlDataDirectory, configuredHomeDirectory, CONTROL_DATA_DIR, OPERATIONS_DIR, BRIDGE_TOKEN_PATH, UPSTREAM_DATA_DIR, UPSTREAM_PUBLIC_ARTIFACT_DIR, BRIDGE_BUILD_DIR, FACADE_LEASE_PATH, EVIDENCE_INTEGRITY_MODEL, MAX_MANAGED_JSON_BYTES, retainedControlRoot;
+var configuredControlDataDirectory, configuredHomeDirectory, CONTROL_DATA_DIR, OPERATIONS_DIR, BRIDGE_TOKEN_PATH, UPSTREAM_DATA_DIR, UPSTREAM_PUBLIC_ARTIFACT_DIR, BRIDGE_BUILD_DIR, FACADE_LEASE_PATH, EVIDENCE_INTEGRITY_MODEL, MAX_MANAGED_JSON_BYTES, MAX_OPERATION_CACHE_ENTRIES, MAX_OPERATION_PROOF_CACHE_BYTES, MAX_OPERATION_PROJECTION_CACHE_BYTES, MAX_OPERATION_PROJECTION_BYTES, retainedControlRoot, validatedOperationBytes, validatedOperationCacheBytes, scanOperationStates;
 var init_artifacts = __esm({
   "server/src/artifacts.ts"() {
     init_core3();
@@ -36113,6 +36294,16 @@ var init_artifacts = __esm({
     FACADE_LEASE_PATH = join4(CONTROL_DATA_DIR, "facade.lock");
     EVIDENCE_INTEGRITY_MODEL = "Unkeyed SHA-256 values detect accidental corruption. They do not authenticate files against a writer with access to the control-data directory.";
     MAX_MANAGED_JSON_BYTES = 64 * 1024 * 1024;
+    MAX_OPERATION_CACHE_ENTRIES = 512;
+    MAX_OPERATION_PROOF_CACHE_BYTES = 4 * 1024 * 1024;
+    MAX_OPERATION_PROJECTION_CACHE_BYTES = 1024 * 1024;
+    MAX_OPERATION_PROJECTION_BYTES = 32 * 1024;
+    validatedOperationBytes = /* @__PURE__ */ new Map();
+    validatedOperationCacheBytes = 0;
+    scanOperationStates = createOperationScanner((operation) => ({
+      operationId: operation["operationId"],
+      state: operation["state"]
+    }));
   }
 });
 
@@ -36885,7 +37076,7 @@ async function createCheckpoint({
       );
     }
     await assertBoundPathIdentity(sourceFile, "Checkpoint source");
-    const checkpointHash = await sha256Handle(
+    const checkpointHash2 = await sha256Handle(
       checkpointFile.handle,
       "Checkpoint"
     );
@@ -36896,12 +37087,12 @@ async function createCheckpoint({
       checkpoint: checkpointFile.absolute,
       receiptPath,
       sourceIdentity: identityOf(snapshot6.stat),
-      checkpointIdentity: identityOf(checkpointHash.info),
+      checkpointIdentity: identityOf(checkpointHash2.info),
       sourceStatBefore: checkpointStat(sourceFile.info),
       sourceStatAfter: checkpointStat(snapshot6.stat),
       sourceDataVersion: snapshot6.dataVersion,
       sourceSha256: snapshot6.sha256,
-      checkpointSha256: checkpointHash.sha256,
+      checkpointSha256: checkpointHash2.sha256,
       sourceDumpSha256: snapshot6.dumpSha256,
       checkpointDumpSha256: snapshot6.dumpSha256,
       quickCheck: { sourceBefore: "ok", sourceAfter: "ok", checkpoint: "ok" },
@@ -37083,22 +37274,22 @@ async function verifyCheckpoint(receiptPathInput, policy, beforeTemporarySnapsho
       temporaryFile,
       temporaryFileIsDescriptorOnly
     );
-    const [checkpointHash, checkpointDumpSha256] = await Promise.all([
+    const [checkpointHash2, checkpointDumpSha256] = await Promise.all([
       sha256Handle(checkpointFile.handle, "Checkpoint artifact"),
       dumpHash(checkpointFile.handle)
     ]);
     await assertBoundPathIdentity(checkpointFile, "Checkpoint artifact");
     const sourceSha256 = sourceSnapshot3.sha256;
-    const checkpointSha256 = checkpointHash.sha256;
+    const checkpointSha256 = checkpointHash2.sha256;
     const sourceDumpSha256 = sourceSnapshot3.dumpSha256;
     const sourceMatchesReceipt = sourceSha256 === receipt2.sourceSha256 && sourceDumpSha256 === receipt2.sourceDumpSha256 && identityMatches(expectedSourceIdentity, sourceSnapshot3.stat);
-    const checkpointMatchesReceipt = checkpointSha256 === receipt2.checkpointSha256 && checkpointDumpSha256 === receipt2.checkpointDumpSha256 && identityMatches(expectedCheckpointIdentity, checkpointHash.info);
+    const checkpointMatchesReceipt = checkpointSha256 === receipt2.checkpointSha256 && checkpointDumpSha256 === receipt2.checkpointDumpSha256 && identityMatches(expectedCheckpointIdentity, checkpointHash2.info);
     const sourceEqualsCheckpoint = sourceDumpSha256 === checkpointDumpSha256;
     const ok = sourceMatchesReceipt && checkpointMatchesReceipt && sourceEqualsCheckpoint;
     await beforeTemporarySnapshotCleanup?.();
     await assertBoundPathIdentity(checkpointFile, "Checkpoint artifact");
     assertStableFile(
-      checkpointHash.info,
+      checkpointHash2.info,
       await checkpointFile.handle.stat({ bigint: true }),
       "Checkpoint artifact"
     );
@@ -37172,16 +37363,16 @@ import { gunzip } from "node:zlib";
 function fail(stage = "record-invalid") {
   throw new NativeHistoryError(stage);
 }
-function retainMetadataHeader(document2, ticket, metadata) {
+function retainMetadataHeader(document2, ticket, metadata2) {
   const headers = document2.metadataHeaders;
   const last = headers?.at(-1);
   if (headers === null || last === void 0) {
     return;
   }
-  if (ticket < last.ticket || ticket === last.ticket && canonicalJson(last.metadata) !== canonicalJson(metadata) || ticket > last.ticket && headers.length >= MAX_HISTORY_ROWS) {
+  if (ticket < last.ticket || ticket === last.ticket && canonicalJson(last.metadata) !== canonicalJson(metadata2) || ticket > last.ticket && headers.length >= MAX_HISTORY_ROWS) {
     document2.metadataHeaders = null;
   } else if (ticket > last.ticket) {
-    headers.push({ ticket, metadata });
+    headers.push({ ticket, metadata: metadata2 });
   }
 }
 function record2(value) {
@@ -37337,12 +37528,12 @@ function* parseNativeRecordSteps(plaintext) {
   }
   const entries = [];
   const budget = { records: 0, bytes: 0 };
-  for (const line4 of lines3) {
-    const split = line4.indexOf("||");
+  for (const line5 of lines3) {
+    const split = line5.indexOf("||");
     if (split < 1) {
       fail();
     }
-    const header = parseObject(line4.slice(0, split));
+    const header = parseObject(line5.slice(0, split));
     const allowedKeys = /* @__PURE__ */ new Set(["type", "id", "ticket", "client"]);
     if (Object.keys(header).some((key) => !allowedKeys.has(key))) {
       fail();
@@ -37350,9 +37541,9 @@ function* parseNativeRecordSteps(plaintext) {
     if (!/^[A-Z][A-Z0-9_]{0,63}$/u.test(text(header["type"], 64))) {
       fail();
     }
-    const bodySource = line4.slice(split + 2);
+    const bodySource = line5.slice(split + 2);
     entries.push({ header, body: bodySource === "" ? null : parseObject(bodySource) });
-    if (materializationBatchReached(budget, Buffer.byteLength(line4))) {
+    if (materializationBatchReached(budget, Buffer.byteLength(line5))) {
       yield;
     }
   }
@@ -37440,13 +37631,13 @@ function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256) {
           fail();
         }
       } else if (type === "DOCHEAD") {
-        const body2 = record2(entry.body);
-        const documentUuid = text(body2["uuid"], 128);
-        const docType = text(body2["docType"], 64);
+        const body3 = record2(entry.body);
+        const documentUuid = text(body3["uuid"], 128);
+        const docType = text(body3["docType"], 64);
         if (!DOCUMENT_TYPES.has(docType)) {
           fail("document-type");
         }
-        currentClient = body2["client"] === void 0 ? void 0 : text(body2["client"], 128);
+        currentClient = body3["client"] === void 0 ? void 0 : text(body3["client"], 128);
         const ticket = integer2(entry.header["ticket"]);
         current2 = documents.get(documentUuid);
         if (current2 && current2.docType !== docType) {
@@ -37456,20 +37647,20 @@ function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256) {
           current2 = {
             uuid: documentUuid,
             docType,
-            metadata: body2,
+            metadata: body3,
             metadataTicket: ticket,
             objects: /* @__PURE__ */ new Map(),
             firstClocks: /* @__PURE__ */ new Map(),
-            metadataHeaders: docType === "SCH_PAGE" ? [{ ticket, metadata: body2 }] : null
+            metadataHeaders: docType === "SCH_PAGE" ? [{ ticket, metadata: body3 }] : null
           };
           documents.set(documentUuid, current2);
-        } else if (ticket === current2.metadataTicket && canonicalJson(current2.metadata) !== canonicalJson(body2)) {
+        } else if (ticket === current2.metadataTicket && canonicalJson(current2.metadata) !== canonicalJson(body3)) {
           fail("document-ticket-conflict");
         } else if (ticket > current2.metadataTicket) {
-          current2.metadata = body2;
+          current2.metadata = body3;
           current2.metadataTicket = ticket;
         }
-        retainMetadataHeader(current2, ticket, body2);
+        retainMetadataHeader(current2, ticket, body3);
       } else {
         if (!current2) {
           fail();
@@ -37514,7 +37705,7 @@ function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256) {
       docType: document2.docType,
       metadata: document2.metadata,
       records: records2,
-      semanticSha256: sha256Json({ uuid: document2.uuid, docType: document2.docType, metadata: document2.metadata, records: records2.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 })) })
+      semanticSha256: sha256Json({ uuid: document2.uuid, docType: document2.docType, metadata: document2.metadata, records: records2.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 })) })
     };
     const completed = headerHistory === void 0 ? snapshot6 : Object.assign(
       snapshot6,
@@ -37857,7 +38048,7 @@ function assertExactReadExecutionSupported(request) {
   }
 }
 function exactReadDocumentType(kind) {
-  if (kind === "schematic-components" || kind === "schematic-topology" || kind === "schematic-source" || kind === "schematic-native") {
+  if (kind === "schematic-components" || kind === "schematic-topology" || kind === "schematic-flat-topology" || kind === "schematic-source" || kind === "schematic-native") {
     return 1;
   }
   if (kind === "symbol-source") {
@@ -38259,10 +38450,10 @@ function validateExactReadPayload(payload, request) {
             throw new TypeError(`Exact component ${id7}.pins must be an array.`);
           }
           const pinIds = [];
-          for (const [index, pin3] of component2.pins.entries()) {
+          for (const [index, pin4] of component2.pins.entries()) {
             const label = `Exact component ${id7}.pins[${index}]`;
             assertExactRecordKeys(
-              pin3,
+              pin4,
               [
                 "primitiveId",
                 "pinNumber",
@@ -38278,20 +38469,20 @@ function validateExactReadPayload(payload, request) {
               ],
               label
             );
-            assertNonemptyString(pin3.primitiveId, `${label}.primitiveId`);
-            assertNonemptyString(pin3.pinNumber, `${label}.pinNumber`);
-            if (typeof pin3.pinName !== "string") {
+            assertNonemptyString(pin4.primitiveId, `${label}.primitiveId`);
+            assertNonemptyString(pin4.pinNumber, `${label}.pinNumber`);
+            if (typeof pin4.pinName !== "string") {
               throw new TypeError(`${label}.pinName must be a string.`);
             }
-            assertFiniteFields(pin3, ["x", "y", "rotation", "pinLength"], label);
-            assertNullableString(pin3.pinColor, `${label}.pinColor`);
-            if (typeof pin3.pinShape !== "string" || typeof pin3.pinType !== "string") {
+            assertFiniteFields(pin4, ["x", "y", "rotation", "pinLength"], label);
+            assertNullableString(pin4.pinColor, `${label}.pinColor`);
+            if (typeof pin4.pinShape !== "string" || typeof pin4.pinType !== "string") {
               throw new TypeError(`${label} has malformed pin shape or type.`);
             }
-            if (typeof pin3.noConnected !== "boolean") {
+            if (typeof pin4.noConnected !== "boolean") {
               throw new TypeError(`${label}.noConnected must be boolean.`);
             }
-            pinIds.push(pin3.primitiveId);
+            pinIds.push(pin4.primitiveId);
           }
           if (new Set(pinIds).size !== pinIds.length) {
             throw new Error(
@@ -38383,8 +38574,8 @@ function validateExactReadPayload(payload, request) {
       }
       for (const id7 of keys2) {
         const component2 = componentByPrimitiveId[id7];
-        for (const pin3 of component2?.pins ?? []) {
-          if (Object.hasOwn(pin3, "otherProperty")) {
+        for (const pin4 of component2?.pins ?? []) {
+          if (Object.hasOwn(pin4, "otherProperty")) {
             throw new Error(
               "Exact schematic component reader exposed unobservable pin properties."
             );
@@ -38445,12 +38636,12 @@ function validateExactReadPayload(payload, request) {
         "Exact schematic topology compiled designator"
       );
       const compiledPinNumbers = [];
-      for (const [index, pin3] of component2.pins.entries()) {
+      for (const [index, pin4] of component2.pins.entries()) {
         const pinLabel = `Exact schematic topology ${component2.uniqueId} pin[${index}]`;
-        assertExactRecordKeys(pin3, ["pinNumber", "net"], pinLabel);
-        assertNonemptyString(pin3.pinNumber, `${pinLabel}.pinNumber`);
-        assertNullableString(pin3.net, `${pinLabel}.net`);
-        compiledPinNumbers.push(pin3.pinNumber);
+        assertExactRecordKeys(pin4, ["pinNumber", "net"], pinLabel);
+        assertNonemptyString(pin4.pinNumber, `${pinLabel}.pinNumber`);
+        assertNullableString(pin4.net, `${pinLabel}.net`);
+        compiledPinNumbers.push(pin4.pinNumber);
       }
       if (new Set(compiledPinNumbers).size !== compiledPinNumbers.length || JSON.stringify(compiledPinNumbers) !== JSON.stringify([...compiledPinNumbers].toSorted())) {
         throw new Error(
@@ -39090,6 +39281,9 @@ function exactTargetAssertionPointer(primitiveId3) {
 function buildExactReadExpression(request) {
   const parsed2 = exactReadRequestSchema.parse(request);
   assertExactReadExecutionSupported(parsed2);
+  if (parsed2.kind === "schematic-flat-topology") {
+    throw new Error("Flat topology requires the checkpoint-bound native coordinator.");
+  }
   const serialized = JSON.stringify(parsed2);
   return `
 (async () => {
@@ -40227,6 +40421,7 @@ var init_exact_readers = __esm({
         ...componentOptions
       }).strict(),
       external_exports.object({ kind: external_exports.literal("schematic-topology") }).strict(),
+      external_exports.object({ kind: external_exports.literal("schematic-flat-topology") }).strict(),
       external_exports.object({ kind: external_exports.literal("pcb-inventory") }).strict(),
       external_exports.object({ kind: external_exports.literal("pcb-rules") }).strict(),
       external_exports.object({ kind: external_exports.literal("schematic-source") }).strict(),
@@ -40423,8 +40618,8 @@ ${source3}
   })();
 })();`;
 }
-function buildComponentMutationCode(documentType, targetChanges, stateName) {
-  if (documentType !== 3 || stateName !== "before" && stateName !== "after") {
+function buildComponentMutationCode(documentType2, targetChanges, stateName) {
+  if (documentType2 !== 3 || stateName !== "before" && stateName !== "after") {
     throw new Error(
       "Exact component mutation currently requires PCB type and before/after state."
     );
@@ -40572,7 +40767,7 @@ return await (async () => {
   }
   return { ok: true, kind: "exact-component-mutation", state: ${jsString(
     mutationState
-  )}, documentType: ${documentType}, applied: [{ primitiveId: returnedId, fields: Object.keys(record.patch).sort() }] };
+  )}, documentType: ${documentType2}, applied: [{ primitiveId: returnedId, fields: Object.keys(record.patch).sort() }] };
 })();`;
 }
 function buildDsnExportCode(fileName2, expectedContext) {
@@ -41652,10 +41847,10 @@ function assertPlainInput(value, depth, budget) {
     throw new Error("Sparse public SDK arrays are not accepted.");
   }
 }
-function validatePublicSdkReadRequest(input, documentType) {
+function validatePublicSdkReadRequest(input, documentType2) {
   const request = publicSdkReadRequestSchema.parse(input);
   const definition = definitions.get(request.method);
-  if (definition === void 0 || !definition.documentTypes.includes(documentType)) {
+  if (definition === void 0 || !definition.documentTypes.includes(documentType2)) {
     throw new Error("Public SDK read is not admitted for this document type.");
   }
   return request;
@@ -42412,14 +42607,14 @@ function compileSchematicOperation(input) {
   if (["port", "net-flag"].includes(family)) {
     limitations.push("default-library-symbol-associations-must-be-captured-and-proven");
   }
-  let identity7 = "preserve";
+  let identity9 = "preserve";
   if (deleting) {
-    identity7 = "delete";
+    identity9 = "delete";
   }
   if (creating) {
-    identity7 = "create";
+    identity9 = "create";
   }
-  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field2, value]) => expected(family, field2, value)), inverse, effect: { family, target: target5, identity: identity7, fields: fields2, collateral }, requiredPreservation, limitations };
+  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field2, value]) => expected(family, field2, value)), inverse, effect: { family, target: target5, identity: identity9, fields: fields2, collateral }, requiredPreservation, limitations };
 }
 function referenceFamily(action) {
   const family = action.split(".")[1];
@@ -42563,9 +42758,9 @@ var init_schematic_operations = __esm({
     sourceRead2 = { purpose: "complete-document-source", api: "sys_FileManager", method: "getDocumentSource", args: [] };
     schematicOperationBatchSchema = external_exports.object({ operations: external_exports.array(schematicOperationSchema).min(1).max(256) }).strict().superRefine((batch, context2) => {
       const prior = /* @__PURE__ */ new Map();
-      const documentType = batch.operations[0]?.documentType;
+      const documentType2 = batch.operations[0]?.documentType;
       for (const operation of batch.operations) {
-        if (operation.documentType !== documentType) {
+        if (operation.documentType !== documentType2) {
           context2.addIssue({ code: "custom", message: "A schematic batch must use one document type and active document." });
         }
         if (prior.has(operation.id)) {
@@ -42597,7 +42792,7 @@ function normalizeSchematicNativeSnapshot(input) {
     for (const attr of model.attributes) {
       const derived = model.kind === "sheet" && ["@Update Date", "@Update Time"].includes(attr.key);
       if (derived) {
-        const stored = scalar2.parse(attr.body["value"]);
+        const stored2 = scalar2.parse(attr.body["value"]);
         if (attr.body["key"] !== attr.key || attr.body["parentId"] !== model.id) {
           throw new Error("Computed frame attribute source binding differs.");
         }
@@ -42605,10 +42800,10 @@ function normalizeSchematicNativeSnapshot(input) {
         if (attr.valueAuthority === void 0 && (typeof attr.value !== "string" || !pattern.test(attr.value))) {
           throw new Error("Computed frame timestamp format differs from the reviewed native getter.");
         }
-        if (attr.valueAuthority !== void 0 && canonicalJson(attr.value) !== canonicalJson(stored)) {
+        if (attr.valueAuthority !== void 0 && canonicalJson(attr.value) !== canonicalJson(stored2)) {
           throw new Error("Stored frame timestamp value is inconsistent.");
         }
-        attr.value = stored;
+        attr.value = stored2;
         attr.valueAuthority = "stored-frame-update";
       } else if (attr.valueAuthority !== void 0) {
         throw new Error("Unexpected native attribute authority marker.");
@@ -42847,74 +43042,6 @@ const schCapture = () => {
   }
 });
 
-// server/src/schematic-native-transport.ts
-import { TextDecoder as TextDecoder3, promisify as promisify3 } from "node:util";
-import { gunzip as gunzip2 } from "node:zlib";
-async function decodeSchematicNativeEnvelope(input) {
-  const envelope = envelopeSchema.parse(input);
-  const compressed = Buffer.from(envelope.base64, "base64");
-  if (compressed.length !== envelope.gzipBytes || compressed.toString("base64") !== envelope.base64 || compressed[0] !== 31 || compressed[1] !== 139 || compressed[2] !== 8 || compressed.readUInt32LE(compressed.length - 4) !== envelope.utf8Bytes) {
-    throw new Error("Native snapshot compressed envelope is noncanonical or contradictory.");
-  }
-  const bytes = await decompress(compressed, { maxOutputLength: envelope.utf8Bytes });
-  if (bytes.length !== envelope.utf8Bytes) {
-    throw new Error("Native snapshot decoded byte count differs.");
-  }
-  const json3 = new TextDecoder3("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
-  const payload = JSON.parse(json3);
-  assertExactTransportValue(payload);
-  return schematicNativeSnapshotSchema.parse(payload);
-}
-function buildSchematicNativeTransportCode(expression) {
-  return `
-const result = await ${expression};
-const json = JSON.stringify(result);
-if (typeof json !== 'string' || json.length > ${SCHEMATIC_NATIVE_MAX_BYTES}) throw new Error('SCH_NATIVE_SNAPSHOT_BOUND');
-const bytes = new TextEncoder().encode(json);
-if (bytes.byteLength > ${SCHEMATIC_NATIVE_MAX_BYTES}) throw new Error('SCH_NATIVE_SNAPSHOT_BOUND');
-if (typeof CompressionStream !== 'function') throw new Error('SCH_NATIVE_COMPRESSION_UNAVAILABLE');
-const compressedReader = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip')).getReader();
-const compressedChunks = [];
-let gzipBytes = 0;
-try {
-  for (;;) {
-    const item = await compressedReader.read();
-    if (item.done) break;
-    if (!(item.value instanceof Uint8Array)) throw new Error('SCH_NATIVE_COMPRESSION_INVALID');
-    gzipBytes += item.value.byteLength;
-    if (gzipBytes > ${SCHEMATIC_NATIVE_MAX_GZIP_BYTES}) throw new Error('SCH_NATIVE_COMPRESSED_BOUND');
-    compressedChunks.push(item.value);
-  }
-} catch (error) {
-  try { await compressedReader.cancel(); } catch { throw new Error('SCH_NATIVE_COMPRESSION_CLEANUP'); }
-  throw error;
-} finally { compressedReader.releaseLock(); }
-if (gzipBytes < 20) throw new Error('SCH_NATIVE_COMPRESSION_INVALID');
-const compressed = new Uint8Array(gzipBytes);
-let offset = 0;
-for (const chunk of compressedChunks) { compressed.set(chunk, offset); offset += chunk.byteLength; }
-let binary = '';
-for (let start = 0; start < compressed.length; start += 32768) binary += String.fromCharCode(...compressed.subarray(start, start + 32768));
-return {schema:${JSON.stringify(SCHEMATIC_NATIVE_TRANSPORT_SCHEMA)},utf8Bytes:bytes.byteLength,gzipBytes,base64:btoa(binary)};`;
-}
-var SCHEMATIC_NATIVE_TRANSPORT_SCHEMA, SCHEMATIC_NATIVE_MAX_GZIP_BYTES, decompress, envelopeSchema;
-var init_schematic_native_transport = __esm({
-  "server/src/schematic-native-transport.ts"() {
-    init_zod();
-    init_exact_readers();
-    init_schematic_native_adapter();
-    SCHEMATIC_NATIVE_TRANSPORT_SCHEMA = "easyeda-pro-control.schematic-native-gzip.v1";
-    SCHEMATIC_NATIVE_MAX_GZIP_BYTES = 1024 * 1024;
-    decompress = promisify3(gunzip2);
-    envelopeSchema = external_exports.object({
-      schema: external_exports.literal(SCHEMATIC_NATIVE_TRANSPORT_SCHEMA),
-      utf8Bytes: external_exports.number().int().min(1).max(SCHEMATIC_NATIVE_MAX_BYTES),
-      gzipBytes: external_exports.number().int().min(20).max(SCHEMATIC_NATIVE_MAX_GZIP_BYTES),
-      base64: external_exports.string().min(1).max(Math.ceil(SCHEMATIC_NATIVE_MAX_GZIP_BYTES / 3) * 4)
-    }).strict();
-  }
-});
-
 // server/src/native-profiles.ts
 import { createHash as createHash6 } from "node:crypto";
 import { constants as constants2 } from "node:fs";
@@ -43051,17 +43178,747 @@ var init_device_native_profile = __esm({
   }
 });
 
+// server/src/schematic-layout-page-load.ts
+function deriveSchematicLayoutPageLoadScope(context2, history) {
+  const projectUuid = context2.project.uuid ?? context2.project.projectUuid;
+  const activePageUuid = context2.document.uuid ?? context2.document.documentUuid;
+  if (context2.document.documentType !== 1 || projectUuid !== history.projectUuid || context2.project.uuid !== void 0 && context2.project.projectUuid !== void 0 && context2.project.uuid !== context2.project.projectUuid || context2.document.uuid !== void 0 && context2.document.documentUuid !== void 0 && context2.document.uuid !== context2.document.documentUuid || history.profile !== "easyeda.native-history.linear-gcm-gzip.v1" || !/^[a-f0-9]{64}$/u.test(history.checkpointSha256) || sha256Json(history.documents.map(({ uuid: uuid8, docType, semanticSha256 }) => ({ uuid: uuid8, docType, semanticSha256 }))) !== history.semanticSha256) {
+    throw new Error("Schematic page loading requires an exact checkpoint and active sheet.");
+  }
+  const known = /* @__PURE__ */ new Set();
+  for (const document2 of history.documents) {
+    if (known.has(document2.uuid) || document2.metadata["uuid"] !== document2.uuid || document2.metadata["docType"] !== document2.docType || sha256Json({
+      uuid: document2.uuid,
+      docType: document2.docType,
+      metadata: document2.metadata,
+      records: document2.records.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 }))
+    }) !== document2.semanticSha256) {
+      throw new Error("Schematic page loading checkpoint document integrity failed.");
+    }
+    known.add(document2.uuid);
+  }
+  const documents = history.documents.filter((document2) => !isNativeDocumentDeleted(document2));
+  const active = documents.find((document2) => document2.uuid === activePageUuid && document2.docType === "SCH_PAGE");
+  const meta3 = active?.records.filter((record6) => record6.id === "META" && record6.type === "META");
+  const schematicUuid = meta3?.length === 1 ? meta3[0]?.body["schematic"] : void 0;
+  if (typeof schematicUuid !== "string" || !documents.some((document2) => document2.uuid === schematicUuid && document2.docType === "SCH") || context2.schematic?.uuid !== void 0 && context2.schematic.uuid !== schematicUuid || context2.schematic?.documentUuid !== void 0 && context2.schematic.documentUuid !== schematicUuid) {
+    throw new Error("Schematic page loading container is not checkpoint-bound.");
+  }
+  const pageUuids = documents.filter((document2) => document2.docType === "SCH_PAGE" && document2.records.some((record6) => record6.id === "META" && record6.type === "META" && record6.body["schematic"] === schematicUuid)).map((document2) => document2.uuid).toSorted();
+  const scope3 = scopeSchema.parse({
+    projectUuid,
+    projectPath: normalizeEasyedaProjectPath(context2.project.path),
+    schematicUuid,
+    activePageUuid,
+    activeTabId: context2.document.tabId,
+    pageUuids
+  });
+  if (scope3.activeTabId !== `${scope3.activePageUuid}@${scope3.projectUuid}` || !scope3.pageUuids.includes(scope3.activePageUuid)) {
+    throw new Error("Schematic page loading rejects aliased or foreign active tabs.");
+  }
+  return scope3;
+}
+function buildSchematicLayoutPageLoadCode(value, pageUuid) {
+  const scope3 = scopeSchema.parse(value);
+  if (scope3.projectPath !== normalizeEasyedaProjectPath(scope3.projectPath) || scope3.activeTabId !== `${scope3.activePageUuid}@${scope3.projectUuid}` || new Set(scope3.pageUuids).size !== scope3.pageUuids.length || !scope3.pageUuids.includes(scope3.activePageUuid) || !scope3.pageUuids.includes(pageUuid)) {
+    throw new Error("Schematic page loading target is outside the declared checkpoint scope.");
+  }
+  const open21 = buildNativeDocumentOpenFunction({ projectUuid: scope3.projectUuid, documentUuid: pageUuid, documentType: 1 });
+  return `return await (async()=>{
+${DEVICE_NATIVE_HOST_GUARD}
+const scope=${JSON.stringify(scope3)},pageUuid=${JSON.stringify(pageUuid)},targetTab=pageUuid+'@'+scope.projectUuid;
+const ui=globalThis.window?.top,sch=globalThis.SCH,manager=sch?.docMemoryManager;
+const fail=()=>{throw new Error('SCH_LAYOUT_PAGE_LOAD_SCOPE');};
+if(!ui||typeof ui.setTimeout!=='function'||typeof ui.clearTimeout!=='function'||typeof ui.document?.getElementById!=='function'||typeof manager?.get!=='function'||typeof manager.getSchDocs!=='function'||typeof manager.getActiveDoc!=='function')fail();
+const sorted=value=>JSON.stringify([...value].sort());
+const owners=async()=>{
+ const project=await eda.dmt_Project.getCurrentProjectInfo();
+ if(project?.uuid!==scope.projectUuid||host.currentProject?.projectId!==scope.projectUuid||sch.gVars?.currentProject?.projectId!==scope.projectUuid)fail();
+ const declared=await eda.dmt_Schematic.getCurrentSchematicInfo();
+ if(declared?.uuid!==scope.schematicUuid||declared.parentProjectUuid!==scope.projectUuid||!Array.isArray(declared.page)||declared.page.length!==scope.pageUuids.length)fail();
+ const ids=declared.page.map(page=>{if(page?.parentSchematicUuid!==scope.schematicUuid||typeof page.uuid!=='string'||(page.parentProjectUuid!==undefined&&page.parentProjectUuid!==scope.projectUuid))fail();return page.uuid;});
+ if(new Set(ids).size!==ids.length||sorted(ids)!==sorted(scope.pageUuids))fail();
+ const docs=manager.getSchDocs();if(!Array.isArray(docs)||docs.length>2048)fail();
+ for(const doc of docs){if(doc.project_uuid!==scope.projectUuid||doc.schematicUuid!==scope.schematicUuid||!scope.pageUuids.includes(doc.uuid)||doc.tabId!==doc.uuid+'@'+scope.projectUuid||doc.isSchSheetDoc()!==true||manager.get(doc.uuid)!==doc)fail();}
+};
+const frameReady=async(id)=>{
+ const tab=id+'@'+scope.projectUuid,doc=manager.get(id),frame=ui.document.getElementById('frame_'+tab);
+ if(!doc||!frame)return false;
+ if(doc.uuid!==id||doc.tabId!==tab||doc.project_uuid!==scope.projectUuid||doc.schematicUuid!==scope.schematicUuid||doc.isSchSheetDoc()!==true||(await bus.rpcCall('getModelTabId',tab))?.message!==tab)fail();
+ return frame.isConnected===true&&frame.tagName==='DIV'&&frame.getAttribute('c_dbid')===tab&&frame.getAttribute('c_doctype')==='1'&&(await bus.rpcCall('isOpenTab',[tab]))?.message===true;
+};
+const activeMatches=async(id)=>{
+ await owners();const current=await eda.dmt_SelectControl.getCurrentDocumentInfo(),native=manager.getActiveDoc();
+ if(current!=null&&((current.parentProjectUuid!==undefined&&current.parentProjectUuid!==scope.projectUuid)||(current.documentType!==1)||(current.uuid!==scope.activePageUuid&&current.uuid!==pageUuid)))fail();
+ return current?.uuid===id&&current.documentType===1&&current.tabId===id+'@'+scope.projectUuid&&native===manager.get(id)&&await frameReady(id);
+};
+await owners();if(!await activeMatches(scope.activePageUuid))fail();
+if(pageUuid!==scope.activePageUuid){
+ const present=(await bus.rpcCall('isOpenTab',[targetTab]))?.message;
+ if(present===false){if(manager.get(pageUuid)!==undefined&&manager.get(pageUuid)!==null)fail();await (${open21})(targetTab);}
+ else if(present!==true||!await frameReady(pageUuid))fail();
+}
+let deadline,pollTimer,rejectDeadline;
+const expired=new Promise((resolve,reject)=>{rejectDeadline=reject;});expired.catch(()=>{});
+const bounded=promise=>Promise.race([promise,expired]);
+const pause=()=>new Promise(resolve=>{pollTimer=ui.setTimeout(()=>{pollTimer=undefined;resolve();},50);});
+try{
+ deadline=ui.setTimeout(()=>rejectDeadline(new Error('NATIVE_LIFECYCLE_OPEN_TIMEOUT')),15000);
+ await bounded(owners());if(!await bounded(frameReady(pageUuid)))fail();
+ if(!await bounded(activeMatches(scope.activePageUuid))){const result=await bounded(eda.dmt_EditorControl.activateDocument(scope.activeTabId));if(typeof result!=='boolean')fail();}
+ let stable=0;
+ for(let attempt=0;attempt<300;attempt++){
+  if(await bounded(activeMatches(scope.activePageUuid))&&await bounded(frameReady(pageUuid))){stable++;if(stable===2)return {ok:true,profile:'easyeda-pro-control.schematic-layout-page-load.v1',pageUuid,activePageUuid:scope.activePageUuid,activeTabId:scope.activeTabId,loaded:true,returned:true,saved:false};}else stable=0;
+  await bounded(pause());
+ }
+ throw new Error('NATIVE_LIFECYCLE_OPEN_TIMEOUT');
+}finally{if(deadline!==undefined)ui.clearTimeout(deadline);if(pollTimer!==undefined)ui.clearTimeout(pollTimer);}
+})();`;
+}
+var identifier2, scopeSchema;
+var init_schematic_layout_page_load = __esm({
+  "server/src/schematic-layout-page-load.ts"() {
+    init_zod();
+    init_core3();
+    init_native_history();
+    init_device_runtime_guard();
+    init_native_document_lifecycle();
+    identifier2 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
+    scopeSchema = external_exports.object({
+      projectUuid: external_exports.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u),
+      projectPath: external_exports.string().min(1).max(4096),
+      schematicUuid: identifier2,
+      activePageUuid: identifier2,
+      activeTabId: external_exports.string().min(1).max(512),
+      pageUuids: external_exports.array(identifier2).min(1).max(16)
+    }).strict();
+  }
+});
+
+// server/src/design-topology.ts
+function normalized(input) {
+  return designTopologySchema.parse(input).map((entry) => ({ uniqueId: entry.uniqueId, designator: entry.designator, pins: entry.pins.toSorted((a, b) => a.pinNumber.localeCompare(b.pinNumber)) })).toSorted((a, b) => a.uniqueId.localeCompare(b.uniqueId));
+}
+async function readDesignTopology(engine2, context2) {
+  if (context2.document.documentType !== 1) {
+    throw new Error("Compiled topology requires the schematic editor.");
+  }
+  const result = await engine2.exactRead({ kind: "schematic-topology" }, context2);
+  if (!isRecord(result)) {
+    throw new TypeError("Compiled topology payload is absent.");
+  }
+  return normalized(result["compiledConnectivity"]);
+}
+function verifyDesignTopology(expected2, actual) {
+  if (canonicalJson(normalized(expected2)) !== canonicalJson(normalized(actual))) {
+    throw new Error("Compiled component/pin/net endpoints differ from the explicit transaction topology; no save is authorized.");
+  }
+}
+var identity, pin2, designTopologySchema;
+var init_design_topology = __esm({
+  "server/src/design-topology.ts"() {
+    init_zod();
+    init_core3();
+    identity = external_exports.string().min(1).max(512);
+    pin2 = external_exports.object({ pinNumber: identity, net: external_exports.string().max(512).nullable() }).strict();
+    designTopologySchema = external_exports.array(external_exports.object({ uniqueId: identity, designator: external_exports.string().max(512).nullable(), pins: external_exports.array(pin2).max(4096) }).strict()).max(2e4).superRefine((value, context2) => {
+      if (new Set(value.map((entry) => entry.uniqueId)).size !== value.length || value.some((entry) => new Set(entry.pins.map((item2) => item2.pinNumber)).size !== entry.pins.length)) {
+        context2.addIssue({ code: "custom", message: "Topology identities must be unique." });
+      }
+    });
+  }
+});
+
+// server/src/schematic-flat-topology.ts
+function refuse(reason) {
+  throw new Error(`SCHEMATIC_FLAT_TOPOLOGY_UNSUPPORTED: ${reason}`);
+}
+function unique(values2, label) {
+  if (new Set(values2).size !== values2.length) {
+    refuse(`duplicate ${label}`);
+  }
+}
+function exactMembers(actual, expected2, label) {
+  unique(actual, label);
+  unique(expected2, label);
+  if (!same(actual.toSorted(), expected2.toSorted())) {
+    refuse(`incomplete ${label}`);
+  }
+}
+function stored(records2, id7, type, value) {
+  const record6 = records2.get(id7);
+  if (record6?.type !== type || !same(record6.body, value)) {
+    refuse(`source record mismatch for ${type}`);
+  }
+}
+function stringAttribute(attributes, key) {
+  const selected = attributes.filter((item2) => item2.key === key);
+  const value = selected[0]?.value;
+  if (selected.length !== 1 || typeof value !== "string" || value.length === 0) {
+    return refuse(`missing exact ${key}`);
+  }
+  return value;
+}
+function checkAttributes(records2, ownerId, attributes, sourceAttributes) {
+  unique(attributes.map((item2) => item2.id), "attribute IDs");
+  unique(attributes.map((item2) => item2.key), "attribute keys");
+  for (const item2 of attributes) {
+    if (item2.body["parentId"] !== ownerId || item2.body["key"] !== item2.key) {
+      refuse("attribute owner or key mismatch");
+    }
+    if (records2.has(item2.id)) {
+      stored(records2, item2.id, "ATTR", item2.body);
+    }
+  }
+  const captured = new Set(attributes.map((item2) => item2.id));
+  for (const record6 of sourceAttributes) {
+    if (!captured.has(record6.id)) {
+      refuse("stored owner attribute omitted from native inventory");
+    }
+  }
+}
+function pointKey(value) {
+  return JSON.stringify(value);
+}
+function endpoint(index, value) {
+  const key = pointKey(value);
+  const existing = index.get(key);
+  if (existing !== void 0) {
+    return existing;
+  }
+  const added = { point: value, lines: [], pins: [] };
+  index.set(key, added);
+  return added;
+}
+function liesInside(value, segment2) {
+  const [a, b] = segment2.points;
+  if (same(value, a) || same(value, b)) {
+    return false;
+  }
+  return (value[0] - a[0]) * (b[1] - a[1]) === (value[1] - a[1]) * (b[0] - a[0]) && value[0] >= Math.min(a[0], b[0]) && value[0] <= Math.max(a[0], b[0]) && value[1] >= Math.min(a[1], b[1]) && value[1] <= Math.max(a[1], b[1]);
+}
+function crossInside(left, right) {
+  const [a, b] = left.points, [c, d] = right.points;
+  const crossing = a[0] === b[0] ? [a[0], c[1]] : [c[0], a[1]];
+  return a[0] === b[0] !== (c[0] === d[0]) && liesInside(crossing, left) && liesInside(crossing, right);
+}
+function verifySchematicFlatTopology(input) {
+  const observation = schematicFlatTopologyObservationSchema.parse(input);
+  const { scope: scope3, pages } = observation;
+  exactMembers(pages.map((page) => page.uuid), scope3.pageIds, "declared pages");
+  if (!scope3.pageIds.includes(scope3.activePageUuid) || pages.find((page) => page.uuid === scope3.activePageUuid)?.tabId !== scope3.activeTabId) {
+    refuse("active page binding differs");
+  }
+  const topology = [];
+  const allPartIds = [], allPinIds = [];
+  const designators = /* @__PURE__ */ new Set(), nameSpelling = /* @__PURE__ */ new Map(), sourceHashes = /* @__PURE__ */ new Map();
+  for (const page of pages) {
+    const source3 = parseDocumentSource(page.source);
+    const records2 = new Map(source3.objects.map((item2) => [item2.id, item2]));
+    const attributesByOwner = /* @__PURE__ */ new Map(), linesByOwner = /* @__PURE__ */ new Map();
+    for (const item2 of source3.objects) {
+      const key = item2.body[item2.type === "ATTR" ? "parentId" : "lineGroup"];
+      const index = item2.type === "ATTR" ? attributesByOwner : linesByOwner;
+      if ((item2.type === "ATTR" || item2.type === "LINE") && typeof key === "string") {
+        const collection = index.get(key) ?? [];
+        collection.push(item2);
+        index.set(key, collection);
+      }
+    }
+    if (source3.document["uuid"] !== page.uuid || source3.document["docType"] !== "SCH_PAGE") {
+      refuse("page source identity differs");
+    }
+    sourceHashes.set(page.uuid, source3.sha256);
+    if (source3.objects.some((item2) => !VISUAL_SOURCE_TYPES.has(item2.type) || item2.body["key"] === "_NETLABEL_" || item2.body["groupId"] !== void 0 && item2.body["groupId"] !== "")) {
+      refuse("unsupported source family, standalone net label or grouped object");
+    }
+    exactMembers(page.symbols.map((item2) => item2.id), source3.objects.filter((item2) => item2.type === "COMPONENT").map((item2) => item2.id), "source components");
+    exactMembers(page.wires.map((item2) => item2.id), source3.objects.filter((item2) => item2.type === "WIRE").map((item2) => item2.id), "source wires");
+    const wireIds = new Set(page.wires.map((item2) => item2.id));
+    const pinIds = new Set(page.symbols.flatMap((item2) => item2.pins.map((terminal) => terminal.id)));
+    for (const item2 of source3.objects.filter((entry) => entry.type === "ATTR")) {
+      const key = item2.body["key"], owner = item2.body["parentId"];
+      if (key === "NET" && (typeof owner !== "string" || !wireIds.has(owner)) || typeof key === "string" && ["Pin Number", "Pin Name", "Pin Type", "NO_CONNECT"].includes(key) && (typeof owner !== "string" || !pinIds.has(owner))) {
+        refuse("source electrical attribute has an unrepresented owner");
+      }
+    }
+    if (source3.objects.some((item2) => item2.type === "LINE" && (typeof item2.body["lineGroup"] !== "string" || !wireIds.has(item2.body["lineGroup"])))) {
+      refuse("source line has an unrepresented wire owner");
+    }
+    const points = /* @__PURE__ */ new Map();
+    const lineNet = /* @__PURE__ */ new Map();
+    const lines3 = [];
+    for (const group of page.wires) {
+      stored(records2, group.id, "WIRE", group.body);
+      const name6 = group.names[0];
+      if (name6 === void 0 || typeof name6.value !== "string" || !/^[A-Za-z_][A-Za-z0-9_+-]{0,127}$/u.test(name6.value) || name6.key !== "Name" || name6.body["key"] !== "NET" || name6.body["parentId"] !== group.id || name6.body["value"] !== name6.value) {
+        refuse("wire requires one literal simple NET name");
+      }
+      const net2 = name6.value;
+      if (nameSpelling.has(net2.toUpperCase()) && nameSpelling.get(net2.toUpperCase()) !== net2) {
+        refuse("case-ambiguous net names");
+      }
+      nameSpelling.set(net2.toUpperCase(), net2);
+      stored(records2, name6.id, "ATTR", name6.body);
+      exactMembers(group.names.map((item2) => item2.id), (attributesByOwner.get(group.id) ?? []).filter((item2) => item2.body["key"] === "NET").map((item2) => item2.id), "wire names");
+      exactMembers(group.lines.map((item2) => item2.id), (linesByOwner.get(group.id) ?? []).map((item2) => item2.id), "wire lines");
+      for (const item2 of group.lines) {
+        stored(records2, item2.id, "LINE", item2.body);
+        const [a, b] = item2.points;
+        if (!same([item2.body["startX"], item2.body["startY"], item2.body["endX"], item2.body["endY"]], [...a, ...b]) || item2.body["lineGroup"] !== group.id || same(a, b) || a[0] !== b[0] && a[1] !== b[1]) {
+          refuse("wire line is not one nonzero orthogonal source segment");
+        }
+        if (lineNet.has(item2.id)) {
+          refuse("duplicate wire line ownership");
+        }
+        lineNet.set(item2.id, net2);
+        lines3.push(item2);
+        endpoint(points, a).lines.push(item2.id);
+        endpoint(points, b).lines.push(item2.id);
+      }
+    }
+    for (const item2 of page.symbols) {
+      stored(records2, item2.id, "COMPONENT", item2.body);
+      checkAttributes(records2, item2.id, item2.attributes, attributesByOwner.get(item2.id) ?? []);
+      if (item2.kind === "sheet" && item2.pins.length > 0) {
+        refuse("drawing frame has electrical pins");
+      }
+    }
+    for (const item2 of page.symbols.filter((entry) => entry.kind === "part")) {
+      if (item2.attributes.some((entry) => ["Group ID", "Channel ID", "Reuse Block", "Multi-Part Group"].includes(entry.key) && entry.value !== "" && entry.value !== null)) {
+        refuse("instance, reuse or multipart attributes");
+      }
+      if (stringAttribute(item2.attributes, "Convert to PCB") !== "yes") {
+        refuse("part excluded from PCB conversion");
+      }
+      const uniqueId = stringAttribute(item2.attributes, "Unique ID");
+      const designator = stringAttribute(item2.attributes, "Designator");
+      if (!/^[A-Za-z]+[1-9][0-9]*$/u.test(designator) || designators.has(designator.toUpperCase())) {
+        refuse("ambiguous or unannotated designator");
+      }
+      designators.add(designator.toUpperCase());
+      allPartIds.push(item2.id);
+      const partPins = [];
+      unique(item2.pins.map((entry) => entry.number), "part pin numbers");
+      for (const terminal of item2.pins) {
+        if (!/^[A-Za-z0-9_+-]{1,128}$/u.test(terminal.number)) {
+          refuse("compound pin number");
+        }
+        const noConnect = terminal.noConnectAttribute;
+        if (noConnect !== null && (noConnect.key !== "NO_CONNECT" || noConnect.value !== "yes" && noConnect.value !== "no")) {
+          refuse("unsupported no-connect attribute");
+        }
+        if (terminal.noConnect !== (noConnect?.value === "yes")) {
+          refuse("no-connect flag differs from its native attribute");
+        }
+        checkAttributes(records2, terminal.id, noConnect === null ? terminal.attributes : [...terminal.attributes, noConnect], attributesByOwner.get(terminal.id) ?? []);
+        if (stringAttribute(terminal.attributes, "Pin Number") !== terminal.number || !same([terminal.body["x"], terminal.body["y"]], terminal.origin)) {
+          refuse("pin identity or source origin differs");
+        }
+        allPinIds.push(terminal.id);
+        if (allPinIds.length > 1e5) {
+          refuse("complete pin-count bound");
+        }
+        endpoint(points, terminal.origin).pins.push(terminal.id);
+        const joined = new Set(endpoint(points, terminal.origin).lines.map((id7) => lineNet.get(id7)));
+        if (joined.size > 1 || joined.has(void 0) || terminal.noConnect && joined.size > 0) {
+          refuse("pin has contradictory native nets or no-connect state");
+        }
+        partPins.push({ pinNumber: terminal.number, net: [...joined][0] ?? "" });
+      }
+      topology.push({ uniqueId, designator, pins: partPins.toSorted((left, right) => left.pinNumber.localeCompare(right.pinNumber)) });
+    }
+    if (points.size * lines3.length > 2e6) {
+      refuse("endpoint/interior comparison bound");
+    }
+    for (const value of points.values()) {
+      if (lines3.some((item2) => liesInside(value.point, item2))) {
+        refuse("unsplit endpoint or pin touches a segment interior");
+      }
+    }
+    if (lines3.length * lines3.length > 2e6) {
+      refuse("line intersection comparison bound");
+    }
+    if (lines3.some((item2, index) => lines3.slice(index + 1).some((other) => crossInside(item2, other)))) {
+      refuse("unsplit segment crossing");
+    }
+    exactMembers(page.contacts.map((item2) => pointKey(item2.point)), [...points.keys()], "native contact points");
+    for (const actual of page.contacts) {
+      const expected2 = points.get(pointKey(actual.point));
+      if (expected2 === void 0) {
+        refuse("extra native contact");
+      }
+      exactMembers(actual.lineIds, expected2.lines, "native contact wire lines");
+      exactMembers(actual.pinIds, expected2.pins, "native contact pins");
+      const nets = new Set(expected2.lines.map((id7) => lineNet.get(id7)));
+      if (nets.size > 1) {
+        refuse("contact joins differently named wires");
+      }
+      if (expected2.lines.length === 0 && expected2.pins.length > 1) {
+        refuse("multiple pins coincide without an explicitly named wire");
+      }
+    }
+  }
+  unique(allPartIds, "all-page component IDs");
+  unique(allPinIds, "all-page pin IDs");
+  const normalized2 = designTopologySchema.parse(topology.toSorted((left, right) => left.uniqueId.localeCompare(right.uniqueId)));
+  return {
+    profile: SCHEMATIC_FLAT_TOPOLOGY_PROFILE,
+    authority: "complete-native-source-and-endpoint-membership",
+    compiledCacheUsed: false,
+    topology: normalized2,
+    sourceSha256ByPage: Object.fromEntries(sourceHashes),
+    observationSha256: sha256Json(observation),
+    componentCount: normalized2.length,
+    pinCount: allPinIds.length
+  };
+}
+function buildSchematicFlatTopologyExpression(input) {
+  const scope3 = schematicFlatTopologyScopeSchema.parse(input);
+  unique(scope3.pageIds, "declared pages");
+  return `(() => {
+const scope=${JSON.stringify(scope3)};
+const fail=(reason)=>{throw new Error('SCH_FLAT_TOPOLOGY_'+reason);};
+const manager=globalThis.SCH?.docMemoryManager;
+if(typeof manager?.getActiveDoc!=='function'||typeof manager?.getSchDocs!=='function')fail('MANAGER');
+const active=manager.getActiveDoc();
+const check=()=>{const current=manager.getActiveDoc();if(current!==active||current?.uuid!==scope.activePageUuid||current?.tabId!==scope.activeTabId||current?.project_uuid!==scope.projectUuid||current?.schematicUuid!==scope.schematicUuid)fail('CONTEXT');};
+check();
+const project=active.projectMgr;
+if(project?.setting?.universal?.defaultNetName!==true||project.netLabelInterPageConnection!==true)fail('SETTINGS');
+const settings={defaultNetName:true,netLabelInterPageConnection:true};
+let copiedBytes=0,totalSources=0,totalSymbols=0,totalPins=0,totalLines=0,totalPoints=0;
+const array=(value,max)=>{if(!Array.isArray(value)||value.length>max)fail('ARRAY');return value;};
+const id=value=>{if(typeof value!=='string'||!value||value.length>512)fail('IDENTITY');return value;};
+const pair=value=>{if(!value||![value.x,value.y].every(number=>Number.isSafeInteger(number)&&Math.abs(number)<=1000000))fail('COORDINATE');return [value.x,value.y];};
+const copy=value=>{const encoded=JSON.stringify(value);if(typeof encoded!=='string'||encoded.length>1048576)fail('BODY');copiedBytes+=encoded.length;if(copiedBytes>8388608)fail('BODY_TOTAL');return JSON.parse(encoded);};
+const body=model=>{if(typeof model?.getConsistencyData!=='function')fail('BODY_METHOD');return copy(model.getConsistencyData());};
+const attribute=(item,owner)=>{if(typeof item.getInstanceValue!=='function'||item.getInstanceValue()!=null||item.variantValue!=null)fail('INSTANCE_ATTRIBUTE');const data=body(item);let value=item.value;if(owner?.cmdKey==='sheet'&&(item.key==='@Update Date'||item.key==='@Update Time')){const pattern=item.key==='@Update Time'?/^(?:[0-2]\\d:[0-5]\\d:[0-5]\\d)?$/:/^(?:\\d{4}-\\d{2}-\\d{2})?$/;if(typeof value!=='string'||!pattern.test(value)||data.key!==item.key||data.parentId!==owner.id||data.value===undefined)fail('FRAME_TIMESTAMP');value=data.value;}return{id:id(item.id),key:id(item.key),value:copy(value),body:data};};
+const attr=model=>{if(typeof model?.getAttr!=='function')fail('ATTR_METHOD');return array(model.getAttr(),4096).map(item=>attribute(item,model));};
+const get=(attrs,key)=>{const selected=attrs.filter(item=>item.key===key);if(selected.length!==1||typeof selected[0].value!=='string'||!selected[0].value)fail('ATTRIBUTE');return selected[0].value;};
+const docs=array(manager.getSchDocs(),256).filter(page=>page?.project_uuid===scope.projectUuid&&page?.schematicUuid===scope.schematicUuid);
+const actualIds=docs.map(page=>id(page.uuid)).sort();
+if(JSON.stringify(actualIds)!==JSON.stringify([...scope.pageIds].sort())||new Set(actualIds).size!==actualIds.length)fail('PAGE_MEMBERSHIP');
+const pages=docs.map(page=>{
+ if(page.projectMgr!==project||page.isSchSheetDoc?.()!==true||page.isBlockSymbolInstancePage!==false||page.readonlyMode===true||page.tabId!==page.uuid+'@'+scope.projectUuid)fail('PAGE_KIND');
+ if(page.consistencyImpl?.state!=='initialized')fail('PAGE_NOT_INITIALIZED');
+ const shapes=page.shapeManager;if(typeof shapes?.getModels!=='function'||shapes.actionRunner?.running!==false||typeof shapes.netPointManager?.getNetPoint!=='function')fail('SHAPES');
+ const handler=page.consistencyImpl?.decodeAndRealTimeSyncHandler;if(typeof handler?.getSourceCodeIdMap!=='function'||page.idManager!==shapes.idManager)fail('SOURCE_INVENTORY');const sourceIds=handler.getSourceCodeIdMap();if(!(sourceIds instanceof Map)||sourceIds.size>100000)fail('SOURCE_INVENTORY');const serializable=new Set(['Symbol','NetGroup','Wire','Attr','NetName','noConnect','Text','Polyline','Circle','Arc','Rect','Bezier','Ellipse']);for(const sourceId of sourceIds.keys()){const model=page.idManager.idMap?.get(sourceId);if(!model||model.id!==sourceId||!serializable.has(model.modelType))fail('SOURCE_MODEL_KIND');}
+ for(const type of ['BusEntry','MaskRegion','NetLabel','Combination','Image','Table'])if(array(shapes.getModels(type),20000).length)fail('UNSUPPORTED_FAMILY');
+ const points=new Map();const remember=value=>{const key=JSON.stringify(pair(value));if(!points.has(key)){if(++totalPoints>100000)fail('POINT_TOTAL');points.set(key,value);}};
+ const symbols=array(shapes.getModels('Symbol'),20000).map(model=>{
+  if(++totalSymbols>20000||!['part','sheet'].includes(model.cmdKey)||model.isAbnormal===true||typeof model.getShapes!=='function'||typeof model.traversePins!=='function')fail('SYMBOL_KIND');
+  if(model.cmdKey==='part'){const template=project.componentCache?.symbolTemplate?.[id(model.symbolUuid)],library=template?.shapeManager;if(template?.consistencyImpl?.state!=='initialized')fail('TEMPLATE_NOT_INITIALIZED');if(typeof library?.getModels!=='function'||typeof library.getPart!=='function')fail('PART_TEMPLATE');const parts=array(library.getModels('Symbol'),20000);if(parts.length!==1||parts[0]?.partId!==model.partId||library.getPart(model.partId)!==parts[0])fail('MULTIPART');}
+  const attributes=attr(model),pinModels=array(model.getShapes('Pin'),4096),traversed=[];model.traversePins(item=>traversed.push(item));
+  if(traversed.length!==pinModels.length||traversed.some(item=>!pinModels.includes(item)))fail('PIN_MEMBERSHIP');
+  const pins=pinModels.map(item=>{if(++totalPins>100000||item.parent!==model||typeof item.isNoConnectShow!=='boolean')fail('PIN_OWNER');const attrs=attr(item);remember(item.origin);return{id:id(item.id),number:get(attrs,'Pin Number'),origin:pair(item.origin),noConnect:item.isNoConnectShow,noConnectAttribute:item.noConnect?attribute(item.noConnect):null,body:body(item),attributes:attrs};});
+  return{id:id(model.id),kind:model.cmdKey,body:body(model),partCount:1,partNumber:1,attributes,pins};
+ });
+ const wires=array(shapes.getModels('NetGroup'),20000).map(model=>{
+  if(model.type!=='wire'||model.combination)fail('WIRE_KIND');
+  const names=array(model.netNames,4096).map(item=>({id:id(item.id),key:id(item.key),value:copy(item.value),body:body(item)}));
+  const lines=array(model.lines,20000).map(item=>{if(++totalLines>20000||item.parent!==model)fail('LINE_OWNER');const coordinates=array(item.points,2);if(coordinates.length!==2)fail('LINE_ARITY');coordinates.forEach(remember);return{id:id(item.id),body:body(item),points:coordinates.map(pair)};});
+  return{id:id(model.id),body:body(model),names,lines};
+ });
+ const contacts=[...points.values()].map(value=>{const point=shapes.netPointManager.getNetPoint(value);if(!point||JSON.stringify(pair(point))!==JSON.stringify(pair(value))||!(point.Wire instanceof Set)||!(point.Pin instanceof Set)||!(point.Bus instanceof Set)||!(point.BusEntry instanceof Set)||point.Bus.size||point.BusEntry.size)fail('CONTACT');const ids=items=>[...items].map(item=>{if(item.shapeManager!==shapes||shapes.idManager?.get(item.id)!==item)fail('CONTACT_OWNER');return id(item.id);}).sort();return{point:pair(value),lineIds:ids(point.Wire),pinIds:ids(point.Pin)};});
+ let source=page.consistencyImpl?.getSourceCode();if(typeof source!=='string'||!source||source.length>4194304)fail('SOURCE');totalSources+=source.length;if(totalSources>8388608)fail('SOURCE_TOTAL');
+ ${NORMALIZE_DOCUMENT_SOURCE_CODE}
+ if(sourceHeader.uuid!==page.uuid||sourceHeader.docType!=='SCH_PAGE')fail('SOURCE_IDENTITY');
+ return{uuid:page.uuid,tabId:id(page.tabId),source,symbols,wires,contacts};
+});
+check();if(project.setting.universal.defaultNetName!==true||project.netLabelInterPageConnection!==true)fail('SETTINGS_CHANGED');
+return{profile:${JSON.stringify(SCHEMATIC_FLAT_TOPOLOGY_PROFILE)},scope,settings,pages};
+})()`;
+}
+var SCHEMATIC_FLAT_TOPOLOGY_PROFILE, identity2, coordinate2, point, body2, attribute2, pin3, symbol2, line, wire, contact, schematicFlatTopologyScopeSchema, pageSchema, schematicFlatTopologyObservationSchema, same, VISUAL_SOURCE_TYPES;
+var init_schematic_flat_topology = __esm({
+  "server/src/schematic-flat-topology.ts"() {
+    init_zod();
+    init_core3();
+    init_document_source();
+    init_design_topology();
+    SCHEMATIC_FLAT_TOPOLOGY_PROFILE = "easyeda-pro-control.schematic-flat-named-wire-topology.v1";
+    identity2 = external_exports.string().min(1).max(512);
+    coordinate2 = external_exports.number().int().min(-1e6).max(1e6);
+    point = external_exports.tuple([coordinate2, coordinate2]);
+    body2 = external_exports.record(external_exports.string(), external_exports.json());
+    attribute2 = external_exports.strictObject({ id: identity2, key: identity2, value: external_exports.json(), body: body2 });
+    pin3 = external_exports.strictObject({
+      id: identity2,
+      number: identity2,
+      origin: point,
+      noConnect: external_exports.boolean(),
+      body: body2,
+      noConnectAttribute: attribute2.nullable(),
+      attributes: external_exports.array(attribute2).max(4096)
+    });
+    symbol2 = external_exports.strictObject({
+      id: identity2,
+      kind: external_exports.enum(["part", "sheet"]),
+      body: body2,
+      partCount: external_exports.literal(1),
+      partNumber: external_exports.literal(1),
+      attributes: external_exports.array(attribute2).max(4096),
+      pins: external_exports.array(pin3).max(4096)
+    });
+    line = external_exports.strictObject({ id: identity2, body: body2, points: external_exports.tuple([point, point]) });
+    wire = external_exports.strictObject({ id: identity2, body: body2, names: external_exports.array(attribute2).length(1), lines: external_exports.array(line).min(1).max(2e4) });
+    contact = external_exports.strictObject({ point, lineIds: external_exports.array(identity2).max(2e4), pinIds: external_exports.array(identity2).max(2e4) });
+    schematicFlatTopologyScopeSchema = external_exports.strictObject({
+      projectUuid: identity2,
+      schematicUuid: identity2,
+      activePageUuid: identity2,
+      activeTabId: identity2,
+      pageIds: external_exports.array(identity2).min(1).max(256)
+    });
+    pageSchema = external_exports.strictObject({
+      uuid: identity2,
+      tabId: identity2,
+      source: external_exports.string().min(1).max(4194304),
+      symbols: external_exports.array(symbol2).max(2e4),
+      wires: external_exports.array(wire).max(2e4),
+      contacts: external_exports.array(contact).max(1e5)
+    });
+    schematicFlatTopologyObservationSchema = external_exports.strictObject({
+      profile: external_exports.literal(SCHEMATIC_FLAT_TOPOLOGY_PROFILE),
+      scope: schematicFlatTopologyScopeSchema,
+      settings: external_exports.strictObject({ defaultNetName: external_exports.literal(true), netLabelInterPageConnection: external_exports.literal(true) }),
+      pages: external_exports.array(pageSchema).min(1).max(256)
+    }).superRefine((value, context2) => {
+      if (Buffer.byteLength(JSON.stringify(value), "utf8") > 16 * 1024 * 1024) {
+        context2.addIssue({ code: "custom", message: "Flat topology observation exceeds the complete-response bound." });
+      }
+    });
+    same = (left, right) => canonicalJson(left) === canonicalJson(right);
+    VISUAL_SOURCE_TYPES = /* @__PURE__ */ new Set(["CANVAS", "META", "COMPONENT", "ATTR", "WIRE", "LINE", "TEXT", "POLYLINE", "CIRCLE", "ARC", "RECT", "BEZIER", "ELLIPSE"]);
+  }
+});
+
+// server/src/library-checkpoint.ts
+function assertUnchangedLibraryCheckpoint(value, receipt2, message) {
+  if (!isRecord(value) || value["ok"] !== true || value["sourceChanged"] !== false || value["sourceEqualsCheckpoint"] !== true || value["sourceMatchesReceipt"] !== true || value["checkpointMatchesReceipt"] !== true || value["receiptPath"] !== receipt2.receiptPath || value["source"] !== receipt2.source || value["checkpoint"] !== receipt2.checkpoint || value["checkpointSha256"] !== receipt2.checkpointSha256 || value["checkpointDumpSha256"] !== receipt2.checkpointDumpSha256) {
+    throw new Error(message);
+  }
+}
+var init_library_checkpoint = __esm({
+  "server/src/library-checkpoint.ts"() {
+    init_core3();
+  }
+});
+
+// server/src/schematic-flat-read.ts
+import { join as join9 } from "node:path";
+async function readSchematicFlatTopology(engine2, expectedContext, overrides = {}) {
+  if (expectedContext.document.documentType !== 1) {
+    throw new Error("Flat topology requires an active schematic page.");
+  }
+  const dependencies3 = { ...services, ...overrides };
+  await engine2.assertBridgeDispatchAllowed();
+  const bundles = await engine2.upstream.installedEasyedaBundles?.();
+  if (bundles === void 0) {
+    throw new Error("Flat topology requires the reviewed native schematic and project implementations.");
+  }
+  const profile = async () => {
+    await dependencies3.verifySchematicNativeProfile(bundles.assetsRoot);
+    await dependencies3.verifyDeviceAssociationNativeProfile(bundles.assetsRoot);
+  };
+  await profile();
+  const context2 = await engine2.assertContext(structuredClone(expectedContext));
+  const outputDir = join9(controlDataDirectory(), "checkpoints");
+  const checkpoint = checkpointSchema.parse(await engine2.checkpoint({
+    source: context2.project.path,
+    outputDir,
+    label: "flat-topology-membership"
+  }));
+  const unchanged = async () => {
+    const proof = await engine2.checkpoint({ receiptPath: checkpoint.receiptPath });
+    assertUnchangedLibraryCheckpoint(proof, checkpoint, "Flat topology requires unchanged complete checkpoint membership throughout the read.");
+  };
+  await unchanged();
+  const projectUuid = context2.project.uuid ?? context2.project.projectUuid;
+  if (typeof projectUuid !== "string") {
+    throw new TypeError("Flat topology project identity is absent.");
+  }
+  const history = await dependencies3.readNativeHistoryCheckpoint({
+    checkpointPath: checkpoint.checkpoint,
+    expectedSha256: checkpoint.checkpointSha256,
+    projectUuid
+  });
+  const binding2 = deriveSchematicLayoutPageLoadScope(context2, history);
+  const scope3 = {
+    projectUuid: binding2.projectUuid,
+    schematicUuid: binding2.schematicUuid,
+    activePageUuid: binding2.activePageUuid,
+    activeTabId: binding2.activeTabId,
+    pageIds: binding2.pageUuids
+  };
+  const expression = buildSchematicFlatTopologyExpression(scope3);
+  const code = wrapWithContextGuard(`
+const expected=${JSON.stringify(scope3)};
+const declared=async()=>{
+ const schematic=await eda.dmt_Schematic.getCurrentSchematicInfo();
+ if(schematic?.uuid!==expected.schematicUuid||schematic.parentProjectUuid!==expected.projectUuid||!Array.isArray(schematic.page)||schematic.page.length!==expected.pageIds.length)throw new Error('SCH_FLAT_SCOPE');
+ const ids=schematic.page.map(page=>{if(typeof page?.uuid!=='string'||page.parentSchematicUuid!==expected.schematicUuid||(page.parentProjectUuid!==undefined&&page.parentProjectUuid!==expected.projectUuid))throw new Error('SCH_FLAT_SCOPE');return page.uuid;}).sort();
+ if(new Set(ids).size!==ids.length||JSON.stringify(ids)!==JSON.stringify(expected.pageIds))throw new Error('SCH_FLAT_SCOPE');
+};
+await declared();
+const payload=${expression};
+await declared();
+const json=JSON.stringify(payload),utf8Bytes=new TextEncoder().encode(json).byteLength;
+const envelope={schema:'easyeda-pro-control.exact-json.v1',utf8Bytes,json};
+if(new TextEncoder().encode(JSON.stringify(envelope)).byteLength>4194304)throw new Error('SCH_FLAT_TRANSPORT_BOUND');
+return envelope;`, context2);
+  const observe = async () => {
+    await engine2.assertBridgeDispatchAllowed();
+    await engine2.assertContext(context2);
+    await unchanged();
+    const raw = await engine2.upstream.callTool("easyeda_execute", { code, timeoutMs: 6e4, confirmWrite: true }, 7e4);
+    assertUpstreamReplySettled(raw);
+    const payload = decodeExactReadEnvelope(extractToolPayload(raw));
+    const proof = verifySchematicFlatTopology(payload);
+    if (payload === null || typeof payload !== "object" || !("scope" in payload) || canonicalJson(payload.scope) !== canonicalJson(scope3)) {
+      throw new Error("Flat topology response substituted its checkpoint-bound scope.");
+    }
+    await engine2.assertContext(context2);
+    await unchanged();
+    return proof;
+  };
+  const first = await observe(), second = await observe();
+  await profile();
+  await unchanged();
+  await engine2.assertContext(context2);
+  if (canonicalJson(first) !== canonicalJson(second)) {
+    throw new Error("Flat topology changed between complete observations.");
+  }
+  const result = {
+    ok: true,
+    kind: "schematic-flat-topology",
+    documentType: 1,
+    ...second,
+    membership: { source: "complete-project-checkpoint", checkpointSha256: checkpoint.checkpointSha256, receiptPath: checkpoint.receiptPath },
+    currentGenerationLiveValidated: false,
+    transactionTopology: false
+  };
+  return { ...result, read_consistency: {
+    stable: true,
+    attempts: 2,
+    snapshotSha256: sha256Json(result),
+    contextBinding: { level: "active-context-stability-required", preAndPostChecked: true, switchAwayAndBackDetectable: false }
+  } };
+}
+var services, checkpointHash, fileIdentity, checkpointSchema;
+var init_schematic_flat_read = __esm({
+  "server/src/schematic-flat-read.ts"() {
+    init_zod();
+    init_artifacts();
+    init_core3();
+    init_exact_readers();
+    init_native_history();
+    init_native_profiles();
+    init_device_native_profile();
+    init_schematic_layout_page_load();
+    init_schematic_flat_topology();
+    init_runtime_scripts();
+    init_library_checkpoint();
+    services = { readNativeHistoryCheckpoint, verifySchematicNativeProfile, verifyDeviceAssociationNativeProfile };
+    checkpointHash = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    fileIdentity = external_exports.object({ birthtimeNs: external_exports.string().min(1), ctimeNs: external_exports.string().min(1), dev: external_exports.string().min(1), ino: external_exports.string().min(1) });
+    checkpointSchema = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.checkpoint.v2"),
+      createdAt: external_exports.string().min(1),
+      source: external_exports.string().min(1),
+      checkpoint: external_exports.string().min(1),
+      sourceIdentity: fileIdentity,
+      checkpointIdentity: fileIdentity,
+      sourceSha256: checkpointHash,
+      checkpointSha256: checkpointHash,
+      sourceDumpSha256: checkpointHash,
+      checkpointDumpSha256: checkpointHash,
+      receiptSha256: checkpointHash,
+      receiptPath: external_exports.string().min(1)
+    }).catchall(external_exports.unknown());
+  }
+});
+
+// server/src/schematic-native-transport.ts
+import { TextDecoder as TextDecoder3, promisify as promisify3 } from "node:util";
+import { gunzip as gunzip2 } from "node:zlib";
+async function decodeSchematicNativeEnvelope(input) {
+  const envelope = envelopeSchema.parse(input);
+  const compressed = Buffer.from(envelope.base64, "base64");
+  if (compressed.length !== envelope.gzipBytes || compressed.toString("base64") !== envelope.base64 || compressed[0] !== 31 || compressed[1] !== 139 || compressed[2] !== 8 || compressed.readUInt32LE(compressed.length - 4) !== envelope.utf8Bytes) {
+    throw new Error("Native snapshot compressed envelope is noncanonical or contradictory.");
+  }
+  const bytes = await decompress(compressed, { maxOutputLength: envelope.utf8Bytes });
+  if (bytes.length !== envelope.utf8Bytes) {
+    throw new Error("Native snapshot decoded byte count differs.");
+  }
+  const json3 = new TextDecoder3("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+  const payload = JSON.parse(json3);
+  assertExactTransportValue(payload);
+  return schematicNativeSnapshotSchema.parse(payload);
+}
+function buildSchematicNativeTransportCode(expression) {
+  return `
+const result = await ${expression};
+const json = JSON.stringify(result);
+if (typeof json !== 'string' || json.length > ${SCHEMATIC_NATIVE_MAX_BYTES}) throw new Error('SCH_NATIVE_SNAPSHOT_BOUND');
+const bytes = new TextEncoder().encode(json);
+if (bytes.byteLength > ${SCHEMATIC_NATIVE_MAX_BYTES}) throw new Error('SCH_NATIVE_SNAPSHOT_BOUND');
+if (typeof CompressionStream !== 'function') throw new Error('SCH_NATIVE_COMPRESSION_UNAVAILABLE');
+const compressedReader = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip')).getReader();
+const compressedChunks = [];
+let gzipBytes = 0;
+try {
+  for (;;) {
+    const item = await compressedReader.read();
+    if (item.done) break;
+    if (!(item.value instanceof Uint8Array)) throw new Error('SCH_NATIVE_COMPRESSION_INVALID');
+    gzipBytes += item.value.byteLength;
+    if (gzipBytes > ${SCHEMATIC_NATIVE_MAX_GZIP_BYTES}) throw new Error('SCH_NATIVE_COMPRESSED_BOUND');
+    compressedChunks.push(item.value);
+  }
+} catch (error) {
+  try { await compressedReader.cancel(); } catch { throw new Error('SCH_NATIVE_COMPRESSION_CLEANUP'); }
+  throw error;
+} finally { compressedReader.releaseLock(); }
+if (gzipBytes < 20) throw new Error('SCH_NATIVE_COMPRESSION_INVALID');
+const compressed = new Uint8Array(gzipBytes);
+let offset = 0;
+for (const chunk of compressedChunks) { compressed.set(chunk, offset); offset += chunk.byteLength; }
+let binary = '';
+for (let start = 0; start < compressed.length; start += 32768) binary += String.fromCharCode(...compressed.subarray(start, start + 32768));
+return {schema:${JSON.stringify(SCHEMATIC_NATIVE_TRANSPORT_SCHEMA)},utf8Bytes:bytes.byteLength,gzipBytes,base64:btoa(binary)};`;
+}
+var SCHEMATIC_NATIVE_TRANSPORT_SCHEMA, SCHEMATIC_NATIVE_MAX_GZIP_BYTES, decompress, envelopeSchema;
+var init_schematic_native_transport = __esm({
+  "server/src/schematic-native-transport.ts"() {
+    init_zod();
+    init_exact_readers();
+    init_schematic_native_adapter();
+    SCHEMATIC_NATIVE_TRANSPORT_SCHEMA = "easyeda-pro-control.schematic-native-gzip.v1";
+    SCHEMATIC_NATIVE_MAX_GZIP_BYTES = 1024 * 1024;
+    decompress = promisify3(gunzip2);
+    envelopeSchema = external_exports.object({
+      schema: external_exports.literal(SCHEMATIC_NATIVE_TRANSPORT_SCHEMA),
+      utf8Bytes: external_exports.number().int().min(1).max(SCHEMATIC_NATIVE_MAX_BYTES),
+      gzipBytes: external_exports.number().int().min(20).max(SCHEMATIC_NATIVE_MAX_GZIP_BYTES),
+      base64: external_exports.string().min(1).max(Math.ceil(SCHEMATIC_NATIVE_MAX_GZIP_BYTES / 3) * 4)
+    }).strict();
+  }
+});
+
 // server/src/engine.ts
 import { randomUUID as randomUUID4 } from "node:crypto";
-import { dirname as dirname4, isAbsolute as isAbsolute10, join as join9 } from "node:path";
+import { dirname as dirname4, isAbsolute as isAbsolute10, join as join10 } from "node:path";
 async function checkpointAccessPolicy(source3) {
   const expectedSource = normalizeEasyedaProjectPath(source3);
   return {
     expectedSource,
     controlRoot: await controlRootCapability(),
     artifactRoots: [
-      join9(dirname4(expectedSource), "backups"),
-      join9(controlDataDirectory(), "checkpoints")
+      join10(dirname4(expectedSource), "backups"),
+      join10(controlDataDirectory(), "checkpoints")
     ]
   };
 }
@@ -43370,13 +44227,13 @@ function now() {
   return (/* @__PURE__ */ new Date()).toISOString();
 }
 function serializeError(error51) {
-  const metadata = errorMetadata(error51);
+  const metadata2 = errorMetadata(error51);
   return {
-    name: metadata?.name ?? "Error",
-    message: metadata?.message ?? String(error51),
-    mismatches: metadata?.mismatches,
-    assertionResults: metadata?.assertionResults,
-    upstreamResult: metadata?.upstreamResult
+    name: metadata2?.name ?? "Error",
+    message: metadata2?.message ?? String(error51),
+    mismatches: metadata2?.mismatches,
+    assertionResults: metadata2?.assertionResults,
+    upstreamResult: metadata2?.upstreamResult
   };
 }
 function assertAssertions(payload, assertions, label) {
@@ -43409,8 +44266,8 @@ function exactCalls(calls, kind) {
     (call) => call.toolName === "easyeda_control_exact_read" && call.arguments?.["kind"] === kind
   );
 }
-function assertRequiredPhaseReaders(calls, documentType, targetPrimitiveIds, label) {
-  const componentKind = documentType === 1 ? "schematic-components" : "pcb-components";
+function assertRequiredPhaseReaders(calls, documentType2, targetPrimitiveIds, label) {
+  const componentKind = documentType2 === 1 ? "schematic-components" : "pcb-components";
   const componentCalls = exactCalls(calls, componentKind);
   const summaryCalls = componentCalls.filter((call) => {
     const selector3 = call.arguments?.["selector"];
@@ -43432,7 +44289,7 @@ function assertRequiredPhaseReaders(calls, documentType, targetPrimitiveIds, lab
       `${label} requires one all-component scalar snapshot (pins/bounds false) and one detailed exact-target ${componentKind} snapshot (pins/bounds true).`
     );
   }
-  if (documentType === 3) {
+  if (documentType2 === 3) {
     for (const kind of ["pcb-inventory", "pcb-rules"]) {
       if (exactCalls(calls, kind).length !== 1) {
         throw new Error(
@@ -43641,8 +44498,8 @@ function pcbInventoryInvariantHash(payload, plan, targetComponentPayload, stateN
   return sha256Json(inventory);
 }
 function baselineInvariants(results, plan) {
-  const documentType = plan.expectedContext.document.documentType;
-  const componentKind = documentType === 1 ? "schematic-components" : "pcb-components";
+  const documentType2 = plan.expectedContext.document.documentType;
+  const componentKind = documentType2 === 1 ? "schematic-components" : "pcb-components";
   const components = componentProofResults(
     results,
     componentKind,
@@ -43664,11 +44521,11 @@ function baselineInvariants(results, plan) {
       plan
     )
   };
-  if (documentType === 1) {
+  if (documentType2 === 1) {
     value.schematicTopologySha256 = sha256Json(
       normalizeProofEnvelope(resultForKind(results, "schematic-topology"))
     );
-  } else if (documentType === 3) {
+  } else if (documentType2 === 3) {
     value.pcbInventorySha256 = pcbInventoryInvariantHash(
       resultForKind(results, "pcb-inventory"),
       plan,
@@ -43784,7 +44641,7 @@ function ensurePlanShape(value) {
     );
   }
   const targetSet = new Set(plan.targetPrimitiveIds);
-  const documentType = plan.expectedContext.document.documentType;
+  const documentType2 = plan.expectedContext.document.documentType;
   const declaredChangeKeys = /* @__PURE__ */ new Set();
   for (const change of plan.targetChanges) {
     if (!targetSet.has(change?.primitiveId)) {
@@ -43809,7 +44666,7 @@ function ensurePlanShape(value) {
       );
     }
     declaredChangeKeys.add(changeKey);
-    if (documentType === 3 && !/^\/(?:x|y|rotation|layer|primitiveLock|bounds\/(?:minX|minY|maxX|maxY)|pads\/\d+\/(?:x|y|rotation|layer))$/u.test(
+    if (documentType2 === 3 && !/^\/(?:x|y|rotation|layer|primitiveLock|bounds\/(?:minX|minY|maxX|maxY)|pads\/\d+\/(?:x|y|rotation|layer))$/u.test(
       change.pointer
     )) {
       throw new Error(
@@ -43922,7 +44779,7 @@ function ensurePlanShape(value) {
   validateExpectedFingerprint(plan.expectedFingerprint);
   validatePrivateFingerprint(plan.expectedFingerprint);
 }
-var FORBIDDEN_APPLY_NAMES, DEDICATED_FACADE_NAME, EXACT_COMPONENT_MUTATION_TOOL, ACTIVE_DOCUMENT_WRITE_ALLOWLIST, SerializedGate, EasyedaControlEngine;
+var FORBIDDEN_APPLY_NAMES, DEDICATED_FACADE_NAME, EXACT_COMPONENT_MUTATION_TOOL, ACTIVE_DOCUMENT_WRITE_ALLOWLIST, SerializedGate, scanBridgeBlockingOperations, scanRecoveryBlockingOperations, scanUnfinishedOperations, EasyedaControlEngine;
 var init_engine = __esm({
   "server/src/engine.ts"() {
     init_core3();
@@ -43932,6 +44789,7 @@ var init_engine = __esm({
     init_exact_readers();
     init_public_sdk_read();
     init_schematic_native_adapter();
+    init_schematic_flat_read();
     init_schematic_native_transport();
     init_reader_diagnostics();
     init_native_profiles();
@@ -43989,6 +44847,18 @@ var init_engine = __esm({
         }
       }
     };
+    scanBridgeBlockingOperations = createOperationScanner((value) => {
+      const operation = asOperationJournal(value);
+      return operation.state === "journal-unreadable" || operationHasOrphanedCallRisk(operation) ? operationSummary2(operation) : void 0;
+    });
+    scanRecoveryBlockingOperations = createOperationScanner((value) => {
+      const operation = asOperationJournal(value);
+      return !isTerminalOperation(operation) || operation.state === "journal-unreadable" || operationHasOrphanedCallRisk(operation) ? operationSummary2(operation) : void 0;
+    });
+    scanUnfinishedOperations = createOperationScanner((value) => {
+      const operation = asOperationJournal(value);
+      return isTerminalOperation(operation) ? void 0 : operationSummary2(operation);
+    });
     EasyedaControlEngine = class {
       upstream;
       privateComponentWriterValidated;
@@ -44439,10 +45309,7 @@ var init_engine = __esm({
         }
       }
       async assertBridgeDispatchAllowed() {
-        const blockingOperations = await scanOperations((value) => {
-          const operation = asOperationJournal(value);
-          return operation.state === "journal-unreadable" || operationHasOrphanedCallRisk(operation) ? operationSummary2(operation) : void 0;
-        });
+        const blockingOperations = await scanBridgeBlockingOperations();
         if (blockingOperations.length === 0) {
           return true;
         }
@@ -44454,10 +45321,8 @@ var init_engine = __esm({
         throw error51;
       }
       async assertRecoveryOperationIsolated(operationId) {
-        const blockingOperations = await scanOperations((value) => {
-          const operation = asOperationJournal(value);
-          return operation.operationId !== operationId && (!isTerminalOperation(operation) || operation.state === "journal-unreadable" || operationHasOrphanedCallRisk(operation)) ? operationSummary2(operation) : void 0;
-        });
+        const recoveryBlockingOperations = await scanRecoveryBlockingOperations();
+        const blockingOperations = recoveryBlockingOperations.filter((operation) => operation.operationId !== operationId);
         if (blockingOperations.length === 0) {
           return true;
         }
@@ -44617,16 +45482,16 @@ var init_engine = __esm({
         const projectUuid = payload?.project?.uuid ?? payload?.project?.projectUuid;
         const projectPath = payload?.project?.path;
         const documentUuid = payload?.document?.uuid ?? payload?.document?.documentUuid;
-        const documentType = payload?.document?.documentType;
+        const documentType2 = payload?.document?.documentType;
         const tabId = payload?.document?.tabId;
-        if (typeof projectUuid !== "string" || projectUuid.length === 0 || typeof projectPath !== "string" || projectPath.length === 0 || typeof documentUuid !== "string" || documentUuid.length === 0 || typeof tabId !== "string" || tabId.length === 0 || !Number.isInteger(documentType) || ![1, 2, 3, 4, 15].includes(documentType)) {
+        if (typeof projectUuid !== "string" || projectUuid.length === 0 || typeof projectPath !== "string" || projectPath.length === 0 || typeof documentUuid !== "string" || documentUuid.length === 0 || typeof tabId !== "string" || tabId.length === 0 || !Number.isInteger(documentType2) || ![1, 2, 3, 4, 15].includes(documentType2)) {
           throw new Error(
             `EasyEDA context probe did not prove a nonempty project UUID/path, document UUID, active tab, and supported document type. ${JSON.stringify(contextFailureDiagnostics(payload))}`
           );
         }
         requireNativeProjectPathProof(payload);
         payload.project.path = normalizeEasyedaProjectPath(projectPath);
-        if (documentType === 1) {
+        if (documentType2 === 1) {
           const schematicUuid = payload?.schematic?.uuid ?? payload?.schematic?.documentUuid;
           const pageUuid = payload.schematicPage?.uuid ?? payload.schematicPage?.documentUuid;
           const parentUuid = payload.schematicPage?.["parentSchematicUuid"];
@@ -44641,7 +45506,7 @@ var init_engine = __esm({
             );
           }
         }
-        if (documentType === 3) {
+        if (documentType2 === 3) {
           const pcbUuid = payload?.pcb?.uuid ?? payload?.pcb?.documentUuid;
           if (pcbUuid !== documentUuid) {
             throw new Error(
@@ -44883,6 +45748,9 @@ var init_engine = __esm({
         const parsed2 = validateExactReadRequest(request, expectedContext);
         if (parsed2.kind === "schematic-native") {
           return this.schematicNativeRead(expectedContext);
+        }
+        if (parsed2.kind === "schematic-flat-topology") {
+          return readSchematicFlatTopology(this, expectedContext);
         }
         const source3 = buildExactReadCode(parsed2);
         const initialContext = await this.assertContext(expectedContext, options);
@@ -45281,10 +46149,8 @@ var init_engine = __esm({
             "A mutation plan must first close/reopen the target without saving to bind its live baseline to the project database. Set confirmDiscardAnyUnsavedState=true only after authorizing discard of any unsaved target-document state."
           );
         }
-        const unfinished = await scanOperations((value) => {
-          const operation2 = asOperationJournal(value);
-          return isTerminalOperation(operation2) ? void 0 : operation2.operationId;
-        });
+        const unfinishedOperations = await scanUnfinishedOperations();
+        const unfinished = unfinishedOperations.map((operation2) => operation2.operationId);
         if (unfinished.length > 0) {
           throw new Error(
             `An incomplete EasyEDA operation already exists: ${unfinished.join(", ")}. Recover it before planning another mutation.`
@@ -46474,10 +47340,7 @@ var init_engine = __esm({
       }
       async recover(operationId, resolution, options = {}) {
         if (operationId === void 0 || operationId.length === 0) {
-          return scanOperations((value) => {
-            const operation2 = asOperationJournal(value);
-            return isTerminalOperation(operation2) ? void 0 : operationSummary2(operation2);
-          });
+          return scanUnfinishedOperations();
         }
         await this.assertRecoveryOperationIsolated(operationId);
         const operation = asOperationJournal(await loadOperation(operationId));
@@ -47140,7 +48003,7 @@ function expectedBetweenRules(compiled, before) {
     throw new Error("Complete Safe Spacing and Creepage Distance pair collections are required.");
   }
   const orientations = /* @__PURE__ */ new Map(), rows = /* @__PURE__ */ new Map();
-  const endpoint = (value) => {
+  const endpoint2 = (value) => {
     if (!isRecord(value) || Object.keys(value).length !== 2 || typeof value["name"] !== "string") {
       throw new Error("Invalid between-net endpoint.");
     }
@@ -47165,7 +48028,7 @@ function expectedBetweenRules(compiled, before) {
       if (!isRecord(value) || Object.keys(value).some((key) => !["net1", "net2", "rule", ...category === "Safe Spacing" ? ["copperRuleName", "planeRuleName"] : []].includes(key))) {
         throw new Error("Unreviewed pair rule field.");
       }
-      const first = endpoint(value["net1"]), second = endpoint(value["net2"]);
+      const first = endpoint2(value["net1"]), second = endpoint2(value["net2"]);
       if (canonicalJson(first) === canonicalJson(second)) {
         throw new Error("Between-net endpoints must be distinct.");
       }
@@ -47179,8 +48042,8 @@ function expectedBetweenRules(compiled, before) {
       }
       seen.add(symmetricId);
       orientations.set(symmetricId, id7);
-      const body2 = rows.get(id7) ?? { ruleOrder: 3, ruleKeyValue: {}, copperValue: { COPPER: null }, innerPlaneValue: { PLANE: null } };
-      const keys2 = body2["ruleKeyValue"];
+      const body3 = rows.get(id7) ?? { ruleOrder: 3, ruleKeyValue: {}, copperValue: { COPPER: null }, innerPlaneValue: { PLANE: null } };
+      const keys2 = body3["ruleKeyValue"];
       if (!isRecord(keys2)) {
         throw new Error("Invalid generated rule body.");
       }
@@ -47189,18 +48052,18 @@ function expectedBetweenRules(compiled, before) {
         keys2[category === "Safe Spacing" ? "SAFE" : "CREEPAGE"] = rule2;
       }
       if (category === "Safe Spacing") {
-        body2["copperValue"] = { COPPER: reference(before, value["copperRuleName"], "SAFE") };
-        body2["innerPlaneValue"] = { PLANE: reference(before, value["planeRuleName"], "SAFE") };
+        body3["copperValue"] = { COPPER: reference(before, value["copperRuleName"], "SAFE") };
+        body3["innerPlaneValue"] = { PLANE: reference(before, value["planeRuleName"], "SAFE") };
       }
-      rows.set(id7, body2);
+      rows.set(id7, body3);
     }
   }
   const objects = before.objects.filter((object4) => {
     const key = selector(object4);
     return !Array.isArray(key) || !Array.isArray(key[0]);
   });
-  for (const [id7, body2] of rows) {
-    objects.push({ id: id7, type: "RULE_SELECTOR", body: { ...before.objects.find((object4) => object4.id === id7)?.body, ...body2 } });
+  for (const [id7, body3] of rows) {
+    objects.push({ id: id7, type: "RULE_SELECTOR", body: { ...before.objects.find((object4) => object4.id === id7)?.body, ...body3 } });
   }
   return snapshot(before, objects);
 }
@@ -47798,25 +48661,25 @@ function assertProfile(compiled, before, ids2) {
   assertPrimitiveRepresentation(family.type, { ...target5.body, ...patch });
   return { family, patch, target: target5 };
 }
-function assertPrimitiveRepresentation(type, body2) {
-  if (type === "VIA" && body2["viaType"] === "BLIND" && (typeof body2["ruleName"] !== "string" || body2["ruleName"].length === 0)) {
+function assertPrimitiveRepresentation(type, body3) {
+  if (type === "VIA" && body3["viaType"] === "BLIND" && (typeof body3["ruleName"] !== "string" || body3["ruleName"].length === 0)) {
     return unsupported("blind via requires an explicit existing blind-layer rule");
   }
   if (type === "PAD" || type === "VIA") {
     const fields2 = type === "PAD" ? Object.values(MASK_FIELDS) : ["topSolderExpansion", "bottomSolderExpansion"];
-    const masks = fields2.map((field2) => body2[field2]);
+    const masks = fields2.map((field2) => body3[field2]);
     if (!masks.every((value) => value === null) && !masks.every((value) => typeof value === "number" && Number.isFinite(value))) {
       return unsupported("native mask mode is shared: use all explicit numeric expansions or all rule defaults");
     }
   }
   if (type === "PAD") {
-    if (body2["topPasteExpansion"] !== body2["bottomPasteExpansion"]) {
+    if (body3["topPasteExpansion"] !== body3["bottomPasteExpansion"]) {
       return unsupported("native pad has one shared top/bottom paste expansion");
     }
-    if (body2["layerId"] !== 12 && body2["hole"] !== null) {
+    if (body3["layerId"] !== 12 && body3["hole"] !== null) {
       return unsupported("surface pad cannot retain a drill hole");
     }
-    if (typeof body2["num"] !== "string" || body2["num"].replaceAll("-", "").toUpperCase() !== body2["num"]) {
+    if (typeof body3["num"] !== "string" || body3["num"].replaceAll("-", "").toUpperCase() !== body3["num"]) {
       return unsupported("pad number must already be in native uppercase/hyphen-free form");
     }
   }
@@ -47943,8 +48806,8 @@ function buildGroupSource(compiled, before) {
     }
   } else if (verb === "delete") {
     records2.delete(groupId);
-    for (const member of members) {
-      setMember(nativeNetName(member), null, family === "differential-pair" ? false : void 0);
+    for (const member2 of members) {
+      setMember(nativeNetName(member2), null, family === "differential-pair" ? false : void 0);
     }
   } else if (verb === "rename") {
     const newName = values2[1];
@@ -47957,8 +48820,8 @@ function buildGroupSource(compiled, before) {
     }
     records2.delete(groupId);
     records2.set(newId, { ...group, id: newId });
-    for (const member of members) {
-      setMember(nativeNetName(member), newName);
+    for (const member2 of members) {
+      setMember(nativeNetName(member2), newName);
     }
     for (const reference2 of selectorReferences) {
       const id7 = reference2.id.replaceAll(JSON.stringify([selectorType, name6]), JSON.stringify([selectorType, newName]));
@@ -47974,21 +48837,21 @@ function buildGroupSource(compiled, before) {
       throw new TypeError("Missing membership changes.");
     }
     for (const net2 of nets) {
-      if (verb === "remove-nets" && !members.some((member) => nativeNetName(member) === net2)) {
+      if (verb === "remove-nets" && !members.some((member2) => nativeNetName(member2) === net2)) {
         throw new Error("Cannot remove a net outside the target group.");
       }
       setMember(net2, verb === "add-nets" ? name6 : null);
     }
   } else if (verb === "set-positive" || verb === "set-negative") {
     const positive2 = verb === "set-positive";
-    const previous = members.filter((member) => member.body["isPositiveNet"] === positive2);
-    const other = members.filter((member) => member.body["isPositiveNet"] !== positive2);
+    const previous = members.filter((member2) => member2.body["isPositiveNet"] === positive2);
+    const other = members.filter((member2) => member2.body["isPositiveNet"] !== positive2);
     const otherMember = other[0];
     if (previous.length !== 1 || other.length !== 1 || otherMember === void 0 || nativeNetName(otherMember) === values2[1]) {
       throw new Error("Differential pair endpoint invariant failed.");
     }
-    for (const member of previous) {
-      setMember(nativeNetName(member), null, false);
+    for (const member2 of previous) {
+      setMember(nativeNetName(member2), null, false);
     }
     setMember(values2[1], name6, positive2);
   } else {
@@ -48035,13 +48898,13 @@ function buildNetRuleSource(compiled, before) {
   const netRules = /* @__PURE__ */ new Map();
   const classNames = /* @__PURE__ */ new Map();
   const lengthNames = /* @__PURE__ */ new Map();
-  const setSelector = (type, name6, body2) => {
+  const setSelector = (type, name6, body3) => {
     const id7 = JSON.stringify(["RULE_SELECTOR", [type, name6]]);
-    if (wantedSelectors.has(id7) && !equal(records2.get(id7)?.body, body2)) {
+    if (wantedSelectors.has(id7) && !equal(records2.get(id7)?.body, body3)) {
       throw new Error("Contradictory duplicate rule selector.");
     }
     const previous = records2.get(id7);
-    records2.set(id7, { id: id7, type: "RULE_SELECTOR", body: { ...previous?.body, ...body2 } });
+    records2.set(id7, { id: id7, type: "RULE_SELECTOR", body: { ...previous?.body, ...body3 } });
     wantedSelectors.add(id7);
   };
   const visitNet = (value, membership) => {
@@ -48053,12 +48916,12 @@ function buildNetRuleSource(compiled, before) {
     if (name6.length === 0 || name6.toUpperCase() !== name6 || net2?.type !== "NET") {
       throw new Error("Rule row names an absent or noncanonical net.");
     }
-    const body2 = netRuleBody(value), previous = netRules.get(name6);
-    if (previous !== void 0 && !equal(previous, body2)) {
+    const body3 = netRuleBody(value), previous = netRules.get(name6);
+    if (previous !== void 0 && !equal(previous, body3)) {
       throw new Error("A net has contradictory rule overrides across groups.");
     }
-    netRules.set(name6, body2);
-    setSelector("NET", name6, body2);
+    netRules.set(name6, body3);
+    setSelector("NET", name6, body3);
     if (membership !== void 0) {
       const map2 = membership.type === "netClass" ? classNames : lengthNames;
       if (map2.has(name6)) {
@@ -48129,31 +48992,31 @@ function expectedComponentChildren(before, target5, patch) {
     if (child.type !== "ATTR") {
       return unsupported("non-ATTR stored component child transform");
     }
-    const body2 = { ...child.body };
+    const body3 = { ...child.body };
     if (flipped || deltaAngle !== 0) {
-      const layer4 = exactNumber(body2["layerId"], "attribute layer");
-      if (typeof body2["mirror"] !== "boolean") {
+      const layer4 = exactNumber(body3["layerId"], "attribute layer");
+      if (typeof body3["mirror"] !== "boolean") {
         return unsupported("attribute mirror must be explicit for rotation/flip");
       }
-      const oldChildAngle = exactNumber(body2["angle"], "attribute angle");
+      const oldChildAngle = exactNumber(body3["angle"], "attribute angle");
       let newLayer = layer4;
       if (flipped) {
         newLayer = oppositeLayer(layer4);
         if (newLayer === layer4) {
           return unsupported("unchanged-layer text flip needs native font-width geometry");
         }
-        body2["layerId"] = newLayer;
+        body3["layerId"] = newLayer;
       }
-      const mirrored = [2, 4, 6, 8, 10, 59].includes(newLayer) !== body2["mirror"];
-      body2["angle"] = nativeCoordinate(oldChildAngle + (mirrored ? -deltaAngle : deltaAngle));
+      const mirrored = [2, 4, 6, 8, 10, 59].includes(newLayer) !== body3["mirror"];
+      body3["angle"] = nativeCoordinate(oldChildAngle + (mirrored ? -deltaAngle : deltaAngle));
     }
-    if (body2["x"] !== null || body2["y"] !== null) {
-      const relativeX = (exactNumber(body2["x"], "attribute x") - oldX) * (flipped ? -1 : 1);
-      const relativeY = exactNumber(body2["y"], "attribute y") - oldY;
-      body2["x"] = nativeCoordinate(oldX + dx + relativeX * cosine - relativeY * sine);
-      body2["y"] = nativeCoordinate(oldY + dy + relativeX * sine + relativeY * cosine);
+    if (body3["x"] !== null || body3["y"] !== null) {
+      const relativeX = (exactNumber(body3["x"], "attribute x") - oldX) * (flipped ? -1 : 1);
+      const relativeY = exactNumber(body3["y"], "attribute y") - oldY;
+      body3["x"] = nativeCoordinate(oldX + dx + relativeX * cosine - relativeY * sine);
+      body3["y"] = nativeCoordinate(oldY + dy + relativeX * sine + relativeY * cosine);
     }
-    expected2.set(child.id, { ...child, body: body2 });
+    expected2.set(child.id, { ...child, body: body3 });
   }
   return expected2;
 }
@@ -48539,9 +49402,9 @@ function assertPublicRuleEffects(operation, before, expected2 = buildExpectedDes
       if (typeof group !== "string" || !Array.isArray(key) || typeof key[1] !== "string") {
         throw new TypeError("Invalid pair-member source identity.");
       }
-      const member = values(records2.get(JSON.stringify(["RULE_SELECTOR", ["NET", key[1]]])), "ruleKeyValue")["DIFFER_ENTAIL"] ?? "default";
+      const member2 = values(records2.get(JSON.stringify(["RULE_SELECTOR", ["NET", key[1]]])), "ruleKeyValue")["DIFFER_ENTAIL"] ?? "default";
       const pair = values(records2.get(JSON.stringify(["RULE_SELECTOR", ["DIFF_PAIR", group]])), "ruleKeyValue")["DIFFER_ENTAIL"] ?? "default";
-      if (typeof member !== "string" || typeof pair !== "string" || member !== pair) {
+      if (typeof member2 !== "string" || typeof pair !== "string" || member2 !== pair) {
         throw new Error("Native full-rule setter would replace individual pair-member physics.");
       }
     }
@@ -48707,7 +49570,7 @@ function buildDesignNativeAdapter(operation, before, ids2 = {}) {
   verifyDesignSourceEffect(compiled, before, expected2, resolved2);
   return buildReviewedNativeSourceMerge(before, expected2, createdId);
 }
-function buildReviewedNativeSourceMerge(before, expected2, createdId, documentType = 3) {
+function buildReviewedNativeSourceMerge(before, expected2, createdId, documentType2 = 3) {
   for (const snapshot6 of [before, expected2]) {
     if (snapshot6.schema !== "easyeda-pro-control.document-source.v1" || snapshot6.sha256 !== sha256Json({ schema: snapshot6.schema, document: snapshot6.document, objects: snapshot6.objects })) {
       throw new Error("Invalid native merge source commitment.");
@@ -48760,11 +49623,11 @@ const parseMergeSource = (source) => {
   }).sort((left, right) => left.id.localeCompare(right.id));
   return { document, objects, rows };
 };
-if (typeof EXPECTED_DOCUMENT_UUID !== 'string' || typeof EXPECTED_TAB_ID !== 'string' || EXPECTED_DOCUMENT_TYPE !== ${documentType} || MERGE_BASELINE.document.uuid !== EXPECTED_DOCUMENT_UUID) throw new Error('Native merge requires the outer context guard');
+if (typeof EXPECTED_DOCUMENT_UUID !== 'string' || typeof EXPECTED_TAB_ID !== 'string' || EXPECTED_DOCUMENT_TYPE !== ${documentType2} || MERGE_BASELINE.document.uuid !== EXPECTED_DOCUMENT_UUID) throw new Error('Native merge requires the outer context guard');
 const mergeFileApi = eda.sys_FileManager;
-if (typeof mergeFileApi?.getDocumentSource !== 'function' || (${documentType} === 3 && typeof mergeFileApi?.setDocumentSource !== 'function')) throw new Error('Native source merge APIs unavailable');
+if (typeof mergeFileApi?.getDocumentSource !== 'function' || (${documentType2} === 3 && typeof mergeFileApi?.setDocumentSource !== 'function')) throw new Error('Native source merge APIs unavailable');
 let mergeBus;
-${documentType === 4 ? `
+${documentType2 === 4 ? `
 mergeStage = 'frame';
 const mergeWindows = [globalThis.window?.top], mergeBuses = [], mergeSeen = new Set();
 for (let index = 0; index < mergeWindows.length; index++) {
@@ -48788,9 +49651,9 @@ if (!mergeBus) throw new Error('Exact native merge frame not found');
 ` : ""}
 mergeStage = 'context';
 const mergeDocument = await eda.dmt_SelectControl.getCurrentDocumentInfo();
-if (String(mergeDocument?.uuid ?? mergeDocument?.documentUuid ?? mergeDocument?.id ?? '') !== EXPECTED_DOCUMENT_UUID || String(mergeDocument?.tabId ?? '') !== EXPECTED_TAB_ID || Number(mergeDocument?.documentType ?? mergeDocument?.docType) !== ${documentType}) throw new Error('Native merge context changed');
+if (String(mergeDocument?.uuid ?? mergeDocument?.documentUuid ?? mergeDocument?.id ?? '') !== EXPECTED_DOCUMENT_UUID || String(mergeDocument?.tabId ?? '') !== EXPECTED_TAB_ID || Number(mergeDocument?.documentType ?? mergeDocument?.docType) !== ${documentType2}) throw new Error('Native merge context changed');
 mergeStage = 'baseline';
-const current = parseMergeSource(${documentType === 4 ? "(await mergeBus.messageBus.rpcCall('FileSource', {}))?.message" : "await mergeFileApi.getDocumentSource()"});
+const current = parseMergeSource(${documentType2 === 4 ? "(await mergeBus.messageBus.rpcCall('FileSource', {}))?.message" : "await mergeFileApi.getDocumentSource()"});
 if (current.document.editVersion !== '3.2.149.88089769' || mergeCanonical({document:current.document, objects:current.objects}) !== mergeCanonical(MERGE_BASELINE)) throw new Error('Native merge baseline drift; nothing dispatched');
 const wanted = new Map(MERGE_DESIRED.objects.map(object => [object.id, object]));
 mergeStage = 'encode';
@@ -48814,9 +49677,9 @@ if (mergeCanonical({document:check.document,objects:check.objects}) !== mergeCan
 // Type 4 calls the exact decoder without UI file-dialog handling. Native false
 // has been observed after a partial edit; retain it and prove the whole effect.
 mergeStage = 'dispatch';
-const applied = ${documentType === 4 ? "(await mergeBus.messageBus.rpcCall('pcb/decode', merged))?.message" : "await mergeFileApi.setDocumentSource(merged)"};
+const applied = ${documentType2 === 4 ? "(await mergeBus.messageBus.rpcCall('pcb/decode', merged))?.message" : "await mergeFileApi.setDocumentSource(merged)"};
 mergeStage = 'acknowledgment';
-${documentType === 4 ? `
+${documentType2 === 4 ? `
 if (typeof applied !== 'boolean') throw new Error('Native source apply acknowledgment is malformed');
 mergeStage = 'readback';
 const mergeReadback = parseMergeSource((await mergeBus.messageBus.rpcCall('FileSource', {}))?.message);
@@ -48828,7 +49691,7 @@ return { nativeSourceMerge: { profile:'footprint-exact-frame.v1', acknowledgment
 ` : `if (applied !== true) throw new Error('Native source apply did not confirm completion');
 return ${createdId === void 0 ? "true" : JSON.stringify({ primitiveId: createdId })};`}
 } catch (error) {
-  ${documentType === 4 ? "throw new Error('Native source merge refused: footprint:' + mergeStage);" : "throw error;"}
+  ${documentType2 === 4 ? "throw new Error('Native source merge refused: footprint:' + mergeStage);" : "throw error;"}
 }
 `;
   return {
@@ -48913,15 +49776,15 @@ var init_schematic_layout_transport = __esm({
 });
 
 // server/src/schematic-lifecycle.ts
-function order(attribute2) {
-  const value = attribute2.body["zIndex"];
+function order(attribute3) {
+  const value = attribute3.body["zIndex"];
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
     throw new Error("Native lifecycle attribute order is invalid.");
   }
   return value;
 }
-function nonDrawing(attribute2) {
-  return attribute2.body["x"] === null && attribute2.body["y"] === null;
+function nonDrawing(attribute3) {
+  return attribute3.body["x"] === null && attribute3.body["y"] === null;
 }
 function boundSource(native) {
   const source3 = parseDocumentSource(native.source);
@@ -48930,16 +49793,16 @@ function boundSource(native) {
   }
   const objects = new Map(source3.objects.map((entry) => [entry.id, entry]));
   const sourceComponents = source3.objects.filter((entry) => entry.type === "COMPONENT");
-  if (!same(sourceComponents.map((entry) => entry.id).toSorted(), native.components.map((entry) => entry.id).toSorted())) {
+  if (!same2(sourceComponents.map((entry) => entry.id).toSorted(), native.components.map((entry) => entry.id).toSorted())) {
     throw new Error("Lifecycle native component inventory differs from source.");
   }
   for (const model of native.components) {
-    if (!same(objects.get(model.id)?.body, model.body)) {
+    if (!same2(objects.get(model.id)?.body, model.body)) {
       throw new Error("Lifecycle native component body differs from source.");
     }
-    for (const attr of [...model.attributes, ...model.pins.flatMap((pin3) => pin3.attributes)]) {
-      const stored = objects.get(attr.id);
-      if (stored !== void 0 && (stored.type !== "ATTR" || !same(stored.body, attr.body))) {
+    for (const attr of [...model.attributes, ...model.pins.flatMap((pin4) => pin4.attributes)]) {
+      const stored2 = objects.get(attr.id);
+      if (stored2 !== void 0 && (stored2.type !== "ATTR" || !same2(stored2.body, attr.body))) {
         throw new Error("Lifecycle native stored attribute differs from source.");
       }
     }
@@ -48959,12 +49822,12 @@ function schematicNonDrawingStoredAttributes(input) {
 }
 function alignAttributes(input, changes) {
   const { before, after } = input;
-  if (!same(before.map((entry) => entry.key).toSorted(), after.map((entry) => entry.key).toSorted())) {
+  if (!same2(before.map((entry) => entry.key).toSorted(), after.map((entry) => entry.key).toSorted())) {
     throw new Error("Lifecycle attribute key inventory changed.");
   }
   const hiddenBefore = before.filter((entry) => nonDrawing(entry));
   const hiddenAfter = after.filter((entry) => nonDrawing(entry));
-  const hiddenPermutation = input.allowHiddenOrder && same(hiddenBefore.map((entry) => entry.key).toSorted(), hiddenAfter.map((entry) => entry.key).toSorted()) && same(hiddenBefore.map((entry) => order(entry)).toSorted((a, b) => a - b), hiddenAfter.map((entry) => order(entry)).toSorted((a, b) => a - b));
+  const hiddenPermutation = input.allowHiddenOrder && same2(hiddenBefore.map((entry) => entry.key).toSorted(), hiddenAfter.map((entry) => entry.key).toSorted()) && same2(hiddenBefore.map((entry) => order(entry)).toSorted((a, b) => a - b), hiddenAfter.map((entry) => order(entry)).toSorted((a, b) => a - b));
   return sortAttributes(after.map((entry) => {
     const prior = before.find((candidate) => candidate.key === entry.key);
     if (prior === void 0 || prior.body["parentId"] !== input.parentId || entry.body["parentId"] !== input.parentId || prior.body["key"] !== prior.key || entry.body["key"] !== entry.key) {
@@ -48997,10 +49860,10 @@ function alignSchematicLifecyclePair(referenceInput, observedInput) {
   const observed = normalizeSchematicNativeSnapshot(observedInput);
   const beforeSource = boundSource(reference2);
   const afterSource = boundSource(observed);
-  if (reference2.document.documentUuid !== observed.document.documentUuid || !same(beforeSource.document, afterSource.document)) {
+  if (reference2.document.documentUuid !== observed.document.documentUuid || !same2(beforeSource.document, afterSource.document)) {
     throw new Error("Lifecycle document identity or semantic header changed.");
   }
-  if (!same(reference2.components.map((entry) => entry.id), observed.components.map((entry) => entry.id))) {
+  if (!same2(reference2.components.map((entry) => entry.id), observed.components.map((entry) => entry.id))) {
     throw new Error("Lifecycle component inventory changed.");
   }
   const beforeIds = new Set(beforeSource.objects.map((entry) => entry.id));
@@ -49008,16 +49871,16 @@ function alignSchematicLifecyclePair(referenceInput, observedInput) {
   const changes = [];
   for (const model of observed.components) {
     const previous = reference2.components.find((entry) => entry.id === model.id);
-    if (previous === void 0 || previous.kind !== model.kind || !same(previous.pins.map((entry) => entry.id), model.pins.map((entry) => entry.id))) {
+    if (previous === void 0 || previous.kind !== model.kind || !same2(previous.pins.map((entry) => entry.id), model.pins.map((entry) => entry.id))) {
       throw new Error("Lifecycle component kind or physical pin identities changed.");
     }
     model.attributes = alignAttributes({ parentId: model.id, before: previous.attributes, after: model.attributes, beforeIds, afterIds, allowHiddenOrder: model.kind === "part" }, changes);
-    for (const pin3 of model.pins) {
-      const prior = previous.pins.find((entry) => entry.id === pin3.id);
+    for (const pin4 of model.pins) {
+      const prior = previous.pins.find((entry) => entry.id === pin4.id);
       if (prior === void 0) {
         throw new Error("Lifecycle physical pin disappeared.");
       }
-      pin3.attributes = alignAttributes({ parentId: pin3.id, before: prior.attributes, after: pin3.attributes, beforeIds, afterIds, allowHiddenOrder: false }, changes);
+      pin4.attributes = alignAttributes({ parentId: pin4.id, before: prior.attributes, after: pin4.attributes, beforeIds, afterIds, allowHiddenOrder: false }, changes);
     }
   }
   const projected4 = structuredClone(afterSource);
@@ -49032,21 +49895,21 @@ function alignSchematicLifecyclePair(referenceInput, observedInput) {
 }
 function verifySchematicLifecycleEquivalence(referenceSource, referenceNative, observedSource, observedNative) {
   const pair = alignSchematicLifecyclePair(referenceNative, observedNative);
-  if (!same(parseDocumentSource(pair.reference.source), referenceSource) || !same(parseDocumentSource(normalizeSchematicNativeSnapshot(observedNative).source), observedSource)) {
+  if (!same2(parseDocumentSource(pair.reference.source), referenceSource) || !same2(parseDocumentSource(normalizeSchematicNativeSnapshot(observedNative).source), observedSource)) {
     throw new Error("Independent source does not match lifecycle native records.");
   }
-  if (!same(referenceSource, pair.observedSource) || !same(pair.reference.components, pair.observed.components)) {
+  if (!same2(referenceSource, pair.observedSource) || !same2(pair.reference.components, pair.observed.components)) {
     throw new Error("Schematic lifecycle changed content beyond proven inherited identity and non-drawing order.");
   }
   return { profile: "easyeda-pro-control.schematic-lifecycle-equivalence.v1", sourceBeforeSha256: referenceSource.sha256, sourceAfterSha256: observedSource.sha256, changes: pair.changes };
 }
-var same, sortAttributes;
+var same2, sortAttributes;
 var init_schematic_lifecycle = __esm({
   "server/src/schematic-lifecycle.ts"() {
     init_core3();
     init_document_source();
     init_schematic_native_adapter();
-    same = (a, b) => canonicalJson(a) === canonicalJson(b);
+    same2 = (a, b) => canonicalJson(a) === canonicalJson(b);
     sortAttributes = (attributes) => attributes.toSorted((a, b) => a.id.localeCompare(b.id));
   }
 });
@@ -49093,20 +49956,20 @@ function correlateSchematicNativeSource(source3, input) {
     throw new Error("Native encoder document identity differs from selected schematic.");
   }
   const objects = encoded.objects;
-  if (!same2(objects, source3.objects)) {
+  if (!same3(objects, source3.objects)) {
     throw new Error("Independent schematic source disagrees with native encoder records.");
   }
   const components = source3.objects.filter((entry) => entry.type === "COMPONENT");
-  if (!same2(components.map(({ id: id7 }) => id7).toSorted(), native.components.map(({ id: id7 }) => id7).toSorted())) {
+  if (!same3(components.map(({ id: id7 }) => id7).toSorted(), native.components.map(({ id: id7 }) => id7).toSorted())) {
     throw new Error("Native component inventory is incomplete.");
   }
   for (const model of native.components) {
-    if (!same2(model.body, components.find(({ id: id7 }) => id7 === model.id)?.body)) {
+    if (!same3(model.body, components.find(({ id: id7 }) => id7 === model.id)?.body)) {
       throw new Error("Native component body differs from source.");
     }
-    for (const attr of [...model.attributes, ...model.pins.flatMap((pin3) => pin3.attributes)]) {
-      const stored = source3.objects.find(({ id: id7 }) => id7 === attr.id);
-      if (stored !== void 0 && (stored.type !== "ATTR" || !same2(stored.body, attr.body))) {
+    for (const attr of [...model.attributes, ...model.pins.flatMap((pin4) => pin4.attributes)]) {
+      const stored2 = source3.objects.find(({ id: id7 }) => id7 === attr.id);
+      if (stored2 !== void 0 && (stored2.type !== "ATTR" || !same3(stored2.body, attr.body))) {
         throw new Error("Native stored attribute differs from source.");
       }
     }
@@ -49146,7 +50009,7 @@ function prepareSchematicSourceOperation(input, source3, nativeInput, ids2 = {})
     const target5 = actualTarget(source3, resolved2, "COMPONENT");
     for (const [field2, sourceField] of [["rotation", "rotation"], ["mirror", "isMirror"]]) {
       const requested = Reflect.get(operation.patch, field2);
-      if (requested !== void 0 && !same2(requested, target5.body[sourceField])) {
+      if (requested !== void 0 && !same3(requested, target5.body[sourceField])) {
         return unsupported2("rotation/mirror needs a complete inherited graphic-transform proof");
       }
     }
@@ -49183,13 +50046,13 @@ function prepareSchematicSourceOperation(input, source3, nativeInput, ids2 = {})
 function assertSchematicSourceProfileSupported(input, source3, ids2 = {}, nativeInput) {
   prepareSchematicSourceOperation(input, source3, nativeInput, ids2);
 }
-function translate(body2, dx, dy) {
-  const result = { ...body2 };
-  if (body2["x"] !== null && body2["x"] !== void 0) {
-    result["x"] = number6(body2["x"]) + dx;
+function translate(body3, dx, dy) {
+  const result = { ...body3 };
+  if (body3["x"] !== null && body3["x"] !== void 0) {
+    result["x"] = number6(body3["x"]) + dx;
   }
-  if (body2["y"] !== null && body2["y"] !== void 0) {
-    result["y"] = number6(body2["y"]) + dy;
+  if (body3["y"] !== null && body3["y"] !== void 0) {
+    result["y"] = number6(body3["y"]) + dy;
   }
   return result;
 }
@@ -49200,12 +50063,12 @@ function exactComponent(native, id7) {
   }
   return model;
 }
-function translatedPin(pin3, dx, dy) {
+function translatedPin(pin4, dx, dy) {
   const attributes = [];
-  for (const attr of pin3.attributes) {
+  for (const attr of pin4.attributes) {
     attributes.push({ ...attr, body: translate(attr.body, dx, dy) });
   }
-  return { ...pin3, body: translate(pin3.body, dx, dy), attributes, noConnect: pin3.noConnect === null ? null : { ...pin3.noConnect, body: translate(pin3.noConnect.body, dx, dy) } };
+  return { ...pin4, body: translate(pin4.body, dx, dy), attributes, noConnect: pin4.noConnect === null ? null : { ...pin4.noConnect, body: translate(pin4.noConnect.body, dx, dy) } };
 }
 function hasLifecycleAttributeDrift(before, after) {
   return before.components.some((model) => {
@@ -49213,10 +50076,10 @@ function hasLifecycleAttributeDrift(before, after) {
     if (current2 === void 0) {
       return false;
     }
-    const attrs = [...current2.attributes, ...current2.pins.flatMap((pin3) => pin3.attributes)];
-    return [...model.attributes, ...model.pins.flatMap((pin3) => pin3.attributes)].some((attr) => {
+    const attrs = [...current2.attributes, ...current2.pins.flatMap((pin4) => pin4.attributes)];
+    return [...model.attributes, ...model.pins.flatMap((pin4) => pin4.attributes)].some((attr) => {
       const next = attrs.find((entry) => entry.key === attr.key && entry.body["parentId"] === attr.body["parentId"]);
-      return next !== void 0 && (attr.id !== next.id || !same2(attr.body["zIndex"], next.body["zIndex"]));
+      return next !== void 0 && (attr.id !== next.id || !same3(attr.body["zIndex"], next.body["zIndex"]));
     });
   });
 }
@@ -49233,7 +50096,7 @@ function verifyComponent(compiled, before, after, ids2, proof) {
     newNative = pair.observed;
     afterObjects = pair.observedSource.objects;
   }
-  if (!same2(oldNative.document, newNative.document)) {
+  if (!same3(oldNative.document, newNative.document)) {
     throw new Error("Native schematic context changed.");
   }
   const id7 = targetId(compiled, ids2);
@@ -49242,7 +50105,7 @@ function verifyComponent(compiled, before, after, ids2, proof) {
   const values2 = expectedValues(compiled);
   const dx = values2["x"] === void 0 ? 0 : number6(values2["x"]) - number6(oldModel.body["x"]);
   const dy = values2["y"] === void 0 ? 0 : -number6(values2["y"]) - number6(oldModel.body["y"]);
-  if (!same2(translate(oldModel.body, dx, dy), newModel.body) || oldModel.locked !== newModel.locked) {
+  if (!same3(translate(oldModel.body, dx, dy), newModel.body) || oldModel.locked !== newModel.locked) {
     throw new Error("Native component pose/body mismatch.");
   }
   const expectedAttributes = new Map(oldModel.attributes.map((entry) => [entry.key, { ...entry, body: translate(entry.body, dx, dy) }]));
@@ -49264,20 +50127,20 @@ function verifyComponent(compiled, before, after, ids2, proof) {
     expectedAttributes.set(key, updated);
   }
   const attrs = [...expectedAttributes.values()].toSorted((a, b) => a.id.localeCompare(b.id));
-  if (!same2(attrs, newModel.attributes)) {
+  if (!same3(attrs, newModel.attributes)) {
     throw new Error("Native attribute preservation or requested-value mismatch.");
   }
-  const pins = oldModel.pins.map((pin3) => translatedPin(pin3, dx, dy));
-  if (!same2(pins, newModel.pins)) {
+  const pins = oldModel.pins.map((pin4) => translatedPin(pin4, dx, dy));
+  if (!same3(pins, newModel.pins)) {
     throw new Error("Native component pins, nets or no-connect state changed outside the pose contract.");
   }
-  if (!same2(oldNative.components.filter((entry) => entry.id !== id7), newNative.components.filter((entry) => entry.id !== id7))) {
+  if (!same3(oldNative.components.filter((entry) => entry.id !== id7), newNative.components.filter((entry) => entry.id !== id7))) {
     throw new Error("Unrelated native components changed.");
   }
   const expected2 = new Map(before.objects.map((object4) => [object4.id, object4]));
   const oldBody = actualTarget(before, id7, "COMPONENT");
   expected2.set(id7, { ...oldBody, body: newModel.body });
-  for (const attr of [...newModel.attributes, ...newModel.pins.flatMap((pin3) => pin3.attributes)]) {
+  for (const attr of [...newModel.attributes, ...newModel.pins.flatMap((pin4) => pin4.attributes)]) {
     const old = expected2.get(attr.id);
     if (old !== void 0) {
       expected2.set(attr.id, { ...old, body: attr.body });
@@ -49285,7 +50148,7 @@ function verifyComponent(compiled, before, after, ids2, proof) {
       expected2.set(attr.id, { id: attr.id, type: "ATTR", body: attr.body });
     }
   }
-  if (!same2([...expected2.values()].toSorted((a, b) => a.id.localeCompare(b.id)), afterObjects)) {
+  if (!same3([...expected2.values()].toSorted((a, b) => a.id.localeCompare(b.id)), afterObjects)) {
     throw new Error("Schematic source has unplanned collateral changes.");
   }
 }
@@ -49323,7 +50186,7 @@ function verifyWire(compiled, before, after, ids2) {
   if (creating && previous.length > 0) {
     return unsupported2("native wire merged with an existing group; use an explicit group-merge proof");
   }
-  if (!same2(before.objects.filter((entry) => !previous.includes(entry)), after.objects.filter((entry) => !next.includes(entry)))) {
+  if (!same3(before.objects.filter((entry) => !previous.includes(entry)), after.objects.filter((entry) => !next.includes(entry)))) {
     throw new Error("Wire mutation changed an unrelated native record.");
   }
   if (deleting) {
@@ -49344,7 +50207,7 @@ function verifyWire(compiled, before, after, ids2) {
     throw new Error("Missing native wire group.");
   }
   const oldGroup = previous.find((entry) => entry.id === id7);
-  if (oldGroup !== void 0 && !same2(oldGroup, group)) {
+  if (oldGroup !== void 0 && !same3(oldGroup, group)) {
     throw new Error("Wire group metadata changed outside request.");
   }
   if (oldGroup === void 0 && Object.keys(group.body).some((key) => !["zIndex", "locked", "groupId"].includes(key))) {
@@ -49358,13 +50221,13 @@ function verifyWire(compiled, before, after, ids2) {
   }
   const expectedLines = values2["line"] === void 0 ? oldLines.map((entry) => [number6(entry.body["startX"]), number6(entry.body["startY"]), number6(entry.body["endX"]), number6(entry.body["endY"])]) : segments(values2["line"]);
   const actualLines = lines3.map((entry) => [number6(entry.body["startX"]), number6(entry.body["startY"]), number6(entry.body["endX"]), number6(entry.body["endY"])]);
-  if (!same2(expectedLines.map((line4) => canonicalSegment(line4)).toSorted(), actualLines.map((line4) => canonicalSegment(line4)).toSorted())) {
+  if (!same3(expectedLines.map((line5) => canonicalSegment(line5)).toSorted(), actualLines.map((line5) => canonicalSegment(line5)).toSorted())) {
     throw new Error("Native wire geometry differs from explicit requested segments.");
   }
   const allowedLine = /* @__PURE__ */ new Set(["fillColor", "fillStyle", "strokeColor", "strokeStyle", "strokeWidth", "startX", "startY", "endX", "endY", "lineGroup"]);
-  for (const line4 of lines3) {
-    const oldLine = oldLines.find((entry) => entry.id === line4.id);
-    if (Object.keys(line4.body).some((key) => !allowedLine.has(key)) || line4.body["fillColor"] !== null || line4.body["fillStyle"] !== null || line4.body["lineGroup"] !== id7) {
+  for (const line5 of lines3) {
+    const oldLine = oldLines.find((entry) => entry.id === line5.id);
+    if (Object.keys(line5.body).some((key) => !allowedLine.has(key)) || line5.body["fillColor"] !== null || line5.body["fillStyle"] !== null || line5.body["lineGroup"] !== id7) {
       return unsupported2("unknown wire-line fields or defaults");
     }
     if (oldLine === void 0 && !creating && values2["line"] === void 0) {
@@ -49377,10 +50240,10 @@ function verifyWire(compiled, before, after, ids2) {
       if (field2 === "lineType" && value !== null) {
         value = ["SOLID", "SHORT_DASH", "DOT", "DOT_DASH"][number6(value)];
       }
-      if (lines3.some((entry) => !same2(entry.body[sourceField], value))) {
+      if (lines3.some((entry) => !same3(entry.body[sourceField], value))) {
         throw new Error("Native wire style differs from request.");
       }
-    } else if (!same2(oldLines.map((entry) => entry.body[sourceField]), lines3.map((entry) => entry.body[sourceField]))) {
+    } else if (!same3(oldLines.map((entry) => entry.body[sourceField]), lines3.map((entry) => entry.body[sourceField]))) {
       throw new Error("Native wire style changed outside the patch.");
     }
   }
@@ -49398,11 +50261,11 @@ function verifyWire(compiled, before, after, ids2) {
       if (oldAttr === void 0) {
         return unsupported2("new named-net attributes require reviewed display/default geometry");
       }
-      if (!same2({ ...oldAttr, body: { ...oldAttr.body, value: net2 } }, attr)) {
+      if (!same3({ ...oldAttr, body: { ...oldAttr.body, value: net2 } }, attr)) {
         throw new Error("Wire net changed attribute metadata outside value.");
       }
     }
-  } else if (!same2(previous.filter((entry) => entry.type === "ATTR"), attrs)) {
+  } else if (!same3(previous.filter((entry) => entry.type === "ATTR"), attrs)) {
     throw new Error("Native wire attributes changed outside the patch.");
   }
 }
@@ -49459,7 +50322,7 @@ function buildInverseSchematicOperation(input, before, ids2 = {}, nativeInput) {
   }
   return void 0;
 }
-var same2, canonicalSegment;
+var same3, canonicalSegment;
 var init_schematic_source_proof = __esm({
   "server/src/schematic-source-proof.ts"() {
     init_core3();
@@ -49467,8 +50330,8 @@ var init_schematic_source_proof = __esm({
     init_schematic_native_adapter();
     init_schematic_operations();
     init_schematic_lifecycle();
-    same2 = (left, right) => canonicalJson({ value: left }) === canonicalJson({ value: right });
-    canonicalSegment = (line4) => canonicalJson(line4[0] < line4[2] || line4[0] === line4[2] && line4[1] <= line4[3] ? line4 : [line4[2], line4[3], line4[0], line4[1]]);
+    same3 = (left, right) => canonicalJson({ value: left }) === canonicalJson({ value: right });
+    canonicalSegment = (line5) => canonicalJson(line5[0] < line5[2] || line5[0] === line5[2] && line5[1] <= line5[3] ? line5 : [line5[2], line5[3], line5[0], line5[1]]);
   }
 });
 
@@ -49497,7 +50360,7 @@ function schematicNewWireOrders(before, records2, native, created) {
     }
   }
   const nodes = /* @__PURE__ */ new Map();
-  const point5 = (xInput, yInput) => {
+  const point6 = (xInput, yInput) => {
     const x = number7(xInput), y = number7(yInput);
     const key = canonicalJson([x, y]);
     const found = nodes.get(key);
@@ -49512,8 +50375,8 @@ function schematicNewWireOrders(before, records2, native, created) {
     return node;
   };
   for (const row of lines3) {
-    const start = point5(row.body["startX"], row.body["startY"]);
-    const end = point5(row.body["endX"], row.body["endY"]);
+    const start = point6(row.body["startX"], row.body["startY"]);
+    const end = point6(row.body["endX"], row.body["endY"]);
     start.lines.set(row.id, String(row.body["lineGroup"]));
     end.lines.set(row.id, String(row.body["lineGroup"]));
     if (start === end) {
@@ -49521,8 +50384,8 @@ function schematicNewWireOrders(before, records2, native, created) {
     }
   }
   for (const component2 of native.components) {
-    for (const pin3 of component2.pins) {
-      point5(pin3.body["x"], pin3.body["y"]).pins.push(number7(component2.body["zIndex"]));
+    for (const pin4 of component2.pins) {
+      point6(pin4.body["x"], pin4.body["y"]).pins.push(number7(component2.body["zIndex"]));
     }
   }
   const counts2 = new Map([...created.keys()].map((id7) => [id7, { junctions: 0, danglingDots: 0, recategorized: false }]));
@@ -49612,11 +50475,11 @@ function nativeWireAttributeOrders(before, geometry2, native, wireId, attrs) {
 }
 function buildSchematicNativeWireAdapter(input, sourceInput, nativeInput) {
   const operation = schematicOperationSchema.parse(input);
-  if (operation.action !== "sch.wire.modify" || operation.documentType !== 1 || !("primitiveId" in operation.target) || !same3(Object.keys(operation.patch).toSorted(), ["color", "line", "lineType", "lineWidth"])) {
+  if (operation.action !== "sch.wire.modify" || operation.documentType !== 1 || !("primitiveId" in operation.target) || !same4(Object.keys(operation.patch).toSorted(), ["color", "line", "lineType", "lineWidth"])) {
     throw new Error("Native wire profile requires exact geometry/color/lineWidth/lineType and omitted net.");
   }
   const before = structuredClone(sourceInput), native = correlateSchematicNativeSource(before, nativeInput);
-  if (!same3(parseDocumentSource(native.source), before)) {
+  if (!same4(parseDocumentSource(native.source), before)) {
     throw new Error("Complete native/source baseline differs.");
   }
   const compiled = prepareSchematicSourceOperation(operation, before, native);
@@ -49632,7 +50495,7 @@ function buildSchematicNativeWireAdapter(input, sourceInput, nativeInput) {
     throw new Error("Native wire subtree contains unsupported records or LINE count.");
   }
   for (const row of oldLines) {
-    if (!same3(Object.keys(row.body).toSorted(), lineFields) || row.body["lineGroup"] !== wireId || row.body["fillColor"] !== null || row.body["fillStyle"] !== null || row.body["strokeStyle"] !== null && !sourceStyles.some((style2) => style2 === row.body["strokeStyle"]) || row.body["strokeColor"] !== null && typeof row.body["strokeColor"] !== "string" || row.body["strokeWidth"] !== null && (finite(row.body["strokeWidth"]) < 1 || finite(row.body["strokeWidth"]) > 10)) {
+    if (!same4(Object.keys(row.body).toSorted(), lineFields) || row.body["lineGroup"] !== wireId || row.body["fillColor"] !== null || row.body["fillStyle"] !== null || row.body["strokeStyle"] !== null && !sourceStyles.some((style2) => style2 === row.body["strokeStyle"]) || row.body["strokeColor"] !== null && typeof row.body["strokeColor"] !== "string" || row.body["strokeWidth"] !== null && (finite(row.body["strokeWidth"]) < 1 || finite(row.body["strokeWidth"]) > 10)) {
       throw new Error("Native wire LINE source profile differs.");
     }
     cardinal([finite(row.body["startX"]), finite(row.body["startY"]), finite(row.body["endX"]), finite(row.body["endY"])]);
@@ -49642,12 +50505,12 @@ function buildSchematicNativeWireAdapter(input, sourceInput, nativeInput) {
       throw new Error("Native wire ATTR must retain an exact unlocked finite-order source body.");
     }
   }
-  const line4 = operation.patch.line;
-  if (line4 === void 0 || operation.patch.color === void 0 || operation.patch.lineWidth === void 0 || operation.patch.lineType === void 0) {
+  const line5 = operation.patch.line;
+  if (line5 === void 0 || operation.patch.color === void 0 || operation.patch.lineWidth === void 0 || operation.patch.lineType === void 0) {
     throw new Error("Native wire explicit patch fields cannot be undefined.");
   }
   const { color: color3, lineWidth, lineType: lineType2 } = operation.patch;
-  const paths = typeof line4[0] === "number" ? [line4] : line4;
+  const paths = typeof line5[0] === "number" ? [line5] : line5;
   const segments3 = [];
   for (const path5 of paths) {
     if (!Array.isArray(path5)) {
@@ -49781,20 +50644,20 @@ function verifySchematicNativeWireEffect(input, before, after, beforeNative, aft
   const adapter = buildSchematicNativeWireAdapter(input, before, beforeNative);
   const original = correlateSchematicNativeSource(before, beforeNative);
   const observed = correlateSchematicNativeSource(after, afterNative);
-  if (!same3(parseDocumentSource(observed.source), after) || !same3(adapter.expected, after)) {
+  if (!same4(parseDocumentSource(observed.source), after) || !same4(adapter.expected, after)) {
     throw new Error("Native wire differs from exact geometry, derived attribute order or complete native state.");
   }
   let changes = [];
-  if (!same3({ ...original, source: "" }, { ...observed, source: "" })) {
+  if (!same4({ ...original, source: "" }, { ...observed, source: "" })) {
     const pair = alignSchematicLifecyclePair(original, observed);
-    if (pair.changes.some((change) => change.stored !== false || change.beforeZ !== change.afterZ) || !same3(pair.observedSource, after) || !same3({ ...pair.reference, source: "" }, { ...pair.observed, source: "" })) {
+    if (pair.changes.some((change) => change.stored !== false || change.beforeZ !== change.afterZ) || !same4(pair.observedSource, after) || !same4({ ...pair.reference, source: "" }, { ...pair.observed, source: "" })) {
       throw new Error("Native wire changed fields beyond exact unstored attribute identities.");
     }
     changes = pair.changes;
   }
   return { ...compareDocumentSources(before, after), nativeIdentity: { profile: "native-wire-unstored-attribute-identity.v1", changes } };
 }
-var SCHEMATIC_NATIVE_WIRE_PROFILE, LINE_ALLOCATION_PROFILE, same3, lineFields, sourceStyles;
+var SCHEMATIC_NATIVE_WIRE_PROFILE, LINE_ALLOCATION_PROFILE, same4, lineFields, sourceStyles;
 var init_schematic_native_wire = __esm({
   "server/src/schematic-native-wire.ts"() {
     init_core3();
@@ -49807,14 +50670,14 @@ var init_schematic_native_wire = __esm({
     init_schematic_lifecycle();
     SCHEMATIC_NATIVE_WIRE_PROFILE = "easyeda-pro-control.schematic-native-wire.v2";
     LINE_ALLOCATION_PROFILE = "easyeda-pro-control.schematic-native-wire.v1";
-    same3 = (a, b) => canonicalJson(a) === canonicalJson(b);
+    same4 = (a, b) => canonicalJson(a) === canonicalJson(b);
     lineFields = ["endX", "endY", "fillColor", "fillStyle", "lineGroup", "startX", "startY", "strokeColor", "strokeStyle", "strokeWidth"];
     sourceStyles = ["SOLID", "SHORT_DASH", "DOT", "DOT_DASH"];
   }
 });
 
 // server/src/stack-native-persistence.ts
-function identity(object4) {
+function identity3(object4) {
   const value = JSON.parse(object4.id);
   if (!Array.isArray(value) || value.length !== 2 || value[0] !== object4.type || typeof value[1] !== "number") {
     throw new Error("Invalid native stack record identity.");
@@ -49835,7 +50698,7 @@ function expectedNativeStackIntermediate(before, expected2) {
       return previous;
     }
     return { id: object4.id, type: object4.type, body: {
-      layerId: identity(object4),
+      layerId: identity3(object4),
       layerType: "SUBSTRATE",
       layerName: object4.body["layerName"],
       use: false,
@@ -49855,8 +50718,8 @@ function buildNativeStackPersistenceCode(before, expected2) {
   const merge2 = buildReviewedNativeSourceMerge(intermediate, expected2);
   const physical = expected2.objects.filter((object4) => object4.type === "LAYER_PHYS").toSorted((left, right) => Number(left.body["zIndex"]) - Number(right.body["zIndex"]));
   const rows = physical.map((object4) => {
-    const layerId = identity(object4);
-    const layer4 = expected2.objects.find((entry) => entry.type === "LAYER" && identity(entry) === layerId);
+    const layerId = identity3(object4);
+    const layer4 = expected2.objects.find((entry) => entry.type === "LAYER" && identity3(entry) === layerId);
     if (layer4 === void 0 || typeof object4.body["thickness"] !== "number") {
       throw new Error("Native physical layer is incomplete.");
     }
@@ -49872,10 +50735,10 @@ function buildNativeStackPersistenceCode(before, expected2) {
       zIndex: object4.body["zIndex"]
     };
   });
-  const uploadIds = expected2.objects.filter((object4) => object4.type === "LAYER" && canonicalJson(before.objects.find((old) => old.id === object4.id) ?? null) !== canonicalJson(object4)).map((object4) => identity(object4));
+  const uploadIds = expected2.objects.filter((object4) => object4.type === "LAYER" && canonicalJson(before.objects.find((old) => old.id === object4.id) ?? null) !== canonicalJson(object4)).map((object4) => identity3(object4));
   for (const object4 of expected2.objects) {
-    if (object4.type === "LAYER" && object4.body["layerType"] === "SUBSTRATE" && !uploadIds.includes(identity(object4))) {
-      uploadIds.push(identity(object4));
+    if (object4.type === "LAYER" && object4.body["layerType"] === "SUBSTRATE" && !uploadIds.includes(identity3(object4))) {
+      uploadIds.push(identity3(object4));
     }
   }
   return `
@@ -50351,7 +51214,7 @@ var init_design_batch_adapter = __esm({
 
 // server/src/schematic-electrical-adapter.ts
 import { randomBytes as randomBytes3 } from "node:crypto";
-function same4(left, right) {
+function same5(left, right) {
   return canonicalJson(left) === canonicalJson(right);
 }
 function isSchematicElectricalAction(action) {
@@ -50368,7 +51231,7 @@ function resolved(operation, ids2) {
   return id7;
 }
 function getPin(native, id7) {
-  const matches = native.components.flatMap((component2) => component2.pins.filter((pin3) => pin3.id === id7).map((pin3) => ({ component: component2, pin: pin3 })));
+  const matches = native.components.flatMap((component2) => component2.pins.filter((pin4) => pin4.id === id7).map((pin4) => ({ component: component2, pin: pin4 })));
   const match = matches[0];
   if (matches.length !== 1 || match === void 0 || match.component.locked || match.pin.body["locked"] === true) {
     throw new Error("No-connect needs exactly one unlocked component pin.");
@@ -50477,20 +51340,20 @@ ${operation.action.endsWith(".delete") ? "return true;" : "return {primitiveId:i
   return { profile: SCHEMATIC_ELECTRICAL_PROFILE, expression, ...creating ? { createdId: id7 } : {} };
 }
 function withoutPinNets(components) {
-  return components.map((component2) => ({ id: component2.id, kind: component2.kind, locked: component2.locked, body: component2.body, attributes: component2.attributes, pins: component2.pins.map((pin3) => ({ id: pin3.id, body: pin3.body, attributes: pin3.attributes, noConnect: pin3.noConnect })) }));
+  return components.map((component2) => ({ id: component2.id, kind: component2.kind, locked: component2.locked, body: component2.body, attributes: component2.attributes, pins: component2.pins.map((pin4) => ({ id: pin4.id, body: pin4.body, attributes: pin4.attributes, noConnect: pin4.noConnect })) }));
 }
 function withoutMarker(components, pinId) {
-  return components.map((component2) => ({ id: component2.id, kind: component2.kind, locked: component2.locked, body: component2.body, attributes: component2.attributes, pins: component2.pins.map((pin3) => ({ id: pin3.id, body: pin3.body, attributes: pin3.attributes, net: pin3.net, noConnect: pin3.id === pinId ? null : pin3.noConnect })) }));
+  return components.map((component2) => ({ id: component2.id, kind: component2.kind, locked: component2.locked, body: component2.body, attributes: component2.attributes, pins: component2.pins.map((pin4) => ({ id: pin4.id, body: pin4.body, attributes: pin4.attributes, net: pin4.net, noConnect: pin4.id === pinId ? null : pin4.noConnect })) }));
 }
 function ownedComponentIds(component2) {
-  return /* @__PURE__ */ new Set([component2.id, ...component2.attributes.map((attr) => attr.id), ...component2.pins.flatMap((pin3) => [pin3.id, ...pin3.attributes.map((attr) => attr.id), ...pin3.noConnect === null ? [] : [pin3.noConnect.id]])]);
+  return /* @__PURE__ */ new Set([component2.id, ...component2.attributes.map((attr) => attr.id), ...component2.pins.flatMap((pin4) => [pin4.id, ...pin4.attributes.map((attr) => attr.id), ...pin4.noConnect === null ? [] : [pin4.noConnect.id]])]);
 }
 function verifySchematicElectricalEffect(input, before, after, oldNativeInput, newNativeInput, ids2 = {}) {
   assertSchematicElectricalSupported(input, before, oldNativeInput, ids2);
   const operation = schematicOperationSchema.parse(input);
   const oldNative = correlateSchematicNativeSource(before, oldNativeInput);
   const newNative = correlateSchematicNativeSource(after, newNativeInput);
-  if (!same4(oldNative.document, newNative.document)) {
+  if (!same5(oldNative.document, newNative.document)) {
     throw new Error("Native electrical context changed.");
   }
   const delta = compareDocumentSources(before, after);
@@ -50517,12 +51380,12 @@ function verifySchematicElectricalEffect(input, before, after, oldNativeInput, n
       if (prior.noConnect === null && expected2.has(marker.id)) {
         throw new Error("New no-connect marker reused a source identity.");
       }
-      const body2 = prior.noConnect === null ? { parentId: id7, key: "NO_CONNECT", x: prior.body["x"], y: prior.body["y"], value, zIndex: nextZ(before), locked: false, groupId: "" } : { ...prior.noConnect.body, value };
-      if (!same4(body2, marker.body)) {
+      const body3 = prior.noConnect === null ? { parentId: id7, key: "NO_CONNECT", x: prior.body["x"], y: prior.body["y"], value, zIndex: nextZ(before), locked: false, groupId: "" } : { ...prior.noConnect.body, value };
+      if (!same5(body3, marker.body)) {
         throw new Error("No-connect changed pin-marker geometry or metadata.");
       }
-      expected2.set(marker.id, { id: marker.id, type: "ATTR", body: body2 });
-      if (!same4(withoutMarker(oldNative.components, id7), withoutMarker(newNative.components, id7))) {
+      expected2.set(marker.id, { id: marker.id, type: "ATTR", body: body3 });
+      if (!same5(withoutMarker(oldNative.components, id7), withoutMarker(newNative.components, id7))) {
         throw new Error("No-connect changed another native pin, property or net.");
       }
     } else {
@@ -50536,17 +51399,17 @@ function verifySchematicElectricalEffect(input, before, after, oldNativeInput, n
         for (const ownedId of owned2) {
           expected2.delete(ownedId);
         }
-        if (!same4(withoutPinNets(oldNative.components.filter((entry) => entry.id !== id7)), withoutPinNets(newNative.components))) {
+        if (!same5(withoutPinNets(oldNative.components.filter((entry) => entry.id !== id7)), withoutPinNets(newNative.components))) {
           throw new Error("Component deletion changed unrelated native properties.");
         }
       }
     }
   }
-  if (operation.action.startsWith("sch.net-label.") && !same4(withoutPinNets(oldNative.components), withoutPinNets(newNative.components))) {
+  if (operation.action.startsWith("sch.net-label.") && !same5(withoutPinNets(oldNative.components), withoutPinNets(newNative.components))) {
     throw new Error("Net-label edit changed component geometry or properties.");
   }
   const records2 = [...expected2.values()].toSorted((a, b) => a.id.localeCompare(b.id));
-  if (!same4(records2, after.objects)) {
+  if (!same5(records2, after.objects)) {
     throw new Error("Electrical edit has unplanned source-record changes.");
   }
   return delta;
@@ -50615,7 +51478,7 @@ function assets(input, history) {
   if (symbolId === void 0 || symbolId.length === 0) {
     throw new Error("Device has no exact symbol association.");
   }
-  const symbol2 = exactAsset(history, symbolId, "SYMBOL");
+  const symbol4 = exactAsset(history, symbolId, "SYMBOL");
   const footprintId = attributes["Footprint"];
   if (operation.properties.addIntoPcb && (footprintId === void 0 || !footprintId)) {
     throw new Error("PCB-included device needs an existing footprint association.");
@@ -50623,22 +51486,22 @@ function assets(input, history) {
   if (footprintId !== void 0 && footprintId.length > 0) {
     exactAsset(history, footprintId, "FOOTPRINT");
   }
-  const parts = symbol2.records.filter((record6) => record6.type === "PART");
+  const parts = symbol4.records.filter((record6) => record6.type === "PART");
   const part = parts.find((record6) => record6.body["title"] === operation.properties.subPartName);
   if (parts.length !== 1 || part === void 0) {
     throw new Error("Component creation currently requires an exact single-part project symbol title.");
   }
-  if (symbol2.records.some((record6) => record6.type === "ATTR" && record6.body["key"] === "NO_CONNECT")) {
+  if (symbol4.records.some((record6) => record6.type === "ATTR" && record6.body["key"] === "NO_CONNECT")) {
     throw new Error("Symbol no-connect inheritance needs an explicit creation profile.");
   }
-  return { device, symbol: symbol2, partId: part.id, attributes };
+  return { device, symbol: symbol4, partId: part.id, attributes };
 }
 function nextDesignator(value, native) {
   const prefix = value?.match(/^([A-Za-z]+)\?$/u)?.[1];
   if (prefix === void 0) {
     throw new Error("Device designator must be a reviewed prefix followed by '?'.");
   }
-  const used = new Set(native.components.flatMap((component2) => component2.attributes.filter((attribute2) => attribute2.key === "Designator").map((attribute2) => attribute2.value)));
+  const used = new Set(native.components.flatMap((component2) => component2.attributes.filter((attribute3) => attribute3.key === "Designator").map((attribute3) => attribute3.value)));
   for (let index = 1; index <= 20001; index += 1) {
     if (!used.has(`${prefix}${index}`)) {
       return `${prefix}${index}`;
@@ -50671,19 +51534,19 @@ function symbolPins(library2) {
   if (pins.length === 0 || pins.length > 4096) {
     throw new Error("Project symbol requires a bounded pin inventory.");
   }
-  return pins.map((pin3) => {
-    const suffix = pin3.id.split("-").at(-1);
-    if (suffix === void 0 || suffix.length === 0 || suffixes.has(suffix) || PIN_FIELDS.some((field2) => !Object.hasOwn(pin3.body, field2)) || Object.keys(pin3.body).some((key) => ![...PIN_FIELDS, "partId", "groupId", "zIndex"].includes(key)) || pin3.body["groupId"] !== "" || typeof pin3.body["display"] !== "boolean" || typeof pin3.body["locked"] !== "boolean" || typeof pin3.body["pinShape"] !== "string" || !["x", "y", "length", "rotation", "zIndex"].every((field2) => typeof pin3.body[field2] === "number" && Number.isFinite(pin3.body[field2]))) {
+  return pins.map((pin4) => {
+    const suffix = pin4.id.split("-").at(-1);
+    if (suffix === void 0 || suffix.length === 0 || suffixes.has(suffix) || PIN_FIELDS.some((field2) => !Object.hasOwn(pin4.body, field2)) || Object.keys(pin4.body).some((key) => ![...PIN_FIELDS, "partId", "groupId", "zIndex"].includes(key)) || pin4.body["groupId"] !== "" || typeof pin4.body["display"] !== "boolean" || typeof pin4.body["locked"] !== "boolean" || typeof pin4.body["pinShape"] !== "string" || !["x", "y", "length", "rotation", "zIndex"].every((field2) => typeof pin4.body[field2] === "number" && Number.isFinite(pin4.body[field2]))) {
       throw new Error("Project symbol pin has an unreviewed native body or identity.");
     }
     suffixes.add(suffix);
-    const attributes = library2.symbol.records.filter((record6) => record6.type === "ATTR" && record6.body["parentId"] === pin3.id);
+    const attributes = library2.symbol.records.filter((record6) => record6.type === "ATTR" && record6.body["parentId"] === pin4.id);
     const keys2 = attributes.map((record6) => record6.body["key"]);
     if (new Set(keys2).size !== keys2.length || ["Pin Name", "Pin Number", "Pin Type"].some((key) => !keys2.includes(key))) {
       throw new Error("Project symbol pin attributes are missing or ambiguous.");
     }
-    for (const attribute2 of attributes) {
-      if (ATTR_FIELDS2.some((field2) => !Object.hasOwn(attribute2.body, field2)) || Object.keys(attribute2.body).some((key) => ![...ATTR_FIELDS2, "partId", "groupId", "version"].includes(key)) || attribute2.body["groupId"] !== "" || attribute2.body["partId"] !== library2.partId || typeof attribute2.body["key"] !== "string" || typeof attribute2.body["value"] !== "string" || typeof attribute2.body["locked"] !== "boolean" || !Number.isSafeInteger(attribute2.body["zIndex"]) || attribute2.body["version"] !== void 0 && attribute2.body["version"] !== "2.0" || ["x", "y"].some((field2) => attribute2.body[field2] !== null && (typeof attribute2.body[field2] !== "number" || !Number.isFinite(attribute2.body[field2])))) {
+    for (const attribute3 of attributes) {
+      if (ATTR_FIELDS2.some((field2) => !Object.hasOwn(attribute3.body, field2)) || Object.keys(attribute3.body).some((key) => ![...ATTR_FIELDS2, "partId", "groupId", "version"].includes(key)) || attribute3.body["groupId"] !== "" || attribute3.body["partId"] !== library2.partId || typeof attribute3.body["key"] !== "string" || typeof attribute3.body["value"] !== "string" || typeof attribute3.body["locked"] !== "boolean" || !Number.isSafeInteger(attribute3.body["zIndex"]) || attribute3.body["version"] !== void 0 && attribute3.body["version"] !== "2.0" || ["x", "y"].some((field2) => attribute3.body[field2] !== null && (typeof attribute3.body[field2] !== "number" || !Number.isFinite(attribute3.body[field2])))) {
         throw new Error("Project symbol pin attribute has an unreviewed native body.");
       }
     }
@@ -50692,7 +51555,7 @@ function symbolPins(library2) {
       throw new Error("Project symbol requires unique nonempty pin numbers.");
     }
     numbers.add(number14);
-    return { pin: pin3, attributes, number: number14 };
+    return { pin: pin4, attributes, number: number14 };
   });
 }
 function translated(value, offset2) {
@@ -50716,7 +51579,7 @@ function buildSchematicComponentCreate(input, before, nativeInput, history) {
   const uniqueId = `gge${randomBytes4(8).toString("hex")}`;
   const designator = nextDesignator(library2.attributes["Designator"], native);
   const ids2 = new Set(before.objects.map((record6) => record6.id));
-  if (ids2.has(createdId) || native.components.some((model) => model.attributes.some((attribute2) => attribute2.key === "Unique ID" && attribute2.value === uniqueId))) {
+  if (ids2.has(createdId) || native.components.some((model) => model.attributes.some((attribute3) => attribute3.key === "Unique ID" && attribute3.value === uniqueId))) {
     throw new Error("Generated component identity collision.");
   }
   const zValues = before.objects.map((record6) => record6.body["zIndex"]).filter((value) => value !== void 0);
@@ -50742,17 +51605,17 @@ function buildSchematicComponentCreate(input, before, nativeInput, history) {
       throw new Error("Generated attribute identity collision.");
     }
     ids2.add(id7);
-    const body2 = attrBody(createdId, key, value, childZ);
+    const body3 = attrBody(createdId, key, value, childZ);
     childZ += 1;
     if (key === "Designator" || key === "Name") {
-      body2["x"] = operation.properties.x;
-      body2["y"] = -operation.properties.y + (key === "Designator" ? -15 : 15);
-      body2["rotation"] = 0;
-      body2["valueVisible"] = true;
-      body2["fontSize"] = 15;
-      body2["align"] = "LEFT_BOTTOM";
+      body3["x"] = operation.properties.x;
+      body3["y"] = -operation.properties.y + (key === "Designator" ? -15 : 15);
+      body3["rotation"] = 0;
+      body3["valueVisible"] = true;
+      body3["fontSize"] = 15;
+      body3["align"] = "LEFT_BOTTOM";
     }
-    objects.push({ id: id7, type: "ATTR", body: body2 });
+    objects.push({ id: id7, type: "ATTR", body: body3 });
   }
   objects.sort((a, b) => a.id.localeCompare(b.id));
   const snapshot6 = { schema: before.schema, document: before.document, objects };
@@ -50790,7 +51653,7 @@ function verifySchematicComponentCreate(input, adapter, before, after, oldNative
   const library2 = assets(operation, history);
   const oldNative = correlateSchematicNativeSource(before, oldNativeInput);
   const newNative = correlateSchematicNativeSource(after, newNativeInput);
-  if (adapter.profile !== SCHEMATIC_COMPONENT_CREATE_PROFILE || adapter.assetCommitment !== assetCommitment(library2) || adapter.expected.sha256 !== sha256Json({ schema: adapter.expected.schema, document: adapter.expected.document, objects: adapter.expected.objects }) || !same5(adapter.expected, after)) {
+  if (adapter.profile !== SCHEMATIC_COMPONENT_CREATE_PROFILE || adapter.assetCommitment !== assetCommitment(library2) || adapter.expected.sha256 !== sha256Json({ schema: adapter.expected.schema, document: adapter.expected.document, objects: adapter.expected.objects }) || !same6(adapter.expected, after)) {
     throw new Error("Created schematic source differs from the journaled exact expectation.");
   }
   const delta = compareDocumentSources(before, after);
@@ -50799,15 +51662,15 @@ function verifySchematicComponentCreate(input, adapter, before, after, oldNative
   }
   const target5 = newNative.components.find((component2) => component2.id === adapter.createdId);
   const existing = newNative.components.filter((component2) => component2.id !== adapter.createdId);
-  let unchanged = same5(oldNative.components, existing);
+  let unchanged = same6(oldNative.components, existing);
   if (!unchanged) {
     const preserved = alignSchematicLifecyclePair(oldNative, { ...newNative, source: oldNative.source, components: existing });
-    unchanged = same5(preserved.reference.components, preserved.observed.components);
+    unchanged = same6(preserved.reference.components, preserved.observed.components);
   }
-  if (target5?.kind !== "part" || target5.locked || !same5(oldNative.document, newNative.document) || !unchanged) {
+  if (target5?.kind !== "part" || target5.locked || !same6(oldNative.document, newNative.document) || !unchanged) {
     throw new Error("Component creation changed unrelated native components, pins or nets.");
   }
-  const values2 = Object.fromEntries(target5.attributes.map((attribute2) => [attribute2.key, attribute2.value]));
+  const values2 = Object.fromEntries(target5.attributes.map((attribute3) => [attribute3.key, attribute3.value]));
   for (const [key, value] of Object.entries({ ...library2.attributes, Device: library2.device.uuid, Symbol: library2.symbol.uuid, Designator: adapter.designator, "Unique ID": adapter.uniqueId, "Add into BOM": operation.properties.addIntoBom ? "yes" : "no", "Convert to PCB": operation.properties.addIntoPcb ? "yes" : "no" })) {
     if (values2[key] !== value) {
       throw new Error("Created component lost a device property or association.");
@@ -50817,26 +51680,26 @@ function verifySchematicComponentCreate(input, adapter, before, after, oldNative
   if (pins.length === 0 || pins.length !== target5.pins.length) {
     throw new Error("Created component pin inventory differs from its project symbol.");
   }
-  for (const { pin: pin3, attributes, number: number14 } of pins) {
-    const physical = target5.pins.filter((entry) => entry.attributes.some((attribute2) => attribute2.key === "Pin Number" && attribute2.value === number14));
+  for (const { pin: pin4, attributes, number: number14 } of pins) {
+    const physical = target5.pins.filter((entry) => entry.attributes.some((attribute3) => attribute3.key === "Pin Number" && attribute3.value === number14));
     const actual = physical[0];
-    if (physical.length !== 1 || actual === void 0 || actual.noConnect !== null || actual.id !== `${adapter.createdId}-${pin3.id.split("-").at(-1)}` || !Number.isSafeInteger(actual.body["zIndex"])) {
+    if (physical.length !== 1 || actual === void 0 || actual.noConnect !== null || actual.id !== `${adapter.createdId}-${pin4.id.split("-").at(-1)}` || !Number.isSafeInteger(actual.body["zIndex"])) {
       throw new Error("Created component pin identity or geometry differs from its exact project symbol.");
     }
-    const expectedBody = { ...Object.fromEntries(PIN_FIELDS.map((key) => [key, pin3.body[key]])), x: translated(pin3.body["x"], operation.properties.x), y: translated(pin3.body["y"], -operation.properties.y), zIndex: actual.body["zIndex"] };
-    if (!same5(actual.body, expectedBody) || actual.attributes.length !== attributes.length) {
+    const expectedBody = { ...Object.fromEntries(PIN_FIELDS.map((key) => [key, pin4.body[key]])), x: translated(pin4.body["x"], operation.properties.x), y: translated(pin4.body["y"], -operation.properties.y), zIndex: actual.body["zIndex"] };
+    if (!same6(actual.body, expectedBody) || actual.attributes.length !== attributes.length) {
       throw new Error("Created component pin geometry, style or attributes differ from its exact project symbol.");
     }
-    for (const attribute2 of attributes) {
-      const matching = actual.attributes.find((entry) => entry.key === attribute2.body["key"]);
-      const body2 = { ...Object.fromEntries(ATTR_FIELDS2.map((key) => [key, attribute2.body[key]])), x: translated(attribute2.body["x"], operation.properties.x), y: translated(attribute2.body["y"], -operation.properties.y), value: null, keyVisible: null, valueVisible: null, parentId: actual.id, strikeout: attribute2.body["strikeout"] === true, fillColor: attribute2.body["color"] };
-      if (matching === void 0 || !/^[a-f0-9]{16}$/u.test(matching.id) || matching.value !== attribute2.body["value"] || matching.symbolValue !== attribute2.body["value"] || matching.blockValue !== null || matching.instanceValue !== null || !same5(matching.body, body2)) {
+    for (const attribute3 of attributes) {
+      const matching = actual.attributes.find((entry) => entry.key === attribute3.body["key"]);
+      const body3 = { ...Object.fromEntries(ATTR_FIELDS2.map((key) => [key, attribute3.body[key]])), x: translated(attribute3.body["x"], operation.properties.x), y: translated(attribute3.body["y"], -operation.properties.y), value: null, keyVisible: null, valueVisible: null, parentId: actual.id, strikeout: attribute3.body["strikeout"] === true, fillColor: attribute3.body["color"] };
+      if (matching === void 0 || !/^[a-f0-9]{16}$/u.test(matching.id) || matching.value !== attribute3.body["value"] || matching.symbolValue !== attribute3.body["value"] || matching.blockValue !== null || matching.instanceValue !== null || !same6(matching.body, body3)) {
         throw new Error("Created pin lost or changed an inherited name, number, electrical type, style or property override.");
       }
     }
   }
 }
-var SCHEMATIC_COMPONENT_CREATE_PROFILE, same5, PIN_FIELDS, ATTR_FIELDS2;
+var SCHEMATIC_COMPONENT_CREATE_PROFILE, same6, PIN_FIELDS, ATTR_FIELDS2;
 var init_schematic_component_create = __esm({
   "server/src/schematic-component-create.ts"() {
     init_core3();
@@ -50847,7 +51710,7 @@ var init_schematic_component_create = __esm({
     init_schematic_operations();
     init_schematic_source_proof();
     SCHEMATIC_COMPONENT_CREATE_PROFILE = "easyeda-pro-control.schematic-component-source-create.v1";
-    same5 = (left, right) => canonicalJson(left) === canonicalJson(right);
+    same6 = (left, right) => canonicalJson(left) === canonicalJson(right);
     PIN_FIELDS = ["display", "x", "y", "length", "rotation", "color", "pinShape", "locked"];
     ATTR_FIELDS2 = ["x", "y", "rotation", "color", "fontFamily", "fontSize", "fontWeight", "italic", "underline", "strikeout", "align", "value", "keyVisible", "valueVisible", "key", "fillColor", "parentId", "zIndex", "locked"];
   }
@@ -50866,11 +51729,11 @@ function projectFootprintScope(source3, history, context2) {
     throw new Error("Footprint context is not bound to its exact checkpoint collection and owner.");
   }
   const asset = history.documents.find((entry) => entry.uuid === source3.document["uuid"] && entry.docType === "FOOTPRINT" && !isNativeDocumentDeleted(entry));
-  const metadata = asset?.records.find((entry) => entry.id === "META" && entry.type === "META");
-  if (metadata === void 0 || source3.document["docType"] !== "PCB") {
+  const metadata2 = asset?.records.find((entry) => entry.id === "META" && entry.type === "META");
+  if (metadata2 === void 0 || source3.document["docType"] !== "PCB") {
     throw new Error("Footprint is absent from the complete project checkpoint or has an unreviewed export header.");
   }
-  return footprintScopeSchema.parse({ libraryUuid: history.projectUuid, metadataOwnerUuid: history.projectOwnerUuid, footprintUuid: asset?.uuid, footprintName: metadata.body["title"] });
+  return footprintScopeSchema.parse({ libraryUuid: history.projectUuid, metadataOwnerUuid: history.projectOwnerUuid, footprintUuid: asset?.uuid, footprintName: metadata2.body["title"] });
 }
 function snapshot2(before, objects, document2 = before.document) {
   const base2 = { schema: before.schema, document: document2, objects: objects.toSorted((left, right) => left.id.localeCompare(right.id)) };
@@ -50881,16 +51744,16 @@ function assertFootprintSource(before) {
     throw new Error("Invalid footprint source identity, hash or native version.");
   }
   const attributes = before.objects.filter((object4) => object4.type === "ATTR"), names2 = /* @__PURE__ */ new Set();
-  for (const attribute2 of attributes) {
-    const key = attribute2.body["key"];
-    if (typeof key !== "string" || key !== "" && names2.has(key) || attribute2.body["parentId"] !== "" && attribute2.body["parentId"] !== null && attribute2.body["parentId"] !== void 0) {
+  for (const attribute3 of attributes) {
+    const key = attribute3.body["key"];
+    if (typeof key !== "string" || key !== "" && names2.has(key) || attribute3.body["parentId"] !== "" && attribute3.body["parentId"] !== null && attribute3.body["parentId"] !== void 0) {
       throw new Error("Footprint attributes would invoke native duplicate/parent repair.");
     }
     if (key !== "") {
       names2.add(key);
     }
   }
-  const footprint2 = attributes.find((attribute2) => attribute2.body["key"] === "Footprint");
+  const footprint2 = attributes.find((attribute3) => attribute3.body["key"] === "Footprint");
   if (footprint2 === void 0 || typeof footprint2.body["value"] !== "string" || !footprint2.body["value"]) {
     throw new Error("Footprint source lacks its required named Footprint attribute.");
   }
@@ -50975,21 +51838,21 @@ function expectedFootprintSource(input, before, ids2 = {}) {
   const expected2 = buildExpectedDesignSource(pcbOperation(operation), pcbProjection(before), ids2);
   const existing = new Set(before.objects.map((object4) => object4.id));
   const objects = expected2.objects.map((object4) => {
-    let body2 = object4.body;
-    if (!existing.has(object4.id) && body2["partitionId"] === "") {
-      body2 = Object.fromEntries(Object.entries(body2).filter(([key]) => key !== "partitionId"));
+    let body3 = object4.body;
+    if (!existing.has(object4.id) && body3["partitionId"] === "") {
+      body3 = Object.fromEntries(Object.entries(body3).filter(([key]) => key !== "partitionId"));
     }
     if (!existing.has(object4.id) && object4.type === "PAD") {
-      body2 = { ...body2, unusedInnerLayers: [] };
+      body3 = { ...body3, unusedInnerLayers: [] };
     }
     if (object4.type === "POLY" && (!existing.has(object4.id) || operation.action === "footprint.polyline.modify" && operation.patch.polygon !== void 0)) {
-      const paths = body2["path"];
+      const paths = body3["path"];
       if (!Array.isArray(paths) || paths.length !== 1 || !Array.isArray(paths[0])) {
         throw new Error("Footprint POLY requires one native contour.");
       }
-      body2 = { ...body2, path: paths[0] };
+      body3 = { ...body3, path: paths[0] };
     }
-    return { id: object4.id, type: object4.type, body: body2 };
+    return { id: object4.id, type: object4.type, body: body3 };
   });
   const result = snapshot2(before, objects);
   return result;
@@ -51039,7 +51902,7 @@ function inverseFootprintOperation(input, before, ids2 = {}) {
   const patch = Object.fromEntries(Object.keys(operation.patch).map((key) => [key, wanted.body[textFields[key] ?? ""]]));
   return footprintOperationSchema.parse({ id: inverseId, action: "footprint.text.modify", target: { primitiveId: wanted.id }, patch });
 }
-var FOOTPRINT_ACTION_PROFILE, id4, target, textProperties2, pad, emptyNet, arc, fill, line, polyline, footprintOperationSchema, footprintScopeSchema, textFields, FOOTPRINT_OPERATION_LIMITATIONS;
+var FOOTPRINT_ACTION_PROFILE, id4, target, textProperties2, pad, emptyNet, arc, fill, line2, polyline, footprintOperationSchema, footprintScopeSchema, textFields, FOOTPRINT_OPERATION_LIMITATIONS;
 var init_footprint_action = __esm({
   "server/src/footprint-action.ts"() {
     init_zod();
@@ -51070,10 +51933,10 @@ var init_footprint_action = __esm({
     emptyNet = { net: external_exports.literal("") };
     arc = footprintGeometryProperties.arc.extend(emptyNet);
     fill = footprintGeometryProperties.fill.extend(emptyNet);
-    line = footprintGeometryProperties.line.extend(emptyNet);
+    line2 = footprintGeometryProperties.line.extend(emptyNet);
     polyline = footprintGeometryProperties.polyline.extend(emptyNet);
     footprintOperationSchema = external_exports.discriminatedUnion("action", [
-      ...geometry("line", line),
+      ...geometry("line", line2),
       ...geometry("arc", arc),
       ...geometry("polyline", polyline),
       ...geometry("fill", fill),
@@ -51414,14 +52277,14 @@ function number8(value, field2) {
   return value;
 }
 function simplePad(record6) {
-  const body2 = record6.body, shape = body2["defaultPad"];
-  if (record6.type !== "PAD" || !isRecord(shape) || !["ELLIPSE", "OVAL", "RECT"].includes(String(shape["padType"])) || canonicalJson(body2["specialPad"]) !== "[]" || ![1, 2, 12].includes(number8(body2["layerId"], "layer")) || typeof body2["num"] !== "string" || !/^[A-Za-z0-9]*$/u.test(body2["num"]) || body2["netName"] !== "" || body2["parentId"] !== void 0 && body2["parentId"] !== null && body2["parentId"] !== "") {
+  const body3 = record6.body, shape = body3["defaultPad"];
+  if (record6.type !== "PAD" || !isRecord(shape) || !["ELLIPSE", "OVAL", "RECT"].includes(String(shape["padType"])) || canonicalJson(body3["specialPad"]) !== "[]" || ![1, 2, 12].includes(number8(body3["layerId"], "layer")) || typeof body3["num"] !== "string" || !/^[A-Za-z0-9]*$/u.test(body3["num"]) || body3["netName"] !== "" || body3["parentId"] !== void 0 && body3["parentId"] !== null && body3["parentId"] !== "") {
     throw new Error("Pad history requires a standalone, empty-net, canonical simple footprint pad.");
   }
-  if (body2["layerId"] === 12 !== (body2["hole"] !== null)) {
+  if (body3["layerId"] === 12 !== (body3["hole"] !== null)) {
     throw new Error("Pad hole and copper layer are inconsistent.");
   }
-  if (number8(shape["width"], "land width") <= 0 || number8(shape["height"], "land height") <= 0 || canonicalJson(body2["unusedInnerLayers"]) !== "[]" || !["NORMAL", "TEST"].includes(String(body2["padType"]))) {
+  if (number8(shape["width"], "land width") <= 0 || number8(shape["height"], "land height") <= 0 || canonicalJson(body3["unusedInnerLayers"]) !== "[]" || !["NORMAL", "TEST"].includes(String(body3["padType"]))) {
     throw new Error("Pad history requires complete simple dimensions, no removed inner lands and a normal/test pad.");
   }
   if (shape["padType"] === "RECT" && (!Number.isInteger(shape["radius"]) || number8(shape["radius"], "corner ratio") < 0 || number8(shape["radius"], "corner ratio") > 100)) {
@@ -51462,10 +52325,10 @@ function buildFootprintPadPropertySteps(input, before, ids2 = {}) {
   const panel = (key, value) => {
     steps.push({ route: "panel", key, value });
   };
-  const attribute2 = (key, value) => {
+  const attribute3 = (key, value) => {
     steps.push({ route: "attribute", key, value });
   };
-  const body2 = desired.body, patch = operation.patch;
+  const body3 = desired.body, patch = operation.patch;
   if (patch.layer !== void 0 && patch.layer !== target5.body["layerId"] && [patch.pad, patch.hole, patch.holeOffsetX, patch.holeOffsetY, patch.holeRotation, patch.solderMaskAndPasteMaskExpansion].some((value) => value === void 0)) {
     throw new Error("Pad layer conversion requires explicit land, hole, hole offsets/angle and all mask settings to restore native conversion defaults.");
   }
@@ -51485,77 +52348,77 @@ function buildFootprintPadPropertySteps(input, before, ids2 = {}) {
     panel("angle", patch.rotation);
   }
   if (patch.pad !== void 0) {
-    attribute2("attr-pad-general-shape", patch.pad[0]);
-    attribute2("attr-pad-general-width", display2(patch.pad[1], "width"));
-    attribute2("attr-pad-general-height", display2(patch.pad[2], "height"));
+    attribute3("attr-pad-general-shape", patch.pad[0]);
+    attribute3("attr-pad-general-width", display2(patch.pad[1], "width"));
+    attribute3("attr-pad-general-height", display2(patch.pad[2], "height"));
     if (patch.pad[0] === "RECT") {
-      attribute2("attr-corner-radius-general", patch.pad[3]);
+      attribute3("attr-corner-radius-general", patch.pad[3]);
     }
   }
   if (patch.hole !== void 0 && patch.hole !== null) {
-    attribute2("attr-pad-hole-shape", patch.hole[0]);
-    attribute2("attr-pad-hole-width", display2(patch.hole[1], "hole width"));
+    attribute3("attr-pad-hole-shape", patch.hole[0]);
+    attribute3("attr-pad-hole-width", display2(patch.hole[1], "hole width"));
     if (patch.hole[0] === "SLOT") {
-      attribute2("attr-pad-hole-length", display2(patch.hole[2], "hole length"));
+      attribute3("attr-pad-hole-length", display2(patch.hole[2], "hole length"));
     }
-    attribute2("attr-pad-hole-rotation", number8(body2["relativeAngle"], "hole angle"));
+    attribute3("attr-pad-hole-rotation", number8(body3["relativeAngle"], "hole angle"));
   }
-  if (patch.hole === null && body2["layerId"] === 12) {
+  if (patch.hole === null && body3["layerId"] === 12) {
     throw new Error("Through-hole pads cannot clear the hole without a layer conversion.");
   }
-  if (body2["hole"] === null) {
-    if (body2["padOffsetX"] !== 0 || body2["padOffsetY"] !== 0 || body2["relativeAngle"] !== null && body2["relativeAngle"] !== 0) {
+  if (body3["hole"] === null) {
+    if (body3["padOffsetX"] !== 0 || body3["padOffsetY"] !== 0 || body3["relativeAngle"] !== null && body3["relativeAngle"] !== 0) {
       throw new Error("Surface pad hole offsets must be zero and its absent-hole angle must remain null or zero.");
     }
-    if (body2["relativeAngle"] !== target5.body["relativeAngle"]) {
+    if (body3["relativeAngle"] !== target5.body["relativeAngle"]) {
       throw new Error("An absent-hole angle cannot be changed through a hole property command.");
     }
   } else {
     if (patch.holeOffsetX !== void 0) {
-      attribute2("attr-pad-offset-x", display2(patch.holeOffsetX, "hole x"));
+      attribute3("attr-pad-offset-x", display2(patch.holeOffsetX, "hole x"));
     }
     if (patch.holeOffsetY !== void 0) {
-      attribute2("attr-pad-offset-y", display2(patch.holeOffsetY, "hole y"));
+      attribute3("attr-pad-offset-y", display2(patch.holeOffsetY, "hole y"));
     }
     if (patch.holeRotation !== void 0) {
-      attribute2("attr-pad-hole-rotation", patch.holeRotation);
+      attribute3("attr-pad-hole-rotation", patch.holeRotation);
     }
   }
   if (patch.metallization !== void 0) {
-    attribute2("attr-pad-plated", patch.metallization ? "yes" : "no");
+    attribute3("attr-pad-plated", patch.metallization ? "yes" : "no");
   }
   if (patch.solderMaskAndPasteMaskExpansion !== void 0) {
     if (patch.solderMaskAndPasteMaskExpansion === null) {
-      attribute2("attr-soldermask-showtype", 1);
+      attribute3("attr-soldermask-showtype", 1);
     } else {
-      if (body2["topPasteExpansion"] !== body2["bottomPasteExpansion"]) {
+      if (body3["topPasteExpansion"] !== body3["bottomPasteExpansion"]) {
         throw new Error("Native pads use one shared paste expansion.");
       }
-      attribute2("attr-soldermask-showtype", 2);
-      attribute2("attr-soldermask-toplayer", display2(body2["topSolderExpansion"], "top solder mask"));
-      attribute2("attr-soldermask-bottomlayer", display2(body2["bottomSolderExpansion"], "bottom solder mask"));
-      attribute2("attr-pastemask", display2(body2["topPasteExpansion"], "paste mask"));
+      attribute3("attr-soldermask-showtype", 2);
+      attribute3("attr-soldermask-toplayer", display2(body3["topSolderExpansion"], "top solder mask"));
+      attribute3("attr-soldermask-bottomlayer", display2(body3["bottomSolderExpansion"], "bottom solder mask"));
+      attribute3("attr-pastemask", display2(body3["topPasteExpansion"], "paste mask"));
     }
   }
   if (patch.heatWelding !== void 0) {
     if (patch.heatWelding === null) {
-      attribute2("attr-pad-thermal-type", 1);
+      attribute3("attr-pad-thermal-type", 1);
     } else {
       const mode = { Divergent: 0, "Direct-connected": 1, "Non-connected": 2 }[patch.heatWelding.connectionMethod];
-      attribute2("attr-pad-thermal-type", 2);
-      attribute2("attr-pad-connection", mode);
-      attribute2("attr-spoke-width", display2(patch.heatWelding.divergenceLineWidth, "spoke width"));
-      attribute2("attr-spoke-spacing", display2(patch.heatWelding.divergenceSpacing, "spoke spacing"));
-      attribute2("attr-spoke-angles", number8(patch.heatWelding.divergenceAngle, "spoke angle"));
+      attribute3("attr-pad-thermal-type", 2);
+      attribute3("attr-pad-connection", mode);
+      attribute3("attr-spoke-width", display2(patch.heatWelding.divergenceLineWidth, "spoke width"));
+      attribute3("attr-spoke-spacing", display2(patch.heatWelding.divergenceSpacing, "spoke spacing"));
+      attribute3("attr-spoke-angles", number8(patch.heatWelding.divergenceAngle, "spoke angle"));
     }
   }
   if (patch.primitiveLock !== void 0) {
-    attribute2("attr-locked", patch.primitiveLock ? "yes" : "no");
+    attribute3("attr-locked", patch.primitiveLock ? "yes" : "no");
   }
   if (steps.length === 0 || steps.length > 32) {
     throw new Error("No supported pad fields or too many property steps.");
   }
-  return { targetId: targetId2, padNumber: String(body2["num"]), expected: expected2, steps };
+  return { targetId: targetId2, padNumber: String(body3["num"]), expected: expected2, steps };
 }
 function buildFootprintPadHistoryExpression(input, before, scope3, ids2 = {}) {
   const operation = footprintOperationSchema.parse(input);
@@ -51694,27 +52557,27 @@ function hiddenAttributes(source3, nativeInput) {
   }
   const records2 = objectMap(source3.objects);
   const result = /* @__PURE__ */ new Map();
-  for (const attribute2 of schematicNonDrawingStoredAttributes(native)) {
-    const record6 = records2.get(attribute2.id);
-    if (result.has(attribute2.id) || attribute2.sourceSha256 !== source3.sha256 || record6 === void 0 || record6.type !== "ATTR" || sha256Json(record6.body) !== attribute2.bodySha256) {
+  for (const attribute3 of schematicNonDrawingStoredAttributes(native)) {
+    const record6 = records2.get(attribute3.id);
+    if (result.has(attribute3.id) || attribute3.sourceSha256 !== source3.sha256 || record6 === void 0 || record6.type !== "ATTR" || sha256Json(record6.body) !== attribute3.bodySha256) {
       throw new Error("Schematic attribute evidence does not identify an exact stored source record.");
     }
-    result.set(attribute2.id, attribute2);
+    result.set(attribute3.id, attribute3);
   }
   return result;
 }
-function matchesHiddenAttribute(record6, attribute2) {
-  return record6 !== void 0 && record6.id === attribute2.id && record6.type === "ATTR" && record6.body["parentId"] === attribute2.parentId && record6.body["key"] === attribute2.key && record6.body["x"] === null && record6.body["y"] === null && typeof record6.body["zIndex"] === "number" && Number.isSafeInteger(record6.body["zIndex"]) && record6.body["zIndex"] >= 0;
+function matchesHiddenAttribute(record6, attribute3) {
+  return record6 !== void 0 && record6.id === attribute3.id && record6.type === "ATTR" && record6.body["parentId"] === attribute3.parentId && record6.body["key"] === attribute3.key && record6.body["x"] === null && record6.body["y"] === null && typeof record6.body["zIndex"] === "number" && Number.isSafeInteger(record6.body["zIndex"]) && record6.body["zIndex"] >= 0;
 }
 function projectOrder(record6, projection) {
-  const attribute2 = projection.get(record6.id);
-  return attribute2 === void 0 ? record6 : { ...record6, body: { ...record6.body, zIndex: attribute2.zIndex } };
+  const attribute3 = projection.get(record6.id);
+  return attribute3 === void 0 ? record6 : { ...record6, body: { ...record6.body, zIndex: attribute3.zIndex } };
 }
 function orderDifferences(projection, before, after, comparison) {
-  return [...projection.values()].flatMap((attribute2) => {
-    const left = before.get(attribute2.id)?.body["zIndex"];
-    const right = after.get(attribute2.id)?.body["zIndex"];
-    return typeof left === "number" && typeof right === "number" && left !== right ? [{ id: attribute2.id, parentId: attribute2.parentId, key: attribute2.key, comparison, beforeZIndex: left, afterZIndex: right }] : [];
+  return [...projection.values()].flatMap((attribute3) => {
+    const left = before.get(attribute3.id)?.body["zIndex"];
+    const right = after.get(attribute3.id)?.body["zIndex"];
+    return typeof left === "number" && typeof right === "number" && left !== right ? [{ id: attribute3.id, parentId: attribute3.parentId, key: attribute3.key, comparison, beforeZIndex: left, afterZIndex: right }] : [];
   });
 }
 function persistenceOrderProjection(input, before, after) {
@@ -51731,12 +52594,12 @@ function persistenceOrderProjection(input, before, after) {
   const newSource = objectMap(input.expectedAfter.objects);
   const newDurable = objectMap(after.records);
   const projection = /* @__PURE__ */ new Map();
-  for (const [id7, attribute2] of newEligible) {
+  for (const [id7, attribute3] of newEligible) {
     const prior = oldEligible.get(id7);
     const wasAbsent = !oldSource.has(id7) && !oldDurable.has(id7);
-    const samePrior = prior !== void 0 && prior.parentId === attribute2.parentId && prior.key === attribute2.key && matchesHiddenAttribute(oldSource.get(id7), prior) && matchesHiddenAttribute(oldDurable.get(id7), prior);
-    if ((wasAbsent || samePrior) && matchesHiddenAttribute(newSource.get(id7), attribute2) && matchesHiddenAttribute(newDurable.get(id7), attribute2)) {
-      projection.set(id7, prior ?? attribute2);
+    const samePrior = prior !== void 0 && prior.parentId === attribute3.parentId && prior.key === attribute3.key && matchesHiddenAttribute(oldSource.get(id7), prior) && matchesHiddenAttribute(oldDurable.get(id7), prior);
+    if ((wasAbsent || samePrior) && matchesHiddenAttribute(newSource.get(id7), attribute3) && matchesHiddenAttribute(newDurable.get(id7), attribute3)) {
+      projection.set(id7, prior ?? attribute3);
     }
   }
   return projection;
@@ -51759,7 +52622,7 @@ function validateCheckpoint(snapshot6) {
       uuid: document2.uuid,
       docType: document2.docType,
       metadata: document2.metadata,
-      records: document2.records.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 }))
+      records: document2.records.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 }))
     };
     if (sha256Json(projection2) !== document2.semanticSha256) {
       throw new Error("Persistence document semantic hash does not match its contents.");
@@ -51826,9 +52689,9 @@ function checkedHeaderHistory(document2, checkpointSha256) {
   }
   return proof;
 }
-function validNativeMetadata(metadata) {
-  const time4 = metadata["updateTime"];
-  return typeof metadata["client"] === "string" && /^[a-f0-9]{16}$/u.test(metadata["client"]) && typeof time4 === "number" && Number.isSafeInteger(time4) && time4 >= 0 && metadata["version"] === String(time4);
+function validNativeMetadata(metadata2) {
+  const time4 = metadata2["updateTime"];
+  return typeof metadata2["client"] === "string" && /^[a-f0-9]{16}$/u.test(metadata2["client"]) && typeof time4 === "number" && Number.isSafeInteger(time4) && time4 >= 0 && metadata2["version"] === String(time4);
 }
 function saneHeaderUser(user) {
   if (!isRecord(user) || Object.keys(user).toSorted().join(",") !== "avatar,nickname,username,uuid" || typeof user["uuid"] !== "string" || !/^[a-f0-9]{32}$/u.test(user["uuid"])) {
@@ -51858,12 +52721,12 @@ function schematicUserRestoration(previous, current2, beforeCheckpointSha256, af
   let updateTime = -1;
   for (const [offset2, header] of newHistory.headers.slice(originalIndex).entries()) {
     const index = originalIndex + offset2;
-    const metadata = header.metadata;
+    const metadata2 = header.metadata;
     const absent = index > originalIndex && index < oldHistory.headers.length;
-    if (!validNativeMetadata(metadata) || Number(metadata["updateTime"]) <= updateTime || metadata["editVersion"] !== "3.2.149.88089769" || changedFields(before, metadata).some((field2) => field2 !== "user" && !VOLATILE_METADATA.has(field2)) || (absent ? Object.hasOwn(metadata, "user") : !equal2(metadata["user"], original.metadata["user"]))) {
+    if (!validNativeMetadata(metadata2) || Number(metadata2["updateTime"]) <= updateTime || metadata2["editVersion"] !== "3.2.149.88089769" || changedFields(before, metadata2).some((field2) => field2 !== "user" && !VOLATILE_METADATA.has(field2)) || (absent ? Object.hasOwn(metadata2, "user") : !equal2(metadata2["user"], original.metadata["user"]))) {
       throw new Error("Schematic user restoration crosses an altered or ambiguous header.");
     }
-    updateTime = Number(metadata["updateTime"]);
+    updateTime = Number(metadata2["updateTime"]);
   }
   return {
     profile: "easyeda-pro-control.schematic-header-user-restoration.v1",
@@ -51927,9 +52790,9 @@ function verifyDesignBaseline(input) {
   const source3 = objectMap(input.source.objects);
   const orderProjection = /* @__PURE__ */ new Map();
   if (input.native !== void 0) {
-    for (const [id7, attribute2] of hiddenAttributes(input.source, input.native)) {
-      if (matchesHiddenAttribute(durable.get(id7), attribute2) && matchesHiddenAttribute(source3.get(id7), attribute2)) {
-        orderProjection.set(id7, attribute2);
+    for (const [id7, attribute3] of hiddenAttributes(input.source, input.native)) {
+      if (matchesHiddenAttribute(durable.get(id7), attribute3) && matchesHiddenAttribute(source3.get(id7), attribute3)) {
+        orderProjection.set(id7, attribute3);
       }
     }
   }
@@ -52111,11 +52974,11 @@ function projectFootprintPadHistory(input) {
   const differences = [];
   const replacements = /* @__PURE__ */ new Map();
   for (const live of input.source.objects.filter((record6) => record6.type === "PAD" && targetIds.has(record6.id))) {
-    const stored = document2.records.find((entry) => entry.id === live.id);
-    if (stored === void 0 || stored.type !== "PAD") {
+    const stored2 = document2.records.find((entry) => entry.id === live.id);
+    if (stored2 === void 0 || stored2.type !== "PAD") {
       throw new Error("Footprint pad target is absent from durable baseline.");
     }
-    const after = live.body, before = stored.body;
+    const after = live.body, before = stored2.body;
     const fields2 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((field2) => canonicalJson({ value: before[field2] }) !== canonicalJson({ value: after[field2] }));
     if (fields2.length > 0) {
       const land = before["defaultPad"];
@@ -52159,7 +53022,7 @@ function projectFootprintPadHistory(input) {
       uuid: entry.uuid,
       docType: entry.docType,
       metadata: entry.metadata,
-      records: records2.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 }))
+      records: records2.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 }))
     }) };
   });
   return { checkpoint: {
@@ -52273,13 +53136,13 @@ function snapshot3(before, objects) {
   const base2 = { schema: before.schema, document: before.document, objects: objects.toSorted((a, b) => a.id.localeCompare(b.id)) };
   return { ...base2, sha256: sha256Json(base2) };
 }
-function pinAttribute(id7, key, value, body2, zIndex) {
+function pinAttribute(id7, key, value, body3, zIndex) {
   if (typeof value !== "string") {
     throw new TypeError("Symbol pin attributes require exact string values.");
   }
-  return { id: sha256Json({ id: id7, key }).slice(0, 16), type: "ATTR", body: { partId: body2["partId"], locked: false, zIndex, parentId: id7, key, value, keyVisible: false, valueVisible: false, x: body2["x"], y: body2["y"], rotation: 0, color: null, fillColor: null, fontFamily: null, fontSize: null, fontWeight: null, italic: null, underline: null, strikeout: false, align: "LEFT_BOTTOM" } };
+  return { id: sha256Json({ id: id7, key }).slice(0, 16), type: "ATTR", body: { partId: body3["partId"], locked: false, zIndex, parentId: id7, key, value, keyVisible: false, valueVisible: false, x: body3["x"], y: body3["y"], rotation: 0, color: null, fillColor: null, fontFamily: null, fontSize: null, fontWeight: null, italic: null, underline: null, strikeout: false, align: "LEFT_BOTTOM" } };
 }
-function updatePinChildren(records2, children2, old, body2, values2, deleting) {
+function updatePinChildren(records2, children2, old, body3, values2, deleting) {
   if (old === void 0) {
     throw new Error("Missing symbol pin baseline.");
   }
@@ -52292,8 +53155,8 @@ function updatePinChildren(records2, children2, old, body2, values2, deleting) {
       if (property !== void 0 && Object.hasOwn(values2, property)) {
         updated["value"] = values2[property];
       }
-      for (const coordinate4 of ["x", "y"].filter((key) => updated[key] !== null && updated[key] !== void 0)) {
-        updated[coordinate4] = finite2(updated[coordinate4]) + finite2(body2[coordinate4]) - finite2(old.body[coordinate4]);
+      for (const coordinate5 of ["x", "y"].filter((key) => updated[key] !== null && updated[key] !== void 0)) {
+        updated[coordinate5] = finite2(updated[coordinate5]) + finite2(body3[coordinate5]) - finite2(old.body[coordinate5]);
       }
       records2.set(child.id, { ...child, body: updated });
     }
@@ -52301,8 +53164,8 @@ function updatePinChildren(records2, children2, old, body2, values2, deleting) {
 }
 function assertPins(objects) {
   const numbers = [];
-  for (const pin3 of objects.filter((entry) => entry.type === "PIN")) {
-    const children2 = objects.filter((entry) => entry.body["parentId"] === pin3.id);
+  for (const pin4 of objects.filter((entry) => entry.type === "PIN")) {
+    const children2 = objects.filter((entry) => entry.body["parentId"] === pin4.id);
     const keys2 = children2.map((entry) => entry.body["key"]);
     if (children2.some((entry) => entry.type !== "ATTR") || new Set(keys2).size !== keys2.length || PIN_FIELDS2.some(([, key]) => !keys2.includes(key))) {
       throw new Error("Symbol pin requires one complete, unique native attribute inventory.");
@@ -52342,9 +53205,9 @@ function expectedSymbolSource(input, before, ids2 = {}) {
     throw new Error("Symbol pin rotation needs a proved owned-attribute rotation model; translation and renumber remain supported.");
   }
   const nextZ3 = Math.max(0, ...before.objects.filter((entry) => entry.body["partId"] === part.id).map((entry) => finite2(entry.body["zIndex"]))) + 1;
-  let body2 = old?.body ?? { partId: part.id, zIndex: nextZ3, locked: false, ...family === "text" ? { strikeout: false } : {}, ...family === "pin" ? { display: true } : {} };
+  let body3 = old?.body ?? { partId: part.id, zIndex: nextZ3, locked: false, ...family === "text" ? { strikeout: false } : {}, ...family === "pin" ? { display: true } : {} };
   if (!deleting) {
-    body2 = { ...body2, ...patchFields(family, values2, body2) };
+    body3 = { ...body3, ...patchFields(family, values2, body3) };
   }
   if (deleting) {
     records2.delete(id7);
@@ -52352,7 +53215,7 @@ function expectedSymbolSource(input, before, ids2 = {}) {
     if (type === void 0) {
       throw new Error("Unknown native symbol family.");
     }
-    records2.set(id7, { id: id7, type, body: body2 });
+    records2.set(id7, { id: id7, type, body: body3 });
   }
   if (family === "pin") {
     const children2 = before.objects.filter((entry) => entry.body["parentId"] === id7);
@@ -52361,14 +53224,14 @@ function expectedSymbolSource(input, before, ids2 = {}) {
     }
     if (creating) {
       for (const [index, [property, key]] of PIN_FIELDS2.entries()) {
-        const child = pinAttribute(id7, key, values2[property], body2, nextZ3 + index + 1);
+        const child = pinAttribute(id7, key, values2[property], body3, nextZ3 + index + 1);
         if (records2.has(child.id)) {
           throw new Error("Created symbol pin attribute identity collision.");
         }
         records2.set(child.id, child);
       }
     } else {
-      updatePinChildren(records2, children2, old, body2, values2, deleting);
+      updatePinChildren(records2, children2, old, body3, values2, deleting);
     }
   }
   const after = snapshot3(before, [...records2.values()]);
@@ -52389,7 +53252,7 @@ function materializedPartSymbolAttribute(before, expected2, after) {
   }
   const delta = compareDocumentSources(expected2, after), record6 = delta.added[0];
   const zIndex = Math.max(0, ...before.objects.filter((entry) => entry.body["partId"] === part.id).map((entry) => finite2(entry.body["zIndex"]))) + 1;
-  const body2 = {
+  const body3 = {
     x: null,
     y: null,
     rotation: null,
@@ -52409,7 +53272,7 @@ function materializedPartSymbolAttribute(before, expected2, after) {
     zIndex,
     partId: part.id
   };
-  if (delta.documentChanged || delta.changed.length > 0 || delta.removed.length > 0 || delta.added.length !== 1 || record6 === void 0 || record6.type !== "ATTR" || !/^[a-f0-9]{16}$/u.test(record6.id) || !Number.isSafeInteger(zIndex) || !same6(record6.body, body2)) {
+  if (delta.documentChanged || delta.changed.length > 0 || delta.removed.length > 0 || delta.added.length !== 1 || record6 === void 0 || record6.type !== "ATTR" || !/^[a-f0-9]{16}$/u.test(record6.id) || !Number.isSafeInteger(zIndex) || !same7(record6.body, body3)) {
     return void 0;
   }
   return { kind: "native-part-symbol-attribute", partId: part.id, record: record6 };
@@ -52417,8 +53280,8 @@ function materializedPartSymbolAttribute(before, expected2, after) {
 function verifySymbolSourceEffect(input, before, after, ids2 = {}) {
   checked2(after);
   const expected2 = expectedSymbolSource(input, before, ids2);
-  const materialization = same6(expected2, after) ? void 0 : materializedPartSymbolAttribute(before, expected2, after);
-  if (!same6(expected2, after) && materialization === void 0) {
+  const materialization = same7(expected2, after) ? void 0 : materializedPartSymbolAttribute(before, expected2, after);
+  if (!same7(expected2, after) && materialization === void 0) {
     throw new Error("Symbol edit changed source outside its exact typed effect.");
   }
   return { ...compareDocumentSources(before, after), symbolMaterializations: materialization === void 0 ? [] : [materialization] };
@@ -52448,13 +53311,13 @@ function inverseSymbolOperation(input, before, ids2 = {}) {
   return schematicOperationSchema.parse({ id: inverseId, documentType: 2, action: operation.action, target: { primitiveId: targetId2 }, patch });
 }
 function inverseField(family, key, original, before) {
-  const body2 = original.body;
-  const special = { topLeftX: body2["dotX1"], topLeftY: body2["dotY1"] === void 0 ? void 0 : -finite2(body2["dotY1"]), cornerRadius: body2["radiusX"] };
+  const body3 = original.body;
+  const special = { topLeftX: body3["dotX1"], topLeftY: body3["dotY1"] === void 0 ? void 0 : -finite2(body3["dotY1"]), cornerRadius: body3["radiusX"] };
   if (key === "width") {
-    return finite2(body2["dotX2"]) - finite2(body2["dotX1"]);
+    return finite2(body3["dotX2"]) - finite2(body3["dotX1"]);
   }
   if (key === "height") {
-    return finite2(body2["dotY1"]) - finite2(body2["dotY2"]);
+    return finite2(body3["dotY1"]) - finite2(body3["dotY2"]);
   }
   if (Object.hasOwn(special, key)) {
     return special[key];
@@ -52467,7 +53330,7 @@ function inverseField(family, key, original, before) {
   if (field2 === void 0) {
     throw new Error("Unmapped symbol inverse property.");
   }
-  const value = body2[field2];
+  const value = body3[field2];
   if (value === null) {
     return null;
   }
@@ -52530,7 +53393,7 @@ const capture=()=>{assertManager();const source=doc.consistencyImpl.getSourceCod
 await assertContext();if(stable(capture())!==stable(BASELINE))throw new Error('SYMBOL_SOURCE_CHANGED');
 `;
 }
-var SYMBOL_ACTION_PROFILE, symbolScopeSchema, TYPES, ALIGN, STROKE, FILL, PIN_SHAPE, FIELDS, SHAPE_FIELDS, PIN_FIELDS2, DERIVED_FIELDS, same6;
+var SYMBOL_ACTION_PROFILE, symbolScopeSchema, TYPES, ALIGN, STROKE, FILL, PIN_SHAPE, FIELDS, SHAPE_FIELDS, PIN_FIELDS2, DERIVED_FIELDS, same7;
 var init_symbol_action = __esm({
   "server/src/symbol-action.ts"() {
     init_zod();
@@ -52554,7 +53417,7 @@ var init_symbol_action = __esm({
     SHAPE_FIELDS = { centerX: "centerX", centerY: "centerY", radius: "radius", rotation: "rotation", color: "strokeColor", fillColor: "fillColor", lineWidth: "strokeWidth", lineType: "strokeStyle", fillStyle: "fillStyle" };
     PIN_FIELDS2 = [["pinName", "Pin Name"], ["pinNumber", "Pin Number"], ["pinType", "Pin Type"]];
     DERIVED_FIELDS = /* @__PURE__ */ new Set(["topLeftX", "topLeftY", "width", "height", "cornerRadius", ...PIN_FIELDS2.map(([property]) => property)]);
-    same6 = (left, right) => canonicalJson(left) === canonicalJson(right);
+    same7 = (left, right) => canonicalJson(left) === canonicalJson(right);
   }
 });
 
@@ -52642,19 +53505,19 @@ function assertUnlockedAncestry(record6, records2) {
 }
 function selectedAttribute(operation, source3) {
   const records2 = assertSource(source3);
-  const attribute2 = records2.get(operation.attributeId);
-  if (attribute2 === void 0 || attribute2.type !== "ATTR" || attribute2.body["key"] !== "3D Model Transform" || typeof attribute2.body["value"] !== "string") {
+  const attribute3 = records2.get(operation.attributeId);
+  if (attribute3 === void 0 || attribute3.type !== "ATTR" || attribute3.body["key"] !== "3D Model Transform" || typeof attribute3.body["value"] !== "string") {
     throw new Error("Model transform requires its exact existing stored ATTR identity and value.");
   }
   let parent;
   if (operation.action === "pcb.component.model-transform") {
     const component2 = records2.get(operation.target.primitiveId);
-    if (component2?.type !== "COMPONENT" || component2.body["locked"] !== false || attribute2.body["parentId"] !== component2.id) {
+    if (component2?.type !== "COMPONENT" || component2.body["locked"] !== false || attribute3.body["parentId"] !== component2.id) {
       throw new Error("Model transform does not belong to the selected unlocked PCB component.");
     }
     parent = component2.id;
   } else {
-    parent = attribute2.body["parentId"];
+    parent = attribute3.body["parentId"];
     if (parent !== "" && parent !== null && parent !== void 0) {
       throw new Error("Footprint model transform must be a document-level attribute.");
     }
@@ -52674,18 +53537,18 @@ function selectedAttribute(operation, source3) {
     }
   }
   const siblings = source3.objects.filter((record6) => record6.type === "ATTR" && record6.body["parentId"] === parent && record6.body["key"] === "3D Model Transform");
-  if (siblings.length !== 1 || siblings[0]?.id !== attribute2.id) {
+  if (siblings.length !== 1 || siblings[0]?.id !== attribute3.id) {
     throw new Error("Model transform attribute identity is ambiguous.");
   }
-  assertUnlockedAncestry(attribute2, records2);
-  decodeModelTransform(attribute2.body["value"]);
-  return attribute2;
+  assertUnlockedAncestry(attribute3, records2);
+  decodeModelTransform(attribute3.body["value"]);
+  return attribute3;
 }
 function expectedModelTransformSource(input, before) {
   const operation = modelTransformOperationSchema.parse(input);
-  const attribute2 = selectedAttribute(operation, before);
+  const attribute3 = selectedAttribute(operation, before);
   const value = encodeModelTransform(operation.transform);
-  const objects = before.objects.map((record6) => record6.id === attribute2.id ? { id: record6.id, type: record6.type, body: { ...record6.body, value } } : record6);
+  const objects = before.objects.map((record6) => record6.id === attribute3.id ? { id: record6.id, type: record6.type, body: { ...record6.body, value } } : record6);
   const result = { schema: before.schema, document: before.document, objects };
   return { ...result, sha256: sha256Json(result) };
 }
@@ -52702,8 +53565,8 @@ function verifyModelTransformSourceEffect(input, before, after) {
 }
 function inverseModelTransformOperation(input, before) {
   const operation = modelTransformOperationSchema.parse(input);
-  const attribute2 = selectedAttribute(operation, before);
-  const inverse = modelTransformOperationSchema.parse({ ...operation, id: `inverse-${sha256Json(operation).slice(0, 32)}`, transform: decodeModelTransform(attribute2.body["value"]) });
+  const attribute3 = selectedAttribute(operation, before);
+  const inverse = modelTransformOperationSchema.parse({ ...operation, id: `inverse-${sha256Json(operation).slice(0, 32)}`, transform: decodeModelTransform(attribute3.body["value"]) });
   const restored = expectedModelTransformSource(inverse, expectedModelTransformSource(operation, before));
   return canonicalJson(restored) === canonicalJson(before) ? inverse : void 0;
 }
@@ -52778,7 +53641,7 @@ function library(history, uuid8, type) {
     uuid: doc.uuid,
     docType: doc.docType,
     metadata: doc.metadata,
-    records: doc.records.map(({ id: id7, type: recordType2, body: body2 }) => ({ id: id7, type: recordType2, body: body2 }))
+    records: doc.records.map(({ id: id7, type: recordType2, body: body3 }) => ({ id: id7, type: recordType2, body: body3 }))
   })) {
     fail2();
   }
@@ -52794,14 +53657,14 @@ function schematicHiddenNullOrder(history, page, source3, native, row) {
   if (symbolAttrs.length !== 1 || deviceAttrs.length !== 1) {
     fail2();
   }
-  const device = library(history, deviceAttrs[0]?.value, "DEVICE"), symbol2 = library(history, symbolAttrs[0]?.value, "SYMBOL");
-  const symbolType3 = symbol2.records.find((entry) => entry.type === "META")?.body["docType"];
+  const device = library(history, deviceAttrs[0]?.value, "DEVICE"), symbol4 = library(history, symbolAttrs[0]?.value, "SYMBOL");
+  const symbolType3 = symbol4.records.find((entry) => entry.type === "META")?.body["docType"];
   const deviceAttributes = device.records.find((entry) => entry.type === "META")?.body["attributes"];
   const partId = model.body["partId"];
-  if (typeof partId !== "string" || !symbol2.records.some((entry) => entry.type === "PART" && entry.id === partId) || symbolType3 !== (model.kind === "part" ? 2 : 18) || !isRecord(deviceAttributes) || deviceAttributes["Symbol"] !== symbol2.uuid) {
+  if (typeof partId !== "string" || !symbol4.records.some((entry) => entry.type === "PART" && entry.id === partId) || symbolType3 !== (model.kind === "part" ? 2 : 18) || !isRecord(deviceAttributes) || deviceAttributes["Symbol"] !== symbol4.uuid) {
     fail2();
   }
-  const children2 = symbol2.records.filter((entry) => entry.body["partId"] === partId);
+  const children2 = symbol4.records.filter((entry) => entry.body["partId"] === partId);
   const shapes = children2.filter((entry) => entry.type !== "ATTR");
   if (shapes.some((entry) => !["PIN", "POLY", "LINE", "ARC", "RECT", "CIRCLE", "ELLIPSE", "TEXT"].includes(entry.type))) {
     fail2();
@@ -52824,7 +53687,7 @@ function schematicHiddenNullOrder(history, page, source3, native, row) {
   if (rootsStored.some((entry) => !Number.isSafeInteger(entry.firstTicket) || entry.firstTicket === void 0 || entry.firstTicket < 0 || entry.firstTicket > entry.ticket || !Object.hasOwn(entry, "firstClient") || entry.firstClient !== null && typeof entry.firstClient !== "string")) {
     fail2();
   }
-  const stored = rootsStored.toSorted((a, b) => {
+  const stored2 = rootsStored.toSorted((a, b) => {
     const ticketOrder = Number(a.firstTicket) - Number(b.firstTicket);
     if (ticketOrder !== 0) {
       return ticketOrder;
@@ -52835,10 +53698,10 @@ function schematicHiddenNullOrder(history, page, source3, native, row) {
     }
     return left > right ? 1 : 0;
   });
-  if (stored.some((entry) => !Number.isSafeInteger(entry.ticket) || typeof entry.body["key"] !== "string") || stored.some((entry, index) => stored.slice(index + 1).some((peer) => peer.firstTicket === entry.firstTicket && (peer.firstClient === entry.firstClient || peer.firstClient === null || entry.firstClient === null))) || new Set(stored.map((entry) => entry.body["key"])).size !== stored.length || !stored.some((entry) => entry.id === row.id && same7(entry.body, row.body))) {
+  if (stored2.some((entry) => !Number.isSafeInteger(entry.ticket) || typeof entry.body["key"] !== "string") || stored2.some((entry, index) => stored2.slice(index + 1).some((peer) => peer.firstTicket === entry.firstTicket && (peer.firstClient === entry.firstClient || peer.firstClient === null || entry.firstClient === null))) || new Set(stored2.map((entry) => entry.body["key"])).size !== stored2.length || !stored2.some((entry) => entry.id === row.id && same8(entry.body, row.body))) {
     fail2();
   }
-  for (const entry of stored) {
+  for (const entry of stored2) {
     const attrKey = String(entry.body["key"]);
     if (!keys2.includes(attrKey)) {
       keys2.push(attrKey);
@@ -52858,7 +53721,7 @@ function schematicHiddenNullOrder(history, page, source3, native, row) {
   const attr = model.attributes.find((entry) => entry.id === row.id && entry.key === key);
   const exported = source3.objects.find((entry) => entry.id === row.id);
   const order2 = shapes.length + keys2.indexOf(key);
-  if (attr === void 0 || exported?.type !== "ATTR" || !same7(attr.body, exported.body) || attr.body["zIndex"] !== order2) {
+  if (attr === void 0 || exported?.type !== "ATTR" || !same8(attr.body, exported.body) || attr.body["zIndex"] !== order2) {
     fail2();
   }
   return {
@@ -52866,9 +53729,9 @@ function schematicHiddenNullOrder(history, page, source3, native, row) {
     attributeId: row.id,
     key,
     order: order2,
-    symbolSha256: symbol2.semanticSha256,
+    symbolSha256: symbol4.semanticSha256,
     deviceSha256: device.semanticSha256,
-    ticketOrderSha256: sha256Json(stored.map((entry) => ({
+    ticketOrderSha256: sha256Json(stored2.map((entry) => ({
       id: entry.id,
       ticket: entry.ticket,
       firstTicket: entry.firstTicket,
@@ -52877,12 +53740,12 @@ function schematicHiddenNullOrder(history, page, source3, native, row) {
     })))
   };
 }
-var same7;
+var same8;
 var init_schematic_hidden_order = __esm({
   "server/src/schematic-hidden-order.ts"() {
     init_core3();
     init_native_history();
-    same7 = (a, b) => canonicalJson({ value: a }) === canonicalJson({ value: b });
+    same8 = (a, b) => canonicalJson({ value: a }) === canonicalJson({ value: b });
   }
 });
 
@@ -52908,7 +53771,7 @@ function document(history, uuid8, type) {
   if (values2.length !== 1 || value === void 0) {
     fail3();
   }
-  const hash8 = sha256Json({ uuid: value.uuid, docType: value.docType, metadata: value.metadata, records: value.records.map(({ id: id7, type: recordType2, body: body2 }) => ({ id: id7, type: recordType2, body: body2 })) });
+  const hash8 = sha256Json({ uuid: value.uuid, docType: value.docType, metadata: value.metadata, records: value.records.map(({ id: id7, type: recordType2, body: body3 }) => ({ id: id7, type: recordType2, body: body3 })) });
   if (hash8 !== value.semanticSha256) {
     fail3();
   }
@@ -52922,8 +53785,8 @@ function rootAttribute(component2, key) {
   }
   return value;
 }
-function translated2(body2, dx, dy) {
-  const result = structuredClone(body2);
+function translated2(body3, dx, dy) {
+  const result = structuredClone(body3);
   for (const [key, delta] of [["x", dx], ["y", dy]]) {
     if (result[key] !== null && result[key] !== void 0) {
       Reflect.set(result, key, number9(result[key]) + delta);
@@ -52931,11 +53794,11 @@ function translated2(body2, dx, dy) {
   }
   return result;
 }
-function unlocked(body2) {
-  return body2["locked"] !== true && (body2["groupId"] === void 0 || body2["groupId"] === "");
+function unlocked(body3) {
+  return body3["locked"] !== true && (body3["groupId"] === void 0 || body3["groupId"] === "");
 }
-function nativeRootOrder(symbol2, partId, attributes, deviceAttributes) {
-  const partRecords = symbol2.records.filter((entry) => entry.body["partId"] === partId);
+function nativeRootOrder(symbol4, partId, attributes, deviceAttributes) {
+  const partRecords = symbol4.records.filter((entry) => entry.body["partId"] === partId);
   const shapes = partRecords.filter((entry) => entry.type !== "ATTR");
   if (shapes.some((entry) => !["PIN", "POLY", "LINE", "ARC", "RECT", "CIRCLE", "ELLIPSE", "TEXT"].includes(entry.type))) {
     fail3();
@@ -52965,38 +53828,38 @@ function nativeRootOrder(symbol2, partId, attributes, deviceAttributes) {
   return { offset: shapes.length, keys: keys2 };
 }
 function storedTemplateBodies(sheet, source3, model) {
-  const pins = new Set(model.pins.map((pin3) => pin3.id));
+  const pins = new Set(model.pins.map((pin4) => pin4.id));
   const selected = (record6) => record6.id === model.id || record6.body["parentId"] === model.id || pins.has(String(record6.body["parentId"]));
   const prior = sheet.records.filter(selected);
   const current2 = source3.objects.filter(selected);
-  if (!same8(prior.map((item2) => item2.id).toSorted(), current2.map((item2) => item2.id).toSorted())) {
+  if (!same9(prior.map((item2) => item2.id).toSorted(), current2.map((item2) => item2.id).toSorted())) {
     fail3();
   }
   const hydration = [];
-  for (const stored of prior) {
-    const live = current2.find((item2) => item2.id === stored.id);
-    if (live === void 0 || live.type !== stored.type || !unlocked(stored.body) || !unlocked(live.body)) {
+  for (const stored2 of prior) {
+    const live = current2.find((item2) => item2.id === stored2.id);
+    if (live === void 0 || live.type !== stored2.type || !unlocked(stored2.body) || !unlocked(live.body)) {
       fail3();
     }
-    const body2 = structuredClone(stored.body), fields2 = [];
-    if (stored.type === "ATTR") {
-      if (!same8(body2["zIndex"], live.body["zIndex"])) {
+    const body3 = structuredClone(stored2.body), fields2 = [];
+    if (stored2.type === "ATTR") {
+      if (!same9(body3["zIndex"], live.body["zIndex"])) {
         if (!Number.isSafeInteger(live.body["zIndex"]) || number9(live.body["zIndex"]) < 0) {
           fail3();
         }
-        body2["zIndex"] = live.body["zIndex"];
+        body3["zIndex"] = live.body["zIndex"];
         fields2.push("zIndex");
       }
-      if (!Object.hasOwn(body2, "strikeout") && live.body["strikeout"] === false) {
-        body2["strikeout"] = false;
+      if (!Object.hasOwn(body3, "strikeout") && live.body["strikeout"] === false) {
+        body3["strikeout"] = false;
         fields2.push("strikeout");
       }
     }
-    if (!same8(body2, live.body)) {
+    if (!same9(body3, live.body)) {
       fail3();
     }
     if (fields2.length > 0) {
-      hydration.push({ id: stored.id, fields: fields2 });
+      hydration.push({ id: stored2.id, fields: fields2 });
     }
   }
   return hydration;
@@ -53005,7 +53868,7 @@ function planSchematicNetFlagClone(input, current2, history, templateInput, allo
   return planClone(input, current2, history, templateInput, allocate);
 }
 function planHistoricalSchematicNetFlagClone(input, current2, history, templateInput, allocate, observedSource) {
-  if (!same8(current2.document, observedSource.document) || observedSource.sha256 !== sha256Json({ schema: observedSource.schema, document: observedSource.document, objects: observedSource.objects })) {
+  if (!same9(current2.document, observedSource.document) || observedSource.sha256 !== sha256Json({ schema: observedSource.schema, document: observedSource.document, objects: observedSource.objects })) {
     fail3();
   }
   return planClone(input, current2, history, templateInput, allocate, observedSource);
@@ -53025,47 +53888,47 @@ function planClone(input, current2, history, templateInput, allocate, historical
     fail3();
   }
   const model = native.components.find((entry) => entry.id === step.template.componentId);
-  if (model === void 0 || model.kind !== "netflag" || model.locked || !unlocked(model.body) || !same8(model.body["attrs"], {}) || model.body["rotation"] !== 0 || model.body["isMirror"] !== false || model.pins.length !== 1) {
+  if (model === void 0 || model.kind !== "netflag" || model.locked || !unlocked(model.body) || !same9(model.body["attrs"], {}) || model.body["rotation"] !== 0 || model.body["isMirror"] !== false || model.pins.length !== 1) {
     fail3();
   }
   const sheet = document(history, step.template.sheetUuid, "SCH_PAGE");
   const symbolUuid = string4(rootAttribute(model, "Symbol").value);
   const deviceUuid = string4(rootAttribute(model, "Device").value);
-  const symbol2 = document(history, symbolUuid, "SYMBOL");
+  const symbol4 = document(history, symbolUuid, "SYMBOL");
   const device = document(history, deviceUuid, "DEVICE");
-  const symbolMeta = symbol2.records.find((entry) => entry.type === "META" && entry.id === "META");
+  const symbolMeta = symbol4.records.find((entry) => entry.type === "META" && entry.id === "META");
   const deviceMeta = device.records.find((entry) => entry.type === "META" && entry.id === "META");
   const deviceAttributes = deviceMeta?.body["attributes"];
   if (symbolMeta?.body["docType"] !== 18 || !isRecord(deviceAttributes) || deviceAttributes["Symbol"] !== symbolUuid || ["Footprint", "3D Model", "Add into BOM", "Convert to PCB"].some((key) => model.attributes.some((attr) => attr.key === key) || Object.hasOwn(deviceAttributes, key))) {
     fail3();
   }
-  const parts = symbol2.records.filter((entry) => entry.type === "PART");
-  const part = parts[0], pin3 = model.pins[0];
-  if (parts.length !== 1 || part === void 0 || model.body["partId"] !== part.id || pin3 === void 0 || pin3.noConnect !== null || !unlocked(pin3.body)) {
+  const parts = symbol4.records.filter((entry) => entry.type === "PART");
+  const part = parts[0], pin4 = model.pins[0];
+  if (parts.length !== 1 || part === void 0 || model.body["partId"] !== part.id || pin4 === void 0 || pin4.noConnect !== null || !unlocked(pin4.body)) {
     fail3();
   }
-  const libraryPins = symbol2.records.filter((entry) => entry.type === "PIN" && entry.body["partId"] === part.id);
+  const libraryPins = symbol4.records.filter((entry) => entry.type === "PIN" && entry.body["partId"] === part.id);
   const libraryPin = libraryPins[0];
-  if (libraryPins.length !== 1 || libraryPin === void 0 || pin3.id !== `${model.id}-${libraryPin.id}` || libraryPin.body["x"] !== 0 || libraryPin.body["y"] !== 0 || number9(pin3.body["x"]) !== number9(model.body["x"]) || number9(pin3.body["y"]) !== number9(model.body["y"])) {
+  if (libraryPins.length !== 1 || libraryPin === void 0 || pin4.id !== `${model.id}-${libraryPin.id}` || libraryPin.body["x"] !== 0 || libraryPin.body["y"] !== 0 || number9(pin4.body["x"]) !== number9(model.body["x"]) || number9(pin4.body["y"]) !== number9(model.body["y"])) {
     fail3();
   }
-  if (["length", "rotation", "display", "color", "pinShape"].some((key) => !same8(libraryPin.body[key], pin3.body[key]))) {
+  if (["length", "rotation", "display", "color", "pinShape"].some((key) => !same9(libraryPin.body[key], pin4.body[key]))) {
     fail3();
   }
   const net2 = string4(rootAttribute(model, "Name").value);
-  if (rootAttribute(model, "Global Net Name").value !== net2 || pin3.net !== net2 || rootAttribute(model, "Relevance").value !== "[]") {
+  if (rootAttribute(model, "Global Net Name").value !== net2 || pin4.net !== net2 || rootAttribute(model, "Relevance").value !== "[]") {
     fail3();
   }
-  const allAttrs = [...model.attributes, ...pin3.attributes];
+  const allAttrs = [...model.attributes, ...pin4.attributes];
   if (allAttrs.some((attr) => !unlocked(attr.body) || attr.instanceValue !== null || attr.valueAuthority !== void 0) || model.attributes.some((attr) => ["Designator", "Unique ID", "UniqueID"].includes(attr.key))) {
     fail3();
   }
-  const owned2 = templateSource.objects.filter((entry) => entry.id === model.id || entry.body["parentId"] === model.id || entry.body["parentId"] === pin3.id);
+  const owned2 = templateSource.objects.filter((entry) => entry.id === model.id || entry.body["parentId"] === model.id || entry.body["parentId"] === pin4.id);
   if (owned2.some((entry) => entry.id !== model.id && entry.type !== "ATTR")) {
     fail3();
   }
   const inheritedDeviceAttributes = model.attributes.filter((attr) => !owned2.some((entry) => entry.id === attr.id));
-  if (inheritedDeviceAttributes.some((attr) => !Object.hasOwn(deviceAttributes, attr.key) || !same8(attr.body["value"], deviceAttributes[attr.key]) || !same8(attr.blockValue, attr.body["value"]))) {
+  if (inheritedDeviceAttributes.some((attr) => !Object.hasOwn(deviceAttributes, attr.key) || !same9(attr.body["value"], deviceAttributes[attr.key]) || !same9(attr.blockValue, attr.body["value"]))) {
     fail3();
   }
   const inheritedRecords = inheritedDeviceAttributes.map((attr) => ({ id: attr.id, type: "ATTR", body: attr.body }));
@@ -53074,7 +53937,7 @@ function planClone(input, current2, history, templateInput, allocate, historical
   if (new Set(storedRoots.map((entry) => entry.ticket)).size !== storedRoots.length) {
     fail3();
   }
-  const templateOrder = nativeRootOrder(symbol2, part.id, storedRoots, deviceAttributes);
+  const templateOrder = nativeRootOrder(symbol4, part.id, storedRoots, deviceAttributes);
   if (model.attributes.length !== templateOrder.keys.length || model.attributes.some((attr) => attr.body["zIndex"] !== templateOrder.offset + templateOrder.keys.indexOf(attr.key))) {
     const roots = storedRoots.filter((entry) => entry.body["key"] === "Relevance");
     const relevance2 = roots[0];
@@ -53095,7 +53958,7 @@ function planClone(input, current2, history, templateInput, allocate, historical
   };
   const componentId = allocation(step.id), pinId = `${componentId}-${libraryPin.id}`;
   const pool = attributes.map((_, index) => allocation(`${step.id}:attr:${index}`)).toSorted();
-  const map2 = /* @__PURE__ */ new Map([[model.id, componentId], [pin3.id, pinId]]);
+  const map2 = /* @__PURE__ */ new Map([[model.id, componentId], [pin4.id, pinId]]);
   for (const [index, attr] of attributes.entries()) {
     const value = pool[index];
     if (value === void 0) {
@@ -53137,27 +54000,27 @@ function planClone(input, current2, history, templateInput, allocate, historical
     if (parent === void 0) {
       fail3();
     }
-    const body2 = translated2(attr.body, dx, dy);
-    body2["parentId"] = parent;
+    const body3 = translated2(attr.body, dx, dy);
+    body3["parentId"] = parent;
     const id7 = map2.get(attr.id) ?? sha256Json({ componentId, parent, key: attr.key }).slice(0, 16);
     const libraryParents = attr.body["parentId"] === model.id ? [part.id, ""] : [libraryPin.id];
-    const libraryAttributes = symbol2.records.filter((entry) => entry.type === "ATTR" && entry.body["partId"] === part.id && entry.body["key"] === attr.key && libraryParents.includes(String(entry.body["parentId"])));
-    if (libraryAttributes.length > 1 || body2["strikeout"] !== void 0 && typeof body2["strikeout"] !== "boolean") {
+    const libraryAttributes = symbol4.records.filter((entry) => entry.type === "ATTR" && entry.body["partId"] === part.id && entry.body["key"] === attr.key && libraryParents.includes(String(entry.body["parentId"])));
+    if (libraryAttributes.length > 1 || body3["strikeout"] !== void 0 && typeof body3["strikeout"] !== "boolean") {
       fail3();
     }
     const inheritedStrikeout = libraryAttributes[0]?.body["strikeout"] === true;
-    if (body2["strikeout"] === void 0 && inheritedStrikeout) {
+    if (body3["strikeout"] === void 0 && inheritedStrikeout) {
       fail3();
     }
-    if (body2["strikeout"] === false && !inheritedStrikeout) {
-      delete body2["strikeout"];
+    if (body3["strikeout"] === false && !inheritedStrikeout) {
+      delete body3["strikeout"];
       watchedOmittedStrikeout.push({ id: id7, parentId: parent, key: attr.key, stored: map2.has(attr.id) });
     }
-    return { ...structuredClone(attr), id: id7, body: body2 };
+    return { ...structuredClone(attr), id: id7, body: body3 };
   };
   component2.attributes = component2.attributes.map(cloneAttr);
   component2.pins = component2.pins.map((entry) => ({ ...entry, id: pinId, body: translated2(entry.body, dx, dy), attributes: entry.attributes.map(cloneAttr) }));
-  const cloneOrder = nativeRootOrder(symbol2, part.id, attributes.filter((entry) => entry.body["parentId"] === model.id), deviceAttributes);
+  const cloneOrder = nativeRootOrder(symbol4, part.id, attributes.filter((entry) => entry.body["parentId"] === model.id), deviceAttributes);
   for (const attr of component2.attributes) {
     attr.body["zIndex"] = cloneOrder.offset + cloneOrder.keys.indexOf(attr.key);
   }
@@ -53176,7 +54039,7 @@ function planClone(input, current2, history, templateInput, allocate, historical
   if (historicalAfter !== void 0) {
     for (const attr of inheritedDeviceAttributes) {
       const id7 = map2.get(attr.id);
-      if (!same8(records2.find((entry) => entry.id === id7), historicalAfter.objects.find((entry) => entry.id === id7))) {
+      if (!same9(records2.find((entry) => entry.id === id7), historicalAfter.objects.find((entry) => entry.id === id7))) {
         fail3();
       }
     }
@@ -53186,7 +54049,7 @@ function planClone(input, current2, history, templateInput, allocate, historical
     ...["Symbol", "Device"].flatMap((key) => storedRootAttributes.filter((attr) => attr.key === key)),
     ...storedRootAttributes.filter((attr) => !["Symbol", "Device"].includes(attr.key)).toSorted((a, b) => number9(a.body["zIndex"]) - number9(b.body["zIndex"]))
   ].map((attr) => ({ id: attr.id, type: "ATTR", body: attr.body }));
-  const reconstructedOrder = nativeRootOrder(symbol2, part.id, reconstructionAttributes, deviceAttributes);
+  const reconstructedOrder = nativeRootOrder(symbol4, part.id, reconstructionAttributes, deviceAttributes);
   const reordered = component2.attributes.filter((attr) => attr.body["zIndex"] !== reconstructedOrder.offset + reconstructedOrder.keys.indexOf(attr.key));
   const deviceAttr = reordered.find((attr) => attr.key === "Device"), relevance = reordered.find((attr) => attr.key === "Relevance");
   const description = reordered.find((attr) => attr.key === "Description");
@@ -53207,7 +54070,7 @@ function planClone(input, current2, history, templateInput, allocate, historical
     templateSourceSha256: templateSource.sha256,
     templateNativeSha256: sha256Json(native),
     symbolUuid,
-    symbolSha256: symbol2.semanticSha256,
+    symbolSha256: symbol4.semanticSha256,
     deviceUuid,
     deviceSha256: device.semanticSha256,
     templateHydration: hydration,
@@ -53229,7 +54092,7 @@ function verifySchematicNetFlagClone(descriptor, actualSource, actualInput) {
   if (found === void 0) {
     fail3();
   }
-  const model = structuredClone(found), stored = new Set(descriptor.records.map((entry) => entry.id));
+  const model = structuredClone(found), stored2 = new Set(descriptor.records.map((entry) => entry.id));
   const align2 = (before, after) => {
     if (before.length !== after.length) {
       fail3();
@@ -53240,7 +54103,7 @@ function verifySchematicNetFlagClone(descriptor, actualSource, actualInput) {
         fail3();
       }
       if (entry.id !== reference2.id) {
-        if (stored.has(reference2.id) || actualSource.objects.some((object4) => object4.id === entry.id) || !/^[a-f0-9]{16}$/u.test(entry.id)) {
+        if (stored2.has(reference2.id) || actualSource.objects.some((object4) => object4.id === entry.id) || !/^[a-f0-9]{16}$/u.test(entry.id)) {
           fail3();
         }
         entry.id = reference2.id;
@@ -53249,24 +54112,24 @@ function verifySchematicNetFlagClone(descriptor, actualSource, actualInput) {
     after.sort((a, b) => a.id.localeCompare(b.id));
   };
   align2(descriptor.component.attributes, model.attributes);
-  for (const pin3 of model.pins) {
-    const reference2 = descriptor.component.pins.find((entry) => entry.id === pin3.id);
+  for (const pin4 of model.pins) {
+    const reference2 = descriptor.component.pins.find((entry) => entry.id === pin4.id);
     if (reference2 === void 0) {
       fail3();
     }
-    align2(reference2.attributes, pin3.attributes);
+    align2(reference2.attributes, pin4.attributes);
   }
   const expected2 = structuredClone(descriptor.component);
   expected2.attributes.sort((a, b) => a.id.localeCompare(b.id));
-  for (const pin3 of expected2.pins) {
-    pin3.attributes.sort((a, b) => a.id.localeCompare(b.id));
+  for (const pin4 of expected2.pins) {
+    pin4.attributes.sort((a, b) => a.id.localeCompare(b.id));
   }
-  if (!same8(model, expected2)) {
+  if (!same9(model, expected2)) {
     fail3();
   }
   const pins = new Set(model.pins.map((entry) => entry.id));
   const records2 = actualSource.objects.filter((entry) => entry.id === model.id || entry.body["parentId"] === model.id || pins.has(String(entry.body["parentId"])));
-  if (!same8(records2.toSorted((a, b) => a.id.localeCompare(b.id)), descriptor.records.toSorted((a, b) => a.id.localeCompare(b.id)))) {
+  if (!same9(records2.toSorted((a, b) => a.id.localeCompare(b.id)), descriptor.records.toSorted((a, b) => a.id.localeCompare(b.id)))) {
     fail3();
   }
 }
@@ -53277,7 +54140,7 @@ function alignSchematicNetFlagCloneLifecycle(descriptor, actualSource, actualInp
   if (component2 === void 0) {
     fail3();
   }
-  const attributes = [...component2.attributes, ...component2.pins.flatMap((pin3) => pin3.attributes)], hydratedAttributes = [];
+  const attributes = [...component2.attributes, ...component2.pins.flatMap((pin4) => pin4.attributes)], hydratedAttributes = [];
   for (const field2 of descriptor.watchedOmittedStrikeout) {
     const matches = attributes.filter((entry) => entry.key === field2.key && entry.body["parentId"] === field2.parentId);
     const attr = matches[0];
@@ -53312,7 +54175,7 @@ function alignSchematicNetFlagCloneLifecycle(descriptor, actualSource, actualInp
     for (const field2 of changed) {
       const attr = component2.attributes.find((entry) => entry.id === field2.id), record6 = records2.get(field2.id);
       const expected2 = descriptor.component.attributes.find((entry) => entry.id === field2.id);
-      if (attr === void 0 || record6 === void 0 || expected2 === void 0 || record6.type !== "ATTR" || attr.key !== field2.key || attr.body["parentId"] !== component2.id || attr.body["zIndex"] !== field2.reconstructedZIndex || record6.body["zIndex"] !== field2.reconstructedZIndex || !same8({ ...attr, body: { ...attr.body, zIndex: field2.initialZIndex } }, expected2) || !same8({ ...record6.body, zIndex: field2.initialZIndex }, expected2.body)) {
+      if (attr === void 0 || record6 === void 0 || expected2 === void 0 || record6.type !== "ATTR" || attr.key !== field2.key || attr.body["parentId"] !== component2.id || attr.body["zIndex"] !== field2.reconstructedZIndex || record6.body["zIndex"] !== field2.reconstructedZIndex || !same9({ ...attr, body: { ...attr.body, zIndex: field2.initialZIndex } }, expected2) || !same9({ ...record6.body, zIndex: field2.initialZIndex }, expected2.body)) {
         fail3();
       }
       attr.body["zIndex"] = field2.initialZIndex;
@@ -53338,7 +54201,7 @@ function alignSchematicNetFlagCloneLifecycle(descriptor, actualSource, actualInp
   } };
 }
 function buildLoadedNetFlagTemplateReadExpression(input) {
-  const scope3 = external_exports.object({ active: external_exports.object({ documentUuid: identifier2, tabId: identifier2 }).strict(), template: external_exports.object({ documentUuid: identifier2, tabId: identifier2 }).strict(), projectUuid: identifier2 }).strict().parse(input);
+  const scope3 = external_exports.object({ active: external_exports.object({ documentUuid: identifier3, tabId: identifier3 }).strict(), template: external_exports.object({ documentUuid: identifier3, tabId: identifier3 }).strict(), projectUuid: identifier3 }).strict().parse(input);
   if (scope3.active.tabId !== `${scope3.active.documentUuid}@${scope3.projectUuid}` || scope3.template.tabId !== `${scope3.template.documentUuid}@${scope3.projectUuid}`) {
     fail3();
   }
@@ -53354,7 +54217,7 @@ const schCheck=()=>{const docs=schManager.getSchDocs();if(schManager.getActiveDo
 schCheck();${SCHEMATIC_NATIVE_READER_CODE.slice(offset2)}
 const first=schCapture(),second=schCapture();if(JSON.stringify(first)!==JSON.stringify(second))throw new Error('SCH_NETFLAG_TEMPLATE_UNSTABLE');return second;})()`;
 }
-var SCHEMATIC_NETFLAG_CLONE_PROFILE, identifier2, netFlagCloneStepSchema, same8;
+var SCHEMATIC_NETFLAG_CLONE_PROFILE, identifier3, netFlagCloneStepSchema, same9;
 var init_schematic_layout_netflag = __esm({
   "server/src/schematic-layout-netflag.ts"() {
     init_zod();
@@ -53365,15 +54228,15 @@ var init_schematic_layout_netflag = __esm({
     init_schematic_hidden_order();
     init_schematic_source_proof();
     SCHEMATIC_NETFLAG_CLONE_PROFILE = "easyeda-pro-control.schematic-netflag-clone.v1";
-    identifier2 = external_exports.string().min(1).max(256);
+    identifier3 = external_exports.string().min(1).max(256);
     netFlagCloneStepSchema = external_exports.object({
       id: external_exports.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/u),
       action: external_exports.literal("sch.net-flag.clone"),
-      template: external_exports.object({ sheetUuid: identifier2, componentId: identifier2 }).strict(),
+      template: external_exports.object({ sheetUuid: identifier3, componentId: identifier3 }).strict(),
       x: external_exports.number(),
       y: external_exports.number()
     }).strict();
-    same8 = (left, right) => left === void 0 || right === void 0 ? left === right : canonicalJson(left) === canonicalJson(right);
+    same9 = (left, right) => left === void 0 || right === void 0 ? left === right : canonicalJson(left) === canonicalJson(right);
   }
 });
 
@@ -53381,38 +54244,38 @@ var init_schematic_layout_netflag = __esm({
 function fail4() {
   throw new Error("Schematic null style lacks exact native library reconstruction.");
 }
-function schematicLibraryStyle(history, native, stored, exported, fields2) {
-  const model = native.components.find((entry) => entry.id === stored.body["parentId"]);
+function schematicLibraryStyle(history, native, stored2, exported, fields2) {
+  const model = native.components.find((entry) => entry.id === stored2.body["parentId"]);
   const symbolId = model?.attributes.find((entry) => entry.key === "Symbol")?.value;
-  const symbol2 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL" && !isNativeDocumentDeleted(doc));
-  if (model?.kind !== "part" || model.body["rotation"] !== 0 || model.body["isMirror"] !== false || symbol2 === void 0 || symbol2.semanticSha256 !== sha256Json({
-    uuid: symbol2.uuid,
-    docType: symbol2.docType,
-    metadata: symbol2.metadata,
-    records: symbol2.records.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 }))
-  }) || !same9(symbol2.records.find((row) => row.type === "CANVAS")?.body, { originX: 0, originY: 0 })) {
+  const symbol4 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL" && !isNativeDocumentDeleted(doc));
+  if (model?.kind !== "part" || model.body["rotation"] !== 0 || model.body["isMirror"] !== false || symbol4 === void 0 || symbol4.semanticSha256 !== sha256Json({
+    uuid: symbol4.uuid,
+    docType: symbol4.docType,
+    metadata: symbol4.metadata,
+    records: symbol4.records.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 }))
+  }) || !same10(symbol4.records.find((row) => row.type === "CANVAS")?.body, { originX: 0, originY: 0 })) {
     fail4();
   }
-  const roots = symbol2.records.filter((row) => row.type === "ATTR" && row.body["partId"] === model.body["partId"] && (row.body["parentId"] === "" || row.body["parentId"] === model.body["partId"]) && row.body["key"] === stored.body["key"]);
-  const attrs = model.attributes.filter((attr) => attr.id === stored.id && attr.key === stored.body["key"]), root = roots[0];
-  if (roots.length !== 1 || root === void 0 || attrs.length !== 1 || !same9(attrs[0]?.body, exported.body) || fields2.length === 0 || fields2.some((key) => !["rotation", "fontSize", "fontWeight", "italic", "underline"].includes(key) || stored.body[key] !== null || !Object.hasOwn(root.body, key) || root.body[key] === null || root.body[key] === void 0 || !same9(root.body[key], exported.body[key]) || (["rotation", "fontSize"].includes(key) ? typeof root.body[key] !== "number" || !Number.isFinite(root.body[key]) || key === "fontSize" && root.body[key] <= 0 : typeof root.body[key] !== "boolean"))) {
+  const roots = symbol4.records.filter((row) => row.type === "ATTR" && row.body["partId"] === model.body["partId"] && (row.body["parentId"] === "" || row.body["parentId"] === model.body["partId"]) && row.body["key"] === stored2.body["key"]);
+  const attrs = model.attributes.filter((attr) => attr.id === stored2.id && attr.key === stored2.body["key"]), root = roots[0];
+  if (roots.length !== 1 || root === void 0 || attrs.length !== 1 || !same10(attrs[0]?.body, exported.body) || fields2.length === 0 || fields2.some((key) => !["rotation", "fontSize", "fontWeight", "italic", "underline"].includes(key) || stored2.body[key] !== null || !Object.hasOwn(root.body, key) || root.body[key] === null || root.body[key] === void 0 || !same10(root.body[key], exported.body[key]) || (["rotation", "fontSize"].includes(key) ? typeof root.body[key] !== "number" || !Number.isFinite(root.body[key]) || key === "fontSize" && root.body[key] <= 0 : typeof root.body[key] !== "boolean"))) {
     fail4();
   }
-  const pins = symbol2.records.filter((row) => row.type === "PIN" && row.body["partId"] === model.body["partId"]);
+  const pins = symbol4.records.filter((row) => row.type === "PIN" && row.body["partId"] === model.body["partId"]);
   if (pins.length !== model.pins.length || pins.some((row) => {
-    const pin3 = model.pins.find((entry) => entry.id === `${model.id}-${row.id}`);
-    return pin3 === void 0 || pin3.body["x"] !== Number(row.body["x"]) + Number(model.body["x"]) || pin3.body["y"] !== Number(row.body["y"]) + Number(model.body["y"]) || pin3.body["rotation"] !== row.body["rotation"] || pin3.body["length"] !== row.body["length"];
+    const pin4 = model.pins.find((entry) => entry.id === `${model.id}-${row.id}`);
+    return pin4 === void 0 || pin4.body["x"] !== Number(row.body["x"]) + Number(model.body["x"]) || pin4.body["y"] !== Number(row.body["y"]) + Number(model.body["y"]) || pin4.body["rotation"] !== row.body["rotation"] || pin4.body["length"] !== row.body["length"];
   })) {
     fail4();
   }
-  return { componentId: model.id, attributeId: stored.id, libraryAttributeId: root.id, symbolSha256: symbol2.semanticSha256, fields: fields2 };
+  return { componentId: model.id, attributeId: stored2.id, libraryAttributeId: root.id, symbolSha256: symbol4.semanticSha256, fields: fields2 };
 }
-var same9;
+var same10;
 var init_schematic_library_style = __esm({
   "server/src/schematic-library-style.ts"() {
     init_core3();
     init_native_history();
-    same9 = (a, b) => canonicalJson({ value: a }) === canonicalJson({ value: b });
+    same10 = (a, b) => canonicalJson({ value: a }) === canonicalJson({ value: b });
   }
 });
 
@@ -53467,16 +54330,16 @@ function projectAttributes(side, document2, source3, native, before, differences
     let hiddenNullOrder;
     if (fields2.includes("zIndex")) {
       const current2 = exported.body["zIndex"];
-      const stored = record6.body["zIndex"];
-      const uninitializedWireOrder = stored === null && kind === "wire" && ["Relevance", "NET"].includes(exported.body["key"]);
-      if (stored === null && (kind === "part" && exported.body["key"] === "Unique ID" || kind === "netflag" && exported.body["key"] === "Relevance")) {
+      const stored2 = record6.body["zIndex"];
+      const uninitializedWireOrder = stored2 === null && kind === "wire" && ["Relevance", "NET"].includes(exported.body["key"]);
+      if (stored2 === null && (kind === "part" && exported.body["key"] === "Unique ID" || kind === "netflag" && exported.body["key"] === "Relevance")) {
         hiddenNullOrder = schematicHiddenNullOrder(history, document2, source3, native, record6);
       }
-      if (!uninitializedWireOrder && hiddenNullOrder === void 0 && (typeof stored !== "number" || !Number.isSafeInteger(stored)) || typeof current2 !== "number" || !Number.isSafeInteger(current2) || current2 < 0) {
+      if (!uninitializedWireOrder && hiddenNullOrder === void 0 && (typeof stored2 !== "number" || !Number.isSafeInteger(stored2)) || typeof current2 !== "number" || !Number.isSafeInteger(current2) || current2 < 0) {
         throw new Error("Schematic attribute order is not an exact native integer.");
       }
       const prior = old.get(record6.id);
-      const exactNewWireCreation = prior === void 0 && stored === 0 && newWireOrders.get(record6.id) === current2;
+      const exactNewWireCreation = prior === void 0 && stored2 === 0 && newWireOrders.get(record6.id) === current2;
       if (side === "after" && !exactNewWireCreation && (prior?.type !== "ATTR" || prior.body["parentId"] !== record6.body["parentId"] || prior.body["key"] !== record6.body["key"] || !fieldEqual(prior.body, record6.body, "zIndex"))) {
         throw new Error("Changed durable attribute order is neither retained nor the exact captured model order.");
       }
@@ -53504,20 +54367,20 @@ function newWireCreationOrders(input, before, after, native) {
   const beforeIds = new Set([...before.records, ...input.expectedBefore.objects].map((entry) => entry.id));
   const records2 = new Map(input.expectedAfter.objects.map((entry) => [entry.id, entry]));
   const created = /* @__PURE__ */ new Map();
-  for (const wire of [...records2.values()].filter((entry) => entry.type === "WIRE" && !beforeIds.has(entry.id))) {
-    const relevance = [...records2.values()].filter((entry) => entry.type === "ATTR" && entry.body["parentId"] === wire.id && entry.body["key"] === "Relevance");
+  for (const wire2 of [...records2.values()].filter((entry) => entry.type === "WIRE" && !beforeIds.has(entry.id))) {
+    const relevance = [...records2.values()].filter((entry) => entry.type === "ATTR" && entry.body["parentId"] === wire2.id && entry.body["key"] === "Relevance");
     const attr = relevance[0];
     if (relevance.length !== 1 || attr === void 0 || beforeIds.has(attr.id) || attr.body["x"] !== null || attr.body["y"] !== null || attr.body["value"] !== "[]" || [attr.body["keyVisible"], attr.body["valueVisible"]].some((value) => value !== null && value !== false)) {
       throw new Error("New wire storage lacks its exact hidden constructor Relevance attribute.");
     }
-    created.set(wire.id, attr.id);
+    created.set(wire2.id, attr.id);
   }
   return schematicNewWireOrders(input.expectedBefore, records2, native, created).filter((order2) => {
-    const source3 = records2.get(order2.relevanceId), stored = after.records.find((entry) => entry.id === order2.relevanceId);
+    const source3 = records2.get(order2.relevanceId), stored2 = after.records.find((entry) => entry.id === order2.relevanceId);
     if (source3?.body["zIndex"] !== order2.zIndex) {
       throw new Error("New wire source order differs from its complete endpoint graph.");
     }
-    return stored?.type === "ATTR" && stored.body["parentId"] === order2.id && stored.body["key"] === "Relevance" && stored.body["zIndex"] === 0 && order2.zIndex !== 0;
+    return stored2?.type === "ATTR" && stored2.body["parentId"] === order2.id && stored2.body["key"] === "Relevance" && stored2.body["zIndex"] === 0 && order2.zIndex !== 0;
   });
 }
 function replace(history, original, records2) {
@@ -53673,7 +54536,7 @@ var init_schematic_storage_persistence = __esm({
     init_schematic_library_style();
     equal3 = (a, b) => canonicalJson({ value: a }) === canonicalJson({ value: b });
     fieldEqual = (a, b, key) => Object.hasOwn(a, key) === Object.hasOwn(b, key) && equal3(a[key], b[key]);
-    semantic = ({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 });
+    semantic = ({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 });
     isRoot = (row) => row.body["parentId"] === "$$root" || !["ATTR", "CANVAS", "META"].includes(row.type) && row.body["parentId"] === void 0 && row.body["lineGroup"] === void 0;
   }
 });
@@ -53682,7 +54545,7 @@ var init_schematic_storage_persistence = __esm({
 import { createHash as createHash10 } from "node:crypto";
 import { constants as constants5 } from "node:fs";
 import { lstat as lstat9, open as open9, realpath as realpath6 } from "node:fs/promises";
-import { basename as basename4, join as join10 } from "node:path";
+import { basename as basename4, join as join11 } from "node:path";
 function fail5() {
   throw new Error("Schematic constructor order lacks one exact preceding managed close/reopen witness.");
 }
@@ -53705,7 +54568,7 @@ function digest(value) {
   }
   return result;
 }
-function same10(left, right) {
+function same11(left, right) {
   if (canonicalJson(left) !== canonicalJson(right)) {
     fail5();
   }
@@ -53742,7 +54605,7 @@ function external(journal) {
 }
 function beforeState(journal) {
   const native = schematicNativeSnapshotSchema.parse(journal["beforeNative"]), source3 = parseDocumentSource(native.source);
-  same10(source3, journal["before"]);
+  same11(source3, journal["before"]);
   return { source: source3, native };
 }
 function phase(journal, name6) {
@@ -53785,8 +54648,8 @@ function preceding(pending, operations) {
   if (prior === void 0 || found[1] !== void 0 && time3(found[1]["updatedAt"]) === time3(prior["updatedAt"])) {
     fail5();
   }
-  same10(scope(prior), target5);
-  same10(external(prior), external(pending));
+  same11(scope(prior), target5);
+  same11(external(prior), external(pending));
   if (prior["state"] !== "completed" || prior["saved"] !== true || prior["reopened"] !== true || prior["hardStop"] !== false || prior["orphanedCallPossible"] !== false || record3(record3(prior["plan"])["operation"])["action"] !== "sch.layout.batch") {
     fail5();
   }
@@ -53800,9 +54663,9 @@ function verifySchematicLayoutConstructorLineage(input) {
   if (selected["operationId"] !== predecessor.operationId) {
     fail5();
   }
-  same10(lineageSummary(selected), lineageSummary(predecessor));
-  same10(scope({ context: pending.plan["expectedContext"] }), target5);
-  same10(scope({ context: predecessor.plan["expectedContext"] }), target5);
+  same11(lineageSummary(selected), lineageSummary(predecessor));
+  same11(scope({ context: pending.plan["expectedContext"] }), target5);
+  same11(scope({ context: predecessor.plan["expectedContext"] }), target5);
   const after = parsePhase(predecessor, "05-after.json", input.afterText);
   const acknowledgment = parsePhase(predecessor, "06-save-reopen.json", input.lifecycleText);
   const terminal = parsePhase(predecessor, "08-reopened.json", input.terminalText);
@@ -53812,8 +54675,8 @@ function verifySchematicLayoutConstructorLineage(input) {
   }
   const afterPayload = record3(after["payload"]), consistency = record3(afterPayload["read_consistency"]);
   const afterSource = parseDocumentSource(text4(afterPayload["source"]));
-  same10(after["snapshot"], afterSource);
-  same10(parseDocumentSource(schematicNativeSnapshotSchema.parse(after["native"]).source), afterSource);
+  same11(after["snapshot"], afterSource);
+  same11(parseDocumentSource(schematicNativeSnapshotSchema.parse(after["native"]).source), afterSource);
   if (consistency["stable"] !== true || consistency["attempts"] !== 2) {
     fail5();
   }
@@ -53825,15 +54688,15 @@ function verifySchematicLayoutConstructorLineage(input) {
   if (acknowledgment["ok"] !== true || acknowledgment["saved"] !== true || acknowledgment["closed"] !== true || acknowledgment["reopened"] !== true || document2["uuid"] !== target5.documentUuid || document2["tabId"] !== target5.tabId || document2["documentType"] !== 1 || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || opened["profile"] !== "easyeda-pro-control.native-document-open.v1" || opened["tabId"] !== target5.tabId || opened["newFrameReady"] !== true || opened["exactContext"] !== true || opened["readinessSamples"] !== 2 || typeof opened["activated"] !== "boolean" || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== target5.projectUuid || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
     fail5();
   }
-  same10(guard["labels"], ["schematic-source"]);
-  same10(guard["snapshotSha256"], [digest(consistency["snapshotSha256"])]);
+  same11(guard["labels"], ["schematic-source"]);
+  same11(guard["snapshotSha256"], [digest(consistency["snapshotSha256"])]);
   const native = schematicNativeSnapshotSchema.parse(terminal["native"]), snapshot6 = parseDocumentSource(native.source);
-  same10(terminal["snapshot"], snapshot6);
-  same10(snapshot6, pending["before"]);
-  same10(terminal["native"], pending["beforeNative"]);
+  same11(terminal["snapshot"], snapshot6);
+  same11(snapshot6, pending["before"]);
+  same11(terminal["native"], pending["beforeNative"]);
   const terminalPayload = record3(terminal["payload"]);
   const terminalConsistency = record3(terminalPayload["read_consistency"]);
-  same10(parseDocumentSource(text4(terminalPayload["source"])), snapshot6);
+  same11(parseDocumentSource(text4(terminalPayload["source"])), snapshot6);
   if (terminalConsistency["stable"] !== true || terminalConsistency["attempts"] !== 2) {
     fail5();
   }
@@ -53863,7 +54726,7 @@ function assertSchematicLayoutConstructorWitness(witness, before, beforeNative, 
   if (witness === void 0 || witness.profile !== PROFILE2 || witness.sourceSha256 !== before.sha256 || before.sha256 !== sha256Json({ schema: before.schema, document: before.document, objects: before.objects }) || witness.nativeSha256 !== schematicNativeSnapshotHash(beforeNative) || witness.checkpointSha256 !== history.checkpointSha256 || witness.projectUuid !== history.projectUuid || witness.documentUuid !== before.document["uuid"] || witness.documentUuid !== beforeNative.document.documentUuid || history.documents.filter((document2) => document2.uuid === witness.documentUuid && document2.docType === "SCH_PAGE").length !== 1 || witness.nativeProfile.schSha256 !== SCHEMATIC_NATIVE_IMPLEMENTATION.sha256 || witness.nativeProfile.workerSha256 !== WORKER.sha256) {
     fail5();
   }
-  same10(parseDocumentSource(beforeNative.source), before);
+  same11(parseDocumentSource(beforeNative.source), before);
   text4(witness.predecessorOperationId);
   digest(witness.predecessorJournalSha256);
   digest(witness.lifecycleArtifactSha256);
@@ -53891,7 +54754,7 @@ async function phaseText(descriptor) {
   return result;
 }
 async function workerProfile(assetsRoot) {
-  const path5 = join10(assetsRoot, WORKER.relativePath);
+  const path5 = join11(assetsRoot, WORKER.relativePath);
   const before = await lstat9(path5, { bigint: true });
   if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath6(path5) !== path5) {
     fail5();
@@ -53916,7 +54779,7 @@ async function workerProfile(assetsRoot) {
 async function resolveSchematicLayoutConstructorWitness(pending, history) {
   const retained = await loadOperation(pending.operationId);
   for (const key of ["before", "beforeNative", "context", "preCheckpoint", "createdAt", "plan"]) {
-    same10(retained[key], pending[key]);
+    same11(retained[key], pending[key]);
   }
   const operations = [];
   for (const operationId of await listOperationIds()) {
@@ -53924,7 +54787,7 @@ async function resolveSchematicLayoutConstructorWitness(pending, history) {
   }
   const selected = preceding(pending, operations);
   const predecessor = await loadOperation(text4(selected["operationId"]));
-  same10(lineageSummary(selected), lineageSummary(predecessor));
+  same11(lineageSummary(selected), lineageSummary(predecessor));
   const fingerprint = record3(pending.plan["expectedFingerprint"]);
   const bundles = record3(fingerprint["installedBundles"]);
   const assetsRoot = text4(bundles["assetsRoot"]);
@@ -53947,8 +54810,8 @@ async function resolveSchematicLayoutConstructorWitness(pending, history) {
     terminalText,
     nativeProfile: { schSha256: SCHEMATIC_NATIVE_IMPLEMENTATION.sha256, workerSha256: WORKER.sha256 }
   });
-  same10(await loadOperation(predecessor.operationId), predecessor);
-  same10(await loadOperation(pending.operationId), retained);
+  same11(await loadOperation(predecessor.operationId), predecessor);
+  same11(await loadOperation(pending.operationId), retained);
   return witness;
 }
 var PROFILE2, WORKER;
@@ -53991,13 +54854,13 @@ function multipleNetWireAttributes(rows, id7) {
   }
   return { relevance: first, nets: ordered2 };
 }
-function inactiveOrAbsentNoConnect(pin3, records2) {
-  const marker = pin3.noConnect;
+function inactiveOrAbsentNoConnect(pin4, records2) {
+  const marker = pin4.noConnect;
   if (marker === null) {
     return true;
   }
-  const stored = records2.get(marker.id);
-  return marker.value === "no" && marker.body["value"] === "no" && marker.body["key"] === "NO_CONNECT" && marker.body["parentId"] === pin3.id && stored?.type === "ATTR" && same11(stored.body, marker.body) && [...records2.values()].filter((row) => row.type === "ATTR" && row.body["key"] === "NO_CONNECT" && row.body["parentId"] === pin3.id).length === 1;
+  const stored2 = records2.get(marker.id);
+  return marker.value === "no" && marker.body["value"] === "no" && marker.body["key"] === "NO_CONNECT" && marker.body["parentId"] === pin4.id && stored2?.type === "ATTR" && same12(stored2.body, marker.body) && [...records2.values()].filter((row) => row.type === "ATTR" && row.body["key"] === "NO_CONNECT" && row.body["parentId"] === pin4.id).length === 1;
 }
 function retainedWireAttributeOrders(order2) {
   const nets = "nets" in order2 ? order2.nets : [{ id: order2.netId, beforeOrder: order2.beforeNetOrder, order: order2.netOrder }];
@@ -54028,12 +54891,12 @@ function attachedPortWireOrders(operation, before, records2, beforeNative, nativ
     const componentId = step.target.primitiveId;
     const original = beforeNative.components.find((model) => model.id === componentId);
     const moved2 = native.components.find((model) => model.id === componentId);
-    const pin3 = original?.pins[0];
+    const pin4 = original?.pins[0];
     const movedPin = moved2?.pins[0];
-    if (original?.kind !== "netport" || moved2?.kind !== "netport" || original.pins.length !== 1 || moved2.pins.length !== 1 || pin3 === void 0 || movedPin === void 0 || pin3.id !== movedPin.id || pin3.net !== movedPin.net || typeof pin3.net !== "string" || pin3.net.length === 0 || !same11(pin3.noConnect, movedPin.noConnect)) {
+    if (original?.kind !== "netport" || moved2?.kind !== "netport" || original.pins.length !== 1 || moved2.pins.length !== 1 || pin4 === void 0 || movedPin === void 0 || pin4.id !== movedPin.id || pin4.net !== movedPin.net || typeof pin4.net !== "string" || pin4.net.length === 0 || !same12(pin4.noConnect, movedPin.noConnect)) {
       throw new Error("Retained wire attachment lost its exact one-pin netport contract.");
     }
-    const stubs2 = before.objects.filter((row) => row.type === "WIRE" && removed.has(row.id) && children(before.objects, row.id).some((child) => child.type === "LINE" && ends(child).some((xy) => same11(xy, point(pin3.body)))));
+    const stubs2 = before.objects.filter((row) => row.type === "WIRE" && removed.has(row.id) && children(before.objects, row.id).some((child) => child.type === "LINE" && ends(child).some((xy) => same12(xy, point2(pin4.body)))));
     if (stubs2.length === 0) {
       return;
     }
@@ -54044,7 +54907,7 @@ function attachedPortWireOrders(operation, before, records2, beforeNative, nativ
     const stubChildren = children(before.objects, stub.id);
     const stubLines = stubChildren.filter((row) => row.type === "LINE");
     const stubAttrs = wireAttributes(before.objects, stub.id);
-    if (stubLines.length !== 1 || stubAttrs.net.body["value"] !== pin3.net || stubChildren.some((row) => records2.has(row.id))) {
+    if (stubLines.length !== 1 || stubAttrs.net.body["value"] !== pin4.net || stubChildren.some((row) => records2.has(row.id))) {
       throw new Error("Retained wire attachment needs an entirely removed single-line named stub.");
     }
     const stubLine = stubLines[0];
@@ -54058,30 +54921,30 @@ function attachedPortWireOrders(operation, before, records2, beforeNative, nativ
       }
       return a[0] === b[0] && xy[0] === a[0] && Number(xy[1]) >= Math.min(Number(a[1]), Number(b[1])) && Number(xy[1]) <= Math.max(Number(a[1]), Number(b[1])) || a[1] === b[1] && xy[1] === a[1] && Number(xy[0]) >= Math.min(Number(a[0]), Number(b[0])) && Number(xy[0]) <= Math.max(Number(a[0]), Number(b[0]));
     };
-    if (beforeNative.components.flatMap((model) => model.pins).some((other) => other.id !== pin3.id && onStub(point(other.body))) || before.objects.some((row) => row.type === "LINE" && row.body["lineGroup"] !== stub.id && old.get(String(row.body["lineGroup"]))?.type === "WIRE" && ends(row).some((xy) => onStub(xy)))) {
+    if (beforeNative.components.flatMap((model) => model.pins).some((other) => other.id !== pin4.id && onStub(point2(other.body))) || before.objects.some((row) => row.type === "LINE" && row.body["lineGroup"] !== stub.id && old.get(String(row.body["lineGroup"]))?.type === "WIRE" && ends(row).some((xy) => onStub(xy)))) {
       throw new Error("Retained wire source stub is not isolated from other pins and groups.");
     }
-    const destinations = rows.filter((row) => row.type === "WIRE" && old.get(row.id)?.type === "WIRE" && children(rows, row.id).some((child) => child.type === "LINE" && ends(child).some((xy) => same11(xy, point(movedPin.body)))));
-    const wire = destinations[0];
-    if (destinations.length !== 1 || wire === void 0 || candidates.has(wire.id) || !same11(old.get(wire.id), wire)) {
+    const destinations = rows.filter((row) => row.type === "WIRE" && old.get(row.id)?.type === "WIRE" && children(rows, row.id).some((child) => child.type === "LINE" && ends(child).some((xy) => same12(xy, point2(movedPin.body)))));
+    const wire2 = destinations[0];
+    if (destinations.length !== 1 || wire2 === void 0 || candidates.has(wire2.id) || !same12(old.get(wire2.id), wire2)) {
       throw new Error("Retained wire destination is ambiguous, reused or changed.");
     }
-    const attrs = wireAttributes(before.objects, wire.id), nextAttrs = wireAttributes(rows, wire.id);
-    const originalChildren = children(before.objects, wire.id);
-    const currentChildren = children(rows, wire.id);
-    if (attrs.net.body["value"] !== pin3.net || !same11(originalChildren.map((row) => row.id).toSorted(), currentChildren.map((row) => row.id).toSorted()) || !same11(attrs.relevance, nextAttrs.relevance)) {
+    const attrs = wireAttributes(before.objects, wire2.id), nextAttrs = wireAttributes(rows, wire2.id);
+    const originalChildren = children(before.objects, wire2.id);
+    const currentChildren = children(rows, wire2.id);
+    if (attrs.net.body["value"] !== pin4.net || !same12(originalChildren.map((row) => row.id).toSorted(), currentChildren.map((row) => row.id).toSorted()) || !same12(attrs.relevance, nextAttrs.relevance)) {
       throw new Error("Retained wire children, naming or hidden Relevance changed.");
     }
     for (const row of currentChildren) {
       const prior = old.get(row.id);
       const visibilitySteps = operation.operations.filter((entry) => entry.action === "sch.attribute.display" && "primitiveId" in entry.target && entry.target.primitiveId === row.id);
       const visibility = visibilitySteps.at(-1);
-      const allowed = row.id === attrs.net.id && visibility?.action === "sch.attribute.display" && visibilitySteps.every((entry) => entry.action === "sch.attribute.display" && same11(Object.keys(entry.patch), ["valueVisible"]));
-      if (!same11(prior, row) && !(allowed && prior !== void 0 && same11({ ...prior, body: { ...prior.body, valueVisible: visibility.patch.valueVisible } }, row))) {
+      const allowed = row.id === attrs.net.id && visibility?.action === "sch.attribute.display" && visibilitySteps.every((entry) => entry.action === "sch.attribute.display" && same12(Object.keys(entry.patch), ["valueVisible"]));
+      if (!same12(prior, row) && !(allowed && prior !== void 0 && same12({ ...prior, body: { ...prior.body, valueVisible: visibility.patch.valueVisible } }, row))) {
         throw new Error("Retained wire geometry or attribute fields differ beyond the exact requested NET visibility.");
       }
     }
-    candidates.set(wire.id, { componentId, removedStubId: stub.id, ...attrs });
+    candidates.set(wire2.id, { componentId, removedStubId: stub.id, ...attrs });
   };
   for (const step of moves) {
     addCandidate(step);
@@ -54116,12 +54979,12 @@ function fullImportWireOrders(operation, before, records2, native, display2) {
   const rows = [...records2.values()];
   const candidates = /* @__PURE__ */ new Map();
   const old = new Map(before.objects.map((row) => [row.id, row]));
-  const addCandidate = (wire) => {
-    if (!same11(wire, records2.get(wire.id))) {
+  const addCandidate = (wire2) => {
+    if (!same12(wire2, records2.get(wire2.id))) {
       throw new Error("Full-import retained wire root changed.");
     }
-    const current2 = children(rows, wire.id), prior = children(before.objects, wire.id);
-    if (!same11(prior.map((row) => row.id).toSorted(), current2.map((row) => row.id).toSorted())) {
+    const current2 = children(rows, wire2.id), prior = children(before.objects, wire2.id);
+    if (!same12(prior.map((row) => row.id).toSorted(), current2.map((row) => row.id).toSorted())) {
       throw new Error("Full-import retained wire child inventory changed.");
     }
     const priorAttrs = prior.filter((row) => row.type !== "LINE");
@@ -54129,19 +54992,19 @@ function fullImportWireOrders(operation, before, records2, native, display2) {
     if (priorAttrs.length !== 2 && !multiple) {
       return;
     }
-    const attrs = multiple ? multipleNetWireAttributes(before.objects, wire.id) : (() => {
-      const single = wireAttributes(before.objects, wire.id);
+    const attrs = multiple ? multipleNetWireAttributes(before.objects, wire2.id) : (() => {
+      const single = wireAttributes(before.objects, wire2.id);
       return { relevance: single.relevance, nets: [single.net] };
     })();
     if (attrs === void 0) {
       return;
     }
     if (multiple) {
-      if (multipleNetWireAttributes(rows, wire.id) === void 0) {
+      if (multipleNetWireAttributes(rows, wire2.id) === void 0) {
         throw new Error("Eligible multiple-NET retained wire profile changed.");
       }
     } else {
-      wireAttributes(rows, wire.id);
+      wireAttributes(rows, wire2.id);
     }
     const lines3 = prior.filter((row) => row.type === "LINE");
     if (lines3.length === 0 || lines3.some((row) => row.body["startX"] === row.body["endX"] === (row.body["startY"] === row.body["endY"]))) {
@@ -54160,23 +55023,23 @@ function fullImportWireOrders(operation, before, records2, native, display2) {
         }
         expected2 = { id: original.id, type: original.type, body: display2(expected2.body, step.patch) };
       }
-      if (!same11(expected2, row)) {
+      if (!same12(expected2, row)) {
         throw new Error("Full-import retained wire geometry or unrequested attribute fields changed.");
       }
     }
     const endpoints = lines3.flatMap((row) => ends(row));
     for (const xy of endpoints) {
-      if (rows.some((row) => row.type === "LINE" && row.body["lineGroup"] !== wire.id && records2.get(String(row.body["lineGroup"]))?.type === "WIRE" && ends(row).some((end) => same11(end, xy)))) {
+      if (rows.some((row) => row.type === "LINE" && row.body["lineGroup"] !== wire2.id && records2.get(String(row.body["lineGroup"]))?.type === "WIRE" && ends(row).some((end) => same12(end, xy)))) {
         throw new Error("Full-import retained wire shares an endpoint with another group.");
       }
-      if (native.components.flatMap((model) => model.pins).some((pin3) => same11(point(pin3.body), xy) && (pin3.net !== attrs.nets[0]?.body["value"] || !inactiveOrAbsentNoConnect(pin3, records2)))) {
+      if (native.components.flatMap((model) => model.pins).some((pin4) => same12(point2(pin4.body), xy) && (pin4.net !== attrs.nets[0]?.body["value"] || !inactiveOrAbsentNoConnect(pin4, records2)))) {
         throw new Error("Full-import retained wire endpoint has a foreign-net or NC pin.");
       }
     }
-    candidates.set(wire.id, attrs);
+    candidates.set(wire2.id, attrs);
   };
-  for (const wire of before.objects.filter((row) => row.type === "WIRE" && records2.has(row.id) && !replacements.has(row.id))) {
-    addCandidate(wire);
+  for (const wire2 of before.objects.filter((row) => row.type === "WIRE" && records2.has(row.id) && !replacements.has(row.id))) {
+    addCandidate(wire2);
   }
   const orders = schematicNewWireOrders(before, records2, native, new Map([...candidates].map(([id7, value]) => [id7, value.relevance.id])));
   return orders.filter((order2) => order2.recategorized).flatMap((order2) => {
@@ -54226,45 +55089,45 @@ function sparseTwoNetAttributes(rows, id7) {
   const lines3 = owned2.filter((row) => row.type === "LINE");
   const relevance = owned2.filter((row) => hiddenRelevance(row));
   const nets = owned2.filter((row) => row.type === "ATTR" && row.body["key"] === "NET");
-  const first = relevance[0], line4 = lines3[0], name6 = nets[0]?.body["value"];
-  if (owned2.length !== 4 || lines3.length !== 1 || line4 === void 0 || relevance.length !== 1 || first === void 0 || nets.length !== 2 || // The r$ importer buffers children in a plain object.
+  const first = relevance[0], line5 = lines3[0], name6 = nets[0]?.body["value"];
+  if (owned2.length !== 4 || lines3.length !== 1 || line5 === void 0 || relevance.length !== 1 || first === void 0 || nets.length !== 2 || // The r$ importer buffers children in a plain object.
   // Array-index IDs can reorder the worker's first-clock sequence.
-  [first, ...nets].some((row) => /^(?:0|[1-9]\d*)$/u.test(row.id) && Number(row.id) < 4294967295) || line4.body["lineGroup"] !== id7 || typeof name6 !== "string" || name6.length === 0 || line4.body["startX"] === line4.body["endX"] === (line4.body["startY"] === line4.body["endY"]) || ends(line4).flat().some((value) => typeof value !== "number" || !Number.isFinite(value)) || [first, ...nets].some((row) => row.body["parentId"] !== id7 || typeof row.body["zIndex"] !== "number" || !Number.isSafeInteger(row.body["zIndex"]) || row.body["zIndex"] < 0) || nets.some((row) => row.body["value"] !== name6 || row.body["valueVisible"] !== true || [row.body["x"], row.body["y"]].some((value) => typeof value !== "number" || !Number.isFinite(value)))) {
+  [first, ...nets].some((row) => /^(?:0|[1-9]\d*)$/u.test(row.id) && Number(row.id) < 4294967295) || line5.body["lineGroup"] !== id7 || typeof name6 !== "string" || name6.length === 0 || line5.body["startX"] === line5.body["endX"] === (line5.body["startY"] === line5.body["endY"]) || ends(line5).flat().some((value) => typeof value !== "number" || !Number.isFinite(value)) || [first, ...nets].some((row) => row.body["parentId"] !== id7 || typeof row.body["zIndex"] !== "number" || !Number.isSafeInteger(row.body["zIndex"]) || row.body["zIndex"] < 0) || nets.some((row) => row.body["value"] !== name6 || row.body["valueVisible"] !== true || [row.body["x"], row.body["y"]].some((value) => typeof value !== "number" || !Number.isFinite(value)))) {
     return void 0;
   }
   const ordered2 = nets.toSorted((left, right) => Number(left.body["zIndex"]) - Number(right.body["zIndex"]));
   if (Number(ordered2[0]?.body["zIndex"]) <= Number(first.body["zIndex"]) || ordered2[0]?.body["zIndex"] === ordered2[1]?.body["zIndex"] || ordered2.every((row, index) => row.body["zIndex"] === Number(first.body["zIndex"]) + index + 1)) {
     return void 0;
   }
-  return { relevance: first, nets: ordered2, line: line4 };
+  return { relevance: first, nets: ordered2, line: line5 };
 }
 function needsSchematicLayoutConstructorWitness(operation, before, beforeNative) {
   if (beforeNative === void 0 || !operation.operations.some((step) => step.action === "sch.wire.create")) {
     return false;
   }
   const moving = new Set(operation.operations.flatMap((step) => step.action === "sch.component.translate" && "primitiveId" in step.target ? [step.target.primitiveId] : []));
-  return before.objects.some((wire) => {
-    if (wire.type !== "WIRE") {
+  return before.objects.some((wire2) => {
+    if (wire2.type !== "WIRE") {
       return false;
     }
-    const attrs = sparseTwoNetAttributes(before.objects, wire.id);
-    return attrs !== void 0 && beforeNative.components.some((model) => model.kind === "part" && moving.has(model.id) && model.pins.some((pin3) => ends(attrs.line).some((xy) => same11(xy, point(pin3.body)))));
+    const attrs = sparseTwoNetAttributes(before.objects, wire2.id);
+    return attrs !== void 0 && beforeNative.components.some((model) => model.kind === "part" && moving.has(model.id) && model.pins.some((pin4) => ends(attrs.line).some((xy) => same12(xy, point2(pin4.body)))));
   });
 }
-function sparseTwoNetFirstOrder(before, native, wire, attrs, evidence) {
+function sparseTwoNetFirstOrder(before, native, wire2, attrs, evidence) {
   assertSchematicLayoutConstructorWitness(evidence.constructorWitness, before, native, evidence.history);
   const page = evidence.history.documents.find((document2) => document2.uuid === before.document["uuid"]);
   if (page?.docType !== "SCH_PAGE" || evidence.history.documents.filter((document2) => document2.uuid === page.uuid).length !== 1 || new Set(page.records.map((row) => row.id)).size !== page.records.length || page.semanticSha256 !== sha256Json({
     uuid: page.uuid,
     docType: page.docType,
     metadata: page.metadata,
-    records: page.records.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 }))
+    records: page.records.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 }))
   }) || evidence.history.semanticSha256 !== sha256Json(evidence.history.documents.map(({ uuid: uuid8, docType, semanticSha256 }) => ({ uuid: uuid8, docType, semanticSha256 })))) {
     throw new Error("Sparse two-NET constructor evidence lacks a complete hash-bound history page.");
   }
-  const durable = page.records.filter((row) => row.id === wire.id || row.body["parentId"] === wire.id || row.body["lineGroup"] === wire.id);
-  const original = [wire, ...children(before.objects, wire.id)].toSorted((left, right) => left.id.localeCompare(right.id));
-  if (!same11(durable.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 })).toSorted((left, right) => left.id.localeCompare(right.id)), original)) {
+  const durable = page.records.filter((row) => row.id === wire2.id || row.body["parentId"] === wire2.id || row.body["lineGroup"] === wire2.id);
+  const original = [wire2, ...children(before.objects, wire2.id)].toSorted((left, right) => left.id.localeCompare(right.id));
+  if (!same12(durable.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 })).toSorted((left, right) => left.id.localeCompare(right.id)), original)) {
     throw new Error("Sparse two-NET constructor requires the complete durable group to equal the before source.");
   }
   const clocks = durable.filter((row) => row.type === "ATTR");
@@ -54281,13 +55144,13 @@ function sparseTwoNetFirstOrder(before, native, wire, attrs, evidence) {
     }
     return String(left.firstClient) > String(right.firstClient) ? 1 : 0;
   });
-  if (!same11(ordered2.map((row) => row.id), attrs.nets.map((row) => row.id))) {
+  if (!same12(ordered2.map((row) => row.id), attrs.nets.map((row) => row.id))) {
     throw new Error("Sparse two-NET constructor order disagrees with the before caption order.");
   }
   return sha256Json(ordered2.map(({ id: id7, firstTicket, firstClient }) => ({ id: id7, firstTicket, firstClient })));
 }
-function nearSegment(xy, line4) {
-  const [a, b] = ends(line4);
+function nearSegment(xy, line5) {
+  const [a, b] = ends(line5);
   if (a === void 0 || b === void 0 || [...xy, ...a, ...b].some((value) => typeof value !== "number" || !Number.isFinite(value))) {
     throw new Error("Sparse two-NET graph has a non-finite coordinate.");
   }
@@ -54308,14 +55171,14 @@ function detachedPinSparseTwoNetOrders(operation, before, records2, beforeNative
   const rows = [...records2.values()];
   const old = new Map(before.objects.map((row) => [row.id, row]));
   const candidates = /* @__PURE__ */ new Map();
-  const beforePins = beforeNative.components.flatMap((model) => model.pins.map((pin3) => ({ model, pin: pin3 })));
-  const afterPins = native.components.flatMap((model) => model.pins.map((pin3) => ({ model, pin: pin3 })));
-  const addCandidate = (wire) => {
-    const attrs = sparseTwoNetAttributes(before.objects, wire.id);
+  const beforePins = beforeNative.components.flatMap((model) => model.pins.map((pin4) => ({ model, pin: pin4 })));
+  const afterPins = native.components.flatMap((model) => model.pins.map((pin4) => ({ model, pin: pin4 })));
+  const addCandidate = (wire2) => {
+    const attrs = sparseTwoNetAttributes(before.objects, wire2.id);
     if (attrs === void 0) {
       return;
     }
-    const departing = beforePins.filter(({ model, pin: pin3 }) => model.kind === "part" && ends(attrs.line).some((xy) => same11(xy, point(pin3.body))) && operation.operations.some((step) => step.action === "sch.component.translate" && "primitiveId" in step.target && step.target.primitiveId === model.id && (step.x !== model.body["x"] || -step.y !== model.body["y"])));
+    const departing = beforePins.filter(({ model, pin: pin4 }) => model.kind === "part" && ends(attrs.line).some((xy) => same12(xy, point2(pin4.body))) && operation.operations.some((step) => step.action === "sch.component.translate" && "primitiveId" in step.target && step.target.primitiveId === model.id && (step.x !== model.body["x"] || -step.y !== model.body["y"])));
     if (departing.length === 0) {
       return;
     }
@@ -54323,42 +55186,42 @@ function detachedPinSparseTwoNetOrders(operation, before, records2, beforeNative
     if (departure === void 0 || departing.length !== 1) {
       throw new Error("Sparse two-NET wire needs one unique typed departing part pin.");
     }
-    if (!same11(wire, records2.get(wire.id)) || !same11(
-      children(rows, wire.id).toSorted((left, right) => left.id.localeCompare(right.id)),
-      children(before.objects, wire.id).toSorted((left, right) => left.id.localeCompare(right.id))
+    if (!same12(wire2, records2.get(wire2.id)) || !same12(
+      children(rows, wire2.id).toSorted((left, right) => left.id.localeCompare(right.id)),
+      children(before.objects, wire2.id).toSorted((left, right) => left.id.localeCompare(right.id))
     )) {
       throw new Error("Sparse two-NET retained group changed.");
     }
     const moves = operation.operations.filter((step) => step.action === "sch.component.translate" && "primitiveId" in step.target && step.target.primitiveId === departure.model.id);
-    const move = moves[0], next = afterPins.filter(({ pin: pin3 }) => pin3.id === departure.pin.id);
+    const move = moves[0], next = afterPins.filter(({ pin: pin4 }) => pin4.id === departure.pin.id);
     const moved2 = next[0];
     if (moves.length !== 1 || move?.action !== "sch.component.translate" || next.length !== 1 || moved2 === void 0 || moved2.model.id !== departure.model.id || moved2.model.kind !== "part" || moved2.pin.net !== departure.pin.net || departure.pin.noConnect !== null || moved2.pin.noConnect !== null) {
       throw new Error("Sparse two-NET departure lost its exact typed translation or null-NC pin contract.");
     }
     const dx = move.x - Number(departure.model.body["x"]), dy = -move.y - Number(departure.model.body["y"]);
-    if (![dx, dy].every((value) => Number.isFinite(value)) || !same11(moved2.pin.body, { ...departure.pin.body, x: Number(departure.pin.body["x"]) + dx, y: Number(departure.pin.body["y"]) + dy }) || moved2.model.body["x"] !== move.x || moved2.model.body["y"] !== -move.y) {
+    if (![dx, dy].every((value) => Number.isFinite(value)) || !same12(moved2.pin.body, { ...departure.pin.body, x: Number(departure.pin.body["x"]) + dx, y: Number(departure.pin.body["y"]) + dy }) || moved2.model.body["x"] !== move.x || moved2.model.body["y"] !== -move.y) {
       throw new Error("Sparse two-NET departing pin is not the requested translation.");
     }
-    const occupants = beforePins.filter(({ pin: pin3 }) => nearSegment(point(pin3.body), attrs.line));
-    const other = occupants.filter(({ pin: pin3 }) => pin3.id !== departure.pin.id), retained = other[0];
-    const opposite = ends(attrs.line).find((xy) => !same11(xy, point(departure.pin.body)));
-    if (occupants.length !== 2 || other.length !== 1 || retained === void 0 || opposite === void 0 || retained.model.kind !== "part" || !same11(point(retained.pin.body), opposite) || [departure.pin, retained.pin].some((pin3) => pin3.net !== attrs.nets[0]?.body["value"] || pin3.noConnect !== null) || beforePins.filter(({ pin: pin3 }) => pin3.id === retained.pin.id || pin3.id === departure.pin.id).length !== 2) {
+    const occupants = beforePins.filter(({ pin: pin4 }) => nearSegment(point2(pin4.body), attrs.line));
+    const other = occupants.filter(({ pin: pin4 }) => pin4.id !== departure.pin.id), retained = other[0];
+    const opposite = ends(attrs.line).find((xy) => !same12(xy, point2(departure.pin.body)));
+    if (occupants.length !== 2 || other.length !== 1 || retained === void 0 || opposite === void 0 || retained.model.kind !== "part" || !same12(point2(retained.pin.body), opposite) || [departure.pin, retained.pin].some((pin4) => pin4.net !== attrs.nets[0]?.body["value"] || pin4.noConnect !== null) || beforePins.filter(({ pin: pin4 }) => pin4.id === retained.pin.id || pin4.id === departure.pin.id).length !== 2) {
       throw new Error("Sparse two-NET before endpoints are not two isolated same-net null-NC part pins.");
     }
-    const retainedAfter = afterPins.filter(({ pin: pin3 }) => nearSegment(point(pin3.body), attrs.line));
-    if (retainedAfter.length !== 1 || retainedAfter[0]?.model.id !== retained.model.id || !same11(retainedAfter[0]?.pin, retained.pin) || !same11(retainedAfter[0]?.model.body, retained.model.body)) {
+    const retainedAfter = afterPins.filter(({ pin: pin4 }) => nearSegment(point2(pin4.body), attrs.line));
+    if (retainedAfter.length !== 1 || retainedAfter[0]?.model.id !== retained.model.id || !same12(retainedAfter[0]?.pin, retained.pin) || !same12(retainedAfter[0]?.model.body, retained.model.body)) {
       throw new Error("Sparse two-NET projected endpoint has another, near, changed or NC pin.");
     }
     for (const collection of [before.objects, rows]) {
-      if (collection.some((row) => row.type === "LINE" && row.body["lineGroup"] !== wire.id && (old.get(String(row.body["lineGroup"]))?.type === "WIRE" || records2.get(String(row.body["lineGroup"]))?.type === "WIRE") && nearLine(row, attrs.line))) {
+      if (collection.some((row) => row.type === "LINE" && row.body["lineGroup"] !== wire2.id && (old.get(String(row.body["lineGroup"]))?.type === "WIRE" || records2.get(String(row.body["lineGroup"]))?.type === "WIRE") && nearLine(row, attrs.line))) {
         throw new Error("Sparse two-NET line has another or near wire occupancy.");
       }
     }
-    const firstClockOrderSha256 = sparseTwoNetFirstOrder(before, beforeNative, wire, attrs, evidence);
-    candidates.set(wire.id, { attrs, departingComponentId: departure.model.id, departingPinId: departure.pin.id, retainedPinId: retained.pin.id, firstClockOrderSha256 });
+    const firstClockOrderSha256 = sparseTwoNetFirstOrder(before, beforeNative, wire2, attrs, evidence);
+    candidates.set(wire2.id, { attrs, departingComponentId: departure.model.id, departingPinId: departure.pin.id, retainedPinId: retained.pin.id, firstClockOrderSha256 });
   };
-  for (const wire of before.objects.filter((row) => row.type === "WIRE" && records2.has(row.id))) {
-    addCandidate(wire);
+  for (const wire2 of before.objects.filter((row) => row.type === "WIRE" && records2.has(row.id))) {
+    addCandidate(wire2);
   }
   const derived = schematicNewWireOrders(before, records2, native, new Map([...candidates].map(([id7, { attrs }]) => [id7, attrs.relevance.id])));
   return derived.map((order2) => {
@@ -54391,15 +55254,15 @@ function schematicRetainedWireOrders(operation, before, records2, beforeNative, 
     ...detachedPinSparseTwoNetOrders(operation, before, records2, beforeNative, native, evidence)
   ];
 }
-var same11, ends, point, children;
+var same12, ends, point2, children;
 var init_schematic_retained_wire_order = __esm({
   "server/src/schematic-retained-wire-order.ts"() {
     init_core3();
     init_schematic_wire_order();
     init_schematic_layout_constructor_witness();
-    same11 = (a, b) => canonicalJson({ value: a }) === canonicalJson({ value: b });
+    same12 = (a, b) => canonicalJson({ value: a }) === canonicalJson({ value: b });
     ends = (row) => [[row.body["startX"], row.body["startY"]], [row.body["endX"], row.body["endY"]]];
-    point = (body2) => [body2["x"], body2["y"]];
+    point2 = (body3) => [body3["x"], body3["y"]];
     children = (rows, id7) => rows.filter((row) => row.body["parentId"] === id7 || row.body["lineGroup"] === id7);
   }
 });
@@ -54449,8 +55312,8 @@ var init_schematic_layout_net_label = __esm({
 function fail6() {
   throw new Error("Stored pin-number coordinates lack exact native library/constructor proof.");
 }
-function point2(body2) {
-  const x = body2["x"], y = body2["y"];
+function point3(body3) {
+  const x = body3["x"], y = body3["y"];
   if (typeof x !== "number" || typeof y !== "number" || !Number.isFinite(x) || !Number.isFinite(y)) {
     fail6();
   }
@@ -54489,61 +55352,61 @@ function documentHash(doc) {
     uuid: doc.uuid,
     docType: doc.docType,
     metadata: doc.metadata,
-    records: doc.records.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 }))
+    records: doc.records.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 }))
   });
 }
-function proveQuarterTurnPinDisplacement(history, referenceSource, observedSource, prior, model, oldPin, pin3) {
-  const currentOrigin = point2(model.body), priorOrigin = point2(prior.body);
+function proveQuarterTurnPinDisplacement(history, referenceSource, observedSource, prior, model, oldPin, pin4) {
+  const currentOrigin = point3(model.body), priorOrigin = point3(prior.body);
   const page = history.documents.find((doc) => doc.uuid === referenceSource.document["uuid"] && doc.docType === "SCH_PAGE" && !isNativeDocumentDeleted(doc));
   const original = page?.records.find((row) => row.type === "COMPONENT" && row.id === model.id);
   const oldSymbols = prior.attributes.filter((attr) => attr.key === "Symbol"), symbols = model.attributes.filter((attr) => attr.key === "Symbol");
   const symbolId = oldSymbols[0]?.value;
-  const symbol2 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL" && !isNativeDocumentDeleted(doc));
-  if (prior.id !== model.id || prior.kind !== "part" || model.kind !== "part" || model.body["rotation"] !== 90 || model.body["isMirror"] !== false || !same12({ ...model.body, x: priorOrigin[0], y: priorOrigin[1] }, prior.body) || referenceSource.document["editVersion"] !== "3.2.149.88089769" || observedSource.document["editVersion"] !== "3.2.149.88089769" || referenceSource.document["uuid"] !== observedSource.document["uuid"] || same12(priorOrigin, currentOrigin) || !same12(constructorPoint([0, 0], priorOrigin, 90), currentOrigin) || !same12(constructorPoint([0, 0], currentOrigin, 90), currentOrigin) || page === void 0 || page.semanticSha256 !== documentHash(page) || original === void 0 || original.body["rotation"] !== 90 || original.body["isMirror"] !== false || original.body["partId"] !== model.body["partId"] || oldSymbols.length !== 1 || symbols.length !== 1 || !same12(oldSymbols[0], symbols[0]) || typeof symbolId !== "string" || oldSymbols[0]?.body["value"] !== symbolId || !page.records.some((row) => row.type === "ATTR" && row.body["parentId"] === model.id && row.body["key"] === "Symbol" && row.body["value"] === symbolId) || symbol2 === void 0 || symbol2.semanticSha256 !== documentHash(symbol2) || !same12(symbol2.records.find((row) => row.type === "CANVAS")?.body, { originX: 0, originY: 0 }) || !symbol2.records.some((row) => row.type === "PART" && row.id === model.body["partId"])) {
+  const symbol4 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL" && !isNativeDocumentDeleted(doc));
+  if (prior.id !== model.id || prior.kind !== "part" || model.kind !== "part" || model.body["rotation"] !== 90 || model.body["isMirror"] !== false || !same13({ ...model.body, x: priorOrigin[0], y: priorOrigin[1] }, prior.body) || referenceSource.document["editVersion"] !== "3.2.149.88089769" || observedSource.document["editVersion"] !== "3.2.149.88089769" || referenceSource.document["uuid"] !== observedSource.document["uuid"] || same13(priorOrigin, currentOrigin) || !same13(constructorPoint([0, 0], priorOrigin, 90), currentOrigin) || !same13(constructorPoint([0, 0], currentOrigin, 90), currentOrigin) || page === void 0 || page.semanticSha256 !== documentHash(page) || original === void 0 || original.body["rotation"] !== 90 || original.body["isMirror"] !== false || original.body["partId"] !== model.body["partId"] || oldSymbols.length !== 1 || symbols.length !== 1 || !same13(oldSymbols[0], symbols[0]) || typeof symbolId !== "string" || oldSymbols[0]?.body["value"] !== symbolId || !page.records.some((row) => row.type === "ATTR" && row.body["parentId"] === model.id && row.body["key"] === "Symbol" && row.body["value"] === symbolId) || symbol4 === void 0 || symbol4.semanticSha256 !== documentHash(symbol4) || !same13(symbol4.records.find((row) => row.type === "CANVAS")?.body, { originX: 0, originY: 0 }) || !symbol4.records.some((row) => row.type === "PART" && row.id === model.body["partId"])) {
     fail6();
   }
-  const locals = symbol2.records.filter((row) => row.type === "PIN" && row.body["partId"] === model.body["partId"] && `${model.id}-${row.id}` === pin3.id);
-  const local = locals[0], originalOrigin = point2(original.body);
+  const locals = symbol4.records.filter((row) => row.type === "PIN" && row.body["partId"] === model.body["partId"] && `${model.id}-${row.id}` === pin4.id);
+  const local = locals[0], originalOrigin = point3(original.body);
   if (locals.length !== 1 || local === void 0) {
     fail6();
   }
-  const originalPin = constructorPoint(point2(local.body), originalOrigin, 90);
-  if (oldPin.id !== pin3.id || oldPin.net !== pin3.net || !same12({ ...pin3.body, x: oldPin.body["x"], y: oldPin.body["y"] }, oldPin.body) || pin3.body["rotation"] !== (Number(local.body["rotation"]) + 90) % 360 || !same12(point2(pin3.body), constructorPoint(point2(local.body), currentOrigin, 90))) {
+  const originalPin = constructorPoint(point3(local.body), originalOrigin, 90);
+  if (oldPin.id !== pin4.id || oldPin.net !== pin4.net || !same13({ ...pin4.body, x: oldPin.body["x"], y: oldPin.body["y"] }, oldPin.body) || pin4.body["rotation"] !== (Number(local.body["rotation"]) + 90) % 360 || !same13(point3(pin4.body), constructorPoint(point3(local.body), currentOrigin, 90))) {
     fail6();
   }
   let translationOrigin = originalOrigin;
-  const recentered = !same12(point2(oldPin.body), moved(originalPin, originalOrigin, priorOrigin));
+  const recentered = !same13(point3(oldPin.body), moved(originalPin, originalOrigin, priorOrigin));
   if (recentered) {
     const reconstructedOrigin2 = constructorPoint([0, 0], originalOrigin, 90);
-    if (!same12(original.body, prior.body) || same12(originalOrigin, reconstructedOrigin2) || !same12(reconstructedOrigin2, currentOrigin) || !same12(point2(oldPin.body), moved(originalPin, reconstructedOrigin2, priorOrigin))) {
+    if (!same13(original.body, prior.body) || same13(originalOrigin, reconstructedOrigin2) || !same13(reconstructedOrigin2, currentOrigin) || !same13(point3(oldPin.body), moved(originalPin, reconstructedOrigin2, priorOrigin))) {
       fail6();
     }
     translationOrigin = reconstructedOrigin2;
-    if (oldPin.noConnect !== null || pin3.noConnect !== null) {
+    if (oldPin.noConnect !== null || pin4.noConnect !== null) {
       const old = oldPin.noConnect;
-      const current2 = pin3.noConnect;
+      const current2 = pin4.noConnect;
       const markers = page.records.filter((row) => row.type === "ATTR" && row.id === old?.id);
       const marker = markers[0];
-      if (old === null || current2 === null || old.id !== current2.id || old.value !== "no" || current2.value !== "no" || old.body["key"] !== "NO_CONNECT" || old.body["value"] !== "no" || old.body["parentId"] !== oldPin.id || markers.length !== 1 || marker === void 0 || !same12(marker.body, old.body) || !same12(old, { ...current2, body: { ...current2.body, x: old.body["x"], y: old.body["y"] } }) || !same12(point2(old.body), point2(oldPin.body)) || !same12(point2(current2.body), point2(pin3.body))) {
+      if (old === null || current2 === null || old.id !== current2.id || old.value !== "no" || current2.value !== "no" || old.body["key"] !== "NO_CONNECT" || old.body["value"] !== "no" || old.body["parentId"] !== oldPin.id || markers.length !== 1 || marker === void 0 || !same13(marker.body, old.body) || !same13(old, { ...current2, body: { ...current2.body, x: old.body["x"], y: old.body["y"] } }) || !same13(point3(old.body), point3(oldPin.body)) || !same13(point3(current2.body), point3(pin4.body))) {
         fail6();
       }
     }
   }
-  return { originalOrigin, priorOrigin, currentOrigin, translationOrigin, recentered, symbolSha256: symbol2.semanticSha256 };
+  return { originalOrigin, priorOrigin, currentOrigin, translationOrigin, recentered, symbolSha256: symbol4.semanticSha256 };
 }
 function alignDisplacedStoredPinNumberCoordinates(history, referenceSource, observedSource, reference2, observed, records2) {
   const changes = [];
   const align2 = (before) => {
     const after = records2.get(before.id);
-    if (after === void 0 || same12(before.body["x"], after.body["x"]) && same12(before.body["y"], after.body["y"])) {
+    if (after === void 0 || same13(before.body["x"], after.body["x"]) && same13(before.body["y"], after.body["y"])) {
       return;
     }
-    const prior = reference2.components.find((model2) => model2.pins.some((pin3) => pin3.id === before.body["parentId"]));
+    const prior = reference2.components.find((model2) => model2.pins.some((pin4) => pin4.id === before.body["parentId"]));
     const model = observed.components.find((entry) => entry.id === prior?.id);
-    if (prior === void 0 || model === void 0 || same12(point2(prior.body), point2(model.body))) {
+    if (prior === void 0 || model === void 0 || same13(point3(prior.body), point3(model.body))) {
       return;
     }
-    const bound2 = bind(history, observedSource, observed, after), oldPin = prior.pins.find((pin3) => pin3.id === bound2.pin.id);
+    const bound2 = bind(history, observedSource, observed, after), oldPin = prior.pins.find((pin4) => pin4.id === bound2.pin.id);
     if (oldPin === void 0) {
       fail6();
     }
@@ -54555,10 +55418,10 @@ function alignDisplacedStoredPinNumberCoordinates(history, referenceSource, obse
     const originals = page?.records.filter((row) => row.id === before.id && row.type === "ATTR" && row.body["parentId"] === oldPin.id && row.body["key"] === "Pin Number");
     const original = originals?.[0], originalLabel = constructorPoint(bound2.local, proof.originalOrigin, 90);
     const translatedLabel = moved(originalLabel, proof.translationOrigin, proof.priorOrigin);
-    if (oldAttrs.length !== 1 || attrs.length !== 1 || originals?.length !== 1 || old === void 0 || attr === void 0 || original === void 0 || !same12(old.body, before.body) || !same12(attr.body, after.body) || !same12(old, { ...attr, body: { ...attr.body, x: old.body["x"], y: old.body["y"] } }) || !same12({ ...after.body, x: before.body["x"], y: before.body["y"] }, before.body) || !same12({ ...original.body, x: before.body["x"], y: before.body["y"] }, before.body) || !same12(point2(original.body), proof.recentered ? translatedLabel : originalLabel) || !same12(point2(before.body), translatedLabel) || !same12(point2(after.body), bound2.reconstructed)) {
+    if (oldAttrs.length !== 1 || attrs.length !== 1 || originals?.length !== 1 || old === void 0 || attr === void 0 || original === void 0 || !same13(old.body, before.body) || !same13(attr.body, after.body) || !same13(old, { ...attr, body: { ...attr.body, x: old.body["x"], y: old.body["y"] } }) || !same13({ ...after.body, x: before.body["x"], y: before.body["y"] }, before.body) || !same13({ ...original.body, x: before.body["x"], y: before.body["y"] }, before.body) || !same13(point3(original.body), proof.recentered ? translatedLabel : originalLabel) || !same13(point3(before.body), translatedLabel) || !same13(point3(after.body), bound2.reconstructed)) {
       fail6();
     }
-    const beforeCoordinates = point2(before.body);
+    const beforeCoordinates = point3(before.body);
     attr.body["x"] = beforeCoordinates[0];
     attr.body["y"] = beforeCoordinates[1];
     after.body["x"] = beforeCoordinates[0];
@@ -54581,42 +55444,42 @@ function alignDisplacedStoredPinNumberCoordinates(history, referenceSource, obse
   return changes;
 }
 function bind(history, source3, native, row) {
-  const owners = native.components.filter((model2) => model2.pins.some((pin4) => pin4.id === row.body["parentId"]));
-  const model = owners[0], pin3 = model?.pins.find((entry) => entry.id === row.body["parentId"]);
-  const attrs = pin3?.attributes.filter((entry) => entry.key === "Pin Number" && entry.id === row.id);
+  const owners = native.components.filter((model2) => model2.pins.some((pin5) => pin5.id === row.body["parentId"]));
+  const model = owners[0], pin4 = model?.pins.find((entry) => entry.id === row.body["parentId"]);
+  const attrs = pin4?.attributes.filter((entry) => entry.key === "Pin Number" && entry.id === row.id);
   const attr = attrs?.[0];
   const symbolId = model?.attributes.find((entry) => entry.key === "Symbol")?.value;
-  const symbol2 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL" && !isNativeDocumentDeleted(doc));
+  const symbol4 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL" && !isNativeDocumentDeleted(doc));
   const rotation2 = model?.body["rotation"];
-  if (owners.length !== 1 || model?.kind !== "part" || ![0, 90, 180, 270].includes(Number(rotation2)) || model.body["isMirror"] !== false || row.type !== "ATTR" || row.body["key"] !== "Pin Number" || attrs?.length !== 1 || attr === void 0 || pin3 === void 0 || source3.document["editVersion"] !== "3.2.149.88089769" || symbol2 === void 0 || typeof symbolId !== "string" || typeof rotation2 !== "number" || symbol2.semanticSha256 !== sha256Json({
-    uuid: symbol2.uuid,
-    docType: symbol2.docType,
-    metadata: symbol2.metadata,
-    records: symbol2.records.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 }))
-  }) || !same12(symbol2.records.find((entry) => entry.type === "CANVAS")?.body, { originX: 0, originY: 0 })) {
+  if (owners.length !== 1 || model?.kind !== "part" || ![0, 90, 180, 270].includes(Number(rotation2)) || model.body["isMirror"] !== false || row.type !== "ATTR" || row.body["key"] !== "Pin Number" || attrs?.length !== 1 || attr === void 0 || pin4 === void 0 || source3.document["editVersion"] !== "3.2.149.88089769" || symbol4 === void 0 || typeof symbolId !== "string" || typeof rotation2 !== "number" || symbol4.semanticSha256 !== sha256Json({
+    uuid: symbol4.uuid,
+    docType: symbol4.docType,
+    metadata: symbol4.metadata,
+    records: symbol4.records.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 }))
+  }) || !same13(symbol4.records.find((entry) => entry.type === "CANVAS")?.body, { originX: 0, originY: 0 })) {
     fail6();
   }
-  const localPins = symbol2.records.filter((entry) => entry.type === "PIN" && entry.body["partId"] === model.body["partId"] && `${model.id}-${entry.id}` === pin3.id);
+  const localPins = symbol4.records.filter((entry) => entry.type === "PIN" && entry.body["partId"] === model.body["partId"] && `${model.id}-${entry.id}` === pin4.id);
   const localPin = localPins[0];
-  const locals = symbol2.records.filter((entry) => entry.type === "ATTR" && entry.body["partId"] === model.body["partId"] && entry.body["parentId"] === localPin?.id && entry.body["key"] === "Pin Number");
-  const localAttr = locals[0], origin = point2(model.body);
-  if (localPins.length !== 1 || locals.length !== 1 || localPin === void 0 || localAttr === void 0 || attr.symbolValue !== localAttr.body["value"] || attr.body["value"] !== row.body["value"] || !same12(point2(pin3.body), constructorPoint(point2(localPin.body), origin, rotation2)) || pin3.body["rotation"] !== (Number(localPin.body["rotation"]) + rotation2) % 360) {
+  const locals = symbol4.records.filter((entry) => entry.type === "ATTR" && entry.body["partId"] === model.body["partId"] && entry.body["parentId"] === localPin?.id && entry.body["key"] === "Pin Number");
+  const localAttr = locals[0], origin = point3(model.body);
+  if (localPins.length !== 1 || locals.length !== 1 || localPin === void 0 || localAttr === void 0 || attr.symbolValue !== localAttr.body["value"] || attr.body["value"] !== row.body["value"] || !same13(point3(pin4.body), constructorPoint(point3(localPin.body), origin, rotation2)) || pin4.body["rotation"] !== (Number(localPin.body["rotation"]) + rotation2) % 360) {
     fail6();
   }
-  const local = point2(localAttr.body);
-  return { model, pin: pin3, local, origin, rotation: rotation2, reconstructed: constructorPoint(local, origin, rotation2), symbolSha256: symbol2.semanticSha256 };
+  const local = point3(localAttr.body);
+  return { model, pin: pin4, local, origin, rotation: rotation2, reconstructed: constructorPoint(local, origin, rotation2), symbolSha256: symbol4.semanticSha256 };
 }
-function projectStoredPinNumberCoordinates(history, source3, native, stored, exported) {
+function projectStoredPinNumberCoordinates(history, source3, native, stored2, exported) {
   const bound2 = bind(history, source3, native, exported);
-  if (!same12(point2(exported.body), bound2.reconstructed) || stored.id !== exported.id || stored.type !== "ATTR" || stored.body["key"] !== "Pin Number" || stored.body["parentId"] !== exported.body["parentId"]) {
+  if (!same13(point3(exported.body), bound2.reconstructed) || stored2.id !== exported.id || stored2.type !== "ATTR" || stored2.body["key"] !== "Pin Number" || stored2.body["parentId"] !== exported.body["parentId"]) {
     fail6();
   }
-  return { row: { ...stored, body: { ...stored.body, x: exported.body["x"], y: exported.body["y"] } }, proof: {
+  return { row: { ...stored2, body: { ...stored2.body, x: exported.body["x"], y: exported.body["y"] } }, proof: {
     componentId: bound2.model.id,
-    attributeId: stored.id,
+    attributeId: stored2.id,
     symbolSha256: bound2.symbolSha256,
     checkpointSha256: history.checkpointSha256,
-    stored: point2(stored.body),
+    stored: point3(stored2.body),
     compared: bound2.reconstructed,
     origins: [bound2.origin],
     profile: "pinned-pin-model-ignores-stored-position"
@@ -54629,9 +55492,9 @@ function verifyStoredPinNumberWrites(before, after, observed, typed) {
   }
   for (const row of newPage.records.filter((entry) => entry.type === "ATTR" && entry.body["key"] === "Pin Number")) {
     const prior = oldPage.records.find((entry) => entry.id === row.id);
-    if (prior !== void 0 && (!same12(prior.body["x"], row.body["x"]) || !same12(prior.body["y"], row.body["y"]))) {
+    if (prior !== void 0 && (!same13(prior.body["x"], row.body["x"]) || !same13(prior.body["y"], row.body["y"]))) {
       const captured = observed.objects.find((entry) => entry.id === row.id), intended = typed.objects.find((entry) => entry.id === row.id);
-      if (captured?.type !== "ATTR" || intended?.type !== "ATTR" || !same12(point2(row.body), point2(captured.body)) && !same12(point2(row.body), point2(intended.body))) {
+      if (captured?.type !== "ATTR" || intended?.type !== "ATTR" || !same13(point3(row.body), point3(captured.body)) && !same13(point3(row.body), point3(intended.body))) {
         throw new Error("Durable Pin Number position is neither retained nor the exact typed/native write.");
       }
     }
@@ -54641,22 +55504,22 @@ function alignStoredPinNumberCoordinates(history, referenceSource, observedSourc
   const changes = [];
   for (const before of referenceSource.objects.filter((row) => row.type === "ATTR" && row.body["key"] === "Pin Number")) {
     const after = records2.get(before.id);
-    if (after !== void 0 && (!same12(before.body["x"], after.body["x"]) || !same12(before.body["y"], after.body["y"]))) {
+    if (after !== void 0 && (!same13(before.body["x"], after.body["x"]) || !same13(before.body["y"], after.body["y"]))) {
       const bound2 = bind(history, observedSource, observed, after), priorBound = bind(history, referenceSource, reference2, before);
       const original = history.documents.find((doc) => doc.uuid === referenceSource.document["uuid"])?.records.find((row) => row.id === bound2.model.id && row.type === "COMPONENT");
       if (original === void 0 || original.body["rotation"] !== bound2.rotation || original.body["isMirror"] !== false || original.body["partId"] !== bound2.model.body["partId"]) {
         fail6();
       }
-      const originalOrigin = point2(original.body);
+      const originalOrigin = point3(original.body);
       const originalLabel = constructorPoint(bound2.local, originalOrigin, bound2.rotation);
-      if (!same12(bound2.model.body, priorBound.model.body) || !same12(bound2.pin.body, priorBound.pin.body) || !same12({ ...after.body, x: before.body["x"], y: before.body["y"] }, before.body) || !same12(point2(before.body), moved(originalLabel, originalOrigin, bound2.origin)) || !same12(point2(after.body), bound2.reconstructed)) {
+      if (!same13(bound2.model.body, priorBound.model.body) || !same13(bound2.pin.body, priorBound.pin.body) || !same13({ ...after.body, x: before.body["x"], y: before.body["y"] }, before.body) || !same13(point3(before.body), moved(originalLabel, originalOrigin, bound2.origin)) || !same13(point3(after.body), bound2.reconstructed)) {
         fail6();
       }
       const attr = bound2.pin.attributes.find((entry) => entry.id === before.id);
       if (attr === void 0) {
         fail6();
       }
-      const beforeCoordinates = point2(before.body);
+      const beforeCoordinates = point3(before.body);
       attr.body["x"] = beforeCoordinates[0];
       attr.body["y"] = beforeCoordinates[1];
       after.body["x"] = before.body["x"];
@@ -54675,12 +55538,12 @@ function alignStoredPinNumberCoordinates(history, referenceSource, observedSourc
   }
   return changes;
 }
-var same12, translate2;
+var same13, translate2;
 var init_schematic_pin_number_coordinates = __esm({
   "server/src/schematic-pin-number-coordinates.ts"() {
     init_core3();
     init_native_history();
-    same12 = (a, b) => canonicalJson({ value: a }) === canonicalJson({ value: b });
+    same13 = (a, b) => canonicalJson({ value: a }) === canonicalJson({ value: b });
     translate2 = (x, y) => [1, 0, 0, 0, 1, 0, x, y, 1];
   }
 });
@@ -54694,13 +55557,13 @@ function number11(value) {
 }
 function symbolEvidence(model, history) {
   const symbolId = model.attributes.find((attr) => attr.key === "Symbol")?.body["value"];
-  const symbol2 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL" && !isNativeDocumentDeleted(doc));
+  const symbol4 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL" && !isNativeDocumentDeleted(doc));
   const rotation2 = model.body["rotation"];
-  if (!(model.kind === "part" && rotation2 === 90 || model.kind === "netport" && (rotation2 === 180 || rotation2 === 270)) || model.body["isMirror"] !== false || symbol2 === void 0 || !same13(symbol2.records.find((row) => row.type === "CANVAS")?.body, { originX: 0, originY: 0 }) || !symbol2.records.some((row) => row.type === "PART" && row.id === model.body["partId"])) {
+  if (!(model.kind === "part" && rotation2 === 90 || model.kind === "netport" && (rotation2 === 180 || rotation2 === 270)) || model.body["isMirror"] !== false || symbol4 === void 0 || !same14(symbol4.records.find((row) => row.type === "CANVAS")?.body, { originX: 0, originY: 0 }) || !symbol4.records.some((row) => row.type === "PART" && row.id === model.body["partId"])) {
     throw new Error("Unreviewed schematic component coordinate reconstruction.");
   }
-  const hash8 = sha256Json({ uuid: symbol2.uuid, docType: symbol2.docType, metadata: symbol2.metadata, records: symbol2.records.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 })) });
-  if (hash8 !== symbol2.semanticSha256) {
+  const hash8 = sha256Json({ uuid: symbol4.uuid, docType: symbol4.docType, metadata: symbol4.metadata, records: symbol4.records.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 })) });
+  if (hash8 !== symbol4.semanticSha256) {
     throw new Error("Coordinate reconstruction library evidence changed.");
   }
   return { hash: hash8, rotation: rotation2 };
@@ -54730,7 +55593,7 @@ function reconstructedOrigin(x, y, degrees) {
 }
 function alignInherited(prior, model, referenceIds, records2, alignBody) {
   for (const owner of [model, ...model.pins]) {
-    const oldOwner = owner === model ? prior : prior.pins.find((pin3) => pin3.id === owner.id);
+    const oldOwner = owner === model ? prior : prior.pins.find((pin4) => pin4.id === owner.id);
     if (oldOwner === void 0) {
       throw new Error("Coordinate reconstruction changed physical pin identity.");
     }
@@ -54749,22 +55612,22 @@ function alignInherited(prior, model, referenceIds, records2, alignBody) {
   }
 }
 function documentHash2(document2) {
-  return sha256Json({ uuid: document2.uuid, docType: document2.docType, metadata: document2.metadata, records: document2.records.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 })) });
+  return sha256Json({ uuid: document2.uuid, docType: document2.docType, metadata: document2.metadata, records: document2.records.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 })) });
 }
 function alignDisplacedInactiveNoConnect(referenceSource, observedSource, prior, model, history, records2) {
   const proofs = [];
-  const align2 = (pin3) => {
-    const oldPin = prior.pins.find((entry) => entry.id === pin3.id);
-    const current2 = pin3.noConnect, old = oldPin?.noConnect;
-    if (old === void 0 || old === null || current2 === null || same13(old.body["x"], current2.body["x"]) && same13(old.body["y"], current2.body["y"])) {
+  const align2 = (pin4) => {
+    const oldPin = prior.pins.find((entry) => entry.id === pin4.id);
+    const current2 = pin4.noConnect, old = oldPin?.noConnect;
+    if (old === void 0 || old === null || current2 === null || same14(old.body["x"], current2.body["x"]) && same14(old.body["y"], current2.body["y"])) {
       return;
     }
     const after = records2.get(current2.id), before = referenceSource.objects.find((row) => row.id === old.id);
     const original = history.documents.find((doc) => doc.uuid === referenceSource.document["uuid"] && doc.docType === "SCH_PAGE")?.records.find((row) => row.id === old.id);
-    if (oldPin === void 0 || old.id !== current2.id || old.value !== "no" || current2.value !== "no" || old.body["key"] !== "NO_CONNECT" || old.body["parentId"] !== oldPin.id || current2.body["parentId"] !== pin3.id || old.body["value"] !== "no" || current2.body["value"] !== "no" || before?.type !== "ATTR" || after?.type !== "ATTR" || original?.type !== "ATTR" || !same13(before.body, old.body) || !same13(after.body, current2.body) || !same13(old, { ...current2, body: { ...current2.body, x: old.body["x"], y: old.body["y"] } }) || !same13({ ...original.body, x: old.body["x"], y: old.body["y"] }, old.body) || !same13([old.body["x"], old.body["y"]], [oldPin.body["x"], oldPin.body["y"]]) || !same13([current2.body["x"], current2.body["y"]], [pin3.body["x"], pin3.body["y"]])) {
+    if (oldPin === void 0 || old.id !== current2.id || old.value !== "no" || current2.value !== "no" || old.body["key"] !== "NO_CONNECT" || old.body["parentId"] !== oldPin.id || current2.body["parentId"] !== pin4.id || old.body["value"] !== "no" || current2.body["value"] !== "no" || before?.type !== "ATTR" || after?.type !== "ATTR" || original?.type !== "ATTR" || !same14(before.body, old.body) || !same14(after.body, current2.body) || !same14(old, { ...current2, body: { ...current2.body, x: old.body["x"], y: old.body["y"] } }) || !same14({ ...original.body, x: old.body["x"], y: old.body["y"] }, old.body) || !same14([old.body["x"], old.body["y"]], [oldPin.body["x"], oldPin.body["y"]]) || !same14([current2.body["x"], current2.body["y"]], [pin4.body["x"], pin4.body["y"]])) {
       throw new Error("Inactive no-connect coordinate lacks its exact stored source/native pin binding.");
     }
-    const proof = proveQuarterTurnPinDisplacement(history, referenceSource, observedSource, prior, model, oldPin, pin3);
+    const proof = proveQuarterTurnPinDisplacement(history, referenceSource, observedSource, prior, model, oldPin, pin4);
     const beforePoint = [number11(old.body["x"]), number11(old.body["y"])], reconstructed = [number11(current2.body["x"]), number11(current2.body["y"])];
     current2.body["x"] = beforePoint[0];
     current2.body["y"] = beforePoint[1];
@@ -54773,7 +55636,7 @@ function alignDisplacedInactiveNoConnect(referenceSource, observedSource, prior,
     proofs.push({
       profile: "pinned-quarter-turn-inactive-no-connect",
       componentId: model.id,
-      pinId: pin3.id,
+      pinId: pin4.id,
       attributeId: old.id,
       symbolSha256: proof.symbolSha256,
       checkpointSha256: history.checkpointSha256,
@@ -54781,8 +55644,8 @@ function alignDisplacedInactiveNoConnect(referenceSource, observedSource, prior,
       reconstructed
     });
   };
-  for (const pin3 of model.pins) {
-    align2(pin3);
+  for (const pin4 of model.pins) {
+    align2(pin4);
   }
   return proofs;
 }
@@ -54797,26 +55660,26 @@ function alignQuarterTurnPinAttributes(referenceSource, observedSource, referenc
   const changes = [];
   const beforeIds = new Set(referenceSource.objects.map((row) => row.id));
   const afterIds = new Set(observedSource.objects.map((row) => row.id));
-  const alignAttribute = (model, prior, pin3, key) => {
-    const oldPin = prior.pins.find((entry) => entry.id === pin3.id);
-    const matches = pin3.attributes.filter((entry) => entry.key === key), oldMatches = oldPin?.attributes.filter((entry) => entry.key === key);
+  const alignAttribute = (model, prior, pin4, key) => {
+    const oldPin = prior.pins.find((entry) => entry.id === pin4.id);
+    const matches = pin4.attributes.filter((entry) => entry.key === key), oldMatches = oldPin?.attributes.filter((entry) => entry.key === key);
     const attr = matches[0], old = oldMatches?.[0];
-    if (old === void 0 || attr === void 0 || same13(old.body["x"], attr.body["x"]) && same13(old.body["y"], attr.body["y"])) {
+    if (old === void 0 || attr === void 0 || same14(old.body["x"], attr.body["x"]) && same14(old.body["y"], attr.body["y"])) {
       return;
     }
     const page = history.documents.find((entry) => entry.uuid === reference2.document.documentUuid && entry.docType === "SCH_PAGE" && !isNativeDocumentDeleted(entry));
     const original = page?.records.find((row) => row.id === model.id && row.type === "COMPONENT");
     const symbolAttr = prior.attributes.find((entry) => entry.key === "Symbol"), symbolId = symbolAttr?.body["value"];
     const partId = model.body["partId"];
-    const symbol2 = history.documents.find((entry) => entry.uuid === symbolId && entry.docType === "SYMBOL" && !isNativeDocumentDeleted(entry));
-    if (prior.kind !== "part" || !same13(prior.body, model.body) || model.body["isMirror"] !== false || referenceSource.document["editVersion"] !== "3.2.149.88089769" || observedSource.document["editVersion"] !== "3.2.149.88089769" || page === void 0 || page.semanticSha256 !== documentHash2(page) || original === void 0 || original.body["rotation"] !== 90 || original.body["isMirror"] !== false || original.body["partId"] !== partId || symbol2 === void 0 || symbol2.semanticSha256 !== documentHash2(symbol2) || !same13(symbol2.records.find((row) => row.type === "CANVAS")?.body, { originX: 0, originY: 0 }) || !symbol2.records.some((row) => row.type === "PART" && row.id === partId) || symbolAttr === void 0 || !same13(symbolAttr, model.attributes.find((entry) => entry.key === "Symbol")) || !page.records.some((row) => row.type === "ATTR" && row.body["parentId"] === model.id && row.body["key"] === "Symbol" && row.body["value"] === symbolId) || matches.length !== 1 || oldMatches?.length !== 1 || beforeIds.has(old.id) || afterIds.has(attr.id) || !/^[a-f0-9]{16}$/u.test(old.id) || !/^[a-f0-9]{16}$/u.test(attr.id) || page.records.some((row) => row.type === "ATTR" && row.body["parentId"] === pin3.id && row.body["key"] === key)) {
+    const symbol4 = history.documents.find((entry) => entry.uuid === symbolId && entry.docType === "SYMBOL" && !isNativeDocumentDeleted(entry));
+    if (prior.kind !== "part" || !same14(prior.body, model.body) || model.body["isMirror"] !== false || referenceSource.document["editVersion"] !== "3.2.149.88089769" || observedSource.document["editVersion"] !== "3.2.149.88089769" || page === void 0 || page.semanticSha256 !== documentHash2(page) || original === void 0 || original.body["rotation"] !== 90 || original.body["isMirror"] !== false || original.body["partId"] !== partId || symbol4 === void 0 || symbol4.semanticSha256 !== documentHash2(symbol4) || !same14(symbol4.records.find((row) => row.type === "CANVAS")?.body, { originX: 0, originY: 0 }) || !symbol4.records.some((row) => row.type === "PART" && row.id === partId) || symbolAttr === void 0 || !same14(symbolAttr, model.attributes.find((entry) => entry.key === "Symbol")) || !page.records.some((row) => row.type === "ATTR" && row.body["parentId"] === model.id && row.body["key"] === "Symbol" && row.body["value"] === symbolId) || matches.length !== 1 || oldMatches?.length !== 1 || beforeIds.has(old.id) || afterIds.has(attr.id) || !/^[a-f0-9]{16}$/u.test(old.id) || !/^[a-f0-9]{16}$/u.test(attr.id) || page.records.some((row) => row.type === "ATTR" && row.body["parentId"] === pin4.id && row.body["key"] === key)) {
       throw new Error("Quarter-turn pin attribute lacks exact unstored component/library binding.");
     }
-    const localPins = symbol2.records.filter((row) => row.type === "PIN" && row.body["partId"] === partId && `${model.id}-${row.id}` === pin3.id);
+    const localPins = symbol4.records.filter((row) => row.type === "PIN" && row.body["partId"] === partId && `${model.id}-${row.id}` === pin4.id);
     const localPin = localPins[0];
-    const localAttrs = symbol2.records.filter((row) => row.type === "ATTR" && row.body["partId"] === partId && row.body["parentId"] === localPin?.id && row.body["key"] === key);
+    const localAttrs = symbol4.records.filter((row) => row.type === "ATTR" && row.body["partId"] === partId && row.body["parentId"] === localPin?.id && row.body["key"] === key);
     const local = localAttrs[0];
-    if (localPins.length !== 1 || localAttrs.length !== 1 || localPin === void 0 || local === void 0 || oldPin === void 0 || !same13(oldPin.body, pin3.body) || old.body["parentId"] !== pin3.id || attr.body["parentId"] !== pin3.id || old.symbolValue !== local.body["value"] || old.blockValue !== null || old.instanceValue !== null || old.body["value"] !== null || !same13(old, { ...attr, id: old.id, body: { ...attr.body, x: old.body["x"], y: old.body["y"] } })) {
+    if (localPins.length !== 1 || localAttrs.length !== 1 || localPin === void 0 || local === void 0 || oldPin === void 0 || !same14(oldPin.body, pin4.body) || old.body["parentId"] !== pin4.id || attr.body["parentId"] !== pin4.id || old.symbolValue !== local.body["value"] || old.blockValue !== null || old.instanceValue !== null || old.body["value"] !== null || !same14(old, { ...attr, id: old.id, body: { ...attr.body, x: old.body["x"], y: old.body["y"] } })) {
       throw new Error("Quarter-turn pin attribute changed pin identity, style, value or structure.");
     }
     const originalOrigin = [number11(original.body["x"]), number11(original.body["y"])];
@@ -54825,7 +55688,7 @@ function alignQuarterTurnPinAttributes(referenceSource, observedSource, referenc
     const originalConstructor = quarterTurnPoint(libraryPosition, originalOrigin), reconstructed = quarterTurnPoint(libraryPosition, currentOrigin);
     const translated4 = originalConstructor.map((value, index) => value + (number11(currentOrigin[index]) - number11(originalOrigin[index])));
     const physical = quarterTurnPoint([number11(localPin.body["x"]), number11(localPin.body["y"])], currentOrigin);
-    if (!same13([pin3.body["x"], pin3.body["y"]], physical) || pin3.body["rotation"] !== (number11(localPin.body["rotation"]) + 90) % 360 || !same13([old.body["x"], old.body["y"]], translated4) || !same13([attr.body["x"], attr.body["y"]], reconstructed)) {
+    if (!same14([pin4.body["x"], pin4.body["y"]], physical) || pin4.body["rotation"] !== (number11(localPin.body["rotation"]) + 90) % 360 || !same14([old.body["x"], old.body["y"]], translated4) || !same14([attr.body["x"], attr.body["y"]], reconstructed)) {
       throw new Error("Quarter-turn pin attribute is not the exact translated/reconstructed library pair.");
     }
     attr.body["x"] = number11(old.body["x"]);
@@ -54833,9 +55696,9 @@ function alignQuarterTurnPinAttributes(referenceSource, observedSource, referenc
     changes.push({
       profile: "pinned-unstored-quarter-turn-pin-attribute",
       componentId: model.id,
-      pinId: pin3.id,
+      pinId: pin4.id,
       key,
-      symbolSha256: symbol2.semanticSha256,
+      symbolSha256: symbol4.semanticSha256,
       checkpointSha256: history.checkpointSha256,
       originalOrigin,
       currentOrigin,
@@ -54850,9 +55713,9 @@ function alignQuarterTurnPinAttributes(referenceSource, observedSource, referenc
   for (const model of observed.components.filter((entry) => entry.kind === "part" && entry.body["rotation"] === 90)) {
     const prior = reference2.components.find((entry) => entry.id === model.id);
     if (prior !== void 0) {
-      for (const pin3 of model.pins) {
+      for (const pin4 of model.pins) {
         for (const key of ["Pin Name", "Pin Number"]) {
-          alignAttribute(model, prior, pin3, key);
+          alignAttribute(model, prior, pin4, key);
         }
       }
     }
@@ -54863,26 +55726,26 @@ function alignInheritedPinNames(referenceSource, observedSource, reference2, obs
   const changes = [];
   const beforeIds = new Set(referenceSource.objects.map((row) => row.id));
   const afterIds = new Set(observedSource.objects.map((row) => row.id));
-  const alignPin = (model, prior, pin3) => {
-    const oldPin = prior.pins.find((entry) => entry.id === pin3.id);
-    const attr = pin3.attributes.find((entry) => entry.key === "Pin Name");
+  const alignPin = (model, prior, pin4) => {
+    const oldPin = prior.pins.find((entry) => entry.id === pin4.id);
+    const attr = pin4.attributes.find((entry) => entry.key === "Pin Name");
     const old = oldPin?.attributes.find((entry) => entry.key === "Pin Name");
-    if (old === void 0 || attr === void 0 || same13(old.body["x"], attr.body["x"]) && same13(old.body["y"], attr.body["y"])) {
+    if (old === void 0 || attr === void 0 || same14(old.body["x"], attr.body["x"]) && same14(old.body["y"], attr.body["y"])) {
       return;
     }
     const page = history.documents.find((entry) => entry.uuid === reference2.document.documentUuid && entry.docType === "SCH_PAGE" && !isNativeDocumentDeleted(entry));
     const original = page?.records.find((row) => row.id === model.id && row.type === "COMPONENT"), symbolAttr = prior.attributes.find((entry) => entry.key === "Symbol");
     const symbolId = symbolAttr?.body["value"];
     const partId = model.body["partId"];
-    const symbol2 = history.documents.find((entry) => entry.uuid === symbolId && entry.docType === "SYMBOL" && !isNativeDocumentDeleted(entry));
-    if (model.kind !== "part" || prior.kind !== "part" || !same13(prior.body, model.body) || model.body["rotation"] !== 0 || model.body["isMirror"] !== false || referenceSource.document["editVersion"] !== "3.2.149.88089769" || observedSource.document["editVersion"] !== "3.2.149.88089769" || page === void 0 || page.semanticSha256 !== documentHash2(page) || original === void 0 || original.body["rotation"] !== 0 || original.body["isMirror"] !== false || original.body["partId"] !== partId || symbol2 === void 0 || symbol2.semanticSha256 !== documentHash2(symbol2) || !same13(symbol2.records.find((row) => row.type === "CANVAS")?.body, { originX: 0, originY: 0 }) || !symbol2.records.some((row) => row.type === "PART" && row.id === partId) || symbolAttr === void 0 || !same13(symbolAttr, model.attributes.find((entry) => entry.key === "Symbol")) || !page.records.some((row) => row.type === "ATTR" && row.body["parentId"] === model.id && row.body["key"] === "Symbol" && row.body["value"] === symbolId) || beforeIds.has(old.id) || afterIds.has(attr.id) || !/^[a-f0-9]{16}$/u.test(old.id) || !/^[a-f0-9]{16}$/u.test(attr.id)) {
+    const symbol4 = history.documents.find((entry) => entry.uuid === symbolId && entry.docType === "SYMBOL" && !isNativeDocumentDeleted(entry));
+    if (model.kind !== "part" || prior.kind !== "part" || !same14(prior.body, model.body) || model.body["rotation"] !== 0 || model.body["isMirror"] !== false || referenceSource.document["editVersion"] !== "3.2.149.88089769" || observedSource.document["editVersion"] !== "3.2.149.88089769" || page === void 0 || page.semanticSha256 !== documentHash2(page) || original === void 0 || original.body["rotation"] !== 0 || original.body["isMirror"] !== false || original.body["partId"] !== partId || symbol4 === void 0 || symbol4.semanticSha256 !== documentHash2(symbol4) || !same14(symbol4.records.find((row) => row.type === "CANVAS")?.body, { originX: 0, originY: 0 }) || !symbol4.records.some((row) => row.type === "PART" && row.id === partId) || symbolAttr === void 0 || !same14(symbolAttr, model.attributes.find((entry) => entry.key === "Symbol")) || !page.records.some((row) => row.type === "ATTR" && row.body["parentId"] === model.id && row.body["key"] === "Symbol" && row.body["value"] === symbolId) || beforeIds.has(old.id) || afterIds.has(attr.id) || !/^[a-f0-9]{16}$/u.test(old.id) || !/^[a-f0-9]{16}$/u.test(attr.id)) {
       throw new Error("Inherited pin-name reconstruction lacks its exact unstored unrotated component/library binding.");
     }
-    const localPins = symbol2.records.filter((row) => row.type === "PIN" && row.body["partId"] === partId && `${model.id}-${row.id}` === pin3.id);
+    const localPins = symbol4.records.filter((row) => row.type === "PIN" && row.body["partId"] === partId && `${model.id}-${row.id}` === pin4.id);
     const localPin = localPins[0];
-    const localAttrs = symbol2.records.filter((row) => row.type === "ATTR" && row.body["partId"] === partId && row.body["parentId"] === localPin?.id && row.body["key"] === "Pin Name");
+    const localAttrs = symbol4.records.filter((row) => row.type === "ATTR" && row.body["partId"] === partId && row.body["parentId"] === localPin?.id && row.body["key"] === "Pin Name");
     const local = localAttrs[0];
-    if (localPins.length !== 1 || localAttrs.length !== 1 || localPin === void 0 || local === void 0 || oldPin === void 0 || !same13(oldPin.body, pin3.body) || old.body["parentId"] !== pin3.id || attr.body["parentId"] !== pin3.id || old.symbolValue !== local.body["value"] || !same13(old, { ...attr, id: old.id, body: { ...attr.body, x: old.body["x"], y: old.body["y"] } })) {
+    if (localPins.length !== 1 || localAttrs.length !== 1 || localPin === void 0 || local === void 0 || oldPin === void 0 || !same14(oldPin.body, pin4.body) || old.body["parentId"] !== pin4.id || attr.body["parentId"] !== pin4.id || old.symbolValue !== local.body["value"] || !same14(old, { ...attr, id: old.id, body: { ...attr.body, x: old.body["x"], y: old.body["y"] } })) {
       throw new Error("Inherited pin-name reconstruction changed pin identity, style, value or attribute structure.");
     }
     const originalOrigin = [number11(original.body["x"]), number11(original.body["y"])];
@@ -54895,7 +55758,7 @@ function alignInheritedPinNames(referenceSource, observedSource, reference2, obs
       const currentValue = number11(currentOrigin[index]);
       const localValue = number11(libraryPosition[index]);
       const moved2 = localValue + originalValue + (currentValue - originalValue), reloaded = localValue + currentValue;
-      if (old.body[key] !== moved2 || attr.body[key] !== reloaded || pin3.body[key] !== number11(localPin.body[key]) + currentValue) {
+      if (old.body[key] !== moved2 || attr.body[key] !== reloaded || pin4.body[key] !== number11(localPin.body[key]) + currentValue) {
         throw new Error("Inherited pin-name coordinate is not the exact translated/reconstructed library pair.");
       }
       translated4.push(moved2);
@@ -54904,9 +55767,9 @@ function alignInheritedPinNames(referenceSource, observedSource, reference2, obs
     }
     changes.push({
       componentId: model.id,
-      pinId: pin3.id,
+      pinId: pin4.id,
       key: "Pin Name",
-      symbolSha256: symbol2.semanticSha256,
+      symbolSha256: symbol4.semanticSha256,
       originalOrigin,
       currentOrigin,
       libraryPosition,
@@ -54919,8 +55782,8 @@ function alignInheritedPinNames(referenceSource, observedSource, reference2, obs
   for (const model of observed.components) {
     const prior = reference2.components.find((entry) => entry.id === model.id);
     if (prior !== void 0) {
-      for (const pin3 of model.pins) {
-        alignPin(model, prior, pin3);
+      for (const pin4 of model.pins) {
+        alignPin(model, prior, pin4);
       }
     }
   }
@@ -54936,7 +55799,7 @@ function alignSchematicCoordinateLifecycle(referenceSource, referenceInput, obse
   const inactiveNoConnects = [];
   for (const model of native.components) {
     const prior = reference2.components.find((entry) => entry.id === model.id);
-    if (prior !== void 0 && (!same13(prior.body["x"], model.body["x"]) || !same13(prior.body["y"], model.body["y"]))) {
+    if (prior !== void 0 && (!same14(prior.body["x"], model.body["x"]) || !same14(prior.body["y"], model.body["y"]))) {
       if (prior.kind !== model.kind || prior.body["rotation"] !== model.body["rotation"] || prior.body["isMirror"] !== model.body["isMirror"] || referenceSource.document["editVersion"] !== "3.2.149.88089769" || observedSource.document["editVersion"] !== "3.2.149.88089769") {
         throw new Error("Unreviewed schematic component coordinate reconstruction.");
       }
@@ -54944,7 +55807,7 @@ function alignSchematicCoordinateLifecycle(referenceSource, referenceInput, obse
       const x = number11(prior.body["x"]), y = number11(prior.body["y"]);
       const mapped = reconstructedOrigin(x, y, rotation2);
       const next = reconstructedOrigin(mapped[0], mapped[1], rotation2);
-      if (!same13(mapped, [model.body["x"], model.body["y"]]) || !same13(next, rotation2 === 180 ? [x, y] : mapped)) {
+      if (!same14(mapped, [model.body["x"], model.body["y"]]) || !same14(next, rotation2 === 180 ? [x, y] : mapped)) {
         throw new Error("Schematic component coordinate change is not the exact stable native matrix result.");
       }
       inactiveNoConnects.push(...alignDisplacedInactiveNoConnect(referenceSource, observedSource, prior, model, history, records2));
@@ -54953,7 +55816,7 @@ function alignSchematicCoordinateLifecycle(referenceSource, referenceInput, obse
         for (const [index, key] of ["x", "y"].entries()) {
           const value2 = before[key];
           if (value2 === null || value2 === void 0) {
-            if (!same13(value2, after[key])) {
+            if (!same14(value2, after[key])) {
               throw new Error("Coordinate reconstruction changed inherited null position.");
             }
           } else {
@@ -54999,21 +55862,21 @@ function restoreComposedCoordinateStorage(source3, native, capturedSource, captu
   for (const componentId of componentIds) {
     const change = proof.changes.find((entry) => entry.componentId === componentId);
     const model = result.components.find((entry) => entry.id === componentId), raw = captured.components.find((entry) => entry.id === componentId);
-    if (change === void 0 || model === void 0 || raw === void 0 || model.kind !== "part" || model.body["rotation"] !== 90 || model.body["isMirror"] !== false || !same13([model.body["x"], model.body["y"]], change.before) || !same13([raw.body["x"], raw.body["y"]], change.reconstructed) || change.capturedComponentSha256 !== sha256Json(raw)) {
+    if (change === void 0 || model === void 0 || raw === void 0 || model.kind !== "part" || model.body["rotation"] !== 90 || model.body["isMirror"] !== false || !same14([model.body["x"], model.body["y"]], change.before) || !same14([raw.body["x"], raw.body["y"]], change.reconstructed) || change.capturedComponentSha256 !== sha256Json(raw)) {
       throw new Error("Composed coordinate storage lacks its exact proved part pose.");
     }
     const delta = change.reconstructed.map((value2, index) => value2 - number11(change.before[index]));
     const sourceIds = [];
-    const restoreBody = (body2, rawBody, spelling) => {
-      if (!same13({ ...rawBody, x: body2["x"], y: body2["y"] }, body2)) {
+    const restoreBody = (body3, rawBody, spelling) => {
+      if (!same14({ ...rawBody, x: body3["x"], y: body3["y"] }, body3)) {
         throw new Error("Composed coordinate storage changed a non-coordinate field.");
       }
       for (const [index, key] of ["x", "y"].entries()) {
-        if (!same13(body2[key], rawBody[key])) {
-          if (spelling === void 0 ? rawBody[key] !== number11(body2[key]) + number11(delta[index]) : body2[key] !== spelling.stored[index] || rawBody[key] !== spelling.compared[index]) {
+        if (!same14(body3[key], rawBody[key])) {
+          if (spelling === void 0 ? rawBody[key] !== number11(body3[key]) + number11(delta[index]) : body3[key] !== spelling.stored[index] || rawBody[key] !== spelling.compared[index]) {
             throw new Error("Composed coordinate storage is not the proved captured displacement.");
           }
-          body2[key] = rawBody[key];
+          body3[key] = rawBody[key];
         }
       }
     };
@@ -55040,7 +55903,7 @@ function restoreComposedCoordinateStorage(source3, native, capturedSource, captu
         if (rawAttr === void 0) {
           throw new Error("Composed coordinate storage lost an attribute.");
         }
-        if (same13(attr.body["x"], rawAttr.body["x"]) && same13(attr.body["y"], rawAttr.body["y"])) {
+        if (same14(attr.body["x"], rawAttr.body["x"]) && same14(attr.body["y"], rawAttr.body["y"])) {
           return;
         }
         const numberProof = proof.storedPinNumbers.find((entry) => entry.componentId === componentId && entry.attributeId === attr.id && entry.profile === "pinned-quarter-turn-displaced-pin-number");
@@ -55056,12 +55919,12 @@ function restoreComposedCoordinateStorage(source3, native, capturedSource, captu
         restoreAttribute(attr);
       }
     }
-    const restoreMarker = (pin3) => {
-      const marker = pin3.noConnect, rawMarker = raw.pins.find((entry) => entry.id === pin3.id)?.noConnect;
-      if (marker === null || rawMarker === void 0 || rawMarker === null || same13(marker.body, rawMarker.body)) {
+    const restoreMarker = (pin4) => {
+      const marker = pin4.noConnect, rawMarker = raw.pins.find((entry) => entry.id === pin4.id)?.noConnect;
+      if (marker === null || rawMarker === void 0 || rawMarker === null || same14(marker.body, rawMarker.body)) {
         return;
       }
-      const nc = proof.inactiveNoConnects.find((entry) => entry.componentId === componentId && entry.pinId === pin3.id && entry.attributeId === marker.id);
+      const nc = proof.inactiveNoConnects.find((entry) => entry.componentId === componentId && entry.pinId === pin4.id && entry.attributeId === marker.id);
       if (nc === void 0 || marker.id !== rawMarker.id || marker.value !== "no" || rawMarker.value !== "no") {
         throw new Error("Composed storage marker is not the proved inactive NC.");
       }
@@ -55069,10 +55932,10 @@ function restoreComposedCoordinateStorage(source3, native, capturedSource, captu
       restoreBody(marker.body, rawMarker.body, spelling);
       restoreRecord(marker.id, spelling);
     };
-    for (const pin3 of model.pins) {
-      restoreMarker(pin3);
+    for (const pin4 of model.pins) {
+      restoreMarker(pin4);
     }
-    if (!same13(model, raw)) {
+    if (!same14(model, raw)) {
       throw new Error("Composed coordinate storage changed the complete native part outside proved coordinates.");
     }
     restored.push({ componentId, sourceIds });
@@ -55090,11 +55953,11 @@ function verifyInactiveNoConnectWrites(before, after, observed, typed) {
   }
   const verify = (row) => {
     const prior = oldPage.records.find((entry) => entry.id === row.id);
-    if (prior === void 0 || same13(prior.body["x"], row.body["x"]) && same13(prior.body["y"], row.body["y"])) {
+    if (prior === void 0 || same14(prior.body["x"], row.body["x"]) && same14(prior.body["y"], row.body["y"])) {
       return;
     }
     const captured = observed.objects.find((entry) => entry.id === row.id), intended = typed.objects.find((entry) => entry.id === row.id);
-    if (captured?.type !== "ATTR" || intended?.type !== "ATTR" || !same13(coordinates2(row.body), coordinates2(captured.body)) && !same13(coordinates2(row.body), coordinates2(intended.body))) {
+    if (captured?.type !== "ATTR" || intended?.type !== "ATTR" || !same14(coordinates2(row.body), coordinates2(captured.body)) && !same14(coordinates2(row.body), coordinates2(intended.body))) {
       throw new Error("Durable inactive NC position is neither retained nor the exact typed/native write.");
     }
   };
@@ -55102,33 +55965,33 @@ function verifyInactiveNoConnectWrites(before, after, observed, typed) {
     verify(row);
   }
 }
-function projectDisplacedInactiveNoConnect(history, source3, native, stored, exported) {
+function projectDisplacedInactiveNoConnect(history, source3, native, stored2, exported) {
   const page = history.documents.find((doc) => doc.uuid === source3.document["uuid"] && doc.docType === "SCH_PAGE" && !isNativeDocumentDeleted(doc));
-  const owners = native.components.filter((model2) => model2.pins.some((pin4) => pin4.noConnect?.id === stored.id));
-  const model = owners[0], pins = model?.pins.filter((pin4) => pin4.noConnect?.id === stored.id);
-  const pin3 = pins?.[0];
-  const marker = pin3?.noConnect;
+  const owners = native.components.filter((model2) => model2.pins.some((pin5) => pin5.noConnect?.id === stored2.id));
+  const model = owners[0], pins = model?.pins.filter((pin5) => pin5.noConnect?.id === stored2.id);
+  const pin4 = pins?.[0];
+  const marker = pin4?.noConnect;
   const original = page?.records.find((row) => row.type === "COMPONENT" && row.id === model?.id);
   const symbolAttrs = model?.attributes.filter((attr) => attr.key === "Symbol"), symbolId = symbolAttrs?.[0]?.value;
-  if (page === void 0 || page.semanticSha256 !== documentHash2(page) || owners.length !== 1 || model === void 0 || model.kind !== "part" || pins?.length !== 1 || pin3 === void 0 || marker === void 0 || marker === null || original === void 0 || model.body["rotation"] !== 90 || model.body["isMirror"] !== false || stored.id !== exported.id || stored.type !== "ATTR" || exported.type !== "ATTR" || stored.body["key"] !== "NO_CONNECT" || stored.body["parentId"] !== pin3.id || stored.body["value"] !== "no" || marker.value !== "no" || !same13(marker.body, exported.body) || !same13({ ...stored.body, x: exported.body["x"], y: exported.body["y"] }, exported.body) || !same13({ ...original.body, x: model.body["x"], y: model.body["y"] }, model.body) || symbolAttrs?.length !== 1 || typeof symbolId !== "string" || symbolAttrs[0]?.body["value"] !== symbolId || page.records.filter((row) => row.type === "ATTR" && row.body["parentId"] === model.id && row.body["key"] === "Symbol" && row.body["value"] === symbolId).length !== 1) {
+  if (page === void 0 || page.semanticSha256 !== documentHash2(page) || owners.length !== 1 || model === void 0 || model.kind !== "part" || pins?.length !== 1 || pin4 === void 0 || marker === void 0 || marker === null || original === void 0 || model.body["rotation"] !== 90 || model.body["isMirror"] !== false || stored2.id !== exported.id || stored2.type !== "ATTR" || exported.type !== "ATTR" || stored2.body["key"] !== "NO_CONNECT" || stored2.body["parentId"] !== pin4.id || stored2.body["value"] !== "no" || marker.value !== "no" || !same14(marker.body, exported.body) || !same14({ ...stored2.body, x: exported.body["x"], y: exported.body["y"] }, exported.body) || !same14({ ...original.body, x: model.body["x"], y: model.body["y"] }, model.body) || symbolAttrs?.length !== 1 || typeof symbolId !== "string" || symbolAttrs[0]?.body["value"] !== symbolId || page.records.filter((row) => row.type === "ATTR" && row.body["parentId"] === model.id && row.body["key"] === "Symbol" && row.body["value"] === symbolId).length !== 1) {
     throw new Error("Stored inactive no-connect lacks exact component/pin coordinate evidence.");
   }
   const { hash: symbolSha256, rotation: rotation2 } = symbolEvidence(model, history);
   const current2 = [number11(model.body["x"]), number11(model.body["y"])], origin = [number11(original.body["x"]), number11(original.body["y"])];
   const mapped = reconstructedOrigin(number11(origin[0]), number11(origin[1]), rotation2);
-  const symbol2 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL");
-  const localPins = symbol2?.records.filter((row) => row.type === "PIN" && row.body["partId"] === model.body["partId"] && `${model.id}-${row.id}` === pin3.id);
+  const symbol4 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL");
+  const localPins = symbol4?.records.filter((row) => row.type === "PIN" && row.body["partId"] === model.body["partId"] && `${model.id}-${row.id}` === pin4.id);
   const local = localPins?.[0];
-  const before = [number11(stored.body["x"]), number11(stored.body["y"])], reconstructed = [number11(exported.body["x"]), number11(exported.body["y"])];
+  const before = [number11(stored2.body["x"]), number11(stored2.body["y"])], reconstructed = [number11(exported.body["x"]), number11(exported.body["y"])];
   const shifted = before.map((value, index) => value + (number11(current2[index]) - number11(origin[index])));
-  if (same13(origin, current2) || !same13(mapped, current2) || !same13(reconstructedOrigin(number11(current2[0]), number11(current2[1]), rotation2), current2) || localPins?.length !== 1 || local === void 0 || pin3.body["rotation"] !== (number11(local.body["rotation"]) + 90) % 360 || !same13([pin3.body["x"], pin3.body["y"]], quarterTurnPoint([number11(local.body["x"]), number11(local.body["y"])], current2)) || !same13(reconstructed, [pin3.body["x"], pin3.body["y"]]) || !same13(shifted, reconstructed)) {
+  if (same14(origin, current2) || !same14(mapped, current2) || !same14(reconstructedOrigin(number11(current2[0]), number11(current2[1]), rotation2), current2) || localPins?.length !== 1 || local === void 0 || pin4.body["rotation"] !== (number11(local.body["rotation"]) + 90) % 360 || !same14([pin4.body["x"], pin4.body["y"]], quarterTurnPoint([number11(local.body["x"]), number11(local.body["y"])], current2)) || !same14(reconstructed, [pin4.body["x"], pin4.body["y"]]) || !same14(shifted, reconstructed)) {
     throw new Error("Stored inactive no-connect is not the exact quarter-turn pin displacement.");
   }
-  return { row: { ...stored, body: { ...stored.body, x: exported.body["x"], y: exported.body["y"] } }, proof: {
+  return { row: { ...stored2, body: { ...stored2.body, x: exported.body["x"], y: exported.body["y"] } }, proof: {
     profile: "pinned-quarter-turn-inactive-no-connect",
     componentId: model.id,
-    pinId: pin3.id,
-    attributeId: stored.id,
+    pinId: pin4.id,
+    attributeId: stored2.id,
     symbolSha256,
     checkpointSha256: history.checkpointSha256,
     before,
@@ -55145,49 +56008,49 @@ function projectSchematicCoordinateCheckpoint(history, source3, nativeInput) {
   const inactiveNoConnects = [];
   const records2 = document2.records.map((row) => {
     const exported = source3.objects.find((entry) => entry.id === row.id);
-    if (row.type === "ATTR" && row.body["key"] === "NO_CONNECT" && exported?.type === "ATTR" && (!same13(row.body["x"], exported.body["x"]) || !same13(row.body["y"], exported.body["y"]))) {
+    if (row.type === "ATTR" && row.body["key"] === "NO_CONNECT" && exported?.type === "ATTR" && (!same14(row.body["x"], exported.body["x"]) || !same14(row.body["y"], exported.body["y"]))) {
       const projected4 = projectDisplacedInactiveNoConnect(history, source3, native, row, exported);
       inactiveNoConnects.push(projected4.proof);
       return projected4.row;
     }
-    if (row.type === "ATTR" && row.body["key"] === "Pin Number" && exported?.type === "ATTR" && (!same13(row.body["x"], exported.body["x"]) || !same13(row.body["y"], exported.body["y"]))) {
+    if (row.type === "ATTR" && row.body["key"] === "Pin Number" && exported?.type === "ATTR" && (!same14(row.body["x"], exported.body["x"]) || !same14(row.body["y"], exported.body["y"]))) {
       const projected4 = projectStoredPinNumberCoordinates(history, source3, native, row, exported);
       storedPinNumbers.push(projected4.proof);
       return projected4.row;
     }
-    if (row.type !== "COMPONENT" || exported?.type !== "COMPONENT" || same13(row.body, exported.body)) {
+    if (row.type !== "COMPONENT" || exported?.type !== "COMPONENT" || same14(row.body, exported.body)) {
       return row;
     }
-    if (same13(row.body["x"], exported.body["x"]) && same13(row.body["y"], exported.body["y"])) {
+    if (same14(row.body["x"], exported.body["x"]) && same14(row.body["y"], exported.body["y"])) {
       return row;
     }
     const model = native.components.find((entry) => entry.id === row.id);
-    if (model === void 0 || !same13({ ...row.body, x: exported.body["x"], y: exported.body["y"] }, exported.body)) {
+    if (model === void 0 || !same14({ ...row.body, x: exported.body["x"], y: exported.body["y"] }, exported.body)) {
       throw new Error("Coordinate checkpoint changed another component field.");
     }
-    const stored = [number11(row.body["x"]), number11(row.body["y"])], { hash: symbolSha256, rotation: rotation2 } = symbolEvidence(model, history);
+    const stored2 = [number11(row.body["x"]), number11(row.body["y"])], { hash: symbolSha256, rotation: rotation2 } = symbolEvidence(model, history);
     const compared = [number11(exported.body["x"]), number11(exported.body["y"])];
-    const forward = reconstructedOrigin(stored[0], stored[1], rotation2), reverse = reconstructedOrigin(compared[0], compared[1], rotation2);
-    const exact = rotation2 === 180 ? same13(forward, compared) && same13(reverse, stored) : same13(forward, compared) && same13(reverse, compared) || same13(reverse, stored) && same13(forward, stored);
+    const forward = reconstructedOrigin(stored2[0], stored2[1], rotation2), reverse = reconstructedOrigin(compared[0], compared[1], rotation2);
+    const exact = rotation2 === 180 ? same14(forward, compared) && same14(reverse, stored2) : same14(forward, compared) && same14(reverse, compared) || same14(reverse, stored2) && same14(forward, stored2);
     if (!exact) {
       throw new Error("Stored coordinate is not an exact stable native matrix pair.");
     }
-    changes.push({ id: row.id, symbolSha256, stored, compared });
+    changes.push({ id: row.id, symbolSha256, stored: stored2, compared });
     return { ...row, body: structuredClone(exported.body) };
   });
-  const changed = { ...document2, records: records2, semanticSha256: sha256Json({ uuid: document2.uuid, docType: document2.docType, metadata: document2.metadata, records: records2.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 })) }) };
+  const changed = { ...document2, records: records2, semanticSha256: sha256Json({ uuid: document2.uuid, docType: document2.docType, metadata: document2.metadata, records: records2.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 })) }) };
   const documents = history.documents.map((doc) => doc.uuid === changed.uuid ? changed : doc);
   const checkpoint = { ...history, documents, semanticSha256: sha256Json(documents.map(({ uuid: uuid8, docType, semanticSha256 }) => ({ uuid: uuid8, docType, semanticSha256 }))) };
   return { checkpoint, proof: { rawSemanticSha256: history.semanticSha256, comparisonSemanticSha256: checkpoint.semanticSha256, changes, storedPinNumbers, inactiveNoConnects } };
 }
-var same13, translate3, coordinates2;
+var same14, translate3, coordinates2;
 var init_schematic_coordinate_lifecycle = __esm({
   "server/src/schematic-coordinate-lifecycle.ts"() {
     init_core3();
     init_native_history();
     init_schematic_source_proof();
     init_schematic_pin_number_coordinates();
-    same13 = (a, b) => canonicalJson({ value: a }) === canonicalJson({ value: b });
+    same14 = (a, b) => canonicalJson({ value: a }) === canonicalJson({ value: b });
     translate3 = (a, b) => [1, 0, 0, 0, 1, 0, a, b, 1];
     coordinates2 = (value) => [number11(value["x"]), number11(value["y"])];
   }
@@ -55209,7 +56072,7 @@ function lines2(source3) {
   return result;
 }
 function groupsAt(rows, p) {
-  return new Set(rows.filter((r) => ends2(line2(r)).some((e) => equal4(e, p))).map((r) => String(r.body["lineGroup"])));
+  return new Set(rows.filter((r) => ends2(line3(r)).some((e) => equal4(e, p))).map((r) => String(r.body["lineGroup"])));
 }
 function reaches(start, anchors, segments3) {
   const pending = [start], visited = /* @__PURE__ */ new Set();
@@ -55239,21 +56102,21 @@ function verifySchematicFlagWireGroups(source3, native, flags) {
   }
   const created = new Set(flags.map((f) => f.component.id)), rows = lines2(source3);
   for (const flag of flags) {
-    const pin3 = flag.component.pins[0];
-    if (pin3 === void 0) {
+    const pin4 = flag.component.pins[0];
+    if (pin4 === void 0) {
       throw new Error("Net-flag attachment has no exact electrical pin.");
     }
-    const origin = point3(pin3.body);
+    const origin = point4(pin4.body);
     const groups2 = groupsAt(rows, origin);
     const group = [...groups2][0];
     if (groups2.size !== 1 || group === void 0) {
       throw new Error("New net-flag pin is not physically wired to one unambiguous native WIRE group.");
     }
-    const anchors = native.components.filter((m) => m.kind === "part" && !created.has(m.id)).flatMap((m) => m.pins).filter((p) => p.net === flag.net && p.noConnect?.value !== "yes").map((p) => point3(p.body)).filter((p) => {
+    const anchors = native.components.filter((m) => m.kind === "part" && !created.has(m.id)).flatMap((m) => m.pins).filter((p) => p.net === flag.net && p.noConnect?.value !== "yes").map((p) => point4(p.body)).filter((p) => {
       const attached = groupsAt(rows, p);
       return attached.size === 1 && attached.has(group);
     });
-    const segments3 = rows.filter((r) => r.body["lineGroup"] === group).map((row) => line2(row));
+    const segments3 = rows.filter((r) => r.body["lineGroup"] === group).map((row) => line3(row));
     if (!reaches(origin, anchors, segments3)) {
       throw new Error("New net-flag is not physically wired to an existing same-net pin within ONE native WIRE group.");
     }
@@ -55270,8 +56133,8 @@ function deriveSchematicWireGroupRepair(operation, before, legacy, native, creat
   const consumed = /* @__PURE__ */ new Set();
   for (const flag of flags) {
     const index = operation.operations.findIndex((s) => s.action === "sch.net-flag.clone" && createdIds[s.id] === flag.component.id);
-    const drop = operation.operations[index - 1], main = operation.operations[index - 2], pin3 = flag.component.pins[0];
-    if (main?.action !== "sch.wire.create" || drop?.action !== "sch.wire.create" || pin3 === void 0) {
+    const drop = operation.operations[index - 1], main = operation.operations[index - 2], pin4 = flag.component.pins[0];
+    if (main?.action !== "sch.wire.create" || drop?.action !== "sch.wire.create" || pin4 === void 0) {
       throw new Error("Retained ground repair has no exact new island/drop/flag sequence.");
     }
     const dropId = createdIds[drop.id], lineId = createdIds[`${drop.id}:segment:0`], mainId = createdIds[main.id], relevanceId = createdIds[`${drop.id}:relevance`];
@@ -55286,13 +56149,13 @@ function deriveSchematicWireGroupRepair(operation, before, legacy, native, creat
     if (mainRow?.type !== "WIRE" || dropRow?.type !== "WIRE" || dropLine?.type !== "LINE" || relevance?.type !== "ATTR" || owned2.length !== 3 || !owned2.every((r) => [dropId, lineId, relevanceId].includes(r.id)) || dropLine.body["lineGroup"] !== dropId || relevance.body["parentId"] !== dropId || relevance.body["key"] !== "Relevance" || relevance.body["value"] !== "[]" || [mainRow, ...owned2].some((r) => r.body["locked"] === true)) {
       throw new Error("Retained ground repair drop group has unknown, named or locked content.");
     }
-    const endpoints = ends2(line2(dropLine));
+    const endpoints = ends2(line3(dropLine));
     const a = endpoints[0], b = endpoints[1];
-    if (a === void 0 || b === void 0 || a[0] !== b[0] || a[1] === b[1] || !equal4(b, point3(pin3.body))) {
+    if (a === void 0 || b === void 0 || a[0] !== b[0] || a[1] === b[1] || !equal4(b, point4(pin4.body))) {
       throw new Error("Retained ground repair drop geometry is not the exact vertical flag lead.");
     }
     const mainLines = [...records2.values()].filter((r) => r.type === "LINE" && r.body["lineGroup"] === mainId);
-    if (!mainLines.some((r) => ends2(line2(r)).some((p) => equal4(p, a))) || [...records2.values()].some((r) => r.type === "ATTR" && r.body["parentId"] === mainId && ["NET", "Name"].includes(String(r.body["key"])))) {
+    if (!mainLines.some((r) => ends2(line3(r)).some((p) => equal4(p, a))) || [...records2.values()].some((r) => r.type === "ATTR" && r.body["parentId"] === mainId && ["NET", "Name"].includes(String(r.body["key"])))) {
       throw new Error("Retained ground repair main group is not the exact unnamed incident island.");
     }
     const attached = groupsAt(lines2(legacy), a);
@@ -55343,13 +56206,13 @@ function deriveSchematicWireGroupRepair(operation, before, legacy, native, creat
   });
   return { source: source3, descriptor };
 }
-var identifier3, hash2, orderSchema, schematicWireGroupRepairDescriptorSchema, point3, equal4, ends2, line2;
+var identifier4, hash2, orderSchema, schematicWireGroupRepairDescriptorSchema, point4, equal4, ends2, line3;
 var init_schematic_layout_wire_groups = __esm({
   "server/src/schematic-layout-wire-groups.ts"() {
     init_zod();
     init_core3();
     init_schematic_wire_order();
-    identifier3 = external_exports.string().regex(/^[a-f0-9]{16}$/u);
+    identifier4 = external_exports.string().regex(/^[a-f0-9]{16}$/u);
     hash2 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     orderSchema = external_exports.number().int().nonnegative();
     schematicWireGroupRepairDescriptorSchema = external_exports.object({
@@ -55358,13 +56221,13 @@ var init_schematic_layout_wire_groups = __esm({
       createdIdsSha256: hash2,
       legacySourceSha256: hash2,
       correctedSourceSha256: hash2,
-      merges: external_exports.array(external_exports.object({ flagId: identifier3, mainWireId: identifier3, dropWireId: identifier3, lineId: identifier3, relevanceId: identifier3 }).strict()).min(1).max(128),
-      wireOrders: external_exports.array(external_exports.object({ id: identifier3, before: orderSchema, after: orderSchema }).strict()).max(256)
+      merges: external_exports.array(external_exports.object({ flagId: identifier4, mainWireId: identifier4, dropWireId: identifier4, lineId: identifier4, relevanceId: identifier4 }).strict()).min(1).max(128),
+      wireOrders: external_exports.array(external_exports.object({ id: identifier4, before: orderSchema, after: orderSchema }).strict()).max(256)
     }).strict();
-    point3 = (body2) => [number12(body2["x"]), number12(body2["y"])];
+    point4 = (body3) => [number12(body3["x"]), number12(body3["y"])];
     equal4 = (a, b) => a[0] === b[0] && a[1] === b[1];
     ends2 = (s) => [[s[0], s[1]], [s[2], s[3]]];
-    line2 = (row) => [number12(row.body["startX"]), number12(row.body["startY"]), number12(row.body["endX"]), number12(row.body["endY"])];
+    line3 = (row) => [number12(row.body["startX"]), number12(row.body["startY"]), number12(row.body["endX"]), number12(row.body["endY"])];
   }
 });
 
@@ -55395,8 +56258,8 @@ async function verifySchematicLayoutBaselineCooperatively(input) {
   await yieldProofEventLoop();
   return proof;
 }
-function nativeBody(body2) {
-  return nativeBodySchema.parse(body2);
+function nativeBody(body3) {
+  return nativeBodySchema.parse(body3);
 }
 function compileSchematicLayoutBatch(input) {
   const operation = schematicLayoutBatchSchema.parse(input);
@@ -55417,8 +56280,8 @@ function encode4(source3) {
   return `${rows.join("|\n")}|
 `;
 }
-function translated3(body2, dx, dy) {
-  const result = { ...body2 };
+function translated3(body3, dx, dy) {
+  const result = { ...body3 };
   for (const [key, delta] of [["x", dx], ["y", dy]]) {
     if (result[key] !== null && result[key] !== void 0) {
       result[key] = number13(result[key]) + delta;
@@ -55426,8 +56289,8 @@ function translated3(body2, dx, dy) {
   }
   return result;
 }
-function display(body2, patch) {
-  const result = { ...body2 };
+function display(body3, patch) {
+  const result = { ...body3 };
   for (const [key, value] of Object.entries(patch)) {
     const field2 = DISPLAY_FIELDS[key];
     if (field2 === void 0) {
@@ -55479,9 +56342,9 @@ function protectedIds(source3, native) {
     if (component2.locked) {
       locked.add(component2.id);
     }
-    for (const pin3 of component2.pins) {
-      if (pin3.body["locked"] === true) {
-        locked.add(pin3.id);
+    for (const pin4 of component2.pins) {
+      if (pin4.body["locked"] === true) {
+        locked.add(pin4.id);
       }
     }
   }
@@ -55513,29 +56376,29 @@ function nextZ2(records2) {
   }
   return Math.floor(result) + 1;
 }
-function updateStoredBody(records2, id7, body2) {
+function updateStoredBody(records2, id7, body3) {
   const previous = records2.get(id7);
   if (previous !== void 0) {
-    records2.set(id7, { ...previous, body: structuredClone(body2) });
+    records2.set(id7, { ...previous, body: structuredClone(body3) });
   }
 }
-function translateOwnedBody(records2, id7, body2, dx, dy) {
-  const stored = records2.get(id7);
-  if (stored !== void 0 && !same14(stored.body, body2)) {
+function translateOwnedBody(records2, id7, body3, dx, dy) {
+  const stored2 = records2.get(id7);
+  if (stored2 !== void 0 && !same15(stored2.body, body3)) {
     throw new Error("Stored pin/attribute/no-connect body disagrees with its exact native owner.");
   }
-  const moved2 = nativeBody(translated3(body2, dx, dy));
+  const moved2 = nativeBody(translated3(body3, dx, dy));
   updateStoredBody(records2, id7, moved2);
   return moved2;
 }
-function inverseDisplay(step, id7, body2) {
+function inverseDisplay(step, id7, body3) {
   const patch = {};
   for (const key of Object.keys(step.patch)) {
     const field2 = DISPLAY_FIELDS[key];
-    if (field2 === void 0 || !Object.hasOwn(body2, field2)) {
+    if (field2 === void 0 || !Object.hasOwn(body3, field2)) {
       return void 0;
     }
-    let value = body2[field2];
+    let value = body3[field2];
     if (key === "y" && value !== null) {
       value = -number13(value);
     }
@@ -55556,34 +56419,34 @@ function replacementStyle(lines3) {
     throw new Error("Layout wire replacement requires at least one existing segment.");
   }
   const style2 = lineStyle(first);
-  if (Object.keys(style2).some((key) => !["fillColor", "fillStyle", "strokeColor", "strokeWidth", "strokeStyle"].includes(key)) || style2["fillColor"] !== null || style2["fillStyle"] !== null || lines3.some((record6) => !same14(lineStyle(record6), style2))) {
+  if (Object.keys(style2).some((key) => !["fillColor", "fillStyle", "strokeColor", "strokeWidth", "strokeStyle"].includes(key)) || style2["fillColor"] !== null || style2["fillStyle"] !== null || lines3.some((record6) => !same15(lineStyle(record6), style2))) {
     throw new Error("Layout wire replacement requires a reviewed uniform segment style.");
   }
   return style2;
 }
-function onSegment(point5, segment2) {
-  return (point5[0] - segment2[0]) * (segment2[3] - segment2[1]) === (point5[1] - segment2[1]) * (segment2[2] - segment2[0]) && point5[0] >= Math.min(segment2[0], segment2[2]) && point5[0] <= Math.max(segment2[0], segment2[2]) && point5[1] >= Math.min(segment2[1], segment2[3]) && point5[1] <= Math.max(segment2[1], segment2[3]);
+function onSegment(point6, segment2) {
+  return (point6[0] - segment2[0]) * (segment2[3] - segment2[1]) === (point6[1] - segment2[1]) * (segment2[2] - segment2[0]) && point6[0] >= Math.min(segment2[0], segment2[2]) && point6[0] <= Math.max(segment2[0], segment2[2]) && point6[1] >= Math.min(segment2[1], segment2[3]) && point6[1] <= Math.max(segment2[1], segment2[3]);
 }
 function wireReachesAnchor(start, anchors, graphSegments, endpoints) {
   const lines3 = /* @__PURE__ */ new Set(), pending = [start], visited = /* @__PURE__ */ new Set();
   while (pending.length > 0) {
-    const point5 = pending.pop();
-    if (point5 === void 0) {
+    const point6 = pending.pop();
+    if (point6 === void 0) {
       break;
     }
-    const key = canonicalJson(point5);
+    const key = canonicalJson(point6);
     if (!visited.has(key)) {
       visited.add(key);
-      if (anchors.some((anchor) => anchor[0] === point5[0] && anchor[1] === point5[1])) {
+      if (anchors.some((anchor) => anchor[0] === point6[0] && anchor[1] === point6[1])) {
         return true;
       }
-      const candidates = [...graphSegments.entries()].filter(([index, segment2]) => !lines3.has(index) && onSegment(point5, segment2));
+      const candidates = [...graphSegments.entries()].filter(([index, segment2]) => !lines3.has(index) && onSegment(point6, segment2));
       for (const [index, segment2] of candidates) {
         lines3.add(index);
         if (anchors.some((anchor) => onSegment(anchor, segment2))) {
           return true;
         }
-        pending.push(...endpoints.filter((endpoint) => onSegment(endpoint, segment2)));
+        pending.push(...endpoints.filter((endpoint2) => onSegment(endpoint2, segment2)));
       }
     }
   }
@@ -55603,7 +56466,7 @@ function historicalWireOrders(operation, before, records2, native) {
     const wireIds = new Set(wires.map((row) => row.id));
     const lines3 = [...records2.values()].filter((row) => row.type === "LINE" && wireIds.has(String(row.body["lineGroup"])));
     const endpoints = /* @__PURE__ */ new Map();
-    const point5 = (x, y) => {
+    const point6 = (x, y) => {
       if (!Number.isSafeInteger(number13(x)) || !Number.isSafeInteger(number13(y))) {
         throw new TypeError("Historical wire-order graph requires exact integer coordinates.");
       }
@@ -55616,11 +56479,11 @@ function historicalWireOrders(operation, before, records2, native) {
       if (row.body["startX"] === row.body["endX"] === (row.body["startY"] === row.body["endY"])) {
         throw new Error("Historical wire-order graph needs nonzero orthogonal segments.");
       }
-      point5(row.body["startX"], row.body["startY"]).wires.push(row);
-      point5(row.body["endX"], row.body["endY"]).wires.push(row);
+      point6(row.body["startX"], row.body["startY"]).wires.push(row);
+      point6(row.body["endX"], row.body["endY"]).wires.push(row);
     }
-    for (const pin3 of native.components.flatMap((model) => model.pins)) {
-      point5(pin3.body["x"], pin3.body["y"]).pins += 1;
+    for (const pin4 of native.components.flatMap((model) => model.pins)) {
+      point6(pin4.body["x"], pin4.body["y"]).pins += 1;
     }
     let junctions = 0;
     for (const entry of endpoints.values()) {
@@ -55710,21 +56573,21 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence, histo
     } else if (step.action === "sch.component.translate") {
       const id7 = targetId2(step), record6 = records2.get(id7);
       const component2 = native.components.find((model) => model.id === id7);
-      if (record6?.type !== "COMPONENT" || component2 === void 0 || !["part", "netport", "netflag"].includes(component2.kind) || component2.locked || component2.attributes.some((attribute2) => attribute2.body["locked"] === true) || component2.pins.some((pin3) => pin3.body["locked"] === true || pin3.noConnect?.body["locked"] === true || pin3.attributes.some((attribute2) => attribute2.body["locked"] === true))) {
+      if (record6?.type !== "COMPONENT" || component2 === void 0 || !["part", "netport", "netflag"].includes(component2.kind) || component2.locked || component2.attributes.some((attribute3) => attribute3.body["locked"] === true) || component2.pins.some((pin4) => pin4.body["locked"] === true || pin4.noConnect?.body["locked"] === true || pin4.attributes.some((attribute3) => attribute3.body["locked"] === true))) {
         throw new Error("Layout translation requires one unlocked part/netport/netflag and unlocked descendants, never a frame.");
       }
       inverseSteps?.push({ id: `inverse:${step.id}`, action: step.action, target: { primitiveId: id7 }, x: number13(record6.body["x"]), y: -number13(record6.body["y"]) });
       const dx = step.x - number13(record6.body["x"]), dy = -step.y - number13(record6.body["y"]);
       component2.body = nativeBody(translated3(component2.body, dx, dy));
       records2.set(id7, { ...record6, body: structuredClone(component2.body) });
-      const children2 = [...component2.attributes, ...component2.pins.flatMap((pin3) => pin3.attributes)];
-      for (const attribute2 of children2) {
-        attribute2.body = translateOwnedBody(records2, attribute2.id, attribute2.body, dx, dy);
+      const children2 = [...component2.attributes, ...component2.pins.flatMap((pin4) => pin4.attributes)];
+      for (const attribute3 of children2) {
+        attribute3.body = translateOwnedBody(records2, attribute3.id, attribute3.body, dx, dy);
       }
-      for (const pin3 of component2.pins) {
-        pin3.body = translateOwnedBody(records2, pin3.id, pin3.body, dx, dy);
-        if (pin3.noConnect !== null) {
-          pin3.noConnect.body = translateOwnedBody(records2, pin3.noConnect.id, pin3.noConnect.body, dx, dy);
+      for (const pin4 of component2.pins) {
+        pin4.body = translateOwnedBody(records2, pin4.id, pin4.body, dx, dy);
+        if (pin4.noConnect !== null) {
+          pin4.noConnect.body = translateOwnedBody(records2, pin4.noConnect.id, pin4.noConnect.body, dx, dy);
         }
       }
     } else if (step.action === "sch.attribute.display" || step.action === "sch.net-label.display" || step.action === "sch.text.display") {
@@ -55742,14 +56605,14 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence, histo
       } else {
         inverseSteps?.push(reverse);
       }
-      const body2 = display(record6.body, step.patch);
-      records2.set(id7, { ...record6, body: body2 });
-      const attributes = native.components.flatMap((component2) => [...component2.attributes, ...component2.pins.flatMap((pin3) => pin3.attributes)]);
-      for (const attribute2 of attributes.filter((entry) => entry.id === id7)) {
-        attribute2.body = nativeBody(body2);
+      const body3 = display(record6.body, step.patch);
+      records2.set(id7, { ...record6, body: body3 });
+      const attributes = native.components.flatMap((component2) => [...component2.attributes, ...component2.pins.flatMap((pin4) => pin4.attributes)]);
+      for (const attribute3 of attributes.filter((entry) => entry.id === id7)) {
+        attribute3.body = nativeBody(body3);
       }
     } else if (step.action === "sch.net-label.create") {
-      if (!native.components.some((component2) => component2.pins.some((pin3) => pin3.net === step.properties.net)) && !before.objects.some((record6) => record6.type === "ATTR" && ["_NETLABEL_", "NET", "Global Net Name"].includes(String(record6.body["key"])) && record6.body["value"] === step.properties.net)) {
+      if (!native.components.some((component2) => component2.pins.some((pin4) => pin4.net === step.properties.net)) && !before.objects.some((record6) => record6.type === "ATTR" && ["_NETLABEL_", "NET", "Global Net Name"].includes(String(record6.body["key"])) && record6.body["value"] === step.properties.net)) {
         throw new Error("Layout labels may name only an existing exact net.");
       }
       const id7 = allocate(step.id);
@@ -55850,7 +56713,7 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence, histo
     }
     const next = snapshot5(before, records2);
     for (const id7 of locked) {
-      if (!same14({ record: before.objects.find((record6) => record6.id === id7) }, { record: records2.get(id7) })) {
+      if (!same15({ record: before.objects.find((record6) => record6.id === id7) }, { record: records2.get(id7) })) {
         throw new Error("Layout changed an initially locked record or its child.");
       }
     }
@@ -55897,7 +56760,7 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence, histo
     inverseSteps = void 0;
   }
   yield;
-  if (providedIds !== void 0 && !same14(Object.keys(providedIds).toSorted(), [...allocated.keys()].toSorted())) {
+  if (providedIds !== void 0 && !same15(Object.keys(providedIds).toSorted(), [...allocated.keys()].toSorted())) {
     throw new Error("Layout creation map contains unknown or missing identities.");
   }
   if (evidence?.wireGroupRepair !== void 0) {
@@ -55905,7 +56768,7 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence, histo
       throw new Error("Ground repair evidence cannot be mixed with a legacy diagnostic mode.");
     }
     const repaired = deriveSchematicWireGroupRepair(operation, before, current2, native, Object.fromEntries(allocated), netFlags);
-    if (!same14(repaired.descriptor, schematicWireGroupRepairDescriptorSchema.parse(evidence.wireGroupRepair))) {
+    if (!same15(repaired.descriptor, schematicWireGroupRepairDescriptorSchema.parse(evidence.wireGroupRepair))) {
       throw new Error("Ground repair descriptor differs from the sealed original operation and creation map.");
     }
     current2 = repaired.source;
@@ -55976,7 +56839,7 @@ function inverseSchematicLayout(input, before, native, createdIds = {}, evidence
     return void 0;
   }
   const reverse = simulate2(forward.inverse, forward.expected, forward.native, {});
-  return same14(reverse.expected, before) ? forward.inverse : void 0;
+  return same15(reverse.expected, before) ? forward.inverse : void 0;
 }
 async function inverseSchematicLayoutCooperatively(input, before, native, createdIds = {}, evidence) {
   const captured = structuredClone({ input: schematicLayoutBatchSchema.parse(input), before, native, createdIds, evidence });
@@ -55986,7 +56849,7 @@ async function inverseSchematicLayoutCooperatively(input, before, native, create
     return void 0;
   }
   const reverse = await drainSimulationCooperatively(simulateSteps(forward.inverse, forward.expected, forward.native, {}));
-  const inverse = same14(reverse.expected, captured.before) ? forward.inverse : void 0;
+  const inverse = same15(reverse.expected, captured.before) ? forward.inverse : void 0;
   await yieldProofEventLoop();
   return inverse;
 }
@@ -56076,11 +56939,11 @@ function retainedWireInitialOrders(expected2, input) {
   const materializations = [];
   for (const order2 of expected2.retainedWireOrders.filter((entry) => "profile" in entry && ["full-import-unchanged-retained-wire", "full-import-unchanged-retained-multiple-net-wire"].includes(entry.profile))) {
     for (const { id: id7, key, beforeOrder: initialOrder, order: modelOrder } of retainedWireAttributeOrders(order2)) {
-      const prior = records2.get(id7), stored = after.records.find((row) => row.id === id7);
+      const prior = records2.get(id7), stored2 = after.records.find((row) => row.id === id7);
       const current2 = input.expectedAfter.objects.find((row) => row.id === id7), original = input.expectedBefore.objects.find((row) => row.id === id7);
       const durableOrder = prior?.body["zIndex"];
       const laggingMultipleNetOrder = "profile" in order2 && order2.profile === "full-import-unchanged-retained-multiple-net-wire" && typeof durableOrder === "number" && Number.isSafeInteger(durableOrder) && durableOrder >= 0 && durableOrder !== initialOrder;
-      if (prior?.type === "ATTR" && (durableOrder === null || laggingMultipleNetOrder) && stored?.type === "ATTR" && stored.body["zIndex"] === initialOrder && original?.type === "ATTR" && original.body["parentId"] === order2.id && original.body["key"] === key && original.body["zIndex"] === initialOrder && current2?.type === "ATTR" && current2.body["zIndex"] === modelOrder && same14(stored.body, original.body) && same14({ ...prior.body, zIndex: initialOrder }, original.body) && same14({ ...original.body, zIndex: modelOrder }, current2.body)) {
+      if (prior?.type === "ATTR" && (durableOrder === null || laggingMultipleNetOrder) && stored2?.type === "ATTR" && stored2.body["zIndex"] === initialOrder && original?.type === "ATTR" && original.body["parentId"] === order2.id && original.body["key"] === key && original.body["zIndex"] === initialOrder && current2?.type === "ATTR" && current2.body["zIndex"] === modelOrder && same15(stored2.body, original.body) && same15({ ...prior.body, zIndex: initialOrder }, original.body) && same15({ ...original.body, zIndex: modelOrder }, current2.body)) {
         records2.set(id7, { ...prior, body: structuredClone(original.body) });
         materializations.push({ id: id7, parentId: order2.id, key, initialOrder, modelOrder, originalBodySha256: sha256Json(original.body) });
       }
@@ -56090,7 +56953,7 @@ function retainedWireInitialOrders(expected2, input) {
     return { checkpoint: input.before, materializations };
   }
   const projected4 = { ...before, records: [...records2.values()] };
-  const semantic2 = projected4.records.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 }));
+  const semantic2 = projected4.records.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 }));
   const document2 = { ...projected4, semanticSha256: sha256Json({ uuid: before.uuid, docType: before.docType, metadata: before.metadata, records: semantic2 }) };
   const documents = input.before.documents.map((entry) => entry.uuid === before.uuid ? document2 : entry);
   return { checkpoint: { ...input.before, documents, semanticSha256: sha256Json(documents.map(({ uuid: uuid8, docType, semanticSha256 }) => ({ uuid: uuid8, docType, semanticSha256 }))) }, materializations };
@@ -56108,8 +56971,8 @@ function layoutStoragePersistence(expected2, input, evidence, effect) {
   const storedPinNumberSpellings = [];
   for (const change of aligned.coordinates?.storedPinNumbers ?? []) {
     const captured = input.expectedAfter.objects.find((row2) => row2.id === change.attributeId), row = records2.get(change.attributeId);
-    const attr = native.components.flatMap((model) => model.pins.flatMap((pin3) => pin3.attributes)).find((entry) => entry.id === change.attributeId);
-    if (captured?.type !== "ATTR" || row?.type !== "ATTR" || attr === void 0 || captured.body["key"] !== "Pin Number" || !same14({ ...captured.body, x: row.body["x"], y: row.body["y"] }, row.body)) {
+    const attr = native.components.flatMap((model) => model.pins.flatMap((pin4) => pin4.attributes)).find((entry) => entry.id === change.attributeId);
+    if (captured?.type !== "ATTR" || row?.type !== "ATTR" || attr === void 0 || captured.body["key"] !== "Pin Number" || !same15({ ...captured.body, x: row.body["x"], y: row.body["y"] }, row.body)) {
       throw new Error("Stored pin-number spelling changed another field.");
     }
     storedPinNumberSpellings.push({ id: row.id, rawBodySha256: sha256Json(captured.body), effectComparisonBodySha256: sha256Json(row.body) });
@@ -56125,33 +56988,33 @@ function layoutStoragePersistence(expected2, input, evidence, effect) {
     if (component2 === void 0) {
       throw new Error("Layout persistence lost the exact cloned component.");
     }
-    const attributes = [...component2.attributes, ...component2.pins.flatMap((pin3) => pin3.attributes)];
+    const attributes = [...component2.attributes, ...component2.pins.flatMap((pin4) => pin4.attributes)];
     const orders = flag.reconstructedHiddenAttributeOrder;
     if (orders.length > 0) {
       const initial = orders.every((field2) => durable.records.find((entry) => entry.id === field2.id)?.body["zIndex"] === field2.initialZIndex);
       const reconstructed = orders.every((field2) => durable.records.find((entry) => entry.id === field2.id)?.body["zIndex"] === field2.reconstructedZIndex);
       const retainedRelevance = orders.length === 2 && orders.every((field2) => {
-        const stored = durable.records.find((entry) => entry.id === field2.id)?.body["zIndex"];
-        return field2.key === "Relevance" ? stored === field2.initialZIndex : field2.key === "Device" && stored === field2.reconstructedZIndex;
+        const stored2 = durable.records.find((entry) => entry.id === field2.id)?.body["zIndex"];
+        return field2.key === "Relevance" ? stored2 === field2.initialZIndex : field2.key === "Device" && stored2 === field2.reconstructedZIndex;
       });
-      const retainedDescriptionRelevance = orders.length === 3 && same14(orders.map((field2) => field2.key).toSorted(), ["Description", "Device", "Relevance"]) && orders.every((field2) => {
-        const stored = durable.records.find((entry) => entry.id === field2.id)?.body["zIndex"];
-        return stored === (field2.key === "Device" ? field2.reconstructedZIndex : field2.initialZIndex);
+      const retainedDescriptionRelevance = orders.length === 3 && same15(orders.map((field2) => field2.key).toSorted(), ["Description", "Device", "Relevance"]) && orders.every((field2) => {
+        const stored2 = durable.records.find((entry) => entry.id === field2.id)?.body["zIndex"];
+        return stored2 === (field2.key === "Device" ? field2.reconstructedZIndex : field2.initialZIndex);
       });
-      const retainedRelevanceRefreshedDescriptionDevice = orders.length === 3 && same14(orders.map((field2) => field2.key).toSorted(), ["Description", "Device", "Relevance"]) && flag.materializedDeviceAttributes.some((field2) => field2.key === "Description" && orders.some((order2) => order2.id === field2.id && order2.key === "Description")) && orders.every((field2) => {
-        const stored = durable.records.find((entry) => entry.id === field2.id)?.body["zIndex"];
-        return stored === (field2.key === "Relevance" ? field2.initialZIndex : field2.reconstructedZIndex);
+      const retainedRelevanceRefreshedDescriptionDevice = orders.length === 3 && same15(orders.map((field2) => field2.key).toSorted(), ["Description", "Device", "Relevance"]) && flag.materializedDeviceAttributes.some((field2) => field2.key === "Description" && orders.some((order2) => order2.id === field2.id && order2.key === "Description")) && orders.every((field2) => {
+        const stored2 = durable.records.find((entry) => entry.id === field2.id)?.body["zIndex"];
+        return stored2 === (field2.key === "Relevance" ? field2.initialZIndex : field2.reconstructedZIndex);
       });
       if (!initial && !reconstructed && !retainedRelevance && !retainedDescriptionRelevance && !retainedRelevanceRefreshedDescriptionDevice) {
         throw new Error("Layout persistence changed the cloned hidden order beyond its exact native storage forms.");
       }
       for (const field2 of orders) {
-        const attr = attributes.find((entry) => entry.id === field2.id), row = records2.get(field2.id), stored = durable.records.find((entry) => entry.id === field2.id);
-        if (row?.type !== "ATTR" || attr === void 0 || stored?.type !== "ATTR" || row.body["parentId"] !== component2.id || row.body["key"] !== field2.key || stored.body["parentId"] !== component2.id || stored.body["key"] !== field2.key) {
+        const attr = attributes.find((entry) => entry.id === field2.id), row = records2.get(field2.id), stored2 = durable.records.find((entry) => entry.id === field2.id);
+        if (row?.type !== "ATTR" || attr === void 0 || stored2?.type !== "ATTR" || row.body["parentId"] !== component2.id || row.body["key"] !== field2.key || stored2.body["parentId"] !== component2.id || stored2.body["key"] !== field2.key) {
           throw new Error("Layout persistence changed the cloned hidden attribute identity.");
         }
-        row.body["zIndex"] = stored.body["zIndex"];
-        attr.body["zIndex"] = number13(stored.body["zIndex"]);
+        row.body["zIndex"] = stored2.body["zIndex"];
+        attr.body["zIndex"] = number13(stored2.body["zIndex"]);
       }
       let variant = "retained-relevance-refreshed-device";
       if (initial) {
@@ -56166,17 +57029,17 @@ function layoutStoragePersistence(expected2, input, evidence, effect) {
       orderSpellings.push({ componentId: component2.id, variant, ids: orders.map((field2) => field2.id) });
     }
     for (const field2 of flag.watchedOmittedStrikeout.filter((entry) => entry.stored)) {
-      const row = records2.get(field2.id), stored = durable.records.find((entry) => entry.id === field2.id);
+      const row = records2.get(field2.id), stored2 = durable.records.find((entry) => entry.id === field2.id);
       const attr = attributes.find((entry) => entry.id === field2.id && entry.key === field2.key && entry.body["parentId"] === field2.parentId);
-      if (row === void 0 || stored?.type !== "ATTR" || attr === void 0 || row.body["parentId"] !== field2.parentId || row.body["key"] !== field2.key) {
+      if (row === void 0 || stored2?.type !== "ATTR" || attr === void 0 || row.body["parentId"] !== field2.parentId || row.body["key"] !== field2.key) {
         throw new Error("Layout persistence clone attribute identity is absent or contradictory.");
       }
-      const body2 = { ...stored.body }, present = Object.hasOwn(body2, "strikeout");
-      if (present && body2["strikeout"] !== false) {
+      const body3 = { ...stored2.body }, present = Object.hasOwn(body3, "strikeout");
+      if (present && body3["strikeout"] !== false) {
         throw new Error("Layout persistence changed a cloned style beyond its reviewed false/omitted representation.");
       }
-      delete body2["strikeout"];
-      if (!same14(body2, row.body)) {
+      delete body3["strikeout"];
+      if (!same15(body3, row.body)) {
         throw new Error("Layout persistence changed another cloned attribute field.");
       }
       if (present) {
@@ -56200,17 +57063,17 @@ function layoutStoragePersistence(expected2, input, evidence, effect) {
     const index = native.components.findIndex((model) => model.id === restored.componentId);
     const raw = coordinateStorage.native.components.find((model) => model.id === restored.componentId);
     const reference2 = aligned.native.components.find((model) => model.id === restored.componentId);
-    if (index === -1 || raw === void 0 || reference2 === void 0 || !same14(native.components[index], raw)) {
+    if (index === -1 || raw === void 0 || reference2 === void 0 || !same15(native.components[index], raw)) {
       throw new Error("Composed coordinate comparison lost its proved complete native part.");
     }
     for (const id7 of restored.sourceIds) {
       const captured = coordinateStorage.source.objects.find((row) => row.id === id7), current2 = records2.get(id7);
-      const normalized2 = aligned.source.objects.find((row) => row.id === id7), stored = comparisonPage.records.find((row) => row.id === id7);
-      if (captured === void 0 || current2 === void 0 || normalized2 === void 0 || stored === void 0 || !same14(current2, captured) || stored.type !== current2.type || !same14(stored.body, current2.body) || normalized2.type !== current2.type || !same14({ ...normalized2.body, x: current2.body["x"], y: current2.body["y"] }, current2.body) || (id7 === restored.componentId ? current2.type !== "COMPONENT" : current2.type !== "ATTR" || !["Pin Number", "NO_CONNECT"].includes(String(current2.body["key"])))) {
+      const normalized2 = aligned.source.objects.find((row) => row.id === id7), stored2 = comparisonPage.records.find((row) => row.id === id7);
+      if (captured === void 0 || current2 === void 0 || normalized2 === void 0 || stored2 === void 0 || !same15(current2, captured) || stored2.type !== current2.type || !same15(stored2.body, current2.body) || normalized2.type !== current2.type || !same15({ ...normalized2.body, x: current2.body["x"], y: current2.body["y"] }, current2.body) || (id7 === restored.componentId ? current2.type !== "COMPONENT" : current2.type !== "ATTR" || !["Pin Number", "NO_CONNECT"].includes(String(current2.body["key"])))) {
         throw new Error("Composed coordinate comparison lacks the exact constructor-proved owned row.");
       }
-      stored.body["x"] = number13(normalized2.body["x"]);
-      stored.body["y"] = number13(normalized2.body["y"]);
+      stored2.body["x"] = number13(normalized2.body["x"]);
+      stored2.body["y"] = number13(normalized2.body["y"]);
       records2.set(id7, structuredClone(normalized2));
     }
     native.components[index] = structuredClone(reference2);
@@ -56221,7 +57084,7 @@ function layoutStoragePersistence(expected2, input, evidence, effect) {
     uuid: comparisonPage.uuid,
     docType: comparisonPage.docType,
     metadata: comparisonPage.metadata,
-    records: comparisonPage.records.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 }))
+    records: comparisonPage.records.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 }))
   }) };
   const documents = comparisonCheckpoint.documents.map((document2) => document2.uuid === comparisonDocument.uuid ? comparisonDocument : document2);
   const comparedAfter = { ...comparisonCheckpoint, documents, semanticSha256: sha256Json(documents.map(({ uuid: uuid8, docType, semanticSha256 }) => ({ uuid: uuid8, docType, semanticSha256 }))) };
@@ -56253,7 +57116,7 @@ function prepareSchematicLayoutNetLabelRepair(input, before, oldNative, createdI
     throw new Error("Layout repair has no exact wire-label correction.");
   }
   const aligned = alignLayoutClones(legacy, currentSource, actual, evidence.history);
-  if (!same14(legacy.expected, aligned.source)) {
+  if (!same15(legacy.expected, aligned.source)) {
     throw new Error("Layout repair current source differs from the complete original dispatched layout.");
   }
   const reference2 = structuredClone(legacy.native);
@@ -56262,15 +57125,15 @@ function prepareSchematicLayoutNetLabelRepair(input, before, oldNative, createdI
   const endpoints = graph.flatMap((segment2) => [[segment2[0], segment2[1]], [segment2[2], segment2[3]]]);
   const misnamedPins = [];
   for (const model of reference2.components) {
-    for (const pin3 of model.pins) {
-      const observed = aligned.native.components.find((entry) => entry.id === model.id)?.pins.find((entry) => entry.id === pin3.id);
-      if (observed !== void 0 && observed.net !== pin3.net) {
-        const binding2 = corrected.labelBindings.find((entry) => entry.net === pin3.net && wireReachesAnchor([entry.x, entry.y], [[number13(pin3.body["x"]), number13(pin3.body["y"])]], graph, endpoints));
-        if (binding2 === void 0 || typeof pin3.net !== "string" || typeof observed.net !== "string" || !/^\$[0-9]+N[0-9]+$/u.test(observed.net)) {
+    for (const pin4 of model.pins) {
+      const observed = aligned.native.components.find((entry) => entry.id === model.id)?.pins.find((entry) => entry.id === pin4.id);
+      if (observed !== void 0 && observed.net !== pin4.net) {
+        const binding2 = corrected.labelBindings.find((entry) => entry.net === pin4.net && wireReachesAnchor([entry.x, entry.y], [[number13(pin4.body["x"]), number13(pin4.body["y"])]], graph, endpoints));
+        if (binding2 === void 0 || typeof pin4.net !== "string" || typeof observed.net !== "string" || !/^\$[0-9]+N[0-9]+$/u.test(observed.net)) {
           throw new Error("Layout repair found a net difference outside the exact generated-name defect.");
         }
-        misnamedPins.push({ componentId: model.id, pinId: pin3.id, expectedNet: pin3.net, observedNet: observed.net, wireId: binding2.wireId });
-        pin3.net = observed.net;
+        misnamedPins.push({ componentId: model.id, pinId: pin4.id, expectedNet: pin4.net, observedNet: observed.net, wireId: binding2.wireId });
+        pin4.net = observed.net;
       }
     }
   }
@@ -56306,24 +57169,24 @@ function legacyWireGroupProof(input, before, oldNative, createdIds, evidence, cu
   const operation = schematicLayoutBatchSchema.parse(input);
   const { descriptor } = deriveSchematicWireGroupRepair(operation, before, legacy.expected, legacy.native, createdIds, legacy.netFlags);
   const aligned = alignLayoutClones(legacy, currentSource, actual, evidence.history);
-  if (!same14(legacy.expected, aligned.source)) {
+  if (!same15(legacy.expected, aligned.source)) {
     throw new Error("Wire-group repair current source differs from the complete original dispatched layout.");
   }
   const misnamedPins = [], reference2 = structuredClone(legacy.native);
   for (const model of reference2.components) {
-    for (const pin3 of model.pins) {
-      const observed = aligned.native.components.find((entry) => entry.id === model.id)?.pins.find((entry) => entry.id === pin3.id);
-      if (observed !== void 0 && observed.net !== pin3.net) {
+    for (const pin4 of model.pins) {
+      const observed = aligned.native.components.find((entry) => entry.id === model.id)?.pins.find((entry) => entry.id === pin4.id);
+      if (observed !== void 0 && observed.net !== pin4.net) {
         const candidates = descriptor.merges.filter((merge3) => {
           const flag = legacy.netFlags.find((entry) => entry.component.id === merge3.flagId);
-          return flag?.net === pin3.net && legacy.expected.objects.some((row) => row.type === "LINE" && row.body["lineGroup"] === merge3.mainWireId && (row.body["startX"] === pin3.body["x"] && row.body["startY"] === pin3.body["y"] || row.body["endX"] === pin3.body["x"] && row.body["endY"] === pin3.body["y"]));
+          return flag?.net === pin4.net && legacy.expected.objects.some((row) => row.type === "LINE" && row.body["lineGroup"] === merge3.mainWireId && (row.body["startX"] === pin4.body["x"] && row.body["startY"] === pin4.body["y"] || row.body["endX"] === pin4.body["x"] && row.body["endY"] === pin4.body["y"]));
         });
         const merge2 = candidates[0];
-        if (model.kind !== "part" || candidates.length !== 1 || merge2 === void 0 || typeof pin3.net !== "string" || typeof observed.net !== "string" || !/^\$[0-9]+N[0-9]+$/u.test(observed.net)) {
+        if (model.kind !== "part" || candidates.length !== 1 || merge2 === void 0 || typeof pin4.net !== "string" || typeof observed.net !== "string" || !/^\$[0-9]+N[0-9]+$/u.test(observed.net)) {
           throw new Error("Wire-group repair found a net difference outside its exact main-group generated-name defect.");
         }
-        misnamedPins.push({ componentId: model.id, pinId: pin3.id, expectedNet: pin3.net, observedNet: observed.net, wireId: merge2.mainWireId });
-        pin3.net = observed.net;
+        misnamedPins.push({ componentId: model.id, pinId: pin4.id, expectedNet: pin4.net, observedNet: observed.net, wireId: merge2.mainWireId });
+        pin4.net = observed.net;
       }
     }
   }
@@ -56371,11 +57234,11 @@ function prepareSchematicLayoutWireGroupRepair(input, before, oldNative, created
   const expectedSource = snapshot5(currentSource, records2), projectedNative = structuredClone(proof.actual);
   projectedNative.source = encode4(expectedSource);
   for (const entry of proof.misnamedPins) {
-    const pin3 = projectedNative.components.find((model) => model.id === entry.componentId)?.pins.find((candidate) => candidate.id === entry.pinId);
-    if (pin3 === void 0 || pin3.net !== entry.observedNet) {
+    const pin4 = projectedNative.components.find((model) => model.id === entry.componentId)?.pins.find((candidate) => candidate.id === entry.pinId);
+    if (pin4 === void 0 || pin4.net !== entry.observedNet) {
       throw new Error("Wire-group correction lost an independently proven misnamed pin.");
     }
-    pin3.net = entry.expectedNet;
+    pin4.net = entry.expectedNet;
   }
   verifySchematicLayoutEffect(input, before, expectedSource, oldNative, projectedNative, createdIds, { ...evidence, wireGroupRepair: proof.descriptor }, true);
   return {
@@ -56429,7 +57292,7 @@ async function buildSchematicLayoutAdapterCooperatively(input, before, nativeInp
   await yieldProofEventLoop();
   return adapter;
 }
-var SCHEMATIC_LAYOUT_PROFILE, stepIdSchema, target3, finite3, coordinates3, line3, displayObject, displayPatch, textDisplayPatch, wireCreateProperties, labelCreateProperties, schematicLayoutStepSchema, schematicLayoutBatchSchema, nativeBodySchema, DISPLAY_FIELDS, ALIGN2, STROKE2, same14;
+var SCHEMATIC_LAYOUT_PROFILE, stepIdSchema, target3, finite3, coordinates3, line4, displayObject, displayPatch, textDisplayPatch, wireCreateProperties, labelCreateProperties, schematicLayoutStepSchema, schematicLayoutBatchSchema, nativeBodySchema, DISPLAY_FIELDS, ALIGN2, STROKE2, same15;
 var init_schematic_layout_batch = __esm({
   "server/src/schematic-layout-batch.ts"() {
     init_zod();
@@ -56454,7 +57317,7 @@ var init_schematic_layout_batch = __esm({
     target3 = external_exports.union([external_exports.object({ primitiveId: external_exports.string().min(1).max(256) }).strict(), external_exports.object({ resultOf: stepIdSchema }).strict()]);
     finite3 = external_exports.number();
     coordinates3 = external_exports.array(finite3).min(4).max(4096).refine((values2) => values2.length % 2 === 0, "Wire vertices need complete coordinate pairs.");
-    line3 = external_exports.union([coordinates3, external_exports.array(coordinates3).min(1).max(256)]);
+    line4 = external_exports.union([coordinates3, external_exports.array(coordinates3).min(1).max(256)]);
     displayObject = external_exports.object({
       x: finite3.nullable(),
       y: finite3.nullable(),
@@ -56471,7 +57334,7 @@ var init_schematic_layout_batch = __esm({
     displayPatch = displayObject.refine((patch) => Object.keys(patch).length > 0, "Empty display patch.");
     textDisplayPatch = displayObject.omit({ keyVisible: true, valueVisible: true }).refine((patch) => Object.keys(patch).length > 0, "Empty text display patch.");
     wireCreateProperties = external_exports.object({
-      line: line3,
+      line: line4,
       color: external_exports.string().max(128).nullable(),
       lineWidth: finite3.min(1).max(10).nullable(),
       lineType: external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2), external_exports.literal(3)]).nullable()
@@ -56484,7 +57347,7 @@ var init_schematic_layout_batch = __esm({
       external_exports.object({ id: stepIdSchema, action: external_exports.literal("sch.text.display"), target: target3, patch: textDisplayPatch }).strict(),
       external_exports.object({ id: stepIdSchema, action: external_exports.literal("sch.text.delete"), target: target3 }).strict(),
       external_exports.object({ id: stepIdSchema, action: external_exports.literal("sch.wire.create"), properties: wireCreateProperties }).strict(),
-      external_exports.object({ id: stepIdSchema, action: external_exports.literal("sch.wire.replace"), target: target3, line: line3 }).strict(),
+      external_exports.object({ id: stepIdSchema, action: external_exports.literal("sch.wire.replace"), target: target3, line: line4 }).strict(),
       external_exports.object({ id: stepIdSchema, action: external_exports.literal("sch.wire.delete"), target: target3 }).strict(),
       external_exports.object({ id: stepIdSchema, action: external_exports.literal("sch.net-label.create"), properties: labelCreateProperties }).strict(),
       external_exports.object({ id: stepIdSchema, action: external_exports.literal("sch.net-label.display"), target: target3, patch: displayPatch }).strict(),
@@ -56515,7 +57378,7 @@ var init_schematic_layout_batch = __esm({
     DISPLAY_FIELDS = { x: "x", y: "y", rotation: "rotation", fontName: "fontFamily", fontSize: "fontSize", bold: "fontWeight", italic: "italic", underLine: "underline", alignMode: "align", keyVisible: "keyVisible", valueVisible: "valueVisible" };
     ALIGN2 = ["", "LEFT_TOP", "LEFT_MIDDLE", "LEFT_BOTTOM", "CENTER_TOP", "CENTER_MIDDLE", "CENTER_BOTTOM", "RIGHT_TOP", "RIGHT_MIDDLE", "RIGHT_BOTTOM"];
     STROKE2 = ["SOLID", "SHORT_DASH", "DOT", "DOT_DASH"];
-    same14 = (left, right) => canonicalJson(left) === canonicalJson(right);
+    same15 = (left, right) => canonicalJson(left) === canonicalJson(right);
   }
 });
 
@@ -57051,42 +57914,8 @@ var init_rule_persistence = __esm({
   }
 });
 
-// server/src/design-topology.ts
-function normalized(input) {
-  return designTopologySchema.parse(input).map((entry) => ({ uniqueId: entry.uniqueId, designator: entry.designator, pins: entry.pins.toSorted((a, b) => a.pinNumber.localeCompare(b.pinNumber)) })).toSorted((a, b) => a.uniqueId.localeCompare(b.uniqueId));
-}
-async function readDesignTopology(engine2, context2) {
-  if (context2.document.documentType !== 1) {
-    throw new Error("Compiled topology requires the schematic editor.");
-  }
-  const result = await engine2.exactRead({ kind: "schematic-topology" }, context2);
-  if (!isRecord(result)) {
-    throw new TypeError("Compiled topology payload is absent.");
-  }
-  return normalized(result["compiledConnectivity"]);
-}
-function verifyDesignTopology(expected2, actual) {
-  if (canonicalJson(normalized(expected2)) !== canonicalJson(normalized(actual))) {
-    throw new Error("Compiled component/pin/net endpoints differ from the explicit transaction topology; no save is authorized.");
-  }
-}
-var identity2, pin2, designTopologySchema;
-var init_design_topology = __esm({
-  "server/src/design-topology.ts"() {
-    init_zod();
-    init_core3();
-    identity2 = external_exports.string().min(1).max(512);
-    pin2 = external_exports.object({ pinNumber: identity2, net: external_exports.string().max(512).nullable() }).strict();
-    designTopologySchema = external_exports.array(external_exports.object({ uniqueId: identity2, designator: external_exports.string().max(512).nullable(), pins: external_exports.array(pin2).max(4096) }).strict()).max(2e4).superRefine((value, context2) => {
-      if (new Set(value.map((entry) => entry.uniqueId)).size !== value.length || value.some((entry) => new Set(entry.pins.map((item2) => item2.pinNumber)).size !== entry.pins.length)) {
-        context2.addIssue({ code: "custom", message: "Topology identities must be unique." });
-      }
-    });
-  }
-});
-
 // server/src/recovery-navigation.ts
-import { dirname as dirname5, join as join11 } from "node:path";
+import { dirname as dirname5, join as join12 } from "node:path";
 function deriveRecoveryNavigationTarget(expectedContext, checkpoint) {
   const documentUuid = expectedContext.document.uuid ?? expectedContext.document.documentUuid;
   const library2 = [2, 4].includes(expectedContext.document.documentType);
@@ -57118,7 +57947,7 @@ async function prepareRecoveryNavigation(input) {
   const verified = await verifyCheckpoint(preCheckpoint.receiptPath, {
     expectedSource: source3,
     controlRoot: await controlRootCapability(),
-    artifactRoots: [join11(dirname5(source3), "backups"), join11(controlDataDirectory(), "checkpoints")]
+    artifactRoots: [join12(dirname5(source3), "backups"), join12(controlDataDirectory(), "checkpoints")]
   });
   if (!verified.checkpointMatchesReceipt || verified.checkpointSha256 !== preCheckpoint.checkpointSha256 || verified.checkpoint !== preCheckpoint.checkpoint || verified.receiptPath !== preCheckpoint.receiptPath || normalizeEasyedaProjectPath(verified.source) !== source3) {
     throw new Error("Recovery navigation retained checkpoint verification failed.");
@@ -57486,7 +58315,7 @@ var init_symbol_lifecycle = __esm({
 });
 
 // server/src/copper-lifecycle.ts
-function same15(left, right) {
+function same16(left, right) {
   return canonicalJson(left) === canonicalJson(right);
 }
 function invalid(message) {
@@ -57508,7 +58337,7 @@ function finite4(value) {
   }
   return value;
 }
-function coordinate2(value) {
+function coordinate3(value) {
   if (Math.abs(finite4(value)) > MAX_COORDINATE) {
     invalid("coordinate exceeds the reviewed roundtrip profile.");
   }
@@ -57518,8 +58347,8 @@ function arcOperands(path5) {
   if (path5.length < 6 || path5.length > 2e5) {
     return invalid("unsupported changed path length.");
   }
-  coordinate2(path5[0]);
-  coordinate2(path5[1]);
+  coordinate3(path5[0]);
+  coordinate3(path5[1]);
   let position = 2;
   let previousPoint = 0;
   let lineMode = false;
@@ -57530,8 +58359,8 @@ function arcOperands(path5) {
       if (Math.abs(angle2) < 6 || Math.abs(angle2) >= 360 || position + 3 >= path5.length) {
         return invalid("arc degeneracy or full-circle conversion is outside this profile.");
       }
-      coordinate2(path5[position + 2]);
-      coordinate2(path5[position + 3]);
+      coordinate3(path5[position + 2]);
+      coordinate3(path5[position + 3]);
       if (path5[previousPoint] === path5[position + 2] && path5[previousPoint + 1] === path5[position + 3]) {
         return invalid("degenerate arc.");
       }
@@ -57552,8 +58381,8 @@ function arcOperands(path5) {
       } else if (!lineMode || typeof command !== "number") {
         return invalid("unreviewed changed path command.");
       }
-      coordinate2(path5[position]);
-      coordinate2(path5[position + 1]);
+      coordinate3(path5[position]);
+      coordinate3(path5[position + 1]);
       previousPoint = position;
       position += 2;
     }
@@ -57578,7 +58407,7 @@ function ulpDistance(before, after) {
   return Number(difference);
 }
 function comparePath(oldPath, newPath, recordId, copperId, pathIndex) {
-  if (same15(oldPath, newPath)) {
+  if (same16(oldPath, newPath)) {
     return [];
   }
   if (!Array.isArray(oldPath) || !Array.isArray(newPath) || oldPath.length !== newPath.length) {
@@ -57590,7 +58419,7 @@ function comparePath(oldPath, newPath, recordId, copperId, pathIndex) {
   for (let index = 0; index < oldPath.length; index += 1) {
     const oldValue = oldPath[index];
     const newValue = newPath[index];
-    if (!same15(oldValue, newValue)) {
+    if (!same16(oldValue, newValue)) {
       const role = eligible.get(index);
       if (role === void 0 || typeof oldValue !== "number" || typeof newValue !== "number") {
         return invalid("non-arc operand or path command changed.");
@@ -57616,7 +58445,7 @@ function comparePath(oldPath, newPath, recordId, copperId, pathIndex) {
 function comparePoured(left, right) {
   const oldFills = left.body["pourFill"];
   const newFills = right.body["pourFill"];
-  if (!same15({ ...left.body, pourFill: null }, { ...right.body, pourFill: null }) || !Array.isArray(oldFills) || !Array.isArray(newFills) || oldFills.length !== newFills.length || oldFills.length > 1e5) {
+  if (!same16({ ...left.body, pourFill: null }, { ...right.body, pourFill: null }) || !Array.isArray(oldFills) || !Array.isArray(newFills) || oldFills.length !== newFills.length || oldFills.length > 1e5) {
     return invalid("derived record fields or child count changed.");
   }
   const differences = [];
@@ -57624,7 +58453,7 @@ function comparePoured(left, right) {
   for (let fillIndex = 0; fillIndex < oldFills.length; fillIndex += 1) {
     const oldFill = oldFills[fillIndex];
     const newFill = newFills[fillIndex];
-    if (!isRecord(oldFill) || !isRecord(newFill) || typeof oldFill["id"] !== "string" || identities.has(oldFill["id"]) || !same15({ ...oldFill, path: null }, { ...newFill, path: null }) || !Array.isArray(oldFill["path"]) || !Array.isArray(newFill["path"]) || oldFill["path"].length !== newFill["path"].length) {
+    if (!isRecord(oldFill) || !isRecord(newFill) || typeof oldFill["id"] !== "string" || identities.has(oldFill["id"]) || !same16({ ...oldFill, path: null }, { ...newFill, path: null }) || !Array.isArray(oldFill["path"]) || !Array.isArray(newFill["path"]) || oldFill["path"].length !== newFill["path"].length) {
       return invalid("copper identity, width, style or path count changed.");
     }
     identities.add(oldFill["id"]);
@@ -57640,7 +58469,7 @@ function comparePoured(left, right) {
 function verifyCopperLifecycleEquivalence(reference2, observed) {
   const oldRecords = checked3(reference2);
   const newRecords = checked3(observed);
-  if (!same15(reference2.document, observed.document) || !same15([...oldRecords.keys()].toSorted(), [...newRecords.keys()].toSorted())) {
+  if (!same16(reference2.document, observed.document) || !same16([...oldRecords.keys()].toSorted(), [...newRecords.keys()].toSorted())) {
     return invalid("document or record identities changed.");
   }
   const differences = [];
@@ -57649,7 +58478,7 @@ function verifyCopperLifecycleEquivalence(reference2, observed) {
     if (newRecord === void 0 || oldRecord.type !== newRecord.type) {
       return invalid("record type changed.");
     }
-    if (!same15(oldRecord, newRecord)) {
+    if (!same16(oldRecord, newRecord)) {
       if (oldRecord.type !== "POURED") {
         return invalid("non-derived record changed.");
       }
@@ -57686,7 +58515,7 @@ function verifyCopperSaveAcknowledgment(ack, afterPhase, expected2) {
     return invalid("retained save/reopen acknowledgment is incomplete.");
   }
   const guard = ack["exactSaveGuard"];
-  if (guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || !same15(guard["labels"], ["pcb-source"]) || !same15(guard["snapshotSha256"], [consistency["snapshotSha256"]])) {
+  if (guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || !same16(guard["labels"], ["pcb-source"]) || !same16(guard["snapshotSha256"], [consistency["snapshotSha256"]])) {
     return invalid("retained save guard is not bound to the verified after phase.");
   }
 }
@@ -57858,8 +58687,8 @@ function verifyFootprintEmptyNetPersistence(input) {
       if (document2.uuid !== before.uuid) {
         return document2;
       }
-      const metadata = { ...document2.metadata, user };
-      return { ...document2, metadata, semanticSha256: sha256Json({ uuid: document2.uuid, docType: document2.docType, metadata, records: document2.records.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 })) }) };
+      const metadata2 = { ...document2.metadata, user };
+      return { ...document2, metadata: metadata2, semanticSha256: sha256Json({ uuid: document2.uuid, docType: document2.docType, metadata: metadata2, records: document2.records.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 })) }) };
     });
     history = { ...history, documents, semanticSha256: sha256Json(documents.map(({ uuid: uuid8, docType, semanticSha256 }) => ({ uuid: uuid8, docType, semanticSha256 }))) };
     userStamp = { field: "user", beforePresent: false, afterSha256: sha256Json(user), ownerUuid: user["uuid"], baselineDocumentIds: anchors.map((document2) => document2.uuid).toSorted() };
@@ -57951,30 +58780,30 @@ function convertedRecord(record6, after, input, partId) {
   if (!["ATTR", "PIN"].includes(record6.type) || next === void 0 || source3 === void 0 || sourceAfter === void 0 || next.type !== record6.type || source3.type !== record6.type || sourceAfter.type !== record6.type || record6.body["partId"] !== partId) {
     return { record: record6 };
   }
-  let body2 = { ...record6.body };
+  let body3 = { ...record6.body };
   const fields2 = [];
   for (const [field2, legacy] of [["groupId", ""], ...record6.type === "ATTR" ? [["version", "2.0"]] : []]) {
-    if (field2 !== void 0 && body2[field2] === legacy && !Object.hasOwn(next.body, field2) && !Object.hasOwn(source3.body, field2) && !Object.hasOwn(sourceAfter.body, field2)) {
-      body2 = Object.fromEntries(Object.entries(body2).filter(([key]) => key !== field2));
+    if (field2 !== void 0 && body3[field2] === legacy && !Object.hasOwn(next.body, field2) && !Object.hasOwn(source3.body, field2) && !Object.hasOwn(sourceAfter.body, field2)) {
+      body3 = Object.fromEntries(Object.entries(body3).filter(([key]) => key !== field2));
       fields2.push(field2);
     }
   }
-  if (record6.type === "ATTR" && body2["parentId"] === "" && source3.body["parentId"] === partId && sourceAfter.body["parentId"] === partId && next.body["parentId"] === partId) {
-    body2["parentId"] = partId;
+  if (record6.type === "ATTR" && body3["parentId"] === "" && source3.body["parentId"] === partId && sourceAfter.body["parentId"] === partId && next.body["parentId"] === partId) {
+    body3["parentId"] = partId;
     fields2.push("parentId");
   }
   if (fields2.length === 0) {
     return { record: record6 };
   }
-  if (!equal5(body2, source3.body)) {
+  if (!equal5(body3, source3.body)) {
     throw new Error("Symbol legacy conversion disagrees with the complete captured model.");
   }
-  return { record: { ...record6, body: body2 }, effect: {
+  return { record: { ...record6, body: body3 }, effect: {
     id: record6.id,
     type: record6.type,
     fields: fields2.toSorted(),
     beforeBodySha256: sha256Json(record6.body),
-    afterBodySha256: sha256Json(body2)
+    afterBodySha256: sha256Json(body3)
   } };
 }
 function insertedUserStamp(before, after, history) {
@@ -58011,13 +58840,13 @@ function verifySymbolPersistence(input) {
   }
   const partId = parts[0].id;
   const converted = before.records.map((record6) => convertedRecord(record6, after, input, partId));
-  const { metadata, evidence: userStamp } = insertedUserStamp(before, after, input.before);
+  const { metadata: metadata2, evidence: userStamp } = insertedUserStamp(before, after, input.before);
   const records2 = converted.map((entry) => entry.record);
-  const replacement = { ...before, metadata, records: records2, semanticSha256: sha256Json({
+  const replacement = { ...before, metadata: metadata2, records: records2, semanticSha256: sha256Json({
     uuid: before.uuid,
     docType: before.docType,
-    metadata,
-    records: records2.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 }))
+    metadata: metadata2,
+    records: records2.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 }))
   }) };
   const documents = input.before.documents.map((document2) => document2.uuid === before.uuid ? replacement : document2);
   const projected4 = { ...input.before, documents, semanticSha256: sha256Json(documents.map(({ uuid: uuid8, docType, semanticSha256 }) => ({ uuid: uuid8, docType, semanticSha256 }))) };
@@ -58102,11 +58931,11 @@ var init_saved_library_recovery = __esm({
 // server/src/schematic-layout-repair-topology.ts
 function attributeValue(attributes, ownerId, key) {
   const selected = attributes.filter((entry) => entry.key === key);
-  const attribute2 = selected[0];
-  if (selected.length !== 1 || attribute2 === void 0 || attribute2.body["parentId"] !== ownerId || attribute2.body["key"] !== key || attribute2.instanceValue !== null || attribute2.body["value"] !== attribute2.blockValue || attribute2.value !== (attribute2.blockValue ?? attribute2.symbolValue) || typeof attribute2.value !== "string" || attribute2.value.length === 0) {
+  const attribute3 = selected[0];
+  if (selected.length !== 1 || attribute3 === void 0 || attribute3.body["parentId"] !== ownerId || attribute3.body["key"] !== key || attribute3.instanceValue !== null || attribute3.body["value"] !== attribute3.blockValue || attribute3.value !== (attribute3.blockValue ?? attribute3.symbolValue) || typeof attribute3.value !== "string" || attribute3.value.length === 0) {
     throw new Error("Ground repair pin identity lacks exact stored or inherited native attributes.");
   }
-  return attribute2.value;
+  return attribute3.value;
 }
 function ordered(topology) {
   return topology.map((part) => ({ ...part, pins: part.pins.toSorted((a, b) => a.pinNumber.localeCompare(b.pinNumber)) })).toSorted((a, b) => a.uniqueId.localeCompare(b.uniqueId));
@@ -58116,7 +58945,7 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
   const original = ordered(designTopologySchema.parse(beforeTopology));
   const current2 = ordered(designTopologySchema.parse(currentTopology));
   const misnamed = misnamedPinsSchema.parse(misnamedPins);
-  const pinIds = native.components.flatMap((component2) => component2.pins.map((pin3) => pin3.id));
+  const pinIds = native.components.flatMap((component2) => component2.pins.map((pin4) => pin4.id));
   if (new Set(pinIds).size !== pinIds.length) {
     throw new Error("Ground repair native pin identities are ambiguous.");
   }
@@ -58133,7 +58962,7 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
     identities.set(component2.id, { uniqueId, designator });
   }
   const originalById = new Map(original.map((part) => [part.uniqueId, part]));
-  const existingNets = new Set(original.flatMap((part) => part.pins.map((pin3) => pin3.net)));
+  const existingNets = new Set(original.flatMap((part) => part.pins.map((pin4) => pin4.net)));
   const admitted = structuredClone(original);
   const admittedById = new Map(admitted.map((part) => [part.uniqueId, part]));
   const selectedPins = /* @__PURE__ */ new Set();
@@ -58143,27 +58972,27 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
   const changedPins = [];
   for (const change of misnamed) {
     const component2 = components.get(change.componentId), identityValue = identities.get(change.componentId);
-    const pin3 = component2?.pins.find((entry) => entry.id === change.pinId);
-    if (component2?.kind !== "part" || identityValue === void 0 || pin3 === void 0 || selectedPins.has(pin3.id) || pin3.net !== change.expectedNet || generatedNet.test(change.expectedNet) || existingNets.has(change.observedNet)) {
+    const pin4 = component2?.pins.find((entry) => entry.id === change.pinId);
+    if (component2?.kind !== "part" || identityValue === void 0 || pin4 === void 0 || selectedPins.has(pin4.id) || pin4.net !== change.expectedNet || generatedNet.test(change.expectedNet) || existingNets.has(change.observedNet)) {
       throw new Error("Ground repair names an extra, duplicate, non-part or mismatched native pin/net.");
     }
-    if (pin3.noConnect !== null && (pin3.noConnect.value !== "no" || pin3.noConnect.body["value"] !== "no" || pin3.noConnect.body["parentId"] !== pin3.id || pin3.noConnect.body["key"] !== "NO_CONNECT")) {
+    if (pin4.noConnect !== null && (pin4.noConnect.value !== "no" || pin4.noConnect.body["value"] !== "no" || pin4.noConnect.body["parentId"] !== pin4.id || pin4.noConnect.body["key"] !== "NO_CONNECT")) {
       throw new Error("Ground repair cannot admit an NC or malformed NC record.");
     }
-    const pinNumber = attributeValue(pin3.attributes, pin3.id, "Pin Number");
-    const endpoint = JSON.stringify([identityValue.uniqueId, pinNumber]);
+    const pinNumber = attributeValue(pin4.attributes, pin4.id, "Pin Number");
+    const endpoint2 = JSON.stringify([identityValue.uniqueId, pinNumber]);
     const originalPart = originalById.get(identityValue.uniqueId);
     const originalPin = originalPart?.pins.find((entry) => entry.pinNumber === pinNumber);
     const admittedPin = admittedById.get(identityValue.uniqueId)?.pins.find((entry) => entry.pinNumber === pinNumber);
-    if (selectedEndpoints.has(endpoint) || originalPart?.designator !== identityValue.designator || originalPin?.net !== change.expectedNet || admittedPin === void 0) {
+    if (selectedEndpoints.has(endpoint2) || originalPart?.designator !== identityValue.designator || originalPin?.net !== change.expectedNet || admittedPin === void 0) {
       throw new Error("Ground repair native identity does not bind one original compiled endpoint.");
     }
     const naming = JSON.stringify([change.expectedNet, change.observedNet]);
     if (wireNames.has(change.wireId) && wireNames.get(change.wireId) !== naming || generatedOwners.has(change.observedNet) && generatedOwners.get(change.observedNet) !== change.wireId) {
       throw new Error("Ground repair wire identity and generated net naming disagree.");
     }
-    selectedPins.add(pin3.id);
-    selectedEndpoints.add(endpoint);
+    selectedPins.add(pin4.id);
+    selectedEndpoints.add(endpoint2);
     wireNames.set(change.wireId, naming);
     generatedOwners.set(change.observedNet, change.wireId);
     admittedPin.net = change.observedNet;
@@ -58179,7 +59008,7 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
     changedPins
   };
 }
-var generatedNet, identity3, misnamedPinsSchema;
+var generatedNet, identity4, misnamedPinsSchema;
 var init_schematic_layout_repair_topology = __esm({
   "server/src/schematic-layout-repair-topology.ts"() {
     init_zod();
@@ -58187,11 +59016,11 @@ var init_schematic_layout_repair_topology = __esm({
     init_design_topology();
     init_schematic_native_adapter();
     generatedNet = /^\$[0-9]+N[0-9]+$/u;
-    identity3 = external_exports.string().min(1).max(512);
+    identity4 = external_exports.string().min(1).max(512);
     misnamedPinsSchema = external_exports.array(external_exports.object({
-      componentId: identity3,
-      pinId: identity3,
-      expectedNet: identity3,
+      componentId: identity4,
+      pinId: identity4,
+      expectedNet: identity4,
       observedNet: external_exports.string().max(512).regex(generatedNet),
       wireId: external_exports.string().regex(/^[a-f0-9]{16}$/u)
     }).strict()).min(1).max(4096);
@@ -58203,7 +59032,7 @@ import { basename as basename5 } from "node:path";
 function verifySchematicWireBaseline(operation, input) {
   const adapter = buildSchematicNativeWireAdapter(operation, input.source, input.native);
   const targets = deriveDesignBaselineTargets(input.source, adapter.expected);
-  if (!same16(targets, input.targets)) {
+  if (!same17(targets, input.targets)) {
     throw new Error("Wire baseline targets differ from the complete typed effect.");
   }
   return { ...verifySchematicStorageBaseline(input), wireProfile: adapter.profile, expectedSourceSha256: adapter.expected.sha256 };
@@ -58227,7 +59056,7 @@ function verifyWireRetainedSaveAuthority(journal, afterPhase, acknowledgment) {
     throw new Error("Retained wire Save requires settled authority and complete original evidence.");
   }
   verifyDesignTopology(journal.beforeTopology, journal.plan.expectedTopology);
-  if (expected2.sha256 !== sha256Json({ schema: expected2.schema, document: expected2.document, objects: expected2.objects }) || parseDocumentSource(journal.afterNative.source).sha256 !== expected2.sha256 || journal.afterNative.document.documentUuid !== expected2.document["uuid"] || !isRecord(afterPhase) || !same16(afterPhase["snapshot"], expected2) || !same16(afterPhase["native"], journal.afterNative) || !isRecord(afterPhase["payload"]) || typeof afterPhase["payload"]["source"] !== "string" || parseDocumentSource(afterPhase["payload"]["source"]).sha256 !== expected2.sha256 || !isRecord(afterPhase["payload"]["read_consistency"])) {
+  if (expected2.sha256 !== sha256Json({ schema: expected2.schema, document: expected2.document, objects: expected2.objects }) || parseDocumentSource(journal.afterNative.source).sha256 !== expected2.sha256 || journal.afterNative.document.documentUuid !== expected2.document["uuid"] || !isRecord(afterPhase) || !same17(afterPhase["snapshot"], expected2) || !same17(afterPhase["native"], journal.afterNative) || !isRecord(afterPhase["payload"]) || typeof afterPhase["payload"]["source"] !== "string" || parseDocumentSource(afterPhase["payload"]["source"]).sha256 !== expected2.sha256 || !isRecord(afterPhase["payload"]["read_consistency"])) {
     throw new Error("Retained wire Save is not bound to the exact verified source and native state.");
   }
   const consistency = afterPhase["payload"]["read_consistency"];
@@ -58238,11 +59067,11 @@ function verifyWireRetainedSaveAuthority(journal, afterPhase, acknowledgment) {
     throw new Error("Retained wire Save/reopen acknowledgment is missing or does not match the target; do not repeat Save.");
   }
   const barrier = acknowledgment["projectUploadBarrier"], close = acknowledgment["closeProof"], guard = acknowledgment["exactSaveGuard"], open21 = acknowledgment["openProof"];
-  if (!isRecord(guard) || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || !same16(guard["labels"], ["schematic-source"]) || !same16(guard["snapshotSha256"], [consistency["snapshotSha256"]]) || !isRecord(close) || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || !isRecord(open21) || open21["profile"] !== "easyeda-pro-control.native-document-open.v1" || open21["tabId"] !== journal.context.document.tabId || open21["newFrameReady"] !== true || open21["exactContext"] !== true || open21["readinessSamples"] !== 2 || typeof open21["activated"] !== "boolean" || !isRecord(barrier) || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== projectUuid || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
+  if (!isRecord(guard) || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || !same17(guard["labels"], ["schematic-source"]) || !same17(guard["snapshotSha256"], [consistency["snapshotSha256"]]) || !isRecord(close) || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || !isRecord(open21) || open21["profile"] !== "easyeda-pro-control.native-document-open.v1" || open21["tabId"] !== journal.context.document.tabId || open21["newFrameReady"] !== true || open21["exactContext"] !== true || open21["readinessSamples"] !== 2 || typeof open21["activated"] !== "boolean" || !isRecord(barrier) || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== projectUuid || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
     throw new Error("Retained wire Save lacks its exact guard, terminal close, ready reopen or upload barrier.");
   }
 }
-var same16;
+var same17;
 var init_schematic_wire_persistence = __esm({
   "server/src/schematic-wire-persistence.ts"() {
     init_core3();
@@ -58251,124 +59080,7 @@ var init_schematic_wire_persistence = __esm({
     init_document_source();
     init_schematic_native_wire();
     init_schematic_storage_persistence();
-    same16 = (a, b) => canonicalJson({ value: a }) === canonicalJson({ value: b });
-  }
-});
-
-// server/src/schematic-layout-page-load.ts
-function deriveSchematicLayoutPageLoadScope(context2, history) {
-  const projectUuid = context2.project.uuid ?? context2.project.projectUuid;
-  const activePageUuid = context2.document.uuid ?? context2.document.documentUuid;
-  if (context2.document.documentType !== 1 || projectUuid !== history.projectUuid || context2.project.uuid !== void 0 && context2.project.projectUuid !== void 0 && context2.project.uuid !== context2.project.projectUuid || context2.document.uuid !== void 0 && context2.document.documentUuid !== void 0 && context2.document.uuid !== context2.document.documentUuid || history.profile !== "easyeda.native-history.linear-gcm-gzip.v1" || !/^[a-f0-9]{64}$/u.test(history.checkpointSha256) || sha256Json(history.documents.map(({ uuid: uuid8, docType, semanticSha256 }) => ({ uuid: uuid8, docType, semanticSha256 }))) !== history.semanticSha256) {
-    throw new Error("Schematic page loading requires an exact checkpoint and active sheet.");
-  }
-  const known = /* @__PURE__ */ new Set();
-  for (const document2 of history.documents) {
-    if (known.has(document2.uuid) || document2.metadata["uuid"] !== document2.uuid || document2.metadata["docType"] !== document2.docType || sha256Json({
-      uuid: document2.uuid,
-      docType: document2.docType,
-      metadata: document2.metadata,
-      records: document2.records.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 }))
-    }) !== document2.semanticSha256) {
-      throw new Error("Schematic page loading checkpoint document integrity failed.");
-    }
-    known.add(document2.uuid);
-  }
-  const documents = history.documents.filter((document2) => !isNativeDocumentDeleted(document2));
-  const active = documents.find((document2) => document2.uuid === activePageUuid && document2.docType === "SCH_PAGE");
-  const meta3 = active?.records.filter((record6) => record6.id === "META" && record6.type === "META");
-  const schematicUuid = meta3?.length === 1 ? meta3[0]?.body["schematic"] : void 0;
-  if (typeof schematicUuid !== "string" || !documents.some((document2) => document2.uuid === schematicUuid && document2.docType === "SCH") || context2.schematic?.uuid !== void 0 && context2.schematic.uuid !== schematicUuid || context2.schematic?.documentUuid !== void 0 && context2.schematic.documentUuid !== schematicUuid) {
-    throw new Error("Schematic page loading container is not checkpoint-bound.");
-  }
-  const pageUuids = documents.filter((document2) => document2.docType === "SCH_PAGE" && document2.records.some((record6) => record6.id === "META" && record6.type === "META" && record6.body["schematic"] === schematicUuid)).map((document2) => document2.uuid).toSorted();
-  const scope3 = scopeSchema.parse({
-    projectUuid,
-    projectPath: normalizeEasyedaProjectPath(context2.project.path),
-    schematicUuid,
-    activePageUuid,
-    activeTabId: context2.document.tabId,
-    pageUuids
-  });
-  if (scope3.activeTabId !== `${scope3.activePageUuid}@${scope3.projectUuid}` || !scope3.pageUuids.includes(scope3.activePageUuid)) {
-    throw new Error("Schematic page loading rejects aliased or foreign active tabs.");
-  }
-  return scope3;
-}
-function buildSchematicLayoutPageLoadCode(value, pageUuid) {
-  const scope3 = scopeSchema.parse(value);
-  if (scope3.projectPath !== normalizeEasyedaProjectPath(scope3.projectPath) || scope3.activeTabId !== `${scope3.activePageUuid}@${scope3.projectUuid}` || new Set(scope3.pageUuids).size !== scope3.pageUuids.length || !scope3.pageUuids.includes(scope3.activePageUuid) || !scope3.pageUuids.includes(pageUuid)) {
-    throw new Error("Schematic page loading target is outside the declared checkpoint scope.");
-  }
-  const open21 = buildNativeDocumentOpenFunction({ projectUuid: scope3.projectUuid, documentUuid: pageUuid, documentType: 1 });
-  return `return await (async()=>{
-${DEVICE_NATIVE_HOST_GUARD}
-const scope=${JSON.stringify(scope3)},pageUuid=${JSON.stringify(pageUuid)},targetTab=pageUuid+'@'+scope.projectUuid;
-const ui=globalThis.window?.top,sch=globalThis.SCH,manager=sch?.docMemoryManager;
-const fail=()=>{throw new Error('SCH_LAYOUT_PAGE_LOAD_SCOPE');};
-if(!ui||typeof ui.setTimeout!=='function'||typeof ui.clearTimeout!=='function'||typeof ui.document?.getElementById!=='function'||typeof manager?.get!=='function'||typeof manager.getSchDocs!=='function'||typeof manager.getActiveDoc!=='function')fail();
-const sorted=value=>JSON.stringify([...value].sort());
-const owners=async()=>{
- const project=await eda.dmt_Project.getCurrentProjectInfo();
- if(project?.uuid!==scope.projectUuid||host.currentProject?.projectId!==scope.projectUuid||sch.gVars?.currentProject?.projectId!==scope.projectUuid)fail();
- const declared=await eda.dmt_Schematic.getCurrentSchematicInfo();
- if(declared?.uuid!==scope.schematicUuid||declared.parentProjectUuid!==scope.projectUuid||!Array.isArray(declared.page)||declared.page.length!==scope.pageUuids.length)fail();
- const ids=declared.page.map(page=>{if(page?.parentSchematicUuid!==scope.schematicUuid||typeof page.uuid!=='string'||(page.parentProjectUuid!==undefined&&page.parentProjectUuid!==scope.projectUuid))fail();return page.uuid;});
- if(new Set(ids).size!==ids.length||sorted(ids)!==sorted(scope.pageUuids))fail();
- const docs=manager.getSchDocs();if(!Array.isArray(docs)||docs.length>2048)fail();
- for(const doc of docs){if(doc.project_uuid!==scope.projectUuid||doc.schematicUuid!==scope.schematicUuid||!scope.pageUuids.includes(doc.uuid)||doc.tabId!==doc.uuid+'@'+scope.projectUuid||doc.isSchSheetDoc()!==true||manager.get(doc.uuid)!==doc)fail();}
-};
-const frameReady=async(id)=>{
- const tab=id+'@'+scope.projectUuid,doc=manager.get(id),frame=ui.document.getElementById('frame_'+tab);
- if(!doc||!frame)return false;
- if(doc.uuid!==id||doc.tabId!==tab||doc.project_uuid!==scope.projectUuid||doc.schematicUuid!==scope.schematicUuid||doc.isSchSheetDoc()!==true||(await bus.rpcCall('getModelTabId',tab))?.message!==tab)fail();
- return frame.isConnected===true&&frame.tagName==='DIV'&&frame.getAttribute('c_dbid')===tab&&frame.getAttribute('c_doctype')==='1'&&(await bus.rpcCall('isOpenTab',[tab]))?.message===true;
-};
-const activeMatches=async(id)=>{
- await owners();const current=await eda.dmt_SelectControl.getCurrentDocumentInfo(),native=manager.getActiveDoc();
- if(current!=null&&((current.parentProjectUuid!==undefined&&current.parentProjectUuid!==scope.projectUuid)||(current.documentType!==1)||(current.uuid!==scope.activePageUuid&&current.uuid!==pageUuid)))fail();
- return current?.uuid===id&&current.documentType===1&&current.tabId===id+'@'+scope.projectUuid&&native===manager.get(id)&&await frameReady(id);
-};
-await owners();if(!await activeMatches(scope.activePageUuid))fail();
-if(pageUuid!==scope.activePageUuid){
- const present=(await bus.rpcCall('isOpenTab',[targetTab]))?.message;
- if(present===false){if(manager.get(pageUuid)!==undefined&&manager.get(pageUuid)!==null)fail();await (${open21})(targetTab);}
- else if(present!==true||!await frameReady(pageUuid))fail();
-}
-let deadline,pollTimer,rejectDeadline;
-const expired=new Promise((resolve,reject)=>{rejectDeadline=reject;});expired.catch(()=>{});
-const bounded=promise=>Promise.race([promise,expired]);
-const pause=()=>new Promise(resolve=>{pollTimer=ui.setTimeout(()=>{pollTimer=undefined;resolve();},50);});
-try{
- deadline=ui.setTimeout(()=>rejectDeadline(new Error('NATIVE_LIFECYCLE_OPEN_TIMEOUT')),15000);
- await bounded(owners());if(!await bounded(frameReady(pageUuid)))fail();
- if(!await bounded(activeMatches(scope.activePageUuid))){const result=await bounded(eda.dmt_EditorControl.activateDocument(scope.activeTabId));if(typeof result!=='boolean')fail();}
- let stable=0;
- for(let attempt=0;attempt<300;attempt++){
-  if(await bounded(activeMatches(scope.activePageUuid))&&await bounded(frameReady(pageUuid))){stable++;if(stable===2)return {ok:true,profile:'easyeda-pro-control.schematic-layout-page-load.v1',pageUuid,activePageUuid:scope.activePageUuid,activeTabId:scope.activeTabId,loaded:true,returned:true,saved:false};}else stable=0;
-  await bounded(pause());
- }
- throw new Error('NATIVE_LIFECYCLE_OPEN_TIMEOUT');
-}finally{if(deadline!==undefined)ui.clearTimeout(deadline);if(pollTimer!==undefined)ui.clearTimeout(pollTimer);}
-})();`;
-}
-var identifier4, scopeSchema;
-var init_schematic_layout_page_load = __esm({
-  "server/src/schematic-layout-page-load.ts"() {
-    init_zod();
-    init_core3();
-    init_native_history();
-    init_device_runtime_guard();
-    init_native_document_lifecycle();
-    identifier4 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
-    scopeSchema = external_exports.object({
-      projectUuid: external_exports.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u),
-      projectPath: external_exports.string().min(1).max(4096),
-      schematicUuid: identifier4,
-      activePageUuid: identifier4,
-      activeTabId: external_exports.string().min(1).max(512),
-      pageUuids: external_exports.array(identifier4).min(1).max(16)
-    }).strict();
+    same17 = (a, b) => canonicalJson({ value: a }) === canonicalJson({ value: b });
   }
 });
 
@@ -58376,7 +59088,7 @@ var init_schematic_layout_page_load = __esm({
 function fail7() {
   throw new Error("Deferred wire-label repair is outside the exact moved-port visibility profile.");
 }
-function point4(model) {
+function point5(model) {
   const x = model.body["x"], y = model.body["y"];
   if (typeof x !== "number" || !Number.isFinite(x) || typeof y !== "number" || !Number.isFinite(y)) {
     return fail7();
@@ -58395,16 +59107,16 @@ function touchingGroups(source3, at2, endpointsOnly) {
   const groups2 = /* @__PURE__ */ new Set();
   for (const row of source3.objects.filter((entry) => entry.type === "LINE" && wires.has(String(entry.body["lineGroup"])))) {
     const [x1, y1, x2, y2] = segment(row);
-    const endpoint = at2[0] === x1 && at2[1] === y1 || at2[0] === x2 && at2[1] === y2;
+    const endpoint2 = at2[0] === x1 && at2[1] === y1 || at2[0] === x2 && at2[1] === y2;
     const onLine = (at2[0] - x1) * (y2 - y1) === (at2[1] - y1) * (x2 - x1) && at2[0] >= Math.min(x1, x2) && at2[0] <= Math.max(x1, x2) && at2[1] >= Math.min(y1, y2) && at2[1] <= Math.max(y1, y2);
-    if (endpoint || !endpointsOnly && onLine) {
+    if (endpoint2 || !endpointsOnly && onLine) {
       groups2.add(String(row.body["lineGroup"]));
     }
   }
   return [...groups2].toSorted();
 }
 function namedPort(model, net2) {
-  const names2 = model.attributes.filter((attribute2) => attribute2.key === "Name");
+  const names2 = model.attributes.filter((attribute3) => attribute3.key === "Name");
   return model.kind === "netport" && model.pins.length === 1 && names2.length === 1 && names2[0]?.value === net2 && names2[0].body["value"] === net2;
 }
 function encode5(source3) {
@@ -58436,7 +59148,7 @@ function prepareSchematicLayoutVisibilityRepair(input, before, oldNative, create
     }
     let created;
     if (step.action === "sch.attribute.display") {
-      if (!("primitiveId" in step.target) || prior?.type !== "ATTR" || prior.body["key"] !== "NET" || !same17(Object.keys(step.patch), ["valueVisible"]) || originalRecords.get(String(prior.body["parentId"]))?.type !== "WIRE" || prior.body["valueVisible"] !== true || prior.body["locked"] !== false || expected2?.body["parentId"] !== prior.body["parentId"] || expected2.body["value"] !== prior.body["value"]) {
+      if (!("primitiveId" in step.target) || prior?.type !== "ATTR" || prior.body["key"] !== "NET" || !same18(Object.keys(step.patch), ["valueVisible"]) || originalRecords.get(String(prior.body["parentId"]))?.type !== "WIRE" || prior.body["valueVisible"] !== true || prior.body["locked"] !== false || expected2?.body["parentId"] !== prior.body["parentId"] || expected2.body["value"] !== prior.body["value"]) {
         return fail7();
       }
     } else {
@@ -58457,24 +59169,24 @@ function prepareSchematicLayoutVisibilityRepair(input, before, oldNative, create
     }
     const wireId = expected2?.body["parentId"];
     const net2 = expected2?.body["value"];
-    if (expected2?.type !== "ATTR" || expected2.body["key"] !== "NET" || expected2.body["locked"] !== false || typeof wireId !== "string" || typeof net2 !== "string" || !net2 || expected2.body["valueVisible"] !== false || current2?.body["valueVisible"] !== true || !same17({ ...current2, body: { ...current2.body, valueVisible: false } }, expected2) || labels.some((label) => label.attributeId === id7)) {
+    if (expected2?.type !== "ATTR" || expected2.body["key"] !== "NET" || expected2.body["locked"] !== false || typeof wireId !== "string" || typeof net2 !== "string" || !net2 || expected2.body["valueVisible"] !== false || current2?.body["valueVisible"] !== true || !same18({ ...current2, body: { ...current2.body, valueVisible: false } }, expected2) || labels.some((label) => label.attributeId === id7)) {
       return fail7();
     }
     const matches = intended.native.components.filter((model) => {
       if (!moved2.has(model.id) || !namedPort(model, net2)) {
         return false;
       }
-      const at2 = point4(model.pins[0] ?? fail7());
-      return same17(touchingGroups(intended.expected, at2, true), [wireId]);
+      const at2 = point5(model.pins[0] ?? fail7());
+      return same18(touchingGroups(intended.expected, at2, true), [wireId]);
     });
     if (matches.length !== 1) {
       return fail7();
     }
     const port = matches[0] ?? fail7();
-    const pin3 = port.pins[0] ?? fail7();
+    const pin4 = port.pins[0] ?? fail7();
     const oldPort = original.components.find((model) => model.id === port.id);
-    const oldPin = oldPort?.pins.find((candidate) => candidate.id === pin3.id);
-    if (oldPort === void 0 || oldPin === void 0 || !namedPort(oldPort, net2) || pin3.net !== net2 || oldPin.net !== net2 || pin3.noConnect?.value === "yes" || oldPin.noConnect?.value === "yes" || same17(point4(oldPin), point4(pin3)) || touchingGroups(before, point4(oldPin), true).includes(wireId) || !same17(touchingGroups(intended.expected, point4(pin3), false), [wireId])) {
+    const oldPin = oldPort?.pins.find((candidate) => candidate.id === pin4.id);
+    if (oldPort === void 0 || oldPin === void 0 || !namedPort(oldPort, net2) || pin4.net !== net2 || oldPin.net !== net2 || pin4.noConnect?.value === "yes" || oldPin.noConnect?.value === "yes" || same18(point5(oldPin), point5(pin4)) || touchingGroups(before, point5(oldPin), true).includes(wireId) || !same18(touchingGroups(intended.expected, point5(pin4), false), [wireId])) {
       return fail7();
     }
     labels.push({
@@ -58483,9 +59195,9 @@ function prepareSchematicLayoutVisibilityRepair(input, before, oldNative, create
       wireId,
       net: net2,
       portId: port.id,
-      pinId: pin3.id,
-      beforePoint: point4(oldPin),
-      afterPoint: point4(pin3),
+      pinId: pin4.id,
+      beforePoint: point5(oldPin),
+      afterPoint: point5(pin4),
       ...created === void 0 ? {} : { created }
     });
     current2.body["valueVisible"] = false;
@@ -58505,7 +59217,7 @@ function prepareSchematicLayoutVisibilityRepair(input, before, oldNative, create
     operations: labels.map((label) => ({ id: `hide:${label.stepId}`, action: "sch.attribute.display", target: { primitiveId: label.attributeId }, patch: { valueVisible: false } }))
   };
   const adapter = buildSchematicLayoutAdapter(repair, currentSource, actual, {});
-  if (!same17(adapter.expected, correctedSource)) {
+  if (!same18(adapter.expected, correctedSource)) {
     throw new Error("Deferred visibility-only adapter exceeds the exact correction.");
   }
   const descriptor = {
@@ -58549,13 +59261,13 @@ function verifySchematicLayoutVisibilityRepairPersistence(operation, input, crea
   const persistence = verifySchematicLayoutPersistence(diagnostic, input, createdIds, evidence);
   return { profile: "easyeda-pro-control.schematic-layout-visibility-repair-persistence.v1", originalIntentFulfilled: false, descriptor: prepared.descriptor, persistence };
 }
-var same17;
+var same18;
 var init_schematic_layout_visibility_repair = __esm({
   "server/src/schematic-layout-visibility-repair.ts"() {
     init_core3();
     init_schematic_source_proof();
     init_schematic_layout_batch();
-    same17 = (a, b) => canonicalJson(a) === canonicalJson(b);
+    same18 = (a, b) => canonicalJson(a) === canonicalJson(b);
   }
 });
 
@@ -58681,7 +59393,7 @@ var init_design_save_attempt = __esm({
 });
 
 // server/src/design-execution.ts
-import { basename as basename7, join as join12 } from "node:path";
+import { basename as basename7, join as join13 } from "node:path";
 function externalRuntimeIdentity(value) {
   const external2 = Object.fromEntries(Object.entries(value).filter(([key]) => !["facadeImplementation", "reviewedCompatibilityManifest"].includes(key)));
   const serialized = JSON.parse(canonicalJson(external2));
@@ -59257,7 +59969,7 @@ var init_design_execution = __esm({
         } else if (input.expectedTopology !== void 0) {
           throw new Error("Explicit schematic topology cannot be supplied for a PCB action.");
         }
-        const checkpoint = await this.engine.checkpoint({ source: context2.project.path, outputDir: join12(controlDataDirectory(), "checkpoints"), label: "typed-design-before" });
+        const checkpoint = await this.engine.checkpoint({ source: context2.project.path, outputDir: join13(controlDataDirectory(), "checkpoints"), label: "typed-design-before" });
         if (!("receiptPath" in checkpoint) || typeof checkpoint.receiptPath !== "string") {
           throw new Error("Checkpoint creation did not return a durable receipt.");
         }
@@ -59722,7 +60434,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
           correction = prepareSchematicLayoutVisibilityRepair(journal.plan.operation, journal.before, journal.beforeNative, journal.createdIds, evidence, current2.snapshot, current2.native);
           preflightCheckpoint = await this.engine.checkpoint({
             source: journal.context.project.path,
-            outputDir: join12(controlDataDirectory(), "checkpoints"),
+            outputDir: join13(controlDataDirectory(), "checkpoints"),
             label: "typed-layout-visibility-before"
           });
           if (!("receiptPath" in preflightCheckpoint)) {
@@ -59871,7 +60583,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
           verifyLayoutWireGroupRepairTopology(journal.beforeNative, journal.beforeTopology, currentTopology, correction.misnamedPins);
           preflightCheckpoint = await this.engine.checkpoint({
             source: journal.context.project.path,
-            outputDir: join12(controlDataDirectory(), "checkpoints"),
+            outputDir: join13(controlDataDirectory(), "checkpoints"),
             label: "typed-layout-wire-group-before"
           });
           if (!("receiptPath" in preflightCheckpoint)) {
@@ -60048,7 +60760,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           await this.engine.awaitProjectUploads(journal.context, journal, "layout-saved-reconcile-upload-barrier");
           const checkpoint = await this.engine.checkpoint({
             source: journal.context.project.path,
-            outputDir: join12(controlDataDirectory(), "checkpoints"),
+            outputDir: join13(controlDataDirectory(), "checkpoints"),
             label: "typed-layout-retained-save-reconciled"
           });
           if (!("receiptPath" in checkpoint)) {
@@ -60102,7 +60814,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             if (journal.plan.expectedTopology !== void 0) {
               verifyDesignTopology(journal.plan.expectedTopology, await readDesignTopology(this.engine, journal.context));
             }
-            const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join12(controlDataDirectory(), "checkpoints"), label: "typed-copper-reconciled-persisted" });
+            const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join13(controlDataDirectory(), "checkpoints"), label: "typed-copper-reconciled-persisted" });
             if (!("receiptPath" in checkpoint)) {
               throw new Error("Copper reconciliation checkpoint receipt missing.");
             }
@@ -60135,7 +60847,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           }
           const checkpoint = await this.engine.checkpoint({
             source: journal.context.project.path,
-            outputDir: join12(controlDataDirectory(), "checkpoints"),
+            outputDir: join13(controlDataDirectory(), "checkpoints"),
             label: "typed-design-reconciled-before"
           });
           if (!("receiptPath" in checkpoint)) {
@@ -60174,7 +60886,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
               { history: beforeState2.history, templates: journal.layoutTemplates ?? {} }
             );
             verifyDesignTopology(journal.beforeTopology, await readDesignTopology(this.engine, journal.context));
-            const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join12(controlDataDirectory(), "checkpoints"), label: "typed-layout-historical-reconciled" });
+            const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join13(controlDataDirectory(), "checkpoints"), label: "typed-layout-historical-reconciled" });
             if (!("receiptPath" in checkpoint)) {
               throw new Error("Historical layout reconciliation checkpoint receipt missing.");
             }
@@ -60264,7 +60976,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         await this.engine.awaitProjectUploads(journal.context, journal, "wire-saved-reconcile-upload-barrier");
         const checkpoint = await this.engine.checkpoint({
           source: journal.context.project.path,
-          outputDir: join12(controlDataDirectory(), "checkpoints"),
+          outputDir: join13(controlDataDirectory(), "checkpoints"),
           label: "typed-wire-retained-save-reconciled"
         });
         if (!("receiptPath" in checkpoint)) {
@@ -60369,7 +61081,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             verifyDesignTopology(journal.plan.expectedTopology, await readDesignTopology(this.engine, context2));
           }
           await this.engine.awaitProjectUploads(context2, journal, "commit-upload-barrier");
-          const checkpoint = await this.engine.checkpoint({ source: context2.project.path, outputDir: join12(controlDataDirectory(), "checkpoints"), label: "typed-design-committed" });
+          const checkpoint = await this.engine.checkpoint({ source: context2.project.path, outputDir: join13(controlDataDirectory(), "checkpoints"), label: "typed-design-committed" });
           if (!("receiptPath" in checkpoint)) {
             throw new Error("Committed checkpoint receipt missing.");
           }
@@ -60424,10 +61136,10 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         return [2, 4].includes(journal.context.document.documentType) && (journal.saved || journal.artifacts.some((entry) => /-(?:(?:symbol|footprint)-(?:save|durable-before-close)|library-save-intent)\.json$/u.test(entry.path)));
       }
       async verifySavedLibrary(journal, current2) {
-        const documentType = journal.context.document.documentType;
+        const documentType2 = journal.context.document.documentType;
         const documentUuid = journal.context.document.uuid;
         const tabId = journal.context.document.tabId;
-        if (journal.after === void 0 || documentType !== 2 && documentType !== 4 || typeof documentUuid !== "string" || typeof tabId !== "string") {
+        if (journal.after === void 0 || documentType2 !== 2 && documentType2 !== 4 || typeof documentUuid !== "string" || typeof tabId !== "string") {
           throw new Error("Saved library recovery requires the retained intended source and exact target context.");
         }
         const installed = await this.engine.upstream.installedEasyedaBundles?.();
@@ -60436,7 +61148,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         }
         await verifyLibraryNativeProfile(installed.assetsRoot);
         const baseline = await durableSnapshot(journal.preCheckpoint, journal.context);
-        const lifecycle = documentType === 2 ? symbolLifecycle(journal.after, baseline) : footprintLifecycle(journal.after, baseline, journal.context);
+        const lifecycle = documentType2 === 2 ? symbolLifecycle(journal.after, baseline) : footprintLifecycle(journal.after, baseline, journal.context);
         const save = await _DesignExecutor.phase(journal, `${lifecycle.family}-save`);
         const durable = await _DesignExecutor.phase(journal, `${lifecycle.family}-durable-before-close`);
         const retained = verifySavedLibraryArtifacts({ family: lifecycle.family, expected: journal.after, current: current2.snapshot, scope: lifecycle.scope, save, durable });
@@ -60449,7 +61161,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         const persistenceInput = { before: baseline, expectedBefore: journal.before, expectedAfter: journal.after };
         const retainedPersistence = await _DesignExecutor.libraryPersistence(journal, { ...persistenceInput, after: retainedHistory });
         await this.engine.awaitProjectUploads(journal.context, journal, "saved-library-recovery-upload-barrier");
-        const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join12(controlDataDirectory(), "checkpoints"), label: "typed-library-saved-recovery" });
+        const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join13(controlDataDirectory(), "checkpoints"), label: "typed-library-saved-recovery" });
         if (!("receiptPath" in checkpoint)) {
           throw new Error("Saved library recovery checkpoint receipt missing.");
         }
@@ -60467,7 +61179,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         const outstandingDispatch = intent !== void 0 && (!isRecord(noDispatch) || noDispatch["dispatched"] !== false || noDispatch["intentSha256"] !== sha256Text(canonicalJson(intent)));
         const navigation = selectSavedLibraryReopen({
           documentUuid,
-          documentType,
+          documentType: documentType2,
           tabId,
           receipts: [await _DesignExecutor.phase(journal, `${lifecycle.family}-reopen`), await _DesignExecutor.phase(journal, `${lifecycle.family}-reopen-recovery`)],
           outstandingDispatch
@@ -60516,7 +61228,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         if (!sameState(state(saved.snapshot), state(journal.after))) {
           throw new Error("Library source changed during save; close refused.");
         }
-        const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join12(controlDataDirectory(), "checkpoints"), label: `typed-${lifecycle.family}-saved-before-close` });
+        const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join13(controlDataDirectory(), "checkpoints"), label: `typed-${lifecycle.family}-saved-before-close` });
         if (!("receiptPath" in checkpoint)) {
           throw new Error("Library saved checkpoint receipt missing; close refused.");
         }
@@ -60558,7 +61270,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           if (journal.beforeTopology !== void 0) {
             verifyDesignTopology(journal.beforeTopology, await readDesignTopology(this.engine, journal.context));
           }
-          const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join12(controlDataDirectory(), "checkpoints"), label: "typed-design-rolled-back" });
+          const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join13(controlDataDirectory(), "checkpoints"), label: "typed-design-rolled-back" });
           if (!("receiptPath" in checkpoint)) {
             throw new Error("Rollback checkpoint receipt missing; durable restoration is unverified.");
           }
@@ -60806,7 +61518,7 @@ const policy=async()=>{const value=JSON.parse(JSON.stringify(await eda.pcb_Drc.g
 import { createHash as createHash11 } from "node:crypto";
 import { constants as constants6 } from "node:fs";
 import { lstat as lstat10, open as open10, realpath as realpath7 } from "node:fs/promises";
-import { isAbsolute as isAbsolute11, join as join13 } from "node:path";
+import { isAbsolute as isAbsolute11, join as join14 } from "node:path";
 async function verifyNativeRuleReportProfile(assetsRoot, kindInput) {
   const { kind } = nativeRuleCheckRequestSchema.parse({ kind: kindInput });
   if (!isAbsolute11(assetsRoot) || await realpath7(assetsRoot) !== assetsRoot) {
@@ -60814,7 +61526,7 @@ async function verifyNativeRuleReportProfile(assetsRoot, kindInput) {
   }
   const implementations = NATIVE_RULE_IMPLEMENTATIONS[kind];
   for (const implementation of implementations) {
-    const path5 = join13(assetsRoot, implementation.relativePath);
+    const path5 = join14(assetsRoot, implementation.relativePath);
     const before = await lstat10(path5, { bigint: true });
     if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath7(path5) !== path5) {
       throw new Error("Rule-check implementation is not a bounded regular file.");
@@ -60854,7 +61566,7 @@ var init_native_rule_profile = __esm({
 });
 
 // server/src/check-execution.ts
-import { join as join14 } from "node:path";
+import { join as join15 } from "node:path";
 function binding(context2) {
   return nativeRuleCheckBindingSchema.parse({
     projectUuid: context2.project.uuid ?? context2.project.projectUuid,
@@ -60925,9 +61637,9 @@ function summary2(journal) {
   };
 }
 function isJournal(value) {
-  return isRecord(value) && isRecord(value["plan"]) && value["plan"]["profile"] === PROFILE5 && isRecord(value["plan"]["check"]) && isRecord(value["plan"]["expectedContext"]) && isRecord(value["plan"]["expectedFingerprint"]) && typeof value["plan"]["maxInlineItems"] === "number" && typeof value["operationId"] === "string" && typeof value["planHash"] === "string" && typeof value["journalPath"] === "string" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["updatedAt"] === "string" && typeof value["sequence"] === "number" && typeof value["calculationDispatched"] === "boolean" && isRecord(value["context"]) && checkpointSchema.safeParse(value["preCheckpoint"]).success && Array.isArray(value["artifacts"]);
+  return isRecord(value) && isRecord(value["plan"]) && value["plan"]["profile"] === PROFILE5 && isRecord(value["plan"]["check"]) && isRecord(value["plan"]["expectedContext"]) && isRecord(value["plan"]["expectedFingerprint"]) && typeof value["plan"]["maxInlineItems"] === "number" && typeof value["operationId"] === "string" && typeof value["planHash"] === "string" && typeof value["journalPath"] === "string" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["updatedAt"] === "string" && typeof value["sequence"] === "number" && typeof value["calculationDispatched"] === "boolean" && isRecord(value["context"]) && checkpointSchema2.safeParse(value["preCheckpoint"]).success && Array.isArray(value["artifacts"]);
 }
-var PROFILE5, hash3, checkpointSchema, verificationSchema, dependencies, RuleCheckExecutor;
+var PROFILE5, hash3, checkpointSchema2, verificationSchema, dependencies, RuleCheckExecutor;
 var init_check_execution = __esm({
   "server/src/check-execution.ts"() {
     init_zod();
@@ -60942,7 +61654,7 @@ var init_check_execution = __esm({
     init_transaction_error();
     PROFILE5 = "easyeda-pro-control.rule-check-transaction.v1";
     hash3 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
-    checkpointSchema = external_exports.object({
+    checkpointSchema2 = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.checkpoint.v2"),
       source: external_exports.string().min(1),
       checkpoint: external_exports.string().min(1),
@@ -61051,8 +61763,8 @@ var init_check_execution = __esm({
         await this.runtime(plan, plan.expectedContext);
         const expectedContext = structuredClone(plan.expectedContext);
         const context2 = structuredClone(await this.engine.assertContext(expectedContext));
-        const checkpointDirectory = join14(controlDataDirectory(), "checkpoints");
-        const checkpoint = checkpointSchema.parse(await this.engine.checkpoint({ source: context2.project.path, outputDir: checkpointDirectory, label: "rule-check-before" }));
+        const checkpointDirectory = join15(controlDataDirectory(), "checkpoints");
+        const checkpoint = checkpointSchema2.parse(await this.engine.checkpoint({ source: context2.project.path, outputDir: checkpointDirectory, label: "rule-check-before" }));
         const operationId = newOperationId();
         const journal = {
           schema: OPERATION_SCHEMA,
@@ -61096,7 +61808,7 @@ var init_check_execution = __esm({
             throw new Error("Native check changed its full live calculation scope.");
           }
           const database = await this.unchanged(journal);
-          const final = checkpointSchema.parse(await this.engine.checkpoint({ source: context2.project.path, outputDir: checkpointDirectory, label: "rule-check-after" }));
+          const final = checkpointSchema2.parse(await this.engine.checkpoint({ source: context2.project.path, outputDir: checkpointDirectory, label: "rule-check-after" }));
           if (final.source !== checkpoint.source || final.checkpointDumpSha256 !== checkpoint.checkpointDumpSha256) {
             throw new Error("Native check changed the complete saved SQLite project.");
           }
@@ -61222,15 +61934,15 @@ var init_check_execution = __esm({
 // server/src/library-operations.ts
 function assetOperations(family) {
   return [
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.get`), libraryUuid: uuid5, target: identity4 }).strict(),
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.delete`), libraryUuid: uuid5, target: identity4 }).strict(),
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.copy`), libraryUuid: uuid5, target: identity4, targetLibraryUuid: uuid5, classification: classification.optional(), name: name4 }).strict()
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.get`), libraryUuid: uuid5, target: identity5 }).strict(),
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.delete`), libraryUuid: uuid5, target: identity5 }).strict(),
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.copy`), libraryUuid: uuid5, target: identity5, targetLibraryUuid: uuid5, classification: classification.optional(), name: name4 }).strict()
   ];
 }
 function sourceOperations(family) {
   return [
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.source.replace`), libraryUuid: uuid5, target: identity4, documentSource: external_exports.string().min(1).max(1048576) }).strict(),
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.open`), libraryUuid: uuid5, target: identity4, splitScreenId: uuid5.optional() }).strict()
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.source.replace`), libraryUuid: uuid5, target: identity5, documentSource: external_exports.string().min(1).max(1048576) }).strict(),
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.open`), libraryUuid: uuid5, target: identity5, splitScreenId: uuid5.optional() }).strict()
   ];
 }
 function simpleExport(action) {
@@ -61562,7 +62274,7 @@ function listLibraryOperationCapabilities() {
     ...LIBRARY_OPERATION_GAPS.map(({ action, status: status2 }) => ({ action, status: status2 }))
   ];
 }
-var LIBRARY_OPERATION_PROFILE, MANAGED_FILE_MAX_BYTES, id6, uuid5, name4, text5, fileName, identity4, classification, symbolType2, associationIdentity, association, propertyScalar, propertyMap, deviceProperty, metadataPatch, nonemptyPatch, managedFileInputSchema, exportOptions, bomOptions, netlistOptions, primitiveSources, libraryOperationSchema, literal4, optional2, ref, source2, tabs, project, assetApis, documentApis, simpleExports, LIBRARY_OPERATION_GAPS;
+var LIBRARY_OPERATION_PROFILE, MANAGED_FILE_MAX_BYTES, id6, uuid5, name4, text5, fileName, identity5, classification, symbolType2, associationIdentity, association, propertyScalar, propertyMap, deviceProperty, metadataPatch, nonemptyPatch, managedFileInputSchema, exportOptions, bomOptions, netlistOptions, primitiveSources, libraryOperationSchema, literal4, optional2, ref, source2, tabs, project, assetApis, documentApis, simpleExports, LIBRARY_OPERATION_GAPS;
 var init_library_operations = __esm({
   "server/src/library-operations.ts"() {
     init_zod();
@@ -61574,7 +62286,7 @@ var init_library_operations = __esm({
     name4 = external_exports.string().min(1).max(512);
     text5 = external_exports.string().max(65536);
     fileName = external_exports.string().regex(/^[A-Za-z0-9][A-Za-z0-9_. -]{0,127}$/u).refine((value) => !value.includes("..") && !value.endsWith(".") && !value.endsWith(" "));
-    identity4 = external_exports.union([external_exports.object({ uuid: uuid5 }).strict(), external_exports.object({ resultOf: id6 }).strict()]);
+    identity5 = external_exports.union([external_exports.object({ uuid: uuid5 }).strict(), external_exports.object({ resultOf: id6 }).strict()]);
     classification = external_exports.array(name4).max(2);
     symbolType2 = external_exports.union([external_exports.literal(2), external_exports.literal(18), external_exports.literal(19), external_exports.literal(20), external_exports.literal(21), external_exports.literal(22), external_exports.literal(25), external_exports.literal(31), external_exports.literal(17)]);
     associationIdentity = external_exports.object({ uuid: uuid5, libraryUuid: uuid5 }).strict();
@@ -61606,30 +62318,30 @@ var init_library_operations = __esm({
       external_exports.object({ id: id6, action: external_exports.literal("library.footprint.create"), libraryUuid: uuid5, name: name4, classification: classification.optional(), description: text5.optional() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("library.device.create"), libraryUuid: uuid5, name: name4, classification: classification.optional(), association: association.extend({ symbol: associationIdentity, footprint: associationIdentity.optional(), model3D: associationIdentity.optional() }).strict(), description: text5.optional(), property: deviceProperty.optional() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("library.model3d.create"), libraryUuid: uuid5, file: managedFileInputSchema, classification: classification.optional(), unit: external_exports.enum(["mm", "cm", "m", "mil", "inch"]) }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("library.symbol.modify"), libraryUuid: uuid5, target: identity4, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("library.footprint.modify"), libraryUuid: uuid5, target: identity4, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("library.model3d.modify"), libraryUuid: uuid5, target: identity4, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("library.device.modify"), libraryUuid: uuid5, target: identity4, patch: metadataPatch.extend({ association: association.refine(nonemptyPatch).optional(), property: deviceProperty.refine(nonemptyPatch).optional() }).strict().refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("library.symbol.modify"), libraryUuid: uuid5, target: identity5, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("library.footprint.modify"), libraryUuid: uuid5, target: identity5, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("library.model3d.modify"), libraryUuid: uuid5, target: identity5, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("library.device.modify"), libraryUuid: uuid5, target: identity5, patch: metadataPatch.extend({ association: association.refine(nonemptyPatch).optional(), property: deviceProperty.refine(nonemptyPatch).optional() }).strict().refine(nonemptyPatch, "Empty patch.") }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("library.device.model-transform"), libraryUuid: uuid5, target: external_exports.object({ uuid: uuid5 }).strict(), transform: modelTransformSchema, inheritedInstances: external_exports.array(external_exports.object({ documentUuid: uuid5, documentType: external_exports.enum(["PCB", "SCH_PAGE"]), componentUuid: uuid5 }).strict()).max(2e4) }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("project.create"), name: name4, projectName: external_exports.string().regex(/^[A-Za-z0-9-]{1,128}$/u).optional(), teamUuid: uuid5, folderUuid: uuid5.optional(), description: text5.optional() }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("project.open"), target: identity4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.open"), target: identity4, splitScreenId: uuid5.optional() }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("project.open"), target: identity5 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.open"), target: identity5, splitScreenId: uuid5.optional() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("document.activate"), tabId: uuid5 }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("document.close"), tabId: uuid5 }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("document.pcb.create"), boardName: name4.optional() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("document.schematic.create"), boardName: name4.optional() }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.page.create"), schematic: identity4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.copy"), target: identity4, boardName: name4.optional() }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.copy"), target: identity4, boardName: name4.optional() }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.page.copy"), target: identity4, schematic: identity4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.rename"), target: identity4, name: name4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.rename"), target: identity4, name: name4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.page.rename"), target: identity4, name: name4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.delete"), target: identity4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.delete"), target: identity4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.page.delete"), target: identity4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.save"), target: identity4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.save"), target: identity4 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.page.create"), schematic: identity5 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.copy"), target: identity5, boardName: name4.optional() }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.copy"), target: identity5, boardName: name4.optional() }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.page.copy"), target: identity5, schematic: identity5 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.rename"), target: identity5, name: name4 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.rename"), target: identity5, name: name4 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.page.rename"), target: identity5, name: name4 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.delete"), target: identity5 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.delete"), target: identity5 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.page.delete"), target: identity5 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.save"), target: identity5 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.save"), target: identity5 }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("export.pcb.gerber"), ...exportOptions, colorSilkscreen: external_exports.boolean(), unit: external_exports.enum(["mm", "inch"]), digitalFormat: external_exports.object({ integerNumber: external_exports.number().int().min(1).max(6), decimalNumber: external_exports.number().int().min(1).max(6) }).strict(), other: external_exports.object({ metallicDrillingInformation: external_exports.boolean(), nonMetallicDrillingInformation: external_exports.boolean(), drillTable: external_exports.boolean(), flyingProbeTestingFile: external_exports.boolean() }).strict(), layers: external_exports.array(external_exports.object({ layerId: external_exports.number().int().min(1).max(100), isMirror: external_exports.boolean() }).strict()).min(1).max(100), objects: external_exports.array(external_exports.enum(primitiveSources)).min(1).max(17) }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("export.pcb.model3d"), ...exportOptions, fileType: external_exports.enum(["step", "obj"]), elements: external_exports.array(external_exports.enum(["Component Model", "Via", "Silkscreen", "Wire In Signal Layer"])).max(4), modelMode: external_exports.enum(["Outfit", "Parts"]), autoGenerateModels: external_exports.boolean() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("export.pcb.pick-and-place"), ...exportOptions, fileType: external_exports.enum(["xlsx", "csv"]), unit: external_exports.enum(["mm", "mil"]) }).strict(),
@@ -61705,7 +62417,7 @@ var init_library_operations = __esm({
 
 // server/src/library-persistence-proof.ts
 function documentValue(document2) {
-  return { uuid: document2.uuid, docType: document2.docType, metadata: document2.metadata, records: document2.records.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 })) };
+  return { uuid: document2.uuid, docType: document2.docType, metadata: document2.metadata, records: document2.records.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 })) };
 }
 function libraryProjectRecordsHash(history) {
   return sha256Json(history.documents.map((document2) => documentValue(document2)));
@@ -61725,7 +62437,7 @@ function projectLibraryOpenTarget(input, history) {
   }
   throw new Error("Editor target is not an exact current-project PCB, schematic page or supported library asset.");
 }
-function verifyProjectLibraryMetadata(input, metadata, history, projectSymbolMetadata) {
+function verifyProjectLibraryMetadata(input, metadata2, history, projectSymbolMetadata) {
   const operation = libraryOperationSchema.parse(input);
   if (!("libraryUuid" in operation) || operation.libraryUuid !== history.projectUuid || !("target" in operation) || !("uuid" in operation.target) || !operation.action.endsWith(".get")) {
     throw new Error("Project metadata proof requires the exact project collection and asset identity.");
@@ -61745,19 +62457,19 @@ function verifyProjectLibraryMetadata(input, metadata, history, projectSymbolMet
     expectedName = native["searchTitle"] || native["displayTitle"];
     symbolTitleEvidence = { sourceTitle: native["displayTitle"], searchTitle: native["searchTitle"], sha256: sha256Json(native) };
   }
-  if (meta3 === void 0 || metadata["uuid"] !== assetId || metadata["name"] !== expectedName || history.projectOwnerUuid === void 0 || metadata["libraryUuid"] !== history.projectOwnerUuid) {
+  if (meta3 === void 0 || metadata2["uuid"] !== assetId || metadata2["name"] !== expectedName || history.projectOwnerUuid === void 0 || metadata2["libraryUuid"] !== history.projectOwnerUuid) {
     throw new Error("Library metadata differs from checkpoint asset membership, name or project owner.");
   }
-  if (meta3.body["description"] !== void 0 && metadata["description"] !== meta3.body["description"]) {
+  if (meta3.body["description"] !== void 0 && metadata2["description"] !== meta3.body["description"]) {
     throw new Error("Library description differs from the project checkpoint.");
   }
   return { collectionUuid: history.projectUuid, ownerUuid: history.projectOwnerUuid, assetUuid: assetId, proof: "hash-verified-project-owner-and-asset-metadata", ...symbolTitleEvidence === void 0 ? {} : { symbolTitleEvidence } };
 }
-function same18(left, right) {
+function same19(left, right) {
   return canonicalJson(left) === canonicalJson(right);
 }
 function verifyTargetMetadata2(before, after) {
-  const fields2 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => Object.hasOwn(before, key) !== Object.hasOwn(after, key) || !same18({ value: before[key] }, { value: after[key] }));
+  const fields2 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => Object.hasOwn(before, key) !== Object.hasOwn(after, key) || !same19({ value: before[key] }, { value: after[key] }));
   if (fields2.length === 0) {
     return;
   }
@@ -61807,7 +62519,7 @@ function verifyProjectLibraryEffect(input, before, after, createdId) {
   if (changed?.docType !== "FOOTPRINT" || isNativeDocumentDeleted(changed)) {
     throw new Error("Persisted active footprint is missing.");
   }
-  if (!same18(before.documents.filter((document2) => document2.uuid !== id7).map((document2) => documentValue(document2)), after.documents.filter((document2) => document2.uuid !== id7).map((document2) => documentValue(document2)))) {
+  if (!same19(before.documents.filter((document2) => document2.uuid !== id7).map((document2) => documentValue(document2)), after.documents.filter((document2) => document2.uuid !== id7).map((document2) => documentValue(document2)))) {
     throw new Error("Library operation altered unrelated project records.");
   }
   const meta3 = changed.records.find((record6) => record6.id === "META" && record6.type === "META");
@@ -61823,8 +62535,8 @@ function verifyProjectLibraryEffect(input, before, after, createdId) {
       throw new Error("Original library asset disappeared.");
     }
     verifyTargetMetadata2(old.metadata, changed.metadata);
-    const expectedRecords = old.records.map(({ id: recordId, type, body: body2 }) => {
-      const expectedBody = { ...body2 };
+    const expectedRecords = old.records.map(({ id: recordId, type, body: body3 }) => {
+      const expectedBody = { ...body3 };
       if (recordId === "META" && type === "META") {
         if (operation.patch.name !== void 0) {
           expectedBody["title"] = operation.patch.name;
@@ -61836,7 +62548,7 @@ function verifyProjectLibraryEffect(input, before, after, createdId) {
       return { id: recordId, type, body: expectedBody, ticket: 0, client: null };
     });
     const expectedDocument = documentValue({ ...old, metadata: changed.metadata, records: expectedRecords });
-    if (!same18(expectedDocument, documentValue(changed))) {
+    if (!same19(expectedDocument, documentValue(changed))) {
       throw new Error("Library patch changed geometry, bindings or unrequested metadata.");
     }
   }
@@ -61851,6 +62563,51 @@ var init_library_persistence_proof = __esm({
 });
 
 // server/src/editor-tabs.ts
+function buildEditorTargetAbsentExpression(input) {
+  const identity9 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
+  const active = external_exports.object({
+    uuid: identity9,
+    documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]),
+    // oxlint-disable-next-line eslint/no-control-regex -- Native tab identities must not contain control characters.
+    tabId: external_exports.string().min(1).max(512).regex(/^[^\u0000-\u001F]+$/u)
+  }).strict();
+  const scope3 = external_exports.object({ targetUuid: identity9, projectUuid: identity9, ownerUuid: identity9, active }).strict().parse(input);
+  if (scope3.active.uuid === scope3.targetUuid || scope3.active.tabId.split("@")[0] !== scope3.active.uuid) {
+    throw new Error("Closed-target proof requires one exact different active tab.");
+  }
+  return `(async()=>{
+const scope=${JSON.stringify(scope3)},editor=eda.dmt_EditorControl;
+if(typeof editor?.getSplitScreenTree!=='function')throw new Error('EDITOR_TABS_API_MISSING');
+const tree=await editor.getSplitScreenTree(),pending=[{value:tree,depth:0}],seen=new Set(),tabIds=new Set();let tabCount=0,activeCount=0;
+while(pending.length){const item=pending.pop(),node=item.value;
+if(!node||typeof node!=='object'||Array.isArray(node)||seen.has(node)||item.depth>16||seen.size>=128)throw new Error('EDITOR_TABS_TREE_BOUND');
+seen.add(node);
+if(node.children!==undefined){
+if(!Array.isArray(node.children)||node.children.length===0||node.children.length>128||node.tabs!==undefined||pending.length+node.children.length+seen.size>128)throw new Error('EDITOR_TABS_TREE_SHAPE');
+for(const child of node.children)pending.push({value:child,depth:item.depth+1});
+}else{
+if(!Array.isArray(node.tabs)||node.tabs.length>256)throw new Error('EDITOR_TABS_TREE_SHAPE');
+if(node.tabs.length===0)throw new Error('EDITOR_TABS_INCOMPLETE');
+for(const tab of node.tabs){tabCount+=1;
+if(tabCount>256||!tab||typeof tab!=='object'||Array.isArray(tab)||typeof tab.tabId!=='string'||!tab.tabId||tab.tabId.length>512||/[\\x00-\\x1f]/.test(tab.tabId))throw new Error('EDITOR_TABS_TAB_SHAPE');
+if(tabIds.has(tab.tabId))throw new Error('EDITOR_TABS_TAB_SHAPE');tabIds.add(tab.tabId);
+const data=tab.data;
+if(data!==undefined&&(!data||typeof data!=='object'||Array.isArray(data)))throw new Error('EDITOR_TABS_TAB_SHAPE');
+if(tab.documentType!==undefined&&data?.doctype!==undefined&&tab.documentType!==data.doctype)throw new Error('EDITOR_TABS_TAB_SHAPE');
+const type=tab.documentType??data?.doctype,id=tab.tabId.split('@')[0];
+const start=tab.tabId==='tab_page1'&&type===-1&&tab.isAbleDelete===false&&tab.parentProjectUuid===undefined&&tab.parentLibraryUuid===undefined&&data?.pid===undefined&&data?.owner===undefined;
+const owned=[1,2,3,4].includes(type)&&id&&
+(tab.parentProjectUuid===undefined||tab.parentProjectUuid===scope.projectUuid)&&(data?.pid===undefined||data.pid===scope.projectUuid)&&
+([2,4].includes(type)?tab.tabId===id+'@'+scope.projectUuid&&(tab.parentLibraryUuid===scope.ownerUuid||data?.owner===scope.ownerUuid)&&(tab.parentLibraryUuid===undefined||tab.parentLibraryUuid===scope.ownerUuid)&&(data?.owner===undefined||data.owner===scope.ownerUuid):
+(tab.parentProjectUuid===scope.projectUuid||data?.pid===scope.projectUuid)&&tab.parentLibraryUuid===undefined&&(data?.owner===undefined||data.owner===scope.ownerUuid));
+if(!start&&!owned)throw new Error('EDITOR_TABS_OWNER_UNPROVEN');
+if(id===scope.targetUuid)throw new Error('EDITOR_TARGET_ALREADY_OPEN');
+if(tab.tabId===scope.active.tabId||id===scope.active.uuid){
+if(!owned||id!==scope.active.uuid||type!==scope.active.documentType||tab.tabId!==scope.active.tabId)throw new Error('EDITOR_TABS_ACTIVE_UNPROVEN');
+activeCount+=1;}
+}}
+}if(activeCount!==1)throw new Error('EDITOR_TABS_ACTIVE_UNPROVEN');return {targetClosed:true};})()`;
+}
 function buildEditorTabsReadCode(projectUuid) {
   if (!/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.test(projectUuid)) {
     throw new Error("Editor-tab inspection needs one exact project UUID.");
@@ -61941,9 +62698,9 @@ var init_editor_tabs = __esm({
 });
 
 // server/src/project-open-execution.ts
-import { join as join15 } from "node:path";
+import { join as join16 } from "node:path";
 async function checkpointPolicy(source3) {
-  return { expectedSource: source3, artifactRoots: [join15(controlDataDirectory(), "checkpoints")], controlRoot: await controlRootCapability() };
+  return { expectedSource: source3, artifactRoots: [join16(controlDataDirectory(), "checkpoints")], controlRoot: await controlRootCapability() };
 }
 function targetContext(target5) {
   return { project: { uuid: target5.projectUuid, path: target5.projectPath }, document: { uuid: target5.documentUuid, documentType: target5.documentType } };
@@ -62093,7 +62850,7 @@ var init_project_open_execution = __esm({
       async durableProof(journal) {
         const beforeCheck = await this.unchanged(journal);
         const checkpoint = await this.services.createCheckpoint(
-          { source: journal.plan.target.projectPath, outputDir: join15(controlDataDirectory(), "checkpoints"), label: "project-open-after" },
+          { source: journal.plan.target.projectPath, outputDir: join16(controlDataDirectory(), "checkpoints"), label: "project-open-after" },
           await this.services.checkpointPolicy(journal.plan.target.projectPath)
         );
         const after = await this.readHistory(checkpoint, journal.plan.target);
@@ -62167,7 +62924,7 @@ var init_project_open_execution = __esm({
           throw new Error("Resolve the incomplete transaction before opening another target.");
         }
         await this.runtime(input.expectedFingerprint);
-        const checkpoint = await this.services.createCheckpoint({ source: target5.projectPath, outputDir: join15(controlDataDirectory(), "checkpoints"), label: "project-open-before" }, await this.services.checkpointPolicy(target5.projectPath));
+        const checkpoint = await this.services.createCheckpoint({ source: target5.projectPath, outputDir: join16(controlDataDirectory(), "checkpoints"), label: "project-open-before" }, await this.services.checkpointPolicy(target5.projectPath));
         const before = await this.readHistory(checkpoint, target5);
         const context2 = targetContext(target5);
         deriveRecoveryNavigationTarget(context2, before);
@@ -62326,7 +63083,7 @@ var init_project_open_execution = __esm({
 
 // server/src/pcb-route-audit.ts
 function finite5(value) {
-  return coordinate3.parse(value);
+  return coordinate4.parse(value);
 }
 function bodyRecord(value) {
   if (!isRecord(value)) {
@@ -62334,7 +63091,7 @@ function bodyRecord(value) {
   }
   return value;
 }
-function identity5(object4, type) {
+function identity6(object4, type) {
   const value = JSON.parse(object4.id);
   if (!Array.isArray(value) || value[0] !== type) {
     throw new Error("Native route source identity is malformed.");
@@ -62342,13 +63099,13 @@ function identity5(object4, type) {
   return value;
 }
 function netName(object4) {
-  return external_exports.string().parse(identity5(object4, "NET")[1]);
+  return external_exports.string().parse(identity6(object4, "NET")[1]);
 }
 function note(code, objectIds, detail) {
   return { code, objectIds, detail };
 }
-function pointKey(point5, layer4) {
-  return canonicalJson([Math.round(point5.x / EPSILON_MIL), Math.round(point5.y / EPSILON_MIL), layer4]);
+function pointKey2(point6, layer4) {
+  return canonicalJson([Math.round(point6.x / EPSILON_MIL), Math.round(point6.y / EPSILON_MIL), layer4]);
 }
 function samePoint(first, second) {
   return Math.hypot(first.x - second.x, first.y - second.y) <= EPSILON_MIL;
@@ -62364,8 +63121,8 @@ function rule(source3, family, reference2) {
   if (reference2 !== void 0 && reference2 !== null && typeof reference2 !== "string") {
     return null;
   }
-  const candidates = source3.objects.filter((entry) => entry.type === "RULE" && identity5(entry, "RULE")[1] === family);
-  const selected = typeof reference2 === "string" && reference2 !== "default" && reference2 !== "" ? candidates.filter((entry) => identity5(entry, "RULE")[2] === reference2) : candidates.filter((entry) => entry.body["ruleState"] === "DEFAULT");
+  const candidates = source3.objects.filter((entry) => entry.type === "RULE" && identity6(entry, "RULE")[1] === family);
+  const selected = typeof reference2 === "string" && reference2 !== "default" && reference2 !== "" ? candidates.filter((entry) => identity6(entry, "RULE")[2] === reference2) : candidates.filter((entry) => entry.body["ruleState"] === "DEFAULT");
   if (selected.length !== 1 || selected[0] === void 0) {
     return null;
   }
@@ -62396,7 +63153,7 @@ function checkedPads(source3, inventoryInput) {
   const expected2 = /* @__PURE__ */ new Map();
   for (const object4 of source3.objects) {
     if (object4.type === "PAD_NET") {
-      const id7 = identity5(object4, "PAD_NET");
+      const id7 = identity6(object4, "PAD_NET");
       if (id7.length !== 4 || !id7.slice(1).every((entry) => typeof entry === "string")) {
         throw new Error("Native PAD_NET identity is incomplete.");
       }
@@ -62480,7 +63237,7 @@ function intersectionWarning(a, b) {
   if (a.layer !== b.layer) {
     return null;
   }
-  const shared = [a.start, a.end].some((point5) => samePoint(point5, b.start) || samePoint(point5, b.end));
+  const shared = [a.start, a.end].some((point6) => samePoint(point6, b.start) || samePoint(point6, b.end));
   if (a.arc || b.arc) {
     return note("arc-interior-intersections-unproved", [a.id, b.id], "Multiple segments involving an arc need native intersection checking before a complete-path claim.");
   }
@@ -62549,11 +63306,11 @@ function inventoryOnlyCopper(source3, inventory, net2) {
 function netGraph(segments3, vias, pads, copper, selected, findings) {
   const parents = /* @__PURE__ */ new Map();
   const points = /* @__PURE__ */ new Map();
-  const node = (point5, layer4) => {
-    const key = pointKey(point5, layer4);
+  const node = (point6, layer4) => {
+    const key = pointKey2(point6, layer4);
     if (!parents.has(key)) {
       parents.set(key, key);
-      points.set(key, { point: point5, layer: layer4 });
+      points.set(key, { point: point6, layer: layer4 });
     }
     return key;
   };
@@ -62606,11 +63363,11 @@ function netGraph(segments3, vias, pads, copper, selected, findings) {
   const terminalNodes = new Set([...padNodes.values()].flat().map((key) => root(key)));
   const danglingNodes = [...graph].filter(([key, edges]) => edges.length === 1 && !terminalNodes.has(key)).map(([key]) => {
     const members = [...points].filter(([id7]) => root(id7) === key);
-    const point5 = members[0]?.[1].point;
-    if (point5 === void 0) {
+    const point6 = members[0]?.[1].point;
+    if (point6 === void 0) {
       throw new Error("Route graph node position is absent.");
     }
-    return { x: point5.x, y: point5.y, layers: [...new Set(members.map(([, value]) => value.layer))].toSorted((a, b) => a - b) };
+    return { x: point6.x, y: point6.y, layers: [...new Set(members.map(([, value]) => value.layer))].toSorted((a, b) => a - b) };
   });
   if (selected === void 0) {
     return { path: null, danglingNodes };
@@ -62749,7 +63506,7 @@ function auditPcbRoutes(source3, inventory, input) {
         return false;
       }
       if (entry.type === "POURED") {
-        const parent = identity5(entry, "POURED")[1];
+        const parent = identity6(entry, "POURED")[1];
         return source3.objects.some((candidate) => candidate.type === "POUR" && candidate.id === parent && candidate.body["netName"] === net2);
       }
       return entry.body["netName"] === net2;
@@ -62778,7 +63535,7 @@ function auditPcbRoutes(source3, inventory, input) {
     results.push({ net: net2, padIds: netPads.map((pad2) => pad2.primitiveId).toSorted(), lineCount: segments3.filter((entry) => !entry.arc).length, arcCount: segments3.filter((entry) => entry.arc).length, viaCount: source3.objects.filter((entry) => entry.type === "VIA" && entry.body["netName"] === net2).length, summedPlanarSegmentLengthMil: segments3.reduce((sum, entry) => sum + entry.length, 0), layers: [...new Set(segments3.map((entry) => entry.layer))].toSorted((a, b) => a - b), ...netGraph(segments3, vias, netPads, copper, selected, findings), findings, widths });
   }
   const compare = (groupName, members, selectedRule, maximum, isPair) => {
-    const rows = members.map((member) => results.find((entry) => entry.net === member));
+    const rows = members.map((member2) => results.find((entry) => entry.net === member2));
     const paths = rows.map((entry) => entry?.path);
     const lengths = paths.map((path5) => path5?.shortestKnownPlanarLengthMil);
     const findings = [];
@@ -62841,14 +63598,14 @@ function auditPcbRoutes(source3, inventory, input) {
     "The coordinator must bind source and inventory to the same stable project/document and runtime; callers cannot supply measurement geometry."
   ] });
 }
-var PCB_ROUTE_AUDIT_PROFILE, name5, coordinate3, names, pathRequest, widthContract, pcbRouteAuditRequestSchema, padSchema, padFamilySchema, padLinkSchema, padCorrelationSchema, padFamiliesSchema, padInventorySchema, findingSchema, widthResultSchema, pathResultSchema, graphNodeSchema, netResultSchema, comparisonSchema, pcbRouteAuditReportSchema, EPSILON_MIL;
+var PCB_ROUTE_AUDIT_PROFILE, name5, coordinate4, names, pathRequest, widthContract, pcbRouteAuditRequestSchema, padSchema, padFamilySchema, padLinkSchema, padCorrelationSchema, padFamiliesSchema, padInventorySchema, findingSchema, widthResultSchema, pathResultSchema, graphNodeSchema, netResultSchema, comparisonSchema, pcbRouteAuditReportSchema, EPSILON_MIL;
 var init_pcb_route_audit = __esm({
   "server/src/pcb-route-audit.ts"() {
     init_zod();
     init_core3();
     PCB_ROUTE_AUDIT_PROFILE = "easyeda-pro-control.pcb-route-audit.v1";
     name5 = external_exports.string().min(1).max(512);
-    coordinate3 = external_exports.number().min(-1e7).max(1e7);
+    coordinate4 = external_exports.number().min(-1e7).max(1e7);
     names = external_exports.array(name5).max(256).refine((values2) => new Set(values2).size === values2.length, "Duplicate selection.");
     pathRequest = external_exports.object({ net: name5, fromPad: name5, toPad: name5 }).strict().refine((value) => value.fromPad !== value.toPad, "Path pads must differ.");
     widthContract = external_exports.object({ net: name5, layer: external_exports.number().int().positive(), minMil: external_exports.number().positive(), maxMil: external_exports.number().positive() }).strict().refine((value) => value.minMil <= value.maxMil, "Width bounds are reversed.");
@@ -62866,7 +63623,7 @@ var init_pcb_route_audit = __esm({
         context2.addIssue({ code: "custom", message: "Duplicate net/layer width contract." });
       }
     });
-    padSchema = external_exports.object({ primitiveId: name5, padNumber: external_exports.string(), net: external_exports.string().nullable(), layer: external_exports.number().int().positive(), x: coordinate3, y: coordinate3, metallization: external_exports.boolean(), parentComponentPrimitiveId: name5.optional(), source: external_exports.literal("pcb_PrimitivePad-direct-state") }).loose();
+    padSchema = external_exports.object({ primitiveId: name5, padNumber: external_exports.string(), net: external_exports.string().nullable(), layer: external_exports.number().int().positive(), x: coordinate4, y: coordinate4, metallization: external_exports.boolean(), parentComponentPrimitiveId: name5.optional(), source: external_exports.literal("pcb_PrimitivePad-direct-state") }).loose();
     padFamilySchema = external_exports.object({ count: external_exports.number().int().nonnegative(), primitiveIds: external_exports.array(name5), byPrimitiveId: external_exports.record(name5, padSchema) }).loose();
     padLinkSchema = external_exports.object({ primitiveId: name5, parentComponentPrimitiveId: name5, padNumber: external_exports.string(), net: external_exports.string().nullable() }).loose();
     padCorrelationSchema = external_exports.object({ status: external_exports.literal("exact-subset"), primitiveIds: external_exports.array(name5), byPrimitiveId: external_exports.record(name5, padLinkSchema) }).loose();
@@ -62882,7 +63639,7 @@ var init_pcb_route_audit = __esm({
     findingSchema = external_exports.object({ code: name5, objectIds: external_exports.array(name5), detail: external_exports.string() }).strict();
     widthResultSchema = external_exports.object({ objectId: name5, net: name5, layer: external_exports.number().int(), actualMil: external_exports.number(), authority: external_exports.enum(["native-net-track", "native-pair-width", "requested-width-contract"]), ruleId: external_exports.string().nullable(), minMil: external_exports.number().nullable(), maxMil: external_exports.number().nullable(), status: external_exports.enum(["within-range", "outside-range", "indeterminate"]) }).strict();
     pathResultSchema = external_exports.object({ fromPad: name5, toPad: name5, connectedInCenterlineModel: external_exports.boolean(), shortestKnownPlanarLengthMil: external_exports.number().nonnegative().nullable(), routeIds: external_exports.array(name5), viaIds: external_exports.array(name5), containsCycle: external_exports.boolean(), completeSimplePath: external_exports.boolean() }).strict();
-    graphNodeSchema = external_exports.object({ x: coordinate3, y: coordinate3, layers: external_exports.array(external_exports.number().int()) }).strict();
+    graphNodeSchema = external_exports.object({ x: coordinate4, y: coordinate4, layers: external_exports.array(external_exports.number().int()) }).strict();
     netResultSchema = external_exports.object({ net: name5, padIds: external_exports.array(name5), lineCount: external_exports.number().int(), arcCount: external_exports.number().int(), viaCount: external_exports.number().int(), summedPlanarSegmentLengthMil: external_exports.number().nonnegative(), layers: external_exports.array(external_exports.number().int()), danglingNodes: external_exports.array(graphNodeSchema), path: pathResultSchema.nullable(), findings: external_exports.array(findingSchema), widths: external_exports.array(widthResultSchema) }).strict();
     comparisonSchema = external_exports.object({ name: name5, nets: external_exports.array(name5), planarSkewMil: external_exports.number().nonnegative().nullable(), maximumSkewMil: external_exports.number().nonnegative().nullable(), ruleId: external_exports.string().nullable(), status: external_exports.enum(["within-planar-limit", "outside-planar-limit", "indeterminate"]), sameEndpointComponentOwners: external_exports.boolean().nullable(), findings: external_exports.array(findingSchema) }).strict();
     pcbRouteAuditReportSchema = external_exports.object({ profile: external_exports.literal(PCB_ROUTE_AUDIT_PROFILE), documentUuid: name5, sourceSha256: external_exports.string().regex(/^[a-f0-9]{64}$/u), inventorySha256: external_exports.string().regex(/^[a-f0-9]{64}$/u), units: external_exports.literal("mil"), nets: external_exports.array(netResultSchema), differentialPairs: external_exports.array(comparisonSchema), equalLengthGroups: external_exports.array(comparisonSchema), limitations: external_exports.array(external_exports.string()) }).strict();
@@ -63119,30 +63876,30 @@ function deviceRequestedModel(input) {
   if (model === void 0 || model === null) {
     return void 0;
   }
-  if (!identity6.test(model.uuid) || !identity6.test(model.libraryUuid)) {
+  if (!identity7.test(model.uuid) || !identity7.test(model.libraryUuid)) {
     throw new Error("Existing model assignment requires exact 32-hex asset and external collection identities, not filenames or paths.");
   }
   return { uuid: model.uuid, libraryUuid: model.libraryUuid };
 }
 function validateDeviceModelMetadata(input, expected2) {
-  if (!identity6.test(expected2.uuid) || !identity6.test(expected2.libraryUuid) || !isRecord(input) || input["uuid"] !== expected2.uuid || input["libraryUuid"] !== expected2.libraryUuid || input["libraryType"] !== "5" || typeof input["name"] !== "string" || input["name"].length === 0 || input["name"].length > 512) {
+  if (!identity7.test(expected2.uuid) || !identity7.test(expected2.libraryUuid) || !isRecord(input) || input["uuid"] !== expected2.uuid || input["libraryUuid"] !== expected2.libraryUuid || input["libraryType"] !== "5" || typeof input["name"] !== "string" || input["name"].length === 0 || input["name"].length > 512) {
     throw new Error("Existing external model metadata identity, owner, type or title differs.");
   }
   return { ...expected2, metadata: structuredClone(input) };
 }
-var identity6, DEVICE_MODEL_RUNTIME_GUARD;
+var identity7, DEVICE_MODEL_RUNTIME_GUARD;
 var init_device_model = __esm({
   "server/src/device-model.ts"() {
     init_core3();
     init_library_operations();
-    identity6 = /^[a-f0-9]{32}$/u;
+    identity7 = /^[a-f0-9]{32}$/u;
     DEVICE_MODEL_RUNTIME_GUARD = `if(PLAN.model!==undefined){const api=eda.lib_3DModel;if(typeof api?.get!=='function')throw new Error('DEVICE_MODEL_GETTER_MISSING');const actual=await api.get(PLAN.model.uuid,PLAN.model.libraryUuid);const encoded=JSON.stringify(actual);if(typeof encoded!=='string'||new TextEncoder().encode(encoded).byteLength>1048576||stable(JSON.parse(encoded))!==stable(PLAN.model.metadata))throw new Error('DEVICE_MODEL_METADATA_DRIFT');await assertProject();}`;
   }
 });
 
 // server/src/device-association.ts
 function projected(history) {
-  return history.documents.map(({ uuid: uuid8, docType, metadata, records: records2 }) => ({ uuid: uuid8, docType, metadata, records: records2.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 })) }));
+  return history.documents.map(({ uuid: uuid8, docType, metadata: metadata2, records: records2 }) => ({ uuid: uuid8, docType, metadata: metadata2, records: records2.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 })) }));
 }
 function deviceAssociationOperation(input) {
   const value = libraryOperationSchema.parse(input);
@@ -63173,8 +63930,8 @@ function prepareDeviceAssociation(input, history, modelInput) {
   const associations = [];
   const requestedModel = deviceRequestedModel(parsed2);
   const model = requestedModel === void 0 ? void 0 : validateDeviceModelMetadata(modelInput, requestedModel);
-  for (const [family, identity7] of Object.entries(parsed2.patch.association ?? {})) {
-    if (family === "model3D" && identity7 === null) {
+  for (const [family, identity9] of Object.entries(parsed2.patch.association ?? {})) {
+    if (family === "model3D" && identity9 === null) {
       attributes["3D Model"] = "";
     } else if (family === "model3D" && model !== void 0) {
       attributes["3D Model"] = `${model.uuid}|${model.libraryUuid}`;
@@ -63184,13 +63941,13 @@ function prepareDeviceAssociation(input, history, modelInput) {
         throw new Error("Unreviewed project association family.");
       }
       const key = family === "symbol" ? "Symbol" : "Footprint";
-      if (identity7 === null && family === "footprint") {
+      if (identity9 === null && family === "footprint") {
         attributes[key] = "";
       } else {
-        if (!isRecord(identity7) || identity7.libraryUuid !== history.projectUuid || typeof identity7.uuid !== "string") {
+        if (!isRecord(identity9) || identity9.libraryUuid !== history.projectUuid || typeof identity9.uuid !== "string") {
           throw new Error("Association may not import or reference an off-project asset.");
         }
-        const target5 = history.documents.find((entry) => entry.uuid === identity7.uuid && entry.docType === (family === "symbol" ? "SYMBOL" : "FOOTPRINT") && !isNativeDocumentDeleted(entry));
+        const target5 = history.documents.find((entry) => entry.uuid === identity9.uuid && entry.docType === (family === "symbol" ? "SYMBOL" : "FOOTPRINT") && !isNativeDocumentDeleted(entry));
         const title = target5?.records.find((entry) => entry.id === "META" && entry.type === "META")?.body["title"];
         if (target5 === void 0 || typeof title !== "string" || title.length === 0) {
           throw new Error("Association asset is absent from the complete checkpoint.");
@@ -63256,7 +64013,7 @@ function verifyDeviceAssociationEffect(plan, before, after) {
     if (entry.uuid !== plan.deviceUuid) {
       return entry;
     }
-    return { uuid: entry.uuid, docType: entry.docType, metadata: next.metadata, records: old.records.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: id7 === "META" && type === "META" ? plan.afterMeta : body2 })) };
+    return { uuid: entry.uuid, docType: entry.docType, metadata: next.metadata, records: old.records.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: id7 === "META" && type === "META" ? plan.afterMeta : body3 })) };
   });
   if (canonicalJson(expected2) !== canonicalJson(projected(after))) {
     throw new Error("Device association changed unrelated metadata, images, geometry or placed records.");
@@ -63282,7 +64039,7 @@ var init_device_association = __esm({
 
 // server/src/device-create.ts
 function projected2(history) {
-  return history.documents.map(({ uuid: uuid8, docType, metadata, records: records2 }) => ({ uuid: uuid8, docType, metadata, records: records2.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 })) }));
+  return history.documents.map(({ uuid: uuid8, docType, metadata: metadata2, records: records2 }) => ({ uuid: uuid8, docType, metadata: metadata2, records: records2.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 })) }));
 }
 function deviceCreateOperation(input) {
   const operation = libraryOperationSchema.parse(input);
@@ -63410,6 +64167,200 @@ var init_device_create = __esm({
   }
 });
 
+// server/src/project-symbol-metadata.ts
+function projectSymbolMetadataOperation(input) {
+  const operation = libraryOperationSchema.parse(input);
+  if (operation.action !== "library.symbol.modify" || !("uuid" in operation.target)) {
+    throw new Error("Symbol metadata editing requires one exact existing symbol identity.");
+  }
+  if (operation.patch.classification !== void 0 || operation.patch.description === null) {
+    throw new Error("Symbol metadata editing accepts name and non-null description only; native classification/null behavior is not an exact patch.");
+  }
+  return operation;
+}
+function symbol3(history, uuid8) {
+  const entries = history.documents.filter((entry) => entry.uuid === uuid8);
+  const result = entries[0];
+  if (entries.length !== 1 || result?.docType !== "SYMBOL" || isNativeDocumentDeleted(result)) {
+    throw new Error("Symbol target must be one active SYMBOL in the complete project checkpoint.");
+  }
+  return result;
+}
+function metadata(document2) {
+  const entries = document2.records.filter((entry) => entry.id === "META" || entry.type === "META");
+  const result = entries[0];
+  if (entries.length !== 1 || result?.id !== "META" || result.type !== "META") {
+    throw new Error("Symbol requires one exact META record.");
+  }
+  return result.body;
+}
+function projectIdentity(history, plan) {
+  if (history.projectUuid !== plan.projectUuid || history.projectOwnerUuid !== plan.ownerUuid || history.branchUuid !== plan.branchUuid) {
+    throw new Error("Symbol project, branch or owner differs from its prepared plan.");
+  }
+}
+function normalizedTitle(value) {
+  return value.trim().toLowerCase();
+}
+function prepareProjectSymbolMetadata(input, history) {
+  const operation = projectSymbolMetadataOperation(input);
+  if (!("uuid" in operation.target) || operation.libraryUuid !== history.projectUuid || history.projectOwnerUuid === void 0 || history.projectOwnerUuid.length === 0) {
+    throw new Error("Symbol metadata editing requires an exact current-project symbol and owner.");
+  }
+  const target5 = symbol3(history, operation.target.uuid);
+  const before = metadata(target5);
+  if (before["docType"] !== 2 || typeof before["title"] !== "string" || typeof before["description"] !== "string") {
+    throw new Error("Symbol metadata editing requires ordinary META.docType 2 with stored title and description.");
+  }
+  const desiredTitle = operation.patch.name ?? before["title"];
+  if (normalizedTitle(desiredTitle).length === 0) {
+    throw new Error("Symbol metadata requires a nonblank display title.");
+  }
+  for (const document2 of history.documents) {
+    if (document2.docType === "SYMBOL" && document2.uuid !== target5.uuid && !isNativeDocumentDeleted(document2)) {
+      const title = metadata(document2)["title"];
+      if (typeof title !== "string") {
+        throw new TypeError("Peer symbol title is missing from duplicate-name proof.");
+      }
+      if (normalizedTitle(title) === normalizedTitle(desiredTitle)) {
+        throw new Error("A project symbol with that normalized name already exists.");
+      }
+    }
+  }
+  return planSchema.parse({
+    profile: PROJECT_SYMBOL_METADATA_PROFILE,
+    projectUuid: history.projectUuid,
+    branchUuid: history.branchUuid,
+    ownerUuid: history.projectOwnerUuid,
+    targetUuid: target5.uuid,
+    beforeProjectSha256: libraryProjectRecordsHash(history),
+    beforeTitle: before["title"],
+    beforeDescription: before["description"],
+    desiredTitle,
+    desiredDescription: operation.patch.description ?? before["description"]
+  });
+}
+function buildProjectSymbolMetadataExpression(input, context2) {
+  const plan = planSchema.parse(input);
+  if ((context2.project.uuid ?? context2.project.projectUuid) !== plan.projectUuid || context2.project.uuid !== void 0 && context2.project.projectUuid !== void 0 && context2.project.uuid !== context2.project.projectUuid || context2.document.uuid !== void 0 && context2.document.documentUuid !== void 0 && context2.document.uuid !== context2.document.documentUuid) {
+    throw new Error("Symbol closed-target context differs from its exact project/document identity.");
+  }
+  const active = { uuid: context2.document.uuid ?? context2.document.documentUuid ?? "", documentType: context2.document.documentType, tabId: context2.document.tabId ?? "" };
+  const ownership = { parentProjectUuid: context2.document["parentProjectUuid"], parentLibraryUuid: context2.document["parentLibraryUuid"] };
+  if (ownership.parentProjectUuid !== void 0 && ownership.parentProjectUuid !== plan.projectUuid || ownership.parentLibraryUuid !== void 0 && (![2, 4].includes(active.documentType) || ownership.parentLibraryUuid !== plan.ownerUuid)) {
+    throw new Error("Symbol closed-target context has contradictory active-document ownership.");
+  }
+  const targetClosed = buildEditorTargetAbsentExpression({ targetUuid: plan.targetUuid, projectUuid: plan.projectUuid, ownerUuid: plan.ownerUuid, active });
+  return `(async()=>{let stage='host';try{
+const PLAN=${JSON.stringify(plan)},ACTIVE=${JSON.stringify(active)},OWNERSHIP=${JSON.stringify(ownership)};
+${DEVICE_NATIVE_HOST_GUARD}
+const assertContext=async()=>{
+const project=await eda.dmt_Project.getCurrentProjectInfo();
+const document=await eda.dmt_SelectControl.getCurrentDocumentInfo();
+if((project?.uuid??project?.projectUuid)!==PLAN.projectUuid||(project.uuid!==undefined&&project.projectUuid!==undefined&&project.uuid!==project.projectUuid)||host.currentProject?.projectId!==PLAN.projectUuid)throw new Error('PROJECT_DRIFT');
+if((document?.uuid??document?.documentUuid)!==ACTIVE.uuid||(document.uuid!==undefined&&document.documentUuid!==undefined&&document.uuid!==document.documentUuid)||document.documentType!==ACTIVE.documentType||document.tabId!==ACTIVE.tabId)throw new Error('ACTIVE_DOCUMENT_DRIFT');
+if((document.parentProjectUuid!==undefined&&document.parentProjectUuid!==PLAN.projectUuid)||(document.parentLibraryUuid!==undefined&&(![2,4].includes(ACTIVE.documentType)||document.parentLibraryUuid!==PLAN.ownerUuid))||(OWNERSHIP.parentProjectUuid!==undefined&&document.parentProjectUuid!==OWNERSHIP.parentProjectUuid)||(OWNERSHIP.parentLibraryUuid!==undefined&&document.parentLibraryUuid!==OWNERSHIP.parentLibraryUuid))throw new Error('ACTIVE_DOCUMENT_OWNER_DRIFT');
+};
+await assertContext();
+stage='before-read';
+const before=(await bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])).message;
+await assertContext();
+if(before?.uuid!==PLAN.targetUuid||before?.project_uuid!==PLAN.projectUuid||before?.owner?.uuid!==PLAN.ownerUuid||before?.docType!==2||before?.display_title!==PLAN.beforeTitle||before?.description!==PLAN.beforeDescription)throw new Error('SYMBOL_METADATA_DRIFT');
+stage='target-closed';
+await ${targetClosed};
+await assertContext();
+stage='modify';
+const api=eda.lib_Symbol;
+if(typeof api?.modify!=='function')throw new Error('METHOD_MISSING');
+const result=await api.modify(PLAN.targetUuid,PLAN.projectUuid,PLAN.desiredTitle,{},PLAN.desiredDescription);
+if(result!==true)throw new Error('ACK_INVALID');
+stage='after-read';
+await assertContext();
+const after=(await bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])).message;
+await assertContext();
+if(after?.uuid!==PLAN.targetUuid||after?.project_uuid!==PLAN.projectUuid||after?.owner?.uuid!==PLAN.ownerUuid||after?.docType!==2||after?.display_title!==PLAN.desiredTitle||after?.description!==PLAN.desiredDescription)throw new Error('SYMBOL_METADATA_DRIFT');
+const payload={kind:'project-symbol-metadata',targetId:PLAN.targetUuid,createdId:null};
+const json=JSON.stringify(payload);return {schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};
+}catch(_){throw new Error('Symbol metadata operation refused at '+stage);}})()`;
+}
+function recordProjection(document2) {
+  return {
+    uuid: document2.uuid,
+    docType: document2.docType,
+    metadata: document2.metadata,
+    records: document2.records.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 }))
+  };
+}
+function verifyHeader(before, after) {
+  const keys2 = /* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)]);
+  const changed = [...keys2].filter((key) => canonicalJson({ value: before[key] }) !== canonicalJson({ value: after[key] }) || Object.hasOwn(before, key) !== Object.hasOwn(after, key));
+  if (changed.length === 0) {
+    return;
+  }
+  const time4 = after["updateTime"];
+  if (changed.some((key) => !["client", "updateTime", "version"].includes(key)) || typeof after["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(after["client"]) || typeof time4 !== "number" || !Number.isSafeInteger(time4) || time4 < 0 || after["version"] !== String(time4) || typeof before["updateTime"] === "number" && time4 < before["updateTime"]) {
+    throw new Error("Symbol header changed outside the reviewed metadata edit fields.");
+  }
+}
+function verifyProjectSymbolMetadataEffect(input, before, after) {
+  const plan = planSchema.parse(input);
+  projectIdentity(before, plan);
+  projectIdentity(after, plan);
+  if (libraryProjectRecordsHash(before) !== plan.beforeProjectSha256) {
+    throw new Error("Symbol baseline differs from the prepared complete-project checkpoint.");
+  }
+  const changed = symbol3(after, plan.targetUuid), old = symbol3(before, plan.targetUuid);
+  const oldMeta = metadata(old);
+  if (oldMeta["title"] !== plan.beforeTitle || oldMeta["description"] !== plan.beforeDescription || oldMeta["docType"] !== 2) {
+    throw new Error("Symbol plan differs from checkpoint metadata.");
+  }
+  const peers = (history) => history.documents.filter((document2) => document2.uuid !== plan.targetUuid).map((document2) => recordProjection(document2));
+  if (canonicalJson(peers(before)) !== canonicalJson(peers(after))) {
+    throw new Error("Symbol metadata edit changed unrelated project records.");
+  }
+  verifyHeader(old.metadata, changed.metadata);
+  const expected2 = { ...old, metadata: changed.metadata, records: old.records.map((record6) => record6.id === "META" && record6.type === "META" ? Object.assign(structuredClone(record6), { body: { ...record6.body, title: plan.desiredTitle, description: plan.desiredDescription } }) : record6) };
+  if (canonicalJson(recordProjection(expected2)) !== canonicalJson(recordProjection(changed))) {
+    throw new Error("Symbol metadata edit changed geometry, bindings or unrequested metadata.");
+  }
+  return {
+    profile: PROJECT_SYMBOL_METADATA_PROFILE,
+    targetId: plan.targetUuid,
+    beforeProjectSha256: plan.beforeProjectSha256,
+    afterProjectSha256: libraryProjectRecordsHash(after),
+    documentCount: after.documents.length,
+    effectVerified: true,
+    persistenceEvidence: "supplied-history-comparison",
+    reopened: false
+  };
+}
+var PROJECT_SYMBOL_METADATA_PROFILE, boundedId, planSchema;
+var init_project_symbol_metadata = __esm({
+  "server/src/project-symbol-metadata.ts"() {
+    init_zod();
+    init_core3();
+    init_library_operations();
+    init_library_persistence_proof();
+    init_native_history();
+    init_device_runtime_guard();
+    init_editor_tabs();
+    PROJECT_SYMBOL_METADATA_PROFILE = "easyeda-pro-control.project-symbol-metadata.v1";
+    boundedId = external_exports.string().min(1).max(256);
+    planSchema = external_exports.object({
+      profile: external_exports.literal(PROJECT_SYMBOL_METADATA_PROFILE),
+      projectUuid: boundedId,
+      branchUuid: boundedId,
+      ownerUuid: boundedId,
+      targetUuid: boundedId,
+      beforeProjectSha256: external_exports.string().regex(/^[a-f0-9]{64}$/u),
+      beforeTitle: external_exports.string().min(1).max(512),
+      beforeDescription: external_exports.string().max(65536),
+      desiredTitle: external_exports.string().min(1).max(512),
+      desiredDescription: external_exports.string().max(65536)
+    }).strict();
+  }
+});
+
 // server/src/library-runtime.ts
 import { createHash as createHash12 } from "node:crypto";
 function libraryExportRefusalReason(action) {
@@ -63457,8 +64408,15 @@ function libraryExecutionKind(input) {
   if (operation.action === "library.device.model-transform") {
     return "project-device-transform";
   }
+  if (operation.action === "library.symbol.modify") {
+    projectSymbolMetadataOperation(operation);
+    return "project-symbol-metadata";
+  }
   if (operation.action === "document.open" || operation.action === "library.footprint.open" || operation.action === "library.symbol.open") {
     return "document-open";
+  }
+  if (operation.action === "document.activate") {
+    return "document-activate";
   }
   throw new Error("Typed catalog entry has no completed execution proof profile.");
 }
@@ -63486,6 +64444,12 @@ function buildLibraryExecutionExpression(input, projectSymbolMetadata = false, o
   }
   if (kind === "project-device-association" || kind === "project-device-create" || kind === "project-device-transform") {
     throw new Error("Device mutation requires a checkpoint-bound native plan.");
+  }
+  if (kind === "project-symbol-metadata") {
+    throw new Error("Symbol metadata mutation requires a checkpoint-bound native plan.");
+  }
+  if (kind === "document-activate") {
+    throw new Error("Document activation requires a checkpoint-bound ownership plan.");
   }
   const compiled = compileLibraryOperation(operation);
   const call = compiled.call;
@@ -63605,6 +64569,7 @@ var init_library_runtime = __esm({
     init_device_create();
     init_device_runtime_guard();
     init_library_runtime_guard();
+    init_project_symbol_metadata();
     LIBRARY_FILE_EXECUTION_MAX_BYTES = 2 * 1024 * 1024;
     LIBRARY_EXECUTION_PROFILE = "easyeda-pro-control.library-execution.v1";
     openScopeSchema = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), uuid: external_exports.string().min(1).max(256), documentType: external_exports.number().int().min(1).max(4), metadataOwnerUuid: external_exports.string().min(1).max(256).optional() }).strict();
@@ -63623,7 +64588,7 @@ var init_library_runtime = __esm({
 
 // server/src/device-transform.ts
 function projected3(history) {
-  return history.documents.map(({ uuid: uuid8, docType, metadata, records: records2 }) => ({ uuid: uuid8, docType, metadata, records: records2.map(({ id: id7, type, body: body2 }) => ({ id: id7, type, body: body2 })) }));
+  return history.documents.map(({ uuid: uuid8, docType, metadata: metadata2, records: records2 }) => ({ uuid: uuid8, docType, metadata: metadata2, records: records2.map(({ id: id7, type, body: body3 }) => ({ id: id7, type, body: body3 })) }));
 }
 function storedAttribute(document2, component2, key) {
   const attributes = document2.records.filter((entry) => entry.type === "ATTR" && entry.body["parentId"] === component2.id && entry.body["key"] === key);
@@ -63759,7 +64724,7 @@ function libraryMutationReceipt(operationInput, nativeReturn) {
     throw new Error("Library mutation acknowledgment kind is missing or contradictory.");
   }
   const creating = operation.action === "library.footprint.create" || operation.action === "library.device.create";
-  const association2 = operation.action === "library.device.modify" || operation.action === "library.device.model-transform";
+  const association2 = operation.action === "library.device.modify" || operation.action === "library.device.model-transform" || operation.action === "library.symbol.modify";
   if (!creating && !association2 && operation.action !== "library.footprint.modify") {
     throw new Error("No supported library mutation receipt for this action.");
   }
@@ -63827,12 +64792,18 @@ function verifyRecoveredLibraryMutation(input) {
   let proof;
   if (operation.action === "library.footprint.create" || operation.action === "library.footprint.modify") {
     proof = verifyProjectLibraryEffect(operation, input.before, input.after, createdId);
+  } else if (operation.action === "library.symbol.modify") {
+    const expected2 = prepareProjectSymbolMetadata(operation, input.before);
+    if (!isRecord(input.preparedSymbol) || canonicalJson(expected2) !== canonicalJson(input.preparedSymbol)) {
+      throw new Error("Retained symbol plan differs from the immutable operation and baseline.");
+    }
+    proof = verifyProjectSymbolMetadataEffect(expected2, input.before, input.after);
   } else {
     if (!isRecord(input.preparedDevice)) {
       throw new Error("Original checkpoint-bound device plan is required for recovery.");
     }
     const model = input.preparedDevice["model"];
-    const metadata = isRecord(model) ? model["metadata"] : void 0;
+    const metadata2 = isRecord(model) ? model["metadata"] : void 0;
     if (operation.action === "library.device.model-transform") {
       const expected3 = prepareDeviceTransform(operation, input.before);
       if (canonicalJson(expected3) !== canonicalJson(input.preparedDevice)) {
@@ -63840,7 +64811,7 @@ function verifyRecoveredLibraryMutation(input) {
       }
       return { receipt: receipt2, proof: verifyDeviceTransformEffect(expected3, input.before, input.after) };
     }
-    const expected2 = operation.action === "library.device.create" ? prepareDeviceCreate(operation, input.before, metadata) : prepareDeviceAssociation(operation, input.before, metadata);
+    const expected2 = operation.action === "library.device.create" ? prepareDeviceCreate(operation, input.before, metadata2) : prepareDeviceAssociation(operation, input.before, metadata2);
     if (canonicalJson(expected2) !== canonicalJson(input.preparedDevice)) {
       throw new Error("Retained device plan differs from the immutable operation and baseline.");
     }
@@ -63860,9 +64831,10 @@ var init_library_recovery_state = __esm({
     init_device_create();
     init_library_persistence_proof();
     init_device_transform();
+    init_project_symbol_metadata();
     receiptSchema2 = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.library-mutation-receipt.v1"),
-      kind: external_exports.enum(["project-footprint-write", "project-device-association", "project-device-create", "project-device-transform"]),
+      kind: external_exports.enum(["project-footprint-write", "project-device-association", "project-device-create", "project-device-transform", "project-symbol-metadata"]),
       createdId: external_exports.string().min(1).max(256).nullable(),
       targetId: external_exports.string().min(1).max(256).nullable(),
       nativeReturnSha256: external_exports.string().regex(/^[a-f0-9]{64}$/u)
@@ -63870,8 +64842,204 @@ var init_library_recovery_state = __esm({
   }
 });
 
+// server/src/document-activation.ts
+function prepareDocumentActivation(operationInput, history, context2) {
+  const operation = libraryOperationSchema.parse(operationInput);
+  if (operation.action !== "document.activate") {
+    throw new Error("Document activation requires its exact typed operation.");
+  }
+  const members = history.documents.filter((entry) => !isNativeDocumentDeleted(entry) && ["SCH_PAGE", "SYMBOL", "PCB", "FOOTPRINT"].includes(entry.docType)).map((entry) => member.parse({ uuid: entry.uuid, documentType: { SCH_PAGE: 1, SYMBOL: 2, PCB: 3, FOOTPRINT: 4 }[entry.docType] }));
+  const targetId2 = operation.tabId.split("@")[0];
+  const targets = members.filter((entry) => entry.uuid === targetId2);
+  const beforeUuid = context2.document.uuid ?? context2.document.documentUuid;
+  if (targets.length !== 1 || targets[0] === void 0 || new Set(members.map((entry) => entry.uuid)).size !== members.length || (context2.project.uuid ?? context2.project.projectUuid) !== history.projectUuid || context2.project.uuid !== void 0 && context2.project.projectUuid !== void 0 && context2.project.uuid !== context2.project.projectUuid || context2.document.uuid !== void 0 && context2.document.documentUuid !== void 0 && context2.document.uuid !== context2.document.documentUuid || !members.some((entry) => entry.uuid === beforeUuid && entry.documentType === context2.document.documentType)) {
+    throw new Error("Activation target and current editor must belong to the exact checkpoint project.");
+  }
+  const plan = planSchema2.parse({
+    profile: DOCUMENT_ACTIVATION_PROFILE,
+    projectUuid: history.projectUuid,
+    projectOwnerUuid: history.projectOwnerUuid,
+    branchUuid: history.branchUuid,
+    projectPath: context2.project.path,
+    before: { uuid: beforeUuid, documentType: context2.document.documentType, tabId: context2.document.tabId },
+    target: { ...targets[0], tabId: operation.tabId },
+    members,
+    projectRecordsSha256: libraryProjectRecordsHash(history)
+  });
+  for (const scope3 of [plan.before, plan.target]) {
+    if (scope3.tabId !== scope3.uuid && scope3.tabId !== `${scope3.uuid}@${plan.projectUuid}` || [2, 4].includes(scope3.documentType) && scope3.tabId !== `${scope3.uuid}@${plan.projectUuid}`) {
+      throw new Error("Activation tab does not encode the exact current-project document.");
+    }
+  }
+  if (plan.before.tabId === plan.target.tabId) {
+    throw new Error("The exact target tab is already active; inspect context without another native activation.");
+  }
+  if (Buffer.byteLength(JSON.stringify(plan)) > 1048576) {
+    throw new Error("Activation inventory exceeds its fixed transport bound.");
+  }
+  return plan;
+}
+function documentActivationContext(planInput) {
+  const plan = planSchema2.parse(planInput);
+  return {
+    project: { uuid: plan.projectUuid, path: plan.projectPath },
+    document: { ...plan.target, ...[2, 4].includes(plan.target.documentType) ? { parentLibraryUuid: plan.projectOwnerUuid } : { parentProjectUuid: plan.projectUuid } }
+  };
+}
+function classifyDocumentActivationContext(planInput, observed) {
+  const plan = planSchema2.parse(planInput);
+  const document2 = observed.document, project2 = observed.project;
+  const projectUuid = project2.uuid ?? project2.projectUuid, uuid8 = document2.uuid ?? document2.documentUuid;
+  if (projectUuid !== plan.projectUuid || project2.path !== plan.projectPath || project2.uuid !== void 0 && project2.projectUuid !== void 0 && project2.uuid !== project2.projectUuid || document2.uuid !== void 0 && document2.documentUuid !== void 0 && document2.uuid !== document2.documentUuid) {
+    throw new Error("Activation recovery observed a conflicting project or document identity.");
+  }
+  const targetActive = uuid8 === plan.target.uuid && document2.documentType === plan.target.documentType && document2.tabId === plan.target.tabId;
+  const originalActive = uuid8 === plan.before.uuid && document2.documentType === plan.before.documentType && document2.tabId === plan.before.tabId;
+  if (!targetActive && !originalActive || ([2, 4].includes(document2.documentType) ? document2["parentLibraryUuid"] !== plan.projectOwnerUuid || document2["parentProjectUuid"] !== void 0 && document2["parentProjectUuid"] !== plan.projectUuid : document2["parentProjectUuid"] !== plan.projectUuid || document2["parentLibraryUuid"] !== void 0)) {
+    throw new Error("Activation recovery observed a third document or conflicting owner.");
+  }
+  return targetActive;
+}
+function verifyDocumentActivationProject(planInput, before, after) {
+  const plan = planSchema2.parse(planInput);
+  if (before.projectUuid !== plan.projectUuid || before.projectOwnerUuid !== plan.projectOwnerUuid || before.branchUuid !== plan.branchUuid || after.projectUuid !== plan.projectUuid || after.projectOwnerUuid !== plan.projectOwnerUuid || after.branchUuid !== plan.branchUuid || libraryProjectRecordsHash(before) !== plan.projectRecordsSha256 || libraryProjectRecordsHash(after) !== plan.projectRecordsSha256) {
+    throw new Error("Document activation changed the complete durable project, branch or owner.");
+  }
+}
+function validateDocumentActivationResult(input, planInput) {
+  const plan = planSchema2.parse(planInput);
+  const result = external_exports.object({
+    kind: external_exports.literal("document-activate"),
+    profile: external_exports.literal(DOCUMENT_ACTIVATION_PROFILE),
+    planSha256: external_exports.string(),
+    tabId: external_exports.string(),
+    acknowledgment: external_exports.boolean(),
+    coherentObservations: external_exports.literal(2),
+    tabsUnchanged: external_exports.literal(true),
+    saveInvoked: external_exports.literal(false),
+    closeInvoked: external_exports.literal(false),
+    openInvoked: external_exports.literal(false)
+  }).strict().parse(input);
+  if (result.planSha256 !== sha256Json(plan) || result.tabId !== plan.target.tabId) {
+    throw new Error("Document activation return differs from its retained exact plan.");
+  }
+  return result;
+}
+function verifyRetainedDocumentActivation(operation, before, context2, prepared, journalPlan) {
+  const expected2 = prepareDocumentActivation(operation, before, context2);
+  if (canonicalJson(expected2) !== canonicalJson(prepared) || canonicalJson(expected2) !== canonicalJson(journalPlan)) {
+    throw new Error("Retained activation plan differs from its original operation and checkpoint.");
+  }
+  return expected2;
+}
+function buildDocumentActivationExpression(planInput) {
+  const plan = planSchema2.parse(planInput);
+  return `(async()=>{
+const plan=${JSON.stringify(plan)},planSha256=${JSON.stringify(sha256Json(plan))};let stage='api';
+const fail=()=>{throw new Error('ACTIVATION_REFUSED');};
+try{
+const project=eda.dmt_Project,select=eda.dmt_SelectControl,editor=eda.dmt_EditorControl;
+const timers=globalThis.window?.top;
+if(typeof project?.getCurrentProjectInfo!=='function'||typeof select?.getCurrentDocumentInfo!=='function'||typeof editor?.getSplitScreenTree!=='function'||typeof editor?.activateDocument!=='function'||typeof timers?.setTimeout!=='function'||typeof timers?.clearTimeout!=='function'||typeof timers?.document?.getElementById!=='function')fail();
+${DEVICE_NATIVE_HOST_GUARD}
+const loadedFrames=new Map();
+const preferencesSafe=()=>{if(![3,4].includes(plan.target.documentType))return;
+if(typeof timers.localStorage?.getItem!=='function')fail();const text=timers.localStorage.getItem('preferences');
+if(typeof text!=='string'||text.length>1048576)fail();const value=JSON.parse(text);
+if(!value||typeof value!=='object'||Array.isArray(value)||value.pcbCommandTab!==true)fail();};
+const frameFor=scope=>{const frame=timers.document.getElementById('frame_'+scope.tabId);
+if(host.currentProject?.projectId!==plan.projectUuid||!frame||frame.isConnected!==true||frame.tagName!==(scope.documentType<=2?'DIV':'IFRAME')||frame.getAttribute('c_dbid')!==scope.tabId||frame.getAttribute('c_doctype')!==String(scope.documentType))fail();
+return frame;};
+const framesMatch=()=>{preferencesSafe();for(const scope of [plan.before,plan.target])if(frameFor(scope)!==loadedFrames.get(scope.tabId))fail();};
+const id=(value,key,alias)=>{if(!value||typeof value!=='object'||Array.isArray(value))fail();const a=value[key],b=value[alias];if(a!==undefined&&b!==undefined&&a!==b)fail();const result=a??b;if(typeof result!=='string'||!result)fail();return result;};
+const projectIdentity=async()=>{const value=await project.getCurrentProjectInfo();if(id(value,'uuid','projectUuid')!==plan.projectUuid)fail();};
+const inspect=async(expected,allowMissing=false)=>{
+await projectIdentity();const value=await select.getCurrentDocumentInfo();await projectIdentity();
+if((value===undefined||value===null)&&allowMissing)return false;
+const uuid=id(value,'uuid','documentUuid'),matches=scope=>uuid===scope.uuid&&value.documentType===scope.documentType&&value.tabId===scope.tabId;
+const waiting=allowMissing&&!matches(expected)&&matches(plan.before),scope=waiting?plan.before:expected;
+if(!matches(scope))fail();
+if([2,4].includes(scope.documentType)?value.parentLibraryUuid!==plan.projectOwnerUuid||value.parentProjectUuid!==undefined&&value.parentProjectUuid!==plan.projectUuid:
+value.parentProjectUuid!==plan.projectUuid||value.parentLibraryUuid!==undefined)fail();return !waiting;
+};
+const tree=async()=>{
+const root=await editor.getSplitScreenTree(),pending=[{node:root,depth:0}],seen=new Set(),tabs=[],ids=new Set();
+while(pending.length){const item=pending.pop(),node=item.node;
+if(!node||typeof node!=='object'||Array.isArray(node)||seen.has(node)||item.depth>16||seen.size>=128)fail();seen.add(node);
+if(node.children!==undefined){if(!Array.isArray(node.children)||!node.children.length||node.children.length>128||node.tabs!==undefined||pending.length+node.children.length+seen.size>128)fail();for(const child of node.children)pending.push({node:child,depth:item.depth+1});}
+else{if(!Array.isArray(node.tabs)||!node.tabs.length||node.tabs.length>256)fail();for(const tab of node.tabs){
+if(tabs.length>=256||!tab||typeof tab!=='object'||Array.isArray(tab)||typeof tab.tabId!=='string'||!tab.tabId||ids.has(tab.tabId))fail();ids.add(tab.tabId);
+const data=tab.data;if(data!==undefined&&(!data||typeof data!=='object'||Array.isArray(data)))fail();
+if(tab.documentType!==undefined&&data?.doctype!==undefined&&tab.documentType!==data.doctype)fail();
+const type=tab.documentType??data?.doctype,uuid=tab.tabId.split('@')[0];
+const start=tab.tabId==='tab_page1'&&type===-1&&tab.isAbleDelete===false&&tab.parentProjectUuid===undefined&&tab.parentLibraryUuid===undefined&&data?.pid===undefined&&data?.owner===undefined;
+const owned=plan.members.some(m=>m.uuid===uuid&&m.documentType===type)&&(tab.tabId===uuid||tab.tabId===uuid+'@'+plan.projectUuid)&&
+(tab.parentProjectUuid===undefined||tab.parentProjectUuid===plan.projectUuid)&&(data?.pid===undefined||data.pid===plan.projectUuid)&&
+([2,4].includes(type)?tab.tabId===uuid+'@'+plan.projectUuid&&(tab.parentLibraryUuid===plan.projectOwnerUuid||data?.owner===plan.projectOwnerUuid)&&(tab.parentLibraryUuid===undefined||tab.parentLibraryUuid===plan.projectOwnerUuid)&&(data?.owner===undefined||data.owner===plan.projectOwnerUuid):
+(tab.parentProjectUuid===plan.projectUuid||data?.pid===plan.projectUuid)&&tab.parentLibraryUuid===undefined&&(data?.owner===undefined||data.owner===plan.projectOwnerUuid));
+if(!start&&!owned)fail();tabs.push({tabId:tab.tabId,uuid,documentType:type});
+}}}
+for(const target of [plan.before,plan.target])if(!tabs.some(t=>t.tabId===target.tabId&&t.uuid===target.uuid&&t.documentType===target.documentType))fail();
+return JSON.stringify(tabs.sort((a,b)=>a.tabId<b.tabId?-1:a.tabId>b.tabId?1:0));
+};
+stage='before-context';await inspect(plan.before);
+stage='before-tabs';const beforeTabs=await tree();
+stage='loaded-frames';for(const scope of [plan.before,plan.target]){
+if(scope.documentType<=2&&(await bus.rpcCall('getModelTabId',scope.tabId))?.message!==scope.tabId)fail();
+loadedFrames.set(scope.tabId,frameFor(scope));}
+stage='preferences';preferencesSafe();
+stage='dispatch-context';await inspect(plan.before);
+framesMatch();
+stage='activate';const acknowledgment=await editor.activateDocument(plan.target.tabId);
+if(typeof acknowledgment!=='boolean')fail();
+stage='target-readiness';let deadline,pollTimer,rejectDeadline;
+const expired=new Promise((resolve,reject)=>{rejectDeadline=reject;});expired.catch(()=>{});
+try{deadline=timers.setTimeout(()=>rejectDeadline(new Error('ACTIVATION_DEADLINE')),15000);
+let coherent=0;
+for(let attempt=0;attempt<300;attempt++){
+const matches=await Promise.race([inspect(plan.target,true),expired]);
+framesMatch();
+if(matches){const observed=await Promise.race([tree(),expired]);if(observed!==beforeTabs)fail();if(!await Promise.race([inspect(plan.target),expired]))fail();coherent+=1;}else coherent=0;
+if(coherent===2)break;
+await Promise.race([new Promise(resolve=>{pollTimer=timers.setTimeout(()=>{pollTimer=undefined;resolve();},50);}),expired]);
+}if(coherent!==2)fail();
+}finally{if(deadline!==undefined)timers.clearTimeout(deadline);if(pollTimer!==undefined)timers.clearTimeout(pollTimer);}
+framesMatch();
+const payload={kind:'document-activate',profile:plan.profile,planSha256,tabId:plan.target.tabId,acknowledgment,coherentObservations:2,tabsUnchanged:true,saveInvoked:false,closeInvoked:false,openInvoked:false};
+const json=JSON.stringify(payload);return{schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};
+}catch{throw new Error('Document activation refused: '+stage);}
+})()`;
+}
+var DOCUMENT_ACTIVATION_PROFILE, identity8, documentType, member, contextSchema, planSchema2;
+var init_document_activation = __esm({
+  "server/src/document-activation.ts"() {
+    init_zod();
+    init_core3();
+    init_library_operations();
+    init_library_persistence_proof();
+    init_native_history();
+    init_device_runtime_guard();
+    DOCUMENT_ACTIVATION_PROFILE = "easyeda-pro-control.document-activation.v1";
+    identity8 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
+    documentType = external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]);
+    member = external_exports.object({ uuid: identity8, documentType }).strict();
+    contextSchema = member.extend({ tabId: external_exports.string().min(1).max(512) }).strict();
+    planSchema2 = external_exports.object({
+      profile: external_exports.literal(DOCUMENT_ACTIVATION_PROFILE),
+      projectUuid: identity8,
+      projectOwnerUuid: identity8,
+      branchUuid: identity8,
+      projectPath: external_exports.string().min(1).max(4096),
+      before: contextSchema,
+      target: contextSchema,
+      members: external_exports.array(member).min(1).max(8192),
+      projectRecordsSha256: external_exports.string().regex(/^[a-f0-9]{64}$/u)
+    }).strict();
+  }
+});
+
 // server/src/library-recovery.ts
-import { join as join16 } from "node:path";
+import { join as join17 } from "node:path";
 function summary4(journal) {
   return {
     operationId: journal.operationId,
@@ -63902,9 +65070,9 @@ function sourceHash(value) {
   return sha256Json(value["source"]);
 }
 function receipt(value) {
-  return checkpointSchema2.parse(value);
+  return checkpointSchema3.parse(value);
 }
-var optionalServices, hashSchema2, fileIdentitySchema, checkpointSchema2, LibraryRecoveryCoordinator;
+var optionalServices, hashSchema2, fileIdentitySchema, checkpointSchema3, LibraryRecoveryCoordinator;
 var init_library_recovery = __esm({
   "server/src/library-recovery.ts"() {
     init_zod();
@@ -63919,10 +65087,13 @@ var init_library_recovery = __esm({
     init_device_native_profile();
     init_transaction_error();
     init_library_recovery_state();
-    optionalServices = { readArtifact, readNativeHistoryCheckpoint, prepareRecoveryNavigation, verifyLibraryNativeProfile, verifyDeviceAssociationNativeProfile };
+    init_document_activation();
+    init_library_checkpoint();
+    init_native_profiles();
+    optionalServices = { readArtifact, readNativeHistoryCheckpoint, prepareRecoveryNavigation, verifyLibraryNativeProfile, verifyDeviceAssociationNativeProfile, verifySchematicNativeProfile };
     hashSchema2 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     fileIdentitySchema = external_exports.object({ birthtimeNs: external_exports.string(), ctimeNs: external_exports.string(), dev: external_exports.string(), ino: external_exports.string() }).strict();
-    checkpointSchema2 = external_exports.object({
+    checkpointSchema3 = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.checkpoint.v2"),
       createdAt: external_exports.string(),
       source: external_exports.string().min(1),
@@ -63939,9 +65110,9 @@ var init_library_recovery = __esm({
     LibraryRecoveryCoordinator = class {
       engine;
       services;
-      constructor(engine2, services) {
+      constructor(engine2, services2) {
         this.engine = engine2;
-        this.services = { ...optionalServices, ...services };
+        this.services = { ...optionalServices, ...services2 };
       }
       async load(operationId) {
         const journal = await this.services.load(operationId);
@@ -63960,8 +65131,11 @@ var init_library_recovery = __esm({
         if (installed === void 0) {
           throw new Error("Library recovery native implementation is unavailable.");
         }
-        const device = ["library.device.create", "library.device.modify", "library.device.model-transform"].includes(journal.plan.operation.action);
+        const device = ["library.device.create", "library.device.modify", "library.device.model-transform", "library.symbol.modify"].includes(journal.plan.operation.action);
         await (device ? this.services.verifyDeviceAssociationNativeProfile(installed.assetsRoot) : this.services.verifyLibraryNativeProfile(installed.assetsRoot));
+        if (journal.plan.operation.action === "document.activate") {
+          await this.services.verifySchematicNativeProfile(installed.assetsRoot);
+        }
         if (requireContext) {
           await this.engine.assertContext(structuredClone(journal.context));
         }
@@ -64004,6 +65178,9 @@ var init_library_recovery = __esm({
         if (isTerminalOperation(journal)) {
           return summary4(journal);
         }
+        if (journal.plan.operation.action === "document.activate") {
+          throw new Error("Activation recovery never opens or reactivates a tab. Reconcile its current exact state instead.");
+        }
         await this.isolated(journal);
         const assetsRoot = await this.runtime(journal, false);
         const prepared = await this.services.prepareRecoveryNavigation({ expectedContext: journal.plan.expectedContext, preCheckpoint: journal.preCheckpoint, assetsRoot });
@@ -64036,7 +65213,12 @@ var init_library_recovery = __esm({
           await this.runtime(journal, false);
         });
         try {
-          journal.context = structuredClone(await this.engine.assertContext(structuredClone(journal.context), { allowTabChange: true }));
+          if (journal.plan.operation.action === "document.activate") {
+            const prepared = await this.activationPreparation(journal);
+            await this.activationContext(prepared.plan);
+          } else {
+            journal.context = structuredClone(await this.engine.assertContext(structuredClone(journal.context), { allowTabChange: true }));
+          }
           journal.state = "library-authority-recovered-needs-reconciliation";
           journal.hardStop = true;
           journal.nextSafeAction = "Execution authority recovered. Reconcile without repeating the original library action.";
@@ -64045,7 +65227,7 @@ var init_library_recovery = __esm({
         } catch (error51) {
           journal.state = "library-authority-recovered-needs-target";
           journal.hardStop = true;
-          journal.nextSafeAction = "Prior execution terminated. Open the original existing target, then reconcile; no mutation was repeated.";
+          journal.nextSafeAction = journal.plan.operation.action === "document.activate" ? "Prior execution terminated. Inspect the original and target tab state, then reconcile without another activation or open." : "Prior execution terminated. Open the original existing target, then reconcile; no mutation was repeated.";
           await this.services.record(journal, "authority-recovered-needs-target", { boundary: boundary ?? null });
           throw transactionError(error51, journal);
         }
@@ -64056,8 +65238,11 @@ var init_library_recovery = __esm({
           return summary4(journal);
         }
         await this.isolated(journal);
-        await this.runtime(journal);
+        await this.runtime(journal, journal.plan.operation.action !== "document.activate");
         try {
+          if (journal.plan.operation.action === "document.activate") {
+            return await this.reconcileActivation(journal);
+          }
           await this.engine.awaitProjectUploads(journal.context, journal, "library-reconcile-upload-barrier");
           const current2 = await this.engine.exactRead({ kind: sourceKind(journal.context) }, journal.context);
           if (sourceHash(current2) !== journal.beforeSourceSha256) {
@@ -64065,7 +65250,7 @@ var init_library_recovery = __esm({
           }
           const baseline = receipt(journal.preCheckpoint);
           const before = await this.history(baseline, journal.context);
-          const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join16(controlDataDirectory(), "checkpoints"), label: "library-reconciled" });
+          const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join17(controlDataDirectory(), "checkpoints"), label: "library-reconciled" });
           const afterReceipt = receipt(checkpoint);
           const after = await this.history(afterReceipt, journal.context);
           let result;
@@ -64083,13 +65268,18 @@ var init_library_recovery = __esm({
             if (journal.devicePlan !== void 0 && canonicalJson(journal.devicePlan) !== canonicalJson(preparedDevice)) {
               throw new Error("Journal and original prepared device artifact disagree.");
             }
+            const preparedSymbol = kind === "project-symbol-metadata" ? await readLibraryRecoveryArtifact(uniqueLibraryRecoveryArtifact(journal.artifacts, "symbol-prepared"), this.services.readArtifact) : void 0;
+            if (journal.symbolPlan !== void 0 && canonicalJson(journal.symbolPlan) !== canonicalJson(preparedSymbol)) {
+              throw new Error("Journal and original prepared symbol artifact disagree.");
+            }
             const verified = verifyRecoveredLibraryMutation({
               operation: journal.plan.operation,
               before,
               after,
               nativeReturn,
               ...journal.mutationReceipt === void 0 ? {} : { retainedReceipt: journal.mutationReceipt },
-              ...preparedDevice === void 0 ? {} : { preparedDevice }
+              ...preparedDevice === void 0 ? {} : { preparedDevice },
+              ...preparedSymbol === void 0 ? {} : { preparedSymbol }
             });
             journal.mutationReceipt = verified.receipt;
             result = {
@@ -64100,7 +65290,8 @@ var init_library_recovery = __esm({
               actionRepeated: false,
               saveInvoked: false,
               closeInvoked: false,
-              reopened: false
+              reopened: false,
+              ...kind === "project-symbol-metadata" ? { currentGenerationLiveValidated: false } : {}
             };
           }
           await this.runtime(journal);
@@ -64108,9 +65299,7 @@ var init_library_recovery = __esm({
             throw new Error("Active source changed during library reconciliation.");
           }
           const final = await this.engine.checkpoint({ receiptPath: afterReceipt.receiptPath });
-          if (!("sourceChanged" in final) || final.sourceChanged !== false || !("checkpointMatchesReceipt" in final) || final.checkpointMatchesReceipt !== true || final.receiptPath !== afterReceipt.receiptPath || final.checkpoint !== afterReceipt.checkpoint || final.checkpointSha256 !== afterReceipt.checkpointSha256 || final.checkpointDumpSha256 !== afterReceipt.checkpointDumpSha256) {
-            throw new Error("Reconciled durable library evidence changed before completion.");
-          }
+          assertUnchangedLibraryCheckpoint(final, afterReceipt, "Reconciled durable library evidence changed before completion or its checkpoint verification failed.");
           journal.finalCheckpoint = afterReceipt;
           journal.result = result;
           journal.hardStop = false;
@@ -64132,12 +65321,71 @@ var init_library_recovery = __esm({
           throw transactionError(error51, journal);
         }
       }
+      async activationPreparation(journal) {
+        const before = await this.history(receipt(journal.preCheckpoint), journal.plan.expectedContext);
+        const prepared = await readLibraryRecoveryArtifact(uniqueLibraryRecoveryArtifact(journal.artifacts, "activation-prepared"), this.services.readArtifact);
+        const plan = verifyRetainedDocumentActivation(journal.plan.operation, before, journal.plan.expectedContext, prepared, journal.activationPlan);
+        return { plan, before };
+      }
+      async activationContext(plan) {
+        const context2 = structuredClone(await this.engine.context());
+        const targetActive = classifyDocumentActivationContext(plan, context2);
+        await this.engine.assertContext(structuredClone(context2));
+        return { context: context2, targetActive };
+      }
+      async reconcileActivation(journal) {
+        const { plan, before } = await this.activationPreparation(journal);
+        const { context: context2, targetActive } = await this.activationContext(plan);
+        await this.engine.awaitProjectUploads(context2, journal, "activation-reconcile-upload-barrier");
+        const source3 = await this.engine.exactRead({ kind: sourceKind(context2) }, context2);
+        if (!targetActive && sourceHash(source3) !== journal.beforeSourceSha256) {
+          throw new Error("Original editor source differs from its activation baseline.");
+        }
+        const afterCheckpoint = await this.engine.checkpoint({ source: context2.project.path, outputDir: join17(controlDataDirectory(), "checkpoints"), label: "activation-reconciled" });
+        const afterReceipt = receipt(afterCheckpoint);
+        verifyDocumentActivationProject(plan, before, await this.history(afterReceipt, context2));
+        if (receipt(journal.preCheckpoint).checkpointDumpSha256 !== afterReceipt.checkpointDumpSha256) {
+          throw new Error("Activation recovery found a changed logical database.");
+        }
+        await this.runtime(journal, false);
+        await this.engine.assertContext(structuredClone(context2));
+        if (sourceHash(await this.engine.exactRead({ kind: sourceKind(context2) }, context2)) !== sourceHash(source3)) {
+          throw new Error("Activation recovery editor source changed between observations.");
+        }
+        const final = await this.engine.checkpoint({ receiptPath: afterReceipt.receiptPath });
+        assertUnchangedLibraryCheckpoint(final, afterReceipt, "Activation recovery checkpoint changed before completion or its verification failed.");
+        await this.engine.assertContext(structuredClone(context2));
+        const result = {
+          kind: "document-activate-recovery",
+          profile: plan.profile,
+          targetActive,
+          context: context2,
+          persistence: "complete-logical-database-and-project-records-unchanged",
+          actionRepeated: false,
+          acknowledgmentInferred: false,
+          saveInvoked: false,
+          closeInvoked: false,
+          openInvoked: false,
+          currentGenerationLiveValidated: false
+        };
+        journal.finalCheckpoint = afterReceipt;
+        journal.result = result;
+        journal.state = "reconciled-no-mutation";
+        journal.hardStop = false;
+        journal.mutationState = "before";
+        journal.mutationMayHaveOccurred = false;
+        journal.saved = false;
+        journal.reopened = false;
+        journal.nextSafeAction = "Exact current tab and unchanged complete project verified. No activation, open, close or Save was repeated.";
+        await this.services.record(journal, "activation-reconciled", { result, checkpoint: afterReceipt });
+        return summary4(journal);
+      }
     };
   }
 });
 
 // server/src/library-execution.ts
-import { join as join17 } from "node:path";
+import { join as join18 } from "node:path";
 function projectId(context2) {
   const id7 = context2.project.uuid ?? context2.project.projectUuid;
   if (typeof id7 !== "string" || id7.length === 0) {
@@ -64151,14 +65399,14 @@ function sourceHash2(payload) {
   }
   return sha256Json(payload["source"]);
 }
-function resolvedMetadataOwner(operation, metadata, expectedOwner, localProject, history, projectSymbolMetadata) {
+function resolvedMetadataOwner(operation, metadata2, expectedOwner, localProject, history, projectSymbolMetadata) {
   if (localProject) {
     if (history === void 0) {
       throw new Error("Project metadata checkpoint is unavailable.");
     }
-    return verifyProjectLibraryMetadata(operation, metadata, history, projectSymbolMetadata);
+    return verifyProjectLibraryMetadata(operation, metadata2, history, projectSymbolMetadata);
   }
-  if (metadata["libraryUuid"] !== expectedOwner) {
+  if (metadata2["libraryUuid"] !== expectedOwner) {
     throw new Error("Returned external library owner differs from the requested library.");
   }
   return null;
@@ -64215,14 +65463,18 @@ function listLibraryExecutionCapabilities() {
       status2 = "implemented-project-local-device-addition-proof";
     } else if (action === "library.device.model-transform") {
       status2 = "implemented-project-device-transform-checkpoint-proof";
+    } else if (action === "library.symbol.modify") {
+      status2 = "implemented-project-symbol-metadata-checkpoint-proof";
+    } else if (action === "document.activate") {
+      status2 = "implemented-current-project-document-activation";
     } else if (["document.open", "library.footprint.open", "library.symbol.open"].includes(action)) {
       status2 = "implemented-current-project-document-open";
     }
-    results.push({ action, status: status2, ...executionRefusal === void 0 ? {} : { executionRefusal }, connectedValidation: "see-capability-matrix;catalog-not-live-proof", ...status2 === "implemented-bounded-file-export" ? { maxBytes: LIBRARY_FILE_EXECUTION_MAX_BYTES, autoGenerateModels: false } : {}, ...["library.device.modify", "library.device.create"].includes(action) ? { supportedBindings: "existing project-local symbol/footprint; existing external 32-hex model identity after stable native metadata reads; explicit footprint/model clearing for modify", model3DAssignment: true, implicitEco: false, createsSymbolOrFootprint: false } : {}, ...action === "library.device.model-transform" ? { inheritedInstances: "exact checkpoint inventory required", modelBindingChanged: false, implicitEco: false } : {} });
+    results.push({ action, status: status2, ...executionRefusal === void 0 ? {} : { executionRefusal }, connectedValidation: "see-capability-matrix;catalog-not-live-proof", ...status2 === "implemented-bounded-file-export" ? { maxBytes: LIBRARY_FILE_EXECUTION_MAX_BYTES, autoGenerateModels: false } : {}, ...["library.device.modify", "library.device.create"].includes(action) ? { supportedBindings: "existing project-local symbol/footprint; existing external 32-hex model identity after stable native metadata reads; explicit footprint/model clearing for modify", model3DAssignment: true, implicitEco: false, createsSymbolOrFootprint: false } : {}, ...action === "library.device.model-transform" ? { inheritedInstances: "exact checkpoint inventory required", modelBindingChanged: false, implicitEco: false } : {}, ...action === "library.symbol.modify" ? { supportedFields: ["name", "description"], ordinarySymbolOnly: true, activeTarget: false, targetMustBeClosed: true, currentGenerationLiveValidated: false, reopened: false } : {} });
   }
   return results;
 }
-var sourceKind2, LibraryExecutor;
+var libraryExecutionServices, sourceKind2, LibraryExecutor;
 var init_library_execution = __esm({
   "server/src/library-execution.ts"() {
     init_artifacts();
@@ -64242,6 +65494,11 @@ var init_library_execution = __esm({
     init_library_recovery_state();
     init_transaction_error();
     init_device_transform();
+    init_project_symbol_metadata();
+    init_document_activation();
+    init_library_checkpoint();
+    init_native_profiles();
+    libraryExecutionServices = { readNativeHistoryCheckpoint, verifyLibraryNativeProfile, verifyDeviceAssociationNativeProfile, verifySchematicNativeProfile };
     sourceKind2 = (context2) => {
       const kind = (/* @__PURE__ */ new Map([[1, "schematic-source"], [2, "symbol-source"], [3, "pcb-source"], [4, "footprint-source"]])).get(context2.document.documentType);
       if (kind === void 0) {
@@ -64252,9 +65509,11 @@ var init_library_execution = __esm({
     LibraryExecutor = class _LibraryExecutor {
       engine;
       recovery;
-      constructor(engine2) {
+      services;
+      constructor(engine2, services2 = {}) {
         this.engine = engine2;
-        this.recovery = new LibraryRecoveryCoordinator(engine2, { load: libraryJournal, record: (journal, phase2, value) => _LibraryExecutor.record(journal, phase2, value) });
+        this.services = { ...libraryExecutionServices, ...services2 };
+        this.recovery = new LibraryRecoveryCoordinator(engine2, { ...this.services, load: libraryJournal, record: (journal, phase2, value) => _LibraryExecutor.record(journal, phase2, value) });
       }
       async runtime(input, context2 = input.expectedContext) {
         validatePrivateFingerprint(input.expectedFingerprint);
@@ -64262,22 +65521,25 @@ var init_library_execution = __esm({
         assertSubset(status2.stableFingerprint, input.expectedFingerprint, "Library execution fingerprint");
         await this.engine.assertContext(structuredClone(context2));
       }
-      async nativeProfile(deviceAssociation = false) {
+      async nativeProfile(deviceAssociation = false, activation = false) {
         const installed = await this.engine.upstream.installedEasyedaBundles?.();
         if (installed === void 0) {
           throw new Error("Native library implementation identity is unavailable.");
         }
-        await (deviceAssociation ? verifyDeviceAssociationNativeProfile(installed.assetsRoot) : verifyLibraryNativeProfile(installed.assetsRoot));
+        await (deviceAssociation ? this.services.verifyDeviceAssociationNativeProfile(installed.assetsRoot) : this.services.verifyLibraryNativeProfile(installed.assetsRoot));
+        if (activation) {
+          await this.services.verifySchematicNativeProfile(installed.assetsRoot);
+        }
       }
       async checkpoint(context2, label) {
-        const checkpoint = await this.engine.checkpoint({ source: context2.project.path, outputDir: join17(controlDataDirectory(), "checkpoints"), label });
+        const checkpoint = await this.engine.checkpoint({ source: context2.project.path, outputDir: join18(controlDataDirectory(), "checkpoints"), label });
         if (!isCheckpoint(checkpoint)) {
           throw new Error("Library checkpoint receipt missing.");
         }
         return checkpoint;
       }
-      static history(checkpoint, context2) {
-        return readNativeHistoryCheckpoint({ checkpointPath: checkpoint.checkpoint, expectedSha256: checkpoint.checkpointSha256, projectUuid: projectId(context2) });
+      history(checkpoint, context2) {
+        return this.services.readNativeHistoryCheckpoint({ checkpointPath: checkpoint.checkpoint, expectedSha256: checkpoint.checkpointSha256, projectUuid: projectId(context2) });
       }
       static async record(journal, phase2, value) {
         journal.sequence += 1;
@@ -64288,18 +65550,34 @@ var init_library_execution = __esm({
       async dispatch(input, journal, operation, phase2, association2, openScope) {
         await this.runtime(input);
         const nativeSymbolMetadata = operation.action === "library.symbol.get" && operation.libraryUuid === projectId(input.expectedContext);
-        await this.nativeProfile(association2 !== void 0 || nativeSymbolMetadata);
+        await this.nativeProfile(association2 !== void 0 || nativeSymbolMetadata, operation.action === "document.activate");
+        const kind = libraryExecutionKind(operation);
+        if (kind.startsWith("project-") || kind === "document-activate") {
+          const baseline = await this.engine.checkpoint({ receiptPath: journal.preCheckpoint.receiptPath });
+          assertUnchangedLibraryCheckpoint(baseline, journal.preCheckpoint, "Durable project changed during final library admission or its checkpoint verification failed.");
+          const active = await this.engine.exactRead({ kind: sourceKind2(input.expectedContext) }, input.expectedContext);
+          if (sourceHash2(active) !== journal.beforeSourceSha256) {
+            throw new Error("Active design changed during final library admission.");
+          }
+        }
         journal.state = `${phase2}-dispatching`;
         journal.hardStop = true;
         journal.nextSafeAction = "Await the single native call; do not retry an ambiguous result.";
         await updateOperation(journal);
         let expression;
-        if (association2 === void 0) {
+        if (operation.action === "document.activate") {
+          if (journal.activationPlan === void 0) {
+            throw new Error("Document activation preparation is missing.");
+          }
+          expression = buildDocumentActivationExpression(journal.activationPlan);
+        } else if (association2 === void 0) {
           expression = buildLibraryExecutionExpression(operation, nativeSymbolMetadata, openScope);
         } else if (association2.profile === DEVICE_CREATE_PROFILE) {
           expression = buildDeviceCreateExpression(association2);
         } else if (association2.profile === DEVICE_TRANSFORM_PROFILE) {
           expression = buildDeviceTransformExpression(association2);
+        } else if (association2.profile === PROJECT_SYMBOL_METADATA_PROFILE) {
+          expression = buildProjectSymbolMetadataExpression(association2, input.expectedContext);
         } else {
           expression = buildDeviceAssociationExpression(association2);
         }
@@ -64312,9 +65590,12 @@ var init_library_execution = __esm({
         const operation = libraryOperationSchema.parse(input.operation);
         const kind = libraryExecutionKind(operation);
         const compiled = compileLibraryOperation(operation);
-        const mutation = kind === "project-footprint-write" || kind === "project-device-association" || kind === "project-device-create" || kind === "project-device-transform";
-        if ((mutation || kind === "document-open") && input.confirmWrite !== true) {
+        const mutation = kind === "project-footprint-write" || kind === "project-device-association" || kind === "project-device-create" || kind === "project-device-transform" || kind === "project-symbol-metadata";
+        if ((mutation || kind === "document-open" || kind === "document-activate") && input.confirmWrite !== true) {
           throw new Error("Library/context changes require explicit confirmation.");
+        }
+        if (kind === "project-symbol-metadata" && "target" in operation && "uuid" in operation.target && operation.target.uuid === (input.expectedContext.document.uuid ?? input.expectedContext.document.documentUuid)) {
+          throw new Error("Symbol metadata editing requires an inactive target; the active editor source must remain unchanged.");
         }
         if (this.engine.executionAuthorityValidator === void 0) {
           throw new Error("Retained runtime execution authority is required for tracked library calls.");
@@ -64332,7 +65613,7 @@ var init_library_execution = __esm({
         const beforeSource = await this.engine.exactRead({ kind: sourceKind2(context2) }, context2);
         const checkpoint = await this.checkpoint(context2, "library-before");
         const projectMetadata = kind === "metadata-read" && compiled.target?.libraryUuid === projectId(context2);
-        const beforeHistory = mutation || kind === "document-open" || projectMetadata ? await _LibraryExecutor.history(checkpoint, context2) : void 0;
+        const beforeHistory = mutation || kind === "document-open" || kind === "document-activate" || projectMetadata ? await this.history(checkpoint, context2) : void 0;
         let association2;
         if (mutation) {
           if (beforeHistory === void 0) {
@@ -64345,6 +65626,10 @@ var init_library_execution = __esm({
         const openTarget = kind === "document-open" && beforeHistory !== void 0 ? projectLibraryOpenTarget(operation, beforeHistory) : void 0;
         if (kind === "document-open" && openTarget === void 0) {
           throw new Error("Document-open checkpoint target is missing.");
+        }
+        const activationPlan = kind === "document-activate" && beforeHistory !== void 0 ? prepareDocumentActivation(operation, beforeHistory, context2) : void 0;
+        if (kind === "document-activate" && activationPlan === void 0) {
+          throw new Error("Activation checkpoint is unavailable.");
         }
         const operationId = newOperationId();
         const plan = { profile: LIBRARY_EXECUTION_PROFILE, operation: structuredClone(operation), expectedFingerprint: structuredClone(input.expectedFingerprint), expectedContext: structuredClone(context2) };
@@ -64373,12 +65658,24 @@ var init_library_execution = __esm({
         await createOperation(journal);
         await _LibraryExecutor.record(journal, "before", { source: beforeSource, baselineUploads, ...beforeHistory === void 0 ? {} : { projectRecordsSha256: libraryProjectRecordsHash(beforeHistory) } });
         try {
+          if (activationPlan !== void 0) {
+            journal.activationPlan = activationPlan;
+            await _LibraryExecutor.record(journal, "activation-prepared", journal.activationPlan);
+          }
+          if (kind === "project-symbol-metadata") {
+            if (beforeHistory === void 0) {
+              throw new Error("Symbol checkpoint is unavailable.");
+            }
+            association2 = prepareProjectSymbolMetadata(operation, beforeHistory);
+            journal.symbolPlan = structuredClone(association2);
+            await _LibraryExecutor.record(journal, "symbol-prepared", association2);
+          }
           if (kind === "project-device-association" || kind === "project-device-create" || kind === "project-device-transform") {
             if (beforeHistory === void 0) {
               throw new Error("Device checkpoint is unavailable.");
             }
             const model = deviceRequestedModel(operation);
-            let metadata;
+            let metadata2;
             if (model !== void 0) {
               const read = libraryOperationSchema.parse({ id: "device-model-read", action: "library.model3d.get", libraryUuid: model.libraryUuid, target: { uuid: model.uuid } });
               const first = decodeExactReadEnvelope(await this.dispatch(input, journal, read, "model-read-first"));
@@ -64388,22 +65685,20 @@ var init_library_execution = __esm({
               if (!isRecord(first) || !isRecord(second) || first["kind"] !== "metadata-read" || second["kind"] !== "metadata-read" || sha256Json(first) !== sha256Json(second)) {
                 throw new Error("Existing model metadata changed between observations.");
               }
-              metadata = validateDeviceModelMetadata(second["metadata"], model).metadata;
+              metadata2 = validateDeviceModelMetadata(second["metadata"], model).metadata;
             }
             if (kind === "project-device-create") {
-              association2 = prepareDeviceCreate(operation, beforeHistory, metadata);
+              association2 = prepareDeviceCreate(operation, beforeHistory, metadata2);
             } else if (kind === "project-device-transform") {
               association2 = prepareDeviceTransform(operation, beforeHistory);
             } else {
-              association2 = prepareDeviceAssociation(operation, beforeHistory, metadata);
+              association2 = prepareDeviceAssociation(operation, beforeHistory, metadata2);
             }
             journal.devicePlan = structuredClone(association2);
             await _LibraryExecutor.record(journal, "device-prepared", association2);
           }
           const check2 = await this.engine.checkpoint({ receiptPath: checkpoint.receiptPath });
-          if (!("sourceChanged" in check2) || check2.sourceChanged !== false) {
-            throw new Error("Durable project changed before library dispatch.");
-          }
+          assertUnchangedLibraryCheckpoint(check2, checkpoint, "Durable project changed before library dispatch or its checkpoint verification failed.");
           const recheck = await this.engine.exactRead({ kind: sourceKind2(context2) }, context2);
           if (sourceHash2(recheck) !== sourceHash2(beforeSource)) {
             throw new Error("Active design changed before library dispatch.");
@@ -64413,12 +65708,31 @@ var init_library_execution = __esm({
           if (mutation) {
             journal.mutationReceipt = libraryMutationReceipt(operation, decodeExactReadEnvelope(envelope));
           }
-          if (mutation || kind === "document-open" || kind === "metadata-read") {
+          if (mutation || kind === "document-open" || kind === "document-activate" || kind === "metadata-read") {
             await _LibraryExecutor.record(journal, "native-return", decodeExactReadEnvelope(envelope));
           }
           let finalContext = context2;
           let result;
-          if (kind === "document-open") {
+          if (kind === "document-activate") {
+            if (journal.activationPlan === void 0 || beforeHistory === void 0) {
+              throw new Error("Activation preparation is missing.");
+            }
+            const activation = validateDocumentActivationResult(decodeExactReadEnvelope(envelope), journal.activationPlan);
+            finalContext = structuredClone(await this.engine.assertContext(documentActivationContext(journal.activationPlan)));
+            await this.engine.awaitProjectUploads(finalContext, journal, "library-activation-upload-barrier");
+            const final = await this.checkpoint(finalContext, "library-activation-after");
+            verifyDocumentActivationProject(journal.activationPlan, beforeHistory, await this.history(final, finalContext));
+            if (checkpoint.checkpointDumpSha256 !== final.checkpointDumpSha256) {
+              throw new Error("Document activation changed the complete logical database.");
+            }
+            const targetSource = await this.engine.exactRead({ kind: sourceKind2(finalContext) }, finalContext);
+            await this.runtime(input, finalContext);
+            if (sourceHash2(await this.engine.exactRead({ kind: sourceKind2(finalContext) }, finalContext)) !== sourceHash2(targetSource)) {
+              throw new Error("Activated document source changed during verification.");
+            }
+            journal.finalCheckpoint = final;
+            result = { ...activation, context: finalContext, targetSourceSha256: sourceHash2(targetSource), persistence: "complete-logical-database-and-project-records-unchanged", currentGenerationLiveValidated: false };
+          } else if (kind === "document-open") {
             const opened = decodeExactReadEnvelope(envelope);
             if (!isRecord(opened) || opened["kind"] !== "document-open" || openTarget === void 0) {
               throw new Error("Document-open acknowledgment missing.");
@@ -64429,7 +65743,7 @@ var init_library_execution = __esm({
             }
             await this.engine.awaitProjectUploads(finalContext, journal, "library-open-upload-barrier");
             const final = await this.checkpoint(finalContext, "library-open-after");
-            if (beforeHistory === void 0 || libraryProjectRecordsHash(await _LibraryExecutor.history(final, finalContext)) !== libraryProjectRecordsHash(beforeHistory)) {
+            if (beforeHistory === void 0 || libraryProjectRecordsHash(await this.history(final, finalContext)) !== libraryProjectRecordsHash(beforeHistory)) {
               throw new Error("Opening a document altered durable project records.");
             }
             result = { kind, context: finalContext, saved: false };
@@ -64444,9 +65758,9 @@ var init_library_execution = __esm({
                 throw new Error("File operation bound is missing.");
               }
               const file2 = decodeLibraryFileResult(envelope, operation.maxBytes);
-              const directory = await ensureManagedDirectory(join17(controlDataDirectory(), "exports", operationId));
-              const reservation = await reserveEvidencePaths({ resultPath: join17(directory, "result.json"), receiptPath: join17(directory, "receipt.json") });
-              const attachment = await publishManagedAttachmentExclusive(join17(directory, "payload.bin"), "Native library export", file2.bytes, "native-file-export");
+              const directory = await ensureManagedDirectory(join18(controlDataDirectory(), "exports", operationId));
+              const reservation = await reserveEvidencePaths({ resultPath: join18(directory, "result.json"), receiptPath: join18(directory, "receipt.json") });
+              const attachment = await publishManagedAttachmentExclusive(join18(directory, "payload.bin"), "Native library export", file2.bytes, "native-file-export");
               const receipt2 = await archiveExternalEvidence({ reservation, request: operation, result: { name: file2.name, mime: file2.mime, bytes: file2.bytes.length, sha256: file2.sha256 }, metadata: { operationId, context: context2, sourceSha256: sourceHash2(afterSource), fabricationApproved: false }, attachments: [attachment] });
               result = { kind, name: file2.name, mime: file2.mime, attachment, receipt: receipt2, fabricationApproved: false };
             } else if (kind === "metadata-read") {
@@ -64456,18 +65770,24 @@ var init_library_execution = __esm({
               if (!isRecord(first) || !isRecord(second) || sha256Json(first) !== sha256Json(second)) {
                 throw new Error("Library metadata changed between observations.");
               }
-              const metadata = validateLibraryMetadata(second["metadata"], operation);
-              const resolvedLibrary = resolvedMetadataOwner(operation, metadata, compiled.target?.libraryUuid, projectMetadata, beforeHistory, second["projectSymbolMetadata"]);
-              result = { kind, metadata, resolvedLibrary, readConsistency: { stable: true, attempts: 2, sha256: sha256Json(metadata) } };
+              const metadata2 = validateLibraryMetadata(second["metadata"], operation);
+              const resolvedLibrary = resolvedMetadataOwner(operation, metadata2, compiled.target?.libraryUuid, projectMetadata, beforeHistory, second["projectSymbolMetadata"]);
+              result = { kind, metadata: metadata2, resolvedLibrary, readConsistency: { stable: true, attempts: 2, sha256: sha256Json(metadata2) } };
             } else {
               const acknowledgment = decodeExactReadEnvelope(envelope);
-              if (!isRecord(acknowledgment) || acknowledgment["kind"] !== kind || beforeHistory === void 0 || association2 !== void 0 && association2.profile !== DEVICE_CREATE_PROFILE && acknowledgment["targetId"] !== association2.deviceUuid) {
+              let expectedTargetId;
+              if (association2?.profile === PROJECT_SYMBOL_METADATA_PROFILE) {
+                expectedTargetId = association2.targetUuid;
+              } else if (association2 !== void 0 && association2.profile !== DEVICE_CREATE_PROFILE) {
+                expectedTargetId = association2.deviceUuid;
+              }
+              if (!isRecord(acknowledgment) || acknowledgment["kind"] !== kind || beforeHistory === void 0 || expectedTargetId !== void 0 && acknowledgment["targetId"] !== expectedTargetId) {
                 throw new Error("Library write result missing.");
               }
               const createdId = typeof acknowledgment["createdId"] === "string" ? acknowledgment["createdId"] : void 0;
               await this.engine.awaitProjectUploads(context2, journal, "library-write-upload-barrier");
               const final = await this.checkpoint(context2, "library-after");
-              const afterHistory = await _LibraryExecutor.history(final, context2);
+              const afterHistory = await this.history(final, context2);
               let proof;
               if (association2 === void 0) {
                 proof = verifyProjectLibraryEffect(operation, beforeHistory, afterHistory, createdId);
@@ -64475,32 +65795,40 @@ var init_library_execution = __esm({
                 proof = verifyDeviceCreateEffect(association2, beforeHistory, afterHistory, createdId);
               } else if (association2.profile === DEVICE_TRANSFORM_PROFILE) {
                 proof = verifyDeviceTransformEffect(association2, beforeHistory, afterHistory);
+              } else if (association2.profile === PROJECT_SYMBOL_METADATA_PROFILE) {
+                proof = verifyProjectSymbolMetadataEffect(association2, beforeHistory, afterHistory);
               } else {
                 proof = verifyDeviceAssociationEffect(association2, beforeHistory, afterHistory);
               }
               journal.finalCheckpoint = final;
               journal.saved = true;
               journal.mutationState = "after";
-              result = { kind, proof, createdId: createdId ?? null, persistence: "complete-project-checkpoint-records-verified", reopened: false };
+              result = {
+                kind,
+                proof,
+                createdId: createdId ?? null,
+                persistence: "complete-project-checkpoint-records-verified",
+                reopened: false,
+                ...kind === "project-symbol-metadata" ? { currentGenerationLiveValidated: false } : {}
+              };
             }
             if (!mutation) {
               await this.engine.awaitProjectUploads(context2, journal, "library-read-upload-barrier");
               const unchanged = await this.engine.checkpoint({ receiptPath: checkpoint.receiptPath });
-              if (!("sourceChanged" in unchanged) || unchanged.sourceChanged !== false) {
-                throw new Error("Read/export changed the durable project.");
-              }
+              assertUnchangedLibraryCheckpoint(unchanged, checkpoint, "Read/export changed the durable project or its checkpoint verification failed.");
             }
           }
           await this.runtime(input, finalContext);
-          await this.nativeProfile(association2 !== void 0 || operation.action === "library.symbol.get" && operation.libraryUuid === projectId(context2));
+          await this.nativeProfile(association2 !== void 0 || operation.action === "library.symbol.get" && operation.libraryUuid === projectId(context2), kind === "document-activate");
           if (kind !== "document-open") {
-            if (sourceHash2(await this.engine.exactRead({ kind: sourceKind2(context2) }, context2)) !== journal.beforeSourceSha256) {
+            if (kind !== "document-activate" && sourceHash2(await this.engine.exactRead({ kind: sourceKind2(context2) }, context2)) !== journal.beforeSourceSha256) {
               throw new Error("Active source changed before library result completion.");
             }
             const finalReceipt = journal.finalCheckpoint ?? checkpoint;
             const finalCheck = await this.engine.checkpoint({ receiptPath: finalReceipt.receiptPath });
-            if (!("sourceChanged" in finalCheck) || finalCheck.sourceChanged !== false) {
-              throw new Error("Durable library evidence changed before completion.");
+            assertUnchangedLibraryCheckpoint(finalCheck, finalReceipt, "Durable library evidence changed before completion or its checkpoint verification failed.");
+            if (kind === "document-activate") {
+              await this.engine.assertContext(structuredClone(finalContext));
             }
           }
           journal.result = result;
@@ -64905,10 +66233,10 @@ async function startWindowsAuthoritySupervisor(options) {
     if (newline === -1) {
       return;
     }
-    const line4 = buffer.slice(0, newline);
+    const line5 = buffer.slice(0, newline);
     buffer = buffer.slice(newline + 1);
     try {
-      const response = record5(JSON.parse(line4));
+      const response = record5(JSON.parse(line5));
       const request = pending;
       if (request === void 0 || response["id"] !== request.id || buffer.length > 0) {
         fail8();
@@ -65711,7 +67039,7 @@ import {
   unlinkSync
 } from "node:fs";
 import { lstat as lstat14, open as open13, readFile as readFile5, rename as rename2, unlink as unlink3 } from "node:fs/promises";
-import { join as join18 } from "node:path";
+import { join as join19 } from "node:path";
 import process7 from "node:process";
 import { setTimeout as wait } from "node:timers/promises";
 function isRecord3(value) {
@@ -65726,8 +67054,8 @@ function privateMode(mode) {
 function identityOf2(information) {
   return { device: information.dev, inode: information.ino };
 }
-function sameIdentity2(information, identity7) {
-  return information.dev === identity7.device && information.ino === identity7.inode;
+function sameIdentity2(information, identity9) {
+  return information.dev === identity9.device && information.ino === identity9.inode;
 }
 function assertPrivateLeaseFile(information, label, expectedLinkCount = 1n) {
   if (information.isSymbolicLink() || !information.isFile() || information.nlink !== expectedLinkCount || privateMode(information.mode) !== 384 || information.size <= 0n || information.size > MAXIMUM_LEASE_RECORD_BYTES || typeof process7.getuid === "function" && information.uid !== BigInt(process7.getuid())) {
@@ -65825,16 +67153,16 @@ async function writeNewPrivateRecord(handle, path5, value, label) {
   ]);
   assertPrivateLeaseFile(opened, label);
   assertPrivateLeaseFile(currentPath, label);
-  const identity7 = identityOf2(opened);
-  if (!sameIdentity2(currentPath, identity7)) {
+  const identity9 = identityOf2(opened);
+  if (!sameIdentity2(currentPath, identity9)) {
     throw new Error(`${label} changed during exclusive publication.`);
   }
-  return identity7;
+  return identity9;
 }
-async function unlinkExpectedPrivateRecord(root, path5, identity7, label) {
+async function unlinkExpectedPrivateRecord(root, path5, identity9, label) {
   const pathInformation = await lstat14(path5, { bigint: true });
   assertPrivateLeaseFile(pathInformation, label);
-  if (!sameIdentity2(pathInformation, identity7)) {
+  if (!sameIdentity2(pathInformation, identity9)) {
     throw new Error(`${label} identity changed before cleanup.`);
   }
   const handle = await open13(
@@ -65849,13 +67177,13 @@ async function unlinkExpectedPrivateRecord(root, path5, identity7, label) {
     ]);
     assertPrivateLeaseFile(opened, label);
     assertPrivateLeaseFile(currentPath, label);
-    if (!sameIdentity2(opened, identity7) || !sameIdentity2(currentPath, identity7)) {
+    if (!sameIdentity2(opened, identity9) || !sameIdentity2(currentPath, identity9)) {
       throw new Error(`${label} identity changed before unlink.`);
     }
     await unlink3(path5);
     await syncControlRoot(root);
     const unlinked = await handle.stat({ bigint: true });
-    if (!sameIdentity2(unlinked, identity7) || unlinked.nlink !== 0n) {
+    if (!sameIdentity2(unlinked, identity9) || unlinked.nlink !== 0n) {
       throw new Error(`${label} did not become descriptor-only after unlink.`);
     }
   } catch (error51) {
@@ -65877,10 +67205,10 @@ async function unlinkExpectedPrivateRecord(root, path5, identity7, label) {
     throw operationFailure instanceof Error ? operationFailure : new Error(`${label} cleanup failed.`, { cause: operationFailure });
   }
 }
-function unlinkExpectedPrivateRecordSync(path5, identity7, label) {
+function unlinkExpectedPrivateRecordSync(path5, identity9, label) {
   const pathInformation = lstatSync(path5, { bigint: true });
   assertPrivateLeaseFile(pathInformation, label);
-  if (!sameIdentity2(pathInformation, identity7)) {
+  if (!sameIdentity2(pathInformation, identity9)) {
     throw new Error(`${label} identity changed before synchronous cleanup.`);
   }
   const descriptor = openSync(
@@ -65892,12 +67220,12 @@ function unlinkExpectedPrivateRecordSync(path5, identity7, label) {
     const currentPath = lstatSync(path5, { bigint: true });
     assertPrivateLeaseFile(opened, label);
     assertPrivateLeaseFile(currentPath, label);
-    if (!sameIdentity2(opened, identity7) || !sameIdentity2(currentPath, identity7)) {
+    if (!sameIdentity2(opened, identity9) || !sameIdentity2(currentPath, identity9)) {
       throw new Error(`${label} identity changed before synchronous unlink.`);
     }
     unlinkSync(path5);
     const unlinked = fstatSync(descriptor, { bigint: true });
-    if (!sameIdentity2(unlinked, identity7) || unlinked.nlink !== 0n) {
+    if (!sameIdentity2(unlinked, identity9) || unlinked.nlink !== 0n) {
       throw new Error(
         `${label} did not become descriptor-only after synchronous unlink.`
       );
@@ -66044,7 +67372,7 @@ async function acquireCleanupLease(root, cleanupPath, staleToken) {
         fsConstants5.O_WRONLY | fsConstants5.O_CREAT | fsConstants5.O_EXCL | fsConstants5.O_NOFOLLOW,
         384
       );
-      const identity7 = await writeNewPrivateRecord(
+      const identity9 = await writeNewPrivateRecord(
         handle,
         cleanupPath,
         record6,
@@ -66053,7 +67381,7 @@ async function acquireCleanupLease(root, cleanupPath, staleToken) {
       await handle.close();
       handle = void 0;
       await syncControlRoot(root);
-      return { identity: identity7, record: record6 };
+      return { identity: identity9, record: record6 };
     } catch (error51) {
       await retryHandleCloseAfterFailure(
         handle,
@@ -66130,7 +67458,7 @@ async function releaseCleanupLease(root, cleanupPath, cleanupLease) {
 }
 async function acquireFacadeLeaseWithCapability(root) {
   await root.assertCurrent();
-  const path5 = join18(root.path, "facade.lock");
+  const path5 = join19(root.path, "facade.lock");
   const boundPath = root.childDescriptorPath(path5);
   const token = randomUUID7();
   const pidStartTime = await linuxProcessStartTime(process7.pid);
@@ -67807,9 +69135,9 @@ var require_permessage_deflate = __commonJS({
        * @private
        */
       _decompress(data2, fin, callback) {
-        const endpoint = this._isServer ? "client" : "server";
+        const endpoint2 = this._isServer ? "client" : "server";
         if (!this._inflate) {
-          const key = `${endpoint}_max_window_bits`;
+          const key = `${endpoint2}_max_window_bits`;
           const windowBits = typeof this.params[key] !== "number" ? zlib.Z_DEFAULT_WINDOWBITS : this.params[key];
           this._inflate = zlib.createInflateRaw({
             ...this._options.zlibInflateOptions,
@@ -67842,7 +69170,7 @@ var require_permessage_deflate = __commonJS({
           } else {
             this._inflate[kTotalLength] = 0;
             this._inflate[kBuffers] = [];
-            if (fin && this.params[`${endpoint}_no_context_takeover`]) {
+            if (fin && this.params[`${endpoint2}_no_context_takeover`]) {
               this._inflate.reset();
             }
           }
@@ -67858,9 +69186,9 @@ var require_permessage_deflate = __commonJS({
        * @private
        */
       _compress(data2, fin, callback) {
-        const endpoint = this._isServer ? "server" : "client";
+        const endpoint2 = this._isServer ? "server" : "client";
         if (!this._deflate) {
-          const key = `${endpoint}_max_window_bits`;
+          const key = `${endpoint2}_max_window_bits`;
           const windowBits = typeof this.params[key] !== "number" ? zlib.Z_DEFAULT_WINDOWBITS : this.params[key];
           this._deflate = zlib.createDeflateRaw({
             ...this._options.zlibDeflateOptions,
@@ -67886,7 +69214,7 @@ var require_permessage_deflate = __commonJS({
           this._deflate[kCallback] = null;
           this._deflate[kTotalLength] = 0;
           this._deflate[kBuffers] = [];
-          if (fin && this.params[`${endpoint}_no_context_takeover`]) {
+          if (fin && this.params[`${endpoint2}_no_context_takeover`]) {
             this._deflate.reset();
           }
           callback(null, data3);
@@ -70754,12 +72082,12 @@ var require_websocket_server = __commonJS({
         }
         if (options.port != null) {
           this._server = http.createServer((req, res) => {
-            const body2 = http.STATUS_CODES[426];
+            const body3 = http.STATUS_CODES[426];
             res.writeHead(426, {
-              "Content-Length": body2.length,
+              "Content-Length": body3.length,
               "Content-Type": "text/plain"
             });
-            res.end(body2);
+            res.end(body3);
           });
           this._server.listen(
             options.port,
@@ -71313,8 +72641,8 @@ async function establishedServerSocketInode(socket) {
   const matches = [];
   for (const table of tables) {
     const text7 = await readFile6(table, "utf8");
-    for (const line4 of text7.split(/\r?\n/u).slice(1)) {
-      const fields2 = line4.trim().split(/\s+/u);
+    for (const line5 of text7.split(/\r?\n/u).slice(1)) {
+      const fields2 = line5.trim().split(/\s+/u);
       if (fields2.length >= 10 && fields2[1] === expectedLocal && fields2[2] === expectedRemote && fields2[3] === "01" && fields2[9] !== void 0) {
         matches.push(fields2[9]);
       }
@@ -72361,7 +73689,7 @@ var init_authenticated_bridge_gateway = __esm({
 import { createHash as createHash17 } from "node:crypto";
 import { constants as fsConstants6 } from "node:fs";
 import { lstat as lstat15, open as open14 } from "node:fs/promises";
-import { basename as basename9, dirname as dirname6, join as join19 } from "node:path";
+import { basename as basename9, dirname as dirname6, join as join20 } from "node:path";
 import process9 from "node:process";
 function isRecord5(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -72401,7 +73729,7 @@ async function readStablePrivateChildFile(parent, name6, maximumBytes, label) {
     if (!sameIdentity3(opened, after) || after.size !== opened.size || after.mtimeMs !== opened.mtimeMs || after.ctimeMs !== opened.ctimeMs) {
       throw new Error(`${label} changed while it was read.`);
     }
-    return { bytes, path: join19(parent.path, name6), stat: after };
+    return { bytes, path: join20(parent.path, name6), stat: after };
   } finally {
     await handle.close();
   }
@@ -72417,7 +73745,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
   let build;
   try {
     const opened = await controlRoot.openDirectory(
-      join19(controlRoot.path, AUTHENTICATED_BRIDGE_BUILD_DIRECTORY),
+      join20(controlRoot.path, AUTHENTICATED_BRIDGE_BUILD_DIRECTORY),
       false
     );
     build = {
@@ -72460,9 +73788,9 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
     await controlRoot.assertCurrent();
     const archiveSha256 = createHash17("sha256").update(archive.bytes).digest("hex");
     const authentication = isRecord5(parsed2) && isRecord5(parsed2["authentication"]) ? parsed2["authentication"] : void 0;
-    const endpoint = isRecord5(authentication) && isRecord5(authentication["publicEndpoint"]) ? authentication["publicEndpoint"] : void 0;
+    const endpoint2 = isRecord5(authentication) && isRecord5(authentication["publicEndpoint"]) ? authentication["publicEndpoint"] : void 0;
     const source3 = isRecord5(parsed2) && isRecord5(parsed2["source"]) ? parsed2["source"] : void 0;
-    if (parsed2["schema"] !== "easyeda-pro-control.authenticated-bridge-build.v2" || parsed2["outputPath"] !== archive.path || parsed2["outputSha256"] !== archiveSha256 || parsed2["outputBytes"] !== archive.stat.size || parsed2["tokenSha256"] !== authenticationKeySha256 || typeof parsed2["authenticatedIndexBuildId"] !== "string" || !/^i[A-Za-z0-9_-]{43}$/u.test(parsed2["authenticatedIndexBuildId"]) || typeof parsed2["indexSha256"] !== "string" || !/^[0-9a-f]{64}$/u.test(parsed2["indexSha256"]) || !isRecord5(authentication) || authentication["protocol"] !== "easyeda-pro-control.bridge-auth.v1" || authentication["rawTokenTransmission"] !== false || authentication["adjacentPortFallback"] !== false || !isRecord5(endpoint) || endpoint["host"] !== AUTHENTICATED_BRIDGE_HOST || endpoint["port"] !== AUTHENTICATED_BRIDGE_PORT || !isRecord5(source3) || source3["repository"] !== AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY.repository || source3["commit"] !== AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY.commit || source3["upstreamTreeSha1"] !== AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY.upstreamTreeSha1 || source3["closureSha256"] !== AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY.closureSha256 || source3["fileCount"] !== AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY.fileCount || source3["totalBytes"] !== AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY.totalBytes || source3["builtFromPrivateSnapshot"] !== true || source3["privateSnapshotSealed"] !== true || source3["postConsumptionVerified"] !== true) {
+    if (parsed2["schema"] !== "easyeda-pro-control.authenticated-bridge-build.v2" || parsed2["outputPath"] !== archive.path || parsed2["outputSha256"] !== archiveSha256 || parsed2["outputBytes"] !== archive.stat.size || parsed2["tokenSha256"] !== authenticationKeySha256 || typeof parsed2["authenticatedIndexBuildId"] !== "string" || !/^i[A-Za-z0-9_-]{43}$/u.test(parsed2["authenticatedIndexBuildId"]) || typeof parsed2["indexSha256"] !== "string" || !/^[0-9a-f]{64}$/u.test(parsed2["indexSha256"]) || !isRecord5(authentication) || authentication["protocol"] !== "easyeda-pro-control.bridge-auth.v1" || authentication["rawTokenTransmission"] !== false || authentication["adjacentPortFallback"] !== false || !isRecord5(endpoint2) || endpoint2["host"] !== AUTHENTICATED_BRIDGE_HOST || endpoint2["port"] !== AUTHENTICATED_BRIDGE_PORT || !isRecord5(source3) || source3["repository"] !== AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY.repository || source3["commit"] !== AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY.commit || source3["upstreamTreeSha1"] !== AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY.upstreamTreeSha1 || source3["closureSha256"] !== AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY.closureSha256 || source3["fileCount"] !== AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY.fileCount || source3["totalBytes"] !== AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY.totalBytes || source3["builtFromPrivateSnapshot"] !== true || source3["privateSnapshotSealed"] !== true || source3["postConsumptionVerified"] !== true) {
       throw new Error(
         "The private authenticated bridge archive and build receipt are not a verified matching pair for the configured credential epoch."
       );
@@ -72505,7 +73833,7 @@ import {
   basename as basename10,
   dirname as dirname7,
   isAbsolute as isAbsolute12,
-  join as join20,
+  join as join21,
   relative as relative5,
   resolve as resolve5,
   sep as sep3
@@ -72513,7 +73841,7 @@ import {
 import process10 from "node:process";
 function configuredControlRootDirectory() {
   return resolve5(
-    process10.env["EASYEDA_CONTROL_DATA_DIR"] ?? join20(process10.env["HOME"] ?? "/tmp", ".easyeda-pro-control")
+    process10.env["EASYEDA_CONTROL_DATA_DIR"] ?? join21(process10.env["HOME"] ?? "/tmp", ".easyeda-pro-control")
   );
 }
 function isWithin3(root, candidate) {
@@ -72665,7 +73993,7 @@ async function prepareBoundUpstreamEnvironment(command, privateBridge, controlRo
   }
   const controlRoot = configuredControlRootDirectory();
   const dataDirectory = resolve5(
-    process10.env["EASYEDA_UPSTREAM_DATA_DIR"] ?? join20(controlRoot, "upstream")
+    process10.env["EASYEDA_UPSTREAM_DATA_DIR"] ?? join21(controlRoot, "upstream")
   );
   if (!isWithin3(controlRoot, dataDirectory)) {
     throw new Error(
@@ -72906,12 +74234,12 @@ function codePointToString(code) {
   return String.fromCharCode((code >> 10) + 55296, (code & 1023) + 56320);
 }
 function getLineInfo(input, offset2) {
-  for (var line4 = 1, cur = 0; ; ) {
+  for (var line5 = 1, cur = 0; ; ) {
     var nextBreak = nextLineBreak(input, cur, offset2);
     if (nextBreak < 0) {
-      return new Position(line4, offset2 - cur);
+      return new Position(line5, offset2 - cur);
     }
-    ++line4;
+    ++line5;
     cur = nextBreak;
   }
 }
@@ -73247,8 +74575,8 @@ var init_acorn = __esm({
     });
     regexpCache = /* @__PURE__ */ Object.create(null);
     loneSurrogate = /(?:[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF])/;
-    Position = function Position2(line4, col) {
-      this.line = line4;
+    Position = function Position2(line5, col) {
+      this.line = line5;
       this.column = col;
     };
     Position.prototype.offset = function offset(n) {
@@ -78592,11 +79920,11 @@ function dependenciesFor(format, source3) {
     }
   }
   visit(program);
-  const unique = /* @__PURE__ */ new Map();
+  const unique2 = /* @__PURE__ */ new Map();
   for (const dependency of dependencies3) {
-    unique.set(`${dependency.mode}\0${dependency.specifier}`, dependency);
+    unique2.set(`${dependency.mode}\0${dependency.specifier}`, dependency);
   }
-  return [...unique.values()].toSorted((left, right) => {
+  return [...unique2.values()].toSorted((left, right) => {
     const modeOrder = left.mode.localeCompare(right.mode);
     return modeOrder === 0 ? left.specifier.localeCompare(right.specifier) : modeOrder;
   });
@@ -79135,7 +80463,7 @@ import {
   readlink as readlink2,
   realpath as realpath11
 } from "node:fs/promises";
-import { dirname as dirname9, isAbsolute as isAbsolute14, join as join21, relative as relative7, resolve as resolve7, sep as sep5 } from "node:path";
+import { dirname as dirname9, isAbsolute as isAbsolute14, join as join22, relative as relative7, resolve as resolve7, sep as sep5 } from "node:path";
 import process11 from "node:process";
 function isRecord7(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -79243,7 +80571,7 @@ async function detectDependencyLock(cwd) {
     ["yarn", "yarn.lock"]
   ];
   for (const [type, name6] of candidates) {
-    const path5 = join21(cwd, name6);
+    const path5 = join22(cwd, name6);
     try {
       const info = await lstat18(path5);
       if (info.isFile() && !info.isSymbolicLink()) {
@@ -79258,8 +80586,8 @@ async function detectDependencyLock(cwd) {
   throw new Error("The upstream dependency lockfile is unavailable.");
 }
 async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPath) {
-  const dependencyRoot = join21(cwd, "node_modules");
-  const packagePath = join21(cwd, "package.json");
+  const dependencyRoot = join22(cwd, "node_modules");
+  const packagePath = join22(cwd, "package.json");
   const roots = [implementationRoot, dependencyRoot, packagePath, dependencyLockPath].map((path5) => resolve7(path5)).toSorted();
   const entries = [];
   const seals = [];
@@ -79296,7 +80624,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
       entries.push({ path: relativePath, kind: "directory", bytes: 0 });
       const children2 = await readdir5(absolute);
       for (const child of children2.toSorted()) {
-        await visit(join21(absolute, child));
+        await visit(join22(absolute, child));
       }
       return;
     }
@@ -79338,12 +80666,12 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
     closureHash.update("\n");
   }
   const implementationFiles = sortedEntries.filter(
-    (entry) => entry.kind === "file" && isWithin5(implementationRoot, join21(cwd, entry.path)) && /\.(c?m?js|json)$/iu.test(entry.path)
+    (entry) => entry.kind === "file" && isWithin5(implementationRoot, join22(cwd, entry.path)) && /\.(c?m?js|json)$/iu.test(entry.path)
   );
   const implementationHash = createHash19("sha256");
   for (const entry of implementationFiles) {
     implementationHash.update(
-      relative7(implementationRoot, join21(cwd, entry.path)).split(sep5).join("/")
+      relative7(implementationRoot, join22(cwd, entry.path)).split(sep5).join("/")
     );
     implementationHash.update("\0");
     implementationHash.update(entry.sha256 ?? "");
@@ -80115,9 +81443,9 @@ function protocolError(code, message) {
   protocolFailureCodes.set(error51, code);
   return error51;
 }
-function classifySandboxStdoutLine(line4, supervisorReady, protocolAdmitted) {
+function classifySandboxStdoutLine(line5, supervisorReady, protocolAdmitted) {
   if (!supervisorReady) {
-    if (line4 !== UPSTREAM_SUPERVISOR_READY_LINE) {
+    if (line5 !== UPSTREAM_SUPERVISOR_READY_LINE) {
       throw protocolError(
         "stdout-before-readiness",
         "The upstream emitted output before its exact supervisor readiness marker."
@@ -80149,8 +81477,8 @@ function hasExactKeys(value, expected2) {
   const keys2 = Object.keys(value);
   return keys2.length === expected2.size && keys2.every((key) => expected2.has(key));
 }
-function parseBubblewrapStatusLine(line4, state2) {
-  const value = JSON.parse(line4);
+function parseBubblewrapStatusLine(line5, state2) {
+  const value = JSON.parse(line5);
   if (!isRecord8(value)) {
     throw new Error("Bubblewrap emitted a non-object status record.");
   }
@@ -80581,14 +81909,14 @@ var init_sandboxed_stdio_client_transport = __esm({
               return;
             }
             this.appendStdoutSegment(chunk.subarray(offset2, newline));
-            const line4 = Buffer.concat(
+            const line5 = Buffer.concat(
               this.stdoutChunks,
               this.stdoutBufferedBytes
             ).toString("utf8");
             this.stdoutBufferedBytes = 0;
             this.stdoutChunks = [];
             const kind = classifySandboxStdoutLine(
-              line4,
+              line5,
               this.supervisorReady,
               this.protocolAdmitted
             );
@@ -80596,7 +81924,7 @@ var init_sandboxed_stdio_client_transport = __esm({
               this.supervisorReady = true;
               this.supervisorReadySignal.resolve(true);
             } else {
-              this.onmessage?.(deserializeMessage(line4));
+              this.onmessage?.(deserializeMessage(line5));
             }
             offset2 = newline + 1;
           }
@@ -80958,11 +82286,11 @@ import {
   open as open20,
   realpath as realpath12
 } from "node:fs/promises";
-import { basename as basename11, join as join22, resolve as resolve8 } from "node:path";
+import { basename as basename11, join as join23, resolve as resolve8 } from "node:path";
 import process13 from "node:process";
 function bundledSupervisorPath() {
   const bundleDirectory = basename11(import.meta.filename) === "server.mjs" ? import.meta.dirname : resolve8(import.meta.dirname, "..", "dist");
-  return join22(bundleDirectory, SUPERVISOR_BUNDLE_NAME);
+  return join23(bundleDirectory, SUPERVISOR_BUNDLE_NAME);
 }
 function reviewedSupervisorFingerprint() {
   const expected2 = loadReviewedCompatibilityManifest().facadeImplementation.bundle.files.find(
@@ -81225,7 +82553,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { createHash as createHash22, randomBytes as randomBytes9 } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
-import { join as join23, resolve as resolve9 } from "node:path";
+import { join as join24, resolve as resolve9 } from "node:path";
 import process15 from "node:process";
 function startupFailureWithStderr(error51, diagnosticBytes, diagnosticSha256, startupDiagnostics) {
   return diagnosticBytes === 0 && startupDiagnostics === void 0 ? error51 : new UpstreamStartupError(
@@ -81874,16 +83202,16 @@ var init_upstream = __esm({
           process15.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"],
           "EASYEDA_PUBLIC_API_BUNDLE_VERSION"
         );
-        const pcbImplementation = join23(
+        const pcbImplementation = join24(
           assetsRoot,
           "pro-pcb",
           pcbVersion,
           "js",
           "pcb.js"
         );
-        const apiImplementation = join23(assetsRoot, "pro-api", apiVersion, "api.js");
-        const apiAdapter = join23(assetsRoot, "pro-api", apiVersion, "api-types.js");
-        const apiDeclarations = join23(
+        const apiImplementation = join24(assetsRoot, "pro-api", apiVersion, "api.js");
+        const apiAdapter = join24(assetsRoot, "pro-api", apiVersion, "api-types.js");
+        const apiDeclarations = join24(
           assetsRoot,
           "pro-api",
           apiVersion,
@@ -82381,8 +83709,8 @@ function methodEntry(namespace, method, detail) {
   return entry;
 }
 function snapshotMetadata(snapshot6) {
-  const { namespaces: _namespaces, types: _types, ...metadata } = snapshot6;
-  return metadata;
+  const { namespaces: _namespaces, types: _types, ...metadata2 } = snapshot6;
+  return metadata2;
 }
 function queryExtensionApiCatalog(input = {}) {
   const query = extensionApiCatalogQuerySchema.parse(input);
@@ -82704,8 +84032,28 @@ var init_extension_api_coverage_routes = __esm({
       add2("lib_Device", [method], "easyeda_control_library", `library.device.${method}`, "native-task-equivalent", "Project-local device addition or association patch to existing assets; no asset import/copy or implicit ECO.", ["device-create.ts", "device-association.ts"], ["device-create.test.ts", "device-association.test.ts"]);
     }
     add2("lib_Symbol", ["openInEditor"], "easyeda_control_library", "library.symbol.open", "public-method", "Existing exact current-project symbol; waits for coherent library editor context and proves unchanged selected branch.", ["library-runtime.ts"], ["library-execution.test.ts"]);
+    add2(
+      "lib_Symbol",
+      ["modify"],
+      "easyeda_control_library",
+      "library.symbol.modify",
+      "public-method",
+      "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Fixed classification object preserves the exact display title. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate.",
+      ["project-symbol-metadata.ts", "library-execution.ts", "library-recovery-state.ts", "editor-tabs.ts"],
+      ["project-symbol-metadata.test.ts", "project-symbol-transaction.test.ts", "library-recovery.test.ts"]
+    );
     add2("lib_Footprint", ["openInEditor"], "easyeda_control_library", "library.footprint.open", "native-task-equivalent", "Uses maintained dmt_EditorControl.openLibraryDocument path for an existing exact current-project footprint.", ["library-runtime.ts", "library-operations.ts"], ["library-execution.test.ts"]);
     add2("dmt_EditorControl", ["openDocument"], "easyeda_control_library", "document.open", "public-method", "Checkpoint-member current-project document only, with one-shot navigation and complete unchanged saved-state proof.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
+    add2(
+      "dmt_EditorControl",
+      ["activateDocument"],
+      "easyeda_control_library",
+      "document.activate",
+      "public-method",
+      "One already-open checkpoint-member current-project tab only, with complete tab ownership, retained preparation and one activation. Two coherent target observations and unchanged complete durable project; recovery never activates, opens, closes or saves. Current-generation live validation is unclaimed.",
+      ["document-activation.ts", "library-execution.ts", "library-recovery.ts"],
+      ["document-activation.test.ts", "document-activation-transaction.test.ts"]
+    );
     add2("dmt_EditorControl", ["openLibraryDocument"], "easyeda_control_library", "library.footprint.open", "public-method", "Existing checkpoint-member current-project footprint only, with one-shot navigation and complete unchanged saved-state proof.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
     exports = {
       getDxfFile: "dxf",
@@ -83002,7 +84350,6 @@ var init_extension_api_coverage = __esm({
       "sch_PrimitiveText.getAllPrimitiveId": "The installed wrapper publishes its callback without awaiting completion; an empty result can precede actual enumeration."
     };
     concreteOmissions = {
-      "lib_Symbol.modify": omitted("candidate-not-live-admitted", "The installed wrapper destructures classification without a default and can substitute the normalized search title for the display title. The disabled project-symbol-metadata candidate supplies a fixed empty classification object and the exact preserved display title, but has only offline regression tests.", "Review the exact candidate and complete an identified disposable project metadata edit, whole-project persistence comparison and inverse before adding it to the live library execution switch.", ["project-symbol-metadata.ts", "project-symbol-metadata.test.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
       "lib_Symbol.create": omitted("symbol-template-effect-model-needed", "Creating a symbol also creates type-specific canvas/template records and META defaults, not just one metadata row. Existing symbol geometry edits require an already owned single-part asset.", "Implement exact generated template/META and child-identity expectations, returned-ID ownership, asset dependency checks and complete saved-project addition proof.", ["library-operations.ts", "library-runtime.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
       "lib_Symbol.updateDocumentSource": omitted("source-decoder-and-save-lifecycle", "Replacing symbol source runs a decoder that can rewrite complete child identities and compiler state; a string schema does not define a safe exact source replacement.", "Add format validation, complete intended decoded delta, inherited-instance effects, no-repeat compiler Save evidence and disposable reopen/inverse proof.", ["library-operations.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
       "lib_Footprint.updateDocumentSource": omitted("source-decoder-and-save-lifecycle", "The footprint source wrapper can create an editor iframe, decode a complete asset and invoke compiler Save. This is not a stateless text replacement and cannot share a generic metadata transaction.", "Add owned iframe lifecycle, exact decoded asset/placed-instance delta, a Save-intent boundary before the hidden compiler save, and disposable saved/reopened recovery proof.", ["library-operations.ts", "docs/api-execution-feasibility-2026-10-10.md"]),
@@ -83559,7 +84906,7 @@ async function failedExportObservation(path5) {
     };
   }
 }
-async function withEvidence(request, result, evidence, metadata = {}, {
+async function withEvidence(request, result, evidence, metadata2 = {}, {
   reservation,
   returnMode = "full",
   maxInlineBytes = 65536,
@@ -83572,7 +84919,7 @@ async function withEvidence(request, result, evidence, metadata = {}, {
       ...reservation === void 0 ? {} : { reservation },
       request,
       result,
-      metadata,
+      metadata: metadata2,
       attachments
     });
   }
@@ -83600,7 +84947,7 @@ async function withEvidence(request, result, evidence, metadata = {}, {
   }
   return { result, summary: summary6, evidence: receipt2 };
 }
-async function finalizeDispatchedFailure(reservation, request, error51, metadata = {}, attachments = []) {
+async function finalizeDispatchedFailure(reservation, request, error51, metadata2 = {}, attachments = []) {
   if (reservation === void 0) {
     return void 0;
   }
@@ -83617,7 +84964,7 @@ async function finalizeDispatchedFailure(reservation, request, error51, metadata
           message: errorRecord["message"] ?? String(error51)
         }
       },
-      metadata: { facadeVersion: CONTROL_VERSION, ...metadata },
+      metadata: { facadeVersion: CONTROL_VERSION, ...metadata2 },
       attachments
     });
   } catch (archiveError) {
@@ -83939,7 +85286,7 @@ function registerFacadeTool(name6, config2, handler) {
     handler
   );
 }
-var MAX_INLINE_RESULT_BYTES, MAX_CAPTURE_PNG_BYTES, MAX_CAPTURE_BASE64_CHARACTERS, MAX_CAPTURE_DECODED_BYTES, EXPORT_TOOLS, CAPTURE_TOOLS, DEDICATED_FACADE_NAME2, UNBOUND_DIAGNOSTIC_READ_NAMES, UI_MUTATING_READ_NAMES, retainedControlRoot2, facadeLease, upstream, windowsRuntime, engine, designExecutor, libraryExecutor, ruleCheckExecutor, projectOpenExecutor, bridgeGate, recordSchema, evidenceSchema, nonEmptyStringSchema, readBatchCallSchema, capturePaddingSchema, captureInferredA4Schema, captureTabArgumentsSchema, captureRegionArgumentsSchema, captureFullPageArgumentsSchema, captureRequestSchema, capturePayloadSchema, exportBase, exportRequestSchema, dsnExportPayloadSchema, checkpointRequestSchema, operationIdSchema, planHashSchema, sha256Schema2, installedBundleAvailableSchema, facadeImplementationFileSchema, facadeImplementationFilesSchema, bridgeDiagnosticsSchema, expectedFingerprintBaseShape, expectedFingerprintSchema, privateFingerprintSchema, projectIdentitySchema, documentIdentitySchema, contextSchema, operationDocumentIdentitySchema, operationContextSchema, assertionValueSchema, assertionSchema, typedCallSpecSchema, checkpointCreateSchema, operationPlanCommonShape, operationPlanSchema, errorOutputSchema, optionalFailureOutputShape, failureOutputSchema, statusSuccessOutputSchema, discoverItemOutputSchema, discoverSuccessOutputSchema, contextOutputSchema, evidenceSuccessOutputSchema, captureSuccessOutputSchema, operationSuccessOutputSchema, recoverSuccessOutputSchema, checkpointSuccessOutputSchema, evidenceVerificationSuccessOutputSchema, artifactReadSuccessOutputSchema, toolOutputSchemas, server, apiRequestSchema, runtimeRequestSchema, designRequestSchema, libraryRequestSchema, checkRequestSchema, transport, shutdown, shutdownAndExit, scheduledShutdown, scheduleShutdown;
+var MAX_INLINE_RESULT_BYTES, MAX_CAPTURE_PNG_BYTES, MAX_CAPTURE_BASE64_CHARACTERS, MAX_CAPTURE_DECODED_BYTES, EXPORT_TOOLS, CAPTURE_TOOLS, DEDICATED_FACADE_NAME2, UNBOUND_DIAGNOSTIC_READ_NAMES, UI_MUTATING_READ_NAMES, retainedControlRoot2, facadeLease, upstream, windowsRuntime, engine, designExecutor, libraryExecutor, ruleCheckExecutor, projectOpenExecutor, bridgeGate, recordSchema, evidenceSchema, nonEmptyStringSchema, readBatchCallSchema, capturePaddingSchema, captureInferredA4Schema, captureTabArgumentsSchema, captureRegionArgumentsSchema, captureFullPageArgumentsSchema, captureRequestSchema, capturePayloadSchema, exportBase, exportRequestSchema, dsnExportPayloadSchema, checkpointRequestSchema, operationIdSchema, planHashSchema, sha256Schema2, installedBundleAvailableSchema, facadeImplementationFileSchema, facadeImplementationFilesSchema, bridgeDiagnosticsSchema, expectedFingerprintBaseShape, expectedFingerprintSchema, privateFingerprintSchema, projectIdentitySchema, documentIdentitySchema, contextSchema2, operationDocumentIdentitySchema, operationContextSchema, assertionValueSchema, assertionSchema, typedCallSpecSchema, checkpointCreateSchema, operationPlanCommonShape, operationPlanSchema, errorOutputSchema, optionalFailureOutputShape, failureOutputSchema, statusSuccessOutputSchema, discoverItemOutputSchema, discoverSuccessOutputSchema, contextOutputSchema, evidenceSuccessOutputSchema, captureSuccessOutputSchema, operationSuccessOutputSchema, recoverSuccessOutputSchema, checkpointSuccessOutputSchema, evidenceVerificationSuccessOutputSchema, artifactReadSuccessOutputSchema, toolOutputSchemas, server, apiRequestSchema, runtimeRequestSchema, designRequestSchema, libraryRequestSchema, checkRequestSchema, transport, shutdown, shutdownAndExit, scheduledShutdown, scheduleShutdown;
 var init_src = __esm({
   async "server/src/index.ts"() {
     init_mcp();
@@ -84223,7 +85570,7 @@ var init_src = __esm({
         tabId: external_exports.string().min(1).optional()
       }).catchall(external_exports.unknown())
     ]);
-    contextSchema = external_exports.object({
+    contextSchema2 = external_exports.object({
       project: projectIdentitySchema,
       document: documentIdentitySchema
     }).catchall(external_exports.unknown());
@@ -84606,8 +85953,8 @@ var init_src = __esm({
     );
     designRequestSchema = external_exports.discriminatedUnion("action", [
       external_exports.object({ action: external_exports.literal("capabilities") }).strict(),
-      external_exports.object({ action: external_exports.literal("apply"), operation: designToolOperationSchema, expectedContext: contextSchema, expectedFingerprint: privateFingerprintSchema, expectedTopology: designTopologySchema.optional(), confirmWrite: external_exports.literal(true) }).strict(),
-      external_exports.object({ action: external_exports.literal("execute"), operation: designToolOperationSchema, expectedContext: contextSchema, expectedFingerprint: privateFingerprintSchema, expectedTopology: designTopologySchema.optional(), confirmWrite: external_exports.literal(true) }).strict(),
+      external_exports.object({ action: external_exports.literal("apply"), operation: designToolOperationSchema, expectedContext: contextSchema2, expectedFingerprint: privateFingerprintSchema, expectedTopology: designTopologySchema.optional(), confirmWrite: external_exports.literal(true) }).strict(),
+      external_exports.object({ action: external_exports.literal("execute"), operation: designToolOperationSchema, expectedContext: contextSchema2, expectedFingerprint: privateFingerprintSchema, expectedTopology: designTopologySchema.optional(), confirmWrite: external_exports.literal(true) }).strict(),
       external_exports.object({ action: external_exports.literal("commit"), operationId: external_exports.string().min(1), confirmWrite: external_exports.literal(true) }).strict(),
       external_exports.object({ action: external_exports.literal("rollback"), operationId: external_exports.string().min(1), confirmWrite: external_exports.literal(true) }).strict(),
       external_exports.object({ action: external_exports.literal("repair-layout-net-labels"), operationId: external_exports.string().min(1), confirmWrite: external_exports.literal(true) }).strict(),
@@ -84745,7 +86092,7 @@ var init_src = __esm({
     );
     libraryRequestSchema = external_exports.discriminatedUnion("action", [
       external_exports.object({ action: external_exports.literal("capabilities") }).strict(),
-      external_exports.object({ action: external_exports.literal("execute"), operation: libraryToolOperationSchema, expectedContext: contextSchema, expectedFingerprint: privateFingerprintSchema, confirmWrite: external_exports.literal(true).optional() }).strict(),
+      external_exports.object({ action: external_exports.literal("execute"), operation: libraryToolOperationSchema, expectedContext: contextSchema2, expectedFingerprint: privateFingerprintSchema, confirmWrite: external_exports.literal(true).optional() }).strict(),
       external_exports.object({ action: external_exports.literal("inspect"), operationId: external_exports.string().min(1) }).strict(),
       external_exports.object({ action: external_exports.literal("recover-authority"), operationId: external_exports.string().min(1), confirmRecovery: external_exports.literal(true) }).strict(),
       external_exports.object({ action: external_exports.literal("reconcile-no-mutation"), operationId: external_exports.string().min(1) }).strict(),
@@ -84757,7 +86104,7 @@ var init_src = __esm({
       external_exports.object({
         action: external_exports.literal("route-audit"),
         audit: pcbRouteAuditRequestSchema,
-        expectedContext: contextSchema,
+        expectedContext: contextSchema2,
         expectedFingerprint: privateFingerprintSchema,
         evidence: evidenceSchema.optional(),
         returnMode: external_exports.enum(["full", "summary", "receipt-only"]).default("full"),
@@ -84766,7 +86113,7 @@ var init_src = __esm({
       external_exports.object({
         action: external_exports.literal("run"),
         kind: external_exports.enum(["pcb-drc", "schematic-erc"]),
-        expectedContext: contextSchema,
+        expectedContext: contextSchema2,
         expectedFingerprint: privateFingerprintSchema,
         maxInlineItems: external_exports.number().int().min(0).max(200).default(100)
       }).strict(),
@@ -84872,7 +86219,7 @@ var init_src = __esm({
         description: "Run a fixed typed local SDK getter or pure calculation with exact runtime/context and authenticated-session guards. Two matching observations are required. The result is public SDK data, not complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
         inputSchema: {
           request: external_exports.unknown().pipe(publicSdkReadRequestSchema),
-          expectedContext: contextSchema,
+          expectedContext: contextSchema2,
           expectedFingerprint: privateFingerprintSchema,
           evidence: evidenceSchema.optional(),
           returnMode: external_exports.enum(["full", "summary", "receipt-only"]).default("full"),
@@ -84914,10 +86261,10 @@ var init_src = __esm({
       "easyeda_control_exact_read",
       {
         title: "Read exact EasyEDA design state",
-        description: "Run a facade-owned field reader twice and return data only when both observations are stable. The schematic-topology kind is disabled because its installed netlist path can annotate and Save All; historical schema presence does not admit execution. Exact context is checked at entry and after each run, but the active tab must remain unchanged during awaited calls. Nested component-pad drill geometry is excluded because the pinned wrapper has a scale defect.",
+        description: "Run a facade-owned field reader twice and return data only when both observations are stable. The schematic-topology kind is disabled because its installed netlist path can annotate and Save All. Separate schematic-flat-topology diagnostics require checkpoint-bound fully loaded pages, ordinary single-part symbols and literal named orthogonal wires; they do not authorize schematic transactions or claim live validation. Exact context is checked at entry and after each run, but the active tab must remain unchanged during awaited calls. Nested component-pad drill geometry is excluded because the pinned wrapper has a scale defect.",
         inputSchema: {
           request: exactReadRequestSchema,
-          expectedContext: contextSchema,
+          expectedContext: contextSchema2,
           expectedFingerprint: privateFingerprintSchema,
           evidence: evidenceSchema.optional(),
           returnMode: external_exports.enum(["full", "summary", "receipt-only"]).default("full"),
@@ -84986,7 +86333,7 @@ var init_src = __esm({
         inputSchema: {
           upstreamTool: external_exports.string().min(1),
           arguments: recordSchema.default({}),
-          expectedContext: contextSchema,
+          expectedContext: contextSchema2,
           expectedFingerprint: expectedFingerprintSchema,
           evidence: evidenceSchema.optional(),
           returnMode: external_exports.enum(["full", "summary", "receipt-only"]).default("full"),
@@ -85059,7 +86406,7 @@ var init_src = __esm({
         description: "Invoke a bounded sequence of explicitly reviewed local-only reads and optionally archive the complete batch with a receipt. Open-world and supplier tools are excluded, and PCB constraint readers cannot accept caller-supplied boardData.",
         inputSchema: {
           calls: external_exports.array(readBatchCallSchema).min(1).max(25),
-          expectedContext: contextSchema,
+          expectedContext: contextSchema2,
           expectedFingerprint: expectedFingerprintSchema,
           evidence: evidenceSchema.optional(),
           returnMode: external_exports.enum(["full", "summary", "receipt-only"]).default("full"),
@@ -85158,7 +86505,7 @@ var init_src = __esm({
         description: "Capture the visible canvas, a framed canvas region, or a complete schematic page while preserving the PNG image content. Region and full-page modes change the visible viewport but not design data.",
         inputSchema: {
           request: captureRequestSchema,
-          expectedContext: contextSchema,
+          expectedContext: contextSchema2,
           expectedFingerprint: expectedFingerprintSchema,
           evidence: evidenceSchema
         },
@@ -85364,7 +86711,7 @@ var init_src = __esm({
         description: "Generate a PCB DSN route-context artifact through a facade-owned public API call, with exact type-3 context checks immediately before and after generation. The installed API has no document argument, so the artifact is active-context/best-effort rather than identity-bound. Archives a SHA-256 receipt; never fabrication release.",
         inputSchema: {
           request: exportRequestSchema,
-          expectedContext: contextSchema,
+          expectedContext: contextSchema2,
           expectedFingerprint: privateFingerprintSchema,
           evidence: evidenceSchema
         },
@@ -85859,8 +87206,8 @@ var MACHINE_PROFILE_ENVIRONMENT_VARIABLE = "EASYEDA_MACHINE_PROFILE";
 var pathSchema = external_exports.string().min(2).max(4096).refine(
   // oxlint-disable-next-line typescript/no-misused-spread -- Only detect ASCII control code points; this does not segment or rewrite user text.
   (value) => isAbsolute2(value) && resolve2(value) === value && ![...value].some((character) => {
-    const point5 = character.codePointAt(0);
-    return point5 === void 0 || point5 < 32 || point5 === 127;
+    const point6 = character.codePointAt(0);
+    return point6 === void 0 || point6 < 32 || point6 === 127;
   })
 );
 var versionSchema = external_exports.string().regex(/^[0-9][A-Za-z0-9.+-]{0,127}$/u);

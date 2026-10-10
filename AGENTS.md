@@ -6,6 +6,35 @@ Last updated: 2026-10-10 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+- Post-restart continuation supersedes the loaded-host statements below:
+  `135410` was authenticated against its exact source/bundle/native tuple with
+  no incomplete operation. Native discovery found an infinite minimized-window
+  UIA rectangle; the source fix returns finite Win32 bounds or null. Focus
+  restored the window but Windows still reported foreground HWND zero, so
+  capture refused and disposable fixture setup remains blocked. No production
+  project was opened, inspected, edited, saved or restored.
+- Candidate `0.3.0+codex.20261010144459` integrates project-local closed-symbol
+  metadata transactions and already-open document activation, a separately
+  checkpoint-bound flat schematic diagnostic, and bounded journal-scan caches
+  that still hash every current journal/artifact byte. Independent review and
+  regression tests cover owned tab trees, final baseline/context rechecks,
+  immutable recovery and hidden serializer side effects. Complete verification,
+  publication and installation evidence belongs in the
+  [continuation record](docs/api-coverage-continuation-2026-10-10.md).
+- Do not mistake a registered typed operation or offline test for disposable
+  connected acceptance. Remaining feasible adapters, current-generation live
+  tests and merge are unfinished. Never kill the host owner or patch its cache
+  to pick up source changes. Production records remain untouched.
+- Frozen continuation verification passes: 1265 facade tests / one platform
+  skip / zero failures or cancellations and 424 bridge tests, with inherited
+  descriptors 142/145. Strict types and type-aware lint are clean. All seven
+  skills, package/repository/privacy checks, actionlint and offline doctor pass;
+  audit remains zero vulnerabilities, 151 signatures / 40 attestations. Source
+  142 files / `4058414f` and three-file bundle `89732b3c` are reproducible;
+  external/native/sanitizer pins are unchanged. The synthetic facade fixture now
+  uses an ephemeral test port and cannot compete with the live bridge. GitHub
+  CI and managed installation evidence must follow actual completion.
+
 - The user explicitly authorized exhaustive API coverage inventory, additional
   feasible implementations and tests, disposable-project validation, publication
   and installation. The user's production project must remain untouched. Earlier
@@ -206,7 +235,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed Git-marketplace candidate is `0.3.0+codex.20261010135410`, with 26 tools and seven skills, from the draft feature ref. This chat's loaded host generation remains `24225913`: installation is not loaded pickup. Use a fresh chat before live work. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate the current facade generation.
+- The installed Git-marketplace candidate is `0.3.0+codex.20261010135410`, with 26 tools and seven skills, from the draft feature ref. This chat's loaded host generation is now `135410`, authenticated after the supported restart. New working-tree bytes are not loaded automatically. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate the current facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

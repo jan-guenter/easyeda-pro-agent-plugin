@@ -6,21 +6,20 @@
     "reviewedDistinctMethods": 697,
     "latestDistinctMethods": 773,
     "statuses": {
-      "implemented-public-subset": 186,
+      "implemented-public-subset": 188,
       "implemented-native-equivalent": 70,
-      "internal-lifecycle-only": 4,
+      "internal-lifecycle-only": 3,
       "implemented-but-blocked": 8,
-      "omitted": 506
+      "omitted": 505
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 308,
+      "available-with-runtime-guards": 310,
       "blocked": 9,
       "partially-blocked": 3
     },
     "omissions": {
       "account-or-library-scope-needed": 41,
       "callback-or-registration-lifecycle": 27,
-      "candidate-not-live-admitted": 1,
       "cross-project-tab-scope-needed": 2,
       "cross-tab-netlist-export-scope": 1,
       "divergent-public-result-abi": 1,
@@ -403,8 +402,38 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "internal-lifecycle-only",
+      "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_library",
+          "selector": "document.activate",
+          "implementation": "public-method",
+          "scope": "One already-open checkpoint-member current-project tab only, with complete tab ownership, retained preparation and one activation. Two coherent target observations and unchanged complete durable project; recovery never activates, opens, closes or saves. Current-generation live validation is unclaimed.",
+          "source": [
+            "document-activation.ts",
+            "library-execution.ts",
+            "library-recovery.ts"
+          ],
+          "tests": [
+            "document-activation.test.ts",
+            "document-activation-transaction.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "library",
+                  "operationAction": "document.activate",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_design",
           "selector": "commit/recovery lifecycle",
@@ -6102,18 +6131,42 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "candidate-not-live-admitted",
-        "reason": "The installed wrapper destructures classification without a default and can substitute the normalized search title for the display title. The disabled project-symbol-metadata candidate supplies a fixed empty classification object and the exact preserved display title, but has only offline regression tests.",
-        "nextRequirement": "Review the exact candidate and complete an identified disposable project metadata edit, whole-project persistence comparison and inverse before adding it to the live library execution switch.",
-        "evidence": [
-          "project-symbol-metadata.ts",
-          "project-symbol-metadata.test.ts",
-          "docs/api-execution-feasibility-2026-10-10.md"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_library",
+          "selector": "library.symbol.modify",
+          "implementation": "public-method",
+          "scope": "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Fixed classification object preserves the exact display title. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate.",
+          "source": [
+            "project-symbol-metadata.ts",
+            "library-execution.ts",
+            "library-recovery-state.ts",
+            "editor-tabs.ts"
+          ],
+          "tests": [
+            "project-symbol-metadata.test.ts",
+            "project-symbol-transaction.test.ts",
+            "library-recovery.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "library",
+                  "operationAction": "library.symbol.modify",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

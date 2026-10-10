@@ -41,7 +41,7 @@ method twice because of overloads, nor count a schema as live validation.
 
 | Action or exact action group | Concrete reason it cannot use the existing executor unchanged | Implementation needed |
 |---|---|---|
-| `library.symbol.modify` | The installed UI destructures an omitted classification argument without a default. It also takes the existing title from a normalized search title, which can change mixed-case display names during description-only updates. | The disabled candidate below supplies a fixed empty classification object and the exact checkpoint display title. It still needs journal/recovery integration and a disposable saved/reopened test. |
+| `library.symbol.modify` | The installed UI destructures an omitted classification argument without a default. It also takes the existing title from a normalized search title, which can change mixed-case display names during description-only updates. | Implemented in the tracked executor for closed ordinary project-local symbols, using the exact display title and a fixed empty classification object. Complete project and recovery proofs are integrated; current-generation disposable saved/reopened validation remains unclaimed. |
 | `library.symbol.create` | The public method calls the symbol service, which generates metadata and obtains initial canvas data. Ordinary symbols and sheet-symbol templates use different paths. The footprint verifier admits only FOOTPRINT records, so it cannot certify the generated symbol/part records. | Bind the requested ordinary type, exact generated template, returned UUID, native header and every new record. Add type-specific creation proofs before expanding to flags, ports or sheet symbols. |
 | `library.symbol.delete`, `library.footprint.delete`, `library.device.delete` | UI deletion runs dependency-aware library deletion logic. A success Boolean does not identify every changed device, inherited instance or tombstone. The current footprint/device proofs admit additions or exact patches, not deletion closure. | Inventory every dependant before dispatch, refuse nonempty unapproved closure, retain deleted records and verify exact tombstones plus all peer documents. A restore procedure is separate from ordinary rollback. |
 | `library.symbol.copy`, `library.footprint.copy`, `library.device.copy` | Copy can migrate canvas data and associated assets to another collection. The current journal retains only the existing create/association models and lacks a complete mapping of copied descendants. | Restrict initial support to explicit project-local targets, retain all returned and generated identities, compare copied geometry/associations, and prove no other assets changed. |
@@ -50,7 +50,7 @@ method twice because of overloads, nor count a schema as live validation.
 | `library.symbol.source.replace`, `library.footprint.source.replace` | Full source replacement invokes a document decoder. The footprint wrapper can create a preview iframe and invokes its compiler save. These are not metadata-only operations and can change unknown records or persist before a separate design commit. | Validate complete source grammar, owner and locks, enumerate accepted record changes, model decoder-generated IDs, preserve unknown records, and integrate the wrapper's actual save boundary with no-repeat recovery. Prefer existing typed geometry actions for ordinary edits. |
 | `project.create` | The API takes team/folder identity and can create account/cloud state. The disposable-local-project request does not designate an external destination. The pinned public delete method is an empty refusal, so public create cannot promise an inverse. | Add explicit destination authority, account-scoped inventory and recovery, or a separately reviewed local-project creation adapter. Never test this against a personal/team workspace by default. |
 | `project.open` | The installed open path can discard unsaved state. The generic descriptor has no proof that every open document is clean. | Use the existing retained-runtime `open-existing` route for its supported saved project case. A broader opener needs complete tab/dirty-state proof and one-shot navigation/recovery. |
-| `document.activate` | Activation changes the exact context; an acknowledgment can be false even when the requested tab becomes active. The existing executor's preserve-context path is inappropriate. | Resolve the tab against a complete editor tree, perform one activation, observe bounded coherent target context and verify unchanged project records. This is feasible without a new design writer. |
+| `document.activate` | Activation changes the exact context; an acknowledgment can be false even when the requested tab becomes active. The existing executor's preserve-context path is inappropriate. | Implemented for already-open current-project schematic pages, PCBs, ordinary symbols and footprints. The retained checkpoint fixes target membership and owner; the complete tab tree is checked before one activation and after two coherent target observations. Complete durable project and logical database remain unchanged. Recovery observes only the original/target state and never reactivates or opens a tab. Current-generation connected validation is not claimed. |
 | `document.close` | Close can open a Save/Discard prompt or trigger late persistence. A returned Boolean does not prove a clean close. | Prove the exact tab is clean, retain one close dispatch, observe its removal and native prompts without selecting Save/Discard, then verify unchanged durable records. |
 | `document.pcb.create`, `document.schematic.create`, `document.page.create` | Creation assigns native identities and may change board/container records. The pinned create methods accept a board name or parent schematic, not a new document title. The existing strict schema correctly omits a document-name field. | Retain the complete creation inventory and exact native defaults. If a caller wants a chosen title, journal a subsequent returned-ID-bound rename, with exact inventory deltas for both steps. |
 | `document.pcb.copy`, `document.schematic.copy`, `document.page.copy` | Copies clone source, pages, IDs and parent membership, beyond the current single-document patch proof. The strict copy schemas expose target/parent scope, not a new document title. | Retain the copied hierarchy and identity mapping, then separately rename if requested. Check every copied source and all untouched documents. |
@@ -71,18 +71,19 @@ documented under [editor control](https://prodocs.easyeda.com/en/api/reference/p
 [symbols](https://prodocs.easyeda.com/en/api/reference/pro-api.lib_symbol.html)
 and [manufacturing export](https://prodocs.easyeda.com/en/api/reference/pro-api.pcb_manufacturedata.html).
 
-## Implemented symbol-metadata candidate
+## Implemented symbol-metadata transaction
 
 [project-symbol-metadata.ts](../plugins/easyeda-pro-control/server/src/project-symbol-metadata.ts)
-adds a narrow ordinary-symbol metadata adapter. It accepts an existing
-`library.symbol.modify` schema but remains absent from the public execution
-switch. It supports an exact project-local name/description patch, not creation,
-classification, source replacement or external library edits.
+adds a narrow ordinary-symbol metadata adapter, now registered in the tracked
+`LibraryExecutor` through the existing `library.symbol.modify` schema. It
+supports exact project-local name and non-null description patches. Creation,
+classification, source replacement and external library edits retain their
+separate omission reasons.
 
 The installed UI class method `VL.modify` in the hash-pinned UI source
 constructs metadata from the
 existing symbol, takes the search title as its default and destructures
-classification before its guarded update. The candidate supplies the checkpoint
+classification before its guarded update. The adapter supplies the checkpoint
 display title even for a description-only patch and supplies an internal empty
 classification object. It preserves the method receiver. The footprint method
 already defaults classification to an empty object; it does not have this
@@ -93,19 +94,43 @@ the installed bug. [Official symbol modifier](https://prodocs.easyeda.com/en/api
 The project worker's `gg` symbol manager maps native metadata into its stored
 META record using `title`, numeric `docType`, `tags`, `description` and `source`.
 Its getter separately derives normalized search and display titles. The
-candidate therefore requires stored `META.docType === 2`, not an invented
+adapter therefore requires stored `META.docType === 2`, not an invented
 `symbolType` field. It compares the supplied complete before/after histories,
 allows only requested META title/description changes and the reviewed edit
 header fields, and preserves every other record. This is a local comparison,
-not a claim that the histories came from verified checkpoint receipts. Its
-result reports `effectVerified` and `persistenceEvidence`, never `saved:true`.
+not a claim that the histories came from verified checkpoint receipts. This pure
+helper reports `effectVerified` and `persistenceEvidence`, never `saved:true`.
+The executor obtains both histories from its maintained checkpoint path, waits
+for project uploads, checks the complete effect, and verifies the final receipt
+before completing the journal. Its durable `saved` result does not claim a
+separate editor reopen.
 
-The six focused regressions cover rejected families and raw fields, normalized
+The focused regressions cover rejected families and raw fields, normalized
 name collisions, geometry/binding/peer/header changes, the display-title and
 classification fixes, owner/context drift across an awaited read, false
 acknowledgment and a throwing writer. Failure after a writer invocation consumes
 one invocation; the generated program never retries. Tests use synthetic
 history and API doubles. They are not connected validation.
+
+Preparation and original dispatch are recorded as an immutable operation,
+`symbolPlan`, `symbol-prepared` artifact and exact target mutation receipt.
+Reconciliation requires the original return artifact and recomputes the plan
+from the immutable operation and original checkpoint. Missing return evidence,
+changed target IDs, substituted preparation, geometry or peer changes retain
+the failure state; reconciliation never invokes the modifier or Save again.
+
+The active editor must be a different document: the executor refuses an active
+symbol target before any upstream access because its active-source invariant
+requires that source to remain unchanged. Immediately before the modifier, a
+complete bounded split-screen tree must prove that the target is absent from
+every tab and all other tabs have known project/library ownership. An inactive
+open symbol is also refused to protect its potentially unsaved source. Malformed,
+cyclic, oversized, duplicate and contradictory ownership entries refuse before
+the modifier. Metadata preservation is checked
+across every document, including devices and placed instances. A helper builds
+an inverse operation only after the supplied full histories prove the forward
+effect. The inverse requires a new transaction and fresh checkpoint;
+it is never an implicit retry, database restoration or same-journal mutation.
 
 ### Disposable acceptance still required
 
@@ -116,10 +141,10 @@ history and API doubles. They are not connected validation.
    description, at least one pin and a placed DEVICE dependant. Retain the exact
    geometry and all instance bindings. A fixture without those records cannot
    test their preservation.
-3. Integrate candidate preparation, dispatch intent, returned receipt and
-   reconciliation into the library journal. Enforce the existing compatibility,
-   no-orphan and complete-durable-baseline gates. Do not call the candidate as an
-   ad hoc script around those controls.
+3. Use the integrated library executor with its prepared plan, dispatch intent,
+   returned receipt and reconciliation. Its compatibility, no-orphan and
+   complete-durable-baseline gates apply. Do not call the compiler as an ad hoc
+   script around those controls.
 4. Patch the description only. Prove the mixed-case title and every pin/part/
    instance record unchanged, the one description changed and no peer document
    altered. Retain verified checkpoint receipts separately from the pure effect
@@ -132,9 +157,10 @@ history and API doubles. They are not connected validation.
    interrupted transport. Recovery must retain the original identity and must
    not redispatch the original mutation.
 
-Only after those phases pass should the executor switch and capability matrix
-advertise connected symbol metadata support. The caller must not infer support
-from the candidate file's presence.
+Only after those phases pass should the capability matrix advertise connected
+symbol metadata support. The executor currently reports
+`currentGenerationLiveValidated:false` and `reopened:false`; a registered
+operation does not establish either claim.
 
 ## Other SDK groups
 
@@ -189,9 +215,83 @@ above. STEP/OBJ, IPC-2581, Gerber/drill and placement exports still
 need content-format checks and operation-specific fixture runs before release
 approval. A file hash proves byte identity, not manufacturing correctness.
 
+## Implemented document activation
+
+[document-activation.ts](../plugins/easyeda-pro-control/server/src/document-activation.ts)
+implements the existing `document.activate` schema through the tracked library
+executor. It accepts an exact already-open tab belonging to the current saved
+project. It does not open a missing tab or navigate to another project.
+An already-active target refuses before journal creation. The pinned native
+method resolves early for this case but continues scheduling its tab callback
+and timer, so a context read is the supported way to confirm an active tab.
+
+The pinned public API `0.2.53.aee2f57a` forwards the method to UI
+`3.2.149.43637efe`, whose reviewed SHA-256 is
+`12414b9ded97913f7d7f30522a2265d2a6c995281e3347bfd1752206e647497a`.
+`S2.activateDocument` checks `isOpenTab` and awaits `setTabActive`.
+The latter registers a tab-active callback, sets a five-minute native timeout
+and publishes a simulated tab click. Its completion is event-based, so the
+adapter does not infer selected context from the Boolean acknowledgment.
+The documented method promises a Boolean and input focus on the requested tab.
+[Official activateDocument contract](https://prodocs.easyeda.com/en/api/reference/pro-api.dmt_editorcontrol.activatedocument.html).
+
+The adapter journals its checkpoint-derived membership plan before dispatch.
+The fixed generated program enumerates every split-screen leaf and refuses
+malformed, empty, duplicate, unknown-owner or foreign-project tab entries.
+An empty leaf is ambiguous in this build: `getFilterTabs` also returns an empty
+list when the native container entry is missing. Both the original and target
+tab must be present. No title-based lookup or caller-defined code is accepted.
+[Official split-screen tree contract](https://prodocs.easyeda.com/en/api/reference/pro-api.dmt_editorcontrol.getsplitscreentree.html).
+
+Tab presence alone does not prove a loaded editor. The pinned UI and schematic
+click handlers lazily open documents whose native frame is absent. The adapter
+therefore binds both existing frame objects by `frame_<tabId>`, connection,
+`c_dbid`, native type and element tag before activation, then requires the same
+objects throughout observation. Schematic and symbol model-tab aliases refuse.
+The schematic source hash `3f50136fb4ba2d5593beac7ef3e20ebe5275177b56bbcfdd297e79f176a6618f`
+is verified alongside the UI source before, after and during recovery.
+
+PCB and footprint activation has another native branch: when the stored
+`pcbCommandTab` preference is false or absent, the click handler writes account
+preferences. The adapter only reads bounded UI local-storage JSON and requires
+this field to be exactly `true`; it never enables or changes the preference.
+False, missing, malformed and non-Boolean values refuse before activation.
+These guards exclude the reviewed lazy-open and preference-write branches;
+they do not describe all native UI effects as side-effect-free.
+
+After one activation, only a missing document or the exact original document
+may wait for readiness. A third document, conflicting alias, wrong type or
+wrong owner stops immediately. Two exact target observations must agree with
+the complete original tab inventory, within a 15-second observation deadline.
+The executor independently rechecks context and target source, waits for
+scheduled uploads and compares every durable project record and the complete
+logical SQLite dump. The adapter never calls design Save, close or open; normal
+native selection, focus and measurement-tool cleanup remain part of activation.
+
+Recovery uses the original retained plan and checkpoint. It classifies one
+independent context observation, then reproves that same exact context. A
+failed target assertion cannot be hidden by probing the original tab instead.
+With no outstanding
+orphan risk, it can prove either the target is active or the original tab is
+still active and the entire durable project is unchanged. It does not infer
+an acknowledgment when return evidence is missing. `reconcile-no-mutation`
+means no design/database mutation, not that the active tab could not have
+changed. The result explicitly reports `targetActive`; it never redispatches
+activation, opens a tab, saves or marks the editor reopened.
+
+The shared library executor also verifies the baseline again after expensive
+runtime and implementation admission. `sourceChanged:false` is insufficient:
+a corrupt checkpoint can report that flag too. Preflight, final admission,
+completion and recovery now require the complete positive verification and
+the exact retained receipt, source, checkpoint and hashes.
+
 ## Evidence in this change
 
-The candidate's six tests pass on Node 24.18.0. Targeted type-aware Oxlint reports
-zero warnings/errors. This report and the candidate contain no connected test
-claim. Publication, installed-package verification and live fixture results
-belong in the release record after they actually complete.
+The integrated metadata, activation, checkpoint, executor, library-runtime,
+library-recovery and editor-tab suites pass 73 tests on Node 24.18.0. They exercise the actual executor and
+generated program with real temporary sealed journals, including publication
+failure, missing returned evidence, rewritten preparation and no-repeat recovery.
+Targeted type-aware Oxlint reports zero diagnostics. This report and the adapter
+contain no connected test claim.
+Publication, installed-package verification and live fixture results belong in
+the release record after they actually complete.

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { runInNewContext } from "node:vm";
-import { buildEditorTabsReadCode, parseEditorTabsRead } from "../src/editor-tabs.ts";
+import { buildEditorTabsReadCode, buildEditorTargetAbsentExpression, parseEditorTabsRead } from "../src/editor-tabs.ts";
 
 const projectUuid = "a".repeat(64);
 async function execute(tree: unknown, drift = false): Promise<unknown> {
@@ -34,4 +34,44 @@ void test("editor-tab inspection rejects context drift and bounds recursive tree
   const tree: { children?: unknown[] } = {};
   tree.children = [tree];
   await assert.rejects(execute(tree), /EDITOR_TABS_TREE_BOUND/u);
+});
+
+function requireClosedTarget(tree: unknown): Promise<unknown> {
+  const eda = { dmt_EditorControl: { getSplitScreenTree: (): Promise<unknown> => Promise.resolve(tree) } };
+  const result: unknown = runInNewContext(buildEditorTargetAbsentExpression({ targetUuid: "symbol", projectUuid, ownerUuid: "owner",
+    active: { uuid: "pcb", documentType: 3, tabId: "pcb" } }), { eda });
+  return Promise.resolve(result);
+}
+void test("closed-target precondition walks every split screen and binds project/library ownership", async () => {
+  await requireClosedTarget({ children: [
+    { tabs: [{ tabId: "tab_page1", documentType: -1, isAbleDelete: false }, { tabId: "pcb", documentType: 3, parentProjectUuid: projectUuid }] },
+    { tabs: [{ tabId: `other@${projectUuid}`, data: { doctype: 2, owner: "owner" } }] },
+  ] });
+  for (const tab of [
+    { tabId: "pcb", documentType: 3 },
+    { tabId: "pcb", documentType: 3, parentProjectUuid: projectUuid, data: { pid: "other" } },
+    { tabId: `other@${projectUuid}`, documentType: 2, parentLibraryUuid: "owner", data: { owner: "other" } },
+    { tabId: "other@foreign", documentType: 2, parentLibraryUuid: "owner" },
+    { tabId: "pcb", documentType: 3, data: { doctype: 2, pid: projectUuid } },
+  ]) { await assert.rejects(requireClosedTarget({ tabs: [tab] }), /OWNER_UNPROVEN|TAB_SHAPE/u); }
+  await assert.rejects(requireClosedTarget({ tabs: [{ tabId: `symbol@${projectUuid}`, documentType: 2, parentLibraryUuid: "owner" }] }), /TARGET_ALREADY_OPEN/u);
+});
+void test("closed-target precondition requires the exact owned active tab in the inventory", async () => {
+  for (const tree of [
+    { tabs: [] },
+    { tabs: [{ tabId: "tab_page1", documentType: -1, isAbleDelete: false }] },
+    { tabs: [{ tabId: "other", documentType: 3, parentProjectUuid: projectUuid }] },
+    { tabs: [{ tabId: "pcb", documentType: 1, parentProjectUuid: projectUuid }] },
+    { tabs: [{ tabId: `pcb@${projectUuid}`, documentType: 3, parentProjectUuid: projectUuid }] },
+    { children: [{ tabs: [] }, { tabs: [{ tabId: `other@${projectUuid}`, documentType: 2, parentLibraryUuid: "owner" }] }] },
+    { children: [{ tabs: [{ tabId: "pcb", documentType: 3, parentProjectUuid: projectUuid }] }, { tabs: [] }] },
+  ]) { await assert.rejects(requireClosedTarget(tree), /ACTIVE_UNPROVEN|INCOMPLETE/u); }
+});
+void test("closed-target precondition refuses malformed, cyclic, oversized and duplicate trees", async () => {
+  const cycle: { children?: unknown[] } = {}; cycle.children = [cycle];
+  for (const tree of [undefined, null, {}, { tabs: [] , children: [] }, { tabs: [null] }, cycle, { children: Array.from({ length: 129 }, () => ({ tabs: [] })) },
+    { tabs: Array.from({ length: 257 }, () => ({ tabId: "pcb", documentType: 3, parentProjectUuid: projectUuid })) },
+    { tabs: [{ tabId: "pcb", documentType: 3, parentProjectUuid: projectUuid }, { tabId: "pcb", documentType: 3, parentProjectUuid: projectUuid }] }]) {
+    await assert.rejects(requireClosedTarget(tree), /TREE_BOUND|TREE_SHAPE|TAB_SHAPE/u);
+  }
 });

@@ -59,7 +59,33 @@ const FACADE_LEASE_PATH = join(CONTROL_DATA_DIR, "facade.lock");
 const EVIDENCE_INTEGRITY_MODEL =
   "Unkeyed SHA-256 values detect accidental corruption. They do not authenticate files against a writer with access to the control-data directory.";
 const MAX_MANAGED_JSON_BYTES = 64 * 1024 * 1024;
+const MAX_OPERATION_CACHE_ENTRIES = 512;
+const MAX_OPERATION_PROOF_CACHE_BYTES = 4 * 1024 * 1024;
+const MAX_OPERATION_PROJECTION_CACHE_BYTES = 1024 * 1024;
+const MAX_OPERATION_PROJECTION_BYTES = 32 * 1024;
 let retainedControlRoot: Promise<ControlRootCapability> | undefined;
+
+interface ValidatedOperationBytes {
+  readonly artifacts: readonly ArtifactDescriptor[];
+  readonly bytesSha256: string;
+  readonly cacheBytes: number;
+}
+
+// Only derived validation and small projections survive a scan. Every use still
+// Reads the complete current journal and all referenced phase-artifact bytes.
+const validatedOperationBytes = new Map<string, ValidatedOperationBytes>();
+let validatedOperationCacheBytes = 0;
+
+interface OperationProjection<T> {
+  readonly bytesSha256: string;
+  readonly cacheBytes: number;
+  readonly value: T | undefined;
+}
+
+interface OperationProjectionCache<T> {
+  bytes: number;
+  readonly entries: Map<string, OperationProjection<T>>;
+}
 
 export interface EvidenceReservation extends EvidencePaths {
   readonly createdAt: string;
@@ -756,6 +782,38 @@ async function readManagedFile(
     assertFileStayedUnchanged(opened.info, after, label);
     assertManagedFileAuthority(after, label);
     return { absolute: opened.absolute, info: after, bytes };
+  } finally {
+    await closeManagedFile(opened);
+  }
+}
+
+async function hashManagedJsonFile(path: string, label: string): Promise<{
+  readonly bytes: number;
+  readonly sha256: string;
+}> {
+  const opened = await openSafeManagedFile(path, label);
+  try {
+    const before = await opened.handle.stat();
+    assertFileStayedUnchanged(opened.info, before, label);
+    assertManagedJsonByteLimit(before.size, label);
+    const hash = createHash("sha256");
+    const buffer = Buffer.alloc(Math.min(1024 * 1024, before.size + 1));
+    let total = 0;
+    while (total <= before.size) {
+      const length = Math.min(buffer.length, before.size + 1 - total);
+      const { bytesRead } = await opened.handle.read(buffer, 0, length, total);
+      if (bytesRead === 0) { break; }
+      total += bytesRead;
+      hash.update(buffer.subarray(0, bytesRead));
+    }
+    const after = await opened.handle.stat();
+    assertFileStayedUnchanged(before, after, label);
+    assertManagedFileAuthority(after, label);
+    if (total !== before.size) {
+      throw new Error(`${label} changed while it was being read.`);
+    }
+    await assertManagedFilePathCurrent(opened.absolute, opened.directory, after, label);
+    return { bytes: total, sha256: hash.digest("hex") };
   } finally {
     await closeManagedFile(opened);
   }
@@ -1904,12 +1962,12 @@ export async function createOperation(
   return path;
 }
 
-export async function loadOperation(
+function parseOperationJournal(
   operationId: string,
-): Promise<OperationJournal> {
-  const path = operationPath(operationId);
-  const journalFile = await readManagedFile(path, "Operation journal");
-  const value: unknown = JSON.parse(journalFile.bytes.toString("utf8"));
+  bytes: Buffer,
+  previouslyValidated: boolean,
+): OperationJournal {
+  const value: unknown = JSON.parse(bytes.toString("utf8"));
   if (!isRecord(value)) {
     throw new Error(`Operation journal ${operationId} must be an object.`);
   }
@@ -1923,13 +1981,14 @@ export async function loadOperation(
     );
   }
   const { journalSha256, ...journalCore } = parsed;
-  if (journalSha256 !== sha256Text(canonicalJson(journalCore))) {
+  if (!previouslyValidated && journalSha256 !== sha256Text(canonicalJson(journalCore))) {
     throw new Error(
       `Operation journal ${operationId} failed its self-hash, which is an unkeyed corruption-detection hash rather than authentication.`,
     );
   }
   const plan = parsed["plan"];
-  if (!isRecord(plan) || parsed["planHash"] !== buildPlanHash(plan)) {
+  const planHash = parsed["planHash"];
+  if (!isRecord(plan) || typeof planHash !== "string" || (!previouslyValidated && planHash !== buildPlanHash(plan))) {
     throw new Error(
       `Operation journal ${operationId} has a mismatched plan hash.`,
     );
@@ -1957,19 +2016,6 @@ export async function loadOperation(
         `Operation ${operationId} references an artifact outside its directory.`,
       );
     }
-    const artifactFile = await readManagedFile(
-      descriptor["path"],
-      "Operation phase artifact",
-    );
-    const text = artifactFile.bytes;
-    if (
-      text.length !== descriptor["bytes"] ||
-      sha256Text(text) !== descriptor["sha256"]
-    ) {
-      throw new Error(
-        `Operation ${operationId} phase artifact failed hash verification.`,
-      );
-    }
     artifacts.push({
       path: descriptor["path"],
       bytes: descriptor["bytes"],
@@ -1980,9 +2026,65 @@ export async function loadOperation(
     ...parsed,
     operationId,
     plan,
-    planHash: parsed["planHash"],
+    planHash,
     artifacts,
   };
+}
+
+async function verifyOperationArtifacts(
+  operationId: string,
+  artifacts: readonly ArtifactDescriptor[],
+): Promise<void> {
+  for (const descriptor of artifacts) {
+    const actual = await hashManagedJsonFile(descriptor.path, "Operation phase artifact");
+    if (actual.bytes !== descriptor.bytes || actual.sha256 !== descriptor.sha256) {
+      throw new Error(`Operation ${operationId} phase artifact failed hash verification.`);
+    }
+  }
+}
+
+function retainOperationValidation(
+  operationId: string,
+  bytesSha256: string,
+  artifacts: readonly ArtifactDescriptor[],
+): ValidatedOperationBytes {
+  const previous = validatedOperationBytes.get(operationId);
+  if (previous !== undefined) {
+    validatedOperationCacheBytes -= previous.cacheBytes;
+    validatedOperationBytes.delete(operationId);
+  }
+  const copied = artifacts.map((artifact) => ({ ...artifact }));
+  const cacheBytes = Buffer.byteLength(JSON.stringify(copied)) + operationId.length + 64;
+  const validation = { artifacts: copied, bytesSha256, cacheBytes };
+  if (cacheBytes > MAX_OPERATION_PROOF_CACHE_BYTES) { return validation; }
+  validatedOperationBytes.set(operationId, validation);
+  validatedOperationCacheBytes += cacheBytes;
+  while (validatedOperationBytes.size > MAX_OPERATION_CACHE_ENTRIES || validatedOperationCacheBytes > MAX_OPERATION_PROOF_CACHE_BYTES) {
+    const oldest = validatedOperationBytes.entries().next().value;
+    if (oldest === undefined) { break; }
+    validatedOperationBytes.delete(oldest[0]);
+    validatedOperationCacheBytes -= oldest[1].cacheBytes;
+  }
+  return validation;
+}
+
+async function loadValidatedOperation(operationId: string): Promise<{
+  readonly operation: OperationJournal;
+  readonly validation: ValidatedOperationBytes;
+}> {
+  const journalFile = await readManagedFile(operationPath(operationId), "Operation journal");
+  const bytesSha256 = createHash("sha256").update(journalFile.bytes).digest("hex");
+  const previous = validatedOperationBytes.get(operationId);
+  const operation = parseOperationJournal(operationId, journalFile.bytes, previous?.bytesSha256 === bytesSha256);
+  const artifacts = operation.artifacts ?? [];
+  await verifyOperationArtifacts(operationId, artifacts);
+  const validation = retainOperationValidation(operationId, bytesSha256, artifacts);
+  return { operation, validation };
+}
+
+export async function loadOperation(operationId: string): Promise<OperationJournal> {
+  const loaded = await loadValidatedOperation(operationId);
+  return loaded.operation;
 }
 
 function sealOperation(operation: Readonly<UnknownRecord>): UnknownRecord {
@@ -2068,15 +2170,122 @@ export async function listOperationIds(): Promise<string[]> {
 /** Verify every journal and phase artifact, retaining only the selected results.
  * Projectors must not retain whole journals unless their caller needs them.
  */
-export async function scanOperations<T>(
+export function scanOperations<T>(
   select: (operation: UnknownRecord) => T | undefined,
+): Promise<T[]> {
+  return scanOperationProjections(select);
+}
+
+/** Create a scanner for a pure, fixed projection. Do not capture mutable inputs.
+ * The cache retains small cloned results, never complete journals or authority.
+ * Current complete journal/artifact bytes and managed paths are checked each time.
+ */
+export function createOperationScanner<T>(
+  select: (operation: UnknownRecord) => T | undefined,
+): () => Promise<T[]> {
+  const cache: OperationProjectionCache<T> = { bytes: 0, entries: new Map() };
+  return (): Promise<T[]> => scanOperationProjections(select, cache);
+}
+
+function projectionCacheEncoding(value: unknown): string | undefined {
+  let units = 0;
+  function admit(item: unknown, depth: number): boolean {
+    units += 4;
+    if (units > MAX_OPERATION_PROJECTION_BYTES || depth > 32) { return false; }
+    if (item === null || item === undefined || typeof item === "boolean") { return true; }
+    if (typeof item === "string") {
+      units += item.length;
+      return units <= MAX_OPERATION_PROJECTION_BYTES;
+    }
+    if (typeof item === "number") { return Number.isFinite(item); }
+    if (typeof item !== "object") { return false; }
+    const array = Array.isArray(item);
+    const prototype: unknown = Object.getPrototypeOf(item);
+    if (array ? prototype !== Array.prototype : prototype !== Object.prototype && prototype !== null) { return false; }
+    if (array && item.length > MAX_OPERATION_PROJECTION_BYTES / 4) { return false; }
+    const keys = Reflect.ownKeys(item);
+    if (keys.length > MAX_OPERATION_PROJECTION_BYTES / 4) { return false; }
+    for (const key of keys) {
+      if (typeof key !== "string") { return false; }
+      if (!array || key !== "length") {
+        if (array && (!/^(?:0|[1-9][0-9]*)$/u.test(key) || Number(key) >= item.length)) { return false; }
+        const descriptor = Object.getOwnPropertyDescriptor(item, key);
+        if (descriptor === undefined || descriptor.enumerable !== true || !("value" in descriptor)) { return false; }
+        units += key.length + 4;
+        const child: unknown = descriptor.value;
+        if (!admit(child, depth + 1)) { return false; }
+      }
+    }
+    return true;
+  }
+  if (!admit(value, 0)) { return undefined; }
+  // Undefined object fields also occupy the retained clone. Count their keys
+  // And a null value rather than letting JSON.stringify omit them from the cap.
+  return JSON.stringify(value, (_key: string, item: unknown): unknown => item === undefined ? null : item);
+}
+
+function retainOperationProjection<T>(
+  cache: OperationProjectionCache<T>,
+  operationId: string,
+  bytesSha256: string,
+  value: T | undefined,
+): void {
+  // The public generic scan also accepts projections which are not cloneable.
+  // Such a result keeps its original behavior and simply receives no cache.
+  let copy: T | undefined;
+  let cacheBytes: number;
+  try {
+    const encoded = projectionCacheEncoding(value);
+    if (encoded === undefined) { return; }
+    cacheBytes = Buffer.byteLength(encoded) + operationId.length + 64;
+    if (cacheBytes > MAX_OPERATION_PROJECTION_BYTES) { return; }
+    copy = structuredClone(value);
+  } catch { return; }
+  const previous = cache.entries.get(operationId);
+  if (previous !== undefined) {
+    cache.bytes -= previous.cacheBytes;
+    cache.entries.delete(operationId);
+  }
+  cache.entries.set(operationId, { bytesSha256, cacheBytes, value: copy });
+  cache.bytes += cacheBytes;
+  while (cache.entries.size > MAX_OPERATION_CACHE_ENTRIES || cache.bytes > MAX_OPERATION_PROJECTION_CACHE_BYTES) {
+    const oldest = cache.entries.entries().next().value;
+    if (oldest === undefined) { break; }
+    cache.entries.delete(oldest[0]);
+    cache.bytes -= oldest[1].cacheBytes;
+  }
+}
+
+async function verifiedOperationProjection<T>(
+  operationId: string,
+  cache: OperationProjectionCache<T> | undefined,
+): Promise<{ value: T | undefined } | undefined> {
+  const projection = cache?.entries.get(operationId);
+  const validation = validatedOperationBytes.get(operationId);
+  if (projection === undefined || validation?.bytesSha256 !== projection.bytesSha256) { return undefined; }
+  const current = await hashManagedJsonFile(operationPath(operationId), "Operation journal");
+  if (current.sha256 !== validation.bytesSha256) { return undefined; }
+  await verifyOperationArtifacts(operationId, validation.artifacts);
+  return { value: structuredClone(projection.value) };
+}
+
+async function scanOperationProjections<T>(
+  select: (operation: UnknownRecord) => T | undefined,
+  cache?: OperationProjectionCache<T>,
 ): Promise<T[]> {
   const operationIds = await listOperationIds();
   const output: T[] = [];
   for (const operationId of operationIds) {
-    let operation: UnknownRecord;
+    let operation: UnknownRecord | undefined;
+    let cached: { value: T | undefined } | undefined;
+    let currentValidation: ValidatedOperationBytes | undefined;
     try {
-      operation = await loadOperation(operationId);
+      cached = await verifiedOperationProjection(operationId, cache);
+      if (cached === undefined) {
+        const loaded = await loadValidatedOperation(operationId);
+        operation = loaded.operation;
+        currentValidation = loaded.validation;
+      }
     } catch (error) {
       const journalPath = join(OPERATIONS_DIR, `${operationId}.json`);
       const message = errorMessage(error);
@@ -2097,7 +2306,10 @@ export async function scanOperations<T>(
       };
     }
     // Projection failures are not corrupt-journal observations.
-    const selected = select(operation);
+    const selected = operation === undefined ? cached?.value : select(operation);
+    if (cache !== undefined && currentValidation !== undefined) {
+      retainOperationProjection(cache, operationId, currentValidation.bytesSha256, selected);
+    }
     if (selected !== undefined) { output.push(selected); }
   }
   return output;
@@ -2109,11 +2321,12 @@ export async function listOperations(): Promise<UnknownRecord[]> {
 }
 
 /** Entry guards need only identity/state, after the same complete validation. */
-export async function listOperationStates(): Promise<UnknownRecord[]> {
-  const operations = await scanOperations((operation) => ({
-    operationId: operation["operationId"], state: operation["state"],
-  }));
-  return operations;
+const scanOperationStates = createOperationScanner((operation) => ({
+  operationId: operation["operationId"], state: operation["state"],
+}));
+
+export function listOperationStates(): Promise<UnknownRecord[]> {
+  return scanOperationStates();
 }
 
 export async function readArtifact(

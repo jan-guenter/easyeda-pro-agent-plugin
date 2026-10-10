@@ -17,7 +17,7 @@ The original 749 and 806 declaration signatures remain in the inventory.
 |---|---|
 | `implemented-public-subset` | A fixed maintained route invokes this method for the stated argument/result subset. It does not accept arbitrary class instances or all declared overloads. |
 | `implemented-native-equivalent` | A maintained transaction performs the relevant CAD task through a reviewed native adapter. This does not claim the public SDK wrapper works. |
-| `internal-lifecycle-only` | A journaled workflow can use this operation internally. There is no unrestricted standalone Save, close or activation API. |
+| `internal-lifecycle-only` | A journaled workflow can use this operation internally. This row supplies no unrestricted standalone authority. The separately mapped typed activation route remains limited to existing owned tabs. |
 | `implemented-but-blocked` | Implementation exists, but every mapped route is currently refused by a required runtime guard. Code or schema presence is not callable support. |
 | `omitted` | There is no supported route for this method. The row gives the actual blocker or the missing implementation work. |
 

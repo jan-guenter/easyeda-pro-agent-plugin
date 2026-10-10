@@ -3,6 +3,13 @@ $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 $schema = 'easyeda-pro-control.windows-native-ui.v1'
 $dispatched = $false
+function Get-FiniteWindowBounds([double[]]$values) {
+  if ($values.Count -ne 4 -or $values[2] -le 0 -or $values[3] -le 0) { return $null }
+  foreach ($value in $values) {
+    if ([double]::IsNaN($value) -or [double]::IsInfinity($value)) { return $null }
+  }
+  return ,$values
+}
 try {
   $line = [Console]::ReadLine()
   if (-not $line -or $line.Length -gt 32768) { throw 'request-bound' }
@@ -40,6 +47,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 public static class EasyedaUiController {
+  [StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left, Top, Right, Bottom; }
   public delegate bool EnumCallback(IntPtr handle, IntPtr value);
   [DllImport("user32.dll")] static extern bool EnumWindows(EnumCallback callback, IntPtr value);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr handle);
@@ -53,6 +61,7 @@ public static class EasyedaUiController {
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr handle);
   [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr handle, int command);
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr handle);
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr handle, out Rect rect);
   [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
   [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
   [DllImport("user32.dll")] public static extern void mouse_event(uint flags, uint x, uint y, uint data, UIntPtr extra);
@@ -79,7 +88,21 @@ public static class EasyedaUiController {
   function Window-Row([IntPtr]$handle) {
     $element = [System.Windows.Automation.AutomationElement]::FromHandle($handle)
     $rect = $element.Current.BoundingRectangle
-    return @{ handle=$handle.ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture); pid=(Window-Pid $handle); title=$element.Current.Name; className=$element.Current.ClassName; bounds=@($rect.X,$rect.Y,$rect.Width,$rect.Height); owner=[EasyedaUiController]::GetWindow($handle,4).ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture) }
+    $bounds = Get-FiniteWindowBounds @($rect.X,$rect.Y,$rect.Width,$rect.Height)
+    $boundsSource = 'uia'
+    if ($null -eq $bounds) {
+      # Minimized UIA windows can return Rect.Empty (infinite coordinates).
+      # Windows PowerShell emits those as invalid JSON. Native bounds are an
+      # independent observation; if unavailable, keep identity with no bounds.
+      $bounds = $null
+      $boundsSource = $null
+      $nativeRect = New-Object EasyedaUiController+Rect
+      if ([EasyedaUiController]::GetWindowRect($handle,[ref]$nativeRect) -and $nativeRect.Right -gt $nativeRect.Left -and $nativeRect.Bottom -gt $nativeRect.Top) {
+        $bounds = @([double]$nativeRect.Left,[double]$nativeRect.Top,([double]$nativeRect.Right-$nativeRect.Left),([double]$nativeRect.Bottom-$nativeRect.Top))
+        $boundsSource = 'win32'
+      }
+    }
+    return @{ handle=$handle.ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture); pid=(Window-Pid $handle); title=$element.Current.Name; className=$element.Current.ClassName; bounds=$bounds; boundsSource=$boundsSource; minimized=[EasyedaUiController]::IsIconic($handle); owner=[EasyedaUiController]::GetWindow($handle,4).ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture) }
   }
   $action = [string]$request.action
   if ($action -notin @('windows','inspect','focused','capture','focus','invoke','setvalue','filename','click','doubleclick','rightclick','keys','normal-close')) { throw 'action-not-admitted' }

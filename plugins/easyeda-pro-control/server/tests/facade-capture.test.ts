@@ -70,6 +70,7 @@ let coldApiCallLog: string;
 let client: Client;
 let transport: StdioClientTransport;
 let expectedFingerprint: Record<string, unknown>;
+let fixtureBridgeEndpoint: Record<string, unknown>;
 let evidenceSequence = 0;
 let facadeEntrypoint: string;
 
@@ -658,12 +659,19 @@ before(async () => {
   );
   const engineMarker = "const engine = new EasyedaControlEngine(upstream,";
   assert.ok(absolutePackages.includes(engineMarker), "fixture must inject its inert bridge scope at the actual engine constructor");
+  const bridgeDiagnosticsMarker = "bridgeConnection: upstream.bridgeConnectionDiagnostics(),";
+  assert.ok(absolutePackages.includes(bridgeDiagnosticsMarker), "fixture must observe the actual isolated listener through status diagnostics");
   const transformedFacade = absolutePackages.replace(
     upstreamMarker,
-    `${upstreamMarker}\n  trustedLauncher: ${JSON.stringify(trustedLauncher)},`,
+    // The synthetic facade must not compete with a user's live bridge.
+    // This private constructor override belongs only in fixture code.
+    `${upstreamMarker}\n  bridgePublicPortForTesting: 0,\n  trustedLauncher: ${JSON.stringify(trustedLauncher)},`,
   ).replace(
     engineMarker,
     `upstream.withAuthenticatedBridgeDispatchScope = async (callback) => await callback(Object.freeze({}));\n${engineMarker}`,
+  ).replace(
+    bridgeDiagnosticsMarker,
+    "bridgeConnection: { ...upstream.bridgeConnectionDiagnostics(), fixturePublicEndpoint: upstream.bridgeSessionLifecycle()?.publicEndpoint },",
   );
   facadeEntrypoint = join(fixtureRoot, "facade-index.ts");
   await writeFile(facadeEntrypoint, transformedFacade, "utf8");
@@ -706,6 +714,10 @@ before(async () => {
     JSON.stringify(status.structuredContent),
   );
   const statusPayload = structured(status);
+  fixtureBridgeEndpoint = requireRecord(
+    requireRecord(statusPayload["bridgeConnection"], "status.bridgeConnection")["fixturePublicEndpoint"],
+    "status.bridgeConnection.fixturePublicEndpoint",
+  );
   const upstreamStatus = requireRecord(
     statusPayload["upstream"],
     "status.upstream",
@@ -725,6 +737,14 @@ after(async () => {
 });
 
 void describe("published facade contracts", { concurrency: false }, () => {
+  void test("synthetic facade uses an ephemeral loopback listener isolated from the production bridge port", async () => {
+    assert.equal(fixtureBridgeEndpoint["host"], "127.0.0.1");
+    const port = fixtureBridgeEndpoint["port"];
+    assert.ok(typeof port === "number" && Number.isSafeInteger(port) && port > 0 && port <= 65_535);
+    assert.notEqual(port, 49_621, "the fixture must never occupy the production bridge port");
+    assert.match(await readFile(facadeEntrypoint, "utf8"), /bridgePublicPortForTesting: 0/u);
+  });
+
   void test("publishes complete nested API selectors and works before upstream startup", async () => {
     assert.equal(coldApiCallLog, "");
     assert.equal(coldApiResult["offline"], true);

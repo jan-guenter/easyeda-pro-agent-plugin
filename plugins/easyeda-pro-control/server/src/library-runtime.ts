@@ -7,11 +7,12 @@ import { deviceAssociationOperation } from "./device-association.ts";
 import { deviceCreateOperation } from "./device-create.ts";
 import { DEVICE_NATIVE_HOST_GUARD } from "./device-runtime-guard.ts";
 import { libraryRuntimeCatchCode } from "./library-runtime-guard.ts";
+import { projectSymbolMetadataOperation } from "./project-symbol-metadata.ts";
 
 /** Single-dispatch files stay below the existing escaped JSON transport limit. */
 export const LIBRARY_FILE_EXECUTION_MAX_BYTES = 2 * 1024 * 1024;
 export const LIBRARY_EXECUTION_PROFILE = "easyeda-pro-control.library-execution.v1";
-export type LibraryExecutionKind = "metadata-read" | "file-export" | "project-footprint-write" | "project-device-association" | "project-device-create" | "project-device-transform" | "document-open";
+export type LibraryExecutionKind = "metadata-read" | "file-export" | "project-footprint-write" | "project-device-association" | "project-device-create" | "project-device-transform" | "project-symbol-metadata" | "document-open" | "document-activate";
 const openScopeSchema = z.object({ projectUuid: z.string().min(1).max(256), uuid: z.string().min(1).max(256), documentType: z.number().int().min(1).max(4), metadataOwnerUuid: z.string().min(1).max(256).optional() }).strict();
 export type LibraryOpenScope = z.infer<typeof openScopeSchema>;
 
@@ -55,7 +56,9 @@ export function libraryExecutionKind(input: unknown): LibraryExecutionKind {
   if (operation.action === "library.device.modify") { deviceAssociationOperation(operation); return "project-device-association"; }
   if (operation.action === "library.device.create") { deviceCreateOperation(operation); return "project-device-create"; }
   if (operation.action === "library.device.model-transform") { return "project-device-transform"; }
+  if (operation.action === "library.symbol.modify") { projectSymbolMetadataOperation(operation); return "project-symbol-metadata"; }
   if (operation.action === "document.open" || operation.action === "library.footprint.open" || operation.action === "library.symbol.open") { return "document-open"; }
+  if (operation.action === "document.activate") { return "document-activate"; }
   throw new Error("Typed catalog entry has no completed execution proof profile.");
 }
 
@@ -73,6 +76,8 @@ export function buildLibraryExecutionExpression(input: unknown, projectSymbolMet
   const openScope = kind === "document-open" ? openScopeSchema.parse(openScopeInput) : undefined;
   if (openScope !== undefined && (!("target" in operation) || !("uuid" in operation.target) || operation.target.uuid !== openScope.uuid || ("libraryUuid" in operation && operation.libraryUuid !== openScope.projectUuid) || (operation.action === "library.symbol.open" && openScope.documentType !== 2) || (operation.action === "library.footprint.open" && openScope.documentType !== 4) || ([2, 4].includes(openScope.documentType) && openScope.metadataOwnerUuid === undefined))) { throw new Error("Library open scope contradicts its checkpoint-bound operation."); }
   if (kind === "project-device-association" || kind === "project-device-create" || kind === "project-device-transform") { throw new Error("Device mutation requires a checkpoint-bound native plan."); }
+  if (kind === "project-symbol-metadata") { throw new Error("Symbol metadata mutation requires a checkpoint-bound native plan."); }
+  if (kind === "document-activate") { throw new Error("Document activation requires a checkpoint-bound ownership plan."); }
   const compiled = compileLibraryOperation(operation);
   const call = compiled.call;
   const args = call.args.map((argument) => argumentCode(argument)).join(",");

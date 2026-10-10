@@ -1996,7 +1996,7 @@ registerFacadeTool(
   {
     title: "Read exact EasyEDA design state",
     description:
-      "Run a facade-owned field reader twice and return data only when both observations are stable. The schematic-topology kind is disabled because its installed netlist path can annotate and Save All; historical schema presence does not admit execution. Exact context is checked at entry and after each run, but the active tab must remain unchanged during awaited calls. Nested component-pad drill geometry is excluded because the pinned wrapper has a scale defect.",
+      "Run a facade-owned field reader twice and return data only when both observations are stable. The schematic-topology kind is disabled because its installed netlist path can annotate and Save All. Separate schematic-flat-topology diagnostics require checkpoint-bound fully loaded pages, ordinary single-part symbols and literal named orthogonal wires; they do not authorize schematic transactions or claim live validation. Exact context is checked at entry and after each run, but the active tab must remain unchanged during awaited calls. Nested component-pad drill geometry is excluded because the pinned wrapper has a scale defect.",
     inputSchema: {
       request: exactReadRequestSchema,
       expectedContext: contextSchema,

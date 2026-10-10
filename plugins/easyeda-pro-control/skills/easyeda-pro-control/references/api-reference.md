@@ -48,6 +48,19 @@ and PCB netlist/BOM/PDF exports are also refused for hidden Save All. Simulation
 export needs an unsupported NGSPICE editor. A File-returning method is not
 necessarily read-only; never bypass these refusals with another dispatcher.
 
+The separate exact-read kind `schematic-flat-topology` is a restricted diagnostic
+replacement, not permission to resume those transactions. Its current profile
+requires at most 16 already-loaded ordinary pages with single-part components,
+literal named orthogonal wires, and both default net naming and inter-page name
+connection enabled. It rejects hierarchy, ports/flags, buses, standalone net
+labels, multipart parts, images, unknown serializers and unsplit contacts.
+Page membership comes from a fresh verified complete-project checkpoint and
+matching public declarations; native endpoint sets and serialized source must
+agree in two observations. The escaped response remains bounded to 4 MiB.
+It never opens pages, compiles a netlist or saves. The result explicitly reports
+`transactionTopology:false` and does not claim connected validation. Use its
+specific refusal to identify unsupported input; do not substitute cached nets.
+
 ## Fixed SDK reads and calculations
 
 ```json
