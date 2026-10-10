@@ -3,7 +3,34 @@
 The first revamp payload passed local checks, GitHub CI and an isolated installed
 MCP probe. Independent review of PR8 then found three additional defects. The
 initial installation is historical evidence, not the final release acceptance.
-All three fixes require a rebuilt, newly versioned payload and fresh checks.
+All fixes require a rebuilt, newly versioned payload and fresh checks.
+
+## Exercise the actual marketplace startup path
+
+The initial isolated installed probe started `server.mjs` directly. It correctly
+verified the self-contained MCP bundle, but did not exercise `.mcp.json` startup.
+That launcher imported TypeScript source and `zod`; Git marketplace packages have
+no `node_modules`. An actual cached-source import confirmed `ERR_MODULE_NOT_FOUND`.
+The earlier successful direct-bundle probe was therefore insufficient launch
+acceptance. Do not compensate by editing an installed cache or relying on a
+workspace's dependency tree.
+
+The configured startup path now uses the existing self-contained server
+bundle. A small entrypoint selects machine-profile launch before any MCP lease
+or engine initialization, then uses the retained verified Node descriptor to
+replace itself with the normal facade entry. Both startup stages use the same
+PID. The existing atomic server/supervisor publication and three-file runtime
+fingerprint remain intact; no separately published launcher bundle is introduced.
+The trusted-checkout TypeScript script remains a developer wrapper, not the
+marketplace runtime entrypoint.
+
+Three packaging regressions launch the real built entrypoint outside the repo,
+with no dependency directory, using a private synthetic profile. They verify
+offline MCP enumeration/queries, pinned-runtime replacement, no upstream child
+or bridge socket, and refusal before facade initialization for bad arguments or
+missing profiles. All35 original adversarial build/publication tests still pass.
+Final installed acceptance also must launch through the exact `.mcp.json`
+command and arguments, not bypass them.
 
 ## Retain Node admission through launch
 

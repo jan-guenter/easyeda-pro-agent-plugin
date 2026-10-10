@@ -12,7 +12,7 @@ This source package has typed design transactions, operation-specific library/ex
 ## Connect and choose a path
 
 - Look up methods and exact operation arguments with offline `easyeda_control_api`; read [api-reference.md](references/api-reference.md). Its latest SDK snapshot is documentation, not execution authority. Validate assembled operations offline before a live preflight.
-- For setup, missing tools or connection trouble, read [connection-and-context.md](references/connection-and-context.md). The portable launcher loads a private machine profile. The bundled foreground client uses the same facade when no other owner is running.
+- For setup, missing tools or connection trouble, read [connection-and-context.md](references/connection-and-context.md). The bundled portable launcher loads a private machine profile. The checkout-only foreground client uses the same facade when no other owner is running.
 - For API edits, inspect `easyeda_control_runtime`. Editing requires EasyEDA launched by `launch-contained`, with retained Windows Job and authenticated process proof. An ordinary PID or a newly connected renderer is not that proof.
 - From Start Page, establish authenticated status and use runtime `open-existing` for an exact saved PCB or schematic-page target; see the connection reference. An unfinished design or library journal uses its own `open-target` recovery instead.
 - When sibling editor tabs are already open, use supported library `document.open`, not exclusive Start Page `open-existing`. Successful navigation can precede editor readiness; observe fresh exact context without repeating the open.

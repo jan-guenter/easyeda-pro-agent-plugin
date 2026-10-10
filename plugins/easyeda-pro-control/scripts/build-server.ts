@@ -2153,7 +2153,7 @@ export async function buildServer(
     banner: { js: bundleBanner(options.bundleBannerSuffixForTesting) },
     bundle: true,
     entryPoints: {
-      server: join(sourceRoot, "index.ts"),
+      server: join(sourceRoot, "main.ts"),
       "upstream-supervisor": join(sourceRoot, "upstream-supervisor.ts"),
     },
     format: "esm",

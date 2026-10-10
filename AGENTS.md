@@ -5,7 +5,7 @@ This file is the durable engineering record and common ground for every human or
 Last updated: 2026-10-10 (Europe/Berlin)
 
 PR8 follow-up fixes are complete and locally verified; publication, required
-CI and final installation of snapshot124131 remain pending. Installed121000
+CI and final installation of snapshot125449 remain pending. Installed121000
 is initial evidence, not final acceptance. Retained-Node handoff, successful
 timeout-shaped data and bounded upload-barrier diagnostics have adversarial
 regressions. No live calls while this chat's old host generation remains loaded.
@@ -64,6 +64,26 @@ regressions. No live calls while this chat's old host generation remains loaded.
   Sanitizer/external/native adapter pins unchanged. The [follow-up review](docs/revamp-final-review-2026-10-10.md)
   and [release record](docs/revamp-release-validation-2026-10-10.md) distinguish
   final checks from the historical initial Git/installation evidence below.
+
+### October marketplace startup local acceptance
+
+- An actual cached-source import found missing `zod`:the initial direct-bundle
+  probe did not cover `.mcp.json`. No installed cache was manually repaired.
+  Snapshot `0.3.0+codex.20261010125449` uses the existing self-contained server
+  bundle's exact `--machine-launch` selector before lazy facade initialization.
+  Final descriptor exec removes the selector and preserves one PID. Only empty
+  argv starts direct facade mode; unknown flags fail before lease/control state.
+- Three isolated packaged-startup regressions pass with only the three runtime
+  files and synthetic metadata/profile, no dependency/source tree, upstream
+  child or non-stdio socket. All35 original build/publication regressions pass.
+  The developer source wrapper/client explicitly require a trusted checkout.
+- Final `npm run verify` with inherited descriptors142/145 passes:951 facade
+  passes/one platform skip/zero failures and424 bridge passes. Strict types/lint,
+  all seven skills, privacy/licenses, actionlint, offline doctor and zero-audit
+  checks pass. Source132files/764fad4a and bundle21b7fb44 are frozen/reproducible;
+  the original three-file fingerprint/publication set and all external pins hold.
+- Intermediate review payload2b6307c passed CI38053581114, but is not acceptance
+  of this newer packaging payload. Final Git/installed evidence must follow.
 
 ### October local release checks
 

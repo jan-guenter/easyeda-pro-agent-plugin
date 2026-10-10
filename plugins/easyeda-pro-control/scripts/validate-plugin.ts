@@ -24,7 +24,7 @@ import {
 } from "./private-temporary-directory.ts";
 import type { PrivateTemporaryDirectory } from "./private-temporary-directory.ts";
 import { validateReleaseVersionParity } from "./release-version.ts";
-import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, MANIFEST_DEFAULT_PROMPTS, hasPortableMcpLaunch } from "./plugin-contract.ts";
+import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, MANIFEST_DEFAULT_PROMPTS, hasPortableMcpLaunch, portableMcpLaunchSchema } from "./plugin-contract.ts";
 
 interface CheckResult {
   readonly detail?: string;
@@ -71,7 +71,6 @@ const OUTPUT_SCHEMA_ANCHORS = {
   easyeda_control_artifact_read: ["path", "bytesRead", "text"],
 } as const satisfies Record<(typeof TOOL_NAMES)[number], readonly string[]>;
 const stringSchema = z.string();
-const environmentSchema = z.record(stringSchema, stringSchema);
 const approvalModeSchema = z.enum(["approve", "prompt"]);
 const toolPolicySchema = z.strictObject({
   approval_mode: approvalModeSchema,
@@ -84,11 +83,11 @@ const pluginManifestSchema = z.looseObject({
   name: stringSchema,
   version: stringSchema,
 });
-const easyedaControlSchema = z.looseObject({
+const easyedaControlSchema = portableMcpLaunchSchema.extend({
   default_tools_approval_mode: approvalModeSchema,
-  env: environmentSchema.optional(),
   tools: z.record(stringSchema, toolPolicySchema),
-  type: stringSchema,
+  type: z.literal("stdio"),
+  enabled: z.literal(true),
 });
 const mcpConfigurationSchema = z.object({
   mcpServers: z.object({
@@ -173,6 +172,8 @@ const required = [
   "server/native/easyeda-fd-sanitizer.S",
   "server/native/easyeda-fd-sanitizer.ld",
   "server/src/descriptor-sanitizer-identity.ts",
+  "server/src/main.ts",
+  "server/src/machine-launch.ts",
   "server/tests/bundled-runtime-license.test.ts",
   "server/tests/descriptor-sanitizer.test.ts",
   "server/tests/release-version.test.ts",

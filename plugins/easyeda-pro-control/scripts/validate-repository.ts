@@ -203,6 +203,8 @@ const required = [
   "server/native/easyeda-fd-sanitizer.ld",
   "server/src/descriptor-sanitizer-identity.ts",
   "server/src/index.ts",
+  "server/src/main.ts",
+  "server/src/machine-launch.ts",
   "server/src/upstream-environment.ts",
   "server/src/upstream-module-execution.ts",
   "server/src/upstream-supervisor.ts",

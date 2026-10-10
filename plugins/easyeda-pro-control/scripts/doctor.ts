@@ -232,6 +232,8 @@ const required = [
   "scripts/windows-authority.ps1",
   "licenses/bundled-runtime.json",
   "server/src/core.ts",
+  "server/src/main.ts",
+  "server/src/machine-launch.ts",
   "server/src/descriptor-sanitizer-identity.ts",
   "server/src/upstream-trust.ts",
   "server/bin/easyeda-fd-sanitizer",

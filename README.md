@@ -69,7 +69,9 @@ EasyEDA MCP process against the same bridge.
 
 For authorized EasyEDA work when the host does not expose MCP tools,
 `scripts/control-session.ts` provides a persistent foreground client for the
-same facade. It uses the selected plugin's `.mcp.json`, checks its reviewed
+same facade. Run this developer CLI from a trusted checkout after `npm ci`
+with the pinned toolchain; it is not a dependency-free installed runtime.
+`--plugin-root` may select a Git-installed plugin. It uses that plugin's `.mcp.json`, checks its reviewed
 bundle, and retains the normal single-owner lease. Use a normal pipe or a
 noncanonical PTY so terminal input does not truncate fingerprint requests. See
 the skill's [connection reference](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/connection-and-context.md#foreground-mcp-session)
@@ -296,7 +298,7 @@ The supported editing/runtime profile is Linux x86_64 under WSL controlling the 
 - authenticated bridge derivative reviewed against upstream commit `964c05082f1c7c9e8b98f56e967e36bfc3f26128`: distinct private package, UUID, menu, socket, and repository identity; fixed extension-facing gateway at `127.0.0.1:49621`; nonce-bound mutual HMAC authentication; exact private-build-receipt/index-bundle/key-epoch admission with fail-closed stale-runtime cleanup; a 2 KiB parser limit and bounded pending clients before authentication; absent-or-exact-native `https://client` Origin admission (never an authentication substitute); and no adjacent-port or raw/browser transport fallback or raw-secret transmission (extension manifest `0.3.0`)
 - Node's built-in SQLite support plus a reviewed absolute `sqlite3` binary at `/usr/bin/sqlite3` or `/usr/local/bin/sqlite3` for deterministic logical dumps; `PATH` is never used to select it
 
-The checked-in [`.mcp.json`](plugins/easyeda-pro-control/.mcp.json) runs `node scripts/launch-machine.ts` with an empty environment map. The launcher loads the private machine profile, verifies its Node/install identities and starts the sole facade. Create a profile with `node scripts/configure-machine.ts --upstream-root /absolute/upstream --assets-root /mnt/drive/path/resources/app/assets` from the plugin directory. Optional `--node`, `--control-dir`, `--pcb-version` and `--api-version` select explicit installation values. The default profile is `~/.easyeda-pro-control/machine-profile.json`; `EASYEDA_MACHINE_PROFILE` selects another existing private profile. Configuration finds paths and versions, not compatibility admission. A different tuple still needs deliberate review.
+The checked-in [`.mcp.json`](plugins/easyeda-pro-control/.mcp.json) runs `node server/dist/server.mjs --machine-launch` with an empty environment map. This bundled launcher needs no plugin `node_modules`; it loads the private machine profile, verifies its Node/install identities and starts the sole facade. `scripts/launch-machine.ts` remains a developer wrapper requiring the trusted checkout's pinned dependencies. Create a profile with `node scripts/configure-machine.ts --upstream-root /absolute/upstream --assets-root /mnt/drive/path/resources/app/assets` from that prepared checkout's plugin directory. Optional `--node`, `--control-dir`, `--pcb-version` and `--api-version` select explicit installation values. The default profile is `~/.easyeda-pro-control/machine-profile.json`; `EASYEDA_MACHINE_PROFILE` selects another existing private profile. Configuration finds paths and versions, not compatibility admission. A different tuple still needs deliberate review.
 
 The external upstream checkout must already contain its reviewed built `dist/index.js` and dependency tree. Configuration does not fetch, install or rebuild it. The same version label is insufficient: the runtime checks the pinned module graph and executable identities.
 

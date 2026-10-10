@@ -1,18 +1,19 @@
 # October revamp release validation
 
-Final payload snapshot: `0.3.0+codex.20261010124131`. Local verification completed
+Final payload snapshot: `0.3.0+codex.20261010125449`. Local verification completed
 2026-10-10 on Linux x86_64 with Node24.18.0/npm11.16.0 and core dumps disabled.
 Its publication and installation evidence is recorded separately after those
 steps actually succeed.
 
 Independent PR review subsequently found three additional hardening issues.
 The initial `0.3.0+codex.20261010121000` record below remains historical. The
-final snapshot includes all three fixes and the skill-route corrections.
+final snapshot includes all three fixes, the skill-route corrections and the
+subsequently discovered marketplace startup fix.
 
 ## Final local acceptance
 
-- `npm run verify` passed with inherited hostile descriptors142/145:945 facade
-  tests,944 passed,zero failed and the same one platform-specific fixture skip;
+- `npm run verify` passed with inherited hostile descriptors142/145:952 facade
+  tests,951 passed,zero failed and the same one platform-specific fixture skip;
   424 bridge tests passed across28 files.
 - Both strict TypeScript checks and type-aware lint passed with zero diagnostics.
   All seven skill packaging/link checks, official quick validation, repository
@@ -20,17 +21,27 @@ final snapshot includes all three fixes and the skill-route corrections.
   checks were repeated after the final private-route wording corrections.
 - The dependency audit reports zero vulnerabilities;151 registry signatures and
   40 attestations verified. No external compatibility pin or sanitizer changed.
-- Final source projection:130 files,
-  `f757b640e2a3ae14860a5a4aab13a41ef0b2f70bdff4ced0c3170725bae8a249`.
+- Final source projection:132 files,
+  `764fad4aad47e281a5762dddf030eb3c8e97df12a8e6c3d276f998f3a38741f6`.
   Final three-file bundle projection:
-  `35250a6d15204d7e53781a5458c0ad59d191e3a0fb0517bb294f4bacace4ba7e`.
+  `21b7fb4444f69b13eea8f97c6f7d6608fcdb3a1c23419db9a0d351983940b13c`.
 - The [independent review follow-up](revamp-final-review-2026-10-10.md) records
   descriptor-handoff, timeout-envelope and upload-barrier fixes and their limits.
   Skill instructions now route private-handler gaps to maintained typed adapters
   or process-bound native dialogs, never ad hoc private/raw execution.
+- Actual configured startup now uses the self-contained bundle. Three isolated
+  packaging regressions pass without any `node_modules` ancestor, original
+  source or developer scripts. The pinned Node replaces a different bootstrap
+  executable with the same PID; offline queries create neither upstream child
+  nor non-stdio socket. Invalid arguments/profile refuse before facade state.
+  All35 original adversarial build/publication tests still pass.
 
 Final-payload GitHub CI and installed-cache proof are still pending at this
 record's creation; the initial evidence below does not stand in for them.
+
+The preceding review-only payload `2b6307c91f049bedbb9bbc64891f6c2cab6fbd6c`
+passed [CI run38053581114](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38053581114).
+It is intermediate evidence, not acceptance of the later startup packaging fix.
 
 ## Initial publication and installation evidence
 

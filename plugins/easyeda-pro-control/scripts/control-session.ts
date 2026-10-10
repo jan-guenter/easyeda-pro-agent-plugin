@@ -152,12 +152,16 @@ const serverSchema = z.object({
   type: z.literal("stdio"),
   enabled: z.literal(true),
   command: z.literal("node"),
-  args: z.tuple([z.literal("scripts/launch-machine.ts")]),
+  args: z.tuple([z.literal("server/dist/server.mjs"), z.literal("--machine-launch")]),
   cwd: z.literal("."),
-  env: z.record(z.string().regex(/^EASYEDA_[A-Z_]+$/u), z.string()),
+  env: z.record(z.string(), z.string()).refine((environment) => Object.keys(environment).length === 0),
 });
 const serversSchema = z.strictObject({ easyeda_pro_control: serverSchema });
 const configurationSchema = z.object({ mcpServers: serversSchema });
+
+export function parseSessionConfiguration(value: unknown): z.infer<typeof configurationSchema> {
+  return configurationSchema.parse(value);
+}
 const reviewedFileSchema = z.object({
   relativePath: z.enum([
     "easyeda-fd-sanitizer", "server.mjs", "upstream-supervisor.mjs",
@@ -225,7 +229,7 @@ async function main(): Promise<void> {
   }
   const configurationPath = join(pluginRoot, ".mcp.json");
   const configurationText = await readFile(configurationPath, "utf8");
-  configurationSchema.parse(JSON.parse(configurationText));
+  parseSessionConfiguration(JSON.parse(configurationText));
   const { profile } = await loadRuntimeMachineProfile();
   const definition = machineProfileLaunchConfiguration(profile, pluginRoot);
   if (await realpath(definition.command) !== await realpath(process.execPath)) {

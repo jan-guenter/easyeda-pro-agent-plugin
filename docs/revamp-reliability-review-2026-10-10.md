@@ -6,7 +6,7 @@ This review covers the checkout, fetched GitHub metadata, existing recovery modu
 
 ## GitHub changes since the previous chat release
 
-The fetched `origin/main` and local `HEAD` both remain at [`cdb9f248581706a8c51d44b21a0b3a90b0ef7dbb`](https://github.com/jan-guenter/easyeda-pro-agent-plugin/commit/cdb9f248581706a8c51d44b21a0b3a90b0ef7dbb). There are no later merged changes to review. The substantial September implementation and recovery improvements are local work, not changes already published on GitHub.
+At the start of this review, fetched `origin/main` and local `HEAD` were both at [`cdb9f248581706a8c51d44b21a0b3a90b0ef7dbb`](https://github.com/jan-guenter/easyeda-pro-agent-plugin/commit/cdb9f248581706a8c51d44b21a0b3a90b0ef7dbb). There were no later merged changes to review. The substantial September implementation and recovery improvements were local work, not changes already published on GitHub. Subsequent revamp publication is recorded in the release validation document.
 
 Four dependency pull requests are open:
 

@@ -3,7 +3,7 @@
     "easyeda_pro_control": {
       "type": "stdio",
       "command": "node",
-      "args": ["scripts/launch-machine.ts"],
+      "args": ["server/dist/server.mjs", "--machine-launch"],
       "cwd": ".",
       "enabled": true,
       "env": {},

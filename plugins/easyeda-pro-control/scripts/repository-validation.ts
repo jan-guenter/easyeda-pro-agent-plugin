@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 
 import { z } from "zod";
+import { portableMcpLaunchSchema } from "./plugin-contract.ts";
 
 const stringSchema = z.string();
 const stringRecordSchema = z.record(stringSchema, stringSchema);
@@ -13,13 +14,10 @@ const marketplaceEntrySchema = z.object({
   policy: z.object({ installation: stringSchema, authentication: stringSchema }),
 });
 const toolPolicySchema = z.object({ approval_mode: stringSchema });
-const mcpServerSchema = z.object({
-  command: stringSchema,
-  args: stringArraySchema,
-  cwd: stringSchema,
-  type: stringSchema,
+const mcpServerSchema = portableMcpLaunchSchema.extend({
+  type: z.literal("stdio"),
+  enabled: z.literal(true),
   default_tools_approval_mode: stringSchema,
-  env: stringRecordSchema,
   tools: z.record(stringSchema, toolPolicySchema),
 });
 const lockEnginesSchema = z.object({ node: stringSchema.optional() });

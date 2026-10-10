@@ -16,6 +16,16 @@ export const MANIFEST_DEFAULT_PROMPTS = [
   "Apply the requested typed design change and verify it after saving and reopening.",
 ] as const;
 
-const portableLaunchSchema = z.object({ command: z.literal("node"), args: z.tuple([z.literal("scripts/launch-machine.ts")]),
-  cwd: z.literal("."), env: z.record(z.string(), z.string()).refine((environment) => Object.keys(environment).length === 0) });
-export function hasPortableMcpLaunch(server: unknown): boolean { return portableLaunchSchema.safeParse(server).success; }
+export const portableMcpArgumentsSchema = z.tuple([
+  z.literal("server/dist/server.mjs"),
+  z.literal("--machine-launch"),
+]);
+
+// Check the whole executable contract; tool-policy metadata is validated separately.
+export const portableMcpLaunchSchema = z.object({
+  command: z.literal("node"), args: portableMcpArgumentsSchema, cwd: z.literal("."),
+  env: z.record(z.string(), z.string()).refine((environment) => Object.keys(environment).length === 0),
+});
+export function hasPortableMcpLaunch(server: unknown): boolean {
+  return portableMcpLaunchSchema.safeParse(server).success;
+}
