@@ -1,5 +1,11 @@
 # Symbol Pin enumeration review
 
+Later installed214400 tests passed the ordinary two-Pin case with exact getter
+parity, unchanged complete symbol source and unchanged 18-document saved history.
+The pins had zero Y, length 10, shape None and type IN. See the
+[generation-bound validation record](api-coverage-disposable-validation-2026-10-10.md).
+The source review below remains separate from that connected evidence.
+
 Reviewed on 2026-10-10. This is primary-source review and isolated test evidence.
 No editor, project database, live bridge, installed cache, operation journal or
 process was changed or queried. Runtime pins and builds are unchanged.
@@ -169,8 +175,10 @@ UTF-16 positions in the complete hash-pinned file.
 
 ## Verification and integration boundary
 
-The isolated Node 24 test file currently passes 58 tests, with zero failures or
-skips. Strict type checks and focused type-aware lint pass without diagnostics.
+The original214400 isolated Node 24 test file passed 58 tests, with zero failures
+or skips. Candidate223200 adds thirteen ownership/device/dot regressions and
+passes all71 isolated tests. Strict type checks and focused type-aware lint pass
+without diagnostics.
 It covers empty/nonempty symbols, all getter fields, generated dots, null/zero/
 empty values, lock preservation, missing/foreign/custom attributes, unknown
 shapes, oversized inventories, public failures and substitution during awaits.

@@ -1,6 +1,85 @@
 # Disposable API validation
 
-## Candidate214400 installed; new live validation pending
+## Restarted214400: component property names
+
+The restarted host loaded the exact installed bundle815f22a5 and manifestde80d703
+and authenticated a contained editor against the unchanged external tuple.
+The flat fixture opened once with all nine documents and the logical database
+unchanged. No earlier edit, inverse or Save was replayed.
+
+The new property-name reader returned the expected 29 sorted frame keys in two
+matching observations. Independent review matched the complete native attribute
+inventory and stored ATTR records. The complete before/after native snapshots
+also match the previous saved terminal snapshot. All three managed receipts
+verify. The sorted-key commitment is
+`1b06d9e379fca05e3c5cd87200705af32293b5f313bd73a25e8a40ac75075c1e`.
+
+The post-read checkpoint and normal application close preserve source commitment
+`465c8adbdfb5401eaa1160f4615e351381de586a9631d937337ff2a7a396ddf9`
+and complete logical database commitment
+`97551086bb8f57ea57ea7d43ef17612bc9420a84efc5fb91340ba21915dc0a79`.
+The maintained offline checkpoint verifier confirms the closed source unchanged.
+No Save, edit, restore or settings change was performed. This validates frame-only
+property enumeration on214400, not parts, flags, unstored attributes or a later
+facade generation. No production project access.
+
+## Restarted214400: closed page rename and populated readers
+
+The older disposable fixture opened once on a clean sibling page with complete
+18-document and logical-database invariance. One closed-page rename completed.
+Independent artifact loading and full checkpoint decoding reproduce its proof:
+only the target META title and DOCHEAD client/updateTime/version changed. All
+17 peers remained exact, including the active page. The original successful
+acknowledgment preceded the separate readback. Terminal commitment:
+`e6d97a64c46dd1361403e16fbca56cd26a95e12ed18b1c953bd2b0a9d73ab3db`.
+This is saved native metadata, with no Save invocation, reopen or editor-caption
+refresh. Do not replay the completed rename.
+
+The populated reader interval returned four expected root Wire group IDs and
+57 component-property names across two resistors, three ground flags and one
+frame. The page stores only 38 of those keys. Independent reconstruction from
+its complete source, referenced SYMBOL PART attributes, DEVICE attributes and
+native defaults supplies the 19 inherited keys. Exact sorted-key commitment:
+`9f11b6ef34364ff3a7a0549f9caca4afd49e3aed6a59ad2329ba8d384fd33fb3`.
+
+All four managed result/receipt pairs verify and bind to the installed214400
+tuple and exact page. Each reader reports two stable observations. The complete
+native snapshots and raw source match before/after, including six models and
+seven pins. Both checkpoint histories contain the same 18 documents and records.
+Source commitment:
+`ad6c7942566d63f3ad9dabb803078119f4265eafb637d8a980e06caf880a696a`.
+Complete logical database commitment:
+`f2b9af1b98f33cfdee10a2faff2b1782372c61c0556102c777adde271c429c47`.
+The Wire result proves group identity, not electrical connectivity or LINE IDs.
+Nonempty Bus membership, hierarchy and newer facade generations remain untested.
+No production project access.
+
+## Restarted214400: ordinary-symbol Pin enumeration
+
+The existing initialized ordinary symbol opened once through its asset-specific
+route, without changing saved state. The new Pin reader returned exactly two
+source-backed Pins. Independent review derived all twelve getter fields from
+the saved PIN and six ATTR records. Getter rotations are 0/180 while the stored
+rotations are 180/0. Both expected OtherProperty absence paths are explicit.
+All three managed result/receipt pairs validate and report two stable samples.
+
+Complete before/after raw symbol source is identical, including all 14 parsed
+objects. Both checkpoint histories contain the same 18 documents and records,
+retaining the source and logical commitments from the populated reader case.
+Normal application close followed by empty process discovery and maintained
+offline checkpoint verification confirms the final source unchanged. No Save,
+edit, inverse or restore occurred. Both disposable projects are closed with no
+pending journal recovery. No production project access.
+
+Scope is two zero-Y, length-10, None-shape IN pins on one ordinary PART.
+Nonzero-Y coordinates, other enums, custom properties and multipart cases are
+not connected-tested. This is installed214400 evidence, not acceptance of the
+new Text-reader candidate or every public Pin contract.
+
+## Historical candidate214400 installation handoff
+
+The later restarted214400 results above and below supersede this section's
+pending-validation statements only for their explicitly tested subsets.
 
 Payload `6ef6f94ce5893a31bc0ba7ef3b29746817f34565` passed
 [CI38089205554](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38089205554)

@@ -19,14 +19,16 @@ internal lifecycle use, or a concrete omission reason and required work.
 checks for the fixed `easyeda_control_sdk_read` allowlist. That separate live
 tool performs local getters, fixed primitive-state projections and bounded pure
 calculations with authenticated context checks and two matching samples. Three
-explicitly classified native equivalents read schematic Text/Wire/Bus group IDs
+explicitly classified native equivalents read standalone Text IDs and Wire/Bus group IDs
 without the public callbacks or compiler; only the active ordinary page and
 empty arguments are supported. A separate native equivalent collects all direct
 component attribute names, including inherited attributes, drawing frames and
 flags, with complete bounded model membership checks. An ordinary project-symbol
 Pin equivalent independently proves membership and matches all twelve explicit
-getter fields; custom attributes and multipart symbols refuse. The fixed read catalog
-has 166 routes, including bounded polygon splitting that preserves input source arrays and their order. It
+getter fields; custom attributes and multipart symbols refuse. Native Text
+`get/getAll` return bounded root-Text state with native coordinates and nullable
+styles, not public-getter parity. The fixed read catalog has 168 routes, including
+bounded polygon splitting that preserves input source arrays and their order. It
 accepts no arbitrary method path, caller code, callbacks, navigation or writes.
 None of these observations replaces complete design or persistence proof.
 

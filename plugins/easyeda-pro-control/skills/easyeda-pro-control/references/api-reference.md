@@ -98,7 +98,9 @@ IDs identify groups, not LINE children. These routes avoid the public callbacks
 and compiler-backed wire/bus getters; they do not serialize source or invoke Save.
 Their native-only authority labels distinguish them from public SDK projections.
 Installed210100 returned one source-backed Text and empty Wire/Bus sets on the
-disposable frame/text fixture; nonempty Wire/Bus acceptance remains pending.
+disposable frame/text fixture. Installed214400 additionally returned all four
+Wire group IDs on the populated disposable page with unchanged complete native
+state and saved project. Nonempty Bus acceptance remains pending.
 That evidence does not validate later facade generations. The older public-SDK validation runner
 rejects these native routes before any dispatch; it is not their test runner.
 
@@ -117,9 +119,36 @@ attributes, multipart/inherited shapes, associated devices and no-connect or
 junction children refuse. Exact generated UnConnectDot ownership is admitted.
 OtherProperty is explicitly undefined, not an inferred empty property map.
 Rotation follows the installed getter, which differs from stored PIN rotation;
-JSON transport normalizes signed zero. Neither this route nor property-name
-enumeration is connected-validated yet or accepted by the public-only fixture
-runner. Inspect their full limits and strict empty-argument schemas offline.
+JSON transport normalizes signed zero. Installed214400 returned two expected
+ordinary-symbol Pins with complete unchanged source and saved-project evidence.
+Both had zero Y, length 10, shape None and type IN; wider geometry/enums and custom
+attributes are not validated. Property-name enumeration passed a 29-key frame case and a
+57-key case with two ordinary parts, three ground flags and a frame. The latter
+included 19 inherited keys absent from page ATTR records, independently derived
+from the referenced library and device records. Complete native and saved-project
+state stayed unchanged. Neither native route is accepted
+by the public-only fixture runner. Inspect their full limits and strict
+empty-argument schemas offline.
+
+`eda.sch_PrimitiveText.get/getAll` are native state observations for source-backed
+root Text on one ordinary schematic page. `get` accepts `primitiveIds` as one
+string or 1–256 distinct strings; both methods return arrays sorted by ID.
+Missing, descendant or non-Text selectors refuse. The entire root Text family
+must fit the 256-item bound even for a selected read, and complete reciprocal
+tree/index/source ownership must fit 20,000 entries. Structural GROUP records,
+symbol editors and block-instance pages are unsupported.
+
+The fixed fields are `primitiveId`, `modelType`, `x`, `y`, `value`, `rotation`,
+`color`, `fontFamily`, `fontSize`, `fontWeight`, `italic`, `underline`, `hAlign`
+and `vAlign`. Coordinates retain native direction, including Y. Pose/style nulls
+remain null; the native value getter maps an unset backing value to an empty
+string. Horizontal alignment is null or 0/1/2 for left/center/right; vertical
+alignment is null or 0/1/2 for top/middle/bottom. This is not public SDK getter
+parity or resolved theme/default rendering. Two synchronous scalar captures and
+two facade observations detect drift, with signed zero normalized only by JSON
+transport. No public Text callback, compiler, serializer, RPC or Save is called.
+Connected validation is pending. Use complete source and checkpoint evidence
+separately when a task needs invariance or persistence proof.
 
 `eda.pcb_MathPolygon.splitPolygon` accepts JSON `complexPolygons`: one to eight
 groups, each a source array or one to eight source arrays, each at most 1024 tokens.

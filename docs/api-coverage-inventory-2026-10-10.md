@@ -10,9 +10,9 @@ The inventory covers 774 distinct method paths. The reviewed installed SDK has
 697, the newer official reference has 773, and one older dialog method appears
 only in the reviewed SDK. These counts are method paths, not overload counts.
 The original 749 and 806 declaration signatures remain in the inventory.
-The current source inventory has 191 public subsets, 79 native equivalents,
-two lifecycle-only methods, eight blocked methods and 494 omissions. The fixed
-SDK-read catalog has 166 routes. These are implementation counts, not live-test
+The current source inventory has 191 public subsets, 81 native equivalents,
+two lifecycle-only methods, eight blocked methods and 492 omissions. The fixed
+SDK-read catalog has 168 routes. These are implementation counts, not live-test
 counts.
 
 Component-property names have a separate fixed native equivalent for the exact
@@ -23,6 +23,16 @@ records, nonreciprocal junction aliases and hierarchical instances refuse.
 The installed broken public wrapper is not invoked. This is a property-name
 observation, not a complete source, connectivity or persistence proof. See the
 [source review and limits](component-property-reader-review-2026-10-10.md).
+
+Two further native equivalents expose ordinary page-root Text state through
+`sch_PrimitiveText.get/getAll`. Both return a sorted array of 14 fixed native
+fields, with unconverted Y coordinates, nullable styles and raw horizontal and
+vertical alignment. They do not claim SDK getter parity. The installed singular
+and collection wrappers disagree on alignment and can return before their
+callbacks finish. Complete bounded tree/index/source/family ownership and two
+scalar captures guard the replacement. Descendant Text, symbol editors,
+structural GROUP records and incomplete selected-ID sets refuse. Source and
+adversarial tests pass; connected validation remains pending.
 
 ## What the statuses mean
 
@@ -102,9 +112,10 @@ must be fixed with a maintained reader, not hidden by labeling every `get*` name
 read-only. Three new synchronous native equivalents now cover Text/Wire/Bus IDs
 on the exact active ordinary type-1 page, with no net filters or symbol scenes.
 They require complete connected tree/index proof, source-backed root-family
-membership and two stable
-observations, without invoking those public wrappers or the compiler. Their
-connected validation remains pending. See the
+membership and two stable observations, without invoking those public wrappers
+or the compiler. The installed214400 Wire path returned four expected groups with complete native and
+saved-project invariance. Text had a separate210100 nonempty test; Bus remains
+empty-only. Those results do not validate a later facade generation. See the
 [source and contract review](schematic-id-reader-review-2026-10-10.md).
 
 The fixed polygon-splitting subset constructs temporary public SDK objects from
@@ -117,8 +128,10 @@ project-symbol PART and compares all twelve explicit-ID getter fields with nativ
 state. Its host schema requires sorted unique IDs, bounded supported values and
 exact undefined-OtherProperty evidence. Multipart/inherited shapes, custom pin
 attributes and unknown structures refuse; schematic component pins are outside
-this route. It invokes no compiler, source serializer or Save. Connected validation
-is still pending. See the [Pin contract review](pin-enumeration-review-2026-10-10.md).
+this route. It invokes no compiler, source serializer or Save. Installed214400
+passed a two-Pin ordinary-symbol case with complete source and saved-project
+invariance. Other shapes/enums and later generations remain untested. See the
+[Pin contract review](pin-enumeration-review-2026-10-10.md).
 These implementation facts and remaining adapter proposals are recorded in the
 [next-adapter research](api-next-feasible-research-2026-10-10.md).
 

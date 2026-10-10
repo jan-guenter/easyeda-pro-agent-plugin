@@ -1,5 +1,11 @@
 # Component-property name reader review
 
+Later installed214400 tests passed a 29-key frame case and a 57-key
+part/ground-flag/frame case, including 19 inherited keys absent from page ATTR
+records. Complete native and saved-project state stayed unchanged. See the
+[generation-bound validation record](api-coverage-disposable-validation-2026-10-10.md).
+The source review below remains separate from that connected evidence.
+
 Research date: 2026-10-10. This review covers source and offline tests only.
 It adds a fixed native equivalent for
 `eda.sch_PrimitiveComponent.getAllPropertyNames`. It does not validate the
@@ -114,11 +120,11 @@ becoming misleading result data.
   connectivity, library-template provenance or persistence evidence. Stable
   name sets do not prove that all other design fields stayed unchanged between
   the two outer SDK observations.
-- No connected read has been run. Before claiming live acceptance, use a
-  disposable nonempty page containing a part, frame, flags, stored and inherited
-  attributes. Independently compare exact captured keys and prove unchanged
-  complete native source and full saved project checkpoint. A zero-component
-  test alone is insufficient.
+- At the original source review, no connected read had been run. The214400
+  acceptance above subsequently covered parts, a frame, flags, stored and
+  inherited attributes, with independently reconstructed keys and unchanged
+  complete native source and saved project. Other fixture shapes and later
+  facade generations remain unvalidated; a zero-component test alone is insufficient.
 
 ## Offline verification
 

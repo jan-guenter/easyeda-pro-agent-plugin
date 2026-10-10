@@ -7,13 +7,13 @@
     "latestDistinctMethods": 773,
     "statuses": {
       "implemented-public-subset": 191,
-      "implemented-native-equivalent": 79,
+      "implemented-native-equivalent": 81,
       "internal-lifecycle-only": 2,
       "implemented-but-blocked": 8,
-      "omitted": 494
+      "omitted": 492
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 325,
+      "available-with-runtime-guards": 327,
       "blocked": 9,
       "partially-blocked": 3
     },
@@ -31,7 +31,7 @@
       "interactive-ui-resource": 37,
       "lossy-heterogeneous-primitive-projection": 3,
       "lossy-logging-selection-reader": 1,
-      "lossy-or-unawaited-public-reader": 7,
+      "lossy-or-unawaited-public-reader": 5,
       "lossy-selected-object-projection": 1,
       "managed-file-contract-needed": 39,
       "multi-object-electrical-effect": 7,
@@ -26254,16 +26254,39 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "lossy-or-unawaited-public-reader",
-        "reason": "The installed wrapper publishes a callback without awaiting it and immediately returns a callback-populated local. It can report undefined before an existing text object is returned; array lookup also filters such entries out.",
-        "nextRequirement": "Use an independently complete native reader with awaited completion, source parity and failure tests; do not report a swallowed error as an empty result.",
-        "evidence": [
-          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.sch_PrimitiveText.get",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native Text-state DTO, not public SDK getter parity. Ordinary active SCH_PAGE root Text only; symbol/block-instance pages, inherited/generated descendant Text selectors and structural GROUP records refuse. Both get and getAll return arrays sorted by primitiveId, including singular get. get accepts one ID or 1-256 unique IDs and refuses any missing/non-root/non-Text target. Complete root Text family is bounded to 256, even for a selected read; tree/source ownership is bounded to 20000 models. Fields are primitiveId, modelType, x, y, value, rotation, color, fontFamily, fontSize, fontWeight, italic, underline, hAlign and vAlign. Coordinates use native units/direction: y is not negated into SDK Y. Pose/style nulls are preserved without theme/default resolution. primitiveId and value are strings; modelType is Text. x/y/rotation are null or finite numbers within +/-1e9; fontSize is null or a finite number in 0..1e9. color/fontFamily are null or strings, and fontWeight/italic/underline are null or booleans. value is the native value getter, whose unset backing value becomes an empty string. hAlign is null or 0/1/2 for left/center/right; vAlign is null or 0/1/2 for top/middle/bottom. No AlignMode is fabricated: installed get uses display alignment, getAll a different raw formula. No style coercion from getApiSchTextData. Reciprocal full tree/ID-index/source membership, family identity, locks and all Text scalar fields are rechecked synchronously. Native signed zero remains distinct during reproof, but JSON transport normalizes it. Values are at most 65536 UTF-16 units, font/color strings 4096, total Text strings 262144; transport bounds also apply. No callback/public Text wrapper, serializer, compiler, display getter, settings, RPC, navigation or Save. This is bounded native Text state, not complete source/connectivity/persistence proof or proof of unrelated field invariance.",
+          "documentTypes": [
+            1
+          ],
+          "source": [
+            "schematic-text-read.ts"
+          ],
+          "tests": [
+            "schematic-text-read.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.sch_PrimitiveText.get",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -26289,16 +26312,39 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "lossy-or-unawaited-public-reader",
-        "reason": "The installed wrapper publishes a callback without awaiting it and returns a callback-populated array. Serialization can observe an empty or incomplete list before enumeration finishes.",
-        "nextRequirement": "Use an independently complete native reader with awaited completion, source parity and failure tests; do not report a swallowed error as an empty result.",
-        "evidence": [
-          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.sch_PrimitiveText.getAll",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native Text-state DTO, not public SDK getter parity. Ordinary active SCH_PAGE root Text only; symbol/block-instance pages, inherited/generated descendant Text selectors and structural GROUP records refuse. Both get and getAll return arrays sorted by primitiveId, including singular get. get accepts one ID or 1-256 unique IDs and refuses any missing/non-root/non-Text target. Complete root Text family is bounded to 256, even for a selected read; tree/source ownership is bounded to 20000 models. Fields are primitiveId, modelType, x, y, value, rotation, color, fontFamily, fontSize, fontWeight, italic, underline, hAlign and vAlign. Coordinates use native units/direction: y is not negated into SDK Y. Pose/style nulls are preserved without theme/default resolution. primitiveId and value are strings; modelType is Text. x/y/rotation are null or finite numbers within +/-1e9; fontSize is null or a finite number in 0..1e9. color/fontFamily are null or strings, and fontWeight/italic/underline are null or booleans. value is the native value getter, whose unset backing value becomes an empty string. hAlign is null or 0/1/2 for left/center/right; vAlign is null or 0/1/2 for top/middle/bottom. No AlignMode is fabricated: installed get uses display alignment, getAll a different raw formula. No style coercion from getApiSchTextData. Reciprocal full tree/ID-index/source membership, family identity, locks and all Text scalar fields are rechecked synchronously. Native signed zero remains distinct during reproof, but JSON transport normalizes it. Values are at most 65536 UTF-16 units, font/color strings 4096, total Text strings 262144; transport bounds also apply. No callback/public Text wrapper, serializer, compiler, display getter, settings, RPC, navigation or Save. This is bounded native Text state, not complete source/connectivity/persistence proof or proof of unrelated field invariance.",
+          "documentTypes": [
+            1
+          ],
+          "source": [
+            "schematic-text-read.ts"
+          ],
+          "tests": [
+            "schematic-text-read.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.sch_PrimitiveText.getAll",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

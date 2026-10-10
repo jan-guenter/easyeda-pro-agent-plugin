@@ -61,6 +61,11 @@ void test("SDK catalog distinguishes native-only, public-only and mixed discover
   const pins = queryPublicSdkReads({ method: "eda.sch_PrimitivePin.getAll" });
   assert.equal(pins["authority"], "native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof");
   assert.equal(pins["executionAuthorized"], false);
+  for (const method of ["eda.sch_PrimitiveText.get", "eda.sch_PrimitiveText.getAll"]) {
+    const result = queryPublicSdkReads({ method, includeSchemas: true });
+    assert.equal(result["authority"], "native-text-state-observation-not-complete-source-connectivity-or-persistence-proof");
+    assert.equal(result["executionAuthorized"], false);
+  }
   assert.equal(queryPublicSdkReads()["authority"], "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof");
   assert.equal(queryPublicSdkReads({ limit: 1, offset: 0 })["authority"], "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof");
 });

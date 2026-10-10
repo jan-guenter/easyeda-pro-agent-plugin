@@ -6,6 +6,7 @@ import { editorTabLookupRequestSchema, isEditorTabLookupMethod } from "./editor-
 import { SCHEMATIC_NATIVE_ID_METHODS, buildSchematicNativeIdsExpression, isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
 import { SCHEMATIC_COMPONENT_PROPERTY_METHOD, buildSchematicComponentPropertyNamesExpression, schematicComponentPropertyNamesSchema } from "./schematic-component-properties.ts";
 import { SYMBOL_PIN_ENUMERATION_METHOD, SYMBOL_PIN_GETTER_FIELDS, buildSymbolPinEnumerationExpression } from "./symbol-pin-enumeration.ts";
+import { buildSchematicTextReadExpression, isSchematicTextReadMethod, schematicTextReadRequestSchema, validateSchematicTextStates } from "./schematic-text-read.ts";
 
 /** This fixed allowlist is independent of the declaration catalog. Public entries
  * were reviewed against this implementation, including delegated getters.
@@ -206,6 +207,19 @@ add(SCHEMATIC_COMPONENT_PROPERTY_METHOD, [1], "strings", emptyArguments, [], {
     "No attribute values, compiler, multiPart, source serializer, settings, RPC, navigation or Save. Stable property-name sets are not complete source/connectivity/persistence proof or proof that other design fields remained unchanged.",
   ],
 });
+for (const schema of schematicTextReadRequestSchema.options) {
+  add(schema.shape.method.value, [1], "records", schema.shape.arguments, schema.shape.method.value.endsWith(".get") ? ["primitiveIds"] : [], {
+    implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [
+      "Fixed synchronous native Text-state DTO, not public SDK getter parity. Ordinary active SCH_PAGE root Text only; symbol/block-instance pages, inherited/generated descendant Text selectors and structural GROUP records refuse.",
+      "Both get and getAll return arrays sorted by primitiveId, including singular get. get accepts one ID or 1-256 unique IDs and refuses any missing/non-root/non-Text target. Complete root Text family is bounded to 256, even for a selected read; tree/source ownership is bounded to 20000 models.",
+      "Fields are primitiveId, modelType, x, y, value, rotation, color, fontFamily, fontSize, fontWeight, italic, underline, hAlign and vAlign. Coordinates use native units/direction: y is not negated into SDK Y. Pose/style nulls are preserved without theme/default resolution.",
+      "primitiveId and value are strings; modelType is Text. x/y/rotation are null or finite numbers within +/-1e9; fontSize is null or a finite number in 0..1e9. color/fontFamily are null or strings, and fontWeight/italic/underline are null or booleans. value is the native value getter, whose unset backing value becomes an empty string.",
+      "hAlign is null or 0/1/2 for left/center/right; vAlign is null or 0/1/2 for top/middle/bottom. No AlignMode is fabricated: installed get uses display alignment, getAll a different raw formula. No style coercion from getApiSchTextData.",
+      "Reciprocal full tree/ID-index/source membership, family identity, locks and all Text scalar fields are rechecked synchronously. Native signed zero remains distinct during reproof, but JSON transport normalizes it. Values are at most 65536 UTF-16 units, font/color strings 4096, total Text strings 262144; transport bounds also apply.",
+      "No callback/public Text wrapper, serializer, compiler, display getter, settings, RPC, navigation or Save. This is bounded native Text state, not complete source/connectivity/persistence proof or proof of unrelated field invariance.",
+    ],
+  });
+}
 add(SYMBOL_PIN_ENUMERATION_METHOD, [2], "primitive", emptyArguments, [], {
   implementationKind: "native-task-equivalent", parameterSupport: "narrowed", primitiveType: "Pin", getters: [...SYMBOL_PIN_GETTER_FIELDS], limitations: [
     "Native membership plus explicit public get(id) parity, never the broken getAll or public ID inventory. Only one exact active ordinary project-symbol PART is supported; schematic instances, multipart/inherited shapes, drawing/flag symbols, device associations and source GROUP records refuse.",
@@ -382,6 +396,7 @@ export function publicSdkReadDescriptors(): PublicSdkReadDescriptor[] {
 }
 
 function readImplementationName(path: string): string {
+  if (isSchematicTextReadMethod(path)) { return "schematic-text-read"; }
   if (isSchematicNativeIdMethod(path)) { return "schematic-native-ids"; }
   if (path === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { return "schematic-component-properties"; }
   if (path === SYMBOL_PIN_ENUMERATION_METHOD) { return "symbol-pin-enumeration"; }
@@ -444,6 +459,7 @@ export function buildPublicSdkReadCode(input: unknown): string {
   if (isSchematicNativeIdMethod(definition.path)) { expression = buildSchematicNativeIdsExpression(definition.path, "sdk-failure-code"); }
   else if (definition.path === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { expression = buildSchematicComponentPropertyNamesExpression("sdk-failure-code"); }
   else if (definition.path === SYMBOL_PIN_ENUMERATION_METHOD) { expression = buildSymbolPinEnumerationExpression("sdk-failure-code"); }
+  else if (isSchematicTextReadMethod(definition.path)) { expression = buildSchematicTextReadExpression(request, "sdk-failure-code"); }
   else if (definition.path === SPLIT_POLYGON_METHOD) { expression = splitPolygonExpression(request); }
   const membership = definition.membership === undefined ? "" : `
   stage = "membership";
@@ -631,6 +647,10 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
       if (payload.undefinedPaths.length > 0) { throw new Error("Component property-name observations cannot contain undefined values."); }
       schematicComponentPropertyNamesSchema.parse(payload.value);
     }
+    if (isSchematicTextReadMethod(request.method)) {
+      if (payload.undefinedPaths.length > 0) { throw new Error("Native Text state cannot contain undefined fields."); }
+      validateSchematicTextStates(payload.value, request);
+    }
     if (request.method === SYMBOL_PIN_ENUMERATION_METHOD) {
       const rows = symbolPinRows.parse(payload.value);
       if (payload.undefinedPaths.length !== rows.length || rows.some((_row, index) => !payload.undefinedPaths.includes(`/value/${index}/OtherProperty`))) {
@@ -683,6 +703,7 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
   if (isSchematicNativeIdMethod(request.method)) { assurance = "bounded-native-id-observation-not-complete-source-connectivity-or-persistence-proof"; }
   if (request.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { assurance = "bounded-native-property-name-observation-not-complete-source-connectivity-or-persistence-proof"; }
   if (request.method === SYMBOL_PIN_ENUMERATION_METHOD) { assurance = "bounded-native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof"; }
+  if (isSchematicTextReadMethod(request.method)) { assurance = "bounded-native-text-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
   return { ...payload, assurance,
     ...(definition.implementationKind === "native-task-equivalent" ? { implementationKind: definition.implementationKind } : {}),
     publicApiSha256: PUBLIC_SDK_READ_API_SHA256, liveValidation: "not-yet-validated", limitations: [...definition.limitations] };

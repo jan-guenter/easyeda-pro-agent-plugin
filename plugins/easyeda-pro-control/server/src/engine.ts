@@ -61,6 +61,7 @@ import { buildPublicSdkReadCode, publicSdkReadImplementationKind, validatePublic
 import { SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
 import { SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
 import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
+import { isSchematicTextReadMethod } from "./schematic-text-read.ts";
 import { isEditorTabLookupMethod, readEditorTabLookup } from "./editor-tab-lookups.ts";
 import { buildSchematicNativeReadExpression } from "./schematic-native-adapter.ts";
 import { readSchematicFlatTopology } from "./schematic-flat-read.ts";
@@ -3294,6 +3295,7 @@ export class EasyedaControlEngine {
     if (isSchematicNativeIdMethod(parsed.method)) { authority = "native-id-observation-not-complete-source-connectivity-or-persistence-proof"; }
     if (parsed.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { authority = "native-property-name-observation-not-complete-source-connectivity-or-persistence-proof"; }
     if (parsed.method === SYMBOL_PIN_ENUMERATION_METHOD) { authority = "native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    if (isSchematicTextReadMethod(parsed.method)) { authority = "native-text-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
     return { ...second, authority, read_consistency: {
       stable: true, attempts: 2, snapshotSha256,
       contextBinding: { level: "active-context-stability-required", preAndPostChecked: true, switchAwayAndBackDetectable: false },

@@ -106,11 +106,11 @@ void test("disposable plan rejects nonfixtures, wrong identities, missing finger
     { ...input, expectedContext: { ...input.expectedContext, document: { ...input.expectedContext.document, documentType: 26 } } },
   ]) { assert.throws(() => parseDisposableSdkValidationPlan(invalid)); }
 });
-void test("historical public-only validation refuses native ID, property-name and Pin plans before any record or facade call", async () => {
-  for (const method of ["eda.sch_PrimitiveText.getAllPrimitiveId", "eda.sch_PrimitiveWire.getAllPrimitiveId", "eda.sch_PrimitiveBus.getAllPrimitiveId", "eda.sch_PrimitiveComponent.getAllPropertyNames", "eda.sch_PrimitivePin.getAll"]) {
+void test("historical public-only validation refuses native ID, property-name, Pin and Text plans before any record or facade call", async () => {
+  for (const method of ["eda.sch_PrimitiveText.getAllPrimitiveId", "eda.sch_PrimitiveWire.getAllPrimitiveId", "eda.sch_PrimitiveBus.getAllPrimitiveId", "eda.sch_PrimitiveComponent.getAllPropertyNames", "eda.sch_PrimitivePin.getAll", "eda.sch_PrimitiveText.get", "eda.sch_PrimitiveText.getAll"]) {
     const input = plan(method === "eda.sch_PrimitivePin.getAll" ? 2 : 1);
     const current = fixture(input);
-    const invalid = { ...input, steps: [...input.steps, { id: "native", request: { method, arguments: {} } }] };
+    const invalid = { ...input, steps: [...input.steps, { id: "native", request: { method, arguments: method === "eda.sch_PrimitiveText.get" ? { primitiveIds: "text" } : {} } }] };
     assert.throws(() => parseDisposableSdkValidationPlan(invalid), /public SDK readers only/u);
     for (const mode of ["dry-run", "execute"] as const) {
       await assert.rejects(runDisposableSdkValidation(invalid, { mode, facade: current.facade,

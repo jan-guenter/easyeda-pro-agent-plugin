@@ -78,6 +78,7 @@ import { publicSdkReadImplementationKind, publicSdkReadRequestSchema } from "./p
 import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
 import { SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
 import { SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
+import { isSchematicTextReadMethod } from "./schematic-text-read.ts";
 import { publicSdkCatalogQuerySchema, publicSdkValidationQuerySchema, queryPublicSdkReads, validatePublicSdkArguments } from "./public-sdk-catalog.ts";
 import { operationCatalogQuerySchema, operationValidationRequestSchema, queryOperationCatalog, validateCatalogOperation } from "./operation-catalog.ts";
 
@@ -1957,7 +1958,7 @@ registerFacadeTool(
   "easyeda_control_sdk_read",
   {
     title: "Read reviewed EasyEDA SDK methods",
-    description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity-only, property-name or Pin-getter observations; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
+    description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity-only, property-name, Pin-getter or Text-state observations; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
     inputSchema: {
       request: z.unknown().pipe(publicSdkReadRequestSchema),
       expectedContext: contextSchema,
@@ -1981,6 +1982,7 @@ registerFacadeTool(
     if (isSchematicNativeIdMethod(input.request.method)) { reader = "fixed-native-id-observation"; effect = "fixed-native-id-read"; }
     if (input.request.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { reader = "fixed-native-property-name-observation"; effect = "fixed-native-property-name-read"; }
     if (input.request.method === SYMBOL_PIN_ENUMERATION_METHOD) { reader = "fixed-native-pin-getter-observation"; effect = "fixed-native-pin-getter-read"; }
+    if (isSchematicTextReadMethod(input.request.method)) { reader = "fixed-native-text-state-observation"; effect = "fixed-native-text-state-read"; }
     try {
       validatePrivateFingerprint(input.expectedFingerprint);
       const status = await engine.status();

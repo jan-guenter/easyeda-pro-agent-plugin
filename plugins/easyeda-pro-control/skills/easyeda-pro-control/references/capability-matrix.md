@@ -22,6 +22,7 @@ its narrow boundary and pending live validation are listed separately below.
 | Schematic Text/Wire/Bus IDs | sdk_read, getAllPrimitiveId | Native ID-only equivalent on an ordinary active type-1 page; empty arguments only, no Wire net filters or symbol/block-instance scenes. Complete reciprocal tree/index proof and source-backed root-family membership; generated frame descendants excluded, structural GROUP records refused. Two stable observations, no callback/compiler/Save. Group IDs are not LINE IDs. Offline-tested; connected validation pending |
 | Schematic component property names | sdk_read, sch_PrimitiveComponent.getAllPropertyNames | Native key-only equivalent on one ordinary page; complete root Symbol/attribute-map/tree/index proof, including inherited/generated frame/flag keys. No values, compiler, source serializer or Save; unsupported ownership/groups refuse. Exact sorted bounded strings, not all-pages or persistence proof. Connected validation pending |
 | Ordinary symbol Pin enumeration | sdk_read, sch_PrimitivePin.getAll | Native single-PART membership plus explicit public-getter parity; 256-Pin bound, exact standard attributes, generated-dot ownership and reproof around awaits. Custom attributes/multipart/device/no-connect/junction cases refuse. Getter rotation is not stored rotation; JSON normalizes signed zero. Connected validation pending |
+| Schematic Text state | sdk_read, sch_PrimitiveText.get/getAll | Complete bounded ordinary page-root Text membership and 14 native scalar fields. Exact selected IDs or all roots; sorted arrays, native Y/null/style/alignment semantics, no public-getter parity. Synchronous reproof plus two facade observations; no compiler, serializer or Save. Connected validation pending |
 | Polygon splitting | sdk_read, pcb_MathPolygon.splitPolygon | Bounded JSON complex-polygon groups, temporary SDK constructors and exact ordered source-array output with duplicates retained. No native handles or CAD mutation; shared aggregate limits apply. Offline-tested including pinned constructor bodies; connected validation pending |
 | Owned editor tab/split-screen lookup | sdk_read, getSplitScreenIdByTabId / getTabsBySplitScreenId | Exact existing selector, complete bounded owned tree and saved project membership; identity-only direct result checked against the tree before/after, two matching samples and unchanged checkpoint/context. No foreign projects, empty leaves, title/data export, navigation or current-generation live claim |
 | Single-page stored display changes | design sch.layout.batch, sealed flat-display profile | Existing literal-ID attribute/text display patches only; complete inverse, unchanged endpoint topology, sole page of one ordinary schematic and full saved-project proof. No electrical edits, NO_CONNECT, creation/deletion, translation, non-display steps or historical repair/page loading. Source/offline-tested; new connected lifecycle pending. See schematic.md |
@@ -73,6 +74,27 @@ its narrow boundary and pending live validation are listed separately below.
 
 ## Reported live coverage
 
+Installed214400 also enumerated two ordinary-symbol Pins with exact twelve-field
+getter parity, explicit OtherProperty absence and unchanged complete symbol
+source and 18-document saved history. The tested pins have zero Y, length 10,
+shape None, type IN and getter rotations 0/180. Other geometry/enums, custom
+attributes, multipart symbols and later generations are not covered.
+
+Installed214400 returned exact property-name sets on two disposable fixtures:
+29 frame keys, then 57 keys across two ordinary parts, three ground flags and a
+frame. The latter includes 19 inherited keys absent from page ATTR records.
+Independent reconstruction from saved page/library/device records matched both
+results. Four nonempty Wire groups also matched their stored identities. Every
+reader returned two equal observations; complete native and saved-project
+comparisons stayed unchanged. This does not validate nonempty Bus membership,
+general hierarchy or a later facade generation.
+
+The same generation renamed one closed empty page while a clean sibling was
+active. Exactly its title and native header bookkeeping changed, with all 17
+other documents unchanged. The original acknowledgment and separate readback
+were retained and independently verified. No Save, reopen or editor-caption
+refresh is claimed. This completed operation must not be replayed.
+
 Installed210100 reconciled the exact earlier text effect, then dispatched one
 inverse on the nine-document disposable fixture. Immediate durable verification
 refused; several minutes later native persistence restored the saved baseline.
@@ -82,8 +104,9 @@ delayed-restoration evidence, not immediate rollback or Save/reopen validation.
 Text-ID, empty Wire/Bus and rectangle/circle/duplicate polygon observations also
 returned expected stable results. A controlled batch after persistence settled
 preserved the complete native snapshot and saved SQLite bytes/logical dump.
-Nonempty Wire/Bus, new property-name and Pin
-readers, attribute edits and nonempty flat topology require separate acceptance.
+Nonempty Wire/Bus and the property-name and Pin readers were unvalidated on210100;
+the214400 subsets above supersede that status only for their tested cases.
+Nonempty Bus, attribute edits and nonempty flat topology still require acceptance.
 A separate210100 one-field text transaction completed one Save/close/reopen with
 exact native readback, complete nine-document proof and eight unchanged peers.
 Normal application close preserved the final checkpoint's source bytes. This

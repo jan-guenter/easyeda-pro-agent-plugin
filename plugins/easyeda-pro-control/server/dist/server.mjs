@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "7f91a2e729100fd3c6195920e14ef024b4c1683af1cb712fcb4eed65278f251c";
+const __easyedaBundlePairId = "547a11cd2044fef6005346c6eeb186ab0638f399089f48c0eba253acff47f9a9";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -7363,8 +7363,8 @@ var init_ko = __esm({
 });
 
 // node_modules/zod/v4/locales/lt.js
-function getUnitTypeFromNumber(number14) {
-  const abs = Math.abs(number14);
+function getUnitTypeFromNumber(number15) {
+  const abs = Math.abs(number15);
   const last = abs % 10;
   const last2 = abs % 100;
   if (last2 >= 11 && last2 <= 19 || last === 0)
@@ -33432,10 +33432,168 @@ var init_symbol_pin_enumeration = __esm({
   }
 });
 
+// server/src/schematic-text-read.ts
+function isSchematicTextReadMethod(method) {
+  return SCHEMATIC_TEXT_READ_METHODS.some((entry) => entry === method);
+}
+function buildSchematicTextReadExpression(input, diagnostics) {
+  const request = schematicTextReadRequestSchema.parse(input);
+  if (diagnostics !== void 0 && diagnostics !== "sdk-failure-code") {
+    throw new Error("Unsupported schematic Text diagnostics.");
+  }
+  const selector4 = request.method === SCHEMATIC_TEXT_READ_METHODS[0] ? request.arguments.primitiveIds : null;
+  const selected = selector4 === null ? null : (Array.isArray(selector4) ? selector4 : [selector4]).toSorted();
+  return `(() => {
+const bad=reason=>{${diagnostics === "sdk-failure-code" ? "failureCode='SCH_TEXT_'+reason;" : ""}throw new Error('SCH_TEXT_'+reason);};
+const selected=${JSON.stringify(selected)};
+const validId=value=>{if(typeof value!=='string'||!value||value.length>256||[...value].some(c=>c.charCodeAt(0)<32||c.charCodeAt(0)===127))bad('IDENTITY');return value;};
+const sch=globalThis.SCH,ui=globalThis.UI,tabs=ui?.tabBar,manager=sch?.docMemoryManager;
+const activeReader=manager?.getActiveDoc,tabReader=tabs?.getActiveTab;
+if(typeof activeReader!=='function'||typeof tabReader!=='function')bad('MANAGER');
+const page=activeReader.call(manager),shapes=page?.shapeManager,ids=page?.idManager,index=ids?.idMap;
+const project=page?.projectMgr,modelMap=shapes?.modelMap,modelReader=shapes?.getModels,root=shapes?.root;
+const consistency=page?.consistencyImpl,handler=consistency?.decodeAndRealTimeSyncHandler,sourceReader=handler?.getSourceCodeIdMap,action=shapes?.actionRunner;
+if(!page||!project||!(index instanceof Map)||index.size>20000||!(modelMap instanceof Map)||modelMap.size>1000||typeof modelReader!=='function'||typeof sourceReader!=='function')bad('INVENTORY');
+const check=()=>{
+ if(globalThis.SCH!==sch||globalThis.UI!==ui||ui.tabBar!==tabs||tabs.getActiveTab!==tabReader||sch.docMemoryManager!==manager||manager.getActiveDoc!==activeReader||activeReader.call(manager)!==page||tabReader.call(tabs)!==EXPECTED_TAB_ID||EXPECTED_DOCUMENT_TYPE!==1||page.uuid!==EXPECTED_DOCUMENT_UUID||page.project_uuid!==EXPECTED_PROJECT_UUID||page.tabId!==EXPECTED_TAB_ID||EXPECTED_TAB_ID!==EXPECTED_DOCUMENT_UUID+'@'+EXPECTED_PROJECT_UUID||page.isSchSheetDoc?.()!==true||page.isBlockSymbolInstancePage!==false)bad('CONTEXT');
+ if(page.projectMgr!==project||project.uuid!==EXPECTED_PROJECT_UUID||page.shapeManager!==shapes||page.idManager!==ids||shapes.docManager!==page||shapes.idManager!==ids||ids.docManager!==page||ids.idMap!==index||shapes.modelMap!==modelMap||shapes.getModels!==modelReader||page.consistencyImpl!==consistency||consistency.docManager!==page||consistency.decodeAndRealTimeSyncHandler!==handler||consistency.handler!==handler||handler.consistencyImpl!==consistency||handler.docManager!==page||handler.getSourceCodeIdMap!==sourceReader||shapes.actionRunner!==action)bad('OWNER');
+ if(consistency.state!=='initialized'||action?.running!==false)bad('READY');
+ if(shapes.root!==root||!root||root.modelType!=='Root'||root.parent!=null||root.isConnected!==true||root.shapeManager!==shapes)bad('TREE');
+};
+const fields=['modelType','x','y','value','rotation','color','fontFamily','fontSize','fontWeight','italic','underline','hAlign','vAlign'];
+const captureTree=()=>{
+ const tree=new Map(),pending=[root];
+ for(let offset=0;offset<pending.length;offset++){
+  const parent=pending[offset],children=parent.children;
+  if(children===undefined){if(parent===root)bad('TREE');continue;}
+  if(!Array.isArray(children)||children.length>20000||new Set(children).size!==children.length)bad('TREE');
+  for(const [position,model] of children.entries()){
+   const id=validId(model?.id);
+   if(tree.has(id)||model===root||model.parent!==parent||model.shapeManager!==shapes||model.isConnected!==true||index.get(id)!==model||model.locked!==undefined&&typeof model.locked!=='boolean')bad('TREE');
+   tree.set(id,{model,parent,position,type:model.modelType,locked:model.locked});pending.push(model);
+   if(tree.size>20000)bad('BOUND');
+  }
+ }
+ if(tree.size!==index.size)bad('TREE');
+ for(const [id,model] of index){if(tree.get(id)?.model!==model)bad('TREE');}
+ return tree;
+};
+const sameTree=(before,after)=>{
+ if(before.size!==after.size)bad('CHANGED');
+ for(const [id,entry] of before){const other=after.get(id);if(!other||other.model!==entry.model||other.parent!==entry.parent||other.position!==entry.position||other.type!==entry.type||!Object.is(other.locked,entry.locked))bad('CHANGED');}
+};
+const captureSource=tree=>{
+ const source=sourceReader.call(handler);
+ if(!(source instanceof Map)||source.size>20000)bad('SOURCE');
+ for(const [id,marker] of source){validId(id);if(marker!==1||!tree.has(id)||tree.get(id).model!==index.get(id))bad('SOURCE');}
+ return new Map(source);
+};
+const sameSource=(before,after)=>{
+ if(before.size!==after.size)bad('CHANGED');
+ for(const [id,marker] of before){if(after.get(id)!==marker)bad('CHANGED');}
+};
+const capture=()=>{
+ check();const tree=captureTree(),source=captureSource(tree);
+ const family=modelMap.get('Text'),models=modelReader.call(shapes,'Text');
+ if(family!==undefined&&(!(family instanceof Set)||family.size>256)||!Array.isArray(models)||models.length>256||models.length!==(family?.size??0))bad('FAMILY');
+ const members=new Map(),states=new Map();let characters=0;
+ for(const model of models){
+  const id=validId(model?.id);
+  if(members.has(id)||model.modelType!=='Text'||model.cmdKey!=='text'||model.parent!==root||model.shapeManager!==shapes||index.get(id)!==model||!family?.has(model)||source.get(id)!==1)bad('FAMILY');
+  const state={primitiveId:id};for(const field of fields)state[field]=model[field];if(state.modelType!=='Text')bad('STATE');
+  for(const field of ['x','y','rotation','fontSize']){const value=state[field];if(value!==null&&(typeof value!=='number'||!Number.isFinite(value)||Math.abs(value)>1000000000||field==='fontSize'&&value<0))bad('STATE');}
+  for(const field of ['fontWeight','italic','underline']){if(state[field]!==null&&typeof state[field]!=='boolean')bad('STATE');}
+  for(const field of ['hAlign','vAlign']){if(state[field]!==null&&![0,1,2].includes(state[field]))bad('STATE');}
+  if(typeof state.value!=='string'||state.value.length>65536||!(state.color===null||typeof state.color==='string'&&state.color.length<=4096)||!(state.fontFamily===null||typeof state.fontFamily==='string'&&state.fontFamily.length<=4096))bad('STATE');
+  characters+=state.value.length+(state.color?.length??0)+(state.fontFamily?.length??0);if(characters>262144)bad('BOUND');
+  members.set(id,model);states.set(id,state);
+ }
+ for(const [id,entry] of tree){if(entry.type==='Text'&&entry.parent===root&&members.get(id)!==entry.model)bad('FAMILY');}
+ sameSource(source,captureSource(tree));sameTree(tree,captureTree());
+ if(modelMap.get('Text')!==family||(family?.size??0)!==members.size)bad('CHANGED');
+ for(const model of members.values()){if(!family?.has(model)||model.cmdKey!=='text')bad('CHANGED');}
+ check();return{tree,source,family,members,states};
+};
+const before=capture(),after=capture();
+if(before.family!==after.family||before.members.size!==after.members.size)bad('CHANGED');
+sameTree(before.tree,after.tree);sameSource(before.source,after.source);
+for(const [id,model] of before.members){if(after.members.get(id)!==model)bad('CHANGED');const left=before.states.get(id),right=after.states.get(id);for(const field of fields){if(!Object.is(left[field],right[field]))bad('CHANGED');}}
+const wanted=selected??[...before.members.keys()].sort();
+for(const id of wanted){if(!before.members.has(id))bad('TARGET');}
+check();return wanted.map(id=>before.states.get(id));
+})()`;
+}
+function validateSchematicTextStates(value, input) {
+  const request = schematicTextReadRequestSchema.parse(input);
+  const rows = schematicTextStatesSchema.parse(value);
+  if (request.method === SCHEMATIC_TEXT_READ_METHODS[0]) {
+    const selected = request.arguments.primitiveIds;
+    const wanted = (Array.isArray(selected) ? selected : [selected]).toSorted();
+    if (rows.length !== wanted.length || rows.some((row, index) => row.primitiveId !== wanted[index])) {
+      throw new Error("Text observation does not match the exact requested identities.");
+    }
+  }
+}
+var SCHEMATIC_TEXT_READ_METHODS, identity, identities, selectedArguments, schematicTextReadRequestSchema, number4, alignment, schematicTextStateSchema, schematicTextStatesSchema, SCHEMATIC_TEXT_GUARD_CODES;
+var init_schematic_text_read = __esm({
+  "server/src/schematic-text-read.ts"() {
+    init_zod();
+    SCHEMATIC_TEXT_READ_METHODS = ["eda.sch_PrimitiveText.get", "eda.sch_PrimitiveText.getAll"];
+    identity = external_exports.string().min(1).max(256).regex(/^[^\u0000-\u001F\u007F]+$/u);
+    identities = external_exports.array(identity).min(1).max(256).refine((values2) => new Set(values2).size === values2.length, "Duplicate Text IDs.");
+    selectedArguments = external_exports.object({ primitiveIds: external_exports.union([identity, identities]) }).strict();
+    schematicTextReadRequestSchema = external_exports.discriminatedUnion("method", [
+      external_exports.object({ method: external_exports.literal(SCHEMATIC_TEXT_READ_METHODS[0]), arguments: selectedArguments }).strict(),
+      external_exports.object({ method: external_exports.literal(SCHEMATIC_TEXT_READ_METHODS[1]), arguments: external_exports.object({}).strict() }).strict()
+    ]);
+    number4 = external_exports.number().min(-1e9).max(1e9).nullable();
+    alignment = external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2), external_exports.null()]);
+    schematicTextStateSchema = external_exports.object({
+      primitiveId: identity,
+      modelType: external_exports.literal("Text"),
+      x: number4,
+      y: number4,
+      value: external_exports.string().max(65536),
+      rotation: number4,
+      color: external_exports.string().max(4096).nullable(),
+      fontFamily: external_exports.string().max(4096).nullable(),
+      fontSize: external_exports.number().min(0).max(1e9).nullable(),
+      fontWeight: external_exports.boolean().nullable(),
+      italic: external_exports.boolean().nullable(),
+      underline: external_exports.boolean().nullable(),
+      hAlign: alignment,
+      vAlign: alignment
+    }).strict();
+    schematicTextStatesSchema = external_exports.array(schematicTextStateSchema).max(256).refine(
+      (rows) => rows.every((row, index) => index === 0 || (rows[index - 1]?.primitiveId ?? "") < row.primitiveId) && rows.reduce((sum, row) => sum + row.value.length + (row.color?.length ?? 0) + (row.fontFamily?.length ?? 0), 0) <= 262144,
+      "Text states must be sorted, unique and bounded."
+    );
+    SCHEMATIC_TEXT_GUARD_CODES = [
+      "IDENTITY",
+      "MANAGER",
+      "INVENTORY",
+      "CONTEXT",
+      "OWNER",
+      "READY",
+      "TREE",
+      "SOURCE",
+      "FAMILY",
+      "STATE",
+      "BOUND",
+      "TARGET",
+      "CHANGED"
+    ];
+  }
+});
+
 // server/src/native-diagnostics.ts
 function nativeFailureCategory(message) {
   if (typeof message !== "string") {
     return null;
+  }
+  const schematicTextCategory = message.length <= 288 ? schematicTextCategories.get(message) : void 0;
+  if (schematicTextCategory !== void 0) {
+    return schematicTextCategory;
   }
   const symbolPinCategory = message.length <= 288 ? symbolPinCategories.get(message) : void 0;
   if (symbolPinCategory !== void 0) {
@@ -33495,7 +33653,7 @@ function nativeFailureCategory(message) {
   const stage = message.startsWith(prefix) ? message.slice(prefix.length) : "";
   return recoveryStages.has(stage) ? `native-preflight:RECOVERY_${stage.toUpperCase().replaceAll("-", "_")}` : null;
 }
-var codes3, recoveryStages, tabCodes, padCodes, footprintLifecycleCodes, operationStages, operationStageCategories, activationPreferenceCategories, metadataGuardCategories, schematicIdCategories, componentPropertyCategories, symbolPinCategories;
+var codes3, recoveryStages, tabCodes, padCodes, footprintLifecycleCodes, operationStages, operationStageCategories, activationPreferenceCategories, metadataGuardCategories, schematicIdCategories, componentPropertyCategories, symbolPinCategories, schematicTextCategories;
 var init_native_diagnostics = __esm({
   "server/src/native-diagnostics.ts"() {
     init_device_runtime_guard();
@@ -33505,6 +33663,7 @@ var init_native_diagnostics = __esm({
     init_schematic_native_ids();
     init_schematic_component_properties();
     init_symbol_pin_enumeration();
+    init_schematic_text_read();
     codes3 = /* @__PURE__ */ new Set([
       "NATIVE_LIFECYCLE_OBSERVER_UNAVAILABLE",
       "NATIVE_LIFECYCLE_PROJECT_DRIFT",
@@ -33736,6 +33895,10 @@ var init_native_diagnostics = __esm({
         `native-symbol-pins:${SYMBOL_PIN_ENUMERATION_METHOD}:${label}`
       ])
     );
+    schematicTextCategories = new Map(SCHEMATIC_TEXT_READ_METHODS.flatMap((method) => [...SCHEMATIC_TEXT_GUARD_CODES.map((code) => [`SCH_TEXT_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
+      `Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
+      `native-schematic-text:${method}:${label}`
+    ])));
   }
 });
 
@@ -41067,14 +41230,14 @@ function verifyDesignTopology(expected2, actual) {
     throw new Error("Compiled component/pin/net endpoints differ from the explicit transaction topology; no save is authorized.");
   }
 }
-var identity, pin, designTopologySchema;
+var identity2, pin, designTopologySchema;
 var init_design_topology = __esm({
   "server/src/design-topology.ts"() {
     init_zod();
     init_core3();
-    identity = external_exports.string().min(1).max(512);
-    pin = external_exports.object({ pinNumber: identity, net: external_exports.string().max(512).nullable() }).strict();
-    designTopologySchema = external_exports.array(external_exports.object({ uniqueId: identity, designator: external_exports.string().max(512).nullable(), pins: external_exports.array(pin).max(4096) }).strict()).max(2e4).superRefine((value, context2) => {
+    identity2 = external_exports.string().min(1).max(512);
+    pin = external_exports.object({ pinNumber: identity2, net: external_exports.string().max(512).nullable() }).strict();
+    designTopologySchema = external_exports.array(external_exports.object({ uniqueId: identity2, designator: external_exports.string().max(512).nullable(), pins: external_exports.array(pin).max(4096) }).strict()).max(2e4).superRefine((value, context2) => {
       if (new Set(value.map((entry) => entry.uniqueId)).size !== value.length || value.some((entry) => new Set(entry.pins.map((item2) => item2.pinNumber)).size !== entry.pins.length)) {
         context2.addIssue({ code: "custom", message: "Topology identities must be unique." });
       }
@@ -41227,14 +41390,14 @@ function compileSchematicOperation(input) {
   if (["port", "net-flag"].includes(family)) {
     limitations.push("default-library-symbol-associations-must-be-captured-and-proven");
   }
-  let identity12 = "preserve";
+  let identity13 = "preserve";
   if (deleting) {
-    identity12 = "delete";
+    identity13 = "delete";
   }
   if (creating) {
-    identity12 = "create";
+    identity13 = "create";
   }
-  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field2, value]) => expected(family, field2, value)), inverse, effect: { family, target: target5, identity: identity12, fields: fields2, collateral }, requiredPreservation, limitations };
+  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field2, value]) => expected(family, field2, value)), inverse, effect: { family, target: target5, identity: identity13, fields: fields2, collateral }, requiredPreservation, limitations };
 }
 function referenceFamily(action) {
   const family = action.split(".")[1];
@@ -41295,12 +41458,12 @@ function buildSchematicOperationCallExpression(input, createdIds = {}, beforeCom
   }
   return `eda.${compiled.call.api}.${compiled.call.method}(${compiled.call.args.map(argumentExpression).join(",")})`;
 }
-var SCHEMATIC_OPERATION_PROFILE, number4, name, text2, id, primitiveId, targetSchema, graphicDocument, lineType, color, width, fillStyle, alignment, coordinates, lines, style, wireProperties, busProperties, pinProperties, textProperties, polygonProperties, rectangleProperties, arcProperties, circleProperties, componentCreateProperties, scalar, SCHEMATIC_BINDING_PROPERTIES, otherProperty, genericOtherProperty, preservedProperties, componentPatch, portProperties, flagProperties, attributePatch, schematicOperationSchema, catalog, sourceRead, schematicOperationBatchSchema, SCHEMATIC_OPERATION_UNIMPLEMENTED;
+var SCHEMATIC_OPERATION_PROFILE, number5, name, text2, id, primitiveId, targetSchema, graphicDocument, lineType, color, width, fillStyle, alignment2, coordinates, lines, style, wireProperties, busProperties, pinProperties, textProperties, polygonProperties, rectangleProperties, arcProperties, circleProperties, componentCreateProperties, scalar, SCHEMATIC_BINDING_PROPERTIES, otherProperty, genericOtherProperty, preservedProperties, componentPatch, portProperties, flagProperties, attributePatch, schematicOperationSchema, catalog, sourceRead, schematicOperationBatchSchema, SCHEMATIC_OPERATION_UNIMPLEMENTED;
 var init_schematic_operations = __esm({
   "server/src/schematic-operations.ts"() {
     init_zod();
     SCHEMATIC_OPERATION_PROFILE = "easyeda-pro-control.schematic-operations.v1";
-    number4 = external_exports.number();
+    number5 = external_exports.number();
     name = external_exports.string().min(1).max(512);
     text2 = external_exports.string().max(65536);
     id = external_exports.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/u);
@@ -41309,30 +41472,30 @@ var init_schematic_operations = __esm({
     graphicDocument = external_exports.union([external_exports.literal(1), external_exports.literal(2)]).default(1);
     lineType = external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2), external_exports.literal(3)]).nullable();
     color = external_exports.string().max(128).nullable();
-    width = number4.positive().nullable();
+    width = number5.positive().nullable();
     fillStyle = external_exports.enum(["None", "Solid", "Grid", "Horizontal Line", "Vertical Line", "Rhombic Grid", "Left Slash Line", "Right Slash Line"]).nullable();
-    alignment = external_exports.number().int().min(1).max(9);
-    coordinates = external_exports.array(number4).min(4).max(2e4).refine((points) => points.length % 2 === 0, "Expected complete coordinate pairs.");
+    alignment2 = external_exports.number().int().min(1).max(9);
+    coordinates = external_exports.array(number5).min(4).max(2e4).refine((points) => points.length % 2 === 0, "Expected complete coordinate pairs.");
     lines = external_exports.union([coordinates, external_exports.array(coordinates).min(1).max(1024)]);
     style = { color, fillColor: color, lineWidth: width, lineType };
     wireProperties = external_exports.object({ line: lines, net: text2, color, lineWidth: width, lineType }).strict();
     busProperties = external_exports.object({ busName: name, line: lines, color, lineWidth: width, lineType }).strict();
-    pinProperties = external_exports.object({ x: number4, y: number4, pinNumber: name, pinName: text2, rotation: number4, pinLength: number4.nonnegative(), pinColor: color, pinShape: external_exports.enum(["None", "Inverted", "Clock", "Inverted Clock"]), pinType: external_exports.enum(["IN", "OUT", "BI", "Passive", "Open Collector", "Open Emitter", "Power", "Ground", "HIZ", "Terminator", "Undefined"]) }).strict();
-    textProperties = external_exports.object({ x: number4, y: number4, content: text2, rotation: number4, textColor: color, fontName: name.nullable(), fontSize: width, bold: external_exports.boolean(), italic: external_exports.boolean(), underLine: external_exports.boolean(), alignMode: alignment }).strict();
+    pinProperties = external_exports.object({ x: number5, y: number5, pinNumber: name, pinName: text2, rotation: number5, pinLength: number5.nonnegative(), pinColor: color, pinShape: external_exports.enum(["None", "Inverted", "Clock", "Inverted Clock"]), pinType: external_exports.enum(["IN", "OUT", "BI", "Passive", "Open Collector", "Open Emitter", "Power", "Ground", "HIZ", "Terminator", "Undefined"]) }).strict();
+    textProperties = external_exports.object({ x: number5, y: number5, content: text2, rotation: number5, textColor: color, fontName: name.nullable(), fontSize: width, bold: external_exports.boolean(), italic: external_exports.boolean(), underLine: external_exports.boolean(), alignMode: alignment2 }).strict();
     polygonProperties = external_exports.object({ line: coordinates.min(6), ...style }).strict();
-    rectangleProperties = external_exports.object({ topLeftX: number4, topLeftY: number4, width: number4.positive(), height: number4.positive(), cornerRadius: number4.nonnegative(), rotation: number4, ...style, fillStyle }).strict();
-    arcProperties = external_exports.object({ startX: number4, startY: number4, referenceX: number4, referenceY: number4, endX: number4, endY: number4, ...style }).strict();
-    circleProperties = external_exports.object({ centerX: number4, centerY: number4, radius: number4.positive(), ...style, fillStyle }).strict();
-    componentCreateProperties = external_exports.object({ component: external_exports.object({ libraryUuid: name, uuid: name }).strict(), x: number4, y: number4, subPartName: name, rotation: number4, mirror: external_exports.boolean(), addIntoBom: external_exports.boolean(), addIntoPcb: external_exports.boolean() }).strict();
-    scalar = external_exports.union([text2, number4, external_exports.boolean()]);
+    rectangleProperties = external_exports.object({ topLeftX: number5, topLeftY: number5, width: number5.positive(), height: number5.positive(), cornerRadius: number5.nonnegative(), rotation: number5, ...style, fillStyle }).strict();
+    arcProperties = external_exports.object({ startX: number5, startY: number5, referenceX: number5, referenceY: number5, endX: number5, endY: number5, ...style }).strict();
+    circleProperties = external_exports.object({ centerX: number5, centerY: number5, radius: number5.positive(), ...style, fillStyle }).strict();
+    componentCreateProperties = external_exports.object({ component: external_exports.object({ libraryUuid: name, uuid: name }).strict(), x: number5, y: number5, subPartName: name, rotation: number5, mirror: external_exports.boolean(), addIntoBom: external_exports.boolean(), addIntoPcb: external_exports.boolean() }).strict();
+    scalar = external_exports.union([text2, number5, external_exports.boolean()]);
     SCHEMATIC_BINDING_PROPERTIES = /* @__PURE__ */ new Set(["Device", "Symbol", "Footprint", "OBJ", "3D Model", "3D Model Title", "Origin 3D Model Title", "3D Model Transform", "Origin Footprint"]);
     otherProperty = external_exports.record(external_exports.string().min(1).max(512).refine((key) => !["__proto__", "prototype", "constructor"].includes(key)), scalar).refine((value) => Object.keys(value).length <= 4096);
     genericOtherProperty = otherProperty.refine((value) => Object.keys(value).every((key) => !isSchematicBindingProperty(key)), "Library-binding attributes require an explicit instance replacement/ECO operation, not a generic property patch.");
     preservedProperties = external_exports.object({ otherProperty, manufacturer: text2.nullable(), manufacturerId: text2.nullable(), supplier: text2.nullable(), supplierId: text2.nullable() }).strict();
-    componentPatch = external_exports.object({ x: number4, y: number4, rotation: number4, mirror: external_exports.boolean(), addIntoBom: external_exports.boolean(), addIntoPcb: external_exports.boolean(), designator: text2.nullable(), name: text2.nullable(), uniqueId: text2.nullable(), manufacturer: text2.nullable(), manufacturerId: text2.nullable(), supplier: text2.nullable(), supplierId: text2.nullable(), otherProperty: genericOtherProperty }).strict().partial().refine((value) => Object.keys(value).length > 0, "Empty component patch.");
-    portProperties = external_exports.object({ direction: external_exports.enum(["IN", "OUT", "BI"]), net: name, x: number4, y: number4, rotation: number4, mirror: external_exports.boolean() }).strict();
-    flagProperties = external_exports.object({ identification: external_exports.enum(["Power", "Ground", "AnalogGround", "ProtectGround"]), net: name, x: number4, y: number4, rotation: number4, mirror: external_exports.boolean() }).strict();
-    attributePatch = external_exports.object({ x: number4.nullable(), y: number4.nullable(), rotation: number4.nullable(), color, fontName: name.nullable(), fontSize: width, bold: external_exports.boolean().nullable(), italic: external_exports.boolean().nullable(), underLine: external_exports.boolean().nullable(), alignMode: alignment.nullable(), fillColor: color, key: text2, value: text2, keyVisible: external_exports.boolean().nullable(), valueVisible: external_exports.boolean().nullable() }).strict().partial().refine((value) => Object.keys(value).length > 0, "Empty attribute patch.");
+    componentPatch = external_exports.object({ x: number5, y: number5, rotation: number5, mirror: external_exports.boolean(), addIntoBom: external_exports.boolean(), addIntoPcb: external_exports.boolean(), designator: text2.nullable(), name: text2.nullable(), uniqueId: text2.nullable(), manufacturer: text2.nullable(), manufacturerId: text2.nullable(), supplier: text2.nullable(), supplierId: text2.nullable(), otherProperty: genericOtherProperty }).strict().partial().refine((value) => Object.keys(value).length > 0, "Empty component patch.");
+    portProperties = external_exports.object({ direction: external_exports.enum(["IN", "OUT", "BI"]), net: name, x: number5, y: number5, rotation: number5, mirror: external_exports.boolean() }).strict();
+    flagProperties = external_exports.object({ identification: external_exports.enum(["Power", "Ground", "AnalogGround", "ProtectGround"]), net: name, x: number5, y: number5, rotation: number5, mirror: external_exports.boolean() }).strict();
+    attributePatch = external_exports.object({ x: number5.nullable(), y: number5.nullable(), rotation: number5.nullable(), color, fontName: name.nullable(), fontSize: width, bold: external_exports.boolean().nullable(), italic: external_exports.boolean().nullable(), underLine: external_exports.boolean().nullable(), alignMode: alignment2.nullable(), fillColor: color, key: text2, value: text2, keyVisible: external_exports.boolean().nullable(), valueVisible: external_exports.boolean().nullable() }).strict().partial().refine((value) => Object.keys(value).length > 0, "Empty attribute patch.");
     schematicOperationSchema = external_exports.discriminatedUnion("action", [
       ...graphicOperations("wire", wireProperties),
       ...graphicOperations("bus", busProperties),
@@ -41351,7 +41514,7 @@ var init_schematic_operations = __esm({
       external_exports.object({ id, action: external_exports.literal("sch.component.delete"), documentType: external_exports.literal(1).default(1), target: targetSchema }).strict(),
       external_exports.object({ id, action: external_exports.literal("sch.port.create"), documentType: external_exports.literal(1).default(1), properties: portProperties }).strict(),
       external_exports.object({ id, action: external_exports.literal("sch.net-flag.create"), documentType: external_exports.literal(1).default(1), properties: flagProperties }).strict(),
-      external_exports.object({ id, action: external_exports.literal("sch.net-label.create"), documentType: external_exports.literal(1).default(1), properties: external_exports.object({ x: number4, y: number4, net: name }).strict() }).strict(),
+      external_exports.object({ id, action: external_exports.literal("sch.net-label.create"), documentType: external_exports.literal(1).default(1), properties: external_exports.object({ x: number5, y: number5, net: name }).strict() }).strict(),
       external_exports.object({ id, action: external_exports.literal("sch.net-label.delete"), documentType: external_exports.literal(1).default(1), target: targetSchema }).strict(),
       external_exports.object({ id, action: external_exports.literal("sch.attribute.modify"), documentType: graphicDocument, target: targetSchema, patch: attributePatch }).strict()
     ]).superRefine((operation, context2) => {
@@ -41924,7 +42087,7 @@ var init_schematic_lifecycle = __esm({
 function unsupported(reason) {
   throw new Error(`SCHEMATIC_SOURCE_UNSUPPORTED: ${reason}`);
 }
-function number5(value) {
+function number6(value) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new TypeError("Native schematic coordinate is not finite.");
   }
@@ -42035,7 +42198,7 @@ function prepareSchematicSourceOperation(input, source3, nativeInput, ids2 = {})
       actualTarget(source3, targetId(compiled, ids2), "WIRE");
     }
     const values2 = expectedValues(compiled);
-    if (values2["lineWidth"] !== void 0 && values2["lineWidth"] !== null && (number5(values2["lineWidth"]) < 1 || number5(values2["lineWidth"]) > 10)) {
+    if (values2["lineWidth"] !== void 0 && values2["lineWidth"] !== null && (number6(values2["lineWidth"]) < 1 || number6(values2["lineWidth"]) > 10)) {
       return unsupported("native wire width is restricted to 1..10 or null");
     }
     if (values2["line"] !== void 0) {
@@ -42055,10 +42218,10 @@ function assertSchematicSourceProfileSupported(input, source3, ids2 = {}, native
 function translate(body3, dx, dy) {
   const result = { ...body3 };
   if (body3["x"] !== null && body3["x"] !== void 0) {
-    result["x"] = number5(body3["x"]) + dx;
+    result["x"] = number6(body3["x"]) + dx;
   }
   if (body3["y"] !== null && body3["y"] !== void 0) {
-    result["y"] = number5(body3["y"]) + dy;
+    result["y"] = number6(body3["y"]) + dy;
   }
   return result;
 }
@@ -42109,8 +42272,8 @@ function verifyComponent(compiled, before, after, ids2, proof) {
   const oldModel = exactComponent(oldNative, id7);
   const newModel = exactComponent(newNative, id7);
   const values2 = expectedValues(compiled);
-  const dx = values2["x"] === void 0 ? 0 : number5(values2["x"]) - number5(oldModel.body["x"]);
-  const dy = values2["y"] === void 0 ? 0 : -number5(values2["y"]) - number5(oldModel.body["y"]);
+  const dx = values2["x"] === void 0 ? 0 : number6(values2["x"]) - number6(oldModel.body["x"]);
+  const dy = values2["y"] === void 0 ? 0 : -number6(values2["y"]) - number6(oldModel.body["y"]);
   if (!same3(translate(oldModel.body, dx, dy), newModel.body) || oldModel.locked !== newModel.locked) {
     throw new Error("Native component pose/body mismatch.");
   }
@@ -42169,7 +42332,7 @@ function segments(input) {
       return unsupported("wire line is malformed");
     }
     for (let index = 0; index < group.length - 2; index += 2) {
-      const item2 = [number5(group[index]), -number5(group[index + 1]), number5(group[index + 2]), -number5(group[index + 3])];
+      const item2 = [number6(group[index]), -number6(group[index + 1]), number6(group[index + 2]), -number6(group[index + 3])];
       if (item2[0] === item2[2] && item2[1] === item2[3]) {
         return unsupported("zero-length wire segment");
       }
@@ -42225,8 +42388,8 @@ function verifyWire(compiled, before, after, ids2) {
   if (group.body["groupId"] !== void 0 && group.body["groupId"] !== "") {
     return unsupported("wire unexpectedly belongs to a combination");
   }
-  const expectedLines = values2["line"] === void 0 ? oldLines.map((entry) => [number5(entry.body["startX"]), number5(entry.body["startY"]), number5(entry.body["endX"]), number5(entry.body["endY"])]) : segments(values2["line"]);
-  const actualLines = lines3.map((entry) => [number5(entry.body["startX"]), number5(entry.body["startY"]), number5(entry.body["endX"]), number5(entry.body["endY"])]);
+  const expectedLines = values2["line"] === void 0 ? oldLines.map((entry) => [number6(entry.body["startX"]), number6(entry.body["startY"]), number6(entry.body["endX"]), number6(entry.body["endY"])]) : segments(values2["line"]);
+  const actualLines = lines3.map((entry) => [number6(entry.body["startX"]), number6(entry.body["startY"]), number6(entry.body["endX"]), number6(entry.body["endY"])]);
   if (!same3(expectedLines.map((line5) => canonicalSegment(line5)).toSorted(), actualLines.map((line5) => canonicalSegment(line5)).toSorted())) {
     throw new Error("Native wire geometry differs from explicit requested segments.");
   }
@@ -42244,7 +42407,7 @@ function verifyWire(compiled, before, after, ids2) {
     if (values2[field2] !== void 0) {
       let value = values2[field2];
       if (field2 === "lineType" && value !== null) {
-        value = ["SOLID", "SHORT_DASH", "DOT", "DOT_DASH"][number5(value)];
+        value = ["SOLID", "SHORT_DASH", "DOT", "DOT_DASH"][number6(value)];
       }
       if (lines3.some((entry) => !same3(entry.body[sourceField], value))) {
         throw new Error("Native wire style differs from request.");
@@ -42313,9 +42476,9 @@ function buildInverseSchematicOperation(input, before, ids2 = {}, nativeInput) {
     const patch = {};
     for (const field2 of Object.keys(operation.patch)) {
       if (field2 === "x") {
-        patch[field2] = number5(model.body["x"]);
+        patch[field2] = number6(model.body["x"]);
       } else if (field2 === "y") {
-        patch[field2] = -number5(model.body["y"]);
+        patch[field2] = -number6(model.body["y"]);
       } else if (field2 === "rotation") {
         patch[field2] = model.body["rotation"];
       } else if (field2 === "mirror") {
@@ -42345,7 +42508,7 @@ var init_schematic_source_proof = __esm({
 function fail3() {
   throw new Error("Net-flag template, inheritance, identity or electrical scope is unsupported or changed.");
 }
-function number6(value) {
+function number7(value) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     fail3();
   }
@@ -42381,7 +42544,7 @@ function translated(body3, dx, dy) {
   const result = structuredClone(body3);
   for (const [key, delta] of [["x", dx], ["y", dy]]) {
     if (result[key] !== null && result[key] !== void 0) {
-      Reflect.set(result, key, number6(result[key]) + delta);
+      Reflect.set(result, key, number7(result[key]) + delta);
     }
   }
   return result;
@@ -42399,7 +42562,7 @@ function nativeRootOrder(symbol4, partId, attributes2, deviceAttributes) {
   if (roots.some((entry) => !Number.isFinite(entry.body["zIndex"])) || new Set(roots.map((entry) => entry.body["zIndex"])).size !== roots.length) {
     fail3();
   }
-  const keys2 = roots.toSorted((a, b) => number6(a.body["zIndex"]) - number6(b.body["zIndex"])).map((entry) => string4(entry.body["key"]));
+  const keys2 = roots.toSorted((a, b) => number7(a.body["zIndex"]) - number7(b.body["zIndex"])).map((entry) => string4(entry.body["key"]));
   if (keys2.includes("Relevance") || new Set(keys2).size !== keys2.length) {
     fail3();
   }
@@ -42436,7 +42599,7 @@ function storedTemplateBodies(sheet, source3, model) {
     const body3 = structuredClone(stored2.body), fields2 = [];
     if (stored2.type === "ATTR") {
       if (!same4(body3["zIndex"], live.body["zIndex"])) {
-        if (!Number.isSafeInteger(live.body["zIndex"]) || number6(live.body["zIndex"]) < 0) {
+        if (!Number.isSafeInteger(live.body["zIndex"]) || number7(live.body["zIndex"]) < 0) {
           fail3();
         }
         body3["zIndex"] = live.body["zIndex"];
@@ -42501,7 +42664,7 @@ function planClone(input, current2, history, templateInput, allocate, historical
   }
   const libraryPins = symbol4.records.filter((entry) => entry.type === "PIN" && entry.body["partId"] === part.id);
   const libraryPin = libraryPins[0];
-  if (libraryPins.length !== 1 || libraryPin === void 0 || pin4.id !== `${model.id}-${libraryPin.id}` || libraryPin.body["x"] !== 0 || libraryPin.body["y"] !== 0 || number6(pin4.body["x"]) !== number6(model.body["x"]) || number6(pin4.body["y"]) !== number6(model.body["y"])) {
+  if (libraryPins.length !== 1 || libraryPin === void 0 || pin4.id !== `${model.id}-${libraryPin.id}` || libraryPin.body["x"] !== 0 || libraryPin.body["y"] !== 0 || number7(pin4.body["x"]) !== number7(model.body["x"]) || number7(pin4.body["y"]) !== number7(model.body["y"])) {
     fail3();
   }
   if (["length", "rotation", "display", "color", "pinShape"].some((key) => !same4(libraryPin.body[key], pin4.body[key]))) {
@@ -42571,11 +42734,11 @@ function planClone(input, current2, history, templateInput, allocate, historical
     used.add(observed.id);
     map2.set(attr.id, observed.id);
   }
-  const dx = step.x - number6(model.body["x"]), dy = -step.y - number6(model.body["y"]);
+  const dx = step.x - number7(model.body["x"]), dy = -step.y - number7(model.body["y"]);
   let zIndex = 0;
   for (const entry of current2.objects) {
     if (entry.body["zIndex"] !== null && entry.body["zIndex"] !== void 0) {
-      zIndex = Math.max(zIndex, number6(entry.body["zIndex"]));
+      zIndex = Math.max(zIndex, number7(entry.body["zIndex"]));
     }
   }
   zIndex = Math.floor(zIndex) + 1;
@@ -42639,18 +42802,18 @@ function planClone(input, current2, history, templateInput, allocate, historical
   const storedRootAttributes = component2.attributes.filter((attr) => records2.some((record6) => record6.id === attr.id));
   const reconstructionAttributes = [
     ...["Symbol", "Device"].flatMap((key) => storedRootAttributes.filter((attr) => attr.key === key)),
-    ...storedRootAttributes.filter((attr) => !["Symbol", "Device"].includes(attr.key)).toSorted((a, b) => number6(a.body["zIndex"]) - number6(b.body["zIndex"]))
+    ...storedRootAttributes.filter((attr) => !["Symbol", "Device"].includes(attr.key)).toSorted((a, b) => number7(a.body["zIndex"]) - number7(b.body["zIndex"]))
   ].map((attr) => ({ id: attr.id, type: "ATTR", body: attr.body }));
   const reconstructedOrder = nativeRootOrder(symbol4, part.id, reconstructionAttributes, deviceAttributes);
   const reordered = component2.attributes.filter((attr) => attr.body["zIndex"] !== reconstructedOrder.offset + reconstructedOrder.keys.indexOf(attr.key));
   const deviceAttr = reordered.find((attr) => attr.key === "Device"), relevance = reordered.find((attr) => attr.key === "Relevance");
   const description2 = reordered.find((attr) => attr.key === "Description");
-  const adjacentSwap = reordered.length === 2 && relevance !== void 0 && deviceAttr !== void 0 && number6(deviceAttr.body["zIndex"]) === number6(relevance.body["zIndex"]) + 1 && reconstructedOrder.offset + reconstructedOrder.keys.indexOf("Device") === relevance.body["zIndex"] && reconstructedOrder.offset + reconstructedOrder.keys.indexOf("Relevance") === deviceAttr.body["zIndex"];
-  const materializedDescriptionCycle = reordered.length === 3 && description2 !== void 0 && relevance !== void 0 && deviceAttr !== void 0 && inheritedDeviceAttributes.some((attr) => attr.key === "Description" && attr.value === "" && map2.get(attr.id) === description2.id) && number6(relevance.body["zIndex"]) === number6(description2.body["zIndex"]) + 1 && number6(deviceAttr.body["zIndex"]) === number6(description2.body["zIndex"]) + 2 && reconstructedOrder.offset + reconstructedOrder.keys.indexOf("Device") === description2.body["zIndex"] && reconstructedOrder.offset + reconstructedOrder.keys.indexOf("Description") === relevance.body["zIndex"] && reconstructedOrder.offset + reconstructedOrder.keys.indexOf("Relevance") === deviceAttr.body["zIndex"];
+  const adjacentSwap = reordered.length === 2 && relevance !== void 0 && deviceAttr !== void 0 && number7(deviceAttr.body["zIndex"]) === number7(relevance.body["zIndex"]) + 1 && reconstructedOrder.offset + reconstructedOrder.keys.indexOf("Device") === relevance.body["zIndex"] && reconstructedOrder.offset + reconstructedOrder.keys.indexOf("Relevance") === deviceAttr.body["zIndex"];
+  const materializedDescriptionCycle = reordered.length === 3 && description2 !== void 0 && relevance !== void 0 && deviceAttr !== void 0 && inheritedDeviceAttributes.some((attr) => attr.key === "Description" && attr.value === "" && map2.get(attr.id) === description2.id) && number7(relevance.body["zIndex"]) === number7(description2.body["zIndex"]) + 1 && number7(deviceAttr.body["zIndex"]) === number7(description2.body["zIndex"]) + 2 && reconstructedOrder.offset + reconstructedOrder.keys.indexOf("Device") === description2.body["zIndex"] && reconstructedOrder.offset + reconstructedOrder.keys.indexOf("Description") === relevance.body["zIndex"] && reconstructedOrder.offset + reconstructedOrder.keys.indexOf("Relevance") === deviceAttr.body["zIndex"];
   const reconstructedHiddenAttributeOrder = (adjacentSwap || materializedDescriptionCycle) && reordered.every((attr) => attr.body["x"] === null && attr.body["y"] === null && attr.body["keyVisible"] === null && attr.body["valueVisible"] === null) ? reordered.map((attr) => ({
     id: attr.id,
     key: attr.key,
-    initialZIndex: number6(attr.body["zIndex"]),
+    initialZIndex: number7(attr.body["zIndex"]),
     reconstructedZIndex: reconstructedOrder.offset + reconstructedOrder.keys.indexOf(attr.key)
   })) : [];
   const descriptor = {
@@ -42947,7 +43110,7 @@ function assertFlatDisplayInverse(bindingInput, inverseInput) {
   }
   return inverse;
 }
-var FLAT_DISPLAY_TRANSACTION_PROFILE, identity2, hash2, projectBindingSchema, member, sourceBinding, flatDisplayBindingSchema;
+var FLAT_DISPLAY_TRANSACTION_PROFILE, identity3, hash2, projectBindingSchema, member, sourceBinding, flatDisplayBindingSchema;
 var init_flat_display_binding = __esm({
   "server/src/flat-display-binding.ts"() {
     init_zod();
@@ -42956,21 +43119,21 @@ var init_flat_display_binding = __esm({
     init_design_topology();
     init_schematic_layout_schema();
     FLAT_DISPLAY_TRANSACTION_PROFILE = "easyeda-pro-control.flat-display-transaction.v1";
-    identity2 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
+    identity3 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
     hash2 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     projectBindingSchema = external_exports.strictObject({
       projectUuid: external_exports.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u),
       ownerUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
       branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u)
     });
-    member = external_exports.strictObject({ uuid: identity2, docType: external_exports.string().min(1).max(128), semanticSha256: hash2 });
+    member = external_exports.strictObject({ uuid: identity3, docType: external_exports.string().min(1).max(128), semanticSha256: hash2 });
     sourceBinding = external_exports.strictObject({ sourceSha256: hash2, nativeSha256: hash2 });
     flatDisplayBindingSchema = external_exports.strictObject({
       profile: external_exports.literal(FLAT_DISPLAY_TRANSACTION_PROFILE),
       project: projectBindingSchema,
       projectPath: external_exports.string().min(1).max(4096),
-      schematicUuid: identity2,
-      pageUuid: identity2,
+      schematicUuid: identity3,
+      pageUuid: identity3,
       tabId: external_exports.string().min(1).max(512),
       operationSha256: hash2,
       inverseSha256: hash2,
@@ -43304,7 +43467,7 @@ check();if(project.setting.universal.defaultNetName!==true||project.netLabelInte
 return{profile:${JSON.stringify(SCHEMATIC_FLAT_TOPOLOGY_PROFILE)},scope,settings,pages};
 })()`;
 }
-var SCHEMATIC_FLAT_TOPOLOGY_PROFILE, identity3, coordinate, point, body2, attribute2, pin3, symbol2, line2, wire, contact, schematicFlatTopologyScopeSchema, pageSchema, schematicFlatTopologyObservationSchema, same5, VISUAL_SOURCE_TYPES;
+var SCHEMATIC_FLAT_TOPOLOGY_PROFILE, identity4, coordinate, point, body2, attribute2, pin3, symbol2, line2, wire, contact, schematicFlatTopologyScopeSchema, pageSchema, schematicFlatTopologyObservationSchema, same5, VISUAL_SOURCE_TYPES;
 var init_schematic_flat_topology = __esm({
   "server/src/schematic-flat-topology.ts"() {
     init_zod();
@@ -43312,14 +43475,14 @@ var init_schematic_flat_topology = __esm({
     init_document_source();
     init_design_topology();
     SCHEMATIC_FLAT_TOPOLOGY_PROFILE = "easyeda-pro-control.schematic-flat-named-wire-topology.v1";
-    identity3 = external_exports.string().min(1).max(512);
+    identity4 = external_exports.string().min(1).max(512);
     coordinate = external_exports.number().int().min(-1e6).max(1e6);
     point = external_exports.tuple([coordinate, coordinate]);
     body2 = external_exports.record(external_exports.string(), external_exports.json());
-    attribute2 = external_exports.strictObject({ id: identity3, key: identity3, value: external_exports.json(), body: body2 });
+    attribute2 = external_exports.strictObject({ id: identity4, key: identity4, value: external_exports.json(), body: body2 });
     pin3 = external_exports.strictObject({
-      id: identity3,
-      number: identity3,
+      id: identity4,
+      number: identity4,
       origin: point,
       noConnect: external_exports.boolean(),
       body: body2,
@@ -43327,7 +43490,7 @@ var init_schematic_flat_topology = __esm({
       attributes: external_exports.array(attribute2).max(4096)
     });
     symbol2 = external_exports.strictObject({
-      id: identity3,
+      id: identity4,
       kind: external_exports.enum(["part", "sheet"]),
       body: body2,
       partCount: external_exports.literal(1),
@@ -43335,19 +43498,19 @@ var init_schematic_flat_topology = __esm({
       attributes: external_exports.array(attribute2).max(4096),
       pins: external_exports.array(pin3).max(4096)
     });
-    line2 = external_exports.strictObject({ id: identity3, body: body2, points: external_exports.tuple([point, point]) });
-    wire = external_exports.strictObject({ id: identity3, body: body2, names: external_exports.array(attribute2).length(1), lines: external_exports.array(line2).min(1).max(2e4) });
-    contact = external_exports.strictObject({ point, lineIds: external_exports.array(identity3).max(2e4), pinIds: external_exports.array(identity3).max(2e4) });
+    line2 = external_exports.strictObject({ id: identity4, body: body2, points: external_exports.tuple([point, point]) });
+    wire = external_exports.strictObject({ id: identity4, body: body2, names: external_exports.array(attribute2).length(1), lines: external_exports.array(line2).min(1).max(2e4) });
+    contact = external_exports.strictObject({ point, lineIds: external_exports.array(identity4).max(2e4), pinIds: external_exports.array(identity4).max(2e4) });
     schematicFlatTopologyScopeSchema = external_exports.strictObject({
-      projectUuid: identity3,
-      schematicUuid: identity3,
-      activePageUuid: identity3,
-      activeTabId: identity3,
-      pageIds: external_exports.array(identity3).min(1).max(256)
+      projectUuid: identity4,
+      schematicUuid: identity4,
+      activePageUuid: identity4,
+      activeTabId: identity4,
+      pageIds: external_exports.array(identity4).min(1).max(256)
     });
     pageSchema = external_exports.strictObject({
-      uuid: identity3,
-      tabId: identity3,
+      uuid: identity4,
+      tabId: identity4,
       source: external_exports.string().min(1).max(4194304),
       symbols: external_exports.array(symbol2).max(2e4),
       wires: external_exports.array(wire).max(2e4),
@@ -44389,12 +44552,12 @@ function compilePrimitive(operation, family) {
       inverse = { kind: "restore-from-checkpoint", reason: "deleted-identity" };
     }
   }
-  const identities = { purpose: "family-identities", api: catalog2.api, method: "getAllPrimitiveId", args: [] };
-  const beforeReads = [sourceRead2, identities];
+  const identities2 = { purpose: "family-identities", api: catalog2.api, method: "getAllPrimitiveId", args: [] };
+  const beforeReads = [sourceRead2, identities2];
   if (target5 !== null) {
     beforeReads.push({ purpose: "target", api: catalog2.api, method: "get", args: [targetArgument(target5)] });
   }
-  const afterReads = [sourceRead2, identities];
+  const afterReads = [sourceRead2, identities2];
   if (method !== "delete") {
     afterReads.push({ purpose: "target", api: catalog2.api, method: "get", args: [targetArgument(target5 ?? { resultOf: operation.id })] });
   }
@@ -44610,13 +44773,13 @@ function buildDesignOperationCallExpression(input, createdIds = {}) {
   }
   return `eda.${compiled.call.api}.${compiled.call.method}(${compiled.call.args.map(argumentExpression).join(",")})`;
 }
-var DESIGN_OPERATION_PROFILE, number7, positive, name2, id2, net, primitiveId2, targetSchema2, uniqueNames, color2, copperLayer, graphicLayer, fillLayer, regionLayer, padLayer, componentLayer, polygonSourceSchema, complexPolygon, mask, heat, padShape, holeShape, lineProperties, arcProperties2, viaProperties, padProperties, polylineProperties, regionRule, areaOutlineWidth, regionProperties, pourProperties, fillProperties, poseProperties, componentProperties, footprintGeometryProperties, boundedJsonInput, json2, jsonObject, jsonRows, designOperationSchema, literal3, targetArgument, primitiveCatalog, sourceRead2, ruleRead, ruleCollections, designOperationBatchSchema, DESIGN_OPERATION_UNIMPLEMENTED;
+var DESIGN_OPERATION_PROFILE, number8, positive, name2, id2, net, primitiveId2, targetSchema2, uniqueNames, color2, copperLayer, graphicLayer, fillLayer, regionLayer, padLayer, componentLayer, polygonSourceSchema, complexPolygon, mask, heat, padShape, holeShape, lineProperties, arcProperties2, viaProperties, padProperties, polylineProperties, regionRule, areaOutlineWidth, regionProperties, pourProperties, fillProperties, poseProperties, componentProperties, footprintGeometryProperties, boundedJsonInput, json2, jsonObject, jsonRows, designOperationSchema, literal3, targetArgument, primitiveCatalog, sourceRead2, ruleRead, ruleCollections, designOperationBatchSchema, DESIGN_OPERATION_UNIMPLEMENTED;
 var init_design_operations = __esm({
   "server/src/design-operations.ts"() {
     init_zod();
     DESIGN_OPERATION_PROFILE = "easyeda-pro-control.pcb-operations.v1";
-    number7 = external_exports.number();
-    positive = number7.positive();
+    number8 = external_exports.number();
+    positive = number8.positive();
     name2 = external_exports.string().min(1).max(512);
     id2 = external_exports.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/u);
     net = external_exports.string().max(512);
@@ -44626,14 +44789,14 @@ var init_design_operations = __esm({
       external_exports.object({ resultOf: id2 }).strict()
     ]);
     uniqueNames = external_exports.array(name2).max(2e4).refine((items) => new Set(items).size === items.length, "Duplicate names.");
-    color2 = external_exports.object({ r: number7.min(0).max(255), g: number7.min(0).max(255), b: number7.min(0).max(255), alpha: number7.min(0).max(1) }).strict().nullable();
+    color2 = external_exports.object({ r: number8.min(0).max(255), g: number8.min(0).max(255), b: number8.min(0).max(255), alpha: number8.min(0).max(1) }).strict().nullable();
     copperLayer = external_exports.number().int().refine((value) => value === 1 || value === 2 || value >= 15 && value <= 44, "Not a copper layer.");
     graphicLayer = external_exports.number().int().refine((value) => value >= 1 && value <= 11 || value >= 13 && value <= 44 || value === 56 || value >= 71 && value <= 100, "Not a line layer.");
     fillLayer = external_exports.number().int().refine((value) => value >= 1 && value <= 10 || value >= 12 && value <= 44 || value >= 71 && value <= 100, "Not a fill layer.");
     regionLayer = external_exports.union([copperLayer, external_exports.literal(12)]);
     padLayer = external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(12)]);
     componentLayer = external_exports.union([external_exports.literal(1), external_exports.literal(2)]);
-    polygonSourceSchema = external_exports.array(external_exports.union([number7, external_exports.enum(["L", "ARC", "CARC", "C", "R", "CIRCLE"])])).min(3).max(2e4).superRefine((source3, context2) => {
+    polygonSourceSchema = external_exports.array(external_exports.union([number8, external_exports.enum(["L", "ARC", "CARC", "C", "R", "CIRCLE"])])).min(3).max(2e4).superRefine((source3, context2) => {
       const first = source3[0];
       if (first === "R" || first === "CIRCLE") {
         if (source3.length !== (first === "R" ? 7 : 4) || source3.slice(1).some((value) => typeof value !== "number")) {
@@ -44662,11 +44825,11 @@ var init_design_operations = __esm({
       }
     });
     complexPolygon = external_exports.union([polygonSourceSchema, external_exports.array(polygonSourceSchema).min(1).max(1024)]);
-    mask = external_exports.object({ topSolderMask: number7.optional(), bottomSolderMask: number7.optional(), topPasteMask: number7.optional(), bottomPasteMask: number7.optional() }).strict().nullable();
-    heat = external_exports.object({ connectionMethod: external_exports.enum(["Divergent", "Direct-connected", "Non-connected"]), divergenceSpacing: number7.nonnegative().optional(), divergenceLineWidth: positive.optional(), divergenceAngle: number7.optional() }).strict().nullable();
+    mask = external_exports.object({ topSolderMask: number8.optional(), bottomSolderMask: number8.optional(), topPasteMask: number8.optional(), bottomPasteMask: number8.optional() }).strict().nullable();
+    heat = external_exports.object({ connectionMethod: external_exports.enum(["Divergent", "Direct-connected", "Non-connected"]), divergenceSpacing: number8.nonnegative().optional(), divergenceLineWidth: positive.optional(), divergenceAngle: number8.optional() }).strict().nullable();
     padShape = external_exports.union([
       external_exports.tuple([external_exports.enum(["ELLIPSE", "OVAL"]), positive, positive]),
-      external_exports.tuple([external_exports.literal("RECT"), positive, positive, number7.nonnegative()]),
+      external_exports.tuple([external_exports.literal("RECT"), positive, positive, number8.nonnegative()]),
       external_exports.tuple([external_exports.literal("NGON"), positive, external_exports.number().int().min(3).max(256)]),
       external_exports.tuple([external_exports.literal("POLYGON"), complexPolygon])
     ]);
@@ -44674,17 +44837,17 @@ var init_design_operations = __esm({
       external_exports.tuple([external_exports.literal("ROUND"), positive]),
       external_exports.tuple([external_exports.literal("SLOT"), positive, positive]).refine((value) => value[2] >= value[1], "Slot length is smaller than its diameter.")
     ]).nullable();
-    lineProperties = external_exports.object({ net, layer: graphicLayer, startX: number7, startY: number7, endX: number7, endY: number7, lineWidth: positive, primitiveLock: external_exports.boolean() }).strict();
-    arcProperties2 = lineProperties.extend({ arcAngle: number7.min(-360).max(360).refine((value) => value !== 0), interactiveMode: external_exports.union([external_exports.literal(1), external_exports.literal(2)]) }).strict();
-    viaProperties = external_exports.object({ net, x: number7, y: number7, holeDiameter: positive, diameter: positive, viaType: external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2)]), designRuleBlindViaName: name2.nullable(), solderMaskExpansion: mask, primitiveLock: external_exports.boolean() }).strict();
-    padProperties = external_exports.object({ layer: padLayer, padNumber: net, x: number7, y: number7, rotation: number7, pad: padShape, net, hole: holeShape, holeOffsetX: number7, holeOffsetY: number7, holeRotation: number7, metallization: external_exports.boolean(), padType: external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2)]), solderMaskAndPasteMaskExpansion: mask, heatWelding: heat, primitiveLock: external_exports.boolean() }).strict();
+    lineProperties = external_exports.object({ net, layer: graphicLayer, startX: number8, startY: number8, endX: number8, endY: number8, lineWidth: positive, primitiveLock: external_exports.boolean() }).strict();
+    arcProperties2 = lineProperties.extend({ arcAngle: number8.min(-360).max(360).refine((value) => value !== 0), interactiveMode: external_exports.union([external_exports.literal(1), external_exports.literal(2)]) }).strict();
+    viaProperties = external_exports.object({ net, x: number8, y: number8, holeDiameter: positive, diameter: positive, viaType: external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2)]), designRuleBlindViaName: name2.nullable(), solderMaskExpansion: mask, primitiveLock: external_exports.boolean() }).strict();
+    padProperties = external_exports.object({ layer: padLayer, padNumber: net, x: number8, y: number8, rotation: number8, pad: padShape, net, hole: holeShape, holeOffsetX: number8, holeOffsetY: number8, holeRotation: number8, metallization: external_exports.boolean(), padType: external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2)]), solderMaskAndPasteMaskExpansion: mask, heatWelding: heat, primitiveLock: external_exports.boolean() }).strict();
     polylineProperties = external_exports.object({ net, layer: graphicLayer, polygon: polygonSourceSchema, lineWidth: positive, primitiveLock: external_exports.boolean() }).strict();
     regionRule = external_exports.union([external_exports.literal(2), external_exports.literal(3), external_exports.literal(5), external_exports.literal(6), external_exports.literal(7), external_exports.literal(8), external_exports.literal(9)]);
-    areaOutlineWidth = number7.nonnegative().describe("Legacy outline decoration input. This native version fixes the effective value to 0.2 mil and reports it in parameterEffects. Not copper width, grid width or clearance; supply 0.2.");
+    areaOutlineWidth = number8.nonnegative().describe("Legacy outline decoration input. This native version fixes the effective value to 0.2 mil and reports it in parameterEffects. Not copper width, grid width or clearance; supply 0.2.");
     regionProperties = external_exports.object({ layer: regionLayer, complexPolygon, ruleType: external_exports.array(regionRule).max(7).refine((values2) => new Set(values2).size === values2.length), regionName: net, lineWidth: areaOutlineWidth, primitiveLock: external_exports.boolean() }).strict();
-    pourProperties = external_exports.object({ net, layer: copperLayer, complexPolygon, pourFillMethod: external_exports.enum(["45grid", "90grid", "solid"]), preserveSilos: external_exports.boolean(), pourName: net, pourPriority: external_exports.number().int().nonnegative(), lineWidth: areaOutlineWidth, primitiveLock: external_exports.boolean(), gridLineWidth: positive.optional(), gridSpacing: positive.optional(), optimizationFineness: number7.nonnegative().optional() }).strict();
+    pourProperties = external_exports.object({ net, layer: copperLayer, complexPolygon, pourFillMethod: external_exports.enum(["45grid", "90grid", "solid"]), preserveSilos: external_exports.boolean(), pourName: net, pourPriority: external_exports.number().int().nonnegative(), lineWidth: areaOutlineWidth, primitiveLock: external_exports.boolean(), gridLineWidth: positive.optional(), gridSpacing: positive.optional(), optimizationFineness: number8.nonnegative().optional() }).strict();
     fillProperties = external_exports.object({ layer: fillLayer, complexPolygon, net, fillMode: external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2)]), lineWidth: areaOutlineWidth, primitiveLock: external_exports.boolean() }).strict();
-    poseProperties = external_exports.object({ layer: componentLayer, x: number7, y: number7, rotation: number7, primitiveLock: external_exports.boolean() }).strict();
+    poseProperties = external_exports.object({ layer: componentLayer, x: number8, y: number8, rotation: number8, primitiveLock: external_exports.boolean() }).strict();
     componentProperties = poseProperties.extend({ component: external_exports.object({ libraryUuid: name2, uuid: name2 }).strict() }).strict();
     footprintGeometryProperties = { line: lineProperties, arc: arcProperties2, pad: padProperties, polyline: polylineProperties, fill: fillProperties };
     boundedJsonInput = external_exports.unknown().refine(isDesignJson, "Expected bounded plain JSON without placeholders.").meta({ description: "Plain JSON only; maximum depth 24, bounded collections, no prototype keys or truncation placeholders." });
@@ -45099,7 +45262,7 @@ async function readEditorTabLookup(engine2, requestInput, expectedContext, overr
     );
   };
   await unchanged();
-  const projectUuid = identity4.parse(contextIdentity(context2).projectUuid);
+  const projectUuid = identity5.parse(contextIdentity(context2).projectUuid);
   const history = await dependencies3.readNativeHistoryCheckpoint({
     checkpointPath: checkpoint.checkpoint,
     expectedSha256: checkpoint.checkpointSha256,
@@ -45146,7 +45309,7 @@ async function readEditorTabLookup(engine2, requestInput, expectedContext, overr
     }
   };
 }
-var TAB_METHOD, SPLIT_METHOD, PROFILE2, MAX_BYTES, identity4, selector, type, member2, editorTabLookupRequestSchema, scopeSchema, tabSchema, nodeSchema, resultSchema, services, hash3, fileIdentity, checkpointSchema;
+var TAB_METHOD, SPLIT_METHOD, PROFILE2, MAX_BYTES, identity5, selector, type, member2, editorTabLookupRequestSchema, scopeSchema, tabSchema, nodeSchema, resultSchema, services, hash3, fileIdentity, checkpointSchema;
 var init_editor_tab_lookups = __esm({
   "server/src/editor-tab-lookups.ts"() {
     init_zod();
@@ -45162,27 +45325,27 @@ var init_editor_tab_lookups = __esm({
     SPLIT_METHOD = "eda.dmt_EditorControl.getTabsBySplitScreenId";
     PROFILE2 = "easyeda-pro-control.owned-editor-tab-lookup.v1";
     MAX_BYTES = 262144;
-    identity4 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
+    identity5 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
     selector = external_exports.string().min(1).max(512).regex(/^[^\u0000-\u001F\u007F]+$/u);
     type = external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]);
-    member2 = external_exports.object({ uuid: identity4, documentType: type }).strict();
+    member2 = external_exports.object({ uuid: identity5, documentType: type }).strict();
     editorTabLookupRequestSchema = external_exports.discriminatedUnion("method", [
       external_exports.object({ method: external_exports.literal(TAB_METHOD), arguments: external_exports.object({ tabId: selector }).strict() }).strict(),
       external_exports.object({ method: external_exports.literal(SPLIT_METHOD), arguments: external_exports.object({ splitScreenId: selector }).strict() }).strict()
     ]);
     scopeSchema = external_exports.object({
-      projectUuid: identity4,
-      ownerUuid: identity4,
-      branchUuid: identity4,
+      projectUuid: identity5,
+      ownerUuid: identity5,
+      branchUuid: identity5,
       active: member2.extend({ tabId: selector }).strict(),
       members: external_exports.array(member2).min(1).max(8192)
     }).strict();
     tabSchema = external_exports.object({
       tabId: selector,
-      uuid: identity4.nullable(),
+      uuid: identity5.nullable(),
       documentType: external_exports.union([type, external_exports.literal(-1)]),
-      parentProjectUuid: identity4.nullable(),
-      parentLibraryUuid: identity4.nullable()
+      parentProjectUuid: identity5.nullable(),
+      parentLibraryUuid: identity5.nullable()
     }).strict();
     nodeSchema = external_exports.object({
       id: selector,
@@ -45318,6 +45481,9 @@ function publicSdkReadDescriptors() {
   }));
 }
 function readImplementationName(path5) {
+  if (isSchematicTextReadMethod(path5)) {
+    return "schematic-text-read";
+  }
   if (isSchematicNativeIdMethod(path5)) {
     return "schematic-native-ids";
   }
@@ -45389,6 +45555,8 @@ function buildPublicSdkReadCode(input) {
     expression = buildSchematicComponentPropertyNamesExpression("sdk-failure-code");
   } else if (definition.path === SYMBOL_PIN_ENUMERATION_METHOD) {
     expression = buildSymbolPinEnumerationExpression("sdk-failure-code");
+  } else if (isSchematicTextReadMethod(definition.path)) {
+    expression = buildSchematicTextReadExpression(request, "sdk-failure-code");
   } else if (definition.path === SPLIT_POLYGON_METHOD) {
     expression = splitPolygonExpression(request);
   }
@@ -45558,6 +45726,12 @@ function validatePublicSdkReadPayload(input, requestInput) {
       }
       schematicComponentPropertyNamesSchema.parse(payload.value);
     }
+    if (isSchematicTextReadMethod(request.method)) {
+      if (payload.undefinedPaths.length > 0) {
+        throw new Error("Native Text state cannot contain undefined fields.");
+      }
+      validateSchematicTextStates(payload.value, request);
+    }
     if (request.method === SYMBOL_PIN_ENUMERATION_METHOD) {
       const rows = symbolPinRows.parse(payload.value);
       if (payload.undefinedPaths.length !== rows.length || rows.some((_row, index) => !payload.undefinedPaths.includes(`/value/${index}/OtherProperty`))) {
@@ -45650,6 +45824,9 @@ function validatePublicSdkReadPayload(input, requestInput) {
   if (request.method === SYMBOL_PIN_ENUMERATION_METHOD) {
     assurance = "bounded-native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof";
   }
+  if (isSchematicTextReadMethod(request.method)) {
+    assurance = "bounded-native-text-state-observation-not-complete-source-connectivity-or-persistence-proof";
+  }
   return {
     ...payload,
     assurance,
@@ -45669,6 +45846,7 @@ var init_public_sdk_read = __esm({
     init_schematic_native_ids();
     init_schematic_component_properties();
     init_symbol_pin_enumeration();
+    init_schematic_text_read();
     PUBLIC_SDK_READ_API_SHA256 = "5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc";
     PUBLIC_SDK_READ_MAX_BYTES = 2097152;
     MAX_ITEMS = 2e4;
@@ -45880,6 +46058,21 @@ var init_public_sdk_read = __esm({
         "No attribute values, compiler, multiPart, source serializer, settings, RPC, navigation or Save. Stable property-name sets are not complete source/connectivity/persistence proof or proof that other design fields remained unchanged."
       ]
     });
+    for (const schema of schematicTextReadRequestSchema.options) {
+      add(schema.shape.method.value, [1], "records", schema.shape.arguments, schema.shape.method.value.endsWith(".get") ? ["primitiveIds"] : [], {
+        implementationKind: "native-task-equivalent",
+        parameterSupport: "narrowed",
+        limitations: [
+          "Fixed synchronous native Text-state DTO, not public SDK getter parity. Ordinary active SCH_PAGE root Text only; symbol/block-instance pages, inherited/generated descendant Text selectors and structural GROUP records refuse.",
+          "Both get and getAll return arrays sorted by primitiveId, including singular get. get accepts one ID or 1-256 unique IDs and refuses any missing/non-root/non-Text target. Complete root Text family is bounded to 256, even for a selected read; tree/source ownership is bounded to 20000 models.",
+          "Fields are primitiveId, modelType, x, y, value, rotation, color, fontFamily, fontSize, fontWeight, italic, underline, hAlign and vAlign. Coordinates use native units/direction: y is not negated into SDK Y. Pose/style nulls are preserved without theme/default resolution.",
+          "primitiveId and value are strings; modelType is Text. x/y/rotation are null or finite numbers within +/-1e9; fontSize is null or a finite number in 0..1e9. color/fontFamily are null or strings, and fontWeight/italic/underline are null or booleans. value is the native value getter, whose unset backing value becomes an empty string.",
+          "hAlign is null or 0/1/2 for left/center/right; vAlign is null or 0/1/2 for top/middle/bottom. No AlignMode is fabricated: installed get uses display alignment, getAll a different raw formula. No style coercion from getApiSchTextData.",
+          "Reciprocal full tree/ID-index/source membership, family identity, locks and all Text scalar fields are rechecked synchronously. Native signed zero remains distinct during reproof, but JSON transport normalizes it. Values are at most 65536 UTF-16 units, font/color strings 4096, total Text strings 262144; transport bounds also apply.",
+          "No callback/public Text wrapper, serializer, compiler, display getter, settings, RPC, navigation or Save. This is bounded native Text state, not complete source/connectivity/persistence proof or proof of unrelated field invariance."
+        ]
+      });
+    }
     add(SYMBOL_PIN_ENUMERATION_METHOD, [2], "primitive", emptyArguments, [], {
       implementationKind: "native-task-equivalent",
       parameterSupport: "narrowed",
@@ -47343,6 +47536,7 @@ var init_engine = __esm({
     init_schematic_component_properties();
     init_symbol_pin_enumeration();
     init_schematic_native_ids();
+    init_schematic_text_read();
     init_editor_tab_lookups();
     init_schematic_native_adapter();
     init_schematic_flat_read();
@@ -48436,6 +48630,9 @@ var init_engine = __esm({
         }
         if (parsed2.method === SYMBOL_PIN_ENUMERATION_METHOD) {
           authority = "native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof";
+        }
+        if (isSchematicTextReadMethod(parsed2.method)) {
+          authority = "native-text-state-observation-not-complete-source-connectivity-or-persistence-proof";
         }
         return { ...second, authority, read_consistency: {
           stable: true,
@@ -51078,7 +51275,7 @@ function nativePatch(compiled, family) {
         unsupported2("constraint and prohibition regions are different native model types");
       }
       patch["regionType"] = numbers.includes(9) ? "CONSTRAINT" : "PROHIBIT";
-      patch["prohibitType"] = [5, 2, 7, 6, 8].filter((number14) => numbers.includes(number14)).map((number14) => REGION_TYPES[number14]);
+      patch["prohibitType"] = [5, 2, 7, 6, 8].filter((number15) => numbers.includes(number15)).map((number15) => REGION_TYPES[number15]);
       return;
     }
     if (name6 === "path") {
@@ -51304,11 +51501,11 @@ function nativeGroupColor(color3) {
     return unsupported2("native NET color serialization does not retain alpha");
   }
   const channels = [color3["r"], color3["g"], color3["b"]].map((channel) => {
-    const number14 = exactNumber(channel, "color channel");
-    if (!Number.isInteger(number14) || number14 < 0 || number14 > 255) {
+    const number15 = exactNumber(channel, "color channel");
+    if (!Number.isInteger(number15) || number15 < 0 || number15 > 255) {
       return unsupported2("native group color needs integer channels");
     }
-    return number14.toString(16).padStart(2, "0");
+    return number15.toString(16).padStart(2, "0");
   });
   return channels.every((channel) => channel === "00") ? null : `#${channels.join("")}`;
 }
@@ -52306,7 +52503,7 @@ var init_design_native_adapter = __esm({
 });
 
 // server/src/schematic-wire-order.ts
-function number8(value) {
+function number9(value) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new TypeError("Wire-order coordinate or parent order is not finite.");
   }
@@ -52331,7 +52528,7 @@ function schematicNewWireOrders(before, records2, native, created) {
   }
   const nodes = /* @__PURE__ */ new Map();
   const point6 = (xInput, yInput) => {
-    const x = number8(xInput), y = number8(yInput);
+    const x = number9(xInput), y = number9(yInput);
     const key = canonicalJson([x, y]);
     const found = nodes.get(key);
     if (found !== void 0) {
@@ -52355,7 +52552,7 @@ function schematicNewWireOrders(before, records2, native, created) {
   }
   for (const component2 of native.components) {
     for (const pin4 of component2.pins) {
-      point6(pin4.body["x"], pin4.body["y"]).pins.push(number8(component2.body["zIndex"]));
+      point6(pin4.body["x"], pin4.body["y"]).pins.push(number9(component2.body["zIndex"]));
     }
   }
   const counts2 = new Map([...created.keys()].map((id7) => [id7, { junctions: 0, danglingDots: 0, recategorized: false }]));
@@ -52382,7 +52579,7 @@ function schematicNewWireOrders(before, records2, native, created) {
     const junction = pinCount >= 3 && wireCount > 0 || pinCount === 2 && wireCount > 0 && !node.zeroLine || pinCount === 1 && wireCount >= 2 || pinCount === 0 && wireCount >= 3;
     if (junction) {
       count.junctions += 1;
-      const rootOrder = number8(wires.get(owner)?.body["zIndex"]);
+      const rootOrder = number9(wires.get(owner)?.body["zIndex"]);
       if (node.pins.every((order2) => rootOrder > order2)) {
         count.recategorized = true;
       }
@@ -52647,7 +52844,7 @@ var init_schematic_native_wire = __esm({
 });
 
 // server/src/stack-native-persistence.ts
-function identity5(object4) {
+function identity6(object4) {
   const value = JSON.parse(object4.id);
   if (!Array.isArray(value) || value.length !== 2 || value[0] !== object4.type || typeof value[1] !== "number") {
     throw new Error("Invalid native stack record identity.");
@@ -52668,7 +52865,7 @@ function expectedNativeStackIntermediate(before, expected2) {
       return previous;
     }
     return { id: object4.id, type: object4.type, body: {
-      layerId: identity5(object4),
+      layerId: identity6(object4),
       layerType: "SUBSTRATE",
       layerName: object4.body["layerName"],
       use: false,
@@ -52688,8 +52885,8 @@ function buildNativeStackPersistenceCode(before, expected2) {
   const merge2 = buildReviewedNativeSourceMerge(intermediate, expected2);
   const physical = expected2.objects.filter((object4) => object4.type === "LAYER_PHYS").toSorted((left, right) => Number(left.body["zIndex"]) - Number(right.body["zIndex"]));
   const rows = physical.map((object4) => {
-    const layerId = identity5(object4);
-    const layer4 = expected2.objects.find((entry) => entry.type === "LAYER" && identity5(entry) === layerId);
+    const layerId = identity6(object4);
+    const layer4 = expected2.objects.find((entry) => entry.type === "LAYER" && identity6(entry) === layerId);
     if (layer4 === void 0 || typeof object4.body["thickness"] !== "number") {
       throw new Error("Native physical layer is incomplete.");
     }
@@ -52705,10 +52902,10 @@ function buildNativeStackPersistenceCode(before, expected2) {
       zIndex: object4.body["zIndex"]
     };
   });
-  const uploadIds = expected2.objects.filter((object4) => object4.type === "LAYER" && canonicalJson(before.objects.find((old) => old.id === object4.id) ?? null) !== canonicalJson(object4)).map((object4) => identity5(object4));
+  const uploadIds = expected2.objects.filter((object4) => object4.type === "LAYER" && canonicalJson(before.objects.find((old) => old.id === object4.id) ?? null) !== canonicalJson(object4)).map((object4) => identity6(object4));
   for (const object4 of expected2.objects) {
-    if (object4.type === "LAYER" && object4.body["layerType"] === "SUBSTRATE" && !uploadIds.includes(identity5(object4))) {
-      uploadIds.push(identity5(object4));
+    if (object4.type === "LAYER" && object4.body["layerType"] === "SUBSTRATE" && !uploadIds.includes(identity6(object4))) {
+      uploadIds.push(identity6(object4));
     }
   }
   return `
@@ -53520,12 +53717,12 @@ function symbolPins(library2) {
         throw new Error("Project symbol pin attribute has an unreviewed native body.");
       }
     }
-    const number14 = attributes2.find((record6) => record6.body["key"] === "Pin Number")?.body["value"];
-    if (typeof number14 !== "string" || !number14 || numbers.has(number14)) {
+    const number15 = attributes2.find((record6) => record6.body["key"] === "Pin Number")?.body["value"];
+    if (typeof number15 !== "string" || !number15 || numbers.has(number15)) {
       throw new Error("Project symbol requires unique nonempty pin numbers.");
     }
-    numbers.add(number14);
-    return { pin: pin4, attributes: attributes2, number: number14 };
+    numbers.add(number15);
+    return { pin: pin4, attributes: attributes2, number: number15 };
   });
 }
 function translated2(value, offset2) {
@@ -53650,8 +53847,8 @@ function verifySchematicComponentCreate(input, adapter, before, after, oldNative
   if (pins.length === 0 || pins.length !== target5.pins.length) {
     throw new Error("Created component pin inventory differs from its project symbol.");
   }
-  for (const { pin: pin4, attributes: attributes2, number: number14 } of pins) {
-    const physical = target5.pins.filter((entry) => entry.attributes.some((attribute3) => attribute3.key === "Pin Number" && attribute3.value === number14));
+  for (const { pin: pin4, attributes: attributes2, number: number15 } of pins) {
+    const physical = target5.pins.filter((entry) => entry.attributes.some((attribute3) => attribute3.key === "Pin Number" && attribute3.value === number15));
     const actual = physical[0];
     if (physical.length !== 1 || actual === void 0 || actual.noConnect !== null || actual.id !== `${adapter.createdId}-${pin4.id.split("-").at(-1)}` || !Number.isSafeInteger(actual.body["zIndex"])) {
       throw new Error("Created component pin identity or geometry differs from its exact project symbol.");
@@ -54240,7 +54437,7 @@ var init_footprint_public_geometry = __esm({
 });
 
 // server/src/footprint-pad-history.ts
-function number9(value, field2) {
+function number10(value, field2) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new TypeError(`Incomplete native pad ${field2}.`);
   }
@@ -54248,16 +54445,16 @@ function number9(value, field2) {
 }
 function simplePad(record6) {
   const body3 = record6.body, shape = body3["defaultPad"];
-  if (record6.type !== "PAD" || !isRecord(shape) || !["ELLIPSE", "OVAL", "RECT"].includes(String(shape["padType"])) || canonicalJson(body3["specialPad"]) !== "[]" || ![1, 2, 12].includes(number9(body3["layerId"], "layer")) || typeof body3["num"] !== "string" || !/^[A-Za-z0-9]*$/u.test(body3["num"]) || body3["netName"] !== "" || body3["parentId"] !== void 0 && body3["parentId"] !== null && body3["parentId"] !== "") {
+  if (record6.type !== "PAD" || !isRecord(shape) || !["ELLIPSE", "OVAL", "RECT"].includes(String(shape["padType"])) || canonicalJson(body3["specialPad"]) !== "[]" || ![1, 2, 12].includes(number10(body3["layerId"], "layer")) || typeof body3["num"] !== "string" || !/^[A-Za-z0-9]*$/u.test(body3["num"]) || body3["netName"] !== "" || body3["parentId"] !== void 0 && body3["parentId"] !== null && body3["parentId"] !== "") {
     throw new Error("Pad history requires a standalone, empty-net, canonical simple footprint pad.");
   }
   if (body3["layerId"] === 12 !== (body3["hole"] !== null)) {
     throw new Error("Pad hole and copper layer are inconsistent.");
   }
-  if (number9(shape["width"], "land width") <= 0 || number9(shape["height"], "land height") <= 0 || canonicalJson(body3["unusedInnerLayers"]) !== "[]" || !["NORMAL", "TEST"].includes(String(body3["padType"]))) {
+  if (number10(shape["width"], "land width") <= 0 || number10(shape["height"], "land height") <= 0 || canonicalJson(body3["unusedInnerLayers"]) !== "[]" || !["NORMAL", "TEST"].includes(String(body3["padType"]))) {
     throw new Error("Pad history requires complete simple dimensions, no removed inner lands and a normal/test pad.");
   }
-  if (shape["padType"] === "RECT" && (!Number.isInteger(shape["radius"]) || number9(shape["radius"], "corner ratio") < 0 || number9(shape["radius"], "corner ratio") > 100)) {
+  if (shape["padType"] === "RECT" && (!Number.isInteger(shape["radius"]) || number10(shape["radius"], "corner ratio") < 0 || number10(shape["radius"], "corner ratio") > 100)) {
     throw new Error("Native pad property corner ratios have one-percent resolution.");
   }
 }
@@ -54290,7 +54487,7 @@ function buildFootprintPadPropertySteps(input, before, ids2 = {}) {
   if (factor === void 0 || canvas === void 0) {
     throw new Error("Pad property unit must be a complete native mil/mm canvas.");
   }
-  const display2 = (value, field2) => number9(value, field2) * factor;
+  const display2 = (value, field2) => number10(value, field2) * factor;
   const steps = [];
   const panel = (key, value) => {
     steps.push({ route: "panel", key, value });
@@ -54309,10 +54506,10 @@ function buildFootprintPadPropertySteps(input, before, ids2 = {}) {
     panel("number", patch.padNumber);
   }
   if (patch.x !== void 0) {
-    panel("centerX", display2(patch.x - number9(canvas["originX"], "origin x"), "x"));
+    panel("centerX", display2(patch.x - number10(canvas["originX"], "origin x"), "x"));
   }
   if (patch.y !== void 0) {
-    panel("centerY", display2(patch.y - number9(canvas["originY"], "origin y"), "y"));
+    panel("centerY", display2(patch.y - number10(canvas["originY"], "origin y"), "y"));
   }
   if (patch.rotation !== void 0) {
     panel("angle", patch.rotation);
@@ -54331,7 +54528,7 @@ function buildFootprintPadPropertySteps(input, before, ids2 = {}) {
     if (patch.hole[0] === "SLOT") {
       attribute3("attr-pad-hole-length", display2(patch.hole[2], "hole length"));
     }
-    attribute3("attr-pad-hole-rotation", number9(body3["relativeAngle"], "hole angle"));
+    attribute3("attr-pad-hole-rotation", number10(body3["relativeAngle"], "hole angle"));
   }
   if (patch.hole === null && body3["layerId"] === 12) {
     throw new Error("Through-hole pads cannot clear the hole without a layer conversion.");
@@ -54379,7 +54576,7 @@ function buildFootprintPadPropertySteps(input, before, ids2 = {}) {
       attribute3("attr-pad-connection", mode);
       attribute3("attr-spoke-width", display2(patch.heatWelding.divergenceLineWidth, "spoke width"));
       attribute3("attr-spoke-spacing", display2(patch.heatWelding.divergenceSpacing, "spoke spacing"));
-      attribute3("attr-spoke-angles", number9(patch.heatWelding.divergenceAngle, "spoke angle"));
+      attribute3("attr-spoke-angles", number10(patch.heatWelding.divergenceAngle, "spoke angle"));
     }
   }
   if (patch.primitiveLock !== void 0) {
@@ -56628,7 +56825,7 @@ var init_schematic_retained_wire_order = __esm({
 });
 
 // server/src/schematic-layout-net-label.ts
-function number10(value) {
+function number11(value) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new TypeError("Wire label requires finite coordinates.");
   }
@@ -56643,12 +56840,12 @@ function bindSchematicWireLabels(records2, labels, orders) {
     if (label?.type !== "ATTR" || label.body["key"] !== "_NETLABEL_" || label.body["parentId"] !== "$$root" || label.body["locked"] !== false || typeof label.body["value"] !== "string") {
       throw new Error("Wire binding requires the exact newly created standalone label.");
     }
-    const x = number10(anchor.x), y = number10(anchor.y);
+    const x = number11(anchor.x), y = number11(anchor.y);
     const touching = new Set([...records2.values()].filter((row) => {
       if (row.type !== "LINE") {
         return false;
       }
-      const ex = number10(row.body["endX"]), ey = number10(row.body["endY"]), sx = number10(row.body["startX"]), sy = number10(row.body["startY"]);
+      const ex = number11(row.body["endX"]), ey = number11(row.body["endY"]), sx = number11(row.body["startX"]), sy = number11(row.body["startY"]);
       return (x - sx) * (ey - sy) === (y - sy) * (ex - sx) && x >= Math.min(sx, ex) && x <= Math.max(sx, ex) && y >= Math.min(sy, ey) && y <= Math.max(sy, ey);
     }).map((row) => String(row.body["lineGroup"])));
     const wireId = [...touching][0];
@@ -56909,7 +57106,7 @@ var init_schematic_pin_number_coordinates = __esm({
 });
 
 // server/src/schematic-coordinate-lifecycle.ts
-function number11(value) {
+function number12(value) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new TypeError("Schematic coordinate lifecycle requires finite values.");
   }
@@ -56934,7 +57131,7 @@ function multiply2(a, b) {
     for (let column = 0; column < 3; column += 1) {
       let sum = 0;
       for (let inner = 0; inner < 3; inner += 1) {
-        sum += number11(a[row * 3 + inner]) * number11(b[inner * 3 + column]);
+        sum += number12(a[row * 3 + inner]) * number12(b[inner * 3 + column]);
       }
       result.push(sum);
     }
@@ -56949,7 +57146,7 @@ function reconstructionMatrix(x, y, degrees) {
 }
 function reconstructedOrigin(x, y, degrees) {
   const result = reconstructionMatrix(x, y, degrees);
-  return [number11(result[6]), number11(result[7])];
+  return [number12(result[6]), number12(result[7])];
 }
 function alignInherited(prior, model, referenceIds, records2, alignBody) {
   for (const owner of [model, ...model.pins]) {
@@ -56988,7 +57185,7 @@ function alignDisplacedInactiveNoConnect(referenceSource, observedSource, prior,
       throw new Error("Inactive no-connect coordinate lacks its exact stored source/native pin binding.");
     }
     const proof = proveQuarterTurnPinDisplacement(history, referenceSource, observedSource, prior, model, oldPin, pin4);
-    const beforePoint = [number11(old.body["x"]), number11(old.body["y"])], reconstructed = [number11(current2.body["x"]), number11(current2.body["y"])];
+    const beforePoint = [number12(old.body["x"]), number12(old.body["y"])], reconstructed = [number12(current2.body["x"]), number12(current2.body["y"])];
     current2.body["x"] = beforePoint[0];
     current2.body["y"] = beforePoint[1];
     after.body["x"] = beforePoint[0];
@@ -57010,10 +57207,10 @@ function alignDisplacedInactiveNoConnect(referenceSource, observedSource, prior,
   return proofs;
 }
 function quarterTurnPoint(local, origin) {
-  const matrix = reconstructionMatrix(number11(origin[0]), number11(origin[1]), 90);
+  const matrix = reconstructionMatrix(number12(origin[0]), number12(origin[1]), 90);
   return [
-    number11(local[0]) * number11(matrix[0]) + number11(local[1]) * number11(matrix[3]) + number11(matrix[6]),
-    number11(local[0]) * number11(matrix[1]) + number11(local[1]) * number11(matrix[4]) + number11(matrix[7])
+    number12(local[0]) * number12(matrix[0]) + number12(local[1]) * number12(matrix[3]) + number12(matrix[6]),
+    number12(local[0]) * number12(matrix[1]) + number12(local[1]) * number12(matrix[4]) + number12(matrix[7])
   ];
 }
 function alignQuarterTurnPinAttributes(referenceSource, observedSource, reference2, observed, history) {
@@ -57042,17 +57239,17 @@ function alignQuarterTurnPinAttributes(referenceSource, observedSource, referenc
     if (localPins.length !== 1 || localAttrs.length !== 1 || localPin === void 0 || local === void 0 || oldPin === void 0 || !same14(oldPin.body, pin4.body) || old.body["parentId"] !== pin4.id || attr.body["parentId"] !== pin4.id || old.symbolValue !== local.body["value"] || old.blockValue !== null || old.instanceValue !== null || old.body["value"] !== null || !same14(old, { ...attr, id: old.id, body: { ...attr.body, x: old.body["x"], y: old.body["y"] } })) {
       throw new Error("Quarter-turn pin attribute changed pin identity, style, value or structure.");
     }
-    const originalOrigin = [number11(original.body["x"]), number11(original.body["y"])];
-    const currentOrigin = [number11(model.body["x"]), number11(model.body["y"])];
-    const libraryPosition = [number11(local.body["x"]), number11(local.body["y"])];
+    const originalOrigin = [number12(original.body["x"]), number12(original.body["y"])];
+    const currentOrigin = [number12(model.body["x"]), number12(model.body["y"])];
+    const libraryPosition = [number12(local.body["x"]), number12(local.body["y"])];
     const originalConstructor = quarterTurnPoint(libraryPosition, originalOrigin), reconstructed = quarterTurnPoint(libraryPosition, currentOrigin);
-    const translated4 = originalConstructor.map((value, index) => value + (number11(currentOrigin[index]) - number11(originalOrigin[index])));
-    const physical = quarterTurnPoint([number11(localPin.body["x"]), number11(localPin.body["y"])], currentOrigin);
-    if (!same14([pin4.body["x"], pin4.body["y"]], physical) || pin4.body["rotation"] !== (number11(localPin.body["rotation"]) + 90) % 360 || !same14([old.body["x"], old.body["y"]], translated4) || !same14([attr.body["x"], attr.body["y"]], reconstructed)) {
+    const translated4 = originalConstructor.map((value, index) => value + (number12(currentOrigin[index]) - number12(originalOrigin[index])));
+    const physical = quarterTurnPoint([number12(localPin.body["x"]), number12(localPin.body["y"])], currentOrigin);
+    if (!same14([pin4.body["x"], pin4.body["y"]], physical) || pin4.body["rotation"] !== (number12(localPin.body["rotation"]) + 90) % 360 || !same14([old.body["x"], old.body["y"]], translated4) || !same14([attr.body["x"], attr.body["y"]], reconstructed)) {
       throw new Error("Quarter-turn pin attribute is not the exact translated/reconstructed library pair.");
     }
-    attr.body["x"] = number11(old.body["x"]);
-    attr.body["y"] = number11(old.body["y"]);
+    attr.body["x"] = number12(old.body["x"]);
+    attr.body["y"] = number12(old.body["y"]);
     changes.push({
       profile: "pinned-unstored-quarter-turn-pin-attribute",
       componentId: model.id,
@@ -57108,17 +57305,17 @@ function alignInheritedPinNames(referenceSource, observedSource, reference2, obs
     if (localPins.length !== 1 || localAttrs.length !== 1 || localPin === void 0 || local === void 0 || oldPin === void 0 || !same14(oldPin.body, pin4.body) || old.body["parentId"] !== pin4.id || attr.body["parentId"] !== pin4.id || old.symbolValue !== local.body["value"] || !same14(old, { ...attr, id: old.id, body: { ...attr.body, x: old.body["x"], y: old.body["y"] } })) {
       throw new Error("Inherited pin-name reconstruction changed pin identity, style, value or attribute structure.");
     }
-    const originalOrigin = [number11(original.body["x"]), number11(original.body["y"])];
-    const currentOrigin = [number11(model.body["x"]), number11(model.body["y"])];
-    const libraryPosition = [number11(local.body["x"]), number11(local.body["y"])];
+    const originalOrigin = [number12(original.body["x"]), number12(original.body["y"])];
+    const currentOrigin = [number12(model.body["x"]), number12(model.body["y"])];
+    const libraryPosition = [number12(local.body["x"]), number12(local.body["y"])];
     const translated4 = [];
     const reconstructed = [];
     for (const [index, key] of ["x", "y"].entries()) {
-      const originalValue = number11(originalOrigin[index]);
-      const currentValue = number11(currentOrigin[index]);
-      const localValue = number11(libraryPosition[index]);
+      const originalValue = number12(originalOrigin[index]);
+      const currentValue = number12(currentOrigin[index]);
+      const localValue = number12(libraryPosition[index]);
       const moved2 = localValue + originalValue + (currentValue - originalValue), reloaded = localValue + currentValue;
-      if (old.body[key] !== moved2 || attr.body[key] !== reloaded || pin4.body[key] !== number11(localPin.body[key]) + currentValue) {
+      if (old.body[key] !== moved2 || attr.body[key] !== reloaded || pin4.body[key] !== number12(localPin.body[key]) + currentValue) {
         throw new Error("Inherited pin-name coordinate is not the exact translated/reconstructed library pair.");
       }
       translated4.push(moved2);
@@ -57164,7 +57361,7 @@ function alignSchematicCoordinateLifecycle(referenceSource, referenceInput, obse
         throw new Error("Unreviewed schematic component coordinate reconstruction.");
       }
       const { hash: symbolSha256, rotation: rotation2 } = symbolEvidence(prior, history);
-      const x = number11(prior.body["x"]), y = number11(prior.body["y"]);
+      const x = number12(prior.body["x"]), y = number12(prior.body["y"]);
       const mapped = reconstructedOrigin(x, y, rotation2);
       const next = reconstructedOrigin(mapped[0], mapped[1], rotation2);
       if (!same14(mapped, [model.body["x"], model.body["y"]]) || !same14(next, rotation2 === 180 ? [x, y] : mapped)) {
@@ -57180,7 +57377,7 @@ function alignSchematicCoordinateLifecycle(referenceSource, referenceInput, obse
               throw new Error("Coordinate reconstruction changed inherited null position.");
             }
           } else {
-            if (after[key] !== number11(value2) + number11(deltas[index])) {
+            if (after[key] !== number12(value2) + number12(deltas[index])) {
               throw new Error("Inherited coordinate differs from the exact component displacement.");
             }
             after[key] = value2;
@@ -57225,7 +57422,7 @@ function restoreComposedCoordinateStorage(source3, native, capturedSource, captu
     if (change === void 0 || model === void 0 || raw === void 0 || model.kind !== "part" || model.body["rotation"] !== 90 || model.body["isMirror"] !== false || !same14([model.body["x"], model.body["y"]], change.before) || !same14([raw.body["x"], raw.body["y"]], change.reconstructed) || change.capturedComponentSha256 !== sha256Json(raw)) {
       throw new Error("Composed coordinate storage lacks its exact proved part pose.");
     }
-    const delta = change.reconstructed.map((value2, index) => value2 - number11(change.before[index]));
+    const delta = change.reconstructed.map((value2, index) => value2 - number12(change.before[index]));
     const sourceIds = [];
     const restoreBody = (body3, rawBody, spelling) => {
       if (!same14({ ...rawBody, x: body3["x"], y: body3["y"] }, body3)) {
@@ -57233,7 +57430,7 @@ function restoreComposedCoordinateStorage(source3, native, capturedSource, captu
       }
       for (const [index, key] of ["x", "y"].entries()) {
         if (!same14(body3[key], rawBody[key])) {
-          if (spelling === void 0 ? rawBody[key] !== number11(body3[key]) + number11(delta[index]) : body3[key] !== spelling.stored[index] || rawBody[key] !== spelling.compared[index]) {
+          if (spelling === void 0 ? rawBody[key] !== number12(body3[key]) + number12(delta[index]) : body3[key] !== spelling.stored[index] || rawBody[key] !== spelling.compared[index]) {
             throw new Error("Composed coordinate storage is not the proved captured displacement.");
           }
           body3[key] = rawBody[key];
@@ -57337,14 +57534,14 @@ function projectDisplacedInactiveNoConnect(history, source3, native, stored2, ex
     throw new Error("Stored inactive no-connect lacks exact component/pin coordinate evidence.");
   }
   const { hash: symbolSha256, rotation: rotation2 } = symbolEvidence(model, history);
-  const current2 = [number11(model.body["x"]), number11(model.body["y"])], origin = [number11(original.body["x"]), number11(original.body["y"])];
-  const mapped = reconstructedOrigin(number11(origin[0]), number11(origin[1]), rotation2);
+  const current2 = [number12(model.body["x"]), number12(model.body["y"])], origin = [number12(original.body["x"]), number12(original.body["y"])];
+  const mapped = reconstructedOrigin(number12(origin[0]), number12(origin[1]), rotation2);
   const symbol4 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL");
   const localPins = symbol4?.records.filter((row) => row.type === "PIN" && row.body["partId"] === model.body["partId"] && `${model.id}-${row.id}` === pin4.id);
   const local = localPins?.[0];
-  const before = [number11(stored2.body["x"]), number11(stored2.body["y"])], reconstructed = [number11(exported.body["x"]), number11(exported.body["y"])];
-  const shifted = before.map((value, index) => value + (number11(current2[index]) - number11(origin[index])));
-  if (same14(origin, current2) || !same14(mapped, current2) || !same14(reconstructedOrigin(number11(current2[0]), number11(current2[1]), rotation2), current2) || localPins?.length !== 1 || local === void 0 || pin4.body["rotation"] !== (number11(local.body["rotation"]) + 90) % 360 || !same14([pin4.body["x"], pin4.body["y"]], quarterTurnPoint([number11(local.body["x"]), number11(local.body["y"])], current2)) || !same14(reconstructed, [pin4.body["x"], pin4.body["y"]]) || !same14(shifted, reconstructed)) {
+  const before = [number12(stored2.body["x"]), number12(stored2.body["y"])], reconstructed = [number12(exported.body["x"]), number12(exported.body["y"])];
+  const shifted = before.map((value, index) => value + (number12(current2[index]) - number12(origin[index])));
+  if (same14(origin, current2) || !same14(mapped, current2) || !same14(reconstructedOrigin(number12(current2[0]), number12(current2[1]), rotation2), current2) || localPins?.length !== 1 || local === void 0 || pin4.body["rotation"] !== (number12(local.body["rotation"]) + 90) % 360 || !same14([pin4.body["x"], pin4.body["y"]], quarterTurnPoint([number12(local.body["x"]), number12(local.body["y"])], current2)) || !same14(reconstructed, [pin4.body["x"], pin4.body["y"]]) || !same14(shifted, reconstructed)) {
     throw new Error("Stored inactive no-connect is not the exact quarter-turn pin displacement.");
   }
   return { row: { ...stored2, body: { ...stored2.body, x: exported.body["x"], y: exported.body["y"] } }, proof: {
@@ -57388,8 +57585,8 @@ function projectSchematicCoordinateCheckpoint(history, source3, nativeInput) {
     if (model === void 0 || !same14({ ...row.body, x: exported.body["x"], y: exported.body["y"] }, exported.body)) {
       throw new Error("Coordinate checkpoint changed another component field.");
     }
-    const stored2 = [number11(row.body["x"]), number11(row.body["y"])], { hash: symbolSha256, rotation: rotation2 } = symbolEvidence(model, history);
-    const compared = [number11(exported.body["x"]), number11(exported.body["y"])];
+    const stored2 = [number12(row.body["x"]), number12(row.body["y"])], { hash: symbolSha256, rotation: rotation2 } = symbolEvidence(model, history);
+    const compared = [number12(exported.body["x"]), number12(exported.body["y"])];
     const forward = reconstructedOrigin(stored2[0], stored2[1], rotation2), reverse = reconstructedOrigin(compared[0], compared[1], rotation2);
     const exact = rotation2 === 180 ? same14(forward, compared) && same14(reverse, stored2) : same14(forward, compared) && same14(reverse, compared) || same14(reverse, stored2) && same14(forward, stored2);
     if (!exact) {
@@ -57412,12 +57609,12 @@ var init_schematic_coordinate_lifecycle = __esm({
     init_schematic_pin_number_coordinates();
     same14 = (a, b) => canonicalJson({ value: a }) === canonicalJson({ value: b });
     translate3 = (a, b) => [1, 0, 0, 0, 1, 0, a, b, 1];
-    coordinates3 = (value) => [number11(value["x"]), number11(value["y"])];
+    coordinates3 = (value) => [number12(value["x"]), number12(value["y"])];
   }
 });
 
 // server/src/schematic-layout-wire-groups.ts
-function number12(value) {
+function number13(value) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new TypeError("Wire-group proof needs exact finite coordinates.");
   }
@@ -57547,7 +57744,7 @@ function deriveSchematicWireGroupRepair(operation, before, legacy, native, creat
     if (row === void 0) {
       throw new Error("Retained ground repair lost a wire-order attribute.");
     }
-    const previous = number12(row.body["zIndex"]);
+    const previous = number13(row.body["zIndex"]);
     if (previous !== order2.zIndex) {
       wireOrders.push({ id: row.id, before: previous, after: order2.zIndex });
       records2.set(row.id, { ...row, body: { ...row.body, zIndex: order2.zIndex } });
@@ -57584,10 +57781,10 @@ var init_schematic_layout_wire_groups = __esm({
       merges: external_exports.array(external_exports.object({ flagId: identifier4, mainWireId: identifier4, dropWireId: identifier4, lineId: identifier4, relevanceId: identifier4 }).strict()).min(1).max(128),
       wireOrders: external_exports.array(external_exports.object({ id: identifier4, before: orderSchema, after: orderSchema }).strict()).max(256)
     }).strict();
-    point4 = (body3) => [number12(body3["x"]), number12(body3["y"])];
+    point4 = (body3) => [number13(body3["x"]), number13(body3["y"])];
     equal4 = (a, b) => a[0] === b[0] && a[1] === b[1];
     ends2 = (s) => [[s[0], s[1]], [s[2], s[3]]];
-    line4 = (row) => [number12(row.body["startX"]), number12(row.body["startY"]), number12(row.body["endX"]), number12(row.body["endY"])];
+    line4 = (row) => [number13(row.body["startX"]), number13(row.body["startY"]), number13(row.body["endX"]), number13(row.body["endY"])];
   }
 });
 
@@ -57625,7 +57822,7 @@ function compileSchematicLayoutBatch(input) {
   const operation = schematicLayoutBatchSchema.parse(input);
   return { profile: SCHEMATIC_LAYOUT_PROFILE, id: operation.id, action: operation.action, documentType: 1, resultKind: "boolean", operation };
 }
-function number13(value) {
+function number14(value) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new TypeError("Layout coordinate is not finite.");
   }
@@ -57644,7 +57841,7 @@ function translated3(body3, dx, dy) {
   const result = { ...body3 };
   for (const [key, delta] of [["x", dx], ["y", dy]]) {
     if (result[key] !== null && result[key] !== void 0) {
-      result[key] = number13(result[key]) + delta;
+      result[key] = number14(result[key]) + delta;
     }
   }
   return result;
@@ -57658,10 +57855,10 @@ function display(body3, patch) {
     }
     let mapped = value;
     if (key === "y" && value !== null) {
-      mapped = -number13(value);
+      mapped = -number14(value);
     }
     if (key === "alignMode" && value !== null) {
-      mapped = ALIGN2[number13(value)];
+      mapped = ALIGN2[number14(value)];
     }
     if (mapped === void 0) {
       throw new Error("Unreviewed layout display enumeration.");
@@ -57681,7 +57878,7 @@ function segments2(value) {
       throw new TypeError("Layout wire path is malformed.");
     }
     for (let i2 = 0; i2 < group.length - 2; i2 += 2) {
-      const part = [number13(group[i2]), -number13(group[i2 + 1]), number13(group[i2 + 2]), -number13(group[i2 + 3])];
+      const part = [number14(group[i2]), -number14(group[i2 + 1]), number14(group[i2 + 2]), -number14(group[i2 + 3])];
       if (part[0] === part[2] === (part[1] === part[3])) {
         throw new Error("Layout wires must be nonzero orthogonal segments with explicit vertices.");
       }
@@ -57724,7 +57921,7 @@ function nextZ2(records2) {
   let result = 0;
   for (const record6 of records2.values()) {
     if (record6.body["zIndex"] !== void 0) {
-      const value = number13(record6.body["zIndex"]);
+      const value = number14(record6.body["zIndex"]);
       if (value < 0) {
         throw new Error("Layout z-order is negative.");
       }
@@ -57760,7 +57957,7 @@ function inverseDisplay(step, id7, body3) {
     }
     let value = body3[field2];
     if (key === "y" && value !== null) {
-      value = -number13(value);
+      value = -number14(value);
     }
     if (key === "alignMode" && value !== null) {
       value = typeof value === "string" ? ALIGN2.indexOf(value) : -1;
@@ -57827,7 +58024,7 @@ function historicalWireOrders(operation, before, records2, native) {
     const lines3 = [...records2.values()].filter((row) => row.type === "LINE" && wireIds.has(String(row.body["lineGroup"])));
     const endpoints = /* @__PURE__ */ new Map();
     const point6 = (x, y) => {
-      if (!Number.isSafeInteger(number13(x)) || !Number.isSafeInteger(number13(y))) {
+      if (!Number.isSafeInteger(number14(x)) || !Number.isSafeInteger(number14(y))) {
         throw new TypeError("Historical wire-order graph requires exact integer coordinates.");
       }
       const key = canonicalJson([x, y]);
@@ -57936,8 +58133,8 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence, histo
       if (record6?.type !== "COMPONENT" || component2 === void 0 || !["part", "netport", "netflag"].includes(component2.kind) || component2.locked || component2.attributes.some((attribute3) => attribute3.body["locked"] === true) || component2.pins.some((pin4) => pin4.body["locked"] === true || pin4.noConnect?.body["locked"] === true || pin4.attributes.some((attribute3) => attribute3.body["locked"] === true))) {
         throw new Error("Layout translation requires one unlocked part/netport/netflag and unlocked descendants, never a frame.");
       }
-      inverseSteps?.push({ id: `inverse:${step.id}`, action: step.action, target: { primitiveId: id7 }, x: number13(record6.body["x"]), y: -number13(record6.body["y"]) });
-      const dx = step.x - number13(record6.body["x"]), dy = -step.y - number13(record6.body["y"]);
+      inverseSteps?.push({ id: `inverse:${step.id}`, action: step.action, target: { primitiveId: id7 }, x: number14(record6.body["x"]), y: -number14(record6.body["y"]) });
+      const dx = step.x - number14(record6.body["x"]), dy = -step.y - number14(record6.body["y"]);
       component2.body = nativeBody(translated3(component2.body, dx, dy));
       records2.set(id7, { ...record6, body: structuredClone(component2.body) });
       const children2 = [...component2.attributes, ...component2.pins.flatMap((pin4) => pin4.attributes)];
@@ -58059,7 +58256,7 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence, histo
           };
         } else {
           style2 = replacementStyle(oldLines);
-          const reverse = { id: `inverse:${step.id}`, action: "sch.wire.replace", target: { primitiveId: id7 }, line: oldLines.map((record6) => [number13(record6.body["startX"]), -number13(record6.body["startY"]), number13(record6.body["endX"]), -number13(record6.body["endY"])]) };
+          const reverse = { id: `inverse:${step.id}`, action: "sch.wire.replace", target: { primitiveId: id7 }, line: oldLines.map((record6) => [number14(record6.body["startX"]), -number14(record6.body["startY"]), number14(record6.body["endX"]), -number14(record6.body["endY"])]) };
           inverseSteps = oldLines.length === paths.length && inverseSteps !== void 0 ? [...inverseSteps, reverse] : void 0;
         }
         for (const record6 of oldLines) {
@@ -58336,10 +58533,10 @@ function layoutStoragePersistence(expected2, input, evidence, effect) {
       throw new Error("Stored pin-number spelling changed another field.");
     }
     storedPinNumberSpellings.push({ id: row.id, rawBodySha256: sha256Json(captured.body), effectComparisonBodySha256: sha256Json(row.body) });
-    row.body["x"] = number13(captured.body["x"]);
-    row.body["y"] = number13(captured.body["y"]);
-    attr.body["x"] = number13(captured.body["x"]);
-    attr.body["y"] = number13(captured.body["y"]);
+    row.body["x"] = number14(captured.body["x"]);
+    row.body["y"] = number14(captured.body["y"]);
+    attr.body["x"] = number14(captured.body["x"]);
+    attr.body["y"] = number14(captured.body["y"]);
   }
   const spellings = [];
   const orderSpellings = [];
@@ -58374,7 +58571,7 @@ function layoutStoragePersistence(expected2, input, evidence, effect) {
           throw new Error("Layout persistence changed the cloned hidden attribute identity.");
         }
         row.body["zIndex"] = stored2.body["zIndex"];
-        attr.body["zIndex"] = number13(stored2.body["zIndex"]);
+        attr.body["zIndex"] = number14(stored2.body["zIndex"]);
       }
       let variant = "retained-relevance-refreshed-device";
       if (initial) {
@@ -58432,8 +58629,8 @@ function layoutStoragePersistence(expected2, input, evidence, effect) {
       if (captured === void 0 || current2 === void 0 || normalized2 === void 0 || stored2 === void 0 || !same15(current2, captured) || stored2.type !== current2.type || !same15(stored2.body, current2.body) || normalized2.type !== current2.type || !same15({ ...normalized2.body, x: current2.body["x"], y: current2.body["y"] }, current2.body) || (id7 === restored.componentId ? current2.type !== "COMPONENT" : current2.type !== "ATTR" || !["Pin Number", "NO_CONNECT"].includes(String(current2.body["key"])))) {
         throw new Error("Composed coordinate comparison lacks the exact constructor-proved owned row.");
       }
-      stored2.body["x"] = number13(normalized2.body["x"]);
-      stored2.body["y"] = number13(normalized2.body["y"]);
+      stored2.body["x"] = number14(normalized2.body["x"]);
+      stored2.body["y"] = number14(normalized2.body["y"]);
       records2.set(id7, structuredClone(normalized2));
     }
     native.components[index] = structuredClone(reference2);
@@ -58481,14 +58678,14 @@ function prepareSchematicLayoutNetLabelRepair(input, before, oldNative, createdI
   }
   const reference2 = structuredClone(legacy.native);
   const wireIds = new Set(legacy.expected.objects.filter((row) => row.type === "WIRE").map((row) => row.id));
-  const graph = legacy.expected.objects.filter((row) => row.type === "LINE" && wireIds.has(String(row.body["lineGroup"]))).map((row) => [number13(row.body["startX"]), number13(row.body["startY"]), number13(row.body["endX"]), number13(row.body["endY"])]);
+  const graph = legacy.expected.objects.filter((row) => row.type === "LINE" && wireIds.has(String(row.body["lineGroup"]))).map((row) => [number14(row.body["startX"]), number14(row.body["startY"]), number14(row.body["endX"]), number14(row.body["endY"])]);
   const endpoints = graph.flatMap((segment2) => [[segment2[0], segment2[1]], [segment2[2], segment2[3]]]);
   const misnamedPins = [];
   for (const model of reference2.components) {
     for (const pin4 of model.pins) {
       const observed = aligned.native.components.find((entry) => entry.id === model.id)?.pins.find((entry) => entry.id === pin4.id);
       if (observed !== void 0 && observed.net !== pin4.net) {
-        const binding2 = corrected.labelBindings.find((entry) => entry.net === pin4.net && wireReachesAnchor([entry.x, entry.y], [[number13(pin4.body["x"]), number13(pin4.body["y"])]], graph, endpoints));
+        const binding2 = corrected.labelBindings.find((entry) => entry.net === pin4.net && wireReachesAnchor([entry.x, entry.y], [[number14(pin4.body["x"]), number14(pin4.body["y"])]], graph, endpoints));
         if (binding2 === void 0 || typeof pin4.net !== "string" || typeof observed.net !== "string" || !/^\$[0-9]+N[0-9]+$/u.test(observed.net)) {
           throw new Error("Layout repair found a net difference outside the exact generated-name defect.");
         }
@@ -59759,14 +59956,14 @@ function comparePoured(left, right) {
     return invalid("derived record fields or child count changed.");
   }
   const differences = [];
-  const identities = /* @__PURE__ */ new Set();
+  const identities2 = /* @__PURE__ */ new Set();
   for (let fillIndex = 0; fillIndex < oldFills.length; fillIndex += 1) {
     const oldFill = oldFills[fillIndex];
     const newFill = newFills[fillIndex];
-    if (!isRecord(oldFill) || !isRecord(newFill) || typeof oldFill["id"] !== "string" || identities.has(oldFill["id"]) || !same16({ ...oldFill, path: null }, { ...newFill, path: null }) || !Array.isArray(oldFill["path"]) || !Array.isArray(newFill["path"]) || oldFill["path"].length !== newFill["path"].length) {
+    if (!isRecord(oldFill) || !isRecord(newFill) || typeof oldFill["id"] !== "string" || identities2.has(oldFill["id"]) || !same16({ ...oldFill, path: null }, { ...newFill, path: null }) || !Array.isArray(oldFill["path"]) || !Array.isArray(newFill["path"]) || oldFill["path"].length !== newFill["path"].length) {
       return invalid("copper identity, width, style or path count changed.");
     }
-    identities.add(oldFill["id"]);
+    identities2.add(oldFill["id"]);
     for (let pathIndex = 0; pathIndex < oldFill["path"].length; pathIndex += 1) {
       differences.push(...comparePath(oldFill["path"][pathIndex], newFill["path"][pathIndex], left.id, oldFill["id"], pathIndex));
       if (differences.length > 1e4) {
@@ -60260,7 +60457,7 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
     throw new Error("Ground repair native pin identities are ambiguous.");
   }
   const components = new Map(native.components.map((component2) => [component2.id, component2]));
-  const identities = /* @__PURE__ */ new Map();
+  const identities2 = /* @__PURE__ */ new Map();
   const uniqueIds = /* @__PURE__ */ new Set();
   for (const component2 of native.components.filter((entry) => entry.kind === "part")) {
     const uniqueId = attributeValue(component2.attributes, component2.id, "Unique ID");
@@ -60269,7 +60466,7 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
       throw new Error("Ground repair real-part identities are duplicated.");
     }
     uniqueIds.add(uniqueId);
-    identities.set(component2.id, { uniqueId, designator });
+    identities2.set(component2.id, { uniqueId, designator });
   }
   const originalById = new Map(original.map((part) => [part.uniqueId, part]));
   const existingNets = new Set(original.flatMap((part) => part.pins.map((pin4) => pin4.net)));
@@ -60281,7 +60478,7 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
   const generatedOwners = /* @__PURE__ */ new Map();
   const changedPins = [];
   for (const change of misnamed) {
-    const component2 = components.get(change.componentId), identityValue = identities.get(change.componentId);
+    const component2 = components.get(change.componentId), identityValue = identities2.get(change.componentId);
     const pin4 = component2?.pins.find((entry) => entry.id === change.pinId);
     if (component2?.kind !== "part" || identityValue === void 0 || pin4 === void 0 || selectedPins.has(pin4.id) || pin4.net !== change.expectedNet || generatedNet.test(change.expectedNet) || existingNets.has(change.observedNet)) {
       throw new Error("Ground repair names an extra, duplicate, non-part or mismatched native pin/net.");
@@ -60318,7 +60515,7 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
     changedPins
   };
 }
-var generatedNet, identity6, misnamedPinsSchema;
+var generatedNet, identity7, misnamedPinsSchema;
 var init_schematic_layout_repair_topology = __esm({
   "server/src/schematic-layout-repair-topology.ts"() {
     init_zod();
@@ -60326,11 +60523,11 @@ var init_schematic_layout_repair_topology = __esm({
     init_design_topology();
     init_schematic_native_adapter();
     generatedNet = /^\$[0-9]+N[0-9]+$/u;
-    identity6 = external_exports.string().min(1).max(512);
+    identity7 = external_exports.string().min(1).max(512);
     misnamedPinsSchema = external_exports.array(external_exports.object({
-      componentId: identity6,
-      pinId: identity6,
-      expectedNet: identity6,
+      componentId: identity7,
+      pinId: identity7,
+      expectedNet: identity7,
       observedNet: external_exports.string().max(512).regex(generatedNet),
       wireId: external_exports.string().regex(/^[a-f0-9]{16}$/u)
     }).strict()).min(1).max(4096);
@@ -63962,15 +64159,15 @@ var init_check_execution = __esm({
 // server/src/library-operations.ts
 function assetOperations(family) {
   return [
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.get`), libraryUuid: uuid5, target: identity7 }).strict(),
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.delete`), libraryUuid: uuid5, target: identity7 }).strict(),
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.copy`), libraryUuid: uuid5, target: identity7, targetLibraryUuid: uuid5, classification: classification.optional(), name: name4 }).strict()
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.get`), libraryUuid: uuid5, target: identity8 }).strict(),
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.delete`), libraryUuid: uuid5, target: identity8 }).strict(),
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.copy`), libraryUuid: uuid5, target: identity8, targetLibraryUuid: uuid5, classification: classification.optional(), name: name4 }).strict()
   ];
 }
 function sourceOperations(family) {
   return [
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.source.replace`), libraryUuid: uuid5, target: identity7, documentSource: external_exports.string().min(1).max(1048576) }).strict(),
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.open`), libraryUuid: uuid5, target: identity7, splitScreenId: uuid5.optional() }).strict()
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.source.replace`), libraryUuid: uuid5, target: identity8, documentSource: external_exports.string().min(1).max(1048576) }).strict(),
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family}.open`), libraryUuid: uuid5, target: identity8, splitScreenId: uuid5.optional() }).strict()
   ];
 }
 function simpleExport(action) {
@@ -64323,7 +64520,7 @@ function listLibraryOperationCapabilities() {
     ...LIBRARY_OPERATION_GAPS.map(({ action, status: status2 }) => ({ action, status: status2 }))
   ];
 }
-var LIBRARY_OPERATION_PROFILE, MANAGED_FILE_MAX_BYTES, id6, uuid5, name4, text5, fileName, identity7, classification, symbolType2, associationIdentity, association, propertyScalar, propertyMap, deviceProperty, metadataPatch, nonemptyPatch, managedFileInputSchema, exportOptions, bomOptions, netlistOptions, primitiveSources, libraryOperationSchema, literal4, optional2, ref, source2, tabs, project, assetApis, documentApis, simpleExports, LIBRARY_OPERATION_GAPS;
+var LIBRARY_OPERATION_PROFILE, MANAGED_FILE_MAX_BYTES, id6, uuid5, name4, text5, fileName, identity8, classification, symbolType2, associationIdentity, association, propertyScalar, propertyMap, deviceProperty, metadataPatch, nonemptyPatch, managedFileInputSchema, exportOptions, bomOptions, netlistOptions, primitiveSources, libraryOperationSchema, literal4, optional2, ref, source2, tabs, project, assetApis, documentApis, simpleExports, LIBRARY_OPERATION_GAPS;
 var init_library_operations = __esm({
   "server/src/library-operations.ts"() {
     init_zod();
@@ -64335,7 +64532,7 @@ var init_library_operations = __esm({
     name4 = external_exports.string().min(1).max(512);
     text5 = external_exports.string().max(65536);
     fileName = external_exports.string().regex(/^[A-Za-z0-9][A-Za-z0-9_. -]{0,127}$/u).refine((value) => !value.includes("..") && !value.endsWith(".") && !value.endsWith(" "));
-    identity7 = external_exports.union([external_exports.object({ uuid: uuid5 }).strict(), external_exports.object({ resultOf: id6 }).strict()]);
+    identity8 = external_exports.union([external_exports.object({ uuid: uuid5 }).strict(), external_exports.object({ resultOf: id6 }).strict()]);
     classification = external_exports.array(name4).max(2);
     symbolType2 = external_exports.union([external_exports.literal(2), external_exports.literal(18), external_exports.literal(19), external_exports.literal(20), external_exports.literal(21), external_exports.literal(22), external_exports.literal(25), external_exports.literal(31), external_exports.literal(17)]);
     associationIdentity = external_exports.object({ uuid: uuid5, libraryUuid: uuid5 }).strict();
@@ -64367,30 +64564,30 @@ var init_library_operations = __esm({
       external_exports.object({ id: id6, action: external_exports.literal("library.footprint.create"), libraryUuid: uuid5, name: name4, classification: classification.optional(), description: text5.optional() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("library.device.create"), libraryUuid: uuid5, name: name4, classification: classification.optional(), association: association.extend({ symbol: associationIdentity, footprint: associationIdentity.optional(), model3D: associationIdentity.optional() }).strict(), description: text5.optional(), property: deviceProperty.optional() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("library.model3d.create"), libraryUuid: uuid5, file: managedFileInputSchema, classification: classification.optional(), unit: external_exports.enum(["mm", "cm", "m", "mil", "inch"]) }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("library.symbol.modify"), libraryUuid: uuid5, target: identity7, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("library.footprint.modify"), libraryUuid: uuid5, target: identity7, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("library.model3d.modify"), libraryUuid: uuid5, target: identity7, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("library.device.modify"), libraryUuid: uuid5, target: identity7, patch: metadataPatch.extend({ association: association.refine(nonemptyPatch).optional(), property: deviceProperty.refine(nonemptyPatch).optional() }).strict().refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("library.symbol.modify"), libraryUuid: uuid5, target: identity8, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("library.footprint.modify"), libraryUuid: uuid5, target: identity8, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("library.model3d.modify"), libraryUuid: uuid5, target: identity8, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("library.device.modify"), libraryUuid: uuid5, target: identity8, patch: metadataPatch.extend({ association: association.refine(nonemptyPatch).optional(), property: deviceProperty.refine(nonemptyPatch).optional() }).strict().refine(nonemptyPatch, "Empty patch.") }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("library.device.model-transform"), libraryUuid: uuid5, target: external_exports.object({ uuid: uuid5 }).strict(), transform: modelTransformSchema, inheritedInstances: external_exports.array(external_exports.object({ documentUuid: uuid5, documentType: external_exports.enum(["PCB", "SCH_PAGE"]), componentUuid: uuid5 }).strict()).max(2e4) }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("project.create"), name: name4, projectName: external_exports.string().regex(/^[A-Za-z0-9-]{1,128}$/u).optional(), teamUuid: uuid5, folderUuid: uuid5.optional(), description: text5.optional() }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("project.open"), target: identity7 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.open"), target: identity7, splitScreenId: uuid5.optional() }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("project.open"), target: identity8 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.open"), target: identity8, splitScreenId: uuid5.optional() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("document.activate"), tabId: uuid5 }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("document.close"), tabId: uuid5 }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("document.pcb.create"), boardName: name4.optional() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("document.schematic.create"), boardName: name4.optional() }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.page.create"), schematic: identity7 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.copy"), target: identity7, boardName: name4.optional() }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.copy"), target: identity7, boardName: name4.optional() }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.page.copy"), target: identity7, schematic: identity7 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.rename"), target: identity7, name: name4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.rename"), target: identity7, name: name4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.page.rename"), target: identity7, name: name4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.delete"), target: identity7 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.delete"), target: identity7 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.page.delete"), target: identity7 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.save"), target: identity7 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.save"), target: identity7 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.page.create"), schematic: identity8 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.copy"), target: identity8, boardName: name4.optional() }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.copy"), target: identity8, boardName: name4.optional() }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.page.copy"), target: identity8, schematic: identity8 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.rename"), target: identity8, name: name4 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.rename"), target: identity8, name: name4 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.page.rename"), target: identity8, name: name4 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.delete"), target: identity8 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.delete"), target: identity8 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.page.delete"), target: identity8 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.save"), target: identity8 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.save"), target: identity8 }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("export.pcb.gerber"), ...exportOptions, colorSilkscreen: external_exports.boolean(), unit: external_exports.enum(["mm", "inch"]), digitalFormat: external_exports.object({ integerNumber: external_exports.number().int().min(1).max(6), decimalNumber: external_exports.number().int().min(1).max(6) }).strict(), other: external_exports.object({ metallicDrillingInformation: external_exports.boolean(), nonMetallicDrillingInformation: external_exports.boolean(), drillTable: external_exports.boolean(), flyingProbeTestingFile: external_exports.boolean() }).strict(), layers: external_exports.array(external_exports.object({ layerId: external_exports.number().int().min(1).max(100), isMirror: external_exports.boolean() }).strict()).min(1).max(100), objects: external_exports.array(external_exports.enum(primitiveSources)).min(1).max(17) }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("export.pcb.model3d"), ...exportOptions, fileType: external_exports.enum(["step", "obj"]), elements: external_exports.array(external_exports.enum(["Component Model", "Via", "Silkscreen", "Wire In Signal Layer"])).max(4), modelMode: external_exports.enum(["Outfit", "Parts"]), autoGenerateModels: external_exports.boolean() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("export.pcb.pick-and-place"), ...exportOptions, fileType: external_exports.enum(["xlsx", "csv"]), unit: external_exports.enum(["mm", "mil"]) }).strict(),
@@ -64613,14 +64810,14 @@ var init_library_persistence_proof = __esm({
 
 // server/src/editor-tabs.ts
 function buildEditorTargetAbsentExpression(input) {
-  const identity12 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
+  const identity13 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
   const active = external_exports.object({
-    uuid: identity12,
+    uuid: identity13,
     documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]),
     // oxlint-disable-next-line eslint/no-control-regex -- Native tab identities must not contain control characters.
     tabId: external_exports.string().min(1).max(512).regex(/^[^\u0000-\u001F]+$/u)
   }).strict();
-  const scope3 = external_exports.object({ targetUuid: identity12, projectUuid: identity12, ownerUuid: identity12, active }).strict().parse(input);
+  const scope3 = external_exports.object({ targetUuid: identity13, projectUuid: identity13, ownerUuid: identity13, active }).strict().parse(input);
   if (scope3.active.uuid === scope3.targetUuid || scope3.active.tabId.split("@")[0] !== scope3.active.uuid) {
     throw new Error("Closed-target proof requires one exact different active tab.");
   }
@@ -65140,7 +65337,7 @@ function bodyRecord(value) {
   }
   return value;
 }
-function identity8(object4, type2) {
+function identity9(object4, type2) {
   const value = JSON.parse(object4.id);
   if (!Array.isArray(value) || value[0] !== type2) {
     throw new Error("Native route source identity is malformed.");
@@ -65148,7 +65345,7 @@ function identity8(object4, type2) {
   return value;
 }
 function netName(object4) {
-  return external_exports.string().parse(identity8(object4, "NET")[1]);
+  return external_exports.string().parse(identity9(object4, "NET")[1]);
 }
 function note(code, objectIds, detail) {
   return { code, objectIds, detail };
@@ -65170,8 +65367,8 @@ function rule(source3, family, reference2) {
   if (reference2 !== void 0 && reference2 !== null && typeof reference2 !== "string") {
     return null;
   }
-  const candidates = source3.objects.filter((entry) => entry.type === "RULE" && identity8(entry, "RULE")[1] === family);
-  const selected = typeof reference2 === "string" && reference2 !== "default" && reference2 !== "" ? candidates.filter((entry) => identity8(entry, "RULE")[2] === reference2) : candidates.filter((entry) => entry.body["ruleState"] === "DEFAULT");
+  const candidates = source3.objects.filter((entry) => entry.type === "RULE" && identity9(entry, "RULE")[1] === family);
+  const selected = typeof reference2 === "string" && reference2 !== "default" && reference2 !== "" ? candidates.filter((entry) => identity9(entry, "RULE")[2] === reference2) : candidates.filter((entry) => entry.body["ruleState"] === "DEFAULT");
   if (selected.length !== 1 || selected[0] === void 0) {
     return null;
   }
@@ -65202,7 +65399,7 @@ function checkedPads(source3, inventoryInput) {
   const expected2 = /* @__PURE__ */ new Map();
   for (const object4 of source3.objects) {
     if (object4.type === "PAD_NET") {
-      const id7 = identity8(object4, "PAD_NET");
+      const id7 = identity9(object4, "PAD_NET");
       if (id7.length !== 4 || !id7.slice(1).every((entry) => typeof entry === "string")) {
         throw new Error("Native PAD_NET identity is incomplete.");
       }
@@ -65555,7 +65752,7 @@ function auditPcbRoutes(source3, inventory, input) {
         return false;
       }
       if (entry.type === "POURED") {
-        const parent = identity8(entry, "POURED")[1];
+        const parent = identity9(entry, "POURED")[1];
         return source3.objects.some((candidate) => candidate.type === "POUR" && candidate.id === parent && candidate.body["netName"] === net2);
       }
       return entry.body["netName"] === net2;
@@ -65925,23 +66122,23 @@ function deviceRequestedModel(input) {
   if (model === void 0 || model === null) {
     return void 0;
   }
-  if (!identity9.test(model.uuid) || !identity9.test(model.libraryUuid)) {
+  if (!identity10.test(model.uuid) || !identity10.test(model.libraryUuid)) {
     throw new Error("Existing model assignment requires exact 32-hex asset and external collection identities, not filenames or paths.");
   }
   return { uuid: model.uuid, libraryUuid: model.libraryUuid };
 }
 function validateDeviceModelMetadata(input, expected2) {
-  if (!identity9.test(expected2.uuid) || !identity9.test(expected2.libraryUuid) || !isRecord(input) || input["uuid"] !== expected2.uuid || input["libraryUuid"] !== expected2.libraryUuid || input["libraryType"] !== "5" || typeof input["name"] !== "string" || input["name"].length === 0 || input["name"].length > 512) {
+  if (!identity10.test(expected2.uuid) || !identity10.test(expected2.libraryUuid) || !isRecord(input) || input["uuid"] !== expected2.uuid || input["libraryUuid"] !== expected2.libraryUuid || input["libraryType"] !== "5" || typeof input["name"] !== "string" || input["name"].length === 0 || input["name"].length > 512) {
     throw new Error("Existing external model metadata identity, owner, type or title differs.");
   }
   return { ...expected2, metadata: structuredClone(input) };
 }
-var identity9, DEVICE_MODEL_RUNTIME_GUARD;
+var identity10, DEVICE_MODEL_RUNTIME_GUARD;
 var init_device_model = __esm({
   "server/src/device-model.ts"() {
     init_core3();
     init_library_operations();
-    identity9 = /^[a-f0-9]{32}$/u;
+    identity10 = /^[a-f0-9]{32}$/u;
     DEVICE_MODEL_RUNTIME_GUARD = `if(PLAN.model!==undefined){const api=eda.lib_3DModel;if(typeof api?.get!=='function')throw new Error('DEVICE_MODEL_GETTER_MISSING');const actual=await api.get(PLAN.model.uuid,PLAN.model.libraryUuid);const encoded=JSON.stringify(actual);if(typeof encoded!=='string'||new TextEncoder().encode(encoded).byteLength>1048576||stable(JSON.parse(encoded))!==stable(PLAN.model.metadata))throw new Error('DEVICE_MODEL_METADATA_DRIFT');await assertProject();}`;
   }
 });
@@ -65979,8 +66176,8 @@ function prepareDeviceAssociation(input, history, modelInput) {
   const associations = [];
   const requestedModel = deviceRequestedModel(parsed2);
   const model = requestedModel === void 0 ? void 0 : validateDeviceModelMetadata(modelInput, requestedModel);
-  for (const [family, identity12] of Object.entries(parsed2.patch.association ?? {})) {
-    if (family === "model3D" && identity12 === null) {
+  for (const [family, identity13] of Object.entries(parsed2.patch.association ?? {})) {
+    if (family === "model3D" && identity13 === null) {
       attributes2["3D Model"] = "";
     } else if (family === "model3D" && model !== void 0) {
       attributes2["3D Model"] = `${model.uuid}|${model.libraryUuid}`;
@@ -65990,13 +66187,13 @@ function prepareDeviceAssociation(input, history, modelInput) {
         throw new Error("Unreviewed project association family.");
       }
       const key = family === "symbol" ? "Symbol" : "Footprint";
-      if (identity12 === null && family === "footprint") {
+      if (identity13 === null && family === "footprint") {
         attributes2[key] = "";
       } else {
-        if (!isRecord(identity12) || identity12.libraryUuid !== history.projectUuid || typeof identity12.uuid !== "string") {
+        if (!isRecord(identity13) || identity13.libraryUuid !== history.projectUuid || typeof identity13.uuid !== "string") {
           throw new Error("Association may not import or reference an off-project asset.");
         }
-        const target5 = history.documents.find((entry) => entry.uuid === identity12.uuid && entry.docType === (family === "symbol" ? "SYMBOL" : "FOOTPRINT") && !isNativeDocumentDeleted(entry));
+        const target5 = history.documents.find((entry) => entry.uuid === identity13.uuid && entry.docType === (family === "symbol" ? "SYMBOL" : "FOOTPRINT") && !isNativeDocumentDeleted(entry));
         const title4 = target5?.records.find((entry) => entry.id === "META" && entry.type === "META")?.body["title"];
         if (target5 === void 0 || typeof title4 !== "string" || title4.length === 0) {
           throw new Error("Association asset is absent from the complete checkpoint.");
@@ -66837,11 +67034,11 @@ function pageNameCounter(value) {
   if (suffix === void 0) {
     return 0;
   }
-  const number14 = Number(suffix);
-  if (!Number.isSafeInteger(number14) || number14 >= Number.MAX_SAFE_INTEGER) {
+  const number15 = Number(suffix);
+  if (!Number.isSafeInteger(number15) || number15 >= Number.MAX_SAFE_INTEGER) {
     throw new Error("Native page-name counter is outside the exact integer range.");
   }
-  return number14;
+  return number15;
 }
 function prepareDocumentPageCreate(input, history, context2) {
   const operation = documentPageCreateOperation(input);
@@ -68026,7 +68223,7 @@ const json=JSON.stringify(payload);return{schema:'easyeda-pro-control.exact-json
 }catch{throw new Error('Document activation refused: '+stage+(preferenceFailure===undefined?'':':'+preferenceFailure));}
 })()`;
 }
-var DOCUMENT_ACTIVATION_PROFILE, identity10, documentType, member3, contextSchema, planSchema5;
+var DOCUMENT_ACTIVATION_PROFILE, identity11, documentType, member3, contextSchema, planSchema5;
 var init_document_activation = __esm({
   "server/src/document-activation.ts"() {
     init_zod();
@@ -68036,15 +68233,15 @@ var init_document_activation = __esm({
     init_native_history();
     init_device_runtime_guard();
     DOCUMENT_ACTIVATION_PROFILE = "easyeda-pro-control.document-activation.v1";
-    identity10 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
+    identity11 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
     documentType = external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]);
-    member3 = external_exports.object({ uuid: identity10, documentType }).strict();
+    member3 = external_exports.object({ uuid: identity11, documentType }).strict();
     contextSchema = member3.extend({ tabId: external_exports.string().min(1).max(512) }).strict();
     planSchema5 = external_exports.object({
       profile: external_exports.literal(DOCUMENT_ACTIVATION_PROFILE),
-      projectUuid: identity10,
-      projectOwnerUuid: identity10,
-      branchUuid: identity10,
+      projectUuid: identity11,
+      projectOwnerUuid: identity11,
+      branchUuid: identity11,
       projectPath: external_exports.string().min(1).max(4096),
       before: contextSchema,
       target: contextSchema,
@@ -68237,7 +68434,7 @@ return envelope({kind:'document-close-reconciliation',profile:PLAN.profile,planS
 }finally{clear();}
 }catch(_){throw new Error('Clean document close refused at '+stage);}})()`;
 }
-var DOCUMENT_CLOSE_PROFILE, identity11, scopeSchema4, planSchema6, resultSchema2, reconcileSchema;
+var DOCUMENT_CLOSE_PROFILE, identity12, scopeSchema4, planSchema6, resultSchema2, reconcileSchema;
 var init_document_close = __esm({
   "server/src/document-close.ts"() {
     init_zod();
@@ -68248,13 +68445,13 @@ var init_document_close = __esm({
     init_native_history();
     init_native_editor_tab_guards();
     DOCUMENT_CLOSE_PROFILE = "easyeda-pro-control.inactive-clean-document-close.v1";
-    identity11 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
-    scopeSchema4 = external_exports.object({ uuid: identity11, documentType: external_exports.union([external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]), tabId: external_exports.string().min(1).max(512) }).strict();
+    identity12 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
+    scopeSchema4 = external_exports.object({ uuid: identity12, documentType: external_exports.union([external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]), tabId: external_exports.string().min(1).max(512) }).strict();
     planSchema6 = external_exports.object({
       profile: external_exports.literal(DOCUMENT_CLOSE_PROFILE),
-      projectUuid: identity11,
-      ownerUuid: identity11,
-      branchUuid: identity11,
+      projectUuid: identity12,
+      ownerUuid: identity12,
+      branchUuid: identity12,
       projectPath: external_exports.string().min(1).max(4096),
       active: scopeSchema4,
       target: scopeSchema4,
@@ -70784,8 +70981,8 @@ function privateMode(mode) {
 function identityOf2(information) {
   return { device: information.dev, inode: information.ino };
 }
-function sameIdentity2(information, identity12) {
-  return information.dev === identity12.device && information.ino === identity12.inode;
+function sameIdentity2(information, identity13) {
+  return information.dev === identity13.device && information.ino === identity13.inode;
 }
 function assertPrivateLeaseFile(information, label, expectedLinkCount = 1n) {
   if (information.isSymbolicLink() || !information.isFile() || information.nlink !== expectedLinkCount || privateMode(information.mode) !== 384 || information.size <= 0n || information.size > MAXIMUM_LEASE_RECORD_BYTES || typeof process7.getuid === "function" && information.uid !== BigInt(process7.getuid())) {
@@ -70883,16 +71080,16 @@ async function writeNewPrivateRecord(handle, path5, value, label) {
   ]);
   assertPrivateLeaseFile(opened, label);
   assertPrivateLeaseFile(currentPath, label);
-  const identity12 = identityOf2(opened);
-  if (!sameIdentity2(currentPath, identity12)) {
+  const identity13 = identityOf2(opened);
+  if (!sameIdentity2(currentPath, identity13)) {
     throw new Error(`${label} changed during exclusive publication.`);
   }
-  return identity12;
+  return identity13;
 }
-async function unlinkExpectedPrivateRecord(root, path5, identity12, label) {
+async function unlinkExpectedPrivateRecord(root, path5, identity13, label) {
   const pathInformation = await lstat14(path5, { bigint: true });
   assertPrivateLeaseFile(pathInformation, label);
-  if (!sameIdentity2(pathInformation, identity12)) {
+  if (!sameIdentity2(pathInformation, identity13)) {
     throw new Error(`${label} identity changed before cleanup.`);
   }
   const handle = await open13(
@@ -70907,13 +71104,13 @@ async function unlinkExpectedPrivateRecord(root, path5, identity12, label) {
     ]);
     assertPrivateLeaseFile(opened, label);
     assertPrivateLeaseFile(currentPath, label);
-    if (!sameIdentity2(opened, identity12) || !sameIdentity2(currentPath, identity12)) {
+    if (!sameIdentity2(opened, identity13) || !sameIdentity2(currentPath, identity13)) {
       throw new Error(`${label} identity changed before unlink.`);
     }
     await unlink3(path5);
     await syncControlRoot(root);
     const unlinked = await handle.stat({ bigint: true });
-    if (!sameIdentity2(unlinked, identity12) || unlinked.nlink !== 0n) {
+    if (!sameIdentity2(unlinked, identity13) || unlinked.nlink !== 0n) {
       throw new Error(`${label} did not become descriptor-only after unlink.`);
     }
   } catch (error51) {
@@ -70935,10 +71132,10 @@ async function unlinkExpectedPrivateRecord(root, path5, identity12, label) {
     throw operationFailure instanceof Error ? operationFailure : new Error(`${label} cleanup failed.`, { cause: operationFailure });
   }
 }
-function unlinkExpectedPrivateRecordSync(path5, identity12, label) {
+function unlinkExpectedPrivateRecordSync(path5, identity13, label) {
   const pathInformation = lstatSync(path5, { bigint: true });
   assertPrivateLeaseFile(pathInformation, label);
-  if (!sameIdentity2(pathInformation, identity12)) {
+  if (!sameIdentity2(pathInformation, identity13)) {
     throw new Error(`${label} identity changed before synchronous cleanup.`);
   }
   const descriptor = openSync(
@@ -70950,12 +71147,12 @@ function unlinkExpectedPrivateRecordSync(path5, identity12, label) {
     const currentPath = lstatSync(path5, { bigint: true });
     assertPrivateLeaseFile(opened, label);
     assertPrivateLeaseFile(currentPath, label);
-    if (!sameIdentity2(opened, identity12) || !sameIdentity2(currentPath, identity12)) {
+    if (!sameIdentity2(opened, identity13) || !sameIdentity2(currentPath, identity13)) {
       throw new Error(`${label} identity changed before synchronous unlink.`);
     }
     unlinkSync(path5);
     const unlinked = fstatSync(descriptor, { bigint: true });
-    if (!sameIdentity2(unlinked, identity12) || unlinked.nlink !== 0n) {
+    if (!sameIdentity2(unlinked, identity13) || unlinked.nlink !== 0n) {
       throw new Error(
         `${label} did not become descriptor-only after synchronous unlink.`
       );
@@ -71102,7 +71299,7 @@ async function acquireCleanupLease(root, cleanupPath, staleToken) {
         fsConstants5.O_WRONLY | fsConstants5.O_CREAT | fsConstants5.O_EXCL | fsConstants5.O_NOFOLLOW,
         384
       );
-      const identity12 = await writeNewPrivateRecord(
+      const identity13 = await writeNewPrivateRecord(
         handle,
         cleanupPath,
         record6,
@@ -71111,7 +71308,7 @@ async function acquireCleanupLease(root, cleanupPath, staleToken) {
       await handle.close();
       handle = void 0;
       await syncControlRoot(root);
-      return { identity: identity12, record: record6 };
+      return { identity: identity13, record: record6 };
     } catch (error51) {
       await retryHandleCloseAfterFailure(
         handle,
@@ -88221,6 +88418,9 @@ function queryPublicSdkReads(input = {}) {
     if (matched.every((entry) => entry.path === SYMBOL_PIN_ENUMERATION_METHOD)) {
       authority = "native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof";
     }
+    if (matched.every((entry) => isSchematicTextReadMethod(entry.path))) {
+      authority = "native-text-state-observation-not-complete-source-connectivity-or-persistence-proof";
+    }
   }
   return {
     schema: "easyeda-pro-control.public-sdk-read-catalog.v1",
@@ -88275,6 +88475,7 @@ var init_public_sdk_catalog = __esm({
     init_schematic_native_ids();
     init_schematic_component_properties();
     init_symbol_pin_enumeration();
+    init_schematic_text_read();
     publicSdkCatalogQuerySchema = external_exports.object({
       method: external_exports.string().min(1).max(160).optional(),
       search: external_exports.string().min(1).max(100).optional(),
@@ -89146,6 +89347,7 @@ var init_src = __esm({
     init_schematic_native_ids();
     init_schematic_component_properties();
     init_symbol_pin_enumeration();
+    init_schematic_text_read();
     init_public_sdk_catalog();
     init_operation_catalog();
     MAX_INLINE_RESULT_BYTES = 256 * 1024;
@@ -90042,7 +90244,7 @@ var init_src = __esm({
       "easyeda_control_sdk_read",
       {
         title: "Read reviewed EasyEDA SDK methods",
-        description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity-only, property-name or Pin-getter observations; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
+        description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity-only, property-name, Pin-getter or Text-state observations; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
         inputSchema: {
           request: external_exports.unknown().pipe(publicSdkReadRequestSchema),
           expectedContext: contextSchema2,
@@ -90074,6 +90276,10 @@ var init_src = __esm({
         if (input.request.method === SYMBOL_PIN_ENUMERATION_METHOD) {
           reader = "fixed-native-pin-getter-observation";
           effect = "fixed-native-pin-getter-read";
+        }
+        if (isSchematicTextReadMethod(input.request.method)) {
+          reader = "fixed-native-text-state-observation";
+          effect = "fixed-native-text-state-read";
         }
         try {
           validatePrivateFingerprint(input.expectedFingerprint);

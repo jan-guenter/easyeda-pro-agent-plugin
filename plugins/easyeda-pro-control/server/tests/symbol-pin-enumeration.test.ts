@@ -100,6 +100,23 @@ void test("independently proven empty PART returns empty without calling public 
   const current = fixture(0); assert.deepEqual(await read(current), []); assert.deepEqual(current.calls, []);
 });
 
+void test("source-backed drawing families remain direct PART children and never become Pins", async () => {
+  const current = fixture(), families = current.part["shapes"]; assert.ok(families instanceof Map);
+  /* The pinned symbol loader attaches drawing models to the PART and Symbol
+   * onChildChange maintains their family Sets. This synthetic graph exercises
+   * those ownership facts; it does not execute the installed loader or prove
+   * complete drawing geometry/source preservation. */
+  for (const modelType of ["Text", "Rect", "Circle", "Polyline"]) {
+    const drawing: Model = { id: `drawing-${modelType}`, modelType, shapeManager: current.shapes, parent: current.part,
+      children: [], isConnected: true, locked: false };
+    current.part.children.push(drawing); current.index.set(drawing.id, drawing); current.sources.set(drawing.id, 1);
+    families.set(modelType, new Set([drawing]));
+  }
+  const result = await read(current); assert.ok(Array.isArray(result));
+  assert.equal(result.length, 2); assert.deepEqual(current.calls, ["pin-0", "pin-1"]);
+  assert.deepEqual(result.map((row: Record<string, unknown>) => row["PrimitiveId"]), ["pin-0", "pin-1"]);
+});
+
 const corruptions: Record<string, (current: Fixture) => void> = {
   "foreign symbol": (current) => { current.doc["uuid"] = "foreign"; },
   "foreign project": (current) => { current.doc["project_uuid"] = "foreign"; },
@@ -109,6 +126,21 @@ const corruptions: Record<string, (current: Fixture) => void> = {
   "multipart": (current) => { current.shapes["_parts"] = [current.part, current.part]; },
   "inactive part": (current) => { current.part["isActive"] = false; },
   "associated device": (current) => { current.doc["componentCache"] = { device: {} }; },
+  "device identity without matching cache": (current) => { current.part["deviceUuid"] = "unbound-device"; },
+  "empty PART groups": (current) => { current.part["groups"] = []; },
+  "extra PART map key": (current) => {
+    const parts = current.shapes["_partIdMap"]; assert.ok(parts !== null && typeof parts === "object");
+    Reflect.set(parts, "extra-part", current.part);
+  },
+  "Pin no-connect pointer": (current) => { const pin = current.pins[0]; assert.ok(pin); pin["noConnect"] = {}; },
+  "Pin junction pointer": (current) => { const pin = current.pins[0]; assert.ok(pin); pin["junctionModel"] = {}; },
+  "initially absent Pin Type": (current) => {
+    const pin = current.pins[0]; assert.ok(pin);
+    const attrIds = pin["_attrIdMap"], attrs = pin["_attrMap"]; assert.ok(attrs instanceof Map && attrIds instanceof Map);
+    const attr = pin.children.find((child) => child["key"] === "Pin Type"); assert.ok(attr);
+    pin.children.splice(pin.children.indexOf(attr), 1); attrs.delete("Pin Type"); attrIds.delete(attr.id);
+    current.index.delete(attr.id); current.sources.delete(attr.id);
+  },
   "foreign source identity": (current) => { current.sources.set("absent", 1); },
   "GROUP record": (current) => { current.sources.set("group", 1); },
   "invalid source marker": (current) => { current.sources.set("part", 2); },

@@ -9,6 +9,8 @@ import { publicSdkReadImplementationKind, publicSdkReadRequestSchema } from "../
 import { isSchematicNativeIdMethod } from "../src/schematic-native-ids.ts";
 import { SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "../src/schematic-component-properties.ts";
 import { SYMBOL_PIN_ENUMERATION_METHOD } from "../src/symbol-pin-enumeration.ts";
+// oxlint-disable-next-line import/max-dependencies -- The real registration handler needs each production authority classifier, not a duplicated test classifier.
+import { SCHEMATIC_TEXT_READ_METHODS, isSchematicTextReadMethod } from "../src/schematic-text-read.ts";
 
 interface Input { request: { method: string; arguments: Record<string, unknown> }; expectedContext: object; expectedFingerprint: object; evidence: object; returnMode: "full"; maxInlineBytes: number }
 type Handler = (input: Input) => Promise<Record<string, unknown>>;
@@ -20,12 +22,12 @@ async function registeredSdkRead(failure: "none" | "status" | "dispatch"): Promi
   const calls: string[] = [], effects: Record<string, unknown>[] = [];
   let invoke: Handler | undefined;
   const scope = {
-    z, publicSdkReadRequestSchema, publicSdkReadImplementationKind, isSchematicNativeIdMethod, SCHEMATIC_COMPONENT_PROPERTY_METHOD, SYMBOL_PIN_ENUMERATION_METHOD,
+    z, publicSdkReadRequestSchema, publicSdkReadImplementationKind, isSchematicNativeIdMethod, SCHEMATIC_COMPONENT_PROPERTY_METHOD, SYMBOL_PIN_ENUMERATION_METHOD, isSchematicTextReadMethod,
     contextSchema: z.object({}), privateFingerprintSchema: z.object({}), evidenceSchema: z.object({}),
     CONTROL_VERSION: "synthetic", MAX_INLINE_RESULT_BYTES: 262_144,
     serializedLiveGuarded: (handler: Handler): Handler => handler,
     registerFacadeTool: (name: string, config: { description: string }, handler: Handler): void => {
-      assert.equal(name, "easyeda_control_sdk_read"); assert.match(config.description, /native identity-only, property-name or Pin-getter/u); invoke = handler;
+      assert.equal(name, "easyeda_control_sdk_read"); assert.match(config.description, /native identity-only, property-name, Pin-getter or Text-state/u); invoke = handler;
     },
     reserveEvidencePaths: (): Promise<object> => { calls.push("reserve"); return Promise.resolve({ synthetic: true }); },
     releaseEvidenceReservation: (): Promise<void> => { calls.push("release"); return Promise.resolve(); },
@@ -49,14 +51,15 @@ async function registeredSdkRead(failure: "none" | "status" | "dispatch"): Promi
   return { invoke, calls, effects };
 }
 
-for (const method of ["eda.sys_Environment.getEditorCurrentVersion", "eda.sch_PrimitiveText.getAllPrimitiveId", "eda.sch_PrimitiveWire.getAllPrimitiveId", "eda.sch_PrimitiveBus.getAllPrimitiveId", SCHEMATIC_COMPONENT_PROPERTY_METHOD, SYMBOL_PIN_ENUMERATION_METHOD]) {
+for (const method of ["eda.sys_Environment.getEditorCurrentVersion", "eda.sch_PrimitiveText.getAllPrimitiveId", "eda.sch_PrimitiveWire.getAllPrimitiveId", "eda.sch_PrimitiveBus.getAllPrimitiveId", SCHEMATIC_COMPONENT_PROPERTY_METHOD, SYMBOL_PIN_ENUMERATION_METHOD, ...SCHEMATIC_TEXT_READ_METHODS]) {
   void test(`registered SDK reader labels success and failure evidence correctly: ${method}`, async () => {
     const native = isSchematicNativeIdMethod(method);
     let reader = native ? "fixed-native-id-observation" : "fixed-public-sdk-observation";
     let effect = native ? "fixed-native-id-read" : "fixed-public-sdk-read";
     if (method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { reader = "fixed-native-property-name-observation"; effect = "fixed-native-property-name-read"; }
     if (method === SYMBOL_PIN_ENUMERATION_METHOD) { reader = "fixed-native-pin-getter-observation"; effect = "fixed-native-pin-getter-read"; }
-    const input: Input = { request: { method, arguments: {} }, expectedContext: {}, expectedFingerprint: {}, evidence: {}, returnMode: "full", maxInlineBytes: 1024 };
+    if (isSchematicTextReadMethod(method)) { reader = "fixed-native-text-state-observation"; effect = "fixed-native-text-state-read"; }
+    const input: Input = { request: { method, arguments: method === SCHEMATIC_TEXT_READ_METHODS[0] ? { primitiveIds: "text" } : {} }, expectedContext: {}, expectedFingerprint: {}, evidence: {}, returnMode: "full", maxInlineBytes: 1024 };
     for (const failure of ["none", "status", "dispatch"] as const) {
       const current = await registeredSdkRead(failure);
       if (failure === "none") {

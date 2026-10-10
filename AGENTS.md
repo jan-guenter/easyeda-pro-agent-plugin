@@ -2,9 +2,65 @@
 
 This file is the durable engineering record and common ground for every human or agent working in this repository. Keep it current whenever a requirement, assumption, interface, compatibility tuple, safety boundary, or test result changes. Do not silently turn an open question into a requirement.
 
-Last updated: 2026-10-10 (Europe/Berlin)
+Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
+
+### Restarted214400 acceptance and candidate223200
+
+- Fresh host1791770 admitted installed214400 bundle815f22a5 and manifestde80d703
+  against the unchanged external tuple. Only the two named disposable fixtures
+  were opened. Prior inverse and text Save/reopen journals stayed terminal and
+  were never replayed. No production project access.
+- Property-name enumeration passed exact29 frame keys and57 keys across two
+  parts, three ground flags and a frame. Independent reconstruction includes19
+  inherited keys absent from page ATTR records. Four nonempty Wire group IDs
+  matched saved source. Two samples per call, managed receipts, complete native
+  state and full saved-project invariance pass, with independent review.
+- Closed-page rename885ab2d4 completed once: exactMETA title and native header
+  bookkeeping only, all17 peers unchanged. Original acknowledgment/readback and
+  complete18-document checkpoint proof independently verified. No Save/reopen
+  or UI-caption-refresh claim. Terminale6d97a64; never replay the rename.
+- Ordinary-symbol Pin enumeration returned exactly two pins and all12 expected
+  getter fields, including explicit OtherProperty absence. Complete14-object
+  source and full18-document history unchanged. Coverage is zeroY/length10/
+  None-shape/IN pins, not arbitrary shapes/enums/custom attributes.
+- Both editors closed normally; empty process discovery and maintained offline
+  checkpoint verification pass. Final old fixture sourcead6c7942/logicalf2b9af1b,
+  flat source465c8adb/logical97551086. No pending CAD/journal recovery or Save.
+- Source-only Text get/getAll native DTO readers add two routes:168 fixed reads;
+  coverage774paths191public/81native/2lifecycle/8blocked/492omitted. Native14-field
+  contract preserves coordinate direction and nullable styles; complete bounded
+  root membership, literal selectors and scalar reproof. No callback/compiler/
+  serializer/Save or public-getter parity. Root and independent review accept;
+  314 focused tests, types and targeted strict lint pass. Pin-test additions
+  separately pass71 focused tests. These are not connected Text acceptance.
+- Candidate0.3.0+codex.20261010223200 passed local release verification below;
+  it is not yet published or installed. Loaded214400 is untouched. New Text reads, attribute
+  edits and nonempty single-page flat topology still need connected tests.
+  Overall API work remains unfinished and PR9 remains draft.
+
+### Candidate223200 local verification
+
+- Clean Node24.18.0/npm11.16.0 installation, dependency tree,151 registry
+  signatures/40 attestations and zero-vulnerability audit pass. Sanitizer and
+  all external/native compatibility pins remain unchanged. Independent review
+  verified that only facade projections and review time changed.
+- Final full verification with inherited descriptors142/145 passes2,189 facade
+  tests/one platform skip/zero failures or cancellations and424 bridge tests.
+  Strict types and type-aware lint have zero diagnostics. The first full run
+  found one stale classification assertion; the corrected independent exact
+  seven-native-route assertion passed separate review and the full rerun.
+  The failed run is retained, not counted as successful verification.
+- Package/seven skills, all seven official skill checks, repository/privacy,
+  actionlint, offline doctor and reproducible builds pass. The optional official
+  plugin-creator validator is not installed; maintained package/MCP/repository
+  checks are complete. Source162files51756a0f, bundled75d864d,
+  manifest14c02f1f. No connected Text acceptance is inferred.
+- Root and independent review accept the dormant new installed-proof helper;
+  it adds exact Text catalog/schema/provenance and argument-boundary checks
+  while retaining immutable Git file/mode and isolated offline-startup proofs.
+  It has not yet run. Publication/CI/official upgrade and installed proof remain.
 
 ### Candidate214400 published and installed
 
@@ -689,7 +745,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed Git-marketplace candidate is `0.3.0+codex.20261010214400`, with 26 tools, seven skills and166 fixed readers, from the draft feature ref. Exact installed-file and offline startup checks pass; connected214400 admission is pending. The loaded host remains210100. Its original flat-display journal is terminal after one inverse, delayed native persistence and read-only full-project reconciliation; no Save or replay. This is not immediate rollback validation. A separate210100 text-only transaction passed Save/close/reopen and complete nine-document proof. Both disposable editors are now closed, with the final flat source verified unchanged after normal close. Earlier lookup, metadata, page-creation and inactive-close evidence remains bound to182554; empty-symbol creation remains bound to194400. The new property-name/Pin readers and recovery corrections are installed but not connected-validated. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
+- The installed and loaded Git-marketplace candidate is `0.3.0+codex.20261010214400`, with 26 tools, seven skills and166 fixed readers, from the draft feature ref. Fresh admission and scoped connected property-name, nonempty Wire, ordinary-symbol Pin and closed-page rename tests pass. Complete native/source and saved-project proofs and independent reviews are recorded above. Both disposable editors are closed, no journal recovery is pending, and earlier inverse/Save cases remain terminal and never replayable. New source candidate223200 adds native Text state readers, bringing fixed reads to168; it is not yet installed or connected-tested. Earlier lifecycle evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

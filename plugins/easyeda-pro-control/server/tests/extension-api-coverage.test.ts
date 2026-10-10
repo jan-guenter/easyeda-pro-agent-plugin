@@ -139,7 +139,7 @@ void test("hidden Save and unsupported-editor exports have no callable route", (
 
 void test("omitted geometric getters retain proven callback, projection and filter defects", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
-  for (const family of ["Bus", "Wire", "Text"]) {
+  for (const family of ["Bus", "Wire"]) {
     for (const method of ["get", "getAll"]) {
       const row = rows.get(`eda.sch_Primitive${family}.${method}`);
       assert.ok(row);
@@ -164,7 +164,7 @@ void test("omitted geometric getters retain proven callback, projection and filt
   assert.match(net.omission.reason, /DTO/u);
   assert.equal(net.routes.length, 0);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 191, "implemented-native-equivalent": 79, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 494,
+    "implemented-public-subset": 191, "implemented-native-equivalent": 81, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 492,
   });
 });
 
