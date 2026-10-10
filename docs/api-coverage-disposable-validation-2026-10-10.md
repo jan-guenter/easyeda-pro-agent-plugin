@@ -59,12 +59,12 @@ Closed-file SHA-256:
 The fixture now retains the new empty page and native metadata history; it was
 not restored to its earlier bytes.
 
-## Source work under review
+## Changes included in candidate194400
 
-Parallel source work adds ordinary empty-symbol creation, a single-page
+Source work adds ordinary empty-symbol creation, a single-page
 display-only schematic transaction profile, earlier retention of native creation
-IDs, and bounded concurrent artifact verification. These changes have not yet
-been installed or connected-tested. General type-1 electrical edits remain
+IDs, and bounded concurrent artifact verification. Their release evidence is
+recorded below; connected tests remain pending. General type-1 electrical edits remain
 blocked; the hidden annotation/SaveAll compiler is not being re-enabled.
 
 The general computer-use helper failed during initialization in this WSL
@@ -122,4 +122,32 @@ types and type-aware lint clean. Reproducible bundles, compatibility, repository
 and privacy checks, all seven skills, actionlint and the sequential offline
 doctor also pass. An earlier doctor invocation lost its MCP connection during a
 concurrent rebuild; that failure is retained separately from the passing
-post-build check. Publication and installation evidence follows separately.
+post-build check.
+
+## Publication and installed-package verification
+
+Corrected payload `6b36a5e7eb6e397a751852e40e13bb006eae916c` passed
+[GitHub CI](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38081291695)
+and is published in draft PR9. The official Git-marketplace upgrade installed
+and enabled `0.3.0+codex.20261010194400` without errors. The cached marketplace
+HEAD matches that payload. An independent probe compared every immutable Git
+blob and mode: all 508 files, 14,429,284 bytes, with no missing or extra files,
+symlinks or special entries. The package stayed unchanged throughout the probe.
+Inventory SHA-256:
+`7648fc2ec4ba13dac3ecafca067bf59244f89ed7e3a38de61bb6878030164f82`.
+
+The actual cached MCP configuration starts ambient Node 26 and hands execution
+to pinned Node 24. Offline checks returned 26 tools, seven skills, 774 method
+paths, 160 fixed SDK reads, 749/806 declaration signatures and 105/68 operation
+schemas. The new symbol and flat-display route catalogs match their packaged
+definitions, and unsafe routes retain their explicit refusals. Twenty-one
+process snapshots found no upstream child or non-stdio socket, and a synthetic
+upstream-start sentinel remained absent. This is bounded offline startup
+evidence, not a continuous trace or connected runtime admission.
+
+The loaded facade remains the previous candidate. No live call followed
+installation. Both disposable fixtures remain closed; the next step requires
+fresh Codex pickup, then connected creation and flat-display lifecycle tests.
+The text-only fixture does not establish attribute-edit or nonempty-connectivity
+support. Remaining feasible API work and overall release acceptance are still
+unfinished; PR9 remains draft.

@@ -6,7 +6,7 @@ Last updated: 2026-10-10 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
-### Candidate194400 correction
+### Candidate194400 published and installed; fresh-session acceptance pending
 
 - Candidate193600 payload476ff30 passed CI38080738725 but was not installed.
   A real newly prepared disposable fixture exposed an invalid flat-profile
@@ -21,7 +21,25 @@ Last updated: 2026-10-10 (Europe/Berlin)
   type-aware lint are clean. Reproducibility, compatibility, repository/privacy,
   package/seven skills, independent actionlint and sequential offline doctor all
   pass. Source155filesc20fbd5c, bundlef77f6722 and manifestdf899c39; external,
-  native and sanitizer pins remain unchanged. CI/install evidence is pending.
+  native and sanitizer pins remain unchanged.
+- Payload6b36a5e7eb6e397a751852e40e13bb006eae916c passed
+  [CI38081291695](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38081291695)
+  and is published in draft PR9. One official Git-marketplace upgrade installed
+  and enabled194400 with no errors. All508 tracked packagefiles/14429284bytes
+  match immutable Git blobs and modes, with no extras or probe-time changes.
+  InventorySHA7648fc2ec4ba13dac3ecafca067bf59244f89ed7e3a38de61bb6878030164f82.
+  Actual cached startup hands ambientNode26 to pinnedNode24:26tools,7skills,
+  774methods,160fixedreads,749/806SDKsignatures,105/68operation schemas.
+  Twenty-one offline process observations found no upstream child/nonstdio
+  socket; the synthetic upstream sentinel remained absent. This is not live
+  admission or a continuous syscall trace. Marketplace HEAD equals the payload.
+- EasyEDA is closed and both disposable fixtures are saved and checkpointed.
+  Loaded facade remains182554; no live call followed installation. Start a fresh
+  Codex session before connected symbol-create and flat-display lifecycle tests.
+  The new text-only fixture cannot validate attributes or nonempty connectivity.
+  Overall feasible API work is unfinished; keep PR9 draft. Root-only release
+  records do not change the installed package or justify another same-version
+  marketplace refresh. No user project was opened or changed.
 - The regression uses a real synthetic SQLite database and maintained backup:
   unequal source/backup byte hashes with equal logical dumps pass preparation.
   A later VACUUM preserving the logical dump still fails exact source-receipt
@@ -56,7 +74,7 @@ Last updated: 2026-10-10 (Europe/Berlin)
   No real journal or production quarantine was edited. Details are in the
   disposable-validation report; retained private artifacts must not be removed.
 
-### Installed182554 disposable continuation
+### Installed182554 disposable continuation (before194400)
 
 - Fresh facade loaded the exact installed182554 bundle and authenticated a
   contained runtime. Existing-project open and both tab/split lookups passed.
@@ -74,12 +92,13 @@ Last updated: 2026-10-10 (Europe/Berlin)
   final receipt. All journals from this continuation are terminal. No user project
   open/read/edit/Save/restore. See the
   [disposable evidence and limits](docs/api-coverage-disposable-validation-2026-10-10.md).
-- Source work is not yet built, published or installed: empty ordinary project
-  symbol creation; creation-ID retention before fallible dispatch cleanup;
+- Source work at that point was not yet built, published or installed: empty
+  ordinary project symbol creation; creation-ID retention before fallible dispatch cleanup;
   bounded concurrent artifact hashing and one fresh status-admission scan;
   single-page display-only schematic profile integration under adversarial
-  review. No generic type1 electrical route or hidden compiler/SaveAll path is
-  re-enabled. Historical live evidence does not validate this new source.
+  review. The later194400 verification is recorded above. No generic type1
+  electrical route or hidden compiler/SaveAll path is re-enabled. Historical
+  live evidence does not validate this new source.
 
 ### Previous182554 publication handoff (historical)
 
