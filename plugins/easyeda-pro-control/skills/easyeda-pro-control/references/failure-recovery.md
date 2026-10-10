@@ -1,57 +1,80 @@
 # Failure recovery
 
-## First rule
+An ambiguous operation must not be repeated or saved. Inspect its journal and preserve the checkpoint, created IDs, runtime proof and phase artifacts. A delayed call may have completed after the response deadline.
 
-After an ambiguous write, stop writing. Record the operation as `unknown` or `mutationMayHaveOccurred`, preserve every artifact, and do not read or retry through the same runtime while a dispatched call may still be running. A blind retry can apply the same change twice or destroy the only recoverable baseline.
+## Typed design and library recovery
 
-The facade enforces a global bridge quarantine whenever any managed journal reports orphan risk. It also treats an unreadable journal as a blocker because the lost state may conceal the only orphan marker. Live status, context, exact/generic reads, captures, exports, checkpoints, raw calls, and mutation phases are refused. Local catalog discovery, managed artifact/evidence inspection, recovery listing, and the nonce-bound recovery resolver remain available. Quarantine discovery uses only the facade's static reviewed snapshot; it must not start the upstream or connect to EasyEDA. Do not delete or rewrite a journal merely to bypass this gate.
+1. Use `easyeda_control_design` inspect with the operation ID, or the corresponding library inspect action. `easyeda_control_recover_incomplete` with no ID lists managed incomplete operations. Local artifact/evidence inspection remains available.
+2. If `orphanedCallPossible` is true, the global bridge quarantine applies. Do not route around it through another facade, a new control directory or native design edits. The selected recovery must be isolated from other incomplete/unreadable journals.
+3. Request normal close of the retained EasyEDA runtime only within the user's authority. Inspect any prompt. Never choose Save after an unknown write. Discarding unsaved state or force termination requires separate applicable authority; the packaged controller does neither automatically.
+4. After old execution authority actually terminates, launch the replacement contained runtime and establish a new authenticated session. Typed `recover-authority` consumes its current operation/phase/attempt-bound technical challenge internally. The retained process handles, old-session closure in the same gateway, replacement renderer/session and unchanged policy are the proof. A copied PID, reconnection or confirmation flag is insufficient.
+5. Recovery clears only the execution-authority gate. It does not classify the design or assume unsaved changes were discarded. Design and library `open-target` take the original operation ID and `confirmOpen:true`; they open its checkpoint-proven original target and retain the current tab without rewriting the sealed plan. Do not start a new runtime `open-existing` transaction while another operation is incomplete.
+6. Use design `reconcile`. Exact live baseline plus unchanged complete durable records can finish as no-mutation. Exact intended live state can return to applied-unsaved only when no Save intent or legacy Save evidence exists. A supported retained save/reopen result may finish without repeating Save. A prior attempted Save with incomplete proof, or any collateral change, remains a review stop.
 
-Call `easyeda_control_recover_incomplete` to list journals that did not reach a terminal state. Its summary includes the managed journal path, uncertain phase, bounded last error, recent artifacts, and checkpoint receipt pointers. Inspect the referenced phase results and checkpoints with `easyeda_control_artifact_read`.
+Library `reconcile-no-mutation` accepts only the unchanged baseline. Library `reconcile` may instead verify the original returned mutation against its retained native-return artifact, prepared device plan and complete durable project-record delta. It never repeats a mutation, export, save, close or inverse. Missing identity or conflicting evidence remains a review stop. A recovered changed result is saved-record proof, not library-editor reopen proof.
 
-A resolving recovery call is accepted only when its selected operation is isolated: every other journal must be terminal and free of orphan risk. Another incomplete, orphan-risk, or unreadable journal blocks resolution because the selected recovery may itself activate, read, or reopen the live editor while a foreign delayed call is still possible.
+A library-design commit can separately account for one earlier, fully journaled rollback whose native disk write arrived after the current baseline. This requires the exact terminal prior journal and inverse artifact, the same project/owner/runtime, chronological preparation evidence, and complete forward and inverse project proofs. The result is explicitly `isolatedTransaction:false` with both proofs and original hashes, not an unchanged-collateral claim. Any other change still stops recovery. Never change the sealed baseline or delete the prior journal to make a comparison pass.
 
-## Recovery sequence
+A facade/gateway restart can lose the retained authority and closed-session history needed for automatic proof. Do not forge replacement evidence or delete the journal to proceed. Preserve the files and request a reviewed recovery path.
 
-1. Inspect the journal summary. If `orphanedCallPossible` is true, pause at a destructive human gate. Ask the user to terminate EasyEDA Pro, restart it, and reconnect the bridge. If EasyEDA asks about unsaved changes, never select Save because that can persist the unknown call. Selecting Don't Save or force-quitting is allowed only if the journaled clean baseline and no-concurrent-edit assumptions still hold and the user explicitly authorizes discarding every unsaved change. Otherwise cancel the close and preserve the session for manual review. A timeout, reconnect, status call, or MCP restart alone does not prove that the old EasyEDA call cannot complete.
-2. Obtain a fresh user message after the authorized restart containing the current `runtimeRestartChallenge` shown by `easyeda_control_recover_incomplete`, and pass that exact value as `runtimeRestartConfirmation`. Its form is `EASYEDA_RESTARTED_AND_RECONNECTED:<operationId>:<phase>:<attempt>:<nonce>`. It is operation-, phase-, attempt-, and nonce-bound and is consumed durably before the orphan gate opens; an interrupted consumption causes a new nonce, and an old value cannot be replayed. Never synthesize it, copy it from an error, infer it from a reconnect, or reuse an earlier value. Before the original dispatch, the facade acquires an HMAC-authenticated lease for the exact fully proxying bridge session, uses that lease for its bound runtime probes and the mutation/lifecycle call, and journals the lease receipt, immutable renderer identity, and OS-level EasyEDA process-tree capture. A replacement session cannot carry that call. Recovery requires the leased session in the same gateway's closed history, a distinct fully proxying replacement session, a different renderer generation and `performance.timeOrigin`, and a hash-bound validator proving under the same capture policy that no process, worker, or main-process authority from the prior captured tree can still complete the call. A facade or gateway restart loses authoritative session history and therefore fails closed. The user attestation, a new JavaScript realm, or a renderer PID change alone cannot open the gate. Production installs no such process-tree validator until connected sacrificial-project validation, so the experimental writer remains disabled. The facade still cannot prove which choice was made in a native prompt.
-3. Prove facade, upstream, and bridge health through the restarted application.
-4. Reestablish the exact project and document context. Recovery activates an already-open target or opens it by UUID, verifies the resulting project/document/type, and durably rebinds the new tab before classification. An uncertain activation is itself journaled and nonce-gated; do not repeat it blindly.
-5. Verify the pre-checkpoint receipt.
-6. Read the target and global invariants without mutation.
-7. Check whether the requested recovery resolution is legal from the journaled phase. A caller-selected label cannot override the phase.
-8. If planning stopped in `baseline-reopen-dispatching`, `baseline-reopen-unknown`, or `baseline-reopened`, verify that the pre-checkpoint still matches the durable source and invalidate the plan. There is no accepted live baseline or design mutation to reconcile.
-9. Classify the one target as the complete declared before-state, complete declared after-state, or other. The state machine deliberately forbids multi-component plans, so it never has to classify a legitimate partial target set.
-10. If live and durable state both match the exact baseline, `reconciled-no-mutation` may end an ambiguous pre-apply/apply/rollback/save-dispatch state. Without a restart/discard boundary, an intact database plus exact live desired-state proof may allow `reconciled-applied-unsaved` to return to `live-verified`. After the required restart/discard boundary, unsaved state is permanently treated as discarded and that resolution is illegal; prove `reconciled-no-mutation` or stop for manual review. Any `other` target state or collateral invariant change is a hard stop; do not invoke the inverse blindly.
-11. `reconciled-saved-reopened` is legal only after the journal reached the save/reopen phase, the pre-checkpoint artifact remains intact, the live project's logical SQLite dump differs from that pre-checkpoint, and typed reopened assertions pass. Recovery creates a candidate final checkpoint before those fresh reads and verifies that candidate against the live database last. A physical file rewrite with the same logical dump is not persistence proof. Saved-state recovery always closes and reopens without saving first; this discards any later unsaved state and therefore requires `confirmDiscardAnyUnsavedState: true` plus user authority.
-12. If it is neither, stop for a reviewed rollback or explicit restore procedure.
+For an exactly diagnosed schematic flag/drop split, `repair-layout-wire-groups` corrects the original failed layout without replaying it. Keep its original plan, checkpoint, created IDs and returned acknowledgment. It refuses prior correction intents, Save attempts, unrelated source/durable changes and pin-net differences outside the enumerated generated-name defect. Reconcile or commit the same operation afterward; never create a second layout to work around the failed journal. Native auto-persistence can already have written the failed layout despite `saved:false`.
 
-The facade journals `recovery-reopen-dispatching` before a destructive reopen-only recovery. If that call becomes uncertain, it records `recovery-reopen-unknown`. Do not repeat it implicitly. After inspecting current state and the journal, a new attempt requires `confirmRepeatAfterUnknownRecovery: true` in addition to any discard authorization.
+For an unfinished design or library journal after a facade upgrade, `rebind-runtime` accepts the replacement `expectedFingerprint` and `confirmRuntimeUpgrade:true` only when no orphan risk remains and every external EasyEDA/upstream fingerprint field is unchanged. It records the replacement facade identity without modifying the sealed original plan. Reconciliation is still required; this cannot clear an orphan or accept a changed EasyEDA implementation.
 
-Do not infer current state from a timeout boundary. The extension may have completed the call after the facade stopped waiting.
+If full schematic topology is unavailable after reopening, `load-layout-pages` with the original design operation ID and `confirmOpen:true` loads the declared sibling pages and returns to the target without saving. Besides unfinished layouts, the path admits a settled, pre-Save `sch.wire.modify` failure only after its exact stored baseline and lifecycle-equivalent native state are restored. It rejects prior page-loading intent, correction, inverse or Save evidence. The fresh target must remain fully unchanged during navigation, and all original endpoints must match afterward. Reconcile the same journal separately. Never replay a partially dispatched page load. This restored-wire path passed nine-page loading and subsequent 850-document no-mutation reconciliation on private design; it does not restore a checkpoint, authorize another edit, or validate the wire writer.
 
-## Common failure patterns
+An unfinished runtime `open-existing` operation uses `inspect-open`, `recover-open-authority`, `rebind-open-runtime` and `reconcile-open`, not the design/library recovery actions. Reconciliation inspects the current exclusive tab and unchanged database without repeating navigation. See [connection-and-context.md](connection-and-context.md#open-an-existing-saved-project-from-start-page).
 
-| Symptom | Likely explanation | Response |
-|---|---|---|
-| A call returns true but reopen shows no change | Request acceptance, view refresh, invalid binding, or serializer rollback | Inspect durable binding and source. Do not repeat blindly. |
-| Import reports completion but a component is unchanged | Device or footprint binding is not a valid project record | Repair the project device, then select one reviewed Modify row. |
-| One intended ECO becomes Add plus Remove | `UniqueId` mismatch | Cancel and repair identity. |
-| A footprint view refreshes but child geometry stays old | Public refresh did not rebuild the instance | Consider version-pinned `recoverFootprint`, then audit every child. |
-| Pin modify returns without a pin change | Wrong adapter argument form | Retry only as a new reviewed operation using the primitive ID form. |
-| A keepout exists but raw paths differ | Polygon canonicalization changed winding or closure | Compare geometric equivalence. |
-| A drill reads ten times too small | Transformed pin wrapper scaled the field | Read direct pad primitives or durable footprint source. |
-| Offline placement passes but live bodies overlap | Offline envelopes omitted real extents | Roll back the whole placement unit and use live bounding boxes. |
-| A 3D model looks offset | Transform normalization or perspective | Inspect source bounds and use a top orthographic check. |
-| Whole-schematic compile times out | Compiler latency or stalled runtime | Treat pending ECO state as unknown and keep row scope exact. |
+Rule checks have their own inspect, recover-authority, open-target, rebind-runtime and reconcile-no-mutation actions under `easyeda_control_check`. A failed or timed-out check is never rerun by recovery. Reconciliation compares the retained full calculation scope and complete saved SQLite baseline; it does not manufacture a report from an unknown check outcome. Other incomplete operations block a new check.
 
-## Disconnects and stale bridges
+## Saved library edit awaiting reopen
 
-A bridge disconnect during a read invalidates that read. A disconnect during a write makes the result unknown. Before Bubblewrap starts, the native descriptor sanitizer binds itself to the exact facade parent with `PR_SET_PDEATHSIG(SIGKILL)` and repeats the parent check after installing the signal. The facade-supervised upstream also exits when facade stdio authority disappears, and the process lease binds the supervisor PID plus Linux process-start identity. These process controls prevent a hard-killed facade from silently leaving its supervised bridge owner running. They do not cancel or resolve a design call already dispatched inside EasyEDA. If the journal marks an orphan risk, use the destructive human restart gate above before reconnecting through the single facade-owned child; merely reconnecting can leave the delayed call alive. Do not start a competing server.
+If a symbol or footprint Save succeeded but reopen failed, reconcile the original design journal. It rehashes the retained Save and durable-before-close artifacts, recomputes the full project proof from their checkpoint, then checks fresh source and saved records. `saved-awaiting-reopen` means that evidence passed, not that reopen completed. Missing acknowledgments or conflicting durable evidence stop recovery; a saved flag alone cannot authorize it.
 
-## Closing without save
+Commit that same operation ID to perform only close/reopen and final verification. It never repeats Save or the edit. An exact retained successful reopen receipt can instead finish verification without another navigation. Read or checkpoint failures before dispatch do not consume the recovery navigation. A dispatched navigation without a success receipt remains incomplete and is never blindly repeated.
 
-Closing an unsaved document can discard unrelated user edits. Use the discard-capable recovery option only when fresh evidence proves the document was clean before the planned operation, no one added other work, and the user authorized discarding anything still unsaved. The recovery tool is destructive for this reason. Otherwise stop and preserve the live state for manual review.
+## Save is never retried
 
-## When to ask for the user
+Every typed design commit records a durable Save intent immediately before
+dispatch, after final authority checks. Failed, missing or ambiguous
+acknowledgments do not erase that intent. Reconciliation, runtime rebinding and
+facade restarts cannot authorize a second Save. Legacy Save lifecycle artifacts
+also count. A refusal before dispatch and before intent is different from an
+attempted Save; inspect the actual retained evidence, not the error text alone.
 
-Pause at a `visible-ui-gate`, an unproven private-version mismatch, an ambiguous ECO, missing restore authority, or a document containing unrelated unsaved work. State the exact evidence and the smallest user action needed. Do not describe ordinary implementation difficulty as a blocker.
+Retained-proof recovery remains operation-specific. Do not generalize wire,
+layout, copper or library recovery to another action. If no maintained path can
+prove the already attempted lifecycle, preserve evidence and request review.
+
+### Retained wire Save
+
+After standalone `sch.wire.modify` reaches Save, never commit it again. The
+executor retains a Save-attempt marker before dispatch and also recognizes
+legacy lifecycle artifacts. Missing, failed or duplicate acknowledgments cannot
+return that journal to `applied-unsaved` or authorize another Save.
+
+With one complete successful Save/close/reopen acknowledgment, reconcile the
+same journal. The wire-only path verifies its hash-bound preceding after-state,
+the exact Save guard and lifecycle receipt, fresh typed source/native effect,
+original full topology, complete durable project delta and final stable state.
+It dispatches neither Save nor navigation. Conflicting evidence remains a stop;
+do not edit the journal or substitute a new operation. After a package/runtime
+change use the ordinary rebind and target recovery first. The retained fixture
+recovery and fresh 16-document wire lifecycle completed Sept25. This is a
+narrow source/lifecycle profile, not blanket permission for wire changes.
+
+## Native UI failures
+
+A native input failure may report `dispatched:true`; that is uncertainty, not permission to repeat a click, key or import. Reinspect the exact owned window and affected design when bridge quarantine permits it. UI inspection is not a save/reopen or connectivity proof. `observed-unowned` process binding supports native bootstrap but never substitutes for retained Job authority.
+
+For a settled API call whose own unsaved target blocks normal close, the explicit [discard-close recovery](native-ui.md#discard-close-recovery-for-the-operations-own-unsaved-target) action preserves saved evidence and binds one discard click to a fresh screenshot and the original journal/process. It does not permit generic UI edits during an incomplete transaction or classify the resulting saved state.
+
+## Legacy recovery
+
+The legacy one-component writer endpoints remain runtime-disabled. Their retained recovery schema uses a user-supplied `runtimeRestartConfirmation` after an authorized restart. Do not apply that historical attestation workflow to the newer typed tools, which use technical challenges and actual retained termination evidence. Conversely, do not synthesize a legacy confirmation.
+
+## Evidence publication
+
+A result published before its receipt is recoverable through `easyeda_control_evidence_recover` using the same reserved paths. This repairs evidence publication, not the editor operation, and must not rerun the original call. Verify recovered receipts before relying on them.
+
+Never overwrite an open EasyEDA database. An exact inverse is operation-dependent; absence of an inverse is not a promise of automatic checkpoint restoration.

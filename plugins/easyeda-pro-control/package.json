@@ -24,11 +24,12 @@
     "sanitizer:check": "node scripts/build-descriptor-sanitizer.ts --check",
     "test": "node --test server/tests/*.test.ts",
     "validate": "node scripts/validate-plugin.ts",
+    "skills:validate": "node scripts/validate-skills.ts",
     "repository:validate": "node scripts/validate-repository.ts",
     "doctor": "node scripts/doctor.ts --offline",
     "compatibility:check": "node scripts/reviewed-compatibility.ts --check",
     "compatibility:update": "node scripts/reviewed-compatibility.ts --write",
-    "verify": "npm run typecheck && npm run bridge:typecheck && npm run bridge:lint && npm run lint && npm run build && npm run compatibility:check && npm test && npm run bridge:test && npm run validate"
+    "verify": "npm run typecheck && npm run bridge:typecheck && npm run bridge:lint && npm run lint && npm run build && npm run compatibility:check && npm test && npm run bridge:test && npm run skills:validate && npm run validate"
   },
   "engines": {
     "node": "24.18.0"
@@ -40,7 +41,7 @@
     "x64"
   ],
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.29.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "acorn": "8.17.0",
     "ws": "8.21.3",
     "zod": "4.4.3"
@@ -49,9 +50,9 @@
     "@types/node": "24.13.3",
     "@types/ws": "8.18.1",
     "esbuild": "0.28.2",
-    "oxlint": "1.80.0",
-    "oxlint-tsgolint": "7.0.2001",
+    "oxlint": "1.87.0",
+    "oxlint-tsgolint": "7.0.2003",
     "typescript": "7.0.2",
-    "vitest": "4.1.9"
+    "vitest": "4.1.11"
   }
 }

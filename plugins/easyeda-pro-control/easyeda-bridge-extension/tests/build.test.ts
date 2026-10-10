@@ -417,7 +417,7 @@ describe('authenticated bridge bundle', () => {
     expect(toastMessages.at(-1)).toContain('Auto-Connect: OFF');
   });
 
-  it('falls back to sys_WebSocket.create when register never reports open', async () => {
+  it('refuses sys_WebSocket.create when native register never reports open', async () => {
     const bundle = buildInMemory({ MCP_DEV_HOTSWAP: '' });
 
     const toastMessages: string[] = [];
@@ -502,8 +502,7 @@ describe('authenticated bridge bundle', () => {
       SYS_WebSocket: {
         register: () => {
           registerCalls += 1;
-          // EasyEDA Pro 3.2.149 on macOS can accept register() without
-          // Invoking the optional connected callback.
+          // Model a silent native registration without invoking connected.
         },
         send: () => {
           registerSendCalls += 1;
@@ -526,29 +525,16 @@ describe('authenticated bridge bundle', () => {
     expect(registerCalls).toBe(1);
     expect(registerSendCalls).toBe(0);
     expect(registerClosedIds).toHaveLength(1);
-    expect(createCalls).toBe(1);
-    expect(rawHandshakePayloads).toContainEqual(expect.objectContaining({ type: 'handshake' }));
-    expect(toastMessages).toContain('EasyEDA Pro Control Bridge connected to local server');
-
-    createdSocket?.onmessage?.({
-      data: JSON.stringify({ type: 'heartbeat', source: 'server' }),
-    });
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(
-      rawHandshakePayloads.some(
-        (payload) => payload.type === 'heartbeat' && payload.source === 'extension',
-      ),
-    ).toBe(true);
-
-    createdSocket?.close();
-    callContextMethod(context, 'edaEsbuildExportName', 'showStatus');
-    expect(toastMessages.at(-1)).toContain('waiting for server');
+    expect(createCalls).toBe(0);
+    expect(createdSocket).toBeUndefined();
+    expect(rawHandshakePayloads).toEqual([]);
+    expect(toastMessages).not.toContain('EasyEDA Pro Control Bridge connected to local server');
+    expect(toastMessages.at(-1)).toContain('did not invoke its open callback');
 
     callContextMethod(context, 'edaEsbuildExportName', 'disconnect');
   });
 
-  it('uses globalThis.WebSocket when the bare identifier is shadowed', async () => {
+  it('refuses globalThis.WebSocket when the native API is absent', async () => {
     const bundle = buildInMemory({ MCP_DEV_HOTSWAP: '' });
 
     const toastMessages: string[] = [];
@@ -624,9 +610,10 @@ describe('authenticated bridge bundle', () => {
     );
     await callContextMethod(context, '__shadowedWebSocketExport', 'connect');
 
-    expect(constructorCalls).toBe(1);
-    expect(handshakePayloads).toContainEqual(expect.objectContaining({ type: 'handshake' }));
-    expect(toastMessages).toContain('EasyEDA Pro Control Bridge connected to local server');
+    expect(constructorCalls).toBe(0);
+    expect(handshakePayloads).toEqual([]);
+    expect(toastMessages).not.toContain('EasyEDA Pro Control Bridge connected to local server');
+    expect(toastMessages.at(-1)).toContain('offline');
 
     callContextMethod(context, '__shadowedWebSocketExport', 'disconnect');
   });

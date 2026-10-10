@@ -68,8 +68,12 @@ async function closeServer(server: WebSocketServer): Promise<void> {
   });
 }
 
-async function openClient(port: number): Promise<WebSocketClient> {
+async function openClient(
+  port: number,
+  headers: Record<string, string | string[]> = {},
+): Promise<WebSocketClient> {
   const socket = new WebSocketClient(`ws://127.0.0.1:${port}`, {
+    headers,
     perMessageDeflate: false,
   });
   socket.on("error", () => {
@@ -81,7 +85,7 @@ async function openClient(port: number): Promise<WebSocketClient> {
 
 async function expectUpgradeRejected(
   port: number,
-  headers: Record<string, string> = {},
+  headers: Record<string, string | string[]> = {},
 ): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     const socket = new WebSocketClient(`ws://127.0.0.1:${port}`, {
@@ -337,6 +341,125 @@ function observeLeaseSettlements(
 }
 
 void describe("mutually authenticated EasyEDA bridge gateway", () => {
+  void test("admits only the exact native renderer origin and still requires full authentication", async () => {
+    const backend = await listeningServer();
+    let backendConnections = 0;
+    backend.on("connection", () => {
+      backendConnections += 1;
+    });
+    const gateway = createGateway(serverPort(backend));
+    await gateway.start();
+    await gateway.bindBackendOwner(process.pid);
+    const port = gateway.lifecycle().publicEndpoint.port;
+    try {
+      for (const origin of [
+        "null", "HTTPS://client", "https://Client", "https://client/",
+        "https://client:443", "https://client.evil", "http://client",
+        "https://client@evil.invalid", "https://client, https://client",
+        ["https://client", "https://client"],
+        ["https://client", "https://evil.invalid"],
+      ]) {
+        await expectUpgradeRejected(port, { Origin: origin });
+      }
+      assert.equal(backendConnections, 0);
+      assert.equal(gateway.connectionDiagnostics().pendingAuthenticationCount, 0);
+      const client = await openClient(port, { Origin: "https://client" });
+      try {
+        assert.equal(gateway.lifecycle().activeSession, null);
+        assert.equal(backendConnections, 0);
+        const closed = once(client, "close");
+        client.send(JSON.stringify({ type: "handshake", sessionToken: "not-a-key" }));
+        await closed;
+        assert.equal(backendConnections, 0);
+        assert.equal(gateway.connectionDiagnostics().lastFailure?.code, "authentication-failed");
+      } finally {
+        client.terminate();
+      }
+      const acceptedClient = await openClient(port, { Origin: "https://client" });
+      try {
+        const backendConnection = nextConnection(backend);
+        await authenticate(acceptedClient, Buffer.alloc(32, 97).toString("base64url"));
+        const privateSocket = await backendConnection;
+        const privateHandshake = nextJson(privateSocket);
+        acceptedClient.send(JSON.stringify({
+          authenticatedIndexBuildId: AUTHENTICATED_INDEX_BUILD_ID,
+          authenticationKeySha256: AUTHENTICATION_KEY_SHA256,
+          contractVersion: 1,
+          protocol: "easyeda-mcp-pro.bridge",
+          protocolVersion: "1.0.0",
+          type: "handshake",
+        }));
+        const forwardedHandshake = await privateHandshake;
+        assert.equal(forwardedHandshake["sessionToken"], BACKEND_TOKEN);
+        assert.equal(gateway.lifecycle().activeSession, null);
+        const hello = nextJson(acceptedClient);
+        privateSocket.send(JSON.stringify(REVIEWED_UPSTREAM_HELLO));
+        await hello;
+        assert.ok(gateway.lifecycle().activeSession !== null);
+      } finally {
+        acceptedClient.terminate();
+      }
+    } finally {
+      await gateway.close();
+      await closeServer(backend);
+    }
+  });
+
+  void test("distinguishes an idle gateway from attempted connections without changing session authority", async () => {
+    const backend = await listeningServer();
+    const gateway = createGateway(serverPort(backend));
+    await gateway.start();
+    try {
+      const initial = gateway.connectionDiagnostics();
+      assert.equal(initial.observedUpgradeCount, 0);
+      assert.equal(initial.pendingAuthenticationCount, 0);
+      assert.equal(initial.lastEvent, null);
+      assert.equal(initial.lastFailure, null);
+      assert.equal(initial.lastAuthenticatedBuildMismatch, null);
+      assert.ok(initial.eventCounts.every((event) => event.count === 0));
+      const priorLifecycle = gateway.lifecycle();
+      const upstream = createUpstreamScopeHarness(
+        gateway,
+        () => Promise.resolve(SUCCESSFUL_TOOL_RESULT),
+      );
+      assert.deepEqual(upstream.bridgeConnectionDiagnostics(), initial);
+      const privateOrigin = "http://private-origin.invalid/private-value";
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        await expectUpgradeRejected(gateway.lifecycle().publicEndpoint.port, {
+          Origin: privateOrigin,
+        });
+      }
+      const diagnostic = gateway.connectionDiagnostics();
+      assert.equal(diagnostic.observedUpgradeCount, 12);
+      assert.equal(diagnostic.lastFailure?.code, "origin-rejected");
+      assert.equal(diagnostic.lastFailure?.phase, "upgrade");
+      assert.equal(diagnostic.pendingAuthenticationCount, 0);
+      assert.equal(diagnostic.eventCounts.length, initial.eventCounts.length);
+      assert.equal(
+        diagnostic.eventCounts.find((event) => event.code === "origin-rejected")?.count,
+        12,
+      );
+      assert.deepEqual(gateway.lifecycle(), priorLifecycle);
+      const serialized = JSON.stringify(diagnostic);
+      for (const sensitive of [
+        privateOrigin, AUTHENTICATION_KEY, AUTHENTICATION_KEY_SHA256,
+        AUTHENTICATED_INDEX_BUILD_ID, BACKEND_TOKEN, CLIENT_NONCE,
+      ]) {
+        assert.equal(serialized.includes(sensitive), false);
+      }
+      assert.ok(serialized.length < 4096);
+      assert.ok(Number.isSafeInteger(diagnostic.lastFailure?.atEpochMs));
+      assert.ok((diagnostic.lastFailure?.atEpochMs ?? 0) > 0);
+      // Returned snapshots cannot mutate stored counters or event records.
+      assert.ok(diagnostic.lastFailure !== null);
+      assert.equal(Reflect.set(diagnostic.lastFailure, "code", "untrusted"), true);
+      assert.equal(gateway.connectionDiagnostics().lastFailure?.code, "origin-rejected");
+    } finally {
+      await gateway.close();
+      await closeServer(backend);
+    }
+  });
+
   void test("fails closed when an attacker pre-binds the public port", async () => {
     const attacker = await listeningServer();
     const backend = await listeningServer();
@@ -373,6 +496,7 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
       socket.send(
         JSON.stringify({
           id: "pre-auth",
+          authenticatedIndexBuildId: `i${"d".repeat(43)}`,
           method: "api.execute",
           type: "request",
         }),
@@ -380,6 +504,9 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
       await closed;
       assert.equal(backendConnections, 0);
       assert.equal(gateway.lifecycle().activeSession, null);
+      assert.equal(gateway.connectionDiagnostics().lastFailure?.code, "authentication-failed");
+      assert.equal(gateway.connectionDiagnostics().lastFailure?.phase, "awaiting-client-hello");
+      assert.equal(gateway.connectionDiagnostics().lastAuthenticatedBuildMismatch, null);
     } finally {
       socket.terminate();
       await gateway.close();
@@ -490,6 +617,8 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
         clients.push(await openClient(gateway.lifecycle().publicEndpoint.port));
       }
       await expectUpgradeRejected(gateway.lifecycle().publicEndpoint.port);
+      assert.equal(gateway.connectionDiagnostics().lastFailure?.code, "pending-limit");
+      assert.equal(gateway.connectionDiagnostics().pendingAuthenticationCount, 8);
       const first = clients[0];
       assert.ok(first);
       const closed = once(first, "close");
@@ -515,7 +644,9 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
     const gateway = createGateway(serverPort(backend));
     await gateway.start();
     await gateway.bindBackendOwner(process.pid);
-    const socket = await openClient(gateway.lifecycle().publicEndpoint.port);
+    const socket = await openClient(gateway.lifecycle().publicEndpoint.port, {
+      Origin: "https://client",
+    });
     try {
       socket.send(
         JSON.stringify({
@@ -538,6 +669,8 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
       await closed;
       assert.equal(backendConnections, 0);
       assert.equal(gateway.lifecycle().activeSession, null);
+      assert.equal(gateway.connectionDiagnostics().lastFailure?.code, "authentication-failed");
+      assert.equal(gateway.connectionDiagnostics().lastFailure?.phase, "awaiting-client-proof");
     } finally {
       socket.terminate();
       await gateway.close();
@@ -599,6 +732,8 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
       assert.equal(gateway.lifecycle().activeSession, null);
       await once(socket, "close");
       assert.equal(backendFrames, 0);
+      assert.equal(gateway.connectionDiagnostics().lastFailure?.code, "authentication-timeout");
+      assert.equal(gateway.connectionDiagnostics().lastFailure?.phase, "awaiting-upstream-handshake");
       assert.ok(
         gateway.closedSession(String(accepted["sessionId"])) === undefined,
       );
@@ -648,6 +783,8 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
           privateSocket.send(JSON.stringify(invalidHello));
           assert.equal(await closeCode, 4007);
           assert.equal(gateway.lifecycle().activeSession, null);
+          assert.equal(gateway.connectionDiagnostics().lastFailure?.code, "backend-protocol-failed");
+          assert.equal(gateway.connectionDiagnostics().lastFailure?.phase, "awaiting-upstream-hello");
           privateSocket.terminate();
         } finally {
           client.terminate();
@@ -786,6 +923,8 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
 
       const lifecycle = gateway.lifecycle();
       assert.equal(lifecycle.activeSession?.sessionId, accepted["sessionId"]);
+      assert.equal(gateway.connectionDiagnostics().lastEvent?.code, "session-established");
+      assert.equal(gateway.connectionDiagnostics().lastFailure, null);
       assert.match(
         lifecycle.activeSession?.authenticationReceiptSha256 ?? "",
         /^[a-f0-9]{64}$/u,
@@ -870,6 +1009,7 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
       for (const [index, identity] of hostileIdentities.entries()) {
         const client = await openClient(
           gateway.lifecycle().publicEndpoint.port,
+          { Origin: "https://client" },
         );
         try {
           await authenticate(
@@ -887,6 +1027,68 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
             }),
           );
           await closed;
+          assert.equal(gateway.lifecycle().activeSession, null);
+          assert.equal(
+            gateway.connectionDiagnostics().lastFailure?.code,
+            index === 0 ? "authenticated-build-mismatch" : "credential-epoch-mismatch",
+          );
+          assert.equal(gateway.connectionDiagnostics().lastFailure?.phase, "awaiting-upstream-handshake");
+          const mismatch = gateway.connectionDiagnostics().lastAuthenticatedBuildMismatch;
+          assert.equal(mismatch?.expectedAuthenticatedIndexBuildId, AUTHENTICATED_INDEX_BUILD_ID);
+          assert.equal(mismatch?.receivedAuthenticatedIndexBuildId, `i${"d".repeat(43)}`);
+          assert.ok(Number.isSafeInteger(mismatch?.atEpochMs));
+          assert.ok(mismatch !== null);
+          assert.equal(Reflect.set(mismatch, "receivedAuthenticatedIndexBuildId", "untrusted"), true);
+          assert.equal(
+            gateway.connectionDiagnostics().lastAuthenticatedBuildMismatch?.receivedAuthenticatedIndexBuildId,
+            `i${"d".repeat(43)}`,
+          );
+        } finally {
+          client.terminate();
+        }
+      }
+      assert.equal(backendFrames, 0);
+    } finally {
+      await gateway.close();
+      await closeServer(backend);
+    }
+  });
+
+  void test("withholds malformed post-authentication build identity values", async () => {
+    const backend = await listeningServer();
+    let backendFrames = 0;
+    backend.on("connection", (socket) => {
+      socket.on("message", () => { backendFrames += 1; });
+    });
+    const gateway = createGateway(serverPort(backend));
+    await gateway.start();
+    await gateway.bindBackendOwner(process.pid);
+    const privateValue = "private-untrusted-index-content";
+    try {
+      for (const [index, receivedIdentity] of [
+        privateValue,
+        { privateValue },
+        `i${"d".repeat(44)}`,
+      ].entries()) {
+        const client = await openClient(gateway.lifecycle().publicEndpoint.port);
+        try {
+          await authenticate(client, Buffer.alloc(32, 30 + index).toString("base64url"));
+          const closed = once(client, "close");
+          client.send(JSON.stringify({
+            authenticatedIndexBuildId: receivedIdentity,
+            authenticationKeySha256: AUTHENTICATION_KEY_SHA256,
+            type: "handshake",
+          }));
+          await closed;
+          const diagnostic = gateway.connectionDiagnostics();
+          assert.equal(diagnostic.lastFailure?.code, "authenticated-build-mismatch");
+          assert.equal(diagnostic.lastAuthenticatedBuildMismatch?.expectedAuthenticatedIndexBuildId, AUTHENTICATED_INDEX_BUILD_ID);
+          assert.equal(diagnostic.lastAuthenticatedBuildMismatch?.receivedAuthenticatedIndexBuildId, "invalid-authenticated-index-build-id");
+          const serialized = JSON.stringify(diagnostic);
+          for (const sensitive of [privateValue, AUTHENTICATION_KEY, AUTHENTICATION_KEY_SHA256, BACKEND_TOKEN]) {
+            assert.equal(serialized.includes(sensitive), false);
+          }
+          assert.ok(serialized.length < 4096);
           assert.equal(gateway.lifecycle().activeSession, null);
         } finally {
           client.terminate();

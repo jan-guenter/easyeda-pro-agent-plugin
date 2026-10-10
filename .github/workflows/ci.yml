@@ -177,6 +177,7 @@ jobs:
         shell: bash
         run: |
           ulimit -c 0
+          npm run skills:validate
           test "$(ulimit -c)" = "0"
           npm run validate
 
@@ -199,7 +200,10 @@ jobs:
               validator_found=true
             fi
             if [[ -f "${skill_validator}" ]]; then
-              python3 "${skill_validator}" plugins/easyeda-pro-control/skills/easyeda-pro-control
+              for packaged_skill in plugins/easyeda-pro-control/skills/*; do
+                test -d "${packaged_skill}"
+                python3 "${skill_validator}" "${packaged_skill}"
+              done
               validator_found=true
             fi
           done

@@ -1,0 +1,4 @@
+interface:
+  display_name: "EasyEDA schematic design"
+  short_description: "Readable schematics with electrical verification"
+  default_prompt: "Use $easyeda-schematic-design to improve this schematic while checking its pin-level connectivity."

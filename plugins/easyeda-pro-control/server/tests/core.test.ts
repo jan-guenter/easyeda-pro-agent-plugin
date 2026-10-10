@@ -35,6 +35,7 @@ import {
   validateRawExecutionInput,
 } from "../src/core.ts";
 import type { ExpectedFingerprint } from "../src/core.ts";
+import { assertFacadeOnlyRuntimeUpgrade } from "../src/design-execution.ts";
 import {
   DESCRIPTOR_SANITIZER_SCHEMA,
   DESCRIPTOR_SANITIZER_SHA256,
@@ -82,7 +83,9 @@ function reviewedFingerprintFixture(): ExpectedFingerprint {
       payload: {
         connected: true,
         bridge_version: manifest.connectedRuntime.bridgeVersion,
-        easyeda_version: manifest.connectedRuntime.bridgeEasyedaVersion,
+        ...(manifest.connectedRuntime.bridgeEasyedaVersion === null ? {} : {
+          easyeda_version: manifest.connectedRuntime.bridgeEasyedaVersion,
+        }),
         diagnostics: {
           method_registry_hash: manifest.connectedRuntime.methodRegistryHash,
         },
@@ -147,6 +150,53 @@ void describe("canonical values and hashes", () => {
 });
 
 void describe("upstream result normalization and tool classification", () => {
+  void test("publishes only allowlisted exact-reader diagnostic tokens", () => {
+    const marker = "EASYEDA_EXACT_READ_FAILURE|pcb-components|getter-lookup|pcb_PrimitiveComponent|getState_X|unset";
+    assert.throws(
+      () => extractToolPayload({ structuredContent: { ok: false, error: marker } }),
+      /exact-reader:pcb-components:getter-lookup:pcb_PrimitiveComponent:getState_X:unset/u,
+    );
+    for (const malformed of [
+      `${marker}|private-native-text`,
+      marker.replace("getState_X", "private-native-text"),
+      marker.replace("getter-lookup", "private-native-text"),
+      marker.replace("pcb_PrimitiveComponent", "private-native-text"),
+    ]) {
+      assert.throws(
+        () => extractToolPayload({ structuredContent: { ok: false, error: malformed } }),
+        (error: unknown) => {
+          assert.ok(error instanceof Error);
+          assert.match(error.message, /unclassified-upstream-failure/u);
+          assert.equal(error.message.includes("private-native-text"), false);
+          return true;
+        },
+      );
+    }
+  });
+
+  void test("reports only fixed upstream failure categories without native messages or scripts", () => {
+    const privateText = "private-native-message-or-script";
+    const cases = [
+      [{ structuredContent: { ok: false, error: 'Bridge method "api.execute" timed out after 60000ms' } }, "bridge-timeout"],
+      [{ structuredContent: { result: { ok: false, error: { code: "EASYEDA_API_ERROR", message: privateText } } } }, "native-api-error"],
+      [{ structuredContent: { ok: false, error: { code: "PAYLOAD_TOO_LARGE", message: privateText } } }, "payload-too-large"],
+      [{ structuredContent: { ok: false, error: privateText } }, "unclassified-upstream-failure"],
+      [{ structuredContent: { ok: false, error: { code: privateText } } }, "unclassified-upstream-failure"],
+      [{ content: [{ type: "text", text: JSON.stringify({ ok: false, errorCode: "INVALID_INPUT", message: privateText }) }] }, "invalid-input"],
+      [{ structuredContent: { read_consistency: { stable: false } } }, "unstable-read"],
+      [{}, "invalid-envelope"],
+    ] as const;
+    for (const [result, category] of cases) {
+      assert.throws(() => extractToolPayload(result), (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.ok(error.message.includes(`[${category}]`));
+        assert.equal(error.message.includes(privateText), false);
+        assert.ok(error.message.length < 128);
+        return true;
+      });
+    }
+  });
+
   void test("normalization rejects every supported outer and nested failure signal", () => {
     const failures = [
       { isError: true },
@@ -651,6 +701,39 @@ void describe("pinned raw call specifications", () => {
 });
 
 void describe("stable runtime fingerprint validation", () => {
+  void test("facade-only recovery permits a changed facade but pins every external identity", () => {
+    const current = reviewedFingerprintFixture();
+    const original = structuredClone(current);
+    original.facadeImplementation.sha256 = "b".repeat(64);
+    assert.doesNotThrow(() => { assertFacadeOnlyRuntimeUpgrade(original, current); });
+    original.upstreamLauncher.entrypointSha256 = "c".repeat(64);
+    assert.throws(() => { assertFacadeOnlyRuntimeUpgrade(original, current); }, /runtime during facade upgrade/u);
+  });
+  void test("facade-only recovery rejects missing prior external binding fields", () => {
+    const current = reviewedFingerprintFixture();
+    const original = structuredClone(current);
+    Reflect.deleteProperty(original, "installedBundles");
+    assert.throws(() => { assertFacadeOnlyRuntimeUpgrade(original, current); });
+  });
+  void test("facade-only recovery compares absent optional native fields using their persisted JSON representation", () => {
+    const current = reviewedFingerprintFixture();
+    const original = structuredClone(current);
+    // Native status constructs this optional property with undefined; MCP and
+    // Journals omit it. Recreating only that difference reproduces the failure.
+    Reflect.set(current.bridge.payload, "easyeda_version", undefined);
+    assert.doesNotThrow(() => { assertFacadeOnlyRuntimeUpgrade(original, current); });
+    assert.equal(Object.hasOwn(current.bridge.payload, "easyeda_version"), true);
+    assert.equal(Object.hasOwn(original.bridge.payload, "easyeda_version"), false);
+  });
+  void test("facade-only JSON projection cannot hide a required missing or changed external identity", () => {
+    const original = reviewedFingerprintFixture();
+    const current = structuredClone(original);
+    Reflect.set(current.bridge.payload, "easyeda_version", undefined);
+    Reflect.set(current.bridge.payload, "bridge_version", undefined);
+    assert.throws(() => { assertFacadeOnlyRuntimeUpgrade(original, current); });
+    current.bridge.payload.bridge_version = "changed-version";
+    assert.throws(() => { assertFacadeOnlyRuntimeUpgrade(original, current); });
+  });
   const digest = "a".repeat(64);
   const valid = {
     facadeImplementation: {
@@ -796,6 +879,39 @@ void describe("stable runtime fingerprint validation", () => {
         return true;
       },
     );
+  });
+
+  void test("accepts an absent bridge-status application version but rejects malformed or conflicting observations", () => {
+    const withoutBridgeVersion = structuredClone(valid);
+    Reflect.deleteProperty(withoutBridgeVersion.bridge.payload, "easyeda_version");
+    assert.equal(validateExpectedFingerprint(withoutBridgeVersion), true);
+    for (const value of [null, "", "   ", 123, "different-editor-version"]) {
+      const malformed = structuredClone(withoutBridgeVersion);
+      Reflect.set(malformed.bridge.payload, "easyeda_version", value);
+      assert.throws(() => validateExpectedFingerprint(malformed), /connected, non-mismatched/u);
+    }
+    Reflect.deleteProperty(withoutBridgeVersion.health.payload, "easyeda_version");
+    assert.throws(() => validateExpectedFingerprint(withoutBridgeVersion), /connected, non-mismatched/u);
+  });
+
+  void test("pins the exact presence or absence of the bridge-status application version for private admission", () => {
+    const reviewed = reviewedFingerprintFixture();
+    assert.equal(validatePrivateFingerprint(reviewed), true);
+    const expected = loadReviewedCompatibilityManifest().connectedRuntime.bridgeEasyedaVersion;
+    if (expected === null) {
+      Reflect.set(reviewed.bridge.payload, "easyeda_version", reviewed.health.payload.easyeda_version);
+    } else {
+      Reflect.deleteProperty(reviewed.bridge.payload, "easyeda_version");
+    }
+    assert.equal(validateExpectedFingerprint(reviewed), true);
+    assert.throws(() => validatePrivateFingerprint(reviewed), (error: unknown) => {
+      assert.deepEqual(detailedError(error)["mismatches"], [{
+        pointer: "/connectedRuntime/bridgeEasyedaVersion",
+        expected,
+        actual: expected === null ? reviewed.health.payload.easyeda_version : null,
+      }]);
+      return true;
+    });
   });
 
   void test("requires the descriptor sanitizer identity and exact reviewed tuple", () => {

@@ -29,6 +29,7 @@ const REPLAY_CACHE_MAXIMUM_ENTRIES = 4096;
 const REPLAY_CACHE_TTL_MS = 10 * 60 * 1000;
 const CLOSED_SESSION_HISTORY_LIMIT = 256;
 const LOOPBACK_HOST = "127.0.0.1";
+const REVIEWED_EASYEDA_RENDERER_ORIGIN = "https://client";
 const UPSTREAM_BRIDGE_CONTRACT_VERSION = 1;
 const UPSTREAM_BRIDGE_PROTOCOL_VERSION = "1.0.0";
 const UPSTREAM_AGGREGATE_PAYLOAD_MULTIPLIER = 8;
@@ -56,6 +57,59 @@ type ConnectionPhase =
   | "awaiting-upstream-hello"
   | "proxying"
   | "closed";
+
+const BRIDGE_CONNECTION_EVENT_CODES = [
+  "upgrade-accepted",
+  "origin-rejected",
+  "loopback-required",
+  "pending-limit",
+  "authentication-failed",
+  "authentication-timeout",
+  "authenticated-build-mismatch",
+  "credential-epoch-mismatch",
+  "backend-not-ready",
+  "authenticated-session-busy",
+  "dispatch-lease-busy",
+  "client-error",
+  "client-closed",
+  "backend-protocol-failed",
+  "backend-error",
+  "backend-closed",
+  "backend-owner-proof-failed",
+  "session-established",
+  "gateway-closed",
+] as const;
+
+type BridgeConnectionEventCode = typeof BRIDGE_CONNECTION_EVENT_CODES[number];
+type BridgeConnectionCloseReason = Exclude<
+  BridgeConnectionEventCode,
+  "upgrade-accepted" | "session-established"
+>;
+
+interface BridgeConnectionDiagnosticEvent {
+  readonly atEpochMs: number;
+  readonly code: BridgeConnectionEventCode;
+  readonly phase: ConnectionPhase | "upgrade";
+}
+
+interface AuthenticatedBuildMismatchDiagnostic {
+  readonly atEpochMs: number;
+  readonly expectedAuthenticatedIndexBuildId: string;
+  readonly receivedAuthenticatedIndexBuildId: string;
+}
+
+export interface BridgeConnectionDiagnostics {
+  readonly eventCounts: readonly {
+    readonly code: BridgeConnectionEventCode;
+    readonly count: number;
+  }[];
+  readonly lastAuthenticatedBuildMismatch: AuthenticatedBuildMismatchDiagnostic | null;
+  readonly lastEvent: BridgeConnectionDiagnosticEvent | null;
+  readonly lastFailure: BridgeConnectionDiagnosticEvent | null;
+  readonly observedUpgradeCount: number;
+  readonly pendingAuthenticationCount: number;
+  readonly schema: "easyeda-pro-control.bridge-connection-diagnostics.v1";
+}
 
 export interface AuthenticatedBridgeSession {
   readonly authenticatedAtEpochMs: number;
@@ -119,9 +173,10 @@ interface ConnectionContext {
   backend: WebSocketClient | null;
   clientNonce: string | null;
   readonly clientSocket: WebSocketClient;
+  diagnosticFailure: BridgeConnectionCloseReason | null;
   phase: ConnectionPhase;
   proxyEstablished: boolean;
-  requestedCloseReason: string | null;
+  requestedCloseReason: BridgeConnectionCloseReason | null;
   serverNonce: string | null;
   session: AuthenticatedBridgeSession | null;
   timeout: ReturnType<typeof setTimeout> | null;
@@ -149,6 +204,25 @@ interface ClientProof {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasAdmittedRendererOrigin(request: IncomingMessage): boolean {
+  // Pinned EasyEDA 3.2.149 SYS_WebSocket uses the renderer's browser WebSocket.
+  // Its HTTPS origin is exact, not an origin pattern or an authentication proof.
+  let originHeaderCount = 0;
+  let rawOrigin: string | undefined;
+  for (let index = 0; index < request.rawHeaders.length; index += 2) {
+    if (request.rawHeaders[index]?.toLowerCase() === "origin") {
+      originHeaderCount += 1;
+      rawOrigin = request.rawHeaders[index + 1];
+    }
+  }
+  if (originHeaderCount === 0) {
+    return request.headers.origin === undefined;
+  }
+  return originHeaderCount === 1 &&
+    rawOrigin === REVIEWED_EASYEDA_RENDERER_ORIGIN &&
+    request.headers.origin === REVIEWED_EASYEDA_RENDERER_ORIGIN;
 }
 
 function assertCompatibleUpstreamHello(
@@ -503,12 +577,17 @@ export class AuthenticatedBridgeGateway {
   readonly #recentClosedSessions: ClosedAuthenticatedBridgeSession[] = [];
   readonly #replayCache = new Map<string, number>();
   readonly #pendingAuthenticationContexts = new Set<ConnectionContext>();
+  readonly #connectionEventCounts = new Map<BridgeConnectionEventCode, number>();
   #activeContext: ConnectionContext | null = null;
   #backendAuthority: BackendProcessAuthority | null = null;
   #dispatchLease: DispatchLeaseState | null = null;
   #publicPort: number | null = null;
   #server: WebSocketServer | null = null;
   #sessionSequence = 0;
+  #observedUpgradeCount = 0;
+  #lastConnectionEvent: BridgeConnectionDiagnosticEvent | null = null;
+  #lastConnectionFailure: BridgeConnectionDiagnosticEvent | null = null;
+  #lastAuthenticatedBuildMismatch: AuthenticatedBuildMismatchDiagnostic | null = null;
 
   public constructor(options: AuthenticatedBridgeGatewayOptions) {
     if (
@@ -584,19 +663,34 @@ export class AuthenticatedBridgeGateway {
       maxPayload: AUTHENTICATION_FRAME_MAXIMUM_BYTES,
       perMessageDeflate: false,
       port: this.#requestedPublicPort,
-      verifyClient: ({ req }: { readonly req: IncomingMessage }): boolean =>
-        req.headers.origin === undefined &&
-        this.#pendingAuthenticationContexts.size <
-          PENDING_AUTHENTICATION_CONTEXT_LIMIT,
+      verifyClient: ({ req }: { readonly req: IncomingMessage }): boolean => {
+        this.#observedUpgradeCount = Math.min(
+          Number.MAX_SAFE_INTEGER,
+          this.#observedUpgradeCount + 1,
+        );
+        if (!hasAdmittedRendererOrigin(req)) {
+          this.#recordConnectionEvent("origin-rejected", "upgrade", true);
+          return false;
+        }
+        if (
+          this.#pendingAuthenticationContexts.size >=
+          PENDING_AUTHENTICATION_CONTEXT_LIMIT
+        ) {
+          this.#recordConnectionEvent("pending-limit", "upgrade", true);
+          return false;
+        }
+        return true;
+      },
     });
     this.#server = server;
     server.on("connection", (socket, request) => {
       if (
-        request.headers.origin !== undefined ||
+        !hasAdmittedRendererOrigin(request) ||
         request.socket.remoteAddress !== this.#publicHost ||
         this.#pendingAuthenticationContexts.size >=
           PENDING_AUTHENTICATION_CONTEXT_LIMIT
       ) {
+        this.#recordConnectionEvent("loopback-required", "upgrade", true);
         closeWebSocket(socket, POLICY_CLOSE_CODE, "loopback-required");
         return;
       }
@@ -648,6 +742,44 @@ export class AuthenticatedBridgeGateway {
       })),
       schema: "easyeda-pro-control.authenticated-bridge-lifecycle.v1",
     };
+  }
+
+  public connectionDiagnostics(): BridgeConnectionDiagnostics {
+    // Keep unauthenticated observations separate from session authority and
+    // Disconnected dispatch fingerprints. Only exact-form post-HMAC build IDs
+    // May be retained; all other peer-controlled diagnostic text is withheld.
+    return {
+      eventCounts: BRIDGE_CONNECTION_EVENT_CODES.map((code) => ({
+        code,
+        count: this.#connectionEventCounts.get(code) ?? 0,
+      })),
+      lastAuthenticatedBuildMismatch: this.#lastAuthenticatedBuildMismatch === null
+        ? null
+        : { ...this.#lastAuthenticatedBuildMismatch },
+      lastEvent: this.#lastConnectionEvent === null
+        ? null
+        : { ...this.#lastConnectionEvent },
+      lastFailure: this.#lastConnectionFailure === null
+        ? null
+        : { ...this.#lastConnectionFailure },
+      observedUpgradeCount: this.#observedUpgradeCount,
+      pendingAuthenticationCount: this.#pendingAuthenticationContexts.size,
+      schema: "easyeda-pro-control.bridge-connection-diagnostics.v1",
+    };
+  }
+
+  #recordConnectionEvent(
+    code: BridgeConnectionEventCode,
+    phase: ConnectionPhase | "upgrade",
+    failure: boolean,
+  ): void {
+    const count = this.#connectionEventCounts.get(code) ?? 0;
+    this.#connectionEventCounts.set(code, Math.min(Number.MAX_SAFE_INTEGER, count + 1));
+    const event = { atEpochMs: this.#now(), code, phase };
+    this.#lastConnectionEvent = event;
+    if (failure) {
+      this.#lastConnectionFailure = event;
+    }
   }
 
   public async bindBackendOwner(pid: number): Promise<void> {
@@ -825,6 +957,7 @@ export class AuthenticatedBridgeGateway {
       backend: null,
       clientNonce: null,
       clientSocket: socket,
+      diagnosticFailure: null,
       phase: "awaiting-client-hello",
       proxyEstablished: false,
       requestedCloseReason: null,
@@ -832,13 +965,18 @@ export class AuthenticatedBridgeGateway {
       session: null,
       timeout: null,
     };
+    this.#recordConnectionEvent("upgrade-accepted", "upgrade", false);
     this.#pendingAuthenticationContexts.add(context);
     this.#armAuthenticationTimeout(context);
     socket.on("message", (data, isBinary) => {
       try {
         this.#handleClientFrame(context, data, isBinary);
       } catch {
-        this.#closeContext(context, PROTOCOL_CLOSE_CODE, "authentication-failed");
+        this.#closeContext(
+          context,
+          PROTOCOL_CLOSE_CODE,
+          context.diagnosticFailure ?? "authentication-failed",
+        );
       }
     });
     socket.once("error", () => {
@@ -966,12 +1104,15 @@ export class AuthenticatedBridgeGateway {
     this.#raiseAuthenticatedClientPayloadLimit(context.clientSocket);
     this.#pendingAuthenticationContexts.delete(context);
     if (this.#activeContext !== null) {
+      context.diagnosticFailure = "authenticated-session-busy";
       throw new Error("Another authenticated EasyEDA bridge is already active.");
     }
     if (this.#dispatchLease !== null) {
+      context.diagnosticFailure = "dispatch-lease-busy";
       throw new Error("A dispatch lease still pins the prior bridge session.");
     }
     if (this.#backendAuthority === null) {
+      context.diagnosticFailure = "backend-not-ready";
       throw new Error("The supervised private bridge backend is not ready.");
     }
     this.#sessionSequence += 1;
@@ -1106,14 +1247,31 @@ export class AuthenticatedBridgeGateway {
     if (
       !isRecord(value) ||
       value["type"] !== "handshake" ||
-      value["authenticatedIndexBuildId"] !==
-        this.#expectedAuthenticatedIndexBuildId ||
-      value["authenticationKeySha256"] !==
-        this.#expectedAuthenticationKeySha256 ||
       Object.hasOwn(value, "sessionToken") ||
       context.backend?.readyState !== WebSocketClient.OPEN
     ) {
       throw new Error("The first authenticated application frame is not a handshake.");
+    }
+    if (
+      value["authenticatedIndexBuildId"] !== this.#expectedAuthenticatedIndexBuildId
+    ) {
+      context.diagnosticFailure = "authenticated-build-mismatch";
+      const receivedBuildId = value["authenticatedIndexBuildId"];
+      this.#lastAuthenticatedBuildMismatch = {
+        atEpochMs: this.#now(),
+        expectedAuthenticatedIndexBuildId: this.#expectedAuthenticatedIndexBuildId,
+        receivedAuthenticatedIndexBuildId: typeof receivedBuildId === "string" &&
+          /^i[A-Za-z0-9_-]{43}$/u.test(receivedBuildId)
+          ? receivedBuildId
+          : "invalid-authenticated-index-build-id",
+      };
+      throw new Error("The authenticated bridge index build does not match.");
+    }
+    if (
+      value["authenticationKeySha256"] !== this.#expectedAuthenticationKeySha256
+    ) {
+      context.diagnosticFailure = "credential-epoch-mismatch";
+      throw new Error("The authenticated bridge credential epoch does not match.");
     }
     context.phase = "awaiting-upstream-hello";
     this.#armAuthenticationTimeout(context);
@@ -1153,6 +1311,7 @@ export class AuthenticatedBridgeGateway {
       }
       context.proxyEstablished = true;
       context.phase = "proxying";
+      this.#recordConnectionEvent("session-established", "proxying", false);
     } else if (context.phase === "proxying") {
       const value: unknown = JSON.parse(strictUtf8(bytes));
       if (isRecord(value) && value["type"] === "hello") {
@@ -1167,7 +1326,7 @@ export class AuthenticatedBridgeGateway {
   #closeContext(
     context: ConnectionContext,
     code: number,
-    reason: string,
+    reason: BridgeConnectionCloseReason,
   ): void {
     if (context.phase === "closed") {
       return;
@@ -1180,10 +1339,15 @@ export class AuthenticatedBridgeGateway {
     this.#finalizeContext(context, reason);
   }
 
-  #finalizeContext(context: ConnectionContext, reason: string): void {
+  #finalizeContext(context: ConnectionContext, reason: BridgeConnectionCloseReason): void {
     if (context.phase === "closed") {
       return;
     }
+    this.#recordConnectionEvent(
+      reason,
+      context.phase,
+      !context.proxyEstablished && reason !== "gateway-closed",
+    );
     context.phase = "closed";
     this.#pendingAuthenticationContexts.delete(context);
     if (context.timeout !== null) {

@@ -18,11 +18,11 @@ const MAXIMUM_RECEIPT_BYTES = 1024 * 1024;
 
 export const AUTHENTICATED_BRIDGE_REVIEWED_SOURCE_IDENTITY = Object.freeze({
   closureSha256:
-    "ce52ca1bf5b2d3d214454790a24516ae5182f1867851c2786c0269bbc7892680",
+    "c5cb4d9ed0d5a93bca655f4f846f4f2e9337633941b2df3482aa3b91d7e43ee5",
   commit: "964c05082f1c7c9e8b98f56e967e36bfc3f26128",
   fileCount: 70,
   repository: "https://github.com/oaslananka/easyeda-mcp-pro",
-  totalBytes: 847_709,
+  totalBytes: 853_680,
   upstreamTreeSha1: "cc8893215e736f9efca78e4216033469008ea8e9",
 });
 

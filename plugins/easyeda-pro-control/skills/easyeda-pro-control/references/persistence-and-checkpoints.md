@@ -2,24 +2,27 @@
 
 ## What durable proof requires
 
-For a guarded PCB type-3 operation, `easyeda_control_save_reopen` enforces this sequence:
+Use `easyeda_control_design` commit after an exact applied-unsaved result. It rechecks the intended native source and durable baseline, journals the save/reopen dispatch, saves the exact document, reopens it, rebinds the new tab, and verifies the intended source again. The final checkpoint is decoded and compared against the pre-checkpoint with the exact intended source delta. All unrelated selected-branch document/library records remain unchanged.
 
-1. Recheck the stable runtime, exact project path, document identity, type, and original active tab, and require `live-verified`.
-2. Re-verify the intact pre-checkpoint.
-3. Journal `saving` durably. In one generated `easyeda_execute` dispatch, rerun every complete typed live guard twice, compare both normalized SHA-256 snapshots, verify active context, and invoke the document-specific save API only from that same continuation. There is no public editor compare-and-swap primitive, so a guard from an earlier bridge call is not accepted.
-4. Require the exact save result, then re-verify the pre-checkpoint.
-5. Close the exact document, reopen it, and activate it.
-6. Recheck project, document UUID, type, and title, then run fresh reopened verification calls and compare target fields and global invariants.
-7. Re-verify that the pre-checkpoint artifact is intact and that the live project's logical SQLite dump differs from it. File timestamp or byte-level churn with an unchanged logical dump does not prove the edit was saved.
-8. Create a candidate final database checkpoint and journal its receipt.
-9. Recheck context and rerun the typed reopened verifier and assertions after candidate creation.
-10. Recheck persistence from the intact pre-checkpoint and verify the candidate checkpoint against the live database.
-11. Require an installed semantic database-delta validator whose proof echoes a SHA-256 binding over the operation ID, plan hash, exact pre/final checkpoint receipts, and reopened proof snapshot. Its canonical observed-delta descriptor must hash to `observedDeltaSha256`. A stale proof, arbitrary delta hash, byte change, or generic logical-dump change cannot prove that only the intended design fields persisted.
-12. After that policy returns, rerun the exact reopened verifier and assertions, require the proof snapshot to remain identical, and re-verify both pre-checkpoint persistence and the candidate checkpoint immediately before completion. Production keeps the writer disabled until a connected sacrificial-project test supplies this validator.
+A supported recovery that composes a prior journal's delayed inverse is separately reported as `isolatedTransaction:false`, with complete proofs for both transactions and original hashes. It is not an unchanged-collateral result; see [failure-recovery.md](failure-recovery.md).
 
-A reopened editor may reuse or replace a tab ID. The pre-save phases require the original exact tab. After the controlled reopen, require the same project path, document UUID, type, title, and content; accept the newly reported tab.
+EasyEDA can acknowledge its cache write before a queued project-worker write reaches `.eprj2`. Typed transactions await the native project upload queue before their baseline checkpoints and after Save, before checkpointing or closing. The receipt proves only that already scheduled writes settled. It neither saves current editor changes nor proves the requested values persisted. Complete durable comparison remains mandatory. Rollback also drains scheduled writes and checks a fresh durable checkpoint before it can become terminal; an exact live inverse alone is insufficient.
 
-The operation state machine rejects schematic type 1 and library types 2 and 4. Those need separate workflows with proven lossless mutation and exact persistence semantics. Do not close a library document until a current-version method can reopen and audit that exact asset.
+The source export and durable storage need not encode unchanged defaults identically. Scoped baseline targets must match, every previously persisted unchanged record remains invariant, and each intended changed record/field must persist. The generic verifier additionally admits validated target-document client/updateTime/version bookkeeping. Document-specific adapters separately prove and report narrowly supported encoding conversions, including the symbol profile described in [libraries-and-eco.md](libraries-and-eco.md); they retain raw hashes and do not permit unrelated document changes. See [safety-state-machine.md](safety-state-machine.md) for the full proof boundary.
+
+Standalone native wire edits use exact typed source/native effect proof before
+the existing schematic storage verifier. That verifier records supported raw
+versus captured attribute-order encodings without relaxing geometry, net values
+or unrelated durable records. If an acknowledged Save/reopen fails final proof,
+the [retained wire recovery](failure-recovery.md#retained-wire-save) rechecks the
+same journal without repeating Save or navigation. That retained-fixture recovery
+and a fresh 16-document wire lifecycle completed Sept25; coverage remains narrow.
+
+A saved/reopened result is different from a library operation reporting saved but not reopened, and from an export reporting managed bytes. The legacy `easyeda_control_save_reopen` endpoint remains disabled. Never infer durable changes from a timestamp, changed SQLite file bytes or a returned boolean.
+
+Native Close can acknowledge before its asynchronous cleanup ends. The lifecycle adapter observes the terminal close notification and proves the old tab and frame were removed before opening once. Reopen requires two matching observations of the new frame, exact document/tab and library owner where applicable. Shared schematic model aliases are refused. A native close/open deadline retains execution uncertainty because the underlying operation may still be running.
+
+For a saved symbol/footprint edit whose reopen failed, design reconciliation can establish `saved-awaiting-reopen` from hash-verified phase artifacts and recomputed complete durable proofs. A subsequent commit reuses the original Save evidence and performs only the missing navigation and final verification. A retained successful reopen acknowledgment is reused too. Neither the `saved` flag nor the old persistence result substitutes for decoding and rechecking the checkpoints. See [failure-recovery.md](failure-recovery.md#saved-library-edit-awaiting-reopen).
 
 ## Evidence artifacts
 
@@ -47,11 +50,7 @@ Draft export bytes are published through a file-descriptor-bound managed parent,
 
 Checkpoint receipts have a 1 MiB whole-file read limit. After receipt publication or verification hashing, the facade rechecks the source pathname, file metadata and SQLite `data_version`. This catches both ordinary database writes and WAL-only commits that occurred after the source snapshot. Verification also rechecks the checkpoint file after hashing. A checkpoint is still a point-in-time snapshot: no check locks the editor against a later commit. Any operation that depends on current baseline equality must reverify immediately before its dispatch boundary.
 
-Make a pre-checkpoint before any material mutation and before the clean-baseline reopen. `easyeda_control_plan` must require `checkpoint.source` to normalize to the `.eprj2` path returned by live context. With explicit discard authorization, it journals and reopens the target without saving, binds the returned tab, runs preflight, then proves the source still equals that checkpoint. This is the durable/live baseline binding; a pre-existing unsaved editor state is never accepted into a plan. Create the candidate final checkpoint only after the first reopened verification, then bind it to a second fresh reopened verification and a final source comparison.
-
-The facade re-verifies that same pre-checkpoint after apply and after live assertions before it calls the state `applied-unsaved` or `live-verified`. This catches an autosave, manual save, or concurrent durable change that would otherwise make an “unsaved” claim false.
-
-It repeats both the typed live verifier and the pre-checkpoint proof immediately before save. After reopen, it does not trust a checkpoint created after stale readback: it creates the candidate first, performs another reopened readback, and verifies the candidate against the live database last.
+Typed apply creates and verifies its pre-checkpoint before dispatch. It checks scoped live target fields against persisted records without discarding the document or claiming every unchanged exported default proves a clean editor. Reverify durable baseline before saving. Commit compares whole durable deltas, so unrelated unsaved work cannot be accepted as intended collateral merely because it was already present in live source.
 
 A checkpoint is evidence and a recovery source. It is not proof that the active document contains the intended edit. The reopened audit supplies that proof.
 

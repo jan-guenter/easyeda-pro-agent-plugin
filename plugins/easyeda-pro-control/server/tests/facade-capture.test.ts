@@ -64,6 +64,9 @@ let controlRoot: string;
 let configPath: string;
 let projectPath: string;
 let fabricatedBoardDataMarker: string;
+let upstreamCallLogPath: string;
+let coldApiResult: Record<string, unknown>;
+let coldApiCallLog: string;
 let client: Client;
 let transport: StdioClientTransport;
 let expectedFingerprint: Record<string, unknown>;
@@ -219,7 +222,16 @@ function failureMessage(result: ToolCallResult): string {
   return String(error["message"]);
 }
 
+async function apiReference(request: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const response = await client.callTool({ name: "easyeda_control_api", arguments: { request } });
+  assert.notEqual(response.isError, true, JSON.stringify(response.content));
+  const payload = structured(response);
+  assert.equal(payload["offline"], true);
+  return requireRecord(payload["result"], "API result");
+}
+
 before(async () => {
+  const { REVIEWED_BRIDGE_SOURCE } = await import("../../scripts/reviewed-bridge-source.ts");
   fixtureRoot = await mkdtemp(
     join(tmpdir(), "easyeda-control-facade-capture-"),
   );
@@ -232,6 +244,7 @@ before(async () => {
   const bridgeBuildRoot = join(controlRoot, "bridge-build");
   const upstreamDataRoot = join(controlRoot, "upstream-data");
   configPath = join(upstreamDataRoot, "capture-config.json");
+  upstreamCallLogPath = join(upstreamDataRoot, "upstream-call-log.jsonl");
   fabricatedBoardDataMarker = join(
     upstreamDataRoot,
     "fabricated-board-data-reached",
@@ -248,6 +261,7 @@ before(async () => {
   await mkdir(controlRoot, { mode: 0o700 });
   await mkdir(bridgeBuildRoot, { mode: 0o700 });
   await mkdir(upstreamDataRoot, { mode: 0o700 });
+  await writeFile(upstreamCallLogPath, "", "utf8");
   await mkdir(join(fixtureRoot, "node_modules"));
   await mkdir(join(assetsRoot, "pro-pcb", "3.2.149.fixture", "js"), {
     recursive: true,
@@ -307,9 +321,10 @@ before(async () => {
         commit: "964c05082f1c7c9e8b98f56e967e36bfc3f26128",
         upstreamTreeSha1: "cc8893215e736f9efca78e4216033469008ea8e9",
         closureSha256:
-          "ce52ca1bf5b2d3d214454790a24516ae5182f1867851c2786c0269bbc7892680",
+          "c5cb4d9ed0d5a93bca655f4f846f4f2e9337633941b2df3482aa3b91d7e43ee5",
         fileCount: 70,
-        totalBytes: 847_709,
+        totalBytes: 853_680,
+        derivative: REVIEWED_BRIDGE_SOURCE.derivative,
         builtFromPrivateSnapshot: true,
         privateSnapshotSealed: true,
         postConsumptionVerified: true,
@@ -347,7 +362,7 @@ before(async () => {
   await writeFile(
     upstreamEntrypoint,
     `
-      import { readFile, writeFile } from 'node:fs/promises';
+      import { appendFile, readFile, writeFile } from 'node:fs/promises';
       import { deflateSync } from 'node:zlib';
 
       const tool = (name, annotations, properties = {}) => ({
@@ -441,6 +456,10 @@ before(async () => {
         JSON.parse(await readFile('/data/capture-config.json', 'utf8'));
 
       const handleToolCall = async (request) => {
+        const config = await readConfig();
+        if (config.unavailable === true) {
+          throw new Error('Fixture upstream and editor context are unavailable.');
+        }
         if (request.params.name === 'easyeda_health_check') {
           return result({
             version: '1.0.0-rc.1',
@@ -467,7 +486,6 @@ before(async () => {
             total: 116,
           });
         }
-        const config = await readConfig();
         if (request.params.name === 'easyeda_execute') {
           const documentType = config.documentType ?? 1;
           return result({
@@ -480,11 +498,15 @@ before(async () => {
             document: {
               uuid: 'document-1',
               documentType,
+              parentProjectUuid: 'project-1',
               tabId: 'tab-1',
               title: documentType === 1 ? 'Sheet 01' : 'PCB',
             },
             schematic: documentType === 1
-              ? { uuid: 'document-1', tabId: 'tab-1', title: 'Sheet 01' }
+              ? { uuid: 'schematic-1', parentProjectUuid: 'project-1' }
+              : {},
+            schematicPage: documentType === 1
+              ? { uuid: 'document-1', parentSchematicUuid: 'schematic-1', parentProjectUuid: 'project-1', tabId: 'tab-1', title: 'Sheet 01' }
               : {},
             pcb: documentType === 3
               ? { uuid: 'document-1', tabId: 'tab-1', title: 'PCB' }
@@ -575,6 +597,10 @@ before(async () => {
           if (line.length === 0) continue;
           const request = JSON.parse(line);
           if (!Object.hasOwn(request, 'id')) continue;
+          await appendFile('/data/upstream-call-log.jsonl', JSON.stringify({
+            method: request.method,
+            tool: request.params?.name ?? null,
+          }) + '\\n', 'utf8');
           try {
             let response;
             if (request.method === 'initialize') {
@@ -630,7 +656,8 @@ before(async () => {
     /from "((?!node:|\.)[^"]+)"/gu,
     replacePackageImport,
   );
-  const engineMarker = "const engine = new EasyedaControlEngine(upstream);";
+  const engineMarker = "const engine = new EasyedaControlEngine(upstream,";
+  assert.ok(absolutePackages.includes(engineMarker), "fixture must inject its inert bridge scope at the actual engine constructor");
   const transformedFacade = absolutePackages.replace(
     upstreamMarker,
     `${upstreamMarker}\n  trustedLauncher: ${JSON.stringify(trustedLauncher)},`,
@@ -665,6 +692,10 @@ before(async () => {
     { capabilities: {} },
   );
   await client.connect(transport);
+  await client.listTools();
+  coldApiResult = await apiReference({ action: "sdk", query: { namespace: "sys_WebSocket", detail: true } });
+  coldApiCallLog = await readFile(upstreamCallLogPath, "utf8");
+  assert.equal(coldApiCallLog, "", "MCP discovery and API references must not start the upstream process");
   const status = await client.callTool({
     name: "easyeda_control_status",
     arguments: {},
@@ -694,6 +725,122 @@ after(async () => {
 });
 
 void describe("published facade contracts", { concurrency: false }, () => {
+  void test("publishes complete nested API selectors and works before upstream startup", async () => {
+    assert.equal(coldApiCallLog, "");
+    assert.equal(coldApiResult["offline"], true);
+    assert.equal(coldApiResult["invocationEnabled"], false);
+    const coldEntries = requireArray(coldApiResult["entries"], "cold SDK entries");
+    assert.equal(coldEntries.length, 3);
+    const listed = await client.listTools();
+    const api = listed.tools.find((tool) => tool.name === "easyeda_control_api");
+    assert.ok(api, "offline API discovery must be published");
+    assert.equal(api.annotations?.readOnlyHint, true);
+    const properties = requireRecord(api.inputSchema.properties, "API input properties");
+    const request = requireRecord(properties["request"], "API request schema");
+    const branches = requireArray(request["anyOf"] ?? request["oneOf"], "API action branches");
+    const sdk = branches.map((branch) => requireRecord(branch, "API branch")).find((branch) => {
+      const branchProperties = requireRecord(branch["properties"], "API branch properties");
+      const action = requireRecord(branchProperties["action"], "API action schema");
+      return action["const"] === "sdk";
+    });
+    const sdkProperties = requireRecord(requireRecord(sdk, "SDK branch")["properties"], "SDK properties");
+    const query = requireRecord(sdkProperties["query"], "SDK query schema");
+    assert.equal(query["additionalProperties"], false);
+    const selectors = requireRecord(query["properties"], "SDK selectors");
+    assert.deepEqual(Object.keys(selectors).toSorted(), ["detail", "kind", "limit", "namespace", "offset", "reference", "search"]);
+    const reference = requireRecord(selectors["reference"], "SDK reference selector");
+    assert.deepEqual(reference["enum"], ["reviewed-installed", "official-latest"]);
+    const limit = requireRecord(selectors["limit"], "SDK page limit");
+    assert.equal(limit["maximum"], 100);
+  });
+
+  void test("API schemas and refinement validation remain offline when upstream and editor context fail", async () => {
+    try {
+      await writeConfig({ unavailable: true });
+      const unavailable = await client.callTool({ name: "easyeda_control_context", arguments: {} });
+      assert.equal(unavailable.isError, true, "mock editor context must genuinely be unavailable");
+      const beforeCalls = await readFile(upstreamCallLogPath, "utf8");
+      const sdk = await apiReference({ action: "sdk", query: { reference: "official-latest", namespace: "sys_Help", detail: true, limit: 1 } });
+      assert.equal(requireRecord(sdk["provenance"], "SDK provenance")["version"], "0.4.26");
+      const method = requireRecord(requireArray(sdk["entries"], "SDK entries")[0], "SDK method");
+      assert.equal(method["executable"], false);
+      assert.equal(method["runtimeAvailability"], "not-probed");
+
+      const catalog = await apiReference({ action: "operations", query: { family: "design", operationAction: "pcb.component.model-transform", includeSchemas: true } });
+      assert.equal(catalog["executionAuthorized"], false);
+      const entry = requireRecord(requireArray(catalog["entries"], "operation entries")[0], "operation entry");
+      assert.equal(entry["action"], "pcb.component.model-transform");
+      assert.equal(requireRecord(entry["inputSchema"], "exact operation schema")["additionalProperties"], false);
+      assert.match(String(entry["inputSchemaSha256"]), /^[a-f0-9]{64}$/u);
+
+      const operation = { id: "export", action: "export.schematic.document", fileName: "review", maxBytes: 1024,
+        fileType: "PDF", object: "Current Schematic Page", objectSpecificParams: { range: [1, 2], outputMethod: "Merged sheet" } };
+      const valid = await apiReference({ action: "validate", query: { family: "library", operation } });
+      assert.equal(valid["valid"], true);
+      assert.equal(valid["nativePreflightPerformed"], false);
+      assert.equal(valid["executionAuthorized"], false);
+      const invalid = await apiReference({ action: "validate", query: { family: "library", operation: { ...operation,
+        objectSpecificParams: { ...operation.objectSpecificParams, range: [2, 1] } } } });
+      assert.equal(invalid["valid"], false, "offline validation must retain custom range refinement");
+      assert.equal(await readFile(upstreamCallLogPath, "utf8"), beforeCalls, "API queries must not dispatch any upstream request");
+    } finally {
+      await writeConfig();
+    }
+  });
+
+  void test("API validation bounds oversized normalized operations and rejects caller-code requests without dispatch", async () => {
+    const beforeCalls = await readFile(upstreamCallLogPath, "utf8");
+    const validation = await apiReference({ action: "validate", query: { family: "library", operation: {
+      id: "large-source", action: "library.symbol.source.replace", libraryUuid: "library", target: { uuid: "symbol" }, documentSource: "a".repeat(1_048_576),
+    } } });
+    assert.equal(validation["valid"], true);
+    assert.equal(validation["normalizedOperationOmitted"], true);
+    assert.equal(validation["normalizedOperation"], undefined);
+    assert.match(String(validation["normalizedOperationSha256"]), /^[a-f0-9]{64}$/u);
+    assert.ok(Buffer.byteLength(JSON.stringify(validation), "utf8") < 1024);
+    for (const request of [
+      { action: "invoke", method: "eda.sys_Help.help" },
+      { action: "sdk", query: { code: "eda.sys_Help.help()" } },
+      { action: "sdk", query: { limit: 101 } },
+      { action: "operations", query: { family: "design", code: "call()" } },
+    ]) {
+      const refused = await client.callTool({ name: "easyeda_control_api", arguments: { request } });
+      assert.equal(refused.isError, true, JSON.stringify(refused.content));
+    }
+    const callerCode = await apiReference({ action: "validate", query: { family: "design", operation: "arbitrary JavaScript" } });
+    assert.equal(callerCode["valid"], false);
+    assert.equal(await readFile(upstreamCallLogPath, "utf8"), beforeCalls);
+  });
+
+  void test("context output accepts success and retains structured identity failures", async () => {
+    try {
+      await writeConfig({ documentType: 3 });
+      const success = await client.callTool({
+        name: "easyeda_control_context",
+        arguments: {},
+      });
+      assert.equal(success.isError, undefined, JSON.stringify(success.content));
+      const payload = structured(success);
+      assert.equal(payload["ok"], true);
+      const project = requireRecord(payload["project"], "context.project");
+      const document = requireRecord(payload["document"], "context.document");
+      assert.equal(project["uuid"], "project-1");
+      assert.equal(project["path"], projectPath);
+      assert.equal(document["uuid"], "document-1");
+      assert.equal(document["documentType"], 3);
+      assert.equal(document["tabId"], "tab-1");
+
+      await writeConfig({ documentType: 0 });
+      const failure = await client.callTool({
+        name: "easyeda_control_context",
+        arguments: {},
+      });
+      assert.match(failureMessage(failure), /supported document type/u);
+    } finally {
+      await writeConfig();
+    }
+  });
+
   void test("keeps every live evidence facade inside one authenticated bridge scope", async () => {
     const source = await readFile(facadeSourceEntrypoint, "utf8");
     const expectedWrappers = new Map<string, string>([
@@ -1148,6 +1295,10 @@ void describe("global orphan-risk quarantine", { concurrency: false }, () => {
       },
     });
     assert.notEqual(discover.isError, true);
+    const quarantinedCallLog = await readFile(upstreamCallLogPath, "utf8");
+    const api = await apiReference({ action: "sdk", query: { namespace: "sys_WebSocket", limit: 1 } });
+    assert.equal(api["invocationEnabled"], false);
+    assert.equal(await readFile(upstreamCallLogPath, "utf8"), quarantinedCallLog, "offline API discovery must remain available during orphan quarantine");
     const recovery = await client.callTool({
       name: "easyeda_control_recover_incomplete",
       arguments: {},

@@ -28,7 +28,14 @@ Treat these as security or data-integrity issues:
 - unrestricted bridge execution becoming reachable;
 - secrets or user design data entering logs, artifacts, tests, or the repository.
 
-The production component writer is disabled. Do not validate it on a real project.
+The legacy component writer remains disabled. Typed design and library operations require their maintained authority/effect gates. Validate newly implemented writers only on an explicitly scoped disposable project, never a real user design.
+
+Exact-read transport rejects missing or malformed JSON envelopes, incorrect
+UTF-8 lengths, oversized results and normalization placeholders. Nested data
+must survive transport before typed validation and double-sample comparison;
+two equally truncated responses are not proof. Runtime failures expose only
+fixed diagnostic categories and bounded exit/protocol metadata. The reviewed
+upstream logger writes synchronously to stderr, never JSON-RPC stdout.
 
 ## Runtime isolation
 
@@ -123,11 +130,14 @@ glob. For a two-link fixed lock, unlink its exact nonce-derived same-inode
 candidate first, recheck the fixed name is still the reported inode with one
 link, and only then unlink the fixed lock. Any mismatch remains fail-closed.
 
-The fixed receipt currently selects bridge build `ded07x99dcxb504`. It is an
-unconnected `validation-required` candidate, not a production-live build. The
-reviewed manifest keeps the historical connected dispatcher build
-`d18b6xd531xe6ca` until a real import, authenticated status capture, and
-connected review justify changing it. Status may collect the candidate's live
-fingerprint, and narrowly reviewed public generic reads may proceed after a
-bounded smoke test against it. Exact readers and private-operation paths remain
-fail-closed while those build IDs differ.
+Dispatcher build `ded07x99dcxb504` is connected-read-admitted after native
+import, authenticated status, PCB and schematic public-read smoke tests and
+installed-source review. The current bridge protocol pin is `1.0.0`; its
+separate optional status application version is absent and pinned as null,
+while the authenticated health application version remains mandatory. This
+supersedes historical dispatcher `d18b6xd531xe6ca` for read admission. Exact
+reads still require the entire reviewed tuple; future mismatches fail closed.
+The legacy writer remains runtime-disabled. Typed API operations require retained
+Windows execution authority and exact source/durable effect proof. Native desktop
+edits do not remove those gates or the bridge quarantine. Offline doctor results
+remain local-file checks, never proof of the currently loaded renderer.

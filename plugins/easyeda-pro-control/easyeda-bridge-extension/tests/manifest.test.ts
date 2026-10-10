@@ -22,7 +22,7 @@ describe('extension manifest activation', () => {
 
     expect(manifest).toMatchObject({
       name: 'easyeda-pro-control-authenticated-bridge',
-      uuid: '7e06d286b1ac846ef7eab9c7f2a9ee4',
+      uuid: '7e06d286b1ac846ef7eab9c7f2a9ee40',
       displayName: 'EasyEDA Pro Control Authenticated Bridge',
       version: '0.3.0',
       publisher: 'JanGuenter',
@@ -53,5 +53,16 @@ describe('extension manifest activation', () => {
         ],
       },
     });
+  });
+
+  it('satisfies the native importer UUID rule and rejects the former 31-character identity', () => {
+    const manifest: unknown = JSON.parse(
+      readFileSync(join(root, 'extension.json'), 'utf8'),
+    );
+    // Installed pro-api 0.2.53 requires exactly 32 lowercase alphanumeric characters.
+    const nativeUuidFormat = /^[a-z0-9]{32}$/u;
+
+    expect(manifest).toHaveProperty('uuid', expect.stringMatching(nativeUuidFormat));
+    expect('7e06d286b1ac846ef7eab9c7f2a9ee4').not.toMatch(nativeUuidFormat);
   });
 });

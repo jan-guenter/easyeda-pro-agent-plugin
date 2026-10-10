@@ -2050,7 +2050,8 @@ export async function writePhaseArtifact(
   return { path, sha256: sha256Text(text), bytes: Buffer.byteLength(text) };
 }
 
-export async function listOperations(): Promise<UnknownRecord[]> {
+/** Enumerate only managed operation identities without retaining full journals. */
+export async function listOperationIds(): Promise<string[]> {
   const directory = await openSafeManagedDirectory(OPERATIONS_DIR);
   let directoryEntries: string[];
   try {
@@ -2058,19 +2059,29 @@ export async function listOperations(): Promise<UnknownRecord[]> {
   } finally {
     await directory.handle.close();
   }
-  const names = directoryEntries
+  return directoryEntries
     .filter((name) => name.endsWith(".json"))
-    .toSorted();
-  const output: UnknownRecord[] = [];
-  for (const name of names) {
+    .toSorted()
+    .map((name) => name.replace(/\.json$/u, ""));
+}
+
+/** Verify every journal and phase artifact, retaining only the selected results.
+ * Projectors must not retain whole journals unless their caller needs them.
+ */
+export async function scanOperations<T>(
+  select: (operation: UnknownRecord) => T | undefined,
+): Promise<T[]> {
+  const operationIds = await listOperationIds();
+  const output: T[] = [];
+  for (const operationId of operationIds) {
+    let operation: UnknownRecord;
     try {
-      const operationId = name.replace(/\.json$/u, "");
-      output.push(await loadOperation(operationId));
+      operation = await loadOperation(operationId);
     } catch (error) {
-      const journalPath = join(OPERATIONS_DIR, name);
+      const journalPath = join(OPERATIONS_DIR, `${operationId}.json`);
       const message = errorMessage(error);
-      output.push({
-        operationId: name.replace(/\.json$/u, ""),
+      operation = {
+        operationId,
         state: "journal-unreadable",
         mutationState: "unknown",
         hardStop: true,
@@ -2083,10 +2094,26 @@ export async function listOperations(): Promise<UnknownRecord[]> {
         },
         nextSafeAction:
           "Inspect and restore the named managed journal before any new mutation.",
-      });
+      };
     }
+    // Projection failures are not corrupt-journal observations.
+    const selected = select(operation);
+    if (selected !== undefined) { output.push(selected); }
   }
   return output;
+}
+
+export async function listOperations(): Promise<UnknownRecord[]> {
+  const operations = await scanOperations((operation) => operation);
+  return operations;
+}
+
+/** Entry guards need only identity/state, after the same complete validation. */
+export async function listOperationStates(): Promise<UnknownRecord[]> {
+  const operations = await scanOperations((operation) => ({
+    operationId: operation["operationId"], state: operation["state"],
+  }));
+  return operations;
 }
 
 export async function readArtifact(

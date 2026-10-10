@@ -14,6 +14,9 @@ const marketplaceEntrySchema = z.object({
 });
 const toolPolicySchema = z.object({ approval_mode: stringSchema });
 const mcpServerSchema = z.object({
+  command: stringSchema,
+  args: stringArraySchema,
+  cwd: stringSchema,
   type: stringSchema,
   default_tools_approval_mode: stringSchema,
   env: stringRecordSchema,
@@ -94,7 +97,11 @@ export const reviewedCompatibilitySchema = z.object({
     bundle: z.object({ version: stringSchema }),
     "source-tree": z.object({ version: stringSchema }),
   }),
-  connectedRuntime: z.object({ dispatcher: z.object({ buildId: stringSchema }) }),
+  connectedRuntime: z.object({
+    bridgeVersion: stringSchema,
+    bridgeEasyedaVersion: stringSchema.nullable(),
+    dispatcher: z.object({ buildId: stringSchema }),
+  }),
 });
 
 export const packageManifestSchema = z.object({

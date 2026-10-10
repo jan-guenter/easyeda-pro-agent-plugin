@@ -1,0 +1,4 @@
+interface:
+  display_name: "EasyEDA PCB layout"
+  short_description: "Constraint-led placement, routing and copper"
+  default_prompt: "Use $easyeda-pcb-layout to plan and check this board's placement, routing and return paths."

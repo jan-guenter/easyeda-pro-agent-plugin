@@ -1,0 +1,4 @@
+interface:
+  display_name: "EasyEDA Pro Extension Development"
+  short_description: "Build and verify narrow EasyEDA Pro SDK adapters"
+  default_prompt: "Use $easyeda-extension-development to investigate this EasyEDA Pro SDK capability and implement a scoped, tested adapter."

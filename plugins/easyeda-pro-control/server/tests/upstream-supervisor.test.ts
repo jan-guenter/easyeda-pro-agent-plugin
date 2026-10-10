@@ -385,7 +385,7 @@ void describe("sandbox process lifetime", () => {
     );
     assert.equal(Reflect.set(upstream, "client", failingResource("client")), true);
     assert.equal(
-      Reflect.set(upstream, "transport", failingResource("transport")),
+      Reflect.set(upstream, "transport", { ...failingResource("transport"), runtimeDiagnostics: (): undefined => undefined }),
       true,
     );
     await assert.rejects(
@@ -436,6 +436,7 @@ void describe("sandbox process lifetime", () => {
     assert.equal(transportClosed, false);
     assert.equal(
       Reflect.set(upstream, "transport", {
+        runtimeDiagnostics: (): undefined => undefined,
         close: (): Promise<void> => {
           transportClosed = true;
           return Promise.resolve();

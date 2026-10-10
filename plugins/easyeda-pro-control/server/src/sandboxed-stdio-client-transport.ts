@@ -51,6 +51,33 @@ export interface SandboxStartupDiagnostics {
   readonly sandboxExitCode: number | null;
 }
 
+type SandboxProtocolFailureCode =
+  | "stdout-before-readiness"
+  | "stdout-before-admission"
+  | "stdout-invalid-message"
+  | "stdout-frame-byte-limit"
+  | "stdout-incomplete-frame"
+  | "status-protocol-error";
+
+const protocolFailureCodes = new WeakMap<Error, SandboxProtocolFailureCode>();
+
+function protocolError(code: SandboxProtocolFailureCode, message: string): Error {
+  const error = new Error(message);
+  protocolFailureCodes.set(error, code);
+  return error;
+}
+
+export interface SandboxRuntimeDiagnostics {
+  readonly schema: "easyeda-pro-control.sandbox-runtime-diagnostics.v1";
+  readonly started: boolean;
+  readonly closed: boolean;
+  readonly stage: SandboxStartupStage;
+  readonly monitorExitCode: number | null;
+  readonly monitorSignal: NodeJS.Signals | null;
+  readonly sandboxExitCode: number | null;
+  readonly protocolFailureCode: SandboxProtocolFailureCode | null;
+}
+
 interface InheritedSandboxDescriptor {
   readonly descriptor: number;
 }
@@ -114,14 +141,16 @@ export function classifySandboxStdoutLine(
 ): "protocol" | "ready" {
   if (!supervisorReady) {
     if (line !== UPSTREAM_SUPERVISOR_READY_LINE) {
-      throw new Error(
+      throw protocolError(
+        "stdout-before-readiness",
         "The upstream emitted output before its exact supervisor readiness marker.",
       );
     }
     return "ready";
   }
   if (!protocolAdmitted) {
-    throw new Error(
+    throw protocolError(
+      "stdout-before-admission",
       "The upstream emitted output between supervisor readiness and protocol admission.",
     );
   }
@@ -518,6 +547,7 @@ export class SandboxedStdioClientTransport implements Transport {
   private closeNotified = false;
   private readonly disposedInheritedResources = new Set<number>();
   private protocolFailed = false;
+  private protocolFailureCode: SandboxProtocolFailureCode | null = null;
   private protocolAdmitted = false;
   private started = false;
   private startupStage: SandboxStartupStage = "pre-spawn-validation";
@@ -554,6 +584,19 @@ export class SandboxedStdioClientTransport implements Transport {
       monitorSignal: this.monitorSignal,
       sandboxExitCode: this.sandboxExitCode,
     };
+  }
+
+  public runtimeDiagnostics(): SandboxRuntimeDiagnostics {
+    return Object.freeze({
+      schema: "easyeda-pro-control.sandbox-runtime-diagnostics.v1",
+      started: this.started,
+      closed: this.closeNotified,
+      stage: this.startupStage,
+      monitorExitCode: this.monitorExitCode,
+      monitorSignal: this.monitorSignal,
+      sandboxExitCode: this.sandboxExitCode,
+      protocolFailureCode: this.protocolFailureCode,
+    });
   }
 
   private notifyClose(): void {
@@ -604,11 +647,17 @@ export class SandboxedStdioClientTransport implements Transport {
     }
   }
 
-  private async failProtocol(error: unknown): Promise<void> {
+  private async failProtocol(
+    error: unknown,
+    code: SandboxProtocolFailureCode = "stdout-invalid-message",
+  ): Promise<void> {
     if (this.protocolFailed) {
       return;
     }
     this.protocolFailed = true;
+    this.protocolFailureCode = error instanceof Error
+      ? protocolFailureCodes.get(error) ?? code
+      : code;
     this.stdoutBufferedBytes = 0;
     this.stdoutChunks = [];
     const normalized =
@@ -639,7 +688,8 @@ export class SandboxedStdioClientTransport implements Transport {
       let offset = 0;
       while (offset < chunk.length) {
         if (this.supervisorReady && !this.protocolAdmitted) {
-          throw new Error(
+          throw protocolError(
+            "stdout-before-admission",
             "The upstream emitted output between supervisor readiness and protocol admission.",
           );
         }
@@ -679,7 +729,10 @@ export class SandboxedStdioClientTransport implements Transport {
     }
     this.stdoutBufferedBytes += segment.length;
     if (this.stdoutBufferedBytes > MAXIMUM_MCP_STDOUT_BUFFER_BYTES) {
-      throw new Error("Upstream MCP stdout frame exceeded its byte limit.");
+      throw protocolError(
+        "stdout-frame-byte-limit",
+        "Upstream MCP stdout frame exceeded its byte limit.",
+      );
     }
     this.stdoutChunks.push(segment);
   }
@@ -704,7 +757,7 @@ export class SandboxedStdioClientTransport implements Transport {
       const normalized =
         error instanceof Error ? error : new Error(String(error));
       if (settled) {
-        void this.failProtocol(normalized);
+        void this.failProtocol(normalized, "status-protocol-error");
       } else {
         settled = true;
         ready.reject(normalized);
@@ -841,6 +894,7 @@ export class SandboxedStdioClientTransport implements Transport {
         if (this.stdoutBufferedBytes > 0) {
           void this.failProtocol(
             new Error("Upstream MCP stdout ended with an incomplete frame."),
+            "stdout-incomplete-frame",
           );
         }
       });

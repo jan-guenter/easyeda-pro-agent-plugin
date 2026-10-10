@@ -841,11 +841,13 @@ void describe("authenticated EasyEDA bridge build", () => {
   });
 
   void test("recovers only owner-scoped candidates after explicit stale-lock clearance", async () => {
-    const exerciseCrashBoundary = async (
-      crashEnvironment: Readonly<NodeJS.ProcessEnv>,
-      expectedCandidate: RegExp,
-      lockCandidate: boolean,
-    ): Promise<void> => {
+    const cases: readonly { crashEnvironment: Readonly<NodeJS.ProcessEnv>; expectedCandidate: RegExp; lockCandidate: boolean }[] = [
+      { crashEnvironment: { EASYEDA_TEST_CRASH_BEFORE_BRIDGE_LOCK_LINK: "1" }, expectedCandidate: /^[.][.]bridge[.]eext[.]archive-receipt[.]lock[.]/u, lockCandidate: true },
+      { crashEnvironment: { EASYEDA_TEST_CRASH_AFTER_BRIDGE_CANDIDATE_PREPARE: "archive" }, expectedCandidate: /^[.]bridge[.][a-f0-9]{64}[.]eext[.]/u, lockCandidate: false },
+      { crashEnvironment: { EASYEDA_TEST_CRASH_DURING_BRIDGE_ARCHIVE_LINK: "1" }, expectedCandidate: /^[.]bridge[.][a-f0-9]{64}[.]eext[.]/u, lockCandidate: false },
+      { crashEnvironment: { EASYEDA_TEST_CRASH_AFTER_BRIDGE_CANDIDATE_PREPARE: "receipt" }, expectedCandidate: /^[.]bridge[.]eext[.]receipt[.]json[.]/u, lockCandidate: false },
+    ];
+    for (const { crashEnvironment, expectedCandidate, lockCandidate } of cases) {
       const directory = await temporaryDirectory();
       const tokenPath = join(directory, "bridge-token");
       const outputPath = join(directory, "bridge.eext");
@@ -947,28 +949,7 @@ void describe("authenticated EasyEDA bridge build", () => {
           : [basename(unrelatedCandidate)],
       );
       parseRecord(recovered.stdout);
-    };
-
-    await exerciseCrashBoundary(
-      { EASYEDA_TEST_CRASH_BEFORE_BRIDGE_LOCK_LINK: "1" },
-      /^[.][.]bridge[.]eext[.]archive-receipt[.]lock[.]/u,
-      true,
-    );
-    await exerciseCrashBoundary(
-      { EASYEDA_TEST_CRASH_AFTER_BRIDGE_CANDIDATE_PREPARE: "archive" },
-      /^[.]bridge[.][a-f0-9]{64}[.]eext[.]/u,
-      false,
-    );
-    await exerciseCrashBoundary(
-      { EASYEDA_TEST_CRASH_DURING_BRIDGE_ARCHIVE_LINK: "1" },
-      /^[.]bridge[.][a-f0-9]{64}[.]eext[.]/u,
-      false,
-    );
-    await exerciseCrashBoundary(
-      { EASYEDA_TEST_CRASH_AFTER_BRIDGE_CANDIDATE_PREPARE: "receipt" },
-      /^[.]bridge[.]eext[.]receipt[.]json[.]/u,
-      false,
-    );
+    }
   });
 
   void test("never reports success after the committed output directory is replaced", async () => {

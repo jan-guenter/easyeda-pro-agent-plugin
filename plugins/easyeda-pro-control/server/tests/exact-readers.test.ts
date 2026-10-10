@@ -4,9 +4,14 @@ import { describe, test } from "node:test";
 import { EasyedaControlEngine } from "../src/engine.ts";
 import type { ContextProbePayload, ExpectedContext } from "../src/engine.ts";
 import {
+  EXACT_READ_ENVELOPE_MAX_BYTES,
   buildExactReadCode,
+  buildExactReadExpression,
+  decodeExactReadEnvelope,
+  encodeExactReadEnvelope,
   exactReadDocumentType,
   exactReadRequestSchema,
+  exactReaderFailureCategory,
   validateExactReadPayload,
   validateExactReadRequest,
 } from "../src/exact-readers.ts";
@@ -18,7 +23,7 @@ type StateObject = Record<string, StateGetter>;
 
 type AsyncFunctionConstructor = new (
   ...parameters: string[]
-) => (eda: unknown) => Promise<unknown>;
+) => (eda: unknown, globals?: unknown) => Promise<unknown>;
 
 interface FixtureRecord extends UnknownRecord {
   arcPrecision: string;
@@ -181,10 +186,13 @@ interface InventoryOptions {
 interface InventoryApi {
   getAllPrimitiveId: () => Promise<unknown>;
   getAll: () => Promise<unknown>;
+  getAllPinsByPrimitiveId?: (primitiveId: string) => Promise<unknown>;
 }
 
 type InventoryEda = Record<string, InventoryApi | undefined> & {
-  pcb_PrimitiveComponent: InventoryApi;
+  pcb_PrimitiveComponent: InventoryApi & {
+    getAllPinsByPrimitiveId: (primitiveId: string) => Promise<unknown>;
+  };
   pcb_PrimitivePoured: InventoryApi;
   pcb_PrimitiveImage?: InventoryApi;
 };
@@ -200,6 +208,7 @@ interface RulesApis {
 
 interface TopologyOptions {
   onFormat?: ((format: string) => void) | undefined;
+  onFileName?: ((fileName: string) => void) | undefined;
   onComponentCall?: ((method: string, args: unknown[]) => void) | undefined;
   componentUniqueId?: string;
   componentDesignator?: string;
@@ -210,12 +219,15 @@ interface TopologyOptions {
 }
 
 interface TopologyApis {
+  dmt_Schematic: { getCurrentSchematicInfo: () => unknown };
   sch_PrimitiveComponent: Record<
     string,
     (...args: unknown[]) => Promise<unknown>
   >;
-  sch_Netlist: { getNetlist: (format: string) => Promise<unknown> };
+  sch_ManufactureData: { getNetlistFile: (fileName: string, format: string) => Promise<unknown> };
 }
+
+const topologyGlobals = new WeakMap<object, unknown>();
 
 /* oxlint-disable typescript/no-unsafe-type-assertion, typescript/no-unsafe-member-access -- The test must construct generated async programs through the runtime's AsyncFunction constructor. */
 const AsyncFunction = Object.getPrototypeOf(
@@ -257,8 +269,10 @@ async function executeReader(
   request: unknown,
   eda: unknown,
 ): Promise<FixturePayload> {
-  const payload = await new AsyncFunction("eda", buildExactReadCode(request))(
-    eda,
+  const dmt: unknown = typeof eda === "object" && eda !== null ? Reflect.get(eda, "dmt_Schematic") : undefined;
+  const globals = typeof dmt === "object" && dmt !== null ? topologyGlobals.get(dmt) : undefined;
+  const payload = await new AsyncFunction("eda", "globalThis", `return await ${buildExactReadExpression(request)};`)(
+    eda, globals ?? globalThis,
   );
   assertFixturePayload(payload);
   return payload;
@@ -272,6 +286,81 @@ function stateObject(values: UnknownRecord): StateObject {
     ]),
   );
 }
+
+// The pinned companion preserves scalar strings and replaces objects at depth zero.
+function normalizeBridgeFixture(value: unknown, depth = 5): unknown {
+  if (value === null || typeof value !== "object") { return value; }
+  if (depth <= 0) { return "[MaxDepth]"; }
+  if (Array.isArray(value)) { return value.map((item: unknown) => normalizeBridgeFixture(item, depth - 1)); }
+  return Object.fromEntries(Object.entries(value).map(([key, field]) => [key, normalizeBridgeFixture(field, depth - 1)]));
+}
+
+void describe("lossless exact-reader transport", () => {
+  void test("preserves nested populated rules through depth-five normalization and compares decoded leaves", async () => {
+    const request = exactReadRequestSchema.parse({ kind: "pcb-rules" });
+    const eda = rulesApis([]);
+    let clearance = 4;
+    const configuration = (): UnknownRecord => ({
+      name: "Fixture Six Layer",
+      config: { spacing: { profiles: { usb: { layers: [{ name: "Öuter", values: { clearance, width: 6.25 } }] } } } },
+    });
+    eda.pcb_Drc.getCurrentRuleConfiguration = async (): Promise<unknown> => configuration();
+    const plain = await executeReader(request, eda);
+    assert.throws(() => validateExactReadPayload(normalizeBridgeFixture(plain), request), /normalization placeholder/u);
+    const code = buildExactReadCode(request);
+    const envelope = await new AsyncFunction("eda", code)(eda);
+    assert.deepEqual(envelope, encodeExactReadEnvelope(plain));
+    const decoded = decodeExactReadEnvelope(normalizeBridgeFixture(envelope));
+    assert.deepEqual(decoded, plain);
+    validateExactReadPayload(decoded, request);
+
+    let changeSecond = false;
+    let observations = 0;
+    const engine = new EasyedaControlEngine({
+      async callTool(): Promise<unknown> {
+        observations += 1;
+        if (changeSecond && observations % 2 === 0) { clearance = 5; }
+        const result = normalizeBridgeFixture(await new AsyncFunction("eda", code)(eda));
+        return { structuredContent: { ok: true, result } };
+      },
+    });
+    engine.assertContext = async (context): Promise<ContextProbePayload> => liveContext(context);
+    const context = {
+      project: { uuid: "project-1", path: "/tmp/project.eprj2" },
+      document: { uuid: "document-1", documentType: 3, tabId: "tab-1" },
+    };
+    const stable = await engine.exactRead(request, context);
+    assert.deepEqual(stable["rules"], plain.rules);
+    changeSecond = true;
+    await assert.rejects(engine.exactRead(request, context), /changed between two consecutive observations/u);
+  });
+
+  void test("rejects missing, malformed, oversized and placeholder-bearing envelopes", () => {
+    const valid = encodeExactReadEnvelope({ ok: true, nested: { value: "µ" } });
+    for (const invalid of [
+      { ok: true },
+      { ...valid, schema: "unreviewed" },
+      { ...valid, utf8Bytes: valid.utf8Bytes - 1 },
+      { ...valid, extra: true },
+      { ...valid, json: "{", utf8Bytes: 1 },
+      { ...valid, json: "x".repeat(EXACT_READ_ENVELOPE_MAX_BYTES + 1), utf8Bytes: EXACT_READ_ENVELOPE_MAX_BYTES + 1 },
+    ]) { assert.throws(() => decodeExactReadEnvelope(invalid), /transport/u); }
+    for (const marker of ["[MaxDepth]", "[Truncated]", "[Circular]", "[Function nativeGetter]"]) {
+      const json = JSON.stringify({ nested: { value: marker } });
+      assert.throws(() => decodeExactReadEnvelope({ ...valid, json, utf8Bytes: Buffer.byteLength(json) }), /normalization placeholder/u);
+    }
+    assert.throws(() => encodeExactReadEnvelope({ value: "x".repeat(EXACT_READ_ENVELOPE_MAX_BYTES) }), /byte bound/u);
+  });
+
+  void test("generated envelope enforces its byte limit without exposing native error text", async () => {
+    const request = exactReadRequestSchema.parse({ kind: "pcb-rules" });
+    const eda = rulesApis([]);
+    eda.pcb_Drc.getCurrentRuleConfiguration = async (): Promise<unknown> => ({ name: "Fixture Six Layer", config: { text: "x".repeat(EXACT_READ_ENVELOPE_MAX_BYTES) } });
+    await assert.rejects(new AsyncFunction("eda", buildExactReadCode(request))(eda), /^Error: Exact reader could not produce a bounded JSON transport envelope\.$/u);
+    eda.pcb_Drc.getCurrentRuleConfiguration = async (): Promise<unknown> => { throw new Error("private-native-error-must-not-escape"); };
+    await assert.rejects(new AsyncFunction("eda", buildExactReadCode(request))(eda), /^Error: EASYEDA_EXACT_READ_FAILURE\|pcb-rules\|api-call\|pcb_Drc\|getCurrentRuleConfiguration\|unset$/u);
+  });
+});
 
 function schematicComponent(
   primitiveId = "sch-r1",
@@ -636,7 +725,12 @@ function inventoryApis({
   }
   return {
     ...eda,
-    pcb_PrimitiveComponent: componentApi,
+    pcb_PrimitiveComponent: {
+      ...componentApi,
+      getAllPinsByPrimitiveId: async (primitiveId: string): Promise<StateObject[]> => [
+        pcbPad({ primitiveId: "component-pad-1", parentComponentPrimitiveId: primitiveId, padType }),
+      ],
+    },
     pcb_PrimitivePoured: pouredApi,
   };
 }
@@ -680,6 +774,7 @@ function rulesApis(differentialPairs: unknown): RulesApis {
 
 function topologyApis({
   onFormat,
+  onFileName,
   onComponentCall,
   componentUniqueId = "gge1",
   componentDesignator = "R1",
@@ -693,7 +788,22 @@ function topologyApis({
     componentDesignator,
     componentUniqueId,
   );
+  const dmt_Schematic: TopologyApis["dmt_Schematic"] = { getCurrentSchematicInfo: () => ({
+    uuid: "schematic", parentProjectUuid: "project",
+    page: [{ uuid: "page", parentSchematicUuid: "schematic" }],
+  }) };
+  const nativePart = {
+    id: "sch-r1", cmdKey: "part",
+    getAttr: (key: string): { value: string } => ({ value: key === "Unique ID" ? componentUniqueId : componentDesignator }),
+    pins: componentPinNumbers.map((number) => ({ getAttr: (): { value: string } => ({ value: number }) })),
+  };
+  const page = { uuid: "page", project_uuid: "project", schematicUuid: "schematic",
+    isSchSheetDoc: (): boolean => true, shapeManager: { getModels: (): unknown[] => [nativePart] } };
+  topologyGlobals.set(dmt_Schematic, { SCH: { docMemoryManager: {
+    getActiveDoc: (): unknown => page, getSchDocs: (): unknown[] => [page],
+  } } });
   return {
+    dmt_Schematic,
     sch_PrimitiveComponent: {
       getAll: async (...args: unknown[]) => {
         onComponentCall?.("getAll", args);
@@ -713,10 +823,11 @@ function topologyApis({
         );
       },
     },
-    sch_Netlist: {
-      getNetlist: async (format: string) => {
+    sch_ManufactureData: {
+      getNetlistFile: async (fileName: string, format: string) => {
         onFormat?.(format);
-        return JSON.stringify({
+        onFileName?.(fileName);
+        const text = JSON.stringify({
           components: {
             [netlistUniqueId]: {
               props: {
@@ -732,12 +843,104 @@ function topologyApis({
             },
           },
         });
+        return new File([text], `${fileName}.enet`, { type: "text/plain" });
       },
     },
   };
 }
 
 void describe("facade-owned exact reader contracts", () => {
+  void test("correlates PCB physical pads by global wrapper identity, never local pad/via summaries", async () => {
+    const component = pcbComponent("pcb-u1", "U1", [
+      { primitiveId: "local-pad", padNumber: "1", net: "GND" },
+      { primitiveId: "local-footprint-via", padNumber: "via", net: "GND" },
+    ]);
+    const request = { kind: "pcb-components", selector: { all: true }, includePins: true, includeBounds: false };
+    const payload = await executeReader(request, pcbComponentApis({ components: [component] }));
+    assert.equal(payload.byPrimitiveId["pcb-u1"].pads.length, 1);
+    assert.equal(payload.byPrimitiveId["pcb-u1"].pads[0]?.primitiveId, "pad-1");
+    const eda = inventoryApis();
+    eda.pcb_PrimitiveComponent.getAll = async (): Promise<StateObject[]> => [
+      stateObject({
+        PrimitiveId: "components-1",
+        Pads: (): never => { throw new Error("untrustworthy pad/via summary must not be read"); },
+      }),
+    ];
+    const inventory = await executeReader({ kind: "pcb-inventory" }, eda);
+    assert.equal(inventory.physicalPadCount, 2);
+    assert.equal(inventory.componentPadCorrelation.count, 1);
+    assert.equal(inventory.standalonePadCount, 1);
+    assert.equal(inventory.componentPadCorrelation.byPrimitiveId["component-pad-1"].source, "component-getAllPinsByPrimitiveId");
+
+    const invalidWrappers = [
+      [pcbPad({ primitiveId: "component-pad-1", parentComponentPrimitiveId: "wrong-parent" })],
+      [pcbPad({ primitiveId: "component-pad-1", primitiveType: "Pad", parentComponentPrimitiveId: "components-1" })],
+      [pcbPad({ primitiveId: "component-pad-1", parentComponentPrimitiveId: "components-1" }), pcbPad({ primitiveId: "component-pad-1", parentComponentPrimitiveId: "components-1" })],
+    ];
+    for (const pads of invalidWrappers) {
+      const invalid = inventoryApis();
+      invalid.pcb_PrimitiveComponent.getAllPinsByPrimitiveId = async (): Promise<StateObject[]> => pads;
+      await assert.rejects(
+        executeReader({ kind: "pcb-inventory" }, invalid),
+        /wrong parent or primitive type|duplicate primitive IDs/u,
+      );
+    }
+    const changedNet = inventoryApis();
+    const mismatched = pcbPad({ primitiveId: "component-pad-1", parentComponentPrimitiveId: "components-1" });
+    mismatched["getState_Net"] = async (): Promise<string> => "different-net";
+    changedNet.pcb_PrimitiveComponent.getAllPinsByPrimitiveId = async (): Promise<StateObject[]> => [mismatched];
+    await assert.rejects(
+      executeReader({ kind: "pcb-inventory" }, changedNet),
+      /disagrees with direct pad number or net/u,
+    );
+  });
+
+  void test("identifies getter and API failure stages using only fixed diagnostic fields", async () => {
+    const request = { kind: "pcb-components", selector: { all: true }, includePins: false, includeBounds: false };
+    const missing = pcbComponent();
+    Reflect.deleteProperty(missing, "getState_X");
+    const wrongShape = pcbComponent();
+    wrongShape["getState_X"] = async (): Promise<string> => "private-coordinate-value";
+    const inventory = inventoryApis();
+    const cases = [
+      {
+        request, eda: pcbComponentApis({ components: [missing] }),
+        diagnostic: { kind: "pcb-components", stage: "getter-lookup", api: "pcb_PrimitiveComponent", method: "getState_X", expectation: "unset" },
+      },
+      {
+        request, eda: pcbComponentApis({ components: [wrongShape] }),
+        diagnostic: { kind: "pcb-components", stage: "getter-result", api: "pcb_PrimitiveComponent", method: "getState_X", expectation: "finite-number" },
+      },
+      {
+        request: { kind: "pcb-inventory" },
+        eda: {
+          ...inventory,
+          pcb_PrimitivePad: {
+            getAllPrimitiveId: async (): Promise<string[]> => [],
+            getAll: async (): Promise<never> => { throw new Error("private-native-error-with-project-data"); },
+          },
+        },
+        diagnostic: { kind: "pcb-inventory", stage: "api-call", api: "pcb_PrimitivePad", method: "getAll", expectation: "unset" },
+      },
+    ];
+    for (const item of cases) {
+      await assert.rejects(
+        new AsyncFunction("eda", `return await ${buildExactReadExpression(item.request)};`)(item.eda),
+        (error: unknown) => {
+          assert.ok(error instanceof Error);
+          const diagnostic: unknown = Reflect.get(error, "exactReaderDiagnostic");
+          assert.deepEqual(diagnostic, item.diagnostic);
+          assert.equal(JSON.stringify(diagnostic).includes("private-"), false);
+          const { kind, stage, api, method, expectation } = item.diagnostic;
+          assert.notEqual(exactReaderFailureCategory(
+            ["EASYEDA_EXACT_READ_FAILURE", kind, stage, api, method, expectation].join("|"),
+          ), null);
+          return true;
+        },
+      );
+    }
+  });
+
   void test("enforces strict request schemas, one selector, and the editor document type", () => {
     assert.throws(
       () =>
@@ -773,6 +976,24 @@ void describe("facade-owned exact reader contracts", () => {
       () => exactReadDocumentType("library-components"),
       /Unsupported exact-reader kind/u,
     );
+  });
+
+  void test("reads bounded lossless native source for each editor and rejects missing source", async () => {
+    const source = '{"type":"DOCHEAD"}||{"docType":"PCB","uuid":"fixture","client":"1234567890abcdef","updateTime":123,"version":"123","editVersion":"3.2.149.88089769"}|\n{"type":"STRING","id":"id","ticket":1}||{"text":"µΩ"}';
+    const normalized = source.replace(',"client":"1234567890abcdef","updateTime":123,"version":"123"', "");
+    for (const kind of ["schematic-source", "symbol-source", "pcb-source", "footprint-source"] as const) {
+      const request = { kind };
+      const payload = await executeReader(request, { sys_FileManager: {
+        getDocumentSource: () => Promise.resolve(source),
+      } });
+      assert.equal(payload["source"], normalized);
+      assert.equal(payload["utf8Bytes"], Buffer.byteLength(normalized));
+      validateExactReadPayload(payload, request);
+      assert.throws(() => validateExactReadPayload({ ...payload, utf8Bytes: 1 }, request), /byte count/u);
+      await assert.rejects(executeReader(request, { sys_FileManager: {
+        getDocumentSource: () => Promise.resolve(),
+      } }), /source is unavailable/u);
+    }
   });
 
   void test("uses only the declared lower-case EasyEDA API and fails on missing APIs", async () => {
@@ -1046,7 +1267,7 @@ void describe("facade-owned exact reader contracts", () => {
         parentComponentPrimitiveId: "components-1",
         padNumber: "1",
         net: "GND",
-        source: "component-getState_Pads",
+        source: "component-getAllPinsByPrimitiveId",
       },
     );
     assert.deepEqual(payload.componentPadCorrelation.byComponentPrimitiveId, {
@@ -1245,18 +1466,9 @@ void describe("facade-owned exact reader contracts", () => {
     );
 
     const missingComponentPad = inventoryApis();
-    missingComponentPad.pcb_PrimitiveComponent.getAll =
+    missingComponentPad.pcb_PrimitiveComponent.getAllPinsByPrimitiveId =
       async (): Promise<unknown> => [
-        stateObject({
-          PrimitiveId: "components-1",
-          Pads: [
-            {
-              primitiveId: "missing-component-pad",
-              padNumber: "1",
-              net: "GND",
-            },
-          ],
-        }),
+        pcbPad({ primitiveId: "missing-component-pad", parentComponentPrimitiveId: "components-1" }),
       ];
     await assert.rejects(
       executeReader({ kind: "pcb-inventory" }, missingComponentPad),
@@ -1422,10 +1634,12 @@ void describe("facade-owned exact reader contracts", () => {
   void test("uses only compiled JLCEDA connectivity and disclaims unavailable wire geometry", async () => {
     const request: ExactReadRequest = { kind: "schematic-topology" };
     const formats: string[] = [];
+    const fileNames: string[] = [];
     const componentCalls: { method: string; args: unknown[] }[] = [];
     const rawPayload = await executeReader(
       request,
       topologyApis({
+        onFileName: (fileName) => { fileNames.push(fileName); },
         onFormat: (format: string) => {
           formats.push(format);
         },
@@ -1435,16 +1649,16 @@ void describe("facade-owned exact reader contracts", () => {
       }),
     );
     assert.deepEqual(formats, ["JLCEDA"]);
+    assert.deepEqual(fileNames, ["easyeda-control-topology"]);
     assert.deepEqual(componentCalls, [
       { method: "getAll", args: ["part", true] },
       { method: "getAllPrimitiveId", args: ["part", true] },
-      { method: "getAllPinsByPrimitiveId", args: ["sch-r1"] },
     ]);
     assert.deepEqual(rawPayload.authority, {
-      connectivity: "sch_Netlist.getNetlist(JLCEDA)",
+      connectivity: "sch_ManufactureData.getNetlistFile(JLCEDA)",
       wireGeometry: "unavailable",
     });
-    assert.equal(rawPayload.limitations.length, 2);
+    assert.equal(rawPayload.limitations.length, 4);
     assert.equal(Object.hasOwn(rawPayload, "wires"), false);
     assert.equal(Object.hasOwn(rawPayload, "netNames"), false);
     assert.equal(Object.hasOwn(rawPayload, "netTree"), false);
@@ -1457,7 +1671,7 @@ void describe("facade-owned exact reader contracts", () => {
     ]);
     assert.deepEqual(rawPayload.componentCorrelation, {
       status: "exact-match",
-      source: "sch_PrimitiveComponent.getAll(part,true)",
+      source: "sch_PrimitiveComponent.getAll(part,true)+complete-declared-page-native-pins",
       componentCount: 1,
       pinCount: 1,
       primitiveIds: ["sch-r1"],
@@ -1471,10 +1685,12 @@ void describe("facade-owned exact reader contracts", () => {
       },
     });
 
+    let dispatched = false;
     const upstream = {
       async callTool(): Promise<unknown> {
+        dispatched = true;
         return {
-          structuredContent: { ok: true, result: structuredClone(rawPayload) },
+          structuredContent: { ok: true, result: encodeExactReadEnvelope(rawPayload) },
         };
       },
     };
@@ -1482,18 +1698,11 @@ void describe("facade-owned exact reader contracts", () => {
     engine.assertContext = async (
       expectedContext,
     ): Promise<ContextProbePayload> => liveContext(expectedContext);
-    const compact = await engine.exactRead(request, {
+    await assert.rejects(engine.exactRead(request, {
       project: { uuid: "project-1", path: "/tmp/project.eprj2" },
       document: { uuid: "document-1", documentType: 1, tabId: "tab-1" },
-    });
-    assert.deepEqual(
-      compact["compiledConnectivity"],
-      rawPayload.compiledConnectivity,
-    );
-    const readConsistency = compact["read_consistency"];
-    assertUnknownRecord(readConsistency);
-    assert.equal(readConsistency["stable"], true);
-    assert.equal(readConsistency["attempts"], 2);
+    }), /Installed schematic asset identity is unavailable/u);
+    assert.equal(dispatched, false);
 
     assert.throws(
       () =>
@@ -1526,8 +1735,8 @@ void describe("facade-owned exact reader contracts", () => {
       /compiled and public component state disagree/u,
     );
     const malformed = topologyApis();
-    malformed.sch_Netlist.getNetlist = async (): Promise<unknown> =>
-      "not JSON connectivity";
+    malformed.sch_ManufactureData.getNetlistFile = async (): Promise<unknown> =>
+      new File(["not JSON connectivity"], "easyeda-control-topology.enet", { type: "text/plain" });
     await assert.rejects(
       executeReader(request, malformed),
       /JSON sequence could not be parsed/u,
@@ -1560,6 +1769,47 @@ void describe("facade-owned exact reader contracts", () => {
       [],
     );
     assert.equal(validateExactReadPayload(payload, request), payload);
+  });
+
+  void test("rejects missing, malformed, oversized or inconsistent netlist files without a legacy fallback", async () => {
+    let legacyCalls = 0;
+    let oversizedReads = 0;
+    const apis = {
+      ...topologyApis(),
+      sch_Netlist: { getNetlist: (): never => {
+        legacyCalls += 1;
+        throw new Error("legacy netlist getter must not run");
+      } },
+    };
+    const fileShape = {
+      name: "easyeda-control-topology.enet", type: "text/plain", size: 2,
+      text: (): Promise<unknown> => Promise.resolve("{}"),
+    };
+    const oversized = { ...fileShape, size: 16 * 1024 * 1024 + 1, text: (): Promise<unknown> => {
+      oversizedReads += 1;
+      return Promise.resolve("{}");
+    } };
+    const changed = { ...fileShape, text: (): Promise<unknown> => {
+      changed.size = 3;
+      return Promise.resolve("{}");
+    } };
+    const invalidFiles = [
+      undefined, {},
+      new File([], fileShape.name, { type: fileShape.type }),
+      { ...fileShape, type: "application/json" },
+      { ...fileShape, name: "unexpected.enet" },
+      { ...fileShape, size: Number.NaN },
+      { ...fileShape, text: "not-callable" },
+      { ...fileShape, text: (): Promise<unknown> => Promise.resolve(42) },
+      { ...fileShape, size: 1 },
+      oversized, changed,
+    ];
+    for (const file of invalidFiles) {
+      apis.sch_ManufactureData.getNetlistFile = (): Promise<unknown> => Promise.resolve(file);
+      await assert.rejects(executeReader({ kind: "schematic-topology" }, apis), /netlist file/u);
+    }
+    assert.equal(oversizedReads, 0);
+    assert.equal(legacyCalls, 0);
   });
 
   void test("validates payload indexes and rejects unstable double reads", async () => {
@@ -1596,7 +1846,7 @@ void describe("facade-owned exact reader contracts", () => {
         return {
           structuredContent: {
             ok: true,
-            result: {
+            result: encodeExactReadEnvelope({
               ...structuredClone(valid),
               byPrimitiveId: {
                 "sch-r1": {
@@ -1604,7 +1854,7 @@ void describe("facade-owned exact reader contracts", () => {
                   x: observation,
                 },
               },
-            },
+            }),
           },
         };
       },

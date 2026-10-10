@@ -431,6 +431,19 @@ before(async () => {
         }] };
       } else if (
         request.method === 'tools/call' &&
+        request.params?.name === 'fixture_invalid_frame'
+      ) {
+        process.stderr.write('private-runtime-diagnostic-fixture\\n');
+        process.stdout.write(JSON.stringify({ level: 40, msg: 'private-invalid-frame-fixture' }) + '\\n');
+        return;
+      } else if (
+        request.method === 'tools/call' &&
+        request.params?.name === 'fixture_exit'
+      ) {
+        process.stderr.write('private-runtime-diagnostic-fixture\\n');
+        process.exit(7);
+      } else if (
+        request.method === 'tools/call' &&
         request.params?.name === 'easyeda_api_call'
       ) {
         const bridgeResponse = await callBridge(request.params.arguments);
@@ -578,6 +591,58 @@ void describe(
   "running upstream implementation fingerprint",
   { concurrency: false },
   () => {
+    void test("retains fixed-code runtime exit diagnostics without private output", async () => {
+      for (const tool of ["fixture_invalid_frame", "fixture_exit"]) {
+        const controlRoot = await openConfiguredControlRootCapability();
+        const trustedLauncher = await new UpstreamEasyedaClient().launcherFingerprint();
+        const upstream = new UpstreamEasyedaClient({
+          bridgePublicPortForTesting: 0,
+          controlRoot,
+          trustedLauncher,
+        });
+        try {
+          assert.equal(upstream.processDiagnostics(), undefined);
+          await upstream.connect();
+          const connected = upstream.processDiagnostics();
+          assert.equal(connected?.sandbox.closed, false);
+          assert.equal(connected?.sandbox.protocolFailureCode, null);
+          await assert.rejects(
+            upstream.callTool(tool, {}),
+            /Connection closed/u,
+          );
+          await upstream.close();
+          const exited = upstream.processDiagnostics();
+          assert.ok(exited);
+          assert.equal(exited.sandbox.closed, true);
+          assert.equal(
+            exited.sandbox.protocolFailureCode,
+            tool === "fixture_invalid_frame" ? "stdout-invalid-message" : null,
+          );
+          if (tool === "fixture_exit") {
+            assert.equal(exited.sandbox.sandboxExitCode, 7);
+            assert.equal(exited.sandbox.monitorExitCode, 7);
+            assert.equal(exited.sandbox.monitorSignal, null);
+          } else {
+            assert.ok(
+              exited.sandbox.monitorExitCode !== null ||
+              exited.sandbox.monitorSignal !== null,
+            );
+          }
+          assert.ok(exited.stderrBytes > 0);
+          assert.match(exited.stderrSha256, /^[a-f0-9]{64}$/u);
+          assert.equal(JSON.stringify(exited).includes("private-runtime"), false);
+          assert.equal(JSON.stringify(exited).includes("private-invalid"), false);
+          assert.equal(Object.isFrozen(exited), true);
+          assert.equal(Object.isFrozen(exited.sandbox), true);
+          assert.deepEqual(upstream.processDiagnostics(), exited);
+          assert.equal(connected?.sandbox.closed, false);
+        } finally {
+          await upstream.close();
+          await controlRoot.close();
+        }
+      }
+    });
+
     void test("accepts only the exact descriptor sanitizer runtime identity", async () => {
       const capture = await captureLauncherFingerprint();
       const fingerprint = capture.fingerprint;

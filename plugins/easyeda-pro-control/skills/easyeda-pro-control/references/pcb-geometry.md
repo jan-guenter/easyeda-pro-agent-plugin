@@ -10,15 +10,15 @@ Normalize rotations modulo 360 before constructing evidence. The candidate compo
 
 Component pin wrappers are useful for transformed centers and nets, but one baseline wrapper returned a drill dimension scaled by 0.1. Read direct pad primitives or durable footprint source for hole and land dimensions.
 
-The exact `pcb-inventory` reader records direct `pcb_PrimitivePad` state, including land/hole objects, offsets, rotation, metallization, numeric pad type, mask/paste expansion, thermal state, lock, layer, net, and source marker. That API enumerates component-owned and standalone pads together, so it is the single physical-pad authority. Component `getState_Pads` records are correlated as a parent-identity subset and never added as a second pad family. The exact component reader uses the transformed component-pin wrapper only for parent/pad identity, center, rotation, layer, and net; it intentionally omits wrapper drill and land geometry. Do not merge or double-count the sources, and do not apply the observed 0.1 correction globally.
+The exact `pcb-inventory` reader records direct `pcb_PrimitivePad` state, including land/hole objects, offsets, rotation, metallization, numeric pad type, mask/paste expansion, thermal state, lock, layer, net, and source marker. That API enumerates component-owned and standalone pads together, so it is the single physical-pad authority. Native `getAllPinsByPrimitiveId` supplies global pad IDs, parent IDs, pad numbers and nets for exact correlation; those rows are never added as a second pad family. Component `getState_Pads` summaries are not used because the pinned mapper exposes footprint-local IDs and can include footprint vias. The exact component reader uses transformed pin centers, rotation and layer but intentionally omits wrapper drill and land geometry. Do not merge or double-count the sources, and do not apply the observed 0.1 correction globally.
 
-The exact component reader can return live bounding boxes for selected components. The inventory reader returns every ID exposed by the pinned public family enumerators and supported geometry/state for pads, vias, lines, arcs, polylines, regions, pours, derived poured fill pieces, and fills. The pinned PCB component mapper returns `undefined` rather than an array for a legitimate zero-pad component; the reader canonicalizes only that case to an empty per-component pad list and still rejects other non-array state. `pcb_PrimitivePoured` groups by the parent pour ID, so the reader correlates that state to `pcb_PrimitivePour` and identifies fill pieces from `getState_PourFills()[].id` without adding another parent primitive count. It deliberately omits region rule types and fill modes because the installed adapter drops `NO_VIAS` and hardcodes `fillMode`. Arc start/end coordinates and angles are rounded to one decimal adapter unit, and via radii are rounded to one decimal before diameter conversion; treat both as adapter-normalized public state, not raw persisted precision. Some remaining families are identity-counted only; consult the payload's limitations before making a geometry or rule claim.
+The exact component reader can return live bounding boxes for selected components. The inventory reader returns every ID exposed by the pinned public family enumerators and supported geometry/state for pads, vias, lines, arcs, polylines, regions, pours, derived poured fill pieces, and fills. Native pin enumeration must return an array, including an empty array for zero physical pads. `pcb_PrimitivePoured` groups by the parent pour ID, so the reader correlates that state to `pcb_PrimitivePour` and identifies fill pieces from `getState_PourFills()[].id` without adding another parent primitive count. It deliberately omits region rule types and fill modes because the installed adapter drops `NO_VIAS` and hardcodes `fillMode`. Arc start/end coordinates and angles are rounded to one decimal adapter unit, and via radii are rounded to one decimal before diameter conversion; treat both as adapter-normalized public state, not raw persisted precision. Some remaining families are identity-counted only; consult the payload's limitations before making a geometry or rule claim.
 
 Serializer grids and adapter scaling need a controlled test in the current editor. Do not apply a global correction from one observed footprint. Create a disposable test primitive, save and reopen it, measure the result, and document any version-specific compensation.
 
 ## Live bounds and placement
 
-Use live placed primitive bounding boxes for clearance decisions. Offline envelopes may omit graphics or body extents. If the experimental writer is later enabled after connected validation, its one-component workflow must:
+Use live placed primitive bounding boxes for clearance decisions. Offline envelopes may omit graphics or body extents. For typed placement:
 
 1. Journal the target's primitive ID, reference, `UniqueId`, coordinates, rotation, layer, and lock state.
 2. Apply one facade-generated pose, layer, or lock patch without saving.
@@ -27,7 +27,7 @@ Use live placed primitive bounding boxes for clearance decisions. Offline envelo
 5. Recompute relevant electrical path metrics.
 6. Roll back that component to the exact journaled baseline if any check fails.
 
-The runtime-disabled candidate writer accepts only top-level `x`, `y`, `rotation`, `layer`, and `primitiveLock`. Bounds and transformed pin positions may be declared as consequences and are verified, but they are never submitted to EasyEDA. Multi-target plans are rejected because a sequential partial failure could not be reconciled safely.
+Typed component modifications include `x`, `y`, `rotation`, `layer` and `primitiveLock`, with attached-record effects independently checked. `pcb.batch` simulates 1–256 steps before one source merge and protects initially locked records and descendants. Creation IDs are retained before dispatch. This replaces the legacy one-target limitation; exact inverse availability is still operation-dependent.
 
 The upstream group planner is not a live placement authority: its board size, component rectangles, and keepouts are caller-supplied, it does not audit the live outline, obstacles, or locks, and its `fixed` flag is not honored by the current implementation. It is excluded from guarded typed writes. An exact version-pinned placement workflow must derive every target and clearance input from live evidence and use explicit inverse poses.
 
@@ -37,13 +37,36 @@ Use explicit line and arc segments for critical outlines. Verify closure, boundi
 
 ## Regions and copper keepouts
 
-The installed public region API exposes polygon, layer, rule list, name, line width, and lock state. `pcb-inventory` reads the exposed geometry, layer, name, width, and lock, but not the rule list: the pinned mapper silently drops raw `NO_VIAS`. The guarded facade also has no region writer or inverse model. Region and keepout mutation therefore remains outside the state machine. Do not copy a MULTI-layer number or rule number from another project without checking it through a separately proven native or UI path.
+The installed public region API exposes polygon, layer, rule list, name, line width, and lock state. `pcb-inventory` reads the exposed geometry, layer, name, width, and lock, but not the rule list: the pinned mapper silently drops raw `NO_VIAS`. Typed region adapters use complete document-source records rather than the lossy public region-rule getter. Unsupported source geometry or rules are rejected; check the operation's exact inverse and live validation status. Do not copy a MULTI-layer number or rule number from another project without checking it through a separately proven native or UI path.
 
-Region geometry verification must compare geometry, not serialized path text. The editor can reverse winding, rotate the starting vertex, remove a duplicated closing point, and canonicalize commands. Normalize polygons and compare equivalent vertices, edges, arcs, closure, and layer. Rule-set verification is unavailable from the current exact region reader.
+Region geometry verification must compare geometry, not serialized path text. The editor can reverse winding, rotate the starting vertex, remove a duplicated closing point, and canonicalize commands. Normalize polygons and compare equivalent vertices, edges, arcs, closure, and layer. Rule-set verification is unavailable from that public region reader; use the complete native source proof for typed changes.
 
 A name has rule meaning only when the rule set says to follow a named region rule. A copper-only keepout should not also forbid component bodies unless the design requirement says so.
 
 ## 3D models
+
+Typed `pcb.component.model-transform` and `footprint.model-transform` change only
+one existing stored `3D Model Transform` attribute. Supply its exact `attributeId`
+and, for PCB, the owning component's `target.primitiveId`. The legacy form uses
+explicit `dimensionsMil`, `rotationDegrees` and `offsetMil` XYZ fields. Its native
+serialization is dx,dy,dz,rz,rx,ry,x,y,z. Mixed zero/positive dimensions are valid.
+For real models, native scaling uses the minimum positive finite requested-size
+to bounding-box ratio and ignores zero axes; zero Z does not mean zero height.
+Three zero dimensions use the native fallback scale. Preserve the stored zeros
+unless resizing is intended. The v2 form
+uses nine `linearColumnMajor` coefficients and `translationMil` XYZ fields.
+
+The adapter preserves pose, pads, nets, model association/title and all unrelated
+records. It cannot create a missing/inherited transform override, replace the
+model or propagate a footprint edit to placed instances. Locked owners or
+attributes require a separate authorized unlock. A previous noncanonical numeric
+string may prevent an exact inverse. This adapter has focused offline tests;
+its connected save/reopen and mechanical validation remain pending.
+
+When the transform comes from DEVICE metadata, use the separate
+`library.device.model-transform` operation and its exact inheriting-instance
+authority list. See [libraries-and-eco.md](libraries-and-eco.md). Do not invent a
+missing PCB attribute or clear the model to get around the stored-attribute path.
 
 EasyEDA normalizes a STEP body's XY bounding-box center and minimum Z before it applies model transforms. Derive the transform from the STEP BREP or bounding box and pin axes. Do not tune it from an oblique preview.
 

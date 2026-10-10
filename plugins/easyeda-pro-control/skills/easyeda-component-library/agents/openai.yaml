@@ -1,0 +1,4 @@
+interface:
+  display_name: "EasyEDA component library"
+  short_description: "Verified symbols, footprints and device mappings"
+  default_prompt: "Use $easyeda-component-library to define this exact part and verify its symbol-to-pad mapping."

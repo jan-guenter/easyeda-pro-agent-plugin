@@ -1,0 +1,4 @@
+interface:
+  display_name: "Electronics design review"
+  short_description: "Evidence-led circuit, layout and production audits"
+  default_prompt: "Use $electronics-design-review to audit these design artifacts and report defects, risks and missing evidence."

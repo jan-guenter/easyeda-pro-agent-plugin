@@ -1,6 +1,6 @@
 {
   "name": "easyeda-pro-control-authenticated-bridge",
-  "uuid": "7e06d286b1ac846ef7eab9c7f2a9ee4",
+  "uuid": "7e06d286b1ac846ef7eab9c7f2a9ee40",
   "displayName": "EasyEDA Pro Control Authenticated Bridge",
   "description": "Private mutually authenticated EasyEDA companion for the EasyEDA Pro Control facade.",
   "version": "0.3.0",

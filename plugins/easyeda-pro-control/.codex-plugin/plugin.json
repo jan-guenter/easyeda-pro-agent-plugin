@@ -1,7 +1,7 @@
 {
   "name": "easyeda-pro-control",
-  "version": "0.3.0+codex.20260906040125",
-  "description": "Safety-gated EasyEDA validation, evidence, recovery, capture, and draft DSN export.",
+  "version": "0.3.0+codex.20261010121000",
+  "description": "Safety-gated EasyEDA engineering skills, offline SDK reference, typed API editing, native control and verified recovery.",
   "author": {
     "name": "Jan G\u00fcnter",
     "url": "https://github.com/jan-guenter"
@@ -19,22 +19,23 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "EasyEDA Pro Control",
-    "shortDescription": "Audit EasyEDA with durable evidence",
-    "longDescription": "An EasyEDA Pro skill and MCP facade implementing version-pinned readers, scoped durable evidence, canvas capture, draft DSN export, SQLite checkpoints, and conservative recovery for an explicitly admitted connected tuple. The bundled private bridge is currently validation-required, so fresh installs keep exact and private operations fail-closed. The included one-component writer is experimental and runtime-disabled pending connected sacrificial-board validation.",
+    "shortDescription": "Inspect and control EasyEDA Pro",
+    "longDescription": "Seven EasyEDA engineering skills cover live control, schematic design, PCB layout, component libraries, manufacturing release, design review and extension development. The authenticated facade exposes offline reviewed/latest SDK declarations, exact operation schemas and argument validation alongside typed API edits, exact readers, native dialogs, checkpoints and recovery. The reviewed external tuple is connected-read-admitted; future mismatches fail closed. Writes require exact authority, source/connectivity and complete durable proof. Save and uncertain calls are never blindly retried. SDK declarations are documentation, not execution permission; coverage and live validation remain operation-specific, and historical tests do not validate this facade generation. Raw JavaScript is refused and the legacy writer is runtime-disabled.",
     "developerName": "JanGuenter",
     "category": "Developer Tools",
     "capabilities": [
       "EasyEDA",
       "MCP",
       "Read",
+      "Edit",
       "Evidence",
       "Recovery"
     ],
     "websiteURL": "https://github.com/jan-guenter/easyeda-pro-agent-plugin",
     "defaultPrompt": [
       "Validate the EasyEDA bridge without bypassing compatibility gates.",
-      "Collect bounded public read evidence for connected candidate review.",
-      "Inspect local recovery journals and managed artifacts safely."
+      "Inspect the admitted EasyEDA project with exact readers and managed evidence.",
+      "Apply the requested typed design change and verify it after saving and reopening."
     ]
   },
   "mcpServers": "./.mcp.json"

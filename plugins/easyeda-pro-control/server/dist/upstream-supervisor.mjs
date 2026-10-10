@@ -9,7 +9,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "4cf674a241262b742f9114b5a17aedffc0fa538ce87dc3f3bb1883546f51aed9";
+const __easyedaBundlePairId = "1369fd920c347b0f89488e9641842ac2c013f3398587491a7e691dc8b3352c0f";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -20557,7 +20557,7 @@ config(en_default());
 
 // server/src/upstream-module-execution.ts
 var MODULE_GRAPH_SCHEMA = "easyeda-pro-control.module-graph.v1";
-var PINO_WORKER_TRANSFORM = "easyeda-pro-control.disable-pino-worker.v1";
+var PINO_WORKER_TRANSFORM = "easyeda-pro-control.disable-pino-worker.v2";
 var SERIALIZED_GRAPH_SCHEMA = "easyeda-pro-control.serialized-module-graph.v1";
 var MAXIMUM_SERIALIZED_GRAPH_BYTES = 16 * 1024 * 1024;
 var sha256Schema = external_exports.string().regex(/^[a-f0-9]{64}$/u);

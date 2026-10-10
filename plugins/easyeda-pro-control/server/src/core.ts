@@ -2,6 +2,8 @@ import { basename, isAbsolute, join, relative, resolve } from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { readFileSync } from "node:fs";
+import { exactReaderFailureCategory } from "./reader-diagnostics.ts";
+import { nativeFailureCategory } from "./native-diagnostics.ts";
 
 import {
   DESCRIPTOR_SANITIZER_FILE_NAME,
@@ -136,7 +138,7 @@ export interface ExpectedFingerprint {
     payload: {
       connected: true;
       bridge_version: string;
-      easyeda_version: string;
+      easyeda_version?: string;
       diagnostics: { method_registry_hash: string };
     };
   };
@@ -177,7 +179,7 @@ export interface ReviewedCompatibilityManifest {
     easyedaVersion: string;
     extensionVersion: string;
     bridgeVersion: string;
-    bridgeEasyedaVersion: string;
+    bridgeEasyedaVersion: string | null;
     methodRegistryHash: string;
     dispatcher: {
       source: "loader_status";
@@ -484,10 +486,73 @@ export function normalizeProofEnvelope(value: unknown): unknown {
   );
 }
 
+function upstreamFailureCategory(normalized: NormalizedToolResult): string {
+  let value = normalized.structuredContent;
+  if (!isRecord(value)) {
+    const textItem = normalized.content.find((item) => isRecord(item) && item["type"] === "text");
+    const text = isRecord(textItem) ? textItem["text"] : undefined;
+    if (typeof text === "string" && text.length <= 16_384) {
+      try {
+        value = JSON.parse(text) as unknown;
+      } catch {
+        // No raw text enters diagnostics.
+      }
+    }
+  }
+  if (!isRecord(value)) {
+    return normalized.content.length === 0 && normalized.structuredContent === undefined
+      ? "invalid-envelope" : "unclassified-upstream-failure";
+  }
+  for (let depth = 0; depth <= 6 && isRecord(value); depth += 1) {
+    const error = value["error"];
+    const code = isRecord(error) ? error["code"] : value["errorCode"];
+    let message = value["message"];
+    if (typeof error === "string") { message = error; }
+    else if (isRecord(error)) { message = error["message"]; }
+    // These exact facade-owned deadlines stop observing, not the underlying
+    // Native close/open Promise. Keep their authority outcome ambiguous even
+    // Though the bridge returns a normal native-error envelope.
+    if (message === "NATIVE_LIFECYCLE_CLOSE_TIMEOUT" || message === "NATIVE_LIFECYCLE_OPEN_TIMEOUT") {
+      return "native-lifecycle-timeout";
+    }
+    const exactReaderCategory = exactReaderFailureCategory(message);
+    if (exactReaderCategory !== null) { return exactReaderCategory; }
+    const nativeCategory = nativeFailureCategory(message);
+    if (nativeCategory !== null) { return nativeCategory; }
+    if (code === "TIMEOUT" || code === "BRIDGE_TIMEOUT" || (typeof message === "string" && message.length <= 4096 &&
+      /^Bridge method "[A-Za-z0-9_.]+" timed out after \d{1,6}ms$/u.test(message))) {
+      return "bridge-timeout";
+    }
+    if (code === "EASYEDA_API_ERROR") { return "native-api-error"; }
+    if (code === "PAYLOAD_TOO_LARGE") { return "payload-too-large"; }
+    if (code === "INVALID_INPUT" || code === "INVALID_PARAMS") { return "invalid-input"; }
+    if (code === "NOT_IMPLEMENTED" || value["not_available"] === true) { return "unavailable"; }
+    if (isRecord(value["read_consistency"]) && value["read_consistency"]["stable"] === false) {
+      return "unstable-read";
+    }
+    value = value["result"];
+  }
+  return "unclassified-upstream-failure";
+}
+
+/** The reviewed upstream converts its bridge timer rejection into an ordinary
+ * MCP response. That timer only forgets the request; it does not stop native
+ * execution. Retain the authenticated lease and runtime capture in this case.
+ */
+export function assertUpstreamReplySettled(result: unknown): void {
+  const category = upstreamFailureCategory(normalizeToolResult(result));
+  if (category === "bridge-timeout") {
+    throw new Error("The upstream bridge timed out without proving native execution ended [bridge-timeout;execution-unsettled].");
+  }
+  if (category === "native-lifecycle-timeout") {
+    throw new Error("The native lifecycle deadline expired without proving execution ended [native-lifecycle-timeout;execution-unsettled].");
+  }
+}
+
 export function extractToolPayload(result: unknown): unknown {
   const normalized = normalizeToolResult(result);
   if (!normalized.ok) {
-    throw errorWithDetails("The upstream EasyEDA tool reported failure.", {
+    throw errorWithDetails(`The upstream EasyEDA tool reported failure [${upstreamFailureCategory(normalized)}].`, {
       upstreamResult: result,
     });
   }
@@ -507,7 +572,7 @@ export function extractToolPayload(result: unknown): unknown {
   }
   if (reportsExplicitFailure(value)) {
     throw errorWithDetails(
-      "The upstream EasyEDA tool reported failure or unavailability.",
+      `The upstream EasyEDA tool reported failure or unavailability [${upstreamFailureCategory(normalized)}].`,
       { upstreamResult: result },
     );
   }
@@ -850,7 +915,6 @@ const EXPECTED_FINGERPRINT_REQUIREMENTS: readonly (readonly [
   ["/health/payload/registry_mismatch", "false"],
   ["/bridge/payload/connected", "true"],
   ["/bridge/payload/bridge_version", "string"],
-  ["/bridge/payload/easyeda_version", "string"],
   ["/bridge/payload/diagnostics/method_registry_hash", "string"],
   ["/bridgeDispatcher/payload/source", "loader-status"],
   ["/bridgeDispatcher/payload/dispatcher_build_id", "string"],
@@ -938,6 +1002,18 @@ export function assertExpectedFingerprint(
     EXPECTED_FINGERPRINT_REQUIREMENTS.filter(([pointer, kind]) =>
       fingerprintRequirementMissing(getJsonPointer(fingerprint, pointer), kind),
     ).map(([pointer, kind]) => ({ pointer, required: kind }));
+  // Health reports the authenticated handshake's editor version. The separate
+  // System status getter may omit its optional version, but may not contradict it.
+  const bridgeEasyedaVersion = getJsonPointer(fingerprint, "/bridge/payload/easyeda_version");
+  if (bridgeEasyedaVersion !== undefined && (
+    typeof bridgeEasyedaVersion !== "string" || bridgeEasyedaVersion.trim().length === 0 ||
+    bridgeEasyedaVersion !== getJsonPointer(fingerprint, "/health/payload/easyeda_version")
+  )) {
+    missing.push({
+      pointer: "/bridge/payload/easyeda_version",
+      required: "absent or nonempty string equal to health application version",
+    });
+  }
   const files = getJsonPointer(fingerprint, "/facadeImplementation/files");
   if (Array.isArray(files)) {
     for (const [index, file] of files.entries()) {
@@ -1354,10 +1430,12 @@ function assertReviewedCompatibilityManifest(
     "easyedaVersion",
     "extensionVersion",
     "bridgeVersion",
-    "bridgeEasyedaVersion",
     "methodRegistryHash",
   ]) {
     manifestString(runtime[key], `/connectedRuntime/${key}`);
+  }
+  if (runtime["bridgeEasyedaVersion"] !== null) {
+    manifestString(runtime["bridgeEasyedaVersion"], "/connectedRuntime/bridgeEasyedaVersion");
   }
   const dispatcher = manifestObject(
     runtime["dispatcher"],
@@ -1529,7 +1607,7 @@ export function validatePrivateFingerprint(fingerprint: unknown): true {
       easyedaVersion: fingerprint.health?.payload?.easyeda_version,
       extensionVersion: fingerprint.health?.payload?.extension_version,
       bridgeVersion: fingerprint.bridge?.payload?.bridge_version,
-      bridgeEasyedaVersion: fingerprint.bridge?.payload?.easyeda_version,
+      bridgeEasyedaVersion: fingerprint.bridge.payload.easyeda_version ?? null,
       methodRegistryHash:
         fingerprint.bridge?.payload?.diagnostics?.method_registry_hash,
       dispatcher: {
