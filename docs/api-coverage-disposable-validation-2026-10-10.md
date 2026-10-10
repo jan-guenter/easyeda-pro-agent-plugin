@@ -1,5 +1,26 @@
 # Disposable API validation
 
+## Candidate214400 installed; new live validation pending
+
+Payload `6ef6f94ce5893a31bc0ba7ef3b29746817f34565` passed
+[CI38089205554](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38089205554)
+and installed through the official Git marketplace. Local2,092facade tests and
+424bridge tests pass, with one platform skip. CI has2,091facade passes and two
+platform skips; neither run has failures or cancellations. Strict types/lint,
+dependency audits, privacy/package/skills, reproducibility and offline doctor pass.
+
+All527 installed files/14,768,976bytes match immutable Git blobs and modes.
+Actual cached offline startup passes with26tools/sevenskills/166fixedreaders;
+the new property-name and Pin catalog/schema/argument/provenance checks pass.
+Sixty-three process snapshots show no upstream child/nonstdio socket, and the
+synthetic upstream sentinel remains absent. This is offline evidence only.
+
+Both disposable editors are closed. The210100 cases below are terminal and
+must not be replayed. The older loaded host remains untouched; a fresh session
+must admit214400 before connected checks of the new readers. Closed page rename,
+attribute edits and nonempty electrical fixtures also remain pending. PR9 remains
+draft and the overall task is unfinished. No production project access.
+
 ## Restarted210100: delayed inverse recovered
 
 The fresh facade admitted the installed bundle and unchanged external tuple.

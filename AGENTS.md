@@ -6,7 +6,35 @@ Last updated: 2026-10-10 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
-### Restarted210100 disposable validation, in progress
+### Candidate214400 published and installed
+
+- Payload6ef6f94ce5893a31bc0ba7ef3b29746817f34565 passed
+  [CI38089205554](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38089205554)
+  in draftPR9. CI:2,091 facade passes/two platform skips/zero failures or
+  cancellations,424 bridge passes; local2,092/oneskip evidence remains separate.
+- One official Git-marketplace upgrade installed/enabled
+  0.3.0+codex.20261010214400 without errors. Marketplace HEAD equals the payload;
+  Git URL/feature ref retained. All527 package files/14,768,976bytes match exact
+  immutable Git blobs/modes with no extras or probe-time changes. Inventory
+  cfb5328cf9dbfa0e19200acc11947415b6893cecaa34e432e6c49b54f8417f52;
+  full per-file evidence is retained privately.
+- Actual cached configured offline startup hands ambientNode26 to pinnedNode24:
+  26tools/sevenskills/774paths/166readers/749and806signatures/105and68schemas.
+  Exact catalog/schema/provenance/authority checks pass for both new native
+  readers; empty arguments accept, extra arguments/caller code refuse without
+  runtime admission. Existing native-ID and polygon checks also pass.
+  Sixty-three process samples find no upstream child/nonstdio socket; the
+  synthetic upstream sentinel remains absent. This is not a continuous trace
+  or connected acceptance. External/native/sanitizer pins remain unchanged.
+- Both disposable editors are closed, with no pending journal recovery. Loaded
+  210100 host is untouched; no live calls follow installation. Fresh214400
+  admission precedes new-reader tests. Do not replay the completed inverse or
+  text Save/reopen cases. Property names, ordinary symbol Pins, closed page rename
+  and nonempty flat fixtures still need connected work. Overall API work remains
+  unfinished and PR9 stays draft. Root-only records do not change the package or
+  justify another same-version refresh. No production project access.
+
+### Restarted210100 disposable acceptance
 
 - Fresh facade1744643 loads the exact installed210100 bundlee46cce87 and
   manifestcad6a87e, with the unchanged external tuple. Contained runtime4676
@@ -62,9 +90,10 @@ Last updated: 2026-10-10 (Europe/Berlin)
   same2,092facade/424bridge passes with no failures or cancellations.
   Source161files83ddfd7e, bundle815f22a5, manifestde80d703;
   external/native/sanitizer pins unchanged.
-- Candidate0.3.0+codex.20261010214400 is not yet published or installed. Loaded
-  210100 completed the disposable lifecycle test and its editor is closed. Publication, CI and actual
-  installed proof must be recorded separately; PR9 remains draft.
+- At local verification time candidate0.3.0+codex.20261010214400 was not yet
+  published or installed. Publication and actual installed proof are recorded
+  above; PR9 remains draft. Loaded210100 completed its disposable text lifecycle
+  and the editor closed normally before installation.
 
 ### Restarted202803 disposable validation and corrections
 
@@ -660,7 +689,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed and loaded Git-marketplace candidate is `0.3.0+codex.20261010210100`, with 26 tools and seven skills, from the draft feature ref. Exact installed-file, offline startup and fresh authenticated tuple admission pass. Its original flat-display journal is terminal after one inverse, delayed native persistence and read-only full-project reconciliation; no Save or replay. This is not immediate rollback validation. A separate210100 text-only transaction passed Save/close/reopen and complete nine-document proof. Both disposable editors are now closed, with the final flat source verified unchanged after normal close. Earlier lookup, metadata, page-creation and inactive-close evidence remains bound to182554; empty-symbol creation remains bound to194400. New source is not installed. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
+- The installed Git-marketplace candidate is `0.3.0+codex.20261010214400`, with 26 tools, seven skills and166 fixed readers, from the draft feature ref. Exact installed-file and offline startup checks pass; connected214400 admission is pending. The loaded host remains210100. Its original flat-display journal is terminal after one inverse, delayed native persistence and read-only full-project reconciliation; no Save or replay. This is not immediate rollback validation. A separate210100 text-only transaction passed Save/close/reopen and complete nine-document proof. Both disposable editors are now closed, with the final flat source verified unchanged after normal close. Earlier lookup, metadata, page-creation and inactive-close evidence remains bound to182554; empty-symbol creation remains bound to194400. The new property-name/Pin readers and recovery corrections are installed but not connected-validated. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
