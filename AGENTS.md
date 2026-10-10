@@ -30,8 +30,40 @@ Last updated: 2026-10-11 (Europe/Berlin)
   NetLabel discriminator only through reciprocal source-bound NetName ownership.
   No compiler gate relaxed. These additions require connected fixtures.
 - Source integration and strict offline regressions are complete; full local
-  verification passes below. Publication/installation are pending; installed223200 is unchanged.
+  verification and candidate233100 publication/installation pass below.
   Overall API work remains unfinished and PR9 stays draft.
+
+### Candidate233100 published and installed
+
+- Payloadbf19c38e67acd1bb8d756e07432079f5709c664c passed
+  [CI38095406999](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38095406999)
+  in draftPR9:2,422 facade passes/two platform skips/zero failures or
+  cancellations and424 bridge passes. Local2,423/one skip is separate evidence.
+- One official Git-marketplace upgrade installed/enabled
+  0.3.0+codex.20261010233100 without errors. Git URL/feature ref retained,
+  marketplace HEAD equals payload. All534 packaged files/15,034,633bytes match
+  exact immutable Git blobs/modes, no extras or probe-time changes. Inventory
+  d18a1236d228ae1d9cc31693b09643bdcdf5dc6ca4140d910c9b933ee78978ad;
+  complete per-file evidence retained privately.
+- Root and independent full-source review accepted private proofhelperc15479c7
+  before execution. Actual configured cached offline startup hands ambientNode26
+  to pinnedNode24:26tools/seven skills/774paths/173readers/exact12native readers,
+  749and806signatures/105and68schemas. Full paged774-entry inventory equals
+  packaged JSON. New methods' exact schemas/provenance/authority/limits and
+  argument/code refusals pass.258 process samples show no upstream child or
+  nonstdio socket; synthetic upstream sentinel stays absent. Not a continuous
+  trace or connected validation. External/native/sanitizer pins unchanged.
+- Independent final review rehashed every installed file against immutable Git
+  blobs/modes and recomputed complete inventoryd18a1236/proof099260d1. CLI state,
+  marketplace HEAD, helper, all12native/173reader/774path counts and successful
+  PR CI identity match. No installed startup or live call was repeated for review.
+- Loaded223200 host1829230 remains untouched; no live calls followed upgrade.
+  Both disposable editors are closed and all prior operations are terminal.
+  Never replay edit/inverse/rename/Save. Fresh233100 admission precedes nonempty
+  Wire/Bus DTO, filtered PCB membership and flat electrical-topology validation.
+  BOARD-generated Line/Arc ownership remains explicitly unsupported. No
+  production project access. Overall API work is unfinished and PR9 stays draft.
+  Root-only evidence updates do not change payload or warrant same-version refresh.
 
 ### Candidate233100 local verification
 
@@ -821,7 +853,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed Git-marketplace candidate is `0.3.0+codex.20261010223200`, with 26 tools, seven skills and168 fixed readers, from the draft feature ref. Its CI, exact installed files/modes and configured offline startup pass. The still-loaded214400 host passed scoped connected property-name, nonempty Wire, ordinary-symbol Pin and closed-page rename tests. Complete native/source and saved-project proofs and independent reviews are recorded above. Both disposable editors are closed, no journal recovery is pending, and earlier inverse/Save/rename cases remain terminal and never replayable. New native Text state readers require fresh223200 admission and connected testing; no live calls followed installation. Earlier lifecycle evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical tests do not validate a newer facade generation.
+- The installed Git-marketplace candidate is `0.3.0+codex.20261010233100`, with 26 tools, seven skills and173 fixed readers, from the draft feature ref. CI, exact installed files/modes and configured offline startup pass. The still-loaded223200 host passed scoped connected native Text readers and one frame-attribute display Save/close/reopen case, with full native and nine-document/eight-peer proof. Prior property-name, Wire-ID, symbol-Pin and rename evidence remains generation-bound. Both disposable editors are closed; no recovery is pending. All prior edit/inverse/rename/Save cases are terminal and never replayable. No live calls followed upgrade. New Wire/Bus DTOs, filtered PCB membership and corrected nonempty flat topology need fresh233100 admission and disposable tests. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
