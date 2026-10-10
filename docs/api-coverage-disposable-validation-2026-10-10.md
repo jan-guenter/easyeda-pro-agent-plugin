@@ -1,5 +1,30 @@
 # Disposable API validation
 
+## Corrected210100 candidate installed; recovery pending
+
+Payload `d57ff5792eebc409348483b6cc3e08b86d0badce` passed
+[GitHub CI38086385404](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38086385404)
+and was installed through one official upgrade of the configured Git marketplace.
+Local tests:1,945 facade passes/one platform skip and424 bridge passes. CI has
+1,944 facade passes/two platform skips and424 bridge passes; neither has failures
+or cancellations. Strict types/lint, audits, privacy/package/seven-skill checks,
+reproducibility and offline doctor pass. External/native/sanitizer pins are unchanged.
+
+All519 installed package files/14,605,053bytes match immutable payload blobs and
+modes with no extra files or probe-time changes. The actual cached configured
+startup and offline catalog/schema probes pass:26tools/sevenskills/164fixedreads.
+Forty-nine process samples find no upstream child/nonstdio socket; the synthetic
+upstream sentinel remains absent. This is offline package evidence, not connected
+validation. No live call was made after installation.
+
+The original failed flat journal remains unresolved and the disposable editor
+closed. A fresh Codex session must admit210100, rebind that same journal to the
+facade-only upgrade, open its original target once and reconcile before its
+reviewed inverse. Recovery must retain the original seals and raw evidence.
+Reopening may reveal additional native initialization; anything beyond the
+reviewed encoding difference must refuse and be inspected, not replayed. The
+overall API task and draftPR9 remain unfinished. No production project access.
+
 ## Installed202803 continuation
 
 The restarted facade admitted bundle `4194f789` and manifest `0367a811` against

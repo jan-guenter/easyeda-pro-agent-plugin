@@ -39,7 +39,7 @@ Last updated: 2026-10-10 (Europe/Berlin)
   additionally exercised the exact hash-pinned constructor/split/source bodies
   offline, including duplicate polygons and the installed discretize throw.
   No application/bridge was invoked by that test. Candidate210100 is built and
-  locally verified; publication and installation are pending. None of
+  locally verified, published and installed as recorded below. None of
   these corrections is connected-validated. Broader work and PR9 remain
   unfinished. No production project was opened, read, edited or saved.
 
@@ -60,7 +60,35 @@ Last updated: 2026-10-10 (Europe/Berlin)
   replay or restoration followed the observed failure. Editor remains closed,
   loaded202803 host untouched. A fresh installed-generation task is required
   before same-journal recovery. Overall API work remains unfinished; PR9 stays
-  draft. Publication and installed-package proof must be recorded separately.
+  draft. Publication and installed-package proof are recorded separately below.
+
+### Candidate210100 published and installed
+
+- Payloadd57ff5792eebc409348483b6cc3e08b86d0badce passed
+  [CI38086385404](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38086385404)
+  in draftPR9. CI:1,944 facade passes/two platform skips/zero failures or
+  cancellations and424 bridge passes. The extra CI skip requires a mounted
+  Windows path; local1,945/oneskip evidence above remains separate.
+- One official Git-marketplace upgrade installed/enabled
+  0.3.0+codex.20261010210100 with no errors. Marketplace HEAD equals the payload;
+  Git URL and feature ref retained. All519 package files/14,605,053bytes match
+  immutable Git blobs and exact modes, with no extra files or probe-time changes.
+  Inventory17f4ba74dea6e9b9a199bff643fd479b087356ee653826bc363eb760474eaef6;
+  complete per-file records are retained privately, not just the commitment.
+- Actual cached configured startup hands ambientNode26 to pinnedNode24 and
+  returns26tools/sevenskills/774paths/164readers/749and806signatures/105and68schemas.
+  Installed offline checks validate polygon schemas, the discretize omission,
+  native-only ID labels and argument refusals without execution authority.
+  Forty-nine process samples find no upstream child/nonstdio socket and the
+  synthetic upstream sentinel remains absent. This is not a continuous trace
+  or connected acceptance. Native-helper and external pins are unchanged.
+- The editor remains closed and loaded202803 host untouched. No live call
+  follows installation. Fresh-session210100 admission and same-journal
+  rebind/open/reconcile precede the reviewed inverse; never replay the failed
+  text edit or start a replacement transaction. No Save/inverse/recovery has
+  occurred yet. Pending page-rename/nonempty fixture/API work remains unfinished.
+  Root-only publication records do not alter the installed package and do not
+  justify another same-version marketplace refresh. No production project access.
 
 ### Restarted194400 disposable acceptance and next source corrections
 
