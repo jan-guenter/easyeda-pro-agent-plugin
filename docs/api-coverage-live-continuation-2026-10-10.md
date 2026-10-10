@@ -26,7 +26,7 @@ receipt verifier. The final connected checkpoint verification retained the
 original file and logical database hashes. This proves these exact public
 observations on this fixture, not every overload or engineering correctness of
 every returned field. The observations were made on 144459, not on the newer
-source being prepared below.
+172121 candidate described below.
 
 An initial checkpoint verification request used a receipt outside the live
 facade's authorized checkpoint roots and refused. The existing project-open
@@ -123,8 +123,42 @@ External runtime, bridge and sanitizer pins are unchanged. An earlier doctor
 run overlapped the final rebuild and refused stale facade projections; the
 final frozen-source doctor passed. No compatibility boundary was weakened.
 
-Publication and installation of this candidate are pending.
-Connected page/symbol writers and successful activation need a fresh installed
-candidate. Remaining feasible work is recorded in the method inventory and
+Payload `96dc874d1f84bf0094e6903aeac9dac54adf62b6` is published in
+[draft PR9](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/9).
+[CI38071801052](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38071801052)
+passed dependency/signature checks, strict lint/types, complete test suites,
+reproducible builds, packaging and artifact upload. Post-commit rebuilding left
+the committed runtime bundles unchanged. The PR remains unmerged.
+
+The official CLI successfully upgraded the Git marketplace at
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, on the feature
+ref. A subsequent explicit plugin add returned a cache-backup permission error.
+No cause is inferred, and no manual cache repair or repeat add was attempted.
+Independent CLI inspection reports `0.3.0+codex.20261010172121` installed and
+enabled. All 474 Git-tracked packaged files, totaling 13,729,919 bytes, match
+the clean source and committed modes, including the PowerShell helper above.
+This comparison covers the tracked package inventory, not any extra cache files.
+
+The actual cached `.mcp.json` command passed a synthetic-profile offline probe:
+ambient Node 26 hands off to pinned Node 24; 26 tools and seven skills are
+available; SDK references have 749 reviewed and 806 latest signatures; operation
+schemas total 105 design and 68 library; the inventory has 774 distinct methods
+and 158 fixed SDK read routes. Typed data validates, caller code and unsafe
+paths refuse, and discovery does not grant execution authority. Startup checks
+observed no upstream child or non-stdio socket. Subsequent calls were only
+offline catalog/schema queries; no live tool or production control root was
+used. This is an installed startup proof, not connected execution acceptance.
+
+The host still loads 144459. Do not call its old symbol writer or replace the
+gateway/cache to pick up the update. The extension-development release workflow
+requires a fresh Codex session before new live testing; leave EasyEDA closed.
+There is no unresolved disposable CAD operation. Next, authenticate the exact
+172121 tuple, checkpoint the disposable project, validate its new page/symbol
+metadata writers and investigate activation using bounded stage diagnostics.
+The fixture currently has only one schematic page; page rename needs a separate
+disposable sibling established through a supported workflow. Do not reuse
+historical writer acceptance as evidence for these new adapters.
+
+Remaining feasible work is recorded in the method inventory and
 [feasibility review](api-execution-feasibility-2026-10-10.md); this continuation
 does not declare the user's overall request complete.

@@ -25,19 +25,36 @@ Last updated: 2026-10-10 (Europe/Berlin)
   session/security setting was changed. Only the existing disposable
   validation database was checkpointed and decoded for fixture planning.
   No production project was opened, read, changed, saved or restored.
-- Candidate `172121` source is built and fully verified, not yet published,
-  installed or live-writer-validated:
+- Candidate `172121` is published, installed and offline-verified, but not
+  live-writer-validated:
   concrete additional getter omission reasons, a closed-page rename adapter,
   footprint validation-runner corrections and native desktop diagnostics.
-  Keep the loaded candidate and this work-in-progress distinct.
+  The loaded host remains `144459`; no live calls follow this installation.
   The [live continuation](docs/api-coverage-live-continuation-2026-10-10.md)
-  records these scoped observations, refusal/recovery and pending release.
+  records these scoped observations, refusal/recovery and release evidence.
 - Final local verification:1375 facade tests pass/one platform skip/zero
   failures or cancellations,424 bridge tests; strict types/type-aware lint,
   all seven skills, package/repository/privacy/actionlint/doctor clean.
   Independent final review passes137 focused tests. Source143files54279794,
-  bundle84c2f435; external/bridge/sanitizer pins unchanged. Publication and
-  installation pending; do not use the loaded144459 symbol writer.
+  bundle84c2f435; external/bridge/sanitizer pins unchanged. Do not use the
+  loaded144459 symbol writer.
+- Payload `96dc874d1f84bf0094e6903aeac9dac54adf62b6` passed
+  [CI38071801052](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38071801052)
+  and is published in draft PR9. Official Git-marketplace upgrade succeeded;
+  a subsequent explicit add returned a cache-backup permission error. No manual
+  cache repair or retry was made. Independent CLI list and byte/mode proof
+  establish `172121` installed/enabled: all474 tracked packaged files,
+  13729919bytes and committed modes match, including the native helper.
+  Actual cached configured startup hands ambientNode26 to pinnedNode24;
+  isolated offline checks return26tools/seven skills/774methods/158fixedreads,
+  749/806SDKsignatures and105/68schemas. Startup has no upstream child or
+  non-stdio socket; no live call was made. Fresh Codex pickup is required with
+  EasyEDA left closed. Live validation of new writers, successful activation,
+  remaining feasible adapters and merge are still pending; this is not overall
+  completion.
+
+### Earlier execution checkpoints (superseded by the current state above)
+
 - Post-restart continuation supersedes the loaded-host statements below:
   `135410` was authenticated against its exact source/bundle/native tuple with
   no incomplete operation. Native discovery found an infinite minimized-window
@@ -278,7 +295,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed and loaded Git-marketplace candidate is `0.3.0+codex.20261010144459`, with 26 tools and seven skills, from the draft feature ref. Its scoped disposable read/navigation/recovery evidence is recorded above. EasyEDA is now closed; candidate `172121` is being verified and is not yet installed. Installation does not reload the host: start a fresh chat after an update. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
+- The installed Git-marketplace candidate is `0.3.0+codex.20261010172121`, with 26 tools and seven skills, from the draft feature ref. The loaded host remains `144459`; its scoped disposable read/navigation/recovery evidence is recorded above. EasyEDA is closed with no unresolved CAD operation. Installation does not reload the host: start a fresh chat before live use of the update. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
