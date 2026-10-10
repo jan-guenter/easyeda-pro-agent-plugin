@@ -35,10 +35,41 @@ Last updated: 2026-10-11 (Europe/Berlin)
   serializer/Save or public-getter parity. Root and independent review accept;
   314 focused tests, types and targeted strict lint pass. Pin-test additions
   separately pass71 focused tests. These are not connected Text acceptance.
-- Candidate0.3.0+codex.20261010223200 passed local release verification below;
-  it is not yet published or installed. Loaded214400 is untouched. New Text reads, attribute
+- Candidate0.3.0+codex.20261010223200 passed local verification and is published
+  and installed as recorded below. Loaded214400 is untouched. New Text reads, attribute
   edits and nonempty single-page flat topology still need connected tests.
   Overall API work remains unfinished and PR9 remains draft.
+
+### Candidate223200 published and installed
+
+- Payload6d4940eb952a4ffbf61f2d8782460f285f7eaa9b passed
+  [CI38092268405](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38092268405)
+  in draftPR9:2,188 facade passes/two platform skips/zero failures or
+  cancellations and424 bridge passes. Local2,189/one skip remains separate.
+- One official Git-marketplace upgrade installed/enabled
+  0.3.0+codex.20261010223200 without errors. Marketplace HEAD equals the payload,
+  Git URL/feature ref retained. All529 packaged files/14,839,371bytes match exact
+  immutable Git blobs and modes, with no extras or probe-time changes. Complete
+  per-file evidence retained; inventory228e219bc670199261d720e726b272425c119a68ca06eb4066896fad0a9075e6.
+- Actual cached configured offline startup hands ambientNode26 to pinnedNode24:
+  26tools/seven skills/774paths/168readers/749and806signatures/105and68schemas.
+  All seven native read descriptors, exact Text schemas/authority/provenance,
+  selectors, bounds and code refusals pass. The first private harness incorrectly
+  expected omitted getAll arguments to refuse; the shared parser already
+  normalizes them to{}. Root/independent reviewed v2 explicitly verifies that
+  normalization while selected get still refuses missing selectors. Original
+  helper/error retained; no package change or repeated marketplace upgrade.
+- Independent final proof review rechecked every immutable Git blob and mode,
+  complete inventory commitment, CLI state and exact successful CI payload.
+  One hundred process samples found no upstream child or nonstdio socket;
+  the synthetic upstream sentinel stayed absent. This is not a continuous
+  trace or connected acceptance. External/native/sanitizer pins unchanged.
+- Loaded214400 host1791770 remains untouched; no live calls followed upgrade.
+  Both disposable editors are closed, all prior operations remain terminal and
+  must never be replayed. Fresh223200 admission precedes Text reader acceptance;
+  attribute edits, nonempty flat topology and other recorded gaps remain.
+  Root-only records do not alter the package or justify a same-version refresh.
+  No production access. Overall work is unfinished and PR9 remains draft.
 
 ### Candidate223200 local verification
 
@@ -60,7 +91,8 @@ Last updated: 2026-10-11 (Europe/Berlin)
 - Root and independent review accept the dormant new installed-proof helper;
   it adds exact Text catalog/schema/provenance and argument-boundary checks
   while retaining immutable Git file/mode and isolated offline-startup proofs.
-  It has not yet run. Publication/CI/official upgrade and installed proof remain.
+  At local verification time it had not run. Publication, official upgrade and
+  corrected installed proof are recorded above.
 
 ### Candidate214400 published and installed
 
@@ -745,7 +777,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed and loaded Git-marketplace candidate is `0.3.0+codex.20261010214400`, with 26 tools, seven skills and166 fixed readers, from the draft feature ref. Fresh admission and scoped connected property-name, nonempty Wire, ordinary-symbol Pin and closed-page rename tests pass. Complete native/source and saved-project proofs and independent reviews are recorded above. Both disposable editors are closed, no journal recovery is pending, and earlier inverse/Save cases remain terminal and never replayable. New source candidate223200 adds native Text state readers, bringing fixed reads to168; it is not yet installed or connected-tested. Earlier lifecycle evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical tests do not validate a newer facade generation.
+- The installed Git-marketplace candidate is `0.3.0+codex.20261010223200`, with 26 tools, seven skills and168 fixed readers, from the draft feature ref. Its CI, exact installed files/modes and configured offline startup pass. The still-loaded214400 host passed scoped connected property-name, nonempty Wire, ordinary-symbol Pin and closed-page rename tests. Complete native/source and saved-project proofs and independent reviews are recorded above. Both disposable editors are closed, no journal recovery is pending, and earlier inverse/Save/rename cases remain terminal and never replayable. New native Text state readers require fresh223200 admission and connected testing; no live calls followed installation. Earlier lifecycle evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

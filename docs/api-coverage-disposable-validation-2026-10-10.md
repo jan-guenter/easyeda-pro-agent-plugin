@@ -1,5 +1,26 @@
 # Disposable API validation
 
+## Candidate223200 installed; fresh admission pending
+
+Payload `6d4940eb952a4ffbf61f2d8782460f285f7eaa9b` passed
+[CI38092268405](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38092268405)
+and installed through the official Git marketplace as
+`0.3.0+codex.20261010223200`. Local verification passed 2,189 facade tests and424
+bridge tests with one platform skip; CI passed 2,188 and424 with two skips.
+Both runs had zero failures/cancellations and clean strict type-aware lint.
+
+All529 package files/14,839,371bytes and modes match the immutable payload.
+Actual configured cached startup passed isolated offline catalog/schema tests:
+26 tools, seven skills,168 fixed reads and774 inventoried method paths. The new
+Text get/getAll argument checks include selector bounds and exact normalization
+of omitted getAll arguments to{}. No live execution authority is inferred.
+
+The loaded214400 host remains untouched, both disposable editors are closed,
+and no live call followed installation. The connected results below remain
+specific to214400. Fresh223200 admission and live Text checks are next;
+attribute edits, nonempty flat topology and the other documented gaps remain.
+No production project was accessed. PR9 and the overall task remain unfinished.
+
 ## Restarted214400: component property names
 
 The restarted host loaded the exact installed bundle815f22a5 and manifestde80d703
