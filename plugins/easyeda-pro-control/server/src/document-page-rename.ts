@@ -7,6 +7,8 @@ import type { NativeDocumentSnapshot, NativeHistorySnapshot } from "./native-his
 import type { ExpectedContext } from "./engine.ts";
 import { DEVICE_NATIVE_HOST_GUARD } from "./device-runtime-guard.ts";
 import { buildEditorTargetAbsentExpression } from "./editor-tabs.ts";
+import { NATIVE_PROJECT_PLACEHOLDER_PREDICATE } from "./native-editor-tab-guards.ts";
+import { METADATA_NATIVE_DIAGNOSTIC_CATCH } from "./metadata-native-diagnostics.ts";
 
 export const DOCUMENT_PAGE_RENAME_PROFILE = "easyeda-pro-control.closed-page-rename.v1";
 const identifier = z.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
@@ -123,6 +125,7 @@ export function buildDocumentPageRenameExpression(input: DocumentPageRenamePlan,
   return `(async()=>{let stage='host';try{
 const PLAN=${JSON.stringify(plan)},ACTIVE=${JSON.stringify(active)};
 ${DEVICE_NATIVE_HOST_GUARD}
+${NATIVE_PROJECT_PLACEHOLDER_PREDICATE}
 const localUI=globalThis.UI,outerUI=globalThis.top?.UI;
 if(localUI!=null&&outerUI!=null&&localUI!==outerUI)throw new Error('UI_AMBIGUOUS');
 const ui=localUI??outerUI,tabs=ui?.tabBar,permission=ui?.concurrentDesign;
@@ -132,11 +135,20 @@ if(PLAN.siblingTitles.some(value=>value.toLocaleLowerCase()===PLAN.desiredTitle.
 const localVersion=globalThis.PRO_EDITOR_VERSION,outerVersion=globalThis.top?.PRO_EDITOR_VERSION;
 if(localVersion!==undefined&&outerVersion!==undefined&&localVersion!==outerVersion)throw new Error('EDITOR_VERSION_AMBIGUOUS');
 if((localVersion??outerVersion)!==(PLAN.headerEditVersion===null?undefined:PLAN.headerEditVersion))throw new Error('EDITOR_VERSION_DRIFT');
-if(host.currentProject?.projectId!==PLAN.projectUuid||host.currentProject.branchUuid!==PLAN.branchUuid||host.currentProject.isV2Format!==false||host.isHistoryMode!==false||tabs.getActiveTab()!==ACTIVE.tabId||tabs.hasTabUnSaved()!==false||tabs.isTabUnSaved(ACTIVE.tabId)!==false)throw new Error('CONTEXT_OR_DIRTY');
-if(permission?.isConcurrentStrictMode!==false||typeof permission.getIframeDisableStatusPanelPcb!=='function'||permission.getIframeDisableStatusPanelPcb(ACTIVE.tabId)?.disable!==false)throw new Error('PROJECT_NOT_WRITABLE');
-const all=tabs.getFilterTabs([]);if(!Array.isArray(all)||all.length<1||all.length>2)throw new Error('TAB_SCOPE');
-let count=0,start=0;
+if(host.currentProject?.projectId!==PLAN.projectUuid)throw new Error('PROJECT_DRIFT');
+if(host.currentProject.branchUuid!==PLAN.branchUuid)throw new Error('BRANCH_DRIFT');
+if(host.currentProject.isV2Format!==false)throw new Error('PROJECT_FORMAT_UNSUPPORTED');
+if(host.isHistoryMode!==false)throw new Error('HISTORY_MODE');
+if(tabs.getActiveTab()!==ACTIVE.tabId)throw new Error('ACTIVE_TAB_DRIFT');
+if(tabs.hasTabUnSaved()!==false)throw new Error('DIRTY_TABS');
+if(tabs.isTabUnSaved(ACTIVE.tabId)!==false)throw new Error('DIRTY_ACTIVE_TAB');
+if(permission?.isConcurrentStrictMode!==false)throw new Error('CONCURRENT_MODE');
+if(typeof permission.getIframeDisableStatusPanelPcb!=='function')throw new Error('PERMISSION_API_MISSING');
+if(permission.getIframeDisableStatusPanelPcb(ACTIVE.tabId)?.disable!==false)throw new Error('READ_ONLY');
+const all=tabs.getFilterTabs([]);if(!Array.isArray(all)||all.length<1||all.length>3)throw new Error('TAB_SCOPE');
+let count=0,start=0,placeholder=0;
 for(const tab of all){if(tab?.tabId==='tab_page1'){if(++start!==1||tab.isAbleDelete!==false||tab.data?.doctype!==-1||tab.data?.pid!==undefined||tab.data?.owner!==undefined)throw new Error('START_TAB');continue;}
+if(tab?.tabId==='0'){if(++placeholder!==1||!isNativeProjectPlaceholder(tab)||tabs.isTabUnSaved(tab.tabId)!==false)throw new Error('PROJECT_PLACEHOLDER');continue;}
 if(++count!==1||tab?.tabId!==ACTIVE.tabId||tab.data?.doctype!==1||tab.data?.pid!==PLAN.projectUuid||(Object.hasOwn(tab,'isUnSaved')?tab.isUnSaved!==false:tab.isUnSaved!==undefined)||tab.parentLibraryUuid!==undefined||(tab.data.owner!==undefined&&tab.data.owner!==PLAN.ownerUuid))throw new Error('TAB_SCOPE');}
 if(count!==1)throw new Error('TAB_SCOPE');};
 const context=async()=>{const project=await eda.dmt_Project.getCurrentProjectInfo();const document=await eda.dmt_SelectControl.getCurrentDocumentInfo();
@@ -158,7 +170,7 @@ if(result?.success!==true||result.result?.uuid!==PLAN.targetUuid||result.result.
 stage='after-read';await read(PLAN.desiredTitle);await ${closed};await context();
 const json=JSON.stringify({kind:'project-page-rename',targetId:PLAN.targetUuid,createdId:null});
 return{schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};
-}catch(_){throw new Error('Closed page rename refused at '+stage);}})()`;
+}catch(error){${METADATA_NATIVE_DIAGNOSTIC_CATCH}throw new Error('Closed page rename refused at '+stage+':'+code);}})()`;
 }
 
 function projection(document: NativeDocumentSnapshot): unknown {

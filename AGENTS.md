@@ -6,6 +6,41 @@ Last updated: 2026-10-10 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+- Restart continuation on installed `172121`: fresh facade authenticated the
+  exact cached tuple. Disposable project and footprint opens completed with
+  all16documents/full logical database unchanged. One symbol metadata attempt
+  refused at host admission and one activation refused at preferences; both
+  original journals reconciled-no-mutation, with no replay or Save. RDP native
+  access returned after the user restored the client. A reviewed footprint
+  screenshot, normal application close, empty discovery and maintained closed
+  checkpoint verification establish unchanged disposable state. No production
+  project was opened, read, edited, saved or restored.
+- Source adds closed empty page creation and inactive clean symbol/PCB/footprint
+  close. Close post-dispatch ambiguity retains runtime quarantine; schematic
+  page close remains excluded because native cleanup can persist instance data.
+  Strict hidden-placeholder handling fixes a source guard defect, without
+  claiming the exact cause of the earlier coarse host refusal. Preferences
+  remain unchanged; clearer activation diagnostics preserve the account-write
+  restriction. Shared pure journal projection and scan-free native inspection
+  remove redundant work without caching authorization. Owned tab/split-screen
+  lookups add two fixed reads. Exact never-dispatched preparation failures can
+  invalidate on the original compatible runtime without lifecycle calls;
+  ambiguous dispatched results retain their original recovery requirements.
+  Terminal orphan journals block native edits. See the
+  [lifecycle continuation](docs/api-coverage-lifecycle-continuation-2026-10-10.md).
+- Frozen candidate `182554` passes1575 facade tests/one platform skip/zero
+  failures or cancellations,424 bridge tests and87 independent recovery tests.
+  Strict types/type-aware lint have zero diagnostics; all seven skill checks,
+  package/repository/privacy/actionlint/offline doctor pass. Dependency audit:
+  zero vulnerabilities,151 signatures/40 attestations. Rebuilt source150files
+  d960496c and bundlecf27a418 match the manifest; all external/native/bridge/
+  sanitizer pins remain unchanged. Coverage:774methods,160fixedreads,
+  190public subsets/73native equivalents/2internal/8blocked/501omitted.
+  Git publication/CI/installation and fresh-runtime connected acceptance remain
+  pending. Overall feasible API work is unfinished; do not merge yet.
+
+### Previous candidate handoff (superseded by this restart continuation)
+
 - Latest continuation loads the installed `144459` facade without owner
   termination or cache changes. Its authenticated bridge and exact bundled
   fingerprint match the published candidate; there are no incomplete
@@ -295,7 +330,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed Git-marketplace candidate is `0.3.0+codex.20261010172121`, with 26 tools and seven skills, from the draft feature ref. The loaded host remains `144459`; its scoped disposable read/navigation/recovery evidence is recorded above. EasyEDA is closed with no unresolved CAD operation. Installation does not reload the host: start a fresh chat before live use of the update. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
+- The installed Git-marketplace candidate and loaded host are `0.3.0+codex.20261010172121`, with 26 tools and seven skills, from the draft feature ref. Its scoped disposable navigation/refusal/recovery evidence is recorded above. EasyEDA is closed with no unresolved CAD operation. Unreleased source changes are not loaded into that host; installation requires supported fresh-chat pickup. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

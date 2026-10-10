@@ -14,6 +14,8 @@ const TRANSLATION_TAG = "Net ${1}";
 function argumentsFor(descriptor: PublicSdkReadDescriptor): Record<string, unknown> {
   const parts = descriptor.path.split(".");
   const method = parts[2];
+  if (method === "getSplitScreenIdByTabId") { return { tabId: "pcb-1@project-1" }; }
+  if (method === "getTabsBySplitScreenId") { return { splitScreenId: "editor-1" }; }
   if (method === "get") { return { primitiveIds: "primitive-1" }; }
   if (method === "getAllPinsByPrimitiveId") { return { primitiveId: "component-1" }; }
   if (method === "getPrimitiveTypeByPrimitiveId") { return { id: "primitive-1" }; }
@@ -139,7 +141,7 @@ void test("all fixed SDK readers are declared in the pinned runtime and expose i
   assert.ok(componentPads.limitations.some((limitation) => limitation.includes("known 0.1 drill-scale defect") && limitation.includes("exact component-pad reader intentionally excludes")));
 });
 
-for (const descriptor of descriptors) {
+for (const descriptor of descriptors.filter((entry) => entry.implementation.source === "server/src/public-sdk-read.ts")) {
   void test(`fixed public SDK call preserves receiver, awaits result and projects bounded data: ${descriptor.path}`, async () => {
     const documentType = descriptor.documentTypes[0];
     assert.ok(documentType !== undefined);

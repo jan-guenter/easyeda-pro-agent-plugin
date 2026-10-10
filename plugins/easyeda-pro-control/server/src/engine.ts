@@ -58,6 +58,7 @@ import {
 } from "./exact-readers.ts";
 import type { ExactReadRequest } from "./exact-readers.ts";
 import { buildPublicSdkReadCode, validatePublicSdkReadPayload, validatePublicSdkReadRequest } from "./public-sdk-read.ts";
+import { isEditorTabLookupMethod, readEditorTabLookup } from "./editor-tab-lookups.ts";
 import { buildSchematicNativeReadExpression } from "./schematic-native-adapter.ts";
 import { readSchematicFlatTopology } from "./schematic-flat-read.ts";
 import { buildSchematicNativeTransportCode, decodeSchematicNativeEnvelope } from "./schematic-native-transport.ts";
@@ -2024,22 +2025,32 @@ export class SerializedGate {
   }
 }
 
-const scanBridgeBlockingOperations = createOperationScanner((value) => {
+// These guards share one bounded pure projection, not one scan result. Every
+// Invocation still rechecks all current journal and artifact bytes and paths.
+// Sharing the projection avoids reparsing large unchanged journals separately
+// For bridge admission, isolated recovery and incomplete-operation reporting.
+const scanAdmissionOperations = createOperationScanner((value) => {
   const operation = asOperationJournal(value);
-  return operation.state === "journal-unreadable" || operationHasOrphanedCallRisk(operation)
-    ? operationSummary(operation) : undefined;
+  const bridgeBlocking = operation.state === "journal-unreadable" || operationHasOrphanedCallRisk(operation);
+  const unfinished = !isTerminalOperation(operation);
+  return bridgeBlocking || unfinished
+    ? { bridgeBlocking, unfinished, summary: operationSummary(operation) } : undefined;
 });
 
-const scanRecoveryBlockingOperations = createOperationScanner((value) => {
-  const operation = asOperationJournal(value);
-  return !isTerminalOperation(operation) || operation.state === "journal-unreadable" || operationHasOrphanedCallRisk(operation)
-    ? operationSummary(operation) : undefined;
-});
+async function scanBridgeBlockingOperations(): Promise<OperationSummary[]> {
+  const operations = await scanAdmissionOperations();
+  return operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary);
+}
 
-const scanUnfinishedOperations = createOperationScanner((value) => {
-  const operation = asOperationJournal(value);
-  return isTerminalOperation(operation) ? undefined : operationSummary(operation);
-});
+async function scanRecoveryBlockingOperations(): Promise<OperationSummary[]> {
+  const operations = await scanAdmissionOperations();
+  return operations.map((entry) => entry.summary);
+}
+
+async function scanUnfinishedOperations(): Promise<OperationSummary[]> {
+  const operations = await scanAdmissionOperations();
+  return operations.filter((entry) => entry.unfinished).map((entry) => entry.summary);
+}
 
 export class EasyedaControlEngine {
   public readonly upstream: UpstreamClient;
@@ -2638,6 +2649,20 @@ export class EasyedaControlEngine {
     throw error;
   }
 
+  /** Native editing must exclude both unfinished transactions and terminal
+   * journals with orphan risk. Use the shared fresh-byte scanner once; local
+   * inspection, focus and normal close bypass this editing-only gate.
+   */
+  public async assertNativeUiEditingAllowed(): Promise<true> {
+    const blockingOperations = await scanRecoveryBlockingOperations();
+    if (blockingOperations.length === 0) { return true; }
+    const error = annotatedError(
+      "Resolve every incomplete, unreadable or orphan-risk API transaction before native UI edits. Inspection, focus and normal close remain available for recovery.",
+    );
+    error.blockingOperations = blockingOperations;
+    throw error;
+  }
+
   public async status(): Promise<EngineStatus> {
     const listTools = this.upstream.listTools?.bind(this.upstream);
     const launcherFingerprint = this.upstream.launcherFingerprint?.bind(
@@ -3211,6 +3236,7 @@ export class EasyedaControlEngine {
   public async publicSdkRead(request: unknown, expectedContext: ExpectedContext): Promise<ProofPayload> {
     const boundContext = structuredClone(expectedContext);
     const parsed = validatePublicSdkReadRequest(request, boundContext.document.documentType);
+    if (isEditorTabLookupMethod(parsed.method)) { return readEditorTabLookup(this, parsed, boundContext); }
     await this.assertBridgeDispatchAllowed();
     await this.assertPublicSdkImplementation();
     const initialContext = await this.assertContext(boundContext);

@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- Catalog routing reuses each narrow adapter's operation validator instead of duplicating its admission contract. */
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { compileLibraryOperation, libraryOperationSchema } from "./library-operations.ts";
@@ -9,11 +10,12 @@ import { DEVICE_NATIVE_HOST_GUARD } from "./device-runtime-guard.ts";
 import { libraryRuntimeCatchCode } from "./library-runtime-guard.ts";
 import { projectSymbolMetadataOperation } from "./project-symbol-metadata.ts";
 import { documentPageRenameOperation } from "./document-page-rename.ts";
+import { documentPageCreateOperation } from "./document-page-create.ts";
 
 /** Single-dispatch files stay below the existing escaped JSON transport limit. */
 export const LIBRARY_FILE_EXECUTION_MAX_BYTES = 2 * 1024 * 1024;
 export const LIBRARY_EXECUTION_PROFILE = "easyeda-pro-control.library-execution.v1";
-export type LibraryExecutionKind = "metadata-read" | "file-export" | "project-footprint-write" | "project-device-association" | "project-device-create" | "project-device-transform" | "project-symbol-metadata" | "project-page-rename" | "document-open" | "document-activate";
+export type LibraryExecutionKind = "metadata-read" | "file-export" | "project-footprint-write" | "project-device-association" | "project-device-create" | "project-device-transform" | "project-symbol-metadata" | "project-page-rename" | "project-page-create" | "document-open" | "document-activate" | "document-close";
 const openScopeSchema = z.object({ projectUuid: z.string().min(1).max(256), uuid: z.string().min(1).max(256), documentType: z.number().int().min(1).max(4), metadataOwnerUuid: z.string().min(1).max(256).optional() }).strict();
 export type LibraryOpenScope = z.infer<typeof openScopeSchema>;
 
@@ -59,8 +61,10 @@ export function libraryExecutionKind(input: unknown): LibraryExecutionKind {
   if (operation.action === "library.device.model-transform") { return "project-device-transform"; }
   if (operation.action === "library.symbol.modify") { projectSymbolMetadataOperation(operation); return "project-symbol-metadata"; }
   if (operation.action === "document.page.rename") { documentPageRenameOperation(operation); return "project-page-rename"; }
+  if (operation.action === "document.page.create") { documentPageCreateOperation(operation); return "project-page-create"; }
   if (operation.action === "document.open" || operation.action === "library.footprint.open" || operation.action === "library.symbol.open") { return "document-open"; }
   if (operation.action === "document.activate") { return "document-activate"; }
+  if (operation.action === "document.close") { return "document-close"; }
   throw new Error("Typed catalog entry has no completed execution proof profile.");
 }
 
@@ -80,7 +84,9 @@ export function buildLibraryExecutionExpression(input: unknown, projectSymbolMet
   if (kind === "project-device-association" || kind === "project-device-create" || kind === "project-device-transform") { throw new Error("Device mutation requires a checkpoint-bound native plan."); }
   if (kind === "project-symbol-metadata") { throw new Error("Symbol metadata mutation requires a checkpoint-bound native plan."); }
   if (kind === "project-page-rename") { throw new Error("Page rename requires a checkpoint-bound closed-target plan."); }
+  if (kind === "project-page-create") { throw new Error("Empty page creation requires a checkpoint-bound parent-only plan."); }
   if (kind === "document-activate") { throw new Error("Document activation requires a checkpoint-bound ownership plan."); }
+  if (kind === "document-close") { throw new Error("Document close requires a checkpoint-bound inactive-clean-tab plan."); }
   const compiled = compileLibraryOperation(operation);
   const call = compiled.call;
   const args = call.args.map((argument) => argumentCode(argument)).join(",");

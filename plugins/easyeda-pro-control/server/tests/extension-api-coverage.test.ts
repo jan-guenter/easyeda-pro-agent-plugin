@@ -45,6 +45,15 @@ void test("coverage does not promote schema-only, native equivalent, stub, lates
   assert.equal(rows.get("eda.lib_Symbol.modify")?.currentGenerationLiveValidation, "not-recorded");
   assert.equal(rows.get("eda.dmt_EditorControl.activateDocument")?.status, "implemented-public-subset");
   assert.equal(rows.get("eda.dmt_EditorControl.activateDocument")?.routes.some((route) => route.selector === "document.activate"), true);
+  assert.equal(rows.get("eda.dmt_EditorControl.closeDocument")?.status, "implemented-public-subset");
+  const close = rows.get("eda.dmt_EditorControl.closeDocument")?.routes.find((route) => route.selector === "document.close");
+  assert.ok(close); assert.equal(close.implementation, "public-method"); assert.deepEqual(close.documentTypes, [3, 4]);
+  assert.equal(close.executionState, "available-with-runtime-guards"); assert.equal(close.validation, "offline-regression;current-live-unclaimed");
+  assert.equal(rows.get("eda.dmt_Schematic.createSchematicPage")?.status, "implemented-native-equivalent");
+  const create = rows.get("eda.dmt_Schematic.createSchematicPage")?.routes[0];
+  assert.ok(create); assert.equal(create.selector, "document.page.create"); assert.equal(create.implementation, "native-task-equivalent");
+  assert.deepEqual(create.documentTypes, [1, 3]); assert.equal(create.executionState, "available-with-runtime-guards");
+  assert.equal(rows.get("eda.dmt_Schematic.createSchematicPage")?.currentGenerationLiveValidation, "not-recorded");
   assert.equal(rows.get("eda.dmt_Schematic.modifySchematicPageName")?.status, "implemented-native-equivalent");
   assert.equal(rows.get("eda.dmt_Schematic.modifySchematicPageName")?.routes[0]?.selector, "document.page.rename");
   assert.equal(rows.get("eda.dmt_Schematic.modifySchematicPageName")?.currentGenerationLiveValidation, "not-recorded");
@@ -118,8 +127,21 @@ void test("omitted geometric getters retain proven callback, projection and filt
   assert.match(net.omission.reason, /DTO/u);
   assert.equal(net.routes.length, 0);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 187, "implemented-native-equivalent": 72, "internal-lifecycle-only": 3, "implemented-but-blocked": 8, omitted: 504,
+    "implemented-public-subset": 190, "implemented-native-equivalent": 73, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 501,
   });
+});
+
+void test("owned editor tab lookup coverage uses only its checkpoint-bound specialized public readers", () => {
+  const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
+  for (const method of ["getSplitScreenIdByTabId", "getTabsBySplitScreenId"]) {
+    const path = `eda.dmt_EditorControl.${method}`, row = rows.get(path); assert.ok(row);
+    assert.equal(row.status, "implemented-public-subset"); assert.equal(row.omission, null);
+    assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.completeDeclaredContractSupported, false);
+    assert.equal(row.routes.length, 1); const route = row.routes[0]; assert.ok(route);
+    assert.equal(route.tool, "easyeda_control_sdk_read"); assert.equal(route.selector, path);
+    assert.equal(route.implementation, "public-method"); assert.deepEqual(route.documentTypes, [1, 2, 3, 4]);
+    assert.deepEqual(route.source, ["editor-tab-lookups.ts"]); assert.deepEqual(route.tests, ["editor-tab-lookups.test.ts"]);
+  }
 });
 
 void test("every maintained execution link names real source and regression evidence", async () => {

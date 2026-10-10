@@ -111,7 +111,7 @@ export function verifyRetainedDocumentActivation(operation: unknown, before: Nat
 export function buildDocumentActivationExpression(planInput: DocumentActivationPlan): string {
   const plan = planSchema.parse(planInput);
   return `(async()=>{
-const plan=${JSON.stringify(plan)},planSha256=${JSON.stringify(sha256Json(plan))};let stage='api';
+const plan=${JSON.stringify(plan)},planSha256=${JSON.stringify(sha256Json(plan))};let stage='api',preferenceFailure;
 const fail=()=>{throw new Error('ACTIVATION_REFUSED');};
 try{
 const project=eda.dmt_Project,select=eda.dmt_SelectControl,editor=eda.dmt_EditorControl;
@@ -119,10 +119,20 @@ const timers=globalThis.window?.top;
 if(typeof project?.getCurrentProjectInfo!=='function'||typeof select?.getCurrentDocumentInfo!=='function'||typeof editor?.getSplitScreenTree!=='function'||typeof editor?.activateDocument!=='function'||typeof timers?.setTimeout!=='function'||typeof timers?.clearTimeout!=='function'||typeof timers?.document?.getElementById!=='function')fail();
 ${DEVICE_NATIVE_HOST_GUARD}
 const loadedFrames=new Map();
+// The pinned UI reads this exact local-storage key before its account write.
+// Never enable the setting or substitute truthiness for the stored Boolean.
 const preferencesSafe=()=>{if(![3,4].includes(plan.target.documentType))return;
-if(typeof timers.localStorage?.getItem!=='function')fail();const text=timers.localStorage.getItem('preferences');
-if(typeof text!=='string'||text.length>1048576)fail();const value=JSON.parse(text);
-if(!value||typeof value!=='object'||Array.isArray(value)||value.pcbCommandTab!==true)fail();};
+preferenceFailure='PREFERENCES_READ_ERROR';const storage=timers.localStorage;
+if(typeof storage?.getItem!=='function'){preferenceFailure='PREFERENCES_API_MISSING';fail();}
+const text=storage.getItem('preferences');
+if(text===null){preferenceFailure='PREFERENCES_MISSING';fail();}
+if(typeof text!=='string'||text.length>1048576){preferenceFailure='PREFERENCES_BOUND';fail();}
+preferenceFailure='PREFERENCES_JSON_INVALID';const value=JSON.parse(text);
+if(!value||typeof value!=='object'||Array.isArray(value)){preferenceFailure='PREFERENCES_SHAPE';fail();}
+if(!Object.hasOwn(value,'pcbCommandTab')){preferenceFailure='PCB_COMMAND_TAB_MISSING';fail();}
+if(value.pcbCommandTab===false){preferenceFailure='PCB_COMMAND_TAB_WRITE_REQUIRED';fail();}
+if(value.pcbCommandTab!==true){preferenceFailure='PCB_COMMAND_TAB_NOT_BOOLEAN';fail();}
+preferenceFailure=undefined;};
 const frameFor=scope=>{const frame=timers.document.getElementById('frame_'+scope.tabId);
 if(host.currentProject?.projectId!==plan.projectUuid||!frame||frame.isConnected!==true||frame.tagName!==(scope.documentType<=2?'DIV':'IFRAME')||frame.getAttribute('c_dbid')!==scope.tabId||frame.getAttribute('c_doctype')!==String(scope.documentType))fail();
 return frame;};
@@ -183,6 +193,6 @@ await Promise.race([new Promise(resolve=>{pollTimer=timers.setTimeout(()=>{pollT
 framesMatch();
 const payload={kind:'document-activate',profile:plan.profile,planSha256,tabId:plan.target.tabId,acknowledgment,coherentObservations:2,tabsUnchanged:true,saveInvoked:false,closeInvoked:false,openInvoked:false};
 const json=JSON.stringify(payload);return{schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};
-}catch{throw new Error('Document activation refused: '+stage);}
+}catch{throw new Error('Document activation refused: '+stage+(preferenceFailure===undefined?'':':'+preferenceFailure));}
 })()`;
 }

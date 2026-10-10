@@ -114,6 +114,37 @@ function candidateFixture(plan: ProjectSymbolMetadataPlan): {
   return { native, eda, metadata, raw, state };
 }
 
+void test("symbol native raw tabs admit only one exact clean hidden project placeholder", async () => {
+  const plan = prepareProjectSymbolMetadata(OPERATION, history());
+  const placeholder = { tabId: "0", data: { doctype: 0 }, isAbleDelete: false, isDisplayNone: true, draggable: false, group: "start_blank" };
+  const valid = candidateFixture(plan);
+  valid.raw.unshift(placeholder, { tabId: "tab_page1", data: { doctype: -1 }, isAbleDelete: false });
+  await execute(plan, valid.eda, valid.native); assert.equal(valid.state.calls, 1);
+  for (const patch of [{ data: { doctype: 0, pid: "foreign" } }, { isDisplayNone: false }, { draggable: true }, { group: "other" }, { isUnSaved: true }]) {
+    const fixture = candidateFixture(plan); fixture.raw.push({ ...placeholder, ...patch });
+    await assert.rejects(execute(plan, fixture.eda, fixture.native), /:PROJECT_PLACEHOLDER$/u);
+    assert.equal(fixture.state.calls, 0);
+  }
+  const duplicate = candidateFixture(plan); duplicate.raw.push(placeholder, structuredClone(placeholder));
+  await assert.rejects(execute(plan, duplicate.eda, duplicate.native), /:TAB_SCOPE$/u); assert.equal(duplicate.state.calls, 0);
+  for (const dirty of [true, undefined, null]) {
+    const fixture = candidateFixture(plan); fixture.raw.push(placeholder);
+    const ui = fixture.native["UI"]; assert.ok(isRecord(ui)); const tabs = ui["tabBar"]; assert.ok(isRecord(tabs));
+    tabs["isTabUnSaved"] = (tabId: string): unknown => tabId === "0" ? dirty : false;
+    await assert.rejects(execute(plan, fixture.eda, fixture.native), /:PROJECT_PLACEHOLDER$/u); assert.equal(fixture.state.calls, 0);
+  }
+});
+
+void test("symbol host diagnostics preserve exact failing subguard without native exception text", async () => {
+  const plan = prepareProjectSymbolMetadata(OPERATION, history());
+  const fixture = candidateFixture(plan);
+  const ui = fixture.native["UI"]; assert.ok(isRecord(ui));
+  const permission = ui["concurrentDesign"]; assert.ok(isRecord(permission));
+  permission["isConcurrentStrictMode"] = true;
+  await assert.rejects(execute(plan, fixture.eda, fixture.native), { message: "Symbol metadata operation refused at host:CONCURRENT_MODE" });
+  assert.equal(fixture.state.calls, 0);
+});
+
 void test("symbol preparation rejects serializer loss before dispatch and binds tags, source and concrete editor version", () => {
   for (const field of ["unknown-meta", "unknown-header", "missing-tags", "missing-source", "wrong-header-id", "bad-version"]) {
     const before = history(), target = before.documents[0]; assert.ok(target);
@@ -395,7 +426,7 @@ void test("symbol candidate refuses owner drift before mutation and never retrie
   } };
   await assert.rejects(execute(plan, eda, { gVars: host }), /refused at before-read/u); assert.equal(calls, 0);
   owner = "owner";
-  await assert.rejects(execute(plan, eda, { gVars: host }), { message: "Symbol metadata operation refused at modify" }); assert.equal(calls, 1);
+  await assert.rejects(execute(plan, eda, { gVars: host }), { message: "Symbol metadata operation refused at modify:EXCEPTION" }); assert.equal(calls, 1);
 });
 
 void test("symbol inverse requires the complete proved forward effect and prepares a new exact patch", () => {

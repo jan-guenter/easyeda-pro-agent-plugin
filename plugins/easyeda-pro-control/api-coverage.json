@@ -6,14 +6,14 @@
     "reviewedDistinctMethods": 697,
     "latestDistinctMethods": 773,
     "statuses": {
-      "implemented-public-subset": 187,
-      "implemented-native-equivalent": 72,
-      "internal-lifecycle-only": 3,
+      "implemented-public-subset": 190,
+      "implemented-native-equivalent": 73,
+      "internal-lifecycle-only": 2,
       "implemented-but-blocked": 8,
-      "omitted": 504
+      "omitted": 501
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 311,
+      "available-with-runtime-guards": 315,
       "blocked": 9,
       "partially-blocked": 3
     },
@@ -21,7 +21,6 @@
       "account-or-library-scope-needed": 41,
       "broken-net-type-filter-and-result-abi": 1,
       "callback-or-registration-lifecycle": 27,
-      "cross-project-tab-scope-needed": 2,
       "cross-tab-netlist-export-scope": 1,
       "divergent-public-result-abi": 1,
       "extension-or-global-settings-state": 15,
@@ -43,7 +42,7 @@
       "panel-context-not-admitted": 1,
       "private-url-state-projection-needed": 2,
       "reviewed-native-stub": 28,
-      "scoped-effect-adapter-needed": 122,
+      "scoped-effect-adapter-needed": 121,
       "selection-marker-or-history-mutation": 8,
       "shared-asset-owner-projection-needed": 3,
       "simulation-editor-not-admitted": 1,
@@ -440,7 +439,7 @@
           "tool": "easyeda_control_design",
           "selector": "commit/recovery lifecycle",
           "implementation": "internal-lifecycle-only",
-          "scope": "Exact target-bound lifecycle only, no standalone close/discard or arbitrary activation.",
+          "scope": "Exact target-bound design commit/recovery lifecycle only. Separately listed library document.activate and document.close routes have their own narrower admission; no unrestricted close/discard or activation.",
           "source": [
             "runtime-scripts.ts",
             "native-document-lifecycle.ts",
@@ -519,13 +518,49 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "internal-lifecycle-only",
+      "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_library",
+          "selector": "document.close",
+          "implementation": "public-method",
+          "scope": "One inactive clean checkpoint-member ordinary symbol (2), PCB (3) or footprint (4), with a separate clean PCB/footprint active and exactly two owned project tabs in one unsplit container. Await terminal removal and prove unchanged active source/context and complete logical database. No Save, reopen or exact inverse. Every post-dispatch failure retains execution quarantine until captured-runtime termination; reconciliation observes only and never repeats close. Current-generation live validation is unclaimed.",
+          "source": [
+            "document-close.ts",
+            "library-execution.ts",
+            "library-recovery.ts",
+            "core.ts"
+          ],
+          "tests": [
+            "document-close.test.ts",
+            "document-close-transaction.test.ts",
+            "typed-recovery.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "documentTypes": [
+            3,
+            4
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "library",
+                  "operationAction": "document.close",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_design",
           "selector": "commit/recovery lifecycle",
           "implementation": "internal-lifecycle-only",
-          "scope": "Exact target-bound lifecycle only, no standalone close/discard or arbitrary activation.",
+          "scope": "Exact target-bound design commit/recovery lifecycle only. Separately listed library document.activate and document.close routes have their own narrower admission; no unrestricted close/discard or activation.",
           "source": [
             "runtime-scripts.ts",
             "native-document-lifecycle.ts",
@@ -670,17 +705,42 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "cross-project-tab-scope-needed",
-        "reason": "A caller-selected tab can belong to another open project. The SDK lookup does not bind it to the current disposable project's checkpoint or document identity.",
-        "nextRequirement": "Resolve and validate exact tab ownership against all editor groups before and after the lookup; existing internal editor ownership checks do not expose arbitrary tab reads.",
-        "evidence": [
-          "editor-tabs.ts",
-          "runtime-scripts.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.dmt_EditorControl.getSplitScreenIdByTabId",
+          "implementation": "public-method",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled public SDK observation, not complete native-source/connectivity/persistence proof. Requires a verified complete current-project checkpoint and two matching owned editor-tree observations; only an existing owned tab or nonempty leaf is admitted. Returns identity/type/project/library-owner fields only, never titles or raw tab data. Missing, parent, foreign, duplicate or ambiguous empty containers refuse; no navigation, preference changes or Save.",
+          "documentTypes": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "source": [
+            "editor-tab-lookups.ts"
+          ],
+          "tests": [
+            "editor-tab-lookups.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.dmt_EditorControl.getSplitScreenIdByTabId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -751,17 +811,42 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "cross-project-tab-scope-needed",
-        "reason": "A split screen can contain tabs from unrelated open projects. Returning its whole tab list requires a policy for every referenced document, not only the active tab.",
-        "nextRequirement": "Add a bounded tab projection with complete owner/identity validation or an explicitly authorized all-open-project scope.",
-        "evidence": [
-          "editor-tabs.ts",
-          "runtime-scripts.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.dmt_EditorControl.getTabsBySplitScreenId",
+          "implementation": "public-method",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled public SDK observation, not complete native-source/connectivity/persistence proof. Requires a verified complete current-project checkpoint and two matching owned editor-tree observations; only an existing owned tab or nonempty leaf is admitted. Returns identity/type/project/library-owner fields only, never titles or raw tab data. Missing, parent, foreign, duplicate or ambiguous empty containers refuse; no navigation, preference changes or Save.",
+          "documentTypes": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "source": [
+            "editor-tab-lookups.ts"
+          ],
+          "tests": [
+            "editor-tab-lookups.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.dmt_EditorControl.getTabsBySplitScreenId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -2678,14 +2763,45 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "dmt_Schematic.createSchematicPage has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_library",
+          "selector": "document.page.create",
+          "implementation": "native-task-equivalent",
+          "scope": "Parent-only creation of one closed empty page in an existing ordinary local schematic, with one clean owned PCB or sibling page active and a writable exact branch. Pinned native name/order defaults, original returned ID and full unchanged peer/hierarchy proof; public template/drawing-frame initialization and editor opening are not invoked. No Save or automatic inverse. Changed recovery requires the original native return and immutable preparation, never infers identity from an observed addition or repeats creation. Current-generation live validation is unclaimed.",
+          "source": [
+            "document-page-create.ts",
+            "library-execution.ts",
+            "library-recovery-state.ts",
+            "library-recovery.ts"
+          ],
+          "tests": [
+            "document-page-create.test.ts",
+            "document-page-create-transaction.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "documentTypes": [
+            1,
+            3
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "library",
+                  "operationAction": "document.page.create",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

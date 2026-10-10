@@ -6,6 +6,8 @@ import { isNativeDocumentDeleted } from "./native-history.ts";
 import type { NativeDocumentSnapshot, NativeHistorySnapshot } from "./native-history.ts";
 import { DEVICE_NATIVE_HOST_GUARD } from "./device-runtime-guard.ts";
 import { buildEditorTargetAbsentExpression } from "./editor-tabs.ts";
+import { NATIVE_PROJECT_PLACEHOLDER_PREDICATE } from "./native-editor-tab-guards.ts";
+import { METADATA_NATIVE_DIAGNOSTIC_CATCH } from "./metadata-native-diagnostics.ts";
 import type { ExpectedContext } from "./engine.ts";
 
 /** Fixed project-local adapter. Connected and reopened validation are separate
@@ -124,6 +126,7 @@ export function buildProjectSymbolMetadataExpression(input: ProjectSymbolMetadat
   return `(async()=>{let stage='host';try{
 const PLAN=${JSON.stringify(plan)},ACTIVE=${JSON.stringify(active)},OWNERSHIP=${JSON.stringify(ownership)};
 ${DEVICE_NATIVE_HOST_GUARD}
+${NATIVE_PROJECT_PLACEHOLDER_PREDICATE}
 const localUI=globalThis.UI,outerUI=globalThis.top?.UI;
 if(localUI!=null&&outerUI!=null&&localUI!==outerUI)throw new Error('UI_AMBIGUOUS');
 const ui=localUI??outerUI,permission=ui?.concurrentDesign,tabs=ui?.tabBar;
@@ -133,21 +136,28 @@ if(PLAN.peerTitles.some(value=>value.toLocaleLowerCase()===PLAN.desiredTitle.toL
 const localVersion=globalThis.PRO_EDITOR_VERSION,outerVersion=globalThis.top?.PRO_EDITOR_VERSION;
 if(localVersion!==undefined&&outerVersion!==undefined&&localVersion!==outerVersion)throw new Error('EDITOR_VERSION_AMBIGUOUS');
 if((localVersion??outerVersion)!==(PLAN.headerEditVersion===null?undefined:PLAN.headerEditVersion))throw new Error('EDITOR_VERSION_DRIFT');
-if(host.currentProject?.projectId!==PLAN.projectUuid||host.currentProject.branchUuid!==PLAN.branchUuid||host.currentProject.isV2Format!==false||host.isHistoryMode!==false)throw new Error('PROJECT_NOT_WRITABLE');
-if(permission?.isConcurrentStrictMode!==false||typeof permission.getIframeDisableStatusPanelPcb!=='function'||permission.getIframeDisableStatusPanelPcb(ACTIVE.tabId)?.disable!==false)throw new Error('PROJECT_NOT_WRITABLE');
-if(tabs.getActiveTab()!==ACTIVE.tabId||tabs.hasTabUnSaved()!==false)throw new Error('CONTEXT_OR_DIRTY');
-const all=tabs.getFilterTabs([]),seen=new Set();let activeCount=0,startCount=0;
-if(!Array.isArray(all)||all.length<1||all.length>256)throw new Error('TAB_SCOPE');
+if(host.currentProject?.projectId!==PLAN.projectUuid)throw new Error('PROJECT_DRIFT');
+if(host.currentProject.branchUuid!==PLAN.branchUuid)throw new Error('BRANCH_DRIFT');
+if(host.currentProject.isV2Format!==false)throw new Error('PROJECT_FORMAT_UNSUPPORTED');
+if(host.isHistoryMode!==false)throw new Error('HISTORY_MODE');
+if(permission?.isConcurrentStrictMode!==false)throw new Error('CONCURRENT_MODE');
+if(typeof permission.getIframeDisableStatusPanelPcb!=='function')throw new Error('PERMISSION_API_MISSING');
+if(permission.getIframeDisableStatusPanelPcb(ACTIVE.tabId)?.disable!==false)throw new Error('READ_ONLY');
+if(tabs.getActiveTab()!==ACTIVE.tabId)throw new Error('ACTIVE_TAB_DRIFT');
+if(tabs.hasTabUnSaved()!==false)throw new Error('DIRTY_TABS');
+const all=tabs.getFilterTabs([]),seen=new Set();let activeCount=0,startCount=0,placeholderCount=0;
+if(!Array.isArray(all)||all.length<1||all.length>257)throw new Error('TAB_SCOPE');
 for(const tab of all){
 if(!tab||typeof tab!=='object'||Array.isArray(tab)||typeof tab.tabId!=='string'||!tab.tabId||tab.tabId.length>512||/[\\x00-\\x1f]/.test(tab.tabId)||seen.has(tab.tabId)||!tab.data||typeof tab.data!=='object'||Array.isArray(tab.data))throw new Error('TAB_SCOPE');seen.add(tab.tabId);
 if(tab.tabId==='tab_page1'){if(++startCount!==1||tab.isAbleDelete!==false||tab.data?.doctype!==-1||tab.data?.pid!==undefined||tab.data?.owner!==undefined||tab.parentProjectUuid!==undefined||tab.parentLibraryUuid!==undefined)throw new Error('START_TAB');continue;}
+if(tab.tabId==='0'){if(++placeholderCount!==1||!isNativeProjectPlaceholder(tab)||tabs.isTabUnSaved(tab.tabId)!==false)throw new Error('PROJECT_PLACEHOLDER');continue;}
 const type=tab.data?.doctype,id=tab.tabId.split('@')[0],library=[2,4].includes(type);
 if(![1,2,3,4].includes(type)||!id||id===PLAN.targetUuid||tab.tabId!==id+'@'+PLAN.projectUuid||(library?tab.data?.pid!==undefined&&tab.data.pid!==PLAN.projectUuid:tab.data?.pid!==PLAN.projectUuid)||
 (tab.parentProjectUuid!==undefined&&tab.parentProjectUuid!==PLAN.projectUuid)||(tab.documentType!==undefined&&tab.documentType!==type)||
 (library?tab.data.owner!==PLAN.ownerUuid||(tab.parentLibraryUuid!==undefined&&tab.parentLibraryUuid!==PLAN.ownerUuid):tab.parentLibraryUuid!==undefined||(tab.data.owner!==undefined&&tab.data.owner!==PLAN.ownerUuid))||
 (Object.hasOwn(tab,'isUnSaved')?tab.isUnSaved!==false:tab.isUnSaved!==undefined)||tabs.isTabUnSaved(tab.tabId)!==false)throw new Error('TAB_SCOPE');
 if(tab.tabId===ACTIVE.tabId){if(id!==ACTIVE.uuid||type!==ACTIVE.documentType)throw new Error('ACTIVE_TAB');activeCount+=1;}
-}if(activeCount!==1)throw new Error('ACTIVE_TAB');
+}if(all.length-placeholderCount>256)throw new Error('TAB_SCOPE');if(activeCount!==1)throw new Error('ACTIVE_TAB');
 };
 const assertContext=async()=>{
 const project=await eda.dmt_Project.getCurrentProjectInfo();
@@ -183,7 +193,7 @@ await assertContext();
 if(after?.uuid!==PLAN.targetUuid||after?.project_uuid!==PLAN.projectUuid||after?.owner?.uuid!==PLAN.ownerUuid||after?.docType!==2||after?.display_title!==PLAN.desiredTitle||after?.description!==PLAN.desiredDescription||after?.source!==PLAN.beforeSource||after?.custom_tags!==JSON.stringify(PLAN.beforeTags))throw new Error('SYMBOL_METADATA_DRIFT');
 const payload={kind:'project-symbol-metadata',targetId:PLAN.targetUuid,createdId:null};
 const json=JSON.stringify(payload);return {schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};
-}catch(_){throw new Error('Symbol metadata operation refused at '+stage);}})()`;
+}catch(error){${METADATA_NATIVE_DIAGNOSTIC_CATCH}throw new Error('Symbol metadata operation refused at '+stage+':'+code);}})()`;
 }
 
 function recordProjection(document: NativeDocumentSnapshot): unknown {

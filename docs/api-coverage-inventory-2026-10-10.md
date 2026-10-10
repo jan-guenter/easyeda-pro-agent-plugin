@@ -17,7 +17,7 @@ The original 749 and 806 declaration signatures remain in the inventory.
 |---|---|
 | `implemented-public-subset` | A fixed maintained route invokes this method for the stated argument/result subset. It does not accept arbitrary class instances or all declared overloads. |
 | `implemented-native-equivalent` | A maintained transaction performs the relevant CAD task through a reviewed native adapter. This does not claim the public SDK wrapper works. |
-| `internal-lifecycle-only` | A journaled workflow can use this operation internally. This row supplies no unrestricted standalone authority. The separately mapped typed activation route remains limited to existing owned tabs. |
+| `internal-lifecycle-only` | A journaled workflow can use this operation internally. This row supplies no unrestricted standalone authority. Separately mapped typed activation and inactive-clean close routes have their own exact tab/context guards. |
 | `implemented-but-blocked` | Implementation exists, but every mapped route is currently refused by a required runtime guard. Code or schema presence is not callable support. |
 | `omitted` | There is no supported route for this method. The row gives the actual blocker or the missing implementation work. |
 
@@ -35,6 +35,24 @@ advertised as callable. Independent type-2 symbol graphics and PCB routes do not
 inherit this topology dependency. Shared lifecycle routes explicitly retain the
 type-1 block. An available route still needs actual compatibility, ownership,
 context and operation admission; this inventory does not grant them.
+
+The standalone `document.close` subset targets an inactive clean ordinary symbol,
+PCB or footprint while a separate PCB/footprint remains active. It waits for
+terminal cleanup, proves the complete database unchanged and invokes no Save or
+reopen. Any post-dispatch failure retains quarantine until captured-runtime
+termination is proved; recovery never repeats the close.
+
+`document.page.create` is a native task equivalent, not invocation of the public
+template-and-open wrapper. It adds one closed empty page to an existing ordinary
+schematic using checkpoint-derived name/order defaults. Complete unchanged-peer
+proof and the original native returned ID are required; neither an observed
+addition nor a matching title grants replay or recovery attribution. Both routes
+remain offline-tested with no current-generation live claim.
+
+Two public editor lookups also have narrowed routes: tab-to-split-screen ID and
+split-screen-to-tab identities. They require an existing owned selector, complete
+checkpoint-member tab-tree ownership, direct-result parity and two unchanged
+observations. They do not expose arbitrary open-project tabs or raw tab data.
 
 ## Reasons for omissions
 

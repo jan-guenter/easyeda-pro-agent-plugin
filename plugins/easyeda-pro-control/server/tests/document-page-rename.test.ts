@@ -39,7 +39,8 @@ function desired(before: NativeHistorySnapshot): NativeHistorySnapshot {
     entry.metadata["updateTime"] = 2; entry.metadata["version"] = "2"; delete entry.metadata["user"]; });
 }
 function compileFixture(options: { readonly fault?: string; readonly faultAt?: string; readonly acknowledgment?: boolean; readonly pristineTab?: boolean;
-  readonly deferredWriterSwitch?: boolean; readonly baselineVersion?: "missing" | "old"; readonly queuedFinalFault?: "target-open" | "dirty" | "host" } = {}): {
+  readonly deferredWriterSwitch?: boolean; readonly baselineVersion?: "missing" | "old"; readonly queuedFinalFault?: "target-open" | "dirty" | "host";
+  readonly placeholder?: Value; readonly placeholderDirty?: unknown; readonly duplicatePlaceholder?: boolean; readonly startPage?: boolean } = {}): {
   readonly run: () => Promise<unknown>; readonly calls: string[]; readonly writes: () => number; readonly projectTitles: Map<string, string>;
 } {
   const before = options.baselineVersion === undefined ? history() : mutate(history(), "page", (entry) => {
@@ -49,6 +50,9 @@ function compileFixture(options: { readonly fault?: string; readonly faultAt?: s
   const projectTitles = new Map([["project", plan.beforeTitle], ["foreign", "Untouched foreign page"]]);
   let current = structuredClone(CONTEXT.document), dirty = false, nativeName = plan.beforeTitle, writes = 0;
   const raw: Value[] = [{ tabId: "active@project", data: { doctype: 1, pid: "project" }, isUnSaved: false }];
+  if (options.placeholder !== undefined) { raw.push(options.placeholder); }
+  if (options.duplicatePlaceholder === true && options.placeholder !== undefined) { raw.push(structuredClone(options.placeholder)); }
+  if (options.startPage === true) { raw.push({ tabId: "tab_page1", data: { doctype: -1 }, isAbleDelete: false }); }
   if (options.pristineTab === true) { const active = raw[0]; assert.ok(active); delete active["isUnSaved"]; }
   const permission = { isConcurrentStrictMode: false, getIframeDisableStatusPanelPcb: (): { disable: boolean } => ({ disable: options.fault === "read-only" }) };
   const host = { isHistoryMode: false, currentProject: { projectId: "project", branchUuid: "branch", isV2Format: false }, messageBus: { rpcCall: (topic: string, args: unknown): Promise<unknown> => {
@@ -110,7 +114,7 @@ function compileFixture(options: { readonly fault?: string; readonly faultAt?: s
     dmt_Schematic: { modifySchematicPageName: (): never => { throw new Error("The mutable row-index public setter must never be invoked."); } },
   };
   const native = { PRO_EDITOR_VERSION: options.fault === "editor-version" ? "3.3" : "3.2", gVars: host, UI: { concurrentDesign: permission, tabBar: { getFilterTabs: (): Value[] => raw, getActiveTab: (): string => "active@project",
-    hasTabUnSaved: (): boolean => dirty, isTabUnSaved: (): boolean => dirty } } };
+    hasTabUnSaved: (): boolean => dirty, isTabUnSaved: (tabId: string): unknown => tabId === "0" && Object.hasOwn(options, "placeholderDirty") ? options.placeholderDirty : dirty } } };
   return { calls, projectTitles, writes: (): number => writes, run: (): Promise<unknown> => {
     // oxlint-disable-next-line typescript/no-implied-eval, no-new-func -- Only the fixed compiler program executes against isolated native doubles.
     const execute = new Function("eda", "globalThis", `return ${buildDocumentPageRenameExpression(plan, CONTEXT)};`);
@@ -118,6 +122,23 @@ function compileFixture(options: { readonly fault?: string; readonly faultAt?: s
     const result: unknown = execute(eda, native); return Promise.resolve(result);
   } };
 }
+
+void test("page rename admits the pinned hidden project tab while preserving one clean sibling", async () => {
+  const placeholder = { tabId: "0", data: { doctype: 0 }, isAbleDelete: false, isDisplayNone: true, draggable: false, group: "start_blank" };
+  const valid = compileFixture({ placeholder, startPage: true });
+  await valid.run(); assert.equal(valid.writes(), 1);
+  for (const patch of [{ data: { doctype: 0, owner: "foreign" } }, { isDisplayNone: false }, { draggable: true }, { group: "other" }, { isUnSaved: true }]) {
+    const fixture = compileFixture({ placeholder: { ...placeholder, ...patch } });
+    await assert.rejects(fixture.run(), { message: "Closed page rename refused at host:PROJECT_PLACEHOLDER" });
+    assert.equal(fixture.writes(), 0);
+  }
+  const duplicate = compileFixture({ placeholder, duplicatePlaceholder: true });
+  await assert.rejects(duplicate.run(), /:PROJECT_PLACEHOLDER$/u); assert.equal(duplicate.writes(), 0);
+  for (const placeholderDirty of [true, null, undefined]) {
+    const fixture = compileFixture({ placeholder, placeholderDirty });
+    await assert.rejects(fixture.run(), /:PROJECT_PLACEHOLDER$/u); assert.equal(fixture.writes(), 0);
+  }
+});
 
 void test("closed page rename is registered only through its checkpoint-bound plan", () => {
   assert.equal(libraryExecutionKind(OPERATION), "project-page-rename");

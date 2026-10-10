@@ -286,7 +286,13 @@ function compileLifecycle(operation: LibraryOperation): CompiledLibraryOperation
     result.call = { api: "dmt_EditorControl", method: operation.action === "document.activate" ? "activateDocument" : "closeDocument", args: [literal(operation.tabId)] };
     result.contextTransition = operation.action === "document.activate" ? "document" : "close";
     result.requiredProofs.push("exact-tab-document-binding");
-    if (operation.action === "document.close") { result.requiredProofs.push("proven-clean-target-before-close", "no-unresolved-save-or-discard-dialog"); }
+    if (operation.action === "document.close") {
+      result.requiredProofs = result.requiredProofs.filter((proof) => proof !== "save-close-reopen-persistence");
+      result.requiredProofs.push("proven-clean-inactive-target-before-close", "terminal-tab-and-frame-removal", "unchanged-active-context-and-source", "unchanged-complete-logical-database", "no-unresolved-save-or-discard-dialog");
+      result.inverse = { kind: "none", api: null };
+      result.limitations.push("Native close clears editor undo/export caches; reopening is not an exact inverse. No Save or automatic reopen is invoked. Ambiguous post-dispatch failure requires retained runtime termination before reconciliation.");
+      return result;
+    }
     result.inverse = { kind: "restore-editor-context", api: "dmt_EditorControl" }; return result;
   }
   const family = operation.action.split(".")[1];
@@ -319,6 +325,16 @@ function compileLifecycle(operation: LibraryOperation): CompiledLibraryOperation
     result.inverse = { kind: "delete-created", api: entry.api };
   } else if ("target" in operation) { result.afterReads.push({ purpose: "identity-metadata", api: entry.api, method: entry.get, args: [ref(operation.target)] }); }
   result.requiredProofs.push("associated-board-page-and-library-collateral");
+  if (operation.action === "document.page.create") {
+    result.call = { api: "native-project-message-bus", method: "/PrjDB/sheet/addData", args: [] };
+    result.documentTypes = [1, 3];
+    result.inverse = { kind: "none", api: null };
+    result.requiredProofs = result.requiredProofs.filter((proof) => proof !== "save-close-reopen-persistence");
+    result.requiredProofs.push("checkpoint-bound-ordinary-parent-and-native-defaults", "exact-clean-writable-branch-and-active-editor",
+      "original-native-created-identity", "one-empty-page-addition-and-unchanged-complete-peer-hierarchy", "unchanged-active-source-and-context");
+    result.limitations.push("Native task equivalent only: checkpoint-derived project, parent, title and order arguments create one closed empty page. The public createSchematicPage template/drawing-frame initialization and editor-open workflow are not invoked.",
+      "No caller source or title, Save, reopen, automatic inverse or current-generation live-validation claim. Changed-result recovery requires the original native return; an observed addition alone cannot identify this call and creation is never repeated.");
+  }
   return result;
 }
 

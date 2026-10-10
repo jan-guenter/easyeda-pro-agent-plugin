@@ -1,6 +1,7 @@
 import { deviceFailureCategory } from "./device-runtime-guard.ts";
 import { libraryRuntimeFailureCategory } from "./library-runtime-guard.ts";
 import { projectUploadBarrierFailureCategory } from "./project-upload-barrier.ts";
+import { METADATA_NATIVE_GUARD_CODES } from "./metadata-native-diagnostics.ts";
 
 /** Fixed literal errors emitted by reviewed code builders. Never echo unknown
  * native exception text, dynamic suffixes, stack traces or caller values.
@@ -172,16 +173,29 @@ const footprintLifecycleCodes = new Map([
 // Each builder discards its caught native exception and emits only these fixed
 // Stages. Exact whole-message matching must not admit suffixes, paths or stacks.
 const operationStages = [
+  { prefix: "Owned editor lookup refused at ", category: "native-editor-tab-lookup", stages: ["api", "before-context", "before-tree", "lookup", "after-tree"] },
+  { prefix: "Closed empty page creation refused at ", category: "native-page-create", stages: ["host", "before-read", "permission", "create", "after-read"] },
+  { prefix: "Clean document close refused at ", category: "native-document-close", stages: ["host", "before-state", "dispatch-state", "close", "terminal-removal", "after-state", "reconciliation"] },
   { prefix: "Document activation refused: ", category: "native-document-activation", stages: ["api", "before-context", "before-tabs", "loaded-frames", "preferences", "dispatch-context", "activate", "target-readiness"] },
   { prefix: "Closed page rename refused at ", category: "native-page-rename", stages: ["host", "before-read", "closed-target", "rename", "after-read"] },
   { prefix: "Symbol metadata operation refused at ", category: "native-symbol-metadata", stages: ["host", "permission", "before-read", "target-closed", "modify", "after-read"] },
 ];
 const operationStageCategories = new Map(operationStages.flatMap(({ prefix, category, stages }) => stages.map((stage) => [`${prefix}${stage}`, `${category}:${stage}`] as const)));
+const activationPreferenceCategories = new Map<string, string>(["preferences", "dispatch-context", "target-readiness"].flatMap((stage) =>
+  ["PREFERENCES_READ_ERROR", "PREFERENCES_API_MISSING", "PREFERENCES_MISSING", "PREFERENCES_BOUND", "PREFERENCES_JSON_INVALID", "PREFERENCES_SHAPE",
+    "PCB_COMMAND_TAB_MISSING", "PCB_COMMAND_TAB_WRITE_REQUIRED", "PCB_COMMAND_TAB_NOT_BOOLEAN"]
+    .map((code) => [`Document activation refused: ${stage}:${code}`, `native-document-activation:${stage}:${code}`] as const)));
+const metadataGuardCategories = new Map<string, string>(operationStages.filter(({ category }) => category === "native-page-rename" || category === "native-symbol-metadata")
+  .flatMap(({ prefix, category, stages }) => stages.flatMap((stage) => METADATA_NATIVE_GUARD_CODES.map((code) => [`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`] as const))));
 
 export function nativeFailureCategory(message: unknown): string | null {
   if (typeof message !== "string") { return null; }
   const operationStageCategory = message.length <= 128 ? operationStageCategories.get(message) : undefined;
   if (operationStageCategory !== undefined) { return operationStageCategory; }
+  const activationPreferenceCategory = message.length <= 128 ? activationPreferenceCategories.get(message) : undefined;
+  if (activationPreferenceCategory !== undefined) { return activationPreferenceCategory; }
+  const metadataGuardCategory = message.length <= 160 ? metadataGuardCategories.get(message) : undefined;
+  if (metadataGuardCategory !== undefined) { return metadataGuardCategory; }
   const uploadBarrierCategory = projectUploadBarrierFailureCategory(message);
   if (uploadBarrierCategory !== null) { return uploadBarrierCategory; }
   if (tabCodes.has(message)) { return `native-preflight:${message}`; }

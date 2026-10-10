@@ -26,7 +26,7 @@ const groups: RouteGroup[] = [];
 const topologyBlock = "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.";
 
 function add(namespace: string, methods: readonly string[], tool: string, selector: string,
-  implementation: ApiCoverageRoute["implementation"], scope: string, source: readonly string[], tests: readonly string[]): void {
+  implementation: ApiCoverageRoute["implementation"], scope: string, source: readonly string[], tests: readonly string[], admittedDocumentTypes?: readonly number[]): void {
   let inputDiscovery: ApiCoverageRoute["inputDiscovery"];
   const action = selector.split(";")[0] ?? "";
   const family = tool === "easyeda_control_library" ? "library" : "design";
@@ -39,7 +39,7 @@ function add(namespace: string, methods: readonly string[], tool: string, select
   let executionState: ApiCoverageRoute["executionState"] = "available-with-runtime-guards";
   if (schematicWrite) { executionState = "blocked"; }
   else if (sharedLifecycle) { executionState = "partially-blocked"; }
-  let documentTypes: readonly number[] | undefined;
+  let documentTypes: readonly number[] | undefined = admittedDocumentTypes;
   if (selector.includes("documentType=2")) { documentTypes = [2]; }
   else if (schematicWrite) { documentTypes = [1]; }
   const blocked = schematicWrite || sharedLifecycle;
@@ -120,9 +120,15 @@ add("dmt_EditorControl", ["openDocument"], "easyeda_control_library", "document.
 add("dmt_EditorControl", ["activateDocument"], "easyeda_control_library", "document.activate", "public-method",
   "One already-open checkpoint-member current-project tab only, with complete tab ownership, retained preparation and one activation. Two coherent target observations and unchanged complete durable project; recovery never activates, opens, closes or saves. Current-generation live validation is unclaimed.",
   ["document-activation.ts", "library-execution.ts", "library-recovery.ts"], ["document-activation.test.ts", "document-activation-transaction.test.ts"]);
+add("dmt_EditorControl", ["closeDocument"], "easyeda_control_library", "document.close", "public-method",
+  "One inactive clean checkpoint-member ordinary symbol (2), PCB (3) or footprint (4), with a separate clean PCB/footprint active and exactly two owned project tabs in one unsplit container. Await terminal removal and prove unchanged active source/context and complete logical database. No Save, reopen or exact inverse. Every post-dispatch failure retains execution quarantine until captured-runtime termination; reconciliation observes only and never repeats close. Current-generation live validation is unclaimed.",
+  ["document-close.ts", "library-execution.ts", "library-recovery.ts", "core.ts"], ["document-close.test.ts", "document-close-transaction.test.ts", "typed-recovery.test.ts"], [3, 4]);
 add("dmt_Schematic", ["modifySchematicPageName"], "easyeda_control_library", "document.page.rename", "native-task-equivalent",
   "Closed ordinary checkpoint-member page only, with one clean owned sibling active, exact writable local branch, immutable preparation and one project-qualified native metadata write. Complete saved title/header effect and unchanged peers/source; no Save, reopen or UI-caption refresh claim. Current-generation live validation is unclaimed.",
   ["document-page-rename.ts", "library-execution.ts", "library-recovery-state.ts", "library-recovery.ts"], ["document-page-rename.test.ts", "document-page-rename-transaction.test.ts"]);
+add("dmt_Schematic", ["createSchematicPage"], "easyeda_control_library", "document.page.create", "native-task-equivalent",
+  "Parent-only creation of one closed empty page in an existing ordinary local schematic, with one clean owned PCB or sibling page active and a writable exact branch. Pinned native name/order defaults, original returned ID and full unchanged peer/hierarchy proof; public template/drawing-frame initialization and editor opening are not invoked. No Save or automatic inverse. Changed recovery requires the original native return and immutable preparation, never infers identity from an observed addition or repeats creation. Current-generation live validation is unclaimed.",
+  ["document-page-create.ts", "library-execution.ts", "library-recovery-state.ts", "library-recovery.ts"], ["document-page-create.test.ts", "document-page-create-transaction.test.ts"], [1, 3]);
 add("dmt_EditorControl", ["openLibraryDocument"], "easyeda_control_library", "library.footprint.open", "public-method", "Existing checkpoint-member current-project footprint only, with one-shot navigation and complete unchanged saved-state proof.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
 
 const exports: Readonly<Record<string, string>> = {
@@ -135,7 +141,7 @@ for (const family of ["pcb", "sch"]) {
   add(`${family}_Drc`, ["check"], "easyeda_control_check", "run", "native-task-equivalent", "Fixed reviewed native calculation/report, scoped complete state and saved SQLite invariance; SDK boolean alone is not accepted.", ["native-rule-report.ts", "check-execution.ts"], ["native-rule-report.test.ts", "check-execution.test.ts"]);
   add(`${family}_Document`, ["save"], "easyeda_control_design", "execute/commit", "internal-lifecycle-only", "Save is available only inside an original journal's verified no-repeat commit lifecycle; never an unrestricted standalone Save.", ["runtime-scripts.ts", "design-save-attempt.ts", "design-execution.ts"], ["design-save-attempt.test.ts", "design-execute.test.ts"]);
 }
-add("dmt_EditorControl", ["activateDocument", "closeDocument"], "easyeda_control_design", "commit/recovery lifecycle", "internal-lifecycle-only", "Exact target-bound lifecycle only, no standalone close/discard or arbitrary activation.", ["runtime-scripts.ts", "native-document-lifecycle.ts"], ["runtime-scripts.test.ts", "native-document-lifecycle.test.ts"]);
+add("dmt_EditorControl", ["activateDocument", "closeDocument"], "easyeda_control_design", "commit/recovery lifecycle", "internal-lifecycle-only", "Exact target-bound design commit/recovery lifecycle only. Separately listed library document.activate and document.close routes have their own narrower admission; no unrestricted close/discard or activation.", ["runtime-scripts.ts", "native-document-lifecycle.ts"], ["runtime-scripts.test.ts", "native-document-lifecycle.test.ts"]);
 add("dmt_Project", ["getCurrentProjectInfo"], "easyeda_control_context", "context", "public-method", "Exact active project identity used before and after guarded operations.", ["runtime-scripts.ts"], ["runtime-scripts.test.ts"]);
 add("dmt_SelectControl", ["getCurrentDocumentInfo"], "easyeda_control_context", "context", "public-method", "Exact active document/type/tab identity used before and after guarded operations.", ["runtime-scripts.ts"], ["runtime-scripts.test.ts"]);
 add("dmt_EditorControl", ["getSplitScreenTree"], "easyeda_control_context", "context/editor ownership", "public-method", "Bounded editor tab ownership and exclusivity checks, not navigation authority.", ["editor-tabs.ts", "runtime-scripts.ts"], ["editor-tabs.test.ts", "runtime-scripts.test.ts"]);

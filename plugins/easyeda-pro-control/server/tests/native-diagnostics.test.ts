@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { extractToolPayload } from "../src/core.ts";
 import { nativeFailureCategory } from "../src/native-diagnostics.ts";
+import { METADATA_NATIVE_GUARD_CODES } from "../src/metadata-native-diagnostics.ts";
 
 void test("only exact reviewed native literal errors become diagnostics", () => {
   assert.equal(nativeFailureCategory("SCH_NATIVE_MANAGER_MISSING"), "native-preflight:SCH_NATIVE_MANAGER_MISSING");
@@ -49,6 +50,9 @@ void test("upload barrier legacy literals and fixed stage wrappers classify with
 });
 
 const operationStages = [
+  { source: "editor-tab-lookups.ts", prefix: "Owned editor lookup refused at ", category: "native-editor-tab-lookup", stages: ["api", "before-context", "before-tree", "lookup", "after-tree"] },
+  { source: "document-page-create.ts", prefix: "Closed empty page creation refused at ", category: "native-page-create", stages: ["host", "before-read", "permission", "create", "after-read"] },
+  { source: "document-close.ts", prefix: "Clean document close refused at ", category: "native-document-close", stages: ["host", "before-state", "dispatch-state", "close", "terminal-removal", "after-state", "reconciliation"] },
   { source: "document-activation.ts", prefix: "Document activation refused: ", category: "native-document-activation", stages: ["api", "before-context", "before-tabs", "loaded-frames", "preferences", "dispatch-context", "activate", "target-readiness"] },
   { source: "document-page-rename.ts", prefix: "Closed page rename refused at ", category: "native-page-rename", stages: ["host", "before-read", "closed-target", "rename", "after-read"] },
   { source: "project-symbol-metadata.ts", prefix: "Symbol metadata operation refused at ", category: "native-symbol-metadata", stages: ["host", "permission", "before-read", "target-closed", "modify", "after-read"] },
@@ -92,6 +96,54 @@ void test("diagnostic stage inventory exactly matches the reviewed generated pro
     const text = await readFile(new URL(`../src/${source}`, import.meta.url), "utf8");
     const emitted = [...text.matchAll(/\bstage='([a-z-]+)'/gu)].map((match) => { assert.ok(typeof match[1] === "string"); return match[1]; });
     assert.deepEqual([...new Set(emitted)].toSorted((left, right) => left.localeCompare(right)), stages.toSorted((left, right) => left.localeCompare(right)));
-    assert.ok(text.includes(`throw new Error('${prefix}'+stage)`));
+    assert.ok(text.includes(`throw new Error('${prefix}'+stage`));
   }
+});
+
+void test("metadata subguard categories admit only fixed stage/code combinations and redact private suffixes", () => {
+  for (const { prefix, category, stages } of operationStages.filter((entry) => ["native-page-rename", "native-symbol-metadata"].includes(entry.category))) {
+    for (const stage of stages) {
+      for (const code of METADATA_NATIVE_GUARD_CODES) {
+        const expected = `${category}:${stage}:${code}`, message = `${prefix}${stage}:${code}`;
+        assert.equal(nativeFailureCategory(message), expected);
+        assert.throws(() => extractToolPayload({ structuredContent: { ok: false, error: message } }),
+          { message: `The upstream EasyEDA tool reported failure [${expected}].` });
+        for (const invalid of [`${message}:private`, `${message}\n`, `${message}\0`, `${message} /private/path`, `Error: ${message}`]) {
+          assert.equal(nativeFailureCategory(invalid), null);
+        }
+      }
+      assert.equal(nativeFailureCategory(`${prefix}${stage}:UNKNOWN_PRIVATE_ERROR`), null);
+    }
+    assert.equal(nativeFailureCategory(`${prefix}private:PROJECT_PLACEHOLDER`), null);
+  }
+});
+
+void test("every compiler-owned metadata guard has a reviewed diagnostic code", async () => {
+  const codes: ReadonlySet<string> = new Set(METADATA_NATIVE_GUARD_CODES);
+  for (const source of ["document-page-rename.ts", "project-symbol-metadata.ts", "device-runtime-guard.ts", "editor-tabs.ts"]) {
+    const text = await readFile(new URL(`../src/${source}`, import.meta.url), "utf8");
+    let scoped = text;
+    if (source === "device-runtime-guard.ts") { scoped = text.slice(0, text.indexOf("export const DEVICE_NATIVE_ASSET_GUARD")); }
+    if (source === "editor-tabs.ts") { scoped = text.slice(0, text.indexOf("export function buildEditorTabsReadCode")); }
+    for (const match of scoped.matchAll(/throw new Error\('([A-Z_]+)'\)/gu)) {
+      assert.ok(match[1] !== undefined && codes.has(match[1]), `${source}: ${String(match[1])}`);
+    }
+  }
+});
+
+void test("activation preference codes remain exact, bounded and limited to the three preference-check stages", () => {
+  for (const stage of ["preferences", "dispatch-context", "target-readiness"]) {
+    for (const code of ["PREFERENCES_READ_ERROR", "PREFERENCES_API_MISSING", "PREFERENCES_MISSING", "PREFERENCES_BOUND", "PREFERENCES_JSON_INVALID", "PREFERENCES_SHAPE",
+      "PCB_COMMAND_TAB_MISSING", "PCB_COMMAND_TAB_WRITE_REQUIRED", "PCB_COMMAND_TAB_NOT_BOOLEAN"]) {
+      const expected = `native-document-activation:${stage}:${code}`, message = `Document activation refused: ${stage}:${code}`;
+      assert.equal(nativeFailureCategory(message), expected);
+      assert.throws(() => extractToolPayload({ structuredContent: { ok: false, error: message } }),
+        { message: `The upstream EasyEDA tool reported failure [${expected}].` });
+      for (const invalid of [`${message}:private`, `${message}\n`, `${message}\0`, `${message} /private/path`, `Error: ${message}`]) {
+        assert.equal(nativeFailureCategory(invalid), null);
+      }
+    }
+  }
+  for (const message of ["Document activation refused: preferences:PRIVATE", "Document activation refused: activate:PCB_COMMAND_TAB_MISSING",
+    "Document activation refused: api:PREFERENCES_API_MISSING"]) { assert.equal(nativeFailureCategory(message), null); }
 });

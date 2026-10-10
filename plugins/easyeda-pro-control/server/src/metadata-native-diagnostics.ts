@@ -1,0 +1,17 @@
+/** Only compiler-owned exact literals may cross the caught native-error boundary. */
+export const METADATA_NATIVE_GUARD_CODES = [
+  "EXCEPTION", "DEVICE_NATIVE_HOST_AMBIGUOUS", "DEVICE_NATIVE_BUS_MISSING", "UI_AMBIGUOUS", "TAB_STATE_MISSING",
+  "LOCALE_DUPLICATE_TITLE", "EDITOR_VERSION_AMBIGUOUS", "EDITOR_VERSION_DRIFT", "PROJECT_DRIFT", "BRANCH_DRIFT",
+  "PROJECT_FORMAT_UNSUPPORTED", "HISTORY_MODE", "CONCURRENT_MODE", "PERMISSION_API_MISSING", "READ_ONLY",
+  "ACTIVE_TAB_DRIFT", "DIRTY_TABS", "DIRTY_ACTIVE_TAB", "TAB_SCOPE", "START_TAB", "PROJECT_PLACEHOLDER",
+  "ACTIVE_TAB", "ACTIVE_DOCUMENT_DRIFT", "ACTIVE_DOCUMENT_OWNER_DRIFT", "PROJECT_PERMISSION", "PROJECT_METADATA",
+  "SYMBOL_METADATA_DRIFT", "ACK_INVALID", "CONTEXT", "PAGE_METADATA", "PARENT_METADATA",
+  "EDITOR_TABS_API_MISSING", "EDITOR_TABS_TREE_BOUND", "EDITOR_TABS_TREE_SHAPE", "EDITOR_TABS_INCOMPLETE",
+  "EDITOR_TABS_TAB_SHAPE", "EDITOR_TABS_OWNER_UNPROVEN", "EDITOR_TARGET_ALREADY_OPEN", "EDITOR_TABS_ACTIVE_UNPROVEN",
+] as const;
+
+export const METADATA_NATIVE_DIAGNOSTIC_CATCH = `let code='EXCEPTION';try{
+const descriptor=error!==null&&(typeof error==='object'||typeof error==='function')?Object.getOwnPropertyDescriptor(error,'message'):undefined;
+const message=descriptor&&Object.hasOwn(descriptor,'value')?descriptor.value:undefined;
+if(typeof message==='string'&&${JSON.stringify(METADATA_NATIVE_GUARD_CODES)}.includes(message))code=message;
+}catch(_){};`;

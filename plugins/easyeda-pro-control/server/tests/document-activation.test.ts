@@ -17,10 +17,11 @@ function history(targetType = "SYMBOL"): NativeHistorySnapshot {
 }
 const PLAN = prepareDocumentActivation(OPERATION, history(), CONTEXT);
 
-function fixture(options: { acknowledgment?: unknown; tree?: unknown; afterTree?: unknown; afterContext?: unknown; missingSamples?: number; originalSamples?: number; beforeProject?: unknown; afterProject?: unknown; missingFrame?: boolean; sharedModel?: boolean; replacedFrame?: boolean; targetDocumentType?: 1 | 2 | 3 | 4; preferences?: string | null; frameFault?: "disconnected" | "identity" | "type" } = {}): {
-  run: () => Promise<unknown>; calls: () => number; timers: Set<ReturnType<typeof setTimeout>>;
+function fixture(options: { acknowledgment?: unknown; tree?: unknown; afterTree?: unknown; afterContext?: unknown; missingSamples?: number; originalSamples?: number; beforeProject?: unknown; afterProject?: unknown; missingFrame?: boolean; sharedModel?: boolean; replacedFrame?: boolean; targetDocumentType?: 1 | 2 | 3 | 4; preferences?: unknown; frameFault?: "disconnected" | "identity" | "type";
+  preferenceFault?: "api" | "getter" | "read"; preferenceSequence?: readonly unknown[]; afterPreferences?: unknown } = {}): {
+  run: () => Promise<unknown>; calls: () => number; preferenceWrites: () => number; timers: Set<ReturnType<typeof setTimeout>>;
 } {
-  let calls = 0, missing = options.missingSamples ?? 0, original = options.originalSamples ?? 0;
+  let calls = 0, missing = options.missingSamples ?? 0, original = options.originalSamples ?? 0, preferenceReads = 0, preferenceWrites = 0;
   const baseline = history({ 1: "SCH_PAGE", 2: "SYMBOL", 3: "PCB", 4: "FOOTPRINT" }[options.targetDocumentType ?? 2]);
   const plan = prepareDocumentActivation(OPERATION, baseline, CONTEXT);
   const tree = { children: [{ tabs: [{ tabId: "board@project", documentType: 3, parentProjectUuid: "project" }] },
@@ -50,19 +51,27 @@ function fixture(options: { acknowledgment?: unknown; tree?: unknown; afterTree?
     assert.equal(topic, "getModelTabId"); return Promise.resolve({ message: options.sharedModel === true ? "shared@project" : tabId });
   } } }, window: { top: {
     document: { getElementById: (id: string): unknown => options.missingFrame === true && id === `frame_${plan.target.tabId}` ? null : frames.get(id) },
-    localStorage: { getItem: (key: string): string | null => { assert.equal(key, "preferences"); return options.preferences === undefined ? '{"pcbCommandTab":true}' : options.preferences; } },
+    localStorage: { getItem: (key: string): unknown => {
+      assert.equal(key, "preferences"); preferenceReads += 1;
+      if (options.preferenceFault === "read") { throw new Error("private account details"); }
+      if (options.preferenceSequence !== undefined) { return options.preferenceSequence[Math.min(preferenceReads - 1, options.preferenceSequence.length - 1)]; }
+      if (calls > 0 && Object.hasOwn(options, "afterPreferences")) { return options.afterPreferences; }
+      return Object.hasOwn(options, "preferences") ? options.preferences : '{"pcbCommandTab":true}';
+    }, setItem(): never { preferenceWrites += 1; throw new Error("Preference writes are forbidden."); } },
     setTimeout: (callback: () => void, milliseconds: number): ReturnType<typeof setTimeout> => {
       // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Reproduce the native timer callback contract and verify timer cleanup.
       const timer = setTimeout(() => { timers.delete(timer); callback(); }, milliseconds === 50 ? 1 : 100); timers.add(timer); return timer;
     },
     clearTimeout: (timer: ReturnType<typeof setTimeout>): void => { timers.delete(timer); clearTimeout(timer); },
   } } };
+  if (options.preferenceFault === "api") { Reflect.deleteProperty(native.window.top.localStorage, "getItem"); }
+  if (options.preferenceFault === "getter") { Object.defineProperty(native.window.top, "localStorage", { get(): never { throw new Error("private storage details"); } }); }
   // oxlint-disable-next-line typescript/no-implied-eval, no-new-func -- Execute only the fixed production compiler against isolated API doubles.
   const execute = new Function("eda", "globalThis", `return ${buildDocumentActivationExpression(plan)};`);
   return { run: async (): Promise<unknown> => {
     // oxlint-disable-next-line typescript/no-unsafe-call -- Confine the generated fixed function's result to unknown.
     const result: unknown = execute(eda, native); return await result;
-  }, calls: (): number => calls, timers };
+  }, calls: (): number => calls, preferenceWrites: (): number => preferenceWrites, timers };
 }
 
 void test("activation derives exact checkpoint membership and never uses the generic preserve-context adapter", () => {
@@ -150,6 +159,45 @@ void test("PCB and footprint activation refuse the delegated account-preference 
     }
     const run = fixture({ targetDocumentType }); const payload = decodeExactReadEnvelope(await run.run());
     assert.equal(typeof payload, "object"); assert.equal(run.calls(), 1); assert.equal(run.timers.size, 0);
+  }
+});
+
+void test("activation preference diagnostics distinguish fixed refusal causes without exposing stored account data", async () => {
+  const cases: readonly { preferences: unknown; code: string }[] = [
+    { preferences: null, code: "PREFERENCES_MISSING" }, { preferences: undefined, code: "PREFERENCES_BOUND" },
+    { preferences: 1, code: "PREFERENCES_BOUND" }, { preferences: "x".repeat(1_048_577), code: "PREFERENCES_BOUND" },
+    { preferences: "private invalid account data", code: "PREFERENCES_JSON_INVALID" },
+    ...["null", "[]", "1", "true", '"private value"'].map((preferences) => ({ preferences, code: "PREFERENCES_SHAPE" })),
+    { preferences: "{}", code: "PCB_COMMAND_TAB_MISSING" },
+    { preferences: '{"pcbCommandTab":false}', code: "PCB_COMMAND_TAB_WRITE_REQUIRED" },
+    ...["null", "0", "1", "[]", "{}", '"true"'].map((value) => ({ preferences: `{"pcbCommandTab":${value}}`, code: "PCB_COMMAND_TAB_NOT_BOOLEAN" })),
+  ];
+  for (const targetDocumentType of [3, 4] as const) {
+    for (const { code, preferences } of cases) {
+      const run = fixture({ targetDocumentType, preferences });
+      await assert.rejects(run.run(), { message: `Document activation refused: preferences:${code}` });
+      assert.equal(run.calls(), 0); assert.equal(run.preferenceWrites(), 0); assert.equal(run.timers.size, 0);
+    }
+    for (const preferenceFault of ["api", "getter", "read"] as const) {
+      const run = fixture({ targetDocumentType, preferenceFault });
+      await assert.rejects(run.run(), { message: `Document activation refused: preferences:${preferenceFault === "api" ? "PREFERENCES_API_MISSING" : "PREFERENCES_READ_ERROR"}` });
+      assert.equal(run.calls(), 0); assert.equal(run.preferenceWrites(), 0);
+    }
+  }
+});
+
+void test("activation rechecks the exact preference before dispatch and after activation without repair or retry", async () => {
+  for (const targetDocumentType of [3, 4] as const) {
+    const before = fixture({ targetDocumentType, preferenceSequence: ['{"pcbCommandTab":true}', '{"pcbCommandTab":false}'] });
+    await assert.rejects(before.run(), { message: "Document activation refused: dispatch-context:PCB_COMMAND_TAB_WRITE_REQUIRED" });
+    assert.equal(before.calls(), 0); assert.equal(before.preferenceWrites(), 0);
+    const after = fixture({ targetDocumentType, afterPreferences: '{"pcbCommandTab":false}' });
+    await assert.rejects(after.run(), { message: "Document activation refused: target-readiness:PCB_COMMAND_TAB_WRITE_REQUIRED" });
+    assert.equal(after.calls(), 1); assert.equal(after.preferenceWrites(), 0); assert.equal(after.timers.size, 0);
+  }
+  for (const targetDocumentType of [1, 2] as const) {
+    const run = fixture({ targetDocumentType, preferenceFault: "getter" });
+    await run.run(); assert.equal(run.calls(), 1); assert.equal(run.preferenceWrites(), 0);
   }
 });
 void test("activation proves the complete project and the original retained plan, including peers and branch ownership", () => {

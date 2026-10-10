@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { polygonSourceSchema } from "./design-operations.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA, assertExactTransportValue } from "./exact-readers.ts";
+import { editorTabLookupRequestSchema, isEditorTabLookupMethod } from "./editor-tab-lookups.ts";
 
 /** This fixed allowlist is independent of the declaration catalog. Every entry
  * was reviewed against this public implementation, including delegated getters.
@@ -103,6 +104,14 @@ add("eda.dmt_Panel.getPanelInfo", ALL_DOCUMENTS, "record", z.object({ panelUuid:
 add("eda.dmt_Pcb.getPcbInfo", ALL_DOCUMENTS, "record", z.object({ pcbUuid: id }).strict(), ["pcbUuid"], { optionalResult: true,
   limitations: ["The pinned implementation looks up the UUID only in the active project's getAllPcbsInfo result."] });
 add("eda.lib_LibrariesList.getProjectLibraryUuid", ALL_DOCUMENTS, "string", emptyArguments, [], { optionalResult: true });
+for (const request of editorTabLookupRequestSchema.options) {
+  const method = request.shape.method.value;
+  add(method, ALL_DOCUMENTS, method.endsWith("getSplitScreenIdByTabId") ? "string" : "records", request.shape.arguments,
+    method.endsWith("getSplitScreenIdByTabId") ? ["tabId"] : ["splitScreenId"], { parameterSupport: "narrowed", limitations: [
+      "Requires a verified complete current-project checkpoint and two matching owned editor-tree observations; only an existing owned tab or nonempty leaf is admitted.",
+      "Returns identity/type/project/library-owner fields only, never titles or raw tab data. Missing, parent, foreign, duplicate or ambiguous empty containers refuse; no navigation, preference changes or Save.",
+    ] });
+}
 
 for (const method of ["getEditorCurrentVersion", "getEditorCompliedDate"]) { add(`eda.sys_Environment.${method}`, ALL_DOCUMENTS, "string"); }
 for (const method of ["isClient", "isWeb", "isEasyEDAProEdition", "isJLCEDAProEdition", "isProPrivateEdition", "isOnlineMode", "isHalfOfflineMode", "isOfflineMode"]) {
@@ -311,7 +320,8 @@ export function publicSdkReadDescriptors(): PublicSdkReadDescriptor[] {
   return [...definitions.values()].map((entry) => ({ path: entry.path, documentTypes: [...entry.documentTypes],
     inputSchema: z.toJSONSchema(z.object({ method: z.literal(entry.path), arguments: entry.argumentsSchema }).strict(), { io: "input", unrepresentable: "throw" }),
     parameterSupport: entry.parameterSupport, limitations: [...entry.limitations],
-    implementation: { source: "server/src/public-sdk-read.ts", test: "server/tests/public-sdk-read.test.ts", publicApiSha256: PUBLIC_SDK_READ_API_SHA256 },
+    implementation: { source: isEditorTabLookupMethod(entry.path) ? "server/src/editor-tab-lookups.ts" : "server/src/public-sdk-read.ts",
+      test: isEditorTabLookupMethod(entry.path) ? "server/tests/editor-tab-lookups.test.ts" : "server/tests/public-sdk-read.test.ts", publicApiSha256: PUBLIC_SDK_READ_API_SHA256 },
     liveValidation: "not-yet-validated", parameters: [...entry.parameters], membership: entry.membership === undefined ? null : { ...entry.membership }, restParameter: entry.restParameter ?? null,
     result: { kind: entry.output, optional: entry.optionalResult, getterFields: [...entry.getters], primitiveType: entry.primitiveType ?? null } }));
 }
@@ -322,6 +332,7 @@ export function publicSdkReadDescriptors(): PublicSdkReadDescriptor[] {
  */
 export function buildPublicSdkReadCode(input: unknown): string {
   const request = publicSdkReadRequestSchema.parse(input);
+  if (isEditorTabLookupMethod(request.method)) { throw new Error("Owned editor lookups require the checkpoint-bound specialized reader."); }
   const definition = definitions.get(request.method);
   if (definition === undefined) { throw new Error("Unsupported fixed SDK method."); }
   const args = definition.parameters.map((key) => {
@@ -488,6 +499,7 @@ function validatePrimitiveFields(row: Record<string, unknown>, rowIndex: number,
 
 export function validatePublicSdkReadPayload(input: unknown, requestInput: unknown): Record<string, unknown> {
   const request = publicSdkReadRequestSchema.parse(requestInput);
+  if (isEditorTabLookupMethod(request.method)) { throw new Error("Owned editor lookup results require the checkpoint-bound specialized verifier."); }
   const definition = definitions.get(request.method);
   if (definition === undefined) { throw new Error("Unsupported fixed SDK method."); }
   assertExactTransportValue(input);

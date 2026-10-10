@@ -25,7 +25,6 @@ import {
   controlRootCapability,
   ensureManagedDirectory,
   inspectManagedFile,
-  listOperationStates,
   publishManagedAttachmentExclusive,
   readArtifact,
   recoverPublishedEvidence,
@@ -46,7 +45,6 @@ import {
   filterTools,
   isRecord,
   isReviewedLocalGenericRead,
-  isTerminalOperation,
   sha256Text,
   validateExpectedFingerprint,
   validatePrivateFingerprint,
@@ -65,6 +63,7 @@ import { LibraryExecutor, listLibraryExecutionCapabilities } from "./library-exe
 import { designToolOperationSchema, libraryToolOperationSchema } from "./tool-operation-envelope.ts";
 import { WindowsControlRuntime } from "./windows-runtime.ts";
 import { WindowsNativeUiController, nativeUiRequestSchema } from "./windows-native-ui.ts";
+import { runNativeUiWithOperationAdmission } from "./native-ui-admission.ts";
 import { discardCloseConfirmation, nativeCloseRecoveryRequestSchema } from "./native-close-recovery.ts";
 import { exactReadRequestSchema } from "./exact-readers.ts";
 import { acquireFacadeLease } from "./lease.ts";
@@ -1764,7 +1763,7 @@ registerFacadeTool(
     inputSchema: { request: z.union([nativeUiRequestSchema, nativeCloseRecoveryRequestSchema]) },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   },
-  serializedGuarded(async ({ request }) => {
+  serializedGuarded(({ request }) => {
     const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"];
     if (assetsRoot === undefined) { throw new Error("Configure the machine's installed EasyEDA assets first."); }
     const controller = new WindowsNativeUiController({
@@ -1772,11 +1771,7 @@ registerFacadeTool(
       pluginRoot: resolve(import.meta.dirname, "../.."), assetsRoot,
     });
     if (request.action === "discard-close-confirmation" || request.action === "discard-save-warning") { return discardCloseConfirmation(request, controller); }
-    const operations = await listOperationStates();
-    if ("confirmUIWrite" in request && !["focus", "normal-close"].includes(request.action) && operations.some((entry) => !isTerminalOperation(entry))) {
-      throw new Error("Resolve the incomplete API transaction before native UI edits. Inspection, focus and normal close remain available for recovery.");
-    }
-    return controller.run(request);
+    return runNativeUiWithOperationAdmission(request, (admitted) => controller.run(admitted), () => engine.assertNativeUiEditingAllowed());
   }, { allowDuringOrphanRisk: true }),
 );
 const designRequestSchema = z.discriminatedUnion("action", [

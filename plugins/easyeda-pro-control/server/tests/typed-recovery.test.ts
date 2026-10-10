@@ -388,4 +388,33 @@ void describe("typed transaction retained-authority recovery", () => {
     assert.equal(calls.includes("end-dispatch"), false);
     assert.equal(calls.includes("abort-dispatch"), true);
   });
+
+  void it("an early-returning close failure retains real engine authority even when native teardown finishes later", async (t) => {
+    const { engine, journal, calls } = await fixture(t);
+    journal.orphanedCallPossible = false;
+    await artifacts.updateOperation(journal);
+    let nativeClosed = false;
+    const finishNativeTeardown = (): void => { nativeClosed = true; };
+    t.mock.method(engine.upstream, "callTool", () => Promise.resolve({ content: [{ type: "text", text: JSON.stringify({
+      success: false, result: { error: { code: "EASYEDA_API_ERROR", message: "NATIVE_LIFECYCLE_CLOSE_UNSETTLED" } },
+    }) }] }));
+    await assert.rejects(engine.dispatchWithOrphanTracking(journal, "execute", "easyeda_execute", {}, 1000), /native-lifecycle-unsettled;execution-unsettled/u);
+    assert.equal(nativeClosed, false);
+    assert.equal(journal.orphanedCallPossible, true);
+    assert.ok(journal.executionAuthorityBeforeOrphan);
+    const retained = await artifacts.loadOperation(journal.operationId);
+    assert.equal(retained["orphanedCallPossible"], true);
+    assert.equal(calls.includes("release-capture-after-durable-clear"), false);
+    assert.equal(calls.includes("end-dispatch"), false);
+    assert.equal(calls.includes("abort-dispatch"), true);
+    // A late event is not retained process-termination proof and cannot clear
+    // The original journal or allow another close against the same runtime.
+    finishNativeTeardown();
+    assert.equal(nativeClosed, true);
+    const afterLateCompletion = await artifacts.loadOperation(journal.operationId);
+    assert.equal(afterLateCompletion["orphanedCallPossible"], true);
+    await assert.rejects(engine.recoverDispatchAuthority(journal, undefined, () => Promise.resolve()));
+    assert.equal(journal.orphanedCallPossible, true);
+    assert.equal(calls.includes("release-capture-after-durable-clear"), false);
+  });
 });

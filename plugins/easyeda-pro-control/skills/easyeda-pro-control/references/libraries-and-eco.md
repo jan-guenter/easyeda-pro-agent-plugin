@@ -30,7 +30,101 @@ Symbol source edits may materialize one previously unexported null `Symbol` attr
 
 Activation is called once. A false boolean is accepted only when fresh project, document, type, tab and library-owner readback proves the requested target is active. A missing or malformed acknowledgment, or any context mismatch, remains a failure.
 
+Activating a PCB or footprint also requires the existing native preference
+`pcbCommandTab === true`. The installed alternative can write an account
+preference; activation authority does not authorize that side effect. The adapter
+reads a bounded preference value and reports fixed failure codes for missing,
+malformed, inaccessible or false/non-boolean values without exposing account
+data. Do not change the setting as a shortcut, weaken the guard or repeat an
+ambiguous activation. A refusal after dispatch uses the original journal's
+read-only reconciliation, not another activation call.
+
 Supported DEVICE writes use `easyeda_control_library` with `request.action:"execute"`, the typed operation, fresh `expectedContext` and `expectedFingerprint`, and `confirmWrite:true`. They journal the plan before dispatch and verify the durable project-record delta afterward. A successful result reports `saved:true,reopened:false`; it is not reopened geometry proof. Do not open an unrelated editor to manufacture that claim.
+
+## Observe owned editor tabs
+
+The fixed SDK readers `eda.dmt_EditorControl.getSplitScreenIdByTabId` and
+`getTabsBySplitScreenId` accept an exact existing `tabId` or leaf `splitScreenId`.
+They bind every tab in the complete bounded tree to saved current-project
+membership, compare the direct lookup with the tree, and require two matching
+observations plus unchanged checkpoint/context. Results contain identities and
+types, not raw tab titles or private data. A canonical Start Page may coexist but
+cannot be the tab selector; foreign projects, empty leaves, duplicate documents
+and unsupported symbol types refuse. These are read-only observations, not
+navigation authority or current-generation live-validation claims.
+
+## Create one closed empty schematic page
+
+Use `document.page.create` only when the requested result is an empty page in an
+existing ordinary project schematic. Supply the parent identity, not a title,
+source string, drawing-frame choice or template:
+
+```js
+{ id: "create-empty-page", action: "document.page.create", schematic: { uuid: schematicUuid } }
+```
+
+The checkpoint-bound adapter derives the native `P` name from the largest
+existing `P` numeric suffix plus one, and the page order from
+`max(1, sibling zIndex) + 1`. It requires one clean owned active PCB (type 3) or
+sibling schematic page (type 1), an exact writable local branch, and no
+hierarchical INSTANCE or CBB project records. Unrelated open editor tabs and
+concurrent strict mode are refused; the canonical Start Page and hidden native
+project placeholder are not treated as design editors.
+
+Execution uses one project-qualified native worker addition. The public
+`createSchematicPage` workflow also initializes a drawing frame and opens an
+editor; those steps are deliberately not invoked here. Success proves exactly
+one new empty page and unchanged complete pre-existing documents/hierarchy,
+plus unchanged active source/context. `saved:true` reports native persistence,
+not an invoked Save. No template initialization, open/reopen, exact inverse or
+current-generation live validation is claimed.
+
+After an ambiguous result, inspect and reconcile the original journal—never
+create again. Changed-result reconciliation needs both its immutable prepared
+plan and original native returned page ID. Even exactly one matching new page
+cannot substitute for that identity evidence. Missing return evidence remains
+unresolved; deleting the observed page is not an automatic rollback.
+
+## Close one inactive clean document
+
+`document.close` accepts an exact project-qualified `tabId` for a loaded ordinary
+symbol (type 2), PCB (3) or footprint (4). A separate clean PCB or footprint must
+remain active. Exactly those two owned project editor tabs must share one unsplit
+container; no dirty tabs, shared symbol model, CBB symbol or active-target close
+is admitted. This does not authorize a general discard operation.
+
+The native public acknowledgment returns before teardown finishes. The adapter
+therefore waits for its terminal removal notification, verifies target tab/frame
+and symbol-manager cleanup, then observes coherent context twice. Completion
+also requires unchanged active source and the entire logical saved database.
+There is no Save, automatic reopen or exact inverse: native close clears editor
+undo/export caches. Schematic-page close is excluded because its installed
+cleanup can persist INSTANCE attributes even when the tab reports clean.
+
+Any post-dispatch failure retains execution quarantine. A still-visible tab or
+later disappearance is not proof that the original native work terminated; use
+the retained-runtime termination workflow before reconciliation. Recovery only
+observes whether the original target remains present and checks the complete
+unchanged baseline. It never repeats close, opens or activates a tab. This route
+has offline regression coverage, not a current-generation live-validation claim.
+
+## Recover an unpublished preparation
+
+For `document.activate`, `document.close` and `document.page.create`, a failed
+journal publication can leave an initial plan without its preparation artifact.
+Use the original journal's reconciliation on the same compatible runtime. Only
+exact initial publication states with no dispatch, orphan, Save or recovery
+markers qualify. The adapter rederives the plan from its original checkpoint
+and proves unchanged source, complete saved database/history and exact context
+before marking it `plan-invalidated`. This is not successful execution and does
+not retry the action. A fresh intent needs a separately reviewed operation.
+
+Read-only verification failure leaves this initial journal intact for another
+inspection. Rebind, target navigation and dispatch-authority recovery refuse
+before changing it; replacement-runtime invalidation is not implemented. Do not
+delete artifacts, clear flags or treat a missing acknowledgment after dispatch
+as an unpublished preparation. Retained preparation and dispatched recovery
+continue to use their original evidence requirements.
 
 ## Create a project DEVICE
 

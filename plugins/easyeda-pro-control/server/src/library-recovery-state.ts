@@ -13,10 +13,12 @@ import { prepareDeviceTransform, verifyDeviceTransformEffect } from "./device-tr
 import type { NativeHistorySnapshot } from "./native-history.ts";
 import { prepareProjectSymbolMetadata, verifyProjectSymbolMetadataEffect } from "./project-symbol-metadata.ts";
 import { prepareDocumentPageRename, verifyDocumentPageRenameEffect } from "./document-page-rename.ts";
+import { prepareDocumentPageCreate, verifyDocumentPageCreateEffect } from "./document-page-create.ts";
 import type { ExpectedContext } from "./engine.ts";
+import { EXACT_READ_ENVELOPE_MAX_BYTES } from "./exact-readers.ts";
 
 const receiptSchema = z.object({ schema: z.literal("easyeda-pro-control.library-mutation-receipt.v1"),
-  kind: z.enum(["project-footprint-write", "project-device-association", "project-device-create", "project-device-transform", "project-symbol-metadata", "project-page-rename"]),
+  kind: z.enum(["project-footprint-write", "project-device-association", "project-device-create", "project-device-transform", "project-symbol-metadata", "project-page-rename", "project-page-create"]),
   createdId: z.string().min(1).max(256).nullable(), targetId: z.string().min(1).max(256).nullable(),
   nativeReturnSha256: z.string().regex(/^[a-f0-9]{64}$/u) }).strict();
 export type LibraryMutationReceipt = z.infer<typeof receiptSchema>;
@@ -28,12 +30,16 @@ export function libraryMutationReceipt(operationInput: unknown, nativeReturn: un
   const operation = libraryOperationSchema.parse(operationInput);
   const kind = libraryExecutionKind(operation);
   if (!isRecord(nativeReturn) || nativeReturn["kind"] !== kind) { throw new Error("Library mutation acknowledgment kind is missing or contradictory."); }
-  const creating = operation.action === "library.footprint.create" || operation.action === "library.device.create";
+  const creating = operation.action === "library.footprint.create" || operation.action === "library.device.create" || operation.action === "document.page.create";
   const association = operation.action === "library.device.modify" || operation.action === "library.device.model-transform" || operation.action === "library.symbol.modify" || operation.action === "document.page.rename";
   if (!creating && !association && operation.action !== "library.footprint.modify") { throw new Error("No supported library mutation receipt for this action."); }
   const createdId = nativeReturn["createdId"] ?? null;
   let targetId: unknown = null;
-  if (association) { targetId = nativeReturn["targetId"]; }
+  if (operation.action === "document.page.create") {
+    targetId = nativeReturn["targetId"];
+    if (targetId !== createdId) { throw new Error("Page creation acknowledgment identities disagree."); }
+  }
+  else if (association) { targetId = nativeReturn["targetId"]; }
   else if ("target" in operation && "uuid" in operation.target) { targetId = operation.target.uuid; }
   if ((creating && (typeof createdId !== "string" || !/^[a-f0-9]{16}$/u.test(createdId))) || (!creating && createdId !== null) ||
       (association && (!("target" in operation) || !("uuid" in operation.target) || targetId !== operation.target.uuid))) {
@@ -47,9 +53,23 @@ export function libraryMutationReceipt(operationInput: unknown, nativeReturn: un
  * bounded and the complete original bytes must reproduce its retained hash.
  * Shortening a UTF-8 page avoids splitting a multibyte codepoint.
  */
-export async function readLibraryRecoveryArtifact(descriptor: ArtifactDescriptor,
+export function readLibraryRecoveryArtifact(descriptor: ArtifactDescriptor,
   read: typeof readArtifact = readArtifact): Promise<unknown> {
-  if (!Number.isSafeInteger(descriptor.bytes) || descriptor.bytes < 1 || descriptor.bytes > 2_097_152) { throw new Error("Library recovery artifact exceeds its reviewed bound."); }
+  return readBoundedLibraryRecoveryArtifact(descriptor, read, 2_097_152);
+}
+
+/** Only the initial source envelope needs the exact-reader 4 MiB allowance;
+ * its normalized four-field upload receipt, hash and JSON framing fit 1 KiB.
+ * Prepared plans and native returns retain their separate 2 MiB bound.
+ */
+export function readLibraryBeforeRecoveryArtifact(descriptor: ArtifactDescriptor,
+  read: typeof readArtifact = readArtifact): Promise<unknown> {
+  if (basename(descriptor.path) !== "01-before.json") { return Promise.reject(new Error("Large source evidence is limited to the initial before artifact.")); }
+  return readBoundedLibraryRecoveryArtifact(descriptor, read, EXACT_READ_ENVELOPE_MAX_BYTES + 1024);
+}
+
+async function readBoundedLibraryRecoveryArtifact(descriptor: ArtifactDescriptor, read: typeof readArtifact, maxBytes: number): Promise<unknown> {
+  if (!Number.isSafeInteger(descriptor.bytes) || descriptor.bytes < 1 || descriptor.bytes > maxBytes) { throw new Error("Library recovery artifact exceeds its reviewed bound."); }
   let offset = 0, text = "";
   while (offset < descriptor.bytes) {
     let length = Math.min(256 * 1024, descriptor.bytes - offset), page: Awaited<ReturnType<typeof read>> | undefined;
@@ -65,7 +85,7 @@ export async function readLibraryRecoveryArtifact(descriptor: ArtifactDescriptor
   if (sha256Text(text) !== descriptor.sha256) { throw new Error("Library recovery artifact hash mismatch."); }
   return JSON.parse(text) as unknown;
 }
-export function uniqueLibraryRecoveryArtifact(artifacts: readonly ArtifactDescriptor[], phase: "native-return" | "device-prepared" | "symbol-prepared" | "activation-prepared" | "page-rename-prepared"): ArtifactDescriptor {
+export function uniqueLibraryRecoveryArtifact(artifacts: readonly ArtifactDescriptor[], phase: "native-return" | "device-prepared" | "symbol-prepared" | "activation-prepared" | "page-rename-prepared" | "page-create-prepared" | "close-prepared"): ArtifactDescriptor {
   const matches = artifacts.filter((entry) => new RegExp(`^[0-9]+-${phase}\\.json$`, "u").test(basename(entry.path)));
   if (matches.length !== 1 || matches[0] === undefined) { throw new Error(`Library recovery requires exactly one retained ${phase} artifact.`); }
   return matches[0];
@@ -74,7 +94,7 @@ export function uniqueLibraryRecoveryArtifact(artifacts: readonly ArtifactDescri
 export function verifyRecoveredLibraryMutation(input: {
   readonly operation: unknown; readonly before: NativeHistorySnapshot; readonly after: NativeHistorySnapshot;
   readonly nativeReturn: unknown; readonly retainedReceipt?: unknown; readonly preparedDevice?: unknown; readonly preparedSymbol?: unknown;
-  readonly preparedPageRename?: unknown; readonly expectedContext?: ExpectedContext;
+  readonly preparedPageRename?: unknown; readonly preparedPageCreate?: unknown; readonly expectedContext?: ExpectedContext;
 }): { receipt: LibraryMutationReceipt; proof: Record<string, unknown> } {
   const operation = libraryOperationSchema.parse(input.operation);
   const receipt = libraryMutationReceipt(operation, input.nativeReturn);
@@ -85,6 +105,11 @@ export function verifyRecoveredLibraryMutation(input: {
   let proof: Record<string, unknown>;
   if (operation.action === "library.footprint.create" || operation.action === "library.footprint.modify") {
     proof = verifyProjectLibraryEffect(operation, input.before, input.after, createdId);
+  } else if (operation.action === "document.page.create") {
+    if (input.expectedContext === undefined || createdId === undefined) { throw new Error("Original page creation context and native identity are required for recovery."); }
+    const expected = prepareDocumentPageCreate(operation, input.before, input.expectedContext);
+    if (!isRecord(input.preparedPageCreate) || canonicalJson(expected) !== canonicalJson(input.preparedPageCreate)) { throw new Error("Retained page creation plan differs from the immutable operation and baseline."); }
+    proof = verifyDocumentPageCreateEffect(expected, input.before, input.after, createdId);
   } else if (operation.action === "document.page.rename") {
     if (input.expectedContext === undefined) { throw new Error("Original page rename context is required for recovery."); }
     const expected = prepareDocumentPageRename(operation, input.before, input.expectedContext);

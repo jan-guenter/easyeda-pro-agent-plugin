@@ -9,6 +9,70 @@ adapter. Some are empty in the installed build. Others need a stateful adapter
 because they start dialogs, create additional assets or return before the full
 workflow ends. The last group is engineering work, not an inherent API limit.
 
+## Highest-priority remaining capability
+
+Ordinary schematic design transactions are currently blocked by the absence of
+an admitted nonmutating transaction-connectivity proof. This is a functional limitation,
+not merely a missing live-validation badge. `DesignExecutor` rejects type-1
+apply, commit, rollback, repair, reconciliation and navigation before runtime
+calls or journal writes. The formerly used schematic netlist path can annotate
+DESIGNATOR/UNIQUEID and invoke global SaveAll. It cannot remain a read-only
+preflight. See the exact delegated call chains in the
+[independent source review](api-coverage-review-2026-10-10.md).
+
+The existing `schematic-flat-topology` reader is a separate native/source-bound
+diagnostic profile, implemented in `schematic-flat-read.ts` and
+`schematic-flat-topology.ts`. It checks saved-project page membership, requires
+every page already loaded, double-samples the complete observation and reports
+`transactionTopology:false`. Its named-wire, single-part, flat-project subset
+does not silently replace the historical compiled transaction proof. See the
+[flat topology review](schematic-flat-topology-review-2026-10-10.md).
+
+One next path is to validate and explicitly integrate that restricted profile
+into transactions whose complete before/after states satisfy its exclusions.
+The broader alternative is an adapter exposing a complete compiled graph without
+annotation or Save, with source-correlated membership, freshness checks and
+explicit treatment of hierarchy, repeated/multipart devices, disconnected pins
+and no-connects. The existing page-local `getSchPinNet` observation is useful
+but is not equivalent to that proof. Private `F0`/`gT` compiled-graph helpers are
+research starting points, not admitted callable replacements. A restricted
+transaction profile must independently prove its excluded hierarchy and complete
+membership; it is not enough to rename the diagnostic result. Removing
+the topology guard or silently substituting page-local evidence is not a fix.
+
+Initial transaction integration should seal the exact flat profile, complete
+page membership, per-page source hashes, endpoint proof and intended topology
+in the original immutable plan. Every apply step, before-Save check, saved/reopened
+check, inverse, repair and reconciliation must use that same profile, never
+switch automatically to compiled topology or broaden its domain. All parts
+must remain single-part, uniquely annotated and PCB-convertible; every wire
+must retain one simple literal name and reviewed orthogonal endpoint geometry.
+Flags, ports, hierarchy, buses, standalone labels, generated-name cases and
+unsupported inherited images/templates remain refused. An operation that would
+leave this domain must refuse before dispatch, including an inverse or repair.
+The existing reader requires all pages loaded and unchanged saved membership;
+reopen/page-loading and failed-transaction recovery need explicit no-repeat
+lifecycle handling rather than assuming those prerequisites survive a close.
+Independent disposable forward, inverse, ambiguous-return and retained-runtime
+recovery tests are needed before removing any type-1 transaction refusal.
+
+The first integration should be a new internal transaction profile admitting
+only `sch.layout.batch` steps that change existing `sch.attribute.display` or
+`sch.text.display` fields. Their complete source-effect and inverse proofs
+already exist. Graphic create/modify/delete schemas alone are insufficient:
+the type-1 source-effect verifier does not implement those families. Preserve
+the old compiled-journal refusals, retain full flat observation evidence, and
+compare normalized endpoint topology separately from source/checkpoint hashes
+that legitimately change after a display edit. Start connected acceptance with
+one nonempty ordinary sheet satisfying every flat-reader restriction, then
+prove its edit, Save/reopen and full-project persistence. This is a proposed
+implementation boundary, not currently enabled support.
+
+This blocker does not prohibit all type-1 activity: read-only observations and
+the separately proved closed-page metadata/creation transactions have different
+effect boundaries. Symbol type-2 geometry is also distinct from type-1 design
+transactions.
+
 ## Source identity
 
 | Source | Bytes | SHA-256 |
@@ -36,28 +100,37 @@ and
 
 At the start of this work, 32 of the 68 strict library/lifecycle operation
 schemas had no executor profile. Eight additional named gaps were outside
-those schemas. The table accounts for all 40. It does not count the same SDK
-method twice because of overloads, nor count a schema as live validation.
+those schemas. The table retains all 40 original entries and identifies the
+subsets implemented since then. A follow-up source audit of
+`listLibraryExecutionCapabilities()` found 34 implemented subsets among 76
+named actions: 27 typed actions still without an executor, seven explicitly
+refused exports, and the eight named native/dialog gaps remain. Thus 42 actions
+are not standalone executable library operations; `project.open` and the Save
+actions have separate restricted lifecycle routes. These counts describe the
+audited source, not an installed package or connected validation. Method-level
+counts belong in the generated API inventory, where overloads and alternate
+routes are accounted for separately.
 
 | Action or exact action group | Concrete reason it cannot use the existing executor unchanged | Implementation needed |
 |---|---|---|
 | `library.symbol.modify` | The public wrapper's awaited current-project comparison can redirect a local write to a cloud library. Its classification and default-title projections can also alter unrelated metadata. | Implemented as a fixed project-qualified native task equivalent for closed ordinary symbols, preserving exact display title and stored tags. Complete project and recovery proofs are integrated; current-generation disposable saved/reopened validation remains unclaimed. |
 | `library.symbol.create` | The public method calls the symbol service, which generates metadata and obtains initial canvas data. Ordinary symbols and sheet-symbol templates use different paths. The footprint verifier admits only FOOTPRINT records, so it cannot certify the generated symbol/part records. | Bind the requested ordinary type, exact generated template, returned UUID, native header and every new record. Add type-specific creation proofs before expanding to flags, ports or sheet symbols. |
-| `library.symbol.delete`, `library.footprint.delete`, `library.device.delete` | UI deletion runs dependency-aware library deletion logic. A success Boolean does not identify every changed device, inherited instance or tombstone. The current footprint/device proofs admit additions or exact patches, not deletion closure. | Inventory every dependant before dispatch, refuse nonempty unapproved closure, retain deleted records and verify exact tombstones plus all peer documents. A restore procedure is separate from ordinary rollback. |
-| `library.symbol.copy`, `library.footprint.copy`, `library.device.copy` | Copy can migrate canvas data and associated assets to another collection. The current journal retains only the existing create/association models and lacks a complete mapping of copied descendants. | Restrict initial support to explicit project-local targets, retain all returned and generated identities, compare copied geometry/associations, and prove no other assets changed. |
+| `library.symbol.delete`, `library.footprint.delete`, `library.device.delete` | UI deletion runs dependency checks, but its `$3` delegate starts individual service deletions in unawaited `forEach` callbacks. Its success acknowledgment does not establish terminal completion. The symbol worker separately has an awaited `deleteData` path emitting DOCHEAD plus DELETE_DOC. | Feasible first subset: closed, dependency-free project asset, with full checkpoint dependency inventory and a project-qualified awaited worker adapter. Refuse nonempty closure, retain deleted records and prove exact tombstone/header changes plus unchanged peers. Review each asset manager separately; a restoration procedure is not an automatic inverse. |
+| `library.symbol.copy`, `library.footprint.copy`, `library.device.copy` | Copy can migrate canvas data and associated assets to another collection. The public DEVICE copy additionally hard-codes `isProject:false` for its read, destination create and associated asset inputs, so it is not a project-local copy adapter. Symbol/footprint copy use mutable-current-project comparisons and source/template services. | Feasible with new project-qualified adapters: first admit one closed local asset and exact copied geometry/identity mapping. DEVICE copy must explicitly preserve or authorize copied associations rather than reuse its public cloud-oriented path. Prove every added record and unchanged peer. |
 | `library.model3d.create` | The importer accepts file data and can return multiple UUIDs. Project-local model create is not implemented in the installed service dispatch. A single local project checkpoint does not back up an external model collection. | Add bounded managed-input transfer, explicit external collection authority, importer result inventory, units and geometry checks, external backup/recovery and per-model identity evidence. |
 | `library.model3d.modify`, `library.model3d.delete`, `library.model3d.copy` | The installed service treats model storage separately from project DEVICE metadata. The local project checkpoint cannot prove or restore external model assets or references. | Add an external-library transaction store and exact model metadata/content/dependant proofs. Existing DEVICE model association actions do not edit the model asset. |
 | `library.symbol.source.replace`, `library.footprint.source.replace` | Full source replacement invokes a document decoder. The footprint wrapper can create a preview iframe and invokes its compiler save. These are not metadata-only operations and can change unknown records or persist before a separate design commit. | Validate complete source grammar, owner and locks, enumerate accepted record changes, model decoder-generated IDs, preserve unknown records, and integrate the wrapper's actual save boundary with no-repeat recovery. Prefer existing typed geometry actions for ordinary edits. |
 | `project.create` | The API takes team/folder identity and can create account/cloud state. The disposable-local-project request does not designate an external destination. The pinned public delete method is an empty refusal, so public create cannot promise an inverse. | Add explicit destination authority, account-scoped inventory and recovery, or a separately reviewed local-project creation adapter. Never test this against a personal/team workspace by default. |
 | `project.open` | The installed open path can discard unsaved state. The generic descriptor has no proof that every open document is clean. | Use the existing retained-runtime `open-existing` route for its supported saved project case. A broader opener needs complete tab/dirty-state proof and one-shot navigation/recovery. |
 | `document.activate` | Activation changes the exact context; an acknowledgment can be false even when the requested tab becomes active. The existing executor's preserve-context path is inappropriate. | Implemented for already-open current-project schematic pages, PCBs, ordinary symbols and footprints. The retained checkpoint fixes target membership and owner; the complete tab tree is checked before one activation and after two coherent target observations. Complete durable project and logical database remain unchanged. Recovery observes only the original/target state and never reactivates or opens a tab. Current-generation connected validation is not claimed. |
-| `document.close` | Close can open a Save/Discard prompt or trigger late persistence. A returned Boolean does not prove a clean close. | Prove the exact tab is clean, retain one close dispatch, observe its removal and native prompts without selecting Save/Discard, then verify unchanged durable records. |
-| `document.pcb.create`, `document.schematic.create`, `document.page.create` | Creation assigns native identities and may change board/container records. The pinned create methods accept a board name or parent schematic, not a new document title. The existing strict schema correctly omits a document-name field. | Retain the complete creation inventory and exact native defaults. If a caller wants a chosen title, journal a subsequent returned-ID-bound rename, with exact inventory deltas for both steps. |
+| `document.close` | The public method starts unawaited teardown and immediately returns true. Schematic type-1 cleanup can persist INSTANCE attributes even when the tab is clean. | Implemented only for an inactive clean loaded ordinary SYMBOL, PCB or FOOTPRINT beside one clean active PCB/FOOTPRINT. One close, terminal removal evidence, unchanged active context/source and complete project/SQLite proof; no Save or automatic inverse. Any post-dispatch failure retains execution quarantine. Type-1, active-target and split-screen close remain outside this subset. |
+| `document.page.create` | The public new-page workflow creates/gets a drawing frame and opens the editor in addition to adding the page. Those are separate effects. | Implemented as a project-qualified empty-page addition under an existing ordinary schematic: exact returned UUID, DOCHEAD/META addition, parent/peer preservation and original-journal recovery. No drawing-frame initialization, editor opening, Save or automatic inverse is claimed. |
+| `document.pcb.create`, `document.schematic.create` | Creation assigns identities and changes board/container membership. Public create routes through `DMT_CreateNew` (`new_PCB`/`new_schematic`); the input is a board name, not the new document title. The page-addition proof does not cover their defaults or hierarchy. | Feasible next local creation work after reviewing each worker `addData` and its generated defaults. Retain the exact new board/container/document inventory; exclude CBB and inherited cases initially. A chosen title requires a separate returned-ID-bound rename unless explicitly added to the native equivalent's contract. |
 | `document.pcb.copy`, `document.schematic.copy`, `document.page.copy` | Copies clone source, pages, IDs and parent membership, beyond the current single-document patch proof. The strict copy schemas expose target/parent scope, not a new document title. | Retain the copied hierarchy and identity mapping, then separately rename if requested. Check every copied source and all untouched documents. |
 | `document.page.rename` | Implemented as a project-qualified native task equivalent. The public wrapper retains a mutable tree-row index across awaited work, which can select a different document. | Closed ordinary checkpoint-member page, one clean active sibling, writable local non-V2 branch only. Exact title/header effect and all peer/source invariants; no Save, reopen or UI-caption refresh claim. Disposable connected validation remains pending. |
 | `document.pcb.rename`, `document.schematic.rename` | Their native handlers also update paired CBB/container state and can call document-opening logic. The page-only effect profile does not cover those changes. | Add complete counterpart/container inventory and open-document effect profiles, duplicate-name checks and original-journal recovery. Public method availability does not establish those effects. |
-| `document.pcb.delete`, `document.schematic.delete`, `document.page.delete` | Deletion changes document hierarchy and can remove descendant pages or board associations. The current persistence comparison requires those peer documents to remain unchanged. | Authorize the exact deletion closure and prove only its tombstones and parent references changed. Retain a recoverable project backup; do not label a new empty document an inverse. |
-| `document.pcb.save`, `document.schematic.save` | A standalone Save would bypass the design transaction's pre-dispatch intent and saved/reopened source proof. A second Save after an ambiguous first one is unsafe. | Route saving through the maintained design commit lifecycle. Supporting a general Save requires an original-journal-bound intent and exact pre-save source/durable expectations, not a new Boolean-return endpoint. |
+| `document.pcb.delete`, `document.schematic.delete`, `document.page.delete` | Deletion changes hierarchy and board associations. The public page deleter marks a last page for schematic deletion and can add its paired PCB to the deletion set. `deletePcb` returns true after its RPC without checking the RPC result. | Feasible first subset: a closed empty non-last ordinary page, after reviewing awaited worker completion and manager cleanup. Broader support must authorize the entire deletion closure and prove its tombstones/parent changes. Retain a recoverable project backup; creating a new empty document is not an inverse. |
+| `document.pcb.save`, `document.schematic.save` | A standalone Save would bypass the design transaction's pre-dispatch intent and saved/reopened source proof. A second Save after an ambiguous first one is unsafe. Type-1 design commit is additionally blocked by missing safe transaction-topology integration. | Use the maintained original-journal commit for admitted non-type-1 designs. Supporting a general Save requires an original-journal-bound intent and exact pre-save source/durable expectations, not a Boolean endpoint; schematic commit also needs the topology blocker resolved. |
 | `project.rename`, `project.description.modify`, `project.copy`, `project.delete` | The corresponding pinned public implementations are empty or return false. | A dedicated native adapter or deliberate newer-runtime review is required. Merely exposing the method cannot make these pinned bodies work. |
 | `library.device.source.replace`, `library.model3d.source.replace` | The reviewed mounted classes contain no `updateDocumentSource` method. DEVICE metadata and model file storage are different contracts. | Use dedicated DEVICE association/property operations; add a model import/replacement transaction for model files if needed. Do not fabricate a source-replacement API. |
 | `eco.schematic-to-pcb` | Public `pcb_Document.importChanges` opens the ECO workflow. Applying the change set is not the same operation as opening the dialog. | Capture the exact comparison rows/options and UID/pin/pad/net consequences, then add a reviewed apply adapter or guarded native dialog sequence and complete saved/reopened proof. |
@@ -71,6 +144,63 @@ documented under [editor control](https://prodocs.easyeda.com/en/api/reference/p
 [schematic documents](https://prodocs.easyeda.com/en/api/reference/pro-api.dmt_schematic.html),
 [symbols](https://prodocs.easyeda.com/en/api/reference/pro-api.lib_symbol.html)
 and [manufacturing export](https://prodocs.easyeda.com/en/api/reference/pro-api.pcb_manufacturedata.html).
+
+### Next feasible local adapters
+
+After resolving transaction topology, the most useful narrow increments are:
+
+1. **Ordinary project-symbol creation.** Start with type 2, no classification,
+   no inherited source and a closed result. `VL.create` delegates through
+   `hTt` and the symbol service; `hTt` produces ordinary metadata directly but
+   resolves a separate existing template for sheet symbols. The worker `gg`
+   manager's `create` builds metadata and obtains source through
+   `si.getProLibSource` before uploading both strings. Review the new-symbol
+   service branch and exact default canvas/part records, then bind every new
+   identity to one returned UUID and a complete addition proof. This is an
+   unfinished adapter, not a missing native capability. The latest
+   [symbol creation reference](https://prodocs.easyeda.com/en/api/reference/pro-api.lib_symbol.create.html)
+   includes additional parameters; it does not establish those parameters in
+   the pinned build.
+2. **Closed, dependency-free project-asset deletion.** The symbol worker's
+   `deleteString` emits one DOCHEAD and `DELETE_DOC {isDelete:true}`;
+   `deleteData` awaits `uploadLocal`. That is a tractable first tombstone
+   proof when the complete project contains no dependent DEVICE, placed or
+   inherited references and the target is absent from all tabs. Do not reuse
+   public `$3` completion: its individual service deletions are unawaited.
+   Footprint/device deletion needs the corresponding manager and dependency
+   review, not an assumed shared implementation.
+3. **Closed ordinary schematic/PCB creation and rename.** Public creation
+   already requests `notOpen:true` or `unOpen:true`, but traverses
+   `DMT_CreateNew` and can create board/default records. Review project-qualified
+   worker additions and enumerate the full expected hierarchy. For rename,
+   exclude CBB/paired assets first and bypass the public tree-index race, as
+   the page rename adapter does. Neither the page-addition nor page-rename
+   proof can simply be relabeled for a container or PCB.
+4. **Same-project copy, then non-last empty-page deletion.** These are feasible
+   but need more identity/dependency work than metadata. Preserve exact source,
+   explicitly model remapped children and associations, and independently
+   prove the target parent. The public DEVICE copy is cloud-oriented even
+   when given a project UUID. A last-page delete is deliberately not the
+   first deletion subset because it can cascade to its schematic and PCB.
+
+Read-only tab/split-screen lookup is now implemented as a separate restricted
+increment, discussed below; it does not resolve schematic connectivity. Export rehabilitation also
+remains useful, but should start from a reviewed nonmutating single-document
+projection, not an unchecked call to a SaveAll-bearing wrapper. Full-source
+replacement, ECO, external model import and cloud project creation require
+larger transaction or authority boundaries; they remain engineering backlog,
+not claims of permanent infeasibility.
+
+For reproducibility, the follow-up native findings use the UI/worker hashes
+above. These are zero-based UTF-16 search anchors, not claimed complete
+function ranges: UI `VL` at 17185634, `hTt` at 9746363, `$3` at 15202843,
+DEVICE `copy` at 17065815, `Xk.createPcb` at 17052002,
+`Ag.createSchematic` at 17074087 and `Ag.deleteSchematicPage` at 17075419;
+worker `gg` at 1919322 and its `addData`/`create` neighborhood at 1926024.
+Public page deletion marks the last page with `isLast:true`, adds its parent
+schematic, and can add the associated PCB before calling `leftTreeDelete2`.
+The public PCB deleter ignores the RPC result and returns true. These facts
+explain why Boolean acknowledgment cannot serve as the deletion effect proof.
 
 ## Implemented symbol-metadata transaction
 
@@ -200,6 +330,97 @@ it never repeats the native call or Save. Durable title verification does not
 prove visible tree-caption refresh or reopen. Tests cover the real sealed
 journal executor/recovery with synthetic native data, not a connected writer.
 
+## Implemented empty-page creation
+
+[document-page-create.ts](../plugins/easyeda-pro-control/server/src/document-page-create.ts)
+implements `document.page.create` as an empty, unopened page under a retained
+ordinary `SCH`. It uses one project-qualified `/PrjDB/sheet/addData` call with
+explicit parent, native-derived `P<number>` title and next zIndex. The public
+new-page workflow's drawing-frame creation and tab opening are not included.
+
+The complete checkpoint excludes active hierarchy/CBB cases and inherited
+parent/page metadata. One clean owned schematic sibling or PCB may be active;
+the new page must not become an editor tab. Writable local branch, native
+dirty state and exact context are rechecked across awaited reads. The strict
+hidden native project placeholder is admitted only under its exact reviewed
+shape and an independent clean-state check.
+
+The effect verifier requires exactly one new SCH_PAGE with its generated
+16-hex identity, expected META and DOCHEAD, no geometry, unchanged parent and
+all other records unchanged. The immutable native return supplies the created
+identity. Recovery cannot infer success from a similarly named page, substitute
+another returned ID or repeat creation when that evidence is missing. There is
+no automatic deletion inverse. The result does not claim that the page was
+opened, drawing-frame initialized or reopened, nor that a design Save occurred.
+Connected acceptance must test those later lifecycle operations separately.
+
+## Implemented inactive clean-document close
+
+[document-close.ts](../plugins/easyeda-pro-control/server/src/document-close.ts)
+implements one inactive clean ordinary SYMBOL, PCB or FOOTPRINT close while a
+different clean PCB/FOOTPRINT remains active. Exactly two project-owned loaded
+document tabs in one unsplit container are required; only the canonical Start
+Page and exact clean hidden project placeholder may accompany them. Complete
+history, branch/owner, canonical tab IDs, connected frame identity and native
+dirty predicates are bound before dispatch. Ordinary symbols also require an
+exact loaded document-manager entry, canvas and no schematic/model-tab alias.
+The public contract warns that close discards unsaved changes, so dirty targets
+are never admitted.
+[Official close contract](https://prodocs.easyeda.com/en/api/reference/pro-api.dmt_editorcontrol.closedocument.html).
+
+The pinned public close starts `$b(tabId)` without awaiting it, then returns
+true. The adapter subscribes before one dispatch, waits for the exact terminal
+`sch/SubTabbarMapRemove` notification, and independently observes target-tab
+and frame removal twice while the active editor stays unchanged. For a symbol,
+its manager entry must be gone and original canvas disposed. Complete durable
+project records, logical SQLite dump, active source and final context remain
+unchanged. No Save, activation, reopening or inverse is performed; reopening
+would not restore the undo/export caches destroyed by native teardown.
+
+Every failure after dispatch reports the fixed
+`NATIVE_LIFECYCLE_CLOSE_UNSETTLED` marker. This includes false or malformed
+acknowledgment, rejection, a missing terminal event, an observer deadline or
+subscription cleanup failure. The existing
+engine retains the journal's orphan risk, bridge lease and captured execution
+authority. A later still-open sample cannot clear that quarantine while the
+old runtime may finish its delayed close. Only supported retained-runtime
+termination recovery can resolve that execution risk; subsequent reconciliation
+is read-only and never repeats close or opens a replacement tab. An unchanged
+database reconciliation does not claim that the original native close finished.
+
+Type-1 schematic close remains excluded for a concrete additional effect:
+`sch/InstanceValue.beforeClosePage` reaches `clearOnePage`, which can delete or
+rewrite INSTANCE attributes and save them even when the ordinary tab is clean.
+A future no-instance flat-project subset could be representable after complete
+delegated cleanup review; the current SYMBOL/PCB/FOOTPRINT close proof does not
+admit it. This adapter has offline transaction and real-engine quarantine
+regressions, not a current-generation connected acceptance claim.
+
+### Preparation publication failures
+
+Page creation, activation and clean close prepare their complete immutable plan
+before creating a journal. A storage failure can still leave a journal without
+its preparation artifact. Recovery now distinguishes that exact initial
+publication prefix from any dispatched or recovered operation. It accepts only
+the original planned state or the specific failed preparation-publication
+state, with at most the original `before` artifact, no dispatch/authority fields
+and no mutation or lifecycle evidence. Unknown journal fields refuse.
+
+The read-only path rederives the plan from the original operation and checkpoint
+and verifies the unchanged active source, complete project history, logical
+database, runtime and context. One sealed journal update marks the attempt
+`plan-invalidated`. It does not infer that a page was created, a tab activated
+or a close completed. Failed inspection preserves the initial journal for a
+later read-only check; no upload barrier, navigation, Save or retry runs.
+Dispatched operations still require their original preparation and returned
+identity where applicable.
+
+This subset requires the original compatible runtime. Rebind, target-open and
+authority-recovery requests refuse before altering a missing-preparation
+journal, directing the caller to original-runtime reconciliation. Supporting
+replacement-runtime invalidation would need a separately preserved original
+pre-dispatch proof; it is not implied by this recovery path.
+
 ## Other SDK groups
 
 The method-level catalog is the appropriate place for the complete mounted
@@ -264,7 +485,9 @@ strings, Wire getter RPC strings, class `s0`, the PCB point/region methods,
 `getAllSelectedPrimitives`, and the native net-handler topic above. These
 findings justify narrower implementation work, not permanent infeasibility.
 
-The next small local-read increment is the editor split-screen lookup pair.
+The editor split-screen lookup pair now has a dedicated read-only adapter in
+`server/src/editor-tab-lookups.ts`, reached through `sdk-read` rather than the
+generic descriptor compiler.
 The pinned UI's `S2.getSplitScreenIdByTabId` calls `fe.getTabContainer`, a
 container lookup. `S2.getTabsBySplitScreenId` filters the container's tabs and
 deep-clones them. Neither path navigates, activates a tab or saves. However,
@@ -274,16 +497,25 @@ also allow an empty result for a non-leaf split-screen node.
 [Tab lookup](https://prodocs.easyeda.com/en/api/reference/pro-api.dmt_editorcontrol.getsplitscreenidbytabid.html),
 [split-screen lookup](https://prodocs.easyeda.com/en/api/reference/pro-api.dmt_editorcontrol.gettabsbysplitscreenid.html).
 
-Implementation should bind a complete saved-project member set, reuse the
-activation adapter's strict tree/owner validation, require one unique existing
-nonempty leaf or one unique owned tab, and compare the direct method result
-with the tree before and after the lookup. Return only reviewed identity/type/
-parent fields, not raw tab data. Missing containers, unknown owners, duplicate
-tab identities, changed tree membership and unsupported document types must
-refuse. The current SDK-read engine supplies authenticated runtime admission,
-quarantine, bounded serialization, active-context checks and two matching
-observations. It does not supply these cross-tab ownership and completeness
-proofs; merely adding `string` or `records` descriptors is insufficient.
+The adapter binds the complete saved-project member set and validates every
+public tree identity and owner before and after the direct method call. Its
+scope is project-owned schematic pages, PCBs, footprints and ordinary symbols
+whose saved `META.docType` is 2. It requires one unique existing owned tab or
+one unique nonempty leaf, and compares the method result with that complete
+tree projection. The tree is bounded to 128 nodes, depth 16 and 256 tabs.
+Missing containers, unknown owners, duplicate identities, changed membership
+and unsupported document types refuse. Only identity, type and parent-owner
+fields are returned, never raw titles or tab data. A canonical Start Page may
+coexist but cannot be the selected tab; the native public tree already omits
+the hidden project placeholder.
+
+Authenticated runtime admission, native branch/history checks, unchanged full
+checkpoint membership, active-context checks across awaits and two identical
+observations are all required. Final pinned-implementation checks remain part
+of the read. No navigation, preference write or Save is invoked. Focused tests
+exercise the fixed reader and its coordinator; they are offline evidence, not
+current-generation live validation. Merely assigning generic `string` or
+`records` result descriptors would not establish these ownership proofs.
 
 These lookups help choose an exact already-open disposable tab. They do not
 create a fixture or solve Start Page setup: the SDK-read path accepts only
@@ -303,6 +535,20 @@ because its installed handler requires an unsupported NGSPICE editor.
 call chains, hashes and function boundaries, including the impact on the former
 schematic-topology reader. Returning a File is not evidence of a read-only
 method.
+
+These are the seven refused export actions included in the 42-action count
+above; interactive BOM is one of the eight separately named gaps, not an eighth
+entry in this table.
+
+| Exact action | Installed blocker | Feasible replacement boundary |
+|---|---|---|
+| `export.schematic.netlist` | Annotation can change DESIGNATOR/UNIQUEID, then SaveAll. | Nonmutating complete topology/format projection, or a separately authorized annotation and whole-scope Save transaction. |
+| `export.schematic.bom` | Shared BOM helpers invoke SaveAll before generation. | Source-bound component/property projection with explicit grouping/filter rules, or an authorized no-repeat Save lifecycle. |
+| `export.pcb.bom` | Shared BOM helpers invoke SaveAll; template selection can change preferences. | Nonmutating board-scoped BOM projection without global template mutation. |
+| `export.schematic.document` | Export immediately awaits the global SaveAll helper. | Separately reviewed renderer with complete page scope and owned output resources. |
+| `export.pcb.pdf` | The PDF helper invokes global SaveAll before rendering. | Nonmutating board renderer with bounded settings and complete output evidence. |
+| `export.pcb.netlist` | Any dirty editor tab triggers SaveAll, including unrelated tabs. | Single-board nonmutating netlist extraction; a prior non-atomic clean check is insufficient. |
+| `export.schematic.simulation` | Native handler requires an NGSPICE editor, outside admitted types 1–4. | Explicit simulation-editor ownership, bounded export and an appropriate disposable simulation fixture. |
 
 For the remaining admitted formats, transfer requires a real nonempty File,
 bounded filename/type, complete byte count,
@@ -392,11 +638,17 @@ the exact retained receipt, source, checkpoint and hashes.
 
 ## Evidence in this change
 
-The integrated metadata, activation, checkpoint, executor, library-runtime,
-library-recovery and editor-tab suites pass 73 tests on Node 24.18.0. They exercise the actual executor and
+The earlier integrated metadata, activation, checkpoint, executor, library-runtime,
+library-recovery and editor-tab run passed 73 tests on Node 24.18.0. Those tests exercise the actual executor and
 generated program with real temporary sealed journals, including publication
 failure, missing returned evidence, rewritten preparation and no-repeat recovery.
 Targeted type-aware Oxlint reports zero diagnostics. This report and the adapter
 contain no connected test claim.
+The later close-focused run passed 57 close/settlement/retained-authority tests;
+the broader close, activation, page-rename, recovery and diagnostic run passed
+178 tests with zero failures or skips. The latter counts are overlapping runs,
+not additive repository totals. Strict TypeScript and targeted type-aware
+Oxlint passed for the close implementation. Empty-page creation has its own
+focused suite; final combined counts belong in the release verification record.
 Publication, installed-package verification and live fixture results belong in
 the release record after they actually complete.
