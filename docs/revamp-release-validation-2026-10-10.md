@@ -5,6 +5,24 @@ Release snapshot: `0.3.0+codex.20261010121000`. Local verification completed
 Publication and installation evidence is recorded separately after those steps
 actually succeed.
 
+## Publication and installation evidence
+
+Payload [33c2ba7f98f915a672118a9e0371ebedcf6317f9](https://github.com/jan-guenter/easyeda-pro-agent-plugin/commit/33c2ba7f98f915a672118a9e0371ebedcf6317f9)
+was published in [PR8](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/8).
+Required [CI run38052366013](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38052366013)
+passed all checks and uploaded the plugin artifact. The official Codex CLI then
+configured `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` as the
+Git marketplace and installed/enabled this snapshot from the tested feature
+ref. The marketplace should track main after the protected merge; only root
+engineering evidence changes after this tested plugin payload.
+
+Installed verification matched all439 Git files,11135676 bytes and committed
+file modes exactly. An isolated installed-bundle MCP probe enumerated25 tools
+and seven skills, retrieved749/806 SDK signatures and105/68 strict operation
+schemas, accepted valid typed arguments and rejected caller-code fields.
+All queries were offline and granted no execution authority. The old loaded
+host facade was not terminated or patched; a fresh chat is required for pickup.
+
 ## Verified payload
 
 - 25 MCP tools, including offline `easyeda_control_api`.

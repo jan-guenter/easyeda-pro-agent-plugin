@@ -60,6 +60,26 @@ Last updated: 2026-10-10 (Europe/Berlin)
   detailed results and limits. GitHub CI/publication/install are not inferred
   from these local checks; append their actual commit/results after completion.
 
+### October publication and installation evidence
+
+- Payload commit33c2ba7f98f915a672118a9e0371ebedcf6317f9 was published in
+  [PR8](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/8).
+  Required [test-build run38052366013](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38052366013)
+  passed, including the reproducible authenticated bridge fixture, hostile
+  descriptors, complete suites, privacy checks and packaged artifact.
+- Official Codex CLI replaced the local marketplace with Git source
+  `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` and installed/
+  enabled `0.3.0+codex.20261010121000` from the CI-verified feature ref. After
+  protected merge, retain this Git source on main; root-only evidence updates
+  do not change the tested plugin payload or its version.
+- Installed payload matches all439 Git files/11135676bytes and committed
+  modes exactly. Actual installed offline MCP probe returned25 tools, seven
+  skills,749/806 SDK signatures and105/68 operation schemas. Valid typed data
+  passes; caller code refuses; execution authority remains false. No live call.
+- Loaded host facade remains the previous24225913 generation. No termination
+  or hot patch; use a fresh chat before any live EasyEDA action. No user CAD
+  edits, Save, restoration, fabrication or shared-library change occurred.
+
 August–September records are preserved intact in
 [engineering-history-2026-09.md](docs/engineering-history-2026-09.md).
 They are evidence, not instructions to replay completed work. Read only the
@@ -72,7 +92,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The pre-revamp installed snapshot is `0.3.0+codex.20260924225913`; the new source has 25 tools and seven skills. Installation and loaded host generations are separate; record the final release/install evidence below before claiming pickup. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate the current facade generation.
+- The installed Git-marketplace snapshot is `0.3.0+codex.20261010121000`, with25 tools and seven skills. This chat's loaded host generation remains24225913:installation is not loaded pickup. Use a fresh chat before live work. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate the current facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor is enabled with source/durable-effect and retained runtime gates. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
