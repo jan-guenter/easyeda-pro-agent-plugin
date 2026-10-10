@@ -6,7 +6,35 @@ Last updated: 2026-10-10 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
-### Candidate193600, publication pending
+### Candidate194400 correction
+
+- Candidate193600 payload476ff30 passed CI38080738725 but was not installed.
+  A real newly prepared disposable fixture exposed an invalid flat-profile
+  requirement that SQLite source and online-backup file bytes be identical.
+  The maintained contract verifies each raw file against its own receipt and
+  compares their logical dumps. Correcting only the cross-file raw comparison,
+  with regression and independent review, is now implemented.
+  The new single-page fixture is saved/closed and independently checkpointed.
+  No user project changed. Loaded facade remains182554; no hot patch or restart
+  shortcut is permitted. Full verification passes1827 facade tests/one platform
+  skip/zero failures or cancellations and424 bridge tests; strict types and
+  type-aware lint are clean. Reproducibility, compatibility, repository/privacy,
+  package/seven skills, independent actionlint and sequential offline doctor all
+  pass. Source155filesc20fbd5c, bundlef77f6722 and manifestdf899c39; external,
+  native and sanitizer pins remain unchanged. CI/install evidence is pending.
+- The regression uses a real synthetic SQLite database and maintained backup:
+  unequal source/backup byte hashes with equal logical dumps pass preparation.
+  A later VACUUM preserving the logical dump still fails exact source-receipt
+  freshness. Synthetic schematic observations remain explicitly separate from
+  that real SQLite evidence; no connected writer validation is inferred.
+- An offline doctor started during the concurrent bundle rebuild lost its MCP
+  connection. Its failure log is retained; the sequential post-build doctor and
+  complete verify catalog both pass. Dependency lockfiles are unchanged: the
+  prior clean install/151 signatures/40 attestations/zero-vulnerability audit
+  remains applicable, and the corrected candidate passes a fresh dependency-tree
+  check. No failed check is being reported as a pass.
+
+### Previous candidate193600 verification
 
 - Source adds sealed single-page stored display transactions, closed empty
   ordinary symbol creation, original creation-ID retention before fallible

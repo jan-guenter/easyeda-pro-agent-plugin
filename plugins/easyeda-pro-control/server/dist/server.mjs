@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "0230f7e1c00a4760b1d487f5ad0a0e97c1221b91638797915a16fa938b6dd66f";
+const __easyedaBundlePairId = "8fbc60d45b94ecbf31584dfabb28445d13576ed3f869abf848325c3a113dae10";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -60111,7 +60111,7 @@ function assertNativeObservation(evidence, native) {
 }
 function evidenceState(evidence, context2, nativeInput) {
   const contextBinding = flatDisplayContextScope(context2), { checkpoint, history, observation } = evidence;
-  if (checkpoint.schema !== "easyeda-pro-control.checkpoint.v2" || normalizeEasyedaProjectPath(checkpoint.source) !== contextBinding.projectPath || checkpoint.sourceSha256 !== checkpoint.checkpointSha256 || checkpoint.sourceDumpSha256 !== checkpoint.checkpointDumpSha256 || history.checkpointSha256 !== checkpoint.checkpointSha256 || !same19(evidence.projectBinding, flatDisplayProjectBindingFromHistory(history))) {
+  if (checkpoint.schema !== "easyeda-pro-control.checkpoint.v2" || normalizeEasyedaProjectPath(checkpoint.source) !== contextBinding.projectPath || checkpoint.sourceDumpSha256 !== checkpoint.checkpointDumpSha256 || history.checkpointSha256 !== checkpoint.checkpointSha256 || !same19(evidence.projectBinding, flatDisplayProjectBindingFromHistory(history))) {
     throw new Error("Flat display observation is not bound to its complete checkpoint and project branch.");
   }
   const scope3 = deriveSchematicLayoutPageLoadScope(context2, history);

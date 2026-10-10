@@ -66,8 +66,10 @@ function evidenceState(evidence: FlatDisplayObservationEvidence, context: Expect
   source: NativeSourceSnapshot; native: SchematicNativeSnapshot; schematicUuid: string;
 } {
   const contextBinding = flatDisplayContextScope(context), { checkpoint, history, observation } = evidence;
+  // The maintained observer verifies each file's own receipt hash and identity.
+  // SQLite backup preserves logical contents, not necessarily source file bytes.
   if (checkpoint.schema !== "easyeda-pro-control.checkpoint.v2" || normalizeEasyedaProjectPath(checkpoint.source) !== contextBinding.projectPath ||
-      checkpoint.sourceSha256 !== checkpoint.checkpointSha256 || checkpoint.sourceDumpSha256 !== checkpoint.checkpointDumpSha256 ||
+      checkpoint.sourceDumpSha256 !== checkpoint.checkpointDumpSha256 ||
       history.checkpointSha256 !== checkpoint.checkpointSha256 || !same(evidence.projectBinding, flatDisplayProjectBindingFromHistory(history))) {
     throw new Error("Flat display observation is not bound to its complete checkpoint and project branch.");
   }

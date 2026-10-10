@@ -2,7 +2,7 @@
 
 This records tests of the installed `0.3.0+codex.20261010182554` candidate,
 not connected validation of later source changes. No user project was opened or
-edited. All CAD actions below used the existing disposable validation project.
+edited. All CAD actions below used designated disposable validation projects.
 
 ## Completed observations
 
@@ -92,3 +92,34 @@ application import, including independent credential/upstream path overrides.
 Adversarial subprocess tests cover inherited live-like paths, static imports,
 failed-test evidence retention and separate worker roots. Production journal
 admission and quarantine remain unchanged.
+
+## New flat-display fixture and checkpoint correction
+
+A separate disposable local project was created through observed native controls.
+Its single ordinary schematic page contains the default drawing frame and one
+plain text object. The current-document File Save action was clicked once, then
+the application closed normally without a prompt choice. Discovery proved exit.
+The maintained offline checkpoint verifier passed: both files match their own
+receipts, the logical databases are equal and the source is unchanged. Decoded
+history contains nine documents and exactly the intended text. The old disposable
+fixture remains closed and verified; no user project was opened or changed.
+
+This real checkpoint exposed a new profile defect before installation. SQLite
+online backup preserved the complete logical database but changed physical file
+bytes. The profile incorrectly required source and backup SHA-256 to be equal.
+The correction removes only that unsupported cross-file comparison. Each file
+still requires its own exact receipt hash and identity; cross-file logical dump
+equality, history-to-backup binding and the immutable plan remain mandatory.
+Regressions cover differing legitimate byte hashes and wrong receipt, history
+and logical-dump evidence. A real synthetic SQLite database supplies an actual
+maintained backup receipt; normal SQLite commits produce differing file hashes
+with equal logical dumps. Preparation succeeds with all retained receipt fields.
+A later VACUUM leaves the logical dump unchanged but is rejected as source drift.
+The schematic observations in that test remain synthetic; it is not a connected
+writer test. Candidate193600 is not installed. Corrected candidate194400 passes
+1,827 facade tests, one platform-specific skip and 424 bridge tests, with strict
+types and type-aware lint clean. Reproducible bundles, compatibility, repository
+and privacy checks, all seven skills, actionlint and the sequential offline
+doctor also pass. An earlier doctor invocation lost its MCP connection during a
+concurrent rebuild; that failure is retained separately from the passing
+post-build check. Publication and installation evidence follows separately.

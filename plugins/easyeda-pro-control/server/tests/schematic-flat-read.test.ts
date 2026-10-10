@@ -16,7 +16,7 @@ const context: ContextProbePayload = { project: { uuid: projectUuid, path: "/tmp
   document: { uuid: "page", documentType: 1, tabId: `page@${projectUuid}` }, schematic: { uuid: "schematic" } };
 const fileIdentity = { birthtimeNs: "1", ctimeNs: "1", dev: "1", ino: "1" };
 const receipt: CheckpointReceipt = { schema: "easyeda-pro-control.checkpoint.v2", createdAt: "fixture", source: context.project.path,
-  checkpoint: "/tmp/disposable-flat-checkpoint.eprj2", checkpointSha256: hash, sourceSha256: hash,
+  checkpoint: "/tmp/disposable-flat-checkpoint.eprj2", checkpointSha256: hash, sourceSha256: "e".repeat(64),
   sourceDumpSha256: hash, checkpointDumpSha256: hash, receiptSha256: hash, receiptPath: "/tmp/disposable-flat.receipt.json",
   sourceIdentity: fileIdentity, checkpointIdentity: fileIdentity };
 const verified: CheckpointVerification = { ...receipt, ok: true, sourceChanged: false, sourceEqualsCheckpoint: true,
@@ -141,9 +141,11 @@ void test("flat reader binds checkpoint verification to its retained complete re
     { receiptPath: "/tmp/substituted.receipt.json" }, { source: "/tmp/substituted.eprj2" }, { checkpoint: "/tmp/substituted-checkpoint.eprj2" },
     { checkpointSha256: "c".repeat(64) }, { checkpointDumpSha256: "c".repeat(64) },
   ]) {
-    const current = fixture({ checkpointProofOverride });
-    await assert.rejects(current.run(), /unchanged complete checkpoint/u);
-    assert.equal(current.events.includes("dispatch"), false);
+    for (const mode of ["run", "observe"] as const) {
+      const current = fixture({ checkpointProofOverride });
+      await assert.rejects(current[mode](), /unchanged complete checkpoint/u);
+      assert.equal(current.events.includes("dispatch"), false);
+    }
   }
 });
 void test("flat reader refuses a substituted successful final checkpoint after both captures", async () => {
@@ -165,6 +167,8 @@ void test("internal flat observer retains exact raw capture, checkpoint history 
   assert.equal(result.projectBinding.projectUuid, projectUuid); assert.equal(result.projectBinding.ownerUuid, "c".repeat(32));
   assert.equal(result.projectBinding.branchUuid, "d".repeat(32)); assert.deepEqual(result.observation.scope.pageIds, ["page"]);
   assert.equal(result.checkpoint.checkpointSha256, result.history.checkpointSha256);
+  assert.notEqual(result.checkpoint.sourceSha256, result.checkpoint.checkpointSha256);
+  assert.equal(result.checkpoint.sourceDumpSha256, result.checkpoint.checkpointDumpSha256);
   assert.equal(current.events.filter((event) => event === "project-read").length, 4);
   assert.equal(current.events.filter((event) => event === "dispatch").length, 2);
 });

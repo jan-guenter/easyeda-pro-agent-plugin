@@ -159,15 +159,17 @@ and [manufacturing export](https://prodocs.easyeda.com/en/api/reference/pro-api.
 
 After resolving transaction topology, the most useful narrow increments are:
 
-1. **Ordinary project-symbol creation.** Start with type 2, no classification,
-   no inherited source and a closed result. `VL.create` delegates through
+1. **Validate empty-symbol creation, then investigate initialized symbols.**
+   The closed, META-only ordinary project-symbol adapter is now implemented;
+   connected validation remains pending. It excludes PART/canvas initialization,
+   classification and inherited source. The broader `VL.create` delegates through
    `hTt` and the symbol service; `hTt` produces ordinary metadata directly but
    resolves a separate existing template for sheet symbols. The worker `gg`
    manager's `create` builds metadata and obtains source through
    `si.getProLibSource` before uploading both strings. Review the new-symbol
    service branch and exact default canvas/part records, then bind every new
-   identity to one returned UUID and a complete addition proof. This is an
-   unfinished adapter, not a missing native capability. The latest
+   identity to one returned UUID and a complete addition proof. That initialized
+   subset remains unfinished, not inherently unavailable. The latest
    [symbol creation reference](https://prodocs.easyeda.com/en/api/reference/pro-api.lib_symbol.create.html)
    includes additional parameters; it does not establish those parameters in
    the pinned build.
@@ -217,9 +219,10 @@ explain why Boolean acknowledgment cannot serve as the deletion effect proof.
 [project-symbol-metadata.ts](../plugins/easyeda-pro-control/server/src/project-symbol-metadata.ts)
 adds a narrow ordinary-symbol metadata adapter, now registered in the tracked
 `LibraryExecutor` through the existing `library.symbol.modify` schema. It
-supports exact project-local name and non-null description patches. Creation,
-classification, source replacement and external library edits retain their
-separate omission reasons.
+supports exact project-local name and non-null description patches. Empty-symbol
+creation has its separate narrow adapter. Initialized creation, classification,
+source replacement and external library edits retain their separate omission
+reasons.
 
 The installed public `VL.modify` wrapper takes a normalized search title as its
 default and reprojects classification. More importantly, it awaits metadata
@@ -546,7 +549,7 @@ call chains, hashes and function boundaries, including the impact on the former
 schematic-topology reader. Returning a File is not evidence of a read-only
 method.
 
-These are the seven refused export actions included in the 42-action count
+These are the seven refused export actions included in the 41-action count
 above; interactive BOM is one of the eight separately named gaps, not an eighth
 entry in this table.
 

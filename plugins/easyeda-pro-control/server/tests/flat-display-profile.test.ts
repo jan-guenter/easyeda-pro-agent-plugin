@@ -32,6 +32,34 @@ void test("flat display selection rejects mixed, electrical, deleting, translate
   }
 });
 
+void test("flat display binds distinct source and SQLite backup byte hashes through their equal logical dumps", async () => {
+  const before = fixture(), logicalSha256 = "f".repeat(64), sourceSha256 = "e".repeat(64);
+  before.evidence = { ...before.evidence, checkpoint: { ...before.evidence.checkpoint, sourceSha256,
+    sourceDumpSha256: logicalSha256, checkpointDumpSha256: logicalSha256,
+    checkpointIdentity: { ...before.evidence.checkpoint.checkpointIdentity, ino: "2" } } };
+  assert.notEqual(sourceSha256, before.evidence.checkpoint.checkpointSha256);
+  const prepared = await prepareFlatDisplayProfile({ ...before, operation, context });
+  assert.equal(prepared.binding.checkpoint.sourceSha256, sourceSha256);
+  assert.equal(prepared.binding.checkpoint.checkpointSha256, before.evidence.checkpoint.checkpointSha256);
+  assert.equal(prepared.binding.checkpoint.sourceDumpSha256, logicalSha256);
+  assert.equal(prepared.binding.checkpoint.checkpointDumpSha256, logicalSha256);
+  assert.equal(prepared.binding.checkpoint.receiptSha256, before.evidence.checkpoint.receiptSha256);
+  assert.doesNotThrow(() => { verifyFlatDisplayObservation(prepared.binding, operation, context, before.evidence, before.native, "before"); });
+  const after = replaceSource(before, prepared.expectedSource, prepared.expectedNative);
+  assert.doesNotThrow(() => { verifyFlatDisplayObservation(prepared.binding, operation, context, after.evidence, after.native, "after"); });
+  for (const mismatch of ["source-dump", "checkpoint-dump", "history-checkpoint"] as const) {
+    const altered = structuredClone(before);
+    if (mismatch === "history-checkpoint") {
+      altered.evidence = { ...altered.evidence, history: { ...altered.evidence.history, checkpointSha256: sourceSha256 } };
+    } else {
+      const field = mismatch === "source-dump" ? "sourceDumpSha256" : "checkpointDumpSha256";
+      altered.evidence.checkpoint[field] = "0".repeat(64);
+    }
+    await assert.rejects(prepareFlatDisplayProfile({ ...altered, operation, context }), /complete checkpoint/u);
+    assert.throws(() => { verifyFlatDisplayObservation(prepared.binding, operation, context, altered.evidence, altered.native, "before"); }, /complete checkpoint/u);
+  }
+});
+
 void test("flat display refuses absent original fields, no-op, locked targets and NO_CONNECT before an inverse is admitted", async () => {
   for (const patch of [{ fontName: "Arial" }, { x: 0 }]) {
     await assert.rejects(prepareFlatDisplayProfile({ ...fixture(), context, operation: { ...operation,

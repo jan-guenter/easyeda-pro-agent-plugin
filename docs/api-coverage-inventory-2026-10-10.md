@@ -27,7 +27,7 @@ wire validation is kept in the separate operation validation registry and remain
 bound to its original profile and evidence.
 
 Each route also reports `executionState`: available with runtime guards, blocked,
-or partially blocked for specified document types. Ordinary schematic type-1
+or partially blocked for specified document types. Generic ordinary schematic type-1
 writes require the complete topology reader in `design-execution.ts`; that reader
 is currently refused because the installed compiled-netlist path can annotate
 parts and invoke global SaveAll. Those writes are implemented but blocked, not
@@ -35,6 +35,15 @@ advertised as callable. Independent type-2 symbol graphics and PCB routes do not
 inherit this topology dependency. Shared lifecycle routes explicitly retain the
 type-1 block. An available route still needs actual compatibility, ownership,
 context and operation admission; this inventory does not grant them.
+
+Three separate routes describe the sealed flat-display exception: attribute
+modify, text modify and internal journal-bound Save. Only existing stored
+display patches on the sole page of an ordinary single-page schematic are
+admitted. The profile retains full ownership, source/native endpoint, inverse
+and durable-state proof. Batches may combine attribute and text display steps,
+but cannot contain electrical or other layout steps. These routes do not call
+the public modify wrappers or enable generic schematic transactions. Connected
+apply/Save/reopen validation remains pending for the new source.
 
 The standalone `document.close` subset targets an inactive clean ordinary symbol,
 PCB or footprint while a separate PCB/footprint remains active. It waits for
@@ -103,7 +112,7 @@ From the plugin package with the pinned Node toolchain:
 
 ```sh
 node scripts/generate-api-coverage.ts --check
-node --test server/tests/extension-api-coverage.test.ts
+node --import ./scripts/test-isolation.ts --test server/tests/extension-api-coverage.test.ts
 ```
 
 After reviewing an adapter or omission-policy change, regenerate with
