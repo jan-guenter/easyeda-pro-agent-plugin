@@ -33,8 +33,8 @@ Last updated: 2026-10-10 (Europe/Berlin)
   and dispatch remain synthetic in those tests, not connected validation.
   Generic compiled topology remains blocked. Existing public reader payloads
   retain their old shape, and the public-only disposable reader plan refuses
-  native entries before any dispatch. Candidate202803 is built and locally
-  verified below; it is not installed or connected-validated yet.
+  native entries before any dispatch. Candidate202803 is built, published,
+  installed and offline-verified below; connected acceptance is pending.
 - Both disposable editors are closed. Loaded194400 host remains untouched.
   The user's production project was not opened, read, edited, saved or restored. Overall feasible API
   work remains unfinished and PR9 stays draft. Current live evidence and limits:
@@ -58,6 +58,32 @@ Last updated: 2026-10-10 (Europe/Berlin)
   before staging/publication; the complete unchanged validator then passed.
   No private design records or credentials are packaged. Publication and actual
   installed-package evidence must be appended separately.
+
+### Candidate202803 published and installed
+
+- Payload29417d15024cb057d00f04334867f59ce6557d4d passed
+  [CI38084073658](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38084073658)
+  and is published in draft PR9. One official Git-marketplace upgrade installed
+  and enabled0.3.0+codex.20261010202803 with no errors. Marketplace HEAD matches
+  the payload and keeps the Git URL/feature ref; no manual cache changes.
+- All515 packaged files/14545957bytes exactly match immutable Git blobs and
+  modes, with no extras or probe-time changes. Inventory commitment
+  826bc4bcbb45771ab8561f76441c44d255cee81acfdda2d58f0b97f466f5f36f.
+  Actual cached configured startup hands ambientNode26 to pinnedNode24 and
+  returns26tools/7skills/774methods/163readers/749and806signatures/105and68schemas.
+  The three new native identity readers accept only empty arguments; filters
+  and caller code refuse, and public/native/mixed authority labels remain exact.
+- Forty-three offline process observations found no upstream child/nonstdio
+  socket, and the synthetic upstream sentinel stayed absent. This is not a
+  continuous syscall trace or connected admission. Native helper pin unchanged.
+  Root-only publication records leave the installed package unchanged; do not
+  refresh this same version just to pick up those records.
+- Loaded194400 host remains untouched, with no live calls after installation.
+  Both disposable editors remain closed. A fresh Codex session must admit202803
+  before testing the native ID readers, closed-page rename and the corrected
+  text display Save/reopen/inverse lifecycle. No attribute or nonempty electrical
+  acceptance is implied by the current text-only fixture. Overall API work is
+  unfinished; retain draft PR9. No user production project was opened or changed.
 
 ### Candidate194400 published and installed; fresh-session acceptance pending
 
@@ -490,7 +516,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed and loaded Git-marketplace candidate is `0.3.0+codex.20261010194400`, with 26 tools and seven skills, from the draft feature ref. Its empty-symbol test passed; the flat-display request refused before journal/write/Save. Earlier scoped lookup, metadata, page-creation and inactive-close evidence remains bound to182554. Both disposable editors closed normally and their final receipts verify. Dirty source changes are not installed. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
+- The installed Git-marketplace candidate is `0.3.0+codex.20261010202803`, with 26 tools and seven skills, from the draft feature ref. Exact installed-file and offline startup proof passes. Loaded host remains194400, whose empty-symbol test passed and flat-display request refused before journal/write/Save. Earlier scoped lookup, metadata, page-creation and inactive-close evidence remains bound to182554. Both disposable editors are closed and their final receipts verify. Fresh-session admission and disposable tests of202803 remain required; no live call followed installation. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

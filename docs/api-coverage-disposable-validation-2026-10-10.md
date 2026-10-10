@@ -106,6 +106,39 @@ Both disposable fixtures remain closed; the currently loaded host still uses
 flat-display lifecycle need fresh-generation disposable validation. PR9 remains
 draft and the overall API execution task is unfinished.
 
+## Candidate202803 publication and installed proof
+
+Payload `29417d15024cb057d00f04334867f59ce6557d4d` passed
+[GitHub CI](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38084073658).
+The official Git-marketplace upgrade installed and enabled
+`0.3.0+codex.20261010202803` without errors. The configured source remains
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, on the draft feature
+ref. Its cached marketplace HEAD matches the payload.
+
+All 515 packaged files, 14,545,957 bytes, match the committed Git blobs and modes,
+with no missing or extra entries and no probe-time change. Inventory commitment:
+`826bc4bcbb45771ab8561f76441c44d255cee81acfdda2d58f0b97f466f5f36f`.
+The actual cached MCP configuration starts through ambient Node26 and hands off
+to pinned Node24. It exposes 26 tools, seven skills, 774 inventoried methods and
+163 fixed reads. Reviewed/latest declarations contain 749/806 signatures;
+design/library catalogs contain 105/68 operation schemas. New identity readers
+are labeled native equivalents, accept only empty arguments, reject filters and
+caller code, and grant no execution authority. Public and mixed catalog labels
+remain distinct.
+
+Forty-three process observations found no upstream child or nonstdio socket.
+The synthetic upstream sentinel remained absent. The probe checks installed
+offline startup, not continuous syscall activity or connected acceptance. The
+native helper is unchanged. Root-only release records do not change the installed
+payload and do not justify another same-version marketplace refresh.
+
+The loaded194400 host was not terminated or patched. No live call followed
+installation. Keep both fixtures closed and start a fresh Codex session for
+202803 admission, native identity reads, closed-page rename and the text-only
+display transaction's Save/reopen/inverse checks. Attribute edits and nonempty
+electrical connectivity require additional suitable disposable fixtures. Overall
+API execution work remains unfinished and PR9 remains draft.
+
 ## Installed182554 continuation
 
 This records tests of the installed `0.3.0+codex.20261010182554` candidate,
