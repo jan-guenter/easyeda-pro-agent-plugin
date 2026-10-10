@@ -4,6 +4,8 @@ import { polygonSourceSchema } from "./design-operations.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA, assertExactTransportValue } from "./exact-readers.ts";
 import { editorTabLookupRequestSchema, isEditorTabLookupMethod } from "./editor-tab-lookups.ts";
 import { SCHEMATIC_NATIVE_ID_METHODS, buildSchematicNativeIdsExpression, isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
+import { SCHEMATIC_COMPONENT_PROPERTY_METHOD, buildSchematicComponentPropertyNamesExpression, schematicComponentPropertyNamesSchema } from "./schematic-component-properties.ts";
+import { SYMBOL_PIN_ENUMERATION_METHOD, SYMBOL_PIN_GETTER_FIELDS, buildSymbolPinEnumerationExpression } from "./symbol-pin-enumeration.ts";
 
 /** This fixed allowlist is independent of the declaration catalog. Public entries
  * were reviewed against this implementation, including delegated getters.
@@ -195,6 +197,24 @@ for (const method of SCHEMATIC_NATIVE_ID_METHODS) {
     ],
   });
 }
+add(SCHEMATIC_COMPONENT_PROPERTY_METHOD, [1], "strings", emptyArguments, [], {
+  implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [
+    "Fixed synchronous native equivalent, not the broken installed public wrapper: only the exact active ordinary SCH_PAGE; hierarchical/block-instance pages and unknown Symbol kinds refuse.",
+    "Complete bounded connected-tree/ID-index/source membership and direct-root Symbol family agreement are required. Each Symbol's direct Attr children, attribute map and getAttr result must agree exactly, including generated and inherited attributes absent from page-source rows.",
+    "Includes part, sheet, netflag, netport, offPageConnector, nonElectrical_symbol, short_symbol and diffPairsFlag. Pin attributes are not component properties. Structural GROUP records and nonreciprocal cross-linked model ownership are unsupported and refuse the entire read.",
+    "Sorted unique exact keys preserve case, whitespace and empty strings. At most 4096 attributes per Symbol, 1024 UTF-16 units per key, 20000 keys and 131072 total key units; shared transport placeholder guards still apply.",
+    "No attribute values, compiler, multiPart, source serializer, settings, RPC, navigation or Save. Stable property-name sets are not complete source/connectivity/persistence proof or proof that other design fields remained unchanged.",
+  ],
+});
+add(SYMBOL_PIN_ENUMERATION_METHOD, [2], "primitive", emptyArguments, [], {
+  implementationKind: "native-task-equivalent", parameterSupport: "narrowed", primitiveType: "Pin", getters: [...SYMBOL_PIN_GETTER_FIELDS], limitations: [
+    "Native membership plus explicit public get(id) parity, never the broken getAll or public ID inventory. Only one exact active ordinary project-symbol PART is supported; schematic instances, multipart/inherited shapes, drawing/flag symbols, device associations and source GROUP records refuse.",
+    "Complete reciprocal tree/ID-index/source and PART Pin-family agreement are required. Generated UnConnectDot children are checked but not counted as Pins. Exactly three source-backed Pin Name/Pin Number/Pin Type attributes are required; custom properties and no-connect/junction children refuse.",
+    "Sorted unique IDs, at most 256 Pins. All twelve fixed getter fields must equal independent native values, with original state and ownership rechecked around every awaited explicit-ID get. Names/colors are at most 4096 UTF-16 units, geometry finite and length nonnegative; unknown shape/type enums refuse.",
+    "OtherProperty must be undefined, with exact per-row absence evidence. Coordinates and rotation follow the installed explicit getter, not source-serialized rotation. JSON transport normalizes signed zero; native reproof and getter parity still distinguish it before serialization.",
+    "No compiler, serializer, sorting parts getter, settings, navigation or Save. This is bounded Pin getter data, not complete native-source, electrical connectivity, persistence or proof that other design fields stayed unchanged between observations.",
+  ],
+});
 
 // Fixed getter DTOs avoid serializing live objects, invoking toJSON, exposing
 // Methods, or accepting caller-selected property names. Polygon values use only
@@ -265,11 +285,20 @@ for (const [family, fields] of Object.entries(schGetters)) {
     ...(family === "Component" ? ["Only the bound current page is admitted; allSchematicPages:true can exceed the document scope."] : []),
     ...(family === "Object" ? ["String content only; File-valued embedded content refuses rather than silently serializing an empty object."] : [])],
   parameterSupport: family === "Component" || family === "Object" ? "narrowed" as const : "complete" as const };
-  add(`eda.sch_Primitive${family}.get`, SCHEMATIC_DOCUMENTS, "primitive", z.object({ primitiveIds }).strict(), ["primitiveIds"], { ...options, optionalResult: true });
-  // The pin getAll implementation swallows RPC failure and returns []; ID
-  // Enumeration and explicit-ID get propagate failure and remain available.
+  add(`eda.sch_Primitive${family}.get`, SCHEMATIC_DOCUMENTS, "primitive", z.object({ primitiveIds }).strict(), ["primitiveIds"], { ...options, optionalResult: true,
+    limitations: [...options.limitations, ...(family === "Pin" ? [
+      "The installed explicit Pin getter omits custom attributes from OtherProperty and returns native rotation unchanged, unlike the stored PIN rotation convention (native plus 180 degrees, normalized). This result is not a lossless attribute/source projection.",
+      "Explicit requested-ID parity does not prove complete native Pin membership. The maintained ordinary-symbol getAll native equivalent independently proves membership and refuses custom attributes before checking getter parity.",
+    ] : [])] });
+  // Pin getAll uses the separate native membership/parity registration above;
+  // Its public wrapper swallows RPC and projection failures as an empty array.
   if (family !== "Pin") { add(`eda.sch_Primitive${family}.getAll`, SCHEMATIC_DOCUMENTS, "primitive", filter.schema, filter.parameters, options); }
-  add(`eda.sch_Primitive${family}.getAllPrimitiveId`, SCHEMATIC_DOCUMENTS, "ids", filter.schema, filter.parameters, { limitations: options.limitations, parameterSupport: options.parameterSupport });
+  add(`eda.sch_Primitive${family}.getAllPrimitiveId`, SCHEMATIC_DOCUMENTS, "ids", filter.schema, filter.parameters, {
+    limitations: [...options.limitations, ...(family === "Pin" ? [
+      "The installed public Pin ID wrapper substitutes an empty object for missing shapes.pin and an empty array for an absent inventory. A successful empty response does not independently prove complete native membership.",
+      "Its native inventory reads the parts getter, which may sort the in-memory parts index and clear shouldSortParts. This is not proof of pure native-state invariance; no compiler or Save belongs to this reviewed callback chain.",
+      "Use the maintained ordinary-symbol getAll native equivalent for independent complete membership/parity within its narrow contract; that route avoids the sorting parts getter and public ID inventory.",
+    ] : [])], parameterSupport: options.parameterSupport });
 }
 add("eda.pcb_PrimitiveComponent.getAllPropertyNames", PCB_DOCUMENTS, "strings");
 add("eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId", [3], "primitive", z.object({ primitiveId: id }).strict(), ["primitiveId"],
@@ -334,6 +363,13 @@ export function validatePublicSdkReadRequest(input: unknown, documentType: numbe
   return request;
 }
 
+/** Shared routing metadata comes from the fixed registry, never method-name guesses. */
+export function publicSdkReadImplementationKind(method: string): ReadDefinition["implementationKind"] {
+  const definition = definitions.get(method);
+  if (definition === undefined) { throw new Error("Unsupported fixed SDK method."); }
+  return definition.implementationKind;
+}
+
 export function publicSdkReadDescriptors(): PublicSdkReadDescriptor[] {
   return [...definitions.values()].map((entry) => ({ path: entry.path, documentTypes: [...entry.documentTypes],
     inputSchema: z.toJSONSchema(z.object({ method: z.literal(entry.path), arguments: entry.argumentsSchema }).strict(), { io: "input", unrepresentable: "throw" }),
@@ -347,6 +383,8 @@ export function publicSdkReadDescriptors(): PublicSdkReadDescriptor[] {
 
 function readImplementationName(path: string): string {
   if (isSchematicNativeIdMethod(path)) { return "schematic-native-ids"; }
+  if (path === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { return "schematic-component-properties"; }
+  if (path === SYMBOL_PIN_ENUMERATION_METHOD) { return "symbol-pin-enumeration"; }
   if (isEditorTabLookupMethod(path)) { return "editor-tab-lookups"; }
   return "public-sdk-read";
 }
@@ -404,6 +442,8 @@ export function buildPublicSdkReadCode(input: unknown): string {
   }).join(",");
   let expression = `await ${definition.path}(${args})`;
   if (isSchematicNativeIdMethod(definition.path)) { expression = buildSchematicNativeIdsExpression(definition.path, "sdk-failure-code"); }
+  else if (definition.path === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { expression = buildSchematicComponentPropertyNamesExpression("sdk-failure-code"); }
+  else if (definition.path === SYMBOL_PIN_ENUMERATION_METHOD) { expression = buildSymbolPinEnumerationExpression("sdk-failure-code"); }
   else if (definition.path === SPLIT_POLYGON_METHOD) { expression = splitPolygonExpression(request); }
   const membership = definition.membership === undefined ? "" : `
   stage = "membership";
@@ -482,7 +522,7 @@ try {
     ${definition.primitiveType === "ComponentPad" ? `if (out.ParentComponentPrimitiveId !== ${JSON.stringify(request.arguments["primitiveId"])}) fail("sdk-wrong-parent");` : ""}
     return out;
   }
-  ${isSchematicNativeIdMethod(definition.path) ? "" : `if (typeof ${definition.path} !== "function") fail("sdk-missing-method");`}
+  ${definition.implementationKind === "native-task-equivalent" ? "" : `if (typeof ${definition.path} !== "function") fail("sdk-missing-method");`}
   ${membership}
   stage = "call";
   const native = ${expression};
@@ -520,6 +560,14 @@ const recordResult = z.record(z.string(), z.unknown());
 const rgbaResult = z.object({ r: z.number(), g: z.number(), b: z.number(), alpha: z.number() }).strict().nullable();
 const splitLineValue = z.union([z.number(), z.array(z.number()).max(256)]);
 const splitLinesResult = z.array(z.array(splitLineValue).max(512)).max(4096);
+const symbolPinRows = z.array(z.object({
+  PrimitiveType: z.literal("Pin"), PrimitiveId: id, X: z.number(), Y: z.number(), Rotation: z.number(), PinLength: z.number().nonnegative(),
+  PinNumber: z.string().max(4096), PinName: z.string().max(4096), PinColor: z.string().max(4096).nullable(),
+  PinShape: z.enum(["None", "Inverted", "Clock", "Inverted Clock"]),
+  pinType: z.enum(["IN", "OUT", "BI", "Passive", "Open Collector", "Open Emitter", "Power", "Ground", "HIZ", "Terminator", "Undefined"]),
+  OtherProperty: z.null(),
+}).strict()).max(256).refine((rows) => rows.every((row, index) => index === 0 || (rows[index - 1]?.PrimitiveId ?? "") < row.PrimitiveId),
+  "Symbol Pin rows must have sorted unique IDs.");
 const resultSchemas: Record<Exclude<OutputKind, "primitive" | "json" | "polygon">, z.ZodType> = {
   string: z.string(), number: z.number(), boolean: z.boolean(), strings: stringsResult,
   ids: z.array(id).max(MAX_ITEMS).refine((value) => new Set(value).size === value.length),
@@ -579,6 +627,16 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
     if (payload.undefinedPaths.includes("/value")) { throw new Error("Public SDK read presence is contradictory."); }
     if (definition.output !== "primitive" && definition.output !== "json" && definition.output !== "polygon") { resultSchemas[definition.output].parse(payload.value); }
     if (definition.output === "polygon") { boundedComplexPolygon.parse(payload.value); }
+    if (request.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) {
+      if (payload.undefinedPaths.length > 0) { throw new Error("Component property-name observations cannot contain undefined values."); }
+      schematicComponentPropertyNamesSchema.parse(payload.value);
+    }
+    if (request.method === SYMBOL_PIN_ENUMERATION_METHOD) {
+      const rows = symbolPinRows.parse(payload.value);
+      if (payload.undefinedPaths.length !== rows.length || rows.some((_row, index) => !payload.undefinedPaths.includes(`/value/${index}/OtherProperty`))) {
+        throw new Error("Symbol Pin observations require exactly one undefined OtherProperty pointer per row.");
+      }
+    }
     if (definition.output === "polygons" && (payload.undefinedPaths.length > 0 || JSON.stringify(payload.value) !== JSON.stringify(normalizedSplitPolygonGroups(request.arguments["complexPolygons"]).flat()))) {
       throw new Error("Public polygon split does not exactly preserve input sources and order.");
     }
@@ -619,9 +677,13 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
     }
     if (value !== null) { throw new Error("Undefined-value evidence conflicts with result."); }
   }
-  return { ...payload, assurance: definition.implementationKind === "native-task-equivalent"
-    ? "bounded-native-id-observation-not-complete-source-connectivity-or-persistence-proof"
-    : "bounded-public-sdk-observation-not-native-or-persistence-proof",
+  let assurance = definition.implementationKind === "native-task-equivalent"
+    ? "bounded-native-task-observation-not-complete-source-connectivity-or-persistence-proof"
+    : "bounded-public-sdk-observation-not-native-or-persistence-proof";
+  if (isSchematicNativeIdMethod(request.method)) { assurance = "bounded-native-id-observation-not-complete-source-connectivity-or-persistence-proof"; }
+  if (request.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { assurance = "bounded-native-property-name-observation-not-complete-source-connectivity-or-persistence-proof"; }
+  if (request.method === SYMBOL_PIN_ENUMERATION_METHOD) { assurance = "bounded-native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof"; }
+  return { ...payload, assurance,
     ...(definition.implementationKind === "native-task-equivalent" ? { implementationKind: definition.implementationKind } : {}),
     publicApiSha256: PUBLIC_SDK_READ_API_SHA256, liveValidation: "not-yet-validated", limitations: [...definition.limitations] };
 }

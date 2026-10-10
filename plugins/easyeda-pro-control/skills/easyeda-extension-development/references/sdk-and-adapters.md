@@ -71,3 +71,24 @@ drawing-frame order. A synthetic fixture that copies saved records verbatim into
 source can hide a universal admission failure. Preserve raw evidence and prove
 each allowed encoding difference; a comparison projection is not a saved
 checkpoint. Apply the same boundary through preflight, rollback and reconciliation.
+
+Keep native membership separate from SDK getter projection. A schematic page's
+root-family set excludes inherited drawing-frame descendants that remain in its
+full ID index. A symbol editor instead owns Pins beneath its PART. Prove the
+reciprocal tree, family set, index and source membership for the actual scene;
+do not reuse a page-root fixture for symbol enumeration. Inspect getters for
+side effects: the pinned symbol `parts` getter sorts its backing array.
+
+Do not compose a public enumeration that turns exceptions into `[]` with a
+getter that drops custom attributes and call the result complete. A native
+equivalent may prove bounded membership and each retained field, while refusing
+unrepresentable attributes. Label it as that narrower equivalent. Preserve
+signed zero during in-memory scalar reproof, and distinguish SDK coordinate/
+rotation conventions from stored records even when field names match.
+
+Separate live mutation, queued uploads and durable state in coordinator tests.
+EasyEDA may persist a forward effect or inverse later without an agent Save.
+An upload barrier is not a flush command. Test inverse intent consumption,
+auto-persistence between preflight and dispatch, live-only restoration, and
+read-only reconciliation after delayed persistence. Retain the fresh checkpoint,
+raw observer and complete proof, not only a success flag or their summary hashes.

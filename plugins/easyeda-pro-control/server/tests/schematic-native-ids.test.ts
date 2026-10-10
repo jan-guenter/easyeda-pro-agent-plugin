@@ -248,7 +248,7 @@ void test("three native ID descriptors preserve public defaults, strict empty ar
     const row = coverage.find((entry) => entry.path === input.method); assert.ok(row);
     assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null); assert.equal(row.completeDeclaredContractSupported, false);
   }
-  for (const descriptor of descriptors.filter((entry) => !/^eda\.sch_Primitive(?:Text|Wire|Bus)\.getAllPrimitiveId$/u.test(entry.path))) {
+  for (const descriptor of descriptors.filter((entry) => !/^eda\.sch_Primitive(?:Text|Wire|Bus)\.getAllPrimitiveId$/u.test(entry.path) && entry.path !== "eda.sch_PrimitiveComponent.getAllPropertyNames" && entry.path !== "eda.sch_PrimitivePin.getAll")) {
     assert.equal(descriptor.implementation.kind, "public-method");
   }
   assert.throws(() => buildSchematicNativeIdsExpression("eda.sch_PrimitiveWire.getAll"));

@@ -6,6 +6,66 @@ Last updated: 2026-10-10 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Restarted210100 disposable validation, in progress
+
+- Fresh facade1744643 loads the exact installed210100 bundlee46cce87 and
+  manifestcad6a87e, with the unchanged external tuple. Contained runtime4676
+  authenticated successfully. The original flat-display journal was rebound,
+  opened once and reconciled to `applied-unsaved`. Root and independent review
+  reproduced its exact intended effect and complete nine-document/eight-peer
+  durable proof without changing the original plan or v1 seals.
+- One reviewed inverse restored the entire original live native snapshot
+  cf68be28, but stopped at durable verification: SQLite still contains the
+  forward TEXT position. The journal is `inverse-needs-recovery`, non-orphan,
+  with no Save. A fresh managed receipt and later checkpoint independently
+  confirmed live-before/durable-after. Later native persistence restored the
+  saved baseline. Root/independent complete nine-document proof passed, then
+  read-only reconcile52 completed `reconciled-no-mutation`, hardStop/orphanfalse,
+  saved/reopenedfalse. Terminal15 SHA4addd35f/92815bytes, sourcec3a6aae0,
+  logicale5d4b75d. Never repeat inverse/edit/Save or treat the upload barrier as
+  a Save. The editor remains open; no close/discard/checkpoint replacement was
+  performed. Source-only admission and evidence-retention corrections passed
+  independent review and139 focused tests; none is installed or connected-validated.
+- Corrected Text, empty Wire/Bus and polygon split observations succeeded. Their
+  first interval overlapped inverse persistence. A separate settled-baseline
+  batch passed with identical complete native state and saved SQLite bytes/
+  logical dump. Post-reader receipt66cbbb50 retains sourcec3a6aae0 and
+  logicale5d4b75d. Scope is one Text, empty Wire/Bus and duplicate-preserving
+  polygon split, not populated Wire/Bus or the two new readers. New component-
+  property and symbol-pin reader work remains source-only. No production access.
+- A separate single-field text execute completed on210100: one Save/close/reopen,
+  exact x280-to285 effect, full nine-document durable proof and eight unchanged
+  peers. Terminal11 SHA c475eb67/76161bytes, source465c8adb/logical97551086.
+  Normal close and empty process discovery followed; maintained checkpoint
+  verification proves the closed source unchanged. Never repeat either journal.
+  This text-only fixture does not validate attribute edits, nonempty electrical
+  topology, page rename or new reader/recovery code. Both fixtures are closed.
+
+### Candidate214400 local verification
+
+- Source-only component property-name and symbol Pin readers bring fixed SDK
+  reads to166. Inventory remains774paths:191public/79native/2lifecycle/8blocked/
+  494omitted. Narrow native ownership/getter parity and omitted public-wrapper
+  behavior are documented; no connected acceptance of these readers is claimed.
+- Recovery now refuses an unsaved inverse after forward persistence, rechecks
+  the exact checkpoint immediately before dispatch, retains complete flat proof
+  artifacts and preserves one-shot inverse/Save exclusion across recovery.
+  Independent139test review passes, including actual coordinator/dispatch tests
+  with encrypted SQLite fixtures. Those tests do not call the live editor.
+- Clean Node24.18.0/npm11.16.0 install,151 registry signatures/40 attestations,
+  zero-vulnerability audit and sanitizer verification pass. Full verification
+  with inherited142/145 passes2,092facade tests/oneplatformskip/zero failures or
+  cancellations and424bridge tests. Strict types/type-aware lint are clean.
+  Package/seven skills, official skill validators, repository/privacy, actionlint,
+  offline doctor and reproducible builds pass. Final reporting-only annotations
+  also passed an independent73test review. The final full rerun repeats the
+  same2,092facade/424bridge passes with no failures or cancellations.
+  Source161files83ddfd7e, bundle815f22a5, manifestde80d703;
+  external/native/sanitizer pins unchanged.
+- Candidate0.3.0+codex.20261010214400 is not yet published or installed. Loaded
+  210100 completed the disposable lifecycle test and its editor is closed. Publication, CI and actual
+  installed proof must be recorded separately; PR9 remains draft.
+
 ### Restarted202803 disposable validation and corrections
 
 - Fresh202803 admission passed the exact installed bundle/manifest and unchanged
@@ -600,7 +660,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed Git-marketplace candidate is `0.3.0+codex.20261010202803`, with 26 tools and seven skills, from the draft feature ref. Exact installed-file and offline startup proof passes. Loaded host remains194400, whose empty-symbol test passed and flat-display request refused before journal/write/Save. Earlier scoped lookup, metadata, page-creation and inactive-close evidence remains bound to182554. Both disposable editors are closed and their final receipts verify. Fresh-session admission and disposable tests of202803 remain required; no live call followed installation. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
+- The installed and loaded Git-marketplace candidate is `0.3.0+codex.20261010210100`, with 26 tools and seven skills, from the draft feature ref. Exact installed-file, offline startup and fresh authenticated tuple admission pass. Its original flat-display journal is terminal after one inverse, delayed native persistence and read-only full-project reconciliation; no Save or replay. This is not immediate rollback validation. A separate210100 text-only transaction passed Save/close/reopen and complete nine-document proof. Both disposable editors are now closed, with the final flat source verified unchanged after normal close. Earlier lookup, metadata, page-creation and inactive-close evidence remains bound to182554; empty-symbol creation remains bound to194400. New source is not installed. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

@@ -2,9 +2,8 @@ import { z } from "zod";
 import { assertExpectedFingerprint, canonicalJson, normalizeEasyedaProjectPath, sha256Json } from "./core.ts";
 import { parseDocumentSource } from "./document-source.ts";
 import { assertExactTransportValue, validateExactReadPayload } from "./exact-readers.ts";
-import { validatePublicSdkReadPayload, validatePublicSdkReadRequest } from "./public-sdk-read.ts";
+import { publicSdkReadImplementationKind, validatePublicSdkReadPayload, validatePublicSdkReadRequest } from "./public-sdk-read.ts";
 import type { PublicSdkReadRequest } from "./public-sdk-read.ts";
-import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
 
 const text = z.string().min(1).max(4096);
 const hash = z.string().regex(/^[a-f0-9]{64}$/u);
@@ -78,7 +77,9 @@ export function parseDisposableSdkValidationPlan(input: unknown): DisposableSdkV
     // This historical validator binds public-only response authority. A new
     // Native result contract needs its own reviewed validation lifecycle, not a
     // Refusal after an otherwise-valid observation has already been dispatched.
-    if (isSchematicNativeIdMethod(request.method)) { throw new Error("This disposable validation plan admits public SDK readers only; native ID equivalents require a separately reviewed validation contract."); }
+    if (publicSdkReadImplementationKind(request.method) !== "public-method") {
+      throw new Error("This disposable validation plan admits public SDK readers only; native equivalents require a separately reviewed validation contract.");
+    }
     return { id: step.id, request };
   });
   return structuredClone({ ...plan, steps });

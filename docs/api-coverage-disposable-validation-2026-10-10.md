@@ -1,6 +1,70 @@
 # Disposable API validation
 
+## Restarted210100: delayed inverse recovered
+
+The fresh facade admitted the installed bundle and unchanged external tuple.
+It rebound the original flat-display journal, opened its original disposable
+target once and reconciled the exact forward effect with all nine durable
+documents checked. Original plan, v1 seals and raw observations were preserved.
+
+One inverse restored the complete original live native snapshot, but immediate
+rollback verification refused because saved TEXT.x was still290 instead of280.
+A second read-only checkpoint confirmed that live-before/durable-after split.
+No Save, edit replay, second inverse, close or settings change was attempted.
+Later native persistence restored x280. Root and independent verification then
+passed the complete maintained restoration proof, including all eight unchanged
+peer documents and separately reported frame/CANVAS/attribute initialization.
+
+Read-only reconciliation completed the original journal as
+`reconciled-no-mutation`, with no hard stop or orphan risk, and `saved:false` /
+`reopened:false`. This proves delayed durable restoration without an agent Save,
+not immediate rollback or a Save/reopen lifecycle. Terminal artifact commitment:
+`4addd35f8b254a9db3d88307e97c6422d364ff0d06786cf66e24d77c61ce918f`.
+Restored source commitment:
+`c3a6aae0a4170b8eee3b1a2f9d76976041cef73c722285b147e35cd862e8fa00`.
+Restored logical SQLite commitment:
+`e5d4b75dcf0b1d19ed4207955c4c3239fcac43eb3d5c3a8e3df1e105da1dff4a`.
+
+Text-ID, empty Wire/Bus-ID and a rectangle/circle/duplicate polygon split all
+returned stable expected data. Their first interval overlapped delayed inverse
+persistence, so those results alone do not establish saved-project invariance.
+A separate controlled read-only batch against the settled baseline passed.
+Each reader returned two matching samples with verified managed receipts. The
+complete native snapshot remained identical, and the post-reader checkpoint
+retained the exact source bytes and logical SQLite commitments shown above.
+Post-reader receipt commitment:
+`66cbbb5093bcccd7f4c5a5586715d9ba11d52adbbfda9e5fc7e1d1b01ac33a54`.
+Empty Wire/Bus results do not validate nonempty wire/bus membership. No component
+property-name or symbol-pin connected acceptance is claimed by this generation.
+### Separate text Save/reopen case
+
+A new transaction changed only the disposable TEXT.x from280 to285. It completed
+one Save, one close and one reopen, with exact native readback and complete
+nine-document persistence proof. All eight peer documents remained unchanged.
+Independent review reproduced the complete persistence/materialization results
+and validated the retained Save authority and its sole immutable attempt.
+The retained close proof reports one close call and removal of the old frame/tab;
+the open proof reports a new ready frame, exact context and two readiness samples.
+This is separate from the earlier recovered journal and does not reuse its Save
+or inverse. Terminal artifact commitment:
+`c475eb675299bea4e488d0abe9e42da1e4a3bccea6398ba4f185df2a25a55703`.
+
+Normal application close and empty process discovery followed. The maintained
+checkpoint verifier confirms the closed source still matches the terminal
+receipt, without Save/Discard selection. Closed source commitment:
+`465c8adbdfb5401eaa1160f4615e351381de586a9631d937337ff2a7a396ddf9`.
+Logical SQLite commitment:
+`97551086bb8f57ea57ea7d43ef17612bc9420a84efc5fb91340ba21915dc0a79`.
+
+Scope is a210100 text-only fixture with zero electrical components/pins, not
+attribute edits, nonempty electrical topology, new source admission or immediate
+rollback. Both disposable editors are closed. The overall API task and draftPR9
+remain unfinished. No production project access.
+
 ## Corrected210100 candidate installed; recovery pending
+
+This section records the pre-restart installation state; the continuation above
+supersedes its pending-recovery statements.
 
 Payload `d57ff5792eebc409348483b6cc3e08b86d0badce` passed
 [GitHub CI38086385404](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38086385404)

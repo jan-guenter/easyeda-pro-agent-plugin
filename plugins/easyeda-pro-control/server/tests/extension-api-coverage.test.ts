@@ -164,11 +164,11 @@ void test("omitted geometric getters retain proven callback, projection and filt
   assert.match(net.omission.reason, /DTO/u);
   assert.equal(net.routes.length, 0);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 191, "implemented-native-equivalent": 77, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 496,
+    "implemented-public-subset": 191, "implemented-native-equivalent": 79, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 494,
   });
 });
 
-void test("polygon splitting has only a bounded public subset while discretize and pin enumeration retain actual installed defects", () => {
+void test("polygon splitting is bounded public data, Pin enumeration is a native equivalent and discretize remains a stub", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   const split = rows.get("eda.pcb_MathPolygon.splitPolygon");
   assert.equal(split?.status, "implemented-public-subset");
@@ -181,10 +181,13 @@ void test("polygon splitting has only a bounded public subset while discretize a
   assert.equal(discretize?.omission?.code, "reviewed-native-stub");
   assert.match(discretize?.omission?.reason ?? "", /unconditionally throws Not implemented/u);
   const pins = rows.get("eda.sch_PrimitivePin.getAll");
-  assert.equal(pins?.status, "omitted");
-  assert.equal(pins?.omission?.code, "lossy-or-unawaited-public-reader");
-  assert.match(pins?.omission?.reason ?? "", /RPC and required-attribute projection errors/u);
-  assert.match(pins?.omission?.reason ?? "", /independent native membership parity/u);
+  assert.equal(pins?.status, "implemented-native-equivalent");
+  assert.equal(pins?.omission, null);
+  assert.equal(pins?.completeDeclaredContractSupported, false);
+  assert.equal(pins?.currentGenerationLiveValidation, "not-recorded");
+  assert.deepEqual(pins?.routes[0]?.documentTypes, [2]);
+  assert.match(pins?.routes[0]?.scope ?? "", /explicit public get\(id\) parity/u);
+  assert.match(pins?.routes[0]?.scope ?? "", /never the broken getAll/u);
 });
 
 void test("owned editor tab lookup coverage uses only its checkpoint-bound specialized public readers", () => {

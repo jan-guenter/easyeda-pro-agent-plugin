@@ -7,13 +7,13 @@
     "latestDistinctMethods": 773,
     "statuses": {
       "implemented-public-subset": 191,
-      "implemented-native-equivalent": 77,
+      "implemented-native-equivalent": 79,
       "internal-lifecycle-only": 2,
       "implemented-but-blocked": 8,
-      "omitted": 496
+      "omitted": 494
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 323,
+      "available-with-runtime-guards": 325,
       "blocked": 9,
       "partially-blocked": 3
     },
@@ -22,7 +22,6 @@
       "broken-net-type-filter-and-result-abi": 1,
       "callback-or-registration-lifecycle": 27,
       "cross-tab-netlist-export-scope": 1,
-      "divergent-public-result-abi": 1,
       "extension-or-global-settings-state": 15,
       "external-commercial-action": 6,
       "implicit-annotation-and-save-all": 2,
@@ -32,7 +31,7 @@
       "interactive-ui-resource": 37,
       "lossy-heterogeneous-primitive-projection": 3,
       "lossy-logging-selection-reader": 1,
-      "lossy-or-unawaited-public-reader": 8,
+      "lossy-or-unawaited-public-reader": 7,
       "lossy-selected-object-projection": 1,
       "managed-file-contract-needed": 39,
       "multi-object-electrical-effect": 7,
@@ -23097,7 +23096,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sch_PrimitiveBus.getAllPrimitiveId",
           "implementation": "native-task-equivalent",
-          "scope": "Fixed narrowed argument subset; bounded double-sampled native ID observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded connected-tree/ID-index agreement and direct-root Text/NetGroup source/model membership are required. Generated or inherited descendant Text is not a root Text entry. Wire/bus IDs identify groups, not their LINE children. Structural GROUP records owned by combinationManager are unsupported because they have no ID-index model; their presence refuses the entire read. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded connected-tree/ID-index agreement and direct-root Text/NetGroup source/model membership are required. Generated or inherited descendant Text is not a root Text entry. Wire/bus IDs identify groups, not their LINE children. Structural GROUP records owned by combinationManager are unsupported because they have no ID-index model; their presence refuses the entire read. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
           "documentTypes": [
             1
           ],
@@ -24233,14 +24232,39 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "divergent-public-result-abi",
-        "reason": "Installed implementation branches use different raw component result shapes; the newer branch calls getAttr on raw RPC rows without a verified class ABI.",
-        "nextRequirement": "Implement an explicit field-name projection from an independently validated component/native representation, or prove both installed result branches with scoped fixtures.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.sch_PrimitiveComponent.getAllPropertyNames",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the broken installed public wrapper: only the exact active ordinary SCH_PAGE; hierarchical/block-instance pages and unknown Symbol kinds refuse. Complete bounded connected-tree/ID-index/source membership and direct-root Symbol family agreement are required. Each Symbol's direct Attr children, attribute map and getAttr result must agree exactly, including generated and inherited attributes absent from page-source rows. Includes part, sheet, netflag, netport, offPageConnector, nonElectrical_symbol, short_symbol and diffPairsFlag. Pin attributes are not component properties. Structural GROUP records and nonreciprocal cross-linked model ownership are unsupported and refuse the entire read. Sorted unique exact keys preserve case, whitespace and empty strings. At most 4096 attributes per Symbol, 1024 UTF-16 units per key, 20000 keys and 131072 total key units; shared transport placeholder guards still apply. No attribute values, compiler, multiPart, source serializer, settings, RPC, navigation or Save. Stable property-name sets are not complete source/connectivity/persistence proof or proof that other design fields remained unchanged.",
+          "documentTypes": [
+            1
+          ],
+          "source": [
+            "schematic-component-properties.ts"
+          ],
+          "tests": [
+            "schematic-component-properties.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.sch_PrimitiveComponent.getAllPropertyNames",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -25162,7 +25186,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sch_PrimitivePin.get",
           "implementation": "public-method",
-          "scope": "Fixed complete argument subset; bounded double-sampled public SDK observation, not complete native-source/connectivity/persistence proof. Public SDK getter projection; native hidden fields, mapper losses, and saved persistence are not independently verified.",
+          "scope": "Fixed complete argument subset; bounded double-sampled public SDK observation, not complete native-source/connectivity/persistence proof. Public SDK getter projection; native hidden fields, mapper losses, and saved persistence are not independently verified. The installed explicit Pin getter omits custom attributes from OtherProperty and returns native rotation unchanged, unlike the stored PIN rotation convention (native plus 180 degrees, normalized). This result is not a lossless attribute/source projection. Explicit requested-ID parity does not prove complete native Pin membership. The maintained ordinary-symbol getAll native equivalent independently proves membership and refuses custom attributes before checking getter parity.",
           "documentTypes": [
             1,
             2
@@ -25215,16 +25239,39 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "lossy-or-unawaited-public-reader",
-        "reason": "The installed pin enumeration catches RPC and required-attribute projection errors as an empty array, so failure is indistinguishable from an empty pin inventory. Explicit-ID get and ID enumeration rethrow errors, but a complete equivalent still needs independent native membership parity.",
-        "nextRequirement": "Use an independently complete native reader with awaited completion, source parity and failure tests; do not report a swallowed error as an empty result.",
-        "evidence": [
-          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.sch_PrimitivePin.getAll",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native membership plus explicit public get(id) parity, never the broken getAll or public ID inventory. Only one exact active ordinary project-symbol PART is supported; schematic instances, multipart/inherited shapes, drawing/flag symbols, device associations and source GROUP records refuse. Complete reciprocal tree/ID-index/source and PART Pin-family agreement are required. Generated UnConnectDot children are checked but not counted as Pins. Exactly three source-backed Pin Name/Pin Number/Pin Type attributes are required; custom properties and no-connect/junction children refuse. Sorted unique IDs, at most 256 Pins. All twelve fixed getter fields must equal independent native values, with original state and ownership rechecked around every awaited explicit-ID get. Names/colors are at most 4096 UTF-16 units, geometry finite and length nonnegative; unknown shape/type enums refuse. OtherProperty must be undefined, with exact per-row absence evidence. Coordinates and rotation follow the installed explicit getter, not source-serialized rotation. JSON transport normalizes signed zero; native reproof and getter parity still distinguish it before serialization. No compiler, serializer, sorting parts getter, settings, navigation or Save. This is bounded Pin getter data, not complete native-source, electrical connectivity, persistence or proof that other design fields stayed unchanged between observations.",
+          "documentTypes": [
+            2
+          ],
+          "source": [
+            "symbol-pin-enumeration.ts"
+          ],
+          "tests": [
+            "symbol-pin-enumeration.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.sch_PrimitivePin.getAll",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -25256,7 +25303,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sch_PrimitivePin.getAllPrimitiveId",
           "implementation": "public-method",
-          "scope": "Fixed complete argument subset; bounded double-sampled public SDK observation, not complete native-source/connectivity/persistence proof. Public SDK getter projection; native hidden fields, mapper losses, and saved persistence are not independently verified.",
+          "scope": "Fixed complete argument subset; bounded double-sampled public SDK observation, not complete native-source/connectivity/persistence proof. Public SDK getter projection; native hidden fields, mapper losses, and saved persistence are not independently verified. The installed public Pin ID wrapper substitutes an empty object for missing shapes.pin and an empty array for an absent inventory. A successful empty response does not independently prove complete native membership. Its native inventory reads the parts getter, which may sort the in-memory parts index and clear shouldSortParts. This is not proof of pure native-state invariance; no compiler or Save belongs to this reviewed callback chain. Use the maintained ordinary-symbol getAll native equivalent for independent complete membership/parity within its narrow contract; that route avoids the sorting parts getter and public ID inventory.",
           "documentTypes": [
             1,
             2
@@ -26283,7 +26330,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sch_PrimitiveText.getAllPrimitiveId",
           "implementation": "native-task-equivalent",
-          "scope": "Fixed narrowed argument subset; bounded double-sampled native ID observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded connected-tree/ID-index agreement and direct-root Text/NetGroup source/model membership are required. Generated or inherited descendant Text is not a root Text entry. Wire/bus IDs identify groups, not their LINE children. Structural GROUP records owned by combinationManager are unsupported because they have no ID-index model; their presence refuses the entire read. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded connected-tree/ID-index agreement and direct-root Text/NetGroup source/model membership are required. Generated or inherited descendant Text is not a root Text entry. Wire/bus IDs identify groups, not their LINE children. Structural GROUP records owned by combinationManager are unsupported because they have no ID-index model; their presence refuses the entire read. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
           "documentTypes": [
             1
           ],
@@ -26664,7 +26711,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sch_PrimitiveWire.getAllPrimitiveId",
           "implementation": "native-task-equivalent",
-          "scope": "Fixed narrowed argument subset; bounded double-sampled native ID observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded connected-tree/ID-index agreement and direct-root Text/NetGroup source/model membership are required. Generated or inherited descendant Text is not a root Text entry. Wire/bus IDs identify groups, not their LINE children. Structural GROUP records owned by combinationManager are unsupported because they have no ID-index model; their presence refuses the entire read. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded connected-tree/ID-index agreement and direct-root Text/NetGroup source/model membership are required. Generated or inherited descendant Text is not a root Text entry. Wire/bus IDs identify groups, not their LINE children. Structural GROUP records owned by combinationManager are unsupported because they have no ID-index model; their presence refuses the entire read. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
           "documentTypes": [
             1
           ],

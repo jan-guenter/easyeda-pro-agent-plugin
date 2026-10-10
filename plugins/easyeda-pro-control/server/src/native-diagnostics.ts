@@ -3,6 +3,8 @@ import { libraryRuntimeFailureCategory } from "./library-runtime-guard.ts";
 import { projectUploadBarrierFailureCategory } from "./project-upload-barrier.ts";
 import { METADATA_NATIVE_GUARD_CODES } from "./metadata-native-diagnostics.ts";
 import { SCHEMATIC_NATIVE_ID_GUARD_CODES, SCHEMATIC_NATIVE_ID_METHODS } from "./schematic-native-ids.ts";
+import { SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES, SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
+import { SYMBOL_PIN_ENUMERATION_GUARD_CODES, SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
 
 /** Fixed literal errors emitted by reviewed code builders. Never echo unknown
  * native exception text, dynamic suffixes, stack traces or caller values.
@@ -193,9 +195,21 @@ const schematicIdCategories = new Map<string, string>(SCHEMATIC_NATIVE_ID_METHOD
   [...SCHEMATIC_NATIVE_ID_GUARD_CODES.map((code) => [`SCH_NATIVE_IDS_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
     .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
       `native-schematic-ids:${method}:${label}`] as const)));
+const componentPropertyCategories = new Map<string, string>(
+  [...SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES.map((code) => [`SCH_COMPONENT_PROPERTIES_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${SCHEMATIC_COMPONENT_PROPERTY_METHOD}|stage=call|code=${code}|getter=none`,
+      `native-component-properties:${SCHEMATIC_COMPONENT_PROPERTY_METHOD}:${label}`] as const));
+const symbolPinCategories = new Map<string, string>(
+  [...SYMBOL_PIN_ENUMERATION_GUARD_CODES.map((code) => [`SYMBOL_PIN_ENUM_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${SYMBOL_PIN_ENUMERATION_METHOD}|stage=call|code=${code}|getter=none`,
+      `native-symbol-pins:${SYMBOL_PIN_ENUMERATION_METHOD}:${label}`] as const));
 
 export function nativeFailureCategory(message: unknown): string | null {
   if (typeof message !== "string") { return null; }
+  const symbolPinCategory = message.length <= 288 ? symbolPinCategories.get(message) : undefined;
+  if (symbolPinCategory !== undefined) { return symbolPinCategory; }
+  const componentPropertyCategory = message.length <= 288 ? componentPropertyCategories.get(message) : undefined;
+  if (componentPropertyCategory !== undefined) { return componentPropertyCategory; }
   const schematicIdCategory = message.length <= 256 ? schematicIdCategories.get(message) : undefined;
   if (schematicIdCategory !== undefined) { return schematicIdCategory; }
   const operationStageCategory = message.length <= 128 ? operationStageCategories.get(message) : undefined;

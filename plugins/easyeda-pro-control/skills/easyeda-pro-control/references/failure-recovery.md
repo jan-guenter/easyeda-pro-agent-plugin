@@ -46,6 +46,27 @@ Retained-proof recovery remains operation-specific. Do not generalize wire,
 layout, copper or library recovery to another action. If no maintained path can
 prove the already attempted lifecycle, preserve evidence and request review.
 
+## Inverse and delayed persistence
+
+An inverse is also one-shot. Its retained intent, preparation or acknowledgment
+survives reconciliation and runtime rebinding; none authorizes another inverse
+or a subsequent Save. The summary's `inverse.available` is conditional admission information,
+not permission to dispatch from a stale summary.
+
+For flat display edits, an unsaved inverse requires fresh proof that durable
+state still matches the original baseline. If native auto-persistence already
+stored the forward effect, rollback refuses before dispatch. Do not relabel that
+effect as unsaved because the agent has not clicked Save.
+
+If an older inverse already restored live state but its durable proof failed,
+preserve the journal and both observations. The upload barrier drains queued
+writes; it does not initiate Save or guarantee that editor changes were queued.
+A later read-only checkpoint may show delayed native persistence. Only then can
+same-journal reconciliation verify the original live baseline, complete durable
+restoration and unchanged peers. Do not change autosave settings, repeat the
+inverse, click Save or close the editor to force this outcome. A continuing
+live/saved mismatch remains unresolved.
+
 ### Retained wire Save
 
 After standalone `sch.wire.modify` reaches Save, never commit it again. The

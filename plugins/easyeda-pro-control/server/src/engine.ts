@@ -57,7 +57,9 @@ import {
   validateExactReadRequest,
 } from "./exact-readers.ts";
 import type { ExactReadRequest } from "./exact-readers.ts";
-import { buildPublicSdkReadCode, validatePublicSdkReadPayload, validatePublicSdkReadRequest } from "./public-sdk-read.ts";
+import { buildPublicSdkReadCode, publicSdkReadImplementationKind, validatePublicSdkReadPayload, validatePublicSdkReadRequest } from "./public-sdk-read.ts";
+import { SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
+import { SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
 import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
 import { isEditorTabLookupMethod, readEditorTabLookup } from "./editor-tab-lookups.ts";
 import { buildSchematicNativeReadExpression } from "./schematic-native-adapter.ts";
@@ -3286,9 +3288,13 @@ export class EasyedaControlEngine {
     if (sha256Json(first) !== snapshotSha256) {
       throw new Error("Public SDK observation changed between consecutive samples; no stable result was produced.");
     }
-    return { ...second, authority: isSchematicNativeIdMethod(parsed.method)
-      ? "native-id-observation-not-complete-source-connectivity-or-persistence-proof"
-      : "public-sdk-observation-not-complete-design-proof", read_consistency: {
+    let authority = publicSdkReadImplementationKind(parsed.method) === "native-task-equivalent"
+      ? "native-task-observation-not-complete-source-connectivity-or-persistence-proof"
+      : "public-sdk-observation-not-complete-design-proof";
+    if (isSchematicNativeIdMethod(parsed.method)) { authority = "native-id-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    if (parsed.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { authority = "native-property-name-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    if (parsed.method === SYMBOL_PIN_ENUMERATION_METHOD) { authority = "native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    return { ...second, authority, read_consistency: {
       stable: true, attempts: 2, snapshotSha256,
       contextBinding: { level: "active-context-stability-required", preAndPostChecked: true, switchAwayAndBackDetectable: false },
     } };

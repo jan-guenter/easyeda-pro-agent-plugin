@@ -1,6 +1,6 @@
 # Capability matrix
 
-Use supported typed APIs first. Native controls cover genuine API stubs and dialogs. This matrix describes the current source package; an older installed snapshot may not contain these tools. The reviewed tuple is connected-read-admitted, and exact reads and typed operations still require their pinned implementation identities.
+Use supported typed APIs first. Native controls cover genuine API stubs and dialogs. This matrix describes the current source package; an older installed snapshot may not contain these tools. Historical external-tuple admission and installed-generation evidence do not admit this new source. Exact reads and typed operations still require their pinned implementation identities and operation-specific proof.
 
 Current safety restriction (October 10): schematic compiled topology is disabled.
 The installed netlist File getter can annotate components and invoke Save All.
@@ -20,6 +20,8 @@ its narrow boundary and pending live validation are listed separately below.
 | Exact schematic components | exact_read | Stable double samples with fixed public projections; schematic-topology disabled pending a verified non-mutating replacement |
 | API coverage and fixed reads | api coverage/sdk-reads/sdk-validate, sdk_read | Complete per-method inventory; fixed schemas and explicit public/native implementation labels; bounded observations, not complete source or persistence proof; current-generation live validation pending |
 | Schematic Text/Wire/Bus IDs | sdk_read, getAllPrimitiveId | Native ID-only equivalent on an ordinary active type-1 page; empty arguments only, no Wire net filters or symbol/block-instance scenes. Complete reciprocal tree/index proof and source-backed root-family membership; generated frame descendants excluded, structural GROUP records refused. Two stable observations, no callback/compiler/Save. Group IDs are not LINE IDs. Offline-tested; connected validation pending |
+| Schematic component property names | sdk_read, sch_PrimitiveComponent.getAllPropertyNames | Native key-only equivalent on one ordinary page; complete root Symbol/attribute-map/tree/index proof, including inherited/generated frame/flag keys. No values, compiler, source serializer or Save; unsupported ownership/groups refuse. Exact sorted bounded strings, not all-pages or persistence proof. Connected validation pending |
+| Ordinary symbol Pin enumeration | sdk_read, sch_PrimitivePin.getAll | Native single-PART membership plus explicit public-getter parity; 256-Pin bound, exact standard attributes, generated-dot ownership and reproof around awaits. Custom attributes/multipart/device/no-connect/junction cases refuse. Getter rotation is not stored rotation; JSON normalizes signed zero. Connected validation pending |
 | Polygon splitting | sdk_read, pcb_MathPolygon.splitPolygon | Bounded JSON complex-polygon groups, temporary SDK constructors and exact ordered source-array output with duplicates retained. No native handles or CAD mutation; shared aggregate limits apply. Offline-tested including pinned constructor bodies; connected validation pending |
 | Owned editor tab/split-screen lookup | sdk_read, getSplitScreenIdByTabId / getTabsBySplitScreenId | Exact existing selector, complete bounded owned tree and saved project membership; identity-only direct result checked against the tree before/after, two matching samples and unchanged checkpoint/context. No foreign projects, empty leaves, title/data export, navigation or current-generation live claim |
 | Single-page stored display changes | design sch.layout.batch, sealed flat-display profile | Existing literal-ID attribute/text display patches only; complete inverse, unchanged endpoint topology, sole page of one ordinary schematic and full saved-project proof. No electrical edits, NO_CONNECT, creation/deletion, translation, non-display steps or historical repair/page loading. Source/offline-tested; new connected lifecycle pending. See schematic.md |
@@ -63,7 +65,7 @@ its narrow boundary and pending live validation are listed separately below.
 | Canvas and desktop captures | capture / native_ui capture | Managed visual evidence; canvas path has full PNG validation; desktop capture is not geometric, connectivity or persistence proof |
 | Design commit | design commit | Durable no-repeat Save intent, save/reopen, source readback and exact complete selected-branch durable delta; unrelated library/documents invariant; retained recovery is operation-specific |
 | One-request design completion | design execute | Apply then commit only its verified non-orphan result; same proof gates and retained failure journal; no retry or automatic inverse |
-| Design rollback | design rollback | Supported exact inverse, fresh desired-state proof, native queued-write completion and a fresh complete durable baseline proof before terminal; never automatically saves |
+| Design rollback | design rollback | One-shot exact inverse and fresh desired-state proof; flat display additionally requires unchanged durable baseline immediately before dispatch. Queued-upload completion is not a Save or guaranteed persistence flush. Full live/durable restoration required before terminal; delayed persistence can be reconciled read-only. Never repeats an inverse or saves afterward |
 | Runtime and orphan recovery | runtime / typed recover-authority | Retained Windows Job, authenticated native process ownership, immutable dispatch capture, old termination and replacement-session proof |
 | Checkpoints and evidence | checkpoint / evidence tools | Read-only SQLite online backup, quick_check, managed hashes and receipts; checkpoint creation is not database restore |
 | Legacy writer endpoints | runtime-disabled | plan/apply/verify/rollback/save_reopen remain refusal endpoints; use design instead |
@@ -71,13 +73,30 @@ its narrow boundary and pending live validation are listed separately below.
 
 ## Reported live coverage
 
-Installed202803 reached the exact requested single-field text effect on a
+Installed210100 reconciled the exact earlier text effect, then dispatched one
+inverse on the nine-document disposable fixture. Immediate durable verification
+refused; several minutes later native persistence restored the saved baseline.
+Complete native and nine-document/eight-peer proof then passed, and read-only
+same-journal reconciliation finished without another inverse or Save. This is
+delayed-restoration evidence, not immediate rollback or Save/reopen validation.
+Text-ID, empty Wire/Bus and rectangle/circle/duplicate polygon observations also
+returned expected stable results. A controlled batch after persistence settled
+preserved the complete native snapshot and saved SQLite bytes/logical dump.
+Nonempty Wire/Bus, new property-name and Pin
+readers, attribute edits and nonempty flat topology require separate acceptance.
+A separate210100 one-field text transaction completed one Save/close/reopen with
+exact native readback, complete nine-document proof and eight unchanged peers.
+Normal application close preserved the final checkpoint's source bytes. This
+does not admit a newer facade, attribute edits or nonempty electrical topology.
+
+Historically, installed202803 reached the exact requested single-field text effect on a
 nine-document disposable fixture, then stopped before Save on differing raw
 source encodings in the flat native hash. Independent parsed-source/native and
-complete durable proof passes; original-journal recovery, inverse and Save/reopen
-remain unfinished. Its new Text-ID call also failed; corrected root/descendant
-membership has offline regression evidence only. Do not treat either as live
-acceptance or replay either call.
+complete durable proof passed. The210100 recovery above supersedes its pending
+original-journal recovery/inverse status; new-source Save/reopen validation remains
+separate. Its new Text-ID call also failed; the corrected root/descendant
+membership subsequently passed the scoped210100 Text-ID case above. Neither
+result admits a newer facade or authorizes replay of the historical edit.
 
 Installed194400 completed one empty ordinary-symbol creation from a clean PCB:
 the original returned identity was retained, exactly one META-only SYMBOL was

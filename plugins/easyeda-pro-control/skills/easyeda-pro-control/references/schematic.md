@@ -39,11 +39,23 @@ The same complete checks apply before writes and to final rollback/reconciliatio
 An inverse may restore the exact display while retaining verified native
 initialization bookkeeping; it does not promise byte-identical SQLite history.
 
+An unsaved inverse is admitted only while a fresh complete checkpoint still
+matches the original baseline. A persisted forward effect is not an unsaved
+rollback target. Inverse intent is one-shot, including after runtime rebinding
+or reconciliation. A successful live inverse with stale saved records remains
+incomplete; follow [delayed-persistence recovery](failure-recovery.md#inverse-and-delayed-persistence)
+without another inverse or Save.
+
 This profile has source and adversarial offline tests. Successful connected
 apply/Save/reopen and inverse validation remain pending for the new candidate.
-Installed194400 refused the real text-only fixture before journal/write/Save
-because its initial stored/source membership check incorrectly included META.
-The new comparison correction must pass a fresh disposable lifecycle test.
+Installed210100 reconciled the earlier single-text effect and dispatched one
+inverse. Exact live restoration preceded durable restoration by several minutes;
+the immediate rollback correctly stopped. This is delayed-persistence evidence,
+not successful immediate rollback or a Save/reopen lifecycle. A separate210100
+single-text transaction subsequently passed one Save/close/reopen, exact native
+readback and complete nine-document persistence proof with eight unchanged peers.
+Attribute edits and nonempty electrical topology still require separate connected
+fixtures. Historical evidence does not admit the new candidate.
 
 Do not use `easyeda_schematic_verify_write` for component proof in the pinned upstream build. Its handler expects an array while the bridge returns `{ total, items }`, so it can report `components_available: false` despite live components. Its name does not make its payload trustworthy.
 

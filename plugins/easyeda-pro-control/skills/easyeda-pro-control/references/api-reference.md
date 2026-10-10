@@ -97,15 +97,38 @@ unsupported and refuse the observation rather than returning a partial list. Wir
 IDs identify groups, not LINE children. These routes avoid the public callbacks
 and compiler-backed wire/bus getters; they do not serialize source or invoke Save.
 Their native-only authority labels distinguish them from public SDK projections.
-New connected validation remains pending. The older public-SDK validation runner
+Installed210100 returned one source-backed Text and empty Wire/Bus sets on the
+disposable frame/text fixture; nonempty Wire/Bus acceptance remains pending.
+That evidence does not validate later facade generations. The older public-SDK validation runner
 rejects these native routes before any dispatch; it is not their test runner.
+
+`eda.sch_PrimitiveComponent.getAllPropertyNames` is a native equivalent on one
+ordinary active schematic page, not the installed broken public wrapper or an
+all-pages query. It reads exact keys from owned component attributes, including
+inherited/generated frame and flag attributes, without reading values. Pin
+attributes are excluded. Unknown Symbol kinds, structural GROUP records and
+nonreciprocal ownership refuse the entire result. Empty and case-distinct keys
+are preserved; shared transport-placeholder guards still apply.
+
+`eda.sch_PrimitivePin.getAll` supports one ordinary active project-symbol PART
+only. It proves native Pin membership and all twelve fixed getter fields around
+each explicit `get(id)`, never invoking the broken public `getAll`. Custom pin
+attributes, multipart/inherited shapes, associated devices and no-connect or
+junction children refuse. Exact generated UnConnectDot ownership is admitted.
+OtherProperty is explicitly undefined, not an inferred empty property map.
+Rotation follows the installed getter, which differs from stored PIN rotation;
+JSON transport normalizes signed zero. Neither this route nor property-name
+enumeration is connected-validated yet or accepted by the public-only fixture
+runner. Inspect their full limits and strict empty-argument schemas offline.
 
 `eda.pcb_MathPolygon.splitPolygon` accepts JSON `complexPolygons`: one to eight
 groups, each a source array or one to eight source arrays, each at most 1024 tokens.
 Shared aggregate bounds still apply. The facade constructs temporary SDK objects
 and returns source arrays, preserving order and duplicates; no reusable handle
-or CAD object is created. This pure subset is offline-tested, not connected-
-validated. The installed `discretize` method throws `Not implemented`; a newer
+or CAD object is created. Installed210100 returned the exact rectangle/circle/
+duplicate sequence on the disposable schematic; other polygon commands and
+later generations still need separate connected evidence. The installed
+`discretize` method throws `Not implemented`; a newer
 declaration does not make it executable on this runtime.
 
 Neither public results nor native ID observations replace complete native-source,

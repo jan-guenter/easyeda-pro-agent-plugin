@@ -81,7 +81,13 @@ async function coordinator(t: TestContext, action: Action, drift: "none" | "meta
   const seams = executor as unknown as { assertRuntime: () => Promise<void>; snapshot: () => Promise<Snapshot>;
     flatEvidence: (journal: unknown, current: Snapshot, phase: Phase, lifecycle?: boolean) => Promise<FlatDisplayObservationEvidence>;
     call: (journal: unknown, phase: string, code: string) => Promise<unknown> };
-  let current = action === "reconcile" || action === "saved-reconcile" ? persisted : applied;
+  // An unsaved inverse is only possible while disk still holds the baseline.
+  // Native observation and SQLite history must not be advanced in lockstep.
+  const unpersisted = { ...applied, evidence: { ...before.evidence,
+    observation: applied.evidence.observation, proof: applied.evidence.proof } };
+  let current = applied;
+  if (action === "reconcile" || action === "saved-reconcile") { current = persisted; }
+  else if (action === "rollback") { current = unpersisted; }
   const calls: string[] = [];
   t.mock.method(seams, "assertRuntime", (): Promise<void> => Promise.resolve());
   t.mock.method(seams, "snapshot", (): Promise<Snapshot> => Promise.resolve({ payload: { read_consistency: { snapshotSha256: "a".repeat(64) } },
@@ -100,12 +106,19 @@ async function coordinator(t: TestContext, action: Action, drift: "none" | "meta
   if (drift === "none") {
     const result = await invoke();
     assert.equal(result["state"], { commit: "completed", rollback: "rolled-back", reconcile: "reconciled-no-mutation", "saved-reconcile": "completed" }[action]);
+    assert.deepEqual(result["topologyAuthority"], { kind: "checkpoint-bound-flat-pin-nets", compiledTopology: false,
+      schematicUuid: prepared.binding.schematicUuid, pageUuid: prepared.binding.pageUuid, durableDocumentCount: 9 });
     const retained = await loadOperation(operationId);
     const descriptor = retained.artifacts?.at(-1); assert.ok(descriptor);
     const read = await readArtifact(descriptor.path, 0, descriptor.bytes); assert.equal(read.eof, true);
     const artifact: unknown = JSON.parse(read.text); assert.ok(isRecord(artifact));
     if (action === "commit" || action === "saved-reconcile") {
       assert.ok(isRecord(artifact["flatMaterialization"])); assert.equal(artifact["flatMaterialization"]["comparisonOnly"], true);
+      const persistence = artifact["persistence"]; assert.ok(isRecord(persistence));
+      for (const proof of [artifact["lifecycle"], persistence["effect"], ...(action === "saved-reconcile" ? [artifact["savedEffect"]] : [])]) {
+        assert.ok(isRecord(proof)); assert.equal(proof["topology"], "executor-verified-checkpoint-bound-flat-pin-nets");
+        assert.equal(proof["compiledTopology"], false);
+      }
       if (action === "saved-reconcile") { assert.equal(artifact["saveDispatchedByRecovery"], false); assert.equal(artifact["navigationDispatchedByRecovery"], false); }
     }
     else {

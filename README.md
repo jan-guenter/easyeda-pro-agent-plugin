@@ -21,10 +21,14 @@ tool performs local getters, fixed primitive-state projections and bounded pure
 calculations with authenticated context checks and two matching samples. Three
 explicitly classified native equivalents read schematic Text/Wire/Bus group IDs
 without the public callbacks or compiler; only the active ordinary page and
-empty arguments are supported. The fixed read catalog has 164 routes, including
-bounded polygon splitting that preserves input source arrays and their order. It
+empty arguments are supported. A separate native equivalent collects all direct
+component attribute names, including inherited attributes, drawing frames and
+flags, with complete bounded model membership checks. An ordinary project-symbol
+Pin equivalent independently proves membership and matches all twelve explicit
+getter fields; custom attributes and multipart symbols refuse. The fixed read catalog
+has 166 routes, including bounded polygon splitting that preserves input source arrays and their order. It
 accepts no arbitrary method path, caller code, callbacks, navigation or writes.
-Neither public observations nor native IDs replace complete design or persistence proof.
+None of these observations replaces complete design or persistence proof.
 
 Latest declarations are not runtime admission. Exact operation schemas cover
 105 design actions and 68 library/lifecycle actions; schema availability does
@@ -39,8 +43,12 @@ profile admits only existing stored attribute/text display patches, with exact
 inverse, endpoint and whole-project persistence checks. It does not re-enable
 electrical edits or historical compiled transactions; connected lifecycle testing
 of this new source is pending. The `202803` disposable text edit reached the intended
-state but stopped before Save on a raw source-format comparison defect; its
-original-journal recovery and full lifecycle still need validation.
+state but stopped before Save on a raw source-format comparison defect. Installed
+`210100` recovered that journal after one inverse and delayed native persistence,
+with complete nine-document restoration proof and no Save. This does not validate
+an immediate inverse. A separate `210100` single-text transaction passed Save,
+close, reopen and complete saved-project verification. The new source still needs
+its own connected admission.
 Native discovery handles minimized windows, and
 bounded recovery-history caches preserve fresh content verification.
 Offline tests do not establish connected validation for this release.

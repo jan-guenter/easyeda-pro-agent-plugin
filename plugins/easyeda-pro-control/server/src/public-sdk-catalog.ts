@@ -1,6 +1,9 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { publicSdkReadDescriptors, publicSdkReadRequestSchema } from "./public-sdk-read.ts";
+import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
+import { SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
+import { SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
 
 export const publicSdkCatalogQuerySchema = z.object({
   method: z.string().min(1).max(160).optional(),
@@ -34,8 +37,11 @@ export function queryPublicSdkReads(input: unknown = {}): Record<string, unknown
   let authority = "public-sdk-observation-not-complete-design-proof";
   if (matched.some((entry) => entry.implementation.kind === "native-task-equivalent")) {
     authority = matched.every((entry) => entry.implementation.kind === "native-task-equivalent")
-      ? "native-id-observation-not-complete-source-connectivity-or-persistence-proof"
+      ? "native-task-observation-not-complete-source-connectivity-or-persistence-proof"
       : "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof";
+    if (matched.every((entry) => isSchematicNativeIdMethod(entry.path))) { authority = "native-id-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    if (matched.every((entry) => entry.path === SCHEMATIC_COMPONENT_PROPERTY_METHOD)) { authority = "native-property-name-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    if (matched.every((entry) => entry.path === SYMBOL_PIN_ENUMERATION_METHOD)) { authority = "native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof"; }
   }
   return { schema: "easyeda-pro-control.public-sdk-read-catalog.v1", offline: true, executionAuthorized: false,
     tool: "easyeda_control_sdk_read", total: all.length, matched: matched.length, entries,

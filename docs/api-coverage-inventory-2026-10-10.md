@@ -10,10 +10,19 @@ The inventory covers 774 distinct method paths. The reviewed installed SDK has
 697, the newer official reference has 773, and one older dialog method appears
 only in the reviewed SDK. These counts are method paths, not overload counts.
 The original 749 and 806 declaration signatures remain in the inventory.
-The current source inventory has 191 public subsets, 77 native equivalents,
-two lifecycle-only methods, eight blocked methods and 496 omissions. The fixed
-SDK-read catalog has 164 routes. These are implementation counts, not live-test
+The current source inventory has 191 public subsets, 79 native equivalents,
+two lifecycle-only methods, eight blocked methods and 494 omissions. The fixed
+SDK-read catalog has 166 routes. These are implementation counts, not live-test
 counts.
+
+Component-property names have a separate fixed native equivalent for the exact
+active ordinary schematic page. It includes all direct component attribute
+keys, including inherited/generated attributes, frames and flags. Complete
+tree/index/source/family/attribute membership must agree. Structural GROUP
+records, nonreciprocal junction aliases and hierarchical instances refuse.
+The installed broken public wrapper is not invoked. This is a property-name
+observation, not a complete source, connectivity or persistence proof. See the
+[source review and limits](component-property-reader-review-2026-10-10.md).
 
 ## What the statuses mean
 
@@ -101,9 +110,15 @@ connected validation remains pending. See the
 The fixed polygon-splitting subset constructs temporary public SDK objects from
 bounded JSON arrays and returns exact ordered source arrays. It has no design
 mutation or native-handle contract. The installed polygon `discretize` delegates
-to an unconditional `Not implemented` throw. The omitted Pin `getAll` wrapper
-swallows both RPC and required-attribute projection failures as an empty array;
-an equivalent needs independent complete membership, not just JSON serialization.
+to an unconditional `Not implemented` throw. The public Pin `getAll` wrapper
+swallows both RPC and required-attribute projection failures as an empty array.
+A separate native equivalent now proves complete membership on one ordinary
+project-symbol PART and compares all twelve explicit-ID getter fields with native
+state. Its host schema requires sorted unique IDs, bounded supported values and
+exact undefined-OtherProperty evidence. Multipart/inherited shapes, custom pin
+attributes and unknown structures refuse; schematic component pins are outside
+this route. It invokes no compiler, source serializer or Save. Connected validation
+is still pending. See the [Pin contract review](pin-enumeration-review-2026-10-10.md).
 These implementation facts and remaining adapter proposals are recorded in the
 [next-adapter research](api-next-feasible-research-2026-10-10.md).
 
