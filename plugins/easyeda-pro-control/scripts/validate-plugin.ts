@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* oxlint-disable import/max-dependencies -- Package validation combines the runtime identity, release contract, private-directory and MCP schema checks. */
 import { existsSync } from "node:fs";
 import { lstat, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -23,6 +24,7 @@ import {
 } from "./private-temporary-directory.ts";
 import type { PrivateTemporaryDirectory } from "./private-temporary-directory.ts";
 import { validateReleaseVersionParity } from "./release-version.ts";
+import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, MANIFEST_DEFAULT_PROMPTS, hasPortableMcpLaunch, portableMcpLaunchSchema } from "./plugin-contract.ts";
 
 interface CheckResult {
   readonly detail?: string;
@@ -32,42 +34,22 @@ interface CheckResult {
 
 type ToolSummary = Awaited<ReturnType<Client["listTools"]>>["tools"][number];
 
-const TOOL_NAMES = [
-  "easyeda_control_status",
-  "easyeda_control_discover",
-  "easyeda_control_context",
-  "easyeda_control_exact_read",
-  "easyeda_control_read",
-  "easyeda_control_read_batch",
-  "easyeda_control_execute",
-  "easyeda_control_capture",
-  "easyeda_control_export",
-  "easyeda_control_plan",
-  "easyeda_control_apply",
-  "easyeda_control_verify",
-  "easyeda_control_rollback",
-  "easyeda_control_save_reopen",
-  "easyeda_control_checkpoint",
-  "easyeda_control_recover_incomplete",
-  "easyeda_control_evidence_recover",
-  "easyeda_control_evidence_verify",
-  "easyeda_control_artifact_read",
-] as const;
+const TOOL_NAMES = FACADE_TOOL_NAMES;
 const AUTO_APPROVED_TOOLS = new Set([
+  "easyeda_control_api",
   "easyeda_control_status",
   "easyeda_control_discover",
   "easyeda_control_context",
   "easyeda_control_evidence_verify",
   "easyeda_control_artifact_read",
 ]);
-const AGENT_DEFAULT_PROMPT =
-  "Use $easyeda-pro-control to validate the EasyEDA bridge, collect bounded read evidence, or inspect local recovery artifacts without bypassing compatibility gates.";
-const MANIFEST_DEFAULT_PROMPTS = [
-  "Validate the EasyEDA bridge without bypassing compatibility gates.",
-  "Collect bounded public read evidence for connected candidate review.",
-  "Inspect local recovery journals and managed artifacts safely.",
-] as const;
 const OUTPUT_SCHEMA_ANCHORS = {
+  easyeda_control_api: ["offline", "result"],
+  easyeda_control_design: ["operationId", "state", "nextSafeAction"],
+  easyeda_control_library: ["capabilities", "operationId", "state"],
+  easyeda_control_runtime: ["action", "result"],
+  easyeda_control_native_ui: ["schema", "action", "result", "observations", "authority"],
+  easyeda_control_check: ["operationId", "state", "report", "proof", "reportArtifact", "nextSafeAction"],
   easyeda_control_status: ["facade", "upstream"],
   easyeda_control_discover: ["value"],
   easyeda_control_context: ["project", "document"],
@@ -89,7 +71,6 @@ const OUTPUT_SCHEMA_ANCHORS = {
   easyeda_control_artifact_read: ["path", "bytesRead", "text"],
 } as const satisfies Record<(typeof TOOL_NAMES)[number], readonly string[]>;
 const stringSchema = z.string();
-const environmentSchema = z.record(stringSchema, stringSchema);
 const approvalModeSchema = z.enum(["approve", "prompt"]);
 const toolPolicySchema = z.strictObject({
   approval_mode: approvalModeSchema,
@@ -102,11 +83,11 @@ const pluginManifestSchema = z.looseObject({
   name: stringSchema,
   version: stringSchema,
 });
-const easyedaControlSchema = z.looseObject({
+const easyedaControlSchema = portableMcpLaunchSchema.extend({
   default_tools_approval_mode: approvalModeSchema,
-  env: environmentSchema.optional(),
   tools: z.record(stringSchema, toolPolicySchema),
-  type: stringSchema,
+  type: z.literal("stdio"),
+  enabled: z.literal(true),
 });
 const mcpConfigurationSchema = z.object({
   mcpServers: z.object({
@@ -136,7 +117,7 @@ const bridgeExtensionManifestSchema = z.looseObject({
     type: z.literal("git"),
     url: z.literal("https://github.com/jan-guenter/easyeda-pro-agent-plugin"),
   }),
-  uuid: z.literal("7e06d286b1ac846ef7eab9c7f2a9ee4"),
+  uuid: z.literal("7e06d286b1ac846ef7eab9c7f2a9ee40"),
   version: stringSchema,
 });
 const bundledRuntimeInventorySchema = z.looseObject({
@@ -179,12 +160,20 @@ const required = [
   "scripts/build-descriptor-sanitizer.ts",
   "scripts/bundled-runtime-license.ts",
   "scripts/release-version.ts",
+  "scripts/plugin-contract.ts",
+  "scripts/configure-machine.ts",
+  "scripts/launch-machine.ts",
+  "scripts/native-ui.ps1",
+  "scripts/native-ui-controller.ps1",
+  "scripts/windows-authority.ps1",
   "server/bin/easyeda-fd-sanitizer",
   "server/dist/server.mjs",
   "server/dist/upstream-supervisor.mjs",
   "server/native/easyeda-fd-sanitizer.S",
   "server/native/easyeda-fd-sanitizer.ld",
   "server/src/descriptor-sanitizer-identity.ts",
+  "server/src/main.ts",
+  "server/src/machine-launch.ts",
   "server/tests/bundled-runtime-license.test.ts",
   "server/tests/descriptor-sanitizer.test.ts",
   "server/tests/release-version.test.ts",
@@ -420,13 +409,7 @@ check(
     "EASYEDA_CONTROL_ALLOW_UNRESTRICTED_EXECUTE",
   ),
 );
-const configuredDataDirectory = mcpServer.env?.["EASYEDA_CONTROL_DATA_DIR"];
-check(
-  "bridge-token-path",
-  configuredDataDirectory !== undefined &&
-    mcpServer.env?.["EASYEDA_BRIDGE_TOKEN_FILE"] ===
-      join(configuredDataDirectory, "bridge-token"),
-);
+check("portable-machine-profile-launch", hasPortableMcpLaunch(mcpServer));
 check("approval-default-prompt", mcpServer.default_tools_approval_mode === "prompt");
 check(
   "descriptor-sanitizer-build-scripts",
@@ -469,7 +452,7 @@ check(
     bridgePackageManifest["private"] === true &&
     bridgeDevDependencies["esbuild"] === "0.28.2" &&
     bridgeDevDependencies["typescript"] === "7.0.2" &&
-    bridgeDevDependencies["vitest"] === "4.1.9" &&
+    bridgeDevDependencies["vitest"] === "4.1.11" &&
     !Object.hasOwn(bridgeDevDependencies, "archiver") &&
     !existsSync(join(pluginRoot, "easyeda-bridge-extension", "package-lock.json")),
 );
@@ -501,8 +484,8 @@ check(
   /^---\nname: easyeda-pro-control\n/mu.test(skill),
 );
 check(
-  "skill-writer-disabled",
-  /writer is experimental and runtime-disabled/iu.test(skill),
+  "skill-typed-and-legacy-boundaries",
+  skill.includes("easyeda_control_design") && /legacy.*runtime-disabled/iu.test(skill),
 );
 check(
   "agent-default-prompt",

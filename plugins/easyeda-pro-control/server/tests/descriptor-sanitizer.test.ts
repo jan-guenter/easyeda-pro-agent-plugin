@@ -320,13 +320,15 @@ function processIdentity(status: string): {
 
 async function currentProcessIdentity(
   pid: number,
+  readStatus: (path: string) => Promise<string> = (path) => readFile(path, "utf8"),
 ): Promise<ReturnType<typeof processIdentity> | null> {
   try {
-    return processIdentity(
-      await readFile(`/proc/${String(pid)}/stat`, "utf8"),
-    );
+    return processIdentity(await readStatus(`/proc/${String(pid)}/stat`));
   } catch (error) {
-    if (errorCode(error) === "ENOENT") {
+    const code = errorCode(error);
+    // Linux can report ESRCH if a correctly killed process disappears after
+    // Its proc file was opened but before the read completes.
+    if (code === "ENOENT" || code === "ESRCH") {
       return null;
     }
     throw error;
@@ -340,6 +342,26 @@ async function waitMilliseconds(milliseconds: number): Promise<void> {
 }
 
 void describe("reviewed native descriptor sanitizer", () => {
+  void test("process identity observation treats proc exit races as absence without masking other failures", async () => {
+    for (const code of ["ENOENT", "ESRCH"]) {
+      const error = Object.assign(new Error("Synthetic proc exit between open and read"), { code });
+      let reads = 0;
+      const identity = await currentProcessIdentity(123, (path) => {
+        reads += 1;
+        assert.equal(path, "/proc/123/stat");
+        return Promise.reject(error);
+      });
+      assert.equal(identity, null);
+      assert.equal(reads, 1);
+    }
+    const inaccessible = Object.assign(new Error("Synthetic permission refusal"), { code: "EACCES" });
+    await assert.rejects(currentProcessIdentity(123, () => Promise.reject(inaccessible)), (error) => error === inaccessible);
+    await assert.rejects(currentProcessIdentity(123, () => Promise.resolve("malformed proc status")), /start-time status is malformed/u);
+    const fields = ["R", ...Array.from({ length: 18 }, () => "0"), "54321"];
+    assert.deepEqual(await currentProcessIdentity(123, () => Promise.resolve(`123 (synthetic proc fixture) ${fields.join(" ")}`)),
+      { startTimeTicks: "54321", state: "R" });
+  });
+
   void test("is the exact static W^X ELF64 image", async () => {
     const [bytes, information] = await Promise.all([
       readFile(sanitizerPath),

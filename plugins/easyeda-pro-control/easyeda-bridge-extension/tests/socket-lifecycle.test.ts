@@ -12,7 +12,9 @@ describe('EasyEDA WebSocket lifecycle', () => {
     expect(source).toContain('fireOpen,');
     expect(source).not.toContain('setTimeout(fireOpen');
     expect(source).toContain('REGISTER_OPEN_CALLBACK_TIMEOUT_MS');
-    expect(source).toContain('startSocket({ skipRegister: true })');
+    expect(source).not.toContain('skipRegister');
+    expect(source).not.toContain('sysWs.create(');
+    expect(source).not.toContain('new BrowserWebSocketCtor');
     expect(source).toContain('closeHandle(registerHandle)');
   });
 });

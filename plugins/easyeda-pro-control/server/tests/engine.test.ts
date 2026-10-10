@@ -1,4 +1,5 @@
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
+import { registerHooks } from "node:module";
 import { after, before, beforeEach, describe, test } from "node:test";
 import {
   buildPlanHash,
@@ -24,7 +25,7 @@ import type {
   ToolDescriptor,
   UpstreamClient,
 } from "../src/engine.ts";
-import { exactReadRequestSchema } from "../src/exact-readers.ts";
+import { encodeExactReadEnvelope, exactReadRequestSchema } from "../src/exact-readers.ts";
 import {
   mkdir,
   mkdtemp,
@@ -149,6 +150,49 @@ let RuntimeDisabledEasyedaControlEngine: EngineConstructor;
 let source = "";
 let outputDir = "";
 let testDir = "";
+let nativeAssetsRoot = "";
+const FIXTURE_PROJECT_UUID = "11".repeat(32);
+
+async function fixtureNativeProfiles(engineUrl: string): Promise<ReturnType<typeof registerHooks>> {
+  const { LIBRARY_NATIVE_IMPLEMENTATION } = await import("../src/library-native-profile.ts");
+  const { DEVICE_NATIVE_IMPLEMENTATIONS } = await import("../src/device-native-profile.ts");
+  const hashes = new Map<string, string>();
+  for (const implementation of [LIBRARY_NATIVE_IMPLEMENTATION, ...DEVICE_NATIVE_IMPLEMENTATIONS]) {
+    const content = `Synthetic engine fixture, never an installed EasyEDA bundle: ${implementation.relativePath}\n`;
+    const path = join(nativeAssetsRoot, implementation.relativePath);
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, content, { flag: "wx", mode: 0o600 });
+    hashes.set(implementation.sha256, sha256Text(content));
+  }
+  const device = new URL("../src/device-native-profile.ts", import.meta.url);
+  const library = new URL("../src/library-native-profile.ts", import.meta.url);
+  const fixtureDevice = new URL(device), fixtureLibrary = new URL(library);
+  fixtureDevice.searchParams.set("engine-native-fixture", testDir);
+  fixtureLibrary.searchParams.set("engine-native-fixture", testDir);
+  const profileSources = new Map([[fixtureDevice.href, await readFile(device, "utf8")],
+    [fixtureLibrary.href, await readFile(library, "utf8")]]);
+  // Parameterize only the fixture engine's profile pins. The original
+  // Canonical-path, no-follow, bounded hash and post-read checks still execute.
+  // Every other module import retains its production profile and source bytes.
+  return registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (context.parentURL === engineUrl && specifier === "./device-native-profile.ts") {
+        return { url: fixtureDevice.href, shortCircuit: true };
+      }
+      if (context.parentURL === fixtureDevice.href && specifier === "./library-native-profile.ts") {
+        return { url: fixtureLibrary.href, shortCircuit: true };
+      }
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      const original = profileSources.get(url);
+      if (original === undefined) { return nextLoad(url, context); }
+      let code = original;
+      for (const [reviewed, synthetic] of hashes) { code = code.replaceAll(reviewed, synthetic); }
+      return { format: "module-typescript", source: code, shortCircuit: true };
+    },
+  });
+}
 
 async function onlyOperation(): Promise<OperationJournal> {
   const operations = await artifacts.listOperations();
@@ -191,10 +235,13 @@ before(async () => {
   testDir = await mkdtemp(join(tmpdir(), "easyeda-control-engine-"));
   source = join(testDir, "mock-project.eprj2");
   outputDir = join(testDir, "backups");
+  nativeAssetsRoot = join(testDir, "native-assets");
   process.env["EASYEDA_CONTROL_DATA_DIR"] = join(testDir, "control-data");
-  const engineModule: unknown = await import(
-    `../src/engine.ts?engine-test=${encodeURIComponent(testDir)}`
-  );
+  const engineUrl = new URL(`../src/engine.ts?engine-test=${encodeURIComponent(testDir)}`, import.meta.url).href;
+  const profiles = await fixtureNativeProfiles(engineUrl);
+  let engineModule: unknown;
+  try { engineModule = await import(engineUrl); }
+  finally { profiles.deregister(); }
   const SourceEngine = requireEngineConstructor(
     requireRecord(engineModule, "engine module")["EasyedaControlEngine"],
   );
@@ -359,7 +406,9 @@ before(async () => {
       const bridgePayload = {
         connected: true,
         bridge_version: manifest.connectedRuntime.bridgeVersion,
-        easyeda_version: manifest.connectedRuntime.bridgeEasyedaVersion,
+        ...(manifest.connectedRuntime.bridgeEasyedaVersion === null ? {} : {
+          easyeda_version: manifest.connectedRuntime.bridgeEasyedaVersion,
+        }),
         diagnostics: {
           method_registry_hash: manifest.connectedRuntime.methodRegistryHash,
         },
@@ -464,6 +513,7 @@ function captureOperationOnReopen(
 }
 
 interface MockOptions {
+  contextOverride?: Record<string, unknown>;
   applyCollateral?: boolean;
   applyError?: Error;
   applyMutatesBeforeError?: boolean;
@@ -762,25 +812,25 @@ class MockUpstream implements UpstreamClient {
   public installedEasyedaBundles(): Promise<InstalledEasyedaBundles> {
     return Promise.resolve({
       available: true,
-      assetsRoot: "/opt/easyeda/assets",
+      assetsRoot: nativeAssetsRoot,
       pcbEditor: {
         version: this.options.pcbEditorVersion ?? "3.2.149.5378b690",
-        implementationPath: "/opt/easyeda/assets/pro-pcb/pcb.js",
+        implementationPath: join(nativeAssetsRoot, "pro-pcb", "pcb.js"),
         implementationSha256:
           this.options.pcbImplementationSha256 ??
           "65401cdc0a8f244db2ff2d8da88fd835b6e1fb3a3ecdbcfd975781502cb04b54",
       },
       publicApi: {
         version: this.options.publicApiVersion ?? "0.2.53.aee2f57a",
-        implementationPath: "/opt/easyeda/assets/pro-api/api.js",
+        implementationPath: join(nativeAssetsRoot, "pro-api", "api.js"),
         implementationSha256:
           this.options.publicApiImplementationSha256 ??
           "5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc",
-        adapterPath: "/opt/easyeda/assets/pro-api/adapter.js",
+        adapterPath: join(nativeAssetsRoot, "pro-api", "adapter.js"),
         adapterSha256:
           this.options.publicApiAdapterSha256 ??
           "4da5b5184a78e2d3aca843dad6b147d7feb7ec1368160d73f49c4acbcf97dfdb",
-        declarationsPath: "/opt/easyeda/assets/pro-api/api-types.d.ts",
+        declarationsPath: join(nativeAssetsRoot, "pro-api", "api-types.d.ts"),
         declarationsSha256:
           this.options.publicApiDeclarationsSha256 ??
           "32a0d2f8b4bc3d7b2b93b33499d9d768b0c23c77f45843a65166cf4e8ad6dab1",
@@ -1144,9 +1194,17 @@ class MockUpstream implements UpstreamClient {
       });
     }
 
+    if (code.includes("bus.rpcCall('/PrjDB/project/awaitUploadEnd',[uuid])")) {
+      assert.ok(code.includes(`const uuid=${JSON.stringify(FIXTURE_PROJECT_UUID)};`));
+      return toolResult({ profile: "easyeda-pro-control.project-upload-barrier.v1", projectUuid: FIXTURE_PROJECT_UUID,
+        scheduledWritesSettled: true, savedEditorChanges: false });
+    }
+
     const requestMatch = /const REQUEST = (\{[^\n]+\});/u.exec(code);
     const requestSource = requestMatch?.[1];
     if (requestSource !== undefined) {
+      const exactToolResult = (payload: unknown): ReturnType<typeof toolResult> =>
+        toolResult(encodeExactReadEnvelope(payload));
       const request: ExactReadRequest = exactReadRequestSchema.parse(
         parseJson(requestSource),
       );
@@ -1290,7 +1348,7 @@ class MockUpstream implements UpstreamClient {
             return [primitiveId, record];
           }),
         );
-        return toolResult({
+        return exactToolResult({
           ok: true,
           kind: request.kind,
           documentType,
@@ -1322,17 +1380,17 @@ class MockUpstream implements UpstreamClient {
         });
       }
       if (request.kind === "schematic-topology") {
-        return toolResult({
+        return exactToolResult({
           ok: true,
           kind: request.kind,
           documentType: 1,
           authority: {
-            connectivity: "sch_Netlist.getNetlist(JLCEDA)",
+            connectivity: "sch_ManufactureData.getNetlistFile(JLCEDA)",
             wireGeometry: "unavailable",
           },
           componentCorrelation: {
             status: "exact-match",
-            source: "sch_PrimitiveComponent.getAll(part,true)",
+            source: "sch_PrimitiveComponent.getAll(part,true)+complete-declared-page-native-pins",
             componentCount: 0,
             pinCount: 0,
             primitiveIds: [],
@@ -1435,7 +1493,7 @@ class MockUpstream implements UpstreamClient {
               targetValue === "applied",
             source: "pcb_PrimitivePad-direct-state",
             parentComponentPrimitiveId: "R1",
-            componentCorrelationSource: "component-getState_Pads",
+            componentCorrelationSource: "component-getAllPinsByPrimitiveId",
           };
           const pads = families["pads"];
           if (pads === undefined) {
@@ -1445,7 +1503,7 @@ class MockUpstream implements UpstreamClient {
           pads.primitiveIds = ["R1-pad-1"];
           pads.byPrimitiveId = { "R1-pad-1": pad };
         }
-        return toolResult({
+        return exactToolResult({
           ok: true,
           kind: request.kind,
           documentType: 3,
@@ -1480,7 +1538,7 @@ class MockUpstream implements UpstreamClient {
                     parentComponentPrimitiveId: "R1",
                     padNumber: "1",
                     net: "GND",
-                    source: "component-getState_Pads",
+                    source: "component-getAllPinsByPrimitiveId",
                   },
                 }
               : {},
@@ -1502,7 +1560,7 @@ class MockUpstream implements UpstreamClient {
         });
       }
       if (request.kind === "pcb-rules") {
-        return toolResult({
+        return exactToolResult({
           ok: true,
           kind: request.kind,
           documentType: 3,
@@ -1530,7 +1588,7 @@ class MockUpstream implements UpstreamClient {
     return toolResult({
       ok: true,
       project: {
-        uuid: "project-1",
+        uuid: FIXTURE_PROJECT_UUID,
         name: "Mock project",
         path: this.options.contextPath ?? source,
       },
@@ -1547,11 +1605,15 @@ class MockUpstream implements UpstreamClient {
       schematic:
         documentType === 1
           ? {
-              uuid: "document-1",
+              uuid: "schematic-container-1",
               title: "Mock schematic",
-              tabId: this.activeTabId,
             }
           : {},
+      schematicPage:
+        documentType === 1
+          ? { uuid: "document-1", parentSchematicUuid: "schematic-container-1", tabId: this.activeTabId }
+          : {},
+      ...this.options.contextOverride,
     });
   }
 }
@@ -1705,7 +1767,7 @@ async function makePlan(
           ]
         : [{ primitiveId: "R1", pointer: "/x", before: 100, after: 200 }],
     expectedContext: {
-      project: { uuid: "project-1", path: source },
+      project: { uuid: FIXTURE_PROJECT_UUID, path: source },
       document: { uuid: "document-1", documentType: 3, tabId: "tab-1" },
     },
     preflightCalls: phaseReadSpecs(documentType),
@@ -1902,7 +1964,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     assert.equal(status.capabilities.privateComponentWriter.enabled, false);
     assert.match(
       status.capabilities.privateComponentWriter.reason,
-      /sacrificial-board (?:test|validation)/u,
+      /Legacy writer runtime-disabled\. Use easyeda_control_design/u,
     );
     await assert.rejects(
       engine.plan({}),
@@ -1963,6 +2025,51 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
         /project UUID\/path|absolute POSIX|\.eprj2 database/u,
       );
     }
+  });
+
+  void test("native registry paths require an exact original-path hash and unchanged context", async () => {
+    const nativePath = String.raw`C:\test\Disposable.eprj2`;
+    const valid = {
+      project: { uuid: sha256Text(nativePath), path: nativePath },
+      projectPathSource: "native-project-registry", contextStable: true,
+    };
+    const context = await new EasyedaControlEngine(new MockUpstream({ contextOverride: valid })).context();
+    assert.equal(context.project.path, "/mnt/c/test/Disposable.eprj2");
+    for (const override of [
+      { ...valid, contextStable: false },
+      { ...valid, project: { uuid: "wrong", path: nativePath } },
+    ]) {
+      await assert.rejects(new EasyedaControlEngine(new MockUpstream({ contextOverride: override })).context(),
+        /exact path-hash proof/u);
+    }
+  });
+
+  void test("schematic context correlates the active page with its separate container", async () => {
+    const context = await new EasyedaControlEngine(new MockUpstream({ documentType: 1 })).context();
+    assert.equal(context.document.uuid, "document-1");
+    for (const schematicPage of [
+      { uuid: "wrong-page", parentSchematicUuid: "schematic-container-1" },
+      { uuid: "document-1", parentSchematicUuid: "wrong-container" },
+    ]) {
+      await assert.rejects(new EasyedaControlEngine(new MockUpstream({
+        documentType: 1, contextOverride: { schematicPage },
+      })).context(), /Schematic page and container identities/u);
+    }
+  });
+
+  void test("native upload-barrier fixture proves its exact project without Save or changing the database", async () => {
+    const upstream = new MockUpstream();
+    const engine = new EasyedaControlEngine(upstream);
+    const baselineBytes = await readFile(source);
+    const context = await engine.context();
+    const binding = beginMockAuthenticatedScope(upstream);
+    try {
+      const receipt = await engine.awaitProjectUploads(context);
+      assert.deepEqual(receipt, { profile: "easyeda-pro-control.project-upload-barrier.v1", projectUuid: FIXTURE_PROJECT_UUID,
+        scheduledWritesSettled: true, savedEditorChanges: false });
+      assert.equal(upstream.saveAttempts, 0);
+      assert.deepEqual(await readFile(source), baselineBytes);
+    } finally { endMockAuthenticatedScope(upstream, binding); }
   });
 
   void test("plans checkpoint and journal before discarding the live baseline", async () => {
@@ -2051,7 +2158,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     const engine = new EasyedaControlEngine(upstream);
     const plan = await makePlan(engine, "full-context-lifecycle", {
       expectedContext: {
-        project: { uuid: "project-1", name: "Mock project", path: source },
+        project: { uuid: FIXTURE_PROJECT_UUID, name: "Mock project", path: source },
         document: {
           uuid: "document-1",
           documentType: 3,
@@ -2150,7 +2257,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
 
     await assert.rejects(
       engine.recover(unknown.operationId, "reconciled-no-mutation"),
-      /terminate EasyEDA Pro, restart it, reconnect the bridge/u,
+      /operation-bound runtimeRestartChallenge.*independent retained-process termination/u,
     );
     const recovered = await engine.recover(
       unknown.operationId,
@@ -2296,7 +2403,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     assert.equal(applied.mutationMayHaveOccurred, true);
     assert.equal(upstream.applyAttempts, 1);
     const applyCode = requireDefined(upstream.lastApplyCode, "apply source");
-    assert.match(applyCode, /EXPECTED_PROJECT_UUID = "project-1"/u);
+    assert.ok(applyCode.includes(`EXPECTED_PROJECT_UUID = ${JSON.stringify(FIXTURE_PROJECT_UUID)}`));
     assert.match(applyCode, /EXPECTED_DOCUMENT_UUID = "document-1"/u);
     assert.match(applyCode, /EXPECTED_TAB_ID = "reopened-tab"/u);
     assert.match(applyCode, /eda\.pcb_PrimitiveComponent/u);
@@ -2581,7 +2688,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     const windowsEngine = new EasyedaControlEngine(windowsUpstream);
     const windowsPlan = await makePlan(windowsEngine, "windows-path", {
       expectedContext: {
-        project: { uuid: "project-1", path: windows },
+        project: { uuid: FIXTURE_PROJECT_UUID, path: windows },
         document: { uuid: "document-1", documentType: 3, tabId: "tab-1" },
       },
     });
@@ -2599,7 +2706,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     const uriEngine = new EasyedaControlEngine(uriUpstream);
     const uriPlan = await makePlan(uriEngine, "file-uri", {
       expectedContext: {
-        project: { uuid: "project-1", path: fileUri },
+        project: { uuid: FIXTURE_PROJECT_UUID, path: fileUri },
         document: { uuid: "document-1", documentType: 3, tabId: "tab-1" },
       },
     });
@@ -2616,7 +2723,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     const engine = new EasyedaControlEngine(upstream);
     const plan = await makePlan(engine, "wrong-checkpoint", {
       expectedContext: {
-        project: { uuid: "project-1", path: join(testDir, "different.eprj2") },
+        project: { uuid: FIXTURE_PROJECT_UUID, path: join(testDir, "different.eprj2") },
         document: { uuid: "document-1", documentType: 3, tabId: "tab-1" },
       },
     });
@@ -2762,7 +2869,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     };
     const plan = await makePlan(engine, "schematic-write-verifier", {
       expectedContext: {
-        project: { uuid: "project-1", path: source },
+        project: { uuid: FIXTURE_PROJECT_UUID, path: source },
         document: { uuid: "document-1", documentType: 1, tabId: "tab-1" },
       },
       preflightCalls: [...phaseReadSpecs(1), verifier],
@@ -2799,7 +2906,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
 
     const pcbReadOnSchematic = await makePlan(engine, "pcb-read-on-schematic", {
       expectedContext: {
-        project: { uuid: "project-1", path: source },
+        project: { uuid: FIXTURE_PROJECT_UUID, path: source },
         document: { uuid: "document-1", documentType: 1, tabId: "tab-1" },
       },
       preflightCalls: [
@@ -2821,7 +2928,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
       "board-read-on-schematic",
       {
         expectedContext: {
-          project: { uuid: "project-1", path: source },
+          project: { uuid: FIXTURE_PROJECT_UUID, path: source },
           document: { uuid: "document-1", documentType: 1, tabId: "tab-1" },
         },
         preflightCalls: [
@@ -2856,7 +2963,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
 
     const previewPlan = await makePlan(engine, "preview-document-plan", {
       expectedContext: {
-        project: { uuid: "project-1", path: source },
+        project: { uuid: FIXTURE_PROJECT_UUID, path: source },
         document: { uuid: "document-1", documentType: 15, tabId: "tab-1" },
       },
     });
@@ -2895,7 +3002,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     const exportPlan = await makePlan(engine, "export-bypass", {
       applyCall: {
         toolName: "easyeda_export_gerbers",
-        arguments: { confirmWrite: true, projectId: "project-1" },
+        arguments: { confirmWrite: true, projectId: FIXTURE_PROJECT_UUID },
       },
     });
     await assert.rejects(
@@ -3684,6 +3791,25 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
     assert.equal(journal.hardStop, true);
   });
 
+  void test("synthetic native profile verification still rejects changed manager bytes before Save", async (t) => {
+    const upstream = new MockUpstream();
+    const engine = new EasyedaControlEngine(upstream);
+    const planned = await planWithDiscard(engine, await makePlan(engine, "native-profile-byte-drift"));
+    await engine.apply(planned.operationId, planned.planHash);
+    await engine.verify(planned.operationId);
+    const { DEVICE_NATIVE_IMPLEMENTATIONS } = await import("../src/device-native-profile.ts");
+    const implementation = requireDefined(DEVICE_NATIVE_IMPLEMENTATIONS[0], "manager implementation");
+    const path = join(nativeAssetsRoot, implementation.relativePath);
+    const original = await readFile(path);
+    t.after(() => writeFile(path, original));
+    await writeFile(path, "Changed synthetic manager, never an installed bundle\n");
+    await assert.rejects(engine.saveReopen(planned.operationId, planned.planHash), /Native device implementation differs from the reviewed profile/u);
+    assert.equal(upstream.saveAttempts, 0);
+    const journal = await artifacts.loadOperation(planned.operationId);
+    assert.equal(journal.orphanedCallPossible, false);
+    assert.equal(journal.hardStop, true);
+  });
+
   void test("normal save rejects a physical-only database rewrite", async () => {
     const upstream = new MockUpstream({ savePersistence: "physical-only" });
     const engine = new EasyedaControlEngine(upstream);
@@ -3965,7 +4091,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
 
     await assert.rejects(
       engine.recover(planned.operationId, "reconciled-saved-reopened"),
-      /terminate EasyEDA Pro, restart it, reconnect the bridge/u,
+      /operation-bound runtimeRestartChallenge.*independent retained-process termination/u,
     );
     await assert.rejects(
       engine.recover(planned.operationId, "reconciled-saved-reopened", {
@@ -4268,7 +4394,7 @@ void describe("durable mutation state machine", { concurrency: false }, () => {
         confirmDiscardAnyUnsavedState: true,
         runtimeRestartConfirmation: firstRestartChallenge,
       }),
-      /current nonce-bound runtimeRestartChallenge/u,
+      /current operation-bound runtimeRestartChallenge.*independent retained-process termination/u,
     );
     assert.equal(upstream.reopenAttempts, 1);
 

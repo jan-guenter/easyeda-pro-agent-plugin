@@ -31,6 +31,8 @@ async function fixtureRoot(): Promise<string> {
     mkdir(join(root, "node_modules"), { recursive: true }),
     mkdir(join(root, "server", "src"), { recursive: true }),
   ]);
+  // Preserve the existing index-input mutation tests through the new entrypoint.
+  await writeFile(join(root, "server", "src", "main.ts"), 'import "./index.ts";\n');
   return root;
 }
 

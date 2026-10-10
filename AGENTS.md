@@ -2,19 +2,167 @@
 
 This file is the durable engineering record and common ground for every human or agent working in this repository. Keep it current whenever a requirement, assumption, interface, compatibility tuple, safety boundary, or test result changes. Do not silently turn an open question into a requirement.
 
-Last updated: 2026-09-06 (Europe/Berlin)
+Last updated: 2026-10-10 (Europe/Berlin)
+
+PR8 final payload9f7ddb9 passed required CI38054290993 and is installed/enabled
+as125449 with exact443-file/configured-startup proof. Only root engineering
+evidence follows before protected merge. Retained-Node handoff, timeout-shaped
+data, bounded upload diagnostics and dependency-free marketplace startup have
+adversarial regressions. No live calls from this chat's old host generation.
+
+## 2026-10-10 plugin revamp
+
+- Remote main was still the prior cdb9f24 release; the substantial September
+  repairs were local changes, not additional merged GitHub commits. Preserve
+  them and their journals. Dependabot reports motivated compatible security
+  upgrades; current dependency audit is clean, with exact lockfile versions.
+- The completed Sept26 ten-sheet redraw supersedes pending statements in older
+  historical records. Standalone wire retained recovery and disposable full lifecycle
+  completed Sept25. Never replay those historical edits, navigation or Save.
+- New offline `easyeda_control_api` separates hash-pinned SDK declarations,
+  exact typed operation schemas and validation from runtime execution authority.
+  Latest declaration 0.4.26 is documentation only; installed external runtime
+  pins are unchanged. No generic SDK/private-method/raw-code dispatcher exists.
+- Design commits persist generic Save intent at the final pre-dispatch boundary.
+  Reconcile/rebind/restart and indirect repair/rollback cannot authorize another
+  Save. Only exact maintained retained-proof paths recover a saved lifecycle.
+  Genuine callback failure before dispatch needs separately verified proof.
+- Existing-project open observes bounded two-sample editor/parent readiness;
+  missing state can wait, conflicting positive identity stops immediately.
+  It never repeats navigation. Sibling tabs use supported library document.open.
+- Seven skills now cover control, schematic, PCB, libraries, manufacturing,
+  review and extension engineering. Entry points route detailed primary-source
+  references; all packaged metadata/links are checked in CI. Offline review does
+  not require a live connection or authorize edits, external uploads or orders.
+- Node24.18.0/npm11.16.0 and TypeScript7.0.2 remain pinned. Oxlint1.87.0 with
+  tsgolint7.0.2003 keeps all six categories at error and zero-warning policy.
+  SDK1.32.1 and Vitest4.1.11 address current audits. Reviewed bridge closure
+  changed only for its Vitest package pin:70files/853680bytes/c5cb4d9e.
+  Old private receipts are immutable historical evidence, never rewritten.
+- This revamp is offline work. No user schematic/PCB edits or new live writer
+  validation are authorized by its tests. Final build/CI/publication/install
+  evidence must be appended after verification, not inferred from this record.
+
+## Historical evidence
+
+### October independent-review local acceptance
+
+- Final snapshot `0.3.0+codex.20261010124131` passed the complete suite with
+  inherited hostile descriptors142/145:944 facade passes/one platform skip,
+  zero failures and424 bridge passes. Strict types/lint have zero diagnostics;
+  zero vulnerabilities,151 signatures/40 attestations, all seven skill checks,
+  privacy/licenses, actionlint and offline doctor pass.
+- Real final-handoff pathname replacement runs only the retained original Node
+  inode, never the replacement; PID/stdio/environment/exit status are preserved.
+  Wrong hashes refuse before version execution. Same-UID in-place future writes
+  remain an explicit immutable-storage limitation, not a promised guarantee.
+- Successful result data containing timeout codes settles normally. Own-level
+  contradictions, nested explicit failures and unknown transport timeouts still
+  quarantine after exactly one call. Upload errors use bounded fixed categories,
+  never native text; scope guards, RPC order, receipts and no-Save behavior hold.
+- Source130files/f757b640 and bundle35250a6d are frozen and reproducible.
+  Sanitizer/external/native adapter pins unchanged. The [follow-up review](docs/revamp-final-review-2026-10-10.md)
+  and [release record](docs/revamp-release-validation-2026-10-10.md) distinguish
+  final checks from the historical initial Git/installation evidence below.
+
+### October marketplace startup local acceptance
+
+- An actual cached-source import found missing `zod`:the initial direct-bundle
+  probe did not cover `.mcp.json`. No installed cache was manually repaired.
+  Snapshot `0.3.0+codex.20261010125449` uses the existing self-contained server
+  bundle's exact `--machine-launch` selector before lazy facade initialization.
+  Final descriptor exec removes the selector and preserves one PID. Only empty
+  argv starts direct facade mode; unknown flags fail before lease/control state.
+- Three isolated packaged-startup regressions pass with only the three runtime
+  files and synthetic metadata/profile, no dependency/source tree, upstream
+  child or non-stdio socket. All35 original build/publication regressions pass.
+  The developer source wrapper/client explicitly require a trusted checkout.
+- Final `npm run verify` with inherited descriptors142/145 passes:951 facade
+  passes/one platform skip/zero failures and424 bridge passes. Strict types/lint,
+  all seven skills, privacy/licenses, actionlint, offline doctor and zero-audit
+  checks pass. Source132files/764fad4a and bundle21b7fb44 are frozen/reproducible;
+  the original three-file fingerprint/publication set and all external pins hold.
+- Intermediate review payload2b6307c passed CI38053581114, but is not acceptance
+  of this newer packaging payload. Final Git/installed evidence must follow.
+
+### October final payload publication and installation
+
+- Payload9f7ddb9f989274cefc194eeaab33ff0c551bb956 passed required
+  [CI38054290993](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38054290993)
+  with full tests, reproducible builds, private bridge fixture, packaging and
+  artifact upload. Root-only follow-up records leave that payload unchanged.
+- Official Git-marketplace CLI installed/enabled125449. One attempt reported a
+  missing cache path; supported CLI reinstall resolved it. No inferred cause or
+  manual cache edits. Subsequent CLI list and cache recheck confirm it persists.
+- All443 Git files/11415268bytes and committed modes match. Actual configured
+  bundled startup hands ambientNode26.7.0 to pinnedNode24.18.0; isolated synthetic
+  profile probe returns25tools/seven skills,749/806 signatures and105/68schemas,
+  accepts typed data/refuses caller code and starts no upstream/bridge socket.
+- Marketplace remains the GitHub URL; after protected merge point its ref at
+  main and recheck the installed payload. No host termination/hot patch/live
+  call/CAD Save. Fresh-chat pickup is required; current live coverage unclaimed.
+
+### October local release checks
+
+- Snapshot `0.3.0+codex.20261010121000`:25 tools/seven skills;105 design and68
+  library/lifecycle schemas. Reviewed/latest SDK signatures749/806 are offline
+  references, not execution admission.
+- Clean install,151 registry signatures/40 attestations and zero-vulnerability
+  audit pass. Exact Node24.18.0/npm11.16.0; both strict TypeScript checks and
+  type-aware lint pass with zero diagnostics. `npm run verify` ran with hostile
+  inherited descriptors142/145:929 facade passes/one Linux-fixture platform
+  skip/zero failures;424 bridge passes. All seven packaged/official skill checks,
+  workflow actionlint, privacy/licenses and offline doctor pass.
+- Production sanitizer remains exact1440bytes/0755/a8b52e84. Rebuilt source130
+  files/82eff87b and bundle5164f012 match the maintained manifest; external pins
+  were not auto-refreshed. ProcfsESRCH test race fixed without runtime changes.
+- Supported private bridge build preserved the former receipt and published
+  new closure evidence; selected archive bytes unchanged, no key rotation/import
+  or connected proof. Old immutable receipts are unchanged.
+- [Release validation](docs/revamp-release-validation-2026-10-10.md) contains
+  detailed results and limits. GitHub CI/publication/install are not inferred
+  from these local checks; append their actual commit/results after completion.
+
+### October publication and installation evidence
+
+- Payload commit33c2ba7f98f915a672118a9e0371ebedcf6317f9 was published in
+  [PR8](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/8).
+  Required [test-build run38052366013](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38052366013)
+  passed, including the reproducible authenticated bridge fixture, hostile
+  descriptors, complete suites, privacy checks and packaged artifact.
+- Official Codex CLI replaced the local marketplace with Git source
+  `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` and installed/
+  enabled `0.3.0+codex.20261010121000` from the CI-verified feature ref. After
+  protected merge, retain this Git source on main; root-only evidence updates
+  do not change the tested plugin payload or its version.
+- Installed payload matches all439 Git files/11135676bytes and committed
+  modes exactly. Actual installed offline MCP probe returned25 tools, seven
+  skills,749/806 SDK signatures and105/68 operation schemas. Valid typed data
+  passes; caller code refuses; execution authority remains false. No live call.
+- Loaded host facade remains the previous24225913 generation. No termination
+  or hot patch; use a fresh chat before any live EasyEDA action. No user CAD
+  edits, Save, restoration, fabrication or shared-library change occurred.
+
+August–September records are preserved intact in
+[engineering-history-2026-09.md](docs/engineering-history-2026-09.md).
+They are evidence, not instructions to replay completed work. Read only the
+specific dated case needed for the current change or retained-journal review.
 
 ## Product truth
 
+- User scope correction after the September 11 handoff: the deliverable is a reusable plugin/skill/MCP/bridge package controlling EasyEDA Pro broadly, including API editing. The current local installation now includes typed API editing and operation-specific live persistence proofs, superseding the earlier connection/read-only milestone. Coverage is still operation-specific; do not claim every API, export format or platform is validated. Native desktop control supplements genuine API gaps and dialogs.
+- Required coverage includes project/document lifecycle; schematic components, wiring and connectivity; symbols, footprints, devices and 3D associations; PCB placement, tracks, vias, regions and copper; rules, differential pairs, length constraints and stackup; ECO, ERC/DRC, save/reopen and manufacturing-file export. Native interaction may supplement genuine missing or dialog-only APIs, but is not the default substitute for implementing available editing APIs. Fabrication submission, purchases and unrelated design changes still require task-specific authority.
+- Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Implemented facade capabilities are live inspection, exact typed reads, managed evidence, SQLite checkpoints, validated capture, draft DSN route-context export, local artifact inspection, and conservative recovery. Runtime use remains gated by the reviewed connected tuple.
-- The experimental PCB component writer is runtime-disabled. Unit tests do not authorize enabling it.
+- The installed Git-marketplace snapshot is `0.3.0+codex.20261010125449`, with25 tools and seven skills. This chat's loaded host generation remains24225913:installation is not loaded pickup. Use a fresh chat before live work. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate the current facade generation.
+- The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor is enabled with source/durable-effect and retained runtime gates. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
 - The facade enters Bubblewrap only through the reviewed native x86_64 descriptor sanitizer. Bubblewrap inherits the deliberate authority set on descriptors `0`–`9`; its exact reviewed executable is admitted on `10`, marked close-on-exec, and entered by descriptor after `close_range(11, UINT_MAX, 0)`. Never add an inherited descriptor without updating the complete mapping, native contract, compatibility fingerprint, and hostile-descriptor tests together.
-- Fixed-receipt bridge build `ded07x99dcxb504` is an unconnected `validation-required` candidate, not a production-live build. The compatibility manifest retains historically connected dispatcher `d18b6xd531xe6ca`; status may collect the candidate fingerprint and narrowly reviewed public generic reads may proceed after a bounded smoke test, but exact reads and private operations remain fail-closed until connected review deliberately updates the manifest.
+- Dispatcher build `ded07x99dcxb504` is connected-read-admitted on the reviewed EasyEDA tuple after native import, authentication, PCB and schematic public-read smoke tests, independent saved-record correlation and installed-source review. Exact reads require the whole pinned tuple; later mismatches fail closed. The legacy writer remains runtime-disabled. Historical typed-executor evidence is in the capability matrix/validation registry; native UI is not a substitute for authority or persistence gates.
 - A boolean, toast, preview, unsaved readback, or file timestamp is never durable design proof.
+
 
 ## Non-negotiable safety rules
 
@@ -22,7 +170,7 @@ Last updated: 2026-09-06 (Europe/Berlin)
 2. Never mutate a real design to test a writer. Connected writer validation must use a disposable, explicitly identified sacrificial project and must prove exact live state, collateral invariants, save/close/reopen state, logical SQLite change, and rollback.
 3. Never enable the private writer merely by setting a flag in production. Record the connected evidence, review it, update the capability docs, add regression tests, and make the enablement change deliberately.
 4. Never bypass the global bridge quarantine. An orphan-risk or unreadable journal blocks every live bridge path except the isolated nonce-bound recovery resolver. Local discovery and managed artifact/evidence inspection may continue.
-5. Never synthesize or replay a restart challenge. Only pass the current nonce after the user reports completing the authorized EasyEDA terminate/restart/reconnect boundary.
+5. Never replay a restart challenge. Legacy recovery retains its user-attestation contract. Typed recovery uses an internal operation-bound technical nonce plus retained old-process termination and replacement authenticated-session evidence; it does not require a new user message copying that nonce or authorize discard/force termination.
 6. Never save after an ambiguous call, invariant mismatch, context drift, runtime drift, or durable-baseline drift.
 7. Preserve unrelated user changes. Do not rewrite the upstream `easyeda-mcp-pro` checkout as part of facade work.
 8. Never commit credentials, private keys, EasyEDA projects, generated evidence, operation journals, or user-specific design data.
@@ -60,12 +208,18 @@ Then run from the repository root:
 
 ```bash
 npm --prefix plugins/easyeda-pro-control run repository:validate
-python3 "$CODEX_HOME/skills/.system/plugin-creator/scripts/validate_plugin.py" plugins/easyeda-pro-control
-python3 "$CODEX_HOME/skills/.system/skill-creator/scripts/quick_validate.py" plugins/easyeda-pro-control/skills/easyeda-pro-control
+for packaged_skill in plugins/easyeda-pro-control/skills/*; do
+  python3 "$CODEX_HOME/skills/.system/skill-creator/scripts/quick_validate.py" "$packaged_skill"
+done
 git diff --exit-code -- plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs
 ```
 
 The offline doctor validates the pinned local workstation and is not a substitute for a connected EasyEDA smoke test. Never run a connected mutation smoke test against a user project.
+
+Use the actual installed skill-creator script location if it differs. Run the
+official plugin validator when installed; this session may not provide the
+historical plugin-creator skill. Repository, MCP-contract and all-skill checks
+remain mandatory, not optional because an external helper is absent.
 
 ## Compatibility manifest
 
@@ -95,34 +249,9 @@ runtime does not invoke them.
 - Record the test count, commit, marketplace URL, and local installation result in this file and the originating project record.
 - Use a new Codex task after installing a new marketplace snapshot.
 
-## 2026-09-06 review update
-
-- Review and fixed findings are recorded in `docs/review-2026-09-06.md`. The real upstream startup failure was reproduced in isolation: `ws` passes a null backlog and the pinned Node normalizes it to zero. Both default forms are now admitted without changing the exact loopback address, port, flag, or inherited-descriptor restrictions. The actual captured upstream then initialized and listed 116 tools with no authenticated EasyEDA session and no design call.
-- Startup now joins concurrent callers correctly, closes executable descriptors acquired during child exit, excludes the public gateway port from backend allocation with eight bounded OS-assigned attempts, and reports fixed stage/exit diagnostics without disclosing private stderr or nested causes. Diagnostic exit values may reflect cleanup; they are not automatically a root-cause claim.
-- Checkpoint creation/verification rechecks source generation and identity after its final awaited work, including WAL commits; verification also rejects checkpoint drift after hashing. Evidence verifies request/schema/metadata/descriptor agreement, bounds managed JSON at 64 MiB and checkpoint receipts at 1 MiB, streams binary hashes over the admitted size, and rejects caller evidence output in the journal directory. Checkpoint proof is point-in-time and does not replace the no-concurrent-edit condition.
-- Discovery defaults to `source: local`, `mode: read` and never starts the upstream. Explicit live discovery remains quarantine-gated. Entries report their source, actual schema availability, and an admitted facade route or `unavailable`. An allowlisted name with live write metadata cannot advertise a generic-read route. The existing 19-tool API is retained; six disabled raw/writer endpoints remain explicit refusals for compatibility.
-- The release validator now lives in `plugins/easyeda-pro-control/scripts/validate-repository.ts` under the same strict TypeScript and type-aware Oxlint configuration as the facade. Metadata is schema-parsed and strict compiler gates check values, not property presence. Three frozen one-statement bridge `.mjs` refusal stubs are the only maintained-source extension exception and now receive strict `checkJs` coverage. They were already linted; the historical claim that every script was TypeScript was too broad. No private bridge source closure or connected tuple changed.
-- The dependency lock updates only `qs` 6.15.3 to 6.16.0. All 151 registry signatures and 39 attestations verify and the audit reports zero vulnerabilities. CI now rejects moderate findings. The exact reviewed plugin `.npmrc` disables dependency install hooks; CI verifies its effective value, and the matching optional esbuild binary builds successfully without a postinstall/download fallback.
-- The installed old release's status handler was reached, superseding the earlier host-level unavailable result. It returned a startup error and no authenticated/session/context evidence. The isolated fixed-upstream test is not connected EasyEDA proof. Candidate `ded07x99dcxb504` remains validation-required; exact/private admission and disposable-project writer validation remain open. No EasyEDA project, document, component, net, rule, route, via, pour, fill, stack, library asset, private credential or imported extension changed.
-- Final local validation on exact Node `24.18.0` and npm `11.16.0` passed strict TypeScript, both type-aware lint gates with zero diagnostics, reproducible sanitizer/bundles, compatibility, plugin/skill validators, actionlint, and 155 repository/privacy checks. With hostile descriptors 142/145 open, the facade suite passed 397 tests across 44 suites and skipped only its Windows-drive fixture; that exact case passed separately on a mounted Windows drive, covering all 398 cases. All 404 bridge tests passed across 28 files.
-- Release payload `36f190d72efb00f8e42cc8abab9ee1679496db3e` was merged through PR #2 as `503943d06b79f5d1b035f4f421abd1ca207d84a3`. PR CI `34011009978` and release-merge CI `34011096316` both passed. Strict required `test-build`, administrator enforcement, and force-push/deletion prohibitions remain enabled. The downloaded 197-file CI archive has SHA-256 `79c4e9eca2e6f33614c09e4fa5c98d668297460247fcd18561902411f61859f3`.
-- Git marketplace `easyeda-pro-agent` was upgraded from `https://github.com/jan-guenter/easyeda-pro-agent-plugin` at release merge `503943d06b79f5d1b035f4f421abd1ca207d84a3`. Plugin `easyeda-pro-control@easyeda-pro-agent` is installed and enabled at `0.3.0+codex.20260906040125`. The first install reported success but was not retained; a second explicit install was retained and verified. All 197 installed files match the release payload bytes and Git modes, with no symlinks. The installed bundle completed stdio initialization, enumerated 19 tools, returned local discovery with an intentionally unusable upstream configuration, and refused raw execution. That smoke called no EasyEDA tool. Start a new task for connected status/context validation.
-- Final facade source projection is `b10d35c1173522c2a26e1b25937712e34e64b9bdfce5f54a2d197942739ef103`; bundle projection is `4489fab0d3754cf12712e55abb4cd8b816b030665d0cb063feb271b4108968fc`. Server bundle SHA-256 is `78873364253f6241d0750463e7d5a1dba5140406fcd21bcf69ef1adc9ead12eb`, supervisor `bb51ae92ce269e6bd97c6f3ce6c83f0038327564ed538230eac4af9cadd2f15e`, lockfile `5fe78cc9cc5480c4dc776d6b67cbded6481ce25d0a725767220bda8ce58f5e09`, and reviewed manifest `cdae76c93d35912f5ec7a7cad648fe594b9cd80457ea778e7fef9b3b795b7970`. The offline doctor passes every check except the deliberately unadmitted connected bridge build.
-
-## Historical validation record, 2026-08-28
-
-- Compatibility target: EasyEDA Pro `3.2.149.88089769`, PCB bundle `3.2.149.5378b690`, public API `0.2.53.aee2f57a`, historically connected upstream MCP/health/extension/bridge `1.0.0-rc.1`, unconnected authenticated extension manifest `0.3.0`, and Node `24.18.0`.
-- Node source/toolchain: TypeScript `7.0.2` with all strict compiler checks enabled; Oxlint `1.80.0` plus type-aware `oxlint-tsgolint` `7.0.2001`; correctness, suspicious, pedantic, performance, style, and restriction diagnostics are errors, warnings are denied, and unused suppressions are errors. Architectural exceptions for Node, async protocol control, typed named modules, generated bridge programs, sequential transactions, and audit-oriented test vectors are individually documented in `.oxlintrc.json`.
-- Connected production-writer validation: **not performed; writer disabled**.
-- Unrestricted raw bridge execution: **structurally disabled**.
-- Release payload commit `520f3ab568e3d3b4adb0a67521e8cbbd46f2a273` supersedes the retained-descriptor failures from runs `33191248912`, `33202470104`, and `33203210507`. GitHub Actions run `33208193481` passed the exact Ubuntu 24.04 checkout/install/audit, cross-binutils sanitizer rebuild, strict TypeScript and lint gates, authenticated-bridge build and tests, hostile-descriptor facade suite, validators, reproducible bundle, exact-mode packaging, and artifact upload in 1 minute 37 seconds. The downloaded 187-file plugin archive has SHA-256 `69e7e7cfe0eb4ce853a291d0b89f6258a4ca85b2fe450ac0654bf4b35dfad4aa`; its sanitizer is exact single-link mode `0755` after extraction.
-- Current sanitizer identity, read from `server/src/descriptor-sanitizer-identity.ts`: schema `easyeda-pro-control.descriptor-sanitizer.v1`, file `easyeda-fd-sanitizer`, 1,440 bytes, SHA-256 `a8b52e8439bdb479a5621052ab03e9030d67b7948c6e2cc448ee5d7bb1dc9b41`, regular single-link mode `0755`. It is a static stripped ELF64 x86_64 image with one read/execute load segment, no interpreter, no dynamic section, no relocations, no writable load segment, and a non-executable stack. The FD contract, parent-death behavior, mode admission, exec failure, and hostile high-descriptor closure have dedicated adversarial tests; the offline doctor exercises successful no-capability admission against the real reviewed Bubblewrap descriptor. The production upstream regression with inherited descriptors `142` and `145` passed locally and in GitHub Actions.
-- Final local validation on exact Node `24.18.0` has zero strict TypeScript or type-aware Oxlint diagnostics, 356/356 facade tests across 41 suites while host descriptors `142` and `145` are deliberately open, and 404/404 authenticated-bridge tests across 28 files. All 151 registry signatures, 39 attestations, and the high-severity vulnerability audit passed. Plugin, skill, compatibility, repository, privacy, actionlint, doctor sanitizer-runtime, reproducible-sanitizer, reproducible-bundle, and package-extraction checks passed. The reviewed facade source projection is `c19e0d8233618069f3eecadb8a9b8966a4eb86546bb158e472e9db1acd6a3a12`; the three-file bundle projection is `7e51f95b61007529a96ea4aae4fba87bf218baa21f48c0c7a7db2bbcc3dd6a4e`, with `server.mjs` `a2ed5dd18f925d2dfb6c18d43a0021c75b8bc75d41cc2948aed27d10265dbe9f` and `upstream-supervisor.mjs` `be235b20ac577150dcf450b3c3890731fcd52e5d5b3eb219fd9524797379e4a0`.
-- The private authenticated bridge candidate was built twice reproducibly from closure `ce52ca1bf5b2d3d214454790a24516ae5182f1867851c2786c0269bbc7892680` (70 files, 847,709 bytes). Fixed receipt build `ded07x99dcxb504` selects authenticated index `ipamxAl7WLjoauIx5hQI-Sck8LB7JWeJMW_7DAXOcdcU` and archive SHA-256 `82cb8f241632ebed931a568085daf23f565960b71ac53cb4fb128e426b9abb0c` (138,874 bytes, mode 0600). It was not imported or connected; offline doctor is therefore fail-closed only on the intended reviewed-connected-build mismatch.
-- Marketplace `easyeda-pro-agent` is upgraded from `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`; enabled plugin `easyeda-pro-control@easyeda-pro-agent` is installed at version `0.3.0+codex.20260828201750` in its versioned Codex plugin-cache entry. All 187 installed files and modes match payload commit `520f3ab568e3d3b4adb0a67521e8cbbd46f2a273` exactly, with no symlinks. The installed bundle completed MCP initialization and enumerated all 19 tools with meaningful output schemas without calling any tool or contacting EasyEDA. Start a new Codex task to load the installed plugin catalog.
 
 ## Open questions
 
-- Which disposable EasyEDA project and acceptance fixture will be used for connected writer validation?
 - Should future releases bundle or bootstrap the upstream MCP, or continue to pin an externally installed checkout?
-- Which additional write capability should be modeled first after the one-component writer is proven?
+- Which additional EasyEDA/platform tuples should receive a separate implementation review and disposable-fixture admission?
+- Which remaining native-dialog workflows, including ECO and operation-specific manufacturing exports, should gain dedicated typed adapters next? Existing native controls do not imply complete API coverage or fabrication authorization.

@@ -74,11 +74,12 @@ export function createRuntimeTimers(
     clearTimeout(handle) {
       if (!handle) {return;}
       if (handle.source === 'easyeda') {
-        const clear = getEasyedaTimerApi()?.clearTimeoutTimer;
+        const api = getEasyedaTimerApi();
+        const clear = api?.clearTimeoutTimer;
         if (typeof clear !== 'function') {
           throw new TypeError('The EasyEDA timeout clearer is no longer callable.');
         }
-        if (!clear(handle.id)) {
+        if (!clear.call(api, handle.id)) {
           throw new TypeError(`EasyEDA did not confirm timeout cleanup for ${handle.id}.`);
         }
         return;
@@ -118,11 +119,12 @@ export function createRuntimeTimers(
     clearInterval(handle) {
       if (!handle) {return;}
       if (handle.source === 'easyeda') {
-        const clear = getEasyedaTimerApi()?.clearIntervalTimer;
+        const api = getEasyedaTimerApi();
+        const clear = api?.clearIntervalTimer;
         if (typeof clear !== 'function') {
           throw new TypeError('The EasyEDA interval clearer is no longer callable.');
         }
-        if (!clear(handle.id)) {
+        if (!clear.call(api, handle.id)) {
           throw new TypeError(`EasyEDA did not confirm interval cleanup for ${handle.id}.`);
         }
         return;

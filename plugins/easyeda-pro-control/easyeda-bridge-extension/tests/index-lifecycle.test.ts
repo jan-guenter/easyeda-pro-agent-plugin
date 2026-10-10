@@ -75,6 +75,7 @@ const GLOBAL_KEYS = [
   'sys_Timer',
   'sys_WebSocket',
   'sys_Dialog',
+  'sys_Environment',
   'eda',
   'WebSocket',
   'SCH_PrimitiveComponent',
@@ -101,6 +102,7 @@ class HarnessSocket {
   static readonly OPEN = 1;
   static readonly CLOSED = 3;
   static instances: HarnessSocket[] = [];
+  static readonly registered = new Map<string, HarnessSocket>();
   static localBehavior: LocalBehavior = 'pending';
   static closeBehavior: CloseBehavior = 'success';
   static sendBehavior: SendBehavior = 'success';
@@ -118,17 +120,21 @@ class HarnessSocket {
   readonly sent: Record<string, unknown>[] = [];
   readyState = 0;
   closeCalls = 0;
-  onopen: (() => void) | null = null;
-  onmessage: ((event: { data: string }) => void) | null = null;
-  onerror: ((error: unknown) => void) | null = null;
-  onclose: (() => void) | null = null;
+  openCallback: (() => void) | null = null;
+  messageCallback: ((event: { data: string }) => void) | null = null;
 
-  constructor(readonly url: string) {
+  constructor(readonly url: string, protocols?: string | string[]) {
+    if (
+      protocols !== undefined && typeof protocols !== 'string' &&
+      (!Array.isArray(protocols) || protocols.some((value) => typeof value !== 'string'))
+    ) {
+      throw new TypeError('WebSocket protocols must be a string or string array.');
+    }
     HarnessSocket.instances.push(this);
     if (!url.startsWith('ws://127.0.0.1:')) {return;}
     queueMicrotask(() => {
       if (HarnessSocket.localBehavior === 'error') {
-        this.onerror?.(new Error('connection refused'));
+        this.readyState = HarnessSocket.CLOSED;
       } else if (HarnessSocket.localBehavior === 'success') {
         this.open();
       }
@@ -146,11 +152,11 @@ class HarnessSocket {
   open(): void {
     if (this.readyState === HarnessSocket.OPEN) {return;}
     this.readyState = HarnessSocket.OPEN;
-    this.onopen?.();
+    this.openCallback?.();
   }
 
   receive(payload: Record<string, unknown>): void {
-    this.onmessage?.({ data: JSON.stringify(payload) });
+    this.messageCallback?.({ data: JSON.stringify(payload) });
   }
 
   send(payload: string): unknown {
@@ -235,9 +241,34 @@ class HarnessSocket {
     }
     if (this.readyState === HarnessSocket.CLOSED) {return undefined;}
     this.readyState = HarnessSocket.CLOSED;
-    this.onclose?.();
     return undefined;
   }
+}
+
+function nativeWebSocketApi(): Record<string, unknown> {
+  return {
+    register: vi.fn((
+      id: string,
+      url: string,
+      onMessage: (event: { data: string }) => void,
+      onOpen?: () => void,
+      protocols?: string | string[],
+    ): void => {
+      // The installed native adapter forwards argument five to WebSocket and
+      // Accepts only message/open callbacks. It returns no socket object.
+      const socket = new HarnessSocket(url, protocols);
+      HarnessSocket.registered.set(id, socket);
+      socket.messageCallback = onMessage;
+      socket.openCallback = onOpen ?? null;
+    }),
+    send: (id: string, data: string): unknown => {
+      const socket = HarnessSocket.registered.get(id);
+      if (socket === undefined) {throw new Error('Unknown native socket id.');}
+      const result = socket.send(data);
+      return result === true ? undefined : result;
+    },
+    close: (id: string): unknown => HarnessSocket.registered.get(id)?.close(),
+  };
 }
 
 let loaded: ExtensionModule | undefined;
@@ -273,7 +304,7 @@ async function loadExtension(
     authenticationKey?: string;
     autoConnect?: boolean;
     autoConnectStoredValue?: unknown;
-    withWebSocket?: boolean;
+    withNativeWebSocket?: boolean;
     webSocketApi?: Record<string, unknown>;
   } = {},
 ): Promise<{
@@ -297,7 +328,9 @@ async function loadExtension(
       return true;
     },
   });
-  if (options.withWebSocket === true) {vi.stubGlobal('WebSocket', HarnessSocket);}
+  if (options.withNativeWebSocket === true) {
+    vi.stubGlobal('sys_WebSocket', nativeWebSocketApi());
+  }
   vi.stubGlobal('BRIDGE_AUTHENTICATION_KEY', authenticationKey);
   vi.stubGlobal('BRIDGE_AUTHENTICATED_PORT', AUTHENTICATED_PORT);
   vi.stubGlobal(
@@ -321,6 +354,7 @@ describe('extension loader lifecycle source', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     HarnessSocket.instances = [];
+    HarnessSocket.registered.clear();
     HarnessSocket.localBehavior = 'pending';
     HarnessSocket.closeBehavior = 'success';
     HarnessSocket.sendBehavior = 'success';
@@ -402,7 +436,7 @@ describe('extension loader lifecycle source', () => {
     vi.stubGlobal('showRemoteRelayStatus', vi.fn());
     HarnessSocket.localBehavior = 'success';
 
-    const { extension } = await loadExtension({ withWebSocket: true });
+    const { extension } = await loadExtension({ withNativeWebSocket: true });
 
     expect(legacyDisconnect).toHaveBeenCalledOnce();
     expect(legacyDeactivate).toHaveBeenCalledOnce();
@@ -426,6 +460,55 @@ describe('extension loader lifecycle source', () => {
     );
   });
 
+  it('reports the native editor version in its handshake with the API receiver preserved', async () => {
+    const environment = {
+      version: '3.2.149.88089769',
+      getEditorCurrentVersion(): string { return this.version; },
+      getVersion: vi.fn(() => 'incorrect-legacy-version'),
+    };
+    vi.stubGlobal('sys_Environment', environment);
+    HarnessSocket.localBehavior = 'success';
+    const { extension } = await loadExtension({ withNativeWebSocket: true });
+
+    await extension.connect();
+
+    expect(HarnessSocket.required(0).sent).toContainEqual(expect.objectContaining({
+      type: 'handshake', easyedaVersion: environment.version, protocolVersion: '1.0.0',
+    }));
+    expect(environment.getVersion).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, null, 123, '', '   ', { private: 'not-version' }])(
+    'omits an invalid native editor version without string coercion: %j', async (version) => {
+      vi.stubGlobal('sys_Environment', { getEditorCurrentVersion: () => version });
+      HarnessSocket.localBehavior = 'success';
+      const { extension } = await loadExtension({ withNativeWebSocket: true });
+
+      await extension.connect();
+
+      const handshake = HarnessSocket.required(0).sent.find((frame) => frame.type === 'handshake');
+      expect(handshake).toBeDefined();
+      expect(handshake).not.toHaveProperty('easyedaVersion');
+    },
+  );
+
+  it('logs only a fixed diagnostic when reading the native editor version throws', async () => {
+    const logged = vi.spyOn(console, 'log').mockImplementation(() => {
+      // Capture diagnostic text without printing it during this test.
+    });
+    const privateDetail = 'private-version-exception';
+    vi.stubGlobal('sys_Environment', { getEditorCurrentVersion: () => {
+      throw new Error(privateDetail);
+    } });
+    HarnessSocket.localBehavior = 'success';
+    const { extension } = await loadExtension({ withNativeWebSocket: true });
+
+    await extension.connect();
+
+    expect(logged.mock.calls.flat().join(' ')).toContain('easyeda-version-read-failed');
+    expect(logged.mock.calls.flat().join(' ')).not.toContain(privateDetail);
+  });
+
   it('blocks replacement when an unauthenticated legacy control cannot be removed', async () => {
     const legacyEdaScope: Record<string, unknown> = {};
     Object.defineProperty(legacyEdaScope, 'connectRemoteRelay', {
@@ -446,7 +529,7 @@ describe('extension loader lifecycle source', () => {
 
   it('reuses only the frozen marker-matched authenticated runtime on repeated evaluation', async () => {
     HarnessSocket.localBehavior = 'success';
-    const { extension } = await loadExtension({ withWebSocket: true });
+    const { extension } = await loadExtension({ withNativeWebSocket: true });
     await extension.connect();
     const firstRuntime = requireRecord(
       Reflect.get(globalThis, AUTHENTICATED_RUNTIME_KEY),
@@ -476,14 +559,14 @@ describe('extension loader lifecycle source', () => {
 
   it('replaces and retires the persistent runtime after authentication-key rotation', async () => {
     HarnessSocket.localBehavior = 'success';
-    const first = await loadExtension({ withWebSocket: true });
+    const first = await loadExtension({ withNativeWebSocket: true });
     await first.extension.connect();
     const firstRuntime: unknown = Reflect.get(globalThis, AUTHENTICATED_RUNTIME_KEY);
     const firstSocket = HarnessSocket.required(0);
 
     const second = await loadExtension({
       authenticationKey: ROTATED_AUTHENTICATION_KEY,
-      withWebSocket: true,
+      withNativeWebSocket: true,
     });
     const secondRuntime = requireRecord(
       Reflect.get(globalThis, AUTHENTICATED_RUNTIME_KEY),
@@ -501,14 +584,14 @@ describe('extension loader lifecycle source', () => {
 
   it('replaces and retires the runtime after an index-only build identity change', async () => {
     HarnessSocket.localBehavior = 'success';
-    const first = await loadExtension({ withWebSocket: true });
+    const first = await loadExtension({ withNativeWebSocket: true });
     await first.extension.connect();
     const firstRuntime: unknown = Reflect.get(globalThis, AUTHENTICATED_RUNTIME_KEY);
     const firstSocket = HarnessSocket.required(0);
 
     await loadExtension({
       authenticatedIndexBuildId: UPDATED_AUTHENTICATED_INDEX_BUILD_ID,
-      withWebSocket: true,
+      withNativeWebSocket: true,
     });
     const secondRuntime = requireRecord(
       Reflect.get(globalThis, AUTHENTICATED_RUNTIME_KEY),
@@ -692,11 +775,13 @@ describe('extension loader lifecycle source', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('falls back from a silent register handle to the EasyEDA create API', async () => {
+  it('closes a silent native register handle without trying create or browser sockets', async () => {
     HarnessSocket.localBehavior = 'success';
     const registeredIds: string[] = [];
     const closedIds: string[] = [];
     let createCalls = 0;
+    const browserSocket = vi.fn();
+    vi.stubGlobal('WebSocket', browserSocket);
     const { extension, toasts } = await loadExtension({
       webSocketApi: {
         register: (id: string) => registeredIds.push(id),
@@ -718,15 +803,18 @@ describe('extension loader lifecycle source', () => {
 
     expect(registeredIds).toHaveLength(1);
     expect(closedIds).toEqual(registeredIds);
-    expect(createCalls).toBe(1);
-    expect(toasts).toContain('EasyEDA Pro Control Bridge connected to local server');
+    expect(createCalls).toBe(0);
+    expect(browserSocket).not.toHaveBeenCalled();
+    expect(toasts.at(-1)).toContain('without trying another transport');
   });
 
   it('never contacts a hostile listener on 49620 and retries only authenticated 49621', async () => {
     HarnessSocket.localBehavior = 'error';
-    const { extension, toasts } = await loadExtension({ withWebSocket: true });
+    const { extension, toasts } = await loadExtension({ withNativeWebSocket: true });
 
-    await extension.connect();
+    const connecting = extension.connect();
+    await vi.advanceTimersByTimeAsync(REGISTER_OPEN_CALLBACK_TIMEOUT_MS);
+    await connecting;
 
     const firstAttempt = HarnessSocket.instances.filter((item) => item.url.startsWith('ws://'));
     expect(firstAttempt.map((item) => item.url)).toEqual([
@@ -749,7 +837,7 @@ describe('extension loader lifecycle source', () => {
 
   it('suppresses duplicate auto-connect calls while one handshake is pending', async () => {
     HarnessSocket.localBehavior = 'pending';
-    const { extension } = await loadExtension({ withWebSocket: true });
+    const { extension } = await loadExtension({ withNativeWebSocket: true });
 
     const first = extension.connect('auto');
     const second = extension.connect('auto');
@@ -765,9 +853,97 @@ describe('extension loader lifecycle source', () => {
     );
   });
 
+  it('matches native register argument order and accepts native void send and close results', async () => {
+    HarnessSocket.localBehavior = 'success';
+    const socketApi = nativeWebSocketApi();
+    const { extension, toasts } = await loadExtension({ webSocketApi: socketApi });
+
+    await extension.connect();
+
+    expect(socketApi.register).toHaveBeenCalledExactlyOnceWith(
+      expect.any(String),
+      `ws://127.0.0.1:${AUTHENTICATED_PORT}`,
+      expect.any(Function),
+      expect.any(Function),
+    );
+    expect(toasts).toContain('EasyEDA Pro Control Bridge connected to local server');
+    extension.disconnect();
+    expect(HarnessSocket.required(0).closeCalls).toBe(1);
+  });
+
+  it.each([
+    ['challenge', 1, 'verified'],
+    ['acceptance', 2, 'verified'],
+    ['challenge', 1, 'invalid'],
+    ['acceptance', 2, 'invalid'],
+    ['challenge', 1, 'rejected'],
+    ['acceptance', 2, 'rejected'],
+  ] as const)(
+    'ignores delayed %s verification number %i with outcome %s after reconnect',
+    async (_phase, delayedCall, outcome) => {
+      HarnessSocket.localBehavior = 'success';
+      const entered = createDeferred<boolean>();
+      const release = createDeferred<boolean>();
+      const finished = createDeferred<boolean>();
+      const nativeVerify = crypto.subtle.verify.bind(crypto.subtle);
+      const nativeSign = crypto.subtle.sign.bind(crypto.subtle);
+      let verificationCalls = 0;
+      let staleSigning = false;
+      vi.spyOn(crypto.subtle, 'sign').mockImplementation(async (...args) => {
+        try {
+          return await nativeSign(...args);
+        } finally {
+          if (staleSigning) {finished.resolve(true);}
+        }
+      });
+      vi.spyOn(crypto.subtle, 'verify').mockImplementation(async (...args) => {
+        verificationCalls += 1;
+        if (verificationCalls !== delayedCall) {return nativeVerify(...args);}
+        const verified = await nativeVerify(...args);
+        entered.resolve(true);
+        await release.promise;
+        staleSigning = delayedCall === 1 && outcome === 'verified';
+        if (!staleSigning) {finished.resolve(true);}
+        if (outcome === 'rejected') {throw new Error('Delayed Web Crypto failure.');}
+        return outcome === 'verified' && verified;
+      });
+      const { extension, toasts } = await loadExtension({ withNativeWebSocket: true });
+      const firstConnecting = extension.connect();
+      await entered.promise;
+      const firstSocket = HarnessSocket.required(0);
+
+      await extension.connect();
+      const replacementSocket = HarnessSocket.required(1);
+      const previousFirstFrames = [...firstSocket.sent];
+      const previousReplacementFrames = [...replacementSocket.sent];
+      const previousCloseCalls = firstSocket.closeCalls;
+      const previousToasts = [...toasts];
+      release.resolve(true);
+      await finished.promise;
+      await flushMicrotasks();
+
+      expect(firstSocket.sent).toEqual(previousFirstFrames);
+      expect(replacementSocket.sent).toEqual(previousReplacementFrames);
+      expect(firstSocket.closeCalls).toBe(previousCloseCalls);
+      expect(replacementSocket.closeCalls).toBe(0);
+      expect(toasts).toEqual(previousToasts);
+      replacementSocket.receive({
+        id: 'replacement-status',
+        method: 'system.loaderStatus',
+        type: 'request',
+      });
+      await flushMicrotasks();
+      expect(replacementSocket.sent).toContainEqual(
+        expect.objectContaining({ id: 'replacement-status', ok: true, type: 'response' }),
+      );
+      await vi.advanceTimersByTimeAsync(8000);
+      await firstConnecting;
+    },
+  );
+
   it('closes a heartbeat-stale socket and releases all reconnect resources on deactivate', async () => {
     HarnessSocket.localBehavior = 'success';
-    const { extension } = await loadExtension({ autoConnect: true, withWebSocket: true });
+    const { extension } = await loadExtension({ autoConnect: true, withNativeWebSocket: true });
 
     await extension.connect();
     const socket = HarnessSocket.required(0);
@@ -784,6 +960,90 @@ describe('extension loader lifecycle source', () => {
     expect(Reflect.has(globalThis, AUTHENTICATED_RUNTIME_KEY)).toBe(false);
     expect(Reflect.has(globalThis, LEGACY_RUNTIME_KEY)).toBe(false);
     loaded = undefined;
+  });
+
+  it('keeps native socket IDs distinct during pre-authentication runtime rotation', async () => {
+    HarnessSocket.localBehavior = 'success';
+    const entered = createDeferred<boolean>();
+    const release = createDeferred<boolean>();
+    const nativeVerify = crypto.subtle.verify.bind(crypto.subtle);
+    vi.spyOn(crypto.subtle, 'verify').mockImplementationOnce(async (...args) => {
+      const verified = await nativeVerify(...args);
+      entered.resolve(true);
+      await release.promise;
+      return verified;
+    });
+    const first = await loadExtension({ withNativeWebSocket: true });
+    const firstConnecting = first.extension.connect();
+    await entered.promise;
+
+    const replacement = await loadExtension({
+      authenticatedIndexBuildId: UPDATED_AUTHENTICATED_INDEX_BUILD_ID,
+      withNativeWebSocket: true,
+    });
+    await replacement.extension.connect();
+    const replacementSocket = HarnessSocket.required(1);
+    expect(HarnessSocket.registered.size).toBe(2);
+
+    release.resolve(true);
+    await vi.advanceTimersByTimeAsync(8000);
+    await firstConnecting;
+
+    expect(replacementSocket.closeCalls).toBe(0);
+    replacement.extension.showStatus();
+    expect(replacement.toasts.at(-1)).toContain('connected to local server');
+  });
+
+  it('isolates replacement native timers from queued retired-runtime cleanup', async () => {
+    interface NativeTimeout {
+      readonly id: string;
+      readonly callback: () => void;
+    }
+    const nativeTimeouts = new Map<string, NativeTimeout>();
+    const scheduled: NativeTimeout[] = [];
+    vi.stubGlobal('sys_Timer', {
+      setTimeoutTimer: (id: string, _delayMs: number, callback: () => void) => {
+        const timer = { id, callback };
+        nativeTimeouts.set(id, timer);
+        scheduled.push(timer);
+        return true;
+      },
+      clearTimeoutTimer: (id: string) => {
+        nativeTimeouts.delete(id);
+        return true;
+      },
+    });
+    HarnessSocket.localBehavior = 'pending';
+    const first = await loadExtension({ withNativeWebSocket: true });
+    const firstConnecting = first.extension.connect();
+    const retiredConnectionTimeout = scheduled[0];
+    if (retiredConnectionTimeout === undefined) {throw new Error('Missing retired timeout.');}
+    // The native timeout expires, but its callback is queued across reload.
+    nativeTimeouts.delete(retiredConnectionTimeout.id);
+
+    const replacement = await loadExtension({
+      authenticatedIndexBuildId: UPDATED_AUTHENTICATED_INDEX_BUILD_ID,
+      withNativeWebSocket: true,
+    });
+    await replacement.extension.disableAutoConnect();
+    const replacementConnecting = replacement.extension.connect();
+    const replacementTimeouts = scheduled.slice(2);
+    expect(replacementTimeouts).toHaveLength(2);
+    retiredConnectionTimeout.callback();
+    await firstConnecting;
+
+    expect([...nativeTimeouts.keys()].sort()).toEqual(
+      replacementTimeouts.map(({ id }) => id).sort(),
+    );
+    const replacementOpenTimeout = replacementTimeouts[1];
+    if (replacementOpenTimeout === undefined) {throw new Error('Missing replacement timeout.');}
+    nativeTimeouts.delete(replacementOpenTimeout.id);
+    replacementOpenTimeout.callback();
+    await replacementConnecting;
+
+    expect(nativeTimeouts.size).toBe(0);
+    expect(HarnessSocket.required(1).closeCalls).toBe(1);
+    expect(replacement.toasts.at(-1)).toContain('without trying another transport');
   });
 
   it.each([
@@ -805,7 +1065,7 @@ describe('extension loader lifecycle source', () => {
       type: 'hello',
       ...override,
     };
-    const { extension, toasts } = await loadExtension({ withWebSocket: true });
+    const { extension, toasts } = await loadExtension({ withNativeWebSocket: true });
 
     await extension.connect();
 
@@ -816,7 +1076,7 @@ describe('extension loader lifecycle source', () => {
 
   it('rejects a replayed hello after connection admission', async () => {
     HarnessSocket.localBehavior = 'success';
-    const { extension, toasts } = await loadExtension({ withWebSocket: true });
+    const { extension, toasts } = await loadExtension({ withNativeWebSocket: true });
     await extension.connect();
     const socket = HarnessSocket.required(0);
 
@@ -830,7 +1090,7 @@ describe('extension loader lifecycle source', () => {
 
   it('does not let an ignored reflected response extend server liveness', async () => {
     HarnessSocket.localBehavior = 'success';
-    const { extension } = await loadExtension({ withWebSocket: true });
+    const { extension } = await loadExtension({ withNativeWebSocket: true });
     await extension.connect();
     const socket = HarnessSocket.required(0);
 
@@ -846,7 +1106,7 @@ describe('extension loader lifecycle source', () => {
     HarnessSocket.localBehavior = 'success';
     const { extension, toasts } = await loadExtension({
       autoConnectStoredValue: 'false',
-      withWebSocket: true,
+      withNativeWebSocket: true,
     });
 
     await extension.activate('onStartupFinished');
@@ -869,9 +1129,9 @@ describe('extension loader lifecycle source', () => {
         },
       });
       HarnessSocket.localBehavior = 'success';
-      const { extension } = await loadExtension({ autoConnect: true, withWebSocket: true });
+      const { extension } = await loadExtension({ autoConnect: true, withNativeWebSocket: true });
       await extension.connect();
-      HarnessSocket.required(0).close();
+      HarnessSocket.required(0).receive(HarnessSocket.localHello);
       await flushMicrotasks();
       const reconnect = timeoutCallbacks.find(
         ({ delayMs }) => delayMs === reconnectDelayMs(1),
@@ -910,9 +1170,9 @@ describe('extension loader lifecycle source', () => {
       },
     });
     HarnessSocket.localBehavior = 'success';
-    const { extension } = await loadExtension({ autoConnect: true, withWebSocket: true });
+    const { extension } = await loadExtension({ autoConnect: true, withNativeWebSocket: true });
     await extension.connect();
-    HarnessSocket.required(0).close();
+    HarnessSocket.required(0).receive(HarnessSocket.localHello);
     await flushMicrotasks();
     const reconnectEntry = [...timeoutCallbacks.entries()].find(
       ([, { delayMs }]) => delayMs === reconnectDelayMs(1),
@@ -942,13 +1202,13 @@ describe('extension loader lifecycle source', () => {
     await extension.connect();
 
     expect(register).not.toHaveBeenCalled();
-    expect(create).toHaveBeenCalledOnce();
-    expect(toasts).toContain('EasyEDA Pro Control Bridge connected to local server');
+    expect(create).not.toHaveBeenCalled();
+    expect(toasts.at(-1)).toContain('native SYS_WebSocket.register API was unavailable');
   });
 
   it('disconnects when an admitted transport loses its send capability', async () => {
     HarnessSocket.localBehavior = 'success';
-    const { extension } = await loadExtension({ withWebSocket: true });
+    const { extension } = await loadExtension({ withNativeWebSocket: true });
     await extension.connect();
     const socket = HarnessSocket.required(0);
     Reflect.set(socket, 'send', undefined);
@@ -966,7 +1226,7 @@ describe('extension loader lifecycle source', () => {
   it('disconnects when send explicitly reports synchronous failure', async () => {
     HarnessSocket.localBehavior = 'success';
     HarnessSocket.sendBehavior = 'false-response';
-    const { extension } = await loadExtension({ withWebSocket: true });
+    const { extension } = await loadExtension({ withNativeWebSocket: true });
     await extension.connect();
     const socket = HarnessSocket.required(0);
 
@@ -985,7 +1245,7 @@ describe('extension loader lifecycle source', () => {
     async (closeBehavior) => {
       HarnessSocket.localBehavior = 'success';
       HarnessSocket.closeBehavior = closeBehavior;
-      const { extension, toasts } = await loadExtension({ withWebSocket: true });
+      const { extension, toasts } = await loadExtension({ withNativeWebSocket: true });
       await extension.connect();
       const socket = HarnessSocket.required(0);
 
@@ -1018,7 +1278,7 @@ describe('extension loader lifecycle source', () => {
       setTimeoutTimer: () => true,
     });
     HarnessSocket.localBehavior = 'success';
-    const { extension } = await loadExtension({ withWebSocket: true });
+    const { extension } = await loadExtension({ withNativeWebSocket: true });
     await extension.connect();
     const socket = HarnessSocket.required(0);
 
@@ -1040,7 +1300,7 @@ describe('extension loader lifecycle source', () => {
   it('retains a pre-admission socket whose timeout close cannot be proven', async () => {
     HarnessSocket.localBehavior = 'pending';
     HarnessSocket.closeBehavior = 'false';
-    const { extension } = await loadExtension({ withWebSocket: true });
+    const { extension } = await loadExtension({ withNativeWebSocket: true });
     const connecting = extension.connect();
 
     await vi.advanceTimersByTimeAsync(8000);
@@ -1057,7 +1317,7 @@ describe('extension loader lifecycle source', () => {
     loaded = undefined;
   });
 
-  it('uses one stable register handle when callbacks fire synchronously', async () => {
+  it('uses one stable native register handle when callbacks fire synchronously', async () => {
     let registerCalls = 0;
     const { extension, toasts } = await loadExtension({
       webSocketApi: {
@@ -1067,12 +1327,10 @@ describe('extension loader lifecycle source', () => {
           _url: string,
           onMessage: (event: unknown) => void,
           onOpen?: () => void,
-          onClose?: () => void,
         ) => {
           registerCalls += 1;
           onOpen?.();
           onMessage(JSON.stringify({ type: 'synchronous-fixture-frame' }));
-          onClose?.();
         },
         send: () => {},
       },
@@ -1085,53 +1343,49 @@ describe('extension loader lifecycle source', () => {
     expect(toasts.at(-1)).toContain('offline');
   });
 
-  it('does not start fallback after register close synchronously settles the attempt', async () => {
-    let onRegisterClose: (() => void) | undefined;
+  it('does not retry or fall back when native register throws after opening', async () => {
     const create = vi.fn((url: string) => new HarnessSocket(url));
-    const { extension } = await loadExtension({
+    const close = vi.fn();
+    const register = vi.fn((
+      _id: string,
+      _url: string,
+      _onMessage: (event: unknown) => void,
+      onOpen?: () => void,
+    ) => {
+      onOpen?.();
+      throw new Error('Native register fixture failure.');
+    });
+    const { extension, toasts } = await loadExtension({
       webSocketApi: {
-        close: () => {
-          onRegisterClose?.();
-          return true;
-        },
+        close,
         create,
-        register: (
-          _id: string,
-          _url: string,
-          _onMessage: (event: unknown) => void,
-          _onOpen?: () => void,
-          onClose?: () => void,
-        ) => {
-          onRegisterClose = onClose;
-        },
+        register,
         send: () => {},
       },
     });
-    const connecting = extension.connect();
+    await extension.connect();
 
-    await vi.advanceTimersByTimeAsync(REGISTER_OPEN_CALLBACK_TIMEOUT_MS);
-    await connecting;
-
+    expect(register).toHaveBeenCalledOnce();
+    expect(close).toHaveBeenCalledOnce();
     expect(create).not.toHaveBeenCalled();
+    expect(toasts).toContain(
+      'EasyEDA Pro Control Bridge could not register its native socket. Check Extension Manager for External Interactions permission; this error alone does not establish the cause.',
+    );
   });
 
-  it('quarantines an unclosable socket returned by the EasyEDA create API', async () => {
+  it('never calls unsupported create or browser APIs when native register is missing', async () => {
     const create = vi.fn(() => ({ send: () => {} }));
+    const browserSocket = vi.fn();
+    vi.stubGlobal('WebSocket', browserSocket);
     const { extension } = await loadExtension({
       webSocketApi: { create },
-      withWebSocket: true,
     });
 
     await extension.connect();
 
-    expect(create).toHaveBeenCalledOnce();
+    expect(create).not.toHaveBeenCalled();
+    expect(browserSocket).not.toHaveBeenCalled();
     expect(HarnessSocket.instances).toHaveLength(0);
-    await expect(extension.connect()).rejects.toThrow(/without a callable close/u);
-    expect(() => {
-      extension.deactivate();
-    }).toThrow(/could not be disconnected safely/u);
-    expect(Reflect.has(globalThis, AUTHENTICATED_RUNTIME_KEY)).toBe(true);
-    loaded = undefined;
   });
 
   it('revokes only its exact controls from both global scopes on deactivate', async () => {
@@ -1232,7 +1486,7 @@ describe('extension loader lifecycle source', () => {
       .mockResolvedValueOnce([{ id: 'second-component' }]);
     vi.stubGlobal('SCH_PrimitiveComponent', { getAll });
     HarnessSocket.localBehavior = 'success';
-    const first = await loadExtension({ withWebSocket: true });
+    const first = await loadExtension({ withNativeWebSocket: true });
     await first.extension.connect();
     const firstSocket = HarnessSocket.required(0);
     firstSocket.receive({
@@ -1246,7 +1500,7 @@ describe('extension loader lifecycle source', () => {
 
     const second = await loadExtension({
       authenticationKey: ROTATED_AUTHENTICATION_KEY,
-      withWebSocket: true,
+      withNativeWebSocket: true,
     });
     await second.extension.connect();
     const secondSocket = HarnessSocket.required(1);
@@ -1279,7 +1533,7 @@ describe('extension loader lifecycle source', () => {
       getAll: async () => [{ description: '界'.repeat(400_000) }],
     });
     HarnessSocket.localBehavior = 'success';
-    const { extension } = await loadExtension({ withWebSocket: true });
+    const { extension } = await loadExtension({ withNativeWebSocket: true });
     await extension.connect();
     const socket = HarnessSocket.required(0);
 
@@ -1310,7 +1564,7 @@ describe('extension loader lifecycle source', () => {
       getAll: async () => [{ description: '界'.repeat(2_800_000) }],
     });
     HarnessSocket.localBehavior = 'success';
-    const { extension } = await loadExtension({ withWebSocket: true });
+    const { extension } = await loadExtension({ withNativeWebSocket: true });
     await extension.connect();
     const socket = HarnessSocket.required(0);
 
@@ -1332,7 +1586,7 @@ describe('extension loader lifecycle source', () => {
   });
 
   it('does not expose the removed Remote Relay control plane', async () => {
-    const { extension } = await loadExtension({ withWebSocket: true });
+    const { extension } = await loadExtension({ withNativeWebSocket: true });
     expect('connectRemoteRelay' in extension).toBe(false);
     expect('disconnectRemoteRelay' in extension).toBe(false);
     expect('showRemoteRelayStatus' in extension).toBe(false);

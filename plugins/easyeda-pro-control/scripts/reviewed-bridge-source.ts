@@ -20,9 +20,9 @@ export const REVIEWED_BRIDGE_SOURCE = {
   commit: "964c05082f1c7c9e8b98f56e967e36bfc3f26128",
   upstreamTreeSha1: "cc8893215e736f9efca78e4216033469008ea8e9",
   closureSha256:
-    "ce52ca1bf5b2d3d214454790a24516ae5182f1867851c2786c0269bbc7892680",
+    "c5cb4d9ed0d5a93bca655f4f846f4f2e9337633941b2df3482aa3b91d7e43ee5",
   fileCount: 70,
-  totalBytes: 847_709,
+  totalBytes: 853_680,
   derivative: {
     addedFiles: [
       "LICENSE",
@@ -100,7 +100,7 @@ export const REVIEWED_BRIDGE_SOURCE = {
     implementationDelta:
       "The derivative uses a private UUID, package/display/menu/socket identity and repository metadata distinct from the stock bridge. Its private build injects an HMAC authentication key and fixed loopback port 49621; the extension uses nonce-bound mutual authentication and removes adjacent-port fallback from its production connection path. A distinct frozen authenticated-runtime marker identifies the hardened runtime family. Persistent runtime reuse requires an exact content-derived authenticated index-bundle ID, authentication-key SHA-256 epoch, and build-specific ownership record; stale, rotated, or shared runtimes are synchronously disconnected, deactivated, deleted, and replaced. Missing, throwing, or asynchronous cleanup fails closed before replacement. The raw key and private backend token are never transmitted to the extension-facing socket. Runtime payloads and trusted envelope fields are validated before use. Strict TypeScript and type-aware lint remediation preserves the ES2020 renderer target and omission-sensitive EasyEDA calls. Nested standalone build, package, and watch commands fail closed; the enclosing facade's hardened `npm run bridge:build` command is the only supported credential-bearing `.eext` publication path. Runtime regression tests build only in memory with synthetic keys.",
     packageDelta:
-      'package.json is private, adds "type": "module", pins the root-owned TypeScript 7.0.2, esbuild 0.28.2, and Vitest 4.1.9 toolchain exactly, covers source and tests with strict typechecking, and routes every legacy build script to the fail-closed entry point. Unused standalone archive tooling and its obsolete lint configuration are removed; the repository root lockfile is authoritative.',
+      'package.json is private, adds "type": "module", pins the root-owned TypeScript 7.0.2, esbuild 0.28.2, and Vitest 4.1.11 toolchain exactly, covers source and tests with strict typechecking, and routes every legacy build script to the fail-closed entry point. Unused standalone archive tooling and its obsolete lint configuration are removed; the repository root lockfile is authoritative.',
     licenseAddition:
       "LICENSE is an exact copy of the upstream repository root MIT license; NOTICE records upstream and derivative attribution",
   },

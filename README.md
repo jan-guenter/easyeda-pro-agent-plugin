@@ -1,8 +1,46 @@
 # EasyEDA Pro Agent Plugin
 
-`easyeda-pro-control` is a Codex skill and MCP safety facade for inspecting a live EasyEDA Pro project. It provides version-pinned exact readers, stable context checks, SQLite checkpoints, hash-bound evidence, validated PNG capture, draft PCB DSN route-context export, and conservative recovery journals.
+`easyeda-pro-control` is a Codex skill and MCP facade for EasyEDA Pro inspection and typed API editing, with native controls for missing APIs and dialogs. It provides version-pinned readers, component and geometry transactions, operation-specific library/export workflows, SQLite checkpoints, hash-bound evidence and recovery journals.
 
-The current release is intentionally honest about its boundary: design mutation is not enabled. A narrow, one-component PCB placement writer and its state machine are included as experimental code, but production refuses `plan`, `apply`, `rollback`, and `save_reopen` until the pinned EasyEDA stack passes a connected sacrificial-board save/reopen and rollback validation. The caller-facing MCP exposes no raw JavaScript tool or environment opt-in; its private sandbox executor receives only facade-generated, reviewed programs.
+The package enables typed editing through `easyeda_control_design` and supported operations through `easyeda_control_library`. Their guards require the reviewed runtime, an authenticated session, a retained Windows process Job, journaled before-state and exact effect verification. Design commit saves and reopens the document, then compares the complete selected-branch project records. The legacy writer remains runtime-disabled: `plan`, `apply`, `verify`, `rollback`, and `save_reopen` are retained refusal endpoints, not the new transaction API. Unrestricted JavaScript has no environment opt-in. Coverage and live validation remain operation-specific.
+
+The October revamp consolidates the September repairs and adds an offline API
+reference, exact typed-operation schemas, argument validation, bounded editor
+readiness observation and a durable no-repeat Save guard. Failed navigation is
+observed and reconciled, not blindly replayed. A failed Save cannot become
+repeatable through reconciliation or runtime rebinding.
+
+The source catalog has 25 tools. `easyeda_control_api` exposes 93 reviewed
+namespaces / 749 declared signatures and 99 latest official namespaces / 806
+signatures. It does not invoke SDK methods. Latest declarations are not runtime
+admission; callable actions remain limited by the existing typed executors and
+operation-specific proof. Exact schemas and offline argument validation cover
+105 design actions and 68 library/lifecycle actions; schema availability does
+not guarantee execution support. See the [API research](docs/easyeda-extension-interface-research-2026-10-10.md)
+and [reliability review](docs/revamp-reliability-review-2026-10-10.md).
+The [independent review follow-up](docs/revamp-final-review-2026-10-10.md)
+also covers descriptor-bound Node launch, timeout-envelope classification and
+bounded upload-barrier diagnostics.
+
+## Skills by task
+
+| Skill | Use |
+|---|---|
+| [easyeda-pro-control](plugins/easyeda-pro-control/skills/easyeda-pro-control/SKILL.md) | Live setup, exact inspection, typed editing, dialogs and recovery |
+| [easyeda-schematic-design](plugins/easyeda-pro-control/skills/easyeda-schematic-design/SKILL.md) | Circuit definition, readable sheets, connectivity and ERC |
+| [easyeda-pcb-layout](plugins/easyeda-pro-control/skills/easyeda-pcb-layout/SKILL.md) | Stackup, placement, power/return paths, routing and DRC |
+| [easyeda-component-library](plugins/easyeda-pro-control/skills/easyeda-component-library/SKILL.md) | Symbols, footprints, terminal mapping and device/model associations |
+| [easyeda-manufacturing-release](plugins/easyeda-pro-control/skills/easyeda-manufacturing-release/SKILL.md) | Fabrication/assembly exports and independently inspected release evidence |
+| [electronics-design-review](plugins/easyeda-pro-control/skills/electronics-design-review/SKILL.md) | Evidence-backed electrical, layout, library and manufacturing review |
+| [easyeda-extension-development](plugins/easyeda-pro-control/skills/easyeda-extension-development/SKILL.md) | Pro SDK research, narrow adapter implementation and compatibility validation |
+
+The design skills include task-specific checklists, detailed references and
+dated primary-source research. They distinguish electrical design judgment from
+editor control and do not authorize purchases, uploads or live edits. Historical
+live coverage is recorded in the [capability matrix](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/capability-matrix.md);
+new offline regression tests are not new live editor validation. Completed
+historical operations must never be replayed. No design is fabrication-approved
+merely because it passed ERC/DRC or exported successfully.
 
 ## Architecture
 
@@ -29,6 +67,20 @@ graph, mounts that graph and the reviewed supervisor from retained descriptors,
 and starts the pinned upstream in a minimal sandbox. Do not run a second
 EasyEDA MCP process against the same bridge.
 
+For authorized EasyEDA work when the host does not expose MCP tools,
+`scripts/control-session.ts` provides a persistent foreground client for the
+same facade. Run this developer CLI from a trusted checkout after `npm ci`
+with the pinned toolchain; it is not a dependency-free installed runtime.
+`--plugin-root` may select a Git-installed plugin. It uses that plugin's `.mcp.json`, checks its reviewed
+bundle, and retains the normal single-owner lease. Use a normal pipe or a
+noncanonical PTY so terminal input does not truncate fingerprint requests. See
+the skill's [connection reference](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/connection-and-context.md#foreground-mcp-session)
+for terminal setup and the JSON-line protocol. `easyeda_control_native_ui` wraps
+the packaged native Windows helpers, bound to the installed executable digest,
+process generation and current owned window. It works on Start Page and native
+dialogs without an authenticated bridge. Native edits still require independent
+saved-and-reopened verification and do not grant retained Job authority.
+
 The native Linux x86_64 sanitizer closes the descriptor-inheritance gap between
 Node and Bubblewrap. The facade gives it the expected facade PID and exactly
 this descriptor layout: MCP stdin/stdout/stderr on `0`–`2`, the data directory
@@ -43,14 +95,27 @@ all descriptors `11` and above with `close_range(2)`, and enters Bubblewrap from
 descriptor `10` with `execveat(2)`. Bubblewrap receives only descriptors `0`–`9`;
 an arbitrary descriptor inherited by the facade's shell cannot reach it.
 
-## Implemented capabilities after connected admission
+## Implemented capabilities
 
-The facade implements the capabilities below for an explicitly reviewed and
-admitted connected tuple. The private bridge bundled for this release is still
-an unconnected `validation-required` candidate: fresh installs may collect
-status, context, and bounded reviewed public-read evidence, but exact readers
-and every private operation remain fail-closed until connected review updates
-the compatibility manifest.
+The live evidence in this section is historical and operation-specific. It is
+not a connected test of the October facade generation.
+
+The current tuple is connected-read-admitted following authenticated status,
+PCB and schematic public-read smoke tests against an independently decoded,
+saved disposable project, plus installed-source review. Exact reads require
+that complete pinned tuple on every call; later mismatches remain fail-closed.
+Admission does not claim every reader variant or typed writer has passed a live test.
+
+Live validation now includes schematic components and compiled topology. The
+in-memory `getNetlistFile` topology route returned the four expected fixture
+endpoints in two identical samples. Revised PCB component and inventory readers
+also passed with two components, four direct pads and one outline; all four
+pad-parent correlations and expected net endpoints matched, and evidence receipt
+verification passed. The lossless PCB rules recheck also passed with equal
+samples and no placeholders. Exact results use a
+bounded, shallow JSON envelope so the bridge cannot replace nested rule data
+with depth-limit markers; earlier placeholder-bearing rule results are invalid
+as complete evidence.
 
 - Exact double-sampled schematic component and compiled connectivity reads, with explicit adapter limitations.
 - Exact PCB component, direct-pad, primitive-inventory, net, rule, class, differential-pair, and equal-length-group reads.
@@ -59,8 +124,16 @@ the compatibility manifest.
 - Full-page and viewport capture with PNG signature, chunk, CRC, zlib, scanline, geometry, and payload/image binding checks.
 - Draft PCB DSN route-context export with descriptor-bound exclusive artifact creation, inode/hash-bound receipts, and hash-bound failure evidence.
 - Durable ambiguous-call recovery with one-use nonce challenges and a global bridge quarantine.
+- Typed PCB and schematic transactions with exact source effects, scoped durable baselines and explicit commit or verified inverse.
+- PCB batches of up to 256 sequential typed effects, journaled created-ID references and locked-part preservation. Pure geometry uses one source merge; batches containing supported rules use ordered source-bound public writer steps. Stack and copper rebuild are separate operations.
+- Supported project-library footprint edits, DEVICE creation and association changes, existing external model binding, device-default model transforms, and bounded file exports through an explicit capability catalog.
+- Process-bound native window discovery, inspection, confirmed input and normal close without automatic save/discard choices.
 
-Not production-enabled: schematic or PCB writes, ECO, library changes, routing, rules, stack-up changes, manufacturing export, unrestricted JavaScript, or fabrication submission.
+DEVICE creation binds existing project symbols and footprints without importing assets. Association editing preserves other device metadata and refuses implicit inherited binding changes. Device-default transform edits instead require the exact acknowledged inheriting instances and preserve all stored placement records. Existing 3D model assignment uses exact external identities and stable metadata reads. These source capabilities have separate live-validation status; see the [library workflow](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/libraries-and-eco.md).
+
+Live evidence includes the five exact reader kinds; PCB component movement with save/reopen/inverse; schematic property restoration, a PCB batch and copper clear with saved/reopened full-project proof; recovered copper rebuild without repeating Save; itemized ERC/DRC; route centerline/width reporting; and a managed schematic netlist export. Earlier line creation/inverse had live-only proof, and footprint-library creation had durable addition proof without reopen. After its initial persistence failure, the repaired stack and a net-class edit passed save/reopen with all 14 fixture documents checked. DEVICE creation, reassignment and inherited-model transform passed complete durable proofs. Symbol geometry subsequently passed save/reopen with a separately proved prior transaction's delayed inverse, explicitly reported as `isolatedTransaction:false`; it is not an unchanged-collateral claim. A footprint LINE then passed save/reopen and complete 14-document proof. Remaining geometry paths need their own live checks. See the [capability matrix](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/capability-matrix.md) for exact phases and limits. ECO remains a native dialog workflow. Unsupported operations, arbitrary code, database restore and fabrication submission are not enabled. This is not a production-live build approval for a user's design.
+
+The installed package's PAD test initially saved successfully but failed library reopen. Retained recovery subsequently completed the original transaction as `saved:true,reopened:true`, with exact live and complete 14-document durable proof. Neither the original edit nor Save was repeated. A recovery target-open readback had separately failed before the exact target was confirmed read-only; that navigation result is not reclassified as success.
 
 For startup trouble, use `easyeda_control_discover` in its default local mode.
 It works without starting the upstream and marks each catalog entry with its
@@ -70,10 +143,16 @@ argument schemas only after startup succeeds. Startup errors report a fixed
 launch stage and observed exit status while keeping private diagnostic text
 withheld. The skill's connection reference distinguishes host dispatch failure,
 upstream startup failure, an unauthenticated extension, and compatibility drift.
+Runtime diagnostics retain fixed protocol/exit codes and exact-reader field/stage
+categories without exposing native error text. The reviewed logger writes
+synchronously to stderr, keeping warnings and errors out of JSON-RPC stdout.
 
 ## Install from this GitHub marketplace
 
 The Codex marketplace manifest is [`.agents/plugins/marketplace.json`](.agents/plugins/marketplace.json).
+
+These commands install the published GitHub snapshot. Check its plugin version
+and actual tool catalog; an older cached snapshot can differ from this checkout.
 
 ```bash
 codex plugin marketplace add https://github.com/jan-guenter/easyeda-pro-agent-plugin
@@ -169,24 +248,25 @@ Import**. A build receipt proves the local artifact and reviewed source closure,
 not that EasyEDA imported or loaded it; the first authenticated status call is
 the live proof. Do not use the unauthenticated stock bridge with this facade, do
 not commit the token or generated extension, and rebuild/reimport the extension
-after rotating the token. A different token location must update `.mcp.json`
-and be passed to both provisioning and build with the same absolute
-`--token-file` path.
+after rotating the token. The machine profile derives the token path inside its
+control directory. Provisioning and bridge building must use that same location;
+do not put credentials or workstation paths in the portable `.mcp.json`.
 
-The current fixed receipt names private bridge build `ded07x99dcxb504`.
-That archive is an unconnected `validation-required` candidate, not a
-production-live build. The reviewed compatibility manifest deliberately retains
-the historically connected dispatcher build `d18b6xd531xe6ca`. Importing the
-candidate is part of the validation workflow: `easyeda_control_status` may
-collect its actual live fingerprint, and narrowly reviewed public generic reads
-may proceed only after a bounded smoke test against that current fingerprint.
-Exact readers and every private-operation path remain fail-closed until a
-connected review deliberately updates the compatibility manifest. Never infer
-compatibility from the build receipt or import alone.
+The fixed receipt names private dispatcher build `ded07x99dcxb504`, now
+connected-read-admitted on EasyEDA Pro `3.2.149.88089769` with bridge protocol
+`1.0.0`. It supersedes historical dispatcher `d18b6xd531xe6ca` for current read
+admission. The health result reports the authenticated handshake's application
+version; the separate bridge-status getter omits its optional application
+version, pinned explicitly as `bridgeEasyedaVersion: null`. No version is copied
+between those sources. A future `validation-required` tuple permits only the
+bounded public validation workflow until reviewed. Never infer compatibility
+from a build receipt or import alone.
 
 ## Runtime prerequisites
 
 This compatibility release is pinned to the local integration tuple recorded in [`reviewed-compatibility.json`](plugins/easyeda-pro-control/reviewed-compatibility.json):
+
+The supported editing/runtime profile is Linux x86_64 under WSL controlling the pinned Windows EasyEDA Pro desktop installation. Windows interop and Windows PowerShell must work, and the EasyEDA assets must be reachable through a canonical `/mnt/<drive>/.../resources/app/assets` path. The packaged helper uses a mounted path or a `\\wsl.localhost` path derived from `WSL_DISTRO_NAME`. Native Linux or macOS EasyEDA and a browser-only editor are not covered by the retained Windows Job profile. Linux facade support alone does not establish editing support on those hosts.
 
 - Linux x86_64 on Linux 5.9 or newer. The sanitizer requires working
   `close_range(2)` and `execveat(2)`, and the filesystem holding Bubblewrap must
@@ -215,24 +295,32 @@ This compatibility release is pinned to the local integration tuple recorded in 
 - PCB editor bundle `3.2.149.5378b690`
 - public API bundle `0.2.53.aee2f57a`
 - external `easyeda-mcp-pro` server `1.0.0-rc.1`
-- authenticated bridge derivative reviewed against upstream commit `964c05082f1c7c9e8b98f56e967e36bfc3f26128`: distinct private package, UUID, menu, socket, and repository identity; fixed extension-facing gateway at `127.0.0.1:49621`; nonce-bound mutual HMAC authentication; exact private-build-receipt/index-bundle/key-epoch admission with fail-closed stale-runtime cleanup; a 2 KiB parser limit and bounded pending clients before authentication; browser-Origin rejection; and no adjacent-port fallback or raw-secret transmission (extension manifest `0.3.0`)
+- authenticated bridge derivative reviewed against upstream commit `964c05082f1c7c9e8b98f56e967e36bfc3f26128`: distinct private package, UUID, menu, socket, and repository identity; fixed extension-facing gateway at `127.0.0.1:49621`; nonce-bound mutual HMAC authentication; exact private-build-receipt/index-bundle/key-epoch admission with fail-closed stale-runtime cleanup; a 2 KiB parser limit and bounded pending clients before authentication; absent-or-exact-native `https://client` Origin admission (never an authentication substitute); and no adjacent-port or raw/browser transport fallback or raw-secret transmission (extension manifest `0.3.0`)
 - Node's built-in SQLite support plus a reviewed absolute `sqlite3` binary at `/usr/bin/sqlite3` or `/usr/local/bin/sqlite3` for deterministic logical dumps; `PATH` is never used to select it
 
-The checked-in [`.mcp.json`](plugins/easyeda-pro-control/.mcp.json) targets the validated workstation paths. A different machine must install/build `easyeda-mcp-pro`, provision a private token, build and import the vendored authenticated bridge extension, and deliberately create a new reviewed compatibility tuple instead of weakening the checks.
+The checked-in [`.mcp.json`](plugins/easyeda-pro-control/.mcp.json) runs `node server/dist/server.mjs --machine-launch` with an empty environment map. This bundled launcher needs no plugin `node_modules`; it loads the private machine profile, verifies its Node/install identities and starts the sole facade. `scripts/launch-machine.ts` remains a developer wrapper requiring the trusted checkout's pinned dependencies. Create a profile with `node scripts/configure-machine.ts --upstream-root /absolute/upstream --assets-root /mnt/drive/path/resources/app/assets` from that prepared checkout's plugin directory. Optional `--node`, `--control-dir`, `--pcb-version` and `--api-version` select explicit installation values. The default profile is `~/.easyeda-pro-control/machine-profile.json`; `EASYEDA_MACHINE_PROFILE` selects another existing private profile. Configuration finds paths and versions, not compatibility admission. A different tuple still needs deliberate review.
+
+The external upstream checkout must already contain its reviewed built `dist/index.js` and dependency tree. Configuration does not fetch, install or rebuild it. The same version label is insufficient: the runtime checks the pinned module graph and executable identities.
+
+Reuse a profile with `node scripts/configure-machine.ts` or `node scripts/configure-machine.ts --profile /absolute/control/machine-profile.json`, without configuration overrides. Overrides against an existing profile are refused. For another supported installation, create a fresh explicit profile path inside its owner-only control directory. Do not overwrite an active profile or change directories to evade the sole-owner lease or quarantine.
+
+`EASYEDA_MACHINE_PROFILE` selects the profile for the launcher. The provisioning/build CLIs do not read that profile. With a nondefault control directory, set `EASYEDA_CONTROL_DATA_DIR` to that same directory for both `bridge:provision` and `bridge:build`; otherwise they select the default token and receipt locations. Do not rotate an existing key merely to correct a path mismatch.
 
 ## First live use
 
-1. Open the intended project and document in EasyEDA Pro.
-2. Connect the imported private EasyEDA bridge extension.
-3. Ask Codex to use `$easyeda-pro-control` and call `easyeda_control_status`; require an authenticated bridge session rather than treating the import dialog or build receipt as connection proof.
-4. Use `easyeda_control_context` to collect the current project path/UUID and
-   document UUID/type/tab as candidate-validation evidence.
-5. While bridge build `ded07x99dcxb504` remains `validation-required`, use only
-   the bounded, reviewed public generic readers needed for that validation and
-   keep the active tab unchanged throughout each call. Do not call
-   `easyeda_control_exact_read`: exact and private operations remain unavailable
-   until connected review deliberately admits the candidate in the compatibility
-   manifest.
+Before connecting, use `easyeda_control_api` to inspect exact operation schemas
+and validate the planned arguments offline. See the skill's [API reference](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/api-reference.md).
+
+1. Inspect `easyeda_control_runtime` status. For API editing, launch a contained instance. If EasyEDA was started separately, use `easyeda_control_native_ui` discover, retain the observed binding, inspect current windows, and request a confirmed normal close before `launch-contained`. Do not discard or save unrelated work at a prompt.
+2. Ask Codex to use `$easyeda-pro-control` and call `easyeda_control_status` on Start Page; require the imported private bridge to authenticate rather than treating its import dialog or build receipt as connection proof.
+3. Open a saved target with `easyeda_control_runtime`, `request.action:"open-existing"`, observed `projectUuid`, `projectPath`, `documentUuid`, `documentType:1|3`, the current `expectedFingerprint`, and `confirmOpen:true`. It checks checkpoint/registry membership, exclusive tabs and the complete saved database unchanged. It does not create, replace, save or discard. See the [connection reference](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/connection-and-context.md#open-an-existing-saved-project-from-start-page) for recovery; an unfinished transaction uses its own recovery path.
+4. Use `easyeda_control_context` to prove the current project path/UUID and
+   document UUID/type/tab.
+5. For the admitted tuple, use `easyeda_control_exact_read` with the current
+   context and fingerprint when complete supported fields are needed. Keep the
+   active tab unchanged throughout the call. A future mismatch returns to the
+   bounded public validation workflow; do not refresh the manifest to make it pass.
+6. Use `easyeda_control_design` execute with a typed operation for one request that applies, verifies, saves and reopens. Use apply separately when an unsaved review or inverse is needed, followed by explicit commit. Both paths use the same whole-project record-delta proof. Inspect and reconcile an uncertain operation before proceeding; never repeat it blindly. Read the [transaction reference](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/safety-state-machine.md) for rollback and recovery limits.
 
 If any call reports bridge quarantine, use `easyeda_control_recover_incomplete` with no operation ID. Do not bypass, delete, or rewrite the journal: a delayed call may still be running.
 

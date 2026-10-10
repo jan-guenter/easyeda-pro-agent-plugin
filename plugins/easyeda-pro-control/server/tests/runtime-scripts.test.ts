@@ -6,6 +6,7 @@ import {
   RUNTIME_IDENTITY_PROBE_CODE,
   buildComponentMutationCode,
   buildSaveReopenCode,
+  contextFailureDiagnostics,
   wrapWithContextGuard,
 } from "../src/runtime-scripts.ts";
 import { buildExactReadCode } from "../src/exact-readers.ts";
@@ -13,7 +14,10 @@ import { normalizeProofEnvelope, sha256Json } from "../src/core.ts";
 
 type AsyncFunctionConstructor = new (
   ...parameters: string[]
-) => (eda: unknown) => Promise<unknown>;
+) => (eda: unknown, globals?: unknown) => Promise<unknown>;
+
+const SAVE_PROJECT = "1".repeat(64);
+const SAVE_TAB = `document-1@${SAVE_PROJECT}`;
 
 interface ContextOptions {
   projectUuid?: string;
@@ -30,11 +34,15 @@ interface PcbEdaOptions {
   saved?: boolean;
   closed?: boolean;
   openedTab?: string;
-  activated?: boolean;
+  activated?: boolean | null;
+  uploadSettled?: boolean;
 }
 
 interface PcbEdaFixture {
   eda: {
+    nativeUploadTestHost: unknown;
+    nativeLifecycleTestWindow: unknown;
+    dmt_Project: { getCurrentProjectInfo: () => Promise<{ uuid: string }> };
     dmt_SelectControl: {
       getCurrentDocumentInfo: () => Promise<Record<string, unknown>>;
     };
@@ -49,7 +57,7 @@ interface PcbEdaFixture {
     dmt_EditorControl: {
       closeDocument: (target: string) => Promise<boolean>;
       openDocument: (uuid: string) => Promise<string>;
-      activateDocument?: ((tabId: string) => Promise<boolean>) | undefined;
+      activateDocument?: ((tabId: string) => Promise<boolean | null>) | undefined;
     };
   };
   calls: string[];
@@ -79,25 +87,39 @@ function contextEda({
 
 function pcbEda(options: PcbEdaOptions = {}): PcbEdaFixture {
   const calls: string[] = [];
-  let reads = 0;
+  let open = true, reopened = false;
+  const listeners = new Map<string, (value: unknown) => void>();
+  const element = (): { tagName: string; isConnected: boolean; getAttribute: (key: string) => string | null } => ({ tagName: "IFRAME", isConnected: true, getAttribute: (key) => { if (key === "c_dbid") { return SAVE_TAB; } if (key === "c_doctype") { return "3"; } return null; } });
+  let frame: ReturnType<typeof element> | null = element();
   const before = {
     uuid: options.beforeUuid ?? "document-1",
     documentType: options.beforeType ?? 3,
-    tabId: "old-tab",
+    tabId: SAVE_TAB,
     title: "PCB",
   };
   const after = {
     uuid: options.afterUuid ?? "document-1",
     documentType: options.afterType ?? 3,
-    tabId: "new-tab",
+    tabId: SAVE_TAB,
     title: "PCB reopened",
   };
   const eda = {
+    nativeLifecycleTestWindow: { top: { document: { getElementById: (): unknown => frame },
+      setTimeout: (callback: () => void, delay: number): NodeJS.Timeout => setTimeout(callback, delay === 15_000 ? 100 : 1), clearTimeout } },
+    nativeUploadTestHost: { currentProject: { projectId: SAVE_PROJECT }, messageBus: { rpcCall: async (topic: string, args: unknown): Promise<unknown> => {
+      if (topic === "isOpenTab") { assert.deepEqual(args, [SAVE_TAB]); return { message: open }; }
+      assert.equal(topic, "/PrjDB/project/awaitUploadEnd"); assert.deepEqual(args, [SAVE_PROJECT]); calls.push("upload-barrier");
+      await Promise.resolve(); return { message: { success: options.uploadSettled ?? true } };
+    },
+    // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Models the pinned native message-bus subscription contract.
+    subscribe: (event: string, callback: (value: unknown) => void): { cancel: () => void } => {
+      listeners.set(event, callback); return { cancel: () => { listeners.delete(event); } };
+    } } },
+    dmt_Project: { getCurrentProjectInfo: async (): Promise<{ uuid: string }> => ({ uuid: SAVE_PROJECT }) },
     dmt_SelectControl: {
       getCurrentDocumentInfo: async (): Promise<Record<string, unknown>> => {
         calls.push("read-document");
-        reads += 1;
-        return reads === 1 ? before : after;
+        return reopened ? after : before;
       },
     },
     pcb_Document: {
@@ -117,15 +139,17 @@ function pcbEda(options: PcbEdaOptions = {}): PcbEdaFixture {
     dmt_EditorControl: {
       closeDocument: async (target: string): Promise<boolean> => {
         calls.push(`close:${target}`);
+        if (options.closed !== false) { setImmediate(() => { assert.ok(frame); frame.isConnected = false; frame = null; open = false; listeners.get("sch/SubTabbarMapRemove")?.("document-1"); }); }
         return options.closed ?? true;
       },
       openDocument: async (uuid: string): Promise<string> => {
         calls.push(`open:${uuid}`);
-        return options.openedTab ?? "new-tab";
+        assert.equal(frame, null); assert.equal(open, false); frame = element(); open = true; reopened = true;
+        return options.openedTab ?? SAVE_TAB;
       },
-      activateDocument: async (tabId: string): Promise<boolean> => {
+      activateDocument: async (tabId: string): Promise<boolean | null> => {
         calls.push(`activate:${tabId}`);
-        return options.activated ?? true;
+        return options.activated === undefined ? true : options.activated;
       },
     },
   };
@@ -150,7 +174,7 @@ const EMPTY_PCB_COMPONENT_PAYLOAD = {
   },
   limitations: {
     componentPadWrapper:
-      "Placed component-pad centers, identity, layer, number, and net only; pad/hole geometry is intentionally omitted because this pinned wrapper has a known 0.1 drill-scale defect.",
+      "Placed component-pad centers, identity, layer, number, and net only; pad/hole geometry is intentionally omitted because this pinned wrapper has a known 0.1 drill-scale defect. getState_Pads summaries are not physical-pad authority: native component serialization uses local child IDs and includes footprint vias.",
   },
   primitiveIds: [],
   byPrimitiveId: {},
@@ -185,7 +209,8 @@ const AsyncFunction = resolveUndefined.constructor as AsyncFunctionConstructor;
 function buildEmptyPcbSaveCode(): string {
   return buildSaveReopenCode(
     {
-      document: { uuid: "document-1", documentType: 3, tabId: "old-tab" },
+      project: { uuid: SAVE_PROJECT },
+      document: { uuid: "document-1", documentType: 3, tabId: SAVE_TAB },
     },
     emptyPcbSaveGuards(),
   );
@@ -205,6 +230,9 @@ void describe("renderer runtime identity", () => {
 });
 
 async function runGenerated(code: string, eda: unknown): Promise<unknown> {
+  if (isRecord(eda) && Object.hasOwn(eda, "nativeUploadTestHost")) {
+    return new AsyncFunction("eda", "globalThis", code)(eda, { crypto: globalThis.crypto, TextEncoder: globalThis.TextEncoder, gVars: eda["nativeUploadTestHost"], window: eda["nativeLifecycleTestWindow"] });
+  }
   return new AsyncFunction("eda", code)(eda);
 }
 
@@ -253,6 +281,11 @@ void describe("compact context probe", () => {
       },
       pcb: { uuid: "document-1", title: "PCB", tabId: "tab-1" },
       schematic: {},
+      schematicPage: {},
+      probeDiagnostics: {
+        project: "object", document: "object", pcb: "object",
+        schematic: "undefined", schematicPage: "unavailable",
+      },
     });
   });
 
@@ -282,7 +315,88 @@ void describe("compact context probe", () => {
       document: { documentType: undefined },
       pcb: {},
       schematic: {},
+      schematicPage: {},
+      probeDiagnostics: {
+        project: "unavailable", document: "unavailable", pcb: "unavailable",
+        schematic: "unavailable", schematicPage: "unavailable",
+        projectPath: "registry-identity-unavailable",
+      },
     });
+  });
+
+  void test("reports fixed API failure codes and never coerces document types", async () => {
+    const output = await runGenerated(CONTEXT_PROBE_CODE, {
+      dmt_Project: { getCurrentProjectInfo: async () => {
+        throw new Error("private-error-details");
+      } },
+      dmt_SelectControl: { getCurrentDocumentInfo: async () => ({ documentType: "3" }) },
+      dmt_Schematic: {
+        getCurrentSchematicInfo: async () => ({ uuid: "container-1" }),
+        getCurrentSchematicPageInfo: async () => ({ uuid: "page-1", parentSchematicUuid: "container-1" }),
+      },
+    });
+    assert.ok(isRecord(output));
+    assert.deepEqual(output["document"], { documentType: undefined });
+    const diagnostics = contextFailureDiagnostics(output);
+    assert.deepEqual(diagnostics["project"], {
+      call: "threw", uuid: { type: "undefined" },
+      projectUuid: { type: "undefined" }, path: { type: "undefined" },
+    });
+    assert.equal(JSON.stringify(output).includes("private-error-details"), false);
+  });
+
+  void test("failure diagnostics bound strings and omit unknown runtime data", () => {
+    const diagnostics = contextFailureDiagnostics({
+      project: { uuid: "project-1", path: "x".repeat(513), nested: "private-value" },
+      probeDiagnostics: { project: "private-status", ignored: "private-value" },
+      runtime: "private-value",
+    });
+    assert.deepEqual(diagnostics["project"], {
+      call: "unreported", uuid: { type: "string", value: "project-1" },
+      projectUuid: { type: "undefined" }, path: { type: "string", oversized: true },
+    });
+    assert.equal(JSON.stringify(diagnostics).includes("private"), false);
+  });
+
+  void test("native registry lookup selects only the exact project and reproves current context", async () => {
+    const uuid = "a".repeat(64);
+    const nativePath = String.raw`C:\test\Disposable.eprj2`;
+    const calls: unknown[] = [];
+    let documentCalls = 0;
+    const output = await runGenerated(CONTEXT_PROBE_CODE, {
+      dmt_Project: { getCurrentProjectInfo: async () => ({ uuid }) },
+      dmt_SelectControl: { getCurrentDocumentInfo: async () => {
+        documentCalls += 1;
+        return { uuid: "document-1", documentType: 3, tabId: "tab-1", parentProjectUuid: uuid };
+      } },
+      dmt_Pcb: { getCurrentPcbInfo: async () => ({ uuid: "document-1" }) },
+      sys_ClientUrl: { request: async (url: string, method: string) => {
+        calls.push({ url, method });
+        return { ok: true, url, body: Response.json({ success: true, result: {
+          [uuid]: { path: nativePath }, other: { path: "private-other-project" },
+        } }).body };
+      } },
+    });
+    assert.ok(isRecord(output));
+    assert.deepEqual(output["project"], { uuid, path: nativePath });
+    assert.equal(output["contextStable"], true);
+    assert.equal(documentCalls, 2);
+    assert.deepEqual(calls, [{ url: "https://client/api/client/projectPaths", method: "GET" }]);
+    assert.equal(JSON.stringify(output).includes("private-other-project"), false);
+  });
+  void test("local library context binds collection tab and independent metadata owner", async () => {
+    const owner = "b".repeat(32), uuid = "a".repeat(64);
+    const run = (tabCollection: string, metadataOwner: string): Promise<unknown> => runGenerated(CONTEXT_PROBE_CODE, {
+      dmt_Project: { getCurrentProjectInfo: async () => ({ uuid }) },
+      dmt_SelectControl: { getCurrentDocumentInfo: async () => ({ uuid: "footprint", documentType: 4, tabId: `footprint@${tabCollection}`, parentLibraryUuid: owner }) },
+      lib_Footprint: { get: async (asset: string, collection: string) => { assert.equal(asset, "footprint"); assert.equal(collection, uuid); return { uuid: asset, libraryUuid: metadataOwner, libraryType: "4" }; } },
+      sys_ClientUrl: { request: async (url: string) => ({ ok: true, url, body: Response.json({ success: true, result: { [uuid]: { path: String.raw`C:\test\Disposable.eprj2` } } }).body }) },
+    });
+    const valid = await run(uuid, owner);
+    assert.ok(isRecord(valid)); assert.equal(valid["contextStable"], true);
+    const wrongCollection = await run("external", owner), wrongOwner = await run(uuid, uuid);
+    assert.ok(isRecord(wrongOwner)); assert.equal(wrongOwner["contextStable"], false);
+    assert.ok(isRecord(wrongCollection)); assert.equal(wrongCollection["contextStable"], false);
   });
 });
 
@@ -626,9 +740,14 @@ void describe("exact save, close, reopen, activate, and identity proof", () => {
       "guard-components",
       "read-document",
       "save:document-1",
-      "close:old-tab",
+      "upload-barrier",
+      "read-document",
+      "read-document",
+      `close:${SAVE_TAB}`,
       "open:document-1",
-      "activate:new-tab",
+      `activate:${SAVE_TAB}`,
+      "read-document",
+      "read-document",
       "read-document",
     ]);
     assert.deepEqual(result, {
@@ -636,6 +755,9 @@ void describe("exact save, close, reopen, activate, and identity proof", () => {
       saved: true,
       closed: true,
       reopened: true,
+      closeProof: { profile: "easyeda-pro-control.native-document-close.v1", closeCalls: 1, terminalNotification: true, oldFrameRemoved: true, oldTabRemoved: true, saved: false },
+      openProof: { profile: "easyeda-pro-control.native-document-open.v1", tabId: SAVE_TAB, newFrameReady: true, exactContext: true, readinessSamples: 2, activated: true },
+      projectUploadBarrier: { profile: "easyeda-pro-control.project-upload-barrier.v1", projectUuid: SAVE_PROJECT, scheduledWritesSettled: true, savedEditorChanges: false },
       exactSaveGuard: {
         passes: 2,
         labels: ["pcb-components"],
@@ -647,7 +769,7 @@ void describe("exact save, close, reopen, activate, and identity proof", () => {
         uuid: "document-1",
         documentType: 3,
         title: "PCB reopened",
-        tabId: "new-tab",
+        tabId: SAVE_TAB,
       },
     });
   });
@@ -712,13 +834,19 @@ void describe("exact save, close, reopen, activate, and identity proof", () => {
     ]);
   });
 
+  void test("never closes when scheduled native uploads did not settle", async () => {
+    const fixture = pcbEda({ uploadSettled: false });
+    await assert.rejects(runGenerated(buildEmptyPcbSaveCode(), fixture.eda), /PROJECT_UPLOAD_BARRIER_REFUSED/u);
+    assert.deepEqual(fixture.calls, ["guard-components", "guard-components", "read-document", "save:document-1", "upload-barrier"]);
+  });
+
   void test("treats close, open, activate, and reopened identity failures as hard errors", async () => {
     const cases: readonly (readonly [PcbEdaOptions, RegExp])[] = [
-      [{ closed: false }, /closeDocument did not return exactly true/u],
-      [{ openedTab: "" }, /openDocument did not return a tab id/u],
-      [{ activated: false }, /activateDocument did not return exactly true/u],
-      [{ afterUuid: "other-document" }, /reopened document identity mismatch/u],
-      [{ afterType: 1 }, /reopened document identity mismatch/u],
+      [{ closed: false }, /NATIVE_LIFECYCLE_CLOSE_ACK/u],
+      [{ openedTab: "" }, /NATIVE_LIFECYCLE_OPEN_ACK/u],
+      [{ activated: null }, /NATIVE_LIFECYCLE_ACTIVATE_CONTEXT/u],
+      [{ afterUuid: "other-document" }, /NATIVE_LIFECYCLE_OPEN_TIMEOUT/u],
+      [{ afterType: 1 }, /NATIVE_LIFECYCLE_OPEN_TIMEOUT/u],
     ];
     for (const [options, pattern] of cases) {
       const { eda } = pcbEda(options);

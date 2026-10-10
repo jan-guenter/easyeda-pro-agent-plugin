@@ -766,10 +766,7 @@ void describe("external evidence archives", () => {
   });
 });
 
-void describe("operation journals and phase artifacts", () => {
-  const operationId = "easyeda-test-operation-0001";
-
-  function fixtureOperation(
+function fixtureOperation(
     id: string,
     overrides: UnknownRecord = {},
   ): UnknownRecord {
@@ -784,8 +781,9 @@ void describe("operation journals and phase artifacts", () => {
       updatedAt: "2026-08-27T10:00:00Z",
       ...overrides,
     };
-  }
-
+}
+void describe("operation journals and phase artifacts", () => {
+  const operationId = "easyeda-test-operation-0001";
   void test("creates, validates, atomically updates, and lists operation journals", async () => {
     const operation = fixtureOperation(operationId);
     const path = await artifacts.createOperation(operation);

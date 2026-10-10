@@ -25,6 +25,7 @@ import {
   controlRootCapability,
   ensureManagedDirectory,
   inspectManagedFile,
+  listOperationStates,
   publishManagedAttachmentExclusive,
   readArtifact,
   recoverPublishedEvidence,
@@ -45,17 +46,34 @@ import {
   filterTools,
   isRecord,
   isReviewedLocalGenericRead,
+  isTerminalOperation,
   sha256Text,
   validateExpectedFingerprint,
   validatePrivateFingerprint,
 } from "./core.ts";
 import { EasyedaControlEngine, SerializedGate } from "./engine.ts";
+import { DesignExecutor } from "./design-execution.ts";
+import { executeAndCommitDesign } from "./design-execute.ts";
+import { RuleCheckExecutor } from "./check-execution.ts";
+import { ProjectOpenExecutor, projectOpenTargetSchema } from "./project-open-execution.ts";
+import { routeAuditResultSchema, runPcbRouteAudit } from "./route-audit-execution.ts";
+import { pcbRouteAuditRequestSchema } from "./pcb-route-audit.ts";
+import { boundedTransactionErrorOutput, transactionErrorOutputSchema } from "./transaction-error-output.ts";
+import { listDesignActionCapabilities } from "./design-capabilities.ts";
+import { designTopologySchema } from "./design-topology.ts";
+import { LibraryExecutor, listLibraryExecutionCapabilities } from "./library-execution.ts";
+import { designToolOperationSchema, libraryToolOperationSchema } from "./tool-operation-envelope.ts";
+import { WindowsControlRuntime } from "./windows-runtime.ts";
+import { WindowsNativeUiController, nativeUiRequestSchema } from "./windows-native-ui.ts";
+import { discardCloseConfirmation, nativeCloseRecoveryRequestSchema } from "./native-close-recovery.ts";
 import { exactReadRequestSchema } from "./exact-readers.ts";
 import { acquireFacadeLease } from "./lease.ts";
 import { discoverReviewedOrLiveTools } from "./reviewed-upstream-tools.ts";
 import { buildDsnExportCode, wrapWithContextGuard } from "./runtime-scripts.ts";
 import { UpstreamEasyedaClient, UpstreamStartupError } from "./upstream.ts";
 import { createSerializedShutdown } from "./shutdown.ts";
+import { extensionApiCatalogInputSchema, queryExtensionApiCatalog } from "./extension-api-catalog.ts";
+import { operationCatalogQuerySchema, operationValidationRequestSchema, queryOperationCatalog, validateCatalogOperation } from "./operation-catalog.ts";
 
 const MAX_INLINE_RESULT_BYTES = 256 * 1024;
 const MAX_CAPTURE_PNG_BYTES = 16 * 1024 * 1024;
@@ -86,7 +104,20 @@ const upstream = new UpstreamEasyedaClient({
   controlRoot: retainedControlRoot,
   onChildStarted: (pid): Promise<void> => facadeLease.bindChild(pid),
 });
-const engine = new EasyedaControlEngine(upstream);
+let windowsRuntime: WindowsControlRuntime | undefined;
+function ownedWindowsRuntime(): WindowsControlRuntime {
+  if (windowsRuntime === undefined) { throw new Error("Use easyeda_control_runtime launch-contained before guarded design editing."); }
+  return windowsRuntime;
+}
+const engine = new EasyedaControlEngine(upstream, { executionAuthorityValidator: {
+  capture: (input): ReturnType<WindowsControlRuntime["capture"]> => ownedWindowsRuntime().capture(input),
+  proveTerminated: (input): ReturnType<WindowsControlRuntime["proveTerminated"]> => ownedWindowsRuntime().proveTerminated(input),
+  releaseCapture: (input): ReturnType<WindowsControlRuntime["releaseCapture"]> => ownedWindowsRuntime().releaseCapture(input),
+} });
+const designExecutor = new DesignExecutor(engine);
+const libraryExecutor = new LibraryExecutor(engine);
+const ruleCheckExecutor = new RuleCheckExecutor(engine);
+const projectOpenExecutor = new ProjectOpenExecutor(engine);
 const bridgeGate = new SerializedGate();
 
 const recordSchema = z.record(z.string(), z.unknown());
@@ -313,7 +344,7 @@ const expectedFingerprintBaseShape = {
         .object({
           connected: z.literal(true),
           bridge_version: z.string().min(1),
-          easyeda_version: z.string().min(1),
+          easyeda_version: z.string().min(1).optional(),
           diagnostics: bridgeDiagnosticsSchema,
         })
         .catchall(z.unknown()),
@@ -667,6 +698,8 @@ function failure(error: unknown): CallToolResult {
       mismatches: errorRecord["mismatches"],
       assertionResults: errorRecord["assertionResults"],
       blockingOperations: errorRecord["blockingOperations"],
+      ...boundedTransactionErrorOutput(error),
+      ...(typeof errorRecord["dispatched"] === "boolean" ? { dispatched: errorRecord["dispatched"] } : {}),
       ...(error instanceof UpstreamStartupError
         ? { startupDiagnostics: error.startupDiagnostics }
         : {}),
@@ -757,7 +790,11 @@ function serializedStatusGuarded<Input>(
       await upstream.listTools();
       const lifecycle = upstream.bridgeSessionLifecycle();
       if (lifecycle?.activeSession === null) {
-        return handler(input);
+        const disconnectedObservation = await handler(input);
+        if (upstream.bridgeSessionLifecycle()?.activeSession === null) { return disconnectedObservation; }
+        // A renderer may authenticate while the first read-only startup probe
+        // Waits. Resample under a new exact lease instead of issuing unbound calls.
+        return upstream.withAuthenticatedBridgeDispatchScope(() => handler(input));
       }
       return upstream.withAuthenticatedBridgeDispatchScope(() =>
         handler(input),
@@ -1423,6 +1460,7 @@ const errorOutputSchema = z
     mismatches: z.unknown().optional(),
     assertionResults: z.unknown().optional(),
     blockingOperations: z.unknown().optional(),
+    ...transactionErrorOutputSchema.partial().shape,
   })
   .catchall(z.unknown());
 const optionalFailureOutputShape = {
@@ -1439,6 +1477,8 @@ const statusSuccessOutputSchema = z
   .object({
     facade: recordSchema.optional(),
     upstream: recordSchema.optional(),
+    bridgeConnection: recordSchema.optional(),
+    upstreamProcess: recordSchema.optional(),
     incompleteOperations: z.array(recordSchema).optional(),
     safetyModel: nonEmptyStringSchema.optional(),
     ...optionalFailureOutputShape,
@@ -1458,6 +1498,8 @@ const contextOutputSchema = z
     project: projectIdentitySchema.optional(),
     document: documentIdentitySchema.optional(),
     ...optionalFailureOutputShape,
+    // The context probe returns ok:true; the guarded error path returns ok:false.
+    ok: z.boolean().optional(),
   })
   .catchall(z.unknown());
 const evidenceSuccessOutputSchema = z
@@ -1533,6 +1575,12 @@ const artifactReadSuccessOutputSchema = z
   })
   .strict();
 const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
+  easyeda_control_api: z.object({ offline: z.boolean().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_runtime: z.object({ action: z.string().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_design: z.object({ operationId: z.string().optional(), state: z.string().optional(), nextSafeAction: z.string().optional(), capabilities: z.record(z.string(), z.unknown()).optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_library: z.object({ operationId: z.string().optional(), state: z.string().optional(), result: z.unknown().optional(), nextSafeAction: z.string().optional(), capabilities: z.array(z.unknown()).optional() }).catchall(z.unknown()),
   easyeda_control_status: statusSuccessOutputSchema,
   easyeda_control_discover: discoverSuccessOutputSchema,
   easyeda_control_context: contextOutputSchema,
@@ -1559,7 +1607,7 @@ const server = new McpServer(
   {
     capabilities: { tools: {} },
     instructions:
-      "Use status, context, and conservative reads first. Audit, evidence, checkpoint, capture, draft DSN export, and recovery are the current production capabilities. The experimental PCB component writer is runtime-disabled pending connected sacrificial-board validation. Never retry a timed-out call. A boolean, toast, dialog, preview, or unsaved readback is not persistence. ECO/import dialogs, private APIs, library documents, and UI automation remain explicit capability gates.",
+      "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal.",
   },
 );
 
@@ -1597,11 +1645,40 @@ registerFacadeTool(
       version: CONTROL_VERSION,
       dataDirectory: controlDataDirectory(),
       processLease: { path: facadeLease.path, pid: facadeLease.pid },
+      typedDesign: { enabled: true, tool: "easyeda_control_design", supervisorRequired: true, persistence: "native-source-plus-complete-project-record-delta", arbitraryCode: false },
+      libraryExecution: { tool: "easyeda_control_library", capabilities: listLibraryExecutionCapabilities() },
     },
     upstream: await engine.status(),
+    bridgeConnection: upstream.bridgeConnectionDiagnostics(),
+    upstreamProcess: upstream.processDiagnostics(),
     incompleteOperations: await engine.recover(),
     safetyModel: "plan-apply-verify-save-reopen-checkpoint",
   })),
+);
+
+const apiRequestSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("sdk"), query: extensionApiCatalogInputSchema.optional() }).strict(),
+  z.object({ action: z.literal("operations"), query: operationCatalogQuerySchema }).strict(),
+  z.object({ action: z.literal("validate"), query: operationValidationRequestSchema }).strict(),
+]);
+registerFacadeTool(
+  "easyeda_control_api",
+  {
+    title: "EasyEDA offline API reference and argument validation",
+    description: "Query hash-pinned reviewed or latest official SDK declarations; retrieve the exact typed design/library operation schemas; validate arguments including custom refinements. Entirely offline: no bridge calls, design changes, journal writes or execution authority. SDK declarations do not imply an admitted or live-validated route.",
+    inputSchema: { request: apiRequestSchema },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+  },
+  guarded(({ request }) => {
+    let result: unknown;
+    switch (request.action) {
+      case "sdk": { result = queryExtensionApiCatalog(request.query ?? {}); break; }
+      case "operations": { result = queryOperationCatalog(request.query); break; }
+      case "validate": { result = validateCatalogOperation(request.query); break; }
+      default: { throw new Error("Unknown offline API reference action."); }
+    }
+    return Promise.resolve({ offline: true, result });
+  }),
 );
 
 registerFacadeTool(
@@ -1642,14 +1719,227 @@ registerFacadeTool(
     title: "Prove active EasyEDA context",
     description:
       "Read a compact project/document identity using the live EasyEDA runtime. Establish this before any scoped audit or operation.",
-    inputSchema: {},
+    inputSchema: { includeRuntimeIdentity: z.boolean().default(false) },
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
       idempotentHint: true,
     },
   },
-  serializedLiveGuarded(() => engine.context()),
+  serializedLiveGuarded(async (input) => {
+    const context = await engine.context();
+    if (!input.includeRuntimeIdentity) {return context;}
+    const runtimeIdentity = await engine.runtimeIdentity();
+    await engine.assertContext(context);
+    return { ...context, runtimeIdentity };
+  }),
+);
+
+const runtimeRequestSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("status") }).strict(),
+  z.object({ action: z.literal("launch-contained"), confirmLaunch: z.literal(true) }).strict(),
+  z.object({ action: z.literal("normal-close"), windowHandle: z.string().regex(/^[1-9][0-9]*$/u), confirmNormalClose: z.literal(true) }).strict(),
+  projectOpenTargetSchema.extend({ action: z.literal("open-existing"), expectedFingerprint: privateFingerprintSchema, confirmOpen: z.literal(true) }).strict(),
+  z.object({ action: z.literal("inspect-open"), operationId: z.string().min(1) }).strict(),
+  z.object({ action: z.literal("inspect-editor-tabs"), operationId: z.string().min(1) }).strict(),
+  z.object({ action: z.literal("recover-open-authority"), operationId: z.string().min(1), confirmRecovery: z.literal(true) }).strict(),
+  z.object({ action: z.literal("reconcile-open"), operationId: z.string().min(1) }).strict(),
+  z.object({ action: z.literal("rebind-open-runtime"), operationId: z.string().min(1), expectedFingerprint: privateFingerprintSchema, confirmRuntimeUpgrade: z.literal(true) }).strict(),
+]);
+registerFacadeTool(
+  "easyeda_control_native_ui",
+  {
+    title: "Control the native EasyEDA desktop and dialogs",
+    description: "Discover the exact installed EasyEDA process, inspect its owned windows and controls, capture managed screenshots, and perform explicitly confirmed native UI actions. Works before bridge connection; observed-unowned UI binding is not API execution authority. Normal close never chooses Save or Discard, and UI acknowledgment is not persistence proof.",
+    inputSchema: { request: z.union([nativeUiRequestSchema, nativeCloseRecoveryRequestSchema]) },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  },
+  serializedGuarded(async ({ request }) => {
+    const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"];
+    if (assetsRoot === undefined) { throw new Error("Configure the machine's installed EasyEDA assets first."); }
+    const controller = new WindowsNativeUiController({
+      runtime: { status: (): ReturnType<WindowsControlRuntime["status"]> => windowsRuntime?.status() ?? { state: "not-launched", launch: null, executableSha256: null, reviewedExecutionScopeSha256: "" } },
+      pluginRoot: resolve(import.meta.dirname, "../.."), assetsRoot,
+    });
+    if (request.action === "discard-close-confirmation" || request.action === "discard-save-warning") { return discardCloseConfirmation(request, controller); }
+    const operations = await listOperationStates();
+    if ("confirmUIWrite" in request && !["focus", "normal-close"].includes(request.action) && operations.some((entry) => !isTerminalOperation(entry))) {
+      throw new Error("Resolve the incomplete API transaction before native UI edits. Inspection, focus and normal close remain available for recovery.");
+    }
+    return controller.run(request);
+  }, { allowDuringOrphanRisk: true }),
+);
+const designRequestSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("capabilities") }).strict(),
+  z.object({ action: z.literal("apply"), operation: designToolOperationSchema, expectedContext: contextSchema, expectedFingerprint: privateFingerprintSchema, expectedTopology: designTopologySchema.optional(), confirmWrite: z.literal(true) }).strict(),
+  z.object({ action: z.literal("execute"), operation: designToolOperationSchema, expectedContext: contextSchema, expectedFingerprint: privateFingerprintSchema, expectedTopology: designTopologySchema.optional(), confirmWrite: z.literal(true) }).strict(),
+  z.object({ action: z.literal("commit"), operationId: z.string().min(1), confirmWrite: z.literal(true) }).strict(),
+  z.object({ action: z.literal("rollback"), operationId: z.string().min(1), confirmWrite: z.literal(true) }).strict(),
+  z.object({ action: z.literal("repair-layout-net-labels"), operationId: z.string().min(1), confirmWrite: z.literal(true) }).strict(),
+  z.object({ action: z.literal("repair-layout-wire-groups"), operationId: z.string().min(1), confirmWrite: z.literal(true) }).strict(),
+  z.object({ action: z.literal("repair-layout-label-visibility"), operationId: z.string().min(1), confirmWrite: z.literal(true) }).strict(),
+  z.object({ action: z.literal("load-layout-pages"), operationId: z.string().min(1), confirmOpen: z.literal(true) }).strict(),
+  z.object({ action: z.literal("inspect"), operationId: z.string().min(1) }).strict(),
+  z.object({ action: z.literal("reconcile"), operationId: z.string().min(1) }).strict(),
+  z.object({ action: z.literal("recover-authority"), operationId: z.string().min(1), confirmRecovery: z.literal(true) }).strict(),
+  z.object({ action: z.literal("rebind-runtime"), operationId: z.string().min(1), expectedFingerprint: privateFingerprintSchema, confirmRuntimeUpgrade: z.literal(true) }).strict(),
+  z.object({ action: z.literal("open-target"), operationId: z.string().min(1), confirmOpen: z.literal(true) }).strict(),
+]);
+
+registerFacadeTool(
+  "easyeda_control_runtime",
+  {
+    title: "Manage the retained EasyEDA execution runtime",
+    description: "Inspect or launch the retained EasyEDA runtime, request normal close, or open an exact existing project/document from Start Page with checkpoint/registry membership, exclusive-tab guards, tracked recovery and complete unchanged-database proof. Opening never replaces another project, saves or discards. Does not attach to an unowned instance or force-terminate it.",
+    inputSchema: { request: runtimeRequestSchema },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  },
+  serializedGuarded(async ({ request }) => {
+    if (request.action === "status") { return { action: request.action, result: windowsRuntime?.status() ?? { state: "not-launched" } }; }
+    if (request.action === "launch-contained") {
+      const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"];
+      if (assetsRoot === undefined) { throw new Error("Configure the machine's installed EasyEDA assets first."); }
+      const implementation = await engine.controlFingerprintPromise;
+      windowsRuntime ??= new WindowsControlRuntime({ upstream, pluginRoot: resolve(import.meta.dirname, "../.."), assetsRoot,
+        reviewedExecutionScopeSha256: implementation.sha256 });
+      return { action: request.action, result: await windowsRuntime.launch() };
+    }
+    if (request.action === "normal-close") {
+      await ownedWindowsRuntime().normalClose(request.windowHandle);
+      return { action: request.action, result: ownedWindowsRuntime().status() };
+    }
+    if (request.action === "inspect-open") { return { action: request.action, result: await projectOpenExecutor.inspect(request.operationId) }; }
+    if (request.action !== "recover-open-authority") { await engine.assertBridgeDispatchAllowed(); }
+    return upstream.withAuthenticatedBridgeDispatchScope(async () => {
+      switch (request.action) {
+        case "open-existing": { return { action: request.action, result: await projectOpenExecutor.openExisting(request) }; }
+        case "recover-open-authority": { return { action: request.action, result: await projectOpenExecutor.recoverAuthority(request.operationId) }; }
+        case "reconcile-open": { return { action: request.action, result: await projectOpenExecutor.reconcileNoMutation(request.operationId) }; }
+        case "inspect-editor-tabs": { return { action: request.action, result: await projectOpenExecutor.inspectEditorTabs(request.operationId) }; }
+        case "rebind-open-runtime": { return { action: request.action, result: await projectOpenExecutor.rebindRuntime(request.operationId, request.expectedFingerprint) }; }
+        default: { throw new Error("Unknown project-open runtime request."); }
+      }
+    });
+  }, { allowDuringOrphanRisk: true }),
+);
+
+registerFacadeTool(
+  "easyeda_control_design",
+  {
+    title: "Edit and verify a typed EasyEDA design transaction",
+    description: "Apply one typed design operation, independently verify native records, then explicitly commit with save/reopen or restore the exact unsaved baseline. A retained contained runtime is required; arbitrary JavaScript is never accepted.",
+    inputSchema: { request: designRequestSchema },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  },
+  serializedGuarded(async ({ request }) => {
+    if (request.action === "capabilities") { return { capabilities: listDesignActionCapabilities() }; }
+    if (request.action === "inspect") { return DesignExecutor.inspect(request.operationId); }
+    if (request.action !== "recover-authority") { await engine.assertBridgeDispatchAllowed(); }
+    return upstream.withAuthenticatedBridgeDispatchScope(() => {
+      switch (request.action) {
+      case "apply": { return designExecutor.apply(request);
+      }
+      case "execute": { return executeAndCommitDesign(designExecutor, request);
+      }
+      case "commit": { return designExecutor.commit(request.operationId);
+      }
+      case "rollback": { return designExecutor.rollback(request.operationId);
+      }
+      case "repair-layout-net-labels": { return designExecutor.repairLayoutNetLabels(request.operationId, request.confirmWrite);
+      }
+      case "repair-layout-wire-groups": { return designExecutor.repairLayoutWireGroups(request.operationId, request.confirmWrite);
+      }
+      case "repair-layout-label-visibility": { return designExecutor.repairLayoutLabelVisibility(request.operationId, request.confirmWrite);
+      }
+      case "load-layout-pages": { return designExecutor.loadLayoutPages(request.operationId, request.confirmOpen);
+      }
+      case "reconcile": { return designExecutor.reconcile(request.operationId);
+      }
+      case "recover-authority": { return designExecutor.recoverAuthority(request.operationId);
+      }
+      case "rebind-runtime": { return designExecutor.rebindRuntime(request.operationId, request.expectedFingerprint);
+      }
+      case "open-target": { return designExecutor.openTarget(request.operationId);
+      }
+      default: { throw new Error("Unknown typed design phase.");
+      }
+      }
+    });
+  }, { allowDuringOrphanRisk: true }),
+);
+
+const libraryRequestSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("capabilities") }).strict(),
+  z.object({ action: z.literal("execute"), operation: libraryToolOperationSchema, expectedContext: contextSchema, expectedFingerprint: privateFingerprintSchema, confirmWrite: z.literal(true).optional() }).strict(),
+  z.object({ action: z.literal("inspect"), operationId: z.string().min(1) }).strict(),
+  z.object({ action: z.literal("recover-authority"), operationId: z.string().min(1), confirmRecovery: z.literal(true) }).strict(),
+  z.object({ action: z.literal("reconcile-no-mutation"), operationId: z.string().min(1) }).strict(),
+  z.object({ action: z.literal("reconcile"), operationId: z.string().min(1) }).strict(),
+  z.object({ action: z.literal("rebind-runtime"), operationId: z.string().min(1), expectedFingerprint: privateFingerprintSchema, confirmRuntimeUpgrade: z.literal(true) }).strict(),
+  z.object({ action: z.literal("open-target"), operationId: z.string().min(1), confirmOpen: z.literal(true) }).strict(),
+]);
+
+const checkRequestSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("route-audit"), audit: pcbRouteAuditRequestSchema, expectedContext: contextSchema, expectedFingerprint: privateFingerprintSchema,
+    evidence: evidenceSchema.optional(), returnMode: z.enum(["full", "summary", "receipt-only"]).default("full"),
+    maxInlineBytes: z.number().int().min(1024).max(MAX_INLINE_RESULT_BYTES).default(65_536) }).strict(),
+  z.object({ action: z.literal("run"), kind: z.enum(["pcb-drc", "schematic-erc"]), expectedContext: contextSchema, expectedFingerprint: privateFingerprintSchema,
+    maxInlineItems: z.number().int().min(0).max(200).default(100) }).strict(),
+  z.object({ action: z.literal("inspect"), operationId: z.string().min(1) }).strict(),
+  z.object({ action: z.literal("recover-authority"), operationId: z.string().min(1), confirmRecovery: z.literal(true) }).strict(),
+  z.object({ action: z.literal("reconcile-no-mutation"), operationId: z.string().min(1) }).strict(),
+  z.object({ action: z.literal("open-target"), operationId: z.string().min(1), confirmOpen: z.literal(true) }).strict(),
+  z.object({ action: z.literal("rebind-runtime"), operationId: z.string().min(1), expectedFingerprint: privateFingerprintSchema, confirmRuntimeUpgrade: z.literal(true) }).strict(),
+]);
+registerFacadeTool(
+  "easyeda_control_check",
+  {
+    title: "Check native ERC/DRC or audit exact PCB routes",
+    description: "Run the fixed native PCB DRC or schematic ERC with tracked calculation, complete live scope and SQLite invariance proof. Or derive route endpoint connectivity, planar lengths/skew and net/layer widths from stable exact PCB source and physical-pad inventory using action route-audit. Route audits accept typed constraints, never caller geometry; evidence paths support large reports. Native checks honor current enabled-rule policy. Neither path saves or claims fabrication approval.",
+    inputSchema: { request: checkRequestSchema },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  },
+  serializedGuarded(async ({ request }) => {
+    if (request.action === "inspect") { return ruleCheckExecutor.inspect(request.operationId); }
+    if (request.action !== "recover-authority") { await engine.assertBridgeDispatchAllowed(); }
+    return upstream.withAuthenticatedBridgeDispatchScope(() => {
+      switch (request.action) {
+        case "route-audit": {
+          if (request.returnMode !== "full" && request.evidence === undefined) { throw new Error("Summary and receipt-only route audits require evidence paths."); }
+          return runPcbRouteAudit(engine, request).then((result) => withEvidence(request, result, request.evidence,
+            { facadeVersion: CONTROL_VERSION, reader: "facade-owned-route-audit" }, { returnMode: request.returnMode, maxInlineBytes: request.maxInlineBytes }));
+        }
+        case "run": { return ruleCheckExecutor.run(request); }
+        case "recover-authority": { return ruleCheckExecutor.recoverAuthority(request.operationId); }
+        case "reconcile-no-mutation": { return ruleCheckExecutor.reconcileNoMutation(request.operationId); }
+        case "open-target": { return ruleCheckExecutor.openTarget(request.operationId); }
+        case "rebind-runtime": { return ruleCheckExecutor.rebindRuntime(request.operationId, request.expectedFingerprint); }
+        default: { throw new Error("Unknown native check request."); }
+      }
+    });
+  }, { allowDuringOrphanRisk: true }),
+);
+registerFacadeTool(
+  "easyeda_control_library",
+  {
+    title: "Execute typed EasyEDA library, lifecycle and export operations",
+    description: "Inspect the exact execution capability list, read library metadata, export bounded managed files, open an existing project document, or change supported local project-library assets. Catalog entries without an execution proof are rejected before dispatch; no caller JavaScript or arbitrary output paths.",
+    inputSchema: { request: libraryRequestSchema },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  },
+  serializedGuarded(async ({ request }) => {
+    if (request.action === "capabilities") { return { capabilities: listLibraryExecutionCapabilities() }; }
+    if (request.action === "inspect") { return LibraryExecutor.inspect(request.operationId); }
+    if (request.action !== "recover-authority") { await engine.assertBridgeDispatchAllowed(); }
+    return upstream.withAuthenticatedBridgeDispatchScope(() => {
+      if (request.action === "execute") { return libraryExecutor.execute({ operation: request.operation, expectedContext: request.expectedContext, expectedFingerprint: request.expectedFingerprint, ...(request.confirmWrite === undefined ? {} : { confirmWrite: request.confirmWrite }) }); }
+      if (request.action === "recover-authority") { return libraryExecutor.recoverAuthority(request.operationId); }
+      if (request.action === "rebind-runtime") { return libraryExecutor.rebindRuntime(request.operationId, request.expectedFingerprint); }
+      if (request.action === "open-target") { return libraryExecutor.openTarget(request.operationId); }
+      if (request.action === "reconcile") { return libraryExecutor.reconcile(request.operationId); }
+      return libraryExecutor.reconcileNoMutation(request.operationId);
+    });
+  }, { allowDuringOrphanRisk: true }),
 );
 
 registerFacadeTool(
@@ -2411,7 +2701,7 @@ registerFacadeTool(
   {
     title: "Experimental PCB mutation plan (disabled)",
     description:
-      "Runtime-disabled pending connected sacrificial-board validation. The retained candidate plans one facade-generated PCB component placement/layer/lock change with exact checkpoints and rejects caller JavaScript.",
+      "Legacy endpoint, runtime-disabled. Use easyeda_control_design for supported typed operations and its operation-specific proof checks. Caller JavaScript remains refused.",
     inputSchema: {
       plan: operationPlanSchema,
       confirmDiscardAnyUnsavedState: z.literal(true),
@@ -2434,7 +2724,7 @@ registerFacadeTool(
   {
     title: "Experimental PCB mutation apply (disabled)",
     description:
-      "Runtime-disabled pending connected sacrificial-board validation. If later enabled, re-prove the preflight and exact tab before one journal-bound unsaved patch; never retry an uncertain call.",
+      "Legacy endpoint, runtime-disabled. Use easyeda_control_design with action apply or execute for supported typed edits. Never retry an uncertain call.",
     inputSchema: {
       operationId: operationIdSchema,
       planHash: planHashSchema,
@@ -2458,7 +2748,7 @@ registerFacadeTool(
   {
     title: "Experimental PCB mutation verification (disabled)",
     description:
-      "Runtime-disabled with the experimental writer. Retained to test journaled exact readback and invariant assertions.",
+      "Legacy endpoint, runtime-disabled. Use easyeda_control_design for typed transaction inspection and reconciliation. Its effect and persistence checks remain mandatory.",
     inputSchema: { operationId: operationIdSchema },
     annotations: {
       readOnlyHint: false,
@@ -2476,7 +2766,7 @@ registerFacadeTool(
   {
     title: "Experimental PCB mutation rollback (disabled)",
     description:
-      "Runtime-disabled pending connected sacrificial-board validation. The candidate inverse requires exact desired-state proof before dispatch and exact baseline restoration afterward; it never saves.",
+      "Legacy endpoint, runtime-disabled. Use easyeda_control_design with action rollback when that typed operation has an exact supported inverse. Rollback does not imply a save.",
     inputSchema: {
       operationId: operationIdSchema,
       planHash: planHashSchema,
@@ -2500,7 +2790,7 @@ registerFacadeTool(
   {
     title: "Experimental PCB mutation persistence (disabled)",
     description:
-      "Runtime-disabled with the experimental writer. The retained candidate lifecycle re-verifies, saves, closes, reopens, proves durable state, and verifies a final SQLite checkpoint.",
+      "Legacy endpoint, runtime-disabled. Use easyeda_control_design with action commit or execute for supported typed edits with save/reopen and complete durable-delta proof.",
     inputSchema: {
       operationId: operationIdSchema,
       planHash: planHashSchema,
@@ -2554,9 +2844,9 @@ registerFacadeTool(
 registerFacadeTool(
   "easyeda_control_recover_incomplete",
   {
-    title: "Recover an incomplete EasyEDA operation",
+    title: "List incomplete journals or recover a legacy operation",
     description:
-      "List nonterminal journals, or reconcile one against its stored baseline, desired live state, or reopened state. When orphanedCallPossible is true, resolution is blocked at a destructive human gate until a person has deliberately terminated and restarted EasyEDA Pro, reconnected the bridge, and supplied a fresh operation-bound runtimeRestartConfirmation. If a native unsaved-changes prompt appears, never choose Save; discard or force-quit only with explicit authority and still-valid clean-baseline/no-concurrent-edit assumptions, otherwise cancel and preserve the session for manual review. An agent must never synthesize or replay the attestation, and the facade cannot independently prove process generation or prompt choices.",
+      "Without an operation ID, list all managed nonterminal journals. ID-based recovery here is the retained legacy component workflow, not the typed design, library, check or runtime-open recovery API; use the originating tool's recovery actions for those journals. Legacy orphan resolution requires a fresh human-supplied operation-bound runtimeRestartConfirmation after an authorized EasyEDA restart and bridge reconnect. Never synthesize or replay that attestation. This legacy path does not prove process generation; typed recovery separately uses retained execution authority. Never choose Save after an unknown write, and never discard or force-quit without explicit applicable authority.",
     inputSchema: {
       operationId: operationIdSchema.optional(),
       resolution: z
@@ -2685,7 +2975,7 @@ registerFacadeTool(
 const transport = new StdioServerTransport();
 const shutdown = createSerializedShutdown(
   server,
-  [upstream],
+  [upstream, { close: async (): Promise<void> => { await windowsRuntime?.release(); } }],
   facadeLease,
   bridgeGate,
 );

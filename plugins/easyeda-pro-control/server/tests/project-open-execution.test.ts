@@ -1,0 +1,118 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { isRecord, loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json } from "../src/core.ts";
+import { ProjectOpenExecutor } from "../src/project-open-execution.ts";
+import type { ProjectOpenDependencies, ProjectOpenEngine, ProjectOpenInput } from "../src/project-open-execution.ts";
+import { buildRecoveryNavigationCode } from "../src/recovery-navigation.ts";
+import type { NativeHistorySnapshot } from "../src/native-history.ts";
+import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
+
+type Value = Record<string, unknown>;
+const HASH = "a".repeat(64);
+const TARGET = { projectUuid: "b".repeat(64), projectPath: "/fixture/project.eprj2", documentUuid: "board", documentType: 3 as const };
+const CONTEXT = { project: { uuid: TARGET.projectUuid, path: TARGET.projectPath }, document: { uuid: TARGET.documentUuid, documentType: 3, tabId: "board@fixture" } };
+const RECEIPT = { schema: "easyeda-pro-control.checkpoint.v2" as const, source: TARGET.projectPath, checkpoint: "/fixture/checkpoint.sqlite", receiptPath: "/fixture/receipt.json", createdAt: "2026-01-01T00:00:00Z",
+  sourceIdentity: { dev: "1", ino: "2", birthtimeNs: "3", ctimeNs: "4" }, checkpointIdentity: { dev: "1", ino: "5", birthtimeNs: "6", ctimeNs: "7" },
+  sourceSha256: HASH, checkpointSha256: HASH, sourceDumpSha256: HASH, checkpointDumpSha256: HASH, receiptSha256: HASH };
+const VERIFIED = { ok: true, sourceMatchesReceipt: true, checkpointMatchesReceipt: true, sourceEqualsCheckpoint: true, sourceChanged: false, source: RECEIPT.source,
+  checkpoint: RECEIPT.checkpoint, receiptPath: RECEIPT.receiptPath, sourceDumpSha256: HASH, checkpointDumpSha256: HASH, checkpointSha256: HASH, sourceSha256: HASH };
+const HISTORY: NativeHistorySnapshot = { profile: "easyeda.native-history.linear-gcm-gzip.v1", projectUuid: TARGET.projectUuid, branchUuid: "c".repeat(32), headHistoryUuid: "d".repeat(32),
+  checkpointSha256: HASH, historyRowCount: 1, chunkCount: 1, plaintextBytes: 100, semanticSha256: HASH,
+  documents: [{ uuid: TARGET.documentUuid, docType: "PCB", metadata: {}, records: [], semanticSha256: HASH }] };
+function fingerprint(): Value {
+  const manifest = loadReviewedCompatibilityManifest(); const facade = manifest.facadeImplementation["source-tree"]; const runtime = manifest.connectedRuntime;
+  return { facadeImplementation: { ...facade, mode: "source-tree", files: facade.files.map((file) => ({ path: `/opt/control/${file.relativePath}`, relativePath: file.relativePath, bytes: file.bytes, sha256: file.sha256 })) },
+    upstreamServer: { version: manifest.upstream.serverVersion }, upstreamLauncher: manifest.upstream.launcher, upstreamImplementationDrift: false,
+    reviewedCompatibilityManifest: reviewedCompatibilityManifestFingerprint(), toolCount: manifest.upstream.toolCatalog.count, toolCatalogSha256: manifest.upstream.toolCatalog.sha256,
+    health: { payload: { version: runtime.healthVersion, node_version: runtime.nodeVersion, bridge_connected: true, easyeda_version: runtime.easyedaVersion, extension_version: runtime.extensionVersion, extension_version_mismatch: false, registry_mismatch: false } },
+    bridge: { payload: { connected: true, bridge_version: runtime.bridgeVersion, ...(runtime.bridgeEasyedaVersion === null ? {} : { easyeda_version: runtime.bridgeEasyedaVersion }), diagnostics: { method_registry_hash: runtime.methodRegistryHash } } },
+    bridgeDispatcher: { payload: { source: runtime.dispatcher.source, dispatcher_build_id: runtime.dispatcher.buildId, total: runtime.dispatcher.total } },
+    installedBundles: { available: true, assetsRoot: "/opt/assets", pcbEditor: { ...manifest.installedBundles.pcbEditor, implementationPath: "/opt/assets/pcb.js" },
+      publicApi: { ...manifest.installedBundles.publicApi, implementationPath: "/opt/assets/api.js", adapterPath: "/opt/assets/adapter.js", declarationsPath: "/opt/assets/api.d.ts" } } };
+}
+function fixture(): { executor: ProjectOpenExecutor; input: ProjectOpenInput; calls: string[]; journals: Map<string, Value>; state: { recordDrift: boolean; uncertain: boolean; incomplete: boolean } } {
+  const calls: string[] = []; const journals = new Map<string, Value>(); const state = { recordDrift: false, uncertain: false, incomplete: false }; const identity = fingerprint(); let historyReads = 0;
+  const save = (journal: Value): Promise<string> => { const id = journal["operationId"]; assert.equal(typeof id, "string"); if (typeof id !== "string") { throw new TypeError("Missing fixture journal ID"); } journals.set(id, structuredClone(journal)); return Promise.resolve(`/fixture/${id}.json`); };
+  const services: ProjectOpenDependencies = {
+    checkpointPolicy: (source): ReturnType<NonNullable<ProjectOpenDependencies["checkpointPolicy"]>> => Promise.resolve({ expectedSource: source, artifactRoots: ["/fixture"] }),
+    createCheckpoint: (): ReturnType<NonNullable<ProjectOpenDependencies["createCheckpoint"]>> => { calls.push("checkpoint"); return Promise.resolve(structuredClone(RECEIPT)); },
+    verifyCheckpoint: (): ReturnType<NonNullable<ProjectOpenDependencies["verifyCheckpoint"]>> => Promise.resolve(structuredClone(VERIFIED)),
+    readNativeHistoryCheckpoint: (): ReturnType<NonNullable<ProjectOpenDependencies["readNativeHistoryCheckpoint"]>> => {
+      historyReads += 1;
+      return Promise.resolve(state.recordDrift && historyReads > 1 ? { ...HISTORY, documents: HISTORY.documents.map((document) => ({ ...document, metadata: { changed: true } })) } : structuredClone(HISTORY));
+    },
+    prepareRecoveryNavigation: (input): ReturnType<NonNullable<ProjectOpenDependencies["prepareRecoveryNavigation"]>> => {
+      assert.equal(input.navigation?.requireExclusiveTabs, true);
+      assert.equal(input.navigation?.requireEditorReadiness, input.navigation?.navigate);
+      return Promise.resolve({ target: TARGET, checkpointSha256: HASH, code: buildRecoveryNavigationCode(TARGET, input.navigation) });
+    },
+    verifyLibraryNativeProfile: (): ReturnType<NonNullable<ProjectOpenDependencies["verifyLibraryNativeProfile"]>> => Promise.resolve({ profile: "easyeda-pro-control.library-native.v1", version: "3.2.149.43637efe", relativePath: "pro-ui/3.2.149.43637efe/js/ui.js", sha256: "12414b9ded97913f7d7f30522a2265d2a6c995281e3347bfd1752206e647497a" }),
+    createOperation: save, updateOperation: save,
+    listOperations: (): ReturnType<NonNullable<ProjectOpenDependencies["listOperations"]>> => Promise.resolve(state.incomplete ? [{ operationId: "another", state: "applied-unsaved" }] : [...journals.values()]),
+    loadOperation: (id): ReturnType<NonNullable<ProjectOpenDependencies["loadOperation"]>> => {
+      const value = journals.get(id); assert.ok(value !== undefined && isRecord(value["plan"]) && typeof value["planHash"] === "string");
+      return Promise.resolve({ ...structuredClone(value), operationId: id, plan: value["plan"], planHash: value["planHash"] });
+    },
+    writePhaseArtifact: (id, sequence, phase, value): ReturnType<NonNullable<ProjectOpenDependencies["writePhaseArtifact"]>> => Promise.resolve({ path: `/fixture/${id}/${sequence}-${phase}.json`, bytes: JSON.stringify(value).length, sha256: sha256Json(value) }),
+  };
+  const engine: ProjectOpenEngine = {
+    executionAuthorityValidator: {}, status: (): Promise<{ stableFingerprint: Value }> => Promise.resolve({ stableFingerprint: identity }),
+    upstream: { installedEasyedaBundles: (): Promise<{ assetsRoot: string }> => Promise.resolve({ assetsRoot: "/opt/assets" }) },
+    assertContext: (): Promise<typeof CONTEXT> => Promise.resolve(structuredClone(CONTEXT)),
+    assertRecoveryOperationIsolated: (): Promise<true> => Promise.resolve(true), ensureRuntimeRestartChallenge: (): Promise<string> => Promise.resolve("fixture-challenge"),
+    recoverDispatchAuthority: (): Promise<never> => Promise.reject(new Error("Unused fixture recovery")),
+    dispatchWithOrphanTracking: async (journal, phase): Promise<unknown> => {
+      calls.push(phase); assert.equal(journals.get(journal.operationId)?.["state"], `${phase}-dispatching`);
+      if (state.uncertain) { journal.orphanedCallPossible = true; await save(journal); throw new Error("uncertain open"); }
+      if (phase === "editor-tabs") {
+        const absent = { kind: "undefined" };
+        const context = { projectUuid: { kind: "string", value: TARGET.projectUuid }, projectUuidAlias: absent, documentUuid: absent, documentUuidAlias: absent, documentType: absent, tabId: absent, parentProjectUuid: absent, parentLibraryUuid: absent };
+        return { structuredContent: encodeExactReadEnvelope({ schema: "easyeda-pro-control.editor-tabs.v1", contextBefore: context, contextAfter: context,
+          nodes: [{ index: 0, parentIndex: null, depth: 0, object: { kind: "object" }, id: { kind: "string", value: "root" }, children: absent, childCount: null, tabs: { kind: "array" }, tabCount: 0, items: [] }] }) };
+      }
+      const payload = phase === "project-open" ? { ok: true, schema: "easyeda-pro-control.recovery-navigation.v1", openedProject: true, openedDocument: true, project: CONTEXT.project, document: CONTEXT.document } :
+        { ok: true, schema: "easyeda-pro-control.recovery-navigation.v1", inspectedOnly: true, targetOpen: false, project: null, document: null };
+      return { structuredContent: payload };
+    },
+  };
+  return { executor: new ProjectOpenExecutor(engine, services), input: { action: "open-existing", ...TARGET, expectedFingerprint: identity, confirmOpen: true }, calls, journals, state };
+}
+void test("existing-project opening journals first and proves the full saved baseline unchanged without save", async () => {
+  const run = fixture(); const result = await run.executor.openExisting(run.input);
+  assert.equal(result["state"], "completed"); assert.equal(result["saved"], false);
+  assert.deepEqual(run.calls, ["checkpoint", "project-open", "checkpoint"]);
+});
+void test("opening refuses another incomplete operation before checkpoint or native navigation", async () => {
+  const run = fixture(); run.state.incomplete = true;
+  await assert.rejects(run.executor.openExisting(run.input), /incomplete transaction/u);
+  assert.deepEqual(run.calls, []);
+});
+void test("pending open diagnostic journals a fixed read without reopening or completing recovery", async () => {
+  const run = fixture(); run.state.recordDrift = true;
+  await assert.rejects(run.executor.openExisting(run.input), /materialized document records/u);
+  const id = [...run.journals.keys()][0]; assert.ok(typeof id === "string");
+  run.state.recordDrift = false;
+  const result = await run.executor.inspectEditorTabs(id);
+  assert.equal(result["action"], "inspect-editor-tabs");
+  assert.equal(result["state"], "project-open-needs-review");
+  assert.equal(result["allSqliteTablesUnchanged"], true);
+  assert.equal(run.calls.filter((phase) => phase === "project-open").length, 1);
+  assert.equal(run.calls.filter((phase) => phase === "editor-tabs").length, 1);
+  const journal = run.journals.get(id); assert.equal(journal?.["hardStop"], true);
+  assert.equal(journal?.["saved"], false);
+});
+void test("changed records and uncertain opens never complete or cause an automatic reopen", async () => {
+  const changed = fixture(); changed.state.recordDrift = true;
+  await assert.rejects(changed.executor.openExisting(changed.input), /materialized document records/u);
+  const id = [...changed.journals.keys()][0]; assert.ok(typeof id === "string");
+  changed.state.recordDrift = false;
+  const reconciled = await changed.executor.reconcileNoMutation(id);
+  assert.equal(reconciled["state"], "reconciled-no-mutation");
+  assert.equal(changed.calls.filter((phase) => phase === "project-open").length, 1);
+  assert.equal(changed.calls.filter((phase) => phase === "project-open-reconcile").length, 1);
+  const uncertain = fixture(); uncertain.state.uncertain = true;
+  await assert.rejects(uncertain.executor.openExisting(uncertain.input), /uncertain open/u);
+  const uncertainId = [...uncertain.journals.keys()][0]; assert.ok(typeof uncertainId === "string");
+  await assert.rejects(uncertain.executor.reconcileNoMutation(uncertainId), /Recover retained authority/u);
+  assert.equal(uncertain.calls.filter((phase) => phase === "project-open").length, 1);
+});

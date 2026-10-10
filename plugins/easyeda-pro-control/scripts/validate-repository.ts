@@ -12,6 +12,7 @@ import {
   DESCRIPTOR_SANITIZER_SHA256,
 } from "../server/src/core.ts";
 import { validateReleaseVersionParity } from "./release-version.ts";
+import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, hasPortableMcpLaunch } from "./plugin-contract.ts";
 
 import {
   bridgeExtensionManifestSchema,
@@ -48,32 +49,12 @@ const authenticatedBridgeDistPath =
 const authenticatedBridgeDistPrefix = `${authenticatedBridgeDistPath}/`;
 const descriptorSanitizerRelativePath =
   `plugins/easyeda-pro-control/server/bin/${DESCRIPTOR_SANITIZER_FILE_NAME}`;
-const VALIDATION_CANDIDATE_BRIDGE_BUILD_ID = "ded07x99dcxb504";
-const REVIEWED_CONNECTED_BRIDGE_BUILD_ID = "d18b6xd531xe6ca";
+const REVIEWED_CONNECTED_BRIDGE_BUILD_ID = "ded07x99dcxb504";
 const checks: CheckResult[] = [];
 const MAX_REPOSITORY_FILE_BYTES = 8 * 1024 * 1024;
-const EXPECTED_TOOL_NAMES = [
-  "easyeda_control_status",
-  "easyeda_control_discover",
-  "easyeda_control_context",
-  "easyeda_control_exact_read",
-  "easyeda_control_read",
-  "easyeda_control_read_batch",
-  "easyeda_control_execute",
-  "easyeda_control_capture",
-  "easyeda_control_export",
-  "easyeda_control_plan",
-  "easyeda_control_apply",
-  "easyeda_control_verify",
-  "easyeda_control_rollback",
-  "easyeda_control_save_reopen",
-  "easyeda_control_checkpoint",
-  "easyeda_control_recover_incomplete",
-  "easyeda_control_evidence_recover",
-  "easyeda_control_evidence_verify",
-  "easyeda_control_artifact_read",
-].toSorted();
+const EXPECTED_TOOL_NAMES = [...FACADE_TOOL_NAMES].toSorted();
 const AUTO_APPROVED_TOOLS = new Set([
+  "easyeda_control_api",
   "easyeda_control_status",
   "easyeda_control_discover",
   "easyeda_control_context",
@@ -139,22 +120,20 @@ check(
 check(
   "manifest-capabilities",
   JSON.stringify(manifest.interface?.capabilities) ===
-    JSON.stringify(["EasyEDA", "MCP", "Read", "Evidence", "Recovery"]),
+    JSON.stringify(["EasyEDA", "MCP", "Read", "Edit", "Evidence", "Recovery"]),
 );
 check(
-  "manifest-disabled-writer",
-  /writer is experimental and runtime-disabled/iu.test(
-    manifest.interface.longDescription,
-  ),
+  "manifest-typed-and-legacy-boundaries",
+  manifest.interface.longDescription.includes("typed API") && /legacy.*runtime-disabled/iu.test(manifest.interface.longDescription),
 );
 check(
-  "manifest-validation-required-truth",
+  "manifest-connected-read-admission-truth",
   manifest.description.includes("Safety-gated") &&
     manifest.interface.longDescription.includes(
-      "currently validation-required",
+      "connected-read-admitted",
     ) &&
     manifest.interface.longDescription.includes(
-      "exact and private operations fail-closed",
+      "future mismatches fail closed",
     ),
 );
 
@@ -202,6 +181,13 @@ const required = [
   "easyeda-bridge-extension/tsconfig.test.json",
   "easyeda-bridge-extension/vitest.config.ts",
   "scripts/bridge-token.ts",
+  "scripts/control-session.ts",
+  "scripts/native-ui.ps1",
+  "scripts/native-ui-controller.ps1",
+  "scripts/windows-authority.ps1",
+  "scripts/plugin-contract.ts",
+  "scripts/configure-machine.ts",
+  "scripts/launch-machine.ts",
   "scripts/build-authenticated-bridge.ts",
   "scripts/build-descriptor-sanitizer.ts",
   "scripts/bundled-runtime-license.ts",
@@ -217,6 +203,8 @@ const required = [
   "server/native/easyeda-fd-sanitizer.ld",
   "server/src/descriptor-sanitizer-identity.ts",
   "server/src/index.ts",
+  "server/src/main.ts",
+  "server/src/machine-launch.ts",
   "server/src/upstream-environment.ts",
   "server/src/upstream-module-execution.ts",
   "server/src/upstream-supervisor.ts",
@@ -226,6 +214,7 @@ const required = [
   "server/tests/release-version.test.ts",
   "server/tests/repository-validation.test.ts",
   "skills/easyeda-pro-control/SKILL.md",
+  "skills/easyeda-pro-control/references/native-ui.md",
   "skills/easyeda-pro-control/agents/openai.yaml",
 ];
 for (const path of required) {
@@ -247,10 +236,8 @@ check(
   mcpServer?.default_tools_approval_mode === "prompt",
 );
 check(
-  "mcp-bridge-token-path",
-  typeof mcpServer?.env?.["EASYEDA_CONTROL_DATA_DIR"] === "string" &&
-    mcpServer?.env?.["EASYEDA_BRIDGE_TOKEN_FILE"] ===
-      join(mcpServer.env["EASYEDA_CONTROL_DATA_DIR"], "bridge-token"),
+  "mcp-portable-machine-profile-launch",
+  hasPortableMcpLaunch(mcpServer),
 );
 const policyNames = Object.keys(mcpServer?.tools ?? {}).toSorted();
 check(
@@ -479,7 +466,7 @@ check(
   vendoredBridgeExtensionManifest.name ===
     "easyeda-pro-control-authenticated-bridge" &&
     vendoredBridgeExtensionManifest.uuid ===
-      "7e06d286b1ac846ef7eab9c7f2a9ee4" &&
+      "7e06d286b1ac846ef7eab9c7f2a9ee40" &&
     vendoredBridgeExtensionManifest.displayName ===
       "EasyEDA Pro Control Authenticated Bridge" &&
     vendoredBridgeExtensionManifest.publisher === "JanGuenter" &&
@@ -581,7 +568,7 @@ check(
     vendoredBridgePackageManifest.private &&
     vendoredBridgePackageManifest.devDependencies?.["esbuild"] === "0.28.2" &&
     vendoredBridgePackageManifest.devDependencies?.["typescript"] === "7.0.2" &&
-    vendoredBridgePackageManifest.devDependencies?.["vitest"] === "4.1.9" &&
+    vendoredBridgePackageManifest.devDependencies?.["vitest"] === "4.1.11" &&
     vendoredBridgePackageManifest.devDependencies?.["esbuild"] ===
       pluginPackageManifest.devDependencies?.["esbuild"] &&
     vendoredBridgePackageManifest.devDependencies?.["typescript"] ===
@@ -671,7 +658,7 @@ check(
       '"cc8893215e736f9efca78e4216033469008ea8e9"',
     ) &&
     reviewedBridgeSource.includes(
-      '"ce52ca1bf5b2d3d214454790a24516ae5182f1867851c2786c0269bbc7892680"',
+      '"c5cb4d9ed0d5a93bca655f4f846f4f2e9337633941b2df3482aa3b91d7e43ee5"',
     ) &&
     reviewedBridgeSource.includes("captureVendoredSourceClosure") &&
     reviewedBridgeSource.includes('"src/mutual-auth.ts"') &&
@@ -861,30 +848,26 @@ check(
       "never that EasyEDA imported or loaded it",
     ),
 );
-const bridgeCandidateTruthSources = [
+const bridgeAdmissionTruthSources = [
   readmeSource,
   securitySource,
   engineeringRecordSource,
   compatibilityReferenceSource,
 ];
 check(
-  "authenticated-bridge-validation-candidate-truth",
+  "authenticated-bridge-connected-read-admission-truth",
   reviewedCompatibilityManifest.connectedRuntime?.dispatcher?.buildId ===
     REVIEWED_CONNECTED_BRIDGE_BUILD_ID &&
-    bridgeCandidateTruthSources.every(
+    reviewedCompatibilityManifest.connectedRuntime.bridgeVersion === "1.0.0" &&
+    reviewedCompatibilityManifest.connectedRuntime.bridgeEasyedaVersion === null &&
+    bridgeAdmissionTruthSources.every(
       (source) =>
-        source.includes(VALIDATION_CANDIDATE_BRIDGE_BUILD_ID) &&
         source.includes(REVIEWED_CONNECTED_BRIDGE_BUILD_ID) &&
-        source.includes("validation-required") &&
-        /not\s+a\s+production-live build/u.test(source) &&
-        source.includes("narrowly reviewed public generic reads") &&
-        source.includes("exact") &&
-        source.includes("private"),
-    ) &&
-    readmeSource.includes(
-      "exact and private operations remain unavailable",
+        source.includes("connected-read-admitted") &&
+        /[Ee]xact\s+reads/u.test(source),
     ) &&
     skillSource.includes("references/compatibility.md") &&
+    skillSource.includes("connected-read-admitted") &&
     skillSource.includes("validation-required") &&
     doctorSource.includes(
       '"authenticated-bridge-connected-build-id"',
@@ -1015,24 +998,22 @@ check(
     ciSource.includes("server/dist/upstream-supervisor.mjs"),
 );
 check(
-  "production-writer-not-enabled",
-  indexSource.includes("new EasyedaControlEngine(upstream)") &&
-    !indexSource.includes(
-      "new EasyedaControlEngine(upstream, { privateComponentWriterValidated: true",
-    ),
+  "typed-design-and-legacy-separation",
+  indexSource.includes('"easyeda_control_design"') && indexSource.includes("new DesignExecutor") &&
+    indexSource.includes("writerRuntimeGuarded(") && indexSource.includes("executionAuthorityValidator"),
 );
 check(
   "raw-structurally-disabled",
   indexSource.includes("there is no environment opt-in"),
 );
 check(
-  "skill-declares-disabled-writer",
-  /writer is experimental and runtime-disabled/iu.test(skillSource),
+  "skill-declares-typed-and-legacy-boundaries",
+  skillSource.includes("easyeda_control_design") && /legacy.*runtime-disabled/iu.test(skillSource),
 );
 check(
   "agent-default-prompt",
   agentSource.includes(
-    'default_prompt: "Use $easyeda-pro-control to validate the EasyEDA bridge, collect bounded read evidence, or inspect local recovery artifacts without bypassing compatibility gates."',
+    `default_prompt: ${JSON.stringify(AGENT_DEFAULT_PROMPT)}`,
   ),
 );
 

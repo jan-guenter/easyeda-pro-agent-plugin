@@ -1,6 +1,8 @@
+/* oxlint-disable import/max-dependencies -- This transaction coordinator imports the separately audited native profile and upload barrier; a dependency-count cap is not a safety boundary. */
 import {
   OPERATION_SCHEMA,
   assertSubset,
+  assertUpstreamReplySettled,
   buildPlanHash,
   canonicalJson,
   classifyTool,
@@ -23,9 +25,9 @@ import {
   controlDataDirectory,
   controlRootCapability,
   createOperation,
-  listOperations,
   loadOperation,
   operationPath,
+  scanOperations,
   updateOperation,
   writePhaseArtifact,
 } from "./artifacts.ts";
@@ -43,16 +45,25 @@ import {
   buildComponentMutationCode,
   buildReopenOnlyCode,
   buildSaveReopenCode,
+  contextFailureDiagnostics,
   wrapWithContextGuard,
 } from "./runtime-scripts.ts";
 import type { ExactSaveGuard } from "./runtime-scripts.ts";
 import {
   buildExactReadCode,
+  decodeExactReadEnvelope,
   exactTargetAssertionPointer,
   validateExactReadPayload,
   validateExactReadRequest,
 } from "./exact-readers.ts";
 import type { ExactReadRequest } from "./exact-readers.ts";
+import { buildSchematicNativeReadExpression } from "./schematic-native-adapter.ts";
+import { buildSchematicNativeTransportCode, decodeSchematicNativeEnvelope } from "./schematic-native-transport.ts";
+import type { SchematicNativeSnapshot } from "./schematic-native-adapter.ts";
+import { firstJsonDifference } from "./reader-diagnostics.ts";
+import { verifySchematicNativeProfile } from "./native-profiles.ts";
+import { verifyDeviceAssociationNativeProfile } from "./device-native-profile.ts";
+import { buildProjectUploadBarrierExpression, validateProjectUploadBarrierResult } from "./project-upload-barrier.ts";
 import { randomUUID } from "node:crypto";
 import { dirname, isAbsolute, join } from "node:path";
 
@@ -189,6 +200,7 @@ export interface ContextProbePayload extends ProjectProbePayload {
   document: LiveDocumentContext;
   pcb?: AuxiliaryDocumentContext | undefined;
   schematic?: AuxiliaryDocumentContext | undefined;
+  schematicPage?: AuxiliaryDocumentContext | undefined;
 }
 
 export interface RuntimeIdentity extends UnknownRecord {
@@ -369,12 +381,12 @@ export interface RuntimeGuardFailure extends UnknownRecord {
   error: SerializedError;
 }
 
-export interface OperationJournal extends UnknownRecord {
+export interface DispatchOperationJournal extends UnknownRecord {
   schema: unknown;
   operationId: string;
   journalPath: string;
   planHash: string;
-  plan: MutationPlan;
+  plan: UnknownRecord;
   state: string;
   mutationState: string;
   saved: boolean;
@@ -417,6 +429,10 @@ export interface OperationJournal extends UnknownRecord {
   recoveryActivationPriorUnknownPhase?: string | null;
   recoveryAttemptCount?: number;
   recoverySourceSha256?: string;
+}
+
+export interface OperationJournal extends DispatchOperationJournal {
+  plan: MutationPlan;
 }
 
 export interface OperationSummary {
@@ -605,6 +621,8 @@ export interface RuntimeExecutionAuthorityValidator {
   readonly proveTerminated: (
     input: ExecutionAuthorityTerminationInput,
   ) => Promise<ExecutionAuthorityTerminationProof>;
+  /** Dispose retained capture handles only after no orphan risk is durable. */
+  readonly releaseCapture?: (evidence: ExecutionAuthorityEvidence) => Promise<void>;
 }
 
 export interface SemanticPersistenceValidationInput {
@@ -863,6 +881,21 @@ function projectPayload(value: unknown): ProjectProbePayload {
     );
   }
   return value;
+}
+
+function requireNativeProjectPathProof(payload: ProjectProbePayload): void {
+  if (payload["projectPathSource"] !== "native-project-registry") {
+    return;
+  }
+  const uuid = payload.project.uuid ?? payload.project.projectUuid;
+  if (payload["contextStable"] !== true ||
+    typeof payload.project.path !== "string" ||
+    typeof uuid !== "string" ||
+    sha256Text(payload.project.path) !== uuid) {
+    throw new Error(
+      `Native project registry path failed its unchanged-context and exact path-hash proof. ${JSON.stringify(contextFailureDiagnostics(payload))}`,
+    );
+  }
 }
 
 function runtimeIdentityPayload(value: unknown): RuntimeIdentity {
@@ -1199,12 +1232,6 @@ function asOperationJournal(value: unknown): OperationJournal {
     throw new TypeError("Operation journal must be an object.");
   }
   return value;
-}
-
-function asOperationJournals(value: unknown): OperationJournal[] {
-  return Array.isArray(value)
-    ? value.map((item) => asOperationJournal(item))
-    : [];
 }
 
 function toolDocumentType(toolName: string): number | undefined {
@@ -2024,7 +2051,7 @@ export class EasyedaControlEngine {
       this.executionAuthorityValidator === undefined
     ) {
       throw new Error(
-        "The private PCB component writer is runtime-disabled until a connected sacrificial-board test validates this installed modify path, a strict semantic persistence-delta validator is installed, and an operation-bound process-tree termination validator is installed for ambiguous-call recovery. Exact reads, evidence, checkpoints, capture, and draft DSN export remain available.",
+        "The legacy private PCB component writer is runtime-disabled. Use easyeda_control_design for supported typed operations with their own runtime, source-effect and durable-persistence checks. Exact reads, evidence, checkpoints, capture, and draft DSN export remain available.",
       );
     }
   }
@@ -2040,7 +2067,7 @@ export class EasyedaControlEngine {
   }
 
   public async markOrphanedCallRisk(
-    operation: OperationJournal,
+    operation: DispatchOperationJournal,
     phase: string,
   ): Promise<OperationBridgeDispatch> {
     const validator = this.executionAuthorityValidator;
@@ -2075,6 +2102,7 @@ export class EasyedaControlEngine {
       bridgeSession,
     );
     let journaled = false;
+    let capturedAuthority: ExecutionAuthorityEvidence | undefined;
     try {
       const runtimeIdentity = await this.runtimeIdentity(bridgeDispatch);
       if (
@@ -2105,6 +2133,7 @@ export class EasyedaControlEngine {
         }),
         bindingSha256,
       );
+      capturedAuthority = executionAuthority;
       operation.runtimeIdentityBeforeOrphan = runtimeIdentity;
       operation.bridgeSessionBeforeOrphan = bridgeSession;
       operation.bridgeDispatchBeforeOrphan = bridgeDispatch;
@@ -2153,7 +2182,7 @@ export class EasyedaControlEngine {
       // The orphan marker is only justified once callTool starts.
       // A post-journal authority reproof failure is provably pre-dispatch.
       // Clear it even when an outer authenticated scope owns the lease lifecycle.
-      if (journaled) {
+      if (journaled || capturedAuthority !== undefined) {
         operation.orphanedCallPossible = false;
         operation.orphanedCallPhase = phase;
         operation.orphanedCallReturnedAt = now();
@@ -2162,9 +2191,10 @@ export class EasyedaControlEngine {
         operation.updatedAt = now();
         try {
           await updateOperation(operation);
+          if (capturedAuthority !== undefined) { await validator.releaseCapture?.(capturedAuthority); }
         } catch (journalError) {
           throw new Error(
-            `Pre-dispatch authority capture failed (${serializeError(error).message}) and its unused orphan marker could not be cleared: ${serializeError(journalError).message}`,
+            `Pre-dispatch authority capture failed (${serializeError(error).message}) and its marker/capture cleanup did not finish: ${serializeError(journalError).message}`,
             { cause: journalError },
           );
         }
@@ -2174,7 +2204,7 @@ export class EasyedaControlEngine {
   }
 
   public async clearOrphanedCallRisk(
-    operation: OperationJournal,
+    operation: DispatchOperationJournal,
     phase: string,
     dispatch: OperationBridgeDispatch,
   ): Promise<void> {
@@ -2194,16 +2224,30 @@ export class EasyedaControlEngine {
     delete operation.runtimeRestartChallengeIssuedAt;
     operation.updatedAt = now();
     await updateOperation(operation);
+    if (operation.executionAuthorityBeforeOrphan !== undefined) {
+      await this.executionAuthorityValidator?.releaseCapture?.(operation.executionAuthorityBeforeOrphan);
+    }
   }
 
-  private async dispatchWithOrphanTracking(
-    operation: OperationJournal,
+  public async dispatchWithOrphanTracking(
+    operation: DispatchOperationJournal,
     phase: string,
     name: string,
     args: UnknownRecord,
     timeoutMs: number,
+    beforeDispatch?: () => Promise<void>,
   ): Promise<unknown> {
     const dispatch = await this.markOrphanedCallRisk(operation, phase);
+    if (beforeDispatch !== undefined) {
+      try { await beforeDispatch(); }
+      catch (error) {
+        // Final authority reproof succeeded, but callTool has not started.
+        // Release its unused capture only after a durable clear. If that clear
+        // Fails, the retained journal quarantine must stay intact.
+        await this.clearOrphanedCallRisk(operation, phase, dispatch);
+        throw error;
+      }
+    }
     try {
       const result = await this.upstream.callTool(
         name,
@@ -2211,6 +2255,7 @@ export class EasyedaControlEngine {
         timeoutMs,
         dispatch.binding,
       );
+      assertUpstreamReplySettled(result);
       await this.clearOrphanedCallRisk(operation, phase, dispatch);
       return result;
     } catch (error) {
@@ -2245,7 +2290,7 @@ export class EasyedaControlEngine {
   }
 
   public async ensureRuntimeRestartChallenge(
-    operation: OperationJournal,
+    operation: DispatchOperationJournal,
   ): Promise<string> {
     if (
       typeof operation.runtimeRestartChallenge === "string" &&
@@ -2268,6 +2313,206 @@ export class EasyedaControlEngine {
     operation.updatedAt = now();
     await updateOperation(operation);
     return operation.runtimeRestartChallenge;
+  }
+
+  /** Clear execution quarantine only after retained process-tree termination.
+   * Never retry an action, save, choose a dialog response or classify design
+   * state here. Keep the original pre-dispatch evidence immutable even if an
+   * artifact write fails after the restart nonce has been consumed.
+   */
+  public async recoverDispatchAuthority(
+    operation: DispatchOperationJournal,
+    runtimeRestartConfirmation: string | undefined,
+    assertRuntime: () => Promise<void>,
+  ): Promise<RuntimeRestartBoundary | undefined> {
+    const operationId = operation.operationId;
+    await this.assertRecoveryOperationIsolated(operationId);
+    if (operationHasOrphanedCallRisk(operation)) {
+      const requiredConfirmation =
+        await this.ensureRuntimeRestartChallenge(operation);
+      if (runtimeRestartConfirmation !== requiredConfirmation) {
+        const error = annotatedError(
+          "Recovery requires the current operation-bound runtimeRestartChallenge as runtimeRestartConfirmation, plus independent retained-process termination and replacement authenticated-session proof. The nonce is a technical replay guard, not a request for a new user message. Follow the authorized normal-close/relaunch workflow; do not infer permission to save, discard or force-quit from the nonce.",
+        );
+        error.requiredRuntimeRestartConfirmation = requiredConfirmation;
+        error.orphanedCallPhase =
+          operation.orphanedCallPhase ?? operation.unknownPhase;
+        throw error;
+      }
+      const priorRuntimeIdentity = operation.runtimeIdentityBeforeOrphan;
+      const priorBridgeSession = operation.bridgeSessionBeforeOrphan;
+      const priorBridgeDispatch = operation.bridgeDispatchBeforeOrphan;
+      const priorExecutionAuthority = operation.executionAuthorityBeforeOrphan;
+      const challengeAttempt = operation.runtimeRestartChallengeAttempt;
+      const orphanedCallPhase =
+        operation.orphanedCallPhase ?? operation.unknownPhase;
+      if (
+        priorRuntimeIdentity === undefined ||
+        priorBridgeSession === undefined ||
+        priorBridgeDispatch === undefined ||
+        priorExecutionAuthority === undefined ||
+        challengeAttempt === undefined ||
+        orphanedCallPhase === undefined
+      ) {
+        throw new Error(
+          "Recovery cannot prove termination of the former EasyEDA execution authority because this operation lacks its complete pre-dispatch runtime, bridge-session, process-tree, phase, or challenge binding.",
+        );
+      }
+      if (
+        priorBridgeDispatch.gatewayInstanceId !==
+          priorBridgeSession.gatewayInstanceId ||
+        priorBridgeDispatch.sessionId !== priorBridgeSession.sessionId ||
+        priorBridgeDispatch.sessionSequence !== priorBridgeSession.sequence
+      ) {
+        throw new Error(
+          "Recovery cannot prove that the orphaned call was dispatched on its recorded authenticated bridge session.",
+        );
+      }
+      const currentBridgeSessionBeforeProbe =
+        this.authenticatedBridgeSession();
+      if (
+        currentBridgeSessionBeforeProbe.gatewayInstanceId !==
+        priorBridgeSession.gatewayInstanceId
+      ) {
+        throw new Error(
+          "The facade bridge gateway restarted and no longer owns authoritative closure history for the pre-dispatch session. Automatic recovery is forbidden.",
+        );
+      }
+      if (
+        currentBridgeSessionBeforeProbe.sessionId ===
+        priorBridgeSession.sessionId
+      ) {
+        throw new Error(
+          "The pre-dispatch authenticated EasyEDA bridge session is still active. Terminate EasyEDA Pro and reconnect before recovery.",
+        );
+      }
+      const currentRuntimeIdentity = await this.runtimeIdentity();
+      const currentBridgeSession = this.authenticatedBridgeSession();
+      if (
+        canonicalJson(currentBridgeSession) !==
+        canonicalJson(currentBridgeSessionBeforeProbe)
+      ) {
+        throw new Error(
+          "The authenticated bridge session changed while recovery identity was being proved.",
+        );
+      }
+      const closedSessionLookup =
+        this.upstream.closedAuthenticatedBridgeSession;
+      if (closedSessionLookup === undefined) {
+        throw new Error(
+          "The authenticated bridge does not expose exact closed-session history.",
+        );
+      }
+      const closedBridgeSession = closedBridgeSessionPayload(
+        closedSessionLookup.call(
+          this.upstream,
+          priorBridgeSession.sessionId,
+        ),
+        priorBridgeSession,
+      );
+      if (
+        currentBridgeSession.authenticatedAtEpochMs <
+        closedBridgeSession.closedAtEpochMs
+      ) {
+        throw new Error(
+          "The replacement bridge session was authenticated before the prior session closed.",
+        );
+      }
+      if (
+        currentRuntimeIdentity.generation === priorRuntimeIdentity.generation ||
+        currentRuntimeIdentity.timeOrigin === priorRuntimeIdentity.timeOrigin
+      ) {
+        throw new Error(
+          "The EasyEDA renderer generation did not change. Terminate or reload the EasyEDA renderer, reconnect the authenticated bridge, and retry with the still-current confirmation.",
+        );
+      }
+      const executionAuthorityValidator = this.executionAuthorityValidator;
+      if (executionAuthorityValidator === undefined) {
+        throw new Error(
+          "Recovery is forbidden without an operation-bound validator that proves the entire prior EasyEDA process tree and execution authority terminated.",
+        );
+      }
+      const terminationBindingSha256 = sha256Json({
+        schema:
+          "easyeda-pro-control.execution-authority-termination-binding.v1",
+        operationId,
+        orphanedCallPhase,
+        challengeAttempt,
+        priorBridgeSession,
+        priorBridgeDispatch,
+        currentBridgeSession,
+        closedBridgeSession,
+        priorRuntimeIdentity,
+        currentRuntimeIdentity,
+        priorExecutionAuthoritySha256:
+          priorExecutionAuthority.authoritySha256,
+      });
+      const executionAuthorityTerminationProof =
+        executionAuthorityTerminationPayload(
+          await executionAuthorityValidator.proveTerminated({
+            bindingSha256: terminationBindingSha256,
+            challengeAttempt,
+            currentBridgeSession,
+            currentRuntimeIdentity,
+            operationId,
+            orphanPhase: orphanedCallPhase,
+            priorBridgeSession,
+            priorExecutionAuthority,
+            priorRuntimeIdentity,
+          }),
+          terminationBindingSha256,
+          priorExecutionAuthority.authoritySha256,
+          priorExecutionAuthority.policyId,
+          priorExecutionAuthority.policySha256,
+        );
+      await assertRuntime();
+      if (canonicalJson(this.authenticatedBridgeSession()) !== canonicalJson(currentBridgeSession) ||
+          canonicalJson(await this.runtimeIdentity()) !== canonicalJson(currentRuntimeIdentity) ||
+          canonicalJson(this.authenticatedBridgeSession()) !== canonicalJson(currentBridgeSession)) {
+        throw new Error("The replacement execution authority changed before recovery could clear quarantine.");
+      }
+      const attestedAt = now();
+      operation.sequence += 1;
+      const boundary = {
+        attestedAt,
+        challengeAttempt,
+        orphanedCallPhase,
+        confirmationSha256: sha256Text(requiredConfirmation),
+        storedRuntimeFingerprintMatchedAfterReconnect: true,
+        priorRuntimeIdentity,
+        currentRuntimeIdentity,
+        rendererGenerationChanged: true,
+        priorBridgeSession,
+        priorBridgeDispatch,
+        currentBridgeSession,
+        closedBridgeSession,
+        executionAuthorityTerminationProof,
+      };
+      operation.runtimeRestartBoundary = boundary;
+      operation.runtimeRestartChallengeConsumedAt = attestedAt;
+      delete operation.runtimeRestartChallenge;
+      delete operation.runtimeRestartChallengeIssuedAt;
+      operation.updatedAt = now();
+      // Persist consumption while the orphan-risk gate is still closed. If the
+      // Process stops before the next journal write, recovery issues a new
+      // Nonce instead of accepting this attestation again.
+      await updateOperation(operation);
+      const artifact = await writePhaseArtifact(
+        operationId,
+        operation.sequence,
+        `runtime-restart-boundary-${Date.now()}`,
+        boundary,
+      );
+      operation.artifacts.push(artifact);
+      operation.orphanedCallPossible = false;
+      operation.orphanedCallPhase = undefined;
+      operation.updatedAt = now();
+      await updateOperation(operation);
+      await executionAuthorityValidator.releaseCapture?.(priorExecutionAuthority);
+      return boundary;
+    }
+    await assertRuntime();
+    return undefined;
   }
 
   public async requireDurableBaselineBeforeDispatch(
@@ -2341,13 +2586,12 @@ export class EasyedaControlEngine {
   }
 
   public async assertBridgeDispatchAllowed(): Promise<true> {
-    const blockingOperations = asOperationJournals(await listOperations())
-      .filter(
-        (operation) =>
-          operation?.state === "journal-unreadable" ||
-          operationHasOrphanedCallRisk(operation),
-      )
-      .map((operation) => operationSummary(operation));
+    const blockingOperations = await scanOperations((value) => {
+      const operation = asOperationJournal(value);
+      return operation.state === "journal-unreadable" ||
+        operationHasOrphanedCallRisk(operation)
+        ? operationSummary(operation) : undefined;
+    });
     if (blockingOperations.length === 0) {
       return true;
     }
@@ -2364,15 +2608,14 @@ export class EasyedaControlEngine {
   public async assertRecoveryOperationIsolated(
     operationId: string,
   ): Promise<true> {
-    const blockingOperations = asOperationJournals(await listOperations())
-      .filter(
-        (operation) =>
-          operation?.operationId !== operationId &&
-          (!isTerminalOperation(operation) ||
-            operation?.state === "journal-unreadable" ||
-            operationHasOrphanedCallRisk(operation)),
-      )
-      .map((operation) => operationSummary(operation));
+    const blockingOperations = await scanOperations((value) => {
+      const operation = asOperationJournal(value);
+      return operation.operationId !== operationId &&
+        (!isTerminalOperation(operation) ||
+          operation.state === "journal-unreadable" ||
+          operationHasOrphanedCallRisk(operation))
+        ? operationSummary(operation) : undefined;
+    });
     if (blockingOperations.length === 0) {
       return true;
     }
@@ -2533,7 +2776,7 @@ export class EasyedaControlEngine {
             this.semanticPersistenceValidator !== undefined &&
             this.executionAuthorityValidator !== undefined
               ? "Connected sacrificial-board validation, strict persisted-delta validation, and operation-bound process-tree termination proof are installed in this facade build."
-              : "Runtime-disabled until connected sacrificial-board validation, strict persisted-delta validation, and operation-bound process-tree termination proof cover the installed modify path.",
+              : "Legacy writer runtime-disabled. Use easyeda_control_design for supported typed operations with separate runtime, source-effect and durable-persistence checks.",
         },
       },
       stableFingerprint,
@@ -2570,22 +2813,26 @@ export class EasyedaControlEngine {
       ![1, 2, 3, 4, 15].includes(documentType)
     ) {
       throw new Error(
-        "EasyEDA context probe did not prove a nonempty project UUID/path, document UUID, active tab, and supported document type.",
+        `EasyEDA context probe did not prove a nonempty project UUID/path, document UUID, active tab, and supported document type. ${JSON.stringify(contextFailureDiagnostics(payload))}`,
       );
     }
+    requireNativeProjectPathProof(payload);
     payload.project.path = normalizeEasyedaProjectPath(projectPath);
     if (documentType === 1) {
       const schematicUuid =
         payload?.schematic?.uuid ?? payload?.schematic?.documentUuid;
-      if (schematicUuid !== documentUuid) {
+      const pageUuid = payload.schematicPage?.uuid ?? payload.schematicPage?.documentUuid;
+      const parentUuid = payload.schematicPage?.["parentSchematicUuid"];
+      if (pageUuid !== documentUuid || typeof schematicUuid !== "string" ||
+        schematicUuid.length === 0 || parentUuid !== schematicUuid) {
         throw new Error(
-          "Schematic context UUID does not agree with the active document UUID.",
+          `Schematic page and container identities do not agree with the active document. ${JSON.stringify(contextFailureDiagnostics(payload))}`,
         );
       }
       if (
-        typeof payload.schematic?.tabId === "string" &&
-        payload.schematic.tabId.length > 0 &&
-        payload.schematic.tabId !== tabId
+        typeof payload.schematicPage?.tabId === "string" &&
+        payload.schematicPage.tabId.length > 0 &&
+        payload.schematicPage.tabId !== tabId
       ) {
         throw new Error(
           "Schematic context tab does not agree with the active document tab.",
@@ -2638,6 +2885,7 @@ export class EasyedaControlEngine {
         "EasyEDA project probe did not prove a UUID and .eprj2 path.",
       );
     }
+    requireNativeProjectPathProof(payload);
     normalizeEasyedaProjectPath(payload.project.path);
     return payload;
   }
@@ -2838,12 +3086,49 @@ export class EasyedaControlEngine {
     }
   }
 
+  /** Drain native project writes already scheduled by a prior operation.
+   * This read-only barrier never saves unsaved editor changes. Callers retain
+   * complete durable proofs and must not infer persistence from its receipt.
+   */
+  public async awaitProjectUploads(
+    expectedContext: ExpectedContext,
+    operation?: DispatchOperationJournal,
+    phase = "project-upload-barrier",
+  ): Promise<ProofPayload> {
+    if (!/^[a-z][a-z0-9-]{0,79}$/u.test(phase)) { throw new Error("Invalid native upload barrier phase."); }
+    if (this.executionAuthorityValidator === undefined || this.upstream.currentAuthenticatedBridgeDispatchBinding?.() === undefined) { throw new Error("Native upload barrier requires the retained authenticated execution scope."); }
+    await this.assertBridgeDispatchAllowed();
+    const context = await this.assertContext(structuredClone(expectedContext));
+    if (operation !== undefined) { await this.assertProjectContext(operation.context.project); }
+    const projectUuid = context.project.uuid ?? context.project.projectUuid;
+    if (typeof projectUuid !== "string") { throw new TypeError("Native upload barrier project identity is missing."); }
+    const installed = await this.upstream.installedEasyedaBundles?.();
+    if (installed === undefined) { throw new Error("Native project-manager implementation identity is unavailable."); }
+    await verifyDeviceAssociationNativeProfile(installed.assetsRoot);
+    const code = wrapWithContextGuard(`return await ${buildProjectUploadBarrierExpression(projectUuid)};`, context);
+    const args = { code, timeoutMs: 60_000, confirmWrite: true };
+    const raw = operation === undefined ? await this.upstream.callTool("easyeda_execute", args, 70_000) :
+      await this.dispatchWithOrphanTracking(operation, phase, "easyeda_execute", args, 70_000);
+    assertUpstreamReplySettled(raw);
+    const receipt = validateProjectUploadBarrierResult(extractToolPayload(raw), projectUuid);
+    await this.assertContext(context);
+    await verifyDeviceAssociationNativeProfile(installed.assetsRoot);
+    if (operation !== undefined) {
+      operation.sequence += 1;
+      operation.artifacts.push(await writePhaseArtifact(operation.operationId, operation.sequence, phase, { receipt, context, sourceSha256: sha256Text(code) }));
+      operation.updatedAt = now();
+      await updateOperation(operation);
+    }
+    return receipt;
+  }
+
   public async exactRead(
     request: unknown,
     expectedContext: ExpectedContext,
     options: ContextOptions = {},
   ): Promise<ProofPayload> {
     const parsed = validateExactReadRequest(request, expectedContext);
+    if (parsed.kind === "schematic-native") { return this.schematicNativeRead(expectedContext); }
     const source = buildExactReadCode(parsed);
     const initialContext = await this.assertContext(expectedContext, options);
     const boundContext = structuredClone(expectedContext);
@@ -2851,15 +3136,21 @@ export class EasyedaControlEngine {
     const guardedSource = wrapWithContextGuard(source, boundContext);
     const executeOnce = async (): Promise<ProofPayload> => {
       await this.assertContext(boundContext);
+      const nativeBundles = parsed.kind === "schematic-topology"
+        ? await this.upstream.installedEasyedaBundles?.() : undefined;
+      if (parsed.kind === "schematic-topology") {
+        if (nativeBundles === undefined) { throw new Error("Installed schematic asset identity is unavailable."); }
+        await verifySchematicNativeProfile(nativeBundles.assetsRoot);
+      }
       const raw = await this.upstream.callTool(
         "easyeda_execute",
         { code: guardedSource, timeoutMs: 60_000, confirmWrite: true },
         70_000,
       );
-      const payload = proofPayload(
-        validateExactReadPayload(extractToolPayload(raw), parsed),
-      );
+      const decoded = decodeExactReadEnvelope(extractToolPayload(raw));
+      const payload = proofPayload(validateExactReadPayload(decoded, parsed));
       await this.assertContext(boundContext);
+      if (nativeBundles !== undefined) { await verifySchematicNativeProfile(nativeBundles.assetsRoot); }
       return payload;
     };
     const first = await executeOnce();
@@ -2872,6 +3163,11 @@ export class EasyedaControlEngine {
       );
       error.mismatches = [
         { pointer: "/", expected: firstHash, actual: secondHash },
+        ...(parsed.kind.endsWith("-source") ? [{
+          pointer: "/source-diagnostics",
+          expected: first,
+          actual: second,
+        }] : []),
       ];
       throw error;
     }
@@ -2888,6 +3184,34 @@ export class EasyedaControlEngine {
         },
       },
     };
+  }
+
+  public async schematicNativeRead(expectedContext: ExpectedContext): Promise<ProofPayload> {
+    if (expectedContext.document.documentType !== 1) { throw new Error("Native schematic reads require the exact active schematic page."); }
+    const bundles = await this.upstream.installedEasyedaBundles?.();
+    if (bundles === undefined) { throw new Error("Installed schematic asset identity is unavailable."); }
+    const profile = await verifySchematicNativeProfile(bundles.assetsRoot);
+    const context = await this.assertContext(expectedContext);
+    const expression = buildSchematicNativeReadExpression({ documentUuid: context.document.uuid ?? context.document.documentUuid, tabId: context.document.tabId });
+    const source = wrapWithContextGuard(buildSchematicNativeTransportCode(expression), context);
+    const read = async (): Promise<SchematicNativeSnapshot> => {
+      await this.assertContext(context);
+      const raw = await this.upstream.callTool("easyeda_execute", { code: source, timeoutMs: 60_000, confirmWrite: true }, 70_000);
+      const payload = await decodeSchematicNativeEnvelope(extractToolPayload(raw));
+      await this.assertContext(context);
+      return payload;
+    };
+    const first = await read();
+    const second = await read();
+    const snapshotSha256 = sha256Json(second);
+    if (snapshotSha256 !== sha256Json(first)) {
+      const error = annotatedError("Complete native schematic snapshot changed between reads.");
+      error.mismatches = { source: firstJsonDifference(first.source, second.source), components: firstJsonDifference(first.components, second.components), document: firstJsonDifference(first.document, second.document) };
+      throw error;
+    }
+    await verifySchematicNativeProfile(bundles.assetsRoot);
+    return { kind: "schematic-native", ok: true, documentType: 1, nativeProfile: profile, snapshot: second,
+      read_consistency: { stable: true, attempts: 2, snapshotSha256 } };
   }
 
   public async invokeSpec(
@@ -3204,14 +3528,13 @@ export class EasyedaControlEngine {
         "A mutation plan must first close/reopen the target without saving to bind its live baseline to the project database. Set confirmDiscardAnyUnsavedState=true only after authorizing discard of any unsaved target-document state.",
       );
     }
-    const operations = asOperationJournals(await listOperations());
-    const unfinished = operations.filter(
-      (operation) => !isTerminalOperation(operation),
-    );
+    const unfinished = await scanOperations((value) => {
+      const operation = asOperationJournal(value);
+      return isTerminalOperation(operation) ? undefined : operation.operationId;
+    });
     if (unfinished.length > 0) {
       throw new Error(
         `An incomplete EasyEDA operation already exists: ${unfinished
-          .map((operation) => operation.operationId)
           .join(", ")}. Recover it before planning another mutation.`,
       );
     }
@@ -4096,6 +4419,9 @@ export class EasyedaControlEngine {
         throw error;
       }
       try {
+        const uploadBarrierBundles = await this.upstream.installedEasyedaBundles?.();
+        if (uploadBarrierBundles === undefined) { throw new Error("Native project-manager implementation identity is unavailable."); }
+        await verifyDeviceAssociationNativeProfile(uploadBarrierBundles.assetsRoot);
         const source = buildSaveReopenCode(
           operation.plan.expectedContext,
           exactSaveGuards,
@@ -4123,6 +4449,7 @@ export class EasyedaControlEngine {
           { code: guarded, timeoutMs: 60_000, confirmWrite: true },
           70_000,
         );
+        await verifyDeviceAssociationNativeProfile(uploadBarrierBundles.assetsRoot);
         const payload = extractToolPayload(raw);
         assertSubset(
           payload,
@@ -4506,9 +4833,10 @@ export class EasyedaControlEngine {
     options: RecoverOptions = {},
   ): Promise<OperationSummary | OperationSummary[]> {
     if (operationId === undefined || operationId.length === 0) {
-      return asOperationJournals(await listOperations())
-        .filter((operation) => !isTerminalOperation(operation))
-        .map((operation) => operationSummary(operation));
+      return scanOperations((value) => {
+        const operation = asOperationJournal(value);
+        return isTerminalOperation(operation) ? undefined : operationSummary(operation);
+      });
     }
     await this.assertRecoveryOperationIsolated(operationId);
     const operation = asOperationJournal(await loadOperation(operationId));
@@ -4594,190 +4922,13 @@ export class EasyedaControlEngine {
       );
     }
 
-    if (operationHasOrphanedCallRisk(operation)) {
-      const requiredConfirmation =
-        await this.ensureRuntimeRestartChallenge(operation);
-      if (options.runtimeRestartConfirmation !== requiredConfirmation) {
-        const error = annotatedError(
-          "Recovery is blocked because a timed-out or disconnected EasyEDA call may still be running. A person must deliberately terminate EasyEDA Pro, restart it, reconnect the bridge, and provide the current nonce-bound runtimeRestartChallenge from the incomplete-operation summary as runtimeRestartConfirmation. If EasyEDA prompts about unsaved changes, never choose Save; discard or force-quit only with explicit authority and a still-valid clean-baseline/no-concurrent-edit assumption, otherwise cancel and preserve the session for manual review.",
-        );
-        error.requiredRuntimeRestartConfirmation = requiredConfirmation;
-        error.orphanedCallPhase =
-          operation.orphanedCallPhase ?? operation.unknownPhase;
-        throw error;
-      }
-      const priorRuntimeIdentity = operation.runtimeIdentityBeforeOrphan;
-      const priorBridgeSession = operation.bridgeSessionBeforeOrphan;
-      const priorBridgeDispatch = operation.bridgeDispatchBeforeOrphan;
-      const priorExecutionAuthority = operation.executionAuthorityBeforeOrphan;
-      const challengeAttempt = operation.runtimeRestartChallengeAttempt;
-      const orphanedCallPhase =
-        operation.orphanedCallPhase ?? operation.unknownPhase;
-      if (
-        priorRuntimeIdentity === undefined ||
-        priorBridgeSession === undefined ||
-        priorBridgeDispatch === undefined ||
-        priorExecutionAuthority === undefined ||
-        challengeAttempt === undefined ||
-        orphanedCallPhase === undefined
-      ) {
-        throw new Error(
-          "Recovery cannot prove termination of the former EasyEDA execution authority because this operation lacks its complete pre-dispatch runtime, bridge-session, process-tree, phase, or challenge binding.",
-        );
-      }
-      if (
-        priorBridgeDispatch.gatewayInstanceId !==
-          priorBridgeSession.gatewayInstanceId ||
-        priorBridgeDispatch.sessionId !== priorBridgeSession.sessionId ||
-        priorBridgeDispatch.sessionSequence !== priorBridgeSession.sequence
-      ) {
-        throw new Error(
-          "Recovery cannot prove that the orphaned call was dispatched on its recorded authenticated bridge session.",
-        );
-      }
-      const currentBridgeSessionBeforeProbe =
-        this.authenticatedBridgeSession();
-      if (
-        currentBridgeSessionBeforeProbe.gatewayInstanceId !==
-        priorBridgeSession.gatewayInstanceId
-      ) {
-        throw new Error(
-          "The facade bridge gateway restarted and no longer owns authoritative closure history for the pre-dispatch session. Automatic recovery is forbidden.",
-        );
-      }
-      if (
-        currentBridgeSessionBeforeProbe.sessionId ===
-        priorBridgeSession.sessionId
-      ) {
-        throw new Error(
-          "The pre-dispatch authenticated EasyEDA bridge session is still active. Terminate EasyEDA Pro and reconnect before recovery.",
-        );
-      }
-      const currentRuntimeIdentity = await this.runtimeIdentity();
-      const currentBridgeSession = this.authenticatedBridgeSession();
-      if (
-        canonicalJson(currentBridgeSession) !==
-        canonicalJson(currentBridgeSessionBeforeProbe)
-      ) {
-        throw new Error(
-          "The authenticated bridge session changed while recovery identity was being proved.",
-        );
-      }
-      const closedSessionLookup =
-        this.upstream.closedAuthenticatedBridgeSession;
-      if (closedSessionLookup === undefined) {
-        throw new Error(
-          "The authenticated bridge does not expose exact closed-session history.",
-        );
-      }
-      const closedBridgeSession = closedBridgeSessionPayload(
-        closedSessionLookup.call(
-          this.upstream,
-          priorBridgeSession.sessionId,
-        ),
-        priorBridgeSession,
-      );
-      if (
-        currentBridgeSession.authenticatedAtEpochMs <
-        closedBridgeSession.closedAtEpochMs
-      ) {
-        throw new Error(
-          "The replacement bridge session was authenticated before the prior session closed.",
-        );
-      }
-      if (
-        currentRuntimeIdentity.generation === priorRuntimeIdentity.generation ||
-        currentRuntimeIdentity.timeOrigin === priorRuntimeIdentity.timeOrigin
-      ) {
-        throw new Error(
-          "The EasyEDA renderer generation did not change. Terminate or reload the EasyEDA renderer, reconnect the authenticated bridge, and retry with the still-current confirmation.",
-        );
-      }
-      const executionAuthorityValidator = this.executionAuthorityValidator;
-      if (executionAuthorityValidator === undefined) {
-        throw new Error(
-          "Recovery is forbidden without an operation-bound validator that proves the entire prior EasyEDA process tree and execution authority terminated.",
-        );
-      }
-      const terminationBindingSha256 = sha256Json({
-        schema:
-          "easyeda-pro-control.execution-authority-termination-binding.v1",
-        operationId,
-        orphanedCallPhase,
-        challengeAttempt,
-        priorBridgeSession,
-        priorBridgeDispatch,
-        currentBridgeSession,
-        closedBridgeSession,
-        priorRuntimeIdentity,
-        currentRuntimeIdentity,
-        priorExecutionAuthoritySha256:
-          priorExecutionAuthority.authoritySha256,
-      });
-      const executionAuthorityTerminationProof =
-        executionAuthorityTerminationPayload(
-          await executionAuthorityValidator.proveTerminated({
-            bindingSha256: terminationBindingSha256,
-            challengeAttempt,
-            currentBridgeSession,
-            currentRuntimeIdentity,
-            operationId,
-            orphanPhase: orphanedCallPhase,
-            priorBridgeSession,
-            priorExecutionAuthority,
-            priorRuntimeIdentity,
-          }),
-          terminationBindingSha256,
-          priorExecutionAuthority.authoritySha256,
-          priorExecutionAuthority.policyId,
-          priorExecutionAuthority.policySha256,
-        );
-      await this.assertStoredRuntime(
-        operation,
-        "recovery-runtime-restart-boundary",
-      );
-      const attestedAt = now();
-      operation.sequence += 1;
-      const boundary = {
-        attestedAt,
-        challengeAttempt,
-        orphanedCallPhase,
-        confirmationSha256: sha256Text(requiredConfirmation),
-        storedRuntimeFingerprintMatchedAfterReconnect: true,
-        priorRuntimeIdentity,
-        currentRuntimeIdentity,
-        rendererGenerationChanged: true,
-        priorBridgeSession,
-        priorBridgeDispatch,
-        currentBridgeSession,
-        closedBridgeSession,
-        executionAuthorityTerminationProof,
-      };
-      operation.runtimeRestartBoundary = boundary;
-      operation.runtimeIdentityBeforeOrphan = currentRuntimeIdentity;
-      operation.bridgeSessionBeforeOrphan = currentBridgeSession;
+    const restartBoundary = await this.recoverDispatchAuthority(
+      operation, options.runtimeRestartConfirmation,
+      () => this.assertStoredRuntime(operation, "recovery-runtime-restart-boundary"),
+    );
+    if (restartBoundary !== undefined) {
       operation.unsavedStateDiscardedByRestart = true;
-      operation.runtimeRestartChallengeConsumedAt = attestedAt;
-      delete operation.runtimeRestartChallenge;
-      delete operation.runtimeRestartChallengeIssuedAt;
-      operation.updatedAt = now();
-      // Persist consumption while the orphan-risk gate is still closed. If the
-      // Process stops before the next journal write, recovery issues a new
-      // Nonce instead of accepting this attestation again.
       await updateOperation(operation);
-      const artifact = await writePhaseArtifact(
-        operationId,
-        operation.sequence,
-        `runtime-restart-boundary-${Date.now()}`,
-        boundary,
-      );
-      operation.artifacts.push(artifact);
-      operation.orphanedCallPossible = false;
-      operation.orphanedCallPhase = undefined;
-      operation.updatedAt = now();
-      await updateOperation(operation);
-    } else {
-      await this.assertStoredRuntime(operation, "recovery");
     }
     if (
       resolution === "reconciled-applied-unsaved" &&

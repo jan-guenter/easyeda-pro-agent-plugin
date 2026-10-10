@@ -7,12 +7,12 @@ inventory at
 `plugins/easyeda-pro-control/licenses/bundled-runtime.json` is checked
 against every esbuild input and its installed license during each build.
 
-- [`@modelcontextprotocol/sdk` 1.29.0](https://github.com/modelcontextprotocol/typescript-sdk), [MIT License](plugins/easyeda-pro-control/licenses/model-context-protocol-sdk-MIT.txt).
+- [`@modelcontextprotocol/sdk` 1.32.1](https://github.com/modelcontextprotocol/typescript-sdk), [MIT License](plugins/easyeda-pro-control/licenses/model-context-protocol-sdk-MIT.txt).
 - [`acorn` 8.17.0](https://github.com/acornjs/acorn), [MIT License](plugins/easyeda-pro-control/licenses/acorn-MIT.txt).
 - [`ajv` 8.20.0](https://github.com/ajv-validator/ajv), [MIT License](plugins/easyeda-pro-control/licenses/ajv-MIT.txt).
 - [`ajv-formats` 3.0.1](https://github.com/ajv-validator/ajv-formats), [MIT License](plugins/easyeda-pro-control/licenses/ajv-formats-MIT.txt).
 - [`fast-deep-equal` 3.1.3](https://github.com/epoberezkin/fast-deep-equal), [MIT License](plugins/easyeda-pro-control/licenses/fast-deep-equal-MIT.txt).
-- [`fast-uri` 3.1.6](https://github.com/fastify/fast-uri), [BSD 3-Clause License](plugins/easyeda-pro-control/licenses/fast-uri-BSD-3-Clause.txt).
+- [`fast-uri` 3.1.8](https://github.com/fastify/fast-uri), [BSD 3-Clause License](plugins/easyeda-pro-control/licenses/fast-uri-BSD-3-Clause.txt).
 - [`json-schema-traverse` 1.0.0](https://github.com/epoberezkin/json-schema-traverse), [MIT License](plugins/easyeda-pro-control/licenses/json-schema-traverse-MIT.txt).
 - [`ws` 8.21.3](https://github.com/websockets/ws), [MIT License](plugins/easyeda-pro-control/licenses/ws-MIT.txt).
 - [`zod` 4.4.3](https://github.com/colinhacks/zod), [MIT License](plugins/easyeda-pro-control/licenses/zod-MIT.txt).
@@ -24,9 +24,15 @@ The development and CI toolchain uses:
 - [`TypeScript` 7.0.2](https://github.com/microsoft/TypeScript), copyright Microsoft Corporation, [Apache License 2.0](plugins/easyeda-pro-control/licenses/typescript-Apache-2.0.txt) and [NOTICE](plugins/easyeda-pro-control/licenses/typescript-NOTICE.txt).
 - [`@types/node` 24.13.3](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node), copyright Microsoft Corporation, [MIT License](plugins/easyeda-pro-control/licenses/types-node-MIT.txt).
 - [`@types/ws` 8.18.1](https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/ws), copyright Microsoft Corporation, [MIT License](plugins/easyeda-pro-control/licenses/types-ws-MIT.txt).
-- [`Oxlint` 1.80.0](https://github.com/oxc-project/oxc), copyright VoidZero Inc., Boshen, and contributors, [MIT License](plugins/easyeda-pro-control/licenses/oxlint-MIT.txt).
-- [`oxlint-tsgolint` 7.0.2001](https://github.com/oxc-project/tsgolint), copyright VoidZero Inc., typescript-eslint, and contributors, [MIT License](plugins/easyeda-pro-control/licenses/oxlint-tsgolint-MIT.txt).
-- [`Vitest` 4.1.9](https://github.com/vitest-dev/vitest), copyright VoidZero Inc. and Vitest contributors, [MIT License](plugins/easyeda-pro-control/licenses/vitest-MIT.txt); used to test the authenticated bridge source.
+- [`Oxlint` 1.87.0](https://github.com/oxc-project/oxc), copyright VoidZero Inc., Boshen, and contributors, [MIT License](plugins/easyeda-pro-control/licenses/oxlint-MIT.txt).
+- [`oxlint-tsgolint` 7.0.2003](https://github.com/oxc-project/tsgolint), copyright VoidZero Inc., typescript-eslint, and contributors, [MIT License](plugins/easyeda-pro-control/licenses/oxlint-tsgolint-MIT.txt).
+- [`Vitest` 4.1.11](https://github.com/vitest-dev/vitest), copyright VoidZero Inc. and Vitest contributors, [MIT License](plugins/easyeda-pro-control/licenses/vitest-MIT.txt); used to test the authenticated bridge source.
+
+The offline API catalog includes extracted metadata from the official
+`@jlceda/pro-api-types` declarations. The [Apache-2.0 license](plugins/easyeda-pro-control/third-party/pro-api-types/LICENSE)
+and [extraction notice](plugins/easyeda-pro-control/third-party/pro-api-types/NOTICE.md)
+accompany its hash-pinned reviewed and latest snapshots. These declarations
+are reference material, not bundled runtime code or execution admission.
 
 The repository vendors a reviewed derivative of the EasyEDA bridge-extension
 source from

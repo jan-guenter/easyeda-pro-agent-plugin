@@ -33,7 +33,7 @@ interface CapturedModule {
   readonly format: SupportedModuleFormat;
   readonly path: string;
   readonly sourceSha256: string;
-  readonly transform: "easyeda-pro-control.disable-pino-worker.v1" | "none";
+  readonly transform: "easyeda-pro-control.disable-pino-worker.v2" | "none";
   readonly url: string;
 }
 
@@ -93,7 +93,8 @@ const PINO_WORKER_OPTION = `        ...(config.NODE_ENV !== 'production'
             : {}),
 `;
 const PINO_WORKER_TRANSFORM =
-  "easyeda-pro-control.disable-pino-worker.v1";
+  "easyeda-pro-control.disable-pino-worker.v2";
+const PINO_LOGGER_CONSTRUCTION = "pino(pinoOpts)";
 const SERIALIZED_GRAPH_SCHEMA =
   "easyeda-pro-control.serialized-module-graph.v1";
 export const MAXIMUM_SERIALIZED_GRAPH_BYTES = 16 * 1024 * 1024;
@@ -505,7 +506,18 @@ function executionSourceFor(
         "The reviewed upstream logger no longer has its exact worker-transport option; refusing an unreviewed execution transform.",
       );
     }
-    bytes = Buffer.from(text.replace(PINO_WORKER_OPTION, ""), "utf8");
+    const construction = text.indexOf(PINO_LOGGER_CONSTRUCTION);
+    if (construction === -1 || construction !== text.lastIndexOf(PINO_LOGGER_CONSTRUCTION)) {
+      throw new Error(
+        "The reviewed upstream logger no longer has its exact logger construction; refusing an unreviewed execution transform.",
+      );
+    }
+    // MCP owns stdout. Removing the worker alone would restore Pino's default
+    // Stdout destination, turning any warning into a fatal JSON-RPC frame.
+    bytes = Buffer.from(text.replace(PINO_WORKER_OPTION, "").replace(
+      PINO_LOGGER_CONSTRUCTION,
+      "pino(pinoOpts, pino.destination({ dest: 2, sync: true }))",
+    ), "utf8");
     transform = PINO_WORKER_TRANSFORM;
   }
   return {

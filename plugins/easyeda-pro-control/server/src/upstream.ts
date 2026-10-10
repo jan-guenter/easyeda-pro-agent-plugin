@@ -19,6 +19,7 @@ import {
 import { loadAuthenticatedBridgeBuildIdentity } from "./authenticated-bridge-build-identity.ts";
 import type {
   AuthenticatedBridgeSessionLifecycle,
+  BridgeConnectionDiagnostics,
   BridgeDispatchAbortOutcome,
   BridgeDispatchAbortResult,
   BridgeDispatchLeaseBinding,
@@ -45,12 +46,23 @@ import { encodeBridgeBootstrapSecret } from "./upstream-bootstrap.ts";
 import { serializeCapturedUpstreamModuleGraph } from "./upstream-module-execution.ts";
 import { stagePrivateRuntimePayload } from "./private-runtime-payload.ts";
 import { SandboxedStdioClientTransport } from "./sandboxed-stdio-client-transport.ts";
-import type { SandboxStartupDiagnostics } from "./sandboxed-stdio-client-transport.ts";
+import type {
+  SandboxRuntimeDiagnostics,
+  SandboxStartupDiagnostics,
+} from "./sandboxed-stdio-client-transport.ts";
 import { stageReviewedSupervisorExecution } from "./supervisor-execution.ts";
 import { createReviewedUpstreamSeccompProgram } from "./upstream-seccomp.ts";
 import type { UpstreamLauncherFingerprint } from "./core.ts";
+import { assertUpstreamReplySettled } from "./core.ts";
 
 export type UpstreamToolResult = CallToolResult;
+
+export interface UpstreamProcessDiagnostics {
+  readonly schema: "easyeda-pro-control.upstream-process-diagnostics.v1";
+  readonly sandbox: SandboxRuntimeDiagnostics;
+  readonly stderrBytes: number;
+  readonly stderrSha256: string;
+}
 
 interface AuthenticatedBridgeDispatchScopeState {
   ambiguousCall: boolean;
@@ -262,6 +274,7 @@ export class UpstreamEasyedaClient {
   private tools: Tool[] | null = null;
   private stderrBytes = 0;
   private stderrDigest = createHash("sha256");
+  private retainedProcessDiagnostics: UpstreamProcessDiagnostics | undefined;
   private startupLauncherAdmission: LauncherAdmission | null = null;
   private bridgeGateway: AuthenticatedBridgeGateway | null = null;
   private fatalStartupCleanupFailure: AggregateError | null = null;
@@ -667,6 +680,7 @@ export class UpstreamEasyedaClient {
         CallToolResultSchema,
         { timeout: timeoutMs, maxTotalTimeout: timeoutMs },
       );
+      assertUpstreamReplySettled(result);
       knownReturn = true;
       if (disconnectedBoundarySha256 !== undefined) {
         assertDisconnectedLifecycleBoundary(gateway, disconnectedBoundarySha256);
@@ -933,6 +947,7 @@ export class UpstreamEasyedaClient {
       try {
         await transport.close();
         if (this.transport === transport) {
+          this.retainedProcessDiagnostics = this.processDiagnostics();
           this.transport = null;
         }
       } catch (error) {
@@ -969,6 +984,22 @@ export class UpstreamEasyedaClient {
     | AuthenticatedBridgeSessionLifecycle
     | undefined {
     return this.bridgeGateway?.lifecycle();
+  }
+
+  public bridgeConnectionDiagnostics(): BridgeConnectionDiagnostics | undefined {
+    return this.bridgeGateway?.connectionDiagnostics();
+  }
+
+  public processDiagnostics(): UpstreamProcessDiagnostics | undefined {
+    if (this.transport === null) {
+      return this.retainedProcessDiagnostics;
+    }
+    return Object.freeze({
+      schema: "easyeda-pro-control.upstream-process-diagnostics.v1",
+      sandbox: this.transport.runtimeDiagnostics(),
+      stderrBytes: this.stderrBytes,
+      stderrSha256: this.stderrDigest.copy().digest("hex"),
+    });
   }
 
   public closedAuthenticatedBridgeSession(

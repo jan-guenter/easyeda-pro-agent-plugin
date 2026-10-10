@@ -1,0 +1,4 @@
+interface:
+  display_name: "EasyEDA manufacturing release"
+  short_description: "Consistent fabrication and assembly file releases"
+  default_prompt: "Use $easyeda-manufacturing-release to prepare and verify a release package without placing an order."

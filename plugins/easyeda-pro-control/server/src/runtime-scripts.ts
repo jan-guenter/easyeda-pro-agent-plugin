@@ -1,4 +1,7 @@
 import { buildExactReadExpression } from "./exact-readers.ts";
+import { buildProjectUploadBarrierExpression } from "./project-upload-barrier.ts";
+import { buildNativeDocumentCloseFunction, buildNativeDocumentOpenFunction } from "./native-document-lifecycle.ts";
+import type { NativeDocumentLifecycleScope } from "./native-document-lifecycle.ts";
 
 export interface ExpectedContext {
   project?:
@@ -13,6 +16,7 @@ export interface ExpectedContext {
         documentUuid?: string | undefined;
         documentType?: number | undefined;
         tabId?: string | undefined;
+        parentLibraryUuid?: string | undefined;
       }
     | undefined;
 }
@@ -72,11 +76,70 @@ function jsString(value: unknown): string {
   return encoded;
 }
 
+const NATIVE_PROJECT_PATH_RESOLVER = `
+  const resolveNativeProjectPath = async (project, diagnostics) => {
+    if (typeof project?.path === "string" && project.path.length > 0) return undefined;
+    const uuid = project?.uuid ?? project?.projectUuid;
+    if (typeof uuid !== "string" || !/^[a-f0-9]{64}$/.test(uuid)) {
+      diagnostics.projectPath = "registry-identity-unavailable";
+      return undefined;
+    }
+    const api = eda.sys_ClientUrl;
+    if (typeof api?.request !== "function") {
+      diagnostics.projectPath = "unavailable";
+      return undefined;
+    }
+    try {
+      const url = "https://client/api/client/projectPaths";
+      const response = await api.request(url, "GET");
+      if (response?.ok !== true || response.url !== url || !response.body?.getReader) {
+        diagnostics.projectPath = "registry-response-rejected";
+        return undefined;
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8", { fatal: true });
+      let bytes = 0;
+      let text = "";
+      try {
+        for (;;) {
+          const part = await reader.read();
+          if (part.done) break;
+          bytes += part.value.byteLength;
+          if (bytes > 2097152) {
+            diagnostics.projectPath = "registry-response-too-large";
+            await reader.cancel();
+            return undefined;
+          }
+          text += decoder.decode(part.value, { stream: true });
+        }
+        text += decoder.decode();
+      } finally { reader.releaseLock(); }
+      const envelope = JSON.parse(text);
+      const entries = envelope?.success === true ? envelope.result : undefined;
+      const entry = entries && typeof entries === "object" && !Array.isArray(entries) &&
+        Object.prototype.hasOwnProperty.call(entries, uuid) ? entries[uuid] : undefined;
+      if (!entry || typeof entry.path !== "string" || entry.path.length === 0 || entry.path.length > 4096) {
+        diagnostics.projectPath = "registry-path-unavailable";
+        return undefined;
+      }
+      diagnostics.projectPath = "registry-path-observed";
+      return entry.path;
+    } catch (_) {
+      diagnostics.projectPath = "threw";
+      return undefined;
+    }
+  };
+`;
+
 export const CONTEXT_PROBE_CODE = `
 return await (async () => {
+  const diagnostics = {};
+  ${NATIVE_PROJECT_PATH_RESOLVER}
   const scalar = (value) => {
     if (value === null || value === undefined) return undefined;
-    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
+    if (typeof value === "string" && value.length <= 4096) return value;
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "boolean") return value;
     return undefined;
   };
   const pick = (source, keys) => {
@@ -88,35 +151,122 @@ return await (async () => {
     }
     return out;
   };
-  const call = async (paths) => {
+  const call = async (label, paths) => {
+    diagnostics[label] = "unavailable";
     for (const path of paths) {
       const parts = path.split(".");
       let owner = eda;
       for (let index = 0; index < parts.length - 1; index += 1) owner = owner?.[parts[index]];
       const fn = owner?.[parts.at(-1)];
       if (typeof fn === "function") {
-        try { return await fn.call(owner); } catch (_) {}
+        try {
+          const result = await fn.call(owner);
+          diagnostics[label] = result === undefined ? "undefined" :
+            result === null ? "null" :
+            typeof result === "object" && !Array.isArray(result) ? "object" : "non-object";
+          return result;
+        } catch (_) { diagnostics[label] = "threw"; }
       }
     }
     return undefined;
   };
-  const project = await call(["dmt_Project.getCurrentProjectInfo"]);
-  const document = await call(["dmt_SelectControl.getCurrentDocumentInfo"]);
-  const pcb = await call(["dmt_Pcb.getCurrentPcbInfo"]);
-  const schematic = await call(["dmt_Schematic.getCurrentSchematicInfo"]);
+  const project = await call("project", ["dmt_Project.getCurrentProjectInfo"]);
+  const document = await call("document", ["dmt_SelectControl.getCurrentDocumentInfo"]);
+  const pcb = await call("pcb", ["dmt_Pcb.getCurrentPcbInfo"]);
+  const schematic = await call("schematic", ["dmt_Schematic.getCurrentSchematicInfo"]);
+  const schematicPage = await call("schematicPage", ["dmt_Schematic.getCurrentSchematicPageInfo"]);
   const rawDocumentType = scalar(document?.documentType) ?? scalar(document?.docType);
-  const documentType = Number.isInteger(Number(rawDocumentType)) ? Number(rawDocumentType) : undefined;
+  const documentType = typeof rawDocumentType === "number" && Number.isInteger(rawDocumentType) ? rawDocumentType : undefined;
+  const nativePath = await resolveNativeProjectPath(project, diagnostics);
+  let contextStable;
+  if (nativePath !== undefined) {
+    const projectUuid = project?.uuid ?? project?.projectUuid;
+    const documentUuid = document?.uuid ?? document?.documentUuid;
+    let libraryOwnerProven = false;
+    if ([2,4].includes(documentType) && document?.tabId === documentUuid + '@' + projectUuid && typeof document?.parentLibraryUuid === 'string') {
+      const library = documentType === 4 ? eda.lib_Footprint : eda.lib_Symbol;
+      try {
+        const metadata = typeof library?.get === 'function' ? await library.get(documentUuid,projectUuid) : undefined;
+        libraryOwnerProven = metadata?.uuid === documentUuid && metadata?.libraryUuid === document.parentLibraryUuid && metadata?.libraryType === String(documentType);
+      } catch (_) { libraryOwnerProven = false; }
+    }
+    const projectAfter = await call("projectAfter", ["dmt_Project.getCurrentProjectInfo"]);
+    const documentAfter = await call("documentAfter", ["dmt_SelectControl.getCurrentDocumentInfo"]);
+    contextStable = (projectAfter?.uuid ?? projectAfter?.projectUuid) === projectUuid &&
+      ([2,4].includes(documentType) ? libraryOwnerProven && documentAfter?.parentLibraryUuid === document?.parentLibraryUuid :
+        document?.parentProjectUuid === projectUuid && documentAfter?.parentProjectUuid === projectUuid) &&
+      (documentAfter?.uuid ?? documentAfter?.documentUuid) === (document?.uuid ?? document?.documentUuid) &&
+      documentAfter?.tabId === document?.tabId &&
+      (documentAfter?.documentType ?? documentAfter?.docType) === rawDocumentType;
+  }
   return {
     ok: true,
-    project: pick(project, ["uuid", "projectUuid", "name", "title", "path"]),
-    document: { ...pick(document, ["uuid", "documentUuid", "title", "tabId", "id"]), documentType },
+    project: { ...pick(project, ["uuid", "projectUuid", "name", "title", "path"]),
+      ...(nativePath !== undefined ? { path: nativePath } : {}) },
+    document: { ...pick(document, ["uuid", "documentUuid", "title", "tabId", "id", "parentProjectUuid", "parentLibraryUuid"]), documentType },
     pcb: pick(pcb, ["uuid", "documentUuid", "title", "tabId"]),
     schematic: pick(schematic, ["uuid", "documentUuid", "title", "tabId"]),
+    schematicPage: pick(schematicPage, ["uuid", "documentUuid", "name", "tabId", "parentSchematicUuid"]),
+    probeDiagnostics: diagnostics,
+    ...(nativePath !== undefined ? { projectPathSource: "native-project-registry", contextStable } : {}),
   };
 })();`;
 
+function diagnosticRecord(value: unknown): Record<string, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return Object.fromEntries(Object.entries(value));
+}
+
+/** Bounded context-only evidence. Never serializes runtime objects or errors. */
+export function contextFailureDiagnostics(payload: unknown): Record<string, unknown> {
+  const source = diagnosticRecord(payload);
+  const result: Record<string, unknown> = {};
+  const fields: Record<string, readonly string[]> = {
+    project: ["uuid", "projectUuid", "path"],
+    document: ["uuid", "documentUuid", "documentType", "tabId", "parentProjectUuid", "parentLibraryUuid"],
+    pcb: ["uuid", "documentUuid", "tabId"],
+    schematic: ["uuid", "documentUuid", "tabId"],
+    schematicPage: ["uuid", "documentUuid", "parentSchematicUuid", "tabId"],
+  };
+  const statuses = diagnosticRecord(source["probeDiagnostics"]);
+  const allowedStatuses = new Set([
+    "unavailable", "undefined", "null", "object", "non-object", "threw",
+    "registry-identity-unavailable", "registry-response-rejected", "registry-response-too-large",
+    "registry-path-unavailable", "registry-path-observed",
+  ]);
+  const pathStatus = statuses["projectPath"];
+  result["projectPathCall"] = typeof pathStatus === "string" && allowedStatuses.has(pathStatus)
+    ? pathStatus : "unreported";
+  result["contextStable"] = source["contextStable"] === true;
+  for (const [label, keys] of Object.entries(fields)) {
+    const item = diagnosticRecord(source[label]);
+    const status = statuses[label];
+    const projected: Record<string, unknown> = {
+      call: typeof status === "string" && allowedStatuses.has(status) ? status : "unreported",
+    };
+    for (const key of keys) {
+      const value = item[key];
+      if (typeof value === "string") {
+        projected[key] = value.length <= 512
+          ? { type: "string", value }
+          : { type: "string", oversized: true };
+      } else if (typeof value === "number" && Number.isFinite(value)) {
+        projected[key] = { type: "number", value };
+      } else {
+        projected[key] = { type: value === null ? "null" : typeof value };
+      }
+    }
+    result[label] = projected;
+  }
+  return result;
+}
+
 export const PROJECT_CONTEXT_PROBE_CODE = `
 return await (async () => {
+  const diagnostics = {};
+  ${NATIVE_PROJECT_PATH_RESOLVER}
   const api = eda.dmt_Project;
   if (!api?.getCurrentProjectInfo) throw new Error("project context API is unavailable");
   const value = await api.getCurrentProjectInfo();
@@ -127,7 +277,15 @@ return await (async () => {
     const item = scalar(value?.[key]);
     if (item !== undefined) project[key] = item;
   }
-  return { ok: true, project };
+  const nativePath = await resolveNativeProjectPath(value, diagnostics);
+  let contextStable;
+  if (nativePath !== undefined) {
+    const after = await api.getCurrentProjectInfo();
+    contextStable = (after?.uuid ?? after?.projectUuid) === (value?.uuid ?? value?.projectUuid);
+    project.path = nativePath;
+  }
+  return { ok: true, project, probeDiagnostics: diagnostics,
+    ...(nativePath !== undefined ? { projectPathSource: "native-project-registry", contextStable } : {}) };
 })();`;
 
 /**
@@ -464,7 +622,7 @@ export function buildSaveReopenCode(
   const expectedType = expectedContext?.document?.documentType;
   const expectedTabId = expectedContext?.document?.tabId;
   if (
-    isMissingString(expectedUuid) ||
+    typeof expectedUuid !== "string" || isMissingString(expectedUuid) ||
     typeof expectedType !== "number" ||
     !Number.isInteger(expectedType)
   ) {
@@ -472,7 +630,7 @@ export function buildSaveReopenCode(
       "save/reopen requires expectedContext.document uuid and documentType.",
     );
   }
-  if (![1, 3].includes(expectedType)) {
+  if (expectedType !== 1 && expectedType !== 3) {
     throw new Error(
       "exact save/reopen currently supports schematic (1) and PCB (3) documents only; library documents require a version-pinned library workflow.",
     );
@@ -480,6 +638,10 @@ export function buildSaveReopenCode(
   if (isMissingString(expectedTabId)) {
     throw new Error("save/reopen requires expectedContext.document.tabId.");
   }
+  const expectedProjectUuid = expectedContext.project?.uuid ?? expectedContext.project?.projectUuid;
+  if (typeof expectedProjectUuid !== "string" || expectedProjectUuid.length === 0) { throw new Error("save/reopen requires an exact project UUID for the durable upload barrier."); }
+  const uploadBarrier = buildProjectUploadBarrierExpression(expectedProjectUuid);
+  const lifecycle: NativeDocumentLifecycleScope = { projectUuid: expectedProjectUuid, documentUuid: expectedUuid, documentType: expectedType };
   if (exactGuards.length === 0 || exactGuards.length > 8) {
     throw new Error("save/reopen requires between one and eight exact guards.");
   }
@@ -571,13 +733,11 @@ return await (async () => {
   const savePending = saveDocument();
   const saved = await savePending;
   if (saved !== true) throw new Error("document save did not return exactly true");
+  const projectUploadBarrier = await ${uploadBarrier};
   const closeTarget = String(before?.tabId ?? EXPECTED_UUID);
-  const closed = await editor.closeDocument(closeTarget);
-  if (closed !== true) throw new Error("closeDocument did not return exactly true");
-  const tabId = await editor.openDocument(EXPECTED_UUID);
-  if (!tabId) throw new Error("openDocument did not return a tab id");
-  const activated = await editor.activateDocument(tabId);
-  if (activated !== true) throw new Error("activateDocument did not return exactly true");
+  const closeProof = await (${buildNativeDocumentCloseFunction(lifecycle)})(closeTarget);
+  const openProof = await (${buildNativeDocumentOpenFunction(lifecycle)})(closeTarget);
+  const tabId = openProof.tabId;
   const after = await readDocument();
   if (uuidOf(after) !== EXPECTED_UUID || typeOf(after) !== EXPECTED_TYPE) {
     throw new Error("reopened document identity mismatch");
@@ -587,6 +747,9 @@ return await (async () => {
     saved: true,
     closed: true,
     reopened: true,
+    projectUploadBarrier,
+    closeProof,
+    openProof,
     exactSaveGuard: {
       passes: 2,
       labels: EXACT_GUARD_LABELS,
@@ -613,8 +776,8 @@ export function buildActivateRecoveryTargetCode(
     expectedContext?.document?.uuid ?? expectedContext?.document?.documentUuid;
   const expectedType = expectedContext?.document?.documentType;
   if (
-    isMissingString(expectedProjectUuid) ||
-    isMissingString(expectedUuid) ||
+    typeof expectedProjectUuid !== "string" || isMissingString(expectedProjectUuid) ||
+    typeof expectedUuid !== "string" || isMissingString(expectedUuid) ||
     typeof expectedType !== "number" ||
     !Number.isInteger(expectedType) ||
     ![1, 2, 3, 4].includes(expectedType)
@@ -678,17 +841,20 @@ export function buildReopenOnlyCode(
   const allowDifferentActiveDocument =
     options.allowDifferentActiveDocument === true;
   if (
-    isMissingString(expectedProjectUuid) ||
-    isMissingString(expectedUuid) ||
+    typeof expectedProjectUuid !== "string" || isMissingString(expectedProjectUuid) ||
+    typeof expectedUuid !== "string" || isMissingString(expectedUuid) ||
     typeof expectedType !== "number" ||
     !Number.isInteger(expectedType) ||
-    ![1, 2, 3, 4].includes(expectedType) ||
+    (expectedType !== 1 && expectedType !== 2 && expectedType !== 3 && expectedType !== 4) ||
     (!allowDifferentActiveDocument && isMissingString(expectedTabId))
   ) {
     throw new Error(
       "reopen-only recovery requires an exact supported document identity.",
     );
   }
+  const metadataOwnerUuid = expectedContext.document?.parentLibraryUuid;
+  const lifecycle: NativeDocumentLifecycleScope = { projectUuid: expectedProjectUuid, documentUuid: expectedUuid, documentType: expectedType,
+    ...(metadataOwnerUuid === undefined ? {} : { metadataOwnerUuid }) };
   return `
 return await (async () => {
   const EXPECTED_PROJECT_UUID = ${jsString(expectedProjectUuid)};
@@ -726,12 +892,9 @@ return await (async () => {
     openedForRecovery = true;
   }
   const closeTarget = String(before?.tabId ?? EXPECTED_UUID);
-  const closed = await editor.closeDocument(closeTarget);
-  if (closed !== true) throw new Error("closeDocument did not return exactly true");
-  const tabId = await editor.openDocument(EXPECTED_UUID);
-  if (!tabId) throw new Error("openDocument did not return a tab id");
-  const activated = await editor.activateDocument(tabId);
-  if (activated !== true) throw new Error("activateDocument did not return exactly true");
+  const closeProof = await (${buildNativeDocumentCloseFunction(lifecycle)})(closeTarget);
+  const openProof = await (${buildNativeDocumentOpenFunction(lifecycle)})(closeTarget);
+  const tabId = openProof.tabId;
   const after = await documentApi.getCurrentDocumentInfo();
   if (uuidOf(after) !== EXPECTED_UUID || typeOf(after) !== EXPECTED_TYPE) {
     throw new Error("reopen-only recovered document identity mismatch");
@@ -742,6 +905,8 @@ return await (async () => {
     closed: true,
     reopened: true,
     openedForRecovery,
+    closeProof,
+    openProof,
     document: { uuid: uuidOf(after), documentType: typeOf(after), tabId: String(after?.tabId ?? tabId) },
   };
 })();`;

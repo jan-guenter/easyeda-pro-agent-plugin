@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { once } from "node:events";
 import { mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, test } from "node:test";
@@ -99,6 +101,70 @@ async function replaceWithAttacker(path: string, source: string): Promise<void> 
 }
 
 void describe("captured upstream module execution", () => {
+  void test("captured logger sends warnings and errors to synchronous stderr without a worker", async () => {
+    const root = await mkdtemp("/tmp/easyeda-logger-graph-test-");
+    const implementation = join(root, "dist");
+    const entrypoint = join(implementation, "entry.mjs");
+    const loggerPath = join(implementation, "utils/logger.js");
+    const pinoDouble = `
+import { writeSync } from 'node:fs';
+function pino(options, stream = { write: (line) => writeSync(1, line) }) {
+  if (options.transport) throw new Error('worker transport must remain disabled');
+  return {
+    warn: () => stream.write('warning\\n'),
+    error: () => stream.write('error\\n'),
+  };
+}
+pino.destination = (options) => {
+  if (options.dest !== 2 || options.sync !== true) throw new Error('destination must be synchronous stderr');
+  return { write: (line) => writeSync(options.dest, line) };
+};
+`;
+    const loggerSource = `
+${pinoDouble}
+let loggerInstance;
+export function createLogger(config) {
+    const pinoOpts = {
+        ...(config.NODE_ENV !== 'production'
+            ? { transport: { target: 'pino/file', options: { destination: 2 } } }
+            : {}),
+    };
+    loggerInstance = pino(pinoOpts);
+    return loggerInstance;
+}
+`;
+    try {
+      await mkdir(join(implementation, "utils"), { recursive: true });
+      await mkdir(join(root, "node_modules"));
+      await writeFile(join(root, "package.json"), JSON.stringify({ name: "logger-fixture", type: "module" }));
+      await writeFile(join(root, "package-lock.json"), JSON.stringify({ name: "logger-fixture", lockfileVersion: 3 }));
+      await writeFile(entrypoint, 'import "./utils/logger.js";');
+      await writeFile(loggerPath, loggerSource);
+      const capture = await captureFixture(root, entrypoint);
+      const logger = [...capture.moduleGraph.modules.values()].find((item) => item.path === loggerPath);
+      assert.ok(logger !== undefined);
+      assert.equal(logger.transform, "easyeda-pro-control.disable-pino-worker.v2");
+      const source = `${logger.bytes.toString("utf8")}\nconst logger = createLogger({NODE_ENV:'development'}); logger.warn(); logger.error();`;
+      const child = spawn(process.execPath, ["--input-type=module", "--eval", source], {
+        stdio: "pipe", timeout: 5000,
+      });
+      let stdout = "";
+      let stderr = "";
+      child.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString("utf8"); });
+      child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString("utf8"); });
+      const exit: unknown[] = await once(child, "close");
+      assert.equal(exit[0], 0, stderr);
+      assert.equal(stdout, "");
+      assert.equal(stderr, "warning\nerror\n");
+      for (const call of ["pino({})", "pino(pinoOpts); pino(pinoOpts)"]) {
+        await writeFile(loggerPath, loggerSource.replace("pino(pinoOpts)", call));
+        await assert.rejects(captureFixture(root, entrypoint), /exact logger construction/u);
+      }
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   void test(
     "executes descriptor-captured ESM, CommonJS, and lazy bytes after path replacement",
     { skip: process.platform !== "linux" },
@@ -468,7 +534,7 @@ void describe("captured upstream module execution", () => {
             const modules = requiredArray(payload["modules"], "modules");
             const module = requiredRecord(modules[0], "module");
             module["transform"] =
-              "easyeda-pro-control.disable-pino-worker.v1";
+              "easyeda-pro-control.disable-pino-worker.v2";
             module["sourceSha256"] = "0".repeat(64);
           },
           /invalid execution transform binding/u,

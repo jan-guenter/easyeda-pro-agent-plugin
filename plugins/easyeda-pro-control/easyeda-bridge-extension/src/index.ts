@@ -81,12 +81,10 @@ interface EasyedaWebSocketApi {
     url: string,
     onMessage: (event: unknown) => void,
     onOpen?: () => void,
-    onClose?: () => void,
-    onError?: (error: unknown) => void,
+    protocols?: string | string[],
   ) => void;
-  send?: (id: string, data: string) => unknown;
-  close?: (id: string) => unknown;
-  create?: (url: string) => EasyedaSocket;
+  send?: (id: string, data: string) => void;
+  close?: (id: string) => void;
 }
 
 interface EasyedaMessageApi {
@@ -95,15 +93,6 @@ interface EasyedaMessageApi {
 
 interface EasyedaToastApi {
   showMessage?: (message: string, messageType?: string) => void;
-}
-
-interface EasyedaSocket {
-  onopen?: () => void;
-  onmessage?: (event: unknown) => void;
-  onclose?: () => void;
-  onerror?: (error: unknown) => void;
-  send?: (data: string) => unknown;
-  close?: () => unknown;
 }
 
 interface BridgeRequest {
@@ -129,9 +118,8 @@ interface BridgeResponse {
 }
 
 interface SocketHandle {
-  type: 'easyeda-register' | 'easyeda-create' | 'browser';
-  id?: string;
-  raw?: EasyedaSocket | WebSocket;
+  type: 'easyeda-register';
+  id: string;
 }
 
 interface RequestConnectionBinding {
@@ -140,17 +128,11 @@ interface RequestConnectionBinding {
   readonly socketGeneration: number;
 }
 
-interface CreateSocketOptions {
-  skipRegister?: boolean;
-}
-
 type LocalConnectionPhase =
   | 'register-open-timeout'
   | 'socket-api-unavailable'
   | 'socket-open-timeout'
-  | 'hello-timeout'
-  | 'socket-closed'
-  | 'socket-error';
+  | 'hello-timeout';
 
 interface LocalConnectionDiagnostic {
   phase: LocalConnectionPhase;
@@ -229,10 +211,15 @@ function getGlobal(): EasyedaGlobal | null {
   return globalThis;
 }
 
+// Native timer IDs are shared across module reloads. A retired runtime may
+// Still clear a queued connection timer after its replacement starts.
+const runtimeTimerNonce = [...crypto.getRandomValues(new Uint8Array(16))]
+  .map((byte) => byte.toString(16).padStart(2, '0'))
+  .join('');
 const runtimeTimers = createRuntimeTimers(
   () => readPath<EasyedaTimerApi>(getGlobal(), 'sys_Timer'),
   undefined,
-  SOCKET_ID,
+  `${SOCKET_ID}-${runtimeTimerNonce}`,
 );
 
 function recordLocalConnectionDiagnostic(diagnostic: LocalConnectionDiagnostic): void {
@@ -284,7 +271,7 @@ function showToast(message: string): void {
 
 function showExternalInteractionHintOnce(error?: unknown): void {
   const message =
-    'EasyEDA Pro Control Bridge needs EasyEDA External Interactions permission. Enable it in Extension Manager for EasyEDA Pro Control Authenticated Bridge.';
+    'EasyEDA Pro Control Bridge could not register its native socket. Check Extension Manager for External Interactions permission; this error alone does not establish the cause.';
   log(message, error);
   if (externalInteractionWarningShown) {return;}
   externalInteractionWarningShown = true;
@@ -401,19 +388,15 @@ function createSocket(
   url: string,
   onOpen: () => void,
   onMessage: (data: string) => void,
-  onClose: () => void,
-  onError: (error: unknown) => void,
   installHandle: (handle: SocketHandle) => void,
-  options: CreateSocketOptions = {},
 ): SocketHandle | null {
   const sysWs = getWsApi();
 
-  // Try easyeda-register first (may throw if external interaction is denied).
-  // Only the API's real connected callback may mark the socket open. Calling
-  // OnOpen speculatively while WebSocket.readyState is CONNECTING makes send()
-  // Throw and closes an otherwise healthy loopback connection.
+  // Only the reviewed native register API is admitted. Its fifth argument is
+  // Protocols, not a close callback. It exposes no close/error callbacks, so
+  // Connection timeouts, synchronous send checks and heartbeats detect loss.
+  // Never substitute a browser transport with a different Origin contract.
   if (
-    options.skipRegister !== true &&
     typeof sysWs?.register === 'function' &&
     typeof sysWs.send === 'function' &&
     typeof sysWs.close === 'function'
@@ -433,82 +416,16 @@ function createSocket(
         url,
         (event) =>{  onMessage(String(isRecord(event) && 'data' in event ? event.data : event)); },
         fireOpen,
-        onClose,
-        onError,
       );
       return registerHandle;
     } catch (error) {
       showExternalInteractionHintOnce(error);
-      log('register() threw, falling through', error);
-      if (openFired) {
-        closeHandle(registerHandle);
-        return null;
+      log('The reviewed native SYS_WebSocket.register() failed', error);
+      if (closeHandle(registerHandle) && socketHandle === registerHandle) {
+        socketHandle = null;
       }
     }
   }
-
-  // Fallback: easyeda-create (different API path, may have different permissions)
-  if (typeof sysWs?.create === 'function') {
-    let socket: EasyedaSocket | undefined;
-    try {
-      socket = sysWs.create(url);
-    } catch (error) {
-      log('create() threw, falling through', error);
-    }
-    if (socket !== undefined) {
-      const createHandle: SocketHandle = { type: 'easyeda-create', raw: socket };
-      installHandle(createHandle);
-      if (typeof socket.close !== 'function') {
-        recordSocketTeardownFailure(
-          'SYS_WebSocket.create() returned a socket without a callable close method.',
-        );
-        unclosedSocketHandles.add(createHandle);
-        return null;
-      }
-      if (typeof socket.send !== 'function') {
-        if (!closeHandle(createHandle)) {return null;}
-        log('create() returned a socket without a callable send method; falling through');
-      } else {
-        socket.onopen = onOpen;
-        socket.onmessage = (event) =>{  onMessage(String(isRecord(event) ? event.data : event)); };
-        socket.onclose = onClose;
-        socket.onerror = onError;
-        return createHandle;
-      }
-    }
-  }
-
-  // Last resort: raw browser WebSocket (works outside extension sandbox).
-  // Resolve via globalThis because some EasyEDA runtimes shadow the bare
-  // WebSocket identifier while preserving the constructor on the global.
-  const BrowserWebSocketCtor = (globalThis as { WebSocket?: typeof WebSocket }).WebSocket;
-  if (typeof BrowserWebSocketCtor === 'function') {
-    try {
-      const socket = new BrowserWebSocketCtor(url);
-      const browserHandle: SocketHandle = { type: 'browser', raw: socket };
-      installHandle(browserHandle);
-      if (typeof socket.close !== 'function') {
-        recordSocketTeardownFailure(
-          'The browser WebSocket constructor returned a socket without a callable close method.',
-        );
-        unclosedSocketHandles.add(browserHandle);
-        return null;
-      }
-      if (typeof socket.send !== 'function') {
-        if (!closeHandle(browserHandle)) {return null;}
-        log('The browser WebSocket constructor returned a socket without a callable send method.');
-        return null;
-      }
-      socket.onopen = onOpen;
-      socket.onmessage = (event) =>{  onMessage(String(event.data)); };
-      socket.onclose = onClose;
-      socket.onerror = onError;
-      return browserHandle;
-    } catch (error) {
-      log('WebSocket() threw', error);
-    }
-  }
-
   return null;
 }
 
@@ -625,22 +542,13 @@ function sendRaw(payload: string): void {
   const sysWs = getWsApi();
   let result: unknown;
   try {
-    if (handle.type === 'easyeda-register') {
-      if (typeof sysWs?.send !== 'function') {
-        throw new TypeError(
-          'The accepted SYS_WebSocket.register transport no longer exposes a callable send method.',
-        );
-      }
-      result = sysWs.send(handle.id ?? SOCKET_ID, payload);
-    } else {
-      const rawSend = handle.raw?.send;
-      if (typeof rawSend !== 'function') {
-        throw new TypeError(
-          `The accepted ${handle.type} transport no longer exposes a callable send method.`,
-        );
-      }
-      result = Reflect.apply(rawSend, handle.raw, [payload]);
+    if (typeof sysWs?.send !== 'function') {
+      throw new TypeError(
+        'The accepted SYS_WebSocket.register transport no longer exposes a callable send method.',
+      );
     }
+    // oxlint-disable-next-line typescript/no-confusing-void-expression -- The pinned native API declares void, but runtime drift must not hide asynchronous or failed results.
+    result = sysWs.send(handle.id, payload);
     if (isThenable(result)) {
       void Promise.resolve(result).catch((error: unknown) => {
         log('Authenticated bridge send rejected after fail-closed disconnect', error);
@@ -686,45 +594,19 @@ function closeHandle(handle: SocketHandle | null): boolean {
   if (!handle) {return true;}
 
   const sysWs = getWsApi();
-  if (handle.type === 'easyeda-register') {
-    if (typeof sysWs?.close !== 'function') {
-      recordSocketTeardownFailure(
-        'The accepted SYS_WebSocket.register transport no longer exposes a callable close method.',
-      );
-      unclosedSocketHandles.add(handle);
-      return false;
-    }
-    try {
-      const result: unknown = sysWs.close(handle.id ?? SOCKET_ID);
-      if (result !== undefined && result !== true) {
-        recordSocketTeardownFailure(
-          'SYS_WebSocket.close did not synchronously confirm teardown of the authenticated bridge socket.',
-        );
-        unclosedSocketHandles.add(handle);
-        return false;
-      }
-      unclosedSocketHandles.delete(handle);
-      return true;
-    } catch (error) {
-      recordSocketTeardownFailure('SYS_WebSocket.close threw during bridge teardown.', error);
-      unclosedSocketHandles.add(handle);
-      return false;
-    }
-  }
-
-  const close = handle.raw?.close;
-  if (typeof close !== 'function') {
+  if (typeof sysWs?.close !== 'function') {
     recordSocketTeardownFailure(
-      `The accepted ${handle.type} transport no longer exposes a callable close method.`,
+      'The accepted SYS_WebSocket.register transport no longer exposes a callable close method.',
     );
     unclosedSocketHandles.add(handle);
     return false;
   }
   try {
-    const result: unknown = Reflect.apply(close, handle.raw, []);
+    // oxlint-disable-next-line typescript/no-confusing-void-expression -- The pinned native API declares void; adversarial runtime results still require teardown quarantine.
+    const result: unknown = sysWs.close(handle.id);
     if (result !== undefined && result !== true) {
       recordSocketTeardownFailure(
-        `The ${handle.type} transport did not synchronously confirm authenticated bridge teardown.`,
+        'SYS_WebSocket.close did not synchronously confirm teardown of the authenticated bridge socket.',
       );
       unclosedSocketHandles.add(handle);
       return false;
@@ -732,10 +614,7 @@ function closeHandle(handle: SocketHandle | null): boolean {
     unclosedSocketHandles.delete(handle);
     return true;
   } catch (error) {
-    recordSocketTeardownFailure(
-      `The ${handle.type} transport threw during authenticated bridge teardown.`,
-      error,
-    );
+    recordSocketTeardownFailure('SYS_WebSocket.close threw during bridge teardown.', error);
     unclosedSocketHandles.add(handle);
     return false;
   }
@@ -846,17 +725,23 @@ function sendHandshake(): void {
 }
 
 function getEasyedaVersion(): string | undefined {
-  const maybeVersion = readPath<unknown>(getGlobal(), 'sys_Environment.getVersion');
-  if (typeof maybeVersion === 'function') {
-    try {
-      const version: unknown = Reflect.apply(maybeVersion, undefined, []);
-      return String(version);
-    } catch (error) {
-      log('failed to read EasyEDA version', String(error));
+  try {
+    const environment = getGlobal()?.sys_Environment;
+    if (!isRecord(environment) ||
+      typeof environment.getEditorCurrentVersion !== 'function') {
+      log('easyeda-version-unavailable');
       return undefined;
     }
+    const version: unknown = Reflect.apply(environment.getEditorCurrentVersion, environment, []);
+    if (typeof version !== 'string' || version.trim().length === 0 || version.length > 128) {
+      log('easyeda-version-invalid');
+      return undefined;
+    }
+    return version;
+  } catch {
+    log('easyeda-version-read-failed');
+    return undefined;
   }
-  return undefined;
 }
 
 function startHeartbeat(): void {
@@ -1101,7 +986,12 @@ async function connectToPort(
   timeoutMs: number,
 ): Promise<boolean> {
   const url = `ws://${LOOPBACK_HOST}:${port}`;
-  const socketId = `${SOCKET_ID}-${runId}-${port}`;
+  // A reloaded runtime restarts runId. Native IDs must remain distinct while
+  // Retired runtime callbacks or connection timers can still perform cleanup.
+  const attemptNonce = [...crypto.getRandomValues(new Uint8Array(16))]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+  const socketId = `${SOCKET_ID}-${runId}-${port}-${attemptNonce}`;
   return new Promise((resolve) => {
     let settled = false;
     let handle: SocketHandle | null = null;
@@ -1109,20 +999,20 @@ async function connectToPort(
     let socketOpened = false;
     let authenticationStarted = false;
     let handshakeSent = false;
-    let registerFallbackTimer: RuntimeTimerHandle | null = null;
+    let registerOpenTimer: RuntimeTimerHandle | null = null;
     let connectionTimeout: RuntimeTimerHandle | null = null;
     let localTimerCleanupFailure: Error | null = null;
 
-    const clearRegisterFallback = (): Error | null => {
-      const timer = registerFallbackTimer;
-      registerFallbackTimer = null;
+    const clearRegisterOpenTimeout = (): Error | null => {
+      const timer = registerOpenTimer;
+      registerOpenTimer = null;
       if (timer === null) {return null;}
       try {
         runtimeTimers.clearTimeout(timer);
         return null;
       } catch (error) {
         localTimerCleanupFailure = recordRuntimeTeardownFailure(
-          'The register-fallback timer could not be cleared safely.',
+          'The native register-open timer could not be cleared safely.',
           error,
         );
         return localTimerCleanupFailure;
@@ -1150,7 +1040,7 @@ async function connectToPort(
       settled = true;
       const cleanupFailures = [
         localTimerCleanupFailure,
-        clearRegisterFallback(),
+        clearRegisterOpenTimeout(),
         clearConnectionTimeout(),
       ].filter((error): error is Error => error !== null);
       const admitted = connected && cleanupFailures.length === 0;
@@ -1171,7 +1061,7 @@ async function connectToPort(
         finish(false);
         return;
       }
-      clearRegisterFallback();
+      clearRegisterOpenTimeout();
       if (handshakeSent) {
         recordLocalConnectionDiagnostic({
           phase: 'hello-timeout',
@@ -1188,12 +1078,12 @@ async function connectToPort(
           message: `Socket opened on port ${port}, but mutual authentication did not complete.`,
           priority: 100,
         });
-      } else if (handle?.type !== 'easyeda-register') {
+      } else {
         recordLocalConnectionDiagnostic({
           phase: 'socket-open-timeout',
           port,
           transport: handle?.type,
-          message: `The ${handle?.type ?? 'WebSocket'} path did not open on port ${port}.`,
+          message: `The native SYS_WebSocket.register path did not open on port ${port}.`,
           priority: 50,
         });
       }
@@ -1204,7 +1094,7 @@ async function connectToPort(
       finish(false);
     }, timeoutMs);
 
-    const startSocket = (options: CreateSocketOptions = {}): SocketHandle | null => {
+    const startSocket = (): SocketHandle | null => {
       socketGeneration += 1;
       const generation = socketGeneration;
       socketOpened = false;
@@ -1215,7 +1105,9 @@ async function connectToPort(
       let messageSequence = Promise.resolve();
       let attemptHandle: SocketHandle | null = null;
       const isCurrentGeneration = (): boolean =>
-        runId === connectRunId && generation === socketGeneration;
+        runId === connectRunId && generation === socketGeneration &&
+        attemptHandle !== null && socketHandle === attemptHandle &&
+        (!settled || connectionState === 'connected');
       const resolvedHandle = (): SocketHandle =>
         attemptHandle ?? { type: 'easyeda-register', id: socketId };
 
@@ -1239,7 +1131,7 @@ async function connectToPort(
               return;
             }
             socketOpened = true;
-            clearRegisterFallback();
+            clearRegisterOpenTimeout();
             socketHandle = resolvedHandle();
             authenticationStarted = true;
             const clientHello = JSON.stringify(authenticator.begin());
@@ -1265,6 +1157,7 @@ async function connectToPort(
                 if (!authenticator.isAuthenticated()) {
                   const value: unknown = JSON.parse(data);
                   const progress = await authenticator.receive(value);
+                  if (!isCurrentGeneration()) {return;}
                   if (progress.outbound !== undefined) {
                     const proof = JSON.stringify(progress.outbound);
                     reflectedAuthenticationFrames.add(proof);
@@ -1306,6 +1199,7 @@ async function connectToPort(
                 }
               })
               .catch((error: unknown) => {
+                if (!isCurrentGeneration()) {return;}
                 log('Bridge authentication or message error', error);
                 const currentHandle = resolvedHandle();
                 recordLocalConnectionDiagnostic({
@@ -1331,90 +1225,17 @@ async function connectToPort(
                 finish(false);
               });
           },
-          () => {
-            if (runId !== connectRunId) {
-              const currentHandle = resolvedHandle();
-              if (socketHandle === currentHandle) {
-                stopHeartbeat();
-                socketHandle = null;
-                unclosedSocketHandles.delete(currentHandle);
-                connectedPort = null;
-                activeSocketGeneration = 0;
-                connectionState = 'disconnected';
-              }
-              finish(false);
-              return;
-            }
-            if (!isCurrentGeneration()) {return;}
-            clearRegisterFallback();
-            const currentHandle = resolvedHandle();
-            const wasActiveConnection =
-              socketHandle === currentHandle && connectionState === 'connected';
-            if (!settled) {
-              recordLocalConnectionDiagnostic({
-                phase: 'socket-closed',
-                port,
-                transport: currentHandle.type,
-                message: `The ${currentHandle.type} path closed before the bridge handshake completed on port ${port}.`,
-                priority: 60,
-              });
-            }
-            if (socketHandle === currentHandle) {
-              stopHeartbeat();
-              socketHandle = null;
-              unclosedSocketHandles.delete(currentHandle);
-              connectedPort = null;
-              activeSocketGeneration = 0;
-              connectionState = 'disconnected';
-            }
-            if (!settled) {
-              finish(false);
-            }
-            if (wasActiveConnection && !manualDisconnectRequested && runId === connectRunId) {
-              scheduleReconnect();
-            }
-          },
-          (error) => {
-            if (runId !== connectRunId) {
-              const currentHandle = resolvedHandle();
-              const closed = closeHandle(currentHandle);
-              if (closed && socketHandle === currentHandle) {socketHandle = null;}
-              finish(false);
-              return;
-            }
-            if (!isCurrentGeneration()) {return;}
-            clearRegisterFallback();
-            const currentHandle = resolvedHandle();
-            recordLocalConnectionDiagnostic({
-              phase: 'socket-error',
-              port,
-              transport: currentHandle.type,
-              message: `The ${currentHandle.type} path failed on port ${port}: ${bridgeErrorMessage(error)}`,
-              priority: 70,
-            });
-            if (socketHandle === currentHandle) {
-              if (connectionState === 'connected') {
-                recoverConnection('The authenticated bridge socket reported an error; reconnecting.');
-              } else {
-                const closed = closeHandle(currentHandle);
-                if (closed && socketHandle === currentHandle) {
-                  socketHandle = null;
-                }
-              }
-            } else {
-              closeHandle(currentHandle);
-            }
-            finish(false);
-          },
           (createdHandle) => {
             attemptHandle = createdHandle;
             handle = createdHandle;
+            socketHandle = createdHandle;
           },
-          options,
         );
       } catch (error) {
         log('createSocket threw', error);
-        closeHandle(attemptHandle);
+        if (closeHandle(attemptHandle) && socketHandle === attemptHandle) {
+          socketHandle = null;
+        }
         return null;
       }
 
@@ -1423,24 +1244,24 @@ async function connectToPort(
         recordLocalConnectionDiagnostic({
           phase: 'socket-api-unavailable',
           port,
-          message: `No usable EasyEDA or browser WebSocket API was available for port ${port}.`,
+          message: `The reviewed native SYS_WebSocket.register API was unavailable or failed on port ${port}.`,
           priority: 80,
         });
         return null;
       }
 
-      if (!settled && attemptHandle.type === 'easyeda-register') {
+      if (!settled && !socketOpened) {
         const registerHandle = attemptHandle;
-        registerFallbackTimer = runtimeTimers.setTimeout(() => {
+        registerOpenTimer = runtimeTimers.setTimeout(() => {
           if (settled || !isCurrentGeneration() || socketOpened) {return;}
-          registerFallbackTimer = null;
+          registerOpenTimer = null;
           recordLocalConnectionDiagnostic({
             phase: 'register-open-timeout',
             port,
             transport: registerHandle.type,
             message:
               `SYS_WebSocket.register() accepted port ${port} but did not invoke its open callback; ` +
-              'the extension closed that handle and tried a safe alternate socket API.',
+              'the extension closed that handle without trying another transport.',
             priority: 85,
           });
           if (!closeHandle(registerHandle)) {
@@ -1448,12 +1269,7 @@ async function connectToPort(
             return;
           }
           if (socketHandle === registerHandle) {socketHandle = null;}
-          if (settled || !isCurrentGeneration()) {return;}
-
-          const fallbackHandle = startSocket({ skipRegister: true });
-          if (!fallbackHandle) {
-            finish(false);
-          }
+          finish(false);
         }, REGISTER_OPEN_CALLBACK_TIMEOUT_MS);
       }
 

@@ -1,4 +1,4 @@
 interface:
   display_name: "EasyEDA Pro Control"
-  short_description: "Validate and inspect EasyEDA safely"
-  default_prompt: "Use $easyeda-pro-control to validate the EasyEDA bridge, collect bounded read evidence, or inspect local recovery artifacts without bypassing compatibility gates."
+  short_description: "Edit EasyEDA through typed APIs and verify results"
+  default_prompt: "Use $easyeda-pro-control to inspect EasyEDA, apply the requested typed API changes, and verify saved results; use native controls for missing APIs and dialogs."

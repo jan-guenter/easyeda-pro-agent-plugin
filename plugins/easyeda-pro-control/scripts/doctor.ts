@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* oxlint-disable import/max-dependencies -- Offline doctor joins machine-profile, packaged runtime, descriptor, bridge artifact and MCP catalog checks. */
 import { createHash } from "node:crypto";
 import {
   access,
@@ -43,6 +44,8 @@ import {
   removeEmptyPrivateTemporaryDirectory,
 } from "./private-temporary-directory.ts";
 import type { PrivateTemporaryDirectory } from "./private-temporary-directory.ts";
+import { FACADE_TOOL_NAMES, hasPortableMcpLaunch } from "./plugin-contract.ts";
+import { MachineProfileError, loadRuntimeMachineProfile, machineProfileLaunchConfiguration } from "../server/src/machine-profile.ts";
 
 interface DoctorCheck {
   readonly check: string;
@@ -59,27 +62,7 @@ interface McpConfiguration {
   readonly env: Record<string, string>;
 }
 
-const TOOL_NAMES = [
-  "easyeda_control_status",
-  "easyeda_control_discover",
-  "easyeda_control_context",
-  "easyeda_control_exact_read",
-  "easyeda_control_read",
-  "easyeda_control_read_batch",
-  "easyeda_control_execute",
-  "easyeda_control_capture",
-  "easyeda_control_export",
-  "easyeda_control_plan",
-  "easyeda_control_apply",
-  "easyeda_control_verify",
-  "easyeda_control_rollback",
-  "easyeda_control_save_reopen",
-  "easyeda_control_checkpoint",
-  "easyeda_control_recover_incomplete",
-  "easyeda_control_evidence_recover",
-  "easyeda_control_evidence_verify",
-  "easyeda_control_artifact_read",
-] as const;
+const TOOL_NAMES = FACADE_TOOL_NAMES;
 const SQLITE_BINARY_CANDIDATES = [
   "/usr/bin/sqlite3",
   "/usr/local/bin/sqlite3",
@@ -242,8 +225,15 @@ const required = [
   ".codex-plugin/plugin.json",
   ".mcp.json",
   "reviewed-compatibility.json",
+  "scripts/plugin-contract.ts",
+  "scripts/configure-machine.ts",
+  "scripts/launch-machine.ts",
+  "scripts/native-ui-controller.ps1",
+  "scripts/windows-authority.ps1",
   "licenses/bundled-runtime.json",
   "server/src/core.ts",
+  "server/src/main.ts",
+  "server/src/machine-launch.ts",
   "server/src/descriptor-sanitizer-identity.ts",
   "server/src/upstream-trust.ts",
   "server/bin/easyeda-fd-sanitizer",
@@ -323,7 +313,15 @@ if (!isRecord(manifest)) {
   throw new TypeError("Plugin manifest must be an object.");
 }
 const mcpText = await readFile(mcpPath, "utf8");
-const mcpConfig = parseMcpConfiguration(JSON.parse(mcpText));
+const portableMcpConfig = parseMcpConfiguration(JSON.parse(mcpText));
+check("portable-machine-profile-launch", hasPortableMcpLaunch(portableMcpConfig));
+const runtimeMachine = await loadRuntimeMachineProfile().catch((error: unknown) => {
+  check("machine-profile", false, error instanceof MachineProfileError ? error.code : "machine-profile-unavailable");
+  process.stdout.write(`${JSON.stringify({ ok: false, offline: true, checks }, null, 2)}\n`);
+  process.exit(1);
+});
+const mcpConfig = machineProfileLaunchConfiguration(runtimeMachine.profile, pluginRoot);
+check("machine-profile", true);
 check("manifest-name", manifest["name"] === "easyeda-pro-control");
 check("manifest-mcp", manifest["mcpServers"] === "./.mcp.json");
 check(
@@ -346,8 +344,8 @@ check("configured-node", await regularFileExists(mcpConfig.command));
 check(
   "configured-bundle",
   mcpConfig.args.length === 1 &&
-    mcpConfig.args[0] === "server/dist/server.mjs" &&
-    mcpConfig.cwd === ".",
+    mcpConfig.args[0] === join(pluginRoot, "server/dist/server.mjs") &&
+    mcpConfig.cwd === pluginRoot,
 );
 const configuredDataDirectory =
   mcpConfig.env["EASYEDA_CONTROL_DATA_DIR"] ?? "";

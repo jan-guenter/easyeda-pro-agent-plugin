@@ -1,6 +1,70 @@
 import { z } from "zod";
+import { NORMALIZE_DOCUMENT_SOURCE_CODE, parseDocumentSource } from "./document-source.ts";
+import { exactDiagnosticAllowed } from "./reader-diagnostics.ts";
+
+export { exactReaderFailureCategory } from "./reader-diagnostics.ts";
 
 type UnknownRecord = Record<string, unknown>;
+
+export const EXACT_READ_ENVELOPE_SCHEMA = "easyeda-pro-control.exact-json.v1";
+export const EXACT_READ_ENVELOPE_MAX_BYTES = 4 * 1024 * 1024;
+
+interface ExactReadEnvelope {
+  schema: typeof EXACT_READ_ENVELOPE_SCHEMA;
+  utf8Bytes: number;
+  json: string;
+}
+
+export function assertExactTransportValue(value: unknown, depth = 0): void {
+  if (depth > 32) { throw new Error("Exact reader transport exceeds its depth bound."); }
+  if (value === null || typeof value === "boolean") { return; }
+  if (typeof value === "string") {
+    if (value === "[MaxDepth]" || value === "[Truncated]" || value === "[Circular]" || /^\[Function(?: |\])/u.test(value)) {
+      throw new Error("Exact reader transport contains a normalization placeholder.");
+    }
+    return;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) { return; }
+  if (typeof value !== "object" || value === null) {
+    throw new Error("Exact reader transport contains a non-JSON value.");
+  }
+  const fields = Array.isArray(value) ? value : Object.values(value);
+  if (fields.length > 20_000) { throw new Error("Exact reader transport exceeds its collection bound."); }
+  for (const field of fields) { assertExactTransportValue(field, depth + 1); }
+}
+
+/** Keep nested exact results out of the companion's depth-limited object normalizer. */
+export function encodeExactReadEnvelope(payload: unknown): ExactReadEnvelope {
+  assertExactTransportValue(payload);
+  const json = JSON.stringify(payload);
+  const utf8Bytes = Buffer.byteLength(json, "utf8");
+  const envelope: ExactReadEnvelope = { schema: EXACT_READ_ENVELOPE_SCHEMA, utf8Bytes, json };
+  if (utf8Bytes > EXACT_READ_ENVELOPE_MAX_BYTES ||
+      Buffer.byteLength(JSON.stringify(envelope), "utf8") > EXACT_READ_ENVELOPE_MAX_BYTES) {
+    throw new Error("Exact reader transport exceeds its byte bound.");
+  }
+  return envelope;
+}
+
+export function decodeExactReadEnvelope(value: unknown): unknown {
+  if (!isUnknownRecord(value) || Object.keys(value).toSorted().join(",") !== "json,schema,utf8Bytes" ||
+      value["schema"] !== EXACT_READ_ENVELOPE_SCHEMA ||
+      typeof value["json"] !== "string" || value["json"].length === 0 ||
+      value["json"].length > EXACT_READ_ENVELOPE_MAX_BYTES ||
+      !Number.isSafeInteger(value["utf8Bytes"]) ||
+      Buffer.byteLength(value["json"], "utf8") !== value["utf8Bytes"] ||
+      Buffer.byteLength(JSON.stringify(value), "utf8") > EXACT_READ_ENVELOPE_MAX_BYTES) {
+    throw new Error("Exact reader returned an invalid or oversized JSON transport envelope.");
+  }
+  let payload: unknown;
+  try {
+    payload = JSON.parse(value["json"]);
+  } catch {
+    throw new Error("Exact reader returned malformed JSON transport content.");
+  }
+  assertExactTransportValue(payload);
+  return payload;
+}
 
 interface ValidationRecord extends UnknownRecord {
   addIntoBom?: unknown;
@@ -327,19 +391,26 @@ export const exactReadRequestSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("schematic-topology") }).strict(),
   z.object({ kind: z.literal("pcb-inventory") }).strict(),
   z.object({ kind: z.literal("pcb-rules") }).strict(),
+  z.object({ kind: z.literal("schematic-source") }).strict(),
+  z.object({ kind: z.literal("schematic-native") }).strict(),
+  z.object({ kind: z.literal("pcb-source") }).strict(),
+  z.object({ kind: z.literal("symbol-source") }).strict(),
+  z.object({ kind: z.literal("footprint-source") }).strict(),
 ]);
 
 export type ExactReadRequest = z.infer<typeof exactReadRequestSchema>;
 export type ExactReadKind = ExactReadRequest["kind"];
 
-export function exactReadDocumentType(kind: unknown): 1 | 3 {
-  if (kind === "schematic-components" || kind === "schematic-topology") {
+export function exactReadDocumentType(kind: unknown): 1 | 2 | 3 | 4 {
+  if (kind === "schematic-components" || kind === "schematic-topology" || kind === "schematic-source" || kind === "schematic-native") {
     return 1;
   }
+  if (kind === "symbol-source") { return 2; }
+  if (kind === "footprint-source") { return 4; }
   if (
     kind === "pcb-components" ||
     kind === "pcb-inventory" ||
-    kind === "pcb-rules"
+    kind === "pcb-rules" || kind === "pcb-source"
   ) {
     return 3;
   }
@@ -635,6 +706,7 @@ export function validateExactReadPayload<T>(
   payload: T,
   request: ExactReadRequest,
 ): T {
+  assertExactTransportValue(payload);
   assertPayloadCandidate(payload);
   if (
     payload.ok !== true ||
@@ -644,6 +716,17 @@ export function validateExactReadPayload<T>(
     throw new Error(
       "Exact reader returned an inconsistent kind, document type, or success flag.",
     );
+  }
+  if (request.kind.endsWith("-source")) {
+    const source = payload["source"];
+    if (payload.authority?.source !== "sys_FileManager.getDocumentSource" ||
+        typeof source !== "string" || source.trim().length === 0 ||
+        Buffer.byteLength(source, "utf8") > 3 * 1024 * 1024 ||
+        payload["utf8Bytes"] !== Buffer.byteLength(source, "utf8")) {
+      throw new Error("Document source is missing, oversized or contradicts its UTF-8 byte count.");
+    }
+    parseDocumentSource(source);
+    return payload;
   }
   if (
     request.kind === "schematic-components" ||
@@ -971,11 +1054,11 @@ export function validateExactReadPayload<T>(
   } else if (request.kind === "schematic-topology") {
     if (
       !Array.isArray(payload.compiledConnectivity) ||
-      payload.authority?.connectivity !== "sch_Netlist.getNetlist(JLCEDA)" ||
+      payload.authority?.connectivity !== "sch_ManufactureData.getNetlistFile(JLCEDA)" ||
       payload.authority?.wireGeometry !== "unavailable" ||
       payload.componentCorrelation?.status !== "exact-match" ||
       payload.componentCorrelation?.source !==
-        "sch_PrimitiveComponent.getAll(part,true)" ||
+        "sch_PrimitiveComponent.getAll(part,true)+complete-declared-page-native-pins" ||
       typeof payload.componentCorrelation?.pinCount !== "number" ||
       !Number.isSafeInteger(payload.componentCorrelation?.pinCount) ||
       payload.componentCorrelation.pinCount < 0 ||
@@ -1595,7 +1678,7 @@ export function validateExactReadPayload<T>(
         typeof correlation.parentComponentPrimitiveId !== "string" ||
         !componentIds.includes(correlation.parentComponentPrimitiveId) ||
         typeof correlation.padNumber !== "string" ||
-        correlation.source !== "component-getState_Pads"
+        correlation.source !== "component-getAllPinsByPrimitiveId"
       ) {
         throw new Error(
           "Exact PCB inventory correlated pad has malformed identity or provenance.",
@@ -1899,34 +1982,59 @@ export function buildExactReadExpression(request: unknown): string {
   return `
 (async () => {
   const REQUEST = ${serialized};
+  const DIAGNOSTIC = {
+    kind: REQUEST.kind, stage: "setup", api: "none", method: "none", expectation: "unset",
+  };
+  try {
   const requiredApi = (lower, _upper, methods) => {
+    DIAGNOSTIC.stage = "api-lookup";
+    DIAGNOSTIC.api = lower;
+    DIAGNOSTIC.method = "none";
+    DIAGNOSTIC.expectation = "object";
     const value = eda[lower];
     if (!value || typeof value !== "object") throw new Error(lower + " API is unavailable");
+    const wrapped = {};
     for (const method of methods) {
-      if (typeof value[method] !== "function") throw new Error(lower + "." + method + " is unavailable");
+      DIAGNOSTIC.method = method;
+      const fn = value[method];
+      if (typeof fn !== "function") throw new Error(lower + "." + method + " is unavailable");
+      wrapped[method] = async (...args) => {
+        DIAGNOSTIC.stage = "api-call";
+        DIAGNOSTIC.api = lower;
+        DIAGNOSTIC.method = method;
+        DIAGNOSTIC.expectation = "unset";
+        const result = await fn.apply(value, args);
+        DIAGNOSTIC.stage = "api-result";
+        return result;
+      };
     }
-    return value;
+    return wrapped;
   };
   const requiredArray = (value, label) => {
+    DIAGNOSTIC.expectation = "array";
     if (!Array.isArray(value)) throw new Error(label + " did not return an array");
     return value;
   };
   const requiredObject = (value, label) => {
+    DIAGNOSTIC.expectation = "object";
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       throw new Error(label + " did not return an object");
     }
     return value;
   };
   const finite = (value, label) => {
+    DIAGNOSTIC.expectation = "finite-number";
     if (typeof value !== "number" || !Number.isFinite(value)) throw new Error(label + " is not finite");
     return value;
   };
   const integer = (value, label) => {
     const result = finite(value, label);
+    DIAGNOSTIC.expectation = "integer";
     if (!Number.isInteger(result)) throw new Error(label + " is not an integer enum");
     return result;
   };
   const requiredString = (value, label, allowEmpty = true) => {
+    DIAGNOSTIC.expectation = allowEmpty ? "string" : "nonempty-string";
     if (typeof value !== "string" || (!allowEmpty && value.length === 0)) {
       throw new Error(label + " is not a valid string");
     }
@@ -1934,16 +2042,22 @@ export function buildExactReadExpression(request: unknown): string {
   };
   const nonemptyString = (value, label) => requiredString(value, label, false);
   const requiredBoolean = (value, label) => {
+    DIAGNOSTIC.expectation = "boolean";
     if (typeof value !== "boolean") throw new Error(label + " is not boolean");
     return value;
   };
   const state = async (value, method, required = true) => {
+    DIAGNOSTIC.stage = "getter-lookup";
+    DIAGNOSTIC.method = method;
+    DIAGNOSTIC.expectation = "unset";
     const fn = value?.[method];
     if (typeof fn !== "function") {
       if (required) throw new Error(method + " is unavailable on a returned primitive");
       return null;
     }
+    DIAGNOSTIC.stage = "getter-call";
     const result = await fn.call(value);
+    DIAGNOSTIC.stage = "getter-result";
     if (result === undefined) {
       if (required) throw new Error(method + " returned undefined");
       return null;
@@ -1951,6 +2065,7 @@ export function buildExactReadExpression(request: unknown): string {
     return result;
   };
   const plain = (value, label, depth = 0, seen = new WeakSet()) => {
+    DIAGNOSTIC.expectation = "json";
     if (value === null || ["string", "number", "boolean"].includes(typeof value)) {
       if (typeof value === "number" && !Number.isFinite(value)) throw new Error(label + " contains a non-finite number");
       return value;
@@ -1977,17 +2092,20 @@ export function buildExactReadExpression(request: unknown): string {
     return result;
   };
   const polygonSource = (value, label) => {
+    DIAGNOSTIC.expectation = "polygon";
     if (!value || typeof value.getSource !== "function") {
       throw new Error(label + " is not an EasyEDA polygon object");
     }
     return plain(value.getSource(), label + " source");
   };
   const nullableString = (value, label) => {
+    DIAGNOSTIC.expectation = "string";
     if (value === null || value === undefined) return null;
     if (typeof value !== "string") throw new Error(label + " is not a string or null");
     return value;
   };
   const association = (value, label, kind = "library") => {
+    DIAGNOSTIC.expectation = "association";
     if (value === null || value === undefined) return null;
     const row = requiredObject(value, label);
     const allowed = kind === "cbb-symbol"
@@ -2011,6 +2129,7 @@ export function buildExactReadExpression(request: unknown): string {
   };
   const bbox = async (api, primitiveId, label) => {
     const value = await api.getPrimitivesBBox([primitiveId]);
+    DIAGNOSTIC.expectation = "bounds";
     requiredObject(value, label + " bounds");
     return {
       minX: finite(value.minX, label + " bounds.minX"),
@@ -2020,6 +2139,7 @@ export function buildExactReadExpression(request: unknown): string {
     };
   };
   const uniqueStrings = (values, label) => {
+    DIAGNOSTIC.expectation = "unique-identities";
     const result = requiredArray(values, label).map((value) => {
       if (typeof value !== "string" || value.length === 0) throw new Error(label + " contains an invalid ID");
       return value;
@@ -2063,6 +2183,21 @@ export function buildExactReadExpression(request: unknown): string {
     }
     return selected.sort((left, right) => left.primitiveId.localeCompare(right.primitiveId));
   };
+
+  if (["schematic-source", "pcb-source", "symbol-source", "footprint-source"].includes(REQUEST.kind)) {
+    const api = requiredApi("sys_FileManager", "SYS_FileManager", ["getDocumentSource"]);
+    let source = await api.getDocumentSource();
+    if (typeof source !== "string" || source.trim().length === 0) {
+      throw new Error("Native document source is unavailable.");
+    }
+    ${NORMALIZE_DOCUMENT_SOURCE_CODE}
+    const utf8Bytes = new TextEncoder().encode(source).byteLength;
+    if (utf8Bytes > 3 * 1024 * 1024) throw new Error("Native document source exceeds the bounded read size.");
+    const documentType = { "schematic-source": 1, "symbol-source": 2, "pcb-source": 3, "footprint-source": 4 }[REQUEST.kind];
+    return { ok: true, kind: REQUEST.kind, documentType,
+      authority: { source: "sys_FileManager.getDocumentSource" }, source, utf8Bytes,
+      limitations: ["Fresh export DOCHEAD client/updateTime/version are excluded; every design record is retained. Native live-state and persisted-source equivalence requires editor-profile validation."] };
+  }
 
   if (REQUEST.kind === "schematic-components") {
     const componentApi = requiredApi("sch_PrimitiveComponent", "SCH_PrimitiveComponent", ["getAll", "getAllPrimitiveId", "getAllPinsByPrimitiveId"]);
@@ -2170,8 +2305,82 @@ export function buildExactReadExpression(request: unknown): string {
   }
 
   if (REQUEST.kind === "schematic-topology") {
-    const netlistApi = requiredApi("sch_Netlist", "SCH_Netlist", ["getNetlist"]);
-    const componentApi = requiredApi("sch_PrimitiveComponent", "SCH_PrimitiveComponent", ["getAll", "getAllPrimitiveId", "getAllPinsByPrimitiveId"]);
+    const netlistApi = requiredApi("sch_ManufactureData", "SCH_ManufactureData", ["getNetlistFile"]);
+    const componentApi = requiredApi("sch_PrimitiveComponent", "SCH_PrimitiveComponent", ["getAll", "getAllPrimitiveId"]);
+    // Pinned sch.js 6064174 resolves get(id) in the active sheet only;
+    // getAll(part,true) at 6064311 enumerates only loaded docMap entries.
+    // Require all declared pages already loaded, then read each owning
+    // Native model's pins. Never initialize documents or change tabs here.
+    const nativeManager = globalThis.SCH?.docMemoryManager;
+    const schematicApi = eda.dmt_Schematic;
+    DIAGNOSTIC.stage = "setup";
+    DIAGNOSTIC.api = "none";
+    DIAGNOSTIC.method = "none";
+    DIAGNOSTIC.expectation = "association";
+    if (!nativeManager || typeof nativeManager.getActiveDoc !== "function" ||
+        typeof nativeManager.getSchDocs !== "function" ||
+        !schematicApi || typeof schematicApi.getCurrentSchematicInfo !== "function") {
+      throw new Error("complete schematic topology scope API is unavailable");
+    }
+    const activeNativePage = nativeManager.getActiveDoc();
+    const declaredScope = (value) => {
+      const info = requiredObject(value, "current schematic information");
+      const schematicUuid = nonemptyString(info.uuid, "current schematic UUID");
+      const projectUuid = nonemptyString(info.parentProjectUuid, "current schematic project UUID");
+      const pageIds = uniqueStrings(requiredArray(info.page, "declared schematic pages").map((page) => {
+        const item = requiredObject(page, "declared schematic page");
+        if (item.parentSchematicUuid !== schematicUuid) throw new Error("declared schematic page has a foreign parent");
+        return nonemptyString(item.uuid, "declared schematic page UUID");
+      }), "declared schematic page UUIDs");
+      if (pageIds.length === 0) throw new Error("current schematic declares no pages");
+      return { schematicUuid, projectUuid, pageIds };
+    };
+    const topologyScope = declaredScope(await schematicApi.getCurrentSchematicInfo.call(schematicApi));
+    const collectNativePinIdentities = () => {
+      DIAGNOSTIC.stage = "setup";
+      DIAGNOSTIC.api = "none";
+      DIAGNOSTIC.method = "none";
+      DIAGNOSTIC.expectation = "association";
+      const active = nativeManager.getActiveDoc();
+      if (!active || active !== activeNativePage || active.project_uuid !== topologyScope.projectUuid ||
+          active.schematicUuid !== topologyScope.schematicUuid || !topologyScope.pageIds.includes(active.uuid)) {
+        throw new Error("native schematic topology active page changed or has a foreign owner");
+      }
+      const pages = requiredArray(nativeManager.getSchDocs(), "loaded schematic pages").filter((page) =>
+        page && page.project_uuid === topologyScope.projectUuid && page.schematicUuid === topologyScope.schematicUuid);
+      const loadedPageIds = uniqueStrings(pages.map((page) => {
+        if (typeof page.isSchSheetDoc !== "function" || page.isSchSheetDoc() !== true) throw new Error("loaded schematic document is not a sheet");
+        return nonemptyString(page.uuid, "loaded schematic page UUID");
+      }), "loaded schematic page UUIDs");
+      DIAGNOSTIC.expectation = "unique-identities";
+      if (JSON.stringify(loadedPageIds) !== JSON.stringify(topologyScope.pageIds)) {
+        throw new Error("declared schematic pages are not all loaded; explicit page loading is required");
+      }
+      const identities = [];
+      for (const page of pages) {
+        if (!page.shapeManager || typeof page.shapeManager.getModels !== "function") throw new Error("native schematic page model manager is unavailable");
+        const models = requiredArray(page.shapeManager.getModels("Symbol"), "native schematic symbols");
+        for (const model of models) {
+          if (model.cmdKey !== "part") continue;
+          if (typeof model.getAttr !== "function") throw new Error("native schematic component attributes are unavailable");
+          const pinNumbers = uniqueStrings(requiredArray(model.pins, "native schematic component pins").map((pin) => {
+            if (!pin || typeof pin.getAttr !== "function") throw new Error("native schematic pin attribute is unavailable");
+            return nonemptyString(pin.getAttr("Pin Number")?.value, "native schematic pin number");
+          }), "native schematic component pin numbers");
+          identities.push({
+            primitiveId: nonemptyString(model.id, "native schematic component ID"),
+            uniqueId: nonemptyString(model.getAttr("Unique ID")?.value, "native schematic component unique ID"),
+            designator: nullableString(model.getAttr("Designator")?.value, "native schematic component designator"),
+            pinNumbers,
+          });
+        }
+      }
+      identities.sort((left, right) => left.primitiveId.localeCompare(right.primitiveId));
+      uniqueStrings(identities.map((item) => item.primitiveId), "native all-page component IDs");
+      return identities;
+    };
+    const nativePinIdentities = collectNativePinIdentities();
+    const nativePinsById = new Map(nativePinIdentities.map((item) => [item.primitiveId, item]));
     // The pinned public adapters for sch_Net.getAllNets/getAllNetsName are
     // unconditional [] stubs, while sch_PrimitiveWire enumeration converts
     // RPC failures to []. Neither can establish complete topology. Use the
@@ -2196,14 +2405,12 @@ export function buildExactReadExpression(request: unknown): string {
         throw new Error("all-page schematic part component " + primitiveId + " has no unique ID");
       }
       const designatorValue = await state(component, "getState_Designator", false);
-      const publicPins = requiredArray(
-        await componentApi.getAllPinsByPrimitiveId(primitiveId),
-        "all-page schematic part component pins",
-      );
-      const pinNumbers = uniqueStrings(
-        await Promise.all(publicPins.map((pin) => state(pin, "getState_PinNumber"))),
-        "all-page schematic part component pin numbers",
-      );
+      const nativeIdentity = nativePinsById.get(primitiveId);
+      if (!nativeIdentity || nativeIdentity.uniqueId !== uniqueIdValue ||
+          nativeIdentity.designator !== (designatorValue ?? null)) {
+        throw new Error("public schematic component identity disagrees with its owning native page");
+      }
+      const pinNumbers = nativeIdentity.pinNumbers;
       componentIdentities.push({
         primitiveId,
         uniqueId: uniqueIdValue,
@@ -2222,13 +2429,33 @@ export function buildExactReadExpression(request: unknown): string {
     if (JSON.stringify(declaredPrimitiveIds) !== JSON.stringify(objectPrimitiveIds)) {
       throw new Error("all-page schematic part ID and object enumerations disagree");
     }
+    if (JSON.stringify(nativePinIdentities.map((item) => item.primitiveId)) !== JSON.stringify(objectPrimitiveIds)) {
+      throw new Error("public all-page component inventory disagrees with complete declared native pages");
+    }
     if (new Set(componentIdentities.map((item) => item.uniqueId)).size !== componentIdentities.length) {
       throw new Error("all-page schematic part components contain duplicate unique IDs");
     }
 
-    const netlist = await netlistApi.getNetlist("JLCEDA");
-    if (typeof netlist !== "string") {
-      throw new Error("schematic netlist is unavailable");
+    // The in-memory file route avoids the deprecated getter's per-footprint
+    // Display-title lookups. An explicit neutral name also skips BOM naming.
+    // No saveFile, download, dialog, or fallback getter is invoked here.
+    const maximumNetlistBytes = 16 * 1024 * 1024;
+    const netlistFile = await netlistApi.getNetlistFile("easyeda-control-topology", "JLCEDA");
+    if (!netlistFile || typeof netlistFile !== "object" ||
+      netlistFile.name !== "easyeda-control-topology.enet" ||
+      netlistFile.type !== "text/plain" || typeof netlistFile.text !== "function" ||
+      !Number.isSafeInteger(netlistFile.size) || netlistFile.size <= 0 ||
+      netlistFile.size > maximumNetlistBytes) {
+      throw new Error("schematic netlist file is missing, malformed, or exceeds 16 MiB");
+    }
+    const netlistSize = netlistFile.size;
+    const netlist = await netlistFile.text();
+    if (typeof netlist !== "string" || netlist.trim().length === 0 ||
+      netlist.length > maximumNetlistBytes ||
+      new TextEncoder().encode(netlist).byteLength !== netlistSize ||
+      netlistFile.size !== netlistSize || netlistFile.type !== "text/plain" ||
+      netlistFile.name !== "easyeda-control-topology.enet") {
+      throw new Error("schematic netlist file text is invalid or contradicts its metadata");
     }
     const splitJsonDocuments = (source) => {
       try {
@@ -2315,6 +2542,7 @@ export function buildExactReadExpression(request: unknown): string {
     }
     const identityByUniqueId = new Map(componentIdentities.map((item) => [item.uniqueId, item]));
     if (compiledConnectivity.length !== componentIdentities.length) {
+      DIAGNOSTIC.expectation = "unique-identities";
       throw new Error("compiled schematic netlist count does not match all-page part components");
     }
     for (const compiled of compiledConnectivity) {
@@ -2325,8 +2553,13 @@ export function buildExactReadExpression(request: unknown): string {
         identity.designator !== compiled.designator ||
         JSON.stringify(identity.pinNumbers) !== JSON.stringify(compiledPinNumbers)
       ) {
+        DIAGNOSTIC.expectation = "association";
         throw new Error("compiled schematic netlist identity does not match all-page part components");
       }
+    }
+    if (JSON.stringify(declaredScope(await schematicApi.getCurrentSchematicInfo.call(schematicApi))) !== JSON.stringify(topologyScope) ||
+        JSON.stringify(collectNativePinIdentities()) !== JSON.stringify(nativePinIdentities)) {
+      throw new Error("declared schematic scope or native component pin identities changed during compilation");
     }
     const correlationByUniqueId = {};
     for (const identity of componentIdentities) {
@@ -2341,12 +2574,12 @@ export function buildExactReadExpression(request: unknown): string {
       kind: REQUEST.kind,
       documentType: 1,
       authority: {
-        connectivity: "sch_Netlist.getNetlist(JLCEDA)",
+        connectivity: "sch_ManufactureData.getNetlistFile(JLCEDA)",
         wireGeometry: "unavailable",
       },
       componentCorrelation: {
         status: "exact-match",
-        source: "sch_PrimitiveComponent.getAll(part,true)",
+        source: "sch_PrimitiveComponent.getAll(part,true)+complete-declared-page-native-pins",
         componentCount: componentIdentities.length,
         pinCount: componentIdentities.reduce((total, item) => total + item.pinNumbers.length, 0),
         primitiveIds: componentIdentities.map((item) => item.primitiveId),
@@ -2356,6 +2589,8 @@ export function buildExactReadExpression(request: unknown): string {
       limitations: [
         "The pinned sch_Net net-tree/name adapters are hard stubs and are not read.",
         "The pinned sch_PrimitiveWire enumerators swallow RPC failures, so wire geometry is not claimed complete.",
+        "Footprint Name enrichment is omitted; the in-memory compiled netlist file already contains component and pin connectivity.",
+        "All declared pages must already be loaded; pin identities come from each owning native page because the public by-ID getter is active-page-only.",
       ],
       compiledConnectivity,
     };
@@ -2403,10 +2638,6 @@ export function buildExactReadExpression(request: unknown): string {
       };
       if (REQUEST.includeBounds) record.bounds = await bbox(primitiveApi, primitiveId, "PCB component " + primitiveId);
       if (REQUEST.includePins) {
-        const rawPadSummary = await state(component, "getState_Pads", false);
-        const padSummary = rawPadSummary === null
-          ? []
-          : requiredArray(plain(rawPadSummary, "PCB pad summary"), "PCB pad summary");
         const pins = requiredArray(await componentApi.getAllPinsByPrimitiveId(primitiveId), "PCB component pads");
         record.pads = [];
         for (const wrapper of pins) {
@@ -2453,14 +2684,6 @@ export function buildExactReadExpression(request: unknown): string {
         if (new Set(record.pads.map((pad) => pad.primitiveId)).size !== record.pads.length) {
           throw new Error("PCB component pads contain duplicate primitive IDs");
         }
-        const summaryIds = uniqueStrings(
-          padSummary.map((pad) => pad?.primitiveId),
-          "PCB component pad summary IDs",
-        );
-        const directIds = record.pads.map((pad) => pad.primitiveId).sort();
-        if (JSON.stringify(summaryIds) !== JSON.stringify(directIds)) {
-          throw new Error("PCB component pad summary and direct pad enumeration disagree");
-        }
       }
       byPrimitiveId[primitiveId] = record;
     }
@@ -2472,7 +2695,7 @@ export function buildExactReadExpression(request: unknown): string {
       units: { coordinates: "mil", bounds: "mil", transformedPadCoordinates: "mil" },
       limitations: {
         componentPadWrapper:
-          "Placed component-pad centers, identity, layer, number, and net only; pad/hole geometry is intentionally omitted because this pinned wrapper has a known 0.1 drill-scale defect.",
+          "Placed component-pad centers, identity, layer, number, and net only; pad/hole geometry is intentionally omitted because this pinned wrapper has a known 0.1 drill-scale defect. getState_Pads summaries are not physical-pad authority: native component serialization uses local child IDs and includes footprint vias.",
       },
       primitiveIds: Object.keys(byPrimitiveId).sort(),
       byPrimitiveId,
@@ -2752,6 +2975,7 @@ export function buildExactReadExpression(request: unknown): string {
     const componentPadIds = [];
     const componentPadsByPrimitiveId = {};
     const componentPadIdsByComponentPrimitiveId = {};
+    const componentPadApi = requiredApi("pcb_PrimitiveComponent", "PCB_PrimitiveComponent", ["getAllPinsByPrimitiveId"]);
     for (const component of objectsByFamily.components) {
       const componentId = nonemptyString(
         await state(component, "getState_PrimitiveId"),
@@ -2761,44 +2985,45 @@ export function buildExactReadExpression(request: unknown): string {
         throw new Error("PCB component pad correlation contains a duplicate component ID");
       }
       componentPadIdsByComponentPrimitiveId[componentId] = [];
-      const rawPads = await state(component, "getState_Pads", false);
-      const pads = rawPads === null
-        ? []
-        : requiredArray(rawPads, "PCB component pad summary");
+      const pads = requiredArray(
+        await componentPadApi.getAllPinsByPrimitiveId(componentId),
+        "PCB component physical pads",
+      );
       for (const pad of pads) {
         const padId = nonemptyString(
-          pad?.primitiveId,
-          "PCB component pad summary primitive ID",
+          await state(pad, "getState_PrimitiveId"),
+          "PCB component physical pad primitive ID",
         );
+        const parentId = nonemptyString(await state(pad, "getState_ParentComponentPrimitiveId"), "PCB component physical pad parent");
+        const primitiveType = nonemptyString(await state(pad, "getState_PrimitiveType"), "PCB component physical pad type");
+        const padNumber = requiredString(await state(pad, "getState_PadNumber"), "PCB component physical pad number");
+        const nullableNet = nullableString(await state(pad, "getState_Net", false), "PCB component physical pad net");
         if (
-          !padId ||
-          typeof pad?.padNumber !== "string" ||
-          !["string", "undefined"].includes(typeof pad?.net)
+          parentId !== componentId || primitiveType !== "ComponentPad"
         ) {
-          throw new Error("PCB component pad summary contains an invalid row");
+          throw new Error("PCB component physical pad has a wrong parent or primitive type");
         }
         if (componentPadsByPrimitiveId[padId]) {
-          throw new Error("PCB component pad summary contains duplicate primitive IDs");
+          throw new Error("PCB component physical pads contain duplicate primitive IDs");
         }
         const directPad = families.pads.byPrimitiveId[padId];
         if (!directPad) {
-          throw new Error("PCB component pad summary references a pad absent from pcb_PrimitivePad");
+          throw new Error("PCB component physical pad is absent from pcb_PrimitivePad");
         }
-        const nullableNet = pad.net ?? null;
-        if (directPad.padNumber !== pad.padNumber || directPad.net !== nullableNet) {
-          throw new Error("PCB component pad summary disagrees with direct pad identity or net");
+        if (directPad.padNumber !== padNumber || directPad.net !== nullableNet) {
+          throw new Error("PCB component physical pad disagrees with direct pad number or net");
         }
         componentPadIds.push(padId);
         componentPadIdsByComponentPrimitiveId[componentId].push(padId);
         componentPadsByPrimitiveId[padId] = {
           primitiveId: padId,
           parentComponentPrimitiveId: componentId,
-          padNumber: pad.padNumber,
+          padNumber,
           net: nullableNet,
-          source: "component-getState_Pads",
+          source: "component-getAllPinsByPrimitiveId",
         };
         directPad.parentComponentPrimitiveId = componentId;
-        directPad.componentCorrelationSource = "component-getState_Pads";
+        directPad.componentCorrelationSource = "component-getAllPinsByPrimitiveId";
       }
       componentPadIdsByComponentPrimitiveId[componentId].sort();
     }
@@ -2830,7 +3055,7 @@ export function buildExactReadExpression(request: unknown): string {
         directPads:
           "pcb_PrimitivePad enumerates both component-owned and standalone pads; its direct state is the sole physical pad and hole record.",
         componentPadCorrelation:
-          "Component getState_Pads contributes parent identity, pad number, and nullable net as an exact subset correlation; the pinned mapper emits undefined for a legitimate zero-pad component, which is normalized to an empty per-component list, and it is never counted as a second physical pad family.",
+          "Component getAllPinsByPrimitiveId contributes global physical-pad IDs, explicit parent identity, pad number, and nullable net as an exact subset of direct pcb_PrimitivePad state, never a second physical pad family. getState_Pads summaries are not used: native serialization supplies local child IDs and also includes footprint vias.",
         pouredCorrelation:
           "pcb_PrimitivePoured groups derived fill state by its parent pour ID; parent IDs are correlated to pours and child getState_PourFills IDs identify fill pieces, with no second primitive count.",
         regionRuleTypes:
@@ -3063,9 +3288,40 @@ export function buildExactReadExpression(request: unknown): string {
   }
 
   throw new Error("unsupported exact-reader request");
+  } catch (error) {
+    const failure = new Error(error instanceof Error ? error.message : "Exact reader failed.");
+    failure.exactReaderDiagnostic = Object.freeze({ ...DIAGNOSTIC });
+    throw failure;
+  }
 })()`;
 }
 
 export function buildExactReadCode(request: unknown): string {
-  return `return await ${buildExactReadExpression(request)};`;
+  const diagnosticAllowed = Object.fromEntries(
+    Object.entries(exactDiagnosticAllowed).map(([key, values]) => [key, [...values]]),
+  );
+  return `
+try {
+  const payload = await ${buildExactReadExpression(request)};
+  const json = JSON.stringify(payload, (_key, value) => {
+    if (value === null || typeof value === "string" || typeof value === "boolean" ||
+        (typeof value === "number" && Number.isFinite(value)) ||
+        (typeof value === "object" && (Array.isArray(value) || Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null))) return value;
+    throw new Error("exact-transport-non-json");
+  });
+  const maximumBytes = ${EXACT_READ_ENVELOPE_MAX_BYTES};
+  if (typeof json !== "string" || json.length > maximumBytes) throw new Error("exact-transport-oversized");
+  const utf8Bytes = new TextEncoder().encode(json).byteLength;
+  const envelope = { schema: ${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)}, utf8Bytes, json };
+  if (utf8Bytes > maximumBytes || new TextEncoder().encode(JSON.stringify(envelope)).byteLength > maximumBytes) throw new Error("exact-transport-oversized");
+  return envelope;
+} catch (error) {
+  const allowed = ${JSON.stringify(diagnosticAllowed)};
+  const detail = error && typeof error === "object" ? error.exactReaderDiagnostic : null;
+  const fields = ["kind", "stage", "api", "method", "expectation"];
+  if (detail && typeof detail === "object" && fields.every((key) => typeof detail[key] === "string" && allowed[key].includes(detail[key]))) {
+    throw new Error("EASYEDA_EXACT_READ_FAILURE|" + fields.map((key) => detail[key]).join("|"));
+  }
+  throw new Error("Exact reader could not produce a bounded JSON transport envelope.");
+}`;
 }
