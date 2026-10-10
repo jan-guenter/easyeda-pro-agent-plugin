@@ -1,3 +1,4 @@
+import { configureTestControlRoot } from "./test-control-root.ts";
 /* oxlint-disable import/max-dependencies -- Sealed transaction tests compose real journal storage, executor and fingerprint boundaries with isolated native doubles. */
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -20,12 +21,12 @@ let artifacts: { loadOperation: typeof loadOperation; updateOperation: typeof up
 let engines: { EasyedaControlEngine: typeof EasyedaControlEngine };
 before(async () => {
   root = await mkdtemp("/tmp/easyeda-close-transaction-");
-  originalRoot = process.env["EASYEDA_CONTROL_DATA_DIR"]; process.env["EASYEDA_CONTROL_DATA_DIR"] = root;
+  originalRoot = process.env["EASYEDA_CONTROL_DATA_DIR"]; configureTestControlRoot(root);
   [library, artifacts, engines] = await Promise.all([import("../src/library-execution.ts"), import("../src/artifacts.ts"), import("../src/engine.ts")]);
 });
 afterEach(async () => { mock.restoreAll(); await rm(join(root, "operations"), { recursive: true, force: true }); });
 after(async () => {
-  if (originalRoot === undefined) { delete process.env["EASYEDA_CONTROL_DATA_DIR"]; } else { process.env["EASYEDA_CONTROL_DATA_DIR"] = originalRoot; }
+  if (originalRoot === undefined) { configureTestControlRoot(); } else { configureTestControlRoot(originalRoot); }
   await rm(root, { recursive: true, force: true });
 });
 const HASH = "a".repeat(64);

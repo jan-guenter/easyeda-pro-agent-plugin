@@ -110,6 +110,14 @@ Every live design facade acquires an authenticated dispatch lease for the exact 
 
 Call `easyeda_control_context` immediately before a scoped read or write. Compare exact values supplied by the current project, not names copied from an old script. Require a nonempty project UUID and `.eprj2` path, a nonempty document UUID, an observed document type, and the active tab when a tool targets a tab.
 
+Build `expectedContext` from the returned `project` and `document` objects,
+preserving their path, UUID, type, tab and owner fields. Add the observed
+`schematic` or `schematicPage` identity when the operation requires it. Do not
+copy the entire response: `runtimeIdentity` from `includeRuntimeIdentity:true`
+is a separate diagnostic, not a field returned by the ordinary context guard.
+Keep the full `upstream.stableFingerprint` from authenticated status in
+`expectedFingerprint`; do not substitute the diagnostic for that fingerprint.
+
 The current connected-read-admitted tuple and source-specific version/path rules are in [compatibility.md](compatibility.md#current-read-admission-2026-09-11). The facade resolves the missing public project path using an exact native registry record with original-path hash proof and post-read context equality. It checks the active schematic page separately from its parent container.
 
 The fixed context implementation uses these public calls. They explain its

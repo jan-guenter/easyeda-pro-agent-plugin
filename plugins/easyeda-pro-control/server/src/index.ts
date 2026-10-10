@@ -50,6 +50,7 @@ import {
   validatePrivateFingerprint,
 } from "./core.ts";
 import { EasyedaControlEngine, SerializedGate } from "./engine.ts";
+import type { StatusAdmissionObservation } from "./engine.ts";
 import { DesignExecutor } from "./design-execution.ts";
 import { executeAndCommitDesign } from "./design-execute.ts";
 import { RuleCheckExecutor } from "./check-execution.ts";
@@ -784,22 +785,22 @@ function serializedLiveResult<Input>(
 }
 
 function serializedStatusGuarded<Input>(
-  handler: FacadeHandler<Input>,
+  handler: (input: Input, admission: StatusAdmissionObservation) => unknown,
 ): (input: Input) => Promise<CallToolResult> {
   return guarded((input) =>
     bridgeGate.run(async () => {
-      await engine.assertBridgeDispatchAllowed();
+      const admission = await engine.observeStatusAdmission();
       await upstream.listTools();
       const lifecycle = upstream.bridgeSessionLifecycle();
       if (lifecycle?.activeSession === null) {
-        const disconnectedObservation = await handler(input);
+        const disconnectedObservation = await handler(input, admission);
         if (upstream.bridgeSessionLifecycle()?.activeSession === null) { return disconnectedObservation; }
         // A renderer may authenticate while the first read-only startup probe
         // Waits. Resample under a new exact lease instead of issuing unbound calls.
-        return upstream.withAuthenticatedBridgeDispatchScope(() => handler(input));
+        return upstream.withAuthenticatedBridgeDispatchScope(() => handler(input, admission));
       }
       return upstream.withAuthenticatedBridgeDispatchScope(() =>
-        handler(input),
+        handler(input, admission),
       );
     }),
   );
@@ -1482,6 +1483,7 @@ const statusSuccessOutputSchema = z
     bridgeConnection: recordSchema.optional(),
     upstreamProcess: recordSchema.optional(),
     incompleteOperations: z.array(recordSchema).optional(),
+    incompleteOperationsObservedAt: nonEmptyStringSchema.optional(),
     safetyModel: nonEmptyStringSchema.optional(),
     ...optionalFailureOutputShape,
   })
@@ -1643,7 +1645,7 @@ registerFacadeTool(
       idempotentHint: true,
     },
   },
-  serializedStatusGuarded(async () => ({
+  serializedStatusGuarded(async (_input, admission) => ({
     facade: {
       version: CONTROL_VERSION,
       dataDirectory: controlDataDirectory(),
@@ -1654,7 +1656,8 @@ registerFacadeTool(
     upstream: await engine.status(),
     bridgeConnection: upstream.bridgeConnectionDiagnostics(),
     upstreamProcess: upstream.processDiagnostics(),
-    incompleteOperations: await engine.recover(),
+    incompleteOperations: admission.incompleteOperations,
+    incompleteOperationsObservedAt: admission.observedAt,
     safetyModel: "plan-apply-verify-save-reopen-checkpoint",
   })),
 );
@@ -1832,7 +1835,7 @@ registerFacadeTool(
   "easyeda_control_design",
   {
     title: "Edit and verify a typed EasyEDA design transaction",
-    description: "Apply one typed design operation, independently verify native records, then explicitly commit with save/reopen or restore the exact unsaved baseline. A retained contained runtime is required; arbitrary JavaScript is never accepted.",
+    description: "Apply one typed design operation, independently verify native records, then explicitly commit with save/reopen or restore the exact unsaved baseline. Type-1 schematic edits admit only sealed single-page stored attribute/text display batches; generic compiled-topology edits remain blocked. Inspect exact coverage and pending live-validation limits. A retained contained runtime is required; arbitrary JavaScript is never accepted.",
     inputSchema: { request: designRequestSchema },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   },

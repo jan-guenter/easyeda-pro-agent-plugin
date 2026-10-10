@@ -1,5 +1,38 @@
 # Schematic work
 
+Current compiled-topology transactions are blocked because the installed
+netlist getter can annotate and Save All. Historical wire, component and repair
+workflows below remain documentation, not permission to execute those paths.
+The only new type-1 transaction exception is the sealed profile below.
+
+## Single-page display-only transactions
+
+Use `sch.layout.batch` containing only `sch.attribute.display` and
+`sch.text.display`, with literal IDs of existing stored records. Each patch
+must have a nonempty exact effect and a complete stored-field inverse. This
+does not change text content, electrical values, no-connect state, geometry
+other than the supported display fields, or create/delete objects. Translation,
+wire and flag edits, label creation, and batches containing any non-display
+step remain blocked. Attribute and text display steps can share one batch.
+
+Admission requires one complete ordinary page in its schematic, exact local
+project/branch ownership, unchanged peer documents and fully represented flat
+parts/endpoints. Hierarchy, variants, grouped records, unsupported templates and
+unnamed/generated wire cases refuse. The existing default-net-name and interpage
+name settings must satisfy the reader; do not change preferences to pass.
+
+The executor retains the profile, source/native hashes, complete saved membership
+and endpoint topology inside the original plan. Apply, inverse, Save/reopen and
+reconciliation recheck that binding. The standalone flat diagnostic still reports
+`transactionTopology:false`; its output is not caller-supplied execution authority.
+Neither compilation nor Save All is used. Before Save, durable state must match
+the complete original baseline or the exact intended delta, including all peers.
+An attempted Save is never repeated. Page-loading and historical repair routes
+cannot recover this profile; inspect the original journal after a refusal.
+
+This profile has source and adversarial offline tests. Successful connected
+apply/Save/reopen and inverse validation remain pending for the new candidate.
+
 Do not use `easyeda_schematic_verify_write` for component proof in the pinned upstream build. Its handler expects an array while the bridge returns `{ total, items }`, so it can report `components_available: false` despite live components. Its name does not make its payload trustworthy.
 
 Use `easyeda_control_exact_read` with `schematic-components` for placed component state. It exposes primitive and unique IDs, normal component/symbol/footprint associations, CBB/project and CBB-symbol UUIDs, pose, BOM/PCB inclusion, sourcing fields, adapter-filtered component `OtherProperty`, and optional pins and bounds. The pinned Component3 mapper removes `3D Model`, title/transform, Channel ID, Group ID, Reuse Block, supplier, and supplierId keys from component `OtherProperty`; it also does not populate pin `OtherProperty` or either CBB `libraryUuid`. Those filtered ownership/property fields are unavailable. The reader is read-only. Typed schematic edits use complete source/native profiles through `easyeda_control_design`, not the disabled legacy PCB state machine.

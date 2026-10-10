@@ -174,7 +174,8 @@ const footprintLifecycleCodes = new Map([
 // Stages. Exact whole-message matching must not admit suffixes, paths or stacks.
 const operationStages = [
   { prefix: "Owned editor lookup refused at ", category: "native-editor-tab-lookup", stages: ["api", "before-context", "before-tree", "lookup", "after-tree"] },
-  { prefix: "Closed empty page creation refused at ", category: "native-page-create", stages: ["host", "before-read", "permission", "create", "after-read"] },
+  { prefix: "Closed empty page creation refused at ", category: "native-page-create", stages: ["host", "before-read", "permission", "create"] },
+  { prefix: "Closed empty symbol creation refused at ", category: "native-symbol-create", stages: ["host", "before-read", "permission", "create"] },
   { prefix: "Clean document close refused at ", category: "native-document-close", stages: ["host", "before-state", "dispatch-state", "close", "terminal-removal", "after-state", "reconciliation"] },
   { prefix: "Document activation refused: ", category: "native-document-activation", stages: ["api", "before-context", "before-tabs", "loaded-frames", "preferences", "dispatch-context", "activate", "target-readiness"] },
   { prefix: "Closed page rename refused at ", category: "native-page-rename", stages: ["host", "before-read", "closed-target", "rename", "after-read"] },

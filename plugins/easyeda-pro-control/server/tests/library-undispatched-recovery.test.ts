@@ -1,3 +1,4 @@
+import { configureTestControlRoot } from "./test-control-root.ts";
 /* oxlint-disable import/max-dependencies -- Exercise sealed journal storage, immutable native plans and recovery together with synthetic read-only runtime evidence. */
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -17,10 +18,11 @@ import { SCHEMATIC_NATIVE_IMPLEMENTATION } from "../src/native-profiles.ts";
 import { prepareDocumentActivation } from "../src/document-activation.ts";
 import { prepareDocumentClose } from "../src/document-close.ts";
 import { prepareDocumentPageCreate } from "../src/document-page-create.ts";
+import { prepareProjectSymbolCreate } from "../src/project-symbol-create.ts";
 import { assertUndispatchedLibraryPreparation, hasMissingLibraryPreparation } from "../src/library-undispatched-recovery.ts";
 
 type Value = Record<string, unknown>;
-type Action = "document.activate" | "document.close" | "document.page.create";
+type Action = "document.activate" | "document.close" | "document.page.create" | "library.symbol.create";
 type Prefix = "before-failed" | "before-retained" | "preparation-failed";
 type Fault = "none" | "source" | "history" | "database" | "context" | "final-context" | "final-source" | "baseline" | "final-checkpoint" | "runtime" | "journal" | "update" | "load-context" | "isolation-context";
 let originalRoot: string | undefined, root = "";
@@ -28,12 +30,12 @@ let artifacts: { createOperation: typeof createOperation; loadOperation: typeof 
 let recovery: { LibraryRecoveryCoordinator: typeof LibraryRecoveryCoordinator };
 beforeAll(async () => {
   root = await mkdtemp("/tmp/easyeda-undispatched-recovery-"); originalRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
-  process.env["EASYEDA_CONTROL_DATA_DIR"] = root;
+  configureTestControlRoot(root);
   [artifacts, recovery] = await Promise.all([import("../src/artifacts.ts"), import("../src/library-recovery.ts")]);
 });
 afterEach(async () => { await rm(join(root, "operations"), { recursive: true, force: true }); });
 after(async () => {
-  if (originalRoot === undefined) { delete process.env["EASYEDA_CONTROL_DATA_DIR"]; } else { process.env["EASYEDA_CONTROL_DATA_DIR"] = originalRoot; }
+  if (originalRoot === undefined) { configureTestControlRoot(); } else { configureTestControlRoot(originalRoot); }
   await rm(root, { recursive: true, force: true });
 });
 const HASH = "a".repeat(64), SOURCE = { source: "complete original board source" };
@@ -72,6 +74,7 @@ function checkpoint(label: string, changed = false): CheckpointReceipt {
     checkpointIdentity: { dev: "1", ino: "5", birthtimeNs: "6", ctimeNs: "7" } };
 }
 function operation(action: Action): LibraryOperation {
+  if (action === "library.symbol.create") { return { id: "create-symbol", action, libraryUuid: "project", name: "Empty symbol", symbolType: 2 }; }
   return action === "document.page.create" ? { id: "create-page", action, schematic: { uuid: "parent" } } : { id: "lifecycle", action, tabId: "footprint@project" };
 }
 async function fixture(action: Action = "document.page.create", prefix: Prefix = "preparation-failed", source = SOURCE): Promise<{
@@ -95,6 +98,7 @@ async function fixture(action: Action = "document.page.create", prefix: Prefix =
       let phase: string;
       if (action === "document.activate") { journal.activationPlan = prepareDocumentActivation(plan.operation, history(), CONTEXT); phase = "activation-prepared"; }
       else if (action === "document.close") { journal.closePlan = prepareDocumentClose(plan.operation, history(), CONTEXT); phase = "close-prepared"; }
+      else if (action === "library.symbol.create") { journal.symbolCreatePlan = prepareProjectSymbolCreate(plan.operation, history(), CONTEXT); phase = "symbol-create-prepared"; }
       else { journal.pageCreatePlan = prepareDocumentPageCreate(plan.operation, history(), CONTEXT); phase = "page-create-prepared"; }
       journal.sequence += 1;
       await artifacts.writePhaseArtifact(operationId, journal.sequence, phase, { publicationCollision: true });
@@ -145,7 +149,7 @@ async function fixture(action: Action = "document.page.create", prefix: Prefix =
   return { journal, coordinator, fault, counts };
 }
 
-for (const action of ["document.activate", "document.close", "document.page.create"] as const) {
+for (const action of ["document.activate", "document.close", "document.page.create", "library.symbol.create"] as const) {
   for (const prefix of ["before-failed", "before-retained", "preparation-failed"] as const) {
     // oxlint-disable-next-line eslint/no-loop-func -- Hooks initialize module handles before each independent immutable case executes.
     void test(`${action} ${prefix} invalidates the sealed attempt without a dispatch or another publication phase`, async () => {
@@ -184,7 +188,7 @@ const forbiddenKeys = ["orphanedCallPhase", "orphanedCallMarkedAt", "orphanedCal
   "bridgeDispatchBeforeOrphan", "executionAuthorityBeforeOrphan", "unsavedStateDiscardedByRestart", "baselineDiscardAuthorized", "runtimeStatus", "facadeImplementation",
   "candidateFinalCheckpoint", "finalCheckpoint", "baselineReopened", "baselineHash", "baselineInvariants", "unknownPhase", "lastError", "runtimeGuardFailure",
   "recoveryActivationResumeState", "recoveryActivationPriorUnknownPhase", "recoveryAttemptCount", "recoverySourceSha256", "mutationReceipt", "result", "runtimeFingerprint",
-  "saveIntent", "devicePlan", "symbolPlan", "pageRenamePlan", "activationPlan", "closePlan", "futureDispatchField"];
+  "saveIntent", "devicePlan", "symbolPlan", "symbolCreatePlan", "pageRenamePlan", "activationPlan", "closePlan", "futureDispatchField"];
 void test("all own dispatch/restart/receipt/unknown fields refuse even undefined, null or false", async () => {
   const run = await fixture(); assertUndispatchedLibraryPreparation(run.journal);
   for (const key of forbiddenKeys) {

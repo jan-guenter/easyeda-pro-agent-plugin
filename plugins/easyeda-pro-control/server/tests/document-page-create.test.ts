@@ -82,6 +82,8 @@ function fixture(options: FixtureOptions = {}): { run: () => Promise<unknown>; w
     if (options.fault === "extra-effect") { pages.push({ ...created, uuid: "f".repeat(16) }); }
     return Promise.resolve({ message: options.fault === "bad-ack" ? null : created });
   } } };
+  const native = { PRO_EDITOR_VERSION: "3.2", gVars: host, UI: { concurrentDesign: permission, tabBar: { getFilterTabs: (): Value[] => tabs,
+    getActiveTab: (): string => "active@project", hasTabUnSaved: (): boolean => dirty, isTabUnSaved: (tabId: string): boolean => dirty || (tabId === "0" && options.placeholderDirty === true) } } };
   function fault(point: string): void {
     if (options.faultAt !== point) { return; }
     if (options.fault === "dirty") { dirty = true; }
@@ -95,9 +97,14 @@ function fixture(options: FixtureOptions = {}): { run: () => Promise<unknown>; w
     if (options.fault === "ambiguous-dirty") { const tab = tabs[0]; assert.ok(tab); tab["isUnSaved"] = undefined; }
     if (options.fault === "duplicate-sibling") { const page = pages[0]; assert.ok(page); pages.push({ ...page }); }
     if (options.fault === "sibling-title") { const page = pages[0]; assert.ok(page); page["display_title"] = "Changed"; }
+    if (options.fault === "host-replaced") { Object.assign(native, { gVars: {} }); }
+    if (options.fault === "ui-replaced") { Object.assign(native, { UI: {} }); }
+    if (options.fault === "bus-replaced") { Object.assign(host, { messageBus: {} }); }
+    if (options.fault === "tabs-replaced") { Object.assign(native.UI, { tabBar: {} }); }
+    if (options.fault === "permission-replaced") { Object.assign(native.UI, { concurrentDesign: {} }); }
+    if (options.fault === "outer-host-ambiguous") { Object.assign(native, { top: { gVars: {} } }); }
+    if (options.fault === "outer-ui-ambiguous") { Object.assign(native, { top: { UI: {} } }); }
   }
-  const native = { PRO_EDITOR_VERSION: "3.2", gVars: host, UI: { concurrentDesign: permission, tabBar: { getFilterTabs: (): Value[] => tabs,
-    getActiveTab: (): string => "active@project", hasTabUnSaved: (): boolean => dirty, isTabUnSaved: (tabId: string): boolean => dirty || (tabId === "0" && options.placeholderDirty === true) } } };
   const eda = { dmt_Project: { getCurrentProjectInfo: (): Promise<unknown> => { calls.push("project"); fault("project"); return Promise.resolve(CONTEXT.project); } },
     dmt_SelectControl: { getCurrentDocumentInfo: (): Promise<unknown> => {
       calls.push("document"); fault("document"); documentCalls += 1;
@@ -152,6 +159,7 @@ void test("fixed native creation writes exactly once and returns its original id
   assert.deepEqual(decodeExactReadEnvelope(await run.run()), { kind: "project-page-create", targetId: CREATED, createdId: CREATED });
   assert.equal(run.writes(), 1);
   assert.equal(run.calls[run.calls.indexOf("/PrjDB/sheet/addData") - 1], "document");
+  assert.equal(run.calls.at(-1), "/PrjDB/sheet/addData");
   assert.ok(run.calls.every((call) => !/open|save|template|drawing/iu.test(call)));
 });
 void test("page creation admits only the exact singleton clean hidden project placeholder", async () => {
@@ -169,7 +177,8 @@ void test("page creation admits only the exact singleton clean hidden project pl
 for (const fault of ["readonly", "permission", "owner", "native-branch", "archive", "parent-title", "parent-source", "missing-siblings", "failed-siblings"]) {
   void test(`page create refuses ${fault} before writing`, async () => { const run = fixture({ fault }); await assert.rejects(run.run()); assert.equal(run.writes(), 0); });
 }
-for (const fault of ["dirty", "host", "branch", "history", "v2", "concurrent", "context", "extra-tab", "ambiguous-dirty", "duplicate-sibling", "sibling-title"]) {
+for (const fault of ["dirty", "host", "branch", "history", "v2", "concurrent", "context", "extra-tab", "ambiguous-dirty", "duplicate-sibling", "sibling-title",
+  "host-replaced", "ui-replaced", "bus-replaced", "tabs-replaced", "permission-replaced", "outer-host-ambiguous", "outer-ui-ambiguous"]) {
   for (const faultAt of ["project", "document", "/PrjDB/schematic/getData", "/PrjDB/project/getData", "/PrjDB/sheet/getAllKVDatas", "ui/hasDocCreatePermission"]) {
     void test(`page create stops ${fault} after ${faultAt} without dispatch`, async () => {
       const run = fixture({ fault, faultAt }); await assert.rejects(run.run()); assert.equal(run.writes(), 0);
@@ -179,14 +188,17 @@ for (const fault of ["dirty", "host", "branch", "history", "v2", "concurrent", "
 void test("page create rechecks synchronous dirty state after its final context await", async () => {
   const run = fixture({ queuedFinalFault: true }); await assert.rejects(run.run()); assert.equal(run.writes(), 0);
 });
-for (const fault of ["lost-ack", "bad-ack", "existing-id", "extra-effect"]) {
+for (const fault of ["lost-ack", "bad-ack", "existing-id"]) {
   void test(`page creation ${fault} never repeats the original write or leaks native errors`, async () => {
-    const run = fixture({ fault }); await assert.rejects(run.run(), /^Error: Closed empty page creation refused at (?:create|after-read)$/u); assert.equal(run.writes(), 1);
+    const run = fixture({ fault }); await assert.rejects(run.run(), /^Error: Closed empty page creation refused at create$/u); assert.equal(run.writes(), 1);
   });
 }
-void test("a project switch during worker completion cannot redirect the fixed project argument", async () => {
-  const run = fixture({ deferredWriterSwitch: true }); await assert.rejects(run.run(), /after-read/u); assert.equal(run.writes(), 1);
-});
+for (const options of [{ fault: "extra-effect" }, { deferredWriterSwitch: true }]) {
+  void test(`page creation retains native ID for facade post-write proof ${JSON.stringify(options)}`, async () => {
+    const run = fixture(options); assert.deepEqual(decodeExactReadEnvelope(await run.run()), { kind: "project-page-create", targetId: CREATED, createdId: CREATED });
+    assert.equal(run.writes(), 1); assert.equal(run.calls.at(-1), "/PrjDB/sheet/addData");
+  });
+}
 void test("full effect proof accepts one empty page only with its retained native identity", () => {
   const before = history();
   const after = desired(before), plan = prepareDocumentPageCreate(OPERATION, before, CONTEXT);

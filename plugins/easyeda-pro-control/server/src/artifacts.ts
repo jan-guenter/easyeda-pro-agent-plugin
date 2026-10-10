@@ -2035,10 +2035,22 @@ async function verifyOperationArtifacts(
   operationId: string,
   artifacts: readonly ArtifactDescriptor[],
 ): Promise<void> {
-  for (const descriptor of artifacts) {
-    const actual = await hashManagedJsonFile(descriptor.path, "Operation phase artifact");
-    if (actual.bytes !== descriptor.bytes || actual.sha256 !== descriptor.sha256) {
-      throw new Error(`Operation ${operationId} phase artifact failed hash verification.`);
+  // Keep journal parsing sequential and limit concurrent hashing to four 1 MiB
+  // Buffers. Settle the complete batch, including descriptor cleanup, before
+  // Throwing its first failure in descriptor order or starting another batch.
+  const concurrency = 4;
+  for (let offset = 0; offset < artifacts.length; offset += concurrency) {
+    const results = await Promise.allSettled(artifacts.slice(offset, offset + concurrency).map(async (descriptor) => {
+      const actual = await hashManagedJsonFile(descriptor.path, "Operation phase artifact");
+      if (actual.bytes !== descriptor.bytes || actual.sha256 !== descriptor.sha256) {
+        throw new Error(`Operation ${operationId} phase artifact failed hash verification.`);
+      }
+    }));
+    for (const result of results) {
+      if (result.status === "rejected") {
+        const reason: unknown = result.reason;
+        throw toError(reason);
+      }
     }
   }
 }

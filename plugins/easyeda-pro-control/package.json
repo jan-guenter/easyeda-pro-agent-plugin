@@ -22,7 +22,7 @@
     "lint:fix": "oxlint --type-aware . --fix",
     "sanitizer:build": "node scripts/build-descriptor-sanitizer.ts --write",
     "sanitizer:check": "node scripts/build-descriptor-sanitizer.ts --check",
-    "test": "node --test server/tests/*.test.ts",
+    "test": "node --import ./scripts/test-isolation.ts --test server/tests/*.test.ts",
     "validate": "node scripts/validate-plugin.ts",
     "skills:validate": "node scripts/validate-skills.ts",
     "api:coverage:check": "node scripts/generate-api-coverage.ts --check",

@@ -6,6 +6,55 @@ Last updated: 2026-10-10 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Candidate193600, publication pending
+
+- Source adds sealed single-page stored display transactions, closed empty
+  ordinary symbol creation, original creation-ID retention before fallible
+  dispatch cleanup, bounded four-way artifact hashing and one fresh admission
+  scan per status request. Generic compiled schematic edits remain blocked.
+  New candidate connected writer/lifecycle validation is still pending.
+- Clean pinned install/audits pass: zero vulnerabilities,151 signatures and
+  40 attestations. Full verification passes1825 facade tests/one platform skip/
+  zero failures or cancellations and424 bridge tests. Strict types/type-aware
+  lint,774-method coverage, package/seven skills, privacy/repository and offline
+  doctor pass. Independent actionlint and all seven official skill checks pass.
+  Reviewed source155files21e76a5b and bundle71bad2b6; external/native/sanitizer
+  pins unchanged. Publication/installation evidence must follow separately.
+- A test import-order defect wrote twelve synthetic files into live operation
+  storage without any CAD call. Independent provenance review and exact
+  recoverable archival preserved all2793 unrelated evidence files unchanged.
+  Per-worker builtin-only preload isolation now binds all three data paths
+  before static imports; focused tests cover failure and inherited paths.
+  No real journal or production quarantine was edited. Details are in the
+  disposable-validation report; retained private artifacts must not be removed.
+
+### Installed182554 disposable continuation
+
+- Fresh facade loaded the exact installed182554 bundle and authenticated a
+  contained runtime. Existing-project open and both tab/split lookups passed.
+  Closed-symbol description change and a separate original-description restore
+  passed complete16document proofs with native persistence, no Save/reopen.
+  Closed empty-page creation passed exact original-ID/17document proof. The
+  new page is retained, not deleted or recreated. Asset-specific footprint
+  open and one inactive-PCB close passed complete unchanged saved-state proof;
+  close produced one terminal notification and two coherent observations.
+  Generic document.open refused the footprint before dispatch; the skill now
+  specifies the library-specific opener and exact project collection.
+- Native foreground/capture worked in the active unlocked RDP session. Normal
+  close made no Save/Discard choice, discovery proved exit, and the maintained
+  offline checkpoint verifier proved the closed fixture unchanged from the
+  final receipt. All journals from this continuation are terminal. No user project
+  open/read/edit/Save/restore. See the
+  [disposable evidence and limits](docs/api-coverage-disposable-validation-2026-10-10.md).
+- Source work is not yet built, published or installed: empty ordinary project
+  symbol creation; creation-ID retention before fallible dispatch cleanup;
+  bounded concurrent artifact hashing and one fresh status-admission scan;
+  single-page display-only schematic profile integration under adversarial
+  review. No generic type1 electrical route or hidden compiler/SaveAll path is
+  re-enabled. Historical live evidence does not validate this new source.
+
+### Previous182554 publication handoff (historical)
+
 - Restart continuation on installed `172121`: fresh facade authenticated the
   exact cached tuple. Disposable project and footprint opens completed with
   all16documents/full logical database unchanged. One symbol metadata attempt
@@ -341,7 +390,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed Git-marketplace candidate is `0.3.0+codex.20261010182554`, with 26 tools and seven skills, from the draft feature ref. The loaded host remains `172121`; its scoped disposable navigation/refusal/recovery evidence is recorded above. EasyEDA closed normally with no unresolved CAD operation. No live calls followed installation; use supported fresh-chat pickup before testing `182554`. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
+- The installed and loaded Git-marketplace candidate is `0.3.0+codex.20261010182554`, with 26 tools and seven skills, from the draft feature ref. Its scoped disposable lookup, metadata, page-creation and inactive-close evidence is recorded above. EasyEDA closed normally with no unresolved CAD operation; the closed fixture remains verified. Dirty source changes are not installed. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
@@ -370,6 +419,11 @@ specific dated case needed for the current change or retained-journal review.
 - Reject missing, malformed, non-finite, coerced, truncated, or contradictory evidence. Do not turn adapter defects into global corrections.
 - Use append-only or exclusive evidence writes, bounded symlink-safe reads, file-descriptor identity checks, and durable directory synchronization.
 - Add adversarial tests for every safety fix. A test must fail on the unsafe implementation and prove that no downstream mutation was dispatched.
+- Run facade tests through `npm test`, or include `--import ./scripts/test-isolation.ts`
+  for a focused Node test invocation. The builtin-only preload allocates a private
+  root before static imports and binds control, credential and upstream paths.
+  Never point a test at live control data. Retained temporary roots aid failure
+  inspection; do not broadly delete them or alter real operation journals.
 - Keep source and committed bundle in sync. Do not hand-edit `server/dist/server.mjs`.
 - Keep `server/native/easyeda-fd-sanitizer.S`, its linker script, the committed binary, and `server/src/descriptor-sanitizer-identity.ts` synchronized. The exact sanitizer identity is a compatibility boundary, not generated metadata to refresh automatically.
 

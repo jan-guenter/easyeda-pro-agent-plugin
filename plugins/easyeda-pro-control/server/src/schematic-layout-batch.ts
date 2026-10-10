@@ -1,6 +1,8 @@
 /* oxlint-disable import/max-dependencies -- Layout composes separate exact source, native, electrical, storage and derived wire-order proofs. */
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
+import { schematicLayoutBatchSchema, schematicLayoutStepSchema } from "./schematic-layout-schema.ts";
+import type { SchematicLayoutBatch, SchematicLayoutStep as Step } from "./schematic-layout-schema.ts";
 import { canonicalJson, sha256Json } from "./core.ts";
 import { compareDocumentSources } from "./document-source.ts";
 import type { NativeSourceDelta, NativeSourceObject, NativeSourceSnapshot } from "./document-source.ts";
@@ -8,7 +10,7 @@ import { SCHEMATIC_NATIVE_READER_CODE } from "./schematic-native-adapter.ts";
 import type { SchematicNativeComponent, SchematicNativeSnapshot } from "./schematic-native-adapter.ts";
 import { correlateSchematicNativeSource } from "./schematic-source-proof.ts";
 import { verifySchematicLifecycleEquivalence } from "./schematic-lifecycle.ts";
-import { alignSchematicNetFlagCloneLifecycle, netFlagCloneStepSchema, planHistoricalSchematicNetFlagClone, planSchematicNetFlagClone, verifySchematicNetFlagClone } from "./schematic-layout-netflag.ts";
+import { alignSchematicNetFlagCloneLifecycle, planHistoricalSchematicNetFlagClone, planSchematicNetFlagClone, verifySchematicNetFlagClone } from "./schematic-layout-netflag.ts";
 import type { SchematicNetFlagCloneDescriptor } from "./schematic-layout-netflag.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
 import { verifySchematicStorageBaseline, verifySchematicStoragePersistence } from "./schematic-storage-persistence.ts";
@@ -24,6 +26,11 @@ import { deriveSchematicWireGroupRepair, schematicWireGroupRepairDescriptorSchem
 import type { SchematicWireGroupRepairDescriptor } from "./schematic-layout-wire-groups.ts";
 import { buildSchematicLayoutPayloadCode } from "./schematic-layout-transport.ts";
 import { yieldProofEventLoop } from "./cooperative-proof.ts";
+import { assertFlatDisplayRuntimeAction, buildFlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
+import type { FlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
+
+export { schematicLayoutBatchSchema, schematicLayoutStepSchema } from "./schematic-layout-schema.ts";
+export type { SchematicLayoutBatch } from "./schematic-layout-schema.ts";
 
 export const SCHEMATIC_LAYOUT_PROFILE = "easyeda-pro-control.schematic-layout-batch.v1";
 
@@ -57,52 +64,6 @@ export async function verifySchematicLayoutBaselineCooperatively(input: Paramete
   return proof;
 }
 
-const stepIdSchema = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/u);
-const target = z.union([z.object({ primitiveId: z.string().min(1).max(256) }).strict(), z.object({ resultOf: stepIdSchema }).strict()]);
-const finite = z.number();
-const coordinates = z.array(finite).min(4).max(4096).refine((values) => values.length % 2 === 0, "Wire vertices need complete coordinate pairs.");
-const line = z.union([coordinates, z.array(coordinates).min(1).max(256)]);
-const displayObject = z.object({ x: finite.nullable(), y: finite.nullable(), rotation: finite.nullable(),
-  fontName: z.string().min(1).max(512).nullable(), fontSize: finite.positive().nullable(), bold: z.boolean().nullable(),
-  italic: z.boolean().nullable(), underLine: z.boolean().nullable(), alignMode: z.number().int().min(1).max(9).nullable(),
-  keyVisible: z.boolean().nullable(), valueVisible: z.boolean().nullable(),
-}).strict().partial();
-const displayPatch = displayObject.refine((patch) => Object.keys(patch).length > 0, "Empty display patch.");
-const textDisplayPatch = displayObject.omit({ keyVisible: true, valueVisible: true }).refine((patch) => Object.keys(patch).length > 0, "Empty text display patch.");
-const wireCreateProperties = z.object({ line, color: z.string().max(128).nullable(), lineWidth: finite.min(1).max(10).nullable(),
-  lineType: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]).nullable() }).strict();
-const labelCreateProperties = z.object({ x: finite, y: finite, net: z.string().min(1).max(512) }).strict();
-export const schematicLayoutStepSchema = z.discriminatedUnion("action", [
-  netFlagCloneStepSchema,
-  z.object({ id: stepIdSchema, action: z.literal("sch.component.translate"), target, x: finite, y: finite }).strict(),
-  z.object({ id: stepIdSchema, action: z.literal("sch.attribute.display"), target, patch: displayPatch }).strict(),
-  z.object({ id: stepIdSchema, action: z.literal("sch.text.display"), target, patch: textDisplayPatch }).strict(),
-  z.object({ id: stepIdSchema, action: z.literal("sch.text.delete"), target }).strict(),
-  z.object({ id: stepIdSchema, action: z.literal("sch.wire.create"), properties: wireCreateProperties }).strict(),
-  z.object({ id: stepIdSchema, action: z.literal("sch.wire.replace"), target, line }).strict(),
-  z.object({ id: stepIdSchema, action: z.literal("sch.wire.delete"), target }).strict(),
-  z.object({ id: stepIdSchema, action: z.literal("sch.net-label.create"), properties: labelCreateProperties }).strict(),
-  z.object({ id: stepIdSchema, action: z.literal("sch.net-label.display"), target, patch: displayPatch }).strict(),
-  z.object({ id: stepIdSchema, action: z.literal("sch.net-label.delete"), target }).strict(),
-]);
-export const schematicLayoutBatchSchema = z.object({ id: stepIdSchema, action: z.literal("sch.layout.batch"), documentType: z.literal(1).default(1),
-  operations: z.array(schematicLayoutStepSchema).min(1).max(256),
-}).strict().superRefine((batch, context) => {
-  const prior = new Map<string, string>();
-  for (const [index, step] of batch.operations.entries()) {
-    if (prior.has(step.id)) { context.addIssue({ code: "custom", path: ["operations", index, "id"], message: "Duplicate layout step ID." }); }
-    if ("target" in step && "resultOf" in step.target) {
-      const creator = prior.get(step.target.resultOf);
-      const family = step.action.startsWith("sch.wire.") ? "sch.wire.create" : "sch.net-label.create";
-      if (creator !== family || (!step.action.startsWith("sch.wire.") && !step.action.startsWith("sch.net-label."))) {
-        context.addIssue({ code: "custom", path: ["operations", index, "target"], message: "A layout reference must identify a prior matching wire or label creation." });
-      }
-    }
-    prior.set(step.id, step.action);
-  }
-});
-export type SchematicLayoutBatch = z.infer<typeof schematicLayoutBatchSchema>;
-type Step = z.infer<typeof schematicLayoutStepSchema>;
 type Body = Record<string, unknown>;
 const nativeBodySchema = z.record(z.string(), z.json());
 function nativeBody(body: Body): SchematicNativeComponent["body"] { return nativeBodySchema.parse(body); }
@@ -137,7 +98,7 @@ function translated(body: Body, dx: number, dy: number): Body {
   }
   return result;
 }
-function display(body: Body, patch: z.infer<typeof displayPatch>): Body {
+function display(body: Body, patch: Extract<Step, { patch: unknown }>["patch"]): Body {
   const result = { ...body };
   for (const [key, value] of Object.entries(patch)) {
     const field = DISPLAY_FIELDS[key];
@@ -151,7 +112,7 @@ function display(body: Body, patch: z.infer<typeof displayPatch>): Body {
   if ((result["x"] === null) !== (result["y"] === null)) { throw new Error("Displayed attributes need either two coordinates or two null positions."); }
   return result;
 }
-function segments(value: z.infer<typeof line>): Segment[] {
+function segments(value: Extract<Step, { action: "sch.wire.create" }>["properties"]["line"]): Segment[] {
   const groups = typeof value[0] === "number" ? [value] : value;
   const result: Segment[] = [];
   for (const group of groups) {
@@ -913,25 +874,25 @@ export function prepareSchematicLayoutWireGroupRepair(input: unknown, before: Na
     correctedSourceSha256: expectedSource.sha256, misnamedPins: proof.misnamedPins };
 }
 function layoutSourceCode(native: SchematicNativeSnapshot, expected: NativeSourceSnapshot, removals: readonly NativeSourceObject[] = [],
-  wireRemovals: readonly { group: NativeSourceObject; line: NativeSourceObject; relevance: NativeSourceObject }[] = []): string {
+  wireRemovals: readonly { group: NativeSourceObject; line: NativeSourceObject; relevance: NativeSourceObject }[] = [], flatGuard?: FlatDisplayRuntimeGuard): string {
   const baseline = canonicalJson(native), desired = JSON.stringify(expected.objects);
   const code = `const binding=${JSON.stringify(native.document)};
 ${SCHEMATIC_NATIVE_READER_CODE}
 const canonical=value=>JSON.stringify(value,(_key,entry)=>entry&&typeof entry==='object'&&!Array.isArray(entry)?Object.fromEntries(Object.keys(entry).sort().map(key=>[key,entry[key]])):entry);
-${buildSchematicLayoutPayloadCode(baseline, desired)}
-if(canonical(schCapture())!==baseline)throw new Error('SCH_LAYOUT_BASELINE_CHANGED');
+${flatGuard === undefined ? "" : `const flatDisplayGuard=await ${buildFlatDisplayRuntimeGuard(flatGuard, "source-action")};flatDisplayGuard.assertWriter(schNative,schManager,schDoc);await flatDisplayGuard.read();\n`}${buildSchematicLayoutPayloadCode(baseline, desired)}
+${flatGuard === undefined ? "" : "flatDisplayGuard.check();\n"}if(canonical(schCapture())!==baseline)throw new Error('SCH_LAYOUT_BASELINE_CHANGED');
 if(typeof schDoc.consistencyImpl.setSourceCode!=='function'||typeof schDoc.shapeManager.actionRunner?.run!=='function')throw new Error('SCH_LAYOUT_SOURCE_API_MISSING');
 const original=schDoc.consistencyImpl.getSourceCode(),head=original.split('|\\n')[0];
 if(!head?.startsWith('{"type":"DOCHEAD"}||'))throw new Error('SCH_LAYOUT_HEADER_INVALID');
 const source=[head,...desired.map((record,index)=>JSON.stringify({type:record.type,id:record.id,ticket:index+1})+'||'+JSON.stringify(record.body))].join('|\\n')+'|\\n';
 const removals=${JSON.stringify(removals)};
 const wireRemovals=${JSON.stringify(wireRemovals)};
-const applied=await schDoc.shapeManager.actionRunner.run(async()=>{schCheck();if(canonical(schCapture())!==baseline)throw new Error('SCH_LAYOUT_BASELINE_CHANGED');
+const applied=await ${flatGuard === undefined ? "schDoc.shapeManager.actionRunner" : "flatDisplayGuard"}.run(async()=>{schCheck();if(canonical(schCapture())!==baseline)throw new Error('SCH_LAYOUT_BASELINE_CHANGED');
 for(const row of removals){const model=schDoc.shapeManager.idManager.get(row.id);if(!model||model.id!==row.id||model.tagName!=='NetLabel'||model.keyInSourceCode!=='_NETLABEL_'||model.parent?.id!=='$$root'||model.isConnected!==true||typeof model.getConsistencyData!=='function'||canonical(model.getConsistencyData())!==canonical(row.body)||typeof model.remove!=='function')throw new Error('SCH_LAYOUT_LABEL_REMOVE_GUARD');}
 for(const row of removals){const model=schDoc.shapeManager.idManager.get(row.id);if(model.remove()!==true||model.parent!==null||model.isConnected!==false||schDoc.shapeManager.idManager.idMap.has(row.id)!==false)throw new Error('SCH_LAYOUT_LABEL_REMOVE_FAILED');}
 for(const entry of wireRemovals){const model=schDoc.shapeManager.idManager.get(entry.group.id),line=schDoc.shapeManager.idManager.get(entry.line.id),attr=schDoc.shapeManager.idManager.get(entry.relevance.id);if(!model||model.tagName!=='NetGroup'||model.type!=='wire'||model.parent?.id!=='$$root'||model.isConnected!==true||model.locked!==false||typeof model.remove!=='function'||typeof model.getConsistencyData!=='function'||canonical(model.getConsistencyData())!==canonical(entry.group.body)||!Array.isArray(model.lines)||model.lines.length!==1||model.lines[0]!==line||!Array.isArray(model.netNames)||model.netNames.length!==0||typeof model.getCustomAttr!=='function'||model.getCustomAttr().length!==1||model.getCustomAttr()[0]!==attr||!line||!attr||line.parent!==model||attr.parent!==model||line.isConnected!==true||attr.isConnected!==true||typeof line.getConsistencyData!=='function'||typeof attr.getConsistencyData!=='function'||canonical(line.getConsistencyData())!==canonical(entry.line.body)||canonical(attr.getConsistencyData())!==canonical(entry.relevance.body))throw new Error('SCH_LAYOUT_WIRE_REMOVE_GUARD');}
 for(const entry of wireRemovals){const model=schDoc.shapeManager.idManager.get(entry.group.id);if(model.remove()!==true||model.parent!==null||model.isConnected!==false||[entry.group.id,entry.line.id,entry.relevance.id].some(id=>schDoc.shapeManager.idManager.idMap.has(id)))throw new Error('SCH_LAYOUT_WIRE_REMOVE_FAILED');}
-if(await schDoc.consistencyImpl.setSourceCode(source)!==true)throw new Error('SCH_LAYOUT_SOURCE_REJECTED');});
+${flatGuard === undefined ? "" : "flatDisplayGuard.assertWriter(schNative,schManager,schDoc);flatDisplayGuard.check();"}if(await schDoc.consistencyImpl.setSourceCode(source)!==true)throw new Error('SCH_LAYOUT_SOURCE_REJECTED');});
 if(applied!==true)throw new Error('SCH_LAYOUT_ACTION_REJECTED');schCheck();return true;`;
   return code;
 }
@@ -943,18 +904,20 @@ export function buildSchematicLayoutAdapter(input: unknown, before: NativeSource
   return layoutAdapterResult(native, result);
 }
 
-function layoutAdapterResult(native: SchematicNativeSnapshot, result: Simulation): ReturnType<typeof buildSchematicLayoutAdapter> {
-  const code = layoutSourceCode(native, result.expected);
+function layoutAdapterResult(native: SchematicNativeSnapshot, result: Simulation, flatGuard?: FlatDisplayRuntimeGuard): ReturnType<typeof buildSchematicLayoutAdapter> {
+  const code = layoutSourceCode(native, result.expected, [], [], flatGuard);
   return { profile: SCHEMATIC_LAYOUT_PROFILE, code, expected: result.expected, createdIds: result.createdIds };
 }
 
-export async function buildSchematicLayoutAdapterCooperatively(input: unknown, before: NativeSourceSnapshot, nativeInput: unknown, createdIds?: SchematicLayoutCreatedIds, evidence?: SchematicLayoutEvidence): Promise<ReturnType<typeof buildSchematicLayoutAdapter>> {
-  const captured = structuredClone({ input, before, nativeInput, createdIds, evidence });
+export async function buildSchematicLayoutAdapterCooperatively(input: unknown, before: NativeSourceSnapshot, nativeInput: unknown, createdIds?: SchematicLayoutCreatedIds, evidence?: SchematicLayoutEvidence,
+  flatGuard?: FlatDisplayRuntimeGuard): Promise<ReturnType<typeof buildSchematicLayoutAdapter>> {
+  const captured = structuredClone({ input, before, nativeInput, createdIds, evidence, flatGuard });
+  if (captured.flatGuard !== undefined) { assertFlatDisplayRuntimeAction(captured.flatGuard, captured.input); }
   const native = correlateSchematicNativeSource(captured.before, captured.nativeInput);
   const result = await drainSimulationCooperatively(simulateSteps(captured.input, captured.before, native, captured.createdIds, captured.evidence));
   await yieldProofEventLoop();
   // The native writer must keep the ORIGINAL captured native as its CAS guard.
-  const adapter = layoutAdapterResult(native, result);
+  const adapter = layoutAdapterResult(native, result, captured.flatGuard);
   await yieldProofEventLoop();
   return adapter;
 }

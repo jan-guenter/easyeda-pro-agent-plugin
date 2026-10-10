@@ -23,6 +23,7 @@ import { verifySchematicNativeProfile } from "./native-profiles.ts";
 import { assertDocumentCloseContext, buildDocumentCloseReconciliationExpression, validateDocumentCloseReconciliation, verifyDocumentCloseProject, verifyRetainedDocumentClose } from "./document-close.ts";
 import type { DocumentClosePlan } from "./document-close.ts";
 import { assertDocumentPageCreateContext, prepareDocumentPageCreate } from "./document-page-create.ts";
+import { assertProjectSymbolCreateContext, prepareProjectSymbolCreate } from "./project-symbol-create.ts";
 import { decodeExactReadEnvelope } from "./exact-readers.ts";
 import { wrapWithContextGuard } from "./runtime-scripts.ts";
 import { assertUndispatchedLibraryPreparation, hasMissingLibraryPreparation, rederiveUndispatchedLibraryPlan } from "./library-undispatched-recovery.ts";
@@ -83,7 +84,7 @@ export class LibraryRecoveryCoordinator {
     assertSubset(status.stableFingerprint, fingerprint, "Library recovery runtime");
     const installed = await this.engine.upstream.installedEasyedaBundles?.();
     if (installed === undefined) { throw new Error("Library recovery native implementation is unavailable."); }
-    const device = ["library.device.create", "library.device.modify", "library.device.model-transform", "library.symbol.modify", "document.page.rename", "document.page.create"].includes(journal.plan.operation.action);
+    const device = ["library.device.create", "library.device.modify", "library.device.model-transform", "library.symbol.modify", "library.symbol.create", "document.page.rename", "document.page.create"].includes(journal.plan.operation.action);
     await (device ? this.services.verifyDeviceAssociationNativeProfile(installed.assetsRoot) : this.services.verifyLibraryNativeProfile(installed.assetsRoot));
     if (journal.plan.operation.action === "document.activate" || journal.plan.operation.action === "document.close" || journal.plan.operation.action === "document.page.rename" || journal.plan.operation.action === "document.page.create" || journal.plan.operation.action === "library.symbol.modify") { await this.services.verifySchematicNativeProfile(installed.assetsRoot); }
     if (requireContext) { await this.engine.assertContext(structuredClone(journal.context)); }
@@ -161,6 +162,11 @@ export class LibraryRecoveryCoordinator {
         const plan = prepareDocumentPageCreate(journal.plan.operation, before, journal.plan.expectedContext);
         const context = structuredClone(await this.engine.assertContext(structuredClone(journal.plan.expectedContext)));
         assertDocumentPageCreateContext(plan, context);
+      } else if (journal.plan.operation.action === "library.symbol.create") {
+        const before = await this.history(receipt(journal.preCheckpoint), journal.plan.expectedContext);
+        const plan = prepareProjectSymbolCreate(journal.plan.operation, before, journal.plan.expectedContext);
+        const context = structuredClone(await this.engine.assertContext(structuredClone(journal.plan.expectedContext)));
+        assertProjectSymbolCreateContext(plan, context);
       } else { journal.context = structuredClone(await this.engine.assertContext(structuredClone(journal.context), { allowTabChange: true })); }
       journal.state = "library-authority-recovered-needs-reconciliation"; journal.hardStop = true;
       journal.nextSafeAction = "Execution authority recovered. Reconcile without repeating the original library action.";
@@ -193,6 +199,14 @@ export class LibraryRecoveryCoordinator {
       const baseline = receipt(journal.preCheckpoint);
       const before = await this.history(baseline, journal.context);
       let preparedPageCreate: unknown;
+      let preparedSymbolCreate: unknown;
+      if (journal.plan.operation.action === "library.symbol.create") {
+        preparedSymbolCreate = await readLibraryRecoveryArtifact(uniqueLibraryRecoveryArtifact(journal.artifacts, "symbol-create-prepared"), this.services.readArtifact);
+        const expected = prepareProjectSymbolCreate(journal.plan.operation, before, journal.plan.expectedContext);
+        if (canonicalJson(expected) !== canonicalJson(preparedSymbolCreate) || canonicalJson(expected) !== canonicalJson(journal.symbolCreatePlan)) { throw new Error("Retained symbol creation plan differs from its original operation and checkpoint."); }
+        const originalContext = await this.engine.assertContext(structuredClone(journal.plan.expectedContext));
+        assertProjectSymbolCreateContext(expected, originalContext);
+      }
       if (journal.plan.operation.action === "document.page.create") {
         preparedPageCreate = await readLibraryRecoveryArtifact(uniqueLibraryRecoveryArtifact(journal.artifacts, "page-create-prepared"), this.services.readArtifact);
         const expected = prepareDocumentPageCreate(journal.plan.operation, before, journal.plan.expectedContext);
@@ -221,17 +235,18 @@ export class LibraryRecoveryCoordinator {
         const verified = verifyRecoveredLibraryMutation({ operation: journal.plan.operation, before, after, nativeReturn,
           ...(journal.mutationReceipt === undefined ? {} : { retainedReceipt: journal.mutationReceipt }), ...(preparedDevice === undefined ? {} : { preparedDevice }),
           ...(preparedSymbol === undefined ? {} : { preparedSymbol }), ...(preparedPageRename === undefined ? {} : { preparedPageRename, expectedContext: journal.plan.expectedContext }),
-          ...(preparedPageCreate === undefined ? {} : { preparedPageCreate, expectedContext: journal.plan.expectedContext }) });
+          ...(preparedPageCreate === undefined ? {} : { preparedPageCreate, expectedContext: journal.plan.expectedContext }),
+          ...(preparedSymbolCreate === undefined ? {} : { preparedSymbolCreate, expectedContext: journal.plan.expectedContext }) });
         journal.mutationReceipt = verified.receipt;
         result = { kind, proof: verified.proof, createdId: verified.receipt.createdId, persistence: "complete-project-checkpoint-records-verified",
           actionRepeated: false, saveInvoked: false, closeInvoked: false, reopened: false,
-          ...(kind === "project-symbol-metadata" || kind === "project-page-rename" || kind === "project-page-create" ? { currentGenerationLiveValidated: false } : {}) };
+          ...(kind === "project-symbol-metadata" || kind === "project-symbol-create" || kind === "project-page-rename" || kind === "project-page-create" ? { currentGenerationLiveValidated: false } : {}) };
       }
       await this.runtime(journal);
       if (sourceHash(await this.engine.exactRead({ kind: sourceKind(journal.context) }, journal.context)) !== journal.beforeSourceSha256) { throw new Error("Active source changed during library reconciliation."); }
       const final = await this.engine.checkpoint({ receiptPath: afterReceipt.receiptPath });
       assertUnchangedLibraryCheckpoint(final, afterReceipt, "Reconciled durable library evidence changed before completion or its checkpoint verification failed.");
-      if (journal.plan.operation.action === "document.page.rename" || journal.plan.operation.action === "document.page.create" || journal.plan.operation.action === "library.symbol.modify") { await this.engine.assertContext(structuredClone(journal.context)); }
+      if (journal.plan.operation.action === "document.page.rename" || journal.plan.operation.action === "document.page.create" || journal.plan.operation.action === "library.symbol.modify" || journal.plan.operation.action === "library.symbol.create") { await this.engine.assertContext(structuredClone(journal.context)); }
       journal.finalCheckpoint = afterReceipt; journal.result = result; journal.hardStop = false;
       journal.state = unchanged ? "reconciled-no-mutation" : "completed";
       journal.mutationState = unchanged ? "before" : "after"; journal.mutationMayHaveOccurred = !unchanged;

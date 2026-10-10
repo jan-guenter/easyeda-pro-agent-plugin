@@ -39,7 +39,13 @@ void test("coverage does not promote schema-only, native equivalent, stub, lates
   assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.status, "implemented-but-blocked");
   assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.routes[0]?.implementation, "native-task-equivalent");
   assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.currentGenerationLiveValidation, "not-recorded");
-  assert.equal(rows.get("eda.lib_Symbol.create")?.status, "omitted");
+  assert.equal(rows.get("eda.lib_Symbol.create")?.status, "implemented-native-equivalent");
+  const symbolCreate = rows.get("eda.lib_Symbol.create")?.routes[0];
+  assert.ok(symbolCreate); assert.equal(symbolCreate.selector, "library.symbol.create");
+  assert.deepEqual(symbolCreate.documentTypes, [3]);
+  assert.equal(symbolCreate.executionState, "available-with-runtime-guards");
+  assert.match(symbolCreate.scope, /Permission denial can display a native dialog/u);
+  assert.equal(rows.get("eda.lib_Symbol.create")?.currentGenerationLiveValidation, "not-recorded");
   assert.equal(rows.get("eda.lib_Symbol.modify")?.status, "implemented-native-equivalent");
   assert.equal(rows.get("eda.lib_Symbol.modify")?.routes[0]?.selector, "library.symbol.modify");
   assert.equal(rows.get("eda.lib_Symbol.modify")?.currentGenerationLiveValidation, "not-recorded");
@@ -82,11 +88,41 @@ void test("topology-dependent schematic routes are blocked without disabling ind
   assert.equal(pinRoutes.find((route) => route.selector.includes("documentType=2"))?.executionState, "available-with-runtime-guards");
   assert.equal(pinRoutes.find((route) => route.selector === "sch.component-pin.no-connect")?.executionState, "blocked");
   assert.equal(rows.get("eda.pcb_PrimitiveLine.create")?.routes[0]?.executionState, "available-with-runtime-guards");
-  assert.equal(rows.get("eda.sch_Document.save")?.routes[0]?.executionState, "partially-blocked");
-  assert.deepEqual(rows.get("eda.sch_Document.save")?.routes[0]?.blockedDocumentTypes, [1]);
+  const genericSave = rows.get("eda.sch_Document.save")?.routes.find((route) => route.selector === "execute/commit");
+  assert.equal(genericSave?.executionState, "partially-blocked");
+  assert.deepEqual(genericSave?.blockedDocumentTypes, [1]);
   const compact = queryExtensionApiCoverage({ search: "eda.sch_PrimitiveWire.modify" })["entries"];
   assert.ok(Array.isArray(compact) && isRecord(compact[0]));
   assert.ok(JSON.stringify(compact).includes("blockedReason"));
+});
+
+void test("sealed flat display coverage admits only existing attribute/text display and its internal Save lifecycle", () => {
+  const profile = "easyeda-pro-control.flat-display-transaction.v1";
+  const rows = inventoryExtensionApiCoverage();
+  const admitted = rows.flatMap((row) => row.routes.filter((route) => route.selector.includes(`sealed-profile=${profile}`)).map((route) => ({ path: row.path, row, route })));
+  assert.deepEqual(admitted.map(({ path }) => path).toSorted(), ["eda.sch_Document.save", "eda.sch_PrimitiveAttribute.modify", "eda.sch_PrimitiveText.modify"]);
+  for (const { path, row, route } of admitted) {
+    assert.equal(route.tool, "easyeda_control_design"); assert.deepEqual(route.documentTypes, [1]);
+    assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.blockedReason, undefined);
+    assert.equal(route.blockedDocumentTypes, undefined); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+    assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+    assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
+    assert.ok(route.source.includes("flat-display-profile.ts")); assert.ok(route.source.includes("flat-display-runtime.ts"));
+    assert.ok(route.tests.includes("flat-display-execution.test.ts")); assert.match(route.scope, /successful full coordinator lifecycle validation remain unclaimed/u);
+    assert.deepEqual(route.inputDiscovery, { tool: "easyeda_control_api", arguments: { request: { action: "operations", query: { family: "design", operationAction: "sch.layout.batch", includeSchemas: true } } } });
+    if (path === "eda.sch_Document.save") {
+      assert.equal(route.implementation, "internal-lifecycle-only"); assert.equal(route.selector, `execute/commit;sealed-profile=${profile}`);
+      assert.match(route.scope, /No standalone Save, generic schematic commit/u);
+      assert.ok(route.source.includes("design-save-attempt.ts"));
+    } else {
+      const step = path === "eda.sch_PrimitiveAttribute.modify" ? "sch.attribute.display" : "sch.text.display";
+      assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.selector, `sch.layout.batch;sealed-profile=${profile};step=${step}`);
+      assert.match(route.scope, /no text-content or attribute-value edits, pin\/net or NO_CONNECT changes, component translation, creation, deletion, mixed layout/u);
+      assert.match(route.scope, /no caller-supplied profile or topology grants authority/u);
+      assert.equal(row.routes.find((entry) => entry.selector.includes("documentType=2"))?.executionState, "available-with-runtime-guards");
+    }
+  }
+  assert.equal(rows.find((row) => row.path === "eda.sch_PrimitiveComponent.createNetFlag")?.routes.every((route) => route.executionState === "blocked"), true);
 });
 
 void test("hidden Save and unsupported-editor exports have no callable route", () => {
@@ -127,7 +163,7 @@ void test("omitted geometric getters retain proven callback, projection and filt
   assert.match(net.omission.reason, /DTO/u);
   assert.equal(net.routes.length, 0);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 190, "implemented-native-equivalent": 73, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 501,
+    "implemented-public-subset": 190, "implemented-native-equivalent": 74, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 500,
   });
 });
 

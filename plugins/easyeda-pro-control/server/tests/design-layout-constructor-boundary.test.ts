@@ -1,3 +1,4 @@
+import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -9,14 +10,14 @@ import type { EasyedaControlEngine } from "../src/engine.ts";
 void test("topology refusal precedes even constructor-witness resolution and every commit Save or navigation", async (t) => {
   const directory = await mkdtemp(join(tmpdir(), "easyeda-constructor-boundary-"));
   const previous = process.env["EASYEDA_CONTROL_DATA_DIR"];
-  process.env["EASYEDA_CONTROL_DATA_DIR"] = directory;
+  configureTestControlRoot(directory);
   const artifacts = await import("../src/artifacts.ts");
   const { DesignExecutor } = await import("../src/design-execution.ts");
   t.after(async () => {
     const rootCapability = await artifacts.controlRootCapability();
     await rootCapability.close();
-    if (previous === undefined) { delete process.env["EASYEDA_CONTROL_DATA_DIR"]; }
-    else { process.env["EASYEDA_CONTROL_DATA_DIR"] = previous; }
+    if (previous === undefined) { configureTestControlRoot(); }
+    else { configureTestControlRoot(previous); }
     await rm(directory, { recursive: true, force: true });
   });
   const context = { project: { uuid: "11".repeat(32), path: join(directory, "fixture.eprj2") },

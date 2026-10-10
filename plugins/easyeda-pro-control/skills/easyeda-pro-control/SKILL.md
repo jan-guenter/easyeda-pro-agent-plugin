@@ -9,10 +9,13 @@ Use the typed MCP tools for supported design work. Native controls supplement ac
 
 This source package has typed design transactions, operation-specific library/export execution, and native Windows control. Installed snapshots may expose older tools. Consult the actual catalog and [capability matrix](references/capability-matrix.md); an implemented descriptor is not proof of a completed live test.
 
-Current restriction: schematic topology and transactions depending on it are
-disabled because the installed netlist getter can annotate parts and Save All.
-Several File exports are refused for the same hidden-Save issue. Inspect current
-coverage/capabilities; do not bypass these refusals or replay historical work.
+Current restriction: compiled schematic topology and transactions depending on
+it are disabled because the installed netlist getter can annotate parts and
+Save All. A separate sealed profile supports only stored attribute/text display
+changes on one verified ordinary page; read [schematic.md](references/schematic.md#single-page-display-only-transactions).
+Its source tests are not connected lifecycle validation. Several File exports
+remain refused for hidden Save All. Inspect the installed capabilities; do not
+bypass refusals or replay historical work.
 
 ## Connect and choose a path
 

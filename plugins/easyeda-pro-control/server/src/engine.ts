@@ -461,6 +461,12 @@ export interface OperationSummary {
   updatedAt: string;
 }
 
+/** A read-only report from one completed status admission, not reusable authority. */
+export interface StatusAdmissionObservation {
+  readonly observedAt: string;
+  readonly incompleteOperations: readonly OperationSummary[];
+}
+
 interface DurableBaselineFailure {
   state: string;
   mutationState: string;
@@ -2042,6 +2048,16 @@ async function scanBridgeBlockingOperations(): Promise<OperationSummary[]> {
   return operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary);
 }
 
+function assertNoBridgeBlockingOperations(blockingOperations: readonly OperationSummary[]): true {
+  if (blockingOperations.length === 0) { return true; }
+  const labels = blockingOperations.map((operation) => `${operation.operationId}:${operation.state}`).join(", ");
+  const error = annotatedError(
+    `EasyEDA bridge dispatch is quarantined by an orphan-risk or unreadable operation journal (${labels}). Use easyeda_control_recover_incomplete without an operationId to inspect the local journals. Do not run live status, context, reads, captures, exports, checkpoints, or writes until the nonce-bound restart/recovery gate clears every orphan risk; an unreadable journal requires manual restoration or review.`,
+  );
+  error.blockingOperations = blockingOperations;
+  throw error;
+}
+
 async function scanRecoveryBlockingOperations(): Promise<OperationSummary[]> {
   const operations = await scanAdmissionOperations();
   return operations.map((entry) => entry.summary);
@@ -2247,13 +2263,16 @@ export class EasyedaControlEngine {
       }
       endDispatch.call(this.upstream, dispatch.binding);
     }
-    operation.orphanedCallPossible = false;
-    operation.orphanedCallPhase = phase;
-    operation.orphanedCallReturnedAt = now();
+    // Keep the caller's quarantine intact until its clear is durably written.
+    // Otherwise an outer failure handler could persist a false in-memory clear.
+    const cleared = { ...operation, orphanedCallPossible: false,
+      orphanedCallPhase: phase, orphanedCallReturnedAt: now(), updatedAt: now() };
+    delete cleared.runtimeRestartChallenge;
+    delete cleared.runtimeRestartChallengeIssuedAt;
+    await updateOperation(cleared);
+    Object.assign(operation, cleared);
     delete operation.runtimeRestartChallenge;
     delete operation.runtimeRestartChallengeIssuedAt;
-    operation.updatedAt = now();
-    await updateOperation(operation);
     if (operation.executionAuthorityBeforeOrphan !== undefined) {
       await this.executionAuthorityValidator?.releaseCapture?.(operation.executionAuthorityBeforeOrphan);
     }
@@ -2266,6 +2285,7 @@ export class EasyedaControlEngine {
     args: UnknownRecord,
     timeoutMs: number,
     beforeDispatch?: () => Promise<void>,
+    retainSettledResult?: (result: unknown) => Promise<void>,
   ): Promise<unknown> {
     const dispatch = await this.markOrphanedCallRisk(operation, phase);
     if (beforeDispatch !== undefined) {
@@ -2286,6 +2306,10 @@ export class EasyedaControlEngine {
         dispatch.binding,
       );
       assertUpstreamReplySettled(result);
+      // Creation adapters seal their original native identity here, before
+      // Fallible lease/journal/capture cleanup can discard a settled reply.
+      // Failed retention must leave quarantine and its capture in place.
+      if (retainSettledResult !== undefined) { await retainSettledResult(result); }
       await this.clearOrphanedCallRisk(operation, phase, dispatch);
       return result;
     } catch (error) {
@@ -2616,18 +2640,20 @@ export class EasyedaControlEngine {
   }
 
   public async assertBridgeDispatchAllowed(): Promise<true> {
-    const blockingOperations = await scanBridgeBlockingOperations();
-    if (blockingOperations.length === 0) {
-      return true;
-    }
-    const labels = blockingOperations
-      .map((operation) => `${operation.operationId}:${operation.state}`)
-      .join(", ");
-    const error = annotatedError(
-      `EasyEDA bridge dispatch is quarantined by an orphan-risk or unreadable operation journal (${labels}). Use easyeda_control_recover_incomplete without an operationId to inspect the local journals. Do not run live status, context, reads, captures, exports, checkpoints, or writes until the nonce-bound restart/recovery gate clears every orphan risk; an unreadable journal requires manual restoration or review.`,
-    );
-    error.blockingOperations = blockingOperations;
-    throw error;
+    return assertNoBridgeBlockingOperations(await scanBridgeBlockingOperations());
+  }
+
+  /** Scan fresh bytes once for a serialized read-only status invocation. The
+   * returned summaries report that admission observation, not end-of-call state.
+   * No other guard accepts this result, and every new invocation scans again.
+   */
+  public async observeStatusAdmission(): Promise<StatusAdmissionObservation> {
+    const operations = await scanAdmissionOperations();
+    assertNoBridgeBlockingOperations(operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary));
+    return {
+      observedAt: now(),
+      incompleteOperations: structuredClone(operations.filter((entry) => entry.unfinished).map((entry) => entry.summary)),
+    };
   }
 
   public async assertRecoveryOperationIsolated(

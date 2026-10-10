@@ -14,6 +14,13 @@ Query `easyeda_control_library` with `{request:{action:"capabilities"}}`. A cata
 
 For symbol or footprint geometry, open the exact project library member and use its supported `easyeda_control_design` operation. Commit saves and reopens that editor, then verifies the complete selected-branch project-record delta. The legacy `easyeda_control_save_reopen` endpoint remains disabled.
 
+Choose `library.footprint.open` or `library.symbol.open` for library assets, with
+`libraryUuid` equal to the observed project UUID and `target.uuid` equal to the
+checkpoint member. `document.open` is for a PCB or schematic page; supplying a
+footprint ID to it refuses before navigation. Use the asset-specific operation
+only after confirming that refusal was pre-dispatch, not to retry an ambiguous
+open under another name.
+
 The pinned footprint editor exports a `PCB` DOCHEAD, while its saved library record is `FOOTPRINT`. Keep that raw header and hash; the executor binds library identity through editor type 4, project/owner/UUID and the complete checkpoint. New footprint geometry omits the PCB-only `partitionId` in both native export and storage. Do not rewrite headers or infer editor type from source alone.
 
 Footprint geometry now uses the installed native history handlers, not full-source decode. The earlier decoder failed after a partial in-memory edit and did not establish durable line creation. A later public LINE test exposed a separate delayed project-worker write: the immediate checkpoint lacked the line, while later checkpoints proved both creation and the subsequent inverse reached storage. A decoder error, public acknowledgment and immediate checkpoint must not be conflated. LINE create/delete use public APIs; modification explicitly awaits the object's `done()` because the SDK wrapper drops that Promise. ARC, POLY, FILL and STRING use fixed, exact-frame history calls. Modifiers correlate native getter values with complete source and preserve unrequested native precision. Created identities come from the native reply and enter the journal before proof.
@@ -85,6 +92,25 @@ plan and original native returned page ID. Even exactly one matching new page
 cannot substitute for that identity evidence. Missing return evidence remains
 unresolved; deleting the observed page is not an automatic rollback.
 
+## Create one closed empty ordinary symbol
+
+`library.symbol.create` supports `symbolType:2`, the exact current-project UUID
+as `libraryUuid`, a unique nonblank name, and an optional description. An ordinary
+clean PCB must be the only project editor. Classification, inherited source,
+hierarchical/CBB projects and other symbol types are refused.
+
+This native task equivalent creates one closed META-only symbol. It does not
+initialize a PART, canvas, pins or template, open an editor, invoke Save, or create
+a device. Do not treat it as a ready-to-place component or assume subsequent
+geometry operations admit an uninitialized symbol. Those steps need their own
+supported operations and proofs. Permission denial may open a native dialog;
+the preflight is not strictly observational.
+
+Success requires the original native returned ID, exact new metadata/header and
+complete unchanged-peer evidence. As with page creation, reconcile the original
+journal after uncertainty; never identify a result by name alone or repeat
+creation. There is no automatic deletion/inverse or connected-validation claim.
+
 ## Close one inactive clean document
 
 `document.close` accepts an exact project-qualified `tabId` for a loaded ordinary
@@ -110,7 +136,8 @@ has offline regression coverage, not a current-generation live-validation claim.
 
 ## Recover an unpublished preparation
 
-For `document.activate`, `document.close` and `document.page.create`, a failed
+For `document.activate`, `document.close`, `document.page.create` and
+`library.symbol.create`, a failed
 journal publication can leave an initial plan without its preparation artifact.
 Use the original journal's reconciliation on the same compatible runtime. Only
 exact initial publication states with no dispatch, orphan, Save or recovery

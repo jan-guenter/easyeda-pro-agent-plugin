@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- The builtin-only fixture helper isolates credential and upstream paths alongside these coordinator test dependencies. */
+import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -1244,7 +1246,7 @@ void describe(
 void describe("global orphan-risk quarantine", { concurrency: false }, () => {
   void test("blocks every live bridge path while local discovery and recovery listing remain available", async () => {
     const previousControlRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
-    process.env["EASYEDA_CONTROL_DATA_DIR"] = controlRoot;
+    configureTestControlRoot(controlRoot);
     const loadedArtifacts: unknown = await import(
       `../src/artifacts.ts?facade-orphan=${encodeURIComponent(fixtureRoot)}`
     );
@@ -1254,9 +1256,9 @@ void describe("global orphan-risk quarantine", { concurrency: false }, () => {
     );
     const journalArtifacts = loadedArtifacts;
     if (previousControlRoot === undefined) {
-      delete process.env["EASYEDA_CONTROL_DATA_DIR"];
+      configureTestControlRoot();
     } else {
-      process.env["EASYEDA_CONTROL_DATA_DIR"] = previousControlRoot;
+      configureTestControlRoot(previousControlRoot);
     }
 
     const operationId = newOperationId();

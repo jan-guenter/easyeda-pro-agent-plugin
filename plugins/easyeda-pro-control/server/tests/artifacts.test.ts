@@ -1,3 +1,4 @@
+import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
 import {
   link,
@@ -147,7 +148,7 @@ function fixturePlan(name = "Artifact test plan"): UnknownRecord {
 
 before(async () => {
   dataDir = await mkdtemp(join("/tmp", "easyeda-control-artifacts-"));
-  process.env["EASYEDA_CONTROL_DATA_DIR"] = dataDir;
+  configureTestControlRoot(dataDir);
   const loaded: unknown = await import(
     `../src/artifacts.ts?test-dir=${encodeURIComponent(dataDir)}`
   );
@@ -159,7 +160,7 @@ before(async () => {
 });
 
 after(async () => {
-  delete process.env["EASYEDA_CONTROL_DATA_DIR"];
+  configureTestControlRoot();
   if (dataDir) {
     const controlRoot = await artifacts.controlRootCapability();
     await controlRoot.close();
@@ -1250,7 +1251,7 @@ void describe("control-root lifetime binding", { concurrency: false }, () => {
     const movedRoot = join(parent, "control-moved");
     const previousRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
     await mkdir(root, { mode: 0o700 });
-    process.env["EASYEDA_CONTROL_DATA_DIR"] = root;
+    configureTestControlRoot(root);
     let swappedArtifacts: ArtifactsModule | undefined;
     try {
       const loaded: unknown = await import(
@@ -1277,9 +1278,9 @@ void describe("control-root lifetime binding", { concurrency: false }, () => {
         await controlRoot.close();
       }
       if (previousRoot === undefined) {
-        delete process.env["EASYEDA_CONTROL_DATA_DIR"];
+        configureTestControlRoot();
       } else {
-        process.env["EASYEDA_CONTROL_DATA_DIR"] = previousRoot;
+        configureTestControlRoot(previousRoot);
       }
       await rm(parent, { recursive: true, force: true });
     }

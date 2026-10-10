@@ -46,8 +46,17 @@ termination is proved; recovery never repeats the close.
 template-and-open wrapper. It adds one closed empty page to an existing ordinary
 schematic using checkpoint-derived name/order defaults. Complete unchanged-peer
 proof and the original native returned ID are required; neither an observed
-addition nor a matching title grants replay or recovery attribution. Both routes
-remain offline-tested with no current-generation live claim.
+addition nor a matching title grants replay or recovery attribution. The installed
+182554 page-creation route passed a disposable complete-project test; that evidence
+does not validate later source changes. See the
+[disposable validation record](api-coverage-disposable-validation-2026-10-10.md).
+
+`library.symbol.create` adds a closed empty ordinary project symbol while an
+ordinary clean PCB is active. It proves the original returned ID, one META-only
+addition and every unchanged peer. It does not initialize a PART, canvas or
+template, open the editor, invoke Save, support classifications or supply an
+automatic inverse. The native permission check may display a denial dialog.
+This new route remains source/offline-tested, without connected validation.
 
 Two public editor lookups also have narrowed routes: tab-to-split-screen ID and
 split-screen-to-tab identities. They require an existing owned selector, complete

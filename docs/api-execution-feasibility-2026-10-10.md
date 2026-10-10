@@ -13,9 +13,10 @@ workflow ends. The last group is engineering work, not an inherent API limit.
 
 Ordinary schematic design transactions are currently blocked by the absence of
 an admitted nonmutating transaction-connectivity proof. This is a functional limitation,
-not merely a missing live-validation badge. `DesignExecutor` rejects type-1
-apply, commit, rollback, repair, reconciliation and navigation before runtime
-calls or journal writes. The formerly used schematic netlist path can annotate
+not merely a missing live-validation badge. Generic compiled-profile type-1
+apply, commit, rollback, repair, reconciliation and navigation refuse before
+runtime calls or journal writes. A new sealed display-only exception is described
+below. The formerly used schematic netlist path can annotate
 DESIGNATOR/UNIQUEID and invoke global SaveAll. It cannot remain a read-only
 preflight. See the exact delegated call chains in the
 [independent source review](api-coverage-review-2026-10-10.md).
@@ -28,8 +29,9 @@ every page already loaded, double-samples the complete observation and reports
 does not silently replace the historical compiled transaction proof. See the
 [flat topology review](schematic-flat-topology-review-2026-10-10.md).
 
-One next path is to validate and explicitly integrate that restricted profile
-into transactions whose complete before/after states satisfy its exclusions.
+The source now integrates a restricted display-only profile into transactions
+whose complete before/after states satisfy its exclusions. Connected lifecycle
+validation is still pending.
 The broader alternative is an adapter exposing a complete compiled graph without
 annotation or Save, with source-correlated membership, freshness checks and
 explicit treatment of hierarchy, repeated/multipart devices, disconnected pins
@@ -56,7 +58,7 @@ lifecycle handling rather than assuming those prerequisites survive a close.
 Independent disposable forward, inverse, ambiguous-return and retained-runtime
 recovery tests are needed before removing any type-1 transaction refusal.
 
-The first integration should be a new internal transaction profile admitting
+The implemented first integration is a new internal transaction profile admitting
 only `sch.layout.batch` steps that change existing `sch.attribute.display` or
 `sch.text.display` fields. Their complete source-effect and inverse proofs
 already exist. Graphic create/modify/delete schemas alone are insufficient:
@@ -66,7 +68,14 @@ compare normalized endpoint topology separately from source/checkpoint hashes
 that legitimately change after a display edit. Start connected acceptance with
 one nonempty ordinary sheet satisfying every flat-reader restriction, then
 prove its edit, Save/reopen and full-project persistence. This is a proposed
-implementation boundary, not currently enabled support.
+boundary implemented in the new source, not an installed or live-validated claim.
+Its immutable plan seals the exact owner/branch, source/native before/after state,
+complete member inventory, endpoint topology and stored-field inverse. Every
+writer and Save uses final same-execution receiver/observation checks. Before
+new Save or inverse authority, complete durable state must be the original
+baseline or the exact intended effect. Old compiled journals and all repair/page
+loading routes stay blocked. Offline helper/runtime/refusal tests pass; they do
+not prove a complete successful connected apply/Save/reopen lifecycle.
 
 This blocker does not prohibit all type-1 activity: read-only observations and
 the separately proved closed-page metadata/creation transactions have different
@@ -102,9 +111,10 @@ At the start of this work, 32 of the 68 strict library/lifecycle operation
 schemas had no executor profile. Eight additional named gaps were outside
 those schemas. The table retains all 40 original entries and identifies the
 subsets implemented since then. A follow-up source audit of
-`listLibraryExecutionCapabilities()` found 34 implemented subsets among 76
-named actions: 27 typed actions still without an executor, seven explicitly
-refused exports, and the eight named native/dialog gaps remain. Thus 42 actions
+`listLibraryExecutionCapabilities()` now has 35 implemented subsets among 76
+named actions after empty ordinary symbol creation: 26 typed actions still
+without an executor, seven explicitly refused exports, and the eight named
+native/dialog gaps remain. Thus 41 actions
 are not standalone executable library operations; `project.open` and the Save
 actions have separate restricted lifecycle routes. These counts describe the
 audited source, not an installed package or connected validation. Method-level
@@ -114,7 +124,7 @@ routes are accounted for separately.
 | Action or exact action group | Concrete reason it cannot use the existing executor unchanged | Implementation needed |
 |---|---|---|
 | `library.symbol.modify` | The public wrapper's awaited current-project comparison can redirect a local write to a cloud library. Its classification and default-title projections can also alter unrelated metadata. | Implemented as a fixed project-qualified native task equivalent for closed ordinary symbols, preserving exact display title and stored tags. Complete project and recovery proofs are integrated; current-generation disposable saved/reopened validation remains unclaimed. |
-| `library.symbol.create` | The public method calls the symbol service, which generates metadata and obtains initial canvas data. Ordinary symbols and sheet-symbol templates use different paths. The footprint verifier admits only FOOTPRINT records, so it cannot certify the generated symbol/part records. | Bind the requested ordinary type, exact generated template, returned UUID, native header and every new record. Add type-specific creation proofs before expanding to flags, ports or sheet symbols. |
+| `library.symbol.create` | The public method calls the symbol service, which generates metadata and obtains initial canvas data. Ordinary symbols and sheet-symbol templates use different paths. | Implemented as a narrower native equivalent: a closed empty ordinary project symbol, exact original returned ID, native header and META-only addition, with all peers unchanged. No PART/template/canvas initialization, open, Save, classification or inverse. Flags, ports, sheet symbols and initialized templates still need their own exact proofs. The permission-denied path may open a native dialog; connected validation is pending. |
 | `library.symbol.delete`, `library.footprint.delete`, `library.device.delete` | UI deletion runs dependency checks, but its `$3` delegate starts individual service deletions in unawaited `forEach` callbacks. Its success acknowledgment does not establish terminal completion. The symbol worker separately has an awaited `deleteData` path emitting DOCHEAD plus DELETE_DOC. | Feasible first subset: closed, dependency-free project asset, with full checkpoint dependency inventory and a project-qualified awaited worker adapter. Refuse nonempty closure, retain deleted records and prove exact tombstone/header changes plus unchanged peers. Review each asset manager separately; a restoration procedure is not an automatic inverse. |
 | `library.symbol.copy`, `library.footprint.copy`, `library.device.copy` | Copy can migrate canvas data and associated assets to another collection. The public DEVICE copy additionally hard-codes `isProject:false` for its read, destination create and associated asset inputs, so it is not a project-local copy adapter. Symbol/footprint copy use mutable-current-project comparisons and source/template services. | Feasible with new project-qualified adapters: first admit one closed local asset and exact copied geometry/identity mapping. DEVICE copy must explicitly preserve or authorize copied associations rather than reuse its public cloud-oriented path. Prove every added record and unchanged peer. |
 | `library.model3d.create` | The importer accepts file data and can return multiple UUIDs. Project-local model create is not implemented in the installed service dispatch. A single local project checkpoint does not back up an external model collection. | Add bounded managed-input transfer, explicit external collection authority, importer result inventory, units and geometry checks, external backup/recovery and per-model identity evidence. |

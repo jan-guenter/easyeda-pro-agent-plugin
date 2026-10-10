@@ -7,13 +7,13 @@
     "latestDistinctMethods": 773,
     "statuses": {
       "implemented-public-subset": 190,
-      "implemented-native-equivalent": 73,
+      "implemented-native-equivalent": 74,
       "internal-lifecycle-only": 2,
       "implemented-but-blocked": 8,
-      "omitted": 501
+      "omitted": 500
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 315,
+      "available-with-runtime-guards": 319,
       "blocked": 9,
       "partially-blocked": 3
     },
@@ -47,7 +47,6 @@
       "shared-asset-owner-projection-needed": 3,
       "simulation-editor-not-admitted": 1,
       "source-decoder-and-save-lifecycle": 2,
-      "symbol-template-effect-model-needed": 1,
       "unrestricted-transport-or-service": 22
     },
     "currentGenerationLiveValidatedMethods": 0,
@@ -453,7 +452,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "partially-blocked",
-          "blockedReason": "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ]
@@ -574,7 +573,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "partially-blocked",
-          "blockedReason": "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ]
@@ -6087,18 +6086,46 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "symbol-template-effect-model-needed",
-        "reason": "Creating a symbol also creates type-specific canvas/template records and META defaults, not just one metadata row. Existing symbol geometry edits require an already owned single-part asset.",
-        "nextRequirement": "Implement exact generated template/META and child-identity expectations, returned-ID ownership, asset dependency checks and complete saved-project addition proof.",
-        "evidence": [
-          "library-operations.ts",
-          "library-runtime.ts",
-          "docs/api-execution-feasibility-2026-10-10.md"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_library",
+          "selector": "library.symbol.create",
+          "implementation": "native-task-equivalent",
+          "scope": "One closed empty ordinary current-project symbol with an ordinary clean PCB active. Exact project-qualified creation and original returned ID, META-only addition and complete unchanged-peer proof; no classifications, inherited source, template/PART/canvas initialization, editor opening, Save or automatic inverse. Permission denial can display a native dialog. Changed recovery requires the retained original return and never recreates. Current-generation live validation is unclaimed.",
+          "source": [
+            "project-symbol-create.ts",
+            "library-execution.ts",
+            "library-recovery-state.ts",
+            "library-recovery.ts",
+            "engine.ts"
+          ],
+          "tests": [
+            "project-symbol-create.test.ts",
+            "project-symbol-create-transaction.test.ts",
+            "typed-recovery.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "documentTypes": [
+            3
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "library",
+                  "operationAction": "library.symbol.create",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -20872,6 +20899,53 @@
       "routes": [
         {
           "tool": "easyeda_control_design",
+          "documentTypes": [
+            1
+          ],
+          "executionState": "available-with-runtime-guards",
+          "validation": "offline-regression;current-live-unclaimed",
+          "source": [
+            "flat-display-binding.ts",
+            "flat-display-profile.ts",
+            "flat-display-runtime.ts",
+            "schematic-flat-read.ts",
+            "schematic-flat-topology.ts",
+            "schematic-layout-batch.ts",
+            "design-action.ts",
+            "design-execution.ts",
+            "runtime-scripts.ts",
+            "design-save-attempt.ts",
+            "native-document-lifecycle.ts"
+          ],
+          "tests": [
+            "flat-display-profile.test.ts",
+            "flat-display-runtime.test.ts",
+            "flat-display-execution.test.ts",
+            "schematic-flat-read.test.ts",
+            "schematic-flat-topology.test.ts",
+            "design-topology-refusal.test.ts",
+            "runtime-scripts.test.ts",
+            "design-save-attempt.test.ts"
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "design",
+                  "operationAction": "sch.layout.batch",
+                  "includeSchemas": true
+                }
+              }
+            }
+          },
+          "selector": "execute/commit;sealed-profile=easyeda-pro-control.flat-display-transaction.v1",
+          "implementation": "internal-lifecycle-only",
+          "scope": "Only the original sealed easyeda-pro-control.flat-display-transaction.v1 display-only transaction's commit lifecycle on its one exact ordinary schematic page. Complete baseline-or-intended durable proof, same-execution source/native endpoint guard after final crypto/context awaits, retained no-repeat Save intent, terminal close/ready reopen and full project persistence are required. Recovery checks the sealed original preparation and retained Save acknowledgment; it never repeats an uncertain Save. No standalone Save, generic schematic commit, caller-provided topology grant or broad activation of other type-1 transactions. Current-generation live and successful full coordinator lifecycle validation remain unclaimed."
+        },
+        {
+          "tool": "easyeda_control_design",
           "selector": "execute/commit",
           "implementation": "internal-lifecycle-only",
           "scope": "Save is available only inside an original journal's verified no-repeat commit lifecycle; never an unrestricted standalone Save.",
@@ -20889,7 +20963,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "partially-blocked",
-          "blockedReason": "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ]
@@ -22434,7 +22508,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -22767,6 +22841,48 @@
               }
             }
           }
+        },
+        {
+          "tool": "easyeda_control_design",
+          "documentTypes": [
+            1
+          ],
+          "executionState": "available-with-runtime-guards",
+          "validation": "offline-regression;current-live-unclaimed",
+          "source": [
+            "flat-display-binding.ts",
+            "flat-display-profile.ts",
+            "flat-display-runtime.ts",
+            "schematic-flat-read.ts",
+            "schematic-flat-topology.ts",
+            "schematic-layout-batch.ts",
+            "design-action.ts",
+            "design-execution.ts"
+          ],
+          "tests": [
+            "flat-display-profile.test.ts",
+            "flat-display-runtime.test.ts",
+            "flat-display-execution.test.ts",
+            "schematic-flat-read.test.ts",
+            "schematic-flat-topology.test.ts",
+            "design-topology-refusal.test.ts"
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "design",
+                  "operationAction": "sch.layout.batch",
+                  "includeSchemas": true
+                }
+              }
+            }
+          },
+          "selector": "sch.layout.batch;sealed-profile=easyeda-pro-control.flat-display-transaction.v1;step=sch.attribute.display",
+          "implementation": "native-task-equivalent",
+          "scope": "Only sch.attribute.display inside a batch composed entirely of existing stored attribute/text display steps on exactly one ordinary project-owned schematic page. Facade-created easyeda-pro-control.flat-display-transaction.v1 binds the complete checkpoint, owner/branch, source/native endpoint topology and exact stored-field inverse; no caller-supplied profile or topology grants authority. Native source import runs once inside its own receiver-bound action, with final synchronous guards and complete baseline-or-intended durable classification. Only supported position/style/visibility fields are changed; no text-content or attribute-value edits, pin/net or NO_CONNECT changes, component translation, creation, deletion, mixed layout, hierarchy, variant, multipart or bus support. Not the public modify wrapper or its full declared contract; current-generation live and successful full coordinator lifecycle validation remain unclaimed."
         }
       ],
       "omission": null,
@@ -23417,7 +23533,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -23525,7 +23641,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -23683,7 +23799,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -24127,7 +24243,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -25188,7 +25304,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -26174,6 +26290,48 @@
               }
             }
           }
+        },
+        {
+          "tool": "easyeda_control_design",
+          "documentTypes": [
+            1
+          ],
+          "executionState": "available-with-runtime-guards",
+          "validation": "offline-regression;current-live-unclaimed",
+          "source": [
+            "flat-display-binding.ts",
+            "flat-display-profile.ts",
+            "flat-display-runtime.ts",
+            "schematic-flat-read.ts",
+            "schematic-flat-topology.ts",
+            "schematic-layout-batch.ts",
+            "design-action.ts",
+            "design-execution.ts"
+          ],
+          "tests": [
+            "flat-display-profile.test.ts",
+            "flat-display-runtime.test.ts",
+            "flat-display-execution.test.ts",
+            "schematic-flat-read.test.ts",
+            "schematic-flat-topology.test.ts",
+            "design-topology-refusal.test.ts"
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "design",
+                  "operationAction": "sch.layout.batch",
+                  "includeSchemas": true
+                }
+              }
+            }
+          },
+          "selector": "sch.layout.batch;sealed-profile=easyeda-pro-control.flat-display-transaction.v1;step=sch.text.display",
+          "implementation": "native-task-equivalent",
+          "scope": "Only sch.text.display inside a batch composed entirely of existing stored attribute/text display steps on exactly one ordinary project-owned schematic page. Facade-created easyeda-pro-control.flat-display-transaction.v1 binds the complete checkpoint, owner/branch, source/native endpoint topology and exact stored-field inverse; no caller-supplied profile or topology grants authority. Native source import runs once inside its own receiver-bound action, with final synchronous guards and complete baseline-or-intended durable classification. Only supported position/style/visibility fields are changed; no text-content or attribute-value edits, pin/net or NO_CONNECT changes, component translation, creation, deletion, mixed layout, hierarchy, variant, multipart or bus support. Not the public modify wrapper or its full declared contract; current-generation live and successful full coordinator lifecycle validation remain unclaimed."
         }
       ],
       "omission": null,
@@ -26222,7 +26380,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -26290,7 +26448,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -26477,7 +26635,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],

@@ -23,7 +23,7 @@ interface RouteGroup {
   readonly route: ApiCoverageRoute;
 }
 const groups: RouteGroup[] = [];
-const topologyBlock = "Ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required; existing action schemas and historical tests do not make this route callable.";
+const topologyBlock = "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.";
 
 function add(namespace: string, methods: readonly string[], tool: string, selector: string,
   implementation: ApiCoverageRoute["implementation"], scope: string, source: readonly string[], tests: readonly string[], admittedDocumentTypes?: readonly number[]): void {
@@ -104,6 +104,29 @@ add("sch_PrimitiveAttribute", ["createNetLabel"], "easyeda_control_design", "sch
 add("sch_PrimitivePin", ["modify"], "easyeda_control_design", "sch.component-pin.no-connect", "native-task-equivalent", "Exact ordinary component pin no-connect marker only; arbitrary placed-pin property changes remain unavailable.", ["schematic-electrical-adapter.ts"], ["schematic-electrical-adapter.test.ts"]);
 add("sch_PrimitiveComponent", ["createNetFlag"], "easyeda_control_design", "sch.layout.batch;checkpoint-bound-netflag-clone", "native-task-equivalent", "Clone of an existing loaded checkpoint-bound flag template only; not general new library flag creation.", ["schematic-layout-netflag.ts", "schematic-layout-batch.ts"], ["schematic-layout-netflag.test.ts", "schematic-layout-batch.test.ts"]);
 
+// These explicit inventory entries describe the facade-owned sealed exception.
+// Keep add()'s generic schematic and shared-lifecycle blocking rules unchanged.
+const flatDisplayProfile = "easyeda-pro-control.flat-display-transaction.v1";
+const flatDisplayRoute: Omit<ApiCoverageRoute, "selector" | "implementation" | "scope"> = {
+  tool: "easyeda_control_design", documentTypes: [1], executionState: "available-with-runtime-guards",
+  validation: "offline-regression;current-live-unclaimed",
+  source: ["flat-display-binding.ts", "flat-display-profile.ts", "flat-display-runtime.ts", "schematic-flat-read.ts", "schematic-flat-topology.ts", "schematic-layout-batch.ts", "design-action.ts", "design-execution.ts"],
+  tests: ["flat-display-profile.test.ts", "flat-display-runtime.test.ts", "flat-display-execution.test.ts", "schematic-flat-read.test.ts", "schematic-flat-topology.test.ts", "design-topology-refusal.test.ts"],
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "operations", query: { family: "design", operationAction: "sch.layout.batch", includeSchemas: true } } } },
+};
+for (const [namespace, step] of [["sch_PrimitiveAttribute", "sch.attribute.display"], ["sch_PrimitiveText", "sch.text.display"]] as const) {
+  groups.push({ namespace, methods: ["modify"], route: { ...flatDisplayRoute,
+    selector: `sch.layout.batch;sealed-profile=${flatDisplayProfile};step=${step}`, implementation: "native-task-equivalent",
+    scope: `Only ${step} inside a batch composed entirely of existing stored attribute/text display steps on exactly one ordinary project-owned schematic page. Facade-created ${flatDisplayProfile} binds the complete checkpoint, owner/branch, source/native endpoint topology and exact stored-field inverse; no caller-supplied profile or topology grants authority. Native source import runs once inside its own receiver-bound action, with final synchronous guards and complete baseline-or-intended durable classification. Only supported position/style/visibility fields are changed; no text-content or attribute-value edits, pin/net or NO_CONNECT changes, component translation, creation, deletion, mixed layout, hierarchy, variant, multipart or bus support. Not the public modify wrapper or its full declared contract; current-generation live and successful full coordinator lifecycle validation remain unclaimed.`,
+  } });
+}
+groups.push({ namespace: "sch_Document", methods: ["save"], route: { ...flatDisplayRoute,
+  selector: `execute/commit;sealed-profile=${flatDisplayProfile}`, implementation: "internal-lifecycle-only",
+  scope: `Only the original sealed ${flatDisplayProfile} display-only transaction's commit lifecycle on its one exact ordinary schematic page. Complete baseline-or-intended durable proof, same-execution source/native endpoint guard after final crypto/context awaits, retained no-repeat Save intent, terminal close/ready reopen and full project persistence are required. Recovery checks the sealed original preparation and retained Save acknowledgment; it never repeats an uncertain Save. No standalone Save, generic schematic commit, caller-provided topology grant or broad activation of other type-1 transactions. Current-generation live and successful full coordinator lifecycle validation remain unclaimed.`,
+  source: [...flatDisplayRoute.source, "runtime-scripts.ts", "design-save-attempt.ts", "native-document-lifecycle.ts"],
+  tests: [...flatDisplayRoute.tests, "runtime-scripts.test.ts", "design-save-attempt.test.ts"],
+} });
+
 for (const [family, api] of [["symbol", "lib_Symbol"], ["footprint", "lib_Footprint"], ["device", "lib_Device"], ["model3d", "lib_3DModel"]] as const) {
   add(api, ["get"], "easyeda_control_library", `library.${family}.get`, "public-method", "Exact identity/owner metadata, bounded double-sampled result; not complete library inventory or asset geometry.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
 }
@@ -115,6 +138,9 @@ add("lib_Symbol", ["openInEditor"], "easyeda_control_library", "library.symbol.o
 add("lib_Symbol", ["modify"], "easyeda_control_library", "library.symbol.modify", "native-task-equivalent",
   "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Project-qualified native write avoids the public wrapper's awaited mutable-current-project cloud-routing race and classification reprojection. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate.",
   ["project-symbol-metadata.ts", "library-execution.ts", "library-recovery-state.ts", "editor-tabs.ts"], ["project-symbol-metadata.test.ts", "project-symbol-transaction.test.ts", "library-recovery.test.ts"]);
+add("lib_Symbol", ["create"], "easyeda_control_library", "library.symbol.create", "native-task-equivalent",
+  "One closed empty ordinary current-project symbol with an ordinary clean PCB active. Exact project-qualified creation and original returned ID, META-only addition and complete unchanged-peer proof; no classifications, inherited source, template/PART/canvas initialization, editor opening, Save or automatic inverse. Permission denial can display a native dialog. Changed recovery requires the retained original return and never recreates. Current-generation live validation is unclaimed.",
+  ["project-symbol-create.ts", "library-execution.ts", "library-recovery-state.ts", "library-recovery.ts", "engine.ts"], ["project-symbol-create.test.ts", "project-symbol-create-transaction.test.ts", "typed-recovery.test.ts"], [3]);
 add("lib_Footprint", ["openInEditor"], "easyeda_control_library", "library.footprint.open", "native-task-equivalent", "Uses maintained dmt_EditorControl.openLibraryDocument path for an existing exact current-project footprint.", ["library-runtime.ts", "library-operations.ts"], ["library-execution.test.ts"]);
 add("dmt_EditorControl", ["openDocument"], "easyeda_control_library", "document.open", "public-method", "Checkpoint-member current-project document only, with one-shot navigation and complete unchanged saved-state proof.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
 add("dmt_EditorControl", ["activateDocument"], "easyeda_control_library", "document.activate", "public-method",

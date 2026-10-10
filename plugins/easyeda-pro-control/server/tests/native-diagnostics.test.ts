@@ -51,7 +51,8 @@ void test("upload barrier legacy literals and fixed stage wrappers classify with
 
 const operationStages = [
   { source: "editor-tab-lookups.ts", prefix: "Owned editor lookup refused at ", category: "native-editor-tab-lookup", stages: ["api", "before-context", "before-tree", "lookup", "after-tree"] },
-  { source: "document-page-create.ts", prefix: "Closed empty page creation refused at ", category: "native-page-create", stages: ["host", "before-read", "permission", "create", "after-read"] },
+  { source: "document-page-create.ts", prefix: "Closed empty page creation refused at ", category: "native-page-create", stages: ["host", "before-read", "permission", "create"] },
+  { source: "project-symbol-create.ts", prefix: "Closed empty symbol creation refused at ", category: "native-symbol-create", stages: ["host", "before-read", "permission", "create"] },
   { source: "document-close.ts", prefix: "Clean document close refused at ", category: "native-document-close", stages: ["host", "before-state", "dispatch-state", "close", "terminal-removal", "after-state", "reconciliation"] },
   { source: "document-activation.ts", prefix: "Document activation refused: ", category: "native-document-activation", stages: ["api", "before-context", "before-tabs", "loaded-frames", "preferences", "dispatch-context", "activate", "target-readiness"] },
   { source: "document-page-rename.ts", prefix: "Closed page rename refused at ", category: "native-page-rename", stages: ["host", "before-read", "closed-target", "rename", "after-read"] },

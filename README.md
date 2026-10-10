@@ -26,12 +26,15 @@ Latest declarations are not runtime admission. Exact operation schemas cover
 105 design actions and 68 library/lifecycle actions; schema availability does
 not guarantee execution support. The [coverage inventory](docs/api-coverage-inventory-2026-10-10.md)
 and [feasibility review](docs/api-execution-feasibility-2026-10-10.md) name the
-remaining work. Closed symbol/page metadata, empty-page creation, existing-tab
+remaining work. Closed symbol/page metadata, empty-page and empty-symbol creation, existing-tab
 activation and inactive clean-tab close have tracked executor and recovery
 paths. Their scopes and remaining connected acceptance are explicit; a public
 acknowledgment alone never completes a lifecycle operation. A separate checkpoint-bound flat-topology
-diagnostic avoids the mutating netlist exporter without re-enabling the old
-schematic transaction paths. Native discovery handles minimized windows, and
+diagnostic avoids the mutating netlist exporter. A separate sealed single-page
+profile admits only existing stored attribute/text display patches, with exact
+inverse, endpoint and whole-project persistence checks. It does not re-enable
+electrical edits or historical compiled transactions; connected lifecycle testing
+of this new source is pending. Native discovery handles minimized windows, and
 bounded recovery-history caches preserve fresh content verification.
 Offline tests do not establish connected validation for this release.
 The [lifecycle continuation](docs/api-coverage-lifecycle-continuation-2026-10-10.md)

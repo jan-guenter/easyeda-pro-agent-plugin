@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- The builtin-only fixture helper isolates credential and upstream paths alongside these coordinator test dependencies. */
+import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -22,7 +24,7 @@ const CONTEXT = { project: { uuid: "b".repeat(64), path: "/fixture/project.eprj2
 
 before(async () => {
   directory = await mkdtemp(join(tmpdir(), "easyeda-save-attempt-test-"));
-  process.env["EASYEDA_CONTROL_DATA_DIR"] = directory;
+  configureTestControlRoot(directory);
   attempts = await import("../src/design-save-attempt.ts");
   artifacts = await import("../src/artifacts.ts");
   engines = await import("../src/engine.ts");
@@ -31,8 +33,8 @@ before(async () => {
 after(async () => {
   const capability = await artifacts.controlRootCapability();
   await capability.close();
-  if (priorDirectory === undefined) { delete process.env["EASYEDA_CONTROL_DATA_DIR"]; }
-  else { process.env["EASYEDA_CONTROL_DATA_DIR"] = priorDirectory; }
+  if (priorDirectory === undefined) { configureTestControlRoot(); }
+  else { configureTestControlRoot(priorDirectory); }
   await rm(directory, { recursive: true, force: true });
 });
 

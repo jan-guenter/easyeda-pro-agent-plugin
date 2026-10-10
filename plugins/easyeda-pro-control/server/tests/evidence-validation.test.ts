@@ -1,3 +1,4 @@
+import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
 import { lstat, mkdtemp, open, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -23,14 +24,14 @@ let artifacts: {
 
 before(async () => {
   dataDirectory = await mkdtemp("/tmp/easyeda-evidence-validation-");
-  process.env["EASYEDA_CONTROL_DATA_DIR"] = dataDirectory;
+  configureTestControlRoot(dataDirectory);
   artifacts = await import("../src/artifacts.ts");
 });
 
 after(async () => {
   const root = await artifacts.controlRootCapability();
   await root.close();
-  delete process.env["EASYEDA_CONTROL_DATA_DIR"];
+  configureTestControlRoot();
   await rm(dataDirectory, { recursive: true, force: true });
 });
 

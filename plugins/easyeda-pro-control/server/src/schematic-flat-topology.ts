@@ -223,7 +223,8 @@ export function verifySchematicFlatTopology(input: unknown): SchematicFlatTopolo
  * compilation, navigation, annotation, Save, native action or cached pin read.
  * Root integration must establish the declared scope independently before it.
  */
-export function buildSchematicFlatTopologyExpression(input: unknown): string {
+export function buildSchematicFlatTopologyExpression(input: unknown, internalAction?: "flat-display-owned-action"): string {
+  if (internalAction !== undefined && internalAction !== "flat-display-owned-action") { throw new Error("Unknown internal flat capture action profile."); }
   const scope = schematicFlatTopologyScopeSchema.parse(input);
   unique(scope.pageIds, "declared pages");
   return `(() => {
@@ -252,7 +253,7 @@ if(JSON.stringify(actualIds)!==JSON.stringify([...scope.pageIds].sort())||new Se
 const pages=docs.map(page=>{
  if(page.projectMgr!==project||page.isSchSheetDoc?.()!==true||page.isBlockSymbolInstancePage!==false||page.readonlyMode===true||page.tabId!==page.uuid+'@'+scope.projectUuid)fail('PAGE_KIND');
  if(page.consistencyImpl?.state!=='initialized')fail('PAGE_NOT_INITIALIZED');
- const shapes=page.shapeManager;if(typeof shapes?.getModels!=='function'||shapes.actionRunner?.running!==false||typeof shapes.netPointManager?.getNetPoint!=='function')fail('SHAPES');
+ const shapes=page.shapeManager;if(typeof shapes?.getModels!=='function'||${internalAction === undefined ? "shapes.actionRunner?.running!==false" : "!flatDisplayActionMatches(page,shapes)"}||typeof shapes.netPointManager?.getNetPoint!=='function')fail('SHAPES');
  const handler=page.consistencyImpl?.decodeAndRealTimeSyncHandler;if(typeof handler?.getSourceCodeIdMap!=='function'||page.idManager!==shapes.idManager)fail('SOURCE_INVENTORY');const sourceIds=handler.getSourceCodeIdMap();if(!(sourceIds instanceof Map)||sourceIds.size>100000)fail('SOURCE_INVENTORY');const serializable=new Set(['Symbol','NetGroup','Wire','Attr','NetName','noConnect','Text','Polyline','Circle','Arc','Rect','Bezier','Ellipse']);for(const sourceId of sourceIds.keys()){const model=page.idManager.idMap?.get(sourceId);if(!model||model.id!==sourceId||!serializable.has(model.modelType))fail('SOURCE_MODEL_KIND');}
  for(const type of ['BusEntry','MaskRegion','NetLabel','Combination','Image','Table'])if(array(shapes.getModels(type),20000).length)fail('UNSUPPORTED_FAMILY');
  const points=new Map();const remember=value=>{const key=JSON.stringify(pair(value));if(!points.has(key)){if(++totalPoints>100000)fail('POINT_TOTAL');points.set(key,value);}};

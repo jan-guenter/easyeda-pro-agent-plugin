@@ -10,7 +10,7 @@ import type { DesignAction, DesignActionState } from "./design-action.ts";
 import { compareDocumentSources, parseDocumentSource } from "./document-source.ts";
 import type { NativeSourceSnapshot } from "./document-source.ts";
 import { buildSaveReopenCode, wrapWithContextGuard } from "./runtime-scripts.ts";
-import { normalizeSchematicNativeSnapshot, schematicNativeSnapshotSchema } from "./schematic-native-adapter.ts";
+import { normalizeSchematicNativeSnapshot, schematicNativeSnapshotHash, schematicNativeSnapshotSchema } from "./schematic-native-adapter.ts";
 import { buildSchematicNativeTransportCode, decodeSchematicNativeEnvelope } from "./schematic-native-transport.ts";
 import type { SchematicNativeSnapshot } from "./schematic-native-adapter.ts";
 import { readNativeHistoryCheckpoint } from "./native-history.ts";
@@ -56,6 +56,11 @@ import { resolveSchematicLayoutConstructorWitness } from "./schematic-layout-con
 import type { SchematicLayoutConstructorWitness } from "./schematic-layout-constructor-witness.ts";
 import { DESIGN_SAVE_ATTEMPT_PROFILE, createDesignSaveIntent, createDesignSaveNotDispatched, designSavePhase, hasLegacyDesignSaveEvidence, inspectDesignSaveAttempts } from "./design-save-attempt.ts";
 import type { DesignSaveIntent } from "./design-save-attempt.ts";
+import { assertFlatDisplayBinding, assertFlatDisplayInverse, flatDisplayOperation, prepareFlatDisplayProfile, verifyFlatDisplayMembershipTopology, verifyFlatDisplayObservation, verifyFlatDisplayPersistence } from "./flat-display-profile.ts";
+import type { FlatDisplayBinding } from "./flat-display-profile.ts";
+import { observeSchematicFlatTopology } from "./schematic-flat-read.ts";
+import type { FlatDisplayObservationEvidence } from "./schematic-flat-read.ts";
+import type { FlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
 
 type RecordValue = Record<string, unknown>;
 const PROFILE = "easyeda-pro-control.typed-design-transaction.v1";
@@ -81,6 +86,7 @@ interface DesignPlan extends RecordValue {
   expectedContext: ExpectedContext;
   expectedFingerprint: RecordValue;
   expectedTopology?: DesignTopology;
+  flatDisplay?: FlatDisplayBinding;
 }
 
 interface DesignJournal extends DispatchOperationJournal {
@@ -177,6 +183,24 @@ export function verifyLayoutRetainedSaveAuthority(journal: LayoutSavedAuthority,
   }
 }
 
+/** A flat profile is additional sealed authority, never a reinterpretation of
+ * the historical compiled-topology receipt. Both validators must pass.
+ */
+export function verifyFlatDisplayRetainedSaveAuthority(journal: Pick<DesignJournal, "plan" | "context">, prepared: unknown, acknowledgment: unknown): void {
+  const binding = assertFlatDisplayBinding(journal.plan.flatDisplay, journal.plan.operation, journal.context);
+  const hash = sha256Text(canonicalJson(binding));
+  if (!isRecord(prepared) || prepared["flatBindingSha256"] !== hash ||
+      typeof prepared["observationSha256"] !== "string" || !/^[a-f0-9]{64}$/u.test(prepared["observationSha256"]) ||
+      !isRecord(acknowledgment) || !isRecord(acknowledgment["flatDisplaySaveGuard"])) {
+    throw new Error("Retained flat display Save lacks its sealed final synchronous guard.");
+  }
+  const guard = acknowledgment["flatDisplaySaveGuard"];
+  if (canonicalJson(guard) !== canonicalJson({ profile: binding.profile, bindingSha256: hash,
+    observationSha256: prepared["observationSha256"], finalSynchronousCheck: true })) {
+    throw new Error("Retained flat display Save guard differs from the prepared observation.");
+  }
+}
+
 export interface DesignApplyInput {
   readonly operation: unknown;
   readonly expectedContext: ExpectedContext;
@@ -194,6 +218,30 @@ function assertDesignTopologyExecutionAvailable(...contexts: readonly ExpectedCo
   if (contexts.some((context) => context.document.documentType === 1)) {
     throw new Error(SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL);
   }
+}
+
+function assertTransactionTopologyAvailable(plan: DesignPlan, ...contexts: readonly ExpectedContext[]): void {
+  if (!Object.hasOwn(plan, "flatDisplay")) { assertDesignTopologyExecutionAvailable(plan.expectedContext, ...contexts); return; }
+  for (const context of [plan.expectedContext, ...contexts]) { assertFlatDisplayBinding(plan.flatDisplay, plan.operation, context); }
+}
+function assertFlatDisplayJournal(journal: DesignJournal): FlatDisplayBinding {
+  const binding = assertFlatDisplayBinding(journal.plan.flatDisplay, journal.plan.operation, journal.context);
+  assertFlatDisplayBinding(binding, journal.plan.operation, journal.plan.expectedContext);
+  const checkpointFields = ["receiptPath", "receiptSha256", "checkpointSha256", "sourceSha256", "sourceDumpSha256", "checkpointDumpSha256"] as const;
+  if (journal.beforeNative === undefined || journal.layoutWireGroupRepair !== undefined || journal.layoutTemplates !== undefined ||
+      journal.before.sha256 !== binding.before.sourceSha256 || schematicNativeSnapshotHash(journal.beforeNative) !== binding.before.nativeSha256 ||
+      sha256Text(canonicalJson({ schema: journal.before.schema, document: journal.before.document, objects: journal.before.objects })) !== binding.before.sourceSha256 ||
+      parseDocumentSource(journal.beforeNative.source).sha256 !== binding.before.sourceSha256 ||
+      journal.createdId !== undefined || journal.targetId !== undefined || canonicalJson(journal.createdIds) !== "{}" ||
+      checkpointFields.some((field) => journal.preCheckpoint[field] !== binding.checkpoint[field]) || buildPlanHash(journal.plan) !== journal.planHash) {
+    throw new Error("Flat display journal differs from its sealed original evidence.");
+  }
+  verifyDesignTopology(binding.topology, journal.beforeTopology); verifyDesignTopology(binding.topology, journal.plan.expectedTopology);
+  if (journal.inverse !== undefined) { assertFlatDisplayInverse(binding, journal.inverse); }
+  return binding;
+}
+function flatDisplayCandidate(input: unknown): boolean {
+  try { flatDisplayOperation(input); return true; } catch { return false; }
 }
 
 function sourceRequest(context: ExpectedContext): { kind: "pcb-source" | "schematic-source" | "symbol-source" | "footprint-source" } {
@@ -264,6 +312,7 @@ function journalPayload(value: unknown): DesignJournal {
   designActionSchema.parse(plan["operation"]);
   // LoadOperation has already checked the sealed journal and every artifact.
   if (!isDesignJournal(value)) { throw new Error("Typed design journal has invalid state fields."); }
+  if (Object.hasOwn(value.plan, "flatDisplay")) { assertFlatDisplayJournal(value); }
   if (value.inverse !== undefined) { designActionSchema.parse(value.inverse); }
   if (value.beforeNative !== undefined) { schematicNativeSnapshotSchema.parse(value.beforeNative); }
   if (value.afterNative !== undefined) { schematicNativeSnapshotSchema.parse(value.afterNative); }
@@ -286,7 +335,7 @@ function state(source: NativeSourceSnapshot, native?: SchematicNativeSnapshot, h
   return { source, ...(native === undefined ? {} : { schematic: native }), ...(history === undefined ? {} : { history }), ...(footprintScope === undefined ? {} : { footprintScope }), ...(symbolScope === undefined ? {} : { symbolScope }), ...(layoutTemplates === undefined ? {} : { layoutTemplates }), ...(layoutWireGroupRepair === undefined ? {} : { layoutWireGroupRepair }), ...(layoutConstructorWitness === undefined ? {} : { layoutConstructorWitness }) };
 }
 interface LibraryLifecycle { readonly family: "symbol" | "footprint"; readonly scope: unknown; readonly saveCode: string; readonly reopenCode: string }
-type RetainedPhase = "after" | "reconciled" | "layout-net-label-repair-verified" | "layout-visibility-repair-verified" | "layout-wire-group-repair-prepared" | "layout-wire-group-repair-verified" | "apply" | "prepared" | "save-reopen" | "inverse" | "inverse-verified" |
+type RetainedPhase = "before" | "flat-inverse-prepared" | "flat-save-prepared" | "after" | "reconciled" | "layout-net-label-repair-verified" | "layout-visibility-repair-verified" | "layout-wire-group-repair-prepared" | "layout-wire-group-repair-verified" | "apply" | "prepared" | "save-reopen" | "inverse" | "inverse-verified" |
   "symbol-save" | "footprint-save" | "symbol-durable-before-close" | "footprint-durable-before-close" |
   "symbol-reopen" | "footprint-reopen" | "symbol-reopen-recovery" | "footprint-reopen-recovery" |
   "library-reopen-recovery-intent" | "library-reopen-recovery-not-dispatched";
@@ -426,6 +475,66 @@ export class DesignExecutor {
     await updateOperation(journal);
   }
 
+  private async flatEvidence(journal: DesignJournal, current: Awaited<ReturnType<DesignExecutor["snapshot"]>>,
+    phase: "before" | "after", lifecycle = false): Promise<FlatDisplayObservationEvidence> {
+    const binding = assertFlatDisplayBinding(journal.plan.flatDisplay, journal.plan.operation, journal.context);
+    if (current.native === undefined) { throw new Error("Flat display requires a complete native snapshot."); }
+    const evidence = await observeSchematicFlatTopology(this.engine, journal.context);
+    if (lifecycle) { verifyFlatDisplayMembershipTopology(binding, journal.plan.operation, journal.context, evidence, current.native); }
+    else { verifyFlatDisplayObservation(binding, journal.plan.operation, journal.context, evidence, current.native, phase); }
+    return evidence;
+  }
+
+  private static flatRuntimeGuard(journal: DesignJournal, evidence: FlatDisplayObservationEvidence, phase: "before" | "after"): FlatDisplayRuntimeGuard {
+    return { binding: assertFlatDisplayBinding(journal.plan.flatDisplay, journal.plan.operation, journal.context), operation: journal.plan.operation,
+      context: journal.context, observation: evidence.observation, phase };
+  }
+
+  private async transactionTopology(journal: DesignJournal, current: Awaited<ReturnType<DesignExecutor["snapshot"]>>,
+    phase: "before" | "after", lifecycle = false): Promise<DesignTopology> {
+    if (journal.plan.flatDisplay === undefined) { return readDesignTopology(this.engine, journal.context); }
+    const evidence = await this.flatEvidence(journal, current, phase, lifecycle);
+    return evidence.proof.topology;
+  }
+
+  /** Native source import may already have persisted its exact effect. Both
+   * admitted states are complete whole-project comparisons, never an exemption
+   * for the active target. A mixed or unrelated durable edit refuses Save.
+   */
+  private static async flatDurability(journal: DesignJournal, current: Awaited<ReturnType<DesignExecutor["snapshot"]>>,
+    evidence: FlatDisplayObservationEvidence, allowAfter: boolean): Promise<RecordValue> {
+    if (journal.plan.operation.action !== "sch.layout.batch" || journal.beforeNative === undefined || current.native === undefined) {
+      throw new Error("Flat display durable classification lacks its exact original layout.");
+    }
+    return verifyFlatDisplayPersistence({ binding: assertFlatDisplayJournal(journal), operation: journal.plan.operation, context: journal.context,
+      baseline: await durableSnapshot(journal.preCheckpoint, journal.context), before: journal.before, beforeNative: journal.beforeNative,
+      current: current.snapshot, currentNative: current.native, evidence, allowAfter });
+  }
+
+  private static async assertFlatDispatch(journal: DesignJournal, phase: string, code: string): Promise<void> {
+    const binding = assertFlatDisplayJournal(journal);
+    const phases = new Map<string, RetainedPhase>([["apply", "prepared"], ["inverse", "flat-inverse-prepared"], ["save-reopen", "flat-save-prepared"]]);
+    const preparedPhase = phases.get(phase);
+    if (preparedPhase === undefined) {
+      throw new Error("Flat display dispatch lacks its exact sealed original preparation and phase.");
+    }
+    if (phase === "inverse") { assertFlatDisplayInverse(binding, journal.inverse); }
+    const retained = journalPayload(await loadOperation(journal.operationId));
+    if (canonicalJson(retained.plan) !== canonicalJson(journal.plan) || retained.planHash !== journal.planHash ||
+        canonicalJson(retained.preCheckpoint) !== canonicalJson(journal.preCheckpoint) || retained.before.sha256 !== journal.before.sha256 ||
+        canonicalJson(retained.beforeNative) !== canonicalJson(journal.beforeNative)) { throw new Error("Flat display dispatch substituted its sealed journal."); }
+    const prepared = await DesignExecutor.phase(retained, preparedPhase);
+    if (!isRecord(prepared) || prepared["codeSha256"] !== sha256Text(code) || prepared["flatBindingSha256"] !== sha256Text(canonicalJson(binding))) {
+      throw new Error("Flat display dispatch differs from its original prepared program.");
+    }
+    const before = await DesignExecutor.phase(retained, "before");
+    if (!isRecord(before) || sha256Text(canonicalJson(before["flatObservation"])) !== binding.beforeObservationSha256 ||
+        sha256Text(canonicalJson(before["flatBaselineProof"])) !== binding.baselineProofSha256 ||
+        canonicalJson(before["flatProjectBinding"]) !== canonicalJson(binding.project)) {
+      throw new Error("Flat display dispatch lacks its original retained observation and baseline proof.");
+    }
+  }
+
   private static async phase(journal: DesignJournal, phase: RetainedPhase, latest = false): Promise<unknown> {
     const descriptor = selectDesignPhaseDescriptor(journal.artifacts, phase, latest);
     if (descriptor === undefined) { return undefined; }
@@ -516,7 +625,8 @@ export class DesignExecutor {
   }
 
   private async call(journal: DesignJournal, phase: string, code: string, lifecycle = false): Promise<unknown> {
-    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
+    assertTransactionTopologyAvailable(journal.plan, journal.context);
+    if (Object.hasOwn(journal.plan, "flatDisplay")) { await DesignExecutor.assertFlatDispatch(journal, phase, code); }
     await this.assertRuntime(journal.plan, journal.context, journal.runtimeFingerprint);
     const nativeLifecycle = ["save-reopen", "footprint-reopen", "footprint-reopen-recovery", "symbol-reopen", "symbol-reopen-recovery"].includes(phase);
     const persistenceNative = nativeLifecycle ? await this.engine.upstream.installedEasyedaBundles?.() : undefined;
@@ -578,7 +688,8 @@ export class DesignExecutor {
 
   public async apply(input: DesignApplyInput): Promise<RecordValue> {
     if (!input.confirmWrite) { throw new Error("Typed design writes need explicit confirmation."); }
-    assertDesignTopologyExecutionAvailable(input.expectedContext);
+    const flatCandidate = input.expectedContext.document.documentType === 1 && flatDisplayCandidate(input.operation);
+    if (!flatCandidate) { assertDesignTopologyExecutionAvailable(input.expectedContext); }
     const operation = designActionSchema.parse(input.operation);
     if (operation.action === "sch.layout.batch" && input.expectedTopology !== undefined) { throw new Error("Schematic layout preserves the complete original compiled topology; an override is not allowed."); }
     if (operation.action === "sch.component.create" && input.expectedTopology !== undefined) { throw new Error("This component-create profile derives exact initially-unconnected topology using journal-owned identities; connect it in a subsequent typed operation."); }
@@ -594,10 +705,13 @@ export class DesignExecutor {
     const baselineUploads = await this.engine.awaitProjectUploads(context);
     const before = await this.snapshot(context);
     const layoutTemplates = await this.readLayoutTemplates(operation, context);
-    const beforeTopology = context.document.documentType === 1 ? await readDesignTopology(this.engine, context) : undefined;
+    const flatBefore = flatCandidate ? await observeSchematicFlatTopology(this.engine, context) : undefined;
+    const flatPrepared = flatBefore === undefined ? undefined : await prepareFlatDisplayProfile({ operation, context, evidence: flatBefore, native: before.native });
+    if (flatPrepared !== undefined) { plan.flatDisplay = flatPrepared.binding; }
+    const beforeTopology = flatBefore?.proof.topology ?? (context.document.documentType === 1 ? await readDesignTopology(this.engine, context) : undefined);
     if (beforeTopology !== undefined) { plan.expectedTopology = designTopologySchema.parse(input.expectedTopology ?? beforeTopology); }
     else if (input.expectedTopology !== undefined) { throw new Error("Explicit schematic topology cannot be supplied for a PCB action."); }
-    const checkpoint = await this.engine.checkpoint({ source: context.project.path, outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-design-before" });
+    const checkpoint = flatBefore === undefined ? await this.engine.checkpoint({ source: context.project.path, outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-design-before" }) : { ...flatBefore.checkpoint };
     if (!("receiptPath" in checkpoint) || typeof checkpoint.receiptPath !== "string") { throw new Error("Checkpoint creation did not return a durable receipt."); }
     const targetId = "target" in operation && "primitiveId" in operation.target ? operation.target.primitiveId : undefined;
     if ("target" in operation && targetId === undefined) { throw new Error("A standalone transaction requires an exact target ID, not a batch reference."); }
@@ -614,7 +728,9 @@ export class DesignExecutor {
     const beforeState: DesignActionState = state(before.snapshot, before.native, baseline, context, layoutTemplates);
     await assertDesignActionSupportedCooperatively(operation, beforeState, targetId === undefined ? {} : { targetId });
     if (operation.action === "sch.layout.batch") { await yieldProofEventLoop(); }
-    const prepared = await prepareDesignActionCooperatively(operation, beforeState, targetId === undefined ? {} : { targetId });
+    const flatGuard = flatBefore === undefined || flatPrepared === undefined ? undefined :
+      { binding: flatPrepared.binding, operation, context, observation: flatBefore.observation, phase: "before" as const };
+    const prepared = await prepareDesignActionCooperatively(operation, beforeState, targetId === undefined ? {} : { targetId }, flatGuard);
     if (prepared.createdId !== undefined) { journal.createdId = prepared.createdId; }
     if (prepared.createdIds !== undefined) { journal.createdIds = prepared.createdIds; }
     if (prepared.componentCreate !== undefined) {
@@ -639,12 +755,19 @@ export class DesignExecutor {
     if (layoutTemplates !== undefined) { journal.layoutTemplates = structuredClone(layoutTemplates); }
     if (beforeTopology !== undefined) { journal.beforeTopology = beforeTopology; }
     await createOperation(journal);
-    await DesignExecutor.artifact(journal, "before", { ...before, baselineProof, baselineUploads });
+    await DesignExecutor.artifact(journal, "before", { ...before, baselineProof, baselineUploads,
+      ...(flatBefore === undefined ? {} : { flatObservation: flatBefore.observation, flatProof: flatBefore.proof, flatProjectBinding: flatBefore.projectBinding,
+        flatBaselineProof: flatPrepared?.baselineProof }) });
     try {
       const recheck = await this.snapshot(context);
       if (!sameState(state(recheck.snapshot, recheck.native), beforeState)) { throw new Error("Design changed after the checkpoint; no write dispatched."); }
+      if (flatBefore !== undefined) {
+        const fresh = await this.flatEvidence(journal, recheck, "before");
+        await DesignExecutor.flatDurability(journal, recheck, fresh, false);
+      }
       if (layoutTemplates !== undefined && canonicalJson(await this.readLayoutTemplates(operation, context)) !== canonicalJson(layoutTemplates)) { throw new Error("A loaded net-flag template changed after preparation; no write dispatched."); }
-      await DesignExecutor.artifact(journal, "prepared", { adapterProfile: prepared.adapterProfile, createdId: prepared.createdId ?? null, createdIds: prepared.createdIds ?? null, codeSha256: sha256Text(prepared.code), componentCreate: prepared.componentCreate ?? null });
+      await DesignExecutor.artifact(journal, "prepared", { adapterProfile: prepared.adapterProfile, createdId: prepared.createdId ?? null, createdIds: prepared.createdIds ?? null, codeSha256: sha256Text(prepared.code), componentCreate: prepared.componentCreate ?? null,
+        ...(flatPrepared === undefined ? {} : { flatBindingSha256: sha256Text(canonicalJson(flatPrepared.binding)) }) });
       const result = await this.call(journal, "apply", prepared.code);
       if (!isRecord(result) || result["ok"] !== true || result["id"] !== operation.id) { throw new Error("Typed operation acknowledgment is invalid."); }
       if (journal.createdIds !== undefined && canonicalJson(journal.createdIds) !== canonicalJson(result["createdIds"])) { throw new Error("Batch acknowledgment differs from journal-owned identities."); }
@@ -659,18 +782,22 @@ export class DesignExecutor {
       const ids = { ...(targetId === undefined ? {} : { targetId }), ...(journal.createdId === undefined ? {} : { createdId: journal.createdId }), ...(journal.createdIds === undefined ? {} : { createdIds: journal.createdIds }), ...(journal.derivedResult === undefined ? {} : { derivedResult: journal.derivedResult }), ...(journal.componentCreate === undefined ? {} : { componentCreate: journal.componentCreate }) };
       const afterState: DesignActionState = { source: after.snapshot, ...(after.native === undefined ? {} : { schematic: after.native }) };
       const proof = await verifyDesignActionCooperatively(prepared.compiled, beforeState, afterState, ids);
+      let flatDurable: RecordValue | undefined;
       if (plan.expectedTopology !== undefined) {
-        const topology = await readDesignTopology(this.engine, context);
+        const flat = plan.flatDisplay === undefined ? undefined : await this.flatEvidence(journal, after, "after");
+        if (flat !== undefined) { flatDurable = await DesignExecutor.flatDurability(journal, after, flat, true); }
+        const topology = flat?.proof.topology ?? await readDesignTopology(this.engine, context);
         verifyDesignTopology(plan.expectedTopology, topology);
         await DesignExecutor.artifact(journal, "topology", topology);
       }
       const inverse = await inverseDesignActionCooperatively(operation, beforeState, ids);
+      if (plan.flatDisplay !== undefined) { assertFlatDisplayInverse(plan.flatDisplay, inverse); }
       if (inverse !== undefined) { journal.inverse = inverse; }
       journal.after = after.snapshot;
       if (after.native !== undefined) { journal.afterNative = after.native; }
       journal.state = "applied-unsaved"; journal.mutationState = "after"; journal.hardStop = false;
       journal.nextSafeAction = "Commit to save/reopen and verify, or rollback to the exact pre-edit state.";
-      await DesignExecutor.artifact(journal, "after", { ...after, proof });
+      await DesignExecutor.artifact(journal, "after", { ...after, proof, ...(flatDurable === undefined ? {} : { flatDurable }) });
       return summary(journal);
     } catch (error) {
       journal.state = journal.orphanedCallPossible ? "apply-outcome-unknown" : "apply-needs-review";
@@ -712,7 +839,7 @@ export class DesignExecutor {
    */
   public async openTarget(operationId: string): Promise<RecordValue> {
     const journal = journalPayload(await loadOperation(operationId));
-    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
+    assertTransactionTopologyAvailable(journal.plan, journal.context);
     if (isTerminalOperation(journal) || journal.orphanedCallPossible) { throw new Error("Recovery navigation requires an isolated unresolved journal with no prior execution uncertainty."); }
     await this.engine.assertRecoveryOperationIsolated(operationId);
     const fingerprint = journal.runtimeFingerprint ?? journal.plan.expectedFingerprint;
@@ -729,6 +856,7 @@ export class DesignExecutor {
       const result = await this.engine.dispatchWithOrphanTracking(journal, "target-open", "easyeda_execute", { code: prepared.code, timeoutMs: 60_000, confirmWrite: true }, 70_000);
       await DesignExecutor.artifact(journal, "target-open-return", extractToolPayload(result));
       journal.context = structuredClone(await this.engine.assertContext(structuredClone(journal.plan.expectedContext), { allowTabChange: true }));
+      assertTransactionTopologyAvailable(journal.plan, journal.context);
       journal.state = "target-opened-needs-reconciliation";
       journal.nextSafeAction = "Exact saved target is open. Reconcile source, topology and durable state before committing or further writes.";
       await DesignExecutor.artifact(journal, "target-opened", { context: journal.context });
@@ -757,6 +885,7 @@ export class DesignExecutor {
     });
     try {
       const context = await this.engine.assertContext(structuredClone(journal.context), { allowTabChange: true });
+      if (Object.hasOwn(journal.plan, "flatDisplay")) { assertTransactionTopologyAvailable(journal.plan, context); }
       journal.context = structuredClone(context);
       journal.state = "authority-recovered-needs-reconciliation";
       journal.hardStop = true;
@@ -1067,7 +1196,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
   /** Classify a returned-but-failed call without executing its action again. */
   public async reconcile(operationId: string): Promise<RecordValue> {
     const journal = journalPayload(await loadOperation(operationId));
-    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
+    assertTransactionTopologyAvailable(journal.plan, journal.context);
     if (isTerminalOperation(journal)) { return summary(journal); }
     if (journal.orphanedCallPossible) { throw new Error("Prior execution may still be running. Prove retained runtime termination before reconciliation."); }
     const saveEvidence = await inspectDesignSaveAttempts(journal);
@@ -1119,6 +1248,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       const afterPhase = await DesignExecutor.phase({ ...journal, artifacts: priorArtifacts }, candidate.phase, true);
       const savedAck = await DesignExecutor.phase(journal, "save-reopen");
       verifyLayoutRetainedSaveAuthority(journal, afterPhase, savedAck);
+      if (journal.plan.flatDisplay !== undefined) { verifyFlatDisplayRetainedSaveAuthority(journal, await DesignExecutor.phase(journal, "flat-save-prepared"), savedAck); }
       if (journal.after === undefined || journal.afterNative === undefined || journal.createdIds === undefined ||
           journal.beforeNative === undefined || current.native === undefined || beforeState.history === undefined || journal.beforeTopology === undefined) {
         throw new Error("Retained layout Save lacks complete source, native or checkpoint evidence.");
@@ -1127,7 +1257,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       const compiled = compileDesignAction(journal.plan.operation);
       const savedEffect = await verifyDesignActionCooperatively(compiled, beforeState, state(journal.after, journal.afterNative), ids);
       const lifecycle = await verifyDesignActionCooperatively(compiled, beforeState, currentState, ids);
-      const topology = await readDesignTopology(this.engine, journal.context);
+      const topology = await this.transactionTopology(journal, current, "after", true);
       verifyDesignTopology(journal.beforeTopology, topology);
       await this.engine.awaitProjectUploads(journal.context, journal, "layout-saved-reconcile-upload-barrier");
       const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path,
@@ -1175,7 +1305,10 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       }
     }
     if (baselineLifecycle) {
-      if (journal.beforeTopology !== undefined) { verifyDesignTopology(journal.beforeTopology, await readDesignTopology(this.engine, journal.context)); }
+      if (journal.beforeTopology !== undefined) {
+        const topology = await this.transactionTopology(journal, current, "before", true);
+        verifyDesignTopology(journal.beforeTopology, topology);
+      }
       const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path,
         outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-design-reconciled-before" });
       if (!("receiptPath" in checkpoint)) { throw new Error("Reconciliation checkpoint receipt missing."); }
@@ -1216,10 +1349,15 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       const prepared = journal.plan.operation.action === "sch.component.create" ? undefined : await prepareDesignActionCooperatively(journal.plan.operation, beforeState, ids);
       const compiled = prepared?.compiled ?? compileDesignAction(journal.plan.operation);
       const proof = await verifyDesignActionCooperatively(compiled, beforeState, currentState, { ...ids, ...(journal.plan.operation.action === "sch.layout.batch" ? { layoutCloneLifecycle: true as const } : {}) });
-      if (journal.plan.expectedTopology !== undefined) { verifyDesignTopology(journal.plan.expectedTopology, await readDesignTopology(this.engine, journal.context)); }
+      if (journal.plan.expectedTopology !== undefined) {
+        const flat = journal.plan.flatDisplay === undefined ? undefined : await this.flatEvidence(journal, current, "after");
+        if (flat !== undefined) { await DesignExecutor.flatDurability(journal, current, flat, true); }
+        verifyDesignTopology(journal.plan.expectedTopology, flat?.proof.topology ?? await readDesignTopology(this.engine, journal.context));
+      }
       journal.after = current.snapshot;
       if (current.native !== undefined) { journal.afterNative = current.native; }
       const inverse = await inverseDesignActionCooperatively(journal.plan.operation, beforeState, ids);
+      if (journal.plan.flatDisplay !== undefined) { assertFlatDisplayInverse(journal.plan.flatDisplay, inverse); }
       if (inverse === undefined) { delete journal.inverse; }
       else { journal.inverse = inverse; }
       journal.state = "applied-unsaved"; journal.mutationState = "after"; journal.hardStop = false;
@@ -1279,7 +1417,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
 
   public async commit(operationId: string): Promise<RecordValue> {
     const journal = journalPayload(await loadOperation(operationId));
-    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
+    assertTransactionTopologyAvailable(journal.plan, journal.context);
     const saveEvidence = await inspectDesignSaveAttempts(journal);
     const resumeSaved = DesignExecutor.hasLibrarySaveEvidence(journal);
     if (saveEvidence.attempted && !(resumeSaved && journal.state === "saved-awaiting-reopen")) { throw new Error("A design Save was already attempted; reconcile its retained evidence without repeating Save."); }
@@ -1300,9 +1438,26 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       let result: unknown;
       if (resumeSaved) { result = await this.resumeSavedLibraryReopen(journal, beforeSave); }
       else if ([2, 4].includes(journal.context.document.documentType)) { result = await this.saveLibraryAndReopen(journal); }
-      else { result = await this.call(journal, "save-reopen", buildSaveReopenCode(journal.context, [{ request: sourceRequest(journal.context), expectedSnapshotSha256: consistency["snapshotSha256"] }]), true); }
+      else {
+        let flatGuard: FlatDisplayRuntimeGuard | undefined;
+        let durable: RecordValue | undefined;
+        if (journal.plan.flatDisplay !== undefined) {
+          await this.engine.awaitProjectUploads(journal.context, journal, "flat-presave-upload-barrier");
+          const evidence = await this.flatEvidence(journal, beforeSave, "after");
+          durable = await DesignExecutor.flatDurability(journal, beforeSave, evidence, true);
+          flatGuard = DesignExecutor.flatRuntimeGuard(journal, evidence, "after");
+        }
+        const code = buildSaveReopenCode(journal.context, [{ request: sourceRequest(journal.context), expectedSnapshotSha256: consistency["snapshotSha256"] }], flatGuard);
+        if (flatGuard !== undefined) {
+          await DesignExecutor.artifact(journal, "flat-save-prepared", { codeSha256: sha256Text(code), flatBindingSha256: sha256Text(canonicalJson(flatGuard.binding)),
+            observationSha256: sha256Text(canonicalJson(flatGuard.observation)), durable });
+        }
+        result = await this.call(journal, "save-reopen", code, true);
+        if (flatGuard !== undefined) { verifyFlatDisplayRetainedSaveAuthority(journal, await DesignExecutor.phase(journal, "flat-save-prepared"), result); }
+      }
       const context = await this.engine.rebindAfterLifecycle(structuredClone(journal.context), result, "Typed design commit");
       journal.context = context;
+      assertTransactionTopologyAvailable(journal.plan, context);
       const reopened = await this.snapshot(context);
       let lifecycle: RecordValue | undefined;
       if (journal.plan.operation.action === "sch.layout.batch") { lifecycle = await DesignExecutor.layoutLifecycle(journal, state(reopened.snapshot, reopened.native), constructorWitness); }
@@ -1314,7 +1469,10 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       else if (journal.plan.operation.action === "pcb.pour.rebuild") { lifecycle = verifyCopperLifecycleEquivalence(journal.after, reopened.snapshot); }
       else { lifecycle = lifecycleEquivalent(state(journal.after, journal.afterNative), state(reopened.snapshot, reopened.native)); }
       if (lifecycle === undefined) { throw new Error("Saved/reopened document does not match the verified edit."); }
-      if (journal.plan.expectedTopology !== undefined) { verifyDesignTopology(journal.plan.expectedTopology, await readDesignTopology(this.engine, context)); }
+      if (journal.plan.expectedTopology !== undefined) {
+        const topology = await this.transactionTopology(journal, reopened, "after", true);
+        verifyDesignTopology(journal.plan.expectedTopology, topology);
+      }
       await this.engine.awaitProjectUploads(context, journal, "commit-upload-barrier");
       const checkpoint = await this.engine.checkpoint({ source: context.project.path, outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-design-committed" });
       if (!("receiptPath" in checkpoint)) { throw new Error("Committed checkpoint receipt missing."); }
@@ -1425,23 +1583,34 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
 
   public async rollback(operationId: string): Promise<RecordValue> {
     const journal = journalPayload(await loadOperation(operationId));
-    assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
+    assertTransactionTopologyAvailable(journal.plan, journal.context);
     const saveEvidence = await inspectDesignSaveAttempts(journal);
     if (saveEvidence.attempted) { throw new Error("A design Save was already attempted; an unsaved inverse is not authorized."); }
     if (journal.state !== "applied-unsaved" || journal.inverse === undefined || journal.after === undefined || journal.orphanedCallPossible) { throw new Error("Transaction has no safely dispatchable inverse."); }
     await this.assertRuntime(journal.plan, journal.context, journal.runtimeFingerprint);
     const current = await this.snapshot(journal.context);
     if (!sameState(state(current.snapshot, current.native), state(journal.after, journal.afterNative))) { throw new Error("Design changed since apply; inverse refused."); }
+    let flatGuard: FlatDisplayRuntimeGuard | undefined;
+    if (journal.plan.flatDisplay !== undefined) {
+      const evidence = await this.flatEvidence(journal, current, "after");
+      await DesignExecutor.flatDurability(journal, current, evidence, true);
+      flatGuard = DesignExecutor.flatRuntimeGuard(journal, evidence, "after");
+      assertFlatDisplayInverse(journal.plan.flatDisplay, journal.inverse);
+    }
     const inverseTarget = "target" in journal.inverse && "primitiveId" in journal.inverse.target ? journal.inverse.target.primitiveId : undefined;
-    const prepared = await prepareDesignActionCooperatively(journal.inverse, state(current.snapshot, current.native, await durableSnapshot(journal.preCheckpoint, journal.context), journal.context), inverseTarget === undefined ? {} : { targetId: inverseTarget });
+    const prepared = await prepareDesignActionCooperatively(journal.inverse, state(current.snapshot, current.native, await durableSnapshot(journal.preCheckpoint, journal.context), journal.context), inverseTarget === undefined ? {} : { targetId: inverseTarget }, flatGuard);
     try {
+      if (flatGuard !== undefined) { await DesignExecutor.artifact(journal, "flat-inverse-prepared", { codeSha256: sha256Text(prepared.code), flatBindingSha256: sha256Text(canonicalJson(flatGuard.binding)) }); }
       const result = await this.call(journal, "inverse", prepared.code);
       if (!isRecord(result) || result["ok"] !== true) { throw new Error("Inverse acknowledgment missing."); }
       await this.engine.awaitProjectUploads(journal.context, journal, "inverse-upload-barrier");
       const restored = await this.snapshot(journal.context);
       const lifecycle = lifecycleEquivalent(state(journal.before, journal.beforeNative), state(restored.snapshot, restored.native));
       if (lifecycle === undefined) { throw new Error("Inverse did not restore every native document record."); }
-      if (journal.beforeTopology !== undefined) { verifyDesignTopology(journal.beforeTopology, await readDesignTopology(this.engine, journal.context)); }
+      if (journal.beforeTopology !== undefined) {
+        const topology = await this.transactionTopology(journal, restored, "before", true);
+        verifyDesignTopology(journal.beforeTopology, topology);
+      }
       const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-design-rolled-back" });
       if (!("receiptPath" in checkpoint)) { throw new Error("Rollback checkpoint receipt missing; durable restoration is unverified."); }
       const persistenceInput = { before: await durableSnapshot(journal.preCheckpoint, journal.context), after: await durableSnapshot(checkpoint, journal.context),

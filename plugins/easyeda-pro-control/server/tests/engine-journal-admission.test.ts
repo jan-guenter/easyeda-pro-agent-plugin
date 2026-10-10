@@ -1,3 +1,4 @@
+import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
 import { link, lstat, mkdtemp, readFile, rename, rm, symlink, unlink, utimes, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -16,7 +17,7 @@ let engines: { EasyedaControlEngine: typeof EasyedaControlEngine };
 before(async () => {
   root = await mkdtemp("/tmp/easyeda-engine-journal-admission-");
   previousRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
-  process.env["EASYEDA_CONTROL_DATA_DIR"] = root;
+  configureTestControlRoot(root);
   [artifacts, engines] = await Promise.all([import("../src/artifacts.ts"), import("../src/engine.ts")]);
 });
 afterEach(async () => {
@@ -26,8 +27,8 @@ afterEach(async () => {
 after(async () => {
   const capability = await artifacts.controlRootCapability();
   await capability.close();
-  if (previousRoot === undefined) { delete process.env["EASYEDA_CONTROL_DATA_DIR"]; }
-  else { process.env["EASYEDA_CONTROL_DATA_DIR"] = previousRoot; }
+  if (previousRoot === undefined) { configureTestControlRoot(); }
+  else { configureTestControlRoot(previousRoot); }
   await rm(root, { recursive: true, force: true });
 });
 
@@ -58,6 +59,43 @@ void test("bridge, recovery and reporting share identical-byte projections witho
   assert.equal(await engine.assertNativeUiEditingAllowed(), true);
   assert.equal(await engine.assertBridgeDispatchAllowed(), true);
   assert.equal(journalParses, 1);
+});
+
+void test("status admission reports one dated cloned observation and every later guard scans fresh bytes", async () => {
+  const { engine, id, journal } = await fixture({ state: "library-needs-review", orphanedCallPossible: false,
+    nextSafeAction: "Inspect the retained operation." });
+  const expected = operationSummary(await artifacts.loadOperation(id));
+  const startedAt = Date.now();
+  const observation = await engine.observeStatusAdmission();
+  assert.ok(Date.parse(observation.observedAt) >= startedAt);
+  assert.ok(Date.parse(observation.observedAt) <= Date.now());
+  assert.deepEqual(observation.incompleteOperations, [expected]);
+  assert.ok(observation.incompleteOperations[0] !== undefined);
+  observation.incompleteOperations[0].nextSafeAction = "caller mutation";
+  const repeated = await engine.observeStatusAdmission();
+  assert.deepEqual(repeated.incompleteOperations, [expected]);
+  await artifacts.updateOperation({ ...journal, state: "completed", orphanedCallPossible: true });
+  await assert.rejects(engine.observeStatusAdmission(), /dispatch is quarantined/u);
+  await assert.rejects(engine.assertBridgeDispatchAllowed(), /dispatch is quarantined/u);
+  await assert.rejects(engine.assertNativeUiEditingAllowed(), /before native UI edits/u);
+  assert.deepEqual(await engine.recover(), []);
+});
+
+void test("status admission rehashes same-size journal and phase changes after its prior observation", async () => {
+  for (const target of ["journal", "artifact"] as const) {
+    const { engine, id, journal } = await fixture();
+    const descriptor = await artifacts.writePhaseArtifact(id, 1, "before", { state: "before" });
+    await artifacts.updateOperation({ ...journal, artifacts: [descriptor] });
+    const observation = await engine.observeStatusAdmission();
+    assert.deepEqual(observation.incompleteOperations, []);
+    const path = target === "journal" ? artifacts.operationPath(id) : descriptor.path;
+    const info = await lstat(path), original = await readFile(path, "utf8");
+    const changed = target === "journal" ? original.replace('"completed"', '"savingxxx"') : original.replace("before", "forged");
+    assert.notEqual(changed, original); assert.equal(Buffer.byteLength(changed), Buffer.byteLength(original));
+    await writeFile(path, changed); await utimes(path, info.atime, info.mtime);
+    await assert.rejects(engine.observeStatusAdmission(), /dispatch is quarantined/u);
+    await rm(join(root, "operations"), { recursive: true, force: true });
+  }
 });
 
 void test("shared admission preserves terminal, explicit orphan and legacy orphan predicates", async () => {

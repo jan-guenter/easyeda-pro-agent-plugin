@@ -136,6 +136,8 @@ if(localUI!=null&&outerUI!=null&&localUI!==outerUI)throw new Error('UI_AMBIGUOUS
 const ui=localUI??outerUI,tabs=ui?.tabBar,permission=ui?.concurrentDesign;
 if(typeof tabs?.getFilterTabs!=='function'||typeof tabs.getActiveTab!=='function'||typeof tabs.hasTabUnSaved!=='function'||typeof tabs.isTabUnSaved!=='function')throw new Error('TAB_STATE_MISSING');
 const clean=()=>{
+const currentLocalHost=globalThis.gVars,currentOuterHost=globalThis.top?.gVars,currentLocalUI=globalThis.UI,currentOuterUI=globalThis.top?.UI;
+if((currentLocalHost!=null&&currentOuterHost!=null&&currentLocalHost!==currentOuterHost)||(currentLocalUI!=null&&currentOuterUI!=null&&currentLocalUI!==currentOuterUI)||(currentLocalHost??currentOuterHost)!==host||(currentLocalUI??currentOuterUI)!==ui||host.messageBus!==bus||ui.tabBar!==tabs||ui.concurrentDesign!==permission)throw new Error('HOST_REPLACED');
 const localVersion=globalThis.PRO_EDITOR_VERSION,outerVersion=globalThis.top?.PRO_EDITOR_VERSION;
 if(localVersion!==undefined&&outerVersion!==undefined&&localVersion!==outerVersion)throw new Error('EDITOR_VERSION_AMBIGUOUS');
 if((localVersion??outerVersion)!==(PLAN.headerEditVersion===null?undefined:PLAN.headerEditVersion))throw new Error('EDITOR_VERSION_DRIFT');
@@ -151,24 +153,25 @@ if(count!==1)throw new Error('TAB_SCOPE');};
 const context=async()=>{const project=await eda.dmt_Project.getCurrentProjectInfo();clean();const document=await eda.dmt_SelectControl.getCurrentDocumentInfo();
 if((project?.uuid??project?.projectUuid)!==PLAN.projectUuid||(project.uuid!==undefined&&project.projectUuid!==undefined&&project.uuid!==project.projectUuid)||
 (document?.uuid??document?.documentUuid)!==PLAN.activeUuid||(document.uuid!==undefined&&document.documentUuid!==undefined&&document.uuid!==document.documentUuid)||document.documentType!==PLAN.activeDocumentType||document.tabId!==PLAN.activeTabId||document.parentProjectUuid!==PLAN.projectUuid||document.parentLibraryUuid!==undefined)throw new Error('CONTEXT');clean();};
-const read=async(created)=>{
+const read=async()=>{
 const parent=(await bus.rpcCall('/PrjDB/schematic/getData',[PLAN.parentUuid,PLAN.projectUuid])).message;await context();
 if(parent?.uuid!==PLAN.parentUuid||parent.project_uuid!==PLAN.projectUuid||parent.display_name!==PLAN.parentTitle||parent.source!=='')throw new Error('PARENT_METADATA');
 const owner=(await bus.rpcCall('/PrjDB/project/getData',[PLAN.projectUuid])).message;await context();
 if(owner?.uuid!==PLAN.projectUuid||owner.owner?.uuid!==PLAN.ownerUuid||owner.currentBranch!==PLAN.branchUuid||owner.isV2Format!==false||owner.archive||owner.store||owner.cbb_project)throw new Error('PROJECT_METADATA');
 const pages=(await bus.rpcCall('/PrjDB/sheet/getAllKVDatas',[PLAN.parentUuid,PLAN.projectUuid])).message;await context();
-const expected=created?[...PLAN.siblings,{uuid:created,title:PLAN.desiredTitle,zIndex:PLAN.desiredZIndex}]:PLAN.siblings;
+const expected=PLAN.siblings;
 if(!pages||typeof pages!=='object'||Array.isArray(pages)||Object.keys(pages).length!==expected.length)throw new Error('SIBLING_MEMBERSHIP');
 const found=new Set();for(const [key,page] of Object.entries(pages)){const value=expected.find(item=>item.uuid===page?.uuid);
 if(!value||key!==page.uuid||found.has(page.uuid)||page.project_uuid!==PLAN.projectUuid||page.schematic_uuid!==PLAN.parentUuid||page.docType!==1||page.source!==''||page.display_title!==value.title||page.zIndex!==value.zIndex)throw new Error('SIBLING_METADATA');found.add(page.uuid);}
 if(PLAN.siblings.some(value=>value.title.toLocaleLowerCase()===PLAN.desiredTitle.toLocaleLowerCase()))throw new Error('DUPLICATE_TITLE');};
-await context();stage='before-read';await read(null);
+await context();stage='before-read';await read();
 stage='permission';const allowed=(await bus.rpcCall('ui/hasDocCreatePermission',{projectId:PLAN.projectUuid,showMsg:false})).message;await context();
 if(allowed!==true)throw new Error('PROJECT_PERMISSION');
-await read(null);await context();clean();stage='create';
+await read();await context();clean();stage='create';
 const created=(await bus.rpcCall('/PrjDB/sheet/addData',[{schematic_uuid:PLAN.parentUuid,title:PLAN.desiredTitle,zIndex:PLAN.desiredZIndex},PLAN.projectUuid])).message;
 if(!created||typeof created.uuid!=='string'||!/^[a-f0-9]{16}$/.test(created.uuid)||PLAN.baselineDocumentIds.includes(created.uuid)||created.project_uuid!==PLAN.projectUuid||created.schematic_uuid!==PLAN.parentUuid||created.docType!==1||created.display_title!==PLAN.desiredTitle||created.source!==''||created.zIndex!==PLAN.desiredZIndex)throw new Error('ACK_INVALID');
-stage='after-read';await context();await read(created.uuid);await context();clean();
+// Return the validated native identity immediately. The facade seals it before
+// Awaiting post-write context, source or complete-checkpoint verification.
 const json=JSON.stringify({kind:'project-page-create',targetId:created.uuid,createdId:created.uuid});
 return{schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};
 }catch(_){throw new Error('Closed empty page creation refused at '+stage);}})()`;

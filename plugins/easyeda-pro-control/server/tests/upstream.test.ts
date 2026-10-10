@@ -1,3 +1,4 @@
+import { configureTestControlRoot } from "./test-control-root.ts";
 // oxlint-disable import/max-dependencies -- This end-to-end sandbox fixture composes filesystem, WebSocket, bridge-auth, launcher, and lifecycle boundaries in one process.
 import assert from "node:assert/strict";
 import { once } from "node:events";
@@ -508,6 +509,7 @@ before(async () => {
     "EASYEDA_UPSTREAM_COMMAND",
     "EASYEDA_UPSTREAM_ARGS_JSON",
     "EASYEDA_UPSTREAM_CWD",
+    "EASYEDA_UPSTREAM_DATA_DIR",
     "EASYEDA_CONTROL_DATA_DIR",
     "EASYEDA_ASSETS_ROOT",
     "EASYEDA_PCB_BUNDLE_VERSION",
@@ -520,7 +522,7 @@ before(async () => {
   process.env["EASYEDA_UPSTREAM_COMMAND"] = process.execPath;
   process.env["EASYEDA_UPSTREAM_ARGS_JSON"] = JSON.stringify([entrypoint]);
   process.env["EASYEDA_UPSTREAM_CWD"] = fixtureRoot;
-  process.env["EASYEDA_CONTROL_DATA_DIR"] = join(fixtureRoot, "control-data");
+  configureTestControlRoot(join(fixtureRoot, "control-data"));
   process.env["EASYEDA_ASSETS_ROOT"] = assetsRoot;
   process.env["EASYEDA_PCB_BUNDLE_VERSION"] = "3.2.149.fixture";
   process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] = "0.2.53.fixture";
@@ -1214,7 +1216,7 @@ void describe(
       const rootTokenPath = join(root, "bridge-token");
       await mkdir(root, { mode: 0o700 });
       await writeFile(rootTokenPath, `${bridgeToken}\n`, { mode: 0o600 });
-      process.env["EASYEDA_CONTROL_DATA_DIR"] = root;
+      configureTestControlRoot(root);
       process.env["EASYEDA_UPSTREAM_DATA_DIR"] = dataDirectory;
       process.env["EASYEDA_BRIDGE_TOKEN_FILE"] = rootTokenPath;
       const controlRoot = await openConfiguredControlRootCapability();
@@ -1274,9 +1276,9 @@ void describe(
         await prepared?.dataDirectory.handle.close();
         await controlRoot.close();
         if (configuredRoot === undefined) {
-          Reflect.deleteProperty(process.env, "EASYEDA_CONTROL_DATA_DIR");
+          configureTestControlRoot();
         } else {
-          process.env["EASYEDA_CONTROL_DATA_DIR"] = configuredRoot;
+          configureTestControlRoot(configuredRoot);
         }
         if (configuredDataDirectory === undefined) {
           Reflect.deleteProperty(process.env, "EASYEDA_UPSTREAM_DATA_DIR");

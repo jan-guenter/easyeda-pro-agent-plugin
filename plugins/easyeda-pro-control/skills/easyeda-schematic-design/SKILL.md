@@ -13,7 +13,12 @@ The current compiled-topology reader is disabled because its installed netlist
 exporter can annotate parts and invoke Save All. Schematic transactions needing
 that proof are blocked pending a verified non-mutating replacement. Native
 per-page pin observations are useful, but do not substitute for complete
-hierarchical connectivity. Do not bypass the refusal or replay historical edits.
+hierarchical connectivity. A separate single-page display-only profile admits
+existing stored text/attribute display patches, with complete source, endpoint
+and persistence proof. Read the control skill's
+[exact boundary](../easyeda-pro-control/references/schematic.md#single-page-display-only-transactions)
+before using it; its new source is not yet live-lifecycle validated. Do not bypass
+other refusals or replay historical edits.
 
 ## Choose the work
 

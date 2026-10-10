@@ -7,7 +7,8 @@ import type { ContextProbePayload, InstalledEasyedaBundles } from "../src/engine
 import type { CheckpointReceipt, CheckpointVerification } from "../src/checkpoint.ts";
 import type { NativeDocumentSnapshot, NativeHistorySnapshot } from "../src/native-history.ts";
 import { SCHEMATIC_NATIVE_IMPLEMENTATION } from "../src/native-profiles.ts";
-import { readSchematicFlatTopology } from "../src/schematic-flat-read.ts";
+import { observeSchematicFlatTopology, readSchematicFlatTopology } from "../src/schematic-flat-read.ts";
+import type { FlatDisplayObservationEvidence } from "../src/schematic-flat-read.ts";
 import { buildExactReadExpression, validateExactReadRequest } from "../src/exact-readers.ts";
 
 const hash = "a".repeat(64), projectUuid = "b".repeat(32);
@@ -34,16 +35,17 @@ function history(): NativeHistorySnapshot {
     return { uuid, docType, metadata, records, semanticSha256: sha256Json({ uuid, docType, metadata,
       records: records.map(({ id, type, body }) => ({ id, type, body })) }) };
   });
-  return { profile: "easyeda.native-history.linear-gcm-gzip.v1", projectUuid, branchUuid: "branch", headHistoryUuid: "head",
+  return { profile: "easyeda.native-history.linear-gcm-gzip.v1", projectUuid, projectOwnerUuid: "c".repeat(32), branchUuid: "d".repeat(32), headHistoryUuid: "head",
     checkpointSha256: hash, historyRowCount: 1, chunkCount: 1, plaintextBytes: 100, documents,
     semanticSha256: sha256Json(documents.map(({ uuid, docType, semanticSha256 }) => ({ uuid, docType, semanticSha256 }))) };
 }
 interface Options { quarantine?: number; profileFail?: number; checkpointFail?: number; contextFail?: number;
   dispatchFail?: boolean; missingPage?: boolean; foreignDeclared?: boolean; varyingSource?: boolean; malformedPayload?: boolean;
-  checkpointProofOverride?: Record<string, unknown>; checkpointProofOverrideAt?: number }
-function fixture(options: Options = {}): { engine: EasyedaControlEngine; run: () => Promise<Record<string, unknown>>; events: string[] } {
+  checkpointProofOverride?: Record<string, unknown>; checkpointProofOverrideAt?: number; projectDriftAt?: number; historyHashDrift?: boolean }
+function fixture(options: Options = {}): { engine: EasyedaControlEngine; run: () => Promise<Record<string, unknown>>;
+  observe: () => Promise<FlatDisplayObservationEvidence>; events: string[] } {
   const events: string[] = [];
-  let checkpoints = 0, contexts = 0, dispatches = 0, gates = 0, profiles = 0;
+  let checkpoints = 0, contexts = 0, dispatches = 0, gates = 0, profiles = 0, projectReads = 0;
   const nativeProject = { setting: { universal: { defaultNetName: true } }, netLabelInterPageConnection: true };
   const source = (): string => `${JSON.stringify({ type: "DOCHEAD" })}||${JSON.stringify({ docType: "SCH_PAGE", uuid: "page", client: "0123456789abcdef", updateTime: 1, version: "1" })}|\n` +
     `${JSON.stringify({ id: "META", type: "META" })}||${JSON.stringify({ schematic: "schematic", title: options.varyingSource === true ? String(dispatches) : "fixture" })}|\n`;
@@ -53,7 +55,13 @@ function fixture(options: Options = {}): { engine: EasyedaControlEngine; run: ()
     projectMgr: nativeProject, isSchSheetDoc: (): true => true, isBlockSymbolInstancePage: false, shapeManager,
     idManager: shapeManager.idManager, consistencyImpl: { state: "initialized", getSourceCode: source,
       decodeAndRealTimeSyncHandler: { getSourceCodeIdMap: (): Map<string, number> => new Map() } } };
-  const runtime = { Map, Set, TextEncoder, SCH: { docMemoryManager: { getActiveDoc: (): object => page,
+  const runtime = { Map, Set, TextEncoder,
+    gVars: { currentProject: { projectId: projectUuid, branchUuid: "d".repeat(32), isV2Format: false }, isHistoryMode: false,
+      messageBus: { rpcCall: (topic: string): Promise<{ message: object }> => {
+        assert.equal(topic, "/PrjDB/project/getData"); events.push("project-read"); projectReads += 1;
+        return Promise.resolve({ message: { uuid: projectUuid, owner: { uuid: projectReads === options.projectDriftAt ? "f".repeat(32) : "c".repeat(32) },
+          currentBranch: "d".repeat(32), isV2Format: false } });
+      } } }, SCH: { docMemoryManager: { getActiveDoc: (): object => page,
     getSchDocs: (): object[] => options.missingPage === true ? [] : [page] } }, eda: {
     dmt_Project: { getCurrentProjectInfo: (): object => context.project },
     dmt_SelectControl: { getCurrentDocumentInfo: (): object => context.document },
@@ -84,14 +92,16 @@ function fixture(options: Options = {}): { engine: EasyedaControlEngine; run: ()
     return Promise.resolve({ ...verified, ok: checkpoints !== options.checkpointFail, sourceChanged: checkpoints === options.checkpointFail,
       ...(checkpoints === (options.checkpointProofOverrideAt ?? 1) ? options.checkpointProofOverride : {}) });
   };
-  const run = (): Promise<Record<string, unknown>> => readSchematicFlatTopology(engine, context, {
-    readNativeHistoryCheckpoint: (): Promise<NativeHistorySnapshot> => { events.push("history"); return Promise.resolve(history()); },
+  const dependencies = {
+    readNativeHistoryCheckpoint: (): Promise<NativeHistorySnapshot> => { events.push("history"); return Promise.resolve({ ...history(), checkpointSha256: options.historyHashDrift === true ? "f".repeat(64) : hash }); },
     verifySchematicNativeProfile: (): Promise<typeof SCHEMATIC_NATIVE_IMPLEMENTATION> => {
       events.push("profile"); profiles += 1;
       return profiles === options.profileFail ? Promise.reject(new Error("fixture profile")) : Promise.resolve(SCHEMATIC_NATIVE_IMPLEMENTATION);
     }, verifyDeviceAssociationNativeProfile: (): Promise<void> => Promise.resolve(),
-  });
-  return { engine, run, events };
+  };
+  const run = (): Promise<Record<string, unknown>> => readSchematicFlatTopology(engine, context, dependencies);
+  const observe = (): Promise<FlatDisplayObservationEvidence> => observeSchematicFlatTopology(engine, context, dependencies);
+  return { engine, run, observe, events };
 }
 
 void test("flat reader executes its actual generated capture twice with independently bound saved membership", async () => {
@@ -148,4 +158,32 @@ void test("flat request cannot supply scope, code or checkpoint and cannot reuse
   }
   assert.throws(() => buildExactReadExpression({ kind: "schematic-flat-topology" }), /checkpoint-bound/u);
   assert.throws(() => validateExactReadRequest({ kind: "schematic-topology" }, context), /disabled/u);
+});
+
+void test("internal flat observer retains exact raw capture, checkpoint history and checked native owner/branch", async () => {
+  const current = fixture(), result = await current.observe();
+  assert.equal(result.projectBinding.projectUuid, projectUuid); assert.equal(result.projectBinding.ownerUuid, "c".repeat(32));
+  assert.equal(result.projectBinding.branchUuid, "d".repeat(32)); assert.deepEqual(result.observation.scope.pageIds, ["page"]);
+  assert.equal(result.checkpoint.checkpointSha256, result.history.checkpointSha256);
+  assert.equal(current.events.filter((event) => event === "project-read").length, 4);
+  assert.equal(current.events.filter((event) => event === "dispatch").length, 2);
+});
+void test("internal flat observer refuses owner drift at all native project boundaries without another observation", async () => {
+  for (const projectDriftAt of [1, 2, 3, 4]) {
+    const current = fixture({ projectDriftAt }); await assert.rejects(current.observe(), /PROJECT_METADATA/u);
+    assert.equal(current.events.filter((event) => event === "project-read").length, projectDriftAt);
+    assert.equal(current.events.filter((event) => event === "dispatch").length, Math.ceil(projectDriftAt / 2));
+  }
+});
+void test("flat observation refuses history from a different checkpoint before any native dispatch", async () => {
+  for (const mode of ["run", "observe"] as const) {
+    const current = fixture({ historyHashDrift: true }); await assert.rejects(current[mode](), /checkpoint identity/u);
+    assert.equal(current.events.includes("dispatch"), false);
+  }
+});
+void test("public flat diagnostic still exposes no raw history, authority binding or transaction admission", async () => {
+  const current = fixture(), result = await current.run();
+  for (const key of ["history", "projectBinding", "observation", "checkpoint", "binding"]) { assert.equal(Object.hasOwn(result, key), false); }
+  assert.equal(result["transactionTopology"], false); assert.equal(result["currentGenerationLiveValidated"], false);
+  assert.equal(current.events.includes("project-read"), false);
 });

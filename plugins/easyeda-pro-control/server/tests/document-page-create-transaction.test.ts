@@ -1,3 +1,4 @@
+import { configureTestControlRoot } from "./test-control-root.ts";
 /* oxlint-disable import/max-dependencies -- Sealed transaction tests compose real journal storage, execution and recovery with isolated native doubles. */
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -19,12 +20,12 @@ let artifacts: { listOperationStates: typeof listOperationStates; loadOperation:
 let engines: { EasyedaControlEngine: typeof EasyedaControlEngine };
 before(async () => {
   root = await mkdtemp("/tmp/easyeda-page-create-transaction-");
-  originalRoot = process.env["EASYEDA_CONTROL_DATA_DIR"]; process.env["EASYEDA_CONTROL_DATA_DIR"] = root;
+  originalRoot = process.env["EASYEDA_CONTROL_DATA_DIR"]; configureTestControlRoot(root);
   [library, artifacts, engines] = await Promise.all([import("../src/library-execution.ts"), import("../src/artifacts.ts"), import("../src/engine.ts")]);
 });
 afterEach(async () => { mock.restoreAll(); await rm(join(root, "operations"), { recursive: true, force: true }); });
 after(async () => {
-  if (originalRoot === undefined) { delete process.env["EASYEDA_CONTROL_DATA_DIR"]; } else { process.env["EASYEDA_CONTROL_DATA_DIR"] = originalRoot; }
+  if (originalRoot === undefined) { configureTestControlRoot(); } else { configureTestControlRoot(originalRoot); }
   await rm(root, { recursive: true, force: true });
 });
 const CREATED = "c".repeat(16), HASH = "a".repeat(64);
@@ -62,7 +63,7 @@ function fingerprint(): Value {
 }
 interface Options { publicationFailure?: "native-return" | "verified"; peerMutation?: boolean; extraAddition?: boolean;
   checkpointFault?: "admission" | "final"; contextFault?: "execute-final" | "recovery-final";
-  activeSourceFault?: boolean; profileFault?: boolean; missingAcknowledgment?: boolean; noEffect?: boolean; unsupportedHistory?: boolean }
+  activeSourceFault?: boolean; profileFault?: boolean; missingAcknowledgment?: boolean; noEffect?: boolean; unsupportedHistory?: boolean; verificationFailureOnce?: boolean }
 function page(uuid: string): Value {
   return { uuid, project_uuid: "project", schematic_uuid: "parent", docType: 1,
     display_title: uuid === "page" ? "P1" : "P2", source: "", zIndex: uuid === "page" ? 1 : 2 };
@@ -70,6 +71,7 @@ function page(uuid: string): Value {
 function fixture(options: Options = {}): { executor: LibraryExecutor; request: LibraryExecuteInput; operationId: () => string;
   counts: () => { dispatches: number; writes: number }; resetPeer: () => void; resetHistory: () => void } {
   const identity = fingerprint(), manifest = loadReviewedCompatibilityManifest();
+  let remainingVerificationFailure = options.verificationFailureOnce === true;
   let contextValid = true, dispatches = 0, operationId = "", peer = options.peerMutation === true, unsupported = options.unsupportedHistory === true, verifications = 0, writes = 0;
   const checkpoint = (label: string): CheckpointReceipt => ({ schema: "easyeda-pro-control.checkpoint.v2", createdAt: "2026-10-10T00:00:00Z", source: CONTEXT.project.path,
     checkpoint: `/fixture/${label}.sqlite`, receiptPath: `/fixture/${label}.json`, checkpointSha256: HASH,
@@ -78,7 +80,16 @@ function fixture(options: Options = {}): { executor: LibraryExecutor; request: L
   const engine = new engines.EasyedaControlEngine({ callTool: (): Promise<never> => Promise.reject(new Error("Unexpected upstream call")) }, {
     executionAuthorityValidator: { capture: (): Promise<never> => Promise.reject(new Error("Unused capture")), proveTerminated: (): Promise<never> => Promise.reject(new Error("Unused termination")) },
   });
-  mock.method(engine, "status", (): Promise<unknown> => Promise.resolve({ stableFingerprint: identity }));
+  mock.method(engine, "status", async (): Promise<unknown> => {
+    if (writes > 0 && remainingVerificationFailure) {
+      remainingVerificationFailure = false;
+      const retained = await artifacts.loadOperation(operationId);
+      assert.ok(retained.artifacts);
+      assert.ok(retained.artifacts.some((entry) => entry.path.endsWith("native-return.json")));
+      throw new Error("Fixture one-shot post-publication verification failure");
+    }
+    return { stableFingerprint: identity };
+  });
   mock.method(engine, "context", (): Promise<unknown> => Promise.resolve(structuredClone(CONTEXT)));
   mock.method(engine, "assertContext", (expected: ExpectedContext): Promise<unknown> => {
     assert.deepEqual(expected, CONTEXT); return contextValid ? Promise.resolve(structuredClone(CONTEXT)) : Promise.reject(new Error("Fixture final context drift"));
@@ -98,7 +109,8 @@ function fixture(options: Options = {}): { executor: LibraryExecutor; request: L
     return Promise.resolve({ ...checkpoint(label), ...(substitute ? { checkpoint: "/fixture/substitute.sqlite" } : {}), ok: true,
       sourceChanged: false, sourceEqualsCheckpoint: true, sourceMatchesReceipt: true, checkpointMatchesReceipt: true });
   });
-  mock.method(engine, "dispatchWithOrphanTracking", async (journal: LibraryJournal, phase: string, name: string, args: Value): Promise<unknown> => {
+  mock.method(engine, "dispatchWithOrphanTracking", async (journal: LibraryJournal, phase: string, name: string, args: Value,
+    _timeoutMs?: number, _beforeDispatch?: () => Promise<void>, retainSettledResult?: (result: unknown) => Promise<void>): Promise<unknown> => {
     dispatches += 1; operationId = journal.operationId; assert.equal(phase, "execute"); assert.equal(name, "easyeda_execute");
     const retained = await artifacts.loadOperation(operationId); assert.equal(retained["state"], "execute-dispatching");
     assert.deepEqual(retained["pageCreatePlan"], journal.pageCreatePlan); assert.ok(journal.artifacts.some((entry) => entry.path.endsWith("page-create-prepared.json")));
@@ -125,7 +137,9 @@ function fixture(options: Options = {}): { executor: LibraryExecutor; request: L
     const pending: unknown = execute(eda, native); const result: unknown = await pending;
     if (options.publicationFailure !== undefined) { await artifacts.writePhaseArtifact(operationId, options.publicationFailure === "native-return" ? 3 : 4,
       options.publicationFailure, { faultInjection: "exclusive-publication-collision" }); }
-    return { content: [{ type: "text", text: JSON.stringify({ success: true, result }) }] };
+    const raw = { content: [{ type: "text", text: JSON.stringify({ success: true, result }) }] };
+    assert.ok(retainSettledResult); await retainSettledResult(raw);
+    return raw;
   });
   const executor = new library.LibraryExecutor(engine, {
     readNativeHistoryCheckpoint: (input): Promise<NativeHistorySnapshot> => {
@@ -146,6 +160,8 @@ void test("page creation seals parent/default plan before exactly one native wor
   assert.equal(result["state"], "completed"); assert.equal(result["saved"], true); assert.equal(result["reopened"], false);
   assert.ok(isRecord(result["result"])); assert.equal(result["result"]["createdId"], CREATED);
   assert.ok(isRecord(result["result"]["proof"])); assert.equal(result["result"]["proof"]["emptyPage"], true);
+  const retained = await artifacts.loadOperation(run.operationId()); assert.ok(retained.artifacts);
+  assert.equal(retained.artifacts.filter((entry) => entry.path.endsWith("native-return.json")).length, 1);
   assert.deepEqual(run.counts(), { dispatches: 1, writes: 1 });
 });
 void test("page creation requires explicit authority and an exact parent before dispatch", async () => {
@@ -174,6 +190,13 @@ void test("page creation refuses final baseline drift before native add", async 
 void test("page creation reconciles the original retained returned identity without recreating", async () => {
   const run = fixture({ publicationFailure: "verified" }); await assert.rejects(run.executor.execute(run.request));
   await assert.rejects(run.executor.reconcileNoMutation(run.operationId()), /Durable library changed/u);
+  const result = await run.executor.reconcile(run.operationId()); assert.equal(result["state"], "completed");
+  assert.ok(isRecord(result["result"])); assert.equal(result["result"]["createdId"], CREATED); assert.equal(result["result"]["actionRepeated"], false);
+  assert.deepEqual(run.counts(), { dispatches: 1, writes: 1 });
+});
+void test("page creation publishes original ID before library post-return verification and reconciles its failure without recreating", async () => {
+  const run = fixture({ verificationFailureOnce: true });
+  await assert.rejects(run.executor.execute(run.request), /post-publication/u);
   const result = await run.executor.reconcile(run.operationId()); assert.equal(result["state"], "completed");
   assert.ok(isRecord(result["result"])); assert.equal(result["result"]["createdId"], CREATED); assert.equal(result["result"]["actionRepeated"], false);
   assert.deepEqual(run.counts(), { dispatches: 1, writes: 1 });

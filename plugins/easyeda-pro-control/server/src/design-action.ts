@@ -34,6 +34,7 @@ import type { SchematicLayoutEvidence } from "./schematic-layout-batch.ts";
 import type { SchematicLayoutConstructorWitness } from "./schematic-layout-constructor-witness.ts";
 import type { SchematicWireGroupRepairDescriptor } from "./schematic-layout-wire-groups.ts";
 import { yieldProofEventLoop } from "./cooperative-proof.ts";
+import type { FlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
 
 export const designActionSchema = z.union([designOperationSchema, schematicOperationSchema, designStackOperationSchema, designBatchOperationSchema, footprintOperationSchema, modelTransformOperationSchema, schematicLayoutBatchSchema]);
 export type DesignAction = z.infer<typeof designActionSchema>;
@@ -113,12 +114,13 @@ export function prepareDesignAction(input: unknown, before: DesignActionState, i
  * Caller changes during a yielded turn cannot change the validated action,
  * source/native state, checkpoint/template evidence or creation identities.
  */
-export async function prepareDesignActionCooperatively(input: unknown, before: DesignActionState, ids: ActionIds = {}): Promise<PreparedDesignAction> {
-  const captured = structuredClone({ action: designActionSchema.parse(input), before, ids });
+export async function prepareDesignActionCooperatively(input: unknown, before: DesignActionState, ids: ActionIds = {}, flatGuard?: FlatDisplayRuntimeGuard): Promise<PreparedDesignAction> {
+  const captured = structuredClone({ action: designActionSchema.parse(input), before, ids, flatGuard });
+  if (captured.flatGuard !== undefined && captured.action.action !== "sch.layout.batch") { throw new Error("Flat display guard requires its exact layout action."); }
   if (captured.action.action === "sch.layout.batch") {
     await assertDesignActionSupportedCooperatively(captured.action, captured.before, captured.ids);
     const adapter = await buildSchematicLayoutAdapterCooperatively(captured.action, captured.before.source,
-      captured.before.schematic, captured.ids.createdIds, layoutEvidence(captured.before));
+      captured.before.schematic, captured.ids.createdIds, layoutEvidence(captured.before), captured.flatGuard);
     const prepared = finishPreparedDesignAction(captured.action, captured.ids, {
       compiled: compileSchematicLayoutBatch(captured.action), expression: `(async () => {${adapter.code}\n})()`,
       adapterProfile: adapter.profile, expectedSource: adapter.expected, createdIds: adapter.createdIds, sourceAdapter: true,
