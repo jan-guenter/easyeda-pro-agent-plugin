@@ -8,8 +8,8 @@ Last updated: 2026-10-10 (Europe/Berlin)
 
 - The user explicitly authorized exhaustive API coverage inventory, additional
   feasible implementations and tests, disposable-project validation, publication
-  and installation. The user's production project must remain untouched. Earlier offline-only revamp
-  scope does not prohibit the newly authorized disposable tests.
+  and installation. The user's production project must remain untouched. Earlier
+  offline-only revamp scope does not prohibit the newly authorized disposable tests.
 - Branch `feature/api-execution-coverage` starts at merged main `9a33523`.
   Count distinct mounted methods separately from overload signatures, typed
   schemas, direct public calls, task-equivalent native adapters and live evidence.
@@ -22,31 +22,44 @@ Last updated: 2026-10-10 (Europe/Berlin)
   update and require supported fresh-chat pickup for new live fixture evidence.
   Offline tests are not connected or saved/reopened validation.
 
-- Candidate `0.3.0+codex.20261010135410` inventories774 methods and adds158
-  fixed SDK read/calculation routes. Coverage is186public subsets/70native
-  equivalents/4internal lifecycle/8implemented-but-blocked/506omitted. No
+- Candidate `0.3.0+codex.20261010135410` inventories 774 methods and adds 158
+  fixed SDK read/calculation routes. Coverage is 186 public subsets / 70 native
+  equivalents / 4 internal lifecycle / 8 implemented-but-blocked / 506 omitted. No
   generic unreviewed plain-read/pure gap remains; stateful writer work is listed.
 - Source review proved hidden annotation+SaveAll in schematic netlist and
   hidden SaveAll in six exports. Those paths and dependent type1 transactions
   are refused before dispatch, including retained commit/inverse/repair paths.
   Existing receipt parsers remain; inspection and bounded authority recovery
   do not authorize another Save. No historical project operation was replayed.
-- Clean npmci, strict types and type-aware lint pass with zero diagnostics.
-  Full `verify` with hostile descriptors142/145 passes1170facade tests plus
-  one platform skip, zero failures, and424bridge tests. All seven skills,
+- Clean `npm ci`, strict types and type-aware lint pass with zero diagnostics.
+  Full `verify` with hostile descriptors 142/145 passes 1170 facade tests plus
+  one platform skip, zero failures, and 424 bridge tests. All seven skills,
   package/repository/privacy checks, actionlint and offline doctor pass.
-  Audit:zero vulnerabilities,151 signatures/40 attestations.
-- Frozen source138files/e9917ba6 and bundlec1116e11 are reproducible. Existing
+  Audit: zero vulnerabilities, 151 signatures / 40 attestations.
+- Frozen source 138 files / e9917ba6 and bundle c1116e11 are reproducible. Existing
   external/runtime/native/sanitizer pins are unchanged. New SDK observations
-  additionally verify delegated UI/manager/worker/schematic hashes. Draft
-  publication and Git-marketplace candidate installation follow; connected
-  acceptance and merge remain pending fresh-runtime disposable tests.
+  additionally verify delegated UI/manager/worker/schematic hashes.
+- Payload `5a3279e490795117c257cdbddff088bcdac5e041` is published in
+  [draft PR9](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/9).
+  [CI38058208209](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38058208209)
+  passed complete tests, reproducible builds, packaging and artifact upload.
+- Official Git-marketplace CLI installed and enabled `135410` from
+  `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` at
+  `feature/api-execution-coverage`. All 459 Git files / 13280703 bytes and
+  committed modes match the cache. Actual configured bundled startup with an
+  isolated synthetic profile returns 26 tools / 7 skills / 158 fixed SDK reads,
+  visible safety refusals and no upstream child or non-stdio socket. No live
+  EasyEDA call was made. The September host process remains unchanged.
+- Connected acceptance, remaining feasible writer work and merge remain pending
+  supported fresh-runtime disposable tests. See the
+  [release handoff](docs/api-coverage-release-2026-10-10.md). Root-only evidence
+  updates do not change the installed plugin payload. Do not update the user's
+  production project record: the current request explicitly leaves it untouched.
 
-PR8 final payload9f7ddb9 passed required CI38054290993 and is installed/enabled
-as125449 with exact443-file/configured-startup proof. Only root engineering
-evidence follows before protected merge. Retained-Node handoff, timeout-shaped
-data, bounded upload diagnostics and dependency-free marketplace startup have
-adversarial regressions. No live calls from this chat's old host generation.
+PR8's payload `9f7ddb9` passed CI38054290993 and was installed as `125449`
+with an exact 443-file/configured-startup proof. PR8 merged as `9a33523` before
+the current branch. That installation is superseded by the candidate above;
+its live evidence remains historical, not current-generation admission.
 
 ## 2026-10-10 plugin revamp
 
@@ -193,8 +206,8 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed Git-marketplace snapshot is `0.3.0+codex.20261010125449`, with25 tools and seven skills. This chat's loaded host generation remains24225913:installation is not loaded pickup. Use a fresh chat before live work. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate the current facade generation.
-- The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor is enabled with source/durable-effect and retained runtime gates. Unit tests alone do not establish live coverage for an adapter.
+- The installed Git-marketplace candidate is `0.3.0+codex.20261010135410`, with 26 tools and seven skills, from the draft feature ref. This chat's loaded host generation remains `24225913`: installation is not loaded pickup. Use a fresh chat before live work. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate the current facade generation.
+- The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
 - The facade enters Bubblewrap only through the reviewed native x86_64 descriptor sanitizer. Bubblewrap inherits the deliberate authority set on descriptors `0`–`9`; its exact reviewed executable is admitted on `10`, marked close-on-exec, and entered by descriptor after `close_range(11, UINT_MAX, 0)`. Never add an inherited descriptor without updating the complete mapping, native contract, compatibility fingerprint, and hostile-descriptor tests together.

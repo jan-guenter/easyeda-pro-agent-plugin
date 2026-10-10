@@ -1,23 +1,23 @@
 # API coverage candidate and remaining acceptance
 
 Candidate snapshot: `0.3.0+codex.20261010135410` on
-`feature/api-execution-coverage`. This is not a completed connected validation
-release. Publication, CI and installation evidence are appended after they run.
+`feature/api-execution-coverage`. Published and installed as a draft candidate;
+this is not a completed connected validation release.
 
 ## Local verification
 
-Clean installation used the pinned Node24.18.0/npm11.16.0 toolchain with core
-dumps disabled. Full `npm run verify` passed:1170 facade tests, one existing
-platform-specific skip, zero failures, and424 bridge tests. The suite ran with
-hostile inherited descriptors142/145. Both strict TypeScript checks and all
+Clean installation used the pinned Node 24.18.0 / npm 11.16.0 toolchain with core
+dumps disabled. Full `npm run verify` passed: 1170 facade tests, one existing
+platform-specific skip, zero failures, and 424 bridge tests. The suite ran with
+hostile inherited descriptors 142/145. Both strict TypeScript checks and all
 strict type-aware lint checks had zero diagnostics.
 
 All seven official skill checks, packaged skill checks, plugin/repository
 validators, privacy scan, actionlint and offline doctor passed. Dependency audit
-reported zero vulnerabilities;151 registry signatures and40 attestations
-verified. The sanitizer remains1440bytes with its original digest and mode.
+reported zero vulnerabilities; 151 registry signatures and 40 attestations
+verified. The sanitizer remains 1440 bytes with its original digest and mode.
 
-The maintained manifest binds138 source files to
+The maintained manifest binds 138 source files to
 `e9917ba6c298676033b7e79b11bf57e91b2510e04cc274580365bc65557b6d67`
 and the reproducible three-file runtime bundle to
 `c1116e11c613d99e4ef4633efa2badc3af85b3d5faefc446b379d55d7afdd74f`.
@@ -26,6 +26,33 @@ route also verifies the already reviewed UI, project-manager/worker and
 schematic implementation files before dispatch and result publication.
 
 These are offline results, not disposable-project live acceptance.
+
+## Publication and installation
+
+Payload commit `5a3279e490795117c257cdbddff088bcdac5e041` is published in
+[draft PR #9](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/9).
+[GitHub CI run 38058208209](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38058208209)
+passed all required checks, including tests, reproducible bundles, private bridge
+fixture, repository checks, packaging and artifact upload. Subsequent root-only
+evidence updates leave the plugin payload unchanged.
+
+The official Codex CLI installed and enabled the candidate from the Git
+marketplace `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, using
+the `feature/api-execution-coverage` ref. The marketplace checkout resolves to
+the tested payload commit. No manual cache edits were made.
+
+All 459 tracked plugin files, totaling 13280703 bytes, match the installed cache
+byte-for-byte with their committed modes. An isolated synthetic-profile probe
+launched the cached `.mcp.json` command and verified the pinned Node handoff,
+26 tools, seven skills, 774 inventoried method paths, 158 fixed SDK methods,
+749/806 declaration signatures and 105/68 design/library schemas. It verified
+typed data validation, rejection of caller code and visibility of the new safety
+refusals. There was no upstream child, non-stdio socket or live EasyEDA call.
+
+The chat's existing September facade process was neither replaced nor stopped.
+Installed-file equality and isolated startup do not prove loaded live admission.
+The PR stays draft and the marketplace stays on the candidate ref until the
+connected acceptance below is completed; main has not been updated.
 
 ## Implemented scope
 
@@ -82,8 +109,8 @@ After supported pickup:
    journal. Installed-file equality alone is insufficient.
 2. Discover the editor/process state without changing it. Use only explicitly
    identified disposable projects. Do not open, close, save, restore or modify
-   the user's production project as a setup shortcut. If switching would require a production-project
-   Save/Discard decision, stop and request the user's direction.
+   the user's production project as a setup shortcut. If switching would require
+   a production-project Save/Discard decision, stop and request the user's direction.
 3. Establish disposable schematic, symbol, PCB and footprint fixtures through
    maintained setup routes. Capture complete source and checkpoint evidence.
    Existing known disposable fixtures may be used after independently proving
