@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { constants as fsConstants } from "node:fs";
 import type { Stats } from "node:fs";
 import { lstat, open, readdir, realpath } from "node:fs/promises";
+import type { FileHandle } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { promisify } from "node:util";
@@ -83,6 +84,11 @@ function sameFile(left: Stats, right: Stats): boolean {
     left.mtimeMs === right.mtimeMs && left.ctimeMs === right.ctimeMs;
 }
 
+function sameNodeFile(left: Stats, right: Stats): boolean {
+  return sameFile(left, right) && left.mode === right.mode && left.uid === right.uid &&
+    left.gid === right.gid && left.nlink === right.nlink;
+}
+
 async function canonicalDirectory(input: string): Promise<string> {
   const path = pathSchema.parse(input);
   const information = await lstat(path);
@@ -125,33 +131,89 @@ async function readJson(path: string, maximumBytes: number, privateFile = false)
   }
 }
 
-async function nodeIdentity(nodeExecutable: string): Promise<MachineProfile["runtime"]> {
+async function nodeDescriptorHash(file: FileHandle, before: Stats): Promise<string> {
+  const hash = createHash("sha256");
+  if (!sameNodeFile(before, await file.stat())) { throw new MachineProfileError("machine-node-changed"); }
+  let total = 0;
+  for await (const chunk of file.createReadStream({ autoClose: false, start: 0 })) {
+    const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
+    total += bytes.length;
+    if (total > NODE_MAX_BYTES) { throw new MachineProfileError("machine-node-too-large"); }
+    hash.update(bytes);
+  }
+  if (total !== before.size || !sameNodeFile(before, await file.stat())) { throw new MachineProfileError("machine-node-changed"); }
+  return hash.digest("hex");
+}
+
+export interface VerifiedMachineNode {
+  readonly runtime: Readonly<MachineProfile["runtime"]>;
+  readonly descriptorPath: string;
+  readonly assertCurrent: () => Promise<void>;
+  readonly close: () => Promise<void>;
+}
+
+async function retainNodeIdentity(nodeExecutable: string, expectedHash?: string): Promise<VerifiedMachineNode> {
   const before = await regularFile(nodeExecutable, NODE_MAX_BYTES, true);
   // oxlint-disable-next-line eslint/no-bitwise -- Retain the checked executable without following a replaced leaf symlink.
   const file = await open(nodeExecutable, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
-  const hash = createHash("sha256");
+  const descriptorPath = `/proc/${process.pid}/fd/${file.fd}`;
   try {
-    if (!sameFile(before, await file.stat())) { throw new MachineProfileError("machine-node-changed"); }
-    let total = 0;
-    for await (const chunk of file.createReadStream({ autoClose: false })) {
-      const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
-      total += bytes.length;
-      if (total > NODE_MAX_BYTES) { throw new MachineProfileError("machine-node-too-large"); }
-      hash.update(bytes);
+    const nodeSha256 = await nodeDescriptorHash(file, before);
+    if (expectedHash !== undefined && nodeSha256 !== expectedHash) {
+      // An unadmitted replacement must never execute, even for the version probe.
+      throw new MachineProfileError("machine-node-hash-mismatch");
     }
-    if (total !== before.size || !sameFile(before, await file.stat())) { throw new MachineProfileError("machine-node-changed"); }
-    await assertSelfSoftCoreLimitZero();
-    // Execute the retained regular-file descriptor, not a pathname that can be replaced.
-    const result = await execFileAsync(`/proc/${process.pid}/fd/${file.fd}`, ["--version"], {
-      env: { LANG: "C", LC_ALL: "C" }, timeout: 5000, maxBuffer: 1024,
+    const assertVersionAndIdentity = async (): Promise<void> => {
+      if (!sameNodeFile(before, await regularFile(nodeExecutable, NODE_MAX_BYTES, true)) ||
+          !sameNodeFile(before, await file.stat())) {
+        throw new MachineProfileError("machine-node-changed");
+      }
+      await assertSelfSoftCoreLimitZero();
+      // Probe and final launch both resolve this same still-open executable descriptor.
+      const result = await execFileAsync(descriptorPath, ["--version"], {
+        env: { LANG: "C", LC_ALL: "C" }, timeout: 5000, maxBuffer: 1024,
+      });
+      if (result.stdout.trim() !== `v${MACHINE_NODE_VERSION}` || result.stderr.length > 0 ||
+          !sameNodeFile(before, await file.stat()) ||
+          !sameNodeFile(before, await regularFile(nodeExecutable, NODE_MAX_BYTES, true))) {
+        throw new MachineProfileError("machine-node-version-or-identity-mismatch");
+      }
+    };
+    const assertCurrent = async (): Promise<void> => {
+      if (await nodeDescriptorHash(file, before) !== nodeSha256) {
+        throw new MachineProfileError("machine-node-changed");
+      }
+      await assertVersionAndIdentity();
+    };
+    await assertVersionAndIdentity();
+    return Object.freeze({
+      runtime: Object.freeze({ nodeExecutable, nodeVersion: MACHINE_NODE_VERSION, nodeSha256 }),
+      descriptorPath, assertCurrent, close: async () => { await file.close(); },
     });
-    if (result.stdout.trim() !== `v${MACHINE_NODE_VERSION}` || result.stderr.length > 0 ||
-        !sameFile(before, await file.stat()) || !sameFile(before, await lstat(nodeExecutable))) {
-      throw new MachineProfileError("machine-node-version-or-identity-mismatch");
-    }
-    return { nodeExecutable, nodeVersion: MACHINE_NODE_VERSION, nodeSha256: hash.digest("hex") };
-  } finally {
+  } catch (error) {
     await file.close();
+    throw error;
+  }
+}
+
+/**
+ * Retain admission through descriptor-bound execve; close this capability on refusal.
+ * Descriptor binding prevents redirection through a replaced executable pathname.
+ * Reproof detects observed inode mutations, not future hostile same-UID writes.
+ * Immutable executable storage is required for an absolute content guarantee.
+ */
+export function openVerifiedMachineNode(runtimeInput: MachineProfile["runtime"]): Promise<VerifiedMachineNode> {
+  const runtime = machineProfileSchema.shape.runtime.parse(runtimeInput);
+  assertSupportedHost();
+  return retainNodeIdentity(runtime.nodeExecutable, runtime.nodeSha256);
+}
+
+async function nodeIdentity(nodeExecutable: string): Promise<MachineProfile["runtime"]> {
+  const node = await retainNodeIdentity(nodeExecutable);
+  try {
+    return node.runtime;
+  } finally {
+    await node.close();
   }
 }
 
@@ -262,8 +324,8 @@ export async function readMachineProfile(path: string): Promise<MachineProfile> 
   await validateControlDirectory(dirname(path), false);
   const profile = machineProfileSchema.parse(await readJson(path, PROFILE_MAX_BYTES, true));
   if (dirname(path) !== profile.controlDirectory) { throw new MachineProfileError("machine-profile-outside-control-directory"); }
-  const runtime = await nodeIdentity(profile.runtime.nodeExecutable);
-  if (runtime.nodeSha256 !== profile.runtime.nodeSha256) { throw new MachineProfileError("machine-node-hash-mismatch"); }
+  const node = await openVerifiedMachineNode(profile.runtime);
+  await node.close();
   await validateInstallation(profile, false);
   return profile;
 }

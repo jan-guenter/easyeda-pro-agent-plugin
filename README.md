@@ -18,6 +18,9 @@ operation-specific proof. Exact schemas and offline argument validation cover
 105 design actions and 68 library/lifecycle actions; schema availability does
 not guarantee execution support. See the [API research](docs/easyeda-extension-interface-research-2026-10-10.md)
 and [reliability review](docs/revamp-reliability-review-2026-10-10.md).
+The [independent review follow-up](docs/revamp-final-review-2026-10-10.md)
+also covers descriptor-bound Node launch, timeout-envelope classification and
+bounded upload-barrier diagnostics.
 
 ## Skills by task
 

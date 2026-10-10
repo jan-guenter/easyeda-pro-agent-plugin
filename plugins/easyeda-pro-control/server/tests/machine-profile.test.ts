@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { chmod, lstat, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, copyFile, link, lstat, mkdir, mkdtemp, open, readFile, realpath, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, test } from "node:test";
@@ -13,12 +13,15 @@ import {
   machineProfileEnvironment,
   machineProfileLaunchConfiguration,
   machineProfileSchema,
+  openVerifiedMachineNode,
   readMachineProfile,
   writeMachineProfile,
 } from "../src/machine-profile.ts";
 import type { MachineProfileOptions } from "../src/machine-profile.ts";
 
-async function fixture(context: TestContext): Promise<MachineProfileOptions & { controlDirectory: string; assetsRoot: string }> {
+async function fixture(context: TestContext): Promise<MachineProfileOptions & {
+  controlDirectory: string; assetsRoot: string; nodeExecutable: string;
+}> {
   const root = await mkdtemp(join(tmpdir(), "easyeda-machine-profile-"));
   context.after(async () => { await rm(root, { recursive: true, force: true }); });
   const options = {
@@ -97,5 +100,87 @@ void describe("installation-generated machine profiles", () => {
     assert.deepEqual(parseMachineLauncherArguments([]), {});
     assert.deepEqual(parseMachineLauncherArguments(["--profile", "/tmp/profile.json"]), { profilePath: "/tmp/profile.json" });
     assert.throws(() => parseMachineLauncherArguments(["--node", "/tmp/node"]), /arguments-invalid/u);
+  });
+
+  void test("retains the exact admitted Node descriptor for repeated proof and closes it on refusal", async (context) => {
+    const options = await fixture(context);
+    const profile = await createMachineProfile(options);
+    const node = await openVerifiedMachineNode(profile.runtime);
+    const expected = await lstat(profile.runtime.nodeExecutable);
+    const retained = await lstat(node.descriptorPath);
+    assert.equal(retained.isSymbolicLink(), true);
+    assert.equal(node.runtime.nodeSha256, profile.runtime.nodeSha256);
+    await node.assertCurrent();
+    const descriptor = await open(node.descriptorPath, "r");
+    try {
+      const information = await descriptor.stat();
+      assert.equal(information.dev, expected.dev);
+      assert.equal(information.ino, expected.ino);
+    } finally {
+      await descriptor.close();
+      await node.close();
+    }
+    await assert.rejects(lstat(node.descriptorPath), { code: "ENOENT" });
+    await assert.rejects(node.assertCurrent(), { code: "EBADF" });
+  });
+
+  void test("rejects a replacement digest before executing even its --version probe", async (context) => {
+    const options = await fixture(context);
+    const nodeExecutable = join(options.pluginRoot, "node");
+    await copyFile(options.nodeExecutable, nodeExecutable);
+    const profile = await createMachineProfile({ ...options, nodeExecutable });
+    const profilePath = join(options.controlDirectory, "machine-profile.json");
+    await writeMachineProfile(profile, profilePath);
+    const marker = join(options.pluginRoot, "replacement-executed");
+    await rename(nodeExecutable, `${nodeExecutable}.retained`);
+    await writeFile(nodeExecutable, `#!/bin/sh\nprintf executed > '${marker}'\nprintf 'v24.18.0\\n'\n`, { mode: 0o755 });
+    await assert.rejects(readMachineProfile(profilePath), /machine-node-hash-mismatch/u);
+    await assert.rejects(openVerifiedMachineNode(profile.runtime), /machine-node-hash-mismatch/u);
+    await assert.rejects(lstat(marker), { code: "ENOENT" });
+  });
+
+  void test("refuses pathname and symlink replacement while retaining the original executable", async (context) => {
+    const options = await fixture(context);
+    const nodeExecutable = join(options.pluginRoot, "node");
+    await copyFile(options.nodeExecutable, nodeExecutable);
+    const profile = await createMachineProfile({ ...options, nodeExecutable });
+    const node = await openVerifiedMachineNode(profile.runtime);
+    try {
+      await rename(nodeExecutable, `${nodeExecutable}.retained`);
+      await symlink(`${nodeExecutable}.retained`, nodeExecutable);
+      await assert.rejects(node.assertCurrent(), /machine-node-changed/u);
+      await assert.rejects(openVerifiedMachineNode(profile.runtime), /bounded-canonical-regular/u);
+    } finally {
+      await node.close();
+    }
+    await assert.rejects(lstat(node.descriptorPath), { code: "ENOENT" });
+  });
+
+  void test("rejects in-place bytes, permissions and link-count changes before another version probe", async (context) => {
+    const options = await fixture(context);
+    const nodeExecutable = join(options.pluginRoot, "node");
+    for (const change of ["bytes", "permissions", "links"] as const) {
+      await copyFile(options.nodeExecutable, nodeExecutable);
+      await chmod(nodeExecutable, 0o755);
+      const profile = await createMachineProfile({ ...options, nodeExecutable });
+      const node = await openVerifiedMachineNode(profile.runtime);
+      try {
+        if (change === "bytes") {
+          const writable = await open(nodeExecutable, "r+");
+          try {
+            await writable.write(Buffer.from([0]), 0, 1, 0);
+          } finally {
+            await writable.close();
+          }
+        } else if (change === "permissions") {
+          await chmod(nodeExecutable, 0o644);
+        } else {
+          await link(nodeExecutable, `${nodeExecutable}.link`);
+        }
+        await assert.rejects(node.assertCurrent(), /machine-node-changed/u);
+      } finally {
+        await node.close();
+      }
+    }
   });
 });

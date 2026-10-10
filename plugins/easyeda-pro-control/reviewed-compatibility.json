@@ -3,7 +3,7 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "82eff87bb74e331e2034bea822dd5f06b87d970f62302f70d0fe57640d4b131b",
+      "sha256": "f757b640e2a3ae14860a5a4aab13a41ef0b2f70bdff4ced0c3170725bae8a249",
       "fileCount": 130,
       "files": [
         {
@@ -58,8 +58,8 @@
         },
         {
           "relativePath": "core.ts",
-          "bytes": 59492,
-          "sha256": "cefda157b33ae9a96acb32c6ee61124d183c7f9ea752b067ac2d64a69f27ef6d"
+          "bytes": 60358,
+          "sha256": "70de5917bdd2209fc991452303e0b390c26229929b87132e8523ab92880de553"
         },
         {
           "relativePath": "descriptor-sanitizer-identity.ts",
@@ -298,8 +298,8 @@
         },
         {
           "relativePath": "machine-profile.ts",
-          "bytes": 15780,
-          "sha256": "7b88eae5898d8602d3e07ae6522cf70b689224092c75e530ebafc31e2a67c610"
+          "bytes": 18242,
+          "sha256": "6140057cce78286b0763ded2562d096bce575e719147c8a6de625b6a54c8149d"
         },
         {
           "relativePath": "model-transform-action.ts",
@@ -313,8 +313,8 @@
         },
         {
           "relativePath": "native-diagnostics.ts",
-          "bytes": 8280,
-          "sha256": "2845969f293384c76c3ef3074db04ae123adf939aca290735821f38cca6d8049"
+          "bytes": 8513,
+          "sha256": "bb15acbfc2ff554c46038353a22f735ac4f37a8b8b751967fd663e2828e84733"
         },
         {
           "relativePath": "native-document-lifecycle.ts",
@@ -368,8 +368,8 @@
         },
         {
           "relativePath": "project-upload-barrier.ts",
-          "bytes": 2204,
-          "sha256": "0d996b333be1be66a487be7b75756c7f97c031ad0af6d215ef67f0ce2415b860"
+          "bytes": 4232,
+          "sha256": "4436c0437bddd4938b3a1dda4bd4586f950cdf4e2d1f0d8a2de7a360f3a0ff48"
         },
         {
           "relativePath": "reader-diagnostics.ts",
@@ -661,7 +661,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "5164f012e0c43df8dcc3420fcd7eac583ce265684c8917489dd17040b65a796f",
+      "sha256": "35250a6d15204d7e53781a5458c0ad59d191e3a0fb0517bb294f4bacace4ba7e",
       "fileCount": 3,
       "files": [
         {
@@ -671,19 +671,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 3971738,
-          "sha256": "63eb0625af455220f70a72ab13cf88098b9e775abb660e24443408175ff281b5"
+          "bytes": 3974100,
+          "sha256": "c6a2924ded7e45d7587f2fc07a4fc60ece9368544e6c2c2345e57ada4da87b71"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 786360,
-          "sha256": "7fe09f80ebcf23e116e5810386d0e9d18df45ee9457adbed91d65a821f22882d"
+          "sha256": "8ada9bd11865135008b6de9f5c0bec409ba6e9bd1ca3a6ea57ea292c0e29986d"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-10-10T12:29:30.639Z",
+  "reviewedAt": "2026-10-10T12:49:31.004Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

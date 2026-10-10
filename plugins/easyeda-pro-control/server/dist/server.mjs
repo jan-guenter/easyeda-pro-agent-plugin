@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "1369fd920c347b0f89488e9641842ac2c013f3398587491a7e691dc8b3352c0f";
+const __easyedaBundlePairId = "3e5e422248dacca2bea3430651e5783f268403118d52d882b54559a6d8eb277a";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -35207,6 +35207,59 @@ const code = typeof message === 'string' && known.includes(message) ? message : 
 throw new Error('Library operation refused: '+${JSON.stringify(kind)}+':'+stage+':'+code);`;
 }
 
+// server/src/project-upload-barrier.ts
+var DIAGNOSTIC_PREFIX = "Project upload barrier refused: ";
+var diagnosticStages = /* @__PURE__ */ new Set(["HOST", "INITIAL_PROJECT", "UPLOAD", "ACKNOWLEDGMENT", "FINAL_PROJECT"]);
+var diagnosticCodes = /* @__PURE__ */ new Set(["EXCEPTION", "DEVICE_NATIVE_HOST_AMBIGUOUS", "DEVICE_NATIVE_BUS_MISSING", "PROJECT_UPLOAD_SCOPE_DRIFT", "PROJECT_UPLOAD_BARRIER_REFUSED"]);
+function buildProjectUploadBarrierExpression(projectUuid) {
+  if (!/^[a-f0-9]{64}$/u.test(projectUuid)) {
+    throw new Error("Upload barrier requires an exact native project UUID.");
+  }
+  return `(async()=>{let uploadBarrierStage='HOST';try{
+${DEVICE_NATIVE_HOST_GUARD}
+const uuid=${JSON.stringify(projectUuid)};
+const assertProject=async()=>{const project=await eda.dmt_Project.getCurrentProjectInfo();if(host.currentProject?.projectId!==uuid||project?.uuid!==uuid)throw new Error('PROJECT_UPLOAD_SCOPE_DRIFT');};
+uploadBarrierStage='INITIAL_PROJECT';
+await assertProject();
+uploadBarrierStage='UPLOAD';
+const reply=await bus.rpcCall('/PrjDB/project/awaitUploadEnd',[uuid]);
+uploadBarrierStage='ACKNOWLEDGMENT';
+if(reply?.message?.success!==true)throw new Error('PROJECT_UPLOAD_BARRIER_REFUSED');
+uploadBarrierStage='FINAL_PROJECT';
+await assertProject();
+return {profile:'easyeda-pro-control.project-upload-barrier.v1',projectUuid:uuid,scheduledWritesSettled:true,savedEditorChanges:false};
+}catch(error){let code='EXCEPTION';try{
+const descriptor=error!==null&&(typeof error==='object'||typeof error==='function')?Object.getOwnPropertyDescriptor(error,'message'):undefined;
+const message=descriptor&&Object.hasOwn(descriptor,'value')?descriptor.value:undefined;
+if(typeof message==='string'&&${JSON.stringify([...diagnosticCodes])}.includes(message))code=message;
+}catch(_){}
+throw new Error(${JSON.stringify(DIAGNOSTIC_PREFIX)}+uploadBarrierStage+':'+code);}
+})()`;
+}
+function projectUploadBarrierFailureCategory(message) {
+  if (typeof message !== "string" || message.length > 180) {
+    return null;
+  }
+  if (message !== "EXCEPTION" && diagnosticCodes.has(message)) {
+    return `native-preflight:${message}`;
+  }
+  if (!message.startsWith(DIAGNOSTIC_PREFIX)) {
+    return null;
+  }
+  const tokens = message.slice(DIAGNOSTIC_PREFIX.length).split(":");
+  const [stage, code] = tokens;
+  if (tokens.length !== 2 || stage === void 0 || code === void 0 || !diagnosticStages.has(stage) || !diagnosticCodes.has(code)) {
+    return null;
+  }
+  return `native-project-upload-barrier:${stage}:${code}`;
+}
+function validateProjectUploadBarrierResult(value, projectUuid) {
+  if (!/^[a-f0-9]{64}$/u.test(projectUuid) || value === null || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length !== 4 || !("profile" in value) || value.profile !== "easyeda-pro-control.project-upload-barrier.v1" || !("projectUuid" in value) || value.projectUuid !== projectUuid || !("scheduledWritesSettled" in value) || value.scheduledWritesSettled !== true || !("savedEditorChanges" in value) || value.savedEditorChanges !== false) {
+    throw new Error("Native project upload barrier returned an invalid receipt.");
+  }
+  return { profile: "easyeda-pro-control.project-upload-barrier.v1", projectUuid, scheduledWritesSettled: true, savedEditorChanges: false };
+}
+
 // server/src/native-diagnostics.ts
 var codes3 = /* @__PURE__ */ new Set([
   "NATIVE_LIFECYCLE_OBSERVER_UNAVAILABLE",
@@ -35405,6 +35458,10 @@ function nativeFailureCategory(message) {
   if (typeof message !== "string") {
     return null;
   }
+  const uploadBarrierCategory = projectUploadBarrierFailureCategory(message);
+  if (uploadBarrierCategory !== null) {
+    return uploadBarrierCategory;
+  }
   if (tabCodes.has(message)) {
     return `native-preflight:${message}`;
   }
@@ -35586,15 +35643,21 @@ function newOperationId(now2 = /* @__PURE__ */ new Date()) {
   const stamp = now2.toISOString().replaceAll(/[-:]/gu, "").replace(/\.\d{3}Z$/u, "Z").toLowerCase();
   return `easyeda-${stamp}-${randomUUID().slice(0, 8)}`;
 }
-function reportsExplicitFailure(value, depth = 0) {
-  if (!isRecord(value) || depth > 6) {
-    return false;
-  }
+function reportsFailureAtLevel(value) {
   if (value["ok"] === false || value["success"] === false || value["not_available"] === true) {
     return true;
   }
   const readConsistency = value["read_consistency"];
   if (isRecord(readConsistency) && readConsistency["stable"] === false) {
+    return true;
+  }
+  return false;
+}
+function reportsExplicitFailure(value, depth = 0) {
+  if (!isRecord(value) || depth > 6) {
+    return false;
+  }
+  if (reportsFailureAtLevel(value)) {
     return true;
   }
   return Object.hasOwn(value, "result") && reportsExplicitFailure(value["result"], depth + 1);
@@ -35621,6 +35684,46 @@ function normalizeProofEnvelope(value) {
     Object.entries(value).filter(([key]) => key !== "read_consistency")
   );
 }
+function upstreamFailureAtLevel(value) {
+  const error51 = value["error"];
+  const code = isRecord(error51) ? error51["code"] : value["errorCode"];
+  let message = value["message"];
+  if (typeof error51 === "string") {
+    message = error51;
+  } else if (isRecord(error51)) {
+    message = error51["message"];
+  }
+  if (message === "NATIVE_LIFECYCLE_CLOSE_TIMEOUT" || message === "NATIVE_LIFECYCLE_OPEN_TIMEOUT") {
+    return "native-lifecycle-timeout";
+  }
+  const exactReaderCategory = exactReaderFailureCategory(message);
+  if (exactReaderCategory !== null) {
+    return exactReaderCategory;
+  }
+  const nativeCategory = nativeFailureCategory(message);
+  if (nativeCategory !== null) {
+    return nativeCategory;
+  }
+  if (code === "TIMEOUT" || code === "BRIDGE_TIMEOUT" || typeof message === "string" && message.length <= 4096 && /^Bridge method "[A-Za-z0-9_.]+" timed out after \d{1,6}ms$/u.test(message)) {
+    return "bridge-timeout";
+  }
+  if (code === "EASYEDA_API_ERROR") {
+    return "native-api-error";
+  }
+  if (code === "PAYLOAD_TOO_LARGE") {
+    return "payload-too-large";
+  }
+  if (code === "INVALID_INPUT" || code === "INVALID_PARAMS") {
+    return "invalid-input";
+  }
+  if (code === "NOT_IMPLEMENTED" || value["not_available"] === true) {
+    return "unavailable";
+  }
+  if (isRecord(value["read_consistency"]) && value["read_consistency"]["stable"] === false) {
+    return "unstable-read";
+  }
+  return null;
+}
 function upstreamFailureCategory(normalized2) {
   let value = normalized2.structuredContent;
   if (!isRecord(value)) {
@@ -35636,44 +35739,18 @@ function upstreamFailureCategory(normalized2) {
   if (!isRecord(value)) {
     return normalized2.content.length === 0 && normalized2.structuredContent === void 0 ? "invalid-envelope" : "unclassified-upstream-failure";
   }
+  let successfulAncestor = false;
+  let failedAncestor = normalized2.isError;
   for (let depth = 0; depth <= 6 && isRecord(value); depth += 1) {
-    const error51 = value["error"];
-    const code = isRecord(error51) ? error51["code"] : value["errorCode"];
-    let message = value["message"];
-    if (typeof error51 === "string") {
-      message = error51;
-    } else if (isRecord(error51)) {
-      message = error51["message"];
+    const explicitlySuccessful = value["ok"] === true || value["success"] === true;
+    failedAncestor ||= reportsFailureAtLevel(value);
+    if (!successfulAncestor || failedAncestor || explicitlySuccessful) {
+      const category = upstreamFailureAtLevel(value);
+      if (category !== null) {
+        return category;
+      }
     }
-    if (message === "NATIVE_LIFECYCLE_CLOSE_TIMEOUT" || message === "NATIVE_LIFECYCLE_OPEN_TIMEOUT") {
-      return "native-lifecycle-timeout";
-    }
-    const exactReaderCategory = exactReaderFailureCategory(message);
-    if (exactReaderCategory !== null) {
-      return exactReaderCategory;
-    }
-    const nativeCategory = nativeFailureCategory(message);
-    if (nativeCategory !== null) {
-      return nativeCategory;
-    }
-    if (code === "TIMEOUT" || code === "BRIDGE_TIMEOUT" || typeof message === "string" && message.length <= 4096 && /^Bridge method "[A-Za-z0-9_.]+" timed out after \d{1,6}ms$/u.test(message)) {
-      return "bridge-timeout";
-    }
-    if (code === "EASYEDA_API_ERROR") {
-      return "native-api-error";
-    }
-    if (code === "PAYLOAD_TOO_LARGE") {
-      return "payload-too-large";
-    }
-    if (code === "INVALID_INPUT" || code === "INVALID_PARAMS") {
-      return "invalid-input";
-    }
-    if (code === "NOT_IMPLEMENTED" || value["not_available"] === true) {
-      return "unavailable";
-    }
-    if (isRecord(value["read_consistency"]) && value["read_consistency"]["stable"] === false) {
-      return "unstable-read";
-    }
+    successfulAncestor ||= explicitlySuccessful;
     value = value["result"];
   }
   return "unclassified-upstream-failure";
@@ -42955,29 +43032,6 @@ try {
   }
   throw new Error("Exact reader could not produce a bounded JSON transport envelope.");
 }`;
-}
-
-// server/src/project-upload-barrier.ts
-function buildProjectUploadBarrierExpression(projectUuid) {
-  if (!/^[a-f0-9]{64}$/u.test(projectUuid)) {
-    throw new Error("Upload barrier requires an exact native project UUID.");
-  }
-  return `(async()=>{
-${DEVICE_NATIVE_HOST_GUARD}
-const uuid=${JSON.stringify(projectUuid)};
-const assertProject=async()=>{const project=await eda.dmt_Project.getCurrentProjectInfo();if(host.currentProject?.projectId!==uuid||project?.uuid!==uuid)throw new Error('PROJECT_UPLOAD_SCOPE_DRIFT');};
-await assertProject();
-const reply=await bus.rpcCall('/PrjDB/project/awaitUploadEnd',[uuid]);
-if(reply?.message?.success!==true)throw new Error('PROJECT_UPLOAD_BARRIER_REFUSED');
-await assertProject();
-return {profile:'easyeda-pro-control.project-upload-barrier.v1',projectUuid:uuid,scheduledWritesSettled:true,savedEditorChanges:false};
-})()`;
-}
-function validateProjectUploadBarrierResult(value, projectUuid) {
-  if (!/^[a-f0-9]{64}$/u.test(projectUuid) || value === null || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length !== 4 || !("profile" in value) || value.profile !== "easyeda-pro-control.project-upload-barrier.v1" || !("projectUuid" in value) || value.projectUuid !== projectUuid || !("scheduledWritesSettled" in value) || value.scheduledWritesSettled !== true || !("savedEditorChanges" in value) || value.savedEditorChanges !== false) {
-    throw new Error("Native project upload barrier returned an invalid receipt.");
-  }
-  return { profile: "easyeda-pro-control.project-upload-barrier.v1", projectUuid, scheduledWritesSettled: true, savedEditorChanges: false };
 }
 
 // server/src/native-document-lifecycle.ts

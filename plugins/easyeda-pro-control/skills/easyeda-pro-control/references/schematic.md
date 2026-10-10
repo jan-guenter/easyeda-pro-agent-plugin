@@ -33,7 +33,7 @@ Placed-instance device replacement and PCB ECO are separate capabilities. The cu
 
 In the baseline public API, passing a component pin object to `sch_PrimitivePin.modify` could do nothing, while an ID string worked. Use only supported typed pin operations. The component-pin no-connect adapter uses a fixed native action with independent effect proof; it does not expose a generic private setter.
 
-If the ID form also fails, a native shape-manager action can be considered `private-version-pinned`. Resolve the exact active native document and exact pin shape. Run one history action, then poll the public pin state. A native no-connect setter may return an object with `done`; await the setter and its completion path. Do not place the upstream `easyeda_schematic_set_pin_no_connect` wrapper in a `public-supported` plan: the installed bridge prefers that private native setter before its public fallback.
+Use `easyeda_control_design` with the maintained `sch.component-pin.no-connect` operation and its exact schema/capability gate. Do not switch to ad hoc native history, a private setter or raw execution after a refusal. Native shape identity and completion promises are adapter implementation concerns, not caller instructions. The upstream `easyeda_schematic_set_pin_no_connect` wrapper is not a public-supported fallback: the installed bridge prefers a private native setter before its public fallback and does not supply the maintained independent effect proof.
 
 Do not add a no-connect marker to silence ERC until the circuit intent says the pin is deliberately unused.
 

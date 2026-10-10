@@ -1,12 +1,11 @@
 #!/usr/bin/env node
-import { lstat, realpath, stat } from "node:fs/promises";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 import {
-  MACHINE_NODE_VERSION,
   MachineProfileError,
   loadRuntimeMachineProfile,
   machineProfileLaunchConfiguration,
+  openVerifiedMachineNode,
 } from "../server/src/machine-profile.ts";
 
 export function parseMachineLauncherArguments(args: readonly string[]): { profilePath?: string } {
@@ -24,22 +23,22 @@ export async function launchMachine(args: readonly string[]): Promise<void> {
   const entrypoint = configuration.args[0];
   if (entrypoint === undefined) { throw new MachineProfileError("machine-launcher-entrypoint-missing"); }
   const environment = { ...process.env, ...configuration.env, EASYEDA_MACHINE_PROFILE: runtime.profilePath };
-  process.chdir(configuration.cwd);
-  const runningNode = await stat("/proc/self/exe");
-  const configuredNode = await lstat(configuration.command);
-  if (process.versions.node === MACHINE_NODE_VERSION && await realpath(process.execPath) === configuration.command &&
-      runningNode.dev === configuredNode.dev && runningNode.ino === configuredNode.ino) {
-    Object.assign(process.env, environment);
-    // One facade in the current process: no extra MCP owner or stdio framing layer.
-    await import(pathToFileURL(entrypoint).href);
-    return;
-  }
   // A portable node command may select another version. POSIX replacement
   // Preserves PID, stdio, signals and exit status without an orphanable wrapper.
   if (typeof process.execve !== "function") {
     throw new MachineProfileError("machine-launcher-needs-node-with-execve");
   }
-  process.execve(configuration.command, [configuration.command, ...configuration.args], environment);
+  const node = await openVerifiedMachineNode(runtime.profile.runtime);
+  try {
+    process.chdir(configuration.cwd);
+    await node.assertCurrent();
+    // Keep admission open through the kernel handoff.
+    // Path swaps after the final proof cannot substitute a different executable.
+    // Replacement preserves the single facade PID and stdio without a wrapper child.
+    process.execve(node.descriptorPath, [configuration.command, ...configuration.args], environment);
+  } finally {
+    await node.close();
+  }
 }
 
 if (import.meta.main) {

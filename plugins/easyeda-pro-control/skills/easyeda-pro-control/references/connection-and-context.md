@@ -112,7 +112,8 @@ Call `easyeda_control_context` immediately before a scoped read or write. Compar
 
 The current connected-read-admitted tuple and source-specific version/path rules are in [compatibility.md](compatibility.md#current-read-admission-2026-09-11). The facade resolves the missing public project path using an exact native registry record with original-path hash proof and post-read context equality. It checks the active schematic page separately from its parent container.
 
-Useful public context calls in raw code are:
+The fixed context implementation uses these public calls. They explain its
+underlying evidence, not a caller-invokable script or raw execution route:
 
 ```js
 const project = await eda.dmt_Project.getCurrentProjectInfo();

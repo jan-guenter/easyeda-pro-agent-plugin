@@ -262,6 +262,56 @@ void describe("upstream result normalization and tool classification", () => {
     );
   });
 
+  void test("successful result data retains timeout-shaped domain diagnostics", () => {
+    const data = {
+      error: { code: "TIMEOUT", message: "private-design-diagnostic" },
+      result: { errorCode: "BRIDGE_TIMEOUT" },
+    };
+    for (const envelope of [
+      { ok: true, result: data },
+      { success: true, result: data },
+      { result: { ok: true, result: data } },
+    ]) {
+      for (const result of [
+        { structuredContent: envelope },
+        { content: [{ type: "text", text: JSON.stringify(envelope) }] },
+      ]) {
+        assert.equal(normalizeToolResult(result).ok, true);
+        assert.deepEqual(extractToolPayload(result), data);
+      }
+    }
+  });
+
+  void test("nested explicit failure categories take precedence over successful business diagnostics", () => {
+    for (const [failure, category] of [
+      [{ ok: false, errorCode: "INVALID_INPUT" }, "invalid-input"],
+      [{ success: false, error: { code: "PAYLOAD_TOO_LARGE" } }, "payload-too-large"],
+      [{ not_available: true }, "unavailable"],
+      [{ read_consistency: { stable: false } }, "unstable-read"],
+      [{ ok: false, error: "EASYEDA_EXACT_READ_FAILURE|pcb-components|getter-lookup|pcb_PrimitiveComponent|getState_X|unset" },
+        "exact-reader:pcb-components:getter-lookup:pcb_PrimitiveComponent:getState_X:unset"],
+    ] as const) {
+      const envelope = {
+        ok: true,
+        result: {
+          error: { code: "TIMEOUT", message: "private-design-diagnostic" },
+          result: failure,
+        },
+      };
+      for (const result of [
+        { structuredContent: envelope },
+        { content: [{ type: "text", text: JSON.stringify(envelope) }] },
+      ]) {
+        assert.throws(() => extractToolPayload(result), (error: unknown) => {
+          assert.ok(error instanceof Error);
+          assert.ok(error.message.includes(`[${category}]`));
+          assert.equal(error.message.includes("private-design-diagnostic"), false);
+          return true;
+        });
+      }
+    }
+  });
+
   void test("payload extraction rejects nested and text-only unavailable or unstable reads", () => {
     const rejected = [
       {

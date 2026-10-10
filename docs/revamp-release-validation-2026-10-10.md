@@ -1,11 +1,38 @@
 # October revamp release validation
 
-Release snapshot: `0.3.0+codex.20261010121000`. Local verification completed
+Final payload snapshot: `0.3.0+codex.20261010124131`. Local verification completed
 2026-10-10 on Linux x86_64 with Node24.18.0/npm11.16.0 and core dumps disabled.
-Publication and installation evidence is recorded separately after those steps
-actually succeed.
+Its publication and installation evidence is recorded separately after those
+steps actually succeed.
 
-## Publication and installation evidence
+Independent PR review subsequently found three additional hardening issues.
+The initial `0.3.0+codex.20261010121000` record below remains historical. The
+final snapshot includes all three fixes and the skill-route corrections.
+
+## Final local acceptance
+
+- `npm run verify` passed with inherited hostile descriptors142/145:945 facade
+  tests,944 passed,zero failed and the same one platform-specific fixture skip;
+  424 bridge tests passed across28 files.
+- Both strict TypeScript checks and type-aware lint passed with zero diagnostics.
+  All seven skill packaging/link checks, official quick validation, repository
+  privacy/licenses, workflow actionlint and the offline doctor passed. Skill
+  checks were repeated after the final private-route wording corrections.
+- The dependency audit reports zero vulnerabilities;151 registry signatures and
+  40 attestations verified. No external compatibility pin or sanitizer changed.
+- Final source projection:130 files,
+  `f757b640e2a3ae14860a5a4aab13a41ef0b2f70bdff4ced0c3170725bae8a249`.
+  Final three-file bundle projection:
+  `35250a6d15204d7e53781a5458c0ad59d191e3a0fb0517bb294f4bacace4ba7e`.
+- The [independent review follow-up](revamp-final-review-2026-10-10.md) records
+  descriptor-handoff, timeout-envelope and upload-barrier fixes and their limits.
+  Skill instructions now route private-handler gaps to maintained typed adapters
+  or process-bound native dialogs, never ad hoc private/raw execution.
+
+Final-payload GitHub CI and installed-cache proof are still pending at this
+record's creation; the initial evidence below does not stand in for them.
+
+## Initial publication and installation evidence
 
 Payload [33c2ba7f98f915a672118a9e0371ebedcf6317f9](https://github.com/jan-guenter/easyeda-pro-agent-plugin/commit/33c2ba7f98f915a672118a9e0371ebedcf6317f9)
 was published in [PR8](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/8).
@@ -13,8 +40,9 @@ Required [CI run38052366013](https://github.com/jan-guenter/easyeda-pro-agent-pl
 passed all checks and uploaded the plugin artifact. The official Codex CLI then
 configured `https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` as the
 Git marketplace and installed/enabled this snapshot from the tested feature
-ref. The marketplace should track main after the protected merge; only root
-engineering evidence changes after this tested plugin payload.
+ref. The marketplace should track main after the protected merge. This was the
+initial snapshot; the later review fixes change the plugin payload and require
+their own build, CI and installation evidence.
 
 Installed verification matched all439 Git files,11135676 bytes and committed
 file modes exactly. An isolated installed-bundle MCP probe enumerated25 tools
@@ -38,7 +66,7 @@ host facade was not terminated or patched; a fresh chat is required for pickup.
   historical adapter-bound validation records and cooperative checkpoint
   materialization with unchanged record/byte limits and final stability proof.
 
-## Local release checks
+## Initial local release checks
 
 | Check | Result |
 |---|---|

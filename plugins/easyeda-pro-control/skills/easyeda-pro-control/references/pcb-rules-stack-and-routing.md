@@ -39,7 +39,7 @@ In the baseline API, public net-rule overwrite accepted spacing, track, and via 
 
 ## Differential-pair physics
 
-The baseline native pair-manager calls are `private-version-pinned`. Read all manager rows, build the complete desired rows, apply once, and read all rows again. In that build, the selected physics profile lived on the pair row while child-net rows stayed `default`. Verify the storage model for the current build before interpreting that state.
+The baseline native pair-manager calls are historical implementation details, not a caller execution route. Use supported typed pair/rule operations when their schema and effect model represent the change; otherwise use the scoped process-bound native dialog workflow. New private-manager coverage requires a reviewed typed adapter and disposable lifecycle validation, not raw dispatch. In the reviewed build, the selected physics profile lived on the pair row while child-net rows stayed `default`. Independently compare every affected and unrelated row and verify the current storage model before interpreting that state.
 
 Pair identity and pair physics are separate assertions. Routing proof also needs actual member widths, intrapair spacing, length mismatch, reference plane, layer transitions, and clearance to other copper.
 

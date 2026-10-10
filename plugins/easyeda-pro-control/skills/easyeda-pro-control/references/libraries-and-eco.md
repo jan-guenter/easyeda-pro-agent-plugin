@@ -116,7 +116,7 @@ Public `pcb_PrimitiveComponent.modify` changes placement, layer, lock, and metad
 
 Typed PCB placement does not rebuild a footprint association. Schematic component edits and supported project-library changes have separate adapters; neither implies a PCB ECO was applied. Use a reviewed native ECO for binding changes that lack a typed execution path, never standalone raw execution.
 
-A footprint instance rebuild through native `buttomCommand` and `recoverFootprint` is `private-version-pinned`. Before calling it, prove one handler in the installed implementation. Afterward, compare placed component ID, pad IDs, `UniqueId`, pose, pad nets, every child graphic, model association, and the intended project footprint.
+The native `buttomCommand` / `recoverFootprint` handler is an implementation-research lead, not an admitted execution route. Inspecting its source does not authorize private/raw dispatch. Current live rebuilds must use the supported process-bound native dialog/ECO workflow. A future typed adapter needs reviewed handler identity, scoped arguments, journaling, a complete effect model and disposable save/reopen validation before enablement. Whether using that future adapter or the current dialog, compare placed component ID, pad IDs, `UniqueId`, pose, pad nets, every child graphic, model association and the intended project footprint.
 
 ## Schematic-to-PCB import
 

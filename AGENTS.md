@@ -4,6 +4,12 @@ This file is the durable engineering record and common ground for every human or
 
 Last updated: 2026-10-10 (Europe/Berlin)
 
+PR8 follow-up fixes are complete and locally verified; publication, required
+CI and final installation of snapshot124131 remain pending. Installed121000
+is initial evidence, not final acceptance. Retained-Node handoff, successful
+timeout-shaped data and bounded upload-barrier diagnostics have adversarial
+regressions. No live calls while this chat's old host generation remains loaded.
+
 ## 2026-10-10 plugin revamp
 
 - Remote main was still the prior cdb9f24 release; the substantial September
@@ -38,6 +44,26 @@ Last updated: 2026-10-10 (Europe/Berlin)
   evidence must be appended after verification, not inferred from this record.
 
 ## Historical evidence
+
+### October independent-review local acceptance
+
+- Final snapshot `0.3.0+codex.20261010124131` passed the complete suite with
+  inherited hostile descriptors142/145:944 facade passes/one platform skip,
+  zero failures and424 bridge passes. Strict types/lint have zero diagnostics;
+  zero vulnerabilities,151 signatures/40 attestations, all seven skill checks,
+  privacy/licenses, actionlint and offline doctor pass.
+- Real final-handoff pathname replacement runs only the retained original Node
+  inode, never the replacement; PID/stdio/environment/exit status are preserved.
+  Wrong hashes refuse before version execution. Same-UID in-place future writes
+  remain an explicit immutable-storage limitation, not a promised guarantee.
+- Successful result data containing timeout codes settles normally. Own-level
+  contradictions, nested explicit failures and unknown transport timeouts still
+  quarantine after exactly one call. Upload errors use bounded fixed categories,
+  never native text; scope guards, RPC order, receipts and no-Save behavior hold.
+- Source130files/f757b640 and bundle35250a6d are frozen and reproducible.
+  Sanitizer/external/native adapter pins unchanged. The [follow-up review](docs/revamp-final-review-2026-10-10.md)
+  and [release record](docs/revamp-release-validation-2026-10-10.md) distinguish
+  final checks from the historical initial Git/installation evidence below.
 
 ### October local release checks
 

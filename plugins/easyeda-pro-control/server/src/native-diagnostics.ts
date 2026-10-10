@@ -1,5 +1,6 @@
 import { deviceFailureCategory } from "./device-runtime-guard.ts";
 import { libraryRuntimeFailureCategory } from "./library-runtime-guard.ts";
+import { projectUploadBarrierFailureCategory } from "./project-upload-barrier.ts";
 
 /** Fixed literal errors emitted by reviewed code builders. Never echo unknown
  * native exception text, dynamic suffixes, stack traces or caller values.
@@ -171,6 +172,8 @@ const footprintLifecycleCodes = new Map([
 
 export function nativeFailureCategory(message: unknown): string | null {
   if (typeof message !== "string") { return null; }
+  const uploadBarrierCategory = projectUploadBarrierFailureCategory(message);
+  if (uploadBarrierCategory !== null) { return uploadBarrierCategory; }
   if (tabCodes.has(message)) { return `native-preflight:${message}`; }
   const padCode = padCodes.get(message);
   if (padCode !== undefined) { return `native-preflight:${padCode}`; }

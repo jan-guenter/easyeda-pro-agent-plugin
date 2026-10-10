@@ -123,7 +123,7 @@ These spellings are implementation evidence, including their typos. They are not
 | Read native schematic symbol inventory | `rpcCall("getAllSymbolMultipartBySchUuid", ...)` |
 | Replace a schematic device | `rpcCall("sch/replaceDevice", ...)` |
 
-Before a private publish call, inspect the installed implementation and prove that exactly one intended handler subscribes to it. Never infer success from a publish return value.
+When researching a future private publish adapter, inspect the installed implementation and prove that exactly one intended handler subscribes to it. This is implementation evidence, not permission to call it: only an admitted maintained typed adapter may dispatch. Use supported process-bound native controls for current dialog-only gaps. Never infer success from a publish return value.
 
 ## Maintaining compatibility
 

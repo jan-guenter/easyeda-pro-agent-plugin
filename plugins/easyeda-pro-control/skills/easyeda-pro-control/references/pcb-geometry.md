@@ -25,7 +25,7 @@ Use live placed primitive bounding boxes for clearance decisions. Offline envelo
 3. Read live bounding boxes and critical pad centers.
 4. Check board edge, locked objects, keepouts, cable and mechanical envelopes, and local clearance.
 5. Recompute relevant electrical path metrics.
-6. Roll back that component to the exact journaled baseline if any check fails.
+6. Stop on any failed check. Use an available journal-verified inverse only when the exact current state and scope are proven; an ambiguous call, quarantine or unsupported inverse must be recovered without another mutation.
 
 Typed component modifications include `x`, `y`, `rotation`, `layer` and `primitiveLock`, with attached-record effects independently checked. `pcb.batch` simulates 1–256 steps before one source merge and protects initially locked records and descendants. Creation IDs are retained before dispatch. This replaces the legacy one-target limitation; exact inverse availability is still operation-dependent.
 
@@ -70,7 +70,7 @@ missing PCB attribute or clear the model to get around the stored-attribute path
 
 EasyEDA normalizes a STEP body's XY bounding-box center and minimum Z before it applies model transforms. Derive the transform from the STEP BREP or bounding box and pin axes. Do not tune it from an oblique preview.
 
-Hash a local model file before binding it. Preserve the complete unrelated property map when changing model identity, title, or transform. A top orthographic view is useful for pad and pin registration but the private 3D view command remains version-pinned.
+Hash a local model file before binding it. Preserve the complete unrelated property map when changing model identity, title, or transform. A top orthographic view is useful for pad and pin registration. Use the supported process-bound native view controls; a private 3D command's version pin alone is not execution admission and does not authorize raw dispatch.
 
 Mechanical proof should compare:
 

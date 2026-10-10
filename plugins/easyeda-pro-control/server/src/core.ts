@@ -428,10 +428,7 @@ export function newOperationId(now: Readonly<Date> = new Date()): string {
   return `easyeda-${stamp}-${randomUUID().slice(0, 8)}`;
 }
 
-function reportsExplicitFailure(value: unknown, depth = 0): boolean {
-  if (!isRecord(value) || depth > 6) {
-    return false;
-  }
+function reportsFailureAtLevel(value: UnknownRecord): boolean {
   if (
     value["ok"] === false ||
     value["success"] === false ||
@@ -441,6 +438,16 @@ function reportsExplicitFailure(value: unknown, depth = 0): boolean {
   }
   const readConsistency = value["read_consistency"];
   if (isRecord(readConsistency) && readConsistency["stable"] === false) {
+    return true;
+  }
+  return false;
+}
+
+function reportsExplicitFailure(value: unknown, depth = 0): boolean {
+  if (!isRecord(value) || depth > 6) {
+    return false;
+  }
+  if (reportsFailureAtLevel(value)) {
     return true;
   }
   return (
@@ -486,6 +493,36 @@ export function normalizeProofEnvelope(value: unknown): unknown {
   );
 }
 
+function upstreamFailureAtLevel(value: UnknownRecord): string | null {
+  const error = value["error"];
+  const code = isRecord(error) ? error["code"] : value["errorCode"];
+  let message = value["message"];
+  if (typeof error === "string") { message = error; }
+  else if (isRecord(error)) { message = error["message"]; }
+  // These exact facade-owned deadlines stop observing, not the underlying
+  // Native close/open Promise. Keep their authority outcome ambiguous even
+  // Though the bridge returns a normal native-error envelope.
+  if (message === "NATIVE_LIFECYCLE_CLOSE_TIMEOUT" || message === "NATIVE_LIFECYCLE_OPEN_TIMEOUT") {
+    return "native-lifecycle-timeout";
+  }
+  const exactReaderCategory = exactReaderFailureCategory(message);
+  if (exactReaderCategory !== null) { return exactReaderCategory; }
+  const nativeCategory = nativeFailureCategory(message);
+  if (nativeCategory !== null) { return nativeCategory; }
+  if (code === "TIMEOUT" || code === "BRIDGE_TIMEOUT" || (typeof message === "string" && message.length <= 4096 &&
+    /^Bridge method "[A-Za-z0-9_.]+" timed out after \d{1,6}ms$/u.test(message))) {
+    return "bridge-timeout";
+  }
+  if (code === "EASYEDA_API_ERROR") { return "native-api-error"; }
+  if (code === "PAYLOAD_TOO_LARGE") { return "payload-too-large"; }
+  if (code === "INVALID_INPUT" || code === "INVALID_PARAMS") { return "invalid-input"; }
+  if (code === "NOT_IMPLEMENTED" || value["not_available"] === true) { return "unavailable"; }
+  if (isRecord(value["read_consistency"]) && value["read_consistency"]["stable"] === false) {
+    return "unstable-read";
+  }
+  return null;
+}
+
 function upstreamFailureCategory(normalized: NormalizedToolResult): string {
   let value = normalized.structuredContent;
   if (!isRecord(value)) {
@@ -503,33 +540,19 @@ function upstreamFailureCategory(normalized: NormalizedToolResult): string {
     return normalized.content.length === 0 && normalized.structuredContent === undefined
       ? "invalid-envelope" : "unclassified-upstream-failure";
   }
+  let successfulAncestor = false;
+  let failedAncestor = normalized.isError;
   for (let depth = 0; depth <= 6 && isRecord(value); depth += 1) {
-    const error = value["error"];
-    const code = isRecord(error) ? error["code"] : value["errorCode"];
-    let message = value["message"];
-    if (typeof error === "string") { message = error; }
-    else if (isRecord(error)) { message = error["message"]; }
-    // These exact facade-owned deadlines stop observing, not the underlying
-    // Native close/open Promise. Keep their authority outcome ambiguous even
-    // Though the bridge returns a normal native-error envelope.
-    if (message === "NATIVE_LIFECYCLE_CLOSE_TIMEOUT" || message === "NATIVE_LIFECYCLE_OPEN_TIMEOUT") {
-      return "native-lifecycle-timeout";
+    const explicitlySuccessful = value["ok"] === true || value["success"] === true;
+    failedAncestor ||= reportsFailureAtLevel(value);
+    // Success shields descendant business data, not this wrapper's own errors.
+    // An outer or nested failure remains authoritative despite inner success.
+    // Unknown-status replies, including text-only legacy envelopes, fail closed.
+    if (!successfulAncestor || failedAncestor || explicitlySuccessful) {
+      const category = upstreamFailureAtLevel(value);
+      if (category !== null) { return category; }
     }
-    const exactReaderCategory = exactReaderFailureCategory(message);
-    if (exactReaderCategory !== null) { return exactReaderCategory; }
-    const nativeCategory = nativeFailureCategory(message);
-    if (nativeCategory !== null) { return nativeCategory; }
-    if (code === "TIMEOUT" || code === "BRIDGE_TIMEOUT" || (typeof message === "string" && message.length <= 4096 &&
-      /^Bridge method "[A-Za-z0-9_.]+" timed out after \d{1,6}ms$/u.test(message))) {
-      return "bridge-timeout";
-    }
-    if (code === "EASYEDA_API_ERROR") { return "native-api-error"; }
-    if (code === "PAYLOAD_TOO_LARGE") { return "payload-too-large"; }
-    if (code === "INVALID_INPUT" || code === "INVALID_PARAMS") { return "invalid-input"; }
-    if (code === "NOT_IMPLEMENTED" || value["not_available"] === true) { return "unavailable"; }
-    if (isRecord(value["read_consistency"]) && value["read_consistency"]["stable"] === false) {
-      return "unstable-read";
-    }
+    successfulAncestor ||= explicitlySuccessful;
     value = value["result"];
   }
   return "unclassified-upstream-failure";

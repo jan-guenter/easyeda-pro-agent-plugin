@@ -17,7 +17,8 @@ before changing compatibility pins, publishing or importing an extension.
    operation journals. Preserve dirty user changes, credentials and historical
    evidence. Do not start a competing bridge owner.
 2. Use `easyeda_control_api` SDK queries for separately pinned reviewed/latest
-   signatures, then operation queries for the exact callable argument schemas.
+   signatures, then operation queries for exact typed argument schemas and
+   separately reported execution availability. Schema presence is not admission.
    Read the relevant official declaration and method page, including overloads,
    union branches, stability tags, units and completion promises.
 3. Classify the operation: local metadata read, navigation, design write,
