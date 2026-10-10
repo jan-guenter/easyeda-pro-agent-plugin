@@ -169,9 +169,19 @@ const footprintLifecycleCodes = new Map([
   ["Footprint reopen identity failed", "FOOTPRINT_LIFECYCLE_REOPEN"],
   ["Footprint activation acknowledgment malformed", "FOOTPRINT_LIFECYCLE_ACTIVATION"],
 ]);
+// Each builder discards its caught native exception and emits only these fixed
+// Stages. Exact whole-message matching must not admit suffixes, paths or stacks.
+const operationStages = [
+  { prefix: "Document activation refused: ", category: "native-document-activation", stages: ["api", "before-context", "before-tabs", "loaded-frames", "preferences", "dispatch-context", "activate", "target-readiness"] },
+  { prefix: "Closed page rename refused at ", category: "native-page-rename", stages: ["host", "before-read", "closed-target", "rename", "after-read"] },
+  { prefix: "Symbol metadata operation refused at ", category: "native-symbol-metadata", stages: ["host", "permission", "before-read", "target-closed", "modify", "after-read"] },
+];
+const operationStageCategories = new Map(operationStages.flatMap(({ prefix, category, stages }) => stages.map((stage) => [`${prefix}${stage}`, `${category}:${stage}`] as const)));
 
 export function nativeFailureCategory(message: unknown): string | null {
   if (typeof message !== "string") { return null; }
+  const operationStageCategory = message.length <= 128 ? operationStageCategories.get(message) : undefined;
+  if (operationStageCategory !== undefined) { return operationStageCategory; }
   const uploadBarrierCategory = projectUploadBarrierFailureCategory(message);
   if (uploadBarrierCategory !== null) { return uploadBarrierCategory; }
   if (tabCodes.has(message)) { return `native-preflight:${message}`; }

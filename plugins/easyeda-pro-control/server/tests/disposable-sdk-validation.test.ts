@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json } from "../src/core.ts";
+import { assertSubset, loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json } from "../src/core.ts";
 import type { ExpectedFingerprint } from "../src/core.ts";
 import { parseDocumentSource } from "../src/document-source.ts";
 import { parseDisposableSdkValidationPlan, runDisposableSdkValidation } from "../src/disposable-sdk-validation.ts";
@@ -21,15 +21,18 @@ function fingerprint(): ExpectedFingerprint {
       publicApi: { ...manifest.installedBundles.publicApi, implementationPath: "/test/assets/api.js", adapterPath: "/test/assets/api-types.js", declarationsPath: "/test/assets/api.d.ts" } },
   };
 }
-function source(uuid = "board", extra = ""): string {
-  return `{"type":"DOCHEAD"}||${JSON.stringify({ uuid, docType: "PCB", editVersion: "3.2.149.88089769" })}|\n{"type":"META","id":"META"}||${JSON.stringify({ title: `Disposable${extra}` })}|\n`;
+function source(uuid = "board", extra = "", docType = "PCB"): string {
+  return `{"type":"DOCHEAD"}||${JSON.stringify({ uuid, docType, editVersion: "3.2.149.88089769" })}|\n{"type":"META","id":"META"}||${JSON.stringify({ title: `Disposable${extra}` })}|\n`;
 }
-function plan(): DisposableSdkValidationPlan {
+function sourceDocumentType(type: 1 | 2 | 3 | 4): string { return ({ 1: "SCH_PAGE", 2: "SYMBOL", 3: "PCB", 4: "PCB" })[type]; }
+function plan(type: 1 | 2 | 3 | 4 = 3): DisposableSdkValidationPlan {
+  const baselineSource = source("board", "", sourceDocumentType(type));
   return parseDisposableSdkValidationPlan({ schema: "easyeda-pro-control.disposable-sdk-validation-plan.v1",
     fixture: { category: "disposable", projectUuid: "fixture", projectPath: "/test/disposable.eprj2", attestation: "This project is disposable and is authorized for SDK read validation." },
-    expectedContext: { project: { uuid: "fixture", path: "/test/disposable.eprj2" }, document: { uuid: "board", documentType: 3, tabId: "board@fixture" } },
+    expectedContext: { project: { uuid: "fixture", path: "/test/disposable.eprj2" }, document: { uuid: "board", documentType: type, tabId: "board@fixture",
+      ...([2, 4].includes(type) ? { parentLibraryUuid: "observed-metadata-owner" } : {}) } },
     expectedFingerprint: fingerprint(), checkpoint: { receiptPath: "/test/checkpoint.receipt.json", sourceSha256: "1".repeat(64), sourceDumpSha256: "2".repeat(64) },
-    baselineSourceSha256: parseDocumentSource(source()).sha256,
+    baselineSourceSha256: parseDocumentSource(baselineSource).sha256,
     steps: [{ id: "conversion", request: { method: "eda.sys_Unit.mmToMil", arguments: { mm: 25.4 } } }, { id: "edition", request: { method: "eda.sys_Environment.isClient", arguments: {} } }],
   });
 }
@@ -38,29 +41,43 @@ function consistent(payload: Record<string, unknown>, sdk = false): Record<strin
     stable: true, attempts: 2, snapshotSha256: sha256Json(payload), contextBinding: { level: "active-context-stability-required", preAndPostChecked: true, switchAwayAndBackDetectable: false },
   } };
 }
-function sourceResult(value = source()): Record<string, unknown> {
-  return consistent({ ok: true, kind: "pcb-source", documentType: 3, source: value, utf8Bytes: Buffer.byteLength(value), authority: { source: "sys_FileManager.getDocumentSource" }, limitations: [] });
+function sourceRequest(type: 1 | 2 | 3 | 4): { kind: "schematic-source" | "symbol-source" | "pcb-source" | "footprint-source" } {
+  switch (type) {
+    case 1: { return { kind: "schematic-source" }; }
+    case 2: { return { kind: "symbol-source" }; }
+    case 3: { return { kind: "pcb-source" }; }
+    case 4: { return { kind: "footprint-source" }; }
+    default: { throw new Error("Unknown test editor."); }
+  }
+}
+function sourceResult(value = source(), type: 1 | 2 | 3 | 4 = 3): Record<string, unknown> {
+  return consistent({ ok: true, ...sourceRequest(type), documentType: type, source: value, utf8Bytes: Buffer.byteLength(value), authority: { source: "sys_FileManager.getDocumentSource" }, limitations: [] });
 }
 interface Fixture {
   facade: DisposableSdkFacade;
   calls: string[];
   checkpoint: Record<string, unknown>;
   source: Record<string, unknown>;
+  actualContext: DisposableSdkValidationPlan["expectedContext"];
   alter?: (phase: string, count: number) => unknown;
 }
 function fixture(input: DisposableSdkValidationPlan): Fixture {
   const result: Fixture = {
     calls: [], checkpoint: { ok: true, source: input.fixture.projectPath, receiptPath: input.checkpoint.receiptPath, checkpoint: "/test/checkpoint.eprj2", checkpointMatchesReceipt: true,
       sourceEqualsCheckpoint: true, sourceMatchesReceipt: true, sourceChanged: false, sourceSha256: input.checkpoint.sourceSha256, sourceDumpSha256: input.checkpoint.sourceDumpSha256,
-      checkpointSha256: "3".repeat(64), checkpointDumpSha256: input.checkpoint.sourceDumpSha256 }, source: sourceResult(),
+      checkpointSha256: "3".repeat(64), checkpointDumpSha256: input.checkpoint.sourceDumpSha256 },
+    source: sourceResult(source("board", "", sourceDocumentType(input.expectedContext.document.documentType)), input.expectedContext.document.documentType),
+    actualContext: structuredClone(input.expectedContext),
     facade: {
       verifyCheckpoint: (receipt) => { assert.equal(receipt, input.checkpoint.receiptPath); result.calls.push("checkpoint"); return Promise.resolve(result.alter?.("checkpoint", result.calls.length) ?? result.checkpoint); },
       exactSource: (request, context, expectedFingerprint) => {
-        assert.deepEqual(request, { kind: "pcb-source" }); assert.deepEqual(context, input.expectedContext); assert.deepEqual(expectedFingerprint, input.expectedFingerprint);
-        result.calls.push("source"); return Promise.resolve(result.alter?.("source", result.calls.length) ?? result.source);
+        assert.deepEqual(request, sourceRequest(input.expectedContext.document.documentType)); assert.deepEqual(context, input.expectedContext); assert.deepEqual(expectedFingerprint, input.expectedFingerprint);
+        result.calls.push("source"); assertSubset(result.actualContext, context, "Active EasyEDA context");
+        return Promise.resolve(result.alter?.("source", result.calls.length) ?? result.source);
       },
       sdkRead: (request, context, expectedFingerprint) => {
         assert.deepEqual(context, input.expectedContext); assert.deepEqual(expectedFingerprint, input.expectedFingerprint);
+        assertSubset(result.actualContext, context, "Active EasyEDA context");
         result.calls.push(request.method);
         const payload = validatePublicSdkReadPayload({ ok: true, kind: "public-sdk-read", method: request.method, present: true,
           value: request.method === "eda.sys_Unit.mmToMil" ? 1000 : true, undefinedPaths: [] }, request);
@@ -103,6 +120,81 @@ void test("a complete realistic source longer than the identifier bound is accep
   const f = fixture(input); f.source = sourceResult(largeSource);
   const result = await runDisposableSdkValidation(input, { mode: "execute", facade: f.facade });
   assert.equal(result["outcome"], "completed"); assert.equal(result["sdkDispatches"], 2);
+});
+void test("all four editor profiles preserve their original native source and semantic commitment", async () => {
+  for (const type of [1, 2, 3, 4] as const) {
+    const input = plan(type);
+    const events: Record<string, unknown>[] = [];
+    const f = fixture(input), retainedPlan = structuredClone(input), retainedSource = structuredClone(f.source);
+    const result = await runDisposableSdkValidation(input, { mode: "execute", facade: f.facade,
+      record: (event) => { events.push(structuredClone(event)); return Promise.resolve(); } });
+    assert.equal(result["outcome"], "completed"); assert.equal(result["sdkDispatches"], 2);
+    assert.deepEqual(f.source, retainedSource); assert.deepEqual(input, retainedPlan);
+    assert.deepEqual(events.filter((event) => event["phase"] === "step-completed").map((event) => event["sourceSha256"]),
+      input.steps.map(() => input.baselineSourceSha256));
+    if (type === 4) { assert.equal(parseDocumentSource(String(f.source["source"])).document["docType"], "PCB"); }
+  }
+});
+void test("library plans retain observed owners and refuse missing owners, foreign tabs and conflicting project parents", () => {
+  for (const type of [2, 4] as const) {
+    const input = plan(type);
+    const document = input.expectedContext.document;
+    assert.equal(document.parentLibraryUuid, "observed-metadata-owner");
+    for (const invalid of [
+      { uuid: document.uuid, documentType: type, tabId: document.tabId }, { ...document, parentLibraryUuid: "" },
+      { ...document, tabId: "board@another-project" }, { ...document, tabId: "another-library-document@fixture" },
+      { ...document, parentProjectUuid: "another-project" },
+    ]) { assert.throws(() => parseDisposableSdkValidationPlan({ ...input, expectedContext: { ...input.expectedContext, document: invalid } })); }
+  }
+  const input = plan();
+  input.expectedContext.document.parentProjectUuid = input.fixture.projectUuid;
+  assert.equal(parseDisposableSdkValidationPlan(input).expectedContext.document.parentProjectUuid, "fixture");
+});
+void test("a changed observed library owner is retained for facade refusal before any SDK dispatch", async () => {
+  for (const type of [2, 4] as const) {
+    const input = plan(type);
+    const f = fixture(input);
+    f.actualContext.document.parentLibraryUuid = "different-owner";
+    const result = await runDisposableSdkValidation(input, { mode: "execute", facade: f.facade });
+    assert.equal(result["outcome"], "stopped"); assert.equal(result["phase"], "source-before"); assert.equal(result["sdkDispatches"], 0);
+    assert.deepEqual(f.calls, ["checkpoint", "source"]);
+  }
+});
+void test("shared PCB headers cannot substitute an editor type and FOOTPRINT headers are never rewritten", async () => {
+  for (const [type, responseType, header] of [[3, 4, "PCB"], [4, 3, "PCB"], [4, 4, "FOOTPRINT"], [3, 3, "FOOTPRINT"], [2, 2, "PCB"], [1, 1, "PCB"]] as const) {
+    const input = plan(type), value = source("board", "", header);
+    const f = fixture(input);
+    input.baselineSourceSha256 = parseDocumentSource(value).sha256;
+    f.source = sourceResult(value, responseType);
+    const result = await runDisposableSdkValidation(input, { mode: "execute", facade: f.facade });
+    assert.equal(result["outcome"], "stopped"); assert.equal(result["phase"], "source-before"); assert.equal(result["sdkDispatches"], 0);
+    assert.deepEqual(f.calls, ["checkpoint", "source"]); assert.equal(f.source["source"], value);
+  }
+});
+void test("source validation shares the maintained UTF-8 byte limit rather than a character-count substitute", async () => {
+  const input = plan(), value = source("board", "界".repeat(1_048_576));
+  const f = fixture(input);
+  assert.ok(value.length < 3 * 1024 * 1024); assert.ok(Buffer.byteLength(value) > 3 * 1024 * 1024);
+  input.baselineSourceSha256 = parseDocumentSource(value).sha256; f.source = sourceResult(value);
+  const result = await runDisposableSdkValidation(input, { mode: "execute", facade: f.facade });
+  assert.equal(result["outcome"], "stopped"); assert.equal(result["phase"], "source-before"); assert.equal(result["sdkDispatches"], 0);
+});
+void test("read adapters must unwrap complete evidence results and never substitute summary or receipt-only output", async () => {
+  for (const phase of ["source", "sdk"]) {
+    for (const wrapped of ["full", "summary", "receipt-only"]) {
+      const input = plan();
+      const f = fixture(input);
+      f.alter = (current): unknown => {
+        if (current !== phase) { return null; }
+        const evidence = { resultPath: "/test/evidence.json" }, summary = { jsonBytes: 4096 };
+        return wrapped === "full" ? { result: f.source, summary, evidence } : { summary, evidence, ...(wrapped === "receipt-only" ? { inlineResultOmitted: true } : {}) };
+      };
+      const result = await runDisposableSdkValidation(input, { mode: "execute", facade: f.facade });
+      assert.equal(result["outcome"], "stopped"); assert.equal(result["phase"], phase === "source" ? "source-before" : "sdk-read");
+      assert.equal(result["sdkDispatches"], phase === "source" ? 0 : 1); assert.deepEqual(result["completed"], []);
+      assert.equal(f.calls.length, phase === "source" ? 2 : 3);
+    }
+  }
 });
 void test("an unrelated or physically changed checkpoint refuses before any SDK read", async () => {
   for (const patch of [{ source: "/test/other.eprj2" }, { receiptPath: "/test/other.json" }, { sourceSha256: "9".repeat(64) },

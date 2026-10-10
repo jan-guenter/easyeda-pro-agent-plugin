@@ -25,11 +25,26 @@ The plan schema requires these fields:
 |---|---|
 | `schema` | `easyeda-pro-control.disposable-sdk-validation-plan.v1` |
 | `fixture` | Category `disposable`, exact `projectUuid`, `projectPath`, and the literal attestation `This project is disposable and is authorized for SDK read validation.` |
-| `expectedContext` | Exact `project.uuid/path` and `document.uuid/documentType/tabId`. Document types 1, 2, 3 and 4 only. |
+| `expectedContext` | Exact `project.uuid/path` and `document.uuid/documentType/tabId`. Document types 1, 2, 3 and 4 only. For project-library editors 2 and 4, also supply the observed `document.parentLibraryUuid`; the tab must be `documentUuid@projectUuid`. Optional observed `document.parentProjectUuid` must match the project UUID. |
 | `expectedFingerprint` | Complete captured private runtime fingerprint. The actual facade independently verifies current admission for every read. |
 | `checkpoint` | Existing `receiptPath`, original project-file `sourceSha256` and complete SQLite `sourceDumpSha256`. |
 | `baselineSourceSha256` | The semantic hash from `parseDocumentSource` of the original exact source. It retains every design record and excludes only documented volatile DOCHEAD fields. |
 | `steps` | Unique `id` plus the exact fixed SDK `{method, arguments}` request obtained from the offline `sdk-reads` catalog. |
+
+Capture library owner metadata from the actual editor context. The project
+collection UUID and metadata owner UUID are distinct; never substitute one for
+the other. The runner preserves these observed fields in every exact-source
+and SDK request, so the facade's pre/post context checks reject an owner change.
+
+The pinned footprint editor returns a native `PCB` DOCHEAD even though its
+saved asset is `FOOTPRINT`. The runner requires `footprint-source` and editor
+type 4, the exact document UUID, observed owner and project-library tab, and the
+original source hash. It does not rewrite the DOCHEAD or reinterpret a type-3
+PCB response as a footprint. Other live source headers remain `SCH_PAGE`,
+`SYMBOL` and `PCB` for editor types 1, 2 and 3. The shared exact-reader validator
+checks source shape and its 3 MiB UTF-8 byte bound, not a character-count bound.
+These read checks do not replace the complete checkpoint membership and
+library-effect proofs required for a writer or lifecycle operation.
 
 The caller supplies three named adapter functions. `verifyCheckpoint` calls
 `easyeda_control_checkpoint` with `action: "verify"` and returns its verified

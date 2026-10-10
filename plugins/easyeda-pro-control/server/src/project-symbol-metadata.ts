@@ -22,10 +22,20 @@ const planSchema = z.object({
   beforeProjectSha256: z.string().regex(/^[a-f0-9]{64}$/u),
   beforeTitle: z.string().min(1).max(512),
   beforeDescription: z.string().max(65_536),
+  beforeTags: z.array(z.string().max(512)).max(256),
+  beforeSource: z.string().max(4096),
+  peerTitles: z.array(z.string().min(1).max(512)).max(4096),
   desiredTitle: z.string().min(1).max(512),
   desiredDescription: z.string().max(65_536),
-}).strict();
+  headerEditVersion: z.string().min(1).max(128).nullable(),
+}).strict().refine((plan) => Buffer.byteLength(`${JSON.stringify(plan)}\n`, "utf8") <= 2_097_152,
+  "Symbol preparation exceeds the retained recovery artifact byte limit.");
 export type ProjectSymbolMetadataPlan = z.infer<typeof planSchema>;
+const symbolMetaSchema = z.object({ title: z.string().min(1).max(512), description: z.string().max(65_536), docType: z.literal(2),
+  tags: z.array(z.string().max(512)).max(256), source: z.string().max(4096) }).strict();
+const symbolHeaderSchema = z.object({ uuid: boundedId, docType: z.literal("SYMBOL"), client: z.string().regex(/^[a-f0-9]{16}$/u),
+  updateTime: z.number().int().nonnegative(), version: z.string().min(1), editVersion: z.string().min(1).max(128).optional(),
+  user: z.record(z.string(), z.unknown()).optional() }).strict();
 
 export function projectSymbolMetadataOperation(input: unknown): Extract<ReturnType<typeof libraryOperationSchema.parse>, { action: "library.symbol.modify" }> {
   const operation = libraryOperationSchema.parse(input);
@@ -69,24 +79,33 @@ export function prepareProjectSymbolMetadata(input: unknown, history: NativeHist
   if (before["docType"] !== 2 || typeof before["title"] !== "string" || typeof before["description"] !== "string") {
     throw new Error("Symbol metadata editing requires ordinary META.docType 2 with stored title and description.");
   }
+  // The cN.metaData serializer emits only these five fields. The fixed writer
+  // Retains source/custom_tags from its existing project-local native object.
+  const meta = symbolMetaSchema.parse(before);
+  const header = symbolHeaderSchema.parse(target.metadata);
+  if (header.uuid !== target.uuid) { throw new Error("Symbol DOCHEAD identity differs from its checkpoint member."); }
   const desiredTitle = operation.patch.name ?? before["title"];
   if (normalizedTitle(desiredTitle).length === 0) { throw new Error("Symbol metadata requires a nonblank display title."); }
+  const peerTitles: string[] = [];
   for (const document of history.documents) {
     if (document.docType === "SYMBOL" && document.uuid !== target.uuid && !isNativeDocumentDeleted(document)) {
       const title = metadata(document)["title"];
       if (typeof title !== "string") { throw new TypeError("Peer symbol title is missing from duplicate-name proof."); }
+      peerTitles.push(title);
       if (normalizedTitle(title) === normalizedTitle(desiredTitle)) { throw new Error("A project symbol with that normalized name already exists."); }
     }
   }
   return planSchema.parse({ profile: PROJECT_SYMBOL_METADATA_PROFILE, projectUuid: history.projectUuid, branchUuid: history.branchUuid,
     ownerUuid: history.projectOwnerUuid, targetUuid: target.uuid, beforeProjectSha256: libraryProjectRecordsHash(history),
-    beforeTitle: before["title"], beforeDescription: before["description"], desiredTitle, desiredDescription: operation.patch.description ?? before["description"] });
+    beforeTitle: before["title"], beforeDescription: before["description"], desiredTitle, desiredDescription: operation.patch.description ?? before["description"],
+    beforeTags: meta.tags, beforeSource: meta.source, peerTitles, headerEditVersion: header.editVersion ?? null });
 }
 
-/** The pinned UI's LIB_Symbol.modify destructures classification without a
- * default and otherwise reuses its lowercased search title. Always supply a
- * fixed empty classification object and the checkpoint's exact display title.
- * This compiler is internal transaction code, not a caller-selectable SDK path.
+/** The public modifier chooses project versus cloud routing after an awaited
+ * metadata read. Bind its project-qualified worker metadata writer instead.
+ * No caller-selectable method path or cloud/library routing exists here.
+ * Keep the native canAddLib check and independently refuse readonly/history
+ * contexts; canAddLib alone permits import/paste/document/library capability.
  */
 export function buildProjectSymbolMetadataExpression(input: ProjectSymbolMetadataPlan, context: ExpectedContext): string {
   const plan = planSchema.parse(input);
@@ -105,31 +124,63 @@ export function buildProjectSymbolMetadataExpression(input: ProjectSymbolMetadat
   return `(async()=>{let stage='host';try{
 const PLAN=${JSON.stringify(plan)},ACTIVE=${JSON.stringify(active)},OWNERSHIP=${JSON.stringify(ownership)};
 ${DEVICE_NATIVE_HOST_GUARD}
+const localUI=globalThis.UI,outerUI=globalThis.top?.UI;
+if(localUI!=null&&outerUI!=null&&localUI!==outerUI)throw new Error('UI_AMBIGUOUS');
+const ui=localUI??outerUI,permission=ui?.concurrentDesign,tabs=ui?.tabBar;
+if(typeof tabs?.getFilterTabs!=='function'||typeof tabs.getActiveTab!=='function'||typeof tabs.hasTabUnSaved!=='function'||typeof tabs.isTabUnSaved!=='function')throw new Error('TAB_STATE_MISSING');
+const assertWritable=()=>{
+if(PLAN.peerTitles.some(value=>value.toLocaleLowerCase()===PLAN.desiredTitle.toLocaleLowerCase()))throw new Error('LOCALE_DUPLICATE_TITLE');
+const localVersion=globalThis.PRO_EDITOR_VERSION,outerVersion=globalThis.top?.PRO_EDITOR_VERSION;
+if(localVersion!==undefined&&outerVersion!==undefined&&localVersion!==outerVersion)throw new Error('EDITOR_VERSION_AMBIGUOUS');
+if((localVersion??outerVersion)!==(PLAN.headerEditVersion===null?undefined:PLAN.headerEditVersion))throw new Error('EDITOR_VERSION_DRIFT');
+if(host.currentProject?.projectId!==PLAN.projectUuid||host.currentProject.branchUuid!==PLAN.branchUuid||host.currentProject.isV2Format!==false||host.isHistoryMode!==false)throw new Error('PROJECT_NOT_WRITABLE');
+if(permission?.isConcurrentStrictMode!==false||typeof permission.getIframeDisableStatusPanelPcb!=='function'||permission.getIframeDisableStatusPanelPcb(ACTIVE.tabId)?.disable!==false)throw new Error('PROJECT_NOT_WRITABLE');
+if(tabs.getActiveTab()!==ACTIVE.tabId||tabs.hasTabUnSaved()!==false)throw new Error('CONTEXT_OR_DIRTY');
+const all=tabs.getFilterTabs([]),seen=new Set();let activeCount=0,startCount=0;
+if(!Array.isArray(all)||all.length<1||all.length>256)throw new Error('TAB_SCOPE');
+for(const tab of all){
+if(!tab||typeof tab!=='object'||Array.isArray(tab)||typeof tab.tabId!=='string'||!tab.tabId||tab.tabId.length>512||/[\\x00-\\x1f]/.test(tab.tabId)||seen.has(tab.tabId)||!tab.data||typeof tab.data!=='object'||Array.isArray(tab.data))throw new Error('TAB_SCOPE');seen.add(tab.tabId);
+if(tab.tabId==='tab_page1'){if(++startCount!==1||tab.isAbleDelete!==false||tab.data?.doctype!==-1||tab.data?.pid!==undefined||tab.data?.owner!==undefined||tab.parentProjectUuid!==undefined||tab.parentLibraryUuid!==undefined)throw new Error('START_TAB');continue;}
+const type=tab.data?.doctype,id=tab.tabId.split('@')[0],library=[2,4].includes(type);
+if(![1,2,3,4].includes(type)||!id||id===PLAN.targetUuid||tab.tabId!==id+'@'+PLAN.projectUuid||(library?tab.data?.pid!==undefined&&tab.data.pid!==PLAN.projectUuid:tab.data?.pid!==PLAN.projectUuid)||
+(tab.parentProjectUuid!==undefined&&tab.parentProjectUuid!==PLAN.projectUuid)||(tab.documentType!==undefined&&tab.documentType!==type)||
+(library?tab.data.owner!==PLAN.ownerUuid||(tab.parentLibraryUuid!==undefined&&tab.parentLibraryUuid!==PLAN.ownerUuid):tab.parentLibraryUuid!==undefined||(tab.data.owner!==undefined&&tab.data.owner!==PLAN.ownerUuid))||
+(Object.hasOwn(tab,'isUnSaved')?tab.isUnSaved!==false:tab.isUnSaved!==undefined)||tabs.isTabUnSaved(tab.tabId)!==false)throw new Error('TAB_SCOPE');
+if(tab.tabId===ACTIVE.tabId){if(id!==ACTIVE.uuid||type!==ACTIVE.documentType)throw new Error('ACTIVE_TAB');activeCount+=1;}
+}if(activeCount!==1)throw new Error('ACTIVE_TAB');
+};
 const assertContext=async()=>{
 const project=await eda.dmt_Project.getCurrentProjectInfo();
 const document=await eda.dmt_SelectControl.getCurrentDocumentInfo();
 if((project?.uuid??project?.projectUuid)!==PLAN.projectUuid||(project.uuid!==undefined&&project.projectUuid!==undefined&&project.uuid!==project.projectUuid)||host.currentProject?.projectId!==PLAN.projectUuid)throw new Error('PROJECT_DRIFT');
 if((document?.uuid??document?.documentUuid)!==ACTIVE.uuid||(document.uuid!==undefined&&document.documentUuid!==undefined&&document.uuid!==document.documentUuid)||document.documentType!==ACTIVE.documentType||document.tabId!==ACTIVE.tabId)throw new Error('ACTIVE_DOCUMENT_DRIFT');
 if((document.parentProjectUuid!==undefined&&document.parentProjectUuid!==PLAN.projectUuid)||(document.parentLibraryUuid!==undefined&&(![2,4].includes(ACTIVE.documentType)||document.parentLibraryUuid!==PLAN.ownerUuid))||(OWNERSHIP.parentProjectUuid!==undefined&&document.parentProjectUuid!==OWNERSHIP.parentProjectUuid)||(OWNERSHIP.parentLibraryUuid!==undefined&&document.parentLibraryUuid!==OWNERSHIP.parentLibraryUuid))throw new Error('ACTIVE_DOCUMENT_OWNER_DRIFT');
+assertWritable();
 };
 await assertContext();
+stage='permission';
+const permissionResult=(await bus.rpcCall('canAddLib',[PLAN.projectUuid])).message;
+await assertContext();
+if(permissionResult?.hasPermission!==true)throw new Error('PROJECT_PERMISSION');
+const projectState=(await bus.rpcCall('/PrjDB/project/getData',[PLAN.projectUuid])).message;
+await assertContext();
+if(projectState?.uuid!==PLAN.projectUuid||projectState.owner?.uuid!==PLAN.ownerUuid||projectState.currentBranch!==PLAN.branchUuid||projectState.isV2Format!==false||projectState.archive||projectState.store||projectState.cbb_project)throw new Error('PROJECT_METADATA');
 stage='before-read';
 const before=(await bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])).message;
 await assertContext();
-if(before?.uuid!==PLAN.targetUuid||before?.project_uuid!==PLAN.projectUuid||before?.owner?.uuid!==PLAN.ownerUuid||before?.docType!==2||before?.display_title!==PLAN.beforeTitle||before?.description!==PLAN.beforeDescription)throw new Error('SYMBOL_METADATA_DRIFT');
+if(before?.uuid!==PLAN.targetUuid||before?.project_uuid!==PLAN.projectUuid||before?.owner?.uuid!==PLAN.ownerUuid||before?.docType!==2||before?.display_title!==PLAN.beforeTitle||before?.description!==PLAN.beforeDescription||before?.source!==PLAN.beforeSource||before?.custom_tags!==JSON.stringify(PLAN.beforeTags))throw new Error('SYMBOL_METADATA_DRIFT');
 stage='target-closed';
 await ${targetClosed};
 await assertContext();
+assertWritable();
 stage='modify';
-const api=eda.lib_Symbol;
-if(typeof api?.modify!=='function')throw new Error('METHOD_MISSING');
-const result=await api.modify(PLAN.targetUuid,PLAN.projectUuid,PLAN.desiredTitle,{},PLAN.desiredDescription);
-if(result!==true)throw new Error('ACK_INVALID');
+const result=(await bus.rpcCall('/PrjDB/symbol/updateData',[{uuid:PLAN.targetUuid,title:PLAN.desiredTitle,description:PLAN.desiredDescription},PLAN.projectUuid])).message;
+if(result?.uuid!==PLAN.targetUuid||result.project_uuid!==PLAN.projectUuid||result.owner?.uuid!==PLAN.ownerUuid||result.docType!==2||result.display_title!==PLAN.desiredTitle||result.description!==PLAN.desiredDescription||result.source!==PLAN.beforeSource||result.custom_tags!==JSON.stringify(PLAN.beforeTags))throw new Error('ACK_INVALID');
 stage='after-read';
 await assertContext();
 const after=(await bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])).message;
 await assertContext();
-if(after?.uuid!==PLAN.targetUuid||after?.project_uuid!==PLAN.projectUuid||after?.owner?.uuid!==PLAN.ownerUuid||after?.docType!==2||after?.display_title!==PLAN.desiredTitle||after?.description!==PLAN.desiredDescription)throw new Error('SYMBOL_METADATA_DRIFT');
+if(after?.uuid!==PLAN.targetUuid||after?.project_uuid!==PLAN.projectUuid||after?.owner?.uuid!==PLAN.ownerUuid||after?.docType!==2||after?.display_title!==PLAN.desiredTitle||after?.description!==PLAN.desiredDescription||after?.source!==PLAN.beforeSource||after?.custom_tags!==JSON.stringify(PLAN.beforeTags))throw new Error('SYMBOL_METADATA_DRIFT');
 const payload={kind:'project-symbol-metadata',targetId:PLAN.targetUuid,createdId:null};
 const json=JSON.stringify(payload);return {schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};
 }catch(_){throw new Error('Symbol metadata operation refused at '+stage);}})()`;
@@ -142,9 +193,10 @@ function recordProjection(document: NativeDocumentSnapshot): unknown {
 function verifyHeader(before: Record<string, unknown>, after: Record<string, unknown>): void {
   const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
   const changed = [...keys].filter((key) => canonicalJson({ value: before[key] }) !== canonicalJson({ value: after[key] }) || Object.hasOwn(before, key) !== Object.hasOwn(after, key));
-  if (changed.length === 0) { return; }
   const time = after["updateTime"];
-  if (changed.some((key) => !["client", "updateTime", "version"].includes(key)) || typeof after["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(after["client"]) || typeof time !== "number" || !Number.isSafeInteger(time) || time < 0 || after["version"] !== String(time) || (typeof before["updateTime"] === "number" && time < before["updateTime"])) {
+  // The vi constructor captures undefined user before subscribe initializes login.
+  // The gg.updateString serializer omits user; no actor insertion/replacement passes.
+  if (changed.some((key) => !["client", "updateTime", "version", "user"].includes(key)) || Object.hasOwn(after, "user") || typeof after["client"] !== "string" || !/^[a-f0-9]{16}$/u.test(after["client"]) || typeof time !== "number" || !Number.isSafeInteger(time) || time < 0 || after["version"] !== String(time) || (typeof before["updateTime"] === "number" && time < before["updateTime"])) {
     throw new Error("Symbol header changed outside the reviewed metadata edit fields.");
   }
 }
@@ -153,6 +205,9 @@ export function verifyProjectSymbolMetadataEffect(input: ProjectSymbolMetadataPl
   const plan = planSchema.parse(input);
   projectIdentity(before, plan); projectIdentity(after, plan);
   if (libraryProjectRecordsHash(before) !== plan.beforeProjectSha256) { throw new Error("Symbol baseline differs from the prepared complete-project checkpoint."); }
+  const expectedPlan = prepareProjectSymbolMetadata({ id: "verify-symbol-metadata", action: "library.symbol.modify", libraryUuid: plan.projectUuid,
+    target: { uuid: plan.targetUuid }, patch: { name: plan.desiredTitle, description: plan.desiredDescription } }, before);
+  if (canonicalJson(plan) !== canonicalJson(expectedPlan)) { throw new Error("Symbol plan differs from its original checkpoint preparation."); }
   const changed = symbol(after, plan.targetUuid), old = symbol(before, plan.targetUuid);
   const oldMeta = metadata(old);
   if (oldMeta["title"] !== plan.beforeTitle || oldMeta["description"] !== plan.beforeDescription || oldMeta["docType"] !== 2) { throw new Error("Symbol plan differs from checkpoint metadata."); }
@@ -164,11 +219,15 @@ export function verifyProjectSymbolMetadataEffect(input: ProjectSymbolMetadataPl
   if (canonicalJson(recordProjection(expected)) !== canonicalJson(recordProjection(changed))) { throw new Error("Symbol metadata edit changed geometry, bindings or unrequested metadata."); }
   return { profile: PROJECT_SYMBOL_METADATA_PROFILE, targetId: plan.targetUuid, beforeProjectSha256: plan.beforeProjectSha256,
     afterProjectSha256: libraryProjectRecordsHash(after), documentCount: after.documents.length,
-    effectVerified: true, persistenceEvidence: "supplied-history-comparison", reopened: false };
+    effectVerified: true, persistenceEvidence: "supplied-history-comparison", reopened: false, adapterKind: "native-task-equivalent",
+    currentGenerationLiveValidated: false, saveInvoked: false, editorTitleRefreshVerified: false,
+    headerBookkeeping: "generated-client-updateTime-version;existing-user-omitted;other-fields-exact",
+    headerUserRemoved: Object.hasOwn(old.metadata, "user"), inverseScope: "requested-title-and-description-only;generated-header-and-removed-user-not-restored" };
 }
 
 /** Build data for a new transaction only after proving the complete forward
  * effect. This does not dispatch, restore a checkpoint or reuse a journal.
+ * Generated header fields and an omitted DOCHEAD user are not invertible here.
  */
 export function projectSymbolMetadataInverse(input: ProjectSymbolMetadataPlan, before: NativeHistorySnapshot,
   after: NativeHistorySnapshot, operationId: string): ReturnType<typeof projectSymbolMetadataOperation> {

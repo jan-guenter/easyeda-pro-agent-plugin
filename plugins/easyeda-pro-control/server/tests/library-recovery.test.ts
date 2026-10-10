@@ -12,6 +12,7 @@ import { libraryMutationReceipt, readLibraryRecoveryArtifact, uniqueLibraryRecov
 import { prepareDeviceCreate } from "../src/device-create.ts";
 import { prepareProjectSymbolMetadata } from "../src/project-symbol-metadata.ts";
 import { LIBRARY_NATIVE_IMPLEMENTATION } from "../src/library-native-profile.ts";
+import { SCHEMATIC_NATIVE_IMPLEMENTATION } from "../src/native-profiles.ts";
 import { LIBRARY_EXECUTION_PROFILE } from "../src/library-runtime.ts";
 import { libraryOperationSchema } from "../src/library-operations.ts";
 import { libraryToolOperationSchema } from "../src/tool-operation-envelope.ts";
@@ -59,9 +60,9 @@ function fixture(symbolMetadata = false): { coordinator: LibraryRecoveryCoordina
   state: { source: string; after: NativeHistorySnapshot; returned: unknown } } {
   const calls: string[] = [], identity = fingerprint();
   const operation = symbolMetadata ? libraryOperationSchema.parse({ id: "modify-symbol", action: "library.symbol.modify", libraryUuid: "project", target: { uuid: "symbol" }, patch: { description: "changed" } }) : OPERATION;
-  const before = symbolMetadata ? { ...BEFORE, documents: [document("board", "PCB", {}), document("symbol", "SYMBOL", { title: "MixedCase", description: "before", docType: 2 })] } : BEFORE;
+  const before = symbolMetadata ? { ...BEFORE, documents: [document("board", "PCB", {}), document("symbol", "SYMBOL", { title: "MixedCase", description: "before", docType: 2, source: "", tags: ["Primary", "Secondary"] })] } : BEFORE;
   const symbolPlan = symbolMetadata ? prepareProjectSymbolMetadata(operation, before) : undefined;
-  const after = symbolMetadata ? { ...before, documents: [document("board", "PCB", {}), document("symbol", "SYMBOL", { title: "MixedCase", description: "changed", docType: 2 })] } : AFTER;
+  const after = symbolMetadata ? { ...before, documents: [document("board", "PCB", {}), document("symbol", "SYMBOL", { title: "MixedCase", description: "changed", docType: 2, source: "", tags: ["Primary", "Secondary"] })] } : AFTER;
   const returned = symbolMetadata ? { kind: "project-symbol-metadata", createdId: null, targetId: "symbol" } : RETURNED;
   const plan: LibraryJournal["plan"] = { profile: LIBRARY_EXECUTION_PROFILE, operation, expectedFingerprint: structuredClone(identity), expectedContext: structuredClone(CONTEXT) };
   const native = artifact("/fixture/2-native-return.json", returned), prepared = artifact(symbolMetadata ? "/fixture/1-symbol-prepared.json" : "/fixture/1-device-prepared.json", symbolPlan ?? PREPARED);
@@ -90,6 +91,7 @@ function fixture(symbolMetadata = false): { coordinator: LibraryRecoveryCoordina
   const services: LibraryRecoveryServices = { load: (): Promise<LibraryJournal> => Promise.resolve(journal), record: (_journal, phase): Promise<void> => { calls.push(phase); return Promise.resolve(); },
     verifyLibraryNativeProfile: (): Promise<typeof LIBRARY_NATIVE_IMPLEMENTATION> => Promise.resolve(LIBRARY_NATIVE_IMPLEMENTATION),
     verifyDeviceAssociationNativeProfile: (): Promise<void> => Promise.resolve(),
+    verifySchematicNativeProfile: (): Promise<typeof SCHEMATIC_NATIVE_IMPLEMENTATION> => Promise.resolve(SCHEMATIC_NATIVE_IMPLEMENTATION),
     readNativeHistoryCheckpoint: (request): Promise<NativeHistorySnapshot> => Promise.resolve(request.checkpointPath === RECEIPT.checkpoint ? before : state.after),
     readArtifact: (path, offset, length): ReturnType<NonNullable<LibraryRecoveryServices["readArtifact"]>> => {
       const at = Number(offset), count = Number(length);

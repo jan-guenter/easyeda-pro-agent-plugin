@@ -40,11 +40,14 @@ void test("coverage does not promote schema-only, native equivalent, stub, lates
   assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.routes[0]?.implementation, "native-task-equivalent");
   assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.currentGenerationLiveValidation, "not-recorded");
   assert.equal(rows.get("eda.lib_Symbol.create")?.status, "omitted");
-  assert.equal(rows.get("eda.lib_Symbol.modify")?.status, "implemented-public-subset");
+  assert.equal(rows.get("eda.lib_Symbol.modify")?.status, "implemented-native-equivalent");
   assert.equal(rows.get("eda.lib_Symbol.modify")?.routes[0]?.selector, "library.symbol.modify");
   assert.equal(rows.get("eda.lib_Symbol.modify")?.currentGenerationLiveValidation, "not-recorded");
   assert.equal(rows.get("eda.dmt_EditorControl.activateDocument")?.status, "implemented-public-subset");
   assert.equal(rows.get("eda.dmt_EditorControl.activateDocument")?.routes.some((route) => route.selector === "document.activate"), true);
+  assert.equal(rows.get("eda.dmt_Schematic.modifySchematicPageName")?.status, "implemented-native-equivalent");
+  assert.equal(rows.get("eda.dmt_Schematic.modifySchematicPageName")?.routes[0]?.selector, "document.page.rename");
+  assert.equal(rows.get("eda.dmt_Schematic.modifySchematicPageName")?.currentGenerationLiveValidation, "not-recorded");
   assert.equal(rows.get("eda.dmt_Project.createProject")?.status, "omitted");
   assert.equal(rows.get("eda.sch_PrimitiveBus.create")?.status, "omitted");
   assert.equal(rows.get("eda.pcb_Document.save")?.status, "internal-lifecycle-only");
@@ -86,6 +89,37 @@ void test("hidden Save and unsupported-editor exports have no callable route", (
   }
   assert.equal(rows.get("eda.sch_ManufactureData.getSimulationNetlistFile")?.omission?.code, "simulation-editor-not-admitted");
   assert.match(rows.get("eda.pcb_Net.getNetlist")?.omission?.nextRequirement ?? "", /also refused/u);
+});
+
+void test("omitted geometric getters retain proven callback, projection and filter defects", () => {
+  const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
+  for (const family of ["Bus", "Wire", "Text"]) {
+    for (const method of ["get", "getAll", "getAllPrimitiveId"]) {
+      const row = rows.get(`eda.sch_Primitive${family}.${method}`);
+      assert.ok(row);
+      assert.equal(row.status, "omitted");
+      assert.equal(row.omission?.code, "lossy-or-unawaited-public-reader");
+      assert.equal(row.routes.length, 0);
+    }
+  }
+  for (const path of ["eda.pcb_Document.getPrimitiveAtPoint", "eda.pcb_Document.getPrimitivesInRegion", "eda.pcb_SelectControl.getAllSelectedPrimitives"]) {
+    const row = rows.get(path);
+    assert.ok(row);
+    assert.equal(row.status, "omitted");
+    assert.equal(row.omission?.code, "lossy-heterogeneous-primitive-projection");
+    assert.match(row.omission.reason, /Text/u);
+    assert.equal(row.routes.length, 0);
+  }
+  const net = rows.get("eda.pcb_Net.getAllPrimitivesByNet");
+  assert.ok(net);
+  assert.equal(net.status, "omitted");
+  assert.equal(net.omission?.code, "broken-net-type-filter-and-result-abi");
+  assert.match(net.omission.reason, /model object/u);
+  assert.match(net.omission.reason, /DTO/u);
+  assert.equal(net.routes.length, 0);
+  assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
+    "implemented-public-subset": 187, "implemented-native-equivalent": 72, "internal-lifecycle-only": 3, "implemented-but-blocked": 8, omitted: 504,
+  });
 });
 
 void test("every maintained execution link names real source and regression evidence", async () => {

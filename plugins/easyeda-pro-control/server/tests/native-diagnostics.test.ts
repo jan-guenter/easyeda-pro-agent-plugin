@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { extractToolPayload } from "../src/core.ts";
 import { nativeFailureCategory } from "../src/native-diagnostics.ts";
@@ -45,4 +46,52 @@ void test("upload barrier legacy literals and fixed stage wrappers classify with
   }
   assert.throws(() => extractToolPayload({ structuredContent: { ok: false, error: "PROJECT_UPLOAD_BARRIER_REFUSED /private/path" } }),
     { message: "The upstream EasyEDA tool reported failure [unclassified-upstream-failure]." });
+});
+
+const operationStages = [
+  { source: "document-activation.ts", prefix: "Document activation refused: ", category: "native-document-activation", stages: ["api", "before-context", "before-tabs", "loaded-frames", "preferences", "dispatch-context", "activate", "target-readiness"] },
+  { source: "document-page-rename.ts", prefix: "Closed page rename refused at ", category: "native-page-rename", stages: ["host", "before-read", "closed-target", "rename", "after-read"] },
+  { source: "project-symbol-metadata.ts", prefix: "Symbol metadata operation refused at ", category: "native-symbol-metadata", stages: ["host", "permission", "before-read", "target-closed", "modify", "after-read"] },
+];
+
+void test("all fixed activation and metadata stages survive existing structured, text and nested failure envelopes", () => {
+  for (const { prefix, category, stages } of operationStages) {
+    for (const stage of stages) {
+      const expected = `${category}:${stage}`, message = `${prefix}${stage}`;
+      assert.equal(nativeFailureCategory(message), expected);
+      for (const response of [
+        { structuredContent: { ok: false, error: message } },
+        { structuredContent: { success: false, error: { code: "EASYEDA_API_ERROR", message } } },
+        { content: [{ type: "text", text: JSON.stringify({ success: false, result: { success: false, error: message } }) }] },
+      ]) {
+        const failure = "content" in response ? "failure or unavailability" : "failure";
+        assert.throws(() => extractToolPayload(response), { message: `The upstream EasyEDA tool reported ${failure} [${expected}].` });
+      }
+    }
+  }
+});
+
+void test("stage classifications never echo unknown, partial, prefixed or suffixed private errors", () => {
+  for (const { prefix, stages } of operationStages) {
+    for (const stage of stages) {
+      const exact = `${prefix}${stage}`;
+      for (const message of [`${exact} /private/design.eprj2`, `${exact}\nprivate stack`, `${exact}\n`, `${exact}\0`,
+        `Error: ${exact}`, `${exact}:private-token`, `${prefix}unknown`, prefix, "x".repeat(129)]) {
+        assert.equal(nativeFailureCategory(message), null);
+        assert.throws(() => extractToolPayload({ structuredContent: { ok: false, error: message } }),
+          { message: "The upstream EasyEDA tool reported failure [unclassified-upstream-failure]." });
+      }
+    }
+  }
+  const privateError = { get message(): never { throw new Error("Private error getter must not be inspected."); } };
+  assert.equal(nativeFailureCategory(privateError), null);
+});
+
+void test("diagnostic stage inventory exactly matches the reviewed generated programs", async () => {
+  for (const { source, prefix, stages } of operationStages) {
+    const text = await readFile(new URL(`../src/${source}`, import.meta.url), "utf8");
+    const emitted = [...text.matchAll(/\bstage='([a-z-]+)'/gu)].map((match) => { assert.ok(typeof match[1] === "string"); return match[1]; });
+    assert.deepEqual([...new Set(emitted)].toSorted((left, right) => left.localeCompare(right)), stages.toSorted((left, right) => left.localeCompare(right)));
+    assert.ok(text.includes(`throw new Error('${prefix}'+stage)`));
+  }
 });

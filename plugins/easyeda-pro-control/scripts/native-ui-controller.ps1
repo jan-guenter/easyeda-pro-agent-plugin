@@ -10,6 +10,26 @@ function Get-FiniteWindowBounds([double[]]$values) {
   }
   return ,$values
 }
+function Get-DesktopStatus([int]$targetSessionId, [IntPtr]$targetHandle) {
+  # Advisory only. Unavailable observations never authorize input or change the
+  # independent foreground, ownership, generation or confirmation guards.
+  $status = @{probeSessionId=$null;targetSessionId=$null;foreground='unavailable';probeDesktopInput='unavailable';targetDesktopInput='unavailable';inputDesktopInput='unavailable';targetSession=@{connectState='unavailable';lockState='unavailable'}}
+  try { $status.probeSessionId = [Diagnostics.Process]::GetCurrentProcess().SessionId } catch {}
+  if ($targetSessionId -ge 0) { $status.targetSessionId = $targetSessionId }
+  try {
+    $foreground = [EasyedaUiController]::GetForegroundWindow()
+    if ($foreground -eq [IntPtr]::Zero) { $status.foreground = 'none' }
+    elseif (Owned-Window $foreground) { $status.foreground = 'owned' }
+    else { $status.foreground = 'foreign' }
+  } catch {}
+  try { $status.probeDesktopInput = [EasyedaDesktopDiagnostic]::ProbeDesktopInput() } catch {}
+  try { $status.targetDesktopInput = [EasyedaDesktopDiagnostic]::TargetDesktopInput($targetHandle,[uint32]$request.rootPid) } catch {}
+  try { $status.inputDesktopInput = [EasyedaDesktopDiagnostic]::InputDesktopInput() } catch {}
+  if ($targetSessionId -ge 0) {
+    try { $status.targetSession = [EasyedaDesktopDiagnostic]::Session($targetSessionId) } catch {}
+  }
+  return $status
+}
 try {
   $line = [Console]::ReadLine()
   if (-not $line -or $line.Length -gt 32768) { throw 'request-bound' }
@@ -67,6 +87,68 @@ public static class EasyedaUiController {
   [DllImport("user32.dll")] public static extern void mouse_event(uint flags, uint x, uint y, uint data, UIntPtr extra);
   public static IntPtr[] Windows() { var result = new List<IntPtr>(); EnumWindows((handle, value) => { if(IsWindowVisible(handle)) result.Add(handle); return true; }, IntPtr.Zero); return result.ToArray(); }
 }
+public static class EasyedaDesktopDiagnostic {
+  // This prefix follows the documented x64 WTSINFOEX level-1 union alignment.
+  // Do not marshal or disclose the trailing account, client or station strings.
+  [StructLayout(LayoutKind.Explicit, Size=20)] public struct SessionPrefix {
+    [FieldOffset(0)] public uint Level;
+    [FieldOffset(8)] public uint SessionId;
+    [FieldOffset(12)] public int State;
+    [FieldOffset(16)] public int Flags;
+  }
+  [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
+  [DllImport("user32.dll")] static extern IntPtr GetThreadDesktop(uint thread);
+  [DllImport("user32.dll")] static extern IntPtr OpenInputDesktop(uint flags, bool inherit, uint access);
+  [DllImport("user32.dll")] static extern bool CloseDesktop(IntPtr handle);
+  [DllImport("user32.dll", EntryPoint="GetUserObjectInformationW")] static extern bool GetUserObjectInformation(IntPtr handle, int index, out int value, uint length, out uint needed);
+  [DllImport("wtsapi32.dll", EntryPoint="WTSQuerySessionInformationW")] static extern bool WTSQuerySessionInformation(IntPtr server, int session, int info, out IntPtr data, out int bytes);
+  [DllImport("wtsapi32.dll")] static extern void WTSFreeMemory(IntPtr data);
+  static string DesktopInput(IntPtr handle) {
+    int value; uint needed;
+    if(handle == IntPtr.Zero || !GetUserObjectInformation(handle,6,out value,4,out needed) || needed != 4) return "unavailable";
+    return value == 0 ? "no" : "yes";
+  }
+  public static string ProbeDesktopInput() {
+    try { return DesktopInput(GetThreadDesktop(GetCurrentThreadId())); } catch { return "unavailable"; }
+  }
+  public static string TargetDesktopInput(IntPtr handle, uint rootPid) {
+    try {
+      if(handle == IntPtr.Zero || rootPid == 0) return "unavailable";
+      uint owner; uint thread = EasyedaUiController.GetWindowThreadProcessId(handle,out owner);
+      if(thread == 0 || owner != rootPid) return "unavailable";
+      // GetThreadDesktop returns a borrowed handle. Never close it.
+      return DesktopInput(GetThreadDesktop(thread));
+    } catch { return "unavailable"; }
+  }
+  public static string InputDesktopInput() {
+    IntPtr handle = IntPtr.Zero;
+    try {
+      handle = OpenInputDesktop(0,false,1); // DESKTOP_READOBJECTS only.
+      return DesktopInput(handle);
+    } catch { return "unavailable"; }
+    finally { if(handle != IntPtr.Zero) CloseDesktop(handle); }
+  }
+  public static Dictionary<string,string> Session(int sessionId) {
+    var result = new Dictionary<string,string>{{"connectState","unavailable"},{"lockState","unavailable"}};
+    if(sessionId < 0 || IntPtr.Size != 8) return result;
+    IntPtr data = IntPtr.Zero;
+    try {
+      int bytes;
+      if(!WTSQuerySessionInformation(IntPtr.Zero,sessionId,25,out data,out bytes) || data == IntPtr.Zero || bytes < 232 || bytes > 4096) return result;
+      // Check the level before interpreting its union, and bind the returned ID.
+      if(Marshal.ReadInt32(data) != 1) return result;
+      var prefix = (SessionPrefix)Marshal.PtrToStructure(data,typeof(SessionPrefix));
+      if(prefix.SessionId != (uint)sessionId) return result;
+      string[] states = {"active","connected","connect-query","shadow","disconnected","idle","listen","reset","down","initializing"};
+      result["connectState"] = prefix.State >= 0 && prefix.State < states.Length ? states[prefix.State] : "unknown";
+      // Windows 7/Server 2008 R2 invert these flags. Do not guess on old hosts.
+      var version = Environment.OSVersion.Version;
+      result["lockState"] = version.Major < 6 || (version.Major == 6 && version.Minor < 2) ? "unknown" : prefix.Flags == 0 ? "locked" : prefix.Flags == 1 ? "unlocked" : "unknown";
+    } catch { return result; }
+    finally { if(data != IntPtr.Zero) WTSFreeMemory(data); }
+    return result;
+  }
+}
 '@
   [void][EasyedaUiController]::SetProcessDPIAware()
   function Window-Pid([IntPtr]$handle) {
@@ -119,7 +201,11 @@ public static class EasyedaUiController {
       }
     }
     $target.Refresh()
-    $result = @{windows=$rows;mainWindowHandle=$target.MainWindowHandle.ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture)}
+    $diagnosticHandle = [IntPtr]::Zero
+    foreach ($row in $rows) { if ($row.pid -eq $request.rootPid) { $diagnosticHandle = [IntPtr][long]$row.handle; break } }
+    $targetSessionId = -1
+    try { $targetSessionId = $target.SessionId } catch {}
+    $result = @{windows=$rows;mainWindowHandle=$target.MainWindowHandle.ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture);desktopStatus=(Get-DesktopStatus $targetSessionId $diagnosticHandle)}
   } else {
     if ($request.windowHandle -isnot [string] -or $request.windowHandle -cnotmatch '^[1-9][0-9]{0,18}$') { throw 'window-format' }
     $windowHandle = [IntPtr][long]$request.windowHandle

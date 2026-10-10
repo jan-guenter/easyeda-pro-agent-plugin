@@ -77,9 +77,9 @@ export class LibraryRecoveryCoordinator {
     assertSubset(status.stableFingerprint, fingerprint, "Library recovery runtime");
     const installed = await this.engine.upstream.installedEasyedaBundles?.();
     if (installed === undefined) { throw new Error("Library recovery native implementation is unavailable."); }
-    const device = ["library.device.create", "library.device.modify", "library.device.model-transform", "library.symbol.modify"].includes(journal.plan.operation.action);
+    const device = ["library.device.create", "library.device.modify", "library.device.model-transform", "library.symbol.modify", "document.page.rename"].includes(journal.plan.operation.action);
     await (device ? this.services.verifyDeviceAssociationNativeProfile(installed.assetsRoot) : this.services.verifyLibraryNativeProfile(installed.assetsRoot));
-    if (journal.plan.operation.action === "document.activate") { await this.services.verifySchematicNativeProfile(installed.assetsRoot); }
+    if (journal.plan.operation.action === "document.activate" || journal.plan.operation.action === "document.page.rename" || journal.plan.operation.action === "library.symbol.modify") { await this.services.verifySchematicNativeProfile(installed.assetsRoot); }
     if (requireContext) { await this.engine.assertContext(structuredClone(journal.context)); }
     return installed.assetsRoot;
   }
@@ -182,18 +182,21 @@ export class LibraryRecoveryCoordinator {
         if (journal.devicePlan !== undefined && canonicalJson(journal.devicePlan) !== canonicalJson(preparedDevice)) { throw new Error("Journal and original prepared device artifact disagree."); }
         const preparedSymbol = kind === "project-symbol-metadata" ? await readLibraryRecoveryArtifact(uniqueLibraryRecoveryArtifact(journal.artifacts, "symbol-prepared"), this.services.readArtifact) : undefined;
         if (journal.symbolPlan !== undefined && canonicalJson(journal.symbolPlan) !== canonicalJson(preparedSymbol)) { throw new Error("Journal and original prepared symbol artifact disagree."); }
+        const preparedPageRename = kind === "project-page-rename" ? await readLibraryRecoveryArtifact(uniqueLibraryRecoveryArtifact(journal.artifacts, "page-rename-prepared"), this.services.readArtifact) : undefined;
+        if (journal.pageRenamePlan !== undefined && canonicalJson(journal.pageRenamePlan) !== canonicalJson(preparedPageRename)) { throw new Error("Journal and original prepared page rename artifact disagree."); }
         const verified = verifyRecoveredLibraryMutation({ operation: journal.plan.operation, before, after, nativeReturn,
           ...(journal.mutationReceipt === undefined ? {} : { retainedReceipt: journal.mutationReceipt }), ...(preparedDevice === undefined ? {} : { preparedDevice }),
-          ...(preparedSymbol === undefined ? {} : { preparedSymbol }) });
+          ...(preparedSymbol === undefined ? {} : { preparedSymbol }), ...(preparedPageRename === undefined ? {} : { preparedPageRename, expectedContext: journal.plan.expectedContext }) });
         journal.mutationReceipt = verified.receipt;
         result = { kind, proof: verified.proof, createdId: verified.receipt.createdId, persistence: "complete-project-checkpoint-records-verified",
           actionRepeated: false, saveInvoked: false, closeInvoked: false, reopened: false,
-          ...(kind === "project-symbol-metadata" ? { currentGenerationLiveValidated: false } : {}) };
+          ...(kind === "project-symbol-metadata" || kind === "project-page-rename" ? { currentGenerationLiveValidated: false } : {}) };
       }
       await this.runtime(journal);
       if (sourceHash(await this.engine.exactRead({ kind: sourceKind(journal.context) }, journal.context)) !== journal.beforeSourceSha256) { throw new Error("Active source changed during library reconciliation."); }
       const final = await this.engine.checkpoint({ receiptPath: afterReceipt.receiptPath });
       assertUnchangedLibraryCheckpoint(final, afterReceipt, "Reconciled durable library evidence changed before completion or its checkpoint verification failed.");
+      if (journal.plan.operation.action === "document.page.rename" || journal.plan.operation.action === "library.symbol.modify") { await this.engine.assertContext(structuredClone(journal.context)); }
       journal.finalCheckpoint = afterReceipt; journal.result = result; journal.hardStop = false;
       journal.state = unchanged ? "reconciled-no-mutation" : "completed";
       journal.mutationState = unchanged ? "before" : "after"; journal.mutationMayHaveOccurred = !unchanged;

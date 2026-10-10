@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { assertExpectedFingerprint, canonicalJson, normalizeEasyedaProjectPath, sha256Json } from "./core.ts";
 import { parseDocumentSource } from "./document-source.ts";
-import { assertExactTransportValue } from "./exact-readers.ts";
+import { assertExactTransportValue, validateExactReadPayload } from "./exact-readers.ts";
 import { validatePublicSdkReadPayload, validatePublicSdkReadRequest } from "./public-sdk-read.ts";
 import type { PublicSdkReadRequest } from "./public-sdk-read.ts";
 
@@ -11,7 +11,7 @@ const documentType = z.union([z.literal(1), z.literal(2), z.literal(3), z.litera
 const stepSchema = z.object({ id: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/u), request: z.unknown() }).strict();
 const contextSchema = z.object({
   project: z.object({ uuid: text, path: text }).strict(),
-  document: z.object({ uuid: text, documentType, tabId: text }).strict(),
+  document: z.object({ uuid: text, documentType, tabId: text, parentProjectUuid: text.optional(), parentLibraryUuid: text.optional() }).strict(),
 }).strict();
 const planSchema = z.object({
   schema: z.literal("easyeda-pro-control.disposable-sdk-validation-plan.v1"),
@@ -66,6 +66,11 @@ export function parseDisposableSdkValidationPlan(input: unknown): DisposableSdkV
   assertExpectedFingerprint(plan.expectedFingerprint);
   const path = normalizeEasyedaProjectPath(plan.expectedContext.project.path);
   if (normalizeEasyedaProjectPath(plan.fixture.projectPath) !== path || plan.fixture.projectUuid !== plan.expectedContext.project.uuid) { throw new Error("Disposable fixture and expected project identity differ."); }
+  const document = plan.expectedContext.document;
+  if (document.parentProjectUuid !== undefined && document.parentProjectUuid !== plan.fixture.projectUuid) { throw new Error("Document parent and disposable project identity differ."); }
+  if ([2, 4].includes(document.documentType) && (document.parentLibraryUuid === undefined || document.tabId !== `${document.uuid}@${plan.fixture.projectUuid}`)) {
+    throw new Error("Library validation requires the observed library owner and exact project-library tab.");
+  }
   if (new Set(plan.steps.map((step) => step.id)).size !== plan.steps.length) { throw new Error("Validation step IDs must be unique."); }
   const steps = plan.steps.map((step) => ({ id: step.id, request: validatePublicSdkReadRequest(step.request, plan.expectedContext.document.documentType) }));
   return structuredClone({ ...plan, steps });
@@ -107,11 +112,13 @@ function stablePayload(value: unknown, sdk = false): Record<string, unknown> {
 function sourceProof(value: unknown, plan: DisposableSdkValidationPlan): string {
   const payload = stablePayload(value);
   const type = plan.expectedContext.document.documentType;
-  const parsed = z.object({ ok: z.literal(true), kind: z.literal(sourceKind(type)), documentType: z.literal(type), source: z.string().min(1).max(3 * 1024 * 1024), utf8Bytes: z.number().int().positive(),
-    authority: z.object({ source: z.literal("sys_FileManager.getDocumentSource") }).strict() }).catchall(z.unknown()).parse(payload);
-  if (Buffer.byteLength(parsed.source, "utf8") !== parsed.utf8Bytes) { throw new Error("Source read byte count differs."); }
+  validateExactReadPayload(payload, { kind: sourceKind(type) });
+  const parsed = z.object({ source: z.string() }).catchall(z.unknown()).parse(payload);
   const snapshot = parseDocumentSource(parsed.source);
-  const expectedDocType = new Map([[1, "SCH_PAGE"], [2, "SYMBOL"], [3, "PCB"], [4, "FOOTPRINT"]]).get(type);
+  // The pinned footprint editor exports PCB, not its durable FOOTPRINT type.
+  // Facade context checks bind editor type, UUID, project-library tab and owner.
+  // Never rewrite this header or its source hash.
+  const expectedDocType = new Map([[1, "SCH_PAGE"], [2, "SYMBOL"], [3, "PCB"], [4, "PCB"]]).get(type);
   if (snapshot.document["uuid"] !== plan.expectedContext.document.uuid || snapshot.document["docType"] !== expectedDocType || snapshot.sha256 !== plan.baselineSourceSha256) {
     throw new Error("Source read is not the exact unchanged disposable document.");
   }

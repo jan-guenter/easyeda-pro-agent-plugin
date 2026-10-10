@@ -6,6 +6,38 @@ Last updated: 2026-10-10 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+- Latest continuation loads the installed `144459` facade without owner
+  termination or cache changes. Its authenticated bridge and exact bundled
+  fingerprint match the published candidate; there are no incomplete
+  operations. The context probe observes Start Page with no current project.
+  Initially focus reported HWND zero and input/capture refused.
+  Read-only Windows evidence showed the same active, unlocked RDP
+  session for the helper and application, with no input desktop reported by
+  `UOI_IO`. Different console/RDP session IDs alone do not establish a fault.
+  After the user restored the visible RDP client, focus and a reviewed native
+  capture succeeded. The empty Start Page instance was closed normally without
+  Save/Discard and native discovery proved exit. A retained-job instance was
+  launched and authenticated. Disposable PCB open, two stable SDK layer reads
+  and footprint open completed with unchanged source/full saved database.
+  One activation refused and was reconciled as no mutation without retry or
+  Save. EasyEDA then closed normally; native discovery was empty and standalone
+  exact checkpoint verification proved the disposable file unchanged. No input guard or
+  session/security setting was changed. Only the existing disposable
+  validation database was checkpointed and decoded for fixture planning.
+  No production project was opened, read, changed, saved or restored.
+- Candidate `172121` source is built and fully verified, not yet published,
+  installed or live-writer-validated:
+  concrete additional getter omission reasons, a closed-page rename adapter,
+  footprint validation-runner corrections and native desktop diagnostics.
+  Keep the loaded candidate and this work-in-progress distinct.
+  The [live continuation](docs/api-coverage-live-continuation-2026-10-10.md)
+  records these scoped observations, refusal/recovery and pending release.
+- Final local verification:1375 facade tests pass/one platform skip/zero
+  failures or cancellations,424 bridge tests; strict types/type-aware lint,
+  all seven skills, package/repository/privacy/actionlint/doctor clean.
+  Independent final review passes137 focused tests. Source143files54279794,
+  bundle84c2f435; external/bridge/sanitizer pins unchanged. Publication and
+  installation pending; do not use the loaded144459 symbol writer.
 - Post-restart continuation supersedes the loaded-host statements below:
   `135410` was authenticated against its exact source/bundle/native tuple with
   no incomplete operation. Native discovery found an infinite minimized-window
@@ -246,7 +278,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed Git-marketplace candidate is `0.3.0+codex.20261010144459`, with 26 tools and seven skills, from the draft feature ref. This chat's loaded host generation is still `135410`, authenticated after the earlier supported restart. Installation does not reload it: start a fresh chat before live work. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate the current facade generation.
+- The installed and loaded Git-marketplace candidate is `0.3.0+codex.20261010144459`, with 26 tools and seven skills, from the draft feature ref. Its scoped disposable read/navigation/recovery evidence is recorded above. EasyEDA is now closed; candidate `172121` is being verified and is not yet installed. Installation does not reload the host: start a fresh chat after an update. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

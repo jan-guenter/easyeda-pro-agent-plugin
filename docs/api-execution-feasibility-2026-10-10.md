@@ -41,7 +41,7 @@ method twice because of overloads, nor count a schema as live validation.
 
 | Action or exact action group | Concrete reason it cannot use the existing executor unchanged | Implementation needed |
 |---|---|---|
-| `library.symbol.modify` | The installed UI destructures an omitted classification argument without a default. It also takes the existing title from a normalized search title, which can change mixed-case display names during description-only updates. | Implemented in the tracked executor for closed ordinary project-local symbols, using the exact display title and a fixed empty classification object. Complete project and recovery proofs are integrated; current-generation disposable saved/reopened validation remains unclaimed. |
+| `library.symbol.modify` | The public wrapper's awaited current-project comparison can redirect a local write to a cloud library. Its classification and default-title projections can also alter unrelated metadata. | Implemented as a fixed project-qualified native task equivalent for closed ordinary symbols, preserving exact display title and stored tags. Complete project and recovery proofs are integrated; current-generation disposable saved/reopened validation remains unclaimed. |
 | `library.symbol.create` | The public method calls the symbol service, which generates metadata and obtains initial canvas data. Ordinary symbols and sheet-symbol templates use different paths. The footprint verifier admits only FOOTPRINT records, so it cannot certify the generated symbol/part records. | Bind the requested ordinary type, exact generated template, returned UUID, native header and every new record. Add type-specific creation proofs before expanding to flags, ports or sheet symbols. |
 | `library.symbol.delete`, `library.footprint.delete`, `library.device.delete` | UI deletion runs dependency-aware library deletion logic. A success Boolean does not identify every changed device, inherited instance or tombstone. The current footprint/device proofs admit additions or exact patches, not deletion closure. | Inventory every dependant before dispatch, refuse nonempty unapproved closure, retain deleted records and verify exact tombstones plus all peer documents. A restore procedure is separate from ordinary rollback. |
 | `library.symbol.copy`, `library.footprint.copy`, `library.device.copy` | Copy can migrate canvas data and associated assets to another collection. The current journal retains only the existing create/association models and lacks a complete mapping of copied descendants. | Restrict initial support to explicit project-local targets, retain all returned and generated identities, compare copied geometry/associations, and prove no other assets changed. |
@@ -54,7 +54,8 @@ method twice because of overloads, nor count a schema as live validation.
 | `document.close` | Close can open a Save/Discard prompt or trigger late persistence. A returned Boolean does not prove a clean close. | Prove the exact tab is clean, retain one close dispatch, observe its removal and native prompts without selecting Save/Discard, then verify unchanged durable records. |
 | `document.pcb.create`, `document.schematic.create`, `document.page.create` | Creation assigns native identities and may change board/container records. The pinned create methods accept a board name or parent schematic, not a new document title. The existing strict schema correctly omits a document-name field. | Retain the complete creation inventory and exact native defaults. If a caller wants a chosen title, journal a subsequent returned-ID-bound rename, with exact inventory deltas for both steps. |
 | `document.pcb.copy`, `document.schematic.copy`, `document.page.copy` | Copies clone source, pages, IDs and parent membership, beyond the current single-document patch proof. The strict copy schemas expose target/parent scope, not a new document title. | Retain the copied hierarchy and identity mapping, then separately rename if requested. Check every copied source and all untouched documents. |
-| `document.pcb.rename`, `document.schematic.rename`, `document.page.rename` | Public methods exist, but the generic library executor has no lifecycle metadata-delta profile. Names appear in saved META records and editor/container state. | Add exact target/parent binding, duplicate-name checks, metadata-only history proof, bounded context observation and one-save recovery where required. This is feasible; no SDK absence justifies omitting it permanently. |
+| `document.page.rename` | Implemented as a project-qualified native task equivalent. The public wrapper retains a mutable tree-row index across awaited work, which can select a different document. | Closed ordinary checkpoint-member page, one clean active sibling, writable local non-V2 branch only. Exact title/header effect and all peer/source invariants; no Save, reopen or UI-caption refresh claim. Disposable connected validation remains pending. |
+| `document.pcb.rename`, `document.schematic.rename` | Their native handlers also update paired CBB/container state and can call document-opening logic. The page-only effect profile does not cover those changes. | Add complete counterpart/container inventory and open-document effect profiles, duplicate-name checks and original-journal recovery. Public method availability does not establish those effects. |
 | `document.pcb.delete`, `document.schematic.delete`, `document.page.delete` | Deletion changes document hierarchy and can remove descendant pages or board associations. The current persistence comparison requires those peer documents to remain unchanged. | Authorize the exact deletion closure and prove only its tombstones and parent references changed. Retain a recoverable project backup; do not label a new empty document an inverse. |
 | `document.pcb.save`, `document.schematic.save` | A standalone Save would bypass the design transaction's pre-dispatch intent and saved/reopened source proof. A second Save after an ambiguous first one is unsafe. | Route saving through the maintained design commit lifecycle. Supporting a general Save requires an original-journal-bound intent and exact pre-save source/durable expectations, not a new Boolean-return endpoint. |
 | `project.rename`, `project.description.modify`, `project.copy`, `project.delete` | The corresponding pinned public implementations are empty or return false. | A dedicated native adapter or deliberate newer-runtime review is required. Merely exposing the method cannot make these pinned bodies work. |
@@ -80,16 +81,17 @@ supports exact project-local name and non-null description patches. Creation,
 classification, source replacement and external library edits retain their
 separate omission reasons.
 
-The installed UI class method `VL.modify` in the hash-pinned UI source
-constructs metadata from the
-existing symbol, takes the search title as its default and destructures
-classification before its guarded update. The adapter supplies the checkpoint
-display title even for a description-only patch and supplies an internal empty
-classification object. It preserves the method receiver. The footprint method
-already defaults classification to an empty object; it does not have this
-particular omission defect. The newer official contract still makes
-classification optional, which is why checking only its declaration would miss
-the installed bug. [Official symbol modifier](https://prodocs.easyeda.com/en/api/reference/pro-api.lib_symbol.modify.html).
+The installed public `VL.modify` wrapper takes a normalized search title as its
+default and reprojects classification. More importantly, it awaits metadata
+retrieval before comparing the requested project with mutable `currentProject`.
+A project switch during that await can route the write to a cloud/personal
+library. Checks around the entire call cannot close that internal race.
+The replacement uses the fixed project-qualified `/PrjDB/symbol/updateData`
+worker path, not the public modifier, and therefore is a native task equivalent.
+It supplies the exact checkpoint display title and requested description while
+preserving stored tags. The documented optional classification argument alone
+does not describe these implementation hazards.
+[Official symbol modifier](https://prodocs.easyeda.com/en/api/reference/pro-api.lib_symbol.modify.html).
 
 The project worker's `gg` symbol manager maps native metadata into its stored
 META record using `title`, numeric `docType`, `tags`, `description` and `source`.
@@ -97,7 +99,10 @@ Its getter separately derives normalized search and display titles. The
 adapter therefore requires stored `META.docType === 2`, not an invented
 `symbolType` field. It compares the supplied complete before/after histories,
 allows only requested META title/description changes and the reviewed edit
-header fields, and preserves every other record. This is a local comparison,
+header fields, and preserves every other record. Unknown serialized META or
+DOCHEAD keys refuse before writing. The serializer drops the captured undefined
+`user` and rewrites client/time/version; only that deterministic removal is
+admitted, with the existing editor version bound before dispatch. This is a local comparison,
 not a claim that the histories came from verified checkpoint receipts. This pure
 helper reports `effectVerified` and `persistenceEvidence`, never `saved:true`.
 The executor obtains both histories from its maintained checkpoint path, waits
@@ -107,7 +112,7 @@ separate editor reopen.
 
 The focused regressions cover rejected families and raw fields, normalized
 name collisions, geometry/binding/peer/header changes, the display-title and
-classification fixes, owner/context drift across an awaited read, false
+native routing and tag preservation, owner/context drift across an awaited read, false
 acknowledgment and a throwing writer. Failure after a writer invocation consumes
 one invocation; the generated program never retries. Tests use synthetic
 history and API doubles. They are not connected validation.
@@ -131,6 +136,7 @@ across every document, including devices and placed instances. A helper builds
 an inverse operation only after the supplied full histories prove the forward
 effect. The inverse requires a new transaction and fresh checkpoint;
 it is never an implicit retry, database restoration or same-journal mutation.
+An inverse restores requested metadata, not the serializer's removed header user.
 
 ### Disposable acceptance still required
 
@@ -162,6 +168,38 @@ symbol metadata support. The executor currently reports
 `currentGenerationLiveValidated:false` and `reopened:false`; a registered
 operation does not establish either claim.
 
+## Implemented closed-page rename transaction
+
+`document-page-rename.ts` derives a complete immutable plan from the retained
+checkpoint. It admits an ordinary closed `SCH_PAGE` and one clean active sibling
+under the same `SCH`; hierarchical instances, CBB assets, inherited source,
+unknown META/DOCHEAD fields and unsupported symbols are refused before dispatch.
+Both server normalization and the installed UI's locale-aware comparison check
+the complete bounded sibling-title set.
+
+The pinned public setter crosses an await with a mutable left-tree index. The
+adapter instead awaits its project-qualified `/PrjDB/sheet/updateData` path
+once. Native branch, owner, version, history and concurrent-design permission
+checks run immediately before that dispatch. Two native dirty-state methods
+must return false; a pristine tab may omit its dirty field, but malformed or
+contradictory values refuse. Every native metadata read is followed by context
+reproof.
+
+The worker serializer removes the old DOCHEAD `user` because the sheet handler
+captures an undefined user during construction. It updates client/time/version
+and writes the editor version. The adapter admits only that exact actor-field
+removal, requires the editor version already to match, and preserves all other
+header fields. The only allowed design-record change is the requested META
+title. The metadata inverse is a separately authorized transaction, not a byte
+restoration of old header bookkeeping.
+
+The executor retains preparation and native-return artifacts, checks complete
+project history and active source, then rechecks the final checkpoint/context.
+Recovery rederives the original plan and requires its original acknowledgment;
+it never repeats the native call or Save. Durable title verification does not
+prove visible tree-caption refresh or reopen. Tests cover the real sealed
+journal executor/recovery with synthetic native data, not a connected writer.
+
 ## Other SDK groups
 
 The method-level catalog is the appropriate place for the complete mounted
@@ -185,6 +223,73 @@ and topic-based [message bus APIs](https://prodocs.easyeda.com/en/api/reference/
 The file APIs explicitly include arbitrary filesystem reading, writing and
 deletion, not only export downloads.
 [Official filesystem reference](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_filesystem.html).
+
+### Remaining local getter implementation review
+
+A further read-only review of the pinned installed code found specific defects
+beyond the generic class-instance serialization limitation. These methods remain
+omitted. No execution status or live-validation count changes because of this
+review.
+
+- In `pro-api/0.2.53.aee2f57a/api.js`, `SCH_PrimitiveBus.get` and `getAll`,
+  and `SCH_PrimitiveWire.get` and `getAll`, catch RPC exceptions. The singular
+  getters return `undefined` without a retained result; enumeration returns an
+  empty array. These failures are indistinguishable from missing objects. The
+  class getters themselves are simple projections, but that does not repair the
+  wrapper's lost error evidence.
+- The same file's `s0` text wrapper publishes `api/getText` or `api/getAllText`
+  and returns a callback-populated local without awaiting completion. Its
+  singular array overload filters undefined entries. All three text readers,
+  including `getAllPrimitiveId`, need an awaited, bounded native projection.
+- The public PCB point, region and all-selected wrappers skip native `Text`
+  and default switch cases. Point lookup returns the first surviving mapped
+  item, which need not be the first native hit. Region and selection results
+  can be incomplete even when two samples match. Generic class serialization
+  and active-context checks cannot reconstruct identities already discarded.
+- In `pro-pcb/3.2.149.5378b690/js/pcb.js`, the
+  `pcb/extensionAPI/pcbnet-getAllPrimitivesByNet` handler assigns `c = l.model`
+  and checks `primitiveTypes.indexOf(c)`. The documented filter contains enum
+  values, not model objects, so a nonempty filter drops matches. With an absent
+  or empty filter the handler projects `my(l)`, native DTOs whose fields and
+  units differ by family, instead of constructing the declared SDK classes.
+  `my` invokes family-specific `toJSON` methods and therefore needs a complete
+  delegated-serializer review before admission. The official method still
+  declares an optional primitive-type filter and primitive-object array.
+  [Official net membership getter](https://prodocs.easyeda.com/en/api/reference/pro-api.pcb_net.getallprimitivesbynet.html).
+
+The public API source SHA-256 is
+`5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc`,
+already pinned by `public-sdk-read.ts`. Review anchors are the Bus getter RPC
+strings, Wire getter RPC strings, class `s0`, the PCB point/region methods,
+`getAllSelectedPrimitives`, and the native net-handler topic above. These
+findings justify narrower implementation work, not permanent infeasibility.
+
+The next small local-read increment is the editor split-screen lookup pair.
+The pinned UI's `S2.getSplitScreenIdByTabId` calls `fe.getTabContainer`, a
+container lookup. `S2.getTabsBySplitScreenId` filters the container's tabs and
+deep-clones them. Neither path navigates, activates a tab or saves. However,
+`getFilterTabs` returns an empty array when a requested container is missing,
+and the returned raw tab data can describe unrelated projects. Official docs
+also allow an empty result for a non-leaf split-screen node.
+[Tab lookup](https://prodocs.easyeda.com/en/api/reference/pro-api.dmt_editorcontrol.getsplitscreenidbytabid.html),
+[split-screen lookup](https://prodocs.easyeda.com/en/api/reference/pro-api.dmt_editorcontrol.gettabsbysplitscreenid.html).
+
+Implementation should bind a complete saved-project member set, reuse the
+activation adapter's strict tree/owner validation, require one unique existing
+nonempty leaf or one unique owned tab, and compare the direct method result
+with the tree before and after the lookup. Return only reviewed identity/type/
+parent fields, not raw tab data. Missing containers, unknown owners, duplicate
+tab identities, changed tree membership and unsupported document types must
+refuse. The current SDK-read engine supplies authenticated runtime admission,
+quarantine, bounded serialization, active-context checks and two matching
+observations. It does not supply these cross-tab ownership and completeness
+proofs; merely adding `string` or `records` descriptors is insufficient.
+
+These lookups help choose an exact already-open disposable tab. They do not
+create a fixture or solve Start Page setup: the SDK-read path accepts only
+document types 1 through 4 and requires an active design context. Broader
+Start Page inspection belongs in the separately process-bound native/editor
+bootstrap workflow, without weakening the design reader's context guard.
 
 ## Exports and practical limits
 
