@@ -90,12 +90,23 @@ Most routes are public SDK observations. Three ID-only routes are explicitly
 classified as `native-task-equivalent`: schematic Text, Wire and Bus
 `getAllPrimitiveId`. They accept only `arguments:{}` on the exact active ordinary
 type-1 page. Wire net filters and symbol/block-instance scenes are refused.
-Complete source-ID, model-family and ID-index agreement is required. Wire and Bus
+The complete connected model tree must agree with the ID index; returned family
+members must be source-backed direct root children. Generated drawing-frame Text
+descendants are not standalone Text IDs. Structural GROUP source records remain
+unsupported and refuse the observation rather than returning a partial list. Wire and Bus
 IDs identify groups, not LINE children. These routes avoid the public callbacks
 and compiler-backed wire/bus getters; they do not serialize source or invoke Save.
 Their native-only authority labels distinguish them from public SDK projections.
 New connected validation remains pending. The older public-SDK validation runner
 rejects these native routes before any dispatch; it is not their test runner.
+
+`eda.pcb_MathPolygon.splitPolygon` accepts JSON `complexPolygons`: one to eight
+groups, each a source array or one to eight source arrays, each at most 1024 tokens.
+Shared aggregate bounds still apply. The facade constructs temporary SDK objects
+and returns source arrays, preserving order and duplicates; no reusable handle
+or CAD object is created. This pure subset is offline-tested, not connected-
+validated. The installed `discretize` method throws `Not implemented`; a newer
+declaration does not make it executable on this runtime.
 
 Neither public results nor native ID observations replace complete native-source,
 connectivity, lock, collateral or saved-project proof in a design transaction.

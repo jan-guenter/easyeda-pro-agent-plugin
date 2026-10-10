@@ -2,6 +2,7 @@ import { deviceFailureCategory } from "./device-runtime-guard.ts";
 import { libraryRuntimeFailureCategory } from "./library-runtime-guard.ts";
 import { projectUploadBarrierFailureCategory } from "./project-upload-barrier.ts";
 import { METADATA_NATIVE_GUARD_CODES } from "./metadata-native-diagnostics.ts";
+import { SCHEMATIC_NATIVE_ID_GUARD_CODES, SCHEMATIC_NATIVE_ID_METHODS } from "./schematic-native-ids.ts";
 
 /** Fixed literal errors emitted by reviewed code builders. Never echo unknown
  * native exception text, dynamic suffixes, stack traces or caller values.
@@ -188,9 +189,15 @@ const activationPreferenceCategories = new Map<string, string>(["preferences", "
     .map((code) => [`Document activation refused: ${stage}:${code}`, `native-document-activation:${stage}:${code}`] as const)));
 const metadataGuardCategories = new Map<string, string>(operationStages.filter(({ category }) => category === "native-page-rename" || category === "native-symbol-metadata")
   .flatMap(({ prefix, category, stages }) => stages.flatMap((stage) => METADATA_NATIVE_GUARD_CODES.map((code) => [`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`] as const))));
+const schematicIdCategories = new Map<string, string>(SCHEMATIC_NATIVE_ID_METHODS.flatMap((method) =>
+  [...SCHEMATIC_NATIVE_ID_GUARD_CODES.map((code) => [`SCH_NATIVE_IDS_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
+      `native-schematic-ids:${method}:${label}`] as const)));
 
 export function nativeFailureCategory(message: unknown): string | null {
   if (typeof message !== "string") { return null; }
+  const schematicIdCategory = message.length <= 256 ? schematicIdCategories.get(message) : undefined;
+  if (schematicIdCategory !== undefined) { return schematicIdCategory; }
   const operationStageCategory = message.length <= 128 ? operationStageCategories.get(message) : undefined;
   if (operationStageCategory !== undefined) { return operationStageCategory; }
   const activationPreferenceCategory = message.length <= 128 ? activationPreferenceCategories.get(message) : undefined;

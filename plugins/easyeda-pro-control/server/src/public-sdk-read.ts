@@ -38,7 +38,7 @@ const layerImageSchema = layer(layerImage).optional();
 const optionalLock = z.boolean().optional();
 const optionalNet = text.optional();
 
-type OutputKind = "json" | "string" | "number" | "boolean" | "strings" | "ids" | "records" | "record" | "bbox" | "point" | "origin" | "primitive" | "polygon";
+type OutputKind = "json" | "string" | "number" | "boolean" | "strings" | "ids" | "records" | "record" | "bbox" | "point" | "origin" | "primitive" | "polygon" | "polygons";
 interface ReadDefinition {
   implementationKind: "public-method" | "native-task-equivalent";
   path: string;
@@ -145,6 +145,8 @@ for (const method of ["convertCanvasOriginToDataOrigin", "convertDataOriginToCan
 }
 const boundedPolygon = polygonSourceSchema.max(1024);
 const boundedComplexPolygon = z.union([boundedPolygon, z.array(boundedPolygon).min(1).max(8)]);
+const splitPolygonGroups = z.array(boundedComplexPolygon).min(1).max(8);
+const SPLIT_POLYGON_METHOD = "eda.pcb_MathPolygon.splitPolygon";
 for (const method of ["calculateWidth", "calculateHeight", "calculateBBoxHeight", "createComplexPolygon"]) {
   add(`eda.pcb_MathPolygon.${method}`, ALL_DOCUMENTS, method === "createComplexPolygon" ? "polygon" : "number",
     z.object({ complexPolygon: boundedComplexPolygon }).strict(), ["complexPolygon"], { optionalResult: method === "createComplexPolygon", parameterSupport: "narrowed",
@@ -152,6 +154,9 @@ for (const method of ["calculateWidth", "calculateHeight", "calculateBBoxHeight"
 }
 add("eda.pcb_MathPolygon.createPolygon", ALL_DOCUMENTS, "polygon", z.object({ polygon: boundedPolygon }).strict(), ["polygon"], { optionalResult: true, parameterSupport: "narrowed",
   limitations: ["JSON polygon array only, at most 1024 tokens. Constructor returns serialized getSource data, not a reusable native object."] });
+add(SPLIT_POLYGON_METHOD, ALL_DOCUMENTS, "polygons", z.object({ complexPolygons: splitPolygonGroups }).strict(), ["complexPolygons"], { restParameter: "complexPolygons", parameterSupport: "narrowed",
+  limitations: ["JSON source arrays only: 1–8 complex-polygon groups, 1–8 polygons per group and at most 1024 tokens per polygon, additionally subject to the shared 16384-node/131072-character input limits.",
+    "Constructs only temporary SDK complex polygons, calls the fixed public splitPolygon and returns getSource arrays with exact input order, duplicates and source parity. No caller objects or native handles; public geometry data only, not a CAD or connectivity proof."] });
 add("eda.pcb_Document.getCalculatingRatlineStatus", [3], "string");
 add("eda.pcb_Document.getCurrentFilterConfiguration", PCB_DOCUMENTS, "record", emptyArguments, [], { optionalResult: true });
 for (const method of ["getAllNetClasses", "getAllEqualLengthNetGroups", "getAllPadPairGroups", "getNetRules", "getRegionRules"]) { add(`eda.pcb_Drc.${method}`, [3], "records"); }
@@ -184,7 +189,8 @@ for (const method of SCHEMATIC_NATIVE_ID_METHODS) {
   add(method, [1], "ids", emptyArguments, method.includes("PrimitiveWire") ? ["net"] : [], {
     implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [
       "Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused.",
-      "Complete bounded Text/NetGroup source-inventory, model-map and ID-index identity agreement is required. Wire/bus IDs identify groups, not their LINE children. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save.",
+      "Complete bounded connected-tree/ID-index agreement and direct-root Text/NetGroup source/model membership are required. Generated or inherited descendant Text is not a root Text entry. Wire/bus IDs identify groups, not their LINE children.",
+      "Structural GROUP records owned by combinationManager are unsupported because they have no ID-index model; their presence refuses the entire read. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save.",
       "Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
     ],
   });
@@ -334,7 +340,7 @@ export function publicSdkReadDescriptors(): PublicSdkReadDescriptor[] {
     parameterSupport: entry.parameterSupport, limitations: [...entry.limitations],
     implementation: { kind: entry.implementationKind,
       source: `server/src/${readImplementationName(entry.path)}.ts`,
-      test: `server/tests/${readImplementationName(entry.path)}.test.ts`, publicApiSha256: PUBLIC_SDK_READ_API_SHA256 },
+      test: `server/tests/${entry.path === SPLIT_POLYGON_METHOD ? "public-sdk-polygon-split" : readImplementationName(entry.path)}.test.ts`, publicApiSha256: PUBLIC_SDK_READ_API_SHA256 },
     liveValidation: "not-yet-validated", parameters: [...entry.parameters], membership: entry.membership === undefined ? null : { ...entry.membership }, restParameter: entry.restParameter ?? null,
     result: { kind: entry.output, optional: entry.optionalResult, getterFields: [...entry.getters], primitiveType: entry.primitiveType ?? null } }));
 }
@@ -343,6 +349,44 @@ function readImplementationName(path: string): string {
   if (isSchematicNativeIdMethod(path)) { return "schematic-native-ids"; }
   if (isEditorTabLookupMethod(path)) { return "editor-tab-lookups"; }
   return "public-sdk-read";
+}
+
+function normalizedSplitPolygonGroups(value: unknown): z.infer<typeof boundedPolygon>[][] {
+  return splitPolygonGroups.parse(value).map((group) => {
+    if (Array.isArray(group[0])) { return z.array(boundedPolygon).min(1).max(8).parse(group); }
+    return [boundedPolygon.parse(group)];
+  });
+}
+
+/** Only facade-created SDK objects reach this synchronous pure method chain.
+ * The independent expected literal is not shared with mutable constructor input.
+ */
+function splitPolygonExpression(request: PublicSdkReadRequest): string {
+  const groups = normalizedSplitPolygonGroups(request.arguments["complexPolygons"]);
+  return `(() => {
+    const inputs = ${JSON.stringify(groups)};
+    const expectedJson = ${JSON.stringify(JSON.stringify(groups.flat()))};
+    const api = eda.pcb_MathPolygon;
+    if (typeof api.createComplexPolygon !== "function") fail("sdk-polygon-constructor");
+    const objects = inputs.map(input => {
+      const before = JSON.stringify(input.length === 1 ? input[0] : input);
+      const object = api.createComplexPolygon(input);
+      if (!object || typeof object.toPolygon !== "function") fail("sdk-polygon-constructor");
+      if (JSON.stringify(plain(polygon(object), "/constructor")) !== before) fail("sdk-polygon-constructor-parity");
+      return object;
+    });
+    const result = api.splitPolygon(...objects);
+    const expectedCount = ${groups.flat().length};
+    if (!Array.isArray(result) || result.length !== expectedCount || Reflect.ownKeys(result).length !== expectedCount + 1) fail("sdk-polygon-split-shape");
+    const sources = [];
+    for (let index = 0; index < result.length; index += 1) {
+      const entry = Object.getOwnPropertyDescriptor(result, String(index));
+      if (!entry || !entry.enumerable || !("value" in entry)) fail("sdk-polygon-split-shape");
+      sources.push(plain(polygon(entry.value), "/value/" + index));
+    }
+    if (JSON.stringify(sources) !== expectedJson) fail("sdk-polygon-split-parity");
+    return sources;
+  })()`;
 }
 
 /** Source is constructed solely from the fixed descriptor and parsed JSON.
@@ -358,6 +402,9 @@ export function buildPublicSdkReadCode(input: unknown): string {
     if (key === definition.restParameter) { return `...${JSON.stringify(request.arguments[key])}`; }
     return request.arguments[key] === undefined ? "undefined" : JSON.stringify(request.arguments[key]);
   }).join(",");
+  let expression = `await ${definition.path}(${args})`;
+  if (isSchematicNativeIdMethod(definition.path)) { expression = buildSchematicNativeIdsExpression(definition.path, "sdk-failure-code"); }
+  else if (definition.path === SPLIT_POLYGON_METHOD) { expression = splitPolygonExpression(request); }
   const membership = definition.membership === undefined ? "" : `
   stage = "membership";
   const members = await ${definition.membership.method}();
@@ -438,7 +485,7 @@ try {
   ${isSchematicNativeIdMethod(definition.path) ? "" : `if (typeof ${definition.path} !== "function") fail("sdk-missing-method");`}
   ${membership}
   stage = "call";
-  const native = ${isSchematicNativeIdMethod(definition.path) ? buildSchematicNativeIdsExpression(definition.path) : `await ${definition.path}(${args})`};
+  const native = ${expression};
   stage = "projection";
   const present = native !== undefined;
   ${definition.membership === undefined ? "" : `if (!native || native.uuid !== ${JSON.stringify(request.arguments[definition.membership.argument])}) fail("sdk-wrong-document");`}
@@ -481,6 +528,7 @@ const resultSchemas: Record<Exclude<OutputKind, "primitive" | "json" | "polygon"
     .refine((value) => value.minX <= value.maxX && value.minY <= value.maxY),
   point: z.object({ x: z.number(), y: z.number() }).strict(),
   origin: z.object({ offsetX: z.number(), offsetY: z.number() }).strict(),
+  polygons: z.array(boundedPolygon).min(1).max(64),
 };
 
 const numericStateFields = new Set("X Y StartX StartY EndX EndY ReferenceX ReferenceY CenterX CenterY Radius HoleDiameter Diameter Layer LineWidth FontSize Rotation Expansion PourPriority TopLeftX TopLeftY Width Height HoleOffsetX HoleOffsetY HoleRotation Precision PinLength CornerRadius ArcAngle".split(" "));
@@ -531,6 +579,9 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
     if (payload.undefinedPaths.includes("/value")) { throw new Error("Public SDK read presence is contradictory."); }
     if (definition.output !== "primitive" && definition.output !== "json" && definition.output !== "polygon") { resultSchemas[definition.output].parse(payload.value); }
     if (definition.output === "polygon") { boundedComplexPolygon.parse(payload.value); }
+    if (definition.output === "polygons" && (payload.undefinedPaths.length > 0 || JSON.stringify(payload.value) !== JSON.stringify(normalizedSplitPolygonGroups(request.arguments["complexPolygons"]).flat()))) {
+      throw new Error("Public polygon split does not exactly preserve input sources and order.");
+    }
     if (request.method === "eda.pcb_Net.getNetColor") { rgbaResult.parse(payload.value); }
     if (request.method === "eda.pcb_Document.getCalculatingRatlineStatus") { z.enum(["active", "inactive"]).parse(payload.value); }
     if (request.method === "eda.sys_Window.getCurrentTheme") { z.enum(["light", "dark"]).parse(payload.value); }

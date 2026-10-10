@@ -54,6 +54,7 @@ const stubs: Readonly<Record<string, string>> = {
   "dmt_Project.copyProject": "Installed project copy method is a native stub; no complete new-project ownership or asset-copy proof exists.",
   "dmt_Project.deleteProject": "Installed project delete method is a native stub; no deletion, dependency or backup contract exists.",
   "pcb_Layer.getCurrentLayer": "Installed method has an empty body and cannot identify the selected layer.",
+  "pcb_MathPolygon.discretize": "Installed polygon discretize delegates to Et.discretize, which unconditionally throws Not implemented; JSON projection alone cannot make this method work.",
   "pcb_Layer.getCurrentPhysicalStackingConfigurationName": "Installed method has an empty body and returns no stack identity.",
   "pcb_Layer.getCurrentPhysicalStackingConfiguration": "Installed method has an empty body and returns no stack data; use the maintained native stack source reader.",
   "pcb_Layer.getPhysicalStackingConfiguration": "Installed method has an empty body and returns no named stack data.",
@@ -79,6 +80,7 @@ const stubs: Readonly<Record<string, string>> = {
   "pcb_Primitive.getPrimitivesByPrimitiveId": "Installed method delegates to the empty singular getter; the declared array result is not useful coverage.",
 };
 const lossyReaders: Readonly<Record<string, string>> = {
+  "sch_PrimitivePin.getAll": "The installed pin enumeration catches RPC and required-attribute projection errors as an empty array, so failure is indistinguishable from an empty pin inventory. Explicit-ID get and ID enumeration rethrow errors, but a complete equivalent still needs independent native membership parity.",
   "sys_FontManager.getFontsList": "The installed wrapper catches native failures and returns an empty array, so a failed read is indistinguishable from an empty font set.",
   "sch_PrimitiveBus.get": "The installed callback wrapper catches RPC errors and returns undefined when no callback result is retained. A failed read is indistinguishable from a missing bus.",
   "sch_PrimitiveBus.getAll": "The installed callback wrapper catches RPC errors and returns an empty array, so failure is indistinguishable from an empty bus inventory.",

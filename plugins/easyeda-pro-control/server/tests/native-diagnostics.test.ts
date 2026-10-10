@@ -3,7 +3,24 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { extractToolPayload } from "../src/core.ts";
 import { nativeFailureCategory } from "../src/native-diagnostics.ts";
+import { SCHEMATIC_NATIVE_ID_GUARD_CODES, SCHEMATIC_NATIVE_ID_METHODS } from "../src/schematic-native-ids.ts";
 import { METADATA_NATIVE_GUARD_CODES } from "../src/metadata-native-diagnostics.ts";
+
+void test("native schematic ID diagnostics admit only fixed complete method/stage/code tuples", () => {
+  for (const method of SCHEMATIC_NATIVE_ID_METHODS) {
+    for (const [code, label] of [...SCHEMATIC_NATIVE_ID_GUARD_CODES.map((entry) => [`SCH_NATIVE_IDS_${entry}`, entry]), ["native-error", "EXCEPTION"]]) {
+      const message = `Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`;
+      const category = `native-schematic-ids:${method}:${label}`;
+      assert.equal(nativeFailureCategory(message), category);
+      assert.throws(() => extractToolPayload({ structuredContent: { ok: false, error: message } }),
+        { message: `The upstream EasyEDA tool reported failure [${category}].` });
+      for (const invalid of [`${message} private suffix`, `${message}\n`, `private ${message}`, message.replace("stage=call", "stage=private"),
+        message.replace("getter=none", "getter=private"), message.replace(method, "eda.private.method"), message.replace(`code=${code}`, "code=PRIVATE_SECRET")]) {
+        assert.equal(nativeFailureCategory(invalid), null);
+      }
+    }
+  }
+});
 
 void test("only exact reviewed native literal errors become diagnostics", () => {
   assert.equal(nativeFailureCategory("SCH_NATIVE_MANAGER_MISSING"), "native-preflight:SCH_NATIVE_MANAGER_MISSING");

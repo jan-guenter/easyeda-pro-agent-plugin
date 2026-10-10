@@ -48,6 +48,13 @@ Draft export bytes are published through a file-descriptor-bound managed parent,
 
 `easyeda_control_checkpoint` can create or verify a checkpoint only for the exact active `.eprj2` project database. Creation uses the descriptor-bound Node SQLite backup API, then runs `quick_check`, creates a deterministic logical dump, and hashes both database and dump. A `checkpoint.v2` receipt binds the source and checkpoint device, inode, creation time, change time, path and hashes. Path replacement or a later hard-link event invalidates that identity even when bytes and the logical dump still match. Older `checkpoint.v1` receipts fail closed. Checkpoint output is confined to either the active project's sibling `backups/` directory or the facade-managed `checkpoints/` directory. Arbitrary source and output paths are rejected.
 
+After normal application exit, that MCP tool cannot verify a closed project:
+its active-context guard still applies. For an already authorized exact project
+and retained receipt, the maintained offline `scripts/checkpoint.ts verify
+RECEIPT_PATH` command checks the same file identities, hashes and logical dumps
+without opening EasyEDA. Use the pinned Node runtime. This grants no restoration,
+new project access or transaction-recovery authority.
+
 Checkpoint receipts have a 1 MiB whole-file read limit. After receipt publication or verification hashing, the facade rechecks the source pathname, file metadata and SQLite `data_version`. This catches both ordinary database writes and WAL-only commits that occurred after the source snapshot. Verification also rechecks the checkpoint file after hashing. A checkpoint is still a point-in-time snapshot: no check locks the editor against a later commit. Any operation that depends on current baseline equality must reverify immediately before its dispatch boundary.
 
 Typed apply creates and verifies its pre-checkpoint before dispatch. It checks scoped live target fields against persisted records without discarding the document or claiming every unchanged exported default proves a clean editor. Reverify durable baseline before saving. Commit compares whole durable deltas, so unrelated unsaved work cannot be accepted as intended collateral merely because it was already present in live source.

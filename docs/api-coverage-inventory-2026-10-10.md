@@ -10,9 +10,9 @@ The inventory covers 774 distinct method paths. The reviewed installed SDK has
 697, the newer official reference has 773, and one older dialog method appears
 only in the reviewed SDK. These counts are method paths, not overload counts.
 The original 749 and 806 declaration signatures remain in the inventory.
-The current source inventory has 190 public subsets, 77 native equivalents,
-two lifecycle-only methods, eight blocked methods and 497 omissions. The fixed
-SDK-read catalog has 163 routes. These are implementation counts, not live-test
+The current source inventory has 191 public subsets, 77 native equivalents,
+two lifecycle-only methods, eight blocked methods and 496 omissions. The fixed
+SDK-read catalog has 164 routes. These are implementation counts, not live-test
 counts.
 
 ## What the statuses mean
@@ -92,10 +92,20 @@ schematic text ID wrapper can return before its callback completes. Such behavio
 must be fixed with a maintained reader, not hidden by labeling every `get*` name
 read-only. Three new synchronous native equivalents now cover Text/Wire/Bus IDs
 on the exact active ordinary type-1 page, with no net filters or symbol scenes.
-They require complete source-ID/model-family/index agreement and two stable
+They require complete connected tree/index proof, source-backed root-family
+membership and two stable
 observations, without invoking those public wrappers or the compiler. Their
 connected validation remains pending. See the
 [source and contract review](schematic-id-reader-review-2026-10-10.md).
+
+The fixed polygon-splitting subset constructs temporary public SDK objects from
+bounded JSON arrays and returns exact ordered source arrays. It has no design
+mutation or native-handle contract. The installed polygon `discretize` delegates
+to an unconditional `Not implemented` throw. The omitted Pin `getAll` wrapper
+swallows both RPC and required-attribute projection failures as an empty array;
+an equivalent needs independent complete membership, not just JSON serialization.
+These implementation facts and remaining adapter proposals are recorded in the
+[next-adapter research](api-next-feasible-research-2026-10-10.md).
 
 The schematic netlist, BOM and document export paths, plus PCB BOM, PDF and
 netlist export paths, invoke implicit annotation and/or Save. They are refused

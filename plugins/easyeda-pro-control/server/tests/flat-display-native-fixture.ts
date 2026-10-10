@@ -8,6 +8,18 @@ import { context, encode, fixture, rehash } from "./flat-display-fixture.ts";
 export const nativeFormatOperation = { id: "native-format-display", action: "sch.layout.batch", documentType: 1,
   operations: [{ id: "move-text", action: "sch.text.display", target: { primitiveId: "text" }, patch: { x: 290 } }] };
 
+/** Native export order and headers deliberately differ from the ID-sorted
+ * projection encoder, including the missing final delimiter. Do not reuse the
+ * production encoder here: doing so hid the projected/native hash mismatch.
+ */
+const category = (type: string): number => ["CANVAS", "ATTR", "COMPONENT", "TEXT"].indexOf(type);
+export function nativeExportSource(source: NativeSourceSnapshot): string {
+  const rows = source.objects.toSorted((left, right) => category(left.type) - category(right.type) ||
+    Number(left.body["zIndex"] ?? 0) - Number(right.body["zIndex"] ?? 0) || left.id.localeCompare(right.id));
+  return [`{"type":"DOCHEAD"}||${JSON.stringify(source.document)}`, ...rows.map((row, index) =>
+    `${JSON.stringify({ type: row.type, ticket: index + 1, id: row.id })}||${JSON.stringify(row.body)}`)].join("|\n");
+}
+
 /** Synthetic identities, real native representation: pinless frame plus TEXT,
  * source-only CANVAS, durable-only META, and unpersisted frame initialization.
  * No retained user/fixture source, IDs or library definitions are copied here.
@@ -27,7 +39,7 @@ export function nativeFormatFixture(): ReturnType<typeof fixture> {
     { id: "text", type: "TEXT", body: { x: 280, y: -400, rotation: 0, value: "Synthetic text", zIndex: 1 } },
     { id: "untouched-text", type: "TEXT", body: { x: 50, y: -100, rotation: 0, value: "Unchanged note", zIndex: 2 } },
     { id: "CANVAS", type: "CANVAS", body: { originX: 0, originY: 0 } }];
-  const source = encode(rows);
+  const source = nativeExportSource(parseDocumentSource(encode(rows)));
   result.native = { profile: "easyeda-pro-control.schematic-native.v1", document: { documentUuid: "page", tabId: context.document.tabId }, source,
     components: [{ id: component.id, kind: "sheet", locked: false, body: component.body, pins: [],
       attributes: attributes.map((attribute) => ({ ...attribute, symbolValue: attribute.value, blockValue: null, instanceValue: null })).toSorted((left, right) => left.id.localeCompare(right.id)) }] };
@@ -52,7 +64,7 @@ export function nativeFormatAfter(before: ReturnType<typeof fixture>, source: Na
   const result = structuredClone(before);
   const frame = native.components[0], page = result.evidence.observation.pages[0];
   assert.ok(page && frame);
-  result.native = structuredClone(native); page.source = native.source;
+  result.native = { ...structuredClone(native), source: nativeExportSource(parseDocumentSource(native.source)) }; page.source = result.native.source;
   page.symbols = [{ id: frame.id, kind: "sheet", body: frame.body, partCount: 1, partNumber: 1,
     attributes: frame.attributes.map(({ id, key, value, body }) => ({ id, key, value, body })), pins: [] }];
   const documents = before.evidence.history.documents.map((document) => document.uuid === "page" && persist ? { ...document,

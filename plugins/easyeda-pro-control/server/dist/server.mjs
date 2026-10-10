@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "7459b9c27a9c1026a5e1c3a69bab3459a590f4134a07fc9bd4fd278799dda86b";
+const __easyedaBundlePairId = "cc3601f84dac1dd72405b68cde68d0f96c03366bf6a1c4a683e3a12716cef845";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -33028,10 +33028,147 @@ if(typeof message==='string'&&${JSON.stringify(METADATA_NATIVE_GUARD_CODES)}.inc
   }
 });
 
+// server/src/schematic-native-ids.ts
+function isSchematicNativeIdMethod(method) {
+  return SCHEMATIC_NATIVE_ID_METHODS.some((entry) => entry === method);
+}
+function buildSchematicNativeIdsExpression(method, diagnostics) {
+  if (!isSchematicNativeIdMethod(method)) {
+    throw new Error("Unsupported schematic native ID method.");
+  }
+  if (diagnostics !== void 0 && diagnostics !== "sdk-failure-code") {
+    throw new Error("Unsupported schematic native ID diagnostics.");
+  }
+  let family = "bus";
+  if (method.includes("PrimitiveText")) {
+    family = "text";
+  }
+  if (method.includes("PrimitiveWire")) {
+    family = "wire";
+  }
+  return `(() => {
+const bad=reason=>{${diagnostics === "sdk-failure-code" ? "failureCode='SCH_NATIVE_IDS_'+reason;" : ""}throw new Error('SCH_NATIVE_IDS_'+reason);};
+const validId=value=>{if(typeof value!=='string'||!value||value.length>256||[...value].some(character=>character.charCodeAt(0)<32||character.charCodeAt(0)===127))bad('IDENTITY');return value;};
+const sch=globalThis.SCH,ui=globalThis.UI,tabs=ui?.tabBar;
+const manager=sch?.docMemoryManager,activeReader=manager?.getActiveDoc;
+if(typeof activeReader!=='function'||typeof tabs?.getActiveTab!=='function')bad('MANAGER');
+const tabReader=tabs.getActiveTab,page=activeReader.call(manager);
+const shapes=page?.shapeManager,ids=page?.idManager,index=ids?.idMap,modelMap=shapes?.modelMap;
+const consistency=page?.consistencyImpl,handler=consistency?.decodeAndRealTimeSyncHandler;
+const sourceReader=handler?.getSourceCodeIdMap,modelReader=shapes?.getModels,project=page?.projectMgr;
+const action=shapes?.actionRunner;
+const root=shapes?.root;
+if(!page||!project||typeof sourceReader!=='function'||typeof modelReader!=='function'||!(index instanceof Map)||index.size>100000||!(modelMap instanceof Map)||modelMap.size>1000)bad('INVENTORY');
+const check=()=>{
+ if(globalThis.SCH!==sch||globalThis.UI!==ui||ui.tabBar!==tabs||tabs.getActiveTab!==tabReader||sch.docMemoryManager!==manager||manager.getActiveDoc!==activeReader||activeReader.call(manager)!==page||tabReader.call(tabs)!==EXPECTED_TAB_ID)bad('RECEIVER_CHANGED');
+ if(EXPECTED_DOCUMENT_TYPE!==1||page.uuid!==EXPECTED_DOCUMENT_UUID||page.project_uuid!==EXPECTED_PROJECT_UUID||page.tabId!==EXPECTED_TAB_ID||EXPECTED_TAB_ID!==EXPECTED_DOCUMENT_UUID+'@'+EXPECTED_PROJECT_UUID||page.isSchSheetDoc?.()!==true||page.isBlockSymbolInstancePage!==false)bad('CONTEXT');
+ if(page.projectMgr!==project||project.uuid!==EXPECTED_PROJECT_UUID||page.shapeManager!==shapes||page.idManager!==ids||shapes.docManager!==page||shapes.idManager!==ids||ids.docManager!==page||ids.idMap!==index||shapes.modelMap!==modelMap||shapes.getModels!==modelReader||page.consistencyImpl!==consistency||consistency.docManager!==page||consistency.decodeAndRealTimeSyncHandler!==handler||consistency.handler!==handler||handler.consistencyImpl!==consistency||handler.docManager!==page||handler.getSourceCodeIdMap!==sourceReader||shapes.actionRunner!==action)bad('OWNER_CHANGED');
+ if(consistency.state!=='initialized'||action?.running!==false)bad('NOT_READY');
+ if(shapes.root!==root||!root||root.modelType!=='Root'||root.shapeManager!==shapes||root.isConnected!==true||root.parent!=null)bad('TREE');
+};
+check();
+const captureTree=()=>{
+ const result=new Map(),pending=[root];
+ for(let offset=0;offset<pending.length;offset++){
+  const parent=pending[offset],children=parent.children;
+  if(children===undefined){if(parent===root)bad('TREE');continue;}
+  if(!Array.isArray(children)||children.length>100000||new Set(children).size!==children.length)bad('TREE');
+  for(const [position,model] of children.entries()){
+   const key=validId(model?.id);
+   if(result.has(key)||model===root||model.parent!==parent||model.shapeManager!==shapes||model.isConnected!==true||index.get(key)!==model)bad('TREE_MEMBERSHIP');
+   result.set(key,{model,parent,position,type:model.modelType});pending.push(model);
+   if(result.size>100000)bad('TREE');
+  }
+ }
+ if(result.size!==index.size)bad('TREE_MEMBERSHIP');
+ for(const [key,model] of index){if(result.get(key)?.model!==model)bad('TREE_MEMBERSHIP');}
+ return result;
+};
+const tree=captureTree();
+const sources=sourceReader.call(handler);
+if(!(sources instanceof Map)||sources.size>100000)bad('SOURCE_INVENTORY');
+const sourceModels=new Map();
+for(const [key,marker] of sources){validId(key);const model=index.get(key);if(marker!==1||!model||model.id!==key)bad('SOURCE_MODEL');sourceModels.set(key,model);}
+const snapshots=[];
+const result=[];
+for(const type of ['Text','NetGroup']){
+ const map=modelMap.get(type);
+ if(map!==undefined&&(!(map instanceof Set)||map.size>20000))bad('MODEL_MAP');
+ const models=modelReader.call(shapes,type);
+ if(!Array.isArray(models)||models.length>20000||models.length!==(map?.size??0))bad('MODEL_LIST');
+ const members=new Map();
+ for(const model of models){
+  const key=validId(model?.id);
+  if(members.has(key)||model.modelType!==type||model.parent!==root||model.shapeManager!==shapes||index.get(key)!==model||!map?.has(model)||sourceModels.get(key)!==model)bad('MODEL_MEMBERSHIP');
+  if(type==='NetGroup'&&!['wire','bus'].includes(model.type))bad('GROUP_TYPE');
+  members.set(key,model);
+  if(type==='Text'&&${JSON.stringify(family)}==='text'||type==='NetGroup'&&model.type===${JSON.stringify(family)})result.push(key);
+ }
+ for(const [key,model] of index){if(model?.modelType===type&&model.parent===root&&(model.id!==key||members.get(key)!==model))bad('INDEX_MEMBERSHIP');}
+ for(const [key,model] of sourceModels){if(model.modelType===type&&model.parent===root&&members.get(key)!==model)bad('SOURCE_MEMBERSHIP');}
+ snapshots.push({type,map,members,types:new Map([...members].map(([key,model])=>[key,model.type]))});
+}
+if(result.length>20000)bad('RESULT_BOUND');
+const finalSources=sourceReader.call(handler);
+if(!(finalSources instanceof Map)||finalSources.size!==sources.size)bad('SOURCE_CHANGED');
+for(const [key,marker] of sources){if(finalSources.get(key)!==marker||index.get(key)!==sourceModels.get(key))bad('SOURCE_CHANGED');}
+for(const {type,map,members,types} of snapshots){
+ if(modelMap.get(type)!==map||map!==undefined&&map.size!==members.size)bad('MODELS_CHANGED');
+ const current=modelReader.call(shapes,type);
+ if(!Array.isArray(current)||current.length!==members.size||new Set(current).size!==current.length)bad('MODELS_CHANGED');
+ for(const model of current){if(members.get(model?.id)!==model||index.get(model.id)!==model||!map?.has(model)||model.modelType!==type||model.parent!==root||model.shapeManager!==shapes||model.type!==types.get(model.id))bad('MODELS_CHANGED');}
+ for(const [key,model] of index){if(model?.modelType===type&&model.parent===root&&members.get(key)!==model)bad('INDEX_CHANGED');}
+}
+const finalTree=captureTree();
+if(finalTree.size!==tree.size)bad('TREE_CHANGED');
+for(const [key,entry] of tree){const current=finalTree.get(key);if(!current||current.model!==entry.model||current.parent!==entry.parent||current.position!==entry.position||current.type!==entry.type)bad('TREE_CHANGED');}
+check();
+return result.sort();
+})()`;
+}
+var SCHEMATIC_NATIVE_ID_METHODS, SCHEMATIC_NATIVE_ID_GUARD_CODES;
+var init_schematic_native_ids = __esm({
+  "server/src/schematic-native-ids.ts"() {
+    SCHEMATIC_NATIVE_ID_METHODS = [
+      "eda.sch_PrimitiveText.getAllPrimitiveId",
+      "eda.sch_PrimitiveWire.getAllPrimitiveId",
+      "eda.sch_PrimitiveBus.getAllPrimitiveId"
+    ];
+    SCHEMATIC_NATIVE_ID_GUARD_CODES = [
+      "IDENTITY",
+      "MANAGER",
+      "INVENTORY",
+      "RECEIVER_CHANGED",
+      "CONTEXT",
+      "OWNER_CHANGED",
+      "NOT_READY",
+      "SOURCE_INVENTORY",
+      "SOURCE_MODEL",
+      "TREE",
+      "TREE_MEMBERSHIP",
+      "TREE_CHANGED",
+      "MODEL_MAP",
+      "MODEL_LIST",
+      "MODEL_MEMBERSHIP",
+      "GROUP_TYPE",
+      "INDEX_MEMBERSHIP",
+      "SOURCE_MEMBERSHIP",
+      "RESULT_BOUND",
+      "SOURCE_CHANGED",
+      "MODELS_CHANGED",
+      "INDEX_CHANGED"
+    ];
+  }
+});
+
 // server/src/native-diagnostics.ts
 function nativeFailureCategory(message) {
   if (typeof message !== "string") {
     return null;
+  }
+  const schematicIdCategory = message.length <= 256 ? schematicIdCategories.get(message) : void 0;
+  if (schematicIdCategory !== void 0) {
+    return schematicIdCategory;
   }
   const operationStageCategory = message.length <= 128 ? operationStageCategories.get(message) : void 0;
   if (operationStageCategory !== void 0) {
@@ -33079,13 +33216,14 @@ function nativeFailureCategory(message) {
   const stage = message.startsWith(prefix) ? message.slice(prefix.length) : "";
   return recoveryStages.has(stage) ? `native-preflight:RECOVERY_${stage.toUpperCase().replaceAll("-", "_")}` : null;
 }
-var codes3, recoveryStages, tabCodes, padCodes, footprintLifecycleCodes, operationStages, operationStageCategories, activationPreferenceCategories, metadataGuardCategories;
+var codes3, recoveryStages, tabCodes, padCodes, footprintLifecycleCodes, operationStages, operationStageCategories, activationPreferenceCategories, metadataGuardCategories, schematicIdCategories;
 var init_native_diagnostics = __esm({
   "server/src/native-diagnostics.ts"() {
     init_device_runtime_guard();
     init_library_runtime_guard();
     init_project_upload_barrier();
     init_metadata_native_diagnostics();
+    init_schematic_native_ids();
     codes3 = /* @__PURE__ */ new Set([
       "NATIVE_LIFECYCLE_OBSERVER_UNAVAILABLE",
       "NATIVE_LIFECYCLE_PROJECT_DRIFT",
@@ -33301,6 +33439,10 @@ var init_native_diagnostics = __esm({
       "PCB_COMMAND_TAB_NOT_BOOLEAN"
     ].map((code) => [`Document activation refused: ${stage}:${code}`, `native-document-activation:${stage}:${code}`])));
     metadataGuardCategories = new Map(operationStages.filter(({ category }) => category === "native-page-rename" || category === "native-symbol-metadata").flatMap(({ prefix, category, stages: stages3 }) => stages3.flatMap((stage) => METADATA_NATIVE_GUARD_CODES.map((code) => [`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`]))));
+    schematicIdCategories = new Map(SCHEMATIC_NATIVE_ID_METHODS.flatMap((method) => [...SCHEMATIC_NATIVE_ID_GUARD_CODES.map((code) => [`SCH_NATIVE_IDS_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
+      `Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
+      `native-schematic-ids:${method}:${label}`
+    ])));
   }
 });
 
@@ -44782,89 +44924,6 @@ var init_editor_tab_lookups = __esm({
   }
 });
 
-// server/src/schematic-native-ids.ts
-function isSchematicNativeIdMethod(method) {
-  return SCHEMATIC_NATIVE_ID_METHODS.some((entry) => entry === method);
-}
-function buildSchematicNativeIdsExpression(method) {
-  if (!isSchematicNativeIdMethod(method)) {
-    throw new Error("Unsupported schematic native ID method.");
-  }
-  let family = "bus";
-  if (method.includes("PrimitiveText")) {
-    family = "text";
-  }
-  if (method.includes("PrimitiveWire")) {
-    family = "wire";
-  }
-  return `(() => {
-const bad=reason=>{throw new Error('SCH_NATIVE_IDS_'+reason);};
-const validId=value=>{if(typeof value!=='string'||!value||value.length>256||[...value].some(character=>character.charCodeAt(0)<32||character.charCodeAt(0)===127))bad('IDENTITY');return value;};
-const sch=globalThis.SCH,ui=globalThis.UI,tabs=ui?.tabBar;
-const manager=sch?.docMemoryManager,activeReader=manager?.getActiveDoc;
-if(typeof activeReader!=='function'||typeof tabs?.getActiveTab!=='function')bad('MANAGER');
-const tabReader=tabs.getActiveTab,page=activeReader.call(manager);
-const shapes=page?.shapeManager,ids=page?.idManager,index=ids?.idMap,modelMap=shapes?.modelMap;
-const consistency=page?.consistencyImpl,handler=consistency?.decodeAndRealTimeSyncHandler;
-const sourceReader=handler?.getSourceCodeIdMap,modelReader=shapes?.getModels,project=page?.projectMgr;
-const action=shapes?.actionRunner;
-if(!page||!project||typeof sourceReader!=='function'||typeof modelReader!=='function'||!(index instanceof Map)||index.size>100000||!(modelMap instanceof Map)||modelMap.size>1000)bad('INVENTORY');
-const check=()=>{
- if(globalThis.SCH!==sch||globalThis.UI!==ui||ui.tabBar!==tabs||tabs.getActiveTab!==tabReader||sch.docMemoryManager!==manager||manager.getActiveDoc!==activeReader||activeReader.call(manager)!==page||tabReader.call(tabs)!==EXPECTED_TAB_ID)bad('RECEIVER_CHANGED');
- if(EXPECTED_DOCUMENT_TYPE!==1||page.uuid!==EXPECTED_DOCUMENT_UUID||page.project_uuid!==EXPECTED_PROJECT_UUID||page.tabId!==EXPECTED_TAB_ID||EXPECTED_TAB_ID!==EXPECTED_DOCUMENT_UUID+'@'+EXPECTED_PROJECT_UUID||page.isSchSheetDoc?.()!==true||page.isBlockSymbolInstancePage!==false)bad('CONTEXT');
- if(page.projectMgr!==project||project.uuid!==EXPECTED_PROJECT_UUID||page.shapeManager!==shapes||page.idManager!==ids||shapes.docManager!==page||shapes.idManager!==ids||ids.docManager!==page||ids.idMap!==index||shapes.modelMap!==modelMap||shapes.getModels!==modelReader||page.consistencyImpl!==consistency||consistency.docManager!==page||consistency.decodeAndRealTimeSyncHandler!==handler||consistency.handler!==handler||handler.consistencyImpl!==consistency||handler.docManager!==page||handler.getSourceCodeIdMap!==sourceReader||shapes.actionRunner!==action)bad('OWNER_CHANGED');
- if(consistency.state!=='initialized'||action?.running!==false)bad('NOT_READY');
-};
-check();
-const sources=sourceReader.call(handler);
-if(!(sources instanceof Map)||sources.size>100000)bad('SOURCE_INVENTORY');
-const sourceModels=new Map();
-for(const [key,marker] of sources){validId(key);const model=index.get(key);if(marker!==1||!model||model.id!==key)bad('SOURCE_MODEL');sourceModels.set(key,model);}
-const snapshots=[];
-const result=[];
-for(const type of ['Text','NetGroup']){
- const map=modelMap.get(type);
- if(map!==undefined&&(!(map instanceof Set)||map.size>20000))bad('MODEL_MAP');
- const models=modelReader.call(shapes,type);
- if(!Array.isArray(models)||models.length>20000||models.length!==(map?.size??0))bad('MODEL_LIST');
- const members=new Map();
- for(const model of models){
-  const key=validId(model?.id);
-  if(members.has(key)||model.modelType!==type||model.shapeManager!==shapes||index.get(key)!==model||!map?.has(model)||sourceModels.get(key)!==model)bad('MODEL_MEMBERSHIP');
-  if(type==='NetGroup'&&!['wire','bus'].includes(model.type))bad('GROUP_TYPE');
-  members.set(key,model);
-  if(type==='Text'&&${JSON.stringify(family)}==='text'||type==='NetGroup'&&model.type===${JSON.stringify(family)})result.push(key);
- }
- for(const [key,model] of index){if(model?.modelType===type&&(model.id!==key||members.get(key)!==model))bad('INDEX_MEMBERSHIP');}
- for(const [key,model] of sourceModels){if(model.modelType===type&&members.get(key)!==model)bad('SOURCE_MEMBERSHIP');}
- snapshots.push({type,map,members,types:new Map([...members].map(([key,model])=>[key,model.type]))});
-}
-if(result.length>20000)bad('RESULT_BOUND');
-const finalSources=sourceReader.call(handler);
-if(!(finalSources instanceof Map)||finalSources.size!==sources.size)bad('SOURCE_CHANGED');
-for(const [key,marker] of sources){if(finalSources.get(key)!==marker||index.get(key)!==sourceModels.get(key))bad('SOURCE_CHANGED');}
-for(const {type,map,members,types} of snapshots){
- if(modelMap.get(type)!==map||map!==undefined&&map.size!==members.size)bad('MODELS_CHANGED');
- const current=modelReader.call(shapes,type);
- if(!Array.isArray(current)||current.length!==members.size||new Set(current).size!==current.length)bad('MODELS_CHANGED');
- for(const model of current){if(members.get(model?.id)!==model||index.get(model.id)!==model||!map?.has(model)||model.modelType!==type||model.shapeManager!==shapes||model.type!==types.get(model.id))bad('MODELS_CHANGED');}
- for(const [key,model] of index){if(model?.modelType===type&&members.get(key)!==model)bad('INDEX_CHANGED');}
-}
-check();
-return result.sort();
-})()`;
-}
-var SCHEMATIC_NATIVE_ID_METHODS;
-var init_schematic_native_ids = __esm({
-  "server/src/schematic-native-ids.ts"() {
-    SCHEMATIC_NATIVE_ID_METHODS = [
-      "eda.sch_PrimitiveText.getAllPrimitiveId",
-      "eda.sch_PrimitiveWire.getAllPrimitiveId",
-      "eda.sch_PrimitiveBus.getAllPrimitiveId"
-    ];
-  }
-});
-
 // server/src/public-sdk-read.ts
 function add(path5, documentTypes, output, argumentsSchema = emptyArguments, parameters = [], options = {}) {
   if (!/^eda\.(?:dmt|lib|pcb|sch|sys)_[A-Za-z0-9]+\.[A-Za-z0-9_]+$/u.test(path5) || definitions.has(path5)) {
@@ -44948,7 +45007,7 @@ function publicSdkReadDescriptors() {
     implementation: {
       kind: entry.implementationKind,
       source: `server/src/${readImplementationName(entry.path)}.ts`,
-      test: `server/tests/${readImplementationName(entry.path)}.test.ts`,
+      test: `server/tests/${entry.path === SPLIT_POLYGON_METHOD ? "public-sdk-polygon-split" : readImplementationName(entry.path)}.test.ts`,
       publicApiSha256: PUBLIC_SDK_READ_API_SHA256
     },
     liveValidation: "not-yet-validated",
@@ -44967,6 +45026,41 @@ function readImplementationName(path5) {
   }
   return "public-sdk-read";
 }
+function normalizedSplitPolygonGroups(value) {
+  return splitPolygonGroups.parse(value).map((group) => {
+    if (Array.isArray(group[0])) {
+      return external_exports.array(boundedPolygon).min(1).max(8).parse(group);
+    }
+    return [boundedPolygon.parse(group)];
+  });
+}
+function splitPolygonExpression(request) {
+  const groups2 = normalizedSplitPolygonGroups(request.arguments["complexPolygons"]);
+  return `(() => {
+    const inputs = ${JSON.stringify(groups2)};
+    const expectedJson = ${JSON.stringify(JSON.stringify(groups2.flat()))};
+    const api = eda.pcb_MathPolygon;
+    if (typeof api.createComplexPolygon !== "function") fail("sdk-polygon-constructor");
+    const objects = inputs.map(input => {
+      const before = JSON.stringify(input.length === 1 ? input[0] : input);
+      const object = api.createComplexPolygon(input);
+      if (!object || typeof object.toPolygon !== "function") fail("sdk-polygon-constructor");
+      if (JSON.stringify(plain(polygon(object), "/constructor")) !== before) fail("sdk-polygon-constructor-parity");
+      return object;
+    });
+    const result = api.splitPolygon(...objects);
+    const expectedCount = ${groups2.flat().length};
+    if (!Array.isArray(result) || result.length !== expectedCount || Reflect.ownKeys(result).length !== expectedCount + 1) fail("sdk-polygon-split-shape");
+    const sources = [];
+    for (let index = 0; index < result.length; index += 1) {
+      const entry = Object.getOwnPropertyDescriptor(result, String(index));
+      if (!entry || !entry.enumerable || !("value" in entry)) fail("sdk-polygon-split-shape");
+      sources.push(plain(polygon(entry.value), "/value/" + index));
+    }
+    if (JSON.stringify(sources) !== expectedJson) fail("sdk-polygon-split-parity");
+    return sources;
+  })()`;
+}
 function buildPublicSdkReadCode(input) {
   const request = publicSdkReadRequestSchema.parse(input);
   if (isEditorTabLookupMethod(request.method)) {
@@ -44982,6 +45076,12 @@ function buildPublicSdkReadCode(input) {
     }
     return request.arguments[key] === void 0 ? "undefined" : JSON.stringify(request.arguments[key]);
   }).join(",");
+  let expression = `await ${definition.path}(${args})`;
+  if (isSchematicNativeIdMethod(definition.path)) {
+    expression = buildSchematicNativeIdsExpression(definition.path, "sdk-failure-code");
+  } else if (definition.path === SPLIT_POLYGON_METHOD) {
+    expression = splitPolygonExpression(request);
+  }
   const membership = definition.membership === void 0 ? "" : `
   stage = "membership";
   const members = await ${definition.membership.method}();
@@ -45062,7 +45162,7 @@ try {
   ${isSchematicNativeIdMethod(definition.path) ? "" : `if (typeof ${definition.path} !== "function") fail("sdk-missing-method");`}
   ${membership}
   stage = "call";
-  const native = ${isSchematicNativeIdMethod(definition.path) ? buildSchematicNativeIdsExpression(definition.path) : `await ${definition.path}(${args})`};
+  const native = ${expression};
   stage = "projection";
   const present = native !== undefined;
   ${definition.membership === void 0 ? "" : `if (!native || native.uuid !== ${JSON.stringify(request.arguments[definition.membership.argument])}) fail("sdk-wrong-document");`}
@@ -45141,6 +45241,9 @@ function validatePublicSdkReadPayload(input, requestInput) {
     }
     if (definition.output === "polygon") {
       boundedComplexPolygon.parse(payload.value);
+    }
+    if (definition.output === "polygons" && (payload.undefinedPaths.length > 0 || JSON.stringify(payload.value) !== JSON.stringify(normalizedSplitPolygonGroups(request.arguments["complexPolygons"]).flat()))) {
+      throw new Error("Public polygon split does not exactly preserve input sources and order.");
     }
     if (request.method === "eda.pcb_Net.getNetColor") {
       rgbaResult.parse(payload.value);
@@ -45224,7 +45327,7 @@ function validatePublicSdkReadPayload(input, requestInput) {
     limitations: [...definition.limitations]
   };
 }
-var PUBLIC_SDK_READ_API_SHA256, PUBLIC_SDK_READ_MAX_BYTES, MAX_ITEMS, MAX_NODES, ALL_DOCUMENTS, SCHEMATIC_DOCUMENTS, PCB_DOCUMENTS, id3, text3, name3, coordinate2, ids, primitiveIds, emptyArguments, layerInner, layerCustom, layerCopper, layerLine, layerImage, layerFill, layer, layerLineSchema, layerImageSchema, optionalLock, optionalNet, definitions, interpolationValues, linePoints, splitLinesSchema, boundedPolygon, boundedComplexPolygon, pcbGetters, schGetters, regionRuleTypes, pcbFilters, requestShape, publicSdkReadRequestSchema, payloadSchema, stringsResult, recordResult, rgbaResult, splitLineValue, splitLinesResult, resultSchemas, numericStateFields, booleanStateFields, stringStateFields, optionalComponentFields, nullableStyleFields;
+var PUBLIC_SDK_READ_API_SHA256, PUBLIC_SDK_READ_MAX_BYTES, MAX_ITEMS, MAX_NODES, ALL_DOCUMENTS, SCHEMATIC_DOCUMENTS, PCB_DOCUMENTS, id3, text3, name3, coordinate2, ids, primitiveIds, emptyArguments, layerInner, layerCustom, layerCopper, layerLine, layerImage, layerFill, layer, layerLineSchema, layerImageSchema, optionalLock, optionalNet, definitions, interpolationValues, linePoints, splitLinesSchema, boundedPolygon, boundedComplexPolygon, splitPolygonGroups, SPLIT_POLYGON_METHOD, pcbGetters, schGetters, regionRuleTypes, pcbFilters, requestShape, publicSdkReadRequestSchema, payloadSchema, stringsResult, recordResult, rgbaResult, splitLineValue, splitLinesResult, resultSchemas, numericStateFields, booleanStateFields, stringStateFields, optionalComponentFields, nullableStyleFields;
 var init_public_sdk_read = __esm({
   "server/src/public-sdk-read.ts"() {
     init_zod();
@@ -45351,6 +45454,8 @@ var init_public_sdk_read = __esm({
     }
     boundedPolygon = polygonSourceSchema.max(1024);
     boundedComplexPolygon = external_exports.union([boundedPolygon, external_exports.array(boundedPolygon).min(1).max(8)]);
+    splitPolygonGroups = external_exports.array(boundedComplexPolygon).min(1).max(8);
+    SPLIT_POLYGON_METHOD = "eda.pcb_MathPolygon.splitPolygon";
     for (const method of ["calculateWidth", "calculateHeight", "calculateBBoxHeight", "createComplexPolygon"]) {
       add(
         `eda.pcb_MathPolygon.${method}`,
@@ -45369,6 +45474,14 @@ var init_public_sdk_read = __esm({
       optionalResult: true,
       parameterSupport: "narrowed",
       limitations: ["JSON polygon array only, at most 1024 tokens. Constructor returns serialized getSource data, not a reusable native object."]
+    });
+    add(SPLIT_POLYGON_METHOD, ALL_DOCUMENTS, "polygons", external_exports.object({ complexPolygons: splitPolygonGroups }).strict(), ["complexPolygons"], {
+      restParameter: "complexPolygons",
+      parameterSupport: "narrowed",
+      limitations: [
+        "JSON source arrays only: 1\u20138 complex-polygon groups, 1\u20138 polygons per group and at most 1024 tokens per polygon, additionally subject to the shared 16384-node/131072-character input limits.",
+        "Constructs only temporary SDK complex polygons, calls the fixed public splitPolygon and returns getSource arrays with exact input order, duplicates and source parity. No caller objects or native handles; public geometry data only, not a CAD or connectivity proof."
+      ]
     });
     add("eda.pcb_Document.getCalculatingRatlineStatus", [3], "string");
     add("eda.pcb_Document.getCurrentFilterConfiguration", PCB_DOCUMENTS, "record", emptyArguments, [], { optionalResult: true });
@@ -45416,7 +45529,8 @@ var init_public_sdk_read = __esm({
         parameterSupport: "narrowed",
         limitations: [
           "Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused.",
-          "Complete bounded Text/NetGroup source-inventory, model-map and ID-index identity agreement is required. Wire/bus IDs identify groups, not their LINE children. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save.",
+          "Complete bounded connected-tree/ID-index agreement and direct-root Text/NetGroup source/model membership are required. Generated or inherited descendant Text is not a root Text entry. Wire/bus IDs identify groups, not their LINE children.",
+          "Structural GROUP records owned by combinationManager are unsupported because they have no ID-index model; their presence refuses the entire read. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save.",
           "Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called."
         ]
       });
@@ -45583,7 +45697,8 @@ var init_public_sdk_read = __esm({
       record: recordResult,
       bbox: external_exports.object({ minX: external_exports.number(), minY: external_exports.number(), maxX: external_exports.number(), maxY: external_exports.number() }).strict().refine((value) => value.minX <= value.maxX && value.minY <= value.maxY),
       point: external_exports.object({ x: external_exports.number(), y: external_exports.number() }).strict(),
-      origin: external_exports.object({ offsetX: external_exports.number(), offsetY: external_exports.number() }).strict()
+      origin: external_exports.object({ offsetX: external_exports.number(), offsetY: external_exports.number() }).strict(),
+      polygons: external_exports.array(boundedPolygon).min(1).max(64)
     };
     numericStateFields = new Set("X Y StartX StartY EndX EndY ReferenceX ReferenceY CenterX CenterY Radius HoleDiameter Diameter Layer LineWidth FontSize Rotation Expansion PourPriority TopLeftX TopLeftY Width Height HoleOffsetX HoleOffsetY HoleRotation Precision PinLength CornerRadius ArcAngle".split(" "));
     booleanStateFields = new Set("PrimitiveLock Mirror HorizonMirror Metallization Reverse PreserveSilos AddIntoBom AddIntoPcb KeyVisible ValueVisible Bold Italic UnderLine NoConnected".split(" "));
@@ -57119,7 +57234,7 @@ function snapshot5(before, records2) {
   const value = { schema: before.schema, document: before.document, objects: structuredClone([...records2.values()]).toSorted((a, b) => a.id.localeCompare(b.id)) };
   return { ...value, sha256: sha256Json(value) };
 }
-function encode4(source3) {
+function encodeSchematicLayoutSource(source3) {
   const rows = [`{"type":"DOCHEAD"}||${JSON.stringify(source3.document)}`, ...source3.objects.map((record6, index) => `${JSON.stringify({ type: record6.type, id: record6.id, ticket: index + 1 })}||${JSON.stringify(record6.body)}`)];
   return `${rows.join("|\n")}|
 `;
@@ -57622,7 +57737,7 @@ function* simulateSteps(input, before, nativeInput, providedIds, evidence, histo
     wireOrders = schematicNewWireOrders(before, new Map(current2.objects.map((row) => [row.id, row])), native, createdWires);
   }
   yield;
-  native.source = encode4(current2);
+  native.source = encodeSchematicLayoutSource(current2);
   yield;
   if (!legacyFlagGroups) {
     verifySchematicFlagWireGroups(current2, native, netFlags);
@@ -57894,7 +58009,7 @@ function layoutStoragePersistence(expected2, input, evidence, effect) {
     }
   }
   const source3 = snapshot5(aligned.source, records2);
-  native.source = encode4(source3);
+  native.source = encodeSchematicLayoutSource(source3);
   const retainedOrders = retainedWireInitialOrders(expected2, input);
   const beforeCoordinates = projectSchematicCoordinateCheckpoint(retainedOrders.checkpoint, input.expectedBefore, input.beforeNative);
   const afterCoordinates = projectSchematicCoordinateCheckpoint(input.after, source3, native);
@@ -57923,7 +58038,7 @@ function layoutStoragePersistence(expected2, input, evidence, effect) {
     native.components[index] = structuredClone(reference2);
   }
   const comparisonSource = snapshot5(source3, records2);
-  native.source = encode4(comparisonSource);
+  native.source = encodeSchematicLayoutSource(comparisonSource);
   const comparisonDocument = { ...comparisonPage, semanticSha256: sha256Json({
     uuid: comparisonPage.uuid,
     docType: comparisonPage.docType,
@@ -58076,7 +58191,7 @@ function prepareSchematicLayoutWireGroupRepair(input, before, oldNative, created
     records2.set(row.id, { ...row, body: { ...row.body, zIndex: order2.after } });
   }
   const expectedSource = snapshot5(currentSource, records2), projectedNative = structuredClone(proof.actual);
-  projectedNative.source = encode4(expectedSource);
+  projectedNative.source = encodeSchematicLayoutSource(expectedSource);
   for (const entry of proof.misnamedPins) {
     const pin4 = projectedNative.components.find((model) => model.id === entry.componentId)?.pins.find((candidate) => candidate.id === entry.pinId);
     if (pin4 === void 0 || pin4.net !== entry.observedNet) {
@@ -59913,7 +60028,7 @@ function namedPort(model, net2) {
   const names2 = model.attributes.filter((attribute3) => attribute3.key === "Name");
   return model.kind === "netport" && model.pins.length === 1 && names2.length === 1 && names2[0]?.value === net2 && names2[0].body["value"] === net2;
 }
-function encode5(source3) {
+function encode4(source3) {
   return `{"type":"DOCHEAD"}||${JSON.stringify(source3.document)}|
 ${source3.objects.map((row) => `${JSON.stringify({ type: row.type, id: row.id })}||${JSON.stringify(row.body)}`).join("|\n")}|
 `;
@@ -60002,7 +60117,7 @@ function prepareSchematicLayoutVisibilityRepair(input, before, oldNative, create
   const semantic2 = { schema: currentSource.schema, document: currentSource.document, objects: [...records2.values()].toSorted((a, b) => a.id.localeCompare(b.id)) };
   const correctedSource = { ...semantic2, sha256: sha256Json(semantic2) };
   const correctedNative = structuredClone(actual);
-  correctedNative.source = encode5(correctedSource);
+  correctedNative.source = encode4(correctedSource);
   verifySchematicLayoutEffect(operation, before, correctedSource, original, correctedNative, createdIds, evidence, true);
   const repair = {
     id: "retained-wire-label-visibility-correction",
@@ -60404,7 +60519,9 @@ async function prepareFlatDisplayProfile(input) {
 function verifyFlatDisplayObservation(bindingInput, operationInput, context2, evidence, nativeInput, phase2) {
   const binding2 = assertFlatDisplayBinding(bindingInput, operationInput, context2);
   const current2 = evidenceState(evidence, context2, nativeInput);
-  if (!same20(binding2.project, evidence.projectBinding) || current2.schematicUuid !== binding2.schematicUuid || current2.source.sha256 !== binding2[phase2].sourceSha256 || schematicNativeSnapshotHash(current2.native) !== binding2[phase2].nativeSha256) {
+  const nativeSource = parseDocumentSource(current2.native.source);
+  const comparisonNative = phase2 === "after" ? { ...current2.native, source: encodeSchematicLayoutSource(nativeSource) } : current2.native;
+  if (!same20(binding2.project, evidence.projectBinding) || current2.schematicUuid !== binding2.schematicUuid || nativeSource.sha256 !== current2.source.sha256 || current2.source.sha256 !== binding2[phase2].sourceSha256 || schematicNativeSnapshotHash(comparisonNative) !== binding2[phase2].nativeSha256) {
     throw new Error("Flat display phase source, native state or project branch differs from its sealed binding.");
   }
   verifyMembershipTopology(binding2, evidence, current2.schematicUuid);
@@ -60883,12 +61000,15 @@ var init_design_execution = __esm({
         journal.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
         await updateOperation(journal);
       }
+      observeFlat(context2) {
+        return observeSchematicFlatTopology(this.engine, context2);
+      }
       async flatEvidence(journal, current2, phase2, lifecycle = false) {
         const binding2 = assertFlatDisplayBinding(journal.plan.flatDisplay, journal.plan.operation, journal.context);
         if (current2.native === void 0) {
           throw new Error("Flat display requires a complete native snapshot.");
         }
-        const evidence = await observeSchematicFlatTopology(this.engine, journal.context);
+        const evidence = await this.observeFlat(journal.context);
         if (lifecycle) {
           verifyFlatDisplayMembershipTopology(binding2, journal.plan.operation, journal.context, evidence, current2.native);
         } else {
@@ -61182,7 +61302,7 @@ var init_design_execution = __esm({
         const baselineUploads = await this.engine.awaitProjectUploads(context2);
         const before = await this.snapshot(context2);
         const layoutTemplates = await this.readLayoutTemplates(operation, context2);
-        const flatBefore = flatCandidate ? await observeSchematicFlatTopology(this.engine, context2) : void 0;
+        const flatBefore = flatCandidate ? await this.observeFlat(context2) : void 0;
         const flatPrepared = flatBefore === void 0 ? void 0 : await prepareFlatDisplayProfile({ operation, context: context2, evidence: flatBefore, native: before.native });
         if (flatPrepared !== void 0) {
           plan.flatDisplay = flatPrepared.binding;
@@ -87416,6 +87536,7 @@ var init_extension_api_coverage = __esm({
       "dmt_Project.copyProject": "Installed project copy method is a native stub; no complete new-project ownership or asset-copy proof exists.",
       "dmt_Project.deleteProject": "Installed project delete method is a native stub; no deletion, dependency or backup contract exists.",
       "pcb_Layer.getCurrentLayer": "Installed method has an empty body and cannot identify the selected layer.",
+      "pcb_MathPolygon.discretize": "Installed polygon discretize delegates to Et.discretize, which unconditionally throws Not implemented; JSON projection alone cannot make this method work.",
       "pcb_Layer.getCurrentPhysicalStackingConfigurationName": "Installed method has an empty body and returns no stack identity.",
       "pcb_Layer.getCurrentPhysicalStackingConfiguration": "Installed method has an empty body and returns no stack data; use the maintained native stack source reader.",
       "pcb_Layer.getPhysicalStackingConfiguration": "Installed method has an empty body and returns no named stack data.",
@@ -87441,6 +87562,7 @@ var init_extension_api_coverage = __esm({
       "pcb_Primitive.getPrimitivesByPrimitiveId": "Installed method delegates to the empty singular getter; the declared array result is not useful coverage."
     };
     lossyReaders = {
+      "sch_PrimitivePin.getAll": "The installed pin enumeration catches RPC and required-attribute projection errors as an empty array, so failure is indistinguishable from an empty pin inventory. Explicit-ID get and ID enumeration rethrow errors, but a complete equivalent still needs independent native membership parity.",
       "sys_FontManager.getFontsList": "The installed wrapper catches native failures and returns an empty array, so a failed read is indistinguishable from an empty font set.",
       "sch_PrimitiveBus.get": "The installed callback wrapper catches RPC errors and returns undefined when no callback result is retained. A failed read is indistinguishable from a missing bus.",
       "sch_PrimitiveBus.getAll": "The installed callback wrapper catches RPC errors and returns an empty array, so failure is indistinguishable from an empty bus inventory.",

@@ -7,7 +7,7 @@ import { isNativeDocumentDeleted } from "./native-history.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
 import { verifyDesignTopology } from "./design-topology.ts";
 import { deriveSchematicLayoutPageLoadScope } from "./schematic-layout-page-load.ts";
-import { expectedSchematicLayoutCooperatively, inverseSchematicLayoutCooperatively, verifySchematicLayoutPersistenceCooperatively } from "./schematic-layout-batch.ts";
+import { encodeSchematicLayoutSource, expectedSchematicLayoutCooperatively, inverseSchematicLayoutCooperatively, verifySchematicLayoutPersistenceCooperatively } from "./schematic-layout-batch.ts";
 import type { SchematicLayoutBatch } from "./schematic-layout-batch.ts";
 import { schematicNativeSnapshotHash } from "./schematic-native-adapter.ts";
 import type { SchematicNativeSnapshot } from "./schematic-native-adapter.ts";
@@ -137,16 +137,23 @@ export async function prepareFlatDisplayProfile(input: { readonly operation: unk
   return { binding, operation, inverse, expectedSource: projected.expected, expectedNative: projected.native, baselineProof };
 }
 
-/** Exact per-phase native proof. Reopen representations that differ from the
- * captured source/native state need a separate lifecycle proof; this helper
- * intentionally does not relax them or reinterpret historical journals.
+/** The retained v1 after seal hashes the layout projection's source encoding,
+ * not a native export's record order, header key order or trailing delimiter.
+ * Re-encode only the already-correlated after source with that exact original
+ * encoder in a comparison copy. Keep every native field and parsed source body,
+ * metadata and identity, and retain the original raw seal and evidence unchanged.
+ * Before observations remain byte-strict. Other lifecycle differences still
+ * require their separate complete proof; the global native hash is unchanged.
  */
 export function verifyFlatDisplayObservation(bindingInput: unknown, operationInput: unknown, context: ExpectedContext,
   evidence: FlatDisplayObservationEvidence, nativeInput: unknown, phase: "before" | "after"): void {
   const binding = assertFlatDisplayBinding(bindingInput, operationInput, context);
   const current = evidenceState(evidence, context, nativeInput);
+  const nativeSource = parseDocumentSource(current.native.source);
+  const comparisonNative = phase === "after" ? { ...current.native, source: encodeSchematicLayoutSource(nativeSource) } : current.native;
   if (!same(binding.project, evidence.projectBinding) || current.schematicUuid !== binding.schematicUuid ||
-      current.source.sha256 !== binding[phase].sourceSha256 || schematicNativeSnapshotHash(current.native) !== binding[phase].nativeSha256) {
+      nativeSource.sha256 !== current.source.sha256 || current.source.sha256 !== binding[phase].sourceSha256 ||
+      schematicNativeSnapshotHash(comparisonNative) !== binding[phase].nativeSha256) {
     throw new Error("Flat display phase source, native state or project branch differs from its sealed binding.");
   }
   verifyMembershipTopology(binding, evidence, current.schematicUuid);

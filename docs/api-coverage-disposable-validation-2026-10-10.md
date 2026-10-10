@@ -1,5 +1,57 @@
 # Disposable API validation
 
+## Installed202803 continuation
+
+The restarted facade admitted bundle `4194f789` and manifest `0367a811` against
+the unchanged external tuple. The nine-document flat fixture opened once with
+complete unchanged SQLite proof. Actual managed native and source observations
+were retained this time, including after each failed test.
+
+The Text identity reader failed with an unclassified upstream error. No ID result
+was accepted or retried. Native snapshots before and after were identical, and
+the complete checkpoint remained unchanged. Source review found that root-family
+membership differs from the full ID index: a drawing frame has unstored Text
+descendants. The synthetic fixture omitted that hierarchy. This is a proven
+source defect consistent with the observed fixture, not a claim that the erased
+native exception was recovered. A strict hierarchy-aware correction and bounded
+literal-only diagnostics now pass source review and focused regression tests;
+Wire and Bus were not called. The correction is not yet connected-validated.
+
+One single-field text-position apply dispatched successfully, then stopped
+before Save at the flat after-state hash check. Independent comparison found
+the exact intended parsed source `2ceb5e10` and no other native-field changes.
+The projected native snapshot encoded source in sorted record order with different
+header-key order and a trailing delimiter; actual native export retained drawing
+order and different framing. Hashing these raw strings made equivalent complete
+records appear different. The correction is confined to the flat after-phase
+comparison; original raw evidence, before hashes and v1 seals must stay intact.
+
+The implemented comparison-only fix passes82 focused tests, plus an independent
+55-test flat/layout/lifecycle review. Encrypted SQLite fixtures exercise actual
+apply, retained-v1 reconciliation, commit and inverse coordinators with synthetic
+native observations and dispatch. Reconciliation makes no edit or Save call,
+retains the original plan/seals, and stores actual raw exporter observations.
+These tests are not evidence that the live pending journal has recovered.
+
+The full nine-document durable audit proves identical membership, all eight
+peers unchanged, and the sole requested TEXT.x280-to290 effect. Beyond that
+effect, the target contains only admitted default CANVAS/frame initialization,
+attribute order/encoding changes and DOCHEAD bookkeeping. Automatic persistence
+occurred without Save. The original journal remains `apply-needs-review`, with
+no orphan risk; it has not been reconciled, rolled back, saved or replayed.
+Current source commitment:
+`386f11360b0e53e8c9db07f70ff3ec0ef9d03aded4bb69fd1e5168f29a566d76`.
+Current logical SQLite commitment:
+`21f2443fc2f4b53b8544e5efd3ad5382d9b6a143d72c7121c5f49865fd275e95`.
+
+The runtime closed normally, with empty process discovery and no Save/Discard
+choice. Closed verification uses the maintained offline checkpoint verifier:
+the MCP checkpoint tool requires an active project context. No authority gate,
+journal or loaded cache was changed. A fresh corrected installation must recover
+this original journal before further writer tests. This is not successful
+apply/rollback or Save/reopen acceptance. Page rename and nonempty electrical
+fixtures remain pending. No user production project was accessed or changed.
+
 ## Installed194400 continuation
 
 The restarted facade loaded bundle

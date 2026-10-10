@@ -78,7 +78,7 @@ void test("real-format post-apply durability requires complete baseline or inten
   const before = nativeFormatFixture(), prepared = await prepareFlatDisplayProfile({ ...before, context, operation });
   const intended = nativeFormatAfter(before, prepared.expectedSource, prepared.expectedNative), unchanged = nativeFormatAfter(before, prepared.expectedSource, prepared.expectedNative, false);
   const input = { binding: prepared.binding, operation, context, baseline: before.evidence.history, before: parseDocumentSource(before.native.source), beforeNative: before.native,
-    current: prepared.expectedSource, currentNative: prepared.expectedNative, evidence: intended.evidence, allowAfter: true };
+    current: prepared.expectedSource, currentNative: intended.native, evidence: intended.evidence, allowAfter: true };
   const intendedProof = await verifyFlatDisplayPersistence(input), unchangedProof = await verifyFlatDisplayPersistence({ ...input, evidence: unchanged.evidence });
   assert.equal(intendedProof["classification"], "exact-intended-effect");
   assert.equal(unchangedProof["classification"], "unchanged-baseline");

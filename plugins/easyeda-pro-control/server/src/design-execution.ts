@@ -476,11 +476,15 @@ export class DesignExecutor {
     await updateOperation(journal);
   }
 
+  private observeFlat(context: ExpectedContext): Promise<FlatDisplayObservationEvidence> {
+    return observeSchematicFlatTopology(this.engine, context);
+  }
+
   private async flatEvidence(journal: DesignJournal, current: Awaited<ReturnType<DesignExecutor["snapshot"]>>,
     phase: "before" | "after", lifecycle = false): Promise<FlatDisplayObservationEvidence> {
     const binding = assertFlatDisplayBinding(journal.plan.flatDisplay, journal.plan.operation, journal.context);
     if (current.native === undefined) { throw new Error("Flat display requires a complete native snapshot."); }
-    const evidence = await observeSchematicFlatTopology(this.engine, journal.context);
+    const evidence = await this.observeFlat(journal.context);
     if (lifecycle) { verifyFlatDisplayMembershipTopology(binding, journal.plan.operation, journal.context, evidence, current.native); }
     else { verifyFlatDisplayObservation(binding, journal.plan.operation, journal.context, evidence, current.native, phase); }
     return evidence;
@@ -706,7 +710,7 @@ export class DesignExecutor {
     const baselineUploads = await this.engine.awaitProjectUploads(context);
     const before = await this.snapshot(context);
     const layoutTemplates = await this.readLayoutTemplates(operation, context);
-    const flatBefore = flatCandidate ? await observeSchematicFlatTopology(this.engine, context) : undefined;
+    const flatBefore = flatCandidate ? await this.observeFlat(context) : undefined;
     const flatPrepared = flatBefore === undefined ? undefined : await prepareFlatDisplayProfile({ operation, context, evidence: flatBefore, native: before.native });
     if (flatPrepared !== undefined) { plan.flatDisplay = flatPrepared.binding; }
     const beforeTopology = flatBefore?.proof.topology ?? (context.document.documentType === 1 ? await readDesignTopology(this.engine, context) : undefined);

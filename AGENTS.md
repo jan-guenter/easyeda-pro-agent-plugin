@@ -6,6 +6,62 @@ Last updated: 2026-10-10 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Restarted202803 disposable validation and corrections
+
+- Fresh202803 admission passed the exact installed bundle/manifest and unchanged
+  external tuple. The nine-document disposable fixture opened once with complete
+  unchanged SQLite proof. Native/source readers returned stable observations.
+- New Text-ID reader failed with an unclassified upstream error; no result was
+  accepted or retried. Complete native and checkpoint comparisons remained
+  unchanged. Source review found a definite fixture-model defect: the native ID
+  index includes drawing-frame Text descendants, whereas model families contain
+  root children. The erased internal error does not prove which guard failed.
+  Strict hierarchy-aware collection and bounded diagnostics now pass source
+  review and97 focused tests; connected acceptance remains pending.
+- One text x280-to290 apply reached the editor, then stopped before Save because
+  the sealed projected native hash included a different raw source encoding.
+  Root and independent checks prove equal parsed source, identical other native
+  fields, the sole intended TEXT effect and all eight peer documents unchanged.
+  The complete durable proof admits only initial frame/CANVAS encoding and native
+  DOCHEAD bookkeeping beyond that effect. Automatic persistence occurred; no Save,
+  inverse, restoration or replay. The original journal remains apply-needs-review,
+  non-orphan. The flat-only comparison fix preserves its original v1 seal and
+  raw evidence;82 focused tests and an independent55-test review pass. These
+  include actual coordinators with encrypted SQLite fixtures and synthetic
+  native observations, not connected execution. Original-journal recovery is
+  required before further CAD writes.
+- Normal close and empty discovery prove the disposable runtime exited without
+  a Save/Discard choice. The host-owned facade remains untouched. The MCP
+  checkpoint verifier requires an active context, so closed-file verification
+  uses the maintained offline verifier, not a bridge restart or context bypass.
+- Bounded polygon splitting and concrete discretize/Pin.getAll omission reasons
+  are implemented in source:225 focused tests, types and strict lint pass. Root
+  additionally exercised the exact hash-pinned constructor/split/source bodies
+  offline, including duplicate polygons and the installed discretize throw.
+  No application/bridge was invoked by that test. Candidate210100 is built and
+  locally verified; publication and installation are pending. None of
+  these corrections is connected-validated. Broader work and PR9 remain
+  unfinished. No production project was opened, read, edited or saved.
+
+### Candidate210100 local verification
+
+- Pinned clean install and complete verification pass:1,945 facade tests,
+  one platform-specific skip, zero failures/cancellations;424 bridge tests.
+  Inherited descriptors142/145 were present. Strict types/type-aware lint have
+  zero diagnostics. Dependency tree,151 signatures/40 attestations and
+  zero-vulnerability audit pass. Package/seven skills, official skill validators,
+  repository/privacy, actionlint, offline doctor and reproducibility pass.
+- Reviewed source157files90b09dd2, bundlee46cce87, manifestcad6a87e. Only facade
+  source/bundle projections and review timestamp changed; external application,
+  upstream, native-helper and sanitizer pins remain exact. Inventory:774paths,
+  191public/77native/2lifecycle/8blocked/496omitted,164 fixed readers. New tests
+  and the offline constructor-body probe do not claim connected admission.
+- Original disposable journal is still unresolved; no recovery, Save, inverse,
+  replay or restoration followed the observed failure. Editor remains closed,
+  loaded202803 host untouched. A fresh installed-generation task is required
+  before same-journal recovery. Overall API work remains unfinished; PR9 stays
+  draft. Publication and installed-package proof must be recorded separately.
+
 ### Restarted194400 disposable acceptance and next source corrections
 
 - Fresh facade loaded194400 and authenticated the exact reviewed tuple.

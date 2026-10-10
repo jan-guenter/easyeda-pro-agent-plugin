@@ -27,6 +27,7 @@ function argumentsFor(descriptor: PublicSdkReadDescriptor): Record<string, unkno
   if (method === "getSchematicPageInfo") { return { schematicPageUuid: "sheet-1" }; }
   if (method === "text") { return { tag: TRANSLATION_TAG, args: ["GND", 1, false] }; }
   if (method === "convertCanvasOriginToDataOrigin" || method === "convertDataOriginToCanvasOrigin") { return { x: 10, y: 20 }; }
+  if (method === "splitPolygon") { return { complexPolygons: [[0, 0, "L", 10, 0, 10, 10]] }; }
   if (parts[1] === "pcb_MathPolygon") { return method === "createPolygon" ? { polygon: [0, 0, "L", 10, 0, 10, 10] } : { complexPolygon: [0, 0, "L", 10, 0, 10, 10] }; }
   if (method === "getRuleConfiguration") { return { configurationName: "Default" }; }
   if (method === "getPadPairGroupMinWireLength") { return { padPairGroupName: "Pair 1" }; }
@@ -83,6 +84,7 @@ function resultFor(descriptor: PublicSdkReadDescriptor): unknown {
     case "json": { return null; }
     case "primitive": { return [primitiveFixture(descriptor)]; }
     case "polygon": { return { getSource: (): unknown[] => [0, 0, "L", 10, 0, 10, 10] }; }
+    case "polygons": { return [{ getSource: (): unknown[] => [0, 0, "L", 10, 0, 10, 10] }]; }
     default: { throw new Error("Unexpected test result contract."); }
   }
 }
@@ -141,7 +143,9 @@ void test("all fixed SDK readers are declared in the pinned runtime and expose i
   assert.ok(componentPads.limitations.some((limitation) => limitation.includes("known 0.1 drill-scale defect") && limitation.includes("exact component-pad reader intentionally excludes")));
 });
 
-for (const descriptor of descriptors.filter((entry) => entry.implementation.source === "server/src/public-sdk-read.ts")) {
+// Polygon splitting has a multi-call synchronous constructor contract, covered
+// Separately with source parity and coordinator fault tests.
+for (const descriptor of descriptors.filter((entry) => entry.implementation.source === "server/src/public-sdk-read.ts" && entry.path !== "eda.pcb_MathPolygon.splitPolygon")) {
   void test(`fixed public SDK call preserves receiver, awaits result and projects bounded data: ${descriptor.path}`, async () => {
     const documentType = descriptor.documentTypes[0];
     assert.ok(documentType !== undefined);

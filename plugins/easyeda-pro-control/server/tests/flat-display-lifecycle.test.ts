@@ -1,12 +1,9 @@
 /* oxlint-disable import/max-dependencies -- Coordinator regressions compose real sealed journals, encrypted SQLite history and complete flat storage proofs with isolated runtime seams. */
 import assert from "node:assert/strict";
-import { createCipheriv, createHash } from "node:crypto";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdtemp } from "node:fs/promises";
 import { basename, join } from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
-import { gzipSync } from "node:zlib";
 import { controlDataDirectory, createOperation, loadOperation, operationPath, readArtifact, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
 import { OPERATION_SCHEMA, buildPlanHash, isRecord, newOperationId, sha256Json } from "../src/core.ts";
 import { DesignExecutor } from "../src/design-execution.ts";
@@ -14,46 +11,14 @@ import { parseDocumentSource } from "../src/document-source.ts";
 import { EasyedaControlEngine } from "../src/engine.ts";
 import { prepareFlatDisplayProfile, verifyFlatDisplayMembershipTopology, verifyFlatDisplayObservation } from "../src/flat-display-profile.ts";
 import type { FlatDisplayObservationEvidence } from "../src/schematic-flat-read.ts";
-import { readNativeHistoryCheckpoint } from "../src/native-history.ts";
 import { context, rehash } from "./flat-display-fixture.ts";
 import { nativeFormatAfter, nativeFormatFixture, nativeFormatOperation as operation } from "./flat-display-native-fixture.ts";
+import { storedFlatFixture as storedFixture } from "./flat-display-sqlite-fixture.ts";
 
 type Fixture = ReturnType<typeof nativeFormatFixture>;
 interface Snapshot { payload: Record<string, unknown>; snapshot: ReturnType<typeof parseDocumentSource>; native: Fixture["native"] }
 type Phase = "before" | "after";
 type Action = "commit" | "rollback" | "reconcile" | "saved-reconcile";
-
-async function storedFixture(value: Fixture, directory: string, name: string): Promise<Fixture> {
-  const checkpointPath = join(directory, `${name}.eprj2`), history = value.evidence.history;
-  // Public synthetic fixture bytes only, never a bridge/runtime credential.
-  const key = "55".repeat(16), uuid = "66".repeat(16);
-  const plaintext = history.documents.map((document) => {
-    const records = document.records.map((row, index) => `${JSON.stringify({ type: row.type, id: row.id, ticket: index + 1 })}||${JSON.stringify(row.body)}|\n`).join("");
-    return `{"type":"DOCHEAD","ticket":0}||${JSON.stringify(document.metadata)}|\n${records}`;
-  }).join("");
-  const cipher = createCipheriv("aes-128-gcm", Buffer.from(key, "hex"), Buffer.from(uuid, "hex"));
-  // oxlint-disable-next-line node/no-sync -- Bounded synthetic history is compressed before its isolated SQLite insert.
-  const encrypted = Buffer.concat([cipher.update(gzipSync(plaintext)), cipher.final(), cipher.getAuthTag()]).toString("base64");
-  const database = new DatabaseSync(checkpointPath);
-  try {
-    database.exec(`CREATE TABLE projects(uuid TEXT PRIMARY KEY, branch_uuid TEXT, owner_uuid TEXT);
-CREATE TABLE branches(uuid TEXT PRIMARY KEY, project_uuid TEXT, history_uuid TEXT);
-CREATE TABLE project_history_${history.branchUuid}(uuid TEXT PRIMARY KEY, parent TEXT, snapshot TEXT, key TEXT, num INTEGER, snapshot_num INTEGER);
-CREATE TABLE history_data(uuid TEXT PRIMARY KEY, history_uuid TEXT, dataStr TEXT);`);
-    assert.equal(typeof history.projectOwnerUuid, "string");
-    assert.ok(history.projectOwnerUuid !== undefined);
-    database.prepare("INSERT INTO projects VALUES(?,?,?)").run(history.projectUuid, history.branchUuid, history.projectOwnerUuid);
-    database.prepare("INSERT INTO branches VALUES(?,?,?)").run(history.branchUuid, history.projectUuid, uuid);
-    database.prepare(`INSERT INTO project_history_${history.branchUuid} VALUES(?,?,?,?,?,?)`).run(uuid, null, null, key, 0, 0);
-    database.prepare("INSERT INTO history_data VALUES(?,?,?)").run(uuid, uuid, encrypted);
-  } finally { database.close(); }
-  const hash = createHash("sha256").update(await readFile(checkpointPath)).digest("hex");
-  const decoded = await readNativeHistoryCheckpoint({ checkpointPath, expectedSha256: hash, projectUuid: history.projectUuid });
-  const result = structuredClone(value);
-  result.evidence = { ...result.evidence, history: decoded, checkpoint: { ...result.evidence.checkpoint,
-    checkpoint: checkpointPath, checkpointSha256: hash, sourceSha256: hash, receiptPath: join(directory, `${name}.receipt.json`) } };
-  return result;
-}
 
 async function coordinator(t: TestContext, action: Action, drift: "none" | "meta" | "peer"): Promise<void> {
   const root = controlDataDirectory();
@@ -78,13 +43,13 @@ async function coordinator(t: TestContext, action: Action, drift: "none" | "meta
     state: action === "reconcile" ? "apply-needs-review" : "applied-unsaved", mutationState: "after", saved: false, reopened: false,
     saveAttemptProtocol: "easyeda-pro-control.design-save-attempt.v1", orphanedCallPossible: false, hardStop: action === "reconcile", mutationMayHaveOccurred: true,
     nextSafeAction: "Synthetic coordinator test.", context, before: parseDocumentSource(before.native.source), beforeNative: before.native,
-    after: prepared.expectedSource, afterNative: prepared.expectedNative, inverse: prepared.inverse, createdIds: {}, beforeTopology: prepared.binding.topology,
+    after: prepared.expectedSource, afterNative: applied.native, inverse: prepared.inverse, createdIds: {}, beforeTopology: prepared.binding.topology,
     preCheckpoint: before.evidence.checkpoint, sequence: 0, artifacts: [] });
   if (action === "saved-reconcile") {
     const hash = "a".repeat(64), journal = await loadOperation(operationId);
     const bindingSha256 = sha256Json(prepared.binding), observationSha256 = sha256Json(applied.evidence.observation);
     const phases: readonly [string, unknown][] = [
-      ["after", { snapshot: prepared.expectedSource, native: prepared.expectedNative, payload: { source: prepared.expectedNative.source,
+      ["after", { snapshot: prepared.expectedSource, native: applied.native, payload: { source: applied.native.source,
         read_consistency: { stable: true, attempts: 2, snapshotSha256: hash } } }],
       ["flat-save-prepared", { flatBindingSha256: bindingSha256, observationSha256 }],
       ["save-reopen", { ok: true, saved: true, closed: true, reopened: true, document: context.document,

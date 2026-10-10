@@ -19,7 +19,8 @@ its narrow boundary and pending live validation are listed separately below.
 | Existing project/document open | runtime open-existing | Saved PCB or schematic page; exact registry/checkpoint membership, exclusive-tab guard and complete unchanged SQLite proof; no creation, save, discard or replacement |
 | Exact schematic components | exact_read | Stable double samples with fixed public projections; schematic-topology disabled pending a verified non-mutating replacement |
 | API coverage and fixed reads | api coverage/sdk-reads/sdk-validate, sdk_read | Complete per-method inventory; fixed schemas and explicit public/native implementation labels; bounded observations, not complete source or persistence proof; current-generation live validation pending |
-| Schematic Text/Wire/Bus IDs | sdk_read, getAllPrimitiveId | Native ID-only equivalent on an ordinary active type-1 page; empty arguments only, no Wire net filters or symbol/block-instance scenes. Full source-ID/model-family/index agreement, two stable observations, no callback/compiler/Save. Group IDs are not LINE IDs. Offline-tested; connected validation pending |
+| Schematic Text/Wire/Bus IDs | sdk_read, getAllPrimitiveId | Native ID-only equivalent on an ordinary active type-1 page; empty arguments only, no Wire net filters or symbol/block-instance scenes. Complete reciprocal tree/index proof and source-backed root-family membership; generated frame descendants excluded, structural GROUP records refused. Two stable observations, no callback/compiler/Save. Group IDs are not LINE IDs. Offline-tested; connected validation pending |
+| Polygon splitting | sdk_read, pcb_MathPolygon.splitPolygon | Bounded JSON complex-polygon groups, temporary SDK constructors and exact ordered source-array output with duplicates retained. No native handles or CAD mutation; shared aggregate limits apply. Offline-tested including pinned constructor bodies; connected validation pending |
 | Owned editor tab/split-screen lookup | sdk_read, getSplitScreenIdByTabId / getTabsBySplitScreenId | Exact existing selector, complete bounded owned tree and saved project membership; identity-only direct result checked against the tree before/after, two matching samples and unchanged checkpoint/context. No foreign projects, empty leaves, title/data export, navigation or current-generation live claim |
 | Single-page stored display changes | design sch.layout.batch, sealed flat-display profile | Existing literal-ID attribute/text display patches only; complete inverse, unchanged endpoint topology, sole page of one ordinary schematic and full saved-project proof. No electrical edits, NO_CONNECT, creation/deletion, translation, non-display steps or historical repair/page loading. Source/offline-tested; new connected lifecycle pending. See schematic.md |
 | Historical presentation-only schematic batch | design sch.layout.batch, compiled profile | Currently blocked by the compiled reader. Historical translation, wire/label edits and flag clones passed selected saved/reopened checks, but that does not enable this route now |
@@ -69,6 +70,14 @@ its narrow boundary and pending live validation are listed separately below.
 | Raw JavaScript, automatic database restore, fabrication submission | unsupported | No unrestricted-code switch or implicit purchasing/manufacturing authority |
 
 ## Reported live coverage
+
+Installed202803 reached the exact requested single-field text effect on a
+nine-document disposable fixture, then stopped before Save on differing raw
+source encodings in the flat native hash. Independent parsed-source/native and
+complete durable proof passes; original-journal recovery, inverse and Save/reopen
+remain unfinished. Its new Text-ID call also failed; corrected root/descendant
+membership has offline regression evidence only. Do not treat either as live
+acceptance or replay either call.
 
 Installed194400 completed one empty ordinary-symbol creation from a clean PCB:
 the original returned identity was retained, exactly one META-only SYMBOL was

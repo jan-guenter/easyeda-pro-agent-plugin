@@ -87,7 +87,7 @@ function snapshot(before: NativeSourceSnapshot, records: ReadonlyMap<string, Nat
   const value = { schema: before.schema, document: before.document, objects: structuredClone([...records.values()]).toSorted((a, b) => a.id.localeCompare(b.id)) };
   return { ...value, sha256: sha256Json(value) };
 }
-function encode(source: NativeSourceSnapshot): string {
+export function encodeSchematicLayoutSource(source: NativeSourceSnapshot): string {
   const rows = [`{"type":"DOCHEAD"}||${JSON.stringify(source.document)}`, ...source.objects.map((record, index) => `${JSON.stringify({ type: record.type, id: record.id, ticket: index + 1 })}||${JSON.stringify(record.body)}`)];
   return `${rows.join("|\n")}|\n`;
 }
@@ -441,7 +441,7 @@ function* simulateSteps(input: unknown, before: NativeSourceSnapshot, nativeInpu
     wireOrders = schematicNewWireOrders(before, new Map(current.objects.map((row) => [row.id, row])), native, createdWires);
   }
   yield;
-  native.source = encode(current);
+  native.source = encodeSchematicLayoutSource(current);
   yield;
   if (!legacyFlagGroups) { verifySchematicFlagWireGroups(current, native, netFlags); }
   const inverse = inverseSteps === undefined ? undefined : schematicLayoutBatchSchema.parse({ id: `inverse:${operation.id}`, action: operation.action, documentType: 1, operations: inverseSteps.toReversed() });
@@ -693,7 +693,7 @@ function layoutStoragePersistence(expected: Simulation, input: Parameters<typeof
       spellings.push({ id: field.id, parentId: field.parentId, key: field.key, durableStrikeout: present ? "false" : "omitted" });
     }
   }
-  const source = snapshot(aligned.source, records); native.source = encode(source);
+  const source = snapshot(aligned.source, records); native.source = encodeSchematicLayoutSource(source);
   const retainedOrders = retainedWireInitialOrders(expected, input);
   const beforeCoordinates = projectSchematicCoordinateCheckpoint(retainedOrders.checkpoint, input.expectedBefore, input.beforeNative);
   const afterCoordinates = projectSchematicCoordinateCheckpoint(input.after, source, native);
@@ -724,7 +724,7 @@ function layoutStoragePersistence(expected: Simulation, input: Parameters<typeof
     }
     native.components[index] = structuredClone(reference);
   }
-  const comparisonSource = snapshot(source, records); native.source = encode(comparisonSource);
+  const comparisonSource = snapshot(source, records); native.source = encodeSchematicLayoutSource(comparisonSource);
   const comparisonDocument = { ...comparisonPage, semanticSha256: sha256Json({ uuid: comparisonPage.uuid, docType: comparisonPage.docType,
     metadata: comparisonPage.metadata, records: comparisonPage.records.map(({ id, type, body }) => ({ id, type, body })) }) };
   const documents = comparisonCheckpoint.documents.map((document) => document.uuid === comparisonDocument.uuid ? comparisonDocument : document);
@@ -862,7 +862,7 @@ export function prepareSchematicLayoutWireGroupRepair(input: unknown, before: Na
     records.set(row.id, { ...row, body: { ...row.body, zIndex: order.after } });
   }
   const expectedSource = snapshot(currentSource, records), projectedNative = structuredClone(proof.actual);
-  projectedNative.source = encode(expectedSource);
+  projectedNative.source = encodeSchematicLayoutSource(expectedSource);
   for (const entry of proof.misnamedPins) {
     const pin = projectedNative.components.find((model) => model.id === entry.componentId)?.pins.find((candidate) => candidate.id === entry.pinId);
     if (pin === undefined || pin.net !== entry.observedNet) { throw new Error("Wire-group correction lost an independently proven misnamed pin."); }

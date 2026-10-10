@@ -6,14 +6,14 @@
     "reviewedDistinctMethods": 697,
     "latestDistinctMethods": 773,
     "statuses": {
-      "implemented-public-subset": 190,
+      "implemented-public-subset": 191,
       "implemented-native-equivalent": 77,
       "internal-lifecycle-only": 2,
       "implemented-but-blocked": 8,
-      "omitted": 497
+      "omitted": 496
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 322,
+      "available-with-runtime-guards": 323,
       "blocked": 9,
       "partially-blocked": 3
     },
@@ -32,16 +32,16 @@
       "interactive-ui-resource": 37,
       "lossy-heterogeneous-primitive-projection": 3,
       "lossy-logging-selection-reader": 1,
-      "lossy-or-unawaited-public-reader": 7,
+      "lossy-or-unawaited-public-reader": 8,
       "lossy-selected-object-projection": 1,
       "managed-file-contract-needed": 39,
       "multi-object-electrical-effect": 7,
       "navigation-or-viewport-adapter-needed": 17,
-      "non-json-result-or-callback": 12,
+      "non-json-result-or-callback": 9,
       "not-in-reviewed-runtime": 76,
       "panel-context-not-admitted": 1,
       "private-url-state-projection-needed": 2,
-      "reviewed-native-stub": 28,
+      "reviewed-native-stub": 29,
       "scoped-effect-adapter-needed": 121,
       "selection-marker-or-history-mutation": 8,
       "shared-asset-owner-projection-needed": 3,
@@ -13253,10 +13253,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "non-json-result-or-callback",
-        "reason": "pcb_MathPolygon.discretize includes executable callbacks, browser/file objects or extension class state whose serialization is not defined by a JSON method call.",
-        "nextRequirement": "Create a fixed data projection or managed resource/file adapter with receiver-bound access and complete failure tests. Never serialize methods, prototype state or arbitrary callback source.",
-        "evidence": []
+        "code": "reviewed-native-stub",
+        "reason": "Installed polygon discretize delegates to Et.discretize, which unconditionally throws Not implemented; JSON projection alone cannot make this method work.",
+        "nextRequirement": "Implement a separately reviewed native task adapter with exact effects, or validate a newer runtime where the public method works.",
+        "evidence": [
+          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -13312,14 +13314,42 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "non-json-result-or-callback",
-        "reason": "pcb_MathPolygon.splitPolygon includes executable callbacks, browser/file objects or extension class state whose serialization is not defined by a JSON method call.",
-        "nextRequirement": "Create a fixed data projection or managed resource/file adapter with receiver-bound access and complete failure tests. Never serialize methods, prototype state or arbitrary callback source.",
-        "evidence": []
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.pcb_MathPolygon.splitPolygon",
+          "implementation": "public-method",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled public SDK observation, not complete native-source/connectivity/persistence proof. JSON source arrays only: 1–8 complex-polygon groups, 1–8 polygons per group and at most 1024 tokens per polygon, additionally subject to the shared 16384-node/131072-character input limits. Constructs only temporary SDK complex polygons, calls the fixed public splitPolygon and returns getSource arrays with exact input order, duplicates and source parity. No caller objects or native handles; public geometry data only, not a CAD or connectivity proof.",
+          "documentTypes": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "source": [
+            "public-sdk-read.ts"
+          ],
+          "tests": [
+            "public-sdk-polygon-split.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.pcb_MathPolygon.splitPolygon",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -23067,7 +23097,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sch_PrimitiveBus.getAllPrimitiveId",
           "implementation": "native-task-equivalent",
-          "scope": "Fixed narrowed argument subset; bounded double-sampled native ID observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded Text/NetGroup source-inventory, model-map and ID-index identity agreement is required. Wire/bus IDs identify groups, not their LINE children. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native ID observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded connected-tree/ID-index agreement and direct-root Text/NetGroup source/model membership are required. Generated or inherited descendant Text is not a root Text entry. Wire/bus IDs identify groups, not their LINE children. Structural GROUP records owned by combinationManager are unsupported because they have no ID-index model; their presence refuses the entire read. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
           "documentTypes": [
             1
           ],
@@ -25188,10 +25218,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "non-json-result-or-callback",
-        "reason": "sch_PrimitivePin.getAll includes executable callbacks, browser/file objects or extension class state whose serialization is not defined by a JSON method call.",
-        "nextRequirement": "Create a fixed data projection or managed resource/file adapter with receiver-bound access and complete failure tests. Never serialize methods, prototype state or arbitrary callback source.",
-        "evidence": []
+        "code": "lossy-or-unawaited-public-reader",
+        "reason": "The installed pin enumeration catches RPC and required-attribute projection errors as an empty array, so failure is indistinguishable from an empty pin inventory. Explicit-ID get and ID enumeration rethrow errors, but a complete equivalent still needs independent native membership parity.",
+        "nextRequirement": "Use an independently complete native reader with awaited completion, source parity and failure tests; do not report a swallowed error as an empty result.",
+        "evidence": [
+          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -26251,7 +26283,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sch_PrimitiveText.getAllPrimitiveId",
           "implementation": "native-task-equivalent",
-          "scope": "Fixed narrowed argument subset; bounded double-sampled native ID observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded Text/NetGroup source-inventory, model-map and ID-index identity agreement is required. Wire/bus IDs identify groups, not their LINE children. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native ID observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded connected-tree/ID-index agreement and direct-root Text/NetGroup source/model membership are required. Generated or inherited descendant Text is not a root Text entry. Wire/bus IDs identify groups, not their LINE children. Structural GROUP records owned by combinationManager are unsupported because they have no ID-index model; their presence refuses the entire read. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
           "documentTypes": [
             1
           ],
@@ -26632,7 +26664,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sch_PrimitiveWire.getAllPrimitiveId",
           "implementation": "native-task-equivalent",
-          "scope": "Fixed narrowed argument subset; bounded double-sampled native ID observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded Text/NetGroup source-inventory, model-map and ID-index identity agreement is required. Wire/bus IDs identify groups, not their LINE children. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native ID observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded connected-tree/ID-index agreement and direct-root Text/NetGroup source/model membership are required. Generated or inherited descendant Text is not a root Text entry. Wire/bus IDs identify groups, not their LINE children. Structural GROUP records owned by combinationManager are unsupported because they have no ID-index model; their presence refuses the entire read. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
           "documentTypes": [
             1
           ],

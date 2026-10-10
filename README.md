@@ -21,7 +21,8 @@ tool performs local getters, fixed primitive-state projections and bounded pure
 calculations with authenticated context checks and two matching samples. Three
 explicitly classified native equivalents read schematic Text/Wire/Bus group IDs
 without the public callbacks or compiler; only the active ordinary page and
-empty arguments are supported. The fixed read catalog has 163 routes. It
+empty arguments are supported. The fixed read catalog has 164 routes, including
+bounded polygon splitting that preserves input source arrays and their order. It
 accepts no arbitrary method path, caller code, callbacks, navigation or writes.
 Neither public observations nor native IDs replace complete design or persistence proof.
 
@@ -37,7 +38,10 @@ diagnostic avoids the mutating netlist exporter. A separate sealed single-page
 profile admits only existing stored attribute/text display patches, with exact
 inverse, endpoint and whole-project persistence checks. It does not re-enable
 electrical edits or historical compiled transactions; connected lifecycle testing
-of this new source is pending. Native discovery handles minimized windows, and
+of this new source is pending. The `202803` disposable text edit reached the intended
+state but stopped before Save on a raw source-format comparison defect; its
+original-journal recovery and full lifecycle still need validation.
+Native discovery handles minimized windows, and
 bounded recovery-history caches preserve fresh content verification.
 Offline tests do not establish connected validation for this release.
 The [lifecycle continuation](docs/api-coverage-lifecycle-continuation-2026-10-10.md)
