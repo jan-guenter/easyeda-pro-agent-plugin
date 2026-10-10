@@ -2,9 +2,9 @@
 
 Candidate: `0.3.0+codex.20261010182554` on `feature/api-execution-coverage`.
 
-Local release verification is complete. Publication and installation evidence
-will be recorded separately. This candidate does not establish complete API
-coverage or connected acceptance of new writers.
+Local and GitHub release verification passed. The candidate is published and
+installed; it does not establish complete API coverage or connected acceptance
+of new writers.
 
 ## Connected observations on installed 172121
 
@@ -138,10 +138,35 @@ equivalents, two internal lifecycle methods, eight implemented-but-blocked and
 not connected-validation counts. The feasibility audit explicitly accounts for
 all42 unavailable named library/lifecycle actions.
 
+## Publication and installation
+
+Payload [ea9660b](https://github.com/jan-guenter/easyeda-pro-agent-plugin/commit/ea9660b3d921e7b1a09dbca437f0b742d28e71cb)
+is published in [draft PR9](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/9).
+[CI38076763456](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38076763456)
+passed complete checks, reproducible facade and authenticated bridge fixture
+builds, packaging and artifact upload.
+
+One official CLI marketplace upgrade installed and enabled
+`0.3.0+codex.20261010182554` from the configured GitHub marketplace. It returned
+no errors. No cache was manually patched and no host was terminated. The
+marketplace checkout HEAD equals the payload. All490 tracked packaged files,
+14,101,221bytes and committed modes match the installed cache.
+
+The actual configured cached offline startup hands ambient Node26.7.0 to pinned
+Node24.18.0 using an isolated synthetic machine profile. It returns26tools,
+seven skills,774method entries,160fixed read routes,749/806 reviewed/latest
+declaration signatures and105/68 design/library schemas. Typed data validates,
+caller code refuses, and execution authority remains false. No upstream child,
+non-stdio socket or live call occurred. The native UI helper hash is unchanged.
+
+Root-only handoff documentation does not alter that package. There is no need
+to reinstall the same package merely to advance the cached marketplace's docs.
+
 ## Outstanding acceptance
 
-GitHub CI, marketplace installation and fresh-runtime disposable validation
-remain pending. Offline tests do not satisfy connected acceptance. The draft PR remains
+The currently loaded host remains172121. Fresh Codex pickup with EasyEDA left
+closed is required before disposable validation of182554. Offline tests do not
+satisfy connected acceptance. The draft PR remains
 unfinished; the feasibility report tracks further implementable work, including
 integrating the existing restricted flat schematic-topology diagnostic into
 type-1 transactions with the same profile retained through every lifecycle and

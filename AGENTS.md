@@ -36,8 +36,19 @@ Last updated: 2026-10-10 (Europe/Berlin)
   d960496c and bundlecf27a418 match the manifest; all external/native/bridge/
   sanitizer pins remain unchanged. Coverage:774methods,160fixedreads,
   190public subsets/73native equivalents/2internal/8blocked/501omitted.
-  Git publication/CI/installation and fresh-runtime connected acceptance remain
-  pending. Overall feasible API work is unfinished; do not merge yet.
+  Fresh-runtime connected acceptance remains pending. Overall feasible API work
+  is unfinished; do not merge yet.
+- Payload `ea9660b3d921e7b1a09dbca437f0b742d28e71cb` is published in draft PR9
+  and passed [CI38076763456](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38076763456).
+  One official Git-marketplace upgrade installed/enabled `182554`, with no
+  error or manual cache repair. All490 tracked packaged files/14101221bytes
+  and committed modes match. Actual configured cached startup hands ambient
+  Node26 to pinnedNode24 and returns26tools/seven skills/774methods/160fixedreads,
+  749/806SDKsignatures and105/68schemas, with no upstream child or non-stdio
+  socket. Marketplace HEAD equals the payload. Root-only handoff docs do not
+  change the package; do not refresh the same version merely for those docs.
+  Loaded host remains172121. No live call followed installation. Start a fresh
+  Codex session with EasyEDA closed before disposable connected validation.
 
 ### Previous candidate handoff (superseded by this restart continuation)
 
@@ -330,7 +341,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed Git-marketplace candidate and loaded host are `0.3.0+codex.20261010172121`, with 26 tools and seven skills, from the draft feature ref. Its scoped disposable navigation/refusal/recovery evidence is recorded above. EasyEDA is closed with no unresolved CAD operation. Unreleased source changes are not loaded into that host; installation requires supported fresh-chat pickup. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
+- The installed Git-marketplace candidate is `0.3.0+codex.20261010182554`, with 26 tools and seven skills, from the draft feature ref. The loaded host remains `172121`; its scoped disposable navigation/refusal/recovery evidence is recorded above. EasyEDA closed normally with no unresolved CAD operation. No live calls followed installation; use supported fresh-chat pickup before testing `182554`. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
