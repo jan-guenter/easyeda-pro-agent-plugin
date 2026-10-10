@@ -87,13 +87,36 @@ Rebuilds are byte-identical. The compatibility update changes only facade
 projections and the review timestamp; external, native, dispatcher and sanitizer
 pins remain unchanged.
 
-GitHub CI and official Git-marketplace installation results follow after they
-complete. These changes do not claim connected writer or saved/reopened
-validation. Remaining feasible adapters and disposable tests are still part of
-the user's request; this candidate is not completion of it.
+Payload `5729d43e9f16bb389afd4662e603d120399ae312` is published in
+[draft PR9](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/9).
+[CI38062025703](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38062025703)
+passed complete tests, reproducible builds, packaging and artifact upload.
+
+The official CLI refreshed the configured Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` on
+`feature/api-execution-coverage` and installed/enabled `144459`. Its first success
+response did not correspond to an installed cache; a supported reinstall
+resolved that observation. No cause is inferred, and no cache was manually
+repaired. The verified cache matches all 470 Git-tracked package files,
+13,567,625 bytes and committed modes.
+
+An isolated probe of the actual cached `.mcp.json` startup handed ambient
+Node26.7.0 to pinned Node24.18.0. It returned 26 tools, seven skills, 774 inventory
+methods, 158 fixed readers and visible safety refusals. The two new public route
+entries were present. No upstream child, non-stdio socket or live CAD call was
+started. The configured real control root was not used by this probe.
+
+These changes do not claim connected writer or saved/reopened validation.
+Remaining feasible adapters and disposable tests are still part of the user's
+request; this candidate is not completion of it. Merge remains deferred.
 
 The official marketplace workflow remains the configured GitHub URL, not a
 manual cache copy. The control/development skills require a fresh chat after
 installing new runtime bytes; never kill the host-owned facade or start another
 gateway to bypass pickup. The [official packaging documentation](https://developers.openai.com/plugins/build/plugins)
 describes managed Git-marketplace refresh and local installation pickup.
+
+Next continuation: pick up `144459` in a fresh Codex chat, obtain foreground
+access to the existing EasyEDA Start Page, re-establish exact runtime/context and
+tab ownership, then create or open only an explicitly disposable validation
+project. Do not replay historical production work or use it as a fixture.

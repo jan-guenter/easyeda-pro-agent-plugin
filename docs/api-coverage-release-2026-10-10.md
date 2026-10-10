@@ -1,5 +1,9 @@
 # API coverage candidate and remaining acceptance
 
+Historical `135410` evidence follows. The installed continuation is now
+`144459`; see the [post-restart continuation record](api-coverage-continuation-2026-10-10.md)
+for current code, tests, publication, installation and remaining acceptance.
+
 Candidate snapshot: `0.3.0+codex.20261010135410` on
 `feature/api-execution-coverage`. Published and installed as a draft candidate;
 this is not a completed connected validation release.
