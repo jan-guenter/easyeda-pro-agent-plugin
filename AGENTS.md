@@ -4,11 +4,11 @@ This file is the durable engineering record and common ground for every human or
 
 Last updated: 2026-10-10 (Europe/Berlin)
 
-PR8 follow-up fixes are complete and locally verified; publication, required
-CI and final installation of snapshot125449 remain pending. Installed121000
-is initial evidence, not final acceptance. Retained-Node handoff, successful
-timeout-shaped data and bounded upload-barrier diagnostics have adversarial
-regressions. No live calls while this chat's old host generation remains loaded.
+PR8 final payload9f7ddb9 passed required CI38054290993 and is installed/enabled
+as125449 with exact443-file/configured-startup proof. Only root engineering
+evidence follows before protected merge. Retained-Node handoff, timeout-shaped
+data, bounded upload diagnostics and dependency-free marketplace startup have
+adversarial regressions. No live calls from this chat's old host generation.
 
 ## 2026-10-10 plugin revamp
 
@@ -85,6 +85,23 @@ regressions. No live calls while this chat's old host generation remains loaded.
 - Intermediate review payload2b6307c passed CI38053581114, but is not acceptance
   of this newer packaging payload. Final Git/installed evidence must follow.
 
+### October final payload publication and installation
+
+- Payload9f7ddb9f989274cefc194eeaab33ff0c551bb956 passed required
+  [CI38054290993](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38054290993)
+  with full tests, reproducible builds, private bridge fixture, packaging and
+  artifact upload. Root-only follow-up records leave that payload unchanged.
+- Official Git-marketplace CLI installed/enabled125449. One attempt reported a
+  missing cache path; supported CLI reinstall resolved it. No inferred cause or
+  manual cache edits. Subsequent CLI list and cache recheck confirm it persists.
+- All443 Git files/11415268bytes and committed modes match. Actual configured
+  bundled startup hands ambientNode26.7.0 to pinnedNode24.18.0; isolated synthetic
+  profile probe returns25tools/seven skills,749/806 signatures and105/68schemas,
+  accepts typed data/refuses caller code and starts no upstream/bridge socket.
+- Marketplace remains the GitHub URL; after protected merge point its ref at
+  main and recheck the installed payload. No host termination/hot patch/live
+  call/CAD Save. Fresh-chat pickup is required; current live coverage unclaimed.
+
 ### October local release checks
 
 - Snapshot `0.3.0+codex.20261010121000`:25 tools/seven skills;105 design and68
@@ -138,7 +155,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed Git-marketplace snapshot is `0.3.0+codex.20261010121000`, with25 tools and seven skills. This chat's loaded host generation remains24225913:installation is not loaded pickup. Use a fresh chat before live work. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate the current facade generation.
+- The installed Git-marketplace snapshot is `0.3.0+codex.20261010125449`, with25 tools and seven skills. This chat's loaded host generation remains24225913:installation is not loaded pickup. Use a fresh chat before live work. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate the current facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor is enabled with source/durable-effect and retained runtime gates. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

@@ -36,8 +36,31 @@ subsequently discovered marketplace startup fix.
   nor non-stdio socket. Invalid arguments/profile refuse before facade state.
   All35 original adversarial build/publication tests still pass.
 
-Final-payload GitHub CI and installed-cache proof are still pending at this
-record's creation; the initial evidence below does not stand in for them.
+## Final publication and installation evidence
+
+Payload [9f7ddb9f989274cefc194eeaab33ff0c551bb956](https://github.com/jan-guenter/easyeda-pro-agent-plugin/commit/9f7ddb9f989274cefc194eeaab33ff0c551bb956)
+passed the required [CI run38054290993](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38054290993),
+including complete suites, reproducible bundle/private bridge fixture, hostile
+descriptors, packaging and artifact upload. This is the final plugin payload;
+subsequent root-only engineering records do not change its bytes or version.
+
+The official CLI refreshed this Git marketplace and installed/enabled
+`0.3.0+codex.20261010125449`. An initial install reported an absent cache path;
+the supported CLI installation was repeated, without manual cache edits. The
+subsequent CLI listing and cache recheck both confirm the installed enabled
+snapshot. No cause for the transient missing path is inferred.
+
+All443 Git files,11415268bytes and committed modes match exactly. The isolated
+installed probe uses the actual `.mcp.json` command/arguments, not direct facade
+mode, with a private synthetic profile. Ambient Node26.7.0 is replaced by the
+profile-pinned Node24.18.0. It returns25 tools/seven skills,749/806 SDK signatures
+and105/68 schemas; valid typed data passes and caller code refuses. No upstream
+child or non-stdio socket exists, no execution authority is granted, and no live
+EasyEDA call occurs. After protected merge the Git marketplace should track
+main; final main/ref confirmation belongs in the originating project record.
+
+The old host generation remains untouched. A fresh chat is required before
+live work; synthetic and installed offline tests are not connected validation.
 
 The preceding review-only payload `2b6307c91f049bedbb9bbc64891f6c2cab6fbd6c`
 passed [CI run38053581114](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38053581114).
