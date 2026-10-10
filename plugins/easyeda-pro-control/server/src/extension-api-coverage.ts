@@ -195,8 +195,8 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
   for (const descriptor of publicSdkReadDescriptors()) {
     const existing = routes.get(descriptor.path) ?? [];
     routes.set(descriptor.path, [...existing, {
-      tool: "easyeda_control_sdk_read", selector: descriptor.path, implementation: "public-method",
-      scope: `Fixed ${descriptor.parameterSupport} argument subset; bounded double-sampled public SDK observation, not complete native-source/connectivity/persistence proof. ${descriptor.limitations.join(" ")}`.trim(),
+      tool: "easyeda_control_sdk_read", selector: descriptor.path, implementation: descriptor.implementation.kind,
+      scope: `Fixed ${descriptor.parameterSupport} argument subset; bounded double-sampled ${descriptor.implementation.kind === "native-task-equivalent" ? "native ID" : "public SDK"} observation, not complete native-source/connectivity/persistence proof. ${descriptor.limitations.join(" ")}`.trim(),
       documentTypes: descriptor.documentTypes,
       source: [descriptor.implementation.source.replace(/^server\/src\//u, "")], tests: [descriptor.implementation.test.replace(/^server\/tests\//u, "")],
       validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",

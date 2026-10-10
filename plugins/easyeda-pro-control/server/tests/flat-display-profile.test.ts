@@ -109,7 +109,7 @@ void test("flat display requires all stored target fields and every declared pag
   const documents = structuredClone(value.evidence.history.documents), page = documents.find((document) => document.uuid === "page"), target = page?.records.find((record) => record.id === "text");
   assert.ok(target); target.body["x"] = 999;
   value.evidence = { ...value.evidence, history: rehash({ ...value.evidence.history, documents }) };
-  await assert.rejects(prepareFlatDisplayProfile({ ...value, operation, context }), /baseline.*differs/u);
+  await assert.rejects(prepareFlatDisplayProfile({ ...value, operation, context }), /unrequested record/u);
   const twoPages = fixture();
   const original = twoPages.evidence.history.documents.find((document) => document.uuid === "page"); assert.ok(original);
   twoPages.evidence = { ...twoPages.evidence, history: rehash({ ...twoPages.evidence.history, documents: [...twoPages.evidence.history.documents,
@@ -141,7 +141,7 @@ void test("flat display baseline indexing never collapses duplicate durable reco
       return { ...document, records: [...document.records, duplicate] };
     });
     value.evidence = { ...value.evidence, history: rehash({ ...value.evidence.history, documents }) };
-    await assert.rejects(prepareFlatDisplayProfile({ ...value, operation, context }), /complete stored\/source target record membership/u);
+    await assert.rejects(prepareFlatDisplayProfile({ ...value, operation, context }), /record identity.*duplicated/u);
   }
 });
 

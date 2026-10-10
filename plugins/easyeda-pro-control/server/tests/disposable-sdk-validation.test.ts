@@ -106,6 +106,19 @@ void test("disposable plan rejects nonfixtures, wrong identities, missing finger
     { ...input, expectedContext: { ...input.expectedContext, document: { ...input.expectedContext.document, documentType: 26 } } },
   ]) { assert.throws(() => parseDisposableSdkValidationPlan(invalid)); }
 });
+void test("historical public-only validation refuses native ID plans before any record or facade call", async () => {
+  for (const family of ["Text", "Wire", "Bus"]) {
+    const input = plan(1);
+    const current = fixture(input);
+    const invalid = { ...input, steps: [...input.steps, { id: "native", request: { method: `eda.sch_Primitive${family}.getAllPrimitiveId`, arguments: {} } }] };
+    assert.throws(() => parseDisposableSdkValidationPlan(invalid), /public SDK readers only/u);
+    for (const mode of ["dry-run", "execute"] as const) {
+      await assert.rejects(runDisposableSdkValidation(invalid, { mode, facade: current.facade,
+        record: (): never => { throw new Error("No record callback is allowed before native-plan refusal."); } }), /public SDK readers only/u);
+      assert.deepEqual(current.calls, []);
+    }
+  }
+});
 void test("each SDK request is bracketed by complete source and exact checkpoint invariance without Save or navigation", async () => {
   const input = plan();
   const events: Record<string, unknown>[] = [], f = fixture(input);

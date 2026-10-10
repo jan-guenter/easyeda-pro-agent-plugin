@@ -30,8 +30,20 @@ the complete original baseline or the exact intended delta, including all peers.
 An attempted Save is never repeated. Page-loading and historical repair routes
 cannot recover this profile; inspect the original journal after a refusal.
 
+Saved records and native exports are different representations. The flat-only
+comparison preserves saved META exactly, permits only a source-only default
+origin CANVAS, and proves the reviewed frame/attribute initialization encodings.
+It compares every other record and all peer documents. Raw receipts and hashes
+remain unchanged; the in-memory comparison is not a new checkpoint or a Save.
+The same complete checks apply before writes and to final rollback/reconciliation.
+An inverse may restore the exact display while retaining verified native
+initialization bookkeeping; it does not promise byte-identical SQLite history.
+
 This profile has source and adversarial offline tests. Successful connected
 apply/Save/reopen and inverse validation remain pending for the new candidate.
+Installed194400 refused the real text-only fixture before journal/write/Save
+because its initial stored/source membership check incorrectly included META.
+The new comparison correction must pass a fresh disposable lifecycle test.
 
 Do not use `easyeda_schematic_verify_write` for component proof in the pinned upstream build. Its handler expects an array while the bridge returns `{ total, items }`, so it can report `components_available: false` despite live components. Its name does not make its payload trustworthy.
 

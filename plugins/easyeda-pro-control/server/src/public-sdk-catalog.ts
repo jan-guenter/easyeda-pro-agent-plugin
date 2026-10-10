@@ -31,11 +31,17 @@ export function queryPublicSdkReads(input: unknown = {}): Record<string, unknown
     entries.push(result);
   }
   const nextOffset = query.offset + entries.length;
+  let authority = "public-sdk-observation-not-complete-design-proof";
+  if (matched.some((entry) => entry.implementation.kind === "native-task-equivalent")) {
+    authority = matched.every((entry) => entry.implementation.kind === "native-task-equivalent")
+      ? "native-id-observation-not-complete-source-connectivity-or-persistence-proof"
+      : "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof";
+  }
   return { schema: "easyeda-pro-control.public-sdk-read-catalog.v1", offline: true, executionAuthorized: false,
     tool: "easyeda_control_sdk_read", total: all.length, matched: matched.length, entries,
     offset: query.offset, returned: entries.length, nextOffset: nextOffset < matched.length ? nextOffset : null,
     limits: { maxEntriesBytes: MAX_ENTRIES_BYTES },
-    authority: "public-sdk-observation-not-complete-design-proof",
+    authority,
     liveValidation: "Per-method evidence is separate; offline tests do not establish connected validation.",
   };
 }

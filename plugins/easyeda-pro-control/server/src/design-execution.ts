@@ -61,6 +61,7 @@ import type { FlatDisplayBinding } from "./flat-display-profile.ts";
 import { observeSchematicFlatTopology } from "./schematic-flat-read.ts";
 import type { FlatDisplayObservationEvidence } from "./schematic-flat-read.ts";
 import type { FlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
+import { verifyFlatDisplayMaterialization, verifyFlatDisplayRestoration } from "./flat-display-storage.ts";
 
 type RecordValue = Record<string, unknown>;
 const PROFILE = "easyeda-pro-control.typed-design-transaction.v1";
@@ -1263,13 +1264,17 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path,
         outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-layout-retained-save-reconciled" });
       if (!("receiptPath" in checkpoint)) { throw new Error("Retained layout reconciliation checkpoint receipt missing."); }
+      const savedHistory = await durableSnapshot(checkpoint, journal.context);
       const persistence = await verifySchematicLayoutPersistenceCooperatively(journal.plan.operation, { before: beforeState.history,
-        after: await durableSnapshot(checkpoint, journal.context), expectedBefore: journal.before, expectedAfter: current.snapshot,
+        after: savedHistory, expectedBefore: journal.before, expectedAfter: current.snapshot,
         beforeNative: journal.beforeNative, afterNative: current.native }, journal.createdIds,
         { history: beforeState.history, templates: journal.layoutTemplates ?? {}, ...(journal.layoutWireGroupRepair === undefined ? {} : { wireGroupRepair: journal.layoutWireGroupRepair }), ...(constructorWitness === undefined ? {} : { constructorWitness }) });
+      const flatMaterialization = journal.plan.flatDisplay === undefined ? undefined :
+        await verifyFlatDisplayMaterialization({ history: savedHistory, source: current.snapshot, native: current.native });
       const final = await this.snapshot(journal.context);
       if (!sameState(currentState, state(final.snapshot, final.native))) { throw new Error("Layout changed during retained Save verification."); }
       await DesignExecutor.artifact(journal, "layout-retained-save-reconciled", { ...final, checkpoint, persistence, savedEffect, lifecycle, topology,
+        ...(flatMaterialization === undefined ? {} : { flatMaterialization }),
         retainedSaveAcknowledgment: savedAck, retainedAfterArtifact: priorArtifacts[candidate.index],
         saveDispatchedByRecovery: false, navigationDispatchedByRecovery: false });
       journal.saved = true; journal.reopened = true; journal.state = "completed"; journal.mutationState = "after"; journal.hardStop = false;
@@ -1315,13 +1320,19 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       const recoveryPersistenceInput = { before: await durableSnapshot(journal.preCheckpoint, journal.context),
         after: await durableSnapshot(checkpoint, journal.context), expectedBefore: journal.before, expectedAfter: current.snapshot,
         ...(journal.beforeNative === undefined || current.native === undefined ? {} : { beforeNative: journal.beforeNative, afterNative: current.native }) };
-      const persistence = journal.context.document.documentType === 4 ? verifyFootprintEmptyNetPersistence(recoveryPersistenceInput) : verifyDesignPersistence(recoveryPersistenceInput);
+      let persistence: RecordValue;
+      if (journal.plan.flatDisplay === undefined) { persistence = journal.context.document.documentType === 4 ? verifyFootprintEmptyNetPersistence(recoveryPersistenceInput) : verifyDesignPersistence(recoveryPersistenceInput); }
+      else { persistence = await verifyFlatDisplayRestoration(recoveryPersistenceInput); }
       durableNoMutation = { checkpoint, persistence, lifecycle: baselineLifecycle };
       journal.state = "reconciled-no-mutation"; journal.mutationState = "before"; journal.hardStop = false;
       journal.mutationMayHaveOccurred = false;
-      journal.nextSafeAction = journal.context.document.documentType === 4 ?
-        "Requested geometry is absent. The retained proof lists native empty-net and metadata bookkeeping separately; all other records match. No action or save was retried." :
-        "Exact current document and all decoded durable documents match the pre-edit baseline; no action or save was retried.";
+      if (journal.context.document.documentType === 4) {
+        journal.nextSafeAction = "Requested geometry is absent. The retained proof lists native empty-net and metadata bookkeeping separately; all other records match. No action or save was retried.";
+      } else {
+        journal.nextSafeAction = journal.plan.flatDisplay === undefined ?
+          "Exact current document and all decoded durable documents match the pre-edit baseline; no action or save was retried." :
+          "Original source and all durable documents match the flat baseline with separately reported native initialization/encoding; no action or Save was retried.";
+      }
     } else {
       if (journal.plan.operation.action === "sch.layout.batch" && journal.plan.operation.operations.some((step) => step.action === "sch.wire.replace")) {
         if (journal.createdIds === undefined || journal.beforeNative === undefined || current.native === undefined || beforeState.history === undefined || journal.beforeTopology === undefined ||
@@ -1480,6 +1491,8 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         expectedBefore: journal.before, expectedAfter: journal.plan.operation.action === "pcb.pour.rebuild" ? journal.after : reopened.snapshot,
         ...(journal.beforeNative === undefined || reopened.native === undefined ? {} : { beforeNative: journal.beforeNative, afterNative: reopened.native }) };
       let persistence: ReturnType<typeof verifyDesignPersistence>;
+      const flatMaterialization = journal.plan.flatDisplay === undefined ? undefined :
+        await verifyFlatDisplayMaterialization({ history: persistenceInput.after, source: reopened.snapshot, native: reopened.native });
       if (journal.plan.operation.action === "sch.layout.batch") {
         if (journal.createdIds === undefined) { throw new Error("Layout persistence lacks journal-owned identities."); }
         persistence = await verifySchematicLayoutPersistenceCooperatively(journal.plan.operation, persistenceInput, journal.createdIds,
@@ -1491,7 +1504,8 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       else if (isDesignRuleAction(journal.plan.operation.action) || (journal.plan.operation.action === "pcb.batch" && journal.plan.operation.operations.some((operation) => isDesignRuleAction(operation.action)))) { persistence = verifyRulePersistence(persistenceInput, journal.plan.operation, journal.createdIds); }
       else if ([2, 4].includes(context.document.documentType)) { persistence = await DesignExecutor.libraryPersistence(journal, persistenceInput); }
       else { persistence = verifyDesignPersistence(persistenceInput); }
-      await DesignExecutor.artifact(journal, "reopened", { ...reopened, checkpoint, persistence, lifecycle });
+      await DesignExecutor.artifact(journal, "reopened", { ...reopened, checkpoint, persistence, lifecycle,
+        ...(flatMaterialization === undefined ? {} : { flatMaterialization }) });
       journal.saved = true; journal.reopened = true; journal.state = "completed"; journal.hardStop = false;
       journal.nextSafeAction = "Saved and reopened document verified. Retain the checkpoint and journal.";
       await updateOperation(journal);
@@ -1616,7 +1630,9 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       const persistenceInput = { before: await durableSnapshot(journal.preCheckpoint, journal.context), after: await durableSnapshot(checkpoint, journal.context),
         expectedBefore: journal.before, expectedAfter: restored.snapshot,
         ...(journal.beforeNative === undefined || restored.native === undefined ? {} : { beforeNative: journal.beforeNative, afterNative: restored.native }) };
-      const persistence = journal.context.document.documentType === 4 ? verifyFootprintEmptyNetPersistence(persistenceInput) : verifyDesignPersistence(persistenceInput);
+      let persistence: RecordValue;
+      if (journal.plan.flatDisplay === undefined) { persistence = journal.context.document.documentType === 4 ? verifyFootprintEmptyNetPersistence(persistenceInput) : verifyDesignPersistence(persistenceInput); }
+      else { persistence = await verifyFlatDisplayRestoration(persistenceInput); }
       const final = await this.snapshot(journal.context);
       if (!sameState(state(final.snapshot, final.native), state(restored.snapshot, restored.native))) { throw new Error("Restored source changed during durable rollback verification."); }
       journal.state = "rolled-back"; journal.mutationState = "before"; journal.hardStop = false;

@@ -7,7 +7,7 @@ import { isNativeDocumentDeleted } from "./native-history.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
 import { verifyDesignTopology } from "./design-topology.ts";
 import { deriveSchematicLayoutPageLoadScope } from "./schematic-layout-page-load.ts";
-import { expectedSchematicLayoutCooperatively, inverseSchematicLayoutCooperatively, verifySchematicLayoutBaselineCooperatively, verifySchematicLayoutPersistenceCooperatively } from "./schematic-layout-batch.ts";
+import { expectedSchematicLayoutCooperatively, inverseSchematicLayoutCooperatively, verifySchematicLayoutPersistenceCooperatively } from "./schematic-layout-batch.ts";
 import type { SchematicLayoutBatch } from "./schematic-layout-batch.ts";
 import { schematicNativeSnapshotHash } from "./schematic-native-adapter.ts";
 import type { SchematicNativeSnapshot } from "./schematic-native-adapter.ts";
@@ -17,6 +17,7 @@ import type { FlatDisplayObservationEvidence } from "./schematic-flat-read.ts";
 import { FLAT_DISPLAY_TRANSACTION_PROFILE, assertFlatDisplayBinding, flatDisplayBindingSchema as bindingSchema, flatDisplayContextScope, flatDisplayOperation, flatDisplayProjectBindingFromHistory } from "./flat-display-binding.ts";
 import type { FlatDisplayBinding } from "./flat-display-binding.ts";
 import { verifySchematicStoragePersistence } from "./schematic-storage-persistence.ts";
+import { verifyFlatDisplayMaterialization } from "./flat-display-storage.ts";
 
 export { FLAT_DISPLAY_TRANSACTION_PROFILE, assertFlatDisplayBinding, assertFlatDisplayInverse, buildFlatDisplayProjectGuardExpression, flatDisplayOperation, flatDisplayProjectBindingFromHistory } from "./flat-display-binding.ts";
 export type { FlatDisplayBinding, FlatDisplayProjectBinding } from "./flat-display-binding.ts";
@@ -116,15 +117,7 @@ export async function prepareFlatDisplayProfile(input: { readonly operation: unk
   const captured = structuredClone(input), operation = flatDisplayOperation(captured.operation);
   const { source, native, schematicUuid } = evidenceState(captured.evidence, captured.context, captured.native);
   const { history, checkpoint, proof } = captured.evidence;
-  const durable = history.documents.find((document) => document.uuid === source.document["uuid"]);
-  const durableBodies = new Map(durable?.records.map((record) => [record.id, record.body]));
-  if (durable === undefined || durableBodies.size !== durable.records.length ||
-      !same(source.objects.map((record) => record.id).toSorted(), durable.records.map((record) => record.id).toSorted())) {
-    throw new Error("Flat display requires complete stored/source target record membership.");
-  }
-  const targets = source.objects.map((record) => ({ id: record.id,
-    fields: [...new Set([...Object.keys(record.body), ...Object.keys(durableBodies.get(record.id) ?? {})])].toSorted() }));
-  const baselineProof = await verifySchematicLayoutBaselineCooperatively({ checkpoint: history, source, native, targets });
+  const baselineProof = await verifyFlatDisplayMaterialization({ history, source, native });
   const layoutEvidence = { history, templates: {} };
   const projected = await expectedSchematicLayoutCooperatively(operation, source, native, {}, layoutEvidence);
   const inverse = await inverseSchematicLayoutCooperatively(operation, source, native, {}, layoutEvidence);
@@ -203,13 +196,18 @@ export async function verifyFlatDisplayPersistence(input: {
     throw new Error("Flat display persistence lacks its sealed original and exact intended sources.");
   }
   verifyFlatDisplayObservation(binding, operation, captured.context, captured.evidence, captured.currentNative, captured.allowAfter ? "after" : "before");
+  const originalMaterialization = await verifyFlatDisplayMaterialization({ history: captured.baseline, source: captured.before, native: captured.beforeNative });
   const persistence = { before: captured.baseline, after: captured.evidence.history, expectedBefore: captured.before, expectedAfter: captured.before,
     beforeNative: captured.beforeNative, afterNative: captured.beforeNative };
-  try { return { classification: "unchanged-baseline", proof: verifySchematicStoragePersistence(persistence) }; }
+  try {
+    const currentMaterialization = await verifyFlatDisplayMaterialization({ history: captured.evidence.history, source: captured.before, native: captured.beforeNative });
+    return { classification: "unchanged-baseline", originalMaterialization, currentMaterialization, proof: verifySchematicStoragePersistence(persistence) };
+  }
   catch (error) {
     if (!captured.allowAfter) { throw error; }
+    const currentMaterialization = await verifyFlatDisplayMaterialization({ history: captured.evidence.history, source: captured.current, native: captured.currentNative });
     const proof = await verifySchematicLayoutPersistenceCooperatively(operation,
       { ...persistence, expectedAfter: captured.current, afterNative: captured.currentNative }, {}, { history: captured.baseline, templates: {} });
-    return { classification: "exact-intended-effect", proof };
+    return { classification: "exact-intended-effect", originalMaterialization, currentMaterialization, proof };
   }
 }

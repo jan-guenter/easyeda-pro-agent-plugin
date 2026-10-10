@@ -7,13 +7,13 @@
     "latestDistinctMethods": 773,
     "statuses": {
       "implemented-public-subset": 190,
-      "implemented-native-equivalent": 74,
+      "implemented-native-equivalent": 77,
       "internal-lifecycle-only": 2,
       "implemented-but-blocked": 8,
-      "omitted": 500
+      "omitted": 497
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 319,
+      "available-with-runtime-guards": 322,
       "blocked": 9,
       "partially-blocked": 3
     },
@@ -32,7 +32,7 @@
       "interactive-ui-resource": 37,
       "lossy-heterogeneous-primitive-projection": 3,
       "lossy-logging-selection-reader": 1,
-      "lossy-or-unawaited-public-reader": 10,
+      "lossy-or-unawaited-public-reader": 7,
       "lossy-selected-object-projection": 1,
       "managed-file-contract-needed": 39,
       "multi-object-electrical-effect": 7,
@@ -23061,16 +23061,39 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "lossy-or-unawaited-public-reader",
-        "reason": "The installed callback wrapper catches errors as an empty array; no exact bus identity reader is implemented.",
-        "nextRequirement": "Use an independently complete native reader with awaited completion, source parity and failure tests; do not report a swallowed error as an empty result.",
-        "evidence": [
-          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.sch_PrimitiveBus.getAllPrimitiveId",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native ID observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded Text/NetGroup source-inventory, model-map and ID-index identity agreement is required. Wire/bus IDs identify groups, not their LINE children. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
+          "documentTypes": [
+            1
+          ],
+          "source": [
+            "schematic-native-ids.ts"
+          ],
+          "tests": [
+            "schematic-native-ids.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.sch_PrimitiveBus.getAllPrimitiveId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -26222,16 +26245,39 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "lossy-or-unawaited-public-reader",
-        "reason": "The installed wrapper publishes its callback without awaiting completion; an empty result can precede actual enumeration.",
-        "nextRequirement": "Use an independently complete native reader with awaited completion, source parity and failure tests; do not report a swallowed error as an empty result.",
-        "evidence": [
-          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.sch_PrimitiveText.getAllPrimitiveId",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native ID observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded Text/NetGroup source-inventory, model-map and ID-index identity agreement is required. Wire/bus IDs identify groups, not their LINE children. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
+          "documentTypes": [
+            1
+          ],
+          "source": [
+            "schematic-native-ids.ts"
+          ],
+          "tests": [
+            "schematic-native-ids.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.sch_PrimitiveText.getAllPrimitiveId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -26580,16 +26626,39 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "lossy-or-unawaited-public-reader",
-        "reason": "The installed callback wrapper catches errors as an empty array; exact wire source is available through schematic-source instead.",
-        "nextRequirement": "Use an independently complete native reader with awaited completion, source parity and failure tests; do not report a swallowed error as an empty result.",
-        "evidence": [
-          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.sch_PrimitiveWire.getAllPrimitiveId",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native ID observation, not complete native-source/connectivity/persistence proof. Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused. Complete bounded Text/NetGroup source-inventory, model-map and ID-index identity agreement is required. Wire/bus IDs identify groups, not their LINE children. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save. Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
+          "documentTypes": [
+            1
+          ],
+          "source": [
+            "schematic-native-ids.ts"
+          ],
+          "tests": [
+            "schematic-native-ids.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.sch_PrimitiveWire.getAllPrimitiveId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

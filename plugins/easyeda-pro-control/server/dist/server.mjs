@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "8fbc60d45b94ecbf31584dfabb28445d13576ed3f869abf848325c3a113dae10";
+const __easyedaBundlePairId = "7459b9c27a9c1026a5e1c3a69bab3459a590f4134a07fc9bd4fd278799dda86b";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -44782,6 +44782,89 @@ var init_editor_tab_lookups = __esm({
   }
 });
 
+// server/src/schematic-native-ids.ts
+function isSchematicNativeIdMethod(method) {
+  return SCHEMATIC_NATIVE_ID_METHODS.some((entry) => entry === method);
+}
+function buildSchematicNativeIdsExpression(method) {
+  if (!isSchematicNativeIdMethod(method)) {
+    throw new Error("Unsupported schematic native ID method.");
+  }
+  let family = "bus";
+  if (method.includes("PrimitiveText")) {
+    family = "text";
+  }
+  if (method.includes("PrimitiveWire")) {
+    family = "wire";
+  }
+  return `(() => {
+const bad=reason=>{throw new Error('SCH_NATIVE_IDS_'+reason);};
+const validId=value=>{if(typeof value!=='string'||!value||value.length>256||[...value].some(character=>character.charCodeAt(0)<32||character.charCodeAt(0)===127))bad('IDENTITY');return value;};
+const sch=globalThis.SCH,ui=globalThis.UI,tabs=ui?.tabBar;
+const manager=sch?.docMemoryManager,activeReader=manager?.getActiveDoc;
+if(typeof activeReader!=='function'||typeof tabs?.getActiveTab!=='function')bad('MANAGER');
+const tabReader=tabs.getActiveTab,page=activeReader.call(manager);
+const shapes=page?.shapeManager,ids=page?.idManager,index=ids?.idMap,modelMap=shapes?.modelMap;
+const consistency=page?.consistencyImpl,handler=consistency?.decodeAndRealTimeSyncHandler;
+const sourceReader=handler?.getSourceCodeIdMap,modelReader=shapes?.getModels,project=page?.projectMgr;
+const action=shapes?.actionRunner;
+if(!page||!project||typeof sourceReader!=='function'||typeof modelReader!=='function'||!(index instanceof Map)||index.size>100000||!(modelMap instanceof Map)||modelMap.size>1000)bad('INVENTORY');
+const check=()=>{
+ if(globalThis.SCH!==sch||globalThis.UI!==ui||ui.tabBar!==tabs||tabs.getActiveTab!==tabReader||sch.docMemoryManager!==manager||manager.getActiveDoc!==activeReader||activeReader.call(manager)!==page||tabReader.call(tabs)!==EXPECTED_TAB_ID)bad('RECEIVER_CHANGED');
+ if(EXPECTED_DOCUMENT_TYPE!==1||page.uuid!==EXPECTED_DOCUMENT_UUID||page.project_uuid!==EXPECTED_PROJECT_UUID||page.tabId!==EXPECTED_TAB_ID||EXPECTED_TAB_ID!==EXPECTED_DOCUMENT_UUID+'@'+EXPECTED_PROJECT_UUID||page.isSchSheetDoc?.()!==true||page.isBlockSymbolInstancePage!==false)bad('CONTEXT');
+ if(page.projectMgr!==project||project.uuid!==EXPECTED_PROJECT_UUID||page.shapeManager!==shapes||page.idManager!==ids||shapes.docManager!==page||shapes.idManager!==ids||ids.docManager!==page||ids.idMap!==index||shapes.modelMap!==modelMap||shapes.getModels!==modelReader||page.consistencyImpl!==consistency||consistency.docManager!==page||consistency.decodeAndRealTimeSyncHandler!==handler||consistency.handler!==handler||handler.consistencyImpl!==consistency||handler.docManager!==page||handler.getSourceCodeIdMap!==sourceReader||shapes.actionRunner!==action)bad('OWNER_CHANGED');
+ if(consistency.state!=='initialized'||action?.running!==false)bad('NOT_READY');
+};
+check();
+const sources=sourceReader.call(handler);
+if(!(sources instanceof Map)||sources.size>100000)bad('SOURCE_INVENTORY');
+const sourceModels=new Map();
+for(const [key,marker] of sources){validId(key);const model=index.get(key);if(marker!==1||!model||model.id!==key)bad('SOURCE_MODEL');sourceModels.set(key,model);}
+const snapshots=[];
+const result=[];
+for(const type of ['Text','NetGroup']){
+ const map=modelMap.get(type);
+ if(map!==undefined&&(!(map instanceof Set)||map.size>20000))bad('MODEL_MAP');
+ const models=modelReader.call(shapes,type);
+ if(!Array.isArray(models)||models.length>20000||models.length!==(map?.size??0))bad('MODEL_LIST');
+ const members=new Map();
+ for(const model of models){
+  const key=validId(model?.id);
+  if(members.has(key)||model.modelType!==type||model.shapeManager!==shapes||index.get(key)!==model||!map?.has(model)||sourceModels.get(key)!==model)bad('MODEL_MEMBERSHIP');
+  if(type==='NetGroup'&&!['wire','bus'].includes(model.type))bad('GROUP_TYPE');
+  members.set(key,model);
+  if(type==='Text'&&${JSON.stringify(family)}==='text'||type==='NetGroup'&&model.type===${JSON.stringify(family)})result.push(key);
+ }
+ for(const [key,model] of index){if(model?.modelType===type&&(model.id!==key||members.get(key)!==model))bad('INDEX_MEMBERSHIP');}
+ for(const [key,model] of sourceModels){if(model.modelType===type&&members.get(key)!==model)bad('SOURCE_MEMBERSHIP');}
+ snapshots.push({type,map,members,types:new Map([...members].map(([key,model])=>[key,model.type]))});
+}
+if(result.length>20000)bad('RESULT_BOUND');
+const finalSources=sourceReader.call(handler);
+if(!(finalSources instanceof Map)||finalSources.size!==sources.size)bad('SOURCE_CHANGED');
+for(const [key,marker] of sources){if(finalSources.get(key)!==marker||index.get(key)!==sourceModels.get(key))bad('SOURCE_CHANGED');}
+for(const {type,map,members,types} of snapshots){
+ if(modelMap.get(type)!==map||map!==undefined&&map.size!==members.size)bad('MODELS_CHANGED');
+ const current=modelReader.call(shapes,type);
+ if(!Array.isArray(current)||current.length!==members.size||new Set(current).size!==current.length)bad('MODELS_CHANGED');
+ for(const model of current){if(members.get(model?.id)!==model||index.get(model.id)!==model||!map?.has(model)||model.modelType!==type||model.shapeManager!==shapes||model.type!==types.get(model.id))bad('MODELS_CHANGED');}
+ for(const [key,model] of index){if(model?.modelType===type&&members.get(key)!==model)bad('INDEX_CHANGED');}
+}
+check();
+return result.sort();
+})()`;
+}
+var SCHEMATIC_NATIVE_ID_METHODS;
+var init_schematic_native_ids = __esm({
+  "server/src/schematic-native-ids.ts"() {
+    SCHEMATIC_NATIVE_ID_METHODS = [
+      "eda.sch_PrimitiveText.getAllPrimitiveId",
+      "eda.sch_PrimitiveWire.getAllPrimitiveId",
+      "eda.sch_PrimitiveBus.getAllPrimitiveId"
+    ];
+  }
+});
+
 // server/src/public-sdk-read.ts
 function add(path5, documentTypes, output, argumentsSchema = emptyArguments, parameters = [], options = {}) {
   if (!/^eda\.(?:dmt|lib|pcb|sch|sys)_[A-Za-z0-9]+\.[A-Za-z0-9_]+$/u.test(path5) || definitions.has(path5)) {
@@ -44793,6 +44876,7 @@ function add(path5, documentTypes, output, argumentsSchema = emptyArguments, par
     argumentsSchema,
     parameters,
     output,
+    implementationKind: options.implementationKind ?? "public-method",
     primitiveType: options.primitiveType,
     membership: options.membership,
     restParameter: options.restParameter,
@@ -44862,8 +44946,9 @@ function publicSdkReadDescriptors() {
     parameterSupport: entry.parameterSupport,
     limitations: [...entry.limitations],
     implementation: {
-      source: isEditorTabLookupMethod(entry.path) ? "server/src/editor-tab-lookups.ts" : "server/src/public-sdk-read.ts",
-      test: isEditorTabLookupMethod(entry.path) ? "server/tests/editor-tab-lookups.test.ts" : "server/tests/public-sdk-read.test.ts",
+      kind: entry.implementationKind,
+      source: `server/src/${readImplementationName(entry.path)}.ts`,
+      test: `server/tests/${readImplementationName(entry.path)}.test.ts`,
       publicApiSha256: PUBLIC_SDK_READ_API_SHA256
     },
     liveValidation: "not-yet-validated",
@@ -44872,6 +44957,15 @@ function publicSdkReadDescriptors() {
     restParameter: entry.restParameter ?? null,
     result: { kind: entry.output, optional: entry.optionalResult, getterFields: [...entry.getters], primitiveType: entry.primitiveType ?? null }
   }));
+}
+function readImplementationName(path5) {
+  if (isSchematicNativeIdMethod(path5)) {
+    return "schematic-native-ids";
+  }
+  if (isEditorTabLookupMethod(path5)) {
+    return "editor-tab-lookups";
+  }
+  return "public-sdk-read";
 }
 function buildPublicSdkReadCode(input) {
   const request = publicSdkReadRequestSchema.parse(input);
@@ -44965,10 +45059,10 @@ try {
     ${definition.primitiveType === "ComponentPad" ? `if (out.ParentComponentPrimitiveId !== ${JSON.stringify(request.arguments["primitiveId"])}) fail("sdk-wrong-parent");` : ""}
     return out;
   }
-  if (typeof ${definition.path} !== "function") fail("sdk-missing-method");
+  ${isSchematicNativeIdMethod(definition.path) ? "" : `if (typeof ${definition.path} !== "function") fail("sdk-missing-method");`}
   ${membership}
   stage = "call";
-  const native = await ${definition.path}(${args});
+  const native = ${isSchematicNativeIdMethod(definition.path) ? buildSchematicNativeIdsExpression(definition.path) : `await ${definition.path}(${args})`};
   stage = "projection";
   const present = native !== undefined;
   ${definition.membership === void 0 ? "" : `if (!native || native.uuid !== ${JSON.stringify(request.arguments[definition.membership.argument])}) fail("sdk-wrong-document");`}
@@ -45123,7 +45217,8 @@ function validatePublicSdkReadPayload(input, requestInput) {
   }
   return {
     ...payload,
-    assurance: "bounded-public-sdk-observation-not-native-or-persistence-proof",
+    assurance: definition.implementationKind === "native-task-equivalent" ? "bounded-native-id-observation-not-complete-source-connectivity-or-persistence-proof" : "bounded-public-sdk-observation-not-native-or-persistence-proof",
+    ...definition.implementationKind === "native-task-equivalent" ? { implementationKind: definition.implementationKind } : {},
     publicApiSha256: PUBLIC_SDK_READ_API_SHA256,
     liveValidation: "not-yet-validated",
     limitations: [...definition.limitations]
@@ -45136,6 +45231,7 @@ var init_public_sdk_read = __esm({
     init_design_operations();
     init_exact_readers();
     init_editor_tab_lookups();
+    init_schematic_native_ids();
     PUBLIC_SDK_READ_API_SHA256 = "5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc";
     PUBLIC_SDK_READ_MAX_BYTES = 2097152;
     MAX_ITEMS = 2e4;
@@ -45314,6 +45410,17 @@ var init_public_sdk_read = __esm({
     add("eda.pcb_ManufactureData.getBomTemplates", [3], "strings");
     add("eda.sch_ManufactureData.getBomTemplates", [1], "strings");
     add("eda.sch_ManufactureData.getAssemblyVariantsConfigs", [1], "records");
+    for (const method of SCHEMATIC_NATIVE_ID_METHODS) {
+      add(method, [1], "ids", emptyArguments, method.includes("PrimitiveWire") ? ["net"] : [], {
+        implementationKind: "native-task-equivalent",
+        parameterSupport: "narrowed",
+        limitations: [
+          "Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused.",
+          "Complete bounded Text/NetGroup source-inventory, model-map and ID-index identity agreement is required. Wire/bus IDs identify groups, not their LINE children. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save.",
+          "Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called."
+        ]
+      });
+    }
     pcbGetters = {
       Via: "Net X Y HoleDiameter Diameter ViaType DesignRuleBlindViaName SolderMaskExpansion PrimitiveLock",
       Line: "Net Layer StartX StartY EndX EndY LineWidth PrimitiveLock",
@@ -46729,6 +46836,7 @@ var init_engine = __esm({
     init_runtime_scripts();
     init_exact_readers();
     init_public_sdk_read();
+    init_schematic_native_ids();
     init_editor_tab_lookups();
     init_schematic_native_adapter();
     init_schematic_flat_read();
@@ -47781,7 +47889,8 @@ var init_engine = __esm({
         }
         await Promise.all([verifyDeviceAssociationNativeProfile(bundles.assetsRoot), verifySchematicNativeProfile(bundles.assetsRoot)]);
       }
-      /** Fixed public SDK observations are not native source or persistence proof.
+      /** Fixed SDK observations and explicit native ID equivalents do not establish
+       * complete native source, connectivity or persistence proof.
        * The outer facade retains the authenticated session and full runtime gate.
        * There is no caller code, retry, mutation or lifecycle action in this route.
        */
@@ -47812,7 +47921,7 @@ var init_engine = __esm({
         if (sha256Json(first) !== snapshotSha256) {
           throw new Error("Public SDK observation changed between consecutive samples; no stable result was produced.");
         }
-        return { ...second, authority: "public-sdk-observation-not-complete-design-proof", read_consistency: {
+        return { ...second, authority: isSchematicNativeIdMethod(parsed2.method) ? "native-id-observation-not-complete-source-connectivity-or-persistence-proof" : "public-sdk-observation-not-complete-design-proof", read_consistency: {
           stable: true,
           attempts: 2,
           snapshotSha256,
@@ -54625,11 +54734,11 @@ function materializedPartSymbolAttribute(before, expected2, after) {
 function verifySymbolSourceEffect(input, before, after, ids2 = {}) {
   checked2(after);
   const expected2 = expectedSymbolSource(input, before, ids2);
-  const materialization = same9(expected2, after) ? void 0 : materializedPartSymbolAttribute(before, expected2, after);
-  if (!same9(expected2, after) && materialization === void 0) {
+  const materialization2 = same9(expected2, after) ? void 0 : materializedPartSymbolAttribute(before, expected2, after);
+  if (!same9(expected2, after) && materialization2 === void 0) {
     throw new Error("Symbol edit changed source outside its exact typed effect.");
   }
-  return { ...compareDocumentSources(before, after), symbolMaterializations: materialization === void 0 ? [] : [materialization] };
+  return { ...compareDocumentSources(before, after), symbolMaterializations: materialization2 === void 0 ? [] : [materialization2] };
 }
 function inverseSymbolOperation(input, before, ids2 = {}) {
   const operation = parsed(input);
@@ -60077,6 +60186,106 @@ var init_design_save_attempt = __esm({
   }
 });
 
+// server/src/flat-display-storage.ts
+async function materialization(input) {
+  const { history, source: source3 } = input;
+  verifyDesignBaseline({ checkpoint: history, source: source3, targets: [] });
+  const native = correlateSchematicNativeSource(source3, input.native);
+  const nativeComponents = new Map(native.components.map((component2) => [component2.id, component2]));
+  const target5 = history.documents.find((document2) => document2.uuid === source3.document["uuid"]);
+  if (target5?.docType !== "SCH_PAGE") {
+    throw new Error("Flat display materialization requires its saved ordinary page.");
+  }
+  const durable = new Map(target5.records.map((record6) => [record6.id, record6]));
+  const exported = new Map(source3.objects.map((record6) => [record6.id, record6]));
+  const meta3 = durable.get("META");
+  if (meta3?.type !== "META" || target5.records.filter((record6) => record6.type === "META").length !== 1 || source3.objects.some((record6) => record6.type === "META" && record6.id !== "META") || exported.has("META") && !same19(exported.get("META"), { id: meta3.id, type: meta3.type, body: meta3.body }) || target5.records.some((record6) => record6.id !== "META" && !exported.has(record6.id)) || source3.objects.some((record6) => !durable.has(record6.id) && record6.id !== "CANVAS")) {
+    throw new Error("Flat display requires complete stored/source target record membership except its exact durable META and default CANVAS.");
+  }
+  const canvas = exported.get("CANVAS");
+  if (!durable.has("CANVAS") && canvas !== void 0 && (canvas.type !== "CANVAS" || !same19(canvas.body, { originX: 0, originY: 0 }))) {
+    throw new Error("Flat display source-only CANVAS is not the exact native default origin.");
+  }
+  for (const record6 of target5.records.filter((entry) => entry.type === "COMPONENT" && entry.body["zIndex"] === null)) {
+    const current2 = exported.get(record6.id);
+    if (current2?.body["zIndex"] !== null && (nativeComponents.get(record6.id)?.kind !== "sheet" || current2?.type !== "COMPONENT" || current2.body["zIndex"] !== 0 || !same19(current2.body, { ...record6.body, zIndex: 0 }))) {
+      throw new Error("Flat display admits only the exact null-to-zero native drawing-frame initialization.");
+    }
+  }
+  await yieldProofEventLoop();
+  const coordinates4 = projectSchematicCoordinateCheckpoint(history, source3, native);
+  const rows = source3.objects.map((record6) => ({
+    ...structuredClone(record6),
+    ticket: durable.get(record6.id)?.ticket ?? 0,
+    client: durable.get(record6.id)?.client ?? null
+  }));
+  if (!exported.has("META")) {
+    rows.push(structuredClone(meta3));
+  }
+  rows.sort((left, right) => left.id.localeCompare(right.id));
+  const comparisonTarget = { ...target5, records: rows, semanticSha256: sha256Json({
+    uuid: target5.uuid,
+    docType: target5.docType,
+    metadata: target5.metadata,
+    records: rows.map(({ id: id7, type: type2, body: body3 }) => ({ id: id7, type: type2, body: body3 }))
+  }) };
+  const documents = history.documents.map((document2) => document2.uuid === target5.uuid ? comparisonTarget : document2);
+  const candidate = { ...history, documents, semanticSha256: sha256Json(documents.map(({ uuid: uuid8, docType, semanticSha256 }) => ({ uuid: uuid8, docType, semanticSha256 }))) };
+  await yieldProofEventLoop();
+  const comparison = verifySchematicStoragePersistence({
+    before: coordinates4.checkpoint,
+    after: candidate,
+    expectedBefore: source3,
+    expectedAfter: source3,
+    beforeNative: native,
+    afterNative: native
+  });
+  const scope3 = {
+    rawCheckpointSha256: history.checkpointSha256,
+    rawHistorySemanticSha256: history.semanticSha256,
+    sourceSha256: source3.sha256,
+    comparisonOnly: true,
+    candidateSemanticSha256: candidate.semanticSha256,
+    durableMetaSha256: sha256Json({ id: meta3.id, type: meta3.type, body: meta3.body }),
+    coordinateProof: coordinates4.proof,
+    comparison
+  };
+  await yieldProofEventLoop();
+  return {
+    coordinateCheckpoint: coordinates4.checkpoint,
+    proof: { ok: true, schema: "easyeda-pro-control.flat-display-materialization.v1", ...scope3, scopeSha256: sha256Json(scope3) }
+  };
+}
+async function verifyFlatDisplayMaterialization(input) {
+  const result = await materialization(structuredClone(input));
+  return result.proof;
+}
+async function verifyFlatDisplayRestoration(input) {
+  const captured = structuredClone(input);
+  const before = await materialization({ history: captured.before, source: captured.expectedBefore, native: captured.beforeNative });
+  const after = await materialization({ history: captured.after, source: captured.expectedAfter, native: captured.afterNative });
+  const comparison = verifySchematicStoragePersistence({ ...captured, before: before.coordinateCheckpoint, after: after.coordinateCheckpoint });
+  return {
+    ok: true,
+    schema: "easyeda-pro-control.flat-display-restoration.v1",
+    beforeMaterialization: before.proof,
+    afterMaterialization: after.proof,
+    comparison
+  };
+}
+var same19;
+var init_flat_display_storage = __esm({
+  "server/src/flat-display-storage.ts"() {
+    init_core3();
+    init_design_persistence();
+    init_schematic_coordinate_lifecycle();
+    init_schematic_source_proof();
+    init_schematic_storage_persistence();
+    init_cooperative_proof();
+    same19 = (left, right) => canonicalJson(left) === canonicalJson(right);
+  }
+});
+
 // server/src/flat-display-profile.ts
 function exactMembers2(history) {
   return history.documents.map(({ uuid: uuid8, docType, semanticSha256 }) => ({ uuid: uuid8, docType, semanticSha256 })).toSorted((left, right) => left.uuid.localeCompare(right.uuid));
@@ -60093,7 +60302,7 @@ function assertNativeObservation(evidence, native) {
   const topologyByPart = new Map(evidence.proof.topology.map((entry) => [entry.uniqueId, entry]));
   for (const symbol4 of symbols) {
     const model = components.get(symbol4.id);
-    if (model === void 0 || model.kind !== symbol4.kind || !same19(model.body, symbol4.body) || !same19(attributes(model.attributes), attributes(symbol4.attributes)) || model.pins.length !== symbol4.pins.length) {
+    if (model === void 0 || model.kind !== symbol4.kind || !same20(model.body, symbol4.body) || !same20(attributes(model.attributes), attributes(symbol4.attributes)) || model.pins.length !== symbol4.pins.length) {
       throw new Error("Flat display native symbol or attributes differ from the independent observation.");
     }
     const uniqueId = symbol4.attributes.find((entry) => entry.key === "Unique ID")?.value;
@@ -60103,7 +60312,7 @@ function assertNativeObservation(evidence, native) {
     for (const pin4 of symbol4.pins) {
       const actual = pins.get(pin4.id), expectedNet = expectedNets.get(pin4.number);
       const noConnect = pin4.noConnectAttribute === null ? null : { id: pin4.noConnectAttribute.id, value: pin4.noConnectAttribute.value, body: pin4.noConnectAttribute.body };
-      if (actual === void 0 || !same19(actual.body, pin4.body) || !same19(attributes(actual.attributes), attributes(pin4.attributes)) || !same19(actual.noConnect, noConnect) || actual.net !== expectedNet) {
+      if (actual === void 0 || !same20(actual.body, pin4.body) || !same20(attributes(actual.attributes), attributes(pin4.attributes)) || !same20(actual.noConnect, noConnect) || actual.net !== expectedNet) {
         throw new Error("Flat display native pin/body/net differs from the independent endpoint observation.");
       }
     }
@@ -60111,7 +60320,7 @@ function assertNativeObservation(evidence, native) {
 }
 function evidenceState(evidence, context2, nativeInput) {
   const contextBinding = flatDisplayContextScope(context2), { checkpoint, history, observation } = evidence;
-  if (checkpoint.schema !== "easyeda-pro-control.checkpoint.v2" || normalizeEasyedaProjectPath(checkpoint.source) !== contextBinding.projectPath || checkpoint.sourceDumpSha256 !== checkpoint.checkpointDumpSha256 || history.checkpointSha256 !== checkpoint.checkpointSha256 || !same19(evidence.projectBinding, flatDisplayProjectBindingFromHistory(history))) {
+  if (checkpoint.schema !== "easyeda-pro-control.checkpoint.v2" || normalizeEasyedaProjectPath(checkpoint.source) !== contextBinding.projectPath || checkpoint.sourceDumpSha256 !== checkpoint.checkpointDumpSha256 || history.checkpointSha256 !== checkpoint.checkpointSha256 || !same20(evidence.projectBinding, flatDisplayProjectBindingFromHistory(history))) {
     throw new Error("Flat display observation is not bound to its complete checkpoint and project branch.");
   }
   const scope3 = deriveSchematicLayoutPageLoadScope(context2, history);
@@ -60123,7 +60332,7 @@ function evidenceState(evidence, context2, nativeInput) {
     pageIds: scope3.pageUuids
   };
   const proof = verifySchematicFlatTopology(observation);
-  if (scope3.pageUuids.length !== 1 || !same19(observation.scope, expectedScope) || !same19(proof, evidence.proof)) {
+  if (scope3.pageUuids.length !== 1 || !same20(observation.scope, expectedScope) || !same20(proof, evidence.proof)) {
     throw new Error("Flat display requires one complete checkpoint-bound page and its exact verified observation.");
   }
   const alive = history.documents.filter((document2) => !isNativeDocumentDeleted(document2));
@@ -60156,16 +60365,7 @@ async function prepareFlatDisplayProfile(input) {
   const captured = structuredClone(input), operation = flatDisplayOperation(captured.operation);
   const { source: source3, native, schematicUuid } = evidenceState(captured.evidence, captured.context, captured.native);
   const { history, checkpoint, proof } = captured.evidence;
-  const durable = history.documents.find((document2) => document2.uuid === source3.document["uuid"]);
-  const durableBodies = new Map(durable?.records.map((record6) => [record6.id, record6.body]));
-  if (durable === void 0 || durableBodies.size !== durable.records.length || !same19(source3.objects.map((record6) => record6.id).toSorted(), durable.records.map((record6) => record6.id).toSorted())) {
-    throw new Error("Flat display requires complete stored/source target record membership.");
-  }
-  const targets = source3.objects.map((record6) => ({
-    id: record6.id,
-    fields: [.../* @__PURE__ */ new Set([...Object.keys(record6.body), ...Object.keys(durableBodies.get(record6.id) ?? {})])].toSorted()
-  }));
-  const baselineProof = await verifySchematicLayoutBaselineCooperatively({ checkpoint: history, source: source3, native, targets });
+  const baselineProof = await verifyFlatDisplayMaterialization({ history, source: source3, native });
   const layoutEvidence2 = { history, templates: {} };
   const projected4 = await expectedSchematicLayoutCooperatively(operation, source3, native, {}, layoutEvidence2);
   const inverse = await inverseSchematicLayoutCooperatively(operation, source3, native, {}, layoutEvidence2);
@@ -60204,7 +60404,7 @@ async function prepareFlatDisplayProfile(input) {
 function verifyFlatDisplayObservation(bindingInput, operationInput, context2, evidence, nativeInput, phase2) {
   const binding2 = assertFlatDisplayBinding(bindingInput, operationInput, context2);
   const current2 = evidenceState(evidence, context2, nativeInput);
-  if (!same19(binding2.project, evidence.projectBinding) || current2.schematicUuid !== binding2.schematicUuid || current2.source.sha256 !== binding2[phase2].sourceSha256 || schematicNativeSnapshotHash(current2.native) !== binding2[phase2].nativeSha256) {
+  if (!same20(binding2.project, evidence.projectBinding) || current2.schematicUuid !== binding2.schematicUuid || current2.source.sha256 !== binding2[phase2].sourceSha256 || schematicNativeSnapshotHash(current2.native) !== binding2[phase2].nativeSha256) {
     throw new Error("Flat display phase source, native state or project branch differs from its sealed binding.");
   }
   verifyMembershipTopology(binding2, evidence, current2.schematicUuid);
@@ -60215,12 +60415,12 @@ function verifyFlatDisplayMembershipTopology(bindingInput, operationInput, conte
   verifyMembershipTopology(binding2, evidence, current2.schematicUuid);
 }
 function verifyMembershipTopology(binding2, evidence, schematicUuid) {
-  if (!same19(binding2.project, evidence.projectBinding) || schematicUuid !== binding2.schematicUuid) {
+  if (!same20(binding2.project, evidence.projectBinding) || schematicUuid !== binding2.schematicUuid) {
     throw new Error("Flat display lifecycle project branch or schematic changed.");
   }
   const members = exactMembers2(evidence.history);
   const previous = new Map(binding2.members.map((entry) => [entry.uuid, entry.semanticSha256]));
-  if (!same19(members.map(({ uuid: uuid8, docType }) => ({ uuid: uuid8, docType })), binding2.members.map(({ uuid: uuid8, docType }) => ({ uuid: uuid8, docType }))) || members.some((entry) => entry.uuid !== binding2.pageUuid && previous.get(entry.uuid) !== entry.semanticSha256)) {
+  if (!same20(members.map(({ uuid: uuid8, docType }) => ({ uuid: uuid8, docType })), binding2.members.map(({ uuid: uuid8, docType }) => ({ uuid: uuid8, docType }))) || members.some((entry) => entry.uuid !== binding2.pageUuid && previous.get(entry.uuid) !== entry.semanticSha256)) {
     throw new Error("Flat display complete project membership or a peer document changed.");
   }
   verifyDesignTopology(binding2.topology, evidence.proof.topology);
@@ -60229,10 +60429,11 @@ async function verifyFlatDisplayPersistence(input) {
   const captured = structuredClone(input);
   const binding2 = assertFlatDisplayBinding(captured.binding, captured.operation, captured.context);
   const operation = flatDisplayOperation(captured.operation);
-  if (captured.baseline.checkpointSha256 !== binding2.checkpoint.checkpointSha256 || captured.baseline.semanticSha256 !== binding2.checkpoint.historySemanticSha256 || !same19(flatDisplayProjectBindingFromHistory(captured.baseline), binding2.project) || !same19(exactMembers2(captured.baseline), binding2.members) || captured.before.sha256 !== binding2.before.sourceSha256 || schematicNativeSnapshotHash(captured.beforeNative) !== binding2.before.nativeSha256 || captured.current.sha256 !== binding2[captured.allowAfter ? "after" : "before"].sourceSha256) {
+  if (captured.baseline.checkpointSha256 !== binding2.checkpoint.checkpointSha256 || captured.baseline.semanticSha256 !== binding2.checkpoint.historySemanticSha256 || !same20(flatDisplayProjectBindingFromHistory(captured.baseline), binding2.project) || !same20(exactMembers2(captured.baseline), binding2.members) || captured.before.sha256 !== binding2.before.sourceSha256 || schematicNativeSnapshotHash(captured.beforeNative) !== binding2.before.nativeSha256 || captured.current.sha256 !== binding2[captured.allowAfter ? "after" : "before"].sourceSha256) {
     throw new Error("Flat display persistence lacks its sealed original and exact intended sources.");
   }
   verifyFlatDisplayObservation(binding2, operation, captured.context, captured.evidence, captured.currentNative, captured.allowAfter ? "after" : "before");
+  const originalMaterialization = await verifyFlatDisplayMaterialization({ history: captured.baseline, source: captured.before, native: captured.beforeNative });
   const persistence = {
     before: captured.baseline,
     after: captured.evidence.history,
@@ -60242,21 +60443,23 @@ async function verifyFlatDisplayPersistence(input) {
     afterNative: captured.beforeNative
   };
   try {
-    return { classification: "unchanged-baseline", proof: verifySchematicStoragePersistence(persistence) };
+    const currentMaterialization = await verifyFlatDisplayMaterialization({ history: captured.evidence.history, source: captured.before, native: captured.beforeNative });
+    return { classification: "unchanged-baseline", originalMaterialization, currentMaterialization, proof: verifySchematicStoragePersistence(persistence) };
   } catch (error51) {
     if (!captured.allowAfter) {
       throw error51;
     }
+    const currentMaterialization = await verifyFlatDisplayMaterialization({ history: captured.evidence.history, source: captured.current, native: captured.currentNative });
     const proof = await verifySchematicLayoutPersistenceCooperatively(
       operation,
       { ...persistence, expectedAfter: captured.current, afterNative: captured.currentNative },
       {},
       { history: captured.baseline, templates: {} }
     );
-    return { classification: "exact-intended-effect", proof };
+    return { classification: "exact-intended-effect", originalMaterialization, currentMaterialization, proof };
   }
 }
-var same19;
+var same20;
 var init_flat_display_profile = __esm({
   "server/src/flat-display-profile.ts"() {
     init_core3();
@@ -60270,8 +60473,9 @@ var init_flat_display_profile = __esm({
     init_schematic_flat_topology();
     init_flat_display_binding();
     init_schematic_storage_persistence();
+    init_flat_display_storage();
     init_flat_display_binding();
-    same19 = (left, right) => canonicalJson(left) === canonicalJson(right);
+    same20 = (left, right) => canonicalJson(left) === canonicalJson(right);
   }
 });
 
@@ -60600,6 +60804,7 @@ var init_design_execution = __esm({
     init_design_save_attempt();
     init_flat_display_profile();
     init_schematic_flat_read();
+    init_flat_display_storage();
     PROFILE5 = "easyeda-pro-control.typed-design-transaction.v1";
     designTransactionActionSchema = external_exports.enum(["apply", "commit", "rollback", "inspect", "reconcile", "recover-authority", "rebind-runtime", "open-target", "load-layout-pages", "repair-layout-net-labels", "repair-layout-wire-groups", "repair-layout-label-visibility"]);
     DesignExecutor = class _DesignExecutor {
@@ -61822,11 +62027,12 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           if (!("receiptPath" in checkpoint)) {
             throw new Error("Retained layout reconciliation checkpoint receipt missing.");
           }
+          const savedHistory = await durableSnapshot(checkpoint, journal.context);
           const persistence = await verifySchematicLayoutPersistenceCooperatively(
             journal.plan.operation,
             {
               before: beforeState2.history,
-              after: await durableSnapshot(checkpoint, journal.context),
+              after: savedHistory,
               expectedBefore: journal.before,
               expectedAfter: current2.snapshot,
               beforeNative: journal.beforeNative,
@@ -61835,6 +62041,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             journal.createdIds,
             { history: beforeState2.history, templates: journal.layoutTemplates ?? {}, ...journal.layoutWireGroupRepair === void 0 ? {} : { wireGroupRepair: journal.layoutWireGroupRepair }, ...constructorWitness === void 0 ? {} : { constructorWitness } }
           );
+          const flatMaterialization = journal.plan.flatDisplay === void 0 ? void 0 : await verifyFlatDisplayMaterialization({ history: savedHistory, source: current2.snapshot, native: current2.native });
           const final = await this.snapshot(journal.context);
           if (!sameState(currentState, state(final.snapshot, final.native))) {
             throw new Error("Layout changed during retained Save verification.");
@@ -61846,6 +62053,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             savedEffect,
             lifecycle,
             topology,
+            ...flatMaterialization === void 0 ? {} : { flatMaterialization },
             retainedSaveAcknowledgment: savedAck,
             retainedAfterArtifact: priorArtifacts[candidate.index],
             saveDispatchedByRecovery: false,
@@ -61917,13 +62125,22 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             expectedAfter: current2.snapshot,
             ...journal.beforeNative === void 0 || current2.native === void 0 ? {} : { beforeNative: journal.beforeNative, afterNative: current2.native }
           };
-          const persistence = journal.context.document.documentType === 4 ? verifyFootprintEmptyNetPersistence(recoveryPersistenceInput) : verifyDesignPersistence(recoveryPersistenceInput);
+          let persistence;
+          if (journal.plan.flatDisplay === void 0) {
+            persistence = journal.context.document.documentType === 4 ? verifyFootprintEmptyNetPersistence(recoveryPersistenceInput) : verifyDesignPersistence(recoveryPersistenceInput);
+          } else {
+            persistence = await verifyFlatDisplayRestoration(recoveryPersistenceInput);
+          }
           durableNoMutation = { checkpoint, persistence, lifecycle: baselineLifecycle };
           journal.state = "reconciled-no-mutation";
           journal.mutationState = "before";
           journal.hardStop = false;
           journal.mutationMayHaveOccurred = false;
-          journal.nextSafeAction = journal.context.document.documentType === 4 ? "Requested geometry is absent. The retained proof lists native empty-net and metadata bookkeeping separately; all other records match. No action or save was retried." : "Exact current document and all decoded durable documents match the pre-edit baseline; no action or save was retried.";
+          if (journal.context.document.documentType === 4) {
+            journal.nextSafeAction = "Requested geometry is absent. The retained proof lists native empty-net and metadata bookkeeping separately; all other records match. No action or save was retried.";
+          } else {
+            journal.nextSafeAction = journal.plan.flatDisplay === void 0 ? "Exact current document and all decoded durable documents match the pre-edit baseline; no action or save was retried." : "Original source and all durable documents match the flat baseline with separately reported native initialization/encoding; no action or Save was retried.";
+          }
         } else {
           if (journal.plan.operation.action === "sch.layout.batch" && journal.plan.operation.operations.some((step) => step.action === "sch.wire.replace")) {
             if (journal.createdIds === void 0 || journal.beforeNative === void 0 || current2.native === void 0 || beforeState2.history === void 0 || journal.beforeTopology === void 0 || canonicalJson(journal.plan.expectedTopology) !== canonicalJson(journal.beforeTopology)) {
@@ -62179,6 +62396,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             ...journal.beforeNative === void 0 || reopened.native === void 0 ? {} : { beforeNative: journal.beforeNative, afterNative: reopened.native }
           };
           let persistence;
+          const flatMaterialization = journal.plan.flatDisplay === void 0 ? void 0 : await verifyFlatDisplayMaterialization({ history: persistenceInput.after, source: reopened.snapshot, native: reopened.native });
           if (journal.plan.operation.action === "sch.layout.batch") {
             if (journal.createdIds === void 0) {
               throw new Error("Layout persistence lacks journal-owned identities.");
@@ -62202,7 +62420,13 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           } else {
             persistence = verifyDesignPersistence(persistenceInput);
           }
-          await _DesignExecutor.artifact(journal, "reopened", { ...reopened, checkpoint, persistence, lifecycle });
+          await _DesignExecutor.artifact(journal, "reopened", {
+            ...reopened,
+            checkpoint,
+            persistence,
+            lifecycle,
+            ...flatMaterialization === void 0 ? {} : { flatMaterialization }
+          });
           journal.saved = true;
           journal.reopened = true;
           journal.state = "completed";
@@ -62378,7 +62602,12 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             expectedAfter: restored.snapshot,
             ...journal.beforeNative === void 0 || restored.native === void 0 ? {} : { beforeNative: journal.beforeNative, afterNative: restored.native }
           };
-          const persistence = journal.context.document.documentType === 4 ? verifyFootprintEmptyNetPersistence(persistenceInput) : verifyDesignPersistence(persistenceInput);
+          let persistence;
+          if (journal.plan.flatDisplay === void 0) {
+            persistence = journal.context.document.documentType === 4 ? verifyFootprintEmptyNetPersistence(persistenceInput) : verifyDesignPersistence(persistenceInput);
+          } else {
+            persistence = await verifyFlatDisplayRestoration(persistenceInput);
+          }
           const final = await this.snapshot(journal.context);
           if (!sameState(state(final.snapshot, final.native), state(restored.snapshot, restored.native))) {
             throw new Error("Restored source changed during durable rollback verification.");
@@ -63583,11 +63812,11 @@ function verifyProjectLibraryMetadata(input, metadata5, history, projectSymbolMe
   }
   return { collectionUuid: history.projectUuid, ownerUuid: history.projectOwnerUuid, assetUuid: assetId, proof: "hash-verified-project-owner-and-asset-metadata", ...symbolTitleEvidence === void 0 ? {} : { symbolTitleEvidence } };
 }
-function same20(left, right) {
+function same21(left, right) {
   return canonicalJson(left) === canonicalJson(right);
 }
 function verifyTargetMetadata2(before, after) {
-  const fields2 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => Object.hasOwn(before, key) !== Object.hasOwn(after, key) || !same20({ value: before[key] }, { value: after[key] }));
+  const fields2 = [.../* @__PURE__ */ new Set([...Object.keys(before), ...Object.keys(after)])].filter((key) => Object.hasOwn(before, key) !== Object.hasOwn(after, key) || !same21({ value: before[key] }, { value: after[key] }));
   if (fields2.length === 0) {
     return;
   }
@@ -63637,7 +63866,7 @@ function verifyProjectLibraryEffect(input, before, after, createdId) {
   if (changed?.docType !== "FOOTPRINT" || isNativeDocumentDeleted(changed)) {
     throw new Error("Persisted active footprint is missing.");
   }
-  if (!same20(before.documents.filter((document2) => document2.uuid !== id7).map((document2) => documentValue(document2)), after.documents.filter((document2) => document2.uuid !== id7).map((document2) => documentValue(document2)))) {
+  if (!same21(before.documents.filter((document2) => document2.uuid !== id7).map((document2) => documentValue(document2)), after.documents.filter((document2) => document2.uuid !== id7).map((document2) => documentValue(document2)))) {
     throw new Error("Library operation altered unrelated project records.");
   }
   const meta3 = changed.records.find((record6) => record6.id === "META" && record6.type === "META");
@@ -63666,7 +63895,7 @@ function verifyProjectLibraryEffect(input, before, after, createdId) {
       return { id: recordId, type: type2, body: expectedBody, ticket: 0, client: null };
     });
     const expectedDocument = documentValue({ ...old, metadata: changed.metadata, records: expectedRecords });
-    if (!same20(expectedDocument, documentValue(changed))) {
+    if (!same21(expectedDocument, documentValue(changed))) {
       throw new Error("Library patch changed geometry, bindings or unrequested metadata.");
     }
   }
@@ -65689,7 +65918,7 @@ function prepareDocumentPageRename(input, history, context2) {
     beforeProjectSha256: libraryProjectRecordsHash(history)
   });
 }
-function buildDocumentPageRenameExpression(input, context2) {
+function buildDocumentPageRenameProgram(input, context2, mode) {
   const plan = planSchema2.parse(input);
   if ((context2.project.uuid ?? context2.project.projectUuid) !== plan.projectUuid || context2.project.uuid !== void 0 && context2.project.projectUuid !== void 0 && context2.project.uuid !== context2.project.projectUuid || context2.document.uuid !== void 0 && context2.document.documentUuid !== void 0 && context2.document.uuid !== context2.document.documentUuid) {
     throw new Error("Page rename context aliases contradict its checkpoint identity.");
@@ -65705,9 +65934,12 @@ ${DEVICE_NATIVE_HOST_GUARD}
 ${NATIVE_PROJECT_PLACEHOLDER_PREDICATE}
 const localUI=globalThis.UI,outerUI=globalThis.top?.UI;
 if(localUI!=null&&outerUI!=null&&localUI!==outerUI)throw new Error('UI_AMBIGUOUS');
-const ui=localUI??outerUI,tabs=ui?.tabBar,permission=ui?.concurrentDesign;
+const ui=localUI??outerUI,tabs=ui?.tabBar,permission=ui?.concurrentDesign,editorTop=globalThis.EDITOR_TOP??globalThis;
+const projectApi=eda.dmt_Project,selectApi=eda.dmt_SelectControl,editorApi=eda.dmt_EditorControl;
 if(typeof tabs?.getFilterTabs!=='function'||typeof tabs.getActiveTab!=='function'||typeof tabs.hasTabUnSaved!=='function'||typeof tabs.isTabUnSaved!=='function')throw new Error('TAB_STATE_MISSING');
 const clean=()=>{
+const currentLocalHost=globalThis.gVars,currentOuterHost=globalThis.top?.gVars,currentLocalUI=globalThis.UI,currentOuterUI=globalThis.top?.UI;
+if((currentLocalHost!=null&&currentOuterHost!=null&&currentLocalHost!==currentOuterHost)||(currentLocalUI!=null&&currentOuterUI!=null&&currentLocalUI!==currentOuterUI)||(currentLocalHost??currentOuterHost)!==host||(currentLocalUI??currentOuterUI)!==ui||(globalThis.EDITOR_TOP??globalThis)!==editorTop||editorTop.gVars!==host||host.messageBus!==bus||ui.tabBar!==tabs||ui.concurrentDesign!==permission||eda.dmt_Project!==projectApi||eda.dmt_SelectControl!==selectApi||eda.dmt_EditorControl!==editorApi)throw new Error('CONTEXT');
 if(PLAN.siblingTitles.some(value=>value.toLocaleLowerCase()===PLAN.desiredTitle.toLocaleLowerCase()))throw new Error('LOCALE_DUPLICATE_TITLE');
 const localVersion=globalThis.PRO_EDITOR_VERSION,outerVersion=globalThis.top?.PRO_EDITOR_VERSION;
 if(localVersion!==undefined&&outerVersion!==undefined&&localVersion!==outerVersion)throw new Error('EDITOR_VERSION_AMBIGUOUS');
@@ -65728,7 +65960,7 @@ for(const tab of all){if(tab?.tabId==='tab_page1'){if(++start!==1||tab.isAbleDel
 if(tab?.tabId==='0'){if(++placeholder!==1||!isNativeProjectPlaceholder(tab)||tabs.isTabUnSaved(tab.tabId)!==false)throw new Error('PROJECT_PLACEHOLDER');continue;}
 if(++count!==1||tab?.tabId!==ACTIVE.tabId||tab.data?.doctype!==1||tab.data?.pid!==PLAN.projectUuid||(Object.hasOwn(tab,'isUnSaved')?tab.isUnSaved!==false:tab.isUnSaved!==undefined)||tab.parentLibraryUuid!==undefined||(tab.data.owner!==undefined&&tab.data.owner!==PLAN.ownerUuid))throw new Error('TAB_SCOPE');}
 if(count!==1)throw new Error('TAB_SCOPE');};
-const context=async()=>{const project=await eda.dmt_Project.getCurrentProjectInfo();const document=await eda.dmt_SelectControl.getCurrentDocumentInfo();
+const context=async()=>{clean();const project=await projectApi.getCurrentProjectInfo();clean();const document=await selectApi.getCurrentDocumentInfo();clean();
 if((project?.uuid??project?.projectUuid)!==PLAN.projectUuid||(project.uuid!==undefined&&project.projectUuid!==undefined&&project.uuid!==project.projectUuid)||
 (document?.uuid??document?.documentUuid)!==ACTIVE.uuid||(document.uuid!==undefined&&document.documentUuid!==undefined&&document.uuid!==document.documentUuid)||document.documentType!==1||document.tabId!==ACTIVE.tabId||document.parentProjectUuid!==PLAN.projectUuid||document.parentLibraryUuid!==undefined)throw new Error('CONTEXT');clean();};
 const read=async(expected)=>{const value=(await bus.rpcCall('/PrjDB/sheet/getData',[PLAN.targetUuid,PLAN.projectUuid])).message;await context();
@@ -65737,17 +65969,34 @@ const parent=(await bus.rpcCall('/PrjDB/schematic/getData',[PLAN.parentUuid,PLAN
 if(parent?.uuid!==PLAN.parentUuid||parent.project_uuid!==PLAN.projectUuid||parent.display_name!==PLAN.parentTitle||parent.source!=='')throw new Error('PARENT_METADATA');
 const owner=(await bus.rpcCall('/PrjDB/project/getData',[PLAN.projectUuid])).message;await context();
 if(owner?.uuid!==PLAN.projectUuid||owner.owner?.uuid!==PLAN.ownerUuid||owner.currentBranch!==PLAN.branchUuid||owner.isV2Format!==false||owner.archive||owner.store||owner.cbb_project)throw new Error('PROJECT_METADATA');};
-await context();stage='before-read';await read(PLAN.beforeTitle);
+${mode === "write" ? `await context();stage='before-read';await read(PLAN.beforeTitle);
 stage='closed-target';await ${closed};
 await context();
 clean();
 stage='rename';
 const result=(await bus.rpcCall('/PrjDB/sheet/updateData',[{uuid:PLAN.targetUuid,title:PLAN.desiredTitle},PLAN.projectUuid])).message;
 if(result?.success!==true||result.result?.uuid!==PLAN.targetUuid||result.result.project_uuid!==PLAN.projectUuid||result.result.schematic_uuid!==PLAN.parentUuid||result.result.display_title!==PLAN.desiredTitle)throw new Error('ACK_INVALID');
-stage='after-read';await read(PLAN.desiredTitle);await ${closed};await context();
-const json=JSON.stringify({kind:'project-page-rename',targetId:PLAN.targetUuid,createdId:null});
+// Publish the exact successful acknowledgment before any post-write await.
+const json=JSON.stringify({kind:'project-page-rename',targetId:PLAN.targetUuid,createdId:null});` : `
+await context();stage='after-read';await read(PLAN.desiredTitle);await ${closed};await context();clean();
+const json=JSON.stringify({kind:'project-page-rename-readback',targetId:PLAN.targetUuid,metadataVerified:true,targetClosed:true});`}
 return{schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};
 }catch(error){${METADATA_NATIVE_DIAGNOSTIC_CATCH}throw new Error('Closed page rename refused at '+stage+':'+code);}})()`;
+}
+function buildDocumentPageRenameExpression(input, context2) {
+  return buildDocumentPageRenameProgram(input, context2, "write");
+}
+function buildDocumentPageRenameReadbackExpression(input, context2) {
+  return buildDocumentPageRenameProgram(input, context2, "readback");
+}
+function validateDocumentPageRenameReadback(value, input) {
+  const plan = planSchema2.parse(input);
+  return external_exports.object({
+    kind: external_exports.literal("project-page-rename-readback"),
+    targetId: external_exports.literal(plan.targetUuid),
+    metadataVerified: external_exports.literal(true),
+    targetClosed: external_exports.literal(true)
+  }).strict().parse(value);
 }
 function projection(document2) {
   return { uuid: document2.uuid, docType: document2.docType, metadata: document2.metadata, records: document2.records.map(({ id: id7, type: type2, body: body3 }) => ({ id: id7, type: type2, body: body3 })) };
@@ -68248,12 +68497,12 @@ var init_library_execution = __esm({
           expression = buildDeviceAssociationExpression(association2);
         }
         const code = wrapWithContextGuard(`return await ${expression};`, input.expectedContext);
-        const creating = kind === "project-symbol-create" || kind === "project-page-create";
-        let createdIdentityRetained = false, settledResultObserved = false;
-        let invalidCreateResult;
-        const retainSettledResult = creating ? async (raw2) => {
+        const requiresEarlyRetention = kind === "project-symbol-create" || kind === "project-page-create" || kind === "project-page-rename";
+        let mutationIdentityRetained = false, settledResultObserved = false;
+        let invalidMutationResult;
+        const retainSettledResult = requiresEarlyRetention ? async (raw2) => {
           if (settledResultObserved) {
-            throw new Error("Native creation identity retention must not repeat.");
+            throw new Error("Native mutation identity retention must not repeat.");
           }
           settledResultObserved = true;
           let mutationReceipt, nativeReturn;
@@ -68261,21 +68510,30 @@ var init_library_execution = __esm({
             nativeReturn = decodeExactReadEnvelope(extractToolPayload(raw2));
             mutationReceipt = libraryMutationReceipt(operation, nativeReturn);
           } catch (error51) {
-            invalidCreateResult = { error: error51 };
+            invalidMutationResult = { error: error51 };
             return;
           }
           journal.mutationReceipt = mutationReceipt;
           await _LibraryExecutor.record(journal, "native-return", nativeReturn);
-          createdIdentityRetained = true;
+          mutationIdentityRetained = true;
         } : void 0;
         const raw = await this.engine.dispatchWithOrphanTracking(journal, phase2, "easyeda_execute", { code, timeoutMs: 6e4, confirmWrite: true }, 7e4, void 0, retainSettledResult);
-        if (invalidCreateResult !== void 0) {
-          throw invalidCreateResult.error;
+        if (invalidMutationResult !== void 0) {
+          throw invalidMutationResult.error;
         }
-        if (creating && !createdIdentityRetained) {
-          throw new Error("Native creation identity was not retained at the settled dispatch boundary.");
+        if (requiresEarlyRetention && !mutationIdentityRetained) {
+          throw new Error("Native mutation identity was not retained at the settled dispatch boundary.");
         }
         return extractToolPayload(raw);
+      }
+      async pageRenameReadback(input, journal, plan) {
+        await this.runtime(input);
+        await this.nativeProfile(true, true);
+        const expression = buildDocumentPageRenameReadbackExpression(plan, input.expectedContext);
+        const code = wrapWithContextGuard(`return await ${expression};`, input.expectedContext);
+        const raw = await this.engine.dispatchWithOrphanTracking(journal, "page-rename-readback", "easyeda_execute", { code, timeoutMs: 6e4, confirmWrite: true }, 7e4);
+        const result = validateDocumentPageRenameReadback(decodeExactReadEnvelope(extractToolPayload(raw)), plan);
+        await _LibraryExecutor.record(journal, "page-rename-readback", result);
       }
       async execute(request) {
         const input = structuredClone(request);
@@ -68431,12 +68689,15 @@ var init_library_execution = __esm({
           }
           journal.mutationMayHaveOccurred = mutation;
           const envelope = await this.dispatch(input, journal, operation, "execute", association2, openTarget === void 0 ? void 0 : { ...openTarget, projectUuid: projectId(context2) });
-          const createdIdentityRetained = kind === "project-symbol-create" || kind === "project-page-create";
-          if (mutation && !createdIdentityRetained) {
+          const mutationIdentityRetained = kind === "project-symbol-create" || kind === "project-page-create" || kind === "project-page-rename";
+          if (mutation && !mutationIdentityRetained) {
             journal.mutationReceipt = libraryMutationReceipt(operation, decodeExactReadEnvelope(envelope));
           }
-          if (!createdIdentityRetained && (mutation || kind === "document-open" || kind === "document-activate" || kind === "document-close" || kind === "metadata-read")) {
+          if (!mutationIdentityRetained && (mutation || kind === "document-open" || kind === "document-activate" || kind === "document-close" || kind === "metadata-read")) {
             await _LibraryExecutor.record(journal, "native-return", decodeExactReadEnvelope(envelope));
+          }
+          if (association2?.profile === DOCUMENT_PAGE_RENAME_PROFILE) {
+            await this.pageRenameReadback(input, journal, association2);
           }
           let finalContext = context2;
           let result;
@@ -87012,8 +87273,8 @@ function inventoryExtensionApiCoverage() {
     routes.set(descriptor.path, [...existing, {
       tool: "easyeda_control_sdk_read",
       selector: descriptor.path,
-      implementation: "public-method",
-      scope: `Fixed ${descriptor.parameterSupport} argument subset; bounded double-sampled public SDK observation, not complete native-source/connectivity/persistence proof. ${descriptor.limitations.join(" ")}`.trim(),
+      implementation: descriptor.implementation.kind,
+      scope: `Fixed ${descriptor.parameterSupport} argument subset; bounded double-sampled ${descriptor.implementation.kind === "native-task-equivalent" ? "native ID" : "public SDK"} observation, not complete native-source/connectivity/persistence proof. ${descriptor.limitations.join(" ")}`.trim(),
       documentTypes: descriptor.documentTypes,
       source: [descriptor.implementation.source.replace(/^server\/src\//u, "")],
       tests: [descriptor.implementation.test.replace(/^server\/tests\//u, "")],
@@ -87245,6 +87506,10 @@ function queryPublicSdkReads(input = {}) {
     entries.push(result);
   }
   const nextOffset = query.offset + entries.length;
+  let authority = "public-sdk-observation-not-complete-design-proof";
+  if (matched.some((entry) => entry.implementation.kind === "native-task-equivalent")) {
+    authority = matched.every((entry) => entry.implementation.kind === "native-task-equivalent") ? "native-id-observation-not-complete-source-connectivity-or-persistence-proof" : "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof";
+  }
   return {
     schema: "easyeda-pro-control.public-sdk-read-catalog.v1",
     offline: true,
@@ -87257,7 +87522,7 @@ function queryPublicSdkReads(input = {}) {
     returned: entries.length,
     nextOffset: nextOffset < matched.length ? nextOffset : null,
     limits: { maxEntriesBytes: MAX_ENTRIES_BYTES },
-    authority: "public-sdk-observation-not-complete-design-proof",
+    authority,
     liveValidation: "Per-method evidence is separate; offline tests do not establish connected validation."
   };
 }
@@ -88163,6 +88428,7 @@ var init_src = __esm({
     init_extension_api_catalog();
     init_extension_api_coverage();
     init_public_sdk_read();
+    init_schematic_native_ids();
     init_public_sdk_catalog();
     init_operation_catalog();
     MAX_INLINE_RESULT_BYTES = 256 * 1024;
@@ -89059,7 +89325,7 @@ var init_src = __esm({
       "easyeda_control_sdk_read",
       {
         title: "Read reviewed EasyEDA SDK methods",
-        description: "Run a fixed typed local SDK getter or pure calculation with exact runtime/context and authenticated-session guards. Two matching observations are required. The result is public SDK data, not complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
+        description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native ID equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity-only observations; neither is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
         inputSchema: {
           request: external_exports.unknown().pipe(publicSdkReadRequestSchema),
           expectedContext: contextSchema2,
@@ -89077,6 +89343,7 @@ var init_src = __esm({
         const reservation = input.evidence === void 0 ? void 0 : await reserveEvidencePaths(input.evidence);
         let dispatched = false;
         const request = { reader: input.request, expectedContext: input.expectedContext, expectedFingerprint: input.expectedFingerprint };
+        const nativeIds = isSchematicNativeIdMethod(input.request.method);
         try {
           validatePrivateFingerprint(input.expectedFingerprint);
           const status2 = await engine.status();
@@ -89087,14 +89354,14 @@ var init_src = __esm({
             request,
             result,
             input.evidence,
-            { facadeVersion: CONTROL_VERSION, reader: "fixed-public-sdk-observation" },
+            { facadeVersion: CONTROL_VERSION, reader: nativeIds ? "fixed-native-id-observation" : "fixed-public-sdk-observation" },
             { reservation, returnMode: input.returnMode, maxInlineBytes: input.maxInlineBytes }
           );
         } catch (error51) {
           if (reservation && !dispatched) {
             await releaseEvidenceReservation(reservation);
           } else if (reservation) {
-            await finalizeDispatchedFailure(reservation, request, error51, { effect: "fixed-public-sdk-read" });
+            await finalizeDispatchedFailure(reservation, request, error51, { effect: nativeIds ? "fixed-native-id-read" : "fixed-public-sdk-read" });
           }
           throw error51;
         }

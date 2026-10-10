@@ -18,9 +18,12 @@ internal lifecycle use, or a concrete omission reason and required work.
 `sdk-reads` and `sdk-validate` expose the exact schemas and offline argument
 checks for the fixed `easyeda_control_sdk_read` allowlist. That separate live
 tool performs local getters, fixed primitive-state projections and bounded pure
-calculations with authenticated context checks and two matching samples. It
+calculations with authenticated context checks and two matching samples. Three
+explicitly classified native equivalents read schematic Text/Wire/Bus group IDs
+without the public callbacks or compiler; only the active ordinary page and
+empty arguments are supported. The fixed read catalog has 163 routes. It
 accepts no arbitrary method path, caller code, callbacks, navigation or writes.
-Public SDK observations do not replace native design or persistence proof.
+Neither public observations nor native IDs replace complete design or persistence proof.
 
 Latest declarations are not runtime admission. Exact operation schemas cover
 105 design actions and 68 library/lifecycle actions; schema availability does

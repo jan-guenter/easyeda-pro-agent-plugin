@@ -4,6 +4,7 @@ import { parseDocumentSource } from "./document-source.ts";
 import { assertExactTransportValue, validateExactReadPayload } from "./exact-readers.ts";
 import { validatePublicSdkReadPayload, validatePublicSdkReadRequest } from "./public-sdk-read.ts";
 import type { PublicSdkReadRequest } from "./public-sdk-read.ts";
+import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
 
 const text = z.string().min(1).max(4096);
 const hash = z.string().regex(/^[a-f0-9]{64}$/u);
@@ -72,7 +73,14 @@ export function parseDisposableSdkValidationPlan(input: unknown): DisposableSdkV
     throw new Error("Library validation requires the observed library owner and exact project-library tab.");
   }
   if (new Set(plan.steps.map((step) => step.id)).size !== plan.steps.length) { throw new Error("Validation step IDs must be unique."); }
-  const steps = plan.steps.map((step) => ({ id: step.id, request: validatePublicSdkReadRequest(step.request, plan.expectedContext.document.documentType) }));
+  const steps = plan.steps.map((step) => {
+    const request = validatePublicSdkReadRequest(step.request, plan.expectedContext.document.documentType);
+    // This historical validator binds public-only response authority. A new
+    // Native result contract needs its own reviewed validation lifecycle, not a
+    // Refusal after an otherwise-valid observation has already been dispatched.
+    if (isSchematicNativeIdMethod(request.method)) { throw new Error("This disposable validation plan admits public SDK readers only; native ID equivalents require a separately reviewed validation contract."); }
+    return { id: step.id, request };
+  });
   return structuredClone({ ...plan, steps });
 }
 

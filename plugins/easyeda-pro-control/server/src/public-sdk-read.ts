@@ -3,10 +3,12 @@ import { z } from "zod";
 import { polygonSourceSchema } from "./design-operations.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA, assertExactTransportValue } from "./exact-readers.ts";
 import { editorTabLookupRequestSchema, isEditorTabLookupMethod } from "./editor-tab-lookups.ts";
+import { SCHEMATIC_NATIVE_ID_METHODS, buildSchematicNativeIdsExpression, isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
 
-/** This fixed allowlist is independent of the declaration catalog. Every entry
- * was reviewed against this public implementation, including delegated getters.
- * It is a public-state observation, never independent native/persistence proof.
+/** This fixed allowlist is independent of the declaration catalog. Public entries
+ * were reviewed against this implementation, including delegated getters.
+ * Explicit native equivalents use separately pinned implementations. Neither
+ * class supplies complete native-source, connectivity or persistence proof.
  */
 export const PUBLIC_SDK_READ_API_SHA256 = "5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc";
 export const PUBLIC_SDK_READ_MAX_BYTES = 2_097_152;
@@ -38,6 +40,7 @@ const optionalNet = text.optional();
 
 type OutputKind = "json" | "string" | "number" | "boolean" | "strings" | "ids" | "records" | "record" | "bbox" | "point" | "origin" | "primitive" | "polygon";
 interface ReadDefinition {
+  implementationKind: "public-method" | "native-task-equivalent";
   path: string;
   documentTypes: readonly number[];
   argumentsSchema: z.ZodType<Record<string, unknown>>;
@@ -63,7 +66,7 @@ export interface PublicSdkReadDescriptor {
   inputSchema: Record<string, unknown>;
   parameterSupport: "complete" | "narrowed";
   limitations: string[];
-  implementation: { source: string; test: string; publicApiSha256: string };
+  implementation: { kind: "public-method" | "native-task-equivalent"; source: string; test: string; publicApiSha256: string };
   liveValidation: "not-yet-validated";
   parameters: string[];
   membership: { method: string; argument: string } | null;
@@ -74,9 +77,9 @@ export interface PublicSdkReadDescriptor {
 const definitions = new Map<string, ReadDefinition>();
 function add(path: string, documentTypes: readonly number[], output: OutputKind,
   argumentsSchema: z.ZodType<Record<string, unknown>> = emptyArguments,
-  parameters: string[] = [], options: Partial<Pick<ReadDefinition, "getters" | "primitiveType" | "membership" | "restParameter" | "optionalResult" | "parameterSupport" | "limitations">> = {}): void {
+  parameters: string[] = [], options: Partial<Pick<ReadDefinition, "implementationKind" | "getters" | "primitiveType" | "membership" | "restParameter" | "optionalResult" | "parameterSupport" | "limitations">> = {}): void {
   if (!/^eda\.(?:dmt|lib|pcb|sch|sys)_[A-Za-z0-9]+\.[A-Za-z0-9_]+$/u.test(path) || definitions.has(path)) { throw new Error("Invalid or duplicate fixed public SDK read."); }
-  definitions.set(path, { path, documentTypes, argumentsSchema, parameters, output, primitiveType: options.primitiveType, membership: options.membership, restParameter: options.restParameter,
+  definitions.set(path, { path, documentTypes, argumentsSchema, parameters, output, implementationKind: options.implementationKind ?? "public-method", primitiveType: options.primitiveType, membership: options.membership, restParameter: options.restParameter,
     optionalResult: options.optionalResult ?? false, getters: options.getters ?? [],
     parameterSupport: options.parameterSupport ?? "complete", limitations: options.limitations ?? [] });
 }
@@ -177,6 +180,15 @@ add("eda.sch_Primitive.getPrimitiveTypeByPrimitiveId", SCHEMATIC_DOCUMENTS, "str
 add("eda.pcb_ManufactureData.getBomTemplates", [3], "strings");
 add("eda.sch_ManufactureData.getBomTemplates", [1], "strings");
 add("eda.sch_ManufactureData.getAssemblyVariantsConfigs", [1], "records");
+for (const method of SCHEMATIC_NATIVE_ID_METHODS) {
+  add(method, [1], "ids", emptyArguments, method.includes("PrimitiveWire") ? ["net"] : [], {
+    implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [
+      "Fixed synchronous native equivalent, not the public wrapper: only the exact active ordinary SCH_PAGE; symbol/block-instance pages and every net filter are refused.",
+      "Complete bounded Text/NetGroup source-inventory, model-map and ID-index identity agreement is required. Wire/bus IDs identify groups, not their LINE children. No compiler, AST/net-name lookup, settings change, serialization, navigation or Save.",
+      "Sorted ID-only observation; not primitive contents, electrical connectivity or persistence proof. Public Text callbacks and compiler-backed Wire/Bus wrappers are not called.",
+    ],
+  });
+}
 
 // Fixed getter DTOs avoid serializing live objects, invoking toJSON, exposing
 // Methods, or accepting caller-selected property names. Polygon values use only
@@ -320,10 +332,17 @@ export function publicSdkReadDescriptors(): PublicSdkReadDescriptor[] {
   return [...definitions.values()].map((entry) => ({ path: entry.path, documentTypes: [...entry.documentTypes],
     inputSchema: z.toJSONSchema(z.object({ method: z.literal(entry.path), arguments: entry.argumentsSchema }).strict(), { io: "input", unrepresentable: "throw" }),
     parameterSupport: entry.parameterSupport, limitations: [...entry.limitations],
-    implementation: { source: isEditorTabLookupMethod(entry.path) ? "server/src/editor-tab-lookups.ts" : "server/src/public-sdk-read.ts",
-      test: isEditorTabLookupMethod(entry.path) ? "server/tests/editor-tab-lookups.test.ts" : "server/tests/public-sdk-read.test.ts", publicApiSha256: PUBLIC_SDK_READ_API_SHA256 },
+    implementation: { kind: entry.implementationKind,
+      source: `server/src/${readImplementationName(entry.path)}.ts`,
+      test: `server/tests/${readImplementationName(entry.path)}.test.ts`, publicApiSha256: PUBLIC_SDK_READ_API_SHA256 },
     liveValidation: "not-yet-validated", parameters: [...entry.parameters], membership: entry.membership === undefined ? null : { ...entry.membership }, restParameter: entry.restParameter ?? null,
     result: { kind: entry.output, optional: entry.optionalResult, getterFields: [...entry.getters], primitiveType: entry.primitiveType ?? null } }));
+}
+
+function readImplementationName(path: string): string {
+  if (isSchematicNativeIdMethod(path)) { return "schematic-native-ids"; }
+  if (isEditorTabLookupMethod(path)) { return "editor-tab-lookups"; }
+  return "public-sdk-read";
 }
 
 /** Source is constructed solely from the fixed descriptor and parsed JSON.
@@ -416,10 +435,10 @@ try {
     ${definition.primitiveType === "ComponentPad" ? `if (out.ParentComponentPrimitiveId !== ${JSON.stringify(request.arguments["primitiveId"])}) fail("sdk-wrong-parent");` : ""}
     return out;
   }
-  if (typeof ${definition.path} !== "function") fail("sdk-missing-method");
+  ${isSchematicNativeIdMethod(definition.path) ? "" : `if (typeof ${definition.path} !== "function") fail("sdk-missing-method");`}
   ${membership}
   stage = "call";
-  const native = await ${definition.path}(${args});
+  const native = ${isSchematicNativeIdMethod(definition.path) ? buildSchematicNativeIdsExpression(definition.path) : `await ${definition.path}(${args})`};
   stage = "projection";
   const present = native !== undefined;
   ${definition.membership === undefined ? "" : `if (!native || native.uuid !== ${JSON.stringify(request.arguments[definition.membership.argument])}) fail("sdk-wrong-document");`}
@@ -549,6 +568,9 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
     }
     if (value !== null) { throw new Error("Undefined-value evidence conflicts with result."); }
   }
-  return { ...payload, assurance: "bounded-public-sdk-observation-not-native-or-persistence-proof",
+  return { ...payload, assurance: definition.implementationKind === "native-task-equivalent"
+    ? "bounded-native-id-observation-not-complete-source-connectivity-or-persistence-proof"
+    : "bounded-public-sdk-observation-not-native-or-persistence-proof",
+    ...(definition.implementationKind === "native-task-equivalent" ? { implementationKind: definition.implementationKind } : {}),
     publicApiSha256: PUBLIC_SDK_READ_API_SHA256, liveValidation: "not-yet-validated", limitations: [...definition.limitations] };
 }

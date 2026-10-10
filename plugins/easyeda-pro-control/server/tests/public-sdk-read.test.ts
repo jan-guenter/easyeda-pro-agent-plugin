@@ -154,6 +154,7 @@ for (const descriptor of descriptors.filter((entry) => entry.implementation.sour
     const result = validatePublicSdkReadPayload(payload, request);
     assert.equal(result["method"], descriptor.path);
     assert.equal(result["assurance"], "bounded-public-sdk-observation-not-native-or-persistence-proof");
+    assert.equal(Object.hasOwn(result, "implementationKind"), false);
     assert.ok(!JSON.stringify(result).includes("privateStateMustNotEscape"));
   });
 }

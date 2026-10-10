@@ -64,3 +64,10 @@ adapter—not arbitrary private invocation. Preserve unknown fields, parent/chil
 order, hidden attributes and locks. Geometric contact is not native connectivity.
 Define unsupported shapes up front. If a general inverse cannot preserve exact
 identity, say it is unavailable; do not advertise automatic rollback.
+
+Test stored and exported representations independently. Native page exports omit
+the stored META record and can include an unstored origin CANVAS or initialized
+drawing-frame order. A synthetic fixture that copies saved records verbatim into
+source can hide a universal admission failure. Preserve raw evidence and prove
+each allowed encoding difference; a comparison projection is not a saved
+checkpoint. Apply the same boundary through preflight, rollback and reconciliation.

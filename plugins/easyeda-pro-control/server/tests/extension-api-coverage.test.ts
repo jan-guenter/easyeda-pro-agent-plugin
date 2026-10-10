@@ -67,7 +67,8 @@ void test("coverage does not promote schema-only, native equivalent, stub, lates
   assert.equal(rows.get("eda.sch_PrimitiveBus.create")?.status, "omitted");
   assert.equal(rows.get("eda.pcb_Document.save")?.status, "internal-lifecycle-only");
   assert.equal(rows.get("eda.pcb_Layer.getCurrentLayer")?.omission?.code, "reviewed-native-stub");
-  assert.equal(rows.get("eda.sch_PrimitiveText.getAllPrimitiveId")?.omission?.code, "lossy-or-unawaited-public-reader");
+  assert.equal(rows.get("eda.sch_PrimitiveText.getAllPrimitiveId")?.status, "implemented-native-equivalent");
+  assert.equal(rows.get("eda.sch_PrimitiveText.getAllPrimitiveId")?.routes[0]?.implementation, "native-task-equivalent");
   assert.equal(rows.get("eda.sys_Help.help")?.omission?.code, "not-in-reviewed-runtime");
   assert.equal(rows.get("eda.pcb_ManufactureData.placePcbOrder")?.omission?.code, "external-commercial-action");
   assert.equal(rows.get("eda.sys_MessageBus.rpcCall")?.omission?.code, "unrestricted-transport-or-service");
@@ -139,7 +140,7 @@ void test("hidden Save and unsupported-editor exports have no callable route", (
 void test("omitted geometric getters retain proven callback, projection and filter defects", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   for (const family of ["Bus", "Wire", "Text"]) {
-    for (const method of ["get", "getAll", "getAllPrimitiveId"]) {
+    for (const method of ["get", "getAll"]) {
       const row = rows.get(`eda.sch_Primitive${family}.${method}`);
       assert.ok(row);
       assert.equal(row.status, "omitted");
@@ -163,7 +164,7 @@ void test("omitted geometric getters retain proven callback, projection and filt
   assert.match(net.omission.reason, /DTO/u);
   assert.equal(net.routes.length, 0);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 190, "implemented-native-equivalent": 74, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 500,
+    "implemented-public-subset": 190, "implemented-native-equivalent": 77, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 497,
   });
 });
 

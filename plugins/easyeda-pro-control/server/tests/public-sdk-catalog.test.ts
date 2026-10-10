@@ -47,3 +47,14 @@ void test("SDK-read catalog selectors are literal, strictly bounded and optional
   const completePage = queryPublicSdkReads({ limit: 100, includeSchemas: true });
   assert.ok(Buffer.byteLength(JSON.stringify(completePage)) < 262_144);
 });
+
+void test("SDK catalog distinguishes native-only, public-only and mixed discovery without execution authority", () => {
+  for (const method of ["eda.sch_PrimitiveText.getAllPrimitiveId", "eda.sch_PrimitiveWire.getAllPrimitiveId", "eda.sch_PrimitiveBus.getAllPrimitiveId"]) {
+    const result = queryPublicSdkReads({ method });
+    assert.equal(result["authority"], "native-id-observation-not-complete-source-connectivity-or-persistence-proof");
+    assert.equal(result["executionAuthorized"], false);
+  }
+  assert.equal(queryPublicSdkReads({ method: "eda.sys_Environment.getEditorCurrentVersion" })["authority"], "public-sdk-observation-not-complete-design-proof");
+  assert.equal(queryPublicSdkReads()["authority"], "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof");
+  assert.equal(queryPublicSdkReads({ limit: 1, offset: 0 })["authority"], "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof");
+});

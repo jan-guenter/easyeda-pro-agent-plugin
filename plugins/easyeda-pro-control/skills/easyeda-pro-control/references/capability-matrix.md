@@ -18,7 +18,8 @@ its narrow boundary and pending live validation are listed separately below.
 | Connection and active context | status, context | Authenticated responsive session, exact project path/UUID and document/type/tab |
 | Existing project/document open | runtime open-existing | Saved PCB or schematic page; exact registry/checkpoint membership, exclusive-tab guard and complete unchanged SQLite proof; no creation, save, discard or replacement |
 | Exact schematic components | exact_read | Stable double samples with fixed public projections; schematic-topology disabled pending a verified non-mutating replacement |
-| API coverage and fixed public reads | api coverage/sdk-reads/sdk-validate, sdk_read | Complete per-method inventory; fixed schemas and bounded public observations, not native or persistence proof; current-generation live validation pending |
+| API coverage and fixed reads | api coverage/sdk-reads/sdk-validate, sdk_read | Complete per-method inventory; fixed schemas and explicit public/native implementation labels; bounded observations, not complete source or persistence proof; current-generation live validation pending |
+| Schematic Text/Wire/Bus IDs | sdk_read, getAllPrimitiveId | Native ID-only equivalent on an ordinary active type-1 page; empty arguments only, no Wire net filters or symbol/block-instance scenes. Full source-ID/model-family/index agreement, two stable observations, no callback/compiler/Save. Group IDs are not LINE IDs. Offline-tested; connected validation pending |
 | Owned editor tab/split-screen lookup | sdk_read, getSplitScreenIdByTabId / getTabsBySplitScreenId | Exact existing selector, complete bounded owned tree and saved project membership; identity-only direct result checked against the tree before/after, two matching samples and unchanged checkpoint/context. No foreign projects, empty leaves, title/data export, navigation or current-generation live claim |
 | Single-page stored display changes | design sch.layout.batch, sealed flat-display profile | Existing literal-ID attribute/text display patches only; complete inverse, unchanged endpoint topology, sole page of one ordinary schematic and full saved-project proof. No electrical edits, NO_CONNECT, creation/deletion, translation, non-display steps or historical repair/page loading. Source/offline-tested; new connected lifecycle pending. See schematic.md |
 | Historical presentation-only schematic batch | design sch.layout.batch, compiled profile | Currently blocked by the compiled reader. Historical translation, wire/label edits and flag clones passed selected saved/reopened checks, but that does not enable this route now |
@@ -38,7 +39,7 @@ its narrow boundary and pending live validation are listed separately below.
 | Schematic net labels and no-connect | design, supported electrical adapters | Typed native paths for genuine SDK gaps, exact record and topology consequences; no generic private invoke |
 | Library metadata | library capabilities/execute | Double-sampled supported metadata operations |
 | Closed project symbol metadata | library, library.symbol.modify | Ordinary project-local symbol name/non-null description only; project-bound native write avoids public cloud-routing race; complete title/description/header and unchanged tags/geometry/peer proof; no editor-refresh, reopen or current-generation connected-writer claim |
-| Closed empty ordinary symbol creation | library, library.symbol.create | Ordinary clean PCB active; unique project-local title and optional description; original native ID and META-only addition with complete unchanged-peer proof. No PART/template/canvas initialization, classification, open, Save or inverse. Native permission denial may display a dialog; new connected validation pending |
+| Closed empty ordinary symbol creation | library, library.symbol.create | Ordinary clean PCB active; unique project-local title and optional description; original native ID and META-only addition with complete unchanged-peer proof. No PART/template/canvas initialization, classification, open, Save or inverse. Native permission denial may display a dialog. Installed194400 passed one disposable creation with all17existing documents unchanged; no general symbol-editor lifecycle claim |
 | Closed project page rename | library, document.page.rename | Checkpoint-member ordinary page with one clean active sibling; exact writable branch, owner and locale duplicate-name checks; one native metadata write, complete saved title/header and unchanged peer/source proof; no Save, reopen, UI-caption refresh or current-generation connected-writer claim |
 | Closed empty schematic-page creation | library, document.page.create | Existing ordinary local schematic parent only; one clean owned PCB or sibling page active; exact writable branch and native name/order defaults; one project-qualified native addition with original returned ID and complete unchanged peer/hierarchy proof. Not the public template/drawing-frame/open workflow; no Save, reopen, automatic inverse or current-generation live claim |
 | Already-open document activation | library, document.activate | Exact checkpoint-member current-project tab and complete tab ownership; PCB/footprint target requires existing pcbCommandTab=true to avoid an account-preference write. One activation, two coherent target observations and unchanged saved database; no setting change, reopen or current-generation connected claim |
@@ -69,13 +70,22 @@ its narrow boundary and pending live validation are listed separately below.
 
 ## Reported live coverage
 
+Installed194400 completed one empty ordinary-symbol creation from a clean PCB:
+the original returned identity was retained, exactly one META-only SYMBOL was
+added, and all17existing documents stayed unchanged. Independent retained-artifact
+and complete-checkpoint verification agreed with the terminal proof. Normal
+application close preserved the final receipt's exact source bytes. This was
+native metadata persistence without Save or editor open/reopen; it does not
+validate PART initialization, geometry, deletion or an inverse.
+
 Installed182554 completed disposable closed-symbol description updates, empty
 page creation, both owned tab/split lookups and inactive PCB close. The tests
 proved the exact complete saved-project delta or invariance. These paths invoked
 no Save and make no reopened-result claim. Empty-page creation does not validate
 the public template-initializing wrapper. Evidence is retained in the repository's
 dated disposable-validation report. This validates that installed snapshot, not
-the later empty-symbol, flat-display or dispatch-cleanup source changes.
+the later flat-display or dispatch-cleanup source changes. The194400 empty-symbol
+test above is separately scoped to that installed generation.
 
 The five original exact reader kinds passed on a small disposable fixture, including lossless rules and all four pad-parent/topology endpoints. Complete source and native schematic double reads also passed.
 

@@ -1,4 +1,112 @@
-# Disposable validation after the 182554 restart
+# Disposable API validation
+
+## Installed194400 continuation
+
+The restarted facade loaded bundle
+`f77f672259a2e544402c2385ffa57370083415a4a4247d1d43de66f96c296e43`
+and manifest
+`df899c39f1b23f7eef7a2bf995148f92dd7236d5f8d902c12f2cd47acc738dd7`.
+It authenticated a contained runtime against the unchanged external tuple.
+Only the two designated disposable projects were opened.
+
+An ordinary empty-symbol creation completed once from a clean PCB. The original
+native returned ID was retained, exactly one META-only SYMBOL was added, and all
+17 existing documents remained unchanged. Independent artifact loading and
+complete checkpoint decoding reproduced the terminal proof. No PART, template,
+canvas initialization, editor open, Save or inverse was involved. Normal close
+followed by empty process discovery and the maintained checkpoint verifier
+proved the source still matched the final receipt. Terminal commitment:
+`378784170e30e1ea9d67d336b120c01d8df6f23b0ebdca8f501f2f61bcc3b78f`.
+Closed source commitment:
+`87719bccca499626b13041b03e538704270cb9380d069be7721c99a5275904eb`.
+
+The separate nine-document flat-display fixture opened once with complete
+unchanged SQLite and document proof. Its flat diagnostic returned two stable
+observations with zero electrical components and pins, without invoking the
+compiler. Source inspection confirmed the single text object's original position.
+One requested text-position transaction then refused in preparation, before
+journal creation, writer dispatch or Save. The profile incorrectly compared all
+durable record IDs with exported source IDs. Real exports omit durable META;
+this fixture also had source-only CANVAS and an initialized frame order. The
+synthetic profile fixture had included META in exported source and missed the
+format mismatch. No text change, rollback or additional Save was attempted.
+
+The flat fixture closed normally without a prompt choice. Empty process
+discovery and maintained receipt verification proved its original source bytes
+unchanged:
+`fe7defcaa794ac5b294d1b93e89113ed26fec37c5fc6e9eba169a40dd4cbb30e`.
+The read succeeded; the display transaction did not. This is not live writer,
+Save/reopen or inverse validation, nor nonempty electrical-connectivity evidence.
+
+The general computer-use initializer again failed before performing any action
+because of its WSL workspace-URI handling. Maintained process-bound native
+controls successfully closed both disposable instances. No desktop security or
+session settings were changed. No user production project was opened, read,
+edited or saved.
+
+## Post194400 corrections awaiting connected acceptance
+
+The flat-only comparison now checks complete exported and durable record bodies,
+not literal equality between two different representations. Its only membership
+exceptions are retained durable META and an exact zero-origin source-only CANVAS.
+The drawing-frame null-to-zero initialization is sheet-kind and full-body bound.
+The maintained storage proof checks attribute-order and encoding differences;
+all peer documents remain part of the proof. Original checkpoints, receipts and
+raw hashes are unchanged. The derived candidate is explicitly comparison-only,
+not a checkpoint or evidence that any write occurred.
+
+The retained fixture comparison found 29 frame attribute-order differences,
+including 13 absent-to-false strikeout fields; the text was exact. Synthetic
+regressions reproduce those format patterns. The actual native snapshot was not
+retained, so those tests do not claim to replay the full actual observation or
+validate a connected writer. Baseline, intended-state, final commit, retained
+Save recovery, rollback and no-mutation reconciliation use the complete proof.
+The compiled schematic route remains blocked.
+
+Page rename now retains the successful native acknowledgment before fallible
+cleanup or separate guarded readback. Three scoped Text/Wire/Bus identity readers
+use native models and complete source/index agreement, with explicit native-only
+metadata; they do not invoke the public compiled getters. Their implementation
+and omission limits are in the [reader review](schematic-id-reader-review-2026-10-10.md).
+All these new paths still require fresh-generation disposable live acceptance.
+
+A preliminary full test run exposed a synthetic gateway test worker that did not
+finish. After fresh ownership checks, only that exact test worker was terminated;
+the original failure log is retained. It recorded 1,807 passes, 59 failures and
+one skip, including the terminated test file and 58 expected stale-manifest
+fingerprint failures before the rebuild. It is not a passing verification run.
+Review found unbounded test waits on socket/server closure and failed setup, not
+a proven ordinary send/listener race. The correction is confined to test helpers
+and deterministic close/deadline regressions; production deadlines are unchanged.
+
+## Candidate202803 local verification
+
+The frozen candidate passes 1,917 facade tests, one platform-specific skip and
+424 bridge tests, with no failures or cancellations. Verification inherited
+hostile descriptors 142 and 145. Both strict TypeScript checks, all type-aware
+lint categories, dependency signatures and security audit, reproducible builds,
+compatibility, repository/privacy/package checks, seven packaged and official
+skill validators, actionlint and the offline doctor pass. Independent review
+also passes 53 flat/runtime/recovery and 33 gateway-helper tests.
+
+The source fingerprint covers 157 files:
+`be4deb3a3a2b70605953292350d568bf0204d6c1904f1caa7a9c953e90544fe1`.
+The three-file runtime bundle fingerprint is
+`4194f789b5e6506b588d4125342f5ca4b9f93dc2c8c60addc2d37dc1acdb0a8e`.
+The manifest is
+`0367a8114b56d0476fff598f5267271fdd2e58d54dd7b351f4759f0669e4d4ca`.
+All external runtime, native helper and sanitizer pins are unchanged. The
+initial repository scan caught a private project name in draft root notes and
+missing safety wording in the edited manifest. Both were corrected before
+publication and the complete validator then passed without changed rules.
+
+Local tests do not establish marketplace installation or connected acceptance.
+Both disposable fixtures remain closed; the currently loaded host still uses
+194400. New readers, renamed-page acknowledgment handling and the corrected
+flat-display lifecycle need fresh-generation disposable validation. PR9 remains
+draft and the overall API execution task is unfinished.
+
+## Installed182554 continuation
 
 This records tests of the installed `0.3.0+codex.20261010182554` candidate,
 not connected validation of later source changes. No user project was opened or

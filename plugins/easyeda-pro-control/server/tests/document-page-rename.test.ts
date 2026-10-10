@@ -4,7 +4,7 @@ import { sha256Json } from "../src/core.ts";
 import type { ExpectedContext } from "../src/engine.ts";
 import type { NativeDocumentSnapshot, NativeHistorySnapshot } from "../src/native-history.ts";
 import { decodeExactReadEnvelope } from "../src/exact-readers.ts";
-import { buildDocumentPageRenameExpression, documentPageRenameInverse, prepareDocumentPageRename, verifyDocumentPageRenameEffect } from "../src/document-page-rename.ts";
+import { buildDocumentPageRenameExpression, buildDocumentPageRenameReadbackExpression, documentPageRenameInverse, prepareDocumentPageRename, validateDocumentPageRenameReadback, verifyDocumentPageRenameEffect } from "../src/document-page-rename.ts";
 import { buildLibraryExecutionExpression, libraryExecutionKind } from "../src/library-runtime.ts";
 import { libraryMutationReceipt, verifyRecoveredLibraryMutation } from "../src/library-recovery-state.ts";
 
@@ -40,15 +40,17 @@ function desired(before: NativeHistorySnapshot): NativeHistorySnapshot {
 }
 function compileFixture(options: { readonly fault?: string; readonly faultAt?: string; readonly acknowledgment?: boolean; readonly pristineTab?: boolean;
   readonly deferredWriterSwitch?: boolean; readonly baselineVersion?: "missing" | "old"; readonly queuedFinalFault?: "target-open" | "dirty" | "host";
+  readonly replaceAt?: number; readonly replacement?: "host" | "ui" | "tabs" | "permission" | "bus" | "editor-top" | "project-api" | "select-api" | "editor-api";
   readonly placeholder?: Value; readonly placeholderDirty?: unknown; readonly duplicatePlaceholder?: boolean; readonly startPage?: boolean } = {}): {
-  readonly run: () => Promise<unknown>; readonly calls: string[]; readonly writes: () => number; readonly projectTitles: Map<string, string>;
+  readonly run: () => Promise<unknown>; readonly readback: () => Promise<unknown>; readonly calls: string[]; readonly writes: () => number;
+  readonly boundaries: () => number; readonly projectTitles: Map<string, string>;
 } {
   const before = options.baselineVersion === undefined ? history() : mutate(history(), "page", (entry) => {
     if (options.baselineVersion === "missing") { delete entry.metadata["editVersion"]; } else { entry.metadata["editVersion"] = "2.2"; }
   });
   const calls: string[] = [], plan = prepareDocumentPageRename(OPERATION, before, CONTEXT);
   const projectTitles = new Map([["project", plan.beforeTitle], ["foreign", "Untouched foreign page"]]);
-  let current = structuredClone(CONTEXT.document), dirty = false, nativeName = plan.beforeTitle, writes = 0;
+  let boundaries = 0, current = structuredClone(CONTEXT.document), dirty = false, nativeName = plan.beforeTitle, writes = 0;
   const raw: Value[] = [{ tabId: "active@project", data: { doctype: 1, pid: "project" }, isUnSaved: false }];
   if (options.placeholder !== undefined) { raw.push(options.placeholder); }
   if (options.duplicatePlaceholder === true && options.placeholder !== undefined) { raw.push(structuredClone(options.placeholder)); }
@@ -69,13 +71,13 @@ function compileFixture(options: { readonly fault?: string; readonly faultAt?: s
         });
       }
       nativeName = plan.desiredTitle; fault("rename");
-      return Promise.resolve({ message: { success: options.acknowledgment ?? true, result: { uuid: "page", project_uuid: "project", schematic_uuid: "parent", display_title: nativeName } } });
+      return complete({ message: { success: options.acknowledgment ?? true, result: { uuid: "page", project_uuid: "project", schematic_uuid: "parent", display_title: nativeName } } });
     }
-    if (topic === "/PrjDB/sheet/getData") { return Promise.resolve({ message: { uuid: "page", project_uuid: "project", schematic_uuid: options.fault === "parent" ? "other" : "parent", docType: 1,
+    if (topic === "/PrjDB/sheet/getData") { return complete({ message: { uuid: "page", project_uuid: "project", schematic_uuid: options.fault === "parent" ? "other" : "parent", docType: 1,
       display_title: options.fault === "title" ? "wrong" : nativeName, source: "", zIndex: options.fault === "zindex" ? 10 : 2 } }); }
-    if (topic === "/PrjDB/schematic/getData") { return Promise.resolve({ message: { uuid: "parent", project_uuid: "project", display_name: "Container", source: "" } }); }
+    if (topic === "/PrjDB/schematic/getData") { return complete({ message: { uuid: "parent", project_uuid: "project", display_name: "Container", source: "" } }); }
     assert.equal(topic, "/PrjDB/project/getData");
-    return Promise.resolve({ message: { uuid: "project", owner: { uuid: options.fault === "owner" ? "other" : "owner" },
+    return complete({ message: { uuid: "project", owner: { uuid: options.fault === "owner" ? "other" : "owner" },
       currentBranch: options.fault === "native-branch" ? "other" : "branch", isV2Format: false } });
   } } };
   function fault(point: string): void {
@@ -92,7 +94,7 @@ function compileFixture(options: { readonly fault?: string; readonly faultAt?: s
     if (options.fault === "extra-tab") { raw.push({ tabId: "foreign@project", data: { doctype: 3, pid: "project" }, isUnSaved: false }); }
   }
   const eda = {
-    dmt_Project: { getCurrentProjectInfo: (): Promise<unknown> => { calls.push("project"); return Promise.resolve(CONTEXT.project); } },
+    dmt_Project: { getCurrentProjectInfo: (): Promise<unknown> => { calls.push("project"); return complete(CONTEXT.project); } },
     dmt_SelectControl: { getCurrentDocumentInfo: (): Promise<unknown> => {
       calls.push("document"); fault("document");
       if (options.queuedFinalFault !== undefined && calls.filter((call) => call === "document").length === 5) {
@@ -104,23 +106,44 @@ function compileFixture(options: { readonly fault?: string; readonly faultAt?: s
           if (options.queuedFinalFault === "host") { host.currentProject.projectId = "foreign"; }
         }); });
       }
-      return Promise.resolve(current);
+      return complete(current);
     } },
     dmt_EditorControl: { getSplitScreenTree: (): Promise<unknown> => { calls.push("tree"); fault("tree");
       const tabs = [{ tabId: "active@project", documentType: 1, parentProjectUuid: "project" }];
       if (options.fault === "target-open") { tabs.push({ tabId: "page@project", documentType: 1, parentProjectUuid: "project" }); }
       if (options.fault === "foreign-tree") { tabs.push({ tabId: "foreign@other", documentType: 1, parentProjectUuid: "other" }); }
-      return Promise.resolve({ tabs }); } },
+      return complete({ tabs }); } },
     dmt_Schematic: { modifySchematicPageName: (): never => { throw new Error("The mutable row-index public setter must never be invoked."); } },
   };
   const native = { PRO_EDITOR_VERSION: options.fault === "editor-version" ? "3.3" : "3.2", gVars: host, UI: { concurrentDesign: permission, tabBar: { getFilterTabs: (): Value[] => raw, getActiveTab: (): string => "active@project",
     hasTabUnSaved: (): boolean => dirty, isTabUnSaved: (tabId: string): unknown => tabId === "0" && Object.hasOwn(options, "placeholderDirty") ? options.placeholderDirty : dirty } } };
-  return { calls, projectTitles, writes: (): number => writes, run: (): Promise<unknown> => {
+  async function complete(value: unknown): Promise<unknown> {
+    await Promise.resolve();
+    boundaries += 1;
+    if (boundaries === options.replaceAt) {
+      const replacements = {
+        host: (): void => { native.gVars = { ...host }; },
+        ui: (): void => { native.UI = { ...native.UI }; },
+        tabs: (): void => { native.UI.tabBar = { ...native.UI.tabBar }; },
+        permission: (): void => { native.UI.concurrentDesign = { ...permission }; },
+        bus: (): void => { host.messageBus = { ...host.messageBus }; },
+        "editor-top": (): void => { Reflect.set(native, "EDITOR_TOP", { gVars: host }); },
+        "project-api": (): void => { eda.dmt_Project = { ...eda.dmt_Project }; },
+        "select-api": (): void => { eda.dmt_SelectControl = { ...eda.dmt_SelectControl }; },
+        "editor-api": (): void => { eda.dmt_EditorControl = { ...eda.dmt_EditorControl }; },
+      };
+      assert.ok(options.replacement !== undefined); replacements[options.replacement]();
+    }
+    return value;
+  }
+  const run = (readback: boolean): Promise<unknown> => {
     // oxlint-disable-next-line typescript/no-implied-eval, no-new-func -- Only the fixed compiler program executes against isolated native doubles.
-    const execute = new Function("eda", "globalThis", `return ${buildDocumentPageRenameExpression(plan, CONTEXT)};`);
+    const execute = new Function("eda", "globalThis", `return ${readback ? buildDocumentPageRenameReadbackExpression(plan, CONTEXT) : buildDocumentPageRenameExpression(plan, CONTEXT)};`);
     // oxlint-disable-next-line typescript/no-unsafe-call -- Keep the generated result unknown until its exact envelope is parsed.
     const result: unknown = execute(eda, native); return Promise.resolve(result);
-  } };
+  };
+  return { calls, projectTitles, writes: (): number => writes, boundaries: (): number => boundaries,
+    run: (): Promise<unknown> => run(false), readback: (): Promise<unknown> => run(true) };
 }
 
 void test("page rename admits the pinned hidden project tab while preserving one clean sibling", async () => {
@@ -185,6 +208,38 @@ void test("page setter runs once after the final awaited context and synchronous
   const plan = prepareDocumentPageRename(OPERATION, history(), CONTEXT);
   const code = buildDocumentPageRenameExpression(plan, CONTEXT);
   assert.equal(/\.(?:save|Save|setSourceCode|openDocument)\(|annotat/u.test(code), false);
+  assert.equal(fixture.calls.at(-1), "rename");
+  const readback = decodeExactReadEnvelope(await fixture.readback());
+  assert.deepEqual(validateDocumentPageRenameReadback(readback, plan), { kind: "project-page-rename-readback", targetId: "page", metadataVerified: true, targetClosed: true });
+  assert.equal(fixture.writes(), 1);
+  assert.equal(buildDocumentPageRenameReadbackExpression(plan, CONTEXT).includes("/PrjDB/sheet/updateData"), false);
+});
+void test("page readback acknowledgment rejects incomplete, foreign or extended claims", () => {
+  const plan = prepareDocumentPageRename(OPERATION, history(), CONTEXT);
+  const valid = { kind: "project-page-rename-readback", targetId: "page", metadataVerified: true, targetClosed: true };
+  for (const patch of [{ kind: "project-page-rename" }, { targetId: "other" }, { metadataVerified: false },
+    { targetClosed: false }, { targetClosed: undefined }, { saved: true }]) {
+    assert.throws(() => validateDocumentPageRenameReadback({ ...valid, ...patch }, plan));
+  }
+});
+void test("page rename refuses replaced receivers after every awaited pre-write boundary", async () => {
+  const baseline = compileFixture(); await baseline.run();
+  assert.equal(baseline.boundaries(), 15);
+  for (const replacement of ["host", "ui", "tabs", "permission", "bus", "editor-top", "project-api", "select-api", "editor-api"] as const) {
+    for (let replaceAt = 1; replaceAt < baseline.boundaries(); replaceAt += 1) {
+      const fixture = compileFixture({ replacement, replaceAt });
+      await assert.rejects(fixture.run(), /:CONTEXT$/u); assert.equal(fixture.writes(), 0);
+    }
+  }
+});
+void test("post-write observation also rejects receiver replacements without repeating the setter", async () => {
+  const baseline = compileFixture(); await baseline.run(); const beforeReadback = baseline.boundaries(); await baseline.readback();
+  for (const replacement of ["host", "ui", "tabs", "permission", "bus", "editor-top", "project-api", "select-api", "editor-api"] as const) {
+    for (let replaceAt = beforeReadback + 1; replaceAt <= baseline.boundaries(); replaceAt += 1) {
+      const fixture = compileFixture({ replacement, replaceAt }); await fixture.run();
+      await assert.rejects(fixture.readback(), /:CONTEXT$/u); assert.equal(fixture.writes(), 1);
+    }
+  }
 });
 void test("page dispatch checks clean state directly after its asynchronous context helper resolves", async () => {
   for (const queuedFinalFault of ["target-open", "dirty", "host"] as const) {
@@ -209,7 +264,8 @@ void test("runtime locale normalization cannot admit a collision missed by serve
   const fixture = compileFixture(); await assert.rejects(fixture.run(), /refused/u); assert.equal(fixture.writes(), 0);
 });
 void test("the delegated worker remains bound to the exact project across its await and never retries on subsequent UI drift", async () => {
-  const fixture = compileFixture({ deferredWriterSwitch: true }); await assert.rejects(fixture.run(), /refused/u);
+  const fixture = compileFixture({ deferredWriterSwitch: true }); assert.deepEqual(decodeExactReadEnvelope(await fixture.run()), RETURNED);
+  await assert.rejects(fixture.readback(), /refused/u);
   assert.equal(fixture.projectTitles.get("project"), OPERATION.name); assert.equal(fixture.projectTitles.get("foreign"), "Untouched foreign page");
   assert.equal(fixture.writes(), 1);
 });
@@ -226,8 +282,11 @@ for (const fault of ["parent", "owner", "title", "zindex", "target-open", "forei
   });
 }
 void test("ambiguous page acknowledgments and post-write context drift never repeat the setter", async () => {
-  for (const options of [{ acknowledgment: false }, { fault: "context", faultAt: "rename" }, { fault: "dirty", faultAt: "rename" }]) {
-    const fixture = compileFixture(options); await assert.rejects(fixture.run(), /refused/u); assert.equal(fixture.writes(), 1);
+  const invalid = compileFixture({ acknowledgment: false }); await assert.rejects(invalid.run(), /refused/u); assert.equal(invalid.writes(), 1);
+  for (const fault of ["context", "dirty"] as const) {
+    const fixture = compileFixture({ fault, faultAt: "rename" });
+    assert.deepEqual(decodeExactReadEnvelope(await fixture.run()), RETURNED);
+    await assert.rejects(fixture.readback(), /refused/u); assert.equal(fixture.writes(), 1);
   }
 });
 void test("complete page effect permits only requested title and reviewed header, preserving parent and every peer", () => {

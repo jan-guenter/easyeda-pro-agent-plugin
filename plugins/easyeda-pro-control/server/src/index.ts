@@ -75,6 +75,7 @@ import { createSerializedShutdown } from "./shutdown.ts";
 import { extensionApiCatalogInputSchema, queryExtensionApiCatalog } from "./extension-api-catalog.ts";
 import { extensionApiCoverageInputSchema, queryExtensionApiCoverage } from "./extension-api-coverage.ts";
 import { publicSdkReadRequestSchema } from "./public-sdk-read.ts";
+import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
 import { publicSdkCatalogQuerySchema, publicSdkValidationQuerySchema, queryPublicSdkReads, validatePublicSdkArguments } from "./public-sdk-catalog.ts";
 import { operationCatalogQuerySchema, operationValidationRequestSchema, queryOperationCatalog, validateCatalogOperation } from "./operation-catalog.ts";
 
@@ -1954,7 +1955,7 @@ registerFacadeTool(
   "easyeda_control_sdk_read",
   {
     title: "Read reviewed EasyEDA SDK methods",
-    description: "Run a fixed typed local SDK getter or pure calculation with exact runtime/context and authenticated-session guards. Two matching observations are required. The result is public SDK data, not complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
+    description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native ID equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity-only observations; neither is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
     inputSchema: {
       request: z.unknown().pipe(publicSdkReadRequestSchema),
       expectedContext: contextSchema,
@@ -1972,6 +1973,7 @@ registerFacadeTool(
     const reservation = input.evidence === undefined ? undefined : await reserveEvidencePaths(input.evidence);
     let dispatched = false;
     const request = { reader: input.request, expectedContext: input.expectedContext, expectedFingerprint: input.expectedFingerprint };
+    const nativeIds = isSchematicNativeIdMethod(input.request.method);
     try {
       validatePrivateFingerprint(input.expectedFingerprint);
       const status = await engine.status();
@@ -1979,11 +1981,11 @@ registerFacadeTool(
       dispatched = true;
       const result = await engine.publicSdkRead(input.request, input.expectedContext);
       return await withEvidence(request, result, input.evidence,
-        { facadeVersion: CONTROL_VERSION, reader: "fixed-public-sdk-observation" },
+        { facadeVersion: CONTROL_VERSION, reader: nativeIds ? "fixed-native-id-observation" : "fixed-public-sdk-observation" },
         { reservation, returnMode: input.returnMode, maxInlineBytes: input.maxInlineBytes });
     } catch (error) {
       if (reservation && !dispatched) { await releaseEvidenceReservation(reservation); }
-      else if (reservation) { await finalizeDispatchedFailure(reservation, request, error, { effect: "fixed-public-sdk-read" }); }
+      else if (reservation) { await finalizeDispatchedFailure(reservation, request, error, { effect: nativeIds ? "fixed-native-id-read" : "fixed-public-sdk-read" }); }
       throw error;
     }
   }),

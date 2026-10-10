@@ -10,13 +10,17 @@ The inventory covers 774 distinct method paths. The reviewed installed SDK has
 697, the newer official reference has 773, and one older dialog method appears
 only in the reviewed SDK. These counts are method paths, not overload counts.
 The original 749 and 806 declaration signatures remain in the inventory.
+The current source inventory has 190 public subsets, 77 native equivalents,
+two lifecycle-only methods, eight blocked methods and 497 omissions. The fixed
+SDK-read catalog has 163 routes. These are implementation counts, not live-test
+counts.
 
 ## What the statuses mean
 
 | Status | Meaning |
 |---|---|
 | `implemented-public-subset` | A fixed maintained route invokes this method for the stated argument/result subset. It does not accept arbitrary class instances or all declared overloads. |
-| `implemented-native-equivalent` | A maintained transaction performs the relevant CAD task through a reviewed native adapter. This does not claim the public SDK wrapper works. |
+| `implemented-native-equivalent` | A maintained read or transaction performs the stated task through a reviewed native adapter. This does not claim the public SDK wrapper works. |
 | `internal-lifecycle-only` | A journaled workflow can use this operation internally. This row supplies no unrestricted standalone authority. Separately mapped typed activation and inactive-clean close routes have their own exact tab/context guards. |
 | `implemented-but-blocked` | Implementation exists, but every mapped route is currently refused by a required runtime guard. Code or schema presence is not callable support. |
 | `omitted` | There is no supported route for this method. The row gives the actual blocker or the missing implementation work. |
@@ -65,7 +69,8 @@ ordinary clean PCB is active. It proves the original returned ID, one META-only
 addition and every unchanged peer. It does not initialize a PART, canvas or
 template, open the editor, invoke Save, support classifications or supply an
 automatic inverse. The native permission check may display a denial dialog.
-This new route remains source/offline-tested, without connected validation.
+Installed194400 passed one disposable native-persistence test with all17existing
+documents unchanged. That test did not open a symbol editor or validate geometry.
 
 Two public editor lookups also have narrowed routes: tab-to-split-screen ID and
 split-screen-to-tab identities. They require an existing owned selector, complete
@@ -84,8 +89,13 @@ where they exist.
 Several apparent readers are also unsuitable as exact evidence. The installed
 font-list wrapper and bus/wire ID readers convert failures to empty arrays. The
 schematic text ID wrapper can return before its callback completes. Such behavior
-must be fixed with a maintained awaited reader, not hidden by labeling every
-`get*` name read-only.
+must be fixed with a maintained reader, not hidden by labeling every `get*` name
+read-only. Three new synchronous native equivalents now cover Text/Wire/Bus IDs
+on the exact active ordinary type-1 page, with no net filters or symbol scenes.
+They require complete source-ID/model-family/index agreement and two stable
+observations, without invoking those public wrappers or the compiler. Their
+connected validation remains pending. See the
+[source and contract review](schematic-id-reader-review-2026-10-10.md).
 
 The schematic netlist, BOM and document export paths, plus PCB BOM, PDF and
 netlist export paths, invoke implicit annotation and/or Save. They are refused

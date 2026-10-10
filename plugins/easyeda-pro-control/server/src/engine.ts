@@ -58,6 +58,7 @@ import {
 } from "./exact-readers.ts";
 import type { ExactReadRequest } from "./exact-readers.ts";
 import { buildPublicSdkReadCode, validatePublicSdkReadPayload, validatePublicSdkReadRequest } from "./public-sdk-read.ts";
+import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
 import { isEditorTabLookupMethod, readEditorTabLookup } from "./editor-tab-lookups.ts";
 import { buildSchematicNativeReadExpression } from "./schematic-native-adapter.ts";
 import { readSchematicFlatTopology } from "./schematic-flat-read.ts";
@@ -3255,7 +3256,8 @@ export class EasyedaControlEngine {
     await Promise.all([verifyDeviceAssociationNativeProfile(bundles.assetsRoot), verifySchematicNativeProfile(bundles.assetsRoot)]);
   }
 
-  /** Fixed public SDK observations are not native source or persistence proof.
+  /** Fixed SDK observations and explicit native ID equivalents do not establish
+   * complete native source, connectivity or persistence proof.
    * The outer facade retains the authenticated session and full runtime gate.
    * There is no caller code, retry, mutation or lifecycle action in this route.
    */
@@ -3284,7 +3286,9 @@ export class EasyedaControlEngine {
     if (sha256Json(first) !== snapshotSha256) {
       throw new Error("Public SDK observation changed between consecutive samples; no stable result was produced.");
     }
-    return { ...second, authority: "public-sdk-observation-not-complete-design-proof", read_consistency: {
+    return { ...second, authority: isSchematicNativeIdMethod(parsed.method)
+      ? "native-id-observation-not-complete-source-connectivity-or-persistence-proof"
+      : "public-sdk-observation-not-complete-design-proof", read_consistency: {
       stable: true, attempts: 2, snapshotSha256,
       contextBinding: { level: "active-context-stability-required", preAndPostChecked: true, switchAwayAndBackDetectable: false },
     } };

@@ -6,6 +6,59 @@ Last updated: 2026-10-10 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Restarted194400 disposable acceptance and next source corrections
+
+- Fresh facade loaded194400 and authenticated the exact reviewed tuple.
+  Empty-symbol creation completed once with the original native ID retained,
+  one META-only addition and all17existing documents unchanged. Independent
+  retained-artifact/checkpoint review reproduced the terminal proof. No PART,
+  editor open, Save or inverse. Normal close and maintained receipt verification
+  proved closed source87719bcc unchanged from the final receipt.
+- Separate9document flat fixture opened with complete unchanged SQLite proof;
+  the flat diagnostic returned stable empty electrical topology without compiler
+  use. One text-display request refused in preparation before journal/write/Save.
+  Raw saved/source ID equality incorrectly included stored-only META; source-only
+  CANVAS and initialized frame order also need explicit comparison proof.
+  Synthetic tests had copied META into source and masked this defect. No extra
+  Save or fixture edit was attempted. Normal close/discoverempty and maintained
+  checkpoint verification prove original flat sourcefe7defca unchanged.
+- Source-only work: page-rename acknowledgment retention before fallible cleanup
+  and separate guarded readback; three native Text/Wire/Bus ID readers with
+  complete source/model/index agreement and truthful native-only metadata;
+  flat-only complete stored/exported comparison correction accepted by main
+  and independent review. Complete target/peer proof covers preparation,
+  commit, retained-Save recovery, rollback and no-mutation reconciliation;
+  original raw receipts are not changed. Independent52test focused run passes,
+  including12 real encrypted-history coordinator cases. Native observations
+  and dispatch remain synthetic in those tests, not connected validation.
+  Generic compiled topology remains blocked. Existing public reader payloads
+  retain their old shape, and the public-only disposable reader plan refuses
+  native entries before any dispatch. Candidate202803 is built and locally
+  verified below; it is not installed or connected-validated yet.
+- Both disposable editors are closed. Loaded194400 host remains untouched.
+  The user's production project was not opened, read, edited, saved or restored. Overall feasible API
+  work remains unfinished and PR9 stays draft. Current live evidence and limits:
+  [disposable validation](docs/api-coverage-disposable-validation-2026-10-10.md).
+
+### Candidate202803 local verification
+
+- Snapshot0.3.0+codex.20261010202803 passes1,917 facade tests/one platform skip/
+  zero failures or cancellations and424 bridge tests with inherited142/145.
+  Strict types/type-aware lint have zero diagnostics. Independent final review
+  passes53 flat/runtime/recovery and33 gateway-helper tests. Test wait fixes do
+  not change production gateway deadlines. Earlier failed runs remain retained.
+- Clean pinned install/dependency tree,151 signatures/40 attestations and
+  zero-vulnerability audit pass. Reproducible builds, compatibility, repository/
+  privacy/package/seven skills, official skill validators, actionlint and offline
+  doctor pass. Source157filesbe4deb3a, bundle4194f789, manifest0367a811.
+  External runtime/native/sanitizer pins remain unchanged. New package metadata
+  preserves the typed/legacy and historical connected-read boundaries.
+- An initial repository check caught the private project name in root-only draft
+  notes and omitted safety wording in the updated manifest. Both were corrected
+  before staging/publication; the complete unchanged validator then passed.
+  No private design records or credentials are packaged. Publication and actual
+  installed-package evidence must be appended separately.
+
 ### Candidate194400 published and installed; fresh-session acceptance pending
 
 - Candidate193600 payload476ff30 passed CI38080738725 but was not installed.
@@ -437,7 +490,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed and loaded Git-marketplace candidate is `0.3.0+codex.20261010182554`, with 26 tools and seven skills, from the draft feature ref. Its scoped disposable lookup, metadata, page-creation and inactive-close evidence is recorded above. EasyEDA closed normally with no unresolved CAD operation; the closed fixture remains verified. Dirty source changes are not installed. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
+- The installed and loaded Git-marketplace candidate is `0.3.0+codex.20261010194400`, with 26 tools and seven skills, from the draft feature ref. Its empty-symbol test passed; the flat-display request refused before journal/write/Save. Earlier scoped lookup, metadata, page-creation and inactive-close evidence remains bound to182554. Both disposable editors closed normally and their final receipts verify. Dirty source changes are not installed. Runtime use stays gated by the exact reviewed tuple. Supported live editing is WSL plus pinned Windows EasyEDA; the upstream remains a separately prepared dependency. Historical live tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

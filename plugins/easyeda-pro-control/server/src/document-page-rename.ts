@@ -110,7 +110,7 @@ export function prepareDocumentPageRename(input: unknown, history: NativeHistory
  * Closed target and one other clean editor exclude asynchronous canvas/title
  * propagation and every unrelated dirty or foreign tab before dispatch.
  */
-export function buildDocumentPageRenameExpression(input: DocumentPageRenamePlan, context: ExpectedContext): string {
+function buildDocumentPageRenameProgram(input: DocumentPageRenamePlan, context: ExpectedContext, mode: "write" | "readback"): string {
   const plan = planSchema.parse(input);
   if ((context.project.uuid ?? context.project.projectUuid) !== plan.projectUuid ||
     (context.project.uuid !== undefined && context.project.projectUuid !== undefined && context.project.uuid !== context.project.projectUuid) ||
@@ -128,9 +128,12 @@ ${DEVICE_NATIVE_HOST_GUARD}
 ${NATIVE_PROJECT_PLACEHOLDER_PREDICATE}
 const localUI=globalThis.UI,outerUI=globalThis.top?.UI;
 if(localUI!=null&&outerUI!=null&&localUI!==outerUI)throw new Error('UI_AMBIGUOUS');
-const ui=localUI??outerUI,tabs=ui?.tabBar,permission=ui?.concurrentDesign;
+const ui=localUI??outerUI,tabs=ui?.tabBar,permission=ui?.concurrentDesign,editorTop=globalThis.EDITOR_TOP??globalThis;
+const projectApi=eda.dmt_Project,selectApi=eda.dmt_SelectControl,editorApi=eda.dmt_EditorControl;
 if(typeof tabs?.getFilterTabs!=='function'||typeof tabs.getActiveTab!=='function'||typeof tabs.hasTabUnSaved!=='function'||typeof tabs.isTabUnSaved!=='function')throw new Error('TAB_STATE_MISSING');
 const clean=()=>{
+const currentLocalHost=globalThis.gVars,currentOuterHost=globalThis.top?.gVars,currentLocalUI=globalThis.UI,currentOuterUI=globalThis.top?.UI;
+if((currentLocalHost!=null&&currentOuterHost!=null&&currentLocalHost!==currentOuterHost)||(currentLocalUI!=null&&currentOuterUI!=null&&currentLocalUI!==currentOuterUI)||(currentLocalHost??currentOuterHost)!==host||(currentLocalUI??currentOuterUI)!==ui||(globalThis.EDITOR_TOP??globalThis)!==editorTop||editorTop.gVars!==host||host.messageBus!==bus||ui.tabBar!==tabs||ui.concurrentDesign!==permission||eda.dmt_Project!==projectApi||eda.dmt_SelectControl!==selectApi||eda.dmt_EditorControl!==editorApi)throw new Error('CONTEXT');
 if(PLAN.siblingTitles.some(value=>value.toLocaleLowerCase()===PLAN.desiredTitle.toLocaleLowerCase()))throw new Error('LOCALE_DUPLICATE_TITLE');
 const localVersion=globalThis.PRO_EDITOR_VERSION,outerVersion=globalThis.top?.PRO_EDITOR_VERSION;
 if(localVersion!==undefined&&outerVersion!==undefined&&localVersion!==outerVersion)throw new Error('EDITOR_VERSION_AMBIGUOUS');
@@ -151,7 +154,7 @@ for(const tab of all){if(tab?.tabId==='tab_page1'){if(++start!==1||tab.isAbleDel
 if(tab?.tabId==='0'){if(++placeholder!==1||!isNativeProjectPlaceholder(tab)||tabs.isTabUnSaved(tab.tabId)!==false)throw new Error('PROJECT_PLACEHOLDER');continue;}
 if(++count!==1||tab?.tabId!==ACTIVE.tabId||tab.data?.doctype!==1||tab.data?.pid!==PLAN.projectUuid||(Object.hasOwn(tab,'isUnSaved')?tab.isUnSaved!==false:tab.isUnSaved!==undefined)||tab.parentLibraryUuid!==undefined||(tab.data.owner!==undefined&&tab.data.owner!==PLAN.ownerUuid))throw new Error('TAB_SCOPE');}
 if(count!==1)throw new Error('TAB_SCOPE');};
-const context=async()=>{const project=await eda.dmt_Project.getCurrentProjectInfo();const document=await eda.dmt_SelectControl.getCurrentDocumentInfo();
+const context=async()=>{clean();const project=await projectApi.getCurrentProjectInfo();clean();const document=await selectApi.getCurrentDocumentInfo();clean();
 if((project?.uuid??project?.projectUuid)!==PLAN.projectUuid||(project.uuid!==undefined&&project.projectUuid!==undefined&&project.uuid!==project.projectUuid)||
 (document?.uuid??document?.documentUuid)!==ACTIVE.uuid||(document.uuid!==undefined&&document.documentUuid!==undefined&&document.uuid!==document.documentUuid)||document.documentType!==1||document.tabId!==ACTIVE.tabId||document.parentProjectUuid!==PLAN.projectUuid||document.parentLibraryUuid!==undefined)throw new Error('CONTEXT');clean();};
 const read=async(expected)=>{const value=(await bus.rpcCall('/PrjDB/sheet/getData',[PLAN.targetUuid,PLAN.projectUuid])).message;await context();
@@ -160,17 +163,37 @@ const parent=(await bus.rpcCall('/PrjDB/schematic/getData',[PLAN.parentUuid,PLAN
 if(parent?.uuid!==PLAN.parentUuid||parent.project_uuid!==PLAN.projectUuid||parent.display_name!==PLAN.parentTitle||parent.source!=='')throw new Error('PARENT_METADATA');
 const owner=(await bus.rpcCall('/PrjDB/project/getData',[PLAN.projectUuid])).message;await context();
 if(owner?.uuid!==PLAN.projectUuid||owner.owner?.uuid!==PLAN.ownerUuid||owner.currentBranch!==PLAN.branchUuid||owner.isV2Format!==false||owner.archive||owner.store||owner.cbb_project)throw new Error('PROJECT_METADATA');};
-await context();stage='before-read';await read(PLAN.beforeTitle);
+${mode === "write" ? `await context();stage='before-read';await read(PLAN.beforeTitle);
 stage='closed-target';await ${closed};
 await context();
 clean();
 stage='rename';
 const result=(await bus.rpcCall('/PrjDB/sheet/updateData',[{uuid:PLAN.targetUuid,title:PLAN.desiredTitle},PLAN.projectUuid])).message;
 if(result?.success!==true||result.result?.uuid!==PLAN.targetUuid||result.result.project_uuid!==PLAN.projectUuid||result.result.schematic_uuid!==PLAN.parentUuid||result.result.display_title!==PLAN.desiredTitle)throw new Error('ACK_INVALID');
-stage='after-read';await read(PLAN.desiredTitle);await ${closed};await context();
-const json=JSON.stringify({kind:'project-page-rename',targetId:PLAN.targetUuid,createdId:null});
+// Publish the exact successful acknowledgment before any post-write await.
+const json=JSON.stringify({kind:'project-page-rename',targetId:PLAN.targetUuid,createdId:null});` : `
+await context();stage='after-read';await read(PLAN.desiredTitle);await ${closed};await context();clean();
+const json=JSON.stringify({kind:'project-page-rename-readback',targetId:PLAN.targetUuid,metadataVerified:true,targetClosed:true});`}
 return{schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};
 }catch(error){${METADATA_NATIVE_DIAGNOSTIC_CATCH}throw new Error('Closed page rename refused at '+stage+':'+code);}})()`;
+}
+
+export function buildDocumentPageRenameExpression(input: DocumentPageRenamePlan, context: ExpectedContext): string {
+  return buildDocumentPageRenameProgram(input, context, "write");
+}
+
+/** Internal observation after the immutable native acknowledgment is published.
+ * Keep the former post-write metadata, target-absence and clean-context checks,
+ * without including a setter or granting another mutation attempt.
+ */
+export function buildDocumentPageRenameReadbackExpression(input: DocumentPageRenamePlan, context: ExpectedContext): string {
+  return buildDocumentPageRenameProgram(input, context, "readback");
+}
+
+export function validateDocumentPageRenameReadback(value: unknown, input: DocumentPageRenamePlan): Record<string, unknown> {
+  const plan = planSchema.parse(input);
+  return z.object({ kind: z.literal("project-page-rename-readback"), targetId: z.literal(plan.targetUuid),
+    metadataVerified: z.literal(true), targetClosed: z.literal(true) }).strict().parse(value);
 }
 
 function projection(document: NativeDocumentSnapshot): unknown {

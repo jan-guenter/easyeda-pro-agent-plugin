@@ -1,13 +1,12 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { once } from "node:events";
+import { EventEmitter, once as nodeOnce } from "node:events";
 import { Socket } from "node:net";
 import { describe, test } from "node:test";
 import { setTimeout as wait } from "node:timers/promises";
 
 import WebSocketClient, { WebSocketServer } from "ws";
-import type { RawData } from "ws";
 
 import {
   AuthenticatedBridgeGateway,
@@ -29,6 +28,7 @@ const AUTHENTICATED_INDEX_BUILD_ID = `i${"c".repeat(43)}`;
 const BACKEND_TOKEN = "b".repeat(64);
 const CLIENT_NONCE = Buffer.alloc(32, 1).toString("base64url");
 const MAXIMUM_PAYLOAD_BYTES = 1_048_576;
+const TEST_EVENT_TIMEOUT_MS = 10_000;
 const REVIEWED_UPSTREAM_HELLO = Object.freeze({
   contractVersion: 1,
   hotSwapEnabled: false,
@@ -38,6 +38,84 @@ const REVIEWED_UPSTREAM_HELLO = Object.freeze({
   supportsChunking: true,
   type: "hello",
 });
+
+function observePending<T>(result: Promise<T>): Promise<T> {
+  // Prearmed waits may reject while a different prerequisite is awaited.
+  // The original promise still rejects when its consumer awaits it.
+  void (async (): Promise<void> => {
+    try {
+      await result;
+    } catch {
+      // This observer owns no outcome; the original promise remains rejecting.
+    }
+  })();
+  return result;
+}
+
+function once(
+  emitter: EventEmitter,
+  event: string,
+  timeoutMs = TEST_EVENT_TIMEOUT_MS,
+  cancellation?: AbortSignal,
+): Promise<unknown[]> {
+  const controller = new AbortController();
+  const abort = (): void => {
+    controller.abort(new Error(`Test wait for ${event} was cancelled.`));
+  };
+  const closed = (): void => {
+    controller.abort(new Error(`Test peer closed before ${event}.`));
+  };
+  const timer = setTimeout(() => {
+    controller.abort(new Error(`Test wait for ${event} exceeded ${timeoutMs} ms.`));
+  }, timeoutMs);
+  if (event !== "close") {
+    emitter.once("close", closed);
+  }
+  cancellation?.addEventListener("abort", abort, { once: true });
+  if (cancellation?.aborted === true) {
+    abort();
+  }
+  if (emitter instanceof WebSocketClient && emitter.readyState === WebSocketClient.CLOSED) {
+    closed();
+  }
+  const result = (async (): Promise<unknown[]> => {
+    try {
+      const eventArguments: unknown[] = await nodeOnce(emitter, event, { signal: controller.signal });
+      return eventArguments;
+    } catch (error) {
+      if (controller.signal.aborted) {
+        const reason: unknown = controller.signal.reason;
+        assert.ok(reason instanceof Error);
+        throw reason;
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+      emitter.off("close", closed);
+      cancellation?.removeEventListener("abort", abort);
+    }
+  })();
+  return observePending(result);
+}
+
+async function boundedCompletion(
+  completion: Promise<unknown>,
+  timeoutMs: number,
+): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      completion,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error("Test completion exceeded its shutdown bound."));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 function serverPort(server: WebSocketServer): number {
   const address = server.address();
@@ -58,14 +136,12 @@ async function listeningServer(): Promise<WebSocketServer> {
 }
 
 async function closeServer(server: WebSocketServer): Promise<void> {
+  const closed = once(server, "close");
   for (const socket of server.clients) {
     socket.terminate();
   }
-  await new Promise<void>((resolve) => {
-    server.close(() => {
-      resolve();
-    });
-  });
+  server.close();
+  await closed;
 }
 
 async function openClient(
@@ -79,8 +155,13 @@ async function openClient(
   socket.on("error", () => {
     // Expected hostile-path closures are asserted through their close event.
   });
-  await once(socket, "open");
-  return socket;
+  try {
+    await once(socket, "open");
+    return socket;
+  } catch (error) {
+    socket.terminate();
+    throw error;
+  }
 }
 
 async function expectUpgradeRejected(
@@ -93,11 +174,19 @@ async function expectUpgradeRejected(
       perMessageDeflate: false,
     });
     let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        socket.terminate();
+        reject(new Error("Test upgrade rejection exceeded its deadline."));
+      }
+    }, TEST_EVENT_TIMEOUT_MS);
     const finish = (): void => {
       if (settled) {
         return;
       }
       settled = true;
+      clearTimeout(timer);
       socket.terminate();
       resolve();
     };
@@ -106,6 +195,7 @@ async function expectUpgradeRejected(
         return;
       }
       settled = true;
+      clearTimeout(timer);
       socket.terminate();
       reject(new Error("Hostile WebSocket upgrade was accepted."));
     });
@@ -118,45 +208,45 @@ async function expectUpgradeRejected(
   });
 }
 
-function nextConnection(server: WebSocketServer): Promise<WebSocketClient> {
-  return new Promise<WebSocketClient>((resolve) => {
-    server.once("connection", (socket) => {
-      resolve(socket);
-    });
-  });
+function nextConnection(
+  server: WebSocketServer,
+  cancellation?: AbortSignal,
+): Promise<WebSocketClient> {
+  return observePending((async (): Promise<WebSocketClient> => {
+    const [socket] = await once(server, "connection", TEST_EVENT_TIMEOUT_MS, cancellation);
+    assert.ok(socket instanceof WebSocketClient);
+    return socket;
+  })());
 }
 
-async function nextJson(socket: WebSocketClient): Promise<Record<string, unknown>> {
-  const { data, isBinary } = await new Promise<{
-    data: RawData;
-    isBinary: boolean;
-  }>((resolve) => {
-    socket.once("message", (frame, binary) => {
-      resolve({ data: frame, isBinary: binary });
-    });
-  });
-  assert.equal(isBinary, false);
-  let bytes: Buffer;
-  if (Array.isArray(data)) {
-    bytes = Buffer.concat(data);
-  } else if (data instanceof ArrayBuffer) {
-    bytes = Buffer.from(data);
-  } else {
-    bytes = data;
-  }
-  const value: unknown = JSON.parse(bytes.toString("utf8"));
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new TypeError("Expected a JSON object WebSocketClient frame.");
-  }
-  return Object.fromEntries(Object.entries(value));
+function nextJson(socket: WebSocketClient): Promise<Record<string, unknown>> {
+  return observePending((async (): Promise<Record<string, unknown>> => {
+    const [data, isBinary] = await once(socket, "message");
+    assert.equal(isBinary, false);
+    let bytes: Buffer;
+    if (Array.isArray(data)) {
+      assert.ok(data.every((part: unknown) => Buffer.isBuffer(part)));
+      bytes = Buffer.concat(data);
+    } else if (data instanceof ArrayBuffer) {
+      bytes = Buffer.from(data);
+    } else {
+      assert.ok(Buffer.isBuffer(data));
+      bytes = data;
+    }
+    const value: unknown = JSON.parse(bytes.toString("utf8"));
+    if (value === null || typeof value !== "object" || Array.isArray(value)) {
+      throw new TypeError("Expected a JSON object WebSocketClient frame.");
+    }
+    return Object.fromEntries(Object.entries(value));
+  })());
 }
 
 function nextCloseCode(socket: WebSocketClient): Promise<number> {
-  return new Promise<number>((resolve) => {
-    socket.once("close", (code) => {
-      resolve(code);
-    });
-  });
+  return observePending((async (): Promise<number> => {
+    const [code] = await once(socket, "close");
+    assert.ok(typeof code === "number");
+    return code;
+  })());
 }
 
 function createGateway(
@@ -269,29 +359,55 @@ async function establishProxySession(
   readonly client: WebSocketClient;
   readonly privateSocket: WebSocketClient;
 }> {
-  const backendConnection = nextConnection(backend);
-  const client = await openClient(gateway.lifecycle().publicEndpoint.port);
-  const accepted = await authenticate(client, clientNonce);
-  const privateSocket = await backendConnection;
-  assert.equal(gateway.lifecycle().activeSession, null);
-  const privateHandshake = nextJson(privateSocket);
-  client.send(
-    JSON.stringify({
-      authenticatedIndexBuildId: AUTHENTICATED_INDEX_BUILD_ID,
-      authenticationKeySha256: AUTHENTICATION_KEY_SHA256,
-      contractVersion: 1,
-      protocol: "easyeda-mcp-pro.bridge",
-      protocolVersion: "1.0.0",
-      type: "handshake",
-    }),
-  );
-  const injectedHandshake = await privateHandshake;
-  assert.equal(injectedHandshake["sessionToken"], BACKEND_TOKEN);
-  const publicHello = nextJson(client);
-  privateSocket.send(JSON.stringify(REVIEWED_UPSTREAM_HELLO));
-  const receivedPublicHello = await publicHello;
-  assert.equal(receivedPublicHello["type"], "hello");
-  return { accepted, client, privateSocket };
+  const cancellation = new AbortController();
+  const backendConnection = nextConnection(backend, cancellation.signal);
+  let client: WebSocketClient | undefined;
+  let privateSocket: WebSocketClient | undefined;
+  try {
+    client = await openClient(gateway.lifecycle().publicEndpoint.port);
+    const accepted = await authenticate(client, clientNonce);
+    privateSocket = await backendConnection;
+    assert.equal(gateway.lifecycle().activeSession, null);
+    const privateHandshake = nextJson(privateSocket);
+    client.send(
+      JSON.stringify({
+        authenticatedIndexBuildId: AUTHENTICATED_INDEX_BUILD_ID,
+        authenticationKeySha256: AUTHENTICATION_KEY_SHA256,
+        contractVersion: 1,
+        protocol: "easyeda-mcp-pro.bridge",
+        protocolVersion: "1.0.0",
+        type: "handshake",
+      }),
+    );
+    const injectedHandshake = await privateHandshake;
+    assert.equal(injectedHandshake["sessionToken"], BACKEND_TOKEN);
+    const publicHello = nextJson(client);
+    privateSocket.send(JSON.stringify(REVIEWED_UPSTREAM_HELLO));
+    const receivedPublicHello = await publicHello;
+    assert.equal(receivedPublicHello["type"], "hello");
+    return { accepted, client, privateSocket };
+  } catch (error) {
+    // Callers cannot clean a session that setup never returned.
+    // Cancel and drain its waiter, including any already delivered connection.
+    cancellation.abort();
+    client?.terminate();
+    privateSocket?.terminate();
+    const [connection] = await Promise.allSettled([backendConnection]);
+    if (connection?.status === "fulfilled") {
+      connection.value.terminate();
+    }
+    const cleanup = await Promise.allSettled([
+      boundedCompletion(gateway.close(), TEST_EVENT_TIMEOUT_MS),
+      closeServer(backend),
+    ]);
+    const failures = cleanup.filter((outcome) => outcome.status === "rejected");
+    if (failures.length > 0) {
+      const reasons: unknown[] = failures.map((outcome): unknown => outcome.reason);
+      throw new AggregateError([error, ...reasons],
+        "Test session setup and cleanup failed.", { cause: error });
+    }
+    throw error;
+  }
 }
 
 const SUCCESSFUL_TOOL_RESULT: UpstreamToolResult = {
@@ -339,6 +455,93 @@ function observeLeaseSettlements(
   };
   return events;
 }
+
+void describe("bounded gateway test waits", () => {
+  void test("cleans listeners after success, early close, error, abort and deadline", async () => {
+    for (const outcome of ["success", "close", "error", "abort", "deadline"]) {
+      // WebSocket's Node EventEmitter contract, including error, is under test.
+      // oxlint-disable-next-line unicorn/prefer-event-target
+      const emitter = new EventEmitter();
+      const cancellation = new AbortController();
+      const result = once(emitter, "message", 5, cancellation.signal);
+      if (outcome === "success") {
+        emitter.emit("message", "fixture");
+        assert.deepEqual(await result, ["fixture"]);
+      } else {
+        if (outcome === "close") {
+          emitter.emit("close");
+        } else if (outcome === "error") {
+          emitter.emit("error", new Error("injected peer failure"));
+        } else if (outcome === "abort") {
+          cancellation.abort();
+        }
+        // Delay consumption while another prerequisite is pending.
+        // Node's test runner rejects unhandled failures.
+        await wait(15);
+        await assert.rejects(result, /closed|injected peer failure|cancelled|exceeded/u);
+      }
+      assert.deepEqual(emitter.eventNames(), []);
+    }
+  });
+
+  void test("rejects a message wait on close and an already closed socket", async () => {
+    const backend = await listeningServer();
+    const connection = nextConnection(backend);
+    const client = await openClient(serverPort(backend));
+    const privateSocket = await connection;
+    try {
+      const message = nextJson(client);
+      const closed = once(client, "close");
+      privateSocket.close();
+      await closed;
+      await wait(15);
+      await assert.rejects(message, /closed before message/u);
+      await assert.rejects(nextJson(client), /closed before message/u);
+      await assert.rejects(nextCloseCode(client), /closed before close/u);
+      assert.equal(client.listenerCount("message"), 0);
+      assert.equal(client.listenerCount("close"), 0);
+    } finally {
+      client.terminate();
+      await closeServer(backend);
+    }
+  });
+
+  void test("observes and removes a prearmed connection wait when its server closes", async () => {
+    const backend = await listeningServer();
+    const connection = nextConnection(backend);
+    await closeServer(backend);
+    await wait(15);
+    await assert.rejects(connection, /closed before connection/u);
+    assert.equal(backend.listenerCount("connection"), 0);
+    assert.equal(backend.listenerCount("error"), 0);
+    assert.equal(backend.listenerCount("close"), 0);
+  });
+
+  void test("bounds a completion that never settles", async () => {
+    const pending = Promise.withResolvers<null>();
+    await assert.rejects(boundedCompletion(pending.promise, 5), /shutdown bound/u);
+    pending.resolve(null);
+    await boundedCompletion(pending.promise, 5);
+  });
+
+  void test("failed authentication drains setup waiters and closes owned fixtures", async () => {
+    const backend = await listeningServer();
+    const gateway = createGateway(serverPort(backend));
+    await gateway.start();
+    try {
+      await assert.rejects(establishProxySession(gateway, backend, "invalid-nonce"),
+        /closed before message/u);
+      assert.equal(backend.address(), null);
+      assert.equal(backend.clients.size, 0);
+      assert.equal(backend.listenerCount("connection"), 0);
+      assert.equal(backend.listenerCount("close"), 0);
+      assert.throws(() => gateway.lifecycle(), /not listening/u);
+    } finally {
+      await boundedCompletion(gateway.close(), TEST_EVENT_TIMEOUT_MS);
+      await closeServer(backend);
+    }
+  });
+});
 
 void describe("mutually authenticated EasyEDA bridge gateway", () => {
   void test("admits only the exact native renderer origin and still requires full authentication", async () => {
@@ -544,17 +747,15 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
     rawSocket.pause();
     const closePromise = gateway.close();
     try {
-      await Promise.race([
-        closePromise,
-        wait(1500, undefined, { ref: false }).then(() => {
-          throw new Error("Gateway shutdown exceeded its forced-close bound.");
-        }),
-      ]);
+      await boundedCompletion(closePromise, 1500);
     } finally {
       rawSocket.resume();
       socket.terminate();
-      await closePromise;
-      await closeServer(backend);
+      try {
+        await boundedCompletion(closePromise, TEST_EVENT_TIMEOUT_MS);
+      } finally {
+        await closeServer(backend);
+      }
     }
   });
 
@@ -612,21 +813,29 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
     const gateway = createGateway(serverPort(backend));
     await gateway.start();
     const clients: WebSocketClient[] = [];
+    const cancellation = new AbortController();
+    let closed: Promise<unknown[]> | undefined;
     try {
       for (let index = 0; index < 8; index += 1) {
-        clients.push(await openClient(gateway.lifecycle().publicEndpoint.port));
+        const client = await openClient(gateway.lifecycle().publicEndpoint.port);
+        clients.push(client);
+        if (index === 0) {
+          closed = once(client, "close", TEST_EVENT_TIMEOUT_MS, cancellation.signal);
+        }
       }
       await expectUpgradeRejected(gateway.lifecycle().publicEndpoint.port);
       assert.equal(gateway.connectionDiagnostics().lastFailure?.code, "pending-limit");
       assert.equal(gateway.connectionDiagnostics().pendingAuthenticationCount, 8);
       const first = clients[0];
       assert.ok(first);
-      const closed = once(first, "close");
+      assert.ok(closed);
+      assert.equal(first.readyState, WebSocketClient.OPEN);
       first.send("x".repeat(2049));
       await closed;
       assert.equal(backendConnections, 0);
       assert.equal(gateway.lifecycle().activeSession, null);
     } finally {
+      cancellation.abort();
       for (const client of clients) {
         client.terminate();
       }
@@ -724,13 +933,14 @@ void describe("mutually authenticated EasyEDA bridge gateway", () => {
     await gateway.start();
     await gateway.bindBackendOwner(process.pid);
     const socket = await openClient(gateway.lifecycle().publicEndpoint.port);
+    const closed = once(socket, "close");
     try {
       const accepted = await authenticate(
         socket,
         Buffer.alloc(32, 8).toString("base64url"),
       );
       assert.equal(gateway.lifecycle().activeSession, null);
-      await once(socket, "close");
+      await closed;
       assert.equal(backendFrames, 0);
       assert.equal(gateway.connectionDiagnostics().lastFailure?.code, "authentication-timeout");
       assert.equal(gateway.connectionDiagnostics().lastFailure?.phase, "awaiting-upstream-handshake");

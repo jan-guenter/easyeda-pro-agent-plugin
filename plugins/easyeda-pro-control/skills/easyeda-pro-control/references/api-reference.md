@@ -86,9 +86,20 @@ the public wrapper hash alone is not sufficient. Use managed evidence with
 `summary` or `receipt-only` for large results. Undefined results remain distinct from an
 empty collection.
 
-These are public SDK observations. Stable output can still reflect a documented
-SDK mapping limitation, so it cannot replace complete native-source, connectivity,
-lock, collateral or saved-project proof in a design transaction. The fixed
+Most routes are public SDK observations. Three ID-only routes are explicitly
+classified as `native-task-equivalent`: schematic Text, Wire and Bus
+`getAllPrimitiveId`. They accept only `arguments:{}` on the exact active ordinary
+type-1 page. Wire net filters and symbol/block-instance scenes are refused.
+Complete source-ID, model-family and ID-index agreement is required. Wire and Bus
+IDs identify groups, not LINE children. These routes avoid the public callbacks
+and compiler-backed wire/bus getters; they do not serialize source or invoke Save.
+Their native-only authority labels distinguish them from public SDK projections.
+New connected validation remains pending. The older public-SDK validation runner
+rejects these native routes before any dispatch; it is not their test runner.
+
+Neither public results nor native ID observations replace complete native-source,
+connectivity, lock, collateral or saved-project proof in a design transaction.
+Stable public output can still reflect an SDK mapping limitation. The fixed
 reader excludes writes, file/network transfers, navigation and resource creation.
 
 ## Typed design and library operations

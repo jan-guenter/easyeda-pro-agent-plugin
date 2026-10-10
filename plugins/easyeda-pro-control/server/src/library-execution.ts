@@ -32,7 +32,7 @@ import { buildDocumentActivationExpression, documentActivationContext, prepareDo
 import type { DocumentActivationPlan } from "./document-activation.ts";
 import { assertUnchangedLibraryCheckpoint } from "./library-checkpoint.ts";
 import { verifySchematicNativeProfile } from "./native-profiles.ts";
-import { DOCUMENT_PAGE_RENAME_PROFILE, buildDocumentPageRenameExpression, prepareDocumentPageRename, verifyDocumentPageRenameEffect } from "./document-page-rename.ts";
+import { DOCUMENT_PAGE_RENAME_PROFILE, buildDocumentPageRenameExpression, buildDocumentPageRenameReadbackExpression, prepareDocumentPageRename, validateDocumentPageRenameReadback, verifyDocumentPageRenameEffect } from "./document-page-rename.ts";
 import type { DocumentPageRenamePlan } from "./document-page-rename.ts";
 import { assertDocumentCloseContext, buildDocumentCloseExpression, prepareDocumentClose, validateDocumentCloseResult, verifyDocumentCloseProject } from "./document-close.ts";
 import type { DocumentClosePlan } from "./document-close.ts";
@@ -181,11 +181,11 @@ export class LibraryExecutor {
     else if (association.profile === DOCUMENT_PAGE_CREATE_PROFILE) { expression = buildDocumentPageCreateExpression(association, input.expectedContext); }
     else { expression = buildDeviceAssociationExpression(association); }
     const code = wrapWithContextGuard(`return await ${expression};`, input.expectedContext);
-    const creating = kind === "project-symbol-create" || kind === "project-page-create";
-    let createdIdentityRetained = false, settledResultObserved = false;
-    let invalidCreateResult: { readonly error: unknown } | undefined;
-    const retainSettledResult = creating ? async (raw: unknown): Promise<void> => {
-      if (settledResultObserved) { throw new Error("Native creation identity retention must not repeat."); }
+    const requiresEarlyRetention = kind === "project-symbol-create" || kind === "project-page-create" || kind === "project-page-rename";
+    let mutationIdentityRetained = false, settledResultObserved = false;
+    let invalidMutationResult: { readonly error: unknown } | undefined;
+    const retainSettledResult = requiresEarlyRetention ? async (raw: unknown): Promise<void> => {
+      if (settledResultObserved) { throw new Error("Native mutation identity retention must not repeat."); }
       settledResultObserved = true;
       let mutationReceipt: LibraryMutationReceipt, nativeReturn: unknown;
       try {
@@ -193,20 +193,30 @@ export class LibraryExecutor {
         mutationReceipt = libraryMutationReceipt(operation, nativeReturn);
       } catch (error) {
         // A settled refusal or malformed acknowledgment has no attributable
-        // Creation identity. Preserve its error without inventing retention or
+        // Mutation identity. Preserve its error without inventing retention or
         // Reclassifying completed native execution as an unsettled transport.
-        invalidCreateResult = { error }; return;
+        invalidMutationResult = { error }; return;
       }
       journal.mutationReceipt = mutationReceipt;
       // Storage failures are different: leave the callback rejected so the
       // Engine retains quarantine and never claims durable result publication.
       await LibraryExecutor.record(journal, "native-return", nativeReturn);
-      createdIdentityRetained = true;
+      mutationIdentityRetained = true;
     } : undefined;
     const raw = await this.engine.dispatchWithOrphanTracking(journal, phase, "easyeda_execute", { code, timeoutMs: 60_000, confirmWrite: true }, 70_000, undefined, retainSettledResult);
-    if (invalidCreateResult !== undefined) { throw invalidCreateResult.error; }
-    if (creating && !createdIdentityRetained) { throw new Error("Native creation identity was not retained at the settled dispatch boundary."); }
+    if (invalidMutationResult !== undefined) { throw invalidMutationResult.error; }
+    if (requiresEarlyRetention && !mutationIdentityRetained) { throw new Error("Native mutation identity was not retained at the settled dispatch boundary."); }
     return extractToolPayload(raw);
+  }
+
+  private async pageRenameReadback(input: LibraryExecuteInput, journal: LibraryJournal, plan: DocumentPageRenamePlan): Promise<void> {
+    await this.runtime(input);
+    await this.nativeProfile(true, true);
+    const expression = buildDocumentPageRenameReadbackExpression(plan, input.expectedContext);
+    const code = wrapWithContextGuard(`return await ${expression};`, input.expectedContext);
+    const raw = await this.engine.dispatchWithOrphanTracking(journal, "page-rename-readback", "easyeda_execute", { code, timeoutMs: 60_000, confirmWrite: true }, 70_000);
+    const result = validateDocumentPageRenameReadback(decodeExactReadEnvelope(extractToolPayload(raw)), plan);
+    await LibraryExecutor.record(journal, "page-rename-readback", result);
   }
 
   public async execute(request: LibraryExecuteInput): Promise<Value> {
@@ -310,9 +320,10 @@ export class LibraryExecutor {
       if (sourceHash(recheck) !== sourceHash(beforeSource)) { throw new Error("Active design changed before library dispatch."); }
       journal.mutationMayHaveOccurred = mutation;
       const envelope = await this.dispatch(input, journal, operation, "execute", association, openTarget === undefined ? undefined : { ...openTarget, projectUuid: projectId(context) });
-      const createdIdentityRetained = kind === "project-symbol-create" || kind === "project-page-create";
-      if (mutation && !createdIdentityRetained) { journal.mutationReceipt = libraryMutationReceipt(operation, decodeExactReadEnvelope(envelope)); }
-      if (!createdIdentityRetained && (mutation || kind === "document-open" || kind === "document-activate" || kind === "document-close" || kind === "metadata-read")) { await LibraryExecutor.record(journal, "native-return", decodeExactReadEnvelope(envelope)); }
+      const mutationIdentityRetained = kind === "project-symbol-create" || kind === "project-page-create" || kind === "project-page-rename";
+      if (mutation && !mutationIdentityRetained) { journal.mutationReceipt = libraryMutationReceipt(operation, decodeExactReadEnvelope(envelope)); }
+      if (!mutationIdentityRetained && (mutation || kind === "document-open" || kind === "document-activate" || kind === "document-close" || kind === "metadata-read")) { await LibraryExecutor.record(journal, "native-return", decodeExactReadEnvelope(envelope)); }
+      if (association?.profile === DOCUMENT_PAGE_RENAME_PROFILE) { await this.pageRenameReadback(input, journal, association); }
       let finalContext: ExpectedContext = context;
       let result: Value;
       if (kind === "document-close") {
