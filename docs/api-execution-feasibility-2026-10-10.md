@@ -4,6 +4,13 @@ Research date: 2026-10-10. This investigation used official documentation and th
 installed implementation files below. It did not open a project, call the bridge,
 change a journal or execute a CAD writer. No user design was read or modified.
 
+Follow-up: the [October11 source review](api-remaining-method-effects-2026-10-11.md)
+traces layer selection, page order, pad-pair replacement, PCB text and a narrow
+closed-container rename route. The
+[installed083400 fixture report](api-coverage-083400-fixture-validation-2026-10-11.md)
+separately records nonempty flat display Save/reopen evidence. Historical pending
+statements below describe the original investigation, not those later results.
+
 The useful boundary is method-specific. Some methods already have an executable
 adapter. Some are empty in the installed build. Others need a stateful adapter
 because they start dialogs, create additional assets or return before the full
@@ -111,10 +118,11 @@ At the start of this work, 32 of the 68 strict library/lifecycle operation
 schemas had no executor profile. Eight additional named gaps were outside
 those schemas. The table retains all 40 original entries and identifies the
 subsets implemented since then. A follow-up source audit of
-`listLibraryExecutionCapabilities()` now has 35 implemented subsets among 76
-named actions after empty ordinary symbol creation: 26 typed actions still
+`listLibraryExecutionCapabilities()` now has 37 implemented subsets among 76
+named actions after empty ordinary symbol creation and closed PCB/schematic
+rename: 24 typed actions still
 without an executor, seven explicitly refused exports, and the eight named
-native/dialog gaps remain. Thus 41 actions
+native/dialog gaps remain. Thus 39 actions
 are not standalone executable library operations; `project.open` and the Save
 actions have separate restricted lifecycle routes. These counts describe the
 audited source, not an installed package or connected validation. Method-level
@@ -138,7 +146,7 @@ routes are accounted for separately.
 | `document.pcb.create`, `document.schematic.create` | Creation assigns identities and changes board/container membership. Public create routes through `DMT_CreateNew` (`new_PCB`/`new_schematic`); the input is a board name, not the new document title. The page-addition proof does not cover their defaults or hierarchy. | Feasible next local creation work after reviewing each worker `addData` and its generated defaults. Retain the exact new board/container/document inventory; exclude CBB and inherited cases initially. A chosen title requires a separate returned-ID-bound rename unless explicitly added to the native equivalent's contract. |
 | `document.pcb.copy`, `document.schematic.copy`, `document.page.copy` | Copies clone source, pages, IDs and parent membership, beyond the current single-document patch proof. The strict copy schemas expose target/parent scope, not a new document title. | Retain the copied hierarchy and identity mapping, then separately rename if requested. Check every copied source and all untouched documents. |
 | `document.page.rename` | Implemented as a project-qualified native task equivalent. The public wrapper retains a mutable tree-row index across awaited work, which can select a different document. | Closed ordinary checkpoint-member page, one clean active sibling, writable local non-V2 branch only. Exact title/header effect and all peer/source invariants; no Save, reopen or UI-caption refresh claim. Disposable connected validation remains pending. |
-| `document.pcb.rename`, `document.schematic.rename` | Their native handlers also update paired CBB/container state and can call document-opening logic. The page-only effect profile does not cover those changes. | Add complete counterpart/container inventory and open-document effect profiles, duplicate-name checks and original-journal recovery. Public method availability does not establish those effects. |
+| `document.pcb.rename`, `document.schematic.rename` | Public wrappers can update paired CBB/container state. Their contract is broader than a title-only edit. | Implemented through a separate direct project-qualified worker adapter for one closed ordinary target, with every schematic child closed and one other clean PCB active. Strict META shape, duplicate-name checks, independent DOM inventory, complete peer records/clocks/provenance and original-acknowledgment recovery. No public paired rename, Save, reopen, automatic inverse or connected acceptance. See the October11 review. |
 | `document.pcb.delete`, `document.schematic.delete`, `document.page.delete` | Deletion changes hierarchy and board associations. The public page deleter marks a last page for schematic deletion and can add its paired PCB to the deletion set. `deletePcb` returns true after its RPC without checking the RPC result. | Feasible first subset: a closed empty non-last ordinary page, after reviewing awaited worker completion and manager cleanup. Broader support must authorize the entire deletion closure and prove its tombstones/parent changes. Retain a recoverable project backup; creating a new empty document is not an inverse. |
 | `document.pcb.save`, `document.schematic.save` | A standalone Save would bypass the design transaction's pre-dispatch intent and saved/reopened source proof. A second Save after an ambiguous first one is unsafe. Type-1 design commit is additionally blocked by missing safe transaction-topology integration. | Use the maintained original-journal commit for admitted non-type-1 designs. Supporting a general Save requires an original-journal-bound intent and exact pre-save source/durable expectations, not a Boolean endpoint; schematic commit also needs the topology blocker resolved. |
 | `project.rename`, `project.description.modify`, `project.copy`, `project.delete` | The corresponding pinned public implementations are empty or return false. | A dedicated native adapter or deliberate newer-runtime review is required. Merely exposing the method cannot make these pinned bodies work. |
@@ -181,13 +189,13 @@ After resolving transaction topology, the most useful narrow increments are:
    public `$3` completion: its individual service deletions are unawaited.
    Footprint/device deletion needs the corresponding manager and dependency
    review, not an assumed shared implementation.
-3. **Closed ordinary schematic/PCB creation and rename.** Public creation
+3. **Closed ordinary schematic/PCB creation.** Public creation
    already requests `notOpen:true` or `unOpen:true`, but traverses
    `DMT_CreateNew` and can create board/default records. Review project-qualified
-   worker additions and enumerate the full expected hierarchy. For rename,
-   exclude CBB/paired assets first and bypass the public tree-index race, as
-   the page rename adapter does. Neither the page-addition nor page-rename
-   proof can simply be relabeled for a container or PCB.
+   worker additions and enumerate the full expected hierarchy. Closed ordinary
+   rename is now implemented by a separate native profile with its own serializer,
+   subscriber, DOM and complete-record proof. Its connected acceptance remains
+   pending. Neither rename proof can be reused as a creation proof.
 4. **Same-project copy, then non-last empty-page deletion.** These are feasible
    but need more identity/dependency work than metadata. Preserve exact source,
    explicitly model remapped children and associations, and independently

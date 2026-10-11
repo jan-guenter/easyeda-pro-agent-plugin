@@ -325,6 +325,15 @@ function compileLifecycle(operation: LibraryOperation): CompiledLibraryOperation
     result.inverse = { kind: "delete-created", api: entry.api };
   } else if ("target" in operation) { result.afterReads.push({ purpose: "identity-metadata", api: entry.api, method: entry.get, args: [ref(operation.target)] }); }
   result.requiredProofs.push("associated-board-page-and-library-collateral");
+  if (operation.action === "document.pcb.rename" || operation.action === "document.schematic.rename") {
+    result.call = { api: "native-project-message-bus", method: `/PrjDB/${family}/updateData`, args: [] };
+    result.documentTypes = [3]; result.inverse = { kind: "restore-metadata-from-before", api: "native-project-message-bus" };
+    result.requiredProofs = result.requiredProofs.filter((proof) => proof !== "save-close-reopen-persistence");
+    result.requiredProofs.push("exact-closed-target-and-all-schematic-children", "independent-complete-dom-frame-inventory", "one-other-clean-owned-direct-open-pcb",
+      "strict-nonimported-history-and-fixed-serializer-metadata", "original-one-shot-native-acknowledgment", "complete-project-title-only-content-proof");
+    result.limitations.push("Native task equivalent only: one closed ordinary PCB or schematic container title; public wrapper, CBB counterpart renames and editor-title refresh are not invoked or claimed.",
+      "Refuses imported atom-header histories, non-null target zIndex, hierarchy/inheritance, pooled panel or hidden export frames. No Save/reopen, automatic inverse or current-generation connected validation. Explicit inverse is a separate newly admitted transaction.");
+  }
   if (operation.action === "document.page.create") {
     result.call = { api: "native-project-message-bus", method: "/PrjDB/sheet/addData", args: [] };
     result.documentTypes = [1, 3];

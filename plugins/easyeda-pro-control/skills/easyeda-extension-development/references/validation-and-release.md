@@ -25,6 +25,15 @@ asynchronous readiness, stale/wrong owner, hanging getters and tab switching.
 Observe readiness with a deadline and two coherent exact samples. Never repeat
 navigation to hide a readiness race; inconsistent positive identity stops.
 
+Include active placement previews in reader tests. Public collections can contain
+models absent from persisted source; silently filtering them would turn incomplete
+evidence into a false success. Test settled and in-progress states separately.
+Native pin-cache exceptions must abort the snapshot with a fixed stage code, not
+an empty-net fallback. Fixed diagnostic inventories should have parity tests
+against every emitted guard and reject private suffixes or unknown labels.
+Cancellation resolving a failure does not establish which earlier opaque guard
+fired; new diagnostics cannot retroactively supply missing evidence.
+
 Journal the possible write before dispatch. Save intent must persist immediately
 before dispatch after authority proof. Missing/error acknowledgment consumes a
 Save attempt; reconcile/rebind/restart cannot grant a second Save. A genuinely

@@ -30,7 +30,7 @@ the complete original baseline or the exact intended delta, including all peers.
 An attempted Save is never repeated. Page-loading and historical repair routes
 cannot recover this profile; inspect the original journal after a refusal.
 
-Imported library history has a separate source-candidate profile. Legacy
+Imported library history has a separate sealed profile. Legacy
 `flat-display-transaction.v1` remains strict. The maintained reader can select
 sealed v2 only from a freshly verified checkpoint containing supported
 SYMBOL/FOOTPRINT `firstTicket` headers. The allowed display operations do not
@@ -57,13 +57,15 @@ or reconciliation. A successful live inverse with stale saved records remains
 incomplete; follow [delayed-persistence recovery](failure-recovery.md#inverse-and-delayed-persistence)
 without another inverse or Save.
 
-This profile has source and adversarial offline tests. Successful connected
-apply/Save/reopen and inverse validation remain pending for the new candidate.
-The imported-peer v2 implementation has only offline evidence and is absent from
-installed `0.3.0+codex.20261011071500`. The original disposable import-only
-checkpoint contains library assets but no placed electrical component: one Paste
-left the page unchanged, Escape ended placement and no Save followed. Do not
-repeat Paste or claim nonempty-topology or v2 writer validation from that state.
+This profile has source and adversarial offline tests. Installed083400 passed
+imported-project opening and a stored Designator x580-to585 edit through one
+Save/close/reopen. Its fixture has one resistor and two unconnected pins;
+all12saved documents and66imported header occurrences were covered. A separate
+reverse transaction passed Save/reopen and restored the original source exactly.
+This does not establish unsaved rollback. New source candidates need their own
+connected admission; this case does not validate other fields or electrical edits.
+The original import-only checkpoint predates native placement and Unique ID
+setup. Never replay that Paste, placement, identity edit or completed transaction.
 Installed210100 reconciled the earlier single-text effect and dispatched one
 inverse. Exact live restoration preceded durable restoration by several minutes;
 the immediate rollback correctly stopped. This is delayed-persistence evidence,

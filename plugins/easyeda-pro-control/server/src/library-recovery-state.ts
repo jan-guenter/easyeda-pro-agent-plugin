@@ -15,11 +15,12 @@ import { prepareProjectSymbolMetadata, verifyProjectSymbolMetadataEffect } from 
 import { prepareDocumentPageRename, verifyDocumentPageRenameEffect } from "./document-page-rename.ts";
 import { prepareDocumentPageCreate, verifyDocumentPageCreateEffect } from "./document-page-create.ts";
 import { prepareProjectSymbolCreate, verifyProjectSymbolCreateEffect } from "./project-symbol-create.ts";
+import { prepareDocumentContainerRename, verifyDocumentContainerRenameEffect } from "./document-container-rename.ts";
 import type { ExpectedContext } from "./engine.ts";
 import { EXACT_READ_ENVELOPE_MAX_BYTES } from "./exact-readers.ts";
 
 const receiptSchema = z.object({ schema: z.literal("easyeda-pro-control.library-mutation-receipt.v1"),
-  kind: z.enum(["project-footprint-write", "project-device-association", "project-device-create", "project-device-transform", "project-symbol-metadata", "project-symbol-create", "project-page-rename", "project-page-create"]),
+  kind: z.enum(["project-footprint-write", "project-device-association", "project-device-create", "project-device-transform", "project-symbol-metadata", "project-symbol-create", "project-page-rename", "project-document-rename", "project-page-create"]),
   createdId: z.string().min(1).max(256).nullable(), targetId: z.string().min(1).max(256).nullable(),
   nativeReturnSha256: z.string().regex(/^[a-f0-9]{64}$/u) }).strict();
 export type LibraryMutationReceipt = z.infer<typeof receiptSchema>;
@@ -32,7 +33,7 @@ export function libraryMutationReceipt(operationInput: unknown, nativeReturn: un
   const kind = libraryExecutionKind(operation);
   if (!isRecord(nativeReturn) || nativeReturn["kind"] !== kind) { throw new Error("Library mutation acknowledgment kind is missing or contradictory."); }
   const creating = operation.action === "library.footprint.create" || operation.action === "library.device.create" || operation.action === "document.page.create" || operation.action === "library.symbol.create";
-  const association = operation.action === "library.device.modify" || operation.action === "library.device.model-transform" || operation.action === "library.symbol.modify" || operation.action === "document.page.rename";
+  const association = operation.action === "library.device.modify" || operation.action === "library.device.model-transform" || operation.action === "library.symbol.modify" || operation.action === "document.page.rename" || operation.action === "document.pcb.rename" || operation.action === "document.schematic.rename";
   if (!creating && !association && operation.action !== "library.footprint.modify") { throw new Error("No supported library mutation receipt for this action."); }
   const createdId = nativeReturn["createdId"] ?? null;
   let targetId: unknown = null;
@@ -86,7 +87,7 @@ async function readBoundedLibraryRecoveryArtifact(descriptor: ArtifactDescriptor
   if (sha256Text(text) !== descriptor.sha256) { throw new Error("Library recovery artifact hash mismatch."); }
   return JSON.parse(text) as unknown;
 }
-export function uniqueLibraryRecoveryArtifact(artifacts: readonly ArtifactDescriptor[], phase: "native-return" | "device-prepared" | "symbol-prepared" | "symbol-create-prepared" | "activation-prepared" | "page-rename-prepared" | "page-create-prepared" | "close-prepared"): ArtifactDescriptor {
+export function uniqueLibraryRecoveryArtifact(artifacts: readonly ArtifactDescriptor[], phase: "native-return" | "device-prepared" | "symbol-prepared" | "symbol-create-prepared" | "activation-prepared" | "page-rename-prepared" | "document-rename-prepared" | "page-create-prepared" | "close-prepared"): ArtifactDescriptor {
   const matches = artifacts.filter((entry) => new RegExp(`^[0-9]+-${phase}\\.json$`, "u").test(basename(entry.path)));
   if (matches.length !== 1 || matches[0] === undefined) { throw new Error(`Library recovery requires exactly one retained ${phase} artifact.`); }
   return matches[0];
@@ -95,7 +96,7 @@ export function uniqueLibraryRecoveryArtifact(artifacts: readonly ArtifactDescri
 export function verifyRecoveredLibraryMutation(input: {
   readonly operation: unknown; readonly before: NativeHistorySnapshot; readonly after: NativeHistorySnapshot;
   readonly nativeReturn: unknown; readonly retainedReceipt?: unknown; readonly preparedDevice?: unknown; readonly preparedSymbol?: unknown;
-  readonly preparedPageRename?: unknown; readonly preparedPageCreate?: unknown; readonly preparedSymbolCreate?: unknown; readonly expectedContext?: ExpectedContext;
+  readonly preparedPageRename?: unknown; readonly preparedDocumentRename?: unknown; readonly preparedPageCreate?: unknown; readonly preparedSymbolCreate?: unknown; readonly expectedContext?: ExpectedContext;
 }): { receipt: LibraryMutationReceipt; proof: Record<string, unknown> } {
   const operation = libraryOperationSchema.parse(input.operation);
   const receipt = libraryMutationReceipt(operation, input.nativeReturn);
@@ -116,6 +117,11 @@ export function verifyRecoveredLibraryMutation(input: {
     const expected = prepareDocumentPageCreate(operation, input.before, input.expectedContext);
     if (!isRecord(input.preparedPageCreate) || canonicalJson(expected) !== canonicalJson(input.preparedPageCreate)) { throw new Error("Retained page creation plan differs from the immutable operation and baseline."); }
     proof = verifyDocumentPageCreateEffect(expected, input.before, input.after, createdId);
+  } else if (operation.action === "document.pcb.rename" || operation.action === "document.schematic.rename") {
+    if (input.expectedContext === undefined) { throw new Error("Original document rename context is required for recovery."); }
+    const expected = prepareDocumentContainerRename(operation, input.before, input.expectedContext);
+    if (!isRecord(input.preparedDocumentRename) || canonicalJson(expected) !== canonicalJson(input.preparedDocumentRename)) { throw new Error("Retained document rename plan differs from the immutable operation and baseline."); }
+    proof = verifyDocumentContainerRenameEffect(expected, input.before, input.after);
   } else if (operation.action === "document.page.rename") {
     if (input.expectedContext === undefined) { throw new Error("Original page rename context is required for recovery."); }
     const expected = prepareDocumentPageRename(operation, input.before, input.expectedContext);

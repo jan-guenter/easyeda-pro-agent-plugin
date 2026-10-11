@@ -351,6 +351,7 @@ function runtime(options: RuntimeOptions = {}): { engine: PcbNetMembershipEngine
   const calls: string[] = [];
   const counts = { contexts: 0, gates: 0, statuses: 0 };
   return { calls, counts, engine: {
+    checkpoint: (): Promise<never> => Promise.reject(new Error("Unexpected inherited-Line checkpoint.")),
     assertBridgeDispatchAllowed: (): Promise<true> => { counts.gates += 1; return counts.gates === options.quarantine ? Promise.reject(new Error("quarantined")) : Promise.resolve(true); },
     status: (): Promise<{ stableFingerprint: Value }> => { counts.statuses += 1; return Promise.resolve({ stableFingerprint: options.runtimeDrift === true && counts.statuses > 1 ? { ...originalFingerprint, toolCount: 0 } : structuredClone(originalFingerprint) }); },
     assertContext: (): Promise<typeof context> => {

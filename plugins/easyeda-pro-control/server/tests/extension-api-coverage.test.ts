@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { test } from "node:test";
 import { extensionApiSnapshots } from "../src/extension-api-catalog-data.ts";
 import { extensionApiCoverageQuerySchema, extensionApiCoverageSummary, inventoryExtensionApiCoverage, queryExtensionApiCoverage } from "../src/extension-api-coverage.ts";
-import { queryOperationCatalog } from "../src/operation-catalog.ts";
+import { queryOperationCatalog, validateCatalogOperation } from "../src/operation-catalog.ts";
 import { queryPublicSdkReads } from "../src/public-sdk-catalog.ts";
 import { isRecord } from "../src/core.ts";
 
@@ -177,8 +177,93 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 192, "implemented-native-equivalent": 89, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 483,
+    "implemented-public-subset": 192, "implemented-native-equivalent": 94, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 478,
   });
+});
+
+void test("String mutation coverage is only the existing type-4 footprint native equivalent, never PCB or public-wrapper support", () => {
+  const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
+  for (const method of ["create", "modify", "delete"]) {
+    const row = rows.get(`eda.pcb_PrimitiveString.${method}`); assert.ok(row);
+    assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
+    assert.equal(row.reviewedRuntimeDeclaration, true); assert.equal(row.completeDeclaredContractSupported, false);
+    assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
+    assert.equal(row.routes.length, 1); const route = row.routes[0]; assert.ok(route);
+    assert.equal(route.tool, "easyeda_control_design"); assert.equal(route.selector, `footprint.text.${method}`);
+    assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [4]);
+    assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+    assert.match(route.scope, /one standalone built-in-default-font STRING per operation/u);
+    assert.match(route.scope, /Modify preserves identity\/layer and refuses reverse-state changes/u);
+    assert.match(route.scope, /delete has no automatic inverse/u);
+    assert.match(route.scope, /No type-3 PCB text, external fonts, placed-instance propagation, public pcb_PrimitiveString wrapper execution\/parity/u);
+    assert.match(route.scope, /class-instance or bulk-delete arguments, or full declared-contract claim/u);
+    assert.ok(route.source.includes("footprint-public-geometry.ts")); assert.ok(route.source.includes("design-action.ts"));
+    assert.ok(route.source.includes("design-execution.ts")); assert.ok(route.tests.includes("footprint-lifecycle.test.ts"));
+    assert.deepEqual(route.inputDiscovery, { tool: "easyeda_control_api", arguments: { request: { action: "operations", query: { family: "design", operationAction: `footprint.text.${method}`, includeSchemas: true } } } });
+    const discovery = route.inputDiscovery?.arguments.request; assert.ok(isRecord(discovery));
+    const catalog = queryOperationCatalog(discovery.query);
+    assert.equal(catalog["offline"], true); assert.equal(catalog["executionAuthorized"], false); assert.equal(catalog["matched"], 1);
+    const entries = catalog["entries"]; assert.ok(Array.isArray(entries)); assert.equal(entries.length, 1);
+    const entry: unknown = entries[0]; assert.ok(isRecord(entry)); assert.equal(entry["action"], route.selector);
+    const schema = entry["inputSchema"]; assert.ok(isRecord(schema)); assert.equal(schema["additionalProperties"], false);
+    const properties = schema["properties"]; assert.ok(isRecord(properties));
+    assert.deepEqual(properties["action"], { type: "string", const: route.selector });
+    assert.equal(queryOperationCatalog({ family: "design", operationAction: `pcb.text.${method}` })["matched"], 0);
+  }
+});
+
+void test("PCB and schematic rename coverage is an exact closed-target native task, not public wrapper or live execution proof", () => {
+  const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
+  for (const [path, action] of [["eda.dmt_Pcb.modifyPcbName", "document.pcb.rename"], ["eda.dmt_Schematic.modifySchematicName", "document.schematic.rename"]] as const) {
+    const row = rows.get(path); assert.ok(row); assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.routes.length, 1);
+    assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+    assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
+    const route = row.routes[0]; assert.ok(route); assert.equal(route.selector, action); assert.equal(route.tool, "easyeda_control_library");
+    assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [3]);
+    assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+    assert.match(route.scope, /every schematic child closed/u); assert.match(route.scope, /independent DOM-frame proof/u);
+    assert.match(route.scope, /nonimported checkpoint and full peer record clocks\/header lineage/u);
+    assert.match(route.scope, /No public wrapper, Save\/reopen, automatic inverse or current-generation live-validation claim/u);
+    assert.ok(route.source.includes("document-container-rename-native-profile.ts")); assert.ok(route.source.includes("library-undispatched-recovery.ts"));
+    const discovery = route.inputDiscovery?.arguments["request"]; assert.ok(isRecord(discovery));
+    const catalog = queryOperationCatalog(discovery["query"]); assert.equal(catalog["offline"], true); assert.equal(catalog["executionAuthorized"], false);
+    const entries = catalog["entries"]; assert.ok(Array.isArray(entries)); assert.equal(entries.length, 1);
+    const entry: unknown = entries[0]; assert.ok(isRecord(entry)); assert.equal(entry["action"], action);
+    assert.ok(isRecord(entry["inputSchema"])); assert.equal(entry["inputSchema"]["additionalProperties"], false);
+    const operation = { id: "rename", action, target: { uuid: "closed-target" }, name: "New name" };
+    const valid = validateCatalogOperation({ family: "library", operation }); assert.equal(valid["valid"], true); assert.equal(valid["executionAuthorized"], false);
+    assert.equal(validateCatalogOperation({ family: "library", operation: { ...operation, code: "caller" } })["valid"], false);
+  }
+});
+
+void test("footprint String coverage discovers strict task arguments, not the public primitive contract or execution authority", () => {
+  const properties = { layer: 3, x: 0, y: 0, text: "TEST", fontSize: 50, lineWidth: 8, origin: "LEFT_BOTTOM", rotation: 0, mirror: false, reverse: false, expansion: 0, primitiveLock: false };
+  const target = { primitiveId: "fixture-text" };
+  const operations = [
+    { id: "text-create", action: "footprint.text.create", properties },
+    { id: "text-modify", action: "footprint.text.modify", target, patch: { text: "MARK" } },
+    { id: "text-delete", action: "footprint.text.delete", target },
+  ];
+  for (const operation of operations) {
+    const result = validateCatalogOperation({ family: "design", operation });
+    assert.equal(result["valid"], true); assert.equal(result["offline"], true);
+    assert.equal(result["executionAuthorized"], false); assert.equal(result["nativePreflightPerformed"], false);
+    for (const extra of [{ documentType: 3 }, { primitiveId: "public-instance", property: {} }]) {
+      assert.equal(validateCatalogOperation({ family: "design", operation: { ...operation, ...extra } })["valid"], false);
+    }
+    assert.equal(validateCatalogOperation({ family: "design", operation: { ...operation, action: operation.action.replace("footprint.", "pcb.") } })["valid"], false);
+  }
+  for (const invalid of [
+    { ...operations[0], properties: { ...properties, fontFamily: "external" } },
+    { ...operations[0], properties: { ...properties, origin: 3 } },
+    { ...operations[0], properties: { ...properties, layer: 12 } },
+    { ...operations[0], properties: { text: "implicit-defaults" } },
+    { ...operations[1], patch: { fontFamily: "default" } },
+    { ...operations[1], patch: {} },
+    { ...operations[2], target: { primitiveIds: ["first", "second"] } },
+  ]) {
+    assert.equal(validateCatalogOperation({ family: "design", operation: invalid })["valid"], false);
+  }
 });
 
 void test("active layer coverage separates its native identity/public fields from the empty public stub", () => {

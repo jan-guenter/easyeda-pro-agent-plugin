@@ -134,10 +134,36 @@ observes whether the original target remains present and checks the complete
 unchanged baseline. It never repeats close, opens or activates a tab. This route
 has offline regression coverage, not a current-generation live-validation claim.
 
+## Rename one closed PCB or schematic container
+
+`document.pcb.rename` and `document.schematic.rename` accept an exact existing
+`target.uuid` and a trimmed, unique `name`. Use the library executor, fresh full
+context/fingerprint and `confirmWrite:true`. One different clean project-owned
+PCB must be active; the target and every child page must be closed. Independent
+DOM checks also exclude tabless editors, hidden export frames and panel pools.
+An empty tab listing alone is insufficient.
+
+This separate native adapter changes only the container's stored title. It
+refuses inherited/CBB/variant projects, imported atom-header histories, unknown
+target metadata and non-null target ordering. It does not invoke the public
+wrapper's paired-design renames, update open editor titles or perform Save.
+Complete checkpoint proof preserves peer records, clocks, insertion provenance
+and schematic-header lineage. Only the target META title and reviewed native
+clock/header bookkeeping may change. Completion reports `saved:false`,
+`reopened:false`, and `saveInvoked:false` despite verified native persistence.
+Current-generation connected acceptance remains pending.
+
+An acknowledged write is retained before post-write readback. After any failure,
+inspect and reconcile its original journal; never repeat the rename or infer
+success from the current title. Restore the original clean PCB context if
+necessary, but do not open the target or children for this recovery. An inverse
+is a separately admitted new transaction using the original name, not automatic
+rollback. A project checkpoint does not prove the tree caption refreshed.
+
 ## Recover an unpublished preparation
 
-For `document.activate`, `document.close`, `document.page.create` and
-`library.symbol.create`, a failed
+For `document.activate`, `document.close`, `document.page.create`,
+`document.pcb.rename`, `document.schematic.rename` and `library.symbol.create`, a failed
 journal publication can leave an initial plan without its preparation artifact.
 Use the original journal's reconciliation on the same compatible runtime. Only
 exact initial publication states with no dispatch, orphan, Save or recovery

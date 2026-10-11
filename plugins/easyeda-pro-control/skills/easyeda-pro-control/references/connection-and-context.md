@@ -41,6 +41,16 @@ When present, status `bridgeConnection` reports bounded fixed-code counters and 
 
 `upstreamProcess` retains fixed protocol-failure codes, process exit status, and private stderr byte count/hash, including after close. Its `stage` is the last startup stage, not a claim that a connected process is still initializing. Raw log contents remain withheld. The reviewed logger transform sends warnings/errors synchronously to stderr; stdout is exclusively JSON-RPC.
 
+Newer candidates also report `upstreamProcess.localIntegrity`: bounded fixed-label
+timings for selected launcher, module-graph, bundle-hashing and sandbox stages.
+Failed status can retain this snapshot under `error.upstreamProcess`.
+`sandbox:null` means no transport diagnostic is available, not that a sandbox
+started. These are passive snapshots, not a progress endpoint or a timeout policy.
+Nested durations overlap and must not be summed; unmeasured work remains outside
+the report. A slow integrity scan does not establish an orphaned bridge call.
+Do not retry status concurrently, disable hashing or terminate its host because a
+selected stage is slow. Older installed generations do not expose these fields.
+
 Exact-reader failures can identify their reader kind, stage, API, method and
 expected field type. These are allowlisted diagnostic values, not native error
 messages. Use them to inspect the matching adapter; do not infer missing design

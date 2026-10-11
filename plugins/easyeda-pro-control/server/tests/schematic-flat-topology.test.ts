@@ -122,6 +122,7 @@ function runtimeFixture(includeFrame = false): { readonly runtime: object; reado
   readonly pageConsistency: { state: string }; readonly templateConsistency: { state: string }; readonly frameValues: { date: string; time: string };
   readonly wireNames: object[]; readonly wireChildren: object[]; readonly wireModels: object[]; readonly rootChildren: object[];
   readonly sourceIds: Map<string, number>; readonly calls: string[];
+  readonly symbolModels: object[];
   readonly root: { id: string; modelType: string; shapeManager?: object; parent: object | null; isConnected: boolean };
   readonly nativeIndex: { get: (id: string) => object | undefined } } {
   const value = fixture();
@@ -199,7 +200,7 @@ function runtimeFixture(includeFrame = false): { readonly runtime: object; reado
     consistencyImpl: pageConsistency };
   const runtime = { SCH: { docMemoryManager: { getActiveDoc: (): object => document, getSchDocs: (): object[] => [document] } } };
   return { runtime, running, wireContacts, project, libraryParts, unsupportedModels, nativeIds: ids, pageConsistency, templateConsistency, frameValues,
-    wireNames, wireChildren, wireModels, rootChildren, sourceIds, calls, root, nativeIndex: shapes.idManager };
+    wireNames, wireChildren, wireModels, rootChildren, sourceIds, calls, root, symbolModels, nativeIndex: shapes.idManager };
 }
 function capture(runtime: object): unknown {
   // oxlint-disable-next-line no-new-func, typescript/no-implied-eval -- Execute this fixed maintained builder against synthetic native objects only.
@@ -213,6 +214,18 @@ void test("fixed flat capture executes on synchronous native model and proves it
   assert.equal(Reflect.get(name, "modelType"), "NetLabel");
   assert.equal(Reflect.get(name, "tagName"), "NetName");
   assert.deepEqual(verifySchematicFlatTopology(capture(scene.runtime)).topology, verifySchematicFlatTopology(fixture()).topology);
+  assert.deepEqual(scene.calls, ["name-body", "source"]);
+});
+
+void test("flat capture never filters a transient placement preview out of complete source membership", () => {
+  const scene = runtimeFixture();
+  const ordinary = scene.symbolModels[0]; assert.ok(ordinary);
+  const preview = { ...ordinary, id: "placement-preview", getShapes: (): object[] => [], traversePins: (): void => undefined };
+  scene.symbolModels.push(preview);
+  const observation = capture(scene.runtime);
+  const parsed = schematicFlatTopologyObservationSchema.parse(observation);
+  assert.deepEqual(parsed.pages[0]?.symbols.map((item) => item.id), ["part", "placement-preview"]);
+  assert.throws(() => verifySchematicFlatTopology(observation), /incomplete source components/u);
   assert.deepEqual(scene.calls, ["name-body", "source"]);
 });
 

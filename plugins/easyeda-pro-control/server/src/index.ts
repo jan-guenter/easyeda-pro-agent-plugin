@@ -701,7 +701,7 @@ function success(value: unknown): CallToolResult {
   };
 }
 
-function failure(error: unknown): CallToolResult {
+function failure(error: unknown, upstreamProcess?: ReturnType<UpstreamEasyedaClient["processDiagnostics"]>): CallToolResult {
   const errorRecord = isRecord(error) ? error : {};
   const details = {
     ok: false,
@@ -711,6 +711,7 @@ function failure(error: unknown): CallToolResult {
       mismatches: errorRecord["mismatches"],
       assertionResults: errorRecord["assertionResults"],
       blockingOperations: errorRecord["blockingOperations"],
+      ...(upstreamProcess === undefined ? {} : { upstreamProcess }),
       ...boundedTransactionErrorOutput(error),
       ...(typeof errorRecord["dispatched"] === "boolean" ? { dispatched: errorRecord["dispatched"] } : {}),
       ...(error instanceof UpstreamStartupError
@@ -727,12 +728,18 @@ function failure(error: unknown): CallToolResult {
 
 function guarded<Input>(
   handler: FacadeHandler<Input>,
+  failureDiagnostics?: () => ReturnType<UpstreamEasyedaClient["processDiagnostics"]>,
 ): (input: Input) => Promise<CallToolResult> {
   return async (input: Input): Promise<CallToolResult> => {
     try {
       return success(await handler(input));
     } catch (error) {
-      return failure(error);
+      let diagnostics: ReturnType<UpstreamEasyedaClient["processDiagnostics"]>;
+      try { diagnostics = failureDiagnostics?.(); }
+      catch {
+        // A diagnostic failure must not replace the original refusal.
+      }
+      return failure(error, diagnostics);
     }
   };
 }
@@ -813,6 +820,7 @@ function serializedStatusGuarded<Input>(
         handler(input, admission),
       );
     }),
+    () => upstream.processDiagnostics(),
   );
 }
 

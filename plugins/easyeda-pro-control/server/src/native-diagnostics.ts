@@ -1,18 +1,22 @@
+/* oxlint-disable import/max-dependencies -- The fixed classifier composes independently maintained literal guard inventories instead of copying reader contracts. */
 import { deviceFailureCategory } from "./device-runtime-guard.ts";
 import { libraryRuntimeFailureCategory } from "./library-runtime-guard.ts";
 import { projectUploadBarrierFailureCategory } from "./project-upload-barrier.ts";
-import { METADATA_NATIVE_GUARD_CODES } from "./metadata-native-diagnostics.ts";
+import { DOCUMENT_RENAME_NATIVE_GUARD_CODES, METADATA_NATIVE_GUARD_CODES } from "./metadata-native-diagnostics.ts";
 import { SCHEMATIC_NATIVE_ID_GUARD_CODES, SCHEMATIC_NATIVE_ID_METHODS } from "./schematic-native-ids.ts";
 import { SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES, SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
 import { SYMBOL_PIN_ENUMERATION_GUARD_CODES, SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
 import { SCHEMATIC_TEXT_GUARD_CODES, SCHEMATIC_TEXT_READ_METHODS } from "./schematic-text-read.ts";
 import { SCHEMATIC_NETGROUP_GUARD_CODES, SCHEMATIC_NETGROUP_READ_METHODS } from "./schematic-netgroup-read.ts";
 import { SCHEMATIC_SELECTION_GUARD_CODES, SCHEMATIC_SELECTION_METHOD } from "./schematic-selection-read.ts";
+import { SCHEMATIC_FLAT_READ_GUARD_CODES, SCHEMATIC_FLAT_TOPOLOGY_GUARD_CODES } from "./schematic-read-diagnostics.ts";
 
 /** Fixed literal errors emitted by reviewed code builders. Never echo unknown
  * native exception text, dynamic suffixes, stack traces or caller values.
  */
 const codes = new Set([
+  ...SCHEMATIC_FLAT_READ_GUARD_CODES,
+  ...SCHEMATIC_FLAT_TOPOLOGY_GUARD_CODES.map((code) => `SCH_FLAT_TOPOLOGY_${code}`),
   "NATIVE_LIFECYCLE_OBSERVER_UNAVAILABLE",
   "NATIVE_LIFECYCLE_PROJECT_DRIFT",
   "NATIVE_LIFECYCLE_CLOSE_CONTEXT",
@@ -117,6 +121,7 @@ const codes = new Set([
   "SCH_NATIVE_PIN_INVALID",
   "SCH_NATIVE_PIN_NET_INVALID",
   "SCH_NATIVE_PIN_NET_MISSING",
+  "SCH_NATIVE_PIN_NET_EXCEPTION",
   "SCH_NATIVE_RUNNER_MISSING",
   "SCH_NATIVE_SCALAR_INVALID",
   "SCH_NATIVE_SOURCE_CONTEXT_MISMATCH",
@@ -191,6 +196,7 @@ const operationStages = [
   { prefix: "Clean document close refused at ", category: "native-document-close", stages: ["host", "before-state", "dispatch-state", "close", "terminal-removal", "after-state", "reconciliation"] },
   { prefix: "Document activation refused: ", category: "native-document-activation", stages: ["api", "before-context", "before-tabs", "loaded-frames", "preferences", "dispatch-context", "activate", "target-readiness"] },
   { prefix: "Closed page rename refused at ", category: "native-page-rename", stages: ["host", "before-read", "closed-target", "rename", "after-read"] },
+  { prefix: "Closed document rename refused at ", category: "native-document-rename", stages: ["host", "before-read", "closed-target", "rename", "after-read"] },
   { prefix: "Symbol metadata operation refused at ", category: "native-symbol-metadata", stages: ["host", "permission", "before-read", "target-closed", "modify", "after-read"] },
 ];
 const operationStageCategories = new Map(operationStages.flatMap(({ prefix, category, stages }) => stages.map((stage) => [`${prefix}${stage}`, `${category}:${stage}`] as const)));
@@ -198,8 +204,8 @@ const activationPreferenceCategories = new Map<string, string>(["preferences", "
   ["PREFERENCES_READ_ERROR", "PREFERENCES_API_MISSING", "PREFERENCES_MISSING", "PREFERENCES_BOUND", "PREFERENCES_JSON_INVALID", "PREFERENCES_SHAPE",
     "PCB_COMMAND_TAB_MISSING", "PCB_COMMAND_TAB_WRITE_REQUIRED", "PCB_COMMAND_TAB_NOT_BOOLEAN"]
     .map((code) => [`Document activation refused: ${stage}:${code}`, `native-document-activation:${stage}:${code}`] as const)));
-const metadataGuardCategories = new Map<string, string>(operationStages.filter(({ category }) => category === "native-page-rename" || category === "native-symbol-metadata")
-  .flatMap(({ prefix, category, stages }) => stages.flatMap((stage) => METADATA_NATIVE_GUARD_CODES.map((code) => [`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`] as const))));
+const metadataGuardCategories = new Map<string, string>(operationStages.filter(({ category }) => category === "native-page-rename" || category === "native-symbol-metadata" || category === "native-document-rename")
+  .flatMap(({ prefix, category, stages }) => stages.flatMap((stage) => (category === "native-document-rename" ? DOCUMENT_RENAME_NATIVE_GUARD_CODES : METADATA_NATIVE_GUARD_CODES).map((code) => [`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`] as const))));
 const schematicIdCategories = new Map<string, string>(SCHEMATIC_NATIVE_ID_METHODS.flatMap((method) =>
   [...SCHEMATIC_NATIVE_ID_GUARD_CODES.map((code) => [`SCH_NATIVE_IDS_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
     .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,

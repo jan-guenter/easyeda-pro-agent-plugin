@@ -19,12 +19,13 @@ import { prepareDocumentActivation } from "../src/document-activation.ts";
 import { prepareDocumentClose } from "../src/document-close.ts";
 import { prepareDocumentPageCreate } from "../src/document-page-create.ts";
 import { prepareProjectSymbolCreate } from "../src/project-symbol-create.ts";
+import { prepareDocumentContainerRename } from "../src/document-container-rename.ts";
 import { assertUndispatchedLibraryPreparation, hasMissingLibraryPreparation } from "../src/library-undispatched-recovery.ts";
 
 type Value = Record<string, unknown>;
-type Action = "document.activate" | "document.close" | "document.page.create" | "library.symbol.create";
+type Action = "document.activate" | "document.close" | "document.page.create" | "library.symbol.create" | "document.pcb.rename" | "document.schematic.rename";
 type Prefix = "before-failed" | "before-retained" | "preparation-failed";
-type Fault = "none" | "source" | "history" | "database" | "context" | "final-context" | "final-source" | "baseline" | "final-checkpoint" | "runtime" | "journal" | "update" | "load-context" | "isolation-context";
+type Fault = "none" | "source" | "history" | "clock" | "database" | "context" | "final-context" | "final-source" | "baseline" | "final-checkpoint" | "runtime" | "journal" | "update" | "load-context" | "isolation-context";
 let originalRoot: string | undefined, root = "";
 let artifacts: { createOperation: typeof createOperation; loadOperation: typeof loadOperation; operationPath: typeof operationPath; updateOperation: typeof updateOperation; writePhaseArtifact: typeof writePhaseArtifact };
 let recovery: { LibraryRecoveryCoordinator: typeof LibraryRecoveryCoordinator };
@@ -41,13 +42,14 @@ after(async () => {
 const HASH = "a".repeat(64), SOURCE = { source: "complete original board source" };
 const CONTEXT = { project: { uuid: "project", path: "/fixture/project.eprj2" },
   document: { uuid: "board", documentType: 3, tabId: "board@project", parentProjectUuid: "project" } } satisfies ExpectedContext;
-function history(changed = false): NativeHistorySnapshot {
-  const documents = ["board", "footprint", "parent", "page"].map((uuid) => {
-    const docType = { board: "PCB", footprint: "FOOTPRINT", parent: "SCH", page: "SCH_PAGE" }[uuid] ?? "missing";
+function history(changed = false, clock = false): NativeHistorySnapshot {
+  const documents = ["board", "footprint", "parent", "page", "pcb"].map((uuid) => {
+    const docType = { board: "PCB", footprint: "FOOTPRINT", parent: "SCH", page: "SCH_PAGE", pcb: "PCB" }[uuid] ?? "missing";
     const metadata = { uuid, docType };
-    const body: Value = { title: uuid === "page" ? "P1" : uuid, source: "", ...(uuid === "page" ? { schematic: "parent", zIndex: 1 } : {}), ...(uuid === "parent" ? { board: "" } : {}) };
+    const body: Value = { title: uuid === "page" ? "P1" : uuid, source: "", ...(uuid === "page" ? { schematic: "parent", zIndex: 1 } : {}),
+      ...(docType === "SCH" || docType === "PCB" ? { board: "", zIndex: null } : {}), ...(docType === "PCB" ? { parent: "" } : {}) };
     if (changed && uuid === "board") { body["title"] = "different"; }
-    const records = [{ id: "META", type: "META", body, ticket: 1, client: null }];
+    const records = [{ id: "META", type: "META", body, ticket: clock && uuid === "board" ? 2 : 1, client: null }];
     return { uuid, docType, metadata, records, semanticSha256: sha256Json({ uuid, docType, metadata, records: records.map(({ id, type, body: content }) => ({ id, type, body: content })) }) };
   });
   return { profile: "easyeda.native-history.linear-gcm-gzip.v1", projectUuid: "project", projectOwnerUuid: "owner", branchUuid: "branch", headHistoryUuid: "head",
@@ -74,6 +76,7 @@ function checkpoint(label: string, changed = false): CheckpointReceipt {
     checkpointIdentity: { dev: "1", ino: "5", birthtimeNs: "6", ctimeNs: "7" } };
 }
 function operation(action: Action): LibraryOperation {
+  if (action === "document.pcb.rename" || action === "document.schematic.rename") { return { id: "rename", action, target: { uuid: action === "document.pcb.rename" ? "pcb" : "parent" }, name: "Renamed" }; }
   if (action === "library.symbol.create") { return { id: "create-symbol", action, libraryUuid: "project", name: "Empty symbol", symbolType: 2 }; }
   return action === "document.page.create" ? { id: "create-page", action, schematic: { uuid: "parent" } } : { id: "lifecycle", action, tabId: "footprint@project" };
 }
@@ -99,6 +102,7 @@ async function fixture(action: Action = "document.page.create", prefix: Prefix =
       if (action === "document.activate") { journal.activationPlan = prepareDocumentActivation(plan.operation, history(), CONTEXT); phase = "activation-prepared"; }
       else if (action === "document.close") { journal.closePlan = prepareDocumentClose(plan.operation, history(), CONTEXT); phase = "close-prepared"; }
       else if (action === "library.symbol.create") { journal.symbolCreatePlan = prepareProjectSymbolCreate(plan.operation, history(), CONTEXT); phase = "symbol-create-prepared"; }
+      else if (action === "document.pcb.rename" || action === "document.schematic.rename") { journal.documentRenamePlan = prepareDocumentContainerRename(plan.operation, history(), CONTEXT); phase = "document-rename-prepared"; }
       else { journal.pageCreatePlan = prepareDocumentPageCreate(plan.operation, history(), CONTEXT); phase = "page-create-prepared"; }
       journal.sequence += 1;
       await artifacts.writePhaseArtifact(operationId, journal.sequence, phase, { publicationCollision: true });
@@ -141,15 +145,16 @@ async function fixture(action: Action = "document.page.create", prefix: Prefix =
     },
     record: (): Promise<never> => { counts.record += 1; return Promise.reject(new Error("Invalidation must not publish another phase artifact")); },
     updateOperation: (updated): Promise<Awaited<ReturnType<typeof artifacts.updateOperation>>> => fault.value === "update" ? Promise.reject(new Error("terminal journal publication failed")) : artifacts.updateOperation(updated),
-    readNativeHistoryCheckpoint: (input): Promise<NativeHistorySnapshot> => Promise.resolve(history(fault.value === "history" && input.checkpointPath !== "/fixture/library-before.sqlite")),
+    readNativeHistoryCheckpoint: (input): Promise<NativeHistorySnapshot> => Promise.resolve(history(fault.value === "history" && input.checkpointPath !== "/fixture/library-before.sqlite", fault.value === "clock" && input.checkpointPath !== "/fixture/library-before.sqlite")),
     verifyLibraryNativeProfile: (): Promise<typeof LIBRARY_NATIVE_IMPLEMENTATION> => Promise.resolve(LIBRARY_NATIVE_IMPLEMENTATION),
     verifyDeviceAssociationNativeProfile: (): Promise<void> => Promise.resolve(),
+    verifyDocumentContainerRenameNativeProfile: (): Promise<void> => Promise.resolve(),
     verifySchematicNativeProfile: (): Promise<typeof SCHEMATIC_NATIVE_IMPLEMENTATION> => Promise.resolve(SCHEMATIC_NATIVE_IMPLEMENTATION),
   });
   return { journal, coordinator, fault, counts };
 }
 
-for (const action of ["document.activate", "document.close", "document.page.create", "library.symbol.create"] as const) {
+for (const action of ["document.activate", "document.close", "document.page.create", "library.symbol.create", "document.pcb.rename", "document.schematic.rename"] as const) {
   for (const prefix of ["before-failed", "before-retained", "preparation-failed"] as const) {
     // oxlint-disable-next-line eslint/no-loop-func -- Hooks initialize module handles before each independent immutable case executes.
     void test(`${action} ${prefix} invalidates the sealed attempt without a dispatch or another publication phase`, async () => {
@@ -165,6 +170,16 @@ for (const action of ["document.activate", "document.close", "document.page.crea
     });
   }
 }
+void test("undispatched document rename refuses peer-envelope drift despite unchanged semantic and logical-dump doubles", async () => {
+  for (const action of ["document.pcb.rename", "document.schematic.rename"] as const) {
+    const run = await fixture(action); run.fault.value = "clock";
+    await assert.rejects(run.coordinator.reconcile(run.journal.operationId), /Unpublished preparation differs from the immutable operation and checkpoint/u);
+    const retained = await artifacts.loadOperation(run.journal.operationId);
+    assert.equal(retained["state"], "library-needs-review");
+    assert.deepEqual(run.counts, { dispatch: 0, barrier: 0, record: 0 });
+    await rm(join(root, "operations"), { recursive: true, force: true });
+  }
+});
 for (const fault of ["source", "history", "database", "context", "final-context", "final-source", "baseline", "final-checkpoint", "runtime", "update", "load-context", "isolation-context"] as const) {
   // oxlint-disable-next-line eslint/no-loop-func -- Shared module handles are initialized by before; every case owns an independent sealed journal.
   void test(`invalidation ${fault} failure leaves the initial journal unchanged and permits a safe read-only recheck`, async () => {

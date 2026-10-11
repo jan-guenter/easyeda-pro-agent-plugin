@@ -6,6 +6,7 @@ import { prepareDocumentActivation } from "./document-activation.ts";
 import { prepareDocumentClose } from "./document-close.ts";
 import { prepareDocumentPageCreate } from "./document-page-create.ts";
 import { prepareProjectSymbolCreate } from "./project-symbol-create.ts";
+import { prepareDocumentContainerRename } from "./document-container-rename.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
 
 const preparations = {
@@ -13,6 +14,8 @@ const preparations = {
   "document.close": { key: "closePlan", phase: "close-prepared", derive: prepareDocumentClose },
   "document.page.create": { key: "pageCreatePlan", phase: "page-create-prepared", derive: prepareDocumentPageCreate },
   "library.symbol.create": { key: "symbolCreatePlan", phase: "symbol-create-prepared", derive: prepareProjectSymbolCreate },
+  "document.pcb.rename": { key: "documentRenamePlan", phase: "document-rename-prepared", derive: prepareDocumentContainerRename },
+  "document.schematic.rename": { key: "documentRenamePlan", phase: "document-rename-prepared", derive: prepareDocumentContainerRename },
 } as const;
 const initialKeys = new Set(["schema", "operationId", "journalPath", "planHash", "plan", "state", "mutationState", "saved", "reopened",
   "orphanedCallPossible", "hardStop", "mutationMayHaveOccurred", "nextSafeAction", "context", "preCheckpoint", "beforeSourceSha256",
@@ -20,7 +23,7 @@ const initialKeys = new Set(["schema", "operationId", "journalPath", "planHash",
 
 function preparation(journal: LibraryJournal): (typeof preparations)[keyof typeof preparations] {
   const action = journal.plan.operation.action;
-  if (action !== "document.activate" && action !== "document.close" && action !== "document.page.create" && action !== "library.symbol.create") {
+  if (action !== "document.activate" && action !== "document.close" && action !== "document.page.create" && action !== "library.symbol.create" && action !== "document.pcb.rename" && action !== "document.schematic.rename") {
     throw new Error("Undispatched preparation invalidation does not support this operation.");
   }
   return preparations[action];
@@ -31,7 +34,7 @@ function preparation(journal: LibraryJournal): (typeof preparations)[keyof typeo
  */
 export function hasMissingLibraryPreparation(journal: LibraryJournal): boolean {
   const action = journal.plan.operation.action;
-  if (action !== "document.activate" && action !== "document.close" && action !== "document.page.create" && action !== "library.symbol.create") { return false; }
+  if (action !== "document.activate" && action !== "document.close" && action !== "document.page.create" && action !== "library.symbol.create" && action !== "document.pcb.rename" && action !== "document.schematic.rename") { return false; }
   const { phase } = preparations[action];
   return !journal.artifacts.some((entry) => new RegExp(`^[0-9]+-${phase}\\.json$`, "u").test(basename(entry.path)));
 }

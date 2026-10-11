@@ -16,6 +16,25 @@ The exact component reader can return live bounding boxes for selected component
 
 Serializer grids and adapter scaling need a controlled test in the current editor. Do not apply a global correction from one observed footprint. Create a disposable test primitive, save and reopen it, measure the result, and document any version-specific compensation.
 
+### Inherited footprint lines
+
+A PCB Line enumerator can include footprint graphics that have no standalone
+PCB `LINE` record. An ID prefix alone does not prove their owner. The candidate
+net-membership and primitive-type readers resolve each explicit component
+`Footprint` association against a fresh managed checkpoint, then match template
+IDs and exact transformed geometry to the complete live inventory. Inherited
+provenance is labelled `FOOTPRINT_LINE` with its footprint document UUID; it is
+not mislabelled as a PCB record or included in a nonempty-net result.
+
+This profile admits only unlocked top-side components at zero rotation, ordinary
+zero-origin local footprints and empty-net top-silkscreen lines. Rotated/bottom
+instances, custom chains, layer replacements, partitions, ambiguous owners and
+incomplete inventories refuse. Explicit footprint associations require proof
+even if the inventory reports no inherited lines. The initial detection sample
+does not count toward the two accepted source/inventory/source cycles; complete
+checkpoint invariance is rechecked around every accepted observation. Offline
+tests and retained-fixture replay are not connected validation of this candidate.
+
 ## Live bounds and placement
 
 Use live placed primitive bounding boxes for clearance decisions. Offline envelopes may omit graphics or body extents. For typed placement:

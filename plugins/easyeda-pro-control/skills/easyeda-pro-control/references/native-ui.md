@@ -65,6 +65,14 @@ Run the script with Windows PowerShell, including from WSL through its observed 
 
 Names and coordinates are observations, not stable APIs. Do not repeatedly toggle a setting from an old read. Native helper dialogs can have another process ID; their bounded owner chain must lead to the bound EasyEDA window.
 
+An enabled UI Automation `Text` label does not prove its enclosing menu action is
+enabled. In the disposable identity test, `Save(S)` reported `enabled:true` as a
+Text control while the screenshot showed the action greyed out. Inspect the
+native menu visually before relying on availability. A successful pointer click
+only proves input delivery; it does not acknowledge Save execution. If the edit
+has already auto-persisted and Save is disabled, prove the durable delta and
+close/reopen it. Do not force Save All or repeat a consumed Save attempt.
+
 For a schematic region capture on the pinned 3.2.149 tuple, public
 `zoomToRegion` negates both supplied Y bounds before constructing the native
 rectangle. A native source rectangle with Y from -580 to -360 therefore needs
@@ -82,6 +90,29 @@ The observed native importer replaces an existing UUID even at the same version.
 The user's request must authorize the edit. Keep a verified checkpoint and identify the active project/document first. When developing a new control workflow, use an explicitly named disposable project. Do not use a real design as an API experiment.
 
 Inspect native selections and properties before each edit. Afterward, independently read the affected identities, net endpoints and relevant geometry through supported MCP readers or decoded saved records. A screenshot or a removed unsaved marker does not prove connectivity or durable state. Save only the intended document, close it, reopen it and verify the expected result. Never use Save All as a convenient persistence test.
+
+### Finishing native component placement
+
+A placed component and the next unplaced preview can coexist in the public
+component collection. In the disposable 3.2.149 fixture, one click placed R1;
+an acknowledged Escape left an R2 preview active. One observed canvas right-click
+ended that tool, after which the exact native reader passed with only R1 and the
+sheet frame. Do not repeat placement because a reader refused. Inspect the
+cursor, selection, public identities and exact source membership first. Right-click
+is an ordinary tool-cancellation action here, not journal recovery or discard.
+
+A freshly placed component can have an empty stored Unique ID. The flat reader
+correctly refuses that identity even when native pins are readable. Do not invoke
+compilation, annotation or Save All to manufacture one. For an explicitly
+authorized disposable fixture, inspect the exact selected component and its native
+Unique ID property, retain a checkpoint, and set one unique value through that
+observed control. An unnamed blank Edit cannot be selected by the current
+`setvalue` name/ID interface; never substitute the nearby visibility checkbox.
+If using keyboard input, first prove that exact field is focused, use simple
+unambiguous text, commit once, and read back the field and complete source delta.
+This is fixture setup, not authorization to rewrite identities in a real design.
+Verify the complete saved project separately; the observed identity edit remained
+unsaved after the editor and flat reader already reported the new value.
 
 The observed PCB Center X/Y property editor applies a movement delta relative to its rounded displayed value, not an absolute full-precision coordinate. The installed `moveOneObject` handler subtracts the old displayed `attr-x`/`attr-y` from the new field value before moving the selection. Compute the requested delta from independently read exact coordinates, then add that delta to the observed displayed field value. Read back the resulting full-precision coordinate and attached label geometry. Merely typing the desired exact coordinate can introduce a small unintended offset. Clicking the field can also change its accessible name by dropping the unit suffix; reinspect before `setvalue`.
 

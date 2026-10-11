@@ -16,7 +16,7 @@ its narrow boundary and pending live validation are listed separately below.
 |---|---|---|
 | Offline SDK and exact operation reference | api sdk/operations/validate | 749 reviewed / 806 latest official declaration signatures; exact strict design/library schemas and offline custom-refinement validation; no SDK invocation or runtime admission |
 | Connection and active context | status, context | Authenticated responsive session, exact project path/UUID and document/type/tab |
-| Existing project/document open | runtime open-existing | Saved PCB or schematic page; exact registry/checkpoint membership, exclusive-tab guard and complete unchanged SQLite proof. Imported SYMBOL/FOOTPRINT header provenance is retained and compared; that new consumer is source/offline-tested, not connected-validated. No creation, save, discard or replacement |
+| Existing project/document open | runtime open-existing | Saved PCB or schematic page; exact registry/checkpoint membership, exclusive-tab guard and complete unchanged SQLite proof. Imported SYMBOL/FOOTPRINT header provenance is retained and compared; installed083400 passed a disposable12document open. Later generations require separate admission. No creation, save, discard or replacement |
 | Exact schematic components | exact_read | Stable double samples with fixed public projections; schematic-topology disabled pending a verified non-mutating replacement |
 | API coverage and fixed reads | api coverage/sdk-reads/sdk-validate, sdk_read | Complete per-method inventory; fixed schemas and explicit public/native implementation labels; bounded observations, not complete source or persistence proof; current-generation live validation pending |
 | Schematic Text/Wire/Bus IDs | sdk_read, getAllPrimitiveId | Native ID-only equivalent on an ordinary active type-1 page; empty arguments only, no Wire net filters or symbol/block-instance scenes. Complete reciprocal tree/index proof and source-backed root-family membership; generated frame descendants excluded, structural GROUP records refused. Two stable observations, no callback/compiler/Save. Group IDs are not LINE IDs. Offline-tested; connected validation pending |
@@ -31,7 +31,8 @@ its narrow boundary and pending live validation are listed separately below.
 | Visible and region canvas capture | capture, easyeda_canvas_capture / easyeda_canvas_capture_region | Existing public image and zoomToRegion calls on the explicit active tab, bounded PNG and managed evidence; before/after runtime/context proof. Region mode changes viewport. No standalone zoom, native receiver identity, complete-design or visual-acceptance claim |
 | Polygon splitting | sdk_read, pcb_MathPolygon.splitPolygon | Bounded JSON complex-polygon groups, temporary SDK constructors and exact ordered source-array output with duplicates retained. No native handles or CAD mutation; shared aggregate limits apply. Offline-tested including pinned constructor bodies; connected validation pending |
 | Owned editor tab/split-screen lookup | sdk_read, getSplitScreenIdByTabId / getTabsBySplitScreenId | Exact existing selector, complete bounded owned tree and saved project membership; identity-only direct result checked against the tree before/after, two matching samples and unchanged checkpoint/context. No foreign projects, empty leaves, title/data export, navigation or current-generation live claim |
-| Single-page stored display changes | design sch.layout.batch, sealed flat-display profiles | Existing literal-ID attribute/text display patches only; complete inverse, unchanged endpoint topology, sole page of one ordinary schematic and full saved-project proof. V1 remains strict; v2 additionally seals unchanged imported-library header occurrences from immutable checkpoints at every lifecycle gate. No electrical edits, NO_CONNECT, creation/deletion, translation, non-display steps or historical repair/page loading. V2 source/offline-tested; connected lifecycle pending. See schematic.md |
+| Single-page stored display changes | design sch.layout.batch, sealed flat-display profiles | Existing literal-ID attribute/text display patches only; complete inverse, unchanged endpoint topology, sole page of one ordinary schematic and full saved-project proof. V1 remains strict; v2 additionally seals unchanged imported-library header occurrences from immutable checkpoints at every lifecycle gate. No electrical edits, NO_CONNECT, creation/deletion, translation, non-display steps or historical repair/page loading. Installed083400 passed a nonempty Designator-coordinate forward/reverse Save/reopen; unsaved rollback and newer generation remain separate. See schematic.md |
+| Closed PCB/schematic rename | library document.pcb.rename / document.schematic.rename | Separate native title-only adapter, one other clean owned PCB, closed target/children, independent DOM-frame inventory, strict nonimported history and fixed META shape. Full peer records/clocks/provenance preserved; original acknowledgment required for changed-result recovery. No public CBB counterpart behavior, Save, reopen, automatic inverse or current-generation connected claim. See libraries-and-eco.md |
 | Historical presentation-only schematic batch | design sch.layout.batch, compiled profile | Currently blocked by the compiled reader. Historical translation, wire/label edits and flag clones passed selected saved/reopened checks, but that does not enable this route now |
 | Existing schematic wire geometry | design sch.wire.modify | Native adapter with explicit cardinal geometry/style, net omitted, exact graph-derived child indices and awaited history; identity-only unstored-attribute alignment on reopen; exact source/topology and complete durable proof; disposable 16-document lifecycle and retained-Save recovery completed Sept25; no general inverse or arbitrary WIRE shape support |
 | Retained split-wire layout repair | design repair-layout-wire-groups | Exact original island/drop/flag identities only; S06 correction and retained Save reconciliation completed live with original topology restored; consumed repairs must never be replayed |
@@ -90,10 +91,15 @@ Normal application close preserved the saved file hash; no Save or design edit
 was performed. These cases do not validate Line/type lookup, nonempty standalone
 Pad/Arc membership, line-parent selection, connectivity, writers or a later build.
 
-The new imported-library decoder and sealed flat-display v2 remain source/offline
-evidence only. The separate flat fixture contains an import-only asset delta,
-not a placed component. Do not replay its prior Paste or infer nonempty topology
-or connected v2 acceptance from immutable history decoding.
+Installed083400 passed one imported-project open, native and nonempty flat
+diagnostics, and a single stored Designator-coordinate transaction through Save
+and reopen. The disposable fixture contained one resistor and two unconnected
+pins. All12saved documents and66imported header occurrences were included in
+the maintained proof; the sole intended live change was x580 to585. An explicit
+reverse transaction passed Save/reopen and restored the original source exactly.
+Normal close and maintained checkpoint verification passed. This does not validate other display fields,
+electrical edits, rollback, or a newer facade generation. Never replay prior
+Paste, placement, identity editing or either completed transaction.
 
 Installed010000 Wire/Bus get and getAll matched four Wire groups containing
 eleven segments and one Bus on the disposable fixture. Independent reconstruction
@@ -111,9 +117,11 @@ adapter; the scoped installed071500 evidence above now tests that adapter.
 The same fixture exposed two PCB admission gaps before net/type dispatch.
 The current source now accepts the actual identity-only component inventory and
 one exact disabled default PANELIZE record. Active, malformed or aliased panel
-records still refuse. The fixture's two inherited silkscreen lines remain outside
-the standalone LINE source proof. Do not infer their owners from ID prefixes or
-claim complete Line/type coverage. Installed071500 now covers the active-layer
+records still refuse. A newer source-only adapter binds inherited neutral lines
+to exact footprint-library records through fresh complete checkpoints. Its narrow
+geometry and ownership limits are in pcb-geometry.md; connected acceptance is
+pending. Do not infer owners from ID prefixes or claim complete Line/type coverage.
+Installed071500 covers the active-layer
 and filtered non-Line cases listed above, not the full method domains.
 
 Installed223200 Text get/getAll returned exactly one root Text and all fourteen

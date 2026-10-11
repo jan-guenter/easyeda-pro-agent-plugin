@@ -7,13 +7,13 @@
     "latestDistinctMethods": 773,
     "statuses": {
       "implemented-public-subset": 192,
-      "implemented-native-equivalent": 89,
+      "implemented-native-equivalent": 94,
       "internal-lifecycle-only": 2,
       "implemented-but-blocked": 8,
-      "omitted": 483
+      "omitted": 478
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 339,
+      "available-with-runtime-guards": 344,
       "blocked": 9,
       "partially-blocked": 3
     },
@@ -28,6 +28,7 @@
       "interactive-engine-lifecycle": 9,
       "interactive-export-resource-lifecycle": 1,
       "interactive-ui-resource": 37,
+      "layer-selection-collateral-state": 1,
       "lossy-heterogeneous-primitive-projection": 3,
       "lossy-logging-selection-reader": 1,
       "lossy-or-unawaited-public-reader": 1,
@@ -37,10 +38,12 @@
       "navigation-or-viewport-adapter-needed": 16,
       "non-json-result-or-callback": 8,
       "not-in-reviewed-runtime": 76,
+      "pad-pair-group-replacement-effects": 1,
+      "page-order-partial-write-lifecycle": 1,
       "panel-context-not-admitted": 1,
       "private-url-state-projection-needed": 2,
       "reviewed-native-stub": 27,
-      "scoped-effect-adapter-needed": 121,
+      "scoped-effect-adapter-needed": 113,
       "selection-marker-or-history-mutation": 8,
       "shared-asset-owner-projection-needed": 3,
       "simulation-editor-not-admitted": 1,
@@ -2197,14 +2200,50 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "dmt_Pcb.modifyPcbName has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_library",
+          "selector": "document.pcb.rename",
+          "implementation": "native-task-equivalent",
+          "scope": "Closed ordinary target only, every schematic child closed, one other clean direct-open PCB and independent DOM-frame proof. Exact nonimported checkpoint and full peer record clocks/header lineage; name-only metadata persistence. Refuses hierarchy, CBB, inheritance, non-null target zIndex, pooled panel/export frames. No public wrapper, Save/reopen, automatic inverse or current-generation live-validation claim.",
+          "source": [
+            "document-container-rename.ts",
+            "document-container-rename-runtime.ts",
+            "document-container-rename-dom.ts",
+            "document-container-rename-native-profile.ts",
+            "library-execution.ts",
+            "library-recovery-state.ts",
+            "library-recovery.ts",
+            "library-undispatched-recovery.ts"
+          ],
+          "tests": [
+            "document-container-rename.test.ts",
+            "document-container-rename-runtime.test.ts",
+            "document-container-rename-transaction.test.ts",
+            "library-undispatched-recovery.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "documentTypes": [
+            3
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "library",
+                  "operationAction": "document.pcb.rename",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -3333,14 +3372,50 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "dmt_Schematic.modifySchematicName has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_library",
+          "selector": "document.schematic.rename",
+          "implementation": "native-task-equivalent",
+          "scope": "Closed ordinary target only, every schematic child closed, one other clean direct-open PCB and independent DOM-frame proof. Exact nonimported checkpoint and full peer record clocks/header lineage; name-only metadata persistence. Refuses hierarchy, CBB, inheritance, non-null target zIndex, pooled panel/export frames. No public wrapper, Save/reopen, automatic inverse or current-generation live-validation claim.",
+          "source": [
+            "document-container-rename.ts",
+            "document-container-rename-runtime.ts",
+            "document-container-rename-dom.ts",
+            "document-container-rename-native-profile.ts",
+            "library-execution.ts",
+            "library-recovery-state.ts",
+            "library-recovery.ts",
+            "library-undispatched-recovery.ts"
+          ],
+          "tests": [
+            "document-container-rename.test.ts",
+            "document-container-rename-runtime.test.ts",
+            "document-container-rename-transaction.test.ts",
+            "library-undispatched-recovery.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "documentTypes": [
+            3
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "library",
+                  "operationAction": "document.schematic.rename",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -3462,10 +3537,13 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "dmt_Schematic.reorderSchematicPages has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
+        "code": "page-order-partial-write-lifecycle",
+        "reason": "The installed implementation checks equal lengths and membership but not duplicate page IDs, writes pages sequentially with zIndex 1,2,4,8 via doubling, and rereads mutable currentProject.projectId between awaited writes. A thrown update can leave an earlier prefix changed, and individual update acknowledgments are not checked.",
+        "nextRequirement": "Implement a complete unique page permutation bound to one project and explicit stored-order semantics, per-write durable intent/acknowledgments, complete-project effect checks and partial-progress recovery without batch replay. The API is beta; this is unfinished transaction support, not inherent infeasibility.",
+        "evidence": [
+          "docs/api-remaining-method-effects-2026-10-11.md",
+          "assets/pro-ui/3.2.149.43637efe/js/ui.js@sha256:12414b9ded97913f7d7f30522a2265d2a6c995281e3347bfd1752206e647497a;utf16:17082000"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -9427,10 +9505,13 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "pcb_Drc.modifyPadPairGroupName has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
+        "code": "pad-pair-group-replacement-effects",
+        "reason": "The installed rename marks the group UPDATED, then deletes its old EQLEN_GRP and recreates a group with a fresh native number without carrying the old color. Public name/pad-pair readback omits those fields. Preservation of rule references has not been proved; no explicit RULE or RULE_SELECTOR write is established by this traced update body.",
+        "nextRequirement": "Implement exact group identity/color/pair and affected-rule reference expectations, collision checks, complete native source/persistence verification, and recovery for the delete/create interval. A bounded adapter remains feasible; do not treat rename as a single metadata-field update.",
+        "evidence": [
+          "docs/api-remaining-method-effects-2026-10-11.md",
+          "assets/pro-pcb/3.2.149.5378b690/js/pcb.js@sha256:65401cdc0a8f244db2ff2d8da88fd835b6e1fb3a3ecdbcfd975781502cb04b54;utf16:10229502,8385008,8382375,8382537,3444645"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -11119,10 +11200,13 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "pcb_Layer.selectLayer has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
+        "code": "layer-selection-collateral-state",
+        "reason": "The installed native handler returns true even when the layer lookup is absent. Valid selection changes active/last-active IDs, visibility, colors, ordering and plane/UI state; the native ACTIVE_LAYER source model also observes the change. A true result or switching back to the prior ID does not prove the complete effect or restoration.",
+        "nextRequirement": "Implement an exact existing-layer subset with bound context, complete before/after layer/view/source effects and an explicit inverse or no-inverse proof. This is feasible unfinished adapter work, not an inherently unavailable method.",
+        "evidence": [
+          "docs/api-remaining-method-effects-2026-10-11.md",
+          "assets/pro-pcb/3.2.149.5378b690/js/pcb.js@sha256:65401cdc0a8f244db2ff2d8da88fd835b6e1fb3a3ecdbcfd975781502cb04b54;utf16:10234952,7863491,7864588,4426612,10827552"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -13644,7 +13728,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_Net.getAllPrimitivesByNet",
           "implementation": "native-task-equivalent",
-          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native task-equivalent identity records, not public primitive instances, native my(item) DTOs or public-method execution parity. Requires a nonempty net and explicit nonempty unique filters from Line, Arc, Via, Pad and ComponentPad; unfiltered, empty-net and other-family requests are unsupported. Pad means standalone physical pads; ComponentPad means component-owned physical pads. These disjoint roles differ from the direct Pad enumerator, which also includes component pads. Requires one exact active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769. expectedContext.document must retain the observed tabId and parentProjectUuid; a minimal UUID/type selector refuses before dispatch. Library, partition and unmodeled source records are unsupported. STRING, FONT, RULE_TEMPLATE, PRIMITIVE, PREFERENCE and SILK_OPTS are admitted as nonselected text/metadata. BOARD is a nonselected display outline: its generated Line/Arc drawing controllers are not the Track/ArcTrack objects enumerated by the electrical inventory. Outline geometry and drawing-child ownership are not returned or validated. PANELIZE is admitted only as one canonical disabled default record: on=false, row=column=1, zero spacing and onlyOutline=true, with all ten settings and exact nested shapes retained. Nested stamp/side flags remain dormant settings; enabled, malformed and descendant panel state is unsupported. Net matching uses uppercase keys and preserves stored spelling. Full requested-family source/inventory correspondence is checked before filtering; this is not electrical connectivity, DRC, saved-file or persistence proof. Two matching source/inventory/source cycles require unchanged runtime and full observed context. Switching away and back between observations remains undetectable. Bounded to 20,000 native source records, 16 MiB native source evidence and 2 MiB result; exceeding bounds refuses without truncation.",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native task-equivalent identity records, not public primitive instances, native my(item) DTOs or public-method execution parity. Requires a nonempty net and explicit nonempty unique filters from Line, Arc, Via, Pad and ComponentPad; unfiltered, empty-net and other-family requests are unsupported. Pad means standalone physical pads; ComponentPad means component-owned physical pads. These disjoint roles differ from the direct Pad enumerator, which also includes component pads. Requires one exact active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769. expectedContext.document must retain the observed tabId and parentProjectUuid; a minimal UUID/type selector refuses before dispatch. Library, partition and unmodeled source records are unsupported. STRING, FONT, RULE_TEMPLATE, PRIMITIVE, PREFERENCE and SILK_OPTS are admitted as nonselected text/metadata. BOARD is a nonselected display outline: its generated Line/Arc drawing controllers are not the Track/ArcTrack objects enumerated by the electrical inventory. Outline geometry and drawing-child ownership are not returned or validated. PANELIZE is admitted only as one canonical disabled default record: on=false, row=column=1, zero spacing and onlyOutline=true, with all ten settings and exact nested shapes retained. Nested stamp/side flags remain dormant settings; enabled, malformed and descendant panel state is unsupported. Net matching uses uppercase keys and preserves stored spelling. Full requested-family source/inventory correspondence is checked before filtering; this is not electrical connectivity, DRC, saved-file or persistence proof. Two matching source/inventory/source cycles require unchanged runtime and full observed context. Switching away and back between observations remains undetectable. Line reads with explicit Footprint associations or extra inventory identities require a fresh managed checkpoint and repeated complete-database invariance. Only direct empty-net top-silkscreen footprint LINEs on unlocked top-side, zero-rotation components with zero library origin are supported; custom chains, replacements, partitions and ambiguous owners refuse. Their explicit footprint provenance is separate from PCB source records; they never enter a nonempty-net result. Bounded to 20,000 native source records, 16 MiB native source evidence and 2 MiB result; inherited Line proof also limits decoded checkpoint history to 32 MiB and each referenced document to 20,000 records. Exceeding bounds refuses without truncation.",
           "documentTypes": [
             3
           ],
@@ -14351,7 +14435,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId",
           "implementation": "native-task-equivalent",
-          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native identity classification, not execution or return-parity of the installed public method, whose body is empty in API 0.2.53.aee2f57a. One literal existing ID, restricted to Line, Arc, Via, standalone Pad and component-owned ComponentPad. Missing IDs, other families and ambiguous membership refuse; no undefined/absence claim is made. Requires complete source/inventory correspondence for all five supported families, including empty-net objects, before classifying the requested ID. Physical pad owner and PAD_NET correlation must agree. Requires one active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769. Library, partition and unmodeled source records are unsupported; nonselected outline/text/metadata contributes no type result. Two matching source/inventory/source cycles require unchanged runtime and full observed context. Switching away and back between observations remains undetectable. Bounded to 20,000 native source records, 16 MiB source evidence and 2 MiB result; no truncation, electrical-connectivity, geometry, saved-file or persistence proof.",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native identity classification, not execution or return-parity of the installed public method, whose body is empty in API 0.2.53.aee2f57a. One literal existing ID, restricted to Line, Arc, Via, standalone Pad and component-owned ComponentPad. Missing IDs, other families and ambiguous membership refuse; no undefined/absence claim is made. Requires complete source/inventory correspondence for all five supported families, including empty-net objects, before classifying the requested ID. Physical pad owner and PAD_NET correlation must agree. Requires one active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769. Library, partition and unmodeled source records are unsupported; nonselected outline/text/metadata contributes no type result. Two matching source/inventory/source cycles require unchanged runtime and full observed context. Switching away and back between observations remains undetectable. Direct empty-net top-silkscreen footprint LINEs additionally require explicit component/Footprint associations from a fresh unchanged complete checkpoint, exact inventory geometry and separately labelled inherited provenance. Only unlocked top-side zero-rotation components and zero-origin ordinary footprints are supported; custom, rotated, bottom, replaced-layer and ambiguous cases refuse. Bounded to 20,000 native source records, 16 MiB source evidence and 2 MiB result; inherited Line proof additionally bounds decoded checkpoint history to 32 MiB and referenced documents to 20,000 records. No truncation, electrical-connectivity, general geometry, saved-file or persistence proof.",
           "documentTypes": [
             3
           ],
@@ -19466,14 +19550,46 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "pcb_PrimitiveString.create has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_design",
+          "selector": "footprint.text.create",
+          "implementation": "native-task-equivalent",
+          "scope": "Existing exact-owner project footprint only, document type 4: one standalone built-in-default-font STRING per operation through receiver-bound native history dispatch, exact source/peer preservation and library Save/close/reopen proof. Native mil geometry, explicit creation fields and named origin; no public-wrapper defaults. Modify preserves identity/layer and refuses reverse-state changes; delete has no automatic inverse. No type-3 PCB text, external fonts, placed-instance propagation, public pcb_PrimitiveString wrapper execution/parity, class-instance or bulk-delete arguments, or full declared-contract claim. Current-generation live validation remains unclaimed.",
+          "source": [
+            "footprint-action.ts",
+            "footprint-public-geometry.ts",
+            "footprint-lifecycle.ts",
+            "design-action.ts",
+            "design-execution.ts"
+          ],
+          "tests": [
+            "footprint-action.test.ts",
+            "footprint-public-geometry.test.ts",
+            "footprint-lifecycle.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "documentTypes": [
+            4
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "design",
+                  "operationAction": "footprint.text.create",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -19499,14 +19615,46 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "pcb_PrimitiveString.delete has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_design",
+          "selector": "footprint.text.delete",
+          "implementation": "native-task-equivalent",
+          "scope": "Existing exact-owner project footprint only, document type 4: one standalone built-in-default-font STRING per operation through receiver-bound native history dispatch, exact source/peer preservation and library Save/close/reopen proof. Native mil geometry, explicit creation fields and named origin; no public-wrapper defaults. Modify preserves identity/layer and refuses reverse-state changes; delete has no automatic inverse. No type-3 PCB text, external fonts, placed-instance propagation, public pcb_PrimitiveString wrapper execution/parity, class-instance or bulk-delete arguments, or full declared-contract claim. Current-generation live validation remains unclaimed.",
+          "source": [
+            "footprint-action.ts",
+            "footprint-public-geometry.ts",
+            "footprint-lifecycle.ts",
+            "design-action.ts",
+            "design-execution.ts"
+          ],
+          "tests": [
+            "footprint-action.test.ts",
+            "footprint-public-geometry.test.ts",
+            "footprint-lifecycle.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "documentTypes": [
+            4
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "design",
+                  "operationAction": "footprint.text.delete",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -19751,14 +19899,46 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "pcb_PrimitiveString.modify has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_design",
+          "selector": "footprint.text.modify",
+          "implementation": "native-task-equivalent",
+          "scope": "Existing exact-owner project footprint only, document type 4: one standalone built-in-default-font STRING per operation through receiver-bound native history dispatch, exact source/peer preservation and library Save/close/reopen proof. Native mil geometry, explicit creation fields and named origin; no public-wrapper defaults. Modify preserves identity/layer and refuses reverse-state changes; delete has no automatic inverse. No type-3 PCB text, external fonts, placed-instance propagation, public pcb_PrimitiveString wrapper execution/parity, class-instance or bulk-delete arguments, or full declared-contract claim. Current-generation live validation remains unclaimed.",
+          "source": [
+            "footprint-action.ts",
+            "footprint-public-geometry.ts",
+            "footprint-lifecycle.ts",
+            "design-action.ts",
+            "design-execution.ts"
+          ],
+          "tests": [
+            "footprint-action.test.ts",
+            "footprint-public-geometry.test.ts",
+            "footprint-lifecycle.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "documentTypes": [
+            4
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "design",
+                  "operationAction": "footprint.text.modify",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

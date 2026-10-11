@@ -36,9 +36,11 @@ void test("flat generated display executes once inside its exact owned running a
   // oxlint-disable-next-line unicorn/no-useless-undefined -- Explicit absent internal option is the backward-compatible generation case under test.
   const plainAsync = await buildSchematicLayoutAdapterCooperatively(operation, source, before.native, {}, undefined, undefined);
   assert.equal(plainAsync.code, plain.code); assert.ok(!plain.code.includes("flatDisplay"));
-  // Independently generated from the pre-profile HEAD builder with this exact
-  // Fixture. This catches accidental edits shared by both current entrypoints.
-  assert.equal(sha256Text(plain.code), "17c5f7b7d5cfbda540dd7274b0e55d420d7f13f33b520ebcb03dfdfb39532764");
+  /* Full old/current generation comparison proved the sole change from the
+   * historical 17c5f7b7... program is the fixed SCH_NATIVE_PIN_NET_EXCEPTION
+   * try/catch around getSchPinNet. Ownership, baseline and dispatch code is
+   * byte-identical. Keep an independent pin for both current entrypoints. */
+  assert.equal(sha256Text(plain.code), "0c4c20facc84713f729538f967da4f1bd5d96e87ba0b8db939d4173627097ca5");
   const historicalSave = buildSaveReopenCode(context, [{ request: { kind: "schematic-source" }, expectedSnapshotSha256: "a".repeat(64) }]);
   assert.equal(sha256Text(historicalSave),
     "c314829e192c18136900386dfd8842d6b3c5863b3ba9efc66ee3dc24a2a3a76d");
@@ -47,6 +49,27 @@ void test("flat generated display executes once inside its exact owned running a
   assert.equal(await execute(adapter.code, scene.runtime), true);
   assert.deepEqual(scene.calls, ["action", "source"]);
   assert.deepEqual(parseDocumentSource(scene.source.written), prepared.expectedSource);
+});
+
+void test("generated display pin-cache failures stop before source dispatch outside and inside the owned action", async () => {
+  const { before, source, adapter } = await preparedFixture();
+  const plain = buildSchematicLayoutAdapter(operation, source, before.native, {});
+  for (const code of [plain.code, adapter.code]) {
+    for (const phase of ["before", "action"] as const) {
+      const scene = runtimeFixture(before);
+      let pinReads = 0;
+      scene.shapes.modelHelpers.pin.getSchPinNet = (): string => {
+        pinReads += 1;
+        if (phase === "before" || scene.runner.running) { throw new Error("private-pin-cache-failure"); }
+        return "SIGNAL";
+      };
+      await assert.rejects(execute(code, scene.runtime), { message: "SCH_NATIVE_PIN_NET_EXCEPTION" });
+      assert.equal(pinReads, phase === "before" ? 1 : 2, "The failed getter is not retried.");
+      assert.deepEqual(scene.calls, phase === "before" ? [] : ["action"]);
+      assert.equal(scene.source.written, "", "No source dispatch or Save follows a failed native pin guard.");
+      assert.equal(scene.runner.running, false);
+    }
+  }
 });
 
 void test("flat generated writer refuses receiver substitution across every payload digest before source dispatch", async () => {

@@ -7,13 +7,142 @@ import { describe, test } from "node:test";
 
 import { captureBackendProcessAuthority } from "../src/backend-listener-authority.ts";
 import { waitForSandboxNodeIdentity } from "../src/sandboxed-stdio-client-transport.ts";
+import { LocalIntegrityTimings } from "../src/upstream-trust.ts";
 import {
   UpstreamEasyedaClient,
   UpstreamStartupError,
   startupFailureWithStderr,
 } from "../src/upstream.ts";
 
+void describe("passive local integrity timing diagnostics", () => {
+  void test("measures completion and original rejection without retaining result or error text", async () => {
+    let now = 10;
+    const timings = new LocalIntegrityTimings(() => now);
+    const secret = { privatePayload: "private-fixture-credential" };
+    assert.equal(await timings.measure("execution-closure", () => {
+      now = 17.9;
+      return Promise.resolve(secret);
+    }), secret);
+    const failure = new Error("private-fixture-error");
+    await assert.rejects(timings.measure("execution-closure", () => {
+      now = 25;
+      return Promise.reject(failure);
+    }), (error: unknown) => error === failure);
+    assert.deepEqual(timings.snapshot().stages, [{
+      stage: "execution-closure", activeCount: 0, activeSpanElapsedMs: 0,
+      completedCount: 1, failedCount: 1, lastElapsedMs: 7, maxElapsedMs: 7, totalElapsedMs: 14,
+    }]);
+    assert.doesNotMatch(JSON.stringify(timings.snapshot()), /private-fixture/u);
+  });
+
+  void test("reports slow pending work without timeout, cancellation, retry or early settlement", async () => {
+    let now = 0;
+    let calls = 0;
+    let settled = false;
+    const work = Promise.withResolvers<string>();
+    const timings = new LocalIntegrityTimings(() => now);
+    const measured = (async (): Promise<string> => {
+      const value = await timings.measure("runtime-module-graph", () => {
+        calls += 1;
+        return work.promise;
+      });
+      settled = true;
+      return value;
+    })();
+    now = 24 * 60 * 60 * 1000;
+    const pending = timings.snapshot();
+    assert.equal(pending.stages[0]?.activeCount, 1);
+    assert.equal(pending.stages[0]?.activeSpanElapsedMs, now);
+    assert.equal(pending.stages[0]?.completedCount, 0);
+    await Promise.resolve();
+    assert.equal(settled, false);
+    assert.equal(calls, 1);
+    work.resolve("completed-once");
+    assert.equal(await measured, "completed-once");
+    assert.equal(timings.snapshot().stages[0]?.lastElapsedMs, now);
+    assert.equal(timings.snapshot().stages[0]?.activeCount, 0);
+    assert.equal(pending.stages[0]?.activeCount, 1);
+  });
+
+  void test("tracks overlapping stages with bounded immutable detached snapshots", async () => {
+    let now = 1;
+    const timings = new LocalIntegrityTimings(() => now);
+    const first = Promise.withResolvers<null>();
+    const second = Promise.withResolvers<null>();
+    const firstMeasured = timings.measure("sandbox-input-validation", () => first.promise);
+    now = 4;
+    const secondMeasured = timings.measure("sandbox-input-validation", () => second.promise);
+    now = 8;
+    const pending = timings.snapshot();
+    assert.equal(pending.stages[0]?.activeCount, 2);
+    assert.equal(pending.stages[0]?.activeSpanElapsedMs, 7);
+    assert.ok(Object.isFrozen(pending));
+    assert.ok(Object.isFrozen(pending.stages));
+    assert.ok(Object.isFrozen(pending.stages[0]));
+    first.resolve(null);
+    await firstMeasured;
+    now = 9;
+    assert.equal(timings.snapshot().stages[0]?.activeCount, 1);
+    assert.equal(timings.snapshot().stages[0]?.activeSpanElapsedMs, 8);
+    second.resolve(null);
+    await secondMeasured;
+    assert.equal(timings.snapshot().stages[0]?.totalElapsedMs, 12);
+    assert.equal(timings.snapshot().stages.length, 1);
+    assert.equal(pending.stages[0]?.activeCount, 2);
+  });
+
+  void test("does not reflect foreign labels or grow state on repeated observations", async () => {
+    const timings = new LocalIntegrityTimings();
+    const token = "unchanged";
+    const action = (): Promise<string> => Promise.resolve(token);
+    for (let index = 0; index < 100; index += 1) {
+      assert.equal(await timings.measure("launcher-admission", action), "unchanged");
+    }
+    const result: unknown = await Reflect.apply(timings.measure.bind(timings), undefined, ["private-untrusted-stage", action]);
+    assert.equal(result, "unchanged");
+    assert.equal(timings.snapshot().stages.length, 1);
+    assert.equal(timings.snapshot().stages[0]?.completedCount, 100);
+    assert.doesNotMatch(JSON.stringify(timings.snapshot()), /private-untrusted-stage/u);
+  });
+
+  void test("clock errors, invalid values, reversal and overflow cannot change work outcomes", async () => {
+    for (const badClock of [(): number => { throw new Error("private-clock-error"); }, (): number => Number.NaN, (): number => Number.POSITIVE_INFINITY, (): number => -1]) {
+      const timings = new LocalIntegrityTimings(badClock);
+      assert.equal(await timings.measure("launcher-admission", () => Promise.resolve(42)), 42);
+      assert.equal(timings.snapshot().stages[0]?.lastElapsedMs, 0);
+      const failure = new Error("original-work-failure");
+      await assert.rejects(timings.measure("launcher-admission", () => { throw failure; }), (error: unknown) => error === failure);
+      assert.equal(timings.snapshot().stages[0]?.failedCount, 1);
+    }
+    let now = 9;
+    const timings = new LocalIntegrityTimings(() => now);
+    await timings.measure("launcher-admission", () => { now = 1; return Promise.resolve(); });
+    assert.equal(timings.snapshot().stages[0]?.lastElapsedMs, 0);
+    await timings.measure("launcher-admission", () => { now = Number.MAX_VALUE; return Promise.resolve(); });
+    assert.equal(timings.snapshot().stages[0]?.lastElapsedMs, Number.MAX_SAFE_INTEGER);
+    assert.equal(timings.snapshot().stages[0]?.totalElapsedMs, Number.MAX_SAFE_INTEGER);
+  });
+});
+
 void describe("upstream startup failure boundaries", { concurrency: false }, () => {
+  void test("can inspect pending pre-transport timing without starting or asserting a sandbox", async () => {
+    const upstream = new UpstreamEasyedaClient();
+    assert.equal(upstream.processDiagnostics(), undefined);
+    const timings: unknown = Reflect.get(upstream, "localIntegrityTimings");
+    assert.ok(timings instanceof LocalIntegrityTimings);
+    const pending = Promise.withResolvers<null>();
+    const measurement = timings.measure("launcher-admission", () => pending.promise);
+    const diagnostic = upstream.processDiagnostics();
+    assert.equal(diagnostic?.sandbox, null);
+    assert.equal(diagnostic?.localIntegrity.stages[0]?.activeCount, 1);
+    assert.equal(upstream.bridgeSessionLifecycle(), undefined);
+    pending.resolve(null);
+    await measurement;
+    assert.equal(upstream.processDiagnostics()?.localIntegrity.stages[0]?.completedCount, 1);
+    assert.equal(diagnostic?.localIntegrity.stages[0]?.activeCount, 1);
+    await upstream.close();
+  });
+
   void test("joins startup after its gateway has been published", async () => {
     const upstream = new UpstreamEasyedaClient();
     const startup = Promise.withResolvers<never>();

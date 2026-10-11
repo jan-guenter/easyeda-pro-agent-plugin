@@ -6,6 +6,75 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Candidate103000 locally verified; publication pending
+
+- Candidate0.3.0+codex.20261011103000 passes3,030facade tests/oneplatformskip/
+  zerofailures and424bridge tests. Strict types and both type-aware linters have
+  zero diagnostics. Repository/privacy, official plugin/seven skill validators,
+  workflow lint, offline doctor and reproducible facade/synthetic bridge builds
+  pass. Source177files094fc7f8, bundle1759c855, manifest0224cc46. External tuple
+  pins are unchanged; the new rename-only pcb-main pin has separate source review.
+- Closed ordinary PCB/schematic rename now has a separate executor/recovery
+  profile, full record clock/provenance checks, independent DOM-frame inventory,
+  early acknowledgment retention and late readback reproof. Independent126tests
+  and owner142focused tests pass. No Save/public-wrapper/automatic-inverse or
+  current-generation connected claim. New inherited neutral-Line reads, fixed
+  schematic diagnostics and passive startup timings remain operation-scoped.
+- Inventory774paths:192public subsets/94native equivalents/2lifecycle-only/
+  8blocked/478omitted;175fixed readers,26tools/sevenskills. Three new mappings
+  point to existing footprint-only String operations. Three concrete omissions
+  record layer selection, page-order partial writes and pad-pair replacement.
+  Feasible API work remains unfinished; PR9 stays draft.
+- Both disposable editors are closed and all journals terminal. Loaded2019730
+  remains083400; do not hot-patch or terminate it. No candidate publication or
+  installation yet. Release details: docs/api-coverage-103000-release-2026-10-11.md.
+
+### Restarted083400 fixture validation, completed before candidate103000
+
+- Actual facade2019730 independently matches installed083400:171source files,
+  composite493d631e;three runtime files,fe3e6bf5;manifest90d42043. Contained
+  EasyEDA40916 authenticates dispatcher ded07x99dcxb504 on the unchanged tuple.
+  Only the disposable flat-display fixture was used. It is now closed;
+  production is untouched.
+- Supported project-opence5cbcc4 completed with all12documents unchanged and
+  all66imported library header occurrences preserved. One native placement and
+  one native Unique ID field edit prepared a resistor with two unconnected pins.
+  Native and nonempty flat diagnostics pass without the compiled topology cache.
+  Full retained checkpoint proofs preserve all peers and imported provenance.
+- One native Save-menu click was attempted, but the action appeared disabled
+  and its menu stayed open. There is no acknowledged Save execution or causal
+  persistence claim; do not repeat it. The identity had auto-persisted before
+  that click. Native Close Tab and one reopen completed. Fixed-case proof8f2a60cf
+  confirms all12saved documents/165records/66headers unchanged and exhaustively
+  enumerates native defaults/order/inherited IDs. Geometry and pin semantics
+  remain exact. No shared lifecycle normalizer was relaxed.
+- Typed display journal16d75766 COMPLETED saved/reopenedtrue, nohardstop/orphan.
+  Terminal67072558 proves Designator x580 to585, all12documents and bothpin nets.
+  Root/independent immutable proof confirms11exactpeers/66importedheaders; native
+  lifecycle changes only8nonstoredsame-order inherited IDs. Raw durable27body
+  changes include prior-exported zIndex/strikeout materialization under the
+  unchanged maintained storage proof. Exactly1Saveintent and1Save/close/reopen.
+  Never replay forward or Save. Explicit reverse journal aad4e7a2 also COMPLETED
+  saved/reopenedtrue, nohardstop/orphan. Terminal c55ae541 restores x585 to580;
+  final native source exactly matches the forward baseline. Independent complete
+  proof preserves both pins,12documents/165records/11peers/66headers, with one
+  Save/close/reopen per transaction. This is not unsaved rollback validation.
+  Normal-close/discoverempty proves40916 exited without a prompt choice. Offline
+  maintained checkpoint verification passes exact source1a6862c9, backup1d81af37
+  and logical4d6820b9 after close. No pending CAD call or journal remains.
+- Source-only changes add narrow checkpoint-bound inherited PCB Line reads,
+  fixed schematic read diagnostics, passive startup timing diagnostics and three
+  footprint-only String coverage mappings. Root/independent focused reviews pass.
+  A separate closed PCB/SCH rename adapter was then integrated and independently
+  reviewed; final evidence is above. It separately checks DOM
+  frames and refuses orphan, export and pooled editor states. No candidate
+  connected acceptance is claimed by those source tests.
+- Fresh dependency signatures151/151,40attestations, audit0vulnerabilities and
+  exact native sanitizer pass. Bridge types/zero-warning lint and424tests pass;
+  all seven skill checks pass. Full candidate verification is recorded above.
+  Earlier full-suite failure classification
+  and limitations are retained in the private continuation record. PR9 is draft.
+
 ### Candidate083400 published and installed; fresh host required
 
 - Payload e73c84d83f595f039c58d02100ef22c0e9039880 is pushed on
@@ -1228,7 +1297,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011083400` is published, installed/enabled and offline-verified against CI-tested e73c84d. All548files/modes match;26tools, seven skills and175fixed readers. Loaded facade1982336 remains071500; fresh Codex pickup and actual-byte admission are required before live use. Its scoped active-layer, ComponentPad/Via membership and ordinary selected-component reads passed complete native/saved invariance. Both disposable editors are closed and all journals are terminal. The flat fixture remains import-only; no component was placed and no Save followed its Paste. Installed083400 adds preserved imported-library provenance and sealed display-only v2; connected project-open/diagnostic/writer acceptance remains pending. Never replay prior edits/inverse/rename/Save. Line/type lookup, nonempty standalone Pad/Arc and nonempty flat topology remain pending. Prior Text/property-name/Wire-ID/Bus/symbol-Pin/display/rename evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
+- Git-marketplace `0.3.0+codex.20261011083400` is published, installed/enabled and offline-verified against CI-tested e73c84d. All548files/modes match;26tools, seven skills and175fixed readers. Actual facade2019730 matches that payload. Installed083400 passed imported-project open, nonempty flat diagnostics and forward/reverse Designator-coordinate transactions with Save/reopen and complete12document proof. Both disposable editors are closed and all journals are terminal. Never replay prior Paste, placement, identity edits, transactions or Save. Earlier071500 active-layer, ComponentPad/Via membership and selected-component evidence remains scoped to that generation. Line/type lookup, nonempty standalone Pad/Arc, electrical writers and unsaved v2 rollback remain pending. New source adapters have no connected acceptance yet. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

@@ -9,6 +9,7 @@ export const METADATA_NATIVE_GUARD_CODES = [
   "EDITOR_TABS_API_MISSING", "EDITOR_TABS_TREE_BOUND", "EDITOR_TABS_TREE_SHAPE", "EDITOR_TABS_INCOMPLETE",
   "EDITOR_TABS_TAB_SHAPE", "EDITOR_TABS_OWNER_UNPROVEN", "EDITOR_TARGET_ALREADY_OPEN", "EDITOR_TABS_ACTIVE_UNPROVEN",
 ] as const;
+export const DOCUMENT_RENAME_NATIVE_GUARD_CODES = [...METADATA_NATIVE_GUARD_CODES, "DOCUMENT_METADATA", "EDITOR_FRAME_STATE"] as const;
 
 export const METADATA_NATIVE_DIAGNOSTIC_CATCH = `let code='EXCEPTION';try{
 const descriptor=error!==null&&(typeof error==='object'||typeof error==='function')?Object.getOwnPropertyDescriptor(error,'message'):undefined;

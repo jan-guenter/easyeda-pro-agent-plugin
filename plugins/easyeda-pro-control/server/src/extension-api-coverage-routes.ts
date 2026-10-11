@@ -82,6 +82,12 @@ for (const family of ["line", "arc", "via", "pad", "polyline", "region", "pour",
       ["design-action.ts", "design-native-adapter.ts", "design-source-proof.ts"], ["design-native-adapter.test.ts", "design-source-proof.test.ts"]);
   }
 }
+for (const method of ["create", "modify", "delete"]) {
+  add("pcb_PrimitiveString", [method], "easyeda_control_design", `footprint.text.${method}`, "native-task-equivalent",
+    "Existing exact-owner project footprint only, document type 4: one standalone built-in-default-font STRING per operation through receiver-bound native history dispatch, exact source/peer preservation and library Save/close/reopen proof. Native mil geometry, explicit creation fields and named origin; no public-wrapper defaults. Modify preserves identity/layer and refuses reverse-state changes; delete has no automatic inverse. No type-3 PCB text, external fonts, placed-instance propagation, public pcb_PrimitiveString wrapper execution/parity, class-instance or bulk-delete arguments, or full declared-contract claim. Current-generation live validation remains unclaimed.",
+    ["footprint-action.ts", "footprint-public-geometry.ts", "footprint-lifecycle.ts", "design-action.ts", "design-execution.ts"],
+    ["footprint-action.test.ts", "footprint-public-geometry.test.ts", "footprint-lifecycle.test.ts"], [4]);
+}
 add("pcb_PrimitivePour", ["rebuildCopperRegions"], "easyeda_control_design", "pcb.pour.rebuild", "native-task-equivalent",
   "Selected-parent derived copper rebuild with complete scoped effect proof; no global uncontrolled rebuild.", ["design-copper-adapter.ts", "copper-persistence.ts"], ["design-copper-adapter.test.ts", "design-persistence.test.ts"]);
 const ruleMethods: Readonly<Record<string, string>> = {
@@ -168,6 +174,12 @@ add("dmt_EditorControl", ["closeDocument"], "easyeda_control_library", "document
 add("dmt_Schematic", ["modifySchematicPageName"], "easyeda_control_library", "document.page.rename", "native-task-equivalent",
   "Closed ordinary checkpoint-member page only, with one clean owned sibling active, exact writable local branch, immutable preparation and one project-qualified native metadata write. Complete saved title/header effect and unchanged peers/source; no Save, reopen or UI-caption refresh claim. Current-generation live validation is unclaimed.",
   ["document-page-rename.ts", "library-execution.ts", "library-recovery-state.ts", "library-recovery.ts"], ["document-page-rename.test.ts", "document-page-rename-transaction.test.ts"]);
+for (const [namespace, method, family] of [["dmt_Pcb", "modifyPcbName", "pcb"], ["dmt_Schematic", "modifySchematicName", "schematic"]] as const) {
+  add(namespace, [method], "easyeda_control_library", `document.${family}.rename`, "native-task-equivalent",
+    "Closed ordinary target only, every schematic child closed, one other clean direct-open PCB and independent DOM-frame proof. Exact nonimported checkpoint and full peer record clocks/header lineage; name-only metadata persistence. Refuses hierarchy, CBB, inheritance, non-null target zIndex, pooled panel/export frames. No public wrapper, Save/reopen, automatic inverse or current-generation live-validation claim.",
+    ["document-container-rename.ts", "document-container-rename-runtime.ts", "document-container-rename-dom.ts", "document-container-rename-native-profile.ts", "library-execution.ts", "library-recovery-state.ts", "library-recovery.ts", "library-undispatched-recovery.ts"],
+    ["document-container-rename.test.ts", "document-container-rename-runtime.test.ts", "document-container-rename-transaction.test.ts", "library-undispatched-recovery.test.ts"], [3]);
+}
 add("dmt_Schematic", ["createSchematicPage"], "easyeda_control_library", "document.page.create", "native-task-equivalent",
   "Parent-only creation of one closed empty page in an existing ordinary local schematic, with one clean owned PCB or sibling page active and a writable exact branch. Pinned native name/order defaults, original returned ID and full unchanged peer/hierarchy proof; public template/drawing-frame initialization and editor opening are not invoked. No Save or automatic inverse. Changed recovery requires the original native return and immutable preparation, never infers identity from an observed addition or repeats creation. Current-generation live validation is unclaimed.",
   ["document-page-create.ts", "library-execution.ts", "library-recovery-state.ts", "library-recovery.ts"], ["document-page-create.test.ts", "document-page-create-transaction.test.ts"], [1, 3]);

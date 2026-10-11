@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { canonicalJson, sha256Json } from "./core.ts";
 import type { NativeSourceObject, NativeSourceSnapshot } from "./document-source.ts";
+import { assertPcbInheritedLineEvidence } from "./pcb-inherited-lines.ts";
+import type { PcbInheritedLine, PcbInheritedLineEvidence } from "./pcb-inherited-lines.ts";
 
 export const PCB_NET_MEMBERSHIP_METHOD = "eda.pcb_Net.getAllPrimitivesByNet";
 export const PCB_NET_MEMBERSHIP_PROFILE = "easyeda-pro-control.pcb-net-membership.v1";
@@ -18,7 +20,8 @@ export const PCB_NET_MEMBERSHIP_LIMITATIONS = [
   "PANELIZE is admitted only as one canonical disabled default record: on=false, row=column=1, zero spacing and onlyOutline=true, with all ten settings and exact nested shapes retained. Nested stamp/side flags remain dormant settings; enabled, malformed and descendant panel state is unsupported.",
   "Net matching uses uppercase keys and preserves stored spelling. Full requested-family source/inventory correspondence is checked before filtering; this is not electrical connectivity, DRC, saved-file or persistence proof.",
   "Two matching source/inventory/source cycles require unchanged runtime and full observed context. Switching away and back between observations remains undetectable.",
-  "Bounded to 20,000 native source records, 16 MiB native source evidence and 2 MiB result; exceeding bounds refuses without truncation.",
+  "Line reads with explicit Footprint associations or extra inventory identities require a fresh managed checkpoint and repeated complete-database invariance. Only direct empty-net top-silkscreen footprint LINEs on unlocked top-side, zero-rotation components with zero library origin are supported; custom chains, replacements, partitions and ambiguous owners refuse. Their explicit footprint provenance is separate from PCB source records; they never enter a nonempty-net result.",
+  "Bounded to 20,000 native source records, 16 MiB native source evidence and 2 MiB result; inherited Line proof also limits decoded checkpoint history to 32 MiB and each referenced document to 20,000 records. Exceeding bounds refuses without truncation.",
 ] as const;
 // oxlint-disable-next-line eslint/no-control-regex -- Native identity selectors cannot carry transport control characters.
 const identity = z.string().min(1).max(256).regex(/^[^\u0000-\u001F\u007F]+$/u);
@@ -134,12 +137,13 @@ function standalone(row: NativeSourceObject, type: PrimitiveType, sourceType: Me
   return { primitiveId: identity.parse(row.id), primitiveType: type, net: net.parse(row.body["netName"]), parentComponentPrimitiveId: null,
     sourceRecordId: row.id, sourceType };
 }
-function verifyFamily(expected: Map<string, Member>, actual: z.infer<typeof familySchema>, expectedType: string): void {
+function verifyFamily(expected: Map<string, Member | PcbInheritedLine>, actual: z.infer<typeof familySchema>, expectedType: string): void {
   sameSet(actual.primitiveIds, [...expected.keys()], "complete family membership");
   for (const [id, member] of expected) {
     const row = actual.byPrimitiveId[id];
     if (row === undefined || row.primitiveType !== expectedType || (row.net ?? "") !== member.net ||
-        (row.parentComponentPrimitiveId ?? null) !== member.parentComponentPrimitiveId || member.padNumber !== undefined && row.padNumber !== member.padNumber) {
+        (row.parentComponentPrimitiveId ?? null) !== (member.sourceType === "FOOTPRINT_LINE" ? null : member.parentComponentPrimitiveId) ||
+        "padNumber" in member && member.padNumber !== undefined && row.padNumber !== member.padNumber) {
       throw new Error("PCB net membership source and inventory assignments disagree.");
     }
   }
@@ -189,17 +193,27 @@ function verifyPadLinks(expected: Map<string, Member>, componentIds: Set<string>
  * are disjoint physical-owner roles, unlike the direct Pad enumerator.
  */
 export function derivePcbPhysicalMembers(source: NativeSourceSnapshot, inventoryInput: unknown, documentUuid: string,
-  primitiveTypes: readonly PrimitiveType[]): Member[] {
+  primitiveTypes: readonly PrimitiveType[], inherited?: PcbInheritedLineEvidence): (Member | PcbInheritedLine)[] {
   sourceIdentity(source, documentUuid);
   const inventory = inventorySchema.parse(inventoryInput);
   const selected = new Set(z.array(primitiveType).min(1).max(5).parse(primitiveTypes));
   if (selected.size !== primitiveTypes.length) { throw new Error("PCB physical membership has duplicate requested families."); }
-  const members: Member[] = [];
+  if (inherited === undefined && selected.has("Line") && source.objects.some((row) => row.type === "ATTR" && row.body["key"] === "Footprint")) {
+    throw new Error("PCB Line membership with Footprint associations requires fresh inherited-library evidence, even when no child is enumerated.");
+  }
+  if (inherited !== undefined) { assertPcbInheritedLineEvidence(inherited, source, inventoryInput); }
+  const members: (Member | PcbInheritedLine)[] = [];
   for (const definition of families) {
     if (selected.has(definition.type)) {
-      const expected = new Map(source.objects.filter((row) => row.type === definition.sourceType).map((row) => {
+      const expected = new Map<string, Member | PcbInheritedLine>(source.objects.filter((row) => row.type === definition.sourceType).map((row) => {
         const member = standalone(row, definition.type, definition.sourceType); return [member.primitiveId, member];
       }));
+      if (definition.type === "Line" && inherited !== undefined) {
+        for (const member of inherited.members) {
+          // The generated evidence already rejects every PCB source-ID collision.
+          expected.set(member.primitiveId, member);
+        }
+      }
       verifyFamily(expected, family(inventory.families[definition.name]), definition.type);
       members.push(...expected.values());
     }
@@ -224,12 +238,13 @@ export function derivePcbPhysicalMembers(source: NativeSourceSnapshot, inventory
   return members;
 }
 
-export function derivePcbNetMembership(source: NativeSourceSnapshot, inventoryInput: unknown, requestInput: unknown, documentUuid: string): PcbNetMembershipItem[] {
+export function derivePcbNetMembership(source: NativeSourceSnapshot, inventoryInput: unknown, requestInput: unknown, documentUuid: string,
+  inherited?: PcbInheritedLineEvidence): PcbNetMembershipItem[] {
   const request = pcbNetMembershipRequestSchema.parse(requestInput);
   const selected = new Set<PrimitiveType>(request.arguments.primitiveTypes);
-  const members = derivePcbPhysicalMembers(source, inventoryInput, documentUuid, request.arguments.primitiveTypes);
+  const members = derivePcbPhysicalMembers(source, inventoryInput, documentUuid, request.arguments.primitiveTypes, inherited);
   const netKey = net.min(1).parse(request.arguments.net.toUpperCase());
-  const result = pcbNetMembershipItemsSchema.parse(members.filter((row) => selected.has(row.primitiveType) && row.net !== "" && row.net.toUpperCase() === netKey)
+  const result = pcbNetMembershipItemsSchema.parse(members.filter((row): row is Member => row.sourceType !== "FOOTPRINT_LINE" && selected.has(row.primitiveType) && row.net !== "" && row.net.toUpperCase() === netKey)
     .map(({ padNumber: _padNumber, ...row }) => row).toSorted((left, right) => left.primitiveId < right.primitiveId ? -1 : 1));
   if (Buffer.byteLength(JSON.stringify(result)) > PCB_NET_MEMBERSHIP_MAX_BYTES) { throw new Error("PCB net membership result exceeds its byte bound."); }
   return result;

@@ -10,10 +10,18 @@ The inventory covers 774 distinct method paths. The reviewed installed SDK has
 697, the newer official reference has 773, and one older dialog method appears
 only in the reviewed SDK. These counts are method paths, not overload counts.
 The original 749 and 806 declaration signatures remain in the inventory.
-The current source inventory has 193 public subsets, 87 native equivalents,
-two lifecycle-only methods, eight blocked methods and 484 omissions. The fixed
-SDK-read catalog has 174 routes. These are implementation counts, not live-test
+The current source inventory has 192 public subsets, 94 native equivalents,
+two lifecycle-only methods, eight blocked methods and 478 omissions. The fixed
+SDK-read catalog has 175 routes. These are implementation counts, not live-test
 counts.
+
+The October11 additions include three mappings to existing footprint-only
+String create/modify/delete actions and two closed ordinary PCB/schematic rename
+adapters. Footprint text is not PCB type-3 text or full public-API parity.
+Container rename has independent frame inventory, one other clean PCB, exact
+whole-project record/provenance proof and original-acknowledgment recovery. It
+does not perform Save or claim connected acceptance. Concrete remaining native
+effects are in the [October11 review](api-remaining-method-effects-2026-10-11.md).
 
 Component-property names have a separate fixed native equivalent for the exact
 active ordinary schematic page. It includes all direct component attribute
@@ -42,7 +50,8 @@ native points and nullable style, every literal NET name and custom attribute
 identities. They do not collapse heterogeneous styles or choose a first net name.
 Complete tree/index/source/child membership, two captures and late scalar/type
 reproof replace the swallowed-error public wrappers. No compiler or serializer
-is called; connected nonempty Wire/Bus DTO validation remains pending.
+is called. Installed010000 subsequently passed a nonempty Wire/Bus fixture with
+complete native and saved-state invariance; newer generations remain separate.
 Installed233100 refused populated Wire state because the adapter confused
 serialized style strings with native numeric enums. The source fix preserves
 the string DTO and compares raw numeric values for drift. Native and saved
@@ -54,11 +63,19 @@ Line, Arc, Via, standalone Pad and ComponentPad. Filters and a nonempty net are
 required. Two complete source/inventory/source cycles prove every requested
 family before net filtering, including PAD_NET/component ownership. Unfiltered
 membership and other native shapes remain unsupported; this is not SDK class
-parity, connectivity or persistence proof. Connected validation remains pending.
+parity, connectivity or persistence proof. Installed071500 passed ComponentPad/Via
+and empty Pad/Arc cases; Line and newer-generation validation remain pending.
 Ordinary text, reviewed metadata and BOARD outlines are admitted. Pinned source
 review distinguishes BOARD drawing controllers from electrical Track/ArcTrack
 models. Complete electrical-family correspondence remains mandatory; outline
 geometry is not returned or validated.
+
+Inherited neutral footprint lines now have a separate narrow checkpoint-bound
+proof. It requires explicit Footprint bindings, exact complete saved history and
+matching native geometry on unlocked top-side zero-rotation components with
+zero-origin libraries. No ID-prefix ownership guess is accepted. These inherited
+lines can satisfy complete membership or a Line type result, but their empty
+nets never enter a nonempty-net result. This addition is offline-tested only.
 
 `pcb_Primitive.getPrimitiveTypeByPrimitiveId` classifies an existing literal ID
 as Line, Arc, Via, Pad or ComponentPad only after complete all-five-family

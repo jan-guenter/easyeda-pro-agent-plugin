@@ -605,9 +605,16 @@ void describe(
         try {
           assert.equal(upstream.processDiagnostics(), undefined);
           await upstream.connect();
+          await upstream.installedEasyedaBundles();
           const connected = upstream.processDiagnostics();
-          assert.equal(connected?.sandbox.closed, false);
-          assert.equal(connected?.sandbox.protocolFailureCode, null);
+          assert.equal(connected?.sandbox?.closed, false);
+          assert.equal(connected?.sandbox?.protocolFailureCode, null);
+          assert.equal(connected?.localIntegrity.schema, "easyeda-pro-control.local-integrity-timings.v1");
+          const startupStages = connected?.localIntegrity.stages;
+          assert.equal(startupStages?.find((stage) => stage.stage === "runtime-module-graph")?.completedCount, 1);
+          assert.equal(startupStages?.find((stage) => stage.stage === "sandbox-startup")?.completedCount, 1);
+          assert.equal(startupStages?.find((stage) => stage.stage === "sandbox-input-validation")?.completedCount, 3);
+          assert.equal(startupStages?.find((stage) => stage.stage === "installed-bundle-hashing")?.completedCount, 1);
           await assert.rejects(
             upstream.callTool(tool, {}),
             /Connection closed/u,
@@ -615,6 +622,7 @@ void describe(
           await upstream.close();
           const exited = upstream.processDiagnostics();
           assert.ok(exited);
+          assert.ok(exited.sandbox !== null);
           assert.equal(exited.sandbox.closed, true);
           assert.equal(
             exited.sandbox.protocolFailureCode,
@@ -637,7 +645,7 @@ void describe(
           assert.equal(Object.isFrozen(exited), true);
           assert.equal(Object.isFrozen(exited.sandbox), true);
           assert.deepEqual(upstream.processDiagnostics(), exited);
-          assert.equal(connected?.sandbox.closed, false);
+          assert.equal(connected?.sandbox?.closed, false);
         } finally {
           await upstream.close();
           await controlRoot.close();
@@ -772,6 +780,9 @@ void describe(
         assert.deepEqual(initial.startup, initial.current);
         assert.equal(initial.startupSha256, initial.currentSha256);
         assert.equal(initial.drift, false);
+        const initialTimings = upstream.processDiagnostics()?.localIntegrity;
+        assert.equal(initialTimings?.stages.find((stage) => stage.stage === "execution-closure")?.completedCount, 1);
+        assert.equal(initialTimings?.stages.find((stage) => stage.stage === "status-module-graph")?.completedCount, 1);
         assert.equal(initial.startup.entrypoint, entrypoint);
         assert.equal(
           initial.startup.implementationTree.root,
@@ -813,6 +824,10 @@ void describe(
         );
         assert.notEqual(drifted.startupSha256, drifted.currentSha256);
         assert.equal(drifted.drift, true);
+        const driftedTimings = upstream.processDiagnostics()?.localIntegrity;
+        assert.equal(driftedTimings?.stages.find((stage) => stage.stage === "execution-closure")?.completedCount, 2);
+        assert.equal(driftedTimings?.stages.find((stage) => stage.stage === "status-module-graph")?.completedCount, 2);
+        assert.equal(initialTimings?.stages.find((stage) => stage.stage === "execution-closure")?.completedCount, 1);
       } finally {
         extension?.terminate();
         await upstream.close();
@@ -861,6 +876,10 @@ void describe(
             ),
         );
         assert.equal(childAuthorityPersisted, false);
+        const failedDiagnostics = upstream.processDiagnostics();
+        assert.equal(failedDiagnostics?.sandbox, null);
+        assert.equal(failedDiagnostics?.localIntegrity.stages.find((stage) => stage.stage === "sandbox-startup")?.failedCount, 1);
+        assert.doesNotMatch(JSON.stringify(failedDiagnostics), /post-ready-race-bwrap/u);
         await assert.rejects(access(spawnMarker), { code: "ENOENT" });
       } finally {
         await upstream?.close();
@@ -893,6 +912,10 @@ void describe(
           upstream.listTools(),
           /runtime module graph differs from the reviewed graph fingerprint/u,
         );
+        const failedDiagnostics = upstream.processDiagnostics();
+        assert.equal(failedDiagnostics?.sandbox, null);
+        assert.equal(failedDiagnostics?.localIntegrity.stages.find((stage) => stage.stage === "runtime-module-graph")?.failedCount, 1);
+        assert.doesNotMatch(JSON.stringify(failedDiagnostics), /unreviewed reachable module drift|dotenv/u);
         await assert.rejects(
           access(spawnMarker),
           (error: unknown) =>

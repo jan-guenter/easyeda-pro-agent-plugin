@@ -64,16 +64,27 @@ and [feasibility review](docs/api-execution-feasibility-2026-10-10.md) name the
 remaining work. Closed symbol/page metadata, empty-page and empty-symbol creation, existing-tab
 activation and inactive clean-tab close have tracked executor and recovery
 paths. Their scopes and remaining connected acceptance are explicit; a public
-acknowledgment alone never completes a lifecycle operation. A separate checkpoint-bound flat-topology
+acknowledgment alone never completes a lifecycle operation. A separate closed
+PCB/schematic-container rename adapter requires one other clean PCB, complete
+checkpoint invariants and independent DOM checks. It preserves the original
+acknowledgment through recovery, performs no Save and has no connected acceptance
+yet. The [remaining-effects review](docs/api-remaining-method-effects-2026-10-11.md)
+also records concrete blockers for layer selection, page ordering, pad-pair groups
+and PCB text. A separate checkpoint-bound flat-topology
 diagnostic avoids the mutating netlist exporter. A separate sealed single-page
 profile admits only existing stored attribute/text display patches, with exact
 inverse, endpoint and whole-project persistence checks. It does not re-enable
-electrical edits or historical compiled transactions; connected lifecycle testing
-of this new source is pending. Imported library atom provenance has a separate
+electrical edits or historical compiled transactions. Imported library atom provenance has a separate
 sealed v2 profile: unchanged SYMBOL/FOOTPRINT peers retain every header occurrence,
 raw encoding and tombstone across the lifecycle. Default parsing and legacy v1
 remain strict. See the [imported-library contract](docs/native-library-import-history-2026-10-11.md)
 and [release evidence](docs/imported-library-peers-release-2026-10-11.md).
+Installed `083400` passed imported-project opening, nonempty native flat topology
+and forward/reverse stored Designator-coordinate transactions through Save and reopen. The
+complete 12-document fixture proof retained imported headers and both pin nets.
+See the [scoped fixture evidence](docs/api-coverage-083400-fixture-validation-2026-10-11.md).
+The reverse restored the original source exactly. Unsaved rollback and the newer
+source generation remain separate validation.
 The `202803` disposable text edit reached the intended
 state but stopped before Save on a raw source-format comparison defect. Installed
 `210100` recovered that journal after one inverse and delayed native persistence,
@@ -82,8 +93,8 @@ an immediate inverse. A separate `210100` single-text transaction passed Save,
 close, reopen and complete saved-project verification. Installed `223200` also
 passed both native Text-state readers and one stored frame-attribute display
 edit with complete nine-document saved proof and one Save/close/reopen. These
-fixtures contain no electrical parts. The new source still needs its own
-connected admission, including nonempty flat topology and the new read routes.
+older fixtures contain no electrical parts. The new source still needs its own
+connected admission and new read-route checks.
 Native discovery handles minimized windows, and
 bounded recovery-history caches preserve fresh content verification.
 Offline tests do not establish connected validation for this release.

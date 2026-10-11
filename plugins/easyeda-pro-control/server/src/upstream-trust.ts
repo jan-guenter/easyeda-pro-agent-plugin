@@ -28,6 +28,132 @@ import {
 import { captureUpstreamModuleGraph } from "./upstream-module-execution.ts";
 import type { CapturedUpstreamModuleGraph } from "./upstream-module-execution.ts";
 
+const LOCAL_INTEGRITY_STAGES = [
+  "launcher-admission",
+  "runtime-module-graph",
+  "bridge-preparation",
+  "environment-preparation",
+  "sandbox-input-validation",
+  "sandbox-startup",
+  "installed-bundle-hashing",
+  "launcher-fingerprint",
+  "execution-closure",
+  "status-module-graph",
+] as const;
+type LocalIntegrityStage = typeof LOCAL_INTEGRITY_STAGES[number];
+
+interface LocalIntegrityStageState {
+  activeCount: number;
+  activeStartedAt: number | null;
+  completedCount: number;
+  failedCount: number;
+  lastElapsedMs: number;
+  maxElapsedMs: number;
+  totalElapsedMs: number;
+}
+
+export interface LocalIntegrityDiagnostics {
+  readonly schema: "easyeda-pro-control.local-integrity-timings.v1";
+  readonly stages: readonly Readonly<{
+    stage: LocalIntegrityStage;
+    activeCount: number;
+    activeSpanElapsedMs: number;
+    completedCount: number;
+    failedCount: number;
+    lastElapsedMs: number;
+    maxElapsedMs: number;
+    totalElapsedMs: number;
+  }>[];
+}
+
+function boundedTimingInteger(value: number): number {
+  return Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(value)));
+}
+
+function timingElapsed(start: number | null, end: number | null): number {
+  return start === null || end === null ? 0 : boundedTimingInteger(end - start);
+}
+
+/** Passive timing only. Nested stages overlap; totals must not be summed.
+ * Fixed labels and counters retain neither paths, payloads nor error text.
+ */
+export class LocalIntegrityTimings {
+  readonly #clock: () => number;
+  readonly #stages = new Map<LocalIntegrityStage, LocalIntegrityStageState>();
+
+  public constructor(clock: () => number = (): number => performance.now()) {
+    this.#clock = clock;
+  }
+
+  #now(): number | null {
+    try {
+      const value = this.#clock();
+      return Number.isFinite(value) && value >= 0 ? value : null;
+    } catch {
+      // Diagnostics must not turn a clock failure into an execution failure.
+      return null;
+    }
+  }
+
+  public async measure<Value>(stage: LocalIntegrityStage, action: () => Promise<Value>): Promise<Value> {
+    if (!LOCAL_INTEGRITY_STAGES.some((allowed) => allowed === stage)) {
+      // A foreign runtime label is never reflected or retained.
+      return action();
+    }
+    const state = this.#stages.get(stage) ?? {
+      activeCount: 0,
+      activeStartedAt: null,
+      completedCount: 0,
+      failedCount: 0,
+      lastElapsedMs: 0,
+      maxElapsedMs: 0,
+      totalElapsedMs: 0,
+    };
+    const start = this.#now();
+    if (state.activeCount === 0) { state.activeStartedAt = start; }
+    state.activeCount = boundedTimingInteger(state.activeCount + 1);
+    this.#stages.set(stage, state);
+    let completed = false;
+    try {
+      const result = await action();
+      completed = true;
+      return result;
+    } finally {
+      const elapsed = timingElapsed(start, this.#now());
+      state.activeCount = boundedTimingInteger(state.activeCount - 1);
+      if (state.activeCount === 0) { state.activeStartedAt = null; }
+      if (completed) {
+        state.completedCount = boundedTimingInteger(state.completedCount + 1);
+      } else {
+        state.failedCount = boundedTimingInteger(state.failedCount + 1);
+      }
+      state.lastElapsedMs = elapsed;
+      state.maxElapsedMs = Math.max(state.maxElapsedMs, elapsed);
+      state.totalElapsedMs = boundedTimingInteger(state.totalElapsedMs + elapsed);
+    }
+  }
+
+  public snapshot(): LocalIntegrityDiagnostics {
+    const now = this.#now();
+    return Object.freeze({
+      schema: "easyeda-pro-control.local-integrity-timings.v1",
+      stages: Object.freeze(LOCAL_INTEGRITY_STAGES.flatMap((stage) => {
+        const state = this.#stages.get(stage);
+        return state === undefined ? [] : [Object.freeze({
+          stage,
+          activeCount: state.activeCount,
+          activeSpanElapsedMs: timingElapsed(state.activeStartedAt, now),
+          completedCount: state.completedCount,
+          failedCount: state.failedCount,
+          lastElapsedMs: state.lastElapsedMs,
+          maxElapsedMs: state.maxElapsedMs,
+          totalElapsedMs: state.totalElapsedMs,
+        })];
+      })),
+    });
+  }
+}
+
 interface DependencyLockFingerprint {
   readonly path: string;
   readonly sha256: string;
@@ -882,6 +1008,7 @@ async function captureLauncherFingerprintAt(
   commandPath: string,
   args: [string],
   cwd: string,
+  timings: LocalIntegrityTimings,
 ): Promise<LauncherCapture> {
   const commandRealPath = await realpath(commandPath);
   const currentNodeRealPath = await realpath(process.execPath);
@@ -908,11 +1035,11 @@ async function captureLauncherFingerprintAt(
   const [dependencyType, dependencyLockPath] =
     await detectDependencyLock(cwd);
   const implementationRoot = dirname(entrypointPath);
-  const closure = await captureExecutionClosure(
+  const closure = await timings.measure("execution-closure", () => captureExecutionClosure(
     cwd,
     implementationRoot,
     dependencyLockPath,
-  );
+  ));
   const sandboxCommand = configuredSandboxCommand();
   const [command, descriptorSanitizer, entrypoint, sandbox] = await Promise.all([
     captureTrustedFile(commandPath),
@@ -954,11 +1081,11 @@ async function captureLauncherFingerprintAt(
     path: dependencyLockPath,
     sha256: closure.dependencyLockSha256,
   };
-  const moduleGraph = await captureUpstreamModuleGraph(
+  const moduleGraph = await timings.measure("status-module-graph", () => captureUpstreamModuleGraph(
     cwd,
     entrypointPath,
     closure.seals,
-  );
+  ));
   await assertPathSealsCurrent(
     closure.seals,
     "during reviewed module-graph resolution",
@@ -996,7 +1123,7 @@ async function captureLauncherFingerprintAt(
   };
 }
 
-export function captureLauncherFingerprint(): Promise<LauncherCapture> {
+export function captureLauncherFingerprint(timings = new LocalIntegrityTimings()): Promise<LauncherCapture> {
   const args = configuredUpstreamArgs();
   const entrypoint = args[0];
   if (entrypoint === undefined) {
@@ -1006,6 +1133,7 @@ export function captureLauncherFingerprint(): Promise<LauncherCapture> {
     configuredUpstreamCommand(),
     [entrypoint],
     configuredUpstreamCwd(),
+    timings,
   );
 }
 

@@ -5,7 +5,7 @@ import { extractToolPayload } from "../src/core.ts";
 import { RECOVERY_NAVIGATION_FAILURE_STAGES, nativeFailureCategory } from "../src/native-diagnostics.ts";
 import { SCHEMATIC_NATIVE_ID_GUARD_CODES, SCHEMATIC_NATIVE_ID_METHODS } from "../src/schematic-native-ids.ts";
 import { SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES, SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "../src/schematic-component-properties.ts";
-import { METADATA_NATIVE_GUARD_CODES } from "../src/metadata-native-diagnostics.ts";
+import { DOCUMENT_RENAME_NATIVE_GUARD_CODES, METADATA_NATIVE_GUARD_CODES } from "../src/metadata-native-diagnostics.ts";
 import { SYMBOL_PIN_ENUMERATION_GUARD_CODES, SYMBOL_PIN_ENUMERATION_METHOD } from "../src/symbol-pin-enumeration.ts";
 import { SCHEMATIC_TEXT_GUARD_CODES, SCHEMATIC_TEXT_READ_METHODS } from "../src/schematic-text-read.ts";
 // oxlint-disable-next-line import/max-dependencies -- This diagnostic matrix covers every fixed native classifier using its production guard inventory.
@@ -183,6 +183,7 @@ const operationStages = [
   { source: "document-close.ts", prefix: "Clean document close refused at ", category: "native-document-close", stages: ["host", "before-state", "dispatch-state", "close", "terminal-removal", "after-state", "reconciliation"] },
   { source: "document-activation.ts", prefix: "Document activation refused: ", category: "native-document-activation", stages: ["api", "before-context", "before-tabs", "loaded-frames", "preferences", "dispatch-context", "activate", "target-readiness"] },
   { source: "document-page-rename.ts", prefix: "Closed page rename refused at ", category: "native-page-rename", stages: ["host", "before-read", "closed-target", "rename", "after-read"] },
+  { source: "document-container-rename-runtime.ts", prefix: "Closed document rename refused at ", category: "native-document-rename", stages: ["host", "before-read", "closed-target", "rename", "after-read"] },
   { source: "project-symbol-metadata.ts", prefix: "Symbol metadata operation refused at ", category: "native-symbol-metadata", stages: ["host", "permission", "before-read", "target-closed", "modify", "after-read"] },
 ];
 
@@ -229,9 +230,9 @@ void test("diagnostic stage inventory exactly matches the reviewed generated pro
 });
 
 void test("metadata subguard categories admit only fixed stage/code combinations and redact private suffixes", () => {
-  for (const { prefix, category, stages } of operationStages.filter((entry) => ["native-page-rename", "native-symbol-metadata"].includes(entry.category))) {
+  for (const { prefix, category, stages } of operationStages.filter((entry) => ["native-page-rename", "native-symbol-metadata", "native-document-rename"].includes(entry.category))) {
     for (const stage of stages) {
-      for (const code of METADATA_NATIVE_GUARD_CODES) {
+      for (const code of category === "native-document-rename" ? DOCUMENT_RENAME_NATIVE_GUARD_CODES : METADATA_NATIVE_GUARD_CODES) {
         const expected = `${category}:${stage}:${code}`, message = `${prefix}${stage}:${code}`;
         assert.equal(nativeFailureCategory(message), expected);
         assert.throws(() => extractToolPayload({ structuredContent: { ok: false, error: message } }),
@@ -243,6 +244,18 @@ void test("metadata subguard categories admit only fixed stage/code combinations
       assert.equal(nativeFailureCategory(`${prefix}${stage}:UNKNOWN_PRIVATE_ERROR`), null);
     }
     assert.equal(nativeFailureCategory(`${prefix}private:PROJECT_PLACEHOLDER`), null);
+  }
+});
+
+void test("new document rename diagnostics inventory includes each runtime and DOM guard without widening page errors", async () => {
+  const codes: ReadonlySet<string> = new Set(DOCUMENT_RENAME_NATIVE_GUARD_CODES);
+  for (const source of ["document-container-rename-runtime.ts", "document-container-rename-dom.ts"]) {
+    const text = await readFile(new URL(`../src/${source}`, import.meta.url), "utf8");
+    for (const match of text.matchAll(/throw new Error\('([A-Z_]+)'\)/gu)) { assert.ok(match[1] !== undefined && codes.has(match[1])); }
+  }
+  for (const code of ["DOCUMENT_METADATA", "EDITOR_FRAME_STATE"]) {
+    assert.equal(nativeFailureCategory(`Closed page rename refused at host:${code}`), null);
+    assert.equal(nativeFailureCategory(`Symbol metadata operation refused at host:${code}`), null);
   }
 });
 
