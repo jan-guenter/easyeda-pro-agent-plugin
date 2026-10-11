@@ -76,17 +76,19 @@ export async function readPcbSelectedObjects(engine: PcbSelectedObjectsEngine, r
     if (canonicalJson(await engine.assertContext(context)) !== canonicalJson(context)) { throw new Error("Selected PCB context changed around observation."); }
   };
   const observeExact = async (kind: "pcb-source" | "pcb-inventory"): Promise<z.infer<typeof exactSchema>> => {
-    await guard();
     const payload = checkedExact(await engine.exactRead({ kind }, context), kind);
     await guard();
     return payload;
   };
   const observeIds = async (): Promise<z.infer<typeof idsSchema>> => {
-    await guard();
     const payload = checkedIds(await engine.publicSdkRead(idsRequest, context));
     await guard();
     return payload;
   };
+  // One boundary guards both adjacent readers: after the preceding reader and
+  // Before the next. Only synchronous validation/classification runs between
+  // Them. Inner reader guards and both samples remain unchanged. Any new await
+  // Between observations must be followed by a fresh guard before another read.
   const observations = async (): Promise<{ source: NativeSourceSnapshot; inventory: z.infer<typeof exactSchema>; ids: string[];
     sourceSha256: string; sourceBeforeSnapshotSha256: string; sourceAfterSnapshotSha256: string; inventorySnapshotSha256: string;
     selectedIdsBeforeSnapshotSha256: string; selectedIdsAfterSnapshotSha256: string; contextBinding: z.infer<typeof consistencySchema>["contextBinding"] }> => {
@@ -104,11 +106,13 @@ export async function readPcbSelectedObjects(engine: PcbSelectedObjectsEngine, r
       selectedIdsBeforeSnapshotSha256: beforeIds.read_consistency.snapshotSha256, selectedIdsAfterSnapshotSha256: afterIds.read_consistency.snapshotSha256,
       inventorySnapshotSha256: inventory.read_consistency.snapshotSha256, contextBinding: inventory.read_consistency.contextBinding };
   };
+  await guard();
   let initial = await observations();
   const initialSelected = new Set(initial.ids);
   if (initial.source.objects.some((row) => row.type === "LINE" && initialSelected.has(row.id)) && pcbNeedsInheritedLineEvidence(initial.source, initial.inventory)) {
     inheritedScope = await capturePcbInheritedLineScope(engine, context);
     // Discard detection observations: they preceded checkpoint admission.
+    await guard();
     initial = await observations();
   }
   const classify = (observed: Awaited<ReturnType<typeof observations>>): Record<string, unknown> => {
@@ -118,7 +122,6 @@ export async function readPcbSelectedObjects(engine: PcbSelectedObjectsEngine, r
   };
   const first = classify(initial), second = classify(await observations());
   if (canonicalJson(first) !== canonicalJson(second)) { throw new Error("Selected PCB complete observations changed between independent cycles."); }
-  await guard();
   const finalStatus = await engine.status();
   const finalFingerprint = finalStatus.stableFingerprint;
   validatePrivateFingerprint(finalFingerprint);

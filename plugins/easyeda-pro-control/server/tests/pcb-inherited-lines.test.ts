@@ -17,6 +17,9 @@ import { PCB_NET_MEMBERSHIP_METHOD, derivePcbNetMembership } from "../src/pcb-ne
 import { readPcbNetMembership } from "../src/pcb-net-membership-read.ts";
 import type { PcbNetMembershipEngine } from "../src/pcb-net-membership-read.ts";
 import { PCB_PRIMITIVE_TYPE_METHOD, derivePcbPrimitiveType, readPcbPrimitiveType } from "../src/pcb-primitive-type-read.ts";
+import { PCB_SELECTED_OBJECTS_IDS_METHOD, PCB_SELECTED_OBJECTS_METHOD } from "../src/pcb-selected-objects.ts";
+import { readPcbSelectedObjects } from "../src/pcb-selected-objects-read.ts";
+import { validatePublicSdkReadPayload } from "../src/public-sdk-read.ts";
 
 type Value = Record<string, unknown>;
 const BRANCH = "22".repeat(16), HISTORY = "33".repeat(16), KEY = "44".repeat(16), PROJECT = "11".repeat(32);
@@ -286,5 +289,34 @@ for (const failure of [8, 9, 10, 11, 12, 13, 14, 15, 30, 49, 50, 51]) {
     };
     await assert.rejects(readPcbPrimitiveType(current.engine, typeRequest, context, fingerprint()), /context changed/u);
     assert.equal(contexts, failure); assert.ok(current.counts.observations <= 9);
+  });
+}
+for (const failedVerification of [undefined, ...Array.from({ length: 14 }, (_, index) => index + 1)]) {
+  void test(`selected source shared boundaries retain inherited checkpoint proof ${String(failedVerification)}`, async () => {
+    const current = await runtime(fixture(), failedVerification);
+    let selections = 0;
+    const engine = { ...current.engine, publicSdkRead: (query: unknown): Promise<Value> => {
+      const idsRequest = { method: PCB_SELECTED_OBJECTS_IDS_METHOD, arguments: {} };
+      assert.deepEqual(query, idsRequest); selections += 1;
+      const sample = validatePublicSdkReadPayload({ ok: true, kind: "public-sdk-read", method: PCB_SELECTED_OBJECTS_IDS_METHOD,
+        present: true, value: ["standalone"], undefinedPaths: [] }, idsRequest);
+      return Promise.resolve({ ...exact(sample), authority: "public-sdk-observation-not-complete-design-proof" });
+    } };
+    const pending = readPcbSelectedObjects(engine, { method: PCB_SELECTED_OBJECTS_METHOD, arguments: {} }, context, fingerprint());
+    if (failedVerification === undefined) {
+      const result = await pending;
+      assert.deepEqual(current.counts, { observations: 9, creations: 1, verifications: 14 });
+      assert.equal(selections, 6);
+      const proof = result["proof"]; assert.ok(isRecord(proof)); assert.ok(isRecord(proof["inheritedLines"]));
+      assert.equal(proof["observationCycles"], 2); assert.equal(proof["samplesPerRead"], 2);
+      assert.deepEqual(proof["selectedPrimitiveIds"], ["standalone"]);
+    } else {
+      await assert.rejects(pending, /unchanged complete checkpoint/u);
+      assert.equal(current.counts.verifications, failedVerification);
+      assert.ok(current.counts.observations <= 9); assert.ok(selections <= 6);
+      // Admission's third reproof is after capture and before a fresh cycle.
+      if (failedVerification <= 3) { assert.equal(current.counts.observations, 3); assert.equal(selections, 2); }
+    }
+    assert.equal(current.counts.creations, 1);
   });
 }
