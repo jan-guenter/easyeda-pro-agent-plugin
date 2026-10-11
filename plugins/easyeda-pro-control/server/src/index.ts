@@ -86,6 +86,7 @@ import { readPcbNetMembership } from "./pcb-net-membership-read.ts";
 import { PCB_PRIMITIVE_TYPE_METHOD, readPcbPrimitiveType } from "./pcb-primitive-type-read.ts";
 import { PCB_SELECTED_OBJECTS_METHOD } from "./pcb-selected-objects.ts";
 import { readPcbSelectedObjects } from "./pcb-selected-objects-read.ts";
+import { PcbSelectedReadTimings } from "./pcb-selected-read-timings.ts";
 import { PCB_ACTIVE_LAYER_METHOD, readPcbActiveLayer } from "./pcb-active-layer-read.ts";
 import { publicSdkCatalogQuerySchema, publicSdkValidationQuerySchema, queryPublicSdkReads, validatePublicSdkArguments } from "./public-sdk-catalog.ts";
 import { operationCatalogQuerySchema, operationValidationRequestSchema, queryOperationCatalog, validateCatalogOperation } from "./operation-catalog.ts";
@@ -2004,6 +2005,7 @@ registerFacadeTool(
     if (input.request.method === PCB_PRIMITIVE_TYPE_METHOD) { reader = "fixed-native-pcb-type-observation"; effect = "fixed-native-pcb-type-read"; }
     if (input.request.method === PCB_SELECTED_OBJECTS_METHOD) { reader = "fixed-native-selected-source-observation"; effect = "fixed-native-selected-source-read"; }
     if (input.request.method === PCB_ACTIVE_LAYER_METHOD) { reader = "fixed-native-active-layer-observation"; effect = "fixed-native-active-layer-read"; }
+    const selectedTimings = input.request.method === PCB_SELECTED_OBJECTS_METHOD ? new PcbSelectedReadTimings() : undefined;
     try {
       validatePrivateFingerprint(input.expectedFingerprint);
       // These coordinators own fresh initial and final runtime admission. Do
@@ -2024,16 +2026,21 @@ registerFacadeTool(
       } else if (input.request.method === PCB_PRIMITIVE_TYPE_METHOD) {
         result = await readPcbPrimitiveType(engine, input.request, input.expectedContext, input.expectedFingerprint);
       } else if (input.request.method === PCB_SELECTED_OBJECTS_METHOD) {
-        result = await readPcbSelectedObjects(engine, input.request, input.expectedContext, input.expectedFingerprint);
+        result = await readPcbSelectedObjects(engine, input.request, input.expectedContext, input.expectedFingerprint, selectedTimings);
       } else if (input.request.method === PCB_ACTIVE_LAYER_METHOD) {
         result = await readPcbActiveLayer(engine, input.request, input.expectedContext, input.expectedFingerprint);
       } else { result = await engine.publicSdkRead(input.request, input.expectedContext); }
-      return await withEvidence(request, result, input.evidence,
-        { facadeVersion: CONTROL_VERSION, reader },
+      const diagnostics = selectedTimings === undefined ? undefined : { selectedReaderTimings: selectedTimings.snapshot() };
+      const response = await withEvidence(request, result, input.evidence,
+        { facadeVersion: CONTROL_VERSION, reader, ...diagnostics },
         { reservation, returnMode: input.returnMode, maxInlineBytes: input.maxInlineBytes });
+      if (diagnostics === undefined) { return response; }
+      if (!isRecord(response)) { throw new Error("Selected PCB read evidence response is not an object."); }
+      return { ...response, diagnostics };
     } catch (error) {
       if (reservation && !dispatched) { await releaseEvidenceReservation(reservation); }
-      else if (reservation) { await finalizeDispatchedFailure(reservation, request, error, { effect }); }
+      else if (reservation) { await finalizeDispatchedFailure(reservation, request, error, { effect,
+        ...(selectedTimings === undefined ? {} : { selectedReaderTimings: selectedTimings.snapshot() }) }); }
       throw error;
     }
   }),

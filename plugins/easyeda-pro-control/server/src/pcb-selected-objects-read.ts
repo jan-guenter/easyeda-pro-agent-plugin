@@ -11,6 +11,7 @@ import type { PcbInheritedLineScope } from "./pcb-inherited-lines.ts";
 import { validatePublicSdkReadPayload } from "./public-sdk-read.ts";
 import { PCB_SELECTED_OBJECTS_IDS_METHOD, PCB_SELECTED_OBJECTS_LIMITATIONS, PCB_SELECTED_OBJECTS_PROFILE,
   derivePcbSelectedObjects, pcbSelectedObjectIdsSchema, pcbSelectedObjectsRequestSchema } from "./pcb-selected-objects.ts";
+import { PcbSelectedReadTimings } from "./pcb-selected-read-timings.ts";
 
 export type PcbSelectedObjectsEngine = PcbNetMembershipEngine & Pick<EasyedaControlEngine, "publicSdkRead">;
 const idsRequest = { method: PCB_SELECTED_OBJECTS_IDS_METHOD, arguments: {} };
@@ -53,7 +54,7 @@ function checkedIds(input: unknown): z.infer<typeof idsSchema> {
  * selected order. Nothing changes selection or invokes an object serializer.
  */
 export async function readPcbSelectedObjects(engine: PcbSelectedObjectsEngine, requestInput: unknown, expectedContext: ExpectedContext,
-  expectedFingerprint: Record<string, unknown>): Promise<Record<string, unknown>> {
+  expectedFingerprint: Record<string, unknown>, timings = new PcbSelectedReadTimings()): Promise<Record<string, unknown>> {
   const request = pcbSelectedObjectsRequestSchema.parse(requestInput);
   const expected = structuredClone(expectedContext);
   const documentUuid = ownedContext(expected);
@@ -61,27 +62,28 @@ export async function readPcbSelectedObjects(engine: PcbSelectedObjectsEngine, r
   validatePrivateFingerprint(expectedRuntime);
   assertSubset(expectedRuntime, { installedBundles: { pcbEditor: { implementationSha256: PCB_NET_MEMBERSHIP_PCB_SHA256 },
     publicApi: { implementationSha256: PCB_NET_MEMBERSHIP_API_SHA256 } } }, "Selected PCB reviewed implementation");
-  await engine.assertBridgeDispatchAllowed();
-  const initialStatus = await engine.status();
+  await timings.measure("quarantine", () => engine.assertBridgeDispatchAllowed());
+  const initialStatus = await timings.measure("status", () => engine.status());
   const fingerprint = structuredClone(initialStatus.stableFingerprint);
   validatePrivateFingerprint(fingerprint);
   assertSubset(fingerprint, expectedRuntime, "Selected PCB runtime");
-  const context = structuredClone(await engine.assertContext(expected));
+  const context = structuredClone(await timings.measure("context", () => engine.assertContext(expected)));
   assertSubset(context, expected, "Selected PCB active context");
   if (ownedContext(context) !== documentUuid) { throw new Error("Selected PCB active identity changed."); }
   let inheritedScope: PcbInheritedLineScope | undefined;
   const guard = async (): Promise<void> => {
-    await engine.assertBridgeDispatchAllowed();
-    await inheritedScope?.reprove();
-    if (canonicalJson(await engine.assertContext(context)) !== canonicalJson(context)) { throw new Error("Selected PCB context changed around observation."); }
+    await timings.measure("quarantine", () => engine.assertBridgeDispatchAllowed());
+    const scope = inheritedScope;
+    if (scope !== undefined) { await timings.measure("inherited-reproof", () => scope.reprove()); }
+    if (canonicalJson(await timings.measure("context", () => engine.assertContext(context))) !== canonicalJson(context)) { throw new Error("Selected PCB context changed around observation."); }
   };
   const observeExact = async (kind: "pcb-source" | "pcb-inventory"): Promise<z.infer<typeof exactSchema>> => {
-    const payload = checkedExact(await engine.exactRead({ kind }, context), kind);
+    const payload = checkedExact(await timings.measure(kind === "pcb-source" ? "source-read" : "inventory-read", () => engine.exactRead({ kind }, context)), kind);
     await guard();
     return payload;
   };
   const observeIds = async (): Promise<z.infer<typeof idsSchema>> => {
-    const payload = checkedIds(await engine.publicSdkRead(idsRequest, context));
+    const payload = checkedIds(await timings.measure("selected-id-read", () => engine.publicSdkRead(idsRequest, context)));
     await guard();
     return payload;
   };
@@ -110,7 +112,7 @@ export async function readPcbSelectedObjects(engine: PcbSelectedObjectsEngine, r
   let initial = await observations();
   const initialSelected = new Set(initial.ids);
   if (initial.source.objects.some((row) => row.type === "LINE" && initialSelected.has(row.id)) && pcbNeedsInheritedLineEvidence(initial.source, initial.inventory)) {
-    inheritedScope = await capturePcbInheritedLineScope(engine, context);
+    inheritedScope = await timings.measure("inherited-capture", () => capturePcbInheritedLineScope(engine, context));
     // Discard detection observations: they preceded checkpoint admission.
     await guard();
     initial = await observations();
@@ -122,7 +124,7 @@ export async function readPcbSelectedObjects(engine: PcbSelectedObjectsEngine, r
   };
   const first = classify(initial), second = classify(await observations());
   if (canonicalJson(first) !== canonicalJson(second)) { throw new Error("Selected PCB complete observations changed between independent cycles."); }
-  const finalStatus = await engine.status();
+  const finalStatus = await timings.measure("status", () => engine.status());
   const finalFingerprint = finalStatus.stableFingerprint;
   validatePrivateFingerprint(finalFingerprint);
   if (canonicalJson(finalFingerprint) !== canonicalJson(fingerprint)) { throw new Error("Selected PCB runtime changed."); }

@@ -6,6 +6,7 @@ import { buildPublicSdkReadCode, publicSdkReadDescriptors, validatePublicSdkRead
 import { PCB_SELECTED_OBJECTS_IDS_METHOD, PCB_SELECTED_OBJECTS_METHOD, PCB_SELECTED_OBJECTS_PROFILE } from "../src/pcb-selected-objects.ts";
 import { readPcbSelectedObjects } from "../src/pcb-selected-objects-read.ts";
 import type { PcbSelectedObjectsEngine } from "../src/pcb-selected-objects-read.ts";
+import { PcbSelectedReadTimings } from "../src/pcb-selected-read-timings.ts";
 import { context, exact, fingerprint, fixture, sourceRow, sourceString } from "./pcb-selected-objects-fixture.ts";
 import type { Value } from "./pcb-selected-objects-fixture.ts";
 
@@ -65,6 +66,26 @@ void test("selected source coordinator returns complete ordered native DTOs afte
 void test("a genuinely empty selection returns an empty stable source DTO array", async () => {
   const current = runtime({ selected: [] }); const result = await readPcbSelectedObjects(current.engine, request, context, fingerprint());
   assert.deepEqual(result["value"], []); assert.deepEqual(current.calls, sequence);
+});
+void test("passive selected stage timings do not change observations, commitments or call order", async () => {
+  let slowClock = 0;
+  const first = runtime(), second = runtime();
+  const fast = new PcbSelectedReadTimings(() => 0), slow = new PcbSelectedReadTimings(() => { slowClock += 1234; return slowClock; });
+  const expected = await readPcbSelectedObjects(first.engine, request, context, fingerprint(), fast);
+  const actual = await readPcbSelectedObjects(second.engine, request, context, fingerprint(), slow);
+  assert.deepEqual(actual, expected); assert.deepEqual(second.events, first.events);
+  assert.notDeepEqual(fast.snapshot(), slow.snapshot());
+  const stages = fast.snapshot()["stages"]; assert.ok(Array.isArray(stages));
+  assert.deepEqual(stages.map((entry: unknown) => { assert.ok(isRecord(entry)); return [entry["stage"], entry["completedCount"], entry["failedCount"]]; }),
+    [["quarantine", 13, 0], ["context", 13, 0], ["status", 2, 0], ["source-read", 4, 0], ["inventory-read", 2, 0], ["selected-id-read", 4, 0]]);
+});
+void test("passive selected timings retain the failed stage without swallowing or continuing a refused read", async () => {
+  const current = runtime({ failRead: 3 }), timings = new PcbSelectedReadTimings(() => 0);
+  await assert.rejects(readPcbSelectedObjects(current.engine, request, context, fingerprint(), timings), /fixture read failed/u);
+  assert.deepEqual(current.calls, sequence.slice(0, 3));
+  const stages = timings.snapshot()["stages"]; assert.ok(Array.isArray(stages));
+  assert.deepEqual(stages.map((entry: unknown) => { assert.ok(isRecord(entry)); return [entry["stage"], entry["completedCount"], entry["failedCount"]]; }),
+    [["quarantine", 4, 0], ["context", 4, 0], ["status", 1, 0], ["source-read", 1, 0], ["inventory-read", 0, 1], ["selected-id-read", 1, 0]]);
 });
 for (const option of [...Array.from({ length: 10 }, (_, index) => ({ failRead: index + 1 })), ...Array.from({ length: 10 }, (_, index) => ({ badHash: index + 1 })),
   ...Array.from({ length: 13 }, (_, index) => ({ failContext: index + 1 })), ...Array.from({ length: 13 }, (_, index) => ({ failGate: index + 1 })),

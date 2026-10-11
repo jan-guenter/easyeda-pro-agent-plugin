@@ -16,6 +16,8 @@ import { PCB_NET_MEMBERSHIP_METHOD } from "../src/pcb-net-membership.ts";
 import { PCB_PRIMITIVE_TYPE_METHOD } from "../src/pcb-primitive-type-read.ts";
 import { PCB_ACTIVE_LAYER_METHOD } from "../src/pcb-active-layer-read.ts";
 import { PCB_SELECTED_OBJECTS_METHOD } from "../src/pcb-selected-objects.ts";
+import { PcbSelectedReadTimings } from "../src/pcb-selected-read-timings.ts";
+import { isRecord } from "../src/core.ts";
 
 interface Input { request: { method: string; arguments: Record<string, unknown> }; expectedContext: object; expectedFingerprint: object; evidence: object; returnMode: "full"; maxInlineBytes: number }
 type Handler = (input: Input) => Promise<Record<string, unknown>>;
@@ -45,7 +47,7 @@ async function registeredSdkRead(failure: "none" | "status" | "dispatch" | "fina
   };
   const scope = {
     z, publicSdkReadRequestSchema, publicSdkReadImplementationKind, isSchematicNativeIdMethod, SCHEMATIC_COMPONENT_PROPERTY_METHOD, SYMBOL_PIN_ENUMERATION_METHOD, isSchematicTextReadMethod,
-    isSchematicNetGroupReadMethod, PCB_NET_MEMBERSHIP_METHOD, PCB_PRIMITIVE_TYPE_METHOD, PCB_ACTIVE_LAYER_METHOD, PCB_SELECTED_OBJECTS_METHOD,
+    isSchematicNetGroupReadMethod, PCB_NET_MEMBERSHIP_METHOD, PCB_PRIMITIVE_TYPE_METHOD, PCB_ACTIVE_LAYER_METHOD, PCB_SELECTED_OBJECTS_METHOD, PcbSelectedReadTimings, isRecord,
     contextSchema: z.object({}), privateFingerprintSchema: z.object({}), evidenceSchema: z.object({}),
     CONTROL_VERSION: "synthetic", MAX_INLINE_RESULT_BYTES: 262_144,
     serializedLiveGuarded: (handler: Handler): Handler => handler,
@@ -76,10 +78,11 @@ async function registeredSdkRead(failure: "none" | "status" | "dispatch" | "fina
       assert.deepEqual(expectedContext, {}); assert.deepEqual(expectedFingerprint, {});
       return coordinatedRead("active-layer");
     },
-    readPcbSelectedObjects: (_engine: unknown, request: Input["request"], expectedContext: object, expectedFingerprint: object): Promise<object> => {
+    readPcbSelectedObjects: (_engine: unknown, request: Input["request"], expectedContext: object, expectedFingerprint: object, timings: PcbSelectedReadTimings): Promise<object> => {
       assert.equal(request.method, PCB_SELECTED_OBJECTS_METHOD); assert.deepEqual(request.arguments, {});
       assert.deepEqual(expectedContext, {}); assert.deepEqual(expectedFingerprint, {});
-      return coordinatedRead("selected-source");
+      assert.ok(timings instanceof PcbSelectedReadTimings);
+      return timings.measure("source-read", () => coordinatedRead("selected-source"));
     },
     engine: {
       status,
@@ -124,6 +127,12 @@ for (const method of ["eda.sys_Environment.getEditorCurrentVersion", "eda.sch_Pr
       if (failure === "none") {
         const result = await current.invoke(input);
         assert.equal(result["reader"], reader);
+        if (method === PCB_SELECTED_OBJECTS_METHOD) {
+          const diagnostics = result["diagnostics"]; assert.ok(isRecord(diagnostics));
+          assert.deepEqual(diagnostics["selectedReaderTimings"], result["selectedReaderTimings"]);
+          assert.ok(isRecord(result["selectedReaderTimings"]));
+          assert.equal(result["selectedReaderTimings"]["authority"], "passive-diagnostics-not-native-observation-or-admission-proof");
+        } else { assert.equal(result["diagnostics"], undefined); assert.equal(result["selectedReaderTimings"], undefined); }
         assert.deepEqual(current.calls, coordinated
           ? ["reserve", "fingerprint", dispatch, "status", "coordinator-subset", "status", "evidence"]
           : ["reserve", "fingerprint", "status", "subset", dispatch, "evidence"]);
@@ -135,6 +144,11 @@ for (const method of ["eda.sys_Environment.getEditorCurrentVersion", "eda.sch_Pr
           const beforeFailure = failure === "status" ? [] : ["coordinator-subset", ...(failure === "final-status" ? ["status"] : [])];
           assert.deepEqual(current.calls, ["reserve", "fingerprint", dispatch, "status", ...beforeFailure, "retain-failure"]);
           assert.equal(current.effects[0]?.["effect"], effect);
+          if (method === PCB_SELECTED_OBJECTS_METHOD) {
+            const timings = current.effects[0]?.["selectedReaderTimings"]; assert.ok(isRecord(timings));
+            const stages = timings["stages"]; assert.ok(Array.isArray(stages));
+            assert.ok(isRecord(stages[0])); assert.equal(stages[0]["failedCount"], 1);
+          } else { assert.equal(current.effects[0]?.["selectedReaderTimings"], undefined); }
         } else if (failure === "status") {
           assert.deepEqual(current.calls, ["reserve", "fingerprint", "status", "release"]); assert.equal(current.effects.length, 0);
         } else {
