@@ -15,6 +15,7 @@ import type { RecoveryNavigationTarget } from "./recovery-navigation.ts";
 import { transactionError } from "./transaction-error.ts";
 import { buildEditorTabsReadCode, parseEditorTabsRead } from "./editor-tabs.ts";
 import { RECOVERY_NAVIGATION_FAILURE_STAGES } from "./native-diagnostics.ts";
+import { nativeLibraryHeaderEvidence } from "./native-library-header-evidence.ts";
 
 type Value = Record<string, unknown>;
 const PROFILE = "easyeda-pro-control.project-open.v1";
@@ -131,33 +132,48 @@ export class ProjectOpenExecutor {
       await this.services.checkpointPolicy(journal.plan.target.projectPath)), journal.preCheckpoint);
   }
   private readHistory(checkpoint: CheckpointReceipt, target: RecoveryNavigationTarget): ReturnType<typeof readNativeHistoryCheckpoint> {
-    return this.services.readNativeHistoryCheckpoint({ checkpointPath: checkpoint.checkpoint, expectedSha256: checkpoint.checkpointSha256, projectUuid: target.projectUuid });
+    return this.services.readNativeHistoryCheckpoint({ checkpointPath: checkpoint.checkpoint, expectedSha256: checkpoint.checkpointSha256,
+      projectUuid: target.projectUuid, libraryAtomHeaders: "preserve" });
   }
   private async durableProof(journal: OpenJournal): Promise<Value> {
     const beforeCheck = await this.unchanged(journal);
+    // Re-read the original immutable checkpoint. A retained compact summary is
+    // Not authority for imported ordering metadata or a substitute for bytes.
+    const before = await this.readHistory(journal.preCheckpoint, journal.plan.target);
+    const beforeHeaders = await nativeLibraryHeaderEvidence(before,
+      { checkpointSha256: journal.preCheckpoint.checkpointSha256, projectUuid: journal.plan.target.projectUuid });
     const checkpoint = await this.services.createCheckpoint({ source: journal.plan.target.projectPath, outputDir: join(controlDataDirectory(), "checkpoints"), label: "project-open-after" },
       await this.services.checkpointPolicy(journal.plan.target.projectPath));
     const after = await this.readHistory(checkpoint, journal.plan.target);
+    const afterHeaders = await nativeLibraryHeaderEvidence(after,
+      { checkpointSha256: checkpoint.checkpointSha256, projectUuid: journal.plan.target.projectUuid });
     const recordsSha256 = libraryProjectRecordsHash(after);
-    if (checkpoint.checkpointDumpSha256 !== journal.preCheckpoint.checkpointDumpSha256 || recordsSha256 !== journal.beforeRecordsSha256) { throw new Error("Project-open proof changed SQLite tables or materialized document records."); }
+    if (checkpoint.checkpointDumpSha256 !== journal.preCheckpoint.checkpointDumpSha256 ||
+        libraryProjectRecordsHash(before) !== journal.beforeRecordsSha256 || recordsSha256 !== journal.beforeRecordsSha256 ||
+        beforeHeaders.contentSha256 !== afterHeaders.contentSha256) { throw new Error("Project-open proof changed SQLite tables or materialized document records."); }
     assertProjectOpenDatabaseUnchanged(await this.services.verifyCheckpoint(checkpoint.receiptPath,
       await this.services.checkpointPolicy(journal.plan.target.projectPath)), checkpoint);
     await this.unchanged(journal);
     journal.finalCheckpoint = checkpoint;
     return { sqliteDumpSha256: checkpoint.checkpointDumpSha256, recordsSha256, documentCount: after.documents.length,
       allSqliteTablesUnchanged: true, allSelectedBranchDocumentsUnchanged: true, baselineVerification: beforeCheck,
+      libraryHeaderEvidence: { before: beforeHeaders, after: afterHeaders, unchanged: true },
       checkpoint, scope: "Complete logical SQLite dump plus materialized selected-branch records. No unsaved-document equivalence or save is inferred." };
   }
   private async dispatch(journal: OpenJournal, phase: string, navigate: boolean): Promise<Value> {
     const fingerprint = journal.runtimeFingerprint ?? journal.plan.expectedFingerprint;
     const assetsRoot = await this.runtime(fingerprint);
     const prepared = await this.services.prepareRecoveryNavigation({ expectedContext: journal.plan.expectedContext,
-      preCheckpoint: journal.preCheckpoint, assetsRoot, navigation: { navigate, requireExclusiveTabs: true, requireEditorReadiness: navigate } });
+      preCheckpoint: journal.preCheckpoint, assetsRoot, libraryAtomHeaders: "preserve",
+      navigation: { navigate, requireExclusiveTabs: true, requireEditorReadiness: navigate } });
     if (canonicalJson(prepared.target) !== canonicalJson(journal.plan.target)) { throw new Error("Prepared project-open target differs from its sealed journal."); }
+    if (prepared.libraryHeaderEvidence === undefined || prepared.libraryHeaderEvidence.checkpointSha256 !== journal.preCheckpoint.checkpointSha256 ||
+        prepared.libraryHeaderEvidence.projectUuid !== journal.plan.target.projectUuid) { throw new Error("Prepared project opening lacks checkpoint-bound library header evidence."); }
     await this.unchanged(journal);
     journal.state = `${phase}-dispatching`; journal.hardStop = true;
     journal.nextSafeAction = "Await this single tracked navigation call; never retry an uncertain open.";
-    await this.record(journal, `${phase}-prepared`, { target: prepared.target, codeSha256: sha256Text(prepared.code), navigate });
+    await this.record(journal, `${phase}-prepared`, { target: prepared.target, codeSha256: sha256Text(prepared.code), navigate,
+      libraryHeaderEvidence: prepared.libraryHeaderEvidence });
     const result = extractToolPayload(await this.engine.dispatchWithOrphanTracking(journal, phase, "easyeda_execute",
       { code: prepared.code, timeoutMs: 60_000, confirmWrite: true }, 70_000));
     if (!isRecord(result) || result["ok"] !== true || result["schema"] !== "easyeda-pro-control.recovery-navigation.v1") { throw new Error("Project-open native acknowledgment is missing."); }
@@ -175,6 +191,7 @@ export class ProjectOpenExecutor {
     await this.runtime(input.expectedFingerprint);
     const checkpoint = await this.services.createCheckpoint({ source: target.projectPath, outputDir: join(controlDataDirectory(), "checkpoints"), label: "project-open-before" }, await this.services.checkpointPolicy(target.projectPath));
     const before = await this.readHistory(checkpoint, target);
+    const libraryHeaderEvidence = await nativeLibraryHeaderEvidence(before, { checkpointSha256: checkpoint.checkpointSha256, projectUuid: target.projectUuid });
     const context = targetContext(target);
     deriveRecoveryNavigationTarget(context, before);
     const operationId = newOperationId();
@@ -185,7 +202,8 @@ export class ProjectOpenExecutor {
       sequence: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), artifacts: [] };
     await this.services.createOperation(journal);
     try {
-      await this.record(journal, "before", { target, checkpoint, recordsSha256: journal.beforeRecordsSha256, documentCount: before.documents.length });
+      await this.record(journal, "before", { target, checkpoint, recordsSha256: journal.beforeRecordsSha256, documentCount: before.documents.length,
+        libraryHeaderEvidence });
       const native = await this.dispatch(journal, "project-open", true);
       journal.context = structuredClone(await this.engine.assertContext(context, { allowTabChange: true }));
       if (!isRecord(native["document"]) || native["document"]["tabId"] !== journal.context.document.tabId || typeof native["openedProject"] !== "boolean" || typeof native["openedDocument"] !== "boolean") { throw new Error("Project-open tab acknowledgment disagrees with the exact active context."); }

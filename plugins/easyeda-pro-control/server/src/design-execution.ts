@@ -58,6 +58,7 @@ import { DESIGN_SAVE_ATTEMPT_PROFILE, createDesignSaveIntent, createDesignSaveNo
 import type { DesignSaveIntent } from "./design-save-attempt.ts";
 import { assertFlatDisplayBinding, assertFlatDisplayInverse, flatDisplayOperation, prepareFlatDisplayProfile, verifyFlatDisplayMembershipTopology, verifyFlatDisplayObservation, verifyFlatDisplayPersistence } from "./flat-display-profile.ts";
 import type { FlatDisplayBinding } from "./flat-display-profile.ts";
+import { FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE, assertFlatDisplayLibraryPeers } from "./flat-display-library-peers.ts";
 import { observeSchematicFlatTopology } from "./schematic-flat-read.ts";
 import type { FlatDisplayObservationEvidence } from "./schematic-flat-read.ts";
 import type { FlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
@@ -455,6 +456,38 @@ function durableSnapshot(checkpoint: RecordValue, context: ExpectedContext): Pro
   return readNativeHistoryCheckpoint({ checkpointPath: checkpoint["checkpoint"], expectedSha256: checkpoint["checkpointSha256"], projectUuid });
 }
 
+/** Only the sealed display-only v2 journal may admit imported library peers.
+ * Every call rereads its original immutable checkpoint and proves the complete
+ * peer membership again. Other actions and historical v1 journals retain the
+ * strict reader, including library writes and generic recovery.
+ */
+async function journalDurableSnapshot(journal: DesignJournal, checkpoint: RecordValue = journal.preCheckpoint,
+  context: ExpectedContext = journal.context): Promise<NativeHistorySnapshot> {
+  if (journal.plan.flatDisplay?.profile !== FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE) { return durableSnapshot(checkpoint, context); }
+  const binding = assertFlatDisplayBinding(journal.plan.flatDisplay, journal.plan.operation, context);
+  const read = (receipt: RecordValue): Promise<NativeHistorySnapshot> => {
+    if (typeof receipt["checkpoint"] !== "string" || typeof receipt["checkpointSha256"] !== "string") {
+      throw new TypeError("Imported flat display lacks an exact immutable checkpoint.");
+    }
+    return readNativeHistoryCheckpoint({ checkpointPath: receipt["checkpoint"], expectedSha256: receipt["checkpointSha256"],
+      projectUuid: binding.project.projectUuid, libraryAtomHeaders: "preserve" });
+  };
+  const baseline = await read(journal.preCheckpoint);
+  if (baseline.checkpointSha256 !== binding.checkpoint.checkpointSha256 || baseline.semanticSha256 !== binding.checkpoint.historySemanticSha256) {
+    throw new Error("Imported flat display baseline differs from its sealed original checkpoint.");
+  }
+  assertFlatDisplayLibraryPeers(binding, baseline);
+  const current = checkpoint === journal.preCheckpoint ? baseline : await read(checkpoint);
+  assertFlatDisplayLibraryPeers(binding, current);
+  const members = new Map(binding.members.map((entry) => [entry.uuid, entry]));
+  if (current.projectUuid !== binding.project.projectUuid || current.projectOwnerUuid !== binding.project.ownerUuid || current.branchUuid !== binding.project.branchUuid ||
+      current.documents.length !== binding.members.length || current.documents.some((document) => {
+        const peer = members.get(document.uuid);
+        return peer?.docType !== document.docType || (document.uuid !== binding.pageUuid && peer.semanticSha256 !== document.semanticSha256);
+      })) { throw new Error("Imported flat display changed its sealed project or an immutable peer document."); }
+  return current;
+}
+
 /** One explicit typed operation per transaction. No caller code, auto-retry,
  * automatic save or silent rollback. Each effect gets independent source proof.
  */
@@ -534,6 +567,7 @@ export class DesignExecutor {
       schema: "easyeda-pro-control.flat-display-verification.v1", phase, operationId: journal.operationId, originalPlanHash: journal.planHash,
       flatBindingSha256: sha256Text(canonicalJson(binding)),
       checkpoint: evidence.checkpoint, projectBinding: evidence.projectBinding,
+      ...(evidence.libraryHeaderEvidence === undefined ? {} : { libraryHeaderEvidence: evidence.libraryHeaderEvidence }),
       observation: evidence.observation, observationSha256: sha256Text(canonicalJson(evidence.observation)),
       topologyProof: evidence.proof, compiledTopology: false, durability,
     });
@@ -593,7 +627,7 @@ export class DesignExecutor {
       throw new Error("Flat display durable classification lacks its exact original layout.");
     }
     return verifyFlatDisplayPersistence({ binding: assertFlatDisplayJournal(journal), operation: journal.plan.operation, context: journal.context,
-      baseline: await durableSnapshot(journal.preCheckpoint, journal.context), before: journal.before, beforeNative: journal.beforeNative,
+      baseline: await journalDurableSnapshot(journal), before: journal.before, beforeNative: journal.beforeNative,
       current: current.snapshot, currentNative: current.native, evidence, allowAfter });
   }
 
@@ -687,7 +721,7 @@ export class DesignExecutor {
 
   private static async layoutLifecycle(journal: DesignJournal, observed: DesignActionState, constructorWitness?: SchematicLayoutConstructorWitness): Promise<RecordValue> {
     if (journal.plan.operation.action !== "sch.layout.batch" || journal.createdIds === undefined) { throw new Error("Layout lifecycle lacks its retained typed operation and created IDs."); }
-    const baseline = await durableSnapshot(journal.preCheckpoint, journal.context);
+    const baseline = await journalDurableSnapshot(journal);
     const witness = constructorWitness ?? await DesignExecutor.layoutConstructorWitness(journal, baseline);
     return { ...(await verifyDesignActionCooperatively(compileDesignAction(journal.plan.operation),
       state(journal.before, journal.beforeNative, baseline, journal.context, journal.layoutTemplates, journal.layoutWireGroupRepair, witness), observed,
@@ -812,7 +846,7 @@ export class DesignExecutor {
       sequence: 0, createdAt: timestamp, updatedAt: timestamp, artifacts: [], before: before.snapshot,
       ...(targetId === undefined ? {} : { targetId }) };
     // Check that the raw-record effect profile is available before any mutation.
-    const baseline = await durableSnapshot(checkpoint, context);
+    const baseline = await journalDurableSnapshot(journal, checkpoint, context);
     const beforeState: DesignActionState = state(before.snapshot, before.native, baseline, context, layoutTemplates);
     await assertDesignActionSupportedCooperatively(operation, beforeState, targetId === undefined ? {} : { targetId });
     if (operation.action === "sch.layout.batch") { await yieldProofEventLoop(); }
@@ -940,10 +974,18 @@ export class DesignExecutor {
     assertSubset(status.stableFingerprint, fingerprint, "Recovery navigation runtime");
     const bundles = await this.engine.upstream.installedEasyedaBundles?.();
     if (bundles === undefined) { throw new Error("Installed navigation implementation identity is unavailable."); }
-    const prepared = await prepareRecoveryNavigation({ expectedContext: journal.plan.expectedContext, preCheckpoint: journal.preCheckpoint, assetsRoot: bundles.assetsRoot });
+    const importedPeers = journal.plan.flatDisplay?.profile === FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE;
+    if (importedPeers) { await journalDurableSnapshot(journal); }
+    const prepared = await prepareRecoveryNavigation({ expectedContext: journal.plan.expectedContext, preCheckpoint: journal.preCheckpoint,
+      assetsRoot: bundles.assetsRoot, ...(importedPeers ? { libraryAtomHeaders: "preserve" as const } : {}) });
+    if (importedPeers && (journal.plan.flatDisplay?.profile !== FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE ||
+        prepared.libraryHeaderEvidence?.contentSha256 !== journal.plan.flatDisplay.libraryHeaders.contentSha256)) {
+      throw new Error("Flat display recovery navigation lost its sealed imported library peers.");
+    }
     journal.state = "target-open-dispatching"; journal.hardStop = true;
     journal.nextSafeAction = "Await the single target-navigation request. Do not repeat an uncertain open.";
-    await DesignExecutor.artifact(journal, "target-open-prepared", { target: prepared.target, codeSha256: sha256Text(prepared.code) });
+    await DesignExecutor.artifact(journal, "target-open-prepared", { target: prepared.target, codeSha256: sha256Text(prepared.code),
+      ...(prepared.libraryHeaderEvidence === undefined ? {} : { libraryHeaderEvidence: prepared.libraryHeaderEvidence }) });
     try {
       const result = await this.engine.dispatchWithOrphanTracking(journal, "target-open", "easyeda_execute", { code: prepared.code, timeoutMs: 60_000, confirmWrite: true }, 70_000);
       await DesignExecutor.artifact(journal, "target-open-return", extractToolPayload(result));
@@ -1310,7 +1352,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
     await this.engine.awaitProjectUploads(journal.context, journal, "reconcile-upload-barrier");
     const current = await this.snapshot(journal.context);
     await DesignExecutor.verifyWireGroupRepairIntent(journal);
-    const baseline = await durableSnapshot(journal.preCheckpoint, journal.context);
+    const baseline = await journalDurableSnapshot(journal);
     const constructorWitness = await DesignExecutor.layoutConstructorWitness(journal, baseline);
     const beforeState = state(journal.before, journal.beforeNative, baseline, journal.context, journal.layoutTemplates, journal.layoutWireGroupRepair, constructorWitness);
     const currentState = state(current.snapshot, current.native);
@@ -1355,7 +1397,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path,
         outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-layout-retained-save-reconciled" });
       if (!("receiptPath" in checkpoint)) { throw new Error("Retained layout reconciliation checkpoint receipt missing."); }
-      const savedHistory = await durableSnapshot(checkpoint, journal.context);
+      const savedHistory = await journalDurableSnapshot(journal, checkpoint);
       const persistence = await verifySchematicLayoutPersistenceCooperatively(journal.plan.operation, { before: beforeState.history,
         after: savedHistory, expectedBefore: journal.before, expectedAfter: current.snapshot,
         beforeNative: journal.beforeNative, afterNative: current.native }, journal.createdIds,
@@ -1411,8 +1453,8 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path,
         outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-design-reconciled-before" });
       if (!("receiptPath" in checkpoint)) { throw new Error("Reconciliation checkpoint receipt missing."); }
-      const recoveryPersistenceInput = { before: await durableSnapshot(journal.preCheckpoint, journal.context),
-        after: await durableSnapshot(checkpoint, journal.context), expectedBefore: journal.before, expectedAfter: current.snapshot,
+      const recoveryPersistenceInput = { before: await journalDurableSnapshot(journal),
+        after: await journalDurableSnapshot(journal, checkpoint), expectedBefore: journal.before, expectedAfter: current.snapshot,
         ...(journal.beforeNative === undefined || current.native === undefined ? {} : { beforeNative: journal.beforeNative, afterNative: current.native }) };
       let persistence: RecordValue;
       if (journal.plan.flatDisplay === undefined) { persistence = journal.context.document.documentType === 4 ? verifyFootprintEmptyNetPersistence(recoveryPersistenceInput) : verifyDesignPersistence(recoveryPersistenceInput); }
@@ -1588,7 +1630,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       await this.engine.awaitProjectUploads(context, journal, "commit-upload-barrier");
       const checkpoint = await this.engine.checkpoint({ source: context.project.path, outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-design-committed" });
       if (!("receiptPath" in checkpoint)) { throw new Error("Committed checkpoint receipt missing."); }
-      const persistenceInput = { before: await durableSnapshot(journal.preCheckpoint, context), after: await durableSnapshot(checkpoint, context),
+      const persistenceInput = { before: await journalDurableSnapshot(journal, journal.preCheckpoint, context), after: await journalDurableSnapshot(journal, checkpoint, context),
         expectedBefore: journal.before, expectedAfter: journal.plan.operation.action === "pcb.pour.rebuild" ? journal.after : reopened.snapshot,
         ...(journal.beforeNative === undefined || reopened.native === undefined ? {} : { beforeNative: journal.beforeNative, afterNative: reopened.native }) };
       let persistence: ReturnType<typeof verifyDesignPersistence>;
@@ -1722,7 +1764,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       assertFlatDisplayInverse(journal.plan.flatDisplay, journal.inverse);
     }
     const inverseTarget = "target" in journal.inverse && "primitiveId" in journal.inverse.target ? journal.inverse.target.primitiveId : undefined;
-    const prepared = await prepareDesignActionCooperatively(journal.inverse, state(current.snapshot, current.native, await durableSnapshot(journal.preCheckpoint, journal.context), journal.context), inverseTarget === undefined ? {} : { targetId: inverseTarget }, flatGuard);
+    const prepared = await prepareDesignActionCooperatively(journal.inverse, state(current.snapshot, current.native, await journalDurableSnapshot(journal), journal.context), inverseTarget === undefined ? {} : { targetId: inverseTarget }, flatGuard);
     try {
       journal.inverseAttempted = true;
       await DesignExecutor.artifact(journal, "design-inverse-intent", { operationId: journal.operationId, originalPlanHash: journal.planHash,
@@ -1740,7 +1782,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       }
       const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-design-rolled-back" });
       if (!("receiptPath" in checkpoint)) { throw new Error("Rollback checkpoint receipt missing; durable restoration is unverified."); }
-      const persistenceInput = { before: await durableSnapshot(journal.preCheckpoint, journal.context), after: await durableSnapshot(checkpoint, journal.context),
+      const persistenceInput = { before: await journalDurableSnapshot(journal), after: await journalDurableSnapshot(journal, checkpoint),
         expectedBefore: journal.before, expectedAfter: restored.snapshot,
         ...(journal.beforeNative === undefined || restored.native === undefined ? {} : { beforeNative: journal.beforeNative, afterNative: restored.native }) };
       let persistence: RecordValue;

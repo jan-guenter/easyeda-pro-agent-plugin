@@ -30,6 +30,17 @@ the complete original baseline or the exact intended delta, including all peers.
 An attempted Save is never repeated. Page-loading and historical repair routes
 cannot recover this profile; inspect the original journal after a refusal.
 
+Imported library history has a separate source-candidate profile. Legacy
+`flat-display-transaction.v1` remains strict. The maintained reader can select
+sealed v2 only from a freshly verified checkpoint containing supported
+SYMBOL/FOOTPRINT `firstTicket` headers. The allowed display operations do not
+expand. All imported peer bodies and their complete ordered header histories,
+including tombstones and raw encodings, must remain unchanged through apply,
+inverse, Save/reopen and reconciliation. Compaction or a header-only change
+refuses even when the final component geometry appears identical. Do not strip
+fields, supply a profile override or substitute the public diagnostic result.
+See [imported library provenance](persistence-and-checkpoints.md#imported-library-provenance).
+
 Saved records and native exports are different representations. The flat-only
 comparison preserves saved META exactly, permits only a source-only default
 origin CANVAS, and proves the reviewed frame/attribute initialization encodings.
@@ -48,6 +59,11 @@ without another inverse or Save.
 
 This profile has source and adversarial offline tests. Successful connected
 apply/Save/reopen and inverse validation remain pending for the new candidate.
+The imported-peer v2 implementation has only offline evidence and is absent from
+installed `0.3.0+codex.20261011071500`. The original disposable import-only
+checkpoint contains library assets but no placed electrical component: one Paste
+left the page unchanged, Escape ended placement and no Save followed. Do not
+repeat Paste or claim nonempty-topology or v2 writer validation from that state.
 Installed210100 reconciled the earlier single-text effect and dispatched one
 inverse. Exact live restoration preceded durable restoration by several minutes;
 the immediate rollback correctly stopped. This is delayed-persistence evidence,

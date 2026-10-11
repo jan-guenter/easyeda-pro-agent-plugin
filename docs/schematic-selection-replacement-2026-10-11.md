@@ -66,8 +66,24 @@ snapshot, connectivity proof or persistence proof. Selection changes that
 return to the same state between checks remain undetectable. No private bus,
 selection writer, navigation, compiler, serialization or Save is introduced.
 
-Offline replay and coordinator tests are not connected execution of the new
-adapter. Coverage retains `not-recorded` current-generation live validation.
+Offline replay and coordinator tests alone do not establish connected execution.
+The installed-generation observation below is narrower than the full contract;
+coverage for an untested later generation remains unclaimed.
+
+## Installed071500 disposable validation
+
+With one ordinary resistor selected through the observed native UI, both the
+modern public getter and the explicit deprecated-name adapter returned its
+exact stored component ID in two matching samples. Complete native snapshots,
+observed context, all 18 saved documents, 383 materialized records and the full
+logical SQLite dump stayed unchanged. Normal application close preserved the
+source-file hash. No design edit, Copy/Paste or Save was performed.
+
+The independently reviewed immutable-evidence audit is SHA-256
+`c707a4f08cc9287a93ce753ea68c7bfedea264b2c87f6c46d55e09844364fadc`,
+bound to installed `0.3.0+codex.20261011071500`. It validates this adapter on
+one selected ordinary component, not the deprecated public method body, line
+parent promotion, symbol/block selection, complete ownership or a later build.
 
 ## Separate project-open failure
 

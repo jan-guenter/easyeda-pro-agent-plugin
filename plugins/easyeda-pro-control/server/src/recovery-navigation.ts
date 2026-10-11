@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- Navigation composes existing receipt, history and native-profile guards with imported-header evidence. */
 import { dirname, join } from "node:path";
 import { z } from "zod";
 import { controlDataDirectory, controlRootCapability } from "./artifacts.ts";
@@ -9,6 +10,8 @@ import type { NativeHistorySnapshot } from "./native-history.ts";
 import { verifyLibraryNativeProfile } from "./library-native-profile.ts";
 import { DEVICE_NATIVE_HOST_GUARD } from "./device-runtime-guard.ts";
 import { RECOVERY_NAVIGATION_FAILURE_STAGES } from "./native-diagnostics.ts";
+import { nativeLibraryHeaderEvidence } from "./native-library-header-evidence.ts";
+import type { NativeLibraryHeaderEvidence } from "./native-library-header-evidence.ts";
 
 const PROFILE = "easyeda-pro-control.recovery-navigation.v1";
 const checkpointBindingSchema = z.object({ schema: z.literal("easyeda-pro-control.checkpoint.v2"), source: z.string().min(1).max(4096),
@@ -59,12 +62,19 @@ export async function prepareRecoveryNavigation(input: {
   readonly preCheckpoint: unknown;
   readonly assetsRoot: string;
   readonly navigation?: Omit<RecoveryNavigationOptions, "checkpointProjectOwnerUuid">;
-}): Promise<{ readonly target: RecoveryNavigationTarget; readonly code: string; readonly checkpointSha256: string }> {
-  await verifyLibraryNativeProfile(input.assetsRoot);
+  /** Exact unchanged-project opening or sealed display-only imported-peer recovery. */
+  readonly libraryAtomHeaders?: "preserve";
+}): Promise<{ readonly target: RecoveryNavigationTarget; readonly code: string; readonly checkpointSha256: string;
+  readonly libraryHeaderEvidence?: NativeLibraryHeaderEvidence }> {
+  const captured = structuredClone(input), libraryAtomHeaders = captured.libraryAtomHeaders;
+  if (libraryAtomHeaders === "preserve" && ![1, 3].includes(captured.expectedContext.document.documentType)) {
+    throw new Error("Imported library history is only admitted by unchanged-project navigation, not library recovery.");
+  }
+  await verifyLibraryNativeProfile(captured.assetsRoot);
   // This projection is only the sealed-journal binding. verifyCheckpoint below
   // Validates the complete on-disk receipt, file identities and content hashes.
-  const preCheckpoint = checkpointBindingSchema.parse(input.preCheckpoint);
-  const source = normalizeEasyedaProjectPath(input.expectedContext.project.path);
+  const preCheckpoint = checkpointBindingSchema.parse(captured.preCheckpoint);
+  const source = normalizeEasyedaProjectPath(captured.expectedContext.project.path);
   if (normalizeEasyedaProjectPath(preCheckpoint.source) !== source) {
     throw new Error("Recovery navigation checkpoint belongs to another saved path.");
   }
@@ -78,18 +88,22 @@ export async function prepareRecoveryNavigation(input: {
       normalizeEasyedaProjectPath(verified.source) !== source) {
     throw new Error("Recovery navigation retained checkpoint verification failed.");
   }
-  const projectUuid = input.expectedContext.project.uuid ?? input.expectedContext.project.projectUuid;
+  const projectUuid = captured.expectedContext.project.uuid ?? captured.expectedContext.project.projectUuid;
   if (projectUuid === undefined) { throw new Error("Recovery navigation project identity is missing."); }
   const checkpoint = await readNativeHistoryCheckpoint({ checkpointPath: verified.checkpoint,
-    expectedSha256: verified.checkpointSha256, projectUuid });
-  const target = deriveRecoveryNavigationTarget(input.expectedContext, checkpoint);
+    expectedSha256: verified.checkpointSha256, projectUuid,
+    ...(libraryAtomHeaders === "preserve" ? { libraryAtomHeaders: "preserve" as const } : {}) });
+  const libraryHeaderEvidence = libraryAtomHeaders === "preserve" ? await nativeLibraryHeaderEvidence(checkpoint,
+    { checkpointSha256: verified.checkpointSha256, projectUuid }) : undefined;
+  const target = deriveRecoveryNavigationTarget(captured.expectedContext, checkpoint);
   const navigation: RecoveryNavigationOptions = {
-    ...(input.navigation?.navigate === undefined ? {} : { navigate: input.navigation.navigate }),
-    ...(input.navigation?.requireExclusiveTabs === undefined ? {} : { requireExclusiveTabs: input.navigation.requireExclusiveTabs }),
-    ...(input.navigation?.requireEditorReadiness === undefined ? {} : { requireEditorReadiness: input.navigation.requireEditorReadiness }),
+    ...(captured.navigation?.navigate === undefined ? {} : { navigate: captured.navigation.navigate }),
+    ...(captured.navigation?.requireExclusiveTabs === undefined ? {} : { requireExclusiveTabs: captured.navigation.requireExclusiveTabs }),
+    ...(captured.navigation?.requireEditorReadiness === undefined ? {} : { requireEditorReadiness: captured.navigation.requireEditorReadiness }),
     ...(checkpoint.projectOwnerUuid === undefined ? {} : { checkpointProjectOwnerUuid: checkpoint.projectOwnerUuid }),
   };
-  return { target, code: buildRecoveryNavigationCode(target, navigation), checkpointSha256: verified.checkpointSha256 };
+  return { target, code: buildRecoveryNavigationCode(target, navigation), checkpointSha256: verified.checkpointSha256,
+    ...(libraryHeaderEvidence === undefined ? {} : { libraryHeaderEvidence }) };
 }
 
 /** Fixed DMT navigation only. The caller dispatches this through retained Job +

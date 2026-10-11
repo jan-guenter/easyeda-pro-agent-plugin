@@ -46,6 +46,11 @@ adapter. It uses the documented modern getter under ordinary-page checks and
 never calls the obsolete iframe path that can silently report no selection.
 Returned wire-segment selections retain the replacement's parent-group IDs.
 
+Installed `071500` passed scoped disposable checks for active Top Layer,
+ComponentPad/Via net membership and one selected ordinary component, preserving
+complete native and saved-project state. These cases do not validate other
+primitive families or admit a later facade build.
+
 The inventory also maps the existing visible-canvas image and region-zoom
 workflows. Capture rechecks the complete runtime fingerprint before accepting
 managed PNG evidence. This is viewport evidence, not design-state or visual
@@ -64,7 +69,12 @@ diagnostic avoids the mutating netlist exporter. A separate sealed single-page
 profile admits only existing stored attribute/text display patches, with exact
 inverse, endpoint and whole-project persistence checks. It does not re-enable
 electrical edits or historical compiled transactions; connected lifecycle testing
-of this new source is pending. The `202803` disposable text edit reached the intended
+of this new source is pending. Imported library atom provenance has a separate
+sealed v2 profile: unchanged SYMBOL/FOOTPRINT peers retain every header occurrence,
+raw encoding and tombstone across the lifecycle. Default parsing and legacy v1
+remain strict. See the [imported-library contract](docs/native-library-import-history-2026-10-11.md)
+and [release evidence](docs/imported-library-peers-release-2026-10-11.md).
+The `202803` disposable text edit reached the intended
 state but stopped before Save on a raw source-format comparison defect. Installed
 `210100` recovered that journal after one inverse and delayed native persistence,
 with complete nine-document restoration proof and no Save. This does not validate

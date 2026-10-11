@@ -17,6 +17,8 @@ import { buildFlatDisplayProjectGuardExpression, flatDisplayProjectBindingFromHi
 import type { FlatDisplayProjectBinding } from "./flat-display-binding.ts";
 import { wrapWithContextGuard } from "./runtime-scripts.ts";
 import { assertUnchangedLibraryCheckpoint } from "./library-checkpoint.ts";
+import { nativeLibraryHeaderEvidence } from "./native-library-header-evidence.ts";
+import type { NativeLibraryHeaderEvidence } from "./native-library-header-evidence.ts";
 
 const services = { readNativeHistoryCheckpoint, verifySchematicNativeProfile, verifyDeviceAssociationNativeProfile };
 type Host = Pick<EasyedaControlEngine, "assertBridgeDispatchAllowed" | "assertContext" | "checkpoint" | "upstream">;
@@ -32,6 +34,7 @@ export interface SchematicFlatObservationEvidence {
   readonly proof: SchematicFlatTopologyProof;
   readonly checkpoint: CheckpointReceipt;
   readonly history: NativeHistorySnapshot;
+  readonly libraryHeaderEvidence?: NativeLibraryHeaderEvidence;
 }
 export interface FlatDisplayObservationEvidence extends SchematicFlatObservationEvidence {
   readonly projectBinding: FlatDisplayProjectBinding;
@@ -43,7 +46,8 @@ export interface FlatDisplayObservationEvidence extends SchematicFlatObservation
  */
 async function captureSchematicFlatTopology(engine: Host, expectedContext: ExpectedContext,
   overrides: Partial<typeof services>, bindProject: boolean): Promise<SchematicFlatObservationEvidence & { readonly projectBinding?: FlatDisplayProjectBinding }> {
-  if (expectedContext.document.documentType !== 1) { throw new Error("Flat topology requires an active schematic page."); }
+  const capturedContext = structuredClone(expectedContext);
+  if (capturedContext.document.documentType !== 1) { throw new Error("Flat topology requires an active schematic page."); }
   const dependencies = { ...services, ...overrides };
   await engine.assertBridgeDispatchAllowed();
   const bundles = await engine.upstream.installedEasyedaBundles?.();
@@ -53,7 +57,7 @@ async function captureSchematicFlatTopology(engine: Host, expectedContext: Expec
     await dependencies.verifyDeviceAssociationNativeProfile(bundles.assetsRoot);
   };
   await profile();
-  const context = await engine.assertContext(structuredClone(expectedContext));
+  const context = await engine.assertContext(capturedContext);
   const outputDir = join(controlDataDirectory(), "checkpoints");
   const checkpoint = checkpointSchema.parse(await engine.checkpoint({ source: context.project.path,
     outputDir, label: "flat-topology-membership" }));
@@ -65,8 +69,9 @@ async function captureSchematicFlatTopology(engine: Host, expectedContext: Expec
   const projectUuid = context.project.uuid ?? context.project.projectUuid;
   if (typeof projectUuid !== "string") { throw new TypeError("Flat topology project identity is absent."); }
   const history = await dependencies.readNativeHistoryCheckpoint({ checkpointPath: checkpoint.checkpoint,
-    expectedSha256: checkpoint.checkpointSha256, projectUuid });
+    expectedSha256: checkpoint.checkpointSha256, projectUuid, libraryAtomHeaders: "preserve" });
   if (history.checkpointSha256 !== checkpoint.checkpointSha256) { throw new Error("Flat topology history substituted its checkpoint identity."); }
+  const libraryHeaderEvidence = await nativeLibraryHeaderEvidence(history, { checkpointSha256: checkpoint.checkpointSha256, projectUuid });
   const binding = deriveSchematicLayoutPageLoadScope(context, history);
   const scope = { projectUuid: binding.projectUuid, schematicUuid: binding.schematicUuid,
     activePageUuid: binding.activePageUuid, activeTabId: binding.activeTabId, pageIds: binding.pageUuids };
@@ -112,7 +117,9 @@ return envelope;`, context);
   await unchanged();
   await engine.assertContext(context);
   if (canonicalJson(first.proof) !== canonicalJson(second.proof)) { throw new Error("Flat topology changed between complete observations."); }
-  return { ...second, checkpoint, history, ...(projectBinding === undefined ? {} : { projectBinding }) };
+  return { ...second, checkpoint, history,
+    ...(libraryHeaderEvidence.documents.length === 0 ? {} : { libraryHeaderEvidence }),
+    ...(projectBinding === undefined ? {} : { projectBinding }) };
 }
 
 /** Private transaction evidence, not an execution grant. Profile preparation
@@ -132,6 +139,7 @@ export async function readSchematicFlatTopology(engine: Host, expectedContext: E
   const observed = await captureSchematicFlatTopology(engine, expectedContext, overrides, false);
   const result = { ok: true, kind: "schematic-flat-topology", documentType: 1, ...observed.proof,
     membership: { source: "complete-project-checkpoint", checkpointSha256: observed.checkpoint.checkpointSha256, receiptPath: observed.checkpoint.receiptPath },
+    ...(observed.libraryHeaderEvidence === undefined ? {} : { libraryHeaderEvidence: observed.libraryHeaderEvidence }),
     currentGenerationLiveValidated: false, transactionTopology: false };
   return { ...result, read_consistency: { stable: true, attempts: 2, snapshotSha256: sha256Json(result),
     contextBinding: { level: "active-context-stability-required", preAndPostChecked: true, switchAwayAndBackDetectable: false } } };

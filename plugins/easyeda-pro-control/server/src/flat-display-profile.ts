@@ -18,9 +18,11 @@ import { FLAT_DISPLAY_TRANSACTION_PROFILE, assertFlatDisplayBinding, flatDisplay
 import type { FlatDisplayBinding } from "./flat-display-binding.ts";
 import { verifySchematicStoragePersistence } from "./schematic-storage-persistence.ts";
 import { verifyFlatDisplayMaterialization } from "./flat-display-storage.ts";
+import { FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE, assertFlatDisplayLibraryPeers, assertFlatDisplayLibrarySummary, captureFlatDisplayHistory, flatDisplayLibrarySeal } from "./flat-display-library-peers.ts";
 
 export { FLAT_DISPLAY_TRANSACTION_PROFILE, assertFlatDisplayBinding, assertFlatDisplayInverse, buildFlatDisplayProjectGuardExpression, flatDisplayOperation, flatDisplayProjectBindingFromHistory } from "./flat-display-binding.ts";
 export type { FlatDisplayBinding, FlatDisplayProjectBinding } from "./flat-display-binding.ts";
+export { FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE } from "./flat-display-library-peers.ts";
 
 export interface PreparedFlatDisplayProfile {
   readonly binding: FlatDisplayBinding;
@@ -31,6 +33,11 @@ export interface PreparedFlatDisplayProfile {
   readonly baselineProof: Readonly<Record<string, unknown>>;
 }
 const same = (left: unknown, right: unknown): boolean => canonicalJson(left) === canonicalJson(right);
+
+function captureEvidence(evidence: FlatDisplayObservationEvidence): FlatDisplayObservationEvidence {
+  const { history, ...rest } = evidence;
+  return { ...structuredClone(rest), history: captureFlatDisplayHistory(history) };
+}
 
 function exactMembers(history: NativeHistorySnapshot): FlatDisplayBinding["members"] {
   return history.documents.map(({ uuid, docType, semanticSha256 }) => ({ uuid, docType, semanticSha256 })).toSorted((left, right) => left.uuid.localeCompare(right.uuid));
@@ -67,6 +74,7 @@ function evidenceState(evidence: FlatDisplayObservationEvidence, context: Expect
   source: NativeSourceSnapshot; native: SchematicNativeSnapshot; schematicUuid: string;
 } {
   const contextBinding = flatDisplayContextScope(context), { checkpoint, history, observation } = evidence;
+  assertFlatDisplayLibrarySummary(history, evidence.libraryHeaderEvidence, checkpoint.checkpointSha256);
   // The maintained observer verifies each file's own receipt hash and identity.
   // SQLite backup preserves logical contents, not necessarily source file bytes.
   if (checkpoint.schema !== "easyeda-pro-control.checkpoint.v2" || normalizeEasyedaProjectPath(checkpoint.source) !== contextBinding.projectPath ||
@@ -114,7 +122,8 @@ function evidenceState(evidence: FlatDisplayObservationEvidence, context: Expect
  */
 export async function prepareFlatDisplayProfile(input: { readonly operation: unknown; readonly context: ExpectedContext;
   readonly evidence: FlatDisplayObservationEvidence; readonly native: unknown }): Promise<PreparedFlatDisplayProfile> {
-  const captured = structuredClone(input), operation = flatDisplayOperation(captured.operation);
+  const captured = { ...structuredClone({ ...input, evidence: undefined }), evidence: captureEvidence(input.evidence) };
+  const operation = flatDisplayOperation(captured.operation);
   const { source, native, schematicUuid } = evidenceState(captured.evidence, captured.context, captured.native);
   const { history, checkpoint, proof } = captured.evidence;
   const baselineProof = await verifyFlatDisplayMaterialization({ history, source, native });
@@ -126,7 +135,9 @@ export async function prepareFlatDisplayProfile(input: { readonly operation: unk
   }
   flatDisplayOperation(inverse);
   const contextBinding = flatDisplayContextScope(captured.context);
-  const binding = bindingSchema.parse({ profile: FLAT_DISPLAY_TRANSACTION_PROFILE, project: captured.evidence.projectBinding,
+  const libraryHeaders = flatDisplayLibrarySeal(history);
+  const binding = bindingSchema.parse({ profile: libraryHeaders === undefined ? FLAT_DISPLAY_TRANSACTION_PROFILE : FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE,
+    ...(libraryHeaders === undefined ? {} : { libraryHeaders }), project: captured.evidence.projectBinding,
     projectPath: contextBinding.projectPath, schematicUuid, pageUuid: contextBinding.pageUuid, tabId: contextBinding.tabId,
     operationSha256: sha256Json(operation), inverseSha256: sha256Json(inverse), checkpoint: { receiptPath: checkpoint.receiptPath,
       receiptSha256: checkpoint.receiptSha256, checkpointSha256: checkpoint.checkpointSha256, sourceSha256: checkpoint.sourceSha256,
@@ -171,6 +182,7 @@ export function verifyFlatDisplayMembershipTopology(bindingInput: unknown, opera
 }
 
 function verifyMembershipTopology(binding: FlatDisplayBinding, evidence: FlatDisplayObservationEvidence, schematicUuid: string): void {
+  assertFlatDisplayLibraryPeers(binding, evidence.history);
   if (!same(binding.project, evidence.projectBinding) || schematicUuid !== binding.schematicUuid) {
     throw new Error("Flat display lifecycle project branch or schematic changed.");
   }
@@ -193,9 +205,11 @@ export async function verifyFlatDisplayPersistence(input: {
   readonly current: NativeSourceSnapshot; readonly currentNative: SchematicNativeSnapshot;
   readonly evidence: FlatDisplayObservationEvidence; readonly allowAfter: boolean;
 }): Promise<Readonly<Record<string, unknown>>> {
-  const captured = structuredClone(input);
+  const captured = { ...structuredClone({ ...input, baseline: undefined, evidence: undefined }),
+    baseline: captureFlatDisplayHistory(input.baseline), evidence: captureEvidence(input.evidence) };
   const binding = assertFlatDisplayBinding(captured.binding, captured.operation, captured.context);
   const operation = flatDisplayOperation(captured.operation);
+  assertFlatDisplayLibraryPeers(binding, captured.baseline);
   if (captured.baseline.checkpointSha256 !== binding.checkpoint.checkpointSha256 || captured.baseline.semanticSha256 !== binding.checkpoint.historySemanticSha256 ||
       !same(flatDisplayProjectBindingFromHistory(captured.baseline), binding.project) || !same(exactMembers(captured.baseline), binding.members) ||
       captured.before.sha256 !== binding.before.sourceSha256 || schematicNativeSnapshotHash(captured.beforeNative) !== binding.before.nativeSha256 ||

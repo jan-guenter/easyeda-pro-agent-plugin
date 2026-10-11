@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "85eae278eb18d43317c36fc8033b0d72260349b9d778894479d19c4995b1f283";
+const __easyedaBundlePairId = "c82d70cc674e5d531a2837f4168fe53bdfbb1dc53d3a8973fa363f9958dc7c29";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -24871,10 +24871,10 @@ var require_util = __commonJS({
     var codegen_1 = require_codegen();
     var code_1 = require_code();
     function toHash(arr) {
-      const hash13 = {};
+      const hash14 = {};
       for (const item2 of arr)
-        hash13[item2] = true;
-      return hash13;
+        hash14[item2] = true;
+      return hash14;
     }
     exports2.toHash = toHash;
     function alwaysValidSchema(it, schema) {
@@ -35933,7 +35933,7 @@ async function hashManagedJsonFile(path5, label) {
     const before = await opened.handle.stat();
     assertFileStayedUnchanged(opened.info, before, label);
     assertManagedJsonByteLimit(before.size, label);
-    const hash13 = createHash3("sha256");
+    const hash14 = createHash3("sha256");
     const buffer = Buffer.alloc(Math.min(1024 * 1024, before.size + 1));
     let total = 0;
     while (total <= before.size) {
@@ -35943,7 +35943,7 @@ async function hashManagedJsonFile(path5, label) {
         break;
       }
       total += bytesRead;
-      hash13.update(buffer.subarray(0, bytesRead));
+      hash14.update(buffer.subarray(0, bytesRead));
     }
     const after = await opened.handle.stat();
     assertFileStayedUnchanged(before, after, label);
@@ -35952,7 +35952,7 @@ async function hashManagedJsonFile(path5, label) {
       throw new Error(`${label} changed while it was being read.`);
     }
     await assertManagedFilePathCurrent(opened.absolute, opened.directory, after, label);
-    return { bytes: total, sha256: hash13.digest("hex") };
+    return { bytes: total, sha256: hash14.digest("hex") };
   } finally {
     await closeManagedFile(opened);
   }
@@ -35986,7 +35986,7 @@ async function hashOpenManagedAttachment(opened, label) {
   const { handle } = opened;
   await handle.sync();
   const before = await handle.stat();
-  const hash13 = createHash3("sha256");
+  const hash14 = createHash3("sha256");
   let bytesRead = 0;
   for await (const chunk of handle.createReadStream({
     autoClose: false,
@@ -35997,7 +35997,7 @@ async function hashOpenManagedAttachment(opened, label) {
       throw new TypeError("Evidence stream yielded a non-buffer chunk.");
     }
     bytesRead += chunk.length;
-    hash13.update(chunk);
+    hash14.update(chunk);
   }
   const after = await handle.stat();
   assertFileStayedUnchanged(before, after, label);
@@ -36008,7 +36008,7 @@ async function hashOpenManagedAttachment(opened, label) {
   return {
     path: opened.absolute,
     bytes: after.size,
-    sha256: hash13.digest("hex"),
+    sha256: hash14.digest("hex"),
     mtimeMs: after.mtimeMs,
     identity: {
       device: String(after.dev),
@@ -37608,7 +37608,7 @@ async function readStableText(file2, label) {
 }
 async function sha256Handle(handle, label) {
   const before = await handle.stat({ bigint: true });
-  const hash13 = createHash4("sha256");
+  const hash14 = createHash4("sha256");
   const buffer = Buffer.allocUnsafe(1024 * 1024);
   let position = 0;
   while (true) {
@@ -37621,12 +37621,12 @@ async function sha256Handle(handle, label) {
     if (bytesRead === 0) {
       break;
     }
-    hash13.update(buffer.subarray(0, bytesRead));
+    hash14.update(buffer.subarray(0, bytesRead));
     position += bytesRead;
   }
   const after = await handle.stat({ bigint: true });
   assertStableFile(before, after, label);
-  return { info: after, sha256: hash13.digest("hex") };
+  return { info: after, sha256: hash14.digest("hex") };
 }
 async function trustedSqliteBinary() {
   for (const candidate of SQLITE_BINARY_CANDIDATES) {
@@ -37706,7 +37706,7 @@ async function runSqliteDump(handle, options = {}) {
       }
       callback();
     };
-    const fail8 = (error51) => {
+    const fail9 = (error51) => {
       finish(() => {
         reject(error51 instanceof Error ? error51 : new Error(errorMessage(error51)));
       });
@@ -37716,7 +37716,7 @@ async function runSqliteDump(handle, options = {}) {
         return;
       }
       child.kill("SIGKILL");
-      fail8(new Error(message));
+      fail9(new Error(message));
     };
     timerState.value = setTimeout(() => {
       abort(`${command} timed out after ${timeoutMs} ms.`);
@@ -37737,7 +37737,7 @@ async function runSqliteDump(handle, options = {}) {
         stderr.push(chunk);
       }
     });
-    child.once("error", fail8);
+    child.once("error", fail9);
     child.once("close", (code, signal) => {
       if (settled) {
         return;
@@ -37747,7 +37747,7 @@ async function runSqliteDump(handle, options = {}) {
           resolve11(Buffer.concat(stdout));
         });
       } else {
-        fail8(
+        fail9(
           new Error(
             `${command} failed (${code ?? signal}): ${Buffer.concat(stderr).toString("utf8").trim()}`
           )
@@ -38335,15 +38335,178 @@ var init_cooperative_proof = __esm({
   }
 });
 
+// server/src/native-atom-header-history.ts
+import { createHash as createHash5 } from "node:crypto";
+function fail() {
+  throw new Error("Unsupported or mismatched native library atom-header provenance.");
+}
+function appendJsonChildren(value, depth, pending) {
+  const array2 = Array.isArray(value);
+  const prototype = Object.getPrototypeOf(value);
+  if (array2 && prototype !== Array.prototype || !array2 && prototype !== Object.prototype && prototype !== null) {
+    fail();
+  }
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  const keys2 = Reflect.ownKeys(descriptors);
+  if (array2) {
+    const length = descriptors["length"]?.value;
+    if (typeof length !== "number" || !Number.isSafeInteger(length) || length < 0 || length > MAX_OCCURRENCES || keys2.length !== length + 1) {
+      fail();
+    }
+  }
+  for (const key of keys2) {
+    if (typeof key !== "string" || ["__proto__", "constructor", "prototype"].includes(key)) {
+      fail();
+    }
+    const descriptor = descriptors[key];
+    if (descriptor === void 0 || !Object.hasOwn(descriptor, "value")) {
+      fail();
+    }
+    if (!(array2 && key === "length")) {
+      if (descriptor.enumerable !== true || array2 && !/^(?:0|[1-9][0-9]*)$/u.test(key)) {
+        fail();
+      }
+      const child = descriptor.value;
+      pending.push({ value: child, depth: depth + 1 });
+    }
+  }
+}
+function requireJsonData(value) {
+  const pending = [{ value, depth: 0 }];
+  const seen = /* @__PURE__ */ new Set();
+  let nodes = 0;
+  while (pending.length > 0) {
+    const item2 = pending.pop();
+    nodes += 1;
+    if (item2 === void 0 || item2.depth > 5 || nodes > MAX_OCCURRENCES * 16 + 32) {
+      fail();
+    }
+    if (typeof item2.value === "number") {
+      if (!Number.isFinite(item2.value) || Object.is(item2.value, -0)) {
+        fail();
+      }
+    } else if (item2.value !== null && typeof item2.value === "object") {
+      if (seen.has(item2.value)) {
+        fail();
+      }
+      seen.add(item2.value);
+      appendJsonChildren(item2.value, item2.depth, pending);
+    } else if (item2.value !== null && typeof item2.value !== "string" && typeof item2.value !== "boolean") {
+      fail();
+    }
+  }
+}
+function* createNativeAtomHeaderHistorySteps(binding2, occurrences) {
+  requireJsonData(binding2);
+  const parsedBinding = bindingSchema.safeParse(binding2);
+  const occurrenceCount = occurrences.length;
+  if (!parsedBinding.success || occurrenceCount === 0 || occurrenceCount > MAX_OCCURRENCES) {
+    fail();
+  }
+  const capturedBinding = Object.freeze(parsedBinding.data);
+  const hash14 = createHash5("sha256");
+  const retained = [];
+  let previous;
+  let hasFirstTicket = false;
+  let batchRecords = 0;
+  let batchBytes = 0;
+  for (let index = 0; index < occurrenceCount; index += 1) {
+    if (occurrences.length !== occurrenceCount) {
+      fail();
+    }
+    const occurrence = occurrences[index];
+    requireJsonData(occurrence);
+    const parsedOccurrence = occurrenceSchema.safeParse(occurrence);
+    if (!parsedOccurrence.success) {
+      fail();
+    }
+    const captured = Object.freeze(parsedOccurrence.data);
+    if (previous !== void 0 && (captured.chunkIndex < previous.chunkIndex || captured.chunkIndex === previous.chunkIndex && captured.recordIndex <= previous.recordIndex)) {
+      fail();
+    }
+    retained.push(captured);
+    hasFirstTicket ||= Object.hasOwn(captured, "serializedFirstTicket");
+    const encoded = canonicalJson(captured);
+    hash14.update(encoded).update("\n");
+    previous = captured;
+    batchRecords += 1;
+    batchBytes += Buffer.byteLength(encoded);
+    if (batchRecords >= HASH_BATCH_RECORDS || batchBytes >= HASH_BATCH_BYTES) {
+      batchRecords = 0;
+      batchBytes = 0;
+      yield;
+    }
+  }
+  if (!hasFirstTicket || occurrences.length !== occurrenceCount) {
+    fail();
+  }
+  const occurrencesSha256 = hash14.digest("hex");
+  const commitment = { profile: PROFILE, ...capturedBinding, occurrenceCount: retained.length, occurrencesSha256 };
+  const result = Object.freeze({ profile: PROFILE, ...capturedBinding, occurrences: Object.freeze(retained), occurrencesSha256, sha256: sha256Json(commitment) });
+  generatedHistories.add(result);
+  return result;
+}
+function verifyGeneratedNativeAtomHeaderHistory(value, expected2) {
+  requireJsonData(expected2);
+  const binding2 = bindingSchema.safeParse(expected2);
+  if (!binding2.success || !generatedHistories.has(value) || value.checkpointSha256 !== binding2.data.checkpointSha256 || value.documentUuid !== binding2.data.documentUuid || value.docType !== binding2.data.docType) {
+    fail();
+  }
+  return value;
+}
+var PROFILE, MAX_OCCURRENCES, HASH_BATCH_RECORDS, HASH_BATCH_BYTES, generatedHistories, hashSchema, clockSchema, occurrenceSchema, bindingSchema, historySchema;
+var init_native_atom_header_history = __esm({
+  "server/src/native-atom-header-history.ts"() {
+    init_zod();
+    init_core3();
+    PROFILE = "easyeda.native-history.library-atom-headers.v1";
+    MAX_OCCURRENCES = 1e6;
+    HASH_BATCH_RECORDS = 512;
+    HASH_BATCH_BYTES = 256 * 1024;
+    generatedHistories = /* @__PURE__ */ new WeakSet();
+    hashSchema = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    clockSchema = external_exports.number().int().min(0).max(Number.MAX_SAFE_INTEGER).refine((value) => !Object.is(value, -0));
+    occurrenceSchema = external_exports.strictObject({
+      chunkIndex: external_exports.number().int().min(0).max(MAX_OCCURRENCES - 1),
+      recordIndex: external_exports.number().int().min(0).max(249999),
+      id: external_exports.string().min(1).max(4096),
+      type: external_exports.string().regex(/^[A-Z][A-Z0-9_]{0,63}$/u),
+      ticket: clockSchema,
+      client: external_exports.string().min(1).max(128).nullable(),
+      clientSource: external_exports.enum(["explicit", "inherited", "missing"]),
+      serializedFirstTicket: clockSchema.optional(),
+      headerSha256: hashSchema,
+      bodySha256: hashSchema.nullable(),
+      bodyEncodingSha256: hashSchema.nullable(),
+      tombstone: external_exports.boolean()
+    }).superRefine((value, context2) => {
+      if (Object.hasOwn(value, "serializedFirstTicket") && value.serializedFirstTicket === void 0 || value.clientSource === "missing" !== (value.client === null) || value.tombstone !== (value.bodySha256 === null) || value.tombstone !== (value.bodyEncodingSha256 === null) || value.serializedFirstTicket !== void 0 && (value.serializedFirstTicket > value.ticket || value.id === "DELETE_DOC" || ["META", "DELETE_DOC", "DOCHEAD", "EDIT_HEAD"].includes(value.type)) || ["DOCHEAD", "EDIT_HEAD"].includes(value.type)) {
+        context2.addIssue({ code: "custom", message: "Unsupported atom header occurrence." });
+      }
+    });
+    bindingSchema = external_exports.strictObject({
+      checkpointSha256: hashSchema,
+      documentUuid: external_exports.string().min(1).max(128),
+      docType: external_exports.enum(["SYMBOL", "FOOTPRINT"])
+    });
+    historySchema = bindingSchema.extend({
+      profile: external_exports.literal(PROFILE),
+      occurrences: external_exports.array(occurrenceSchema).min(1).max(MAX_OCCURRENCES),
+      occurrencesSha256: hashSchema,
+      sha256: hashSchema
+    });
+  }
+});
+
 // server/src/native-history.ts
-import { createDecipheriv, createHash as createHash5 } from "node:crypto";
+import { createDecipheriv, createHash as createHash6 } from "node:crypto";
 import { constants } from "node:fs";
 import { lstat as lstat5, open as open5 } from "node:fs/promises";
 import { isAbsolute as isAbsolute6 } from "node:path";
 import { DatabaseSync as DatabaseSync2 } from "node:sqlite";
 import { TextDecoder as TextDecoder2, promisify as promisify2 } from "node:util";
 import { gunzip } from "node:zlib";
-function fail(stage = "record-invalid") {
+function fail2(stage = "record-invalid") {
   throw new NativeHistoryError(stage);
 }
 function retainMetadataHeader(document2, ticket, metadata5) {
@@ -38360,26 +38523,26 @@ function retainMetadataHeader(document2, ticket, metadata5) {
 }
 function record2(value) {
   if (!isRecord(value)) {
-    fail();
+    fail2();
   }
   return value;
 }
 function text(value, maximum = 4096) {
   if (typeof value !== "string" || value.length === 0 || value.length > maximum) {
-    fail();
+    fail2();
   }
   return value;
 }
 function uuid3(value) {
   const result = text(value, 32);
   if (!UUID.test(result)) {
-    fail();
+    fail2();
   }
   return result;
 }
 function integer2(value, maximum = Number.MAX_SAFE_INTEGER) {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0 || value > maximum) {
-    fail();
+    fail2();
   }
   return value;
 }
@@ -38416,13 +38579,13 @@ function rejectDuplicateJsonKeys(source3) {
         const keys2 = containers.at(-1);
         const key = JSON.parse(source3.slice(start, index + 1));
         if (keys2 === void 0 || keys2 === null || typeof key !== "string" || keys2.has(key)) {
-          fail();
+          fail2();
         }
         keys2.add(key);
       }
     }
     if (containers.length > 64) {
-      fail();
+      fail2();
     }
   }
 }
@@ -38431,7 +38594,7 @@ function parseObject(source3) {
   try {
     parsed2 = JSON.parse(source3);
   } catch {
-    fail();
+    fail2();
   }
   rejectDuplicateJsonKeys(source3);
   const result = record2(parsed2);
@@ -38441,15 +38604,15 @@ function parseObject(source3) {
     const item2 = pending.pop();
     nodes += 1;
     if (!item2 || item2.depth > 64 || nodes > 5e5) {
-      fail();
+      fail2();
     }
     if (typeof item2.value === "number" && !Number.isFinite(item2.value)) {
-      fail();
+      fail2();
     }
     if (item2.value !== null && typeof item2.value === "object") {
       for (const [key, child] of Object.entries(item2.value)) {
         if (["__proto__", "constructor", "prototype"].includes(key)) {
-          fail();
+          fail2();
         }
         pending.push({ value: child, depth: item2.depth + 1 });
       }
@@ -38463,11 +38626,11 @@ async function decodeNativeHistoryChunk(input) {
     const keyHex = uuid3(input.keyHex);
     const encoded = text(input.dataBase64, Math.ceil(MAX_CIPHER_BYTES / 3) * 4);
     if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(encoded)) {
-      fail("chunk-encoding");
+      fail2("chunk-encoding");
     }
     const bytes = Buffer.from(encoded, "base64");
     if (bytes.length <= 16 || bytes.length > MAX_CIPHER_BYTES || bytes.toString("base64") !== encoded) {
-      fail();
+      fail2();
     }
     const decipher = createDecipheriv("aes-128-gcm", Buffer.from(keyHex, "hex"), Buffer.from(historyUuid, "hex"));
     decipher.setAuthTag(bytes.subarray(-16));
@@ -38478,7 +38641,7 @@ async function decodeNativeHistoryChunk(input) {
     if (error51 instanceof NativeHistoryError) {
       throw error51;
     }
-    return fail("chunk-decode");
+    return fail2("chunk-decode");
   }
 }
 function materializationBatchReached(budget, bytes = 0) {
@@ -38498,65 +38661,135 @@ function finishMaterializationSteps(steps) {
   }
   return step.value;
 }
-function* parseNativeRecordSteps(plaintext) {
+function* parseNativeRecordSteps(plaintext, preserveLibraryAtoms = false) {
   if (Buffer.byteLength(plaintext) > MAX_CHUNK_BYTES) {
-    fail();
+    fail2();
   }
   const lines3 = plaintext.split("|\n");
   if (lines3.at(-1) === "") {
     lines3.pop();
   }
   if (lines3.length === 0 || lines3.length > MAX_CHUNK_RECORDS) {
-    fail();
+    fail2();
   }
   const entries = [];
   const budget = { records: 0, bytes: 0 };
   for (const line5 of lines3) {
     const split = line5.indexOf("||");
     if (split < 1) {
-      fail();
+      fail2();
     }
-    const header = parseObject(line5.slice(0, split));
+    const headerSource = line5.slice(0, split);
+    const header = parseObject(headerSource);
     const allowedKeys = /* @__PURE__ */ new Set(["type", "id", "ticket", "client"]);
+    if (preserveLibraryAtoms) {
+      allowedKeys.add("firstTicket");
+    }
     if (Object.keys(header).some((key) => !allowedKeys.has(key))) {
-      fail();
+      fail2();
     }
     if (!/^[A-Z][A-Z0-9_]{0,63}$/u.test(text(header["type"], 64))) {
-      fail();
+      fail2();
+    }
+    if (Object.hasOwn(header, "firstTicket")) {
+      const firstTicket = integer2(header["firstTicket"]);
+      if (Object.is(firstTicket, -0) || firstTicket > integer2(header["ticket"]) || ["EDIT_HEAD", "DOCHEAD", "META", "DELETE_DOC"].includes(text(header["type"])) || entryDeletionId(header)) {
+        fail2();
+      }
     }
     const bodySource = line5.slice(split + 2);
-    entries.push({ header, body: bodySource === "" ? null : parseObject(bodySource) });
+    entries.push({
+      header,
+      body: bodySource === "" ? null : parseObject(bodySource),
+      ...preserveLibraryAtoms ? {
+        headerSha256: createHash6("sha256").update(headerSource).digest("hex"),
+        bodyEncodingSha256: bodySource === "" ? null : createHash6("sha256").update(bodySource).digest("hex")
+      } : {}
+    });
     if (materializationBatchReached(budget, Buffer.byteLength(line5))) {
       yield;
     }
   }
   return entries;
 }
+function entryDeletionId(header) {
+  return header["id"] === "DELETE_DOC";
+}
 function parseNativeRecords(plaintext) {
   return finishMaterializationSteps(parseNativeRecordSteps(plaintext));
+}
+function retainLibraryAtom(document2, entry, inheritedClient, chunkIndex, recordIndex, checkpointSha256) {
+  const history = document2.libraryAtoms;
+  const hasFirstTicket = Object.hasOwn(entry.header, "firstTicket");
+  if (hasFirstTicket && (history === void 0 || checkpointSha256 === void 0)) {
+    fail2("atom-header-profile");
+  }
+  if (history === void 0) {
+    return;
+  }
+  const id7 = text(entry.header["id"]);
+  const type2 = text(entry.header["type"], 64);
+  const ticket = integer2(entry.header["ticket"]);
+  const client = optionalClient(entry.header["client"] ?? inheritedClient);
+  const serializedFirstTicket = hasFirstTicket ? { serializedFirstTicket: integer2(entry.header["firstTicket"]) } : {};
+  const signature = sha256Json({ type: type2, body: entry.body, ...serializedFirstTicket });
+  const tickets = history.clocks.get(id7) ?? /* @__PURE__ */ new Map();
+  const clients = tickets.get(ticket) ?? /* @__PURE__ */ new Map();
+  const previous = clients.get(client);
+  if (previous !== void 0 && previous !== signature) {
+    fail2("record-ticket-conflict");
+  }
+  if (client === null && [...clients.keys()].some((value) => value !== null) || client !== null && clients.has(null)) {
+    fail2("record-client-conflict");
+  }
+  clients.set(client, signature);
+  tickets.set(ticket, clients);
+  history.clocks.set(id7, tickets);
+  history.hasFirstTicket ||= hasFirstTicket;
+  if (entry.headerSha256 === void 0 || entry.bodyEncodingSha256 === void 0) {
+    fail2("atom-header-profile");
+  }
+  let clientSource = inheritedClient === void 0 ? "missing" : "inherited";
+  if (entry.header["client"] !== void 0 && entry.header["client"] !== null) {
+    clientSource = "explicit";
+  }
+  history.occurrences.push({
+    chunkIndex,
+    recordIndex,
+    id: id7,
+    type: type2,
+    ticket,
+    client,
+    clientSource,
+    ...serializedFirstTicket,
+    headerSha256: entry.headerSha256,
+    bodyEncodingSha256: entry.bodyEncodingSha256,
+    bodySha256: entry.body === null ? null : sha256Json(entry.body),
+    tombstone: entry.body === null
+  });
 }
 function applyRecord(document2, entry, inheritedClient) {
   const type2 = text(entry.header["type"], 64);
   const id7 = text(entry.header["id"]);
   if (type2 === "DELETE_DOC" && (id7 !== "DELETE_DOC" || entry.body === null || Object.keys(entry.body).length !== 1 || typeof entry.body["isDelete"] !== "boolean")) {
-    fail("delete-document");
+    fail2("delete-document");
   }
   if (id7 === "DELETE_DOC" && type2 !== "DELETE_DOC") {
-    fail("delete-document");
+    fail2("delete-document");
   }
   const ticket = integer2(entry.header["ticket"]);
   const client = optionalClient(entry.header["client"] ?? inheritedClient);
   const previous = document2.objects.get(id7);
   const next = { id: id7, type: type2, ticket, client, body: entry.body };
   if (previous && previous.type !== type2 && previous.body !== null && entry.body !== null) {
-    fail("record-type-conflict");
+    fail2("record-type-conflict");
   }
   if (previous && previous.ticket === ticket && canonicalJson(previous) !== canonicalJson(next)) {
     if (previous.client === client) {
-      fail("record-ticket-conflict");
+      fail2("record-ticket-conflict");
     }
     if (previous.client === null || client === null) {
-      fail("record-client-conflict");
+      fail2("record-client-conflict");
     }
   }
   if (!previous || previous.ticket < ticket || previous.ticket === ticket && previous.client !== null && client !== null && previous.client < client) {
@@ -38582,49 +38815,49 @@ function isNativeDocumentDeleted(document2) {
   }
   const marker = markers[0];
   if (markers.length !== 1 || marker?.id !== "DELETE_DOC" || marker.type !== "DELETE_DOC" || Object.keys(marker.body).length !== 1 || typeof marker.body["isDelete"] !== "boolean") {
-    fail("delete-document");
+    fail2("delete-document");
   }
   return marker.body["isDelete"];
 }
-function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256) {
+function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256, options = {}) {
   if (checkpointSha256 !== void 0 && !/^[a-f0-9]{64}$/u.test(checkpointSha256)) {
-    fail("checkpoint-hash");
+    fail2("checkpoint-hash");
   }
   const documents = /* @__PURE__ */ new Map();
   let totalBytes = 0;
   let totalRecords = 0;
-  for (const plaintext of plaintextChunks) {
+  for (const [chunkIndex, plaintext] of plaintextChunks.entries()) {
     totalBytes += Buffer.byteLength(plaintext);
     if (totalBytes > MAX_TOTAL_BYTES) {
-      fail("total-bytes-limit");
+      fail2("total-bytes-limit");
     }
     let current2;
     let currentClient;
-    const entries = yield* parseNativeRecordSteps(plaintext);
+    const entries = yield* parseNativeRecordSteps(plaintext, options.libraryAtomHeaders === "preserve");
     yield;
     const budget = { records: 0, bytes: 0 };
-    for (const entry of entries) {
+    for (const [recordIndex, entry] of entries.entries()) {
       totalRecords += 1;
       if (totalRecords > MAX_TOTAL_RECORDS) {
-        fail("total-records-limit");
+        fail2("total-records-limit");
       }
       const type2 = entry.header["type"];
       if (type2 === "EDIT_HEAD") {
         if (Object.keys(entry.header).length !== 1 || entry.body === null) {
-          fail();
+          fail2();
         }
       } else if (type2 === "DOCHEAD") {
         const body3 = record2(entry.body);
         const documentUuid = text(body3["uuid"], 128);
         const docType = text(body3["docType"], 64);
         if (!DOCUMENT_TYPES.has(docType)) {
-          fail("document-type");
+          fail2("document-type");
         }
         currentClient = body3["client"] === void 0 ? void 0 : text(body3["client"], 128);
         const ticket = integer2(entry.header["ticket"]);
         current2 = documents.get(documentUuid);
         if (current2 && current2.docType !== docType) {
-          fail();
+          fail2();
         }
         if (!current2) {
           current2 = {
@@ -38634,11 +38867,12 @@ function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256) {
             metadataTicket: ticket,
             objects: /* @__PURE__ */ new Map(),
             firstClocks: /* @__PURE__ */ new Map(),
-            metadataHeaders: docType === "SCH_PAGE" ? [{ ticket, metadata: body3 }] : null
+            metadataHeaders: docType === "SCH_PAGE" ? [{ ticket, metadata: body3 }] : null,
+            ...options.libraryAtomHeaders === "preserve" && (docType === "SYMBOL" || docType === "FOOTPRINT") ? { libraryAtoms: { occurrences: [], clocks: /* @__PURE__ */ new Map(), hasFirstTicket: false } } : {}
           };
           documents.set(documentUuid, current2);
         } else if (ticket === current2.metadataTicket && canonicalJson(current2.metadata) !== canonicalJson(body3)) {
-          fail("document-ticket-conflict");
+          fail2("document-ticket-conflict");
         } else if (ticket > current2.metadataTicket) {
           current2.metadata = body3;
           current2.metadataTicket = ticket;
@@ -38646,8 +38880,9 @@ function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256) {
         retainMetadataHeader(current2, ticket, body3);
       } else {
         if (!current2) {
-          fail();
+          fail2();
         }
+        retainLibraryAtom(current2, entry, currentClient, chunkIndex, recordIndex, checkpointSha256);
         if (entry.header["type"] === "DELETE_DOC" || entry.header["id"] === "DELETE_DOC") {
           current2.metadataHeaders = null;
         }
@@ -38660,7 +38895,7 @@ function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256) {
     yield;
   }
   if (documents.size === 0) {
-    fail();
+    fail2();
   }
   const snapshots = [];
   for (const document2 of [...documents.values()].toSorted((left, right) => left.uuid.localeCompare(right.uuid))) {
@@ -38694,13 +38929,24 @@ function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256) {
       snapshot6,
       { headerHistory: Object.assign(headerHistory, { sha256: sha256Json(headerHistory) }) }
     );
+    if (document2.libraryAtoms?.hasFirstTicket === true) {
+      if (checkpointSha256 === void 0 || document2.docType !== "SYMBOL" && document2.docType !== "FOOTPRINT") {
+        fail2("atom-header-profile");
+      }
+      const atomHeaderHistory = yield* createNativeAtomHeaderHistorySteps({
+        checkpointSha256,
+        documentUuid: document2.uuid,
+        docType: document2.docType
+      }, document2.libraryAtoms.occurrences);
+      Object.assign(completed, { atomHeaderHistory });
+    }
     snapshots.push(completed);
     yield;
   }
   return snapshots;
 }
-async function materializeNativeHistoryCooperatively(plaintextChunks, checkpointSha256) {
-  const steps = materializeNativeHistorySteps([...plaintextChunks], checkpointSha256);
+async function materializeNativeHistoryCooperatively(plaintextChunks, checkpointSha256, options = {}) {
+  const steps = materializeNativeHistorySteps([...plaintextChunks], checkpointSha256, { ...options });
   let step = steps.next();
   while (step.done !== true) {
     await yieldProofEventLoop();
@@ -38717,23 +38963,23 @@ async function absentSidecars(path5) {
       if (isRecord(error51) && error51["code"] === "ENOENT") {
         missing = true;
       } else {
-        fail();
+        fail2();
       }
     }
     if (!missing) {
-      fail();
+      fail2();
     }
   }
 }
 async function readNativeHistoryCheckpoint(input) {
-  const { checkpointPath, expectedSha256, projectUuid: requestedProjectUuid } = input;
+  const { checkpointPath, expectedSha256, projectUuid: requestedProjectUuid, libraryAtomHeaders } = input;
   let stage = "checkpoint-input";
   if (!isAbsolute6(checkpointPath) || !/\.eprj2$/iu.test(checkpointPath) || !/^[a-f0-9]{64}$/u.test(expectedSha256)) {
-    fail();
+    fail2();
   }
   const projectUuid = text(requestedProjectUuid, 64);
   if (!/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.test(projectUuid)) {
-    fail();
+    fail2();
   }
   await absentSidecars(checkpointPath);
   const file2 = await open5(checkpointPath, constants.O_RDONLY | constants.O_NOFOLLOW);
@@ -38742,17 +38988,17 @@ async function readNativeHistoryCheckpoint(input) {
     stage = "checkpoint-file";
     const before = await file2.stat({ bigint: true });
     if (!before.isFile() || before.nlink !== 1n || before.size > BigInt(MAX_DATABASE_BYTES)) {
-      fail();
+      fail2();
     }
-    const hash13 = createHash5("sha256");
+    const hash14 = createHash6("sha256");
     for await (const chunk of file2.createReadStream({ autoClose: false, start: 0 })) {
       if (!Buffer.isBuffer(chunk)) {
-        fail();
+        fail2();
       }
-      hash13.update(chunk);
+      hash14.update(chunk);
     }
-    if (hash13.digest("hex") !== expectedSha256) {
-      fail("checkpoint-hash");
+    if (hash14.digest("hex") !== expectedSha256) {
+      fail2("checkpoint-hash");
     }
     stage = "project-scope";
     database = new DatabaseSync2(`/proc/self/fd/${String(file2.fd)}`, { readOnly: true, enableForeignKeyConstraints: false, allowExtension: false });
@@ -38762,7 +39008,7 @@ async function readNativeHistoryCheckpoint(input) {
     const branchUuid = uuid3(project2["branch_uuid"]);
     const branch = record2(database.prepare("SELECT uuid, project_uuid, history_uuid FROM branches WHERE uuid=?").get(branchUuid));
     if (branch["project_uuid"] !== projectUuid) {
-      fail();
+      fail2();
     }
     const headHistoryUuid = uuid3(branch["history_uuid"]);
     const historyTable = `project_history_${branchUuid}`;
@@ -38772,12 +39018,12 @@ async function readNativeHistoryCheckpoint(input) {
     while (next !== null) {
       stage = "history-chain";
       if (seen.has(next) || rows.length >= MAX_HISTORY_ROWS) {
-        fail("history-chain");
+        fail2("history-chain");
       }
       seen.add(next);
       const row = record2(database.prepare(`SELECT uuid, parent, snapshot, key, num, snapshot_num FROM "${historyTable}" WHERE uuid=?`).get(next));
       if (row["snapshot"] !== null || row["snapshot_num"] !== 0) {
-        fail("history-snapshot");
+        fail2("history-snapshot");
       }
       rows.push(row);
       next = row["parent"] === null ? null : uuid3(row["parent"]);
@@ -38793,26 +39039,30 @@ async function readNativeHistoryCheckpoint(input) {
         const chunkUuid = index === 0 ? historyUuid : `${historyUuid}-${String(index)}`;
         const payload = record2(database.prepare("SELECT history_uuid, dataStr FROM history_data WHERE uuid=?").get(chunkUuid));
         if (payload["history_uuid"] !== historyUuid) {
-          fail();
+          fail2();
         }
         const decoded = await decodeNativeHistoryChunk({ historyUuid, keyHex, dataBase64: text(payload["dataStr"], Math.ceil(MAX_CIPHER_BYTES / 3) * 4) });
         plaintextBytes += Buffer.byteLength(decoded);
         if (plaintextBytes > MAX_TOTAL_BYTES) {
-          fail("total-bytes-limit");
+          fail2("total-bytes-limit");
         }
         plaintext.push(decoded);
       }
     }
-    const documents = await materializeNativeHistoryCooperatively(plaintext, expectedSha256);
+    const documents = await materializeNativeHistoryCooperatively(
+      plaintext,
+      expectedSha256,
+      libraryAtomHeaders === void 0 ? {} : { libraryAtomHeaders }
+    );
     stage = "checkpoint-stability";
     const after = await file2.stat({ bigint: true });
     const pathAfter = await lstat5(checkpointPath, { bigint: true });
     if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== pathAfter.dev || after.ino !== pathAfter.ino) {
-      fail();
+      fail2();
     }
     await absentSidecars(checkpointPath);
     return {
-      profile: PROFILE,
+      profile: PROFILE2,
       projectUuid,
       ...projectOwnerUuid === void 0 ? {} : { projectOwnerUuid },
       branchUuid,
@@ -38828,17 +39078,18 @@ async function readNativeHistoryCheckpoint(input) {
     if (error51 instanceof NativeHistoryError) {
       throw error51;
     }
-    return fail(stage);
+    return fail2(stage);
   } finally {
     database?.close();
     await file2.close();
   }
 }
-var unzip, UUID, MAX_DATABASE_BYTES, MAX_CIPHER_BYTES, MAX_CHUNK_BYTES, MAX_TOTAL_BYTES, MAX_CHUNK_RECORDS, MAX_TOTAL_RECORDS, MAX_HISTORY_ROWS, COOPERATIVE_RECORD_BATCH, COOPERATIVE_BYTE_BATCH, PROFILE, DOCUMENT_TYPES, NativeHistoryError;
+var unzip, UUID, MAX_DATABASE_BYTES, MAX_CIPHER_BYTES, MAX_CHUNK_BYTES, MAX_TOTAL_BYTES, MAX_CHUNK_RECORDS, MAX_TOTAL_RECORDS, MAX_HISTORY_ROWS, COOPERATIVE_RECORD_BATCH, COOPERATIVE_BYTE_BATCH, PROFILE2, DOCUMENT_TYPES, NativeHistoryError;
 var init_native_history = __esm({
   "server/src/native-history.ts"() {
     init_core3();
     init_cooperative_proof();
+    init_native_atom_header_history();
     unzip = promisify2(gunzip);
     UUID = /^[a-f0-9]{32}$/u;
     MAX_DATABASE_BYTES = 256 * 1024 * 1024;
@@ -38850,7 +39101,7 @@ var init_native_history = __esm({
     MAX_HISTORY_ROWS = 4096;
     COOPERATIVE_RECORD_BATCH = 512;
     COOPERATIVE_BYTE_BATCH = 256 * 1024;
-    PROFILE = "easyeda.native-history.linear-gcm-gzip.v1";
+    PROFILE2 = "easyeda.native-history.linear-gcm-gzip.v1";
     DOCUMENT_TYPES = /* @__PURE__ */ new Set([
       "SCH",
       "SCH_PAGE",
@@ -42108,7 +42359,7 @@ const schCapture = () => {
 });
 
 // server/src/schematic-hidden-order.ts
-function fail2() {
+function fail3() {
   throw new Error("Hidden null attribute order lacks exact native library reconstruction.");
 }
 function library(history, uuid8, type2) {
@@ -42120,7 +42371,7 @@ function library(history, uuid8, type2) {
     metadata: doc.metadata,
     records: doc.records.map(({ id: id7, type: recordType2, body: body3 }) => ({ id: id7, type: recordType2, body: body3 }))
   })) {
-    fail2();
+    fail3();
   }
   return doc;
 }
@@ -42128,41 +42379,41 @@ function schematicHiddenNullOrder(history, page, source3, native, row) {
   const model = native.components.find((entry) => entry.id === row.body["parentId"]);
   const key = row.body["key"];
   if (model === void 0 || !(model.kind === "part" && key === "Unique ID" || model.kind === "netflag" && key === "Relevance") || row.body["zIndex"] !== null || ["x", "y", "rotation", "keyVisible", "valueVisible"].some((field2) => row.body[field2] !== null) || (key === "Relevance" ? row.body["value"] !== "[]" : typeof row.body["value"] !== "string" || row.body["value"].length === 0) || source3.document["uuid"] !== page.uuid || source3.document["editVersion"] !== "3.2.149.88089769") {
-    fail2();
+    fail3();
   }
   const deviceAttrs = model.attributes.filter((attr2) => attr2.key === "Device"), symbolAttrs = model.attributes.filter((attr2) => attr2.key === "Symbol");
   if (symbolAttrs.length !== 1 || deviceAttrs.length !== 1) {
-    fail2();
+    fail3();
   }
   const device = library(history, deviceAttrs[0]?.value, "DEVICE"), symbol4 = library(history, symbolAttrs[0]?.value, "SYMBOL");
   const symbolType3 = symbol4.records.find((entry) => entry.type === "META")?.body["docType"];
   const deviceAttributes = device.records.find((entry) => entry.type === "META")?.body["attributes"];
   const partId = model.body["partId"];
   if (typeof partId !== "string" || !symbol4.records.some((entry) => entry.type === "PART" && entry.id === partId) || symbolType3 !== (model.kind === "part" ? 2 : 18) || !isRecord(deviceAttributes) || deviceAttributes["Symbol"] !== symbol4.uuid) {
-    fail2();
+    fail3();
   }
   const children2 = symbol4.records.filter((entry) => entry.body["partId"] === partId);
   const shapes = children2.filter((entry) => entry.type !== "ATTR");
   if (shapes.some((entry) => !["PIN", "POLY", "LINE", "ARC", "RECT", "CIRCLE", "ELLIPSE", "TEXT"].includes(entry.type))) {
-    fail2();
+    fail3();
   }
   const roots = children2.filter((entry) => entry.type === "ATTR" && [partId, ""].includes(String(entry.body["parentId"])));
   if (roots.some((entry) => typeof entry.body["key"] !== "string" || !Number.isSafeInteger(entry.body["zIndex"])) || new Set(roots.map((entry) => entry.body["zIndex"])).size !== roots.length) {
-    fail2();
+    fail3();
   }
   const keys2 = roots.toSorted((a, b) => Number(a.body["zIndex"]) - Number(b.body["zIndex"])).map((entry) => String(entry.body["key"]));
   if (new Set(keys2).size !== keys2.length || keys2.includes(key)) {
-    fail2();
+    fail3();
   }
   if (model.kind === "part") {
     if (!keys2.includes("Designator") || keys2.includes("Add into BOM") || keys2.includes("Convert to PCB")) {
-      fail2();
+      fail3();
     }
     keys2.unshift("Add into BOM", "Convert to PCB");
   }
   const rootsStored = page.records.filter((entry) => entry.type === "ATTR" && entry.body["parentId"] === model.id);
   if (rootsStored.some((entry) => !Number.isSafeInteger(entry.firstTicket) || entry.firstTicket === void 0 || entry.firstTicket < 0 || entry.firstTicket > entry.ticket || !Object.hasOwn(entry, "firstClient") || entry.firstClient !== null && typeof entry.firstClient !== "string")) {
-    fail2();
+    fail3();
   }
   const stored2 = rootsStored.toSorted((a, b) => {
     const ticketOrder = Number(a.firstTicket) - Number(b.firstTicket);
@@ -42176,7 +42427,7 @@ function schematicHiddenNullOrder(history, page, source3, native, row) {
     return left > right ? 1 : 0;
   });
   if (stored2.some((entry) => !Number.isSafeInteger(entry.ticket) || typeof entry.body["key"] !== "string") || stored2.some((entry, index) => stored2.slice(index + 1).some((peer2) => peer2.firstTicket === entry.firstTicket && (peer2.firstClient === entry.firstClient || peer2.firstClient === null || entry.firstClient === null))) || new Set(stored2.map((entry) => entry.body["key"])).size !== stored2.length || !stored2.some((entry) => entry.id === row.id && same(entry.body, row.body))) {
-    fail2();
+    fail3();
   }
   for (const entry of stored2) {
     const attrKey = String(entry.body["key"]);
@@ -42193,13 +42444,13 @@ function schematicHiddenNullOrder(history, page, source3, native, row) {
     keys2.push("Name");
   }
   if (model.attributes.length !== keys2.length || new Set(model.attributes.map((attr2) => attr2.key)).size !== model.attributes.length || model.attributes.some((attr2) => attr2.body["parentId"] !== model.id || attr2.body["key"] !== attr2.key || attr2.instanceValue !== null || attr2.body["zIndex"] !== shapes.length + keys2.indexOf(attr2.key))) {
-    fail2();
+    fail3();
   }
   const attr = model.attributes.find((entry) => entry.id === row.id && entry.key === key);
   const exported = source3.objects.find((entry) => entry.id === row.id);
   const order2 = shapes.length + keys2.indexOf(key);
   if (attr === void 0 || exported?.type !== "ATTR" || !same(attr.body, exported.body) || attr.body["zIndex"] !== order2) {
-    fail2();
+    fail3();
   }
   return {
     componentId: model.id,
@@ -42787,18 +43038,18 @@ var init_schematic_source_proof = __esm({
 });
 
 // server/src/schematic-layout-netflag.ts
-function fail3() {
+function fail4() {
   throw new Error("Net-flag template, inheritance, identity or electrical scope is unsupported or changed.");
 }
 function number7(value) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
-    fail3();
+    fail4();
   }
   return value;
 }
 function string4(value) {
   if (typeof value !== "string" || !value) {
-    fail3();
+    fail4();
   }
   return value;
 }
@@ -42806,11 +43057,11 @@ function document(history, uuid8, type2) {
   const values2 = history.documents.filter((entry) => entry.uuid === uuid8 && entry.docType === type2 && !isNativeDocumentDeleted(entry));
   const value = values2[0];
   if (values2.length !== 1 || value === void 0) {
-    fail3();
+    fail4();
   }
-  const hash13 = sha256Json({ uuid: value.uuid, docType: value.docType, metadata: value.metadata, records: value.records.map(({ id: id7, type: recordType2, body: body3 }) => ({ id: id7, type: recordType2, body: body3 })) });
-  if (hash13 !== value.semanticSha256) {
-    fail3();
+  const hash14 = sha256Json({ uuid: value.uuid, docType: value.docType, metadata: value.metadata, records: value.records.map(({ id: id7, type: recordType2, body: body3 }) => ({ id: id7, type: recordType2, body: body3 })) });
+  if (hash14 !== value.semanticSha256) {
+    fail4();
   }
   return value;
 }
@@ -42818,7 +43069,7 @@ function rootAttribute(component2, key) {
   const values2 = component2.attributes.filter((entry) => entry.key === key);
   const value = values2[0];
   if (values2.length !== 1 || value === void 0 || value.body["parentId"] !== component2.id || value.instanceValue !== null) {
-    fail3();
+    fail4();
   }
   return value;
 }
@@ -42838,15 +43089,15 @@ function nativeRootOrder(symbol4, partId, attributes2, deviceAttributes) {
   const partRecords = symbol4.records.filter((entry) => entry.body["partId"] === partId);
   const shapes = partRecords.filter((entry) => entry.type !== "ATTR");
   if (shapes.some((entry) => !["PIN", "POLY", "LINE", "ARC", "RECT", "CIRCLE", "ELLIPSE", "TEXT"].includes(entry.type))) {
-    fail3();
+    fail4();
   }
   const roots = partRecords.filter((entry) => entry.type === "ATTR" && [partId, ""].includes(String(entry.body["parentId"])));
   if (roots.some((entry) => !Number.isFinite(entry.body["zIndex"])) || new Set(roots.map((entry) => entry.body["zIndex"])).size !== roots.length) {
-    fail3();
+    fail4();
   }
   const keys2 = roots.toSorted((a, b) => number7(a.body["zIndex"]) - number7(b.body["zIndex"])).map((entry) => string4(entry.body["key"]));
   if (keys2.includes("Relevance") || new Set(keys2).size !== keys2.length) {
-    fail3();
+    fail4();
   }
   for (const attr of attributes2) {
     const key = string4(attr.body["key"]);
@@ -42870,19 +43121,19 @@ function storedTemplateBodies(sheet, source3, model) {
   const prior = sheet.records.filter(selected);
   const current2 = source3.objects.filter(selected);
   if (!same4(prior.map((item2) => item2.id).toSorted(), current2.map((item2) => item2.id).toSorted())) {
-    fail3();
+    fail4();
   }
   const hydration = [];
   for (const stored2 of prior) {
     const live = current2.find((item2) => item2.id === stored2.id);
     if (live === void 0 || live.type !== stored2.type || !unlocked(stored2.body) || !unlocked(live.body)) {
-      fail3();
+      fail4();
     }
     const body3 = structuredClone(stored2.body), fields2 = [];
     if (stored2.type === "ATTR") {
       if (!same4(body3["zIndex"], live.body["zIndex"])) {
         if (!Number.isSafeInteger(live.body["zIndex"]) || number7(live.body["zIndex"]) < 0) {
-          fail3();
+          fail4();
         }
         body3["zIndex"] = live.body["zIndex"];
         fields2.push("zIndex");
@@ -42893,7 +43144,7 @@ function storedTemplateBodies(sheet, source3, model) {
       }
     }
     if (!same4(body3, live.body)) {
-      fail3();
+      fail4();
     }
     if (fields2.length > 0) {
       hydration.push({ id: stored2.id, fields: fields2 });
@@ -42906,27 +43157,27 @@ function planSchematicNetFlagClone(input, current2, history, templateInput, allo
 }
 function planHistoricalSchematicNetFlagClone(input, current2, history, templateInput, allocate, observedSource) {
   if (!same4(current2.document, observedSource.document) || observedSource.sha256 !== sha256Json({ schema: observedSource.schema, document: observedSource.document, objects: observedSource.objects })) {
-    fail3();
+    fail4();
   }
   return planClone(input, current2, history, templateInput, allocate, observedSource);
 }
 function planClone(input, current2, history, templateInput, allocate, historicalAfter) {
   const step = netFlagCloneStepSchema.parse(input);
   if (history.profile !== "easyeda.native-history.linear-gcm-gzip.v1" || !/^[a-f0-9]{64}$/u.test(history.checkpointSha256) || current2.document["docType"] !== "SCH_PAGE" || current2.document["editVersion"] !== "3.2.149.88089769") {
-    fail3();
+    fail4();
   }
   document(history, string4(current2.document["uuid"]), "SCH_PAGE");
   if (!isRecord(templateInput) || typeof templateInput["source"] !== "string") {
-    fail3();
+    fail4();
   }
   const templateSource = parseDocumentSource(templateInput["source"]);
   const native = correlateSchematicNativeSource(templateSource, templateInput);
   if (native.document.documentUuid !== step.template.sheetUuid || native.document.tabId !== `${step.template.sheetUuid}@${history.projectUuid}`) {
-    fail3();
+    fail4();
   }
   const model = native.components.find((entry) => entry.id === step.template.componentId);
   if (model === void 0 || model.kind !== "netflag" || model.locked || !unlocked(model.body) || !same4(model.body["attrs"], {}) || model.body["rotation"] !== 0 || model.body["isMirror"] !== false || model.pins.length !== 1) {
-    fail3();
+    fail4();
   }
   const sheet = document(history, step.template.sheetUuid, "SCH_PAGE");
   const symbolUuid = string4(rootAttribute(model, "Symbol").value);
@@ -42937,49 +43188,49 @@ function planClone(input, current2, history, templateInput, allocate, historical
   const deviceMeta = device.records.find((entry) => entry.type === "META" && entry.id === "META");
   const deviceAttributes = deviceMeta?.body["attributes"];
   if (symbolMeta?.body["docType"] !== 18 || !isRecord(deviceAttributes) || deviceAttributes["Symbol"] !== symbolUuid || ["Footprint", "3D Model", "Add into BOM", "Convert to PCB"].some((key) => model.attributes.some((attr) => attr.key === key) || Object.hasOwn(deviceAttributes, key))) {
-    fail3();
+    fail4();
   }
   const parts = symbol4.records.filter((entry) => entry.type === "PART");
   const part = parts[0], pin4 = model.pins[0];
   if (parts.length !== 1 || part === void 0 || model.body["partId"] !== part.id || pin4 === void 0 || pin4.noConnect !== null || !unlocked(pin4.body)) {
-    fail3();
+    fail4();
   }
   const libraryPins = symbol4.records.filter((entry) => entry.type === "PIN" && entry.body["partId"] === part.id);
   const libraryPin = libraryPins[0];
   if (libraryPins.length !== 1 || libraryPin === void 0 || pin4.id !== `${model.id}-${libraryPin.id}` || libraryPin.body["x"] !== 0 || libraryPin.body["y"] !== 0 || number7(pin4.body["x"]) !== number7(model.body["x"]) || number7(pin4.body["y"]) !== number7(model.body["y"])) {
-    fail3();
+    fail4();
   }
   if (["length", "rotation", "display", "color", "pinShape"].some((key) => !same4(libraryPin.body[key], pin4.body[key]))) {
-    fail3();
+    fail4();
   }
   const net3 = string4(rootAttribute(model, "Name").value);
   if (rootAttribute(model, "Global Net Name").value !== net3 || pin4.net !== net3 || rootAttribute(model, "Relevance").value !== "[]") {
-    fail3();
+    fail4();
   }
   const allAttrs = [...model.attributes, ...pin4.attributes];
   if (allAttrs.some((attr) => !unlocked(attr.body) || attr.instanceValue !== null || attr.valueAuthority !== void 0) || model.attributes.some((attr) => ["Designator", "Unique ID", "UniqueID"].includes(attr.key))) {
-    fail3();
+    fail4();
   }
   const owned2 = templateSource.objects.filter((entry) => entry.id === model.id || entry.body["parentId"] === model.id || entry.body["parentId"] === pin4.id);
   if (owned2.some((entry) => entry.id !== model.id && entry.type !== "ATTR")) {
-    fail3();
+    fail4();
   }
   const inheritedDeviceAttributes = model.attributes.filter((attr) => !owned2.some((entry) => entry.id === attr.id));
   if (inheritedDeviceAttributes.some((attr) => !Object.hasOwn(deviceAttributes, attr.key) || !same4(attr.body["value"], deviceAttributes[attr.key]) || !same4(attr.blockValue, attr.body["value"]))) {
-    fail3();
+    fail4();
   }
   const inheritedRecords = inheritedDeviceAttributes.map((attr) => ({ id: attr.id, type: "ATTR", body: attr.body }));
   const attributes2 = [...owned2.filter((entry) => entry.type === "ATTR"), ...historicalAfter === void 0 ? inheritedRecords : []].toSorted((a, b) => a.id.localeCompare(b.id));
   const storedRoots = sheet.records.filter((entry) => entry.type === "ATTR" && entry.body["parentId"] === model.id).toSorted((a, b) => a.ticket - b.ticket);
   if (new Set(storedRoots.map((entry) => entry.ticket)).size !== storedRoots.length) {
-    fail3();
+    fail4();
   }
   const templateOrder = nativeRootOrder(symbol4, part.id, storedRoots, deviceAttributes);
   if (model.attributes.length !== templateOrder.keys.length || model.attributes.some((attr) => attr.body["zIndex"] !== templateOrder.offset + templateOrder.keys.indexOf(attr.key))) {
     const roots = storedRoots.filter((entry) => entry.body["key"] === "Relevance");
     const relevance2 = roots[0];
     if (roots.length !== 1 || relevance2 === void 0) {
-      fail3();
+      fail4();
     }
     schematicHiddenNullOrder(history, sheet, templateSource, native, relevance2);
   }
@@ -42988,7 +43239,7 @@ function planClone(input, current2, history, templateInput, allocate, historical
   const allocation = (key) => {
     const value = allocate(key);
     if (!/^[a-f0-9]{16}$/u.test(value) || used.has(value)) {
-      fail3();
+      fail4();
     }
     used.add(value);
     return value;
@@ -42999,19 +43250,19 @@ function planClone(input, current2, history, templateInput, allocate, historical
   for (const [index, attr] of attributes2.entries()) {
     const value = pool[index];
     if (value === void 0) {
-      fail3();
+      fail4();
     }
     map2.set(attr.id, value);
   }
   if (historicalAfter !== void 0) {
     const attr = inheritedDeviceAttributes[0];
     if (inheritedDeviceAttributes.length !== 1 || attr?.key !== "Description") {
-      fail3();
+      fail4();
     }
     const matches = historicalAfter.objects.filter((entry) => entry.type === "ATTR" && entry.body["parentId"] === componentId && entry.body["key"] === "Description");
     const observed = matches[0];
     if (matches.length !== 1 || observed === void 0 || !/^[a-f0-9]{16}$/u.test(observed.id) || used.has(observed.id) || historicalAfter.objects.filter((entry) => entry.id === observed.id).length !== 1) {
-      fail3();
+      fail4();
     }
     used.add(observed.id);
     map2.set(attr.id, observed.id);
@@ -43025,7 +43276,7 @@ function planClone(input, current2, history, templateInput, allocate, historical
   }
   zIndex = Math.floor(zIndex) + 1;
   if (!Number.isSafeInteger(zIndex)) {
-    fail3();
+    fail4();
   }
   const component2 = structuredClone(model);
   component2.id = componentId;
@@ -43035,7 +43286,7 @@ function planClone(input, current2, history, templateInput, allocate, historical
   const cloneAttr = (attr) => {
     const parent = map2.get(string4(attr.body["parentId"]));
     if (parent === void 0) {
-      fail3();
+      fail4();
     }
     const body3 = translated(attr.body, dx, dy);
     body3["parentId"] = parent;
@@ -43043,11 +43294,11 @@ function planClone(input, current2, history, templateInput, allocate, historical
     const libraryParents = attr.body["parentId"] === model.id ? [part.id, ""] : [libraryPin.id];
     const libraryAttributes = symbol4.records.filter((entry) => entry.type === "ATTR" && entry.body["partId"] === part.id && entry.body["key"] === attr.key && libraryParents.includes(String(entry.body["parentId"])));
     if (libraryAttributes.length > 1 || body3["strikeout"] !== void 0 && typeof body3["strikeout"] !== "boolean") {
-      fail3();
+      fail4();
     }
     const inheritedStrikeout = libraryAttributes[0]?.body["strikeout"] === true;
     if (body3["strikeout"] === void 0 && inheritedStrikeout) {
-      fail3();
+      fail4();
     }
     if (body3["strikeout"] === false && !inheritedStrikeout) {
       delete body3["strikeout"];
@@ -43069,7 +43320,7 @@ function planClone(input, current2, history, templateInput, allocate, historical
   for (const attr of [...attributes2, ...historicalAfter === void 0 ? [] : inheritedRecords]) {
     const mapped = [...component2.attributes, ...component2.pins.flatMap((entry) => entry.attributes)].find((entry) => entry.id === map2.get(attr.id));
     if (mapped === void 0) {
-      fail3();
+      fail4();
     }
     records2.push({ id: mapped.id, type: "ATTR", body: structuredClone(mapped.body) });
   }
@@ -43077,7 +43328,7 @@ function planClone(input, current2, history, templateInput, allocate, historical
     for (const attr of inheritedDeviceAttributes) {
       const id7 = map2.get(attr.id);
       if (!same4(records2.find((entry) => entry.id === id7), historicalAfter.objects.find((entry) => entry.id === id7))) {
-        fail3();
+        fail4();
       }
     }
   }
@@ -43123,25 +43374,25 @@ function planClone(input, current2, history, templateInput, allocate, historical
 }
 function verifySchematicNetFlagClone(descriptor, actualSource, actualInput) {
   if (descriptor.profile !== SCHEMATIC_NETFLAG_CLONE_PROFILE) {
-    fail3();
+    fail4();
   }
   const actual = correlateSchematicNativeSource(actualSource, actualInput), found = actual.components.find((entry) => entry.id === descriptor.component.id);
   if (found === void 0) {
-    fail3();
+    fail4();
   }
   const model = structuredClone(found), stored2 = new Set(descriptor.records.map((entry) => entry.id));
   const align2 = (before, after) => {
     if (before.length !== after.length) {
-      fail3();
+      fail4();
     }
     for (const entry of after) {
       const reference2 = before.find((attr) => attr.key === entry.key && attr.body["parentId"] === entry.body["parentId"]);
       if (reference2 === void 0) {
-        fail3();
+        fail4();
       }
       if (entry.id !== reference2.id) {
         if (stored2.has(reference2.id) || actualSource.objects.some((object4) => object4.id === entry.id) || !/^[a-f0-9]{16}$/u.test(entry.id)) {
-          fail3();
+          fail4();
         }
         entry.id = reference2.id;
       }
@@ -43152,7 +43403,7 @@ function verifySchematicNetFlagClone(descriptor, actualSource, actualInput) {
   for (const pin4 of model.pins) {
     const reference2 = descriptor.component.pins.find((entry) => entry.id === pin4.id);
     if (reference2 === void 0) {
-      fail3();
+      fail4();
     }
     align2(reference2.attributes, pin4.attributes);
   }
@@ -43162,12 +43413,12 @@ function verifySchematicNetFlagClone(descriptor, actualSource, actualInput) {
     pin4.attributes.sort((a, b) => a.id.localeCompare(b.id));
   }
   if (!same4(model, expected2)) {
-    fail3();
+    fail4();
   }
   const pins = new Set(model.pins.map((entry) => entry.id));
   const records2 = actualSource.objects.filter((entry) => entry.id === model.id || entry.body["parentId"] === model.id || pins.has(String(entry.body["parentId"])));
   if (!same4(records2.toSorted((a, b) => a.id.localeCompare(b.id)), descriptor.records.toSorted((a, b) => a.id.localeCompare(b.id)))) {
-    fail3();
+    fail4();
   }
 }
 function alignSchematicNetFlagCloneLifecycle(descriptor, actualSource, actualInput) {
@@ -43175,22 +43426,22 @@ function alignSchematicNetFlagCloneLifecycle(descriptor, actualSource, actualInp
   const rawNativeSha256 = sha256Json(native), records2 = new Map(actualSource.objects.map((entry) => [entry.id, structuredClone(entry)]));
   const component2 = native.components.find((entry) => entry.id === descriptor.component.id);
   if (component2 === void 0) {
-    fail3();
+    fail4();
   }
   const attributes2 = [...component2.attributes, ...component2.pins.flatMap((pin4) => pin4.attributes)], hydratedAttributes = [];
   for (const field2 of descriptor.watchedOmittedStrikeout) {
     const matches = attributes2.filter((entry) => entry.key === field2.key && entry.body["parentId"] === field2.parentId);
     const attr = matches[0];
     if (matches.length !== 1 || attr === void 0 || field2.stored && attr.id !== field2.id) {
-      fail3();
+      fail4();
     }
     const record6 = records2.get(attr.id);
     if (field2.stored !== (record6 !== void 0)) {
-      fail3();
+      fail4();
     }
     if (Object.hasOwn(attr.body, "strikeout")) {
       if (attr.body["strikeout"] !== false || record6 !== void 0 && record6.body["strikeout"] !== false) {
-        fail3();
+        fail4();
       }
       delete attr.body["strikeout"];
       if (record6 !== void 0) {
@@ -43203,17 +43454,17 @@ function alignSchematicNetFlagCloneLifecycle(descriptor, actualSource, actualInp
   const order2 = descriptor.reconstructedHiddenAttributeOrder;
   if (order2.length > 0) {
     if (order2.length !== 2 && order2.length !== 3) {
-      fail3();
+      fail4();
     }
     const changed = order2.filter((field2) => component2.attributes.find((attr) => attr.id === field2.id)?.body["zIndex"] !== field2.initialZIndex);
     if (changed.length > 0 && changed.length !== order2.length) {
-      fail3();
+      fail4();
     }
     for (const field2 of changed) {
       const attr = component2.attributes.find((entry) => entry.id === field2.id), record6 = records2.get(field2.id);
       const expected2 = descriptor.component.attributes.find((entry) => entry.id === field2.id);
       if (attr === void 0 || record6 === void 0 || expected2 === void 0 || record6.type !== "ATTR" || attr.key !== field2.key || attr.body["parentId"] !== component2.id || attr.body["zIndex"] !== field2.reconstructedZIndex || record6.body["zIndex"] !== field2.reconstructedZIndex || !same4({ ...attr, body: { ...attr.body, zIndex: field2.initialZIndex } }, expected2) || !same4({ ...record6.body, zIndex: field2.initialZIndex }, expected2.body)) {
-        fail3();
+        fail4();
       }
       attr.body["zIndex"] = field2.initialZIndex;
       record6.body["zIndex"] = field2.initialZIndex;
@@ -43240,11 +43491,11 @@ function alignSchematicNetFlagCloneLifecycle(descriptor, actualSource, actualInp
 function buildLoadedNetFlagTemplateReadExpression(input) {
   const scope3 = external_exports.object({ active: external_exports.object({ documentUuid: identifier2, tabId: identifier2 }).strict(), template: external_exports.object({ documentUuid: identifier2, tabId: identifier2 }).strict(), projectUuid: identifier2 }).strict().parse(input);
   if (scope3.active.tabId !== `${scope3.active.documentUuid}@${scope3.projectUuid}` || scope3.template.tabId !== `${scope3.template.documentUuid}@${scope3.projectUuid}`) {
-    fail3();
+    fail4();
   }
   const offset2 = SCHEMATIC_NATIVE_READER_CODE.indexOf("const schScalar =");
   if (offset2 === -1) {
-    fail3();
+    fail4();
   }
   return `(()=>{const scope=${JSON.stringify(scope3)},binding=scope.template;
 const schNative=globalThis.SCH,schManager=schNative?.docMemoryManager;
@@ -43347,6 +43598,106 @@ var init_schematic_layout_schema = __esm({
   }
 });
 
+// server/src/flat-display-library-peers.ts
+function flatDisplayLibrarySeal(history) {
+  const documents = [];
+  for (const document2 of history.documents) {
+    if (document2.atomHeaderHistory !== void 0) {
+      if (document2.docType !== "SYMBOL" && document2.docType !== "FOOTPRINT" || document2.metadata["uuid"] !== document2.uuid || document2.metadata["docType"] !== document2.docType) {
+        throw new Error("Flat display imported history must belong to unchanged SYMBOL or FOOTPRINT peers.");
+      }
+      const proof = verifyGeneratedNativeAtomHeaderHistory(
+        document2.atomHeaderHistory,
+        { checkpointSha256: history.checkpointSha256, documentUuid: document2.uuid, docType: document2.docType }
+      );
+      documents.push({
+        documentUuid: document2.uuid,
+        docType: document2.docType,
+        occurrenceCount: proof.occurrences.length,
+        occurrencesSha256: proof.occurrencesSha256
+      });
+    }
+  }
+  if (documents.length === 0) {
+    return void 0;
+  }
+  documents.sort((left, right) => left.documentUuid.localeCompare(right.documentUuid));
+  return flatDisplayLibrarySealSchema.parse({ profile: "easyeda-pro-control.flat-library-peers.v1", documents, contentSha256: sha256Json(documents) });
+}
+function assertFlatDisplayLibrarySummary(history, summary6, checkpointSha256) {
+  const seal = flatDisplayLibrarySeal(history);
+  if (seal === void 0) {
+    if (summary6 !== void 0) {
+      throw new Error("Flat display header summary has no imported peer history.");
+    }
+    return;
+  }
+  const parsed2 = headerSummarySchema.parse(summary6);
+  const proofs = new Map(history.documents.map((document2) => [document2.uuid, document2.atomHeaderHistory]));
+  const documents = seal.documents.map((document2) => ({ ...document2, proofSha256: proofs.get(document2.documentUuid)?.sha256 }));
+  const expected2 = {
+    profile: "easyeda.native-history.library-header-evidence.v1",
+    checkpointSha256,
+    projectUuid: history.projectUuid,
+    documents,
+    contentSha256: seal.contentSha256
+  };
+  if (canonicalJson(parsed2) !== canonicalJson({ ...expected2, sha256: sha256Json(expected2) })) {
+    throw new Error("Flat display imported peers lack their exact fresh checkpoint-bound header summary.");
+  }
+}
+function captureFlatDisplayHistory(history) {
+  flatDisplayLibrarySeal(history);
+  const documents = history.documents.map((document2) => {
+    const { atomHeaderHistory, ...body3 } = document2;
+    return { ...structuredClone(body3), ...atomHeaderHistory === void 0 ? {} : { atomHeaderHistory } };
+  });
+  return { ...structuredClone({ ...history, documents: [] }), documents };
+}
+function assertFlatDisplayLibraryPeers(binding2, history) {
+  const seal = flatDisplayLibrarySeal(history);
+  if (binding2.profile === FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE) {
+    if (seal === void 0 || binding2.libraryHeaders === void 0 || canonicalJson(seal) !== canonicalJson(binding2.libraryHeaders)) {
+      throw new Error("Flat display imported library header peers changed or lost their sealed provenance.");
+    }
+  } else if (seal !== void 0 || binding2.libraryHeaders !== void 0) {
+    throw new Error("Legacy flat display does not admit imported library header provenance.");
+  }
+}
+var FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE, hash2, memberSchema, flatDisplayLibrarySealSchema, headerSummarySchema;
+var init_flat_display_library_peers = __esm({
+  "server/src/flat-display-library-peers.ts"() {
+    init_zod();
+    init_core3();
+    init_native_atom_header_history();
+    FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE = "easyeda-pro-control.flat-display-transaction.v2";
+    hash2 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    memberSchema = external_exports.strictObject({
+      documentUuid: external_exports.string().min(1).max(128),
+      docType: external_exports.enum(["SYMBOL", "FOOTPRINT"]),
+      occurrenceCount: external_exports.number().int().min(1).max(1e6),
+      occurrencesSha256: hash2
+    });
+    flatDisplayLibrarySealSchema = external_exports.strictObject({
+      profile: external_exports.literal("easyeda-pro-control.flat-library-peers.v1"),
+      documents: external_exports.array(memberSchema).min(1).max(1e5),
+      contentSha256: hash2
+    }).superRefine((value, context2) => {
+      if (new Set(value.documents.map((entry) => entry.documentUuid)).size !== value.documents.length || sha256Json(value.documents) !== value.contentSha256 || value.documents.some((entry, index) => index > 0 && (value.documents[index - 1]?.documentUuid.localeCompare(entry.documentUuid) ?? 0) >= 0)) {
+        context2.addIssue({ code: "custom", message: "Imported library peer seal is inconsistent." });
+      }
+    });
+    headerSummarySchema = external_exports.strictObject({
+      profile: external_exports.literal("easyeda.native-history.library-header-evidence.v1"),
+      checkpointSha256: hash2,
+      projectUuid: external_exports.string(),
+      documents: external_exports.array(external_exports.strictObject({ ...memberSchema.shape, proofSha256: hash2 })).max(1e5),
+      contentSha256: hash2,
+      sha256: hash2
+    });
+  }
+});
+
 // server/src/flat-display-binding.ts
 function flatDisplayProjectBindingFromHistory(history) {
   return projectBindingSchema.parse({ projectUuid: history.projectUuid, ownerUuid: history.projectOwnerUuid, branchUuid: history.branchUuid });
@@ -43392,7 +43743,7 @@ function assertFlatDisplayInverse(bindingInput, inverseInput) {
   }
   return inverse;
 }
-var FLAT_DISPLAY_TRANSACTION_PROFILE, identity4, hash2, projectBindingSchema, member, sourceBinding, flatDisplayBindingSchema;
+var FLAT_DISPLAY_TRANSACTION_PROFILE, identity4, hash3, projectBindingSchema, member, sourceBinding, commonBindingSchema, flatDisplayBindingSchema;
 var init_flat_display_binding = __esm({
   "server/src/flat-display-binding.ts"() {
     init_zod();
@@ -43400,43 +43751,51 @@ var init_flat_display_binding = __esm({
     init_device_runtime_guard();
     init_design_topology();
     init_schematic_layout_schema();
+    init_flat_display_library_peers();
     FLAT_DISPLAY_TRANSACTION_PROFILE = "easyeda-pro-control.flat-display-transaction.v1";
     identity4 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
-    hash2 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hash3 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     projectBindingSchema = external_exports.strictObject({
       projectUuid: external_exports.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u),
       ownerUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
       branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u)
     });
-    member = external_exports.strictObject({ uuid: identity4, docType: external_exports.string().min(1).max(128), semanticSha256: hash2 });
-    sourceBinding = external_exports.strictObject({ sourceSha256: hash2, nativeSha256: hash2 });
-    flatDisplayBindingSchema = external_exports.strictObject({
-      profile: external_exports.literal(FLAT_DISPLAY_TRANSACTION_PROFILE),
+    member = external_exports.strictObject({ uuid: identity4, docType: external_exports.string().min(1).max(128), semanticSha256: hash3 });
+    sourceBinding = external_exports.strictObject({ sourceSha256: hash3, nativeSha256: hash3 });
+    commonBindingSchema = external_exports.strictObject({
       project: projectBindingSchema,
       projectPath: external_exports.string().min(1).max(4096),
       schematicUuid: identity4,
       pageUuid: identity4,
       tabId: external_exports.string().min(1).max(512),
-      operationSha256: hash2,
-      inverseSha256: hash2,
+      operationSha256: hash3,
+      inverseSha256: hash3,
       checkpoint: external_exports.strictObject({
         receiptPath: external_exports.string().min(1).max(4096),
-        receiptSha256: hash2,
-        checkpointSha256: hash2,
-        sourceSha256: hash2,
-        sourceDumpSha256: hash2,
-        checkpointDumpSha256: hash2,
-        historySemanticSha256: hash2
+        receiptSha256: hash3,
+        checkpointSha256: hash3,
+        sourceSha256: hash3,
+        sourceDumpSha256: hash3,
+        checkpointDumpSha256: hash3,
+        historySemanticSha256: hash3
       }),
       members: external_exports.array(member).min(2).max(1e5),
       before: sourceBinding,
       after: sourceBinding,
       topology: designTopologySchema,
-      beforeObservationSha256: hash2,
-      baselineProofSha256: hash2
-    }).superRefine((value, context2) => {
+      beforeObservationSha256: hash3,
+      baselineProofSha256: hash3
+    });
+    flatDisplayBindingSchema = external_exports.discriminatedUnion("profile", [
+      external_exports.strictObject({ profile: external_exports.literal(FLAT_DISPLAY_TRANSACTION_PROFILE), ...commonBindingSchema.shape }),
+      external_exports.strictObject({ profile: external_exports.literal(FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE), ...commonBindingSchema.shape, libraryHeaders: flatDisplayLibrarySealSchema })
+    ]).superRefine((value, context2) => {
       if (new Set(value.members.map((entry) => entry.uuid)).size !== value.members.length || value.members.filter((entry) => entry.uuid === value.pageUuid && entry.docType === "SCH_PAGE").length !== 1 || value.members.filter((entry) => entry.uuid === value.schematicUuid && entry.docType === "SCH").length !== 1 || value.tabId !== `${value.pageUuid}@${value.project.projectUuid}` || value.projectPath !== normalizeEasyedaProjectPath(value.projectPath)) {
         context2.addIssue({ code: "custom", message: "Flat display binding has inconsistent membership, path or tab identity." });
+      }
+      const typesByUuid = new Map(value.members.map((entry) => [entry.uuid, entry.docType]));
+      if (value.profile === FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE && value.libraryHeaders.documents.some((entry) => typesByUuid.get(entry.documentUuid) !== entry.docType)) {
+        context2.addIssue({ code: "custom", message: "Imported library header seal is outside the exact saved peer membership." });
       }
       if (Buffer.byteLength(JSON.stringify(value), "utf8") > 2097152) {
         context2.addIssue({ code: "custom", message: "Flat display binding exceeds its bounded retained-plan size." });
@@ -43833,14 +44192,14 @@ var init_schematic_flat_topology = __esm({
 });
 
 // server/src/schematic-layout-transport.ts
-import { createHash as createHash6 } from "node:crypto";
+import { createHash as createHash7 } from "node:crypto";
 import { gzipSync } from "node:zlib";
 function encode3(bytes) {
   const compressed = gzipSync(bytes);
   if (compressed.length > SCHEMATIC_LAYOUT_PAYLOAD_MAX_GZIP_BYTES) {
     throw new Error("Layout payload exceeds its compressed bound.");
   }
-  return { utf8Bytes: bytes.length, gzipBytes: compressed.length, base64: compressed.toString("base64"), sha256: createHash6("sha256").update(bytes).digest("hex") };
+  return { utf8Bytes: bytes.length, gzipBytes: compressed.length, base64: compressed.toString("base64"), sha256: createHash7("sha256").update(bytes).digest("hex") };
 }
 function buildSchematicLayoutPayloadCode(baseline, desiredJson) {
   const baselineBytes = Buffer.from(baseline, "utf8"), desiredBytes = Buffer.from(desiredJson, "utf8");
@@ -45234,7 +45593,7 @@ var init_design_operations = __esm({
 });
 
 // server/src/native-profiles.ts
-import { createHash as createHash7 } from "node:crypto";
+import { createHash as createHash8 } from "node:crypto";
 import { constants as constants2 } from "node:fs";
 import { lstat as lstat6, open as open6, realpath as realpath3 } from "node:fs/promises";
 import { isAbsolute as isAbsolute7, join as join6 } from "node:path";
@@ -45249,16 +45608,16 @@ async function verifySchematicNativeProfile(assetsRoot) {
   }
   const file2 = await open6(path5, constants2.O_RDONLY | constants2.O_NOFOLLOW);
   try {
-    const hash13 = createHash7("sha256");
+    const hash14 = createHash8("sha256");
     for await (const chunk of file2.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw new TypeError("Native implementation stream is not binary.");
       }
-      hash13.update(chunk);
+      hash14.update(chunk);
     }
     const after = await file2.stat({ bigint: true });
     const current2 = await lstat6(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash13.digest("hex") !== SCHEMATIC_NATIVE_IMPLEMENTATION.sha256) {
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash14.digest("hex") !== SCHEMATIC_NATIVE_IMPLEMENTATION.sha256) {
       throw new Error("Installed schematic native implementation differs from its reviewed profile.");
     }
     return SCHEMATIC_NATIVE_IMPLEMENTATION;
@@ -45279,7 +45638,7 @@ var init_native_profiles = __esm({
 });
 
 // server/src/library-native-profile.ts
-import { createHash as createHash8 } from "node:crypto";
+import { createHash as createHash9 } from "node:crypto";
 import { constants as constants3 } from "node:fs";
 import { lstat as lstat7, open as open7, realpath as realpath4 } from "node:fs/promises";
 import { isAbsolute as isAbsolute8, join as join7 } from "node:path";
@@ -45294,16 +45653,16 @@ async function verifyLibraryNativeProfile(assetsRoot) {
   }
   const file2 = await open7(path5, constants3.O_RDONLY | constants3.O_NOFOLLOW);
   try {
-    const hash13 = createHash8("sha256");
+    const hash14 = createHash9("sha256");
     for await (const chunk of file2.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw new TypeError("Native implementation stream is not binary.");
       }
-      hash13.update(chunk);
+      hash14.update(chunk);
     }
     const after = await file2.stat({ bigint: true });
     const current2 = await lstat7(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash13.digest("hex") !== LIBRARY_NATIVE_IMPLEMENTATION.sha256) {
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash14.digest("hex") !== LIBRARY_NATIVE_IMPLEMENTATION.sha256) {
       throw new Error("Native library implementation differs from the reviewed profile.");
     }
     return LIBRARY_NATIVE_IMPLEMENTATION;
@@ -45324,7 +45683,7 @@ var init_library_native_profile = __esm({
 });
 
 // server/src/device-native-profile.ts
-import { createHash as createHash9 } from "node:crypto";
+import { createHash as createHash10 } from "node:crypto";
 import { constants as constants4 } from "node:fs";
 import { lstat as lstat8, open as open8, realpath as realpath5 } from "node:fs/promises";
 import { isAbsolute as isAbsolute9, join as join8 } from "node:path";
@@ -45341,16 +45700,16 @@ async function verifyDeviceAssociationNativeProfile(assetsRoot) {
     }
     const file2 = await open8(path5, constants4.O_RDONLY | constants4.O_NOFOLLOW);
     try {
-      const hash13 = createHash9("sha256");
+      const hash14 = createHash10("sha256");
       for await (const chunk of file2.createReadStream({ autoClose: false })) {
         if (!Buffer.isBuffer(chunk)) {
           throw new TypeError("Native device implementation stream is not binary.");
         }
-        hash13.update(chunk);
+        hash14.update(chunk);
       }
       const after = await file2.stat({ bigint: true });
       const current2 = await lstat8(path5, { bigint: true });
-      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash13.digest("hex") !== implementation.sha256) {
+      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash14.digest("hex") !== implementation.sha256) {
         throw new Error("Native device implementation differs from the reviewed profile.");
       }
     } finally {
@@ -45469,7 +45828,7 @@ stage='lookup';const native=await ${call};await context();
 const value=request.method===${JSON.stringify(TAB_METHOD)}?string(native):tabs(native);
 if(JSON.stringify(value)!==JSON.stringify(request.method===${JSON.stringify(TAB_METHOD)}?leaf.id:leaf.tabs))fail();
 stage='after-tree';const after=tree(await editor.getSplitScreenTree());await context();if(JSON.stringify(before)!==JSON.stringify(after))fail();
-const payload={profile:${JSON.stringify(PROFILE2)},scopeSha256:${JSON.stringify(sha256Json(scope3))},method:request.method,tree:after,value};
+const payload={profile:${JSON.stringify(PROFILE3)},scopeSha256:${JSON.stringify(sha256Json(scope3))},method:request.method,tree:after,value};
 const json=JSON.stringify(payload),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:'easyeda-pro-control.exact-json.v1',utf8Bytes,json};
 if(utf8Bytes>${MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${MAX_BYTES})fail();return envelope;
 }catch{throw new Error('Owned editor lookup refused at '+stage);}`;
@@ -45610,7 +45969,7 @@ async function readEditorTabLookup(engine2, requestInput, expectedContext, overr
     }
   };
 }
-var TAB_METHOD, SPLIT_METHOD, PROFILE2, MAX_BYTES, identity6, selector, type, member2, editorTabLookupRequestSchema, scopeSchema, tabSchema, nodeSchema, resultSchema, services, hash3, fileIdentity, checkpointSchema;
+var TAB_METHOD, SPLIT_METHOD, PROFILE3, MAX_BYTES, identity6, selector, type, member2, editorTabLookupRequestSchema, scopeSchema, tabSchema, nodeSchema, resultSchema, services, hash4, fileIdentity, checkpointSchema;
 var init_editor_tab_lookups = __esm({
   "server/src/editor-tab-lookups.ts"() {
     init_zod();
@@ -45624,7 +45983,7 @@ var init_editor_tab_lookups = __esm({
     init_runtime_scripts();
     TAB_METHOD = "eda.dmt_EditorControl.getSplitScreenIdByTabId";
     SPLIT_METHOD = "eda.dmt_EditorControl.getTabsBySplitScreenId";
-    PROFILE2 = "easyeda-pro-control.owned-editor-tab-lookup.v1";
+    PROFILE3 = "easyeda-pro-control.owned-editor-tab-lookup.v1";
     MAX_BYTES = 262144;
     identity6 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
     selector = external_exports.string().min(1).max(512).regex(/^[^\u0000-\u001F\u007F]+$/u);
@@ -45655,14 +46014,14 @@ var init_editor_tab_lookups = __esm({
       tabs: external_exports.array(tabSchema).min(1).max(256).nullable()
     }).strict();
     resultSchema = external_exports.object({
-      profile: external_exports.literal(PROFILE2),
+      profile: external_exports.literal(PROFILE3),
       scopeSha256: external_exports.string().regex(/^[a-f0-9]{64}$/u),
       method: external_exports.enum([TAB_METHOD, SPLIT_METHOD]),
       tree: external_exports.array(nodeSchema).min(1).max(128),
       value: external_exports.union([selector, external_exports.array(tabSchema).min(1).max(256)])
     }).strict();
     services = { readNativeHistoryCheckpoint, verifySchematicNativeProfile, verifyDeviceAssociationNativeProfile };
-    hash3 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hash4 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     fileIdentity = external_exports.object({ birthtimeNs: external_exports.string().min(1), ctimeNs: external_exports.string().min(1), dev: external_exports.string().min(1), ino: external_exports.string().min(1) });
     checkpointSchema = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.checkpoint.v2"),
@@ -45671,11 +46030,11 @@ var init_editor_tab_lookups = __esm({
       checkpoint: external_exports.string().min(1),
       sourceIdentity: fileIdentity,
       checkpointIdentity: fileIdentity,
-      sourceSha256: hash3,
-      checkpointSha256: hash3,
-      sourceDumpSha256: hash3,
-      checkpointDumpSha256: hash3,
-      receiptSha256: hash3,
+      sourceSha256: hash4,
+      checkpointSha256: hash4,
+      sourceDumpSha256: hash4,
+      checkpointDumpSha256: hash4,
+      receiptSha256: hash4,
       receiptPath: external_exports.string().min(1)
     }).catchall(external_exports.unknown());
   }
@@ -45867,7 +46226,7 @@ var init_pcb_net_membership = __esm({
       "Native task-equivalent identity records, not public primitive instances, native my(item) DTOs or public-method execution parity.",
       "Requires a nonempty net and explicit nonempty unique filters from Line, Arc, Via, Pad and ComponentPad; unfiltered, empty-net and other-family requests are unsupported.",
       "Pad means standalone physical pads; ComponentPad means component-owned physical pads. These disjoint roles differ from the direct Pad enumerator, which also includes component pads.",
-      "Requires one exact active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769; library, partition and unmodeled source records are unsupported.",
+      "Requires one exact active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769. expectedContext.document must retain the observed tabId and parentProjectUuid; a minimal UUID/type selector refuses before dispatch. Library, partition and unmodeled source records are unsupported.",
       "STRING, FONT, RULE_TEMPLATE, PRIMITIVE, PREFERENCE and SILK_OPTS are admitted as nonselected text/metadata. BOARD is a nonselected display outline: its generated Line/Arc drawing controllers are not the Track/ArcTrack objects enumerated by the electrical inventory. Outline geometry and drawing-child ownership are not returned or validated.",
       "PANELIZE is admitted only as one canonical disabled default record: on=false, row=column=1, zero spacing and onlyOutline=true, with all ten settings and exact nested shapes retained. Nested stamp/side flags remain dormant settings; enabled, malformed and descendant panel state is unsupported.",
       "Net matching uses uppercase keys and preserves stored spelling. Full requested-family source/inventory correspondence is checked before filtering; this is not electrical connectivity, DRC, saved-file or persistence proof.",
@@ -46115,7 +46474,7 @@ async function readPcbPrimitiveType(engine2, requestInput, expectedContext, expe
   }
   return result;
 }
-var PCB_PRIMITIVE_TYPE_METHOD, PCB_PRIMITIVE_TYPE_PROFILE, PCB_PRIMITIVE_TYPE_LIMITATIONS, identity8, pcbPrimitiveTypeArgumentsSchema, pcbPrimitiveTypeRequestSchema, pcbPrimitiveTypeResultSchema, hash4, consistencySchema, payloadSchema;
+var PCB_PRIMITIVE_TYPE_METHOD, PCB_PRIMITIVE_TYPE_PROFILE, PCB_PRIMITIVE_TYPE_LIMITATIONS, identity8, pcbPrimitiveTypeArgumentsSchema, pcbPrimitiveTypeRequestSchema, pcbPrimitiveTypeResultSchema, hash5, consistencySchema, payloadSchema;
 var init_pcb_primitive_type_read = __esm({
   "server/src/pcb-primitive-type-read.ts"() {
     init_zod();
@@ -46136,11 +46495,11 @@ var init_pcb_primitive_type_read = __esm({
     pcbPrimitiveTypeArgumentsSchema = external_exports.object({ id: identity8 }).strict();
     pcbPrimitiveTypeRequestSchema = external_exports.object({ method: external_exports.literal(PCB_PRIMITIVE_TYPE_METHOD), arguments: pcbPrimitiveTypeArgumentsSchema }).strict();
     pcbPrimitiveTypeResultSchema = external_exports.enum(PCB_NET_MEMBERSHIP_TYPES);
-    hash4 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hash5 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     consistencySchema = external_exports.object({
       stable: external_exports.literal(true),
       attempts: external_exports.literal(2),
-      snapshotSha256: hash4,
+      snapshotSha256: hash5,
       contextBinding: external_exports.object({ level: external_exports.literal("active-context-stability-required"), preAndPostChecked: external_exports.literal(true), switchAwayAndBackDetectable: external_exports.literal(false) }).strict()
     }).strict();
     payloadSchema = external_exports.object({ ok: external_exports.literal(true), kind: external_exports.enum(["pcb-source", "pcb-inventory"]), documentType: external_exports.literal(3), read_consistency: consistencySchema }).loose();
@@ -46345,7 +46704,7 @@ async function readPcbActiveLayer(engine2, requestInput, expectedContext, expect
   }
   return result;
 }
-var PCB_ACTIVE_LAYER_METHOD, PCB_ACTIVE_LAYER_PROFILE, PCB_ACTIVE_LAYER_API_SHA256, PCB_ACTIVE_LAYER_PCB_SHA256, PCB_ACTIVE_LAYER_SOURCE_EDIT_VERSION, ALL_LAYERS_METHOD, MAX_BYTES2, PCB_ACTIVE_LAYER_LIMITATIONS, pcbActiveLayerArgumentsSchema, pcbActiveLayerRequestSchema, layerId, layerType, color3, pcbActiveLayerResultSchema, layerRows, sourceLayerFields, hash5, consistencySchema2, sourcePayloadSchema, layersPayloadSchema;
+var PCB_ACTIVE_LAYER_METHOD, PCB_ACTIVE_LAYER_PROFILE, PCB_ACTIVE_LAYER_API_SHA256, PCB_ACTIVE_LAYER_PCB_SHA256, PCB_ACTIVE_LAYER_SOURCE_EDIT_VERSION, ALL_LAYERS_METHOD, MAX_BYTES2, PCB_ACTIVE_LAYER_LIMITATIONS, pcbActiveLayerArgumentsSchema, pcbActiveLayerRequestSchema, layerId, layerType, color3, pcbActiveLayerResultSchema, layerRows, sourceLayerFields, hash6, consistencySchema2, sourcePayloadSchema, layersPayloadSchema;
 var init_pcb_active_layer_read = __esm({
   "server/src/pcb-active-layer-read.ts"() {
     init_zod();
@@ -46361,7 +46720,7 @@ var init_pcb_active_layer_read = __esm({
     MAX_BYTES2 = 2097152;
     PCB_ACTIVE_LAYER_LIMITATIONS = [
       "Native active-layer identity plus the existing public getAllLayers nine-field projection; not execution or return-parity of getCurrentLayer, whose installed API 0.2.53.aee2f57a body is empty.",
-      "Only one exact active project-owned type-3 PCB. One ACTIVE_LAYER record and one corresponding LAYER source record must identify exactly one returned layer. Missing, malformed or ambiguous state refuses; no undefined/no-active-layer result is claimed.",
+      "Only one exact active project-owned type-3 PCB. expectedContext.document must retain the observed tabId and parentProjectUuid; a minimal UUID/type selector refuses before dispatch. One ACTIVE_LAYER record and one corresponding LAYER source record must identify exactly one returned layer. Missing, malformed or ambiguous state refuses; no undefined/no-active-layer result is claimed.",
       "The selected layer's name, mapped type, locked state and use/show-derived status must match source. Colors and rounded transparency percentages retain the public getAllLayers projection, not complete native display/physical-stack parity.",
       "Color fields are bounded raw public strings, not validated CSS colors. The pinned native fractional-channel serializer can emit malformed values such as #a.492f; values are preserved, never corrected or evaluated.",
       "Two matching complete source/layers/source cycles, each observation double-sampled, require unchanged full observed context and runtime. Switch-away-and-back between observations remains undetectable.",
@@ -46393,11 +46752,11 @@ var init_pcb_active_layer_read = __esm({
       use: external_exports.boolean(),
       show: external_exports.boolean()
     }).loose();
-    hash5 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hash6 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     consistencySchema2 = external_exports.object({
       stable: external_exports.literal(true),
       attempts: external_exports.literal(2),
-      snapshotSha256: hash5,
+      snapshotSha256: hash6,
       contextBinding: external_exports.object({ level: external_exports.literal("active-context-stability-required"), preAndPostChecked: external_exports.literal(true), switchAwayAndBackDetectable: external_exports.literal(false) }).strict()
     }).strict();
     sourcePayloadSchema = external_exports.object({
@@ -47553,10 +47912,67 @@ var init_schematic_layout_page_load = __esm({
   }
 });
 
+// server/src/native-library-header-evidence.ts
+async function nativeLibraryHeaderEvidence(history, expected2) {
+  const { checkpointSha256, projectUuid } = expected2;
+  if (history.checkpointSha256 !== checkpointSha256 || history.projectUuid !== projectUuid || !/^[a-f0-9]{64}$/u.test(checkpointSha256) || !/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.test(projectUuid)) {
+    throw new Error("Library header evidence differs from its independently verified checkpoint identity.");
+  }
+  const documents = [];
+  const seen = /* @__PURE__ */ new Set();
+  let batchDocuments = 0;
+  for (const document2 of history.documents) {
+    if (seen.has(document2.uuid)) {
+      throw new Error("Library header evidence has duplicate document identities.");
+    }
+    seen.add(document2.uuid);
+    batchDocuments += 1;
+    if (batchDocuments === 512) {
+      batchDocuments = 0;
+      await yieldProofEventLoop();
+    }
+    if (document2.atomHeaderHistory !== void 0) {
+      if (document2.docType !== "SYMBOL" && document2.docType !== "FOOTPRINT" || document2.metadata["uuid"] !== document2.uuid || document2.metadata["docType"] !== document2.docType) {
+        throw new Error("Library header evidence belongs to an unsupported document.");
+      }
+      const proof = verifyGeneratedNativeAtomHeaderHistory(document2.atomHeaderHistory, {
+        checkpointSha256,
+        documentUuid: document2.uuid,
+        docType: document2.docType
+      });
+      documents.push({
+        documentUuid: document2.uuid,
+        docType: document2.docType,
+        occurrenceCount: proof.occurrences.length,
+        occurrencesSha256: proof.occurrencesSha256,
+        proofSha256: proof.sha256
+      });
+    }
+  }
+  documents.sort((left, right) => left.documentUuid.localeCompare(right.documentUuid));
+  const contentSha256 = sha256Json(documents.map(({ documentUuid, docType, occurrenceCount, occurrencesSha256 }) => ({ documentUuid, docType, occurrenceCount, occurrencesSha256 })));
+  const evidence = {
+    profile: "easyeda.native-history.library-header-evidence.v1",
+    checkpointSha256,
+    projectUuid,
+    documents,
+    contentSha256
+  };
+  return { ...evidence, sha256: sha256Json(evidence) };
+}
+var init_native_library_header_evidence = __esm({
+  "server/src/native-library-header-evidence.ts"() {
+    init_core3();
+    init_native_atom_header_history();
+    init_cooperative_proof();
+  }
+});
+
 // server/src/schematic-flat-read.ts
 import { join as join10 } from "node:path";
 async function captureSchematicFlatTopology(engine2, expectedContext, overrides, bindProject) {
-  if (expectedContext.document.documentType !== 1) {
+  const capturedContext = structuredClone(expectedContext);
+  if (capturedContext.document.documentType !== 1) {
     throw new Error("Flat topology requires an active schematic page.");
   }
   const dependencies3 = { ...services2, ...overrides };
@@ -47570,7 +47986,7 @@ async function captureSchematicFlatTopology(engine2, expectedContext, overrides,
     await dependencies3.verifyDeviceAssociationNativeProfile(bundles.assetsRoot);
   };
   await profile();
-  const context2 = await engine2.assertContext(structuredClone(expectedContext));
+  const context2 = await engine2.assertContext(capturedContext);
   const outputDir = join10(controlDataDirectory(), "checkpoints");
   const checkpoint = checkpointSchema2.parse(await engine2.checkpoint({
     source: context2.project.path,
@@ -47589,11 +48005,13 @@ async function captureSchematicFlatTopology(engine2, expectedContext, overrides,
   const history = await dependencies3.readNativeHistoryCheckpoint({
     checkpointPath: checkpoint.checkpoint,
     expectedSha256: checkpoint.checkpointSha256,
-    projectUuid
+    projectUuid,
+    libraryAtomHeaders: "preserve"
   });
   if (history.checkpointSha256 !== checkpoint.checkpointSha256) {
     throw new Error("Flat topology history substituted its checkpoint identity.");
   }
+  const libraryHeaderEvidence = await nativeLibraryHeaderEvidence(history, { checkpointSha256: checkpoint.checkpointSha256, projectUuid });
   const binding2 = deriveSchematicLayoutPageLoadScope(context2, history);
   const scope3 = {
     projectUuid: binding2.projectUuid,
@@ -47646,7 +48064,13 @@ return envelope;`, context2);
   if (canonicalJson(first.proof) !== canonicalJson(second.proof)) {
     throw new Error("Flat topology changed between complete observations.");
   }
-  return { ...second, checkpoint, history, ...projectBinding === void 0 ? {} : { projectBinding } };
+  return {
+    ...second,
+    checkpoint,
+    history,
+    ...libraryHeaderEvidence.documents.length === 0 ? {} : { libraryHeaderEvidence },
+    ...projectBinding === void 0 ? {} : { projectBinding }
+  };
 }
 async function observeSchematicFlatTopology(engine2, expectedContext, overrides = {}) {
   const result = await captureSchematicFlatTopology(engine2, expectedContext, overrides, true);
@@ -47663,6 +48087,7 @@ async function readSchematicFlatTopology(engine2, expectedContext, overrides = {
     documentType: 1,
     ...observed.proof,
     membership: { source: "complete-project-checkpoint", checkpointSha256: observed.checkpoint.checkpointSha256, receiptPath: observed.checkpoint.receiptPath },
+    ...observed.libraryHeaderEvidence === void 0 ? {} : { libraryHeaderEvidence: observed.libraryHeaderEvidence },
     currentGenerationLiveValidated: false,
     transactionTopology: false
   };
@@ -47688,6 +48113,7 @@ var init_schematic_flat_read = __esm({
     init_flat_display_binding();
     init_runtime_scripts();
     init_library_checkpoint();
+    init_native_library_header_evidence();
     services2 = { readNativeHistoryCheckpoint, verifySchematicNativeProfile, verifyDeviceAssociationNativeProfile };
     checkpointHash = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     fileIdentity2 = external_exports.object({ birthtimeNs: external_exports.string().min(1), ctimeNs: external_exports.string().min(1), dev: external_exports.string().min(1), ino: external_exports.string().min(1) });
@@ -56964,7 +57390,7 @@ var init_model_transform_action = __esm({
 });
 
 // server/src/schematic-library-style.ts
-function fail4() {
+function fail5() {
   throw new Error("Schematic null style lacks exact native library reconstruction.");
 }
 function schematicLibraryStyle(history, native, stored2, exported, fields2) {
@@ -56977,19 +57403,19 @@ function schematicLibraryStyle(history, native, stored2, exported, fields2) {
     metadata: symbol4.metadata,
     records: symbol4.records.map(({ id: id7, type: type2, body: body3 }) => ({ id: id7, type: type2, body: body3 }))
   }) || !same10(symbol4.records.find((row) => row.type === "CANVAS")?.body, { originX: 0, originY: 0 })) {
-    fail4();
+    fail5();
   }
   const roots = symbol4.records.filter((row) => row.type === "ATTR" && row.body["partId"] === model.body["partId"] && (row.body["parentId"] === "" || row.body["parentId"] === model.body["partId"]) && row.body["key"] === stored2.body["key"]);
   const attrs = model.attributes.filter((attr) => attr.id === stored2.id && attr.key === stored2.body["key"]), root = roots[0];
   if (roots.length !== 1 || root === void 0 || attrs.length !== 1 || !same10(attrs[0]?.body, exported.body) || fields2.length === 0 || fields2.some((key) => !["rotation", "fontSize", "fontWeight", "italic", "underline"].includes(key) || stored2.body[key] !== null || !Object.hasOwn(root.body, key) || root.body[key] === null || root.body[key] === void 0 || !same10(root.body[key], exported.body[key]) || (["rotation", "fontSize"].includes(key) ? typeof root.body[key] !== "number" || !Number.isFinite(root.body[key]) || key === "fontSize" && root.body[key] <= 0 : typeof root.body[key] !== "boolean"))) {
-    fail4();
+    fail5();
   }
   const pins = symbol4.records.filter((row) => row.type === "PIN" && row.body["partId"] === model.body["partId"]);
   if (pins.length !== model.pins.length || pins.some((row) => {
     const pin4 = model.pins.find((entry) => entry.id === `${model.id}-${row.id}`);
     return pin4 === void 0 || pin4.body["x"] !== Number(row.body["x"]) + Number(model.body["x"]) || pin4.body["y"] !== Number(row.body["y"]) + Number(model.body["y"]) || pin4.body["rotation"] !== row.body["rotation"] || pin4.body["length"] !== row.body["length"];
   })) {
-    fail4();
+    fail5();
   }
   return { componentId: model.id, attributeId: stored2.id, libraryAttributeId: root.id, symbolSha256: symbol4.semanticSha256, fields: fields2 };
 }
@@ -57265,41 +57691,41 @@ var init_schematic_storage_persistence = __esm({
 });
 
 // server/src/schematic-layout-constructor-witness.ts
-import { createHash as createHash10 } from "node:crypto";
+import { createHash as createHash11 } from "node:crypto";
 import { constants as constants5 } from "node:fs";
 import { lstat as lstat9, open as open9, realpath as realpath6 } from "node:fs/promises";
 import { basename as basename4, join as join12 } from "node:path";
-function fail5() {
+function fail6() {
   throw new Error("Schematic constructor order lacks one exact preceding managed close/reopen witness.");
 }
 function record3(value) {
   if (!isRecord(value)) {
-    fail5();
+    fail6();
   }
   return value;
 }
 function text4(value) {
   if (typeof value !== "string" || value.length === 0) {
-    fail5();
+    fail6();
   }
   return value;
 }
 function digest(value) {
   const result = text4(value);
   if (!/^[a-f0-9]{64}$/u.test(result)) {
-    fail5();
+    fail6();
   }
   return result;
 }
 function same11(left, right) {
   if (canonicalJson(left) !== canonicalJson(right)) {
-    fail5();
+    fail6();
   }
 }
 function time3(value) {
   const result = Date.parse(text4(value));
   if (!Number.isFinite(result)) {
-    fail5();
+    fail6();
   }
   return result;
 }
@@ -57308,7 +57734,7 @@ function scope(journal) {
   const project2 = record3(context2["project"]);
   const document2 = record3(context2["document"]);
   if (document2["documentType"] !== 1) {
-    fail5();
+    fail6();
   }
   return { projectUuid: text4(project2["uuid"] ?? project2["projectUuid"]), projectPath: text4(project2["path"]), documentUuid: text4(document2["uuid"] ?? document2["documentUuid"]), tabId: text4(document2["tabId"]) };
 }
@@ -57334,14 +57760,14 @@ function beforeState(journal) {
 function phase(journal, name6) {
   const found = (journal.artifacts ?? []).filter((entry) => basename4(entry.path) === name6);
   if (found.length !== 1 || found[0] === void 0) {
-    fail5();
+    fail6();
   }
   return found[0];
 }
 function parsePhase(journal, name6, bytes) {
   const descriptor = phase(journal, name6);
   if (Buffer.byteLength(bytes) !== descriptor.bytes || sha256Text(bytes) !== descriptor.sha256) {
-    fail5();
+    fail6();
   }
   const parsed2 = JSON.parse(bytes);
   return record3(parsed2);
@@ -57352,7 +57778,7 @@ function preceding(pending, operations) {
   const found = [];
   for (const entry of operations) {
     if (entry["state"] === "journal-unreadable") {
-      fail5();
+      fail6();
     }
     if (entry["operationId"] !== pending.operationId) {
       const context2 = entry["context"];
@@ -57360,7 +57786,7 @@ function preceding(pending, operations) {
         const started = time3(entry["createdAt"]);
         const ended = time3(entry["updatedAt"]);
         if (started > ended || ended >= created) {
-          fail5();
+          fail6();
         }
         found.push(entry);
       }
@@ -57369,12 +57795,12 @@ function preceding(pending, operations) {
   found.sort((a, b) => time3(b["updatedAt"]) - time3(a["updatedAt"]));
   const prior = found[0];
   if (prior === void 0 || found[1] !== void 0 && time3(found[1]["updatedAt"]) === time3(prior["updatedAt"])) {
-    fail5();
+    fail6();
   }
   same11(scope(prior), target5);
   same11(external(prior), external(pending));
   if (prior["state"] !== "completed" || prior["saved"] !== true || prior["reopened"] !== true || prior["hardStop"] !== false || prior["orphanedCallPossible"] !== false || record3(record3(prior["plan"])["operation"])["action"] !== "sch.layout.batch") {
-    fail5();
+    fail6();
   }
   return prior;
 }
@@ -57384,7 +57810,7 @@ function verifySchematicLayoutConstructorLineage(input) {
   const before = beforeState(pending);
   const selected = preceding(pending, input.operations);
   if (selected["operationId"] !== predecessor.operationId) {
-    fail5();
+    fail6();
   }
   same11(lineageSummary(selected), lineageSummary(predecessor));
   same11(scope({ context: pending.plan["expectedContext"] }), target5);
@@ -57394,14 +57820,14 @@ function verifySchematicLayoutConstructorLineage(input) {
   const terminal = parsePhase(predecessor, "08-reopened.json", input.terminalText);
   const artifacts = predecessor.artifacts ?? [];
   if (artifacts.at(-1)?.path !== phase(predecessor, "08-reopened.json").path || artifacts.indexOf(phase(predecessor, "05-after.json")) >= artifacts.indexOf(phase(predecessor, "06-save-reopen.json")) || artifacts.indexOf(phase(predecessor, "06-save-reopen.json")) >= artifacts.indexOf(phase(predecessor, "08-reopened.json"))) {
-    fail5();
+    fail6();
   }
   const afterPayload = record3(after["payload"]), consistency = record3(afterPayload["read_consistency"]);
   const afterSource = parseDocumentSource(text4(afterPayload["source"]));
   same11(after["snapshot"], afterSource);
   same11(parseDocumentSource(schematicNativeSnapshotSchema.parse(after["native"]).source), afterSource);
   if (consistency["stable"] !== true || consistency["attempts"] !== 2) {
-    fail5();
+    fail6();
   }
   const guard = record3(acknowledgment["exactSaveGuard"]);
   const close = record3(acknowledgment["closeProof"]);
@@ -57409,7 +57835,7 @@ function verifySchematicLayoutConstructorLineage(input) {
   const document2 = record3(acknowledgment["document"]);
   const barrier = record3(acknowledgment["projectUploadBarrier"]);
   if (acknowledgment["ok"] !== true || acknowledgment["saved"] !== true || acknowledgment["closed"] !== true || acknowledgment["reopened"] !== true || document2["uuid"] !== target5.documentUuid || document2["tabId"] !== target5.tabId || document2["documentType"] !== 1 || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || opened["profile"] !== "easyeda-pro-control.native-document-open.v1" || opened["tabId"] !== target5.tabId || opened["newFrameReady"] !== true || opened["exactContext"] !== true || opened["readinessSamples"] !== 2 || typeof opened["activated"] !== "boolean" || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== target5.projectUuid || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
-    fail5();
+    fail6();
   }
   same11(guard["labels"], ["schematic-source"]);
   same11(guard["snapshotSha256"], [digest(consistency["snapshotSha256"])]);
@@ -57421,16 +57847,16 @@ function verifySchematicLayoutConstructorLineage(input) {
   const terminalConsistency = record3(terminalPayload["read_consistency"]);
   same11(parseDocumentSource(text4(terminalPayload["source"])), snapshot6);
   if (terminalConsistency["stable"] !== true || terminalConsistency["attempts"] !== 2) {
-    fail5();
+    fail6();
   }
   digest(terminalConsistency["snapshotSha256"]);
   const checkpoint = record3(terminal["checkpoint"]), pendingCheckpoint = record3(pending["preCheckpoint"]), persistence = record3(terminal["persistence"]);
   const { receiptSha256, ...receiptCore } = checkpoint;
   if (checkpoint["schema"] !== "easyeda-pro-control.checkpoint.v2" || sha256Json(receiptCore) !== receiptSha256 || checkpoint["checkpointSha256"] !== pendingCheckpoint["checkpointSha256"] || checkpoint["checkpointSha256"] !== history.checkpointSha256 || checkpoint["source"] !== target5.projectPath || pendingCheckpoint["source"] !== target5.projectPath || time3(checkpoint["createdAt"]) > time3(predecessor["updatedAt"]) || time3(pendingCheckpoint["createdAt"]) < time3(checkpoint["createdAt"]) || time3(pendingCheckpoint["createdAt"]) > time3(pending["createdAt"]) || persistence["ok"] !== true || record3(persistence["comparison"])["ok"] !== true || persistence["afterCheckpointSha256"] !== history.checkpointSha256 || persistence["rawExpectedAfterSourceSha256"] !== snapshot6.sha256 || persistence["rawAfterNativeSha256"] !== sha256Json(native) || persistence["documentCount"] !== history.documents.length || persistence["rawAfterSemanticSha256"] !== history.semanticSha256) {
-    fail5();
+    fail6();
   }
   const witness = {
-    profile: PROFILE3,
+    profile: PROFILE4,
     sourceSha256: snapshot6.sha256,
     nativeSha256: schematicNativeSnapshotHash(native),
     checkpointSha256: history.checkpointSha256,
@@ -57446,8 +57872,8 @@ function verifySchematicLayoutConstructorLineage(input) {
   return witness;
 }
 function assertSchematicLayoutConstructorWitness(witness, before, beforeNative, history) {
-  if (witness === void 0 || witness.profile !== PROFILE3 || witness.sourceSha256 !== before.sha256 || before.sha256 !== sha256Json({ schema: before.schema, document: before.document, objects: before.objects }) || witness.nativeSha256 !== schematicNativeSnapshotHash(beforeNative) || witness.checkpointSha256 !== history.checkpointSha256 || witness.projectUuid !== history.projectUuid || witness.documentUuid !== before.document["uuid"] || witness.documentUuid !== beforeNative.document.documentUuid || history.documents.filter((document2) => document2.uuid === witness.documentUuid && document2.docType === "SCH_PAGE").length !== 1 || witness.nativeProfile.schSha256 !== SCHEMATIC_NATIVE_IMPLEMENTATION.sha256 || witness.nativeProfile.workerSha256 !== WORKER.sha256) {
-    fail5();
+  if (witness === void 0 || witness.profile !== PROFILE4 || witness.sourceSha256 !== before.sha256 || before.sha256 !== sha256Json({ schema: before.schema, document: before.document, objects: before.objects }) || witness.nativeSha256 !== schematicNativeSnapshotHash(beforeNative) || witness.checkpointSha256 !== history.checkpointSha256 || witness.projectUuid !== history.projectUuid || witness.documentUuid !== before.document["uuid"] || witness.documentUuid !== beforeNative.document.documentUuid || history.documents.filter((document2) => document2.uuid === witness.documentUuid && document2.docType === "SCH_PAGE").length !== 1 || witness.nativeProfile.schSha256 !== SCHEMATIC_NATIVE_IMPLEMENTATION.sha256 || witness.nativeProfile.workerSha256 !== WORKER.sha256) {
+    fail6();
   }
   same11(parseDocumentSource(beforeNative.source), before);
   text4(witness.predecessorOperationId);
@@ -57466,13 +57892,13 @@ async function phaseText(descriptor) {
       chunk = await readArtifact(descriptor.path, offset2, length);
     }
     if (chunk.size !== descriptor.bytes || chunk.offset !== offset2 || chunk.bytesRead < 1 || Buffer.byteLength(chunk.text) !== chunk.bytesRead) {
-      fail5();
+      fail6();
     }
     result += chunk.text;
     offset2 += chunk.bytesRead;
   }
   if (Buffer.byteLength(result) !== descriptor.bytes || sha256Text(result) !== descriptor.sha256) {
-    fail5();
+    fail6();
   }
   return result;
 }
@@ -57480,20 +57906,20 @@ async function workerProfile(assetsRoot) {
   const path5 = join12(assetsRoot, WORKER.relativePath);
   const before = await lstat9(path5, { bigint: true });
   if (!before.isFile() || before.isSymbolicLink() || before.size <= 0n || before.size > 128n * 1024n * 1024n || await realpath6(path5) !== path5) {
-    fail5();
+    fail6();
   }
   const file2 = await open9(path5, constants5.O_RDONLY | constants5.O_NOFOLLOW);
   try {
-    const hash13 = createHash10("sha256");
+    const hash14 = createHash11("sha256");
     for await (const chunk of file2.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
-        fail5();
+        fail6();
       }
-      hash13.update(chunk);
+      hash14.update(chunk);
     }
     const after = await file2.stat({ bigint: true }), current2 = await lstat9(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash13.digest("hex") !== WORKER.sha256) {
-      fail5();
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash14.digest("hex") !== WORKER.sha256) {
+      fail6();
     }
   } finally {
     await file2.close();
@@ -57515,13 +57941,13 @@ async function resolveSchematicLayoutConstructorWitness(pending, history) {
   const bundles = record3(fingerprint["installedBundles"]);
   const assetsRoot = text4(bundles["assetsRoot"]);
   if (bundles["available"] !== true) {
-    fail5();
+    fail6();
   }
   await verifySchematicNativeProfile(assetsRoot);
   await workerProfile(assetsRoot);
   const [afterText, lifecycleText, terminalText] = await Promise.all(["05-after.json", "06-save-reopen.json", "08-reopened.json"].map((name6) => phaseText(phase(predecessor, name6))));
   if (afterText === void 0 || lifecycleText === void 0 || terminalText === void 0) {
-    fail5();
+    fail6();
   }
   const witness = verifySchematicLayoutConstructorLineage({
     pending,
@@ -57537,7 +57963,7 @@ async function resolveSchematicLayoutConstructorWitness(pending, history) {
   same11(await loadOperation(pending.operationId), retained);
   return witness;
 }
-var PROFILE3, WORKER;
+var PROFILE4, WORKER;
 var init_schematic_layout_constructor_witness = __esm({
   "server/src/schematic-layout-constructor-witness.ts"() {
     init_artifacts();
@@ -57545,7 +57971,7 @@ var init_schematic_layout_constructor_witness = __esm({
     init_document_source();
     init_native_profiles();
     init_schematic_native_adapter();
-    PROFILE3 = "easyeda-pro-control.schematic-layout-constructor-witness.v1";
+    PROFILE4 = "easyeda-pro-control.schematic-layout-constructor-witness.v1";
     WORKER = Object.freeze({ relativePath: "pro-mgr/3.2.148.154949d9/js/project-worker.js", sha256: "2792c6c87e3c60e09c43f03494a9cbb24e4ebe9c385372bbaf877ed75083a949" });
   }
 });
@@ -58032,13 +58458,13 @@ var init_schematic_layout_net_label = __esm({
 });
 
 // server/src/schematic-pin-number-coordinates.ts
-function fail6() {
+function fail7() {
   throw new Error("Stored pin-number coordinates lack exact native library/constructor proof.");
 }
 function point3(body3) {
   const x = body3["x"], y = body3["y"];
   if (typeof x !== "number" || typeof y !== "number" || !Number.isFinite(x) || !Number.isFinite(y)) {
-    fail6();
+    fail7();
   }
   return [x, y];
 }
@@ -58086,23 +58512,23 @@ function proveQuarterTurnPinDisplacement(history, referenceSource, observedSourc
   const symbolId = oldSymbols[0]?.value;
   const symbol4 = history.documents.find((doc) => doc.uuid === symbolId && doc.docType === "SYMBOL" && !isNativeDocumentDeleted(doc));
   if (prior.id !== model.id || prior.kind !== "part" || model.kind !== "part" || model.body["rotation"] !== 90 || model.body["isMirror"] !== false || !same13({ ...model.body, x: priorOrigin[0], y: priorOrigin[1] }, prior.body) || referenceSource.document["editVersion"] !== "3.2.149.88089769" || observedSource.document["editVersion"] !== "3.2.149.88089769" || referenceSource.document["uuid"] !== observedSource.document["uuid"] || same13(priorOrigin, currentOrigin) || !same13(constructorPoint([0, 0], priorOrigin, 90), currentOrigin) || !same13(constructorPoint([0, 0], currentOrigin, 90), currentOrigin) || page === void 0 || page.semanticSha256 !== documentHash(page) || original === void 0 || original.body["rotation"] !== 90 || original.body["isMirror"] !== false || original.body["partId"] !== model.body["partId"] || oldSymbols.length !== 1 || symbols.length !== 1 || !same13(oldSymbols[0], symbols[0]) || typeof symbolId !== "string" || oldSymbols[0]?.body["value"] !== symbolId || !page.records.some((row) => row.type === "ATTR" && row.body["parentId"] === model.id && row.body["key"] === "Symbol" && row.body["value"] === symbolId) || symbol4 === void 0 || symbol4.semanticSha256 !== documentHash(symbol4) || !same13(symbol4.records.find((row) => row.type === "CANVAS")?.body, { originX: 0, originY: 0 }) || !symbol4.records.some((row) => row.type === "PART" && row.id === model.body["partId"])) {
-    fail6();
+    fail7();
   }
   const locals = symbol4.records.filter((row) => row.type === "PIN" && row.body["partId"] === model.body["partId"] && `${model.id}-${row.id}` === pin4.id);
   const local = locals[0], originalOrigin = point3(original.body);
   if (locals.length !== 1 || local === void 0) {
-    fail6();
+    fail7();
   }
   const originalPin = constructorPoint(point3(local.body), originalOrigin, 90);
   if (oldPin.id !== pin4.id || oldPin.net !== pin4.net || !same13({ ...pin4.body, x: oldPin.body["x"], y: oldPin.body["y"] }, oldPin.body) || pin4.body["rotation"] !== (Number(local.body["rotation"]) + 90) % 360 || !same13(point3(pin4.body), constructorPoint(point3(local.body), currentOrigin, 90))) {
-    fail6();
+    fail7();
   }
   let translationOrigin = originalOrigin;
   const recentered = !same13(point3(oldPin.body), moved(originalPin, originalOrigin, priorOrigin));
   if (recentered) {
     const reconstructedOrigin2 = constructorPoint([0, 0], originalOrigin, 90);
     if (!same13(original.body, prior.body) || same13(originalOrigin, reconstructedOrigin2) || !same13(reconstructedOrigin2, currentOrigin) || !same13(point3(oldPin.body), moved(originalPin, reconstructedOrigin2, priorOrigin))) {
-      fail6();
+      fail7();
     }
     translationOrigin = reconstructedOrigin2;
     if (oldPin.noConnect !== null || pin4.noConnect !== null) {
@@ -58111,7 +58537,7 @@ function proveQuarterTurnPinDisplacement(history, referenceSource, observedSourc
       const markers = page.records.filter((row) => row.type === "ATTR" && row.id === old?.id);
       const marker = markers[0];
       if (old === null || current2 === null || old.id !== current2.id || old.value !== "no" || current2.value !== "no" || old.body["key"] !== "NO_CONNECT" || old.body["value"] !== "no" || old.body["parentId"] !== oldPin.id || markers.length !== 1 || marker === void 0 || !same13(marker.body, old.body) || !same13(old, { ...current2, body: { ...current2.body, x: old.body["x"], y: old.body["y"] } }) || !same13(point3(old.body), point3(oldPin.body)) || !same13(point3(current2.body), point3(pin4.body))) {
-        fail6();
+        fail7();
       }
     }
   }
@@ -58131,7 +58557,7 @@ function alignDisplacedStoredPinNumberCoordinates(history, referenceSource, obse
     }
     const bound2 = bind(history, observedSource, observed, after), oldPin = prior.pins.find((pin4) => pin4.id === bound2.pin.id);
     if (oldPin === void 0) {
-      fail6();
+      fail7();
     }
     const proof = proveQuarterTurnPinDisplacement(history, referenceSource, observedSource, prior, model, oldPin, bound2.pin);
     const oldAttrs = oldPin.attributes.filter((attr2) => attr2.id === before.id && attr2.key === "Pin Number");
@@ -58142,7 +58568,7 @@ function alignDisplacedStoredPinNumberCoordinates(history, referenceSource, obse
     const original = originals?.[0], originalLabel = constructorPoint(bound2.local, proof.originalOrigin, 90);
     const translatedLabel = moved(originalLabel, proof.translationOrigin, proof.priorOrigin);
     if (oldAttrs.length !== 1 || attrs.length !== 1 || originals?.length !== 1 || old === void 0 || attr === void 0 || original === void 0 || !same13(old.body, before.body) || !same13(attr.body, after.body) || !same13(old, { ...attr, body: { ...attr.body, x: old.body["x"], y: old.body["y"] } }) || !same13({ ...after.body, x: before.body["x"], y: before.body["y"] }, before.body) || !same13({ ...original.body, x: before.body["x"], y: before.body["y"] }, before.body) || !same13(point3(original.body), proof.recentered ? translatedLabel : originalLabel) || !same13(point3(before.body), translatedLabel) || !same13(point3(after.body), bound2.reconstructed)) {
-      fail6();
+      fail7();
     }
     const beforeCoordinates = point3(before.body);
     attr.body["x"] = beforeCoordinates[0];
@@ -58180,14 +58606,14 @@ function bind(history, source3, native, row) {
     metadata: symbol4.metadata,
     records: symbol4.records.map(({ id: id7, type: type2, body: body3 }) => ({ id: id7, type: type2, body: body3 }))
   }) || !same13(symbol4.records.find((entry) => entry.type === "CANVAS")?.body, { originX: 0, originY: 0 })) {
-    fail6();
+    fail7();
   }
   const localPins = symbol4.records.filter((entry) => entry.type === "PIN" && entry.body["partId"] === model.body["partId"] && `${model.id}-${entry.id}` === pin4.id);
   const localPin = localPins[0];
   const locals = symbol4.records.filter((entry) => entry.type === "ATTR" && entry.body["partId"] === model.body["partId"] && entry.body["parentId"] === localPin?.id && entry.body["key"] === "Pin Number");
   const localAttr = locals[0], origin = point3(model.body);
   if (localPins.length !== 1 || locals.length !== 1 || localPin === void 0 || localAttr === void 0 || attr.symbolValue !== localAttr.body["value"] || attr.body["value"] !== row.body["value"] || !same13(point3(pin4.body), constructorPoint(point3(localPin.body), origin, rotation2)) || pin4.body["rotation"] !== (Number(localPin.body["rotation"]) + rotation2) % 360) {
-    fail6();
+    fail7();
   }
   const local = point3(localAttr.body);
   return { model, pin: pin4, local, origin, rotation: rotation2, reconstructed: constructorPoint(local, origin, rotation2), symbolSha256: symbol4.semanticSha256 };
@@ -58195,7 +58621,7 @@ function bind(history, source3, native, row) {
 function projectStoredPinNumberCoordinates(history, source3, native, stored2, exported) {
   const bound2 = bind(history, source3, native, exported);
   if (!same13(point3(exported.body), bound2.reconstructed) || stored2.id !== exported.id || stored2.type !== "ATTR" || stored2.body["key"] !== "Pin Number" || stored2.body["parentId"] !== exported.body["parentId"]) {
-    fail6();
+    fail7();
   }
   return { row: { ...stored2, body: { ...stored2.body, x: exported.body["x"], y: exported.body["y"] } }, proof: {
     componentId: bound2.model.id,
@@ -58211,7 +58637,7 @@ function projectStoredPinNumberCoordinates(history, source3, native, stored2, ex
 function verifyStoredPinNumberWrites(before, after, observed, typed) {
   const newPage = after.documents.find((doc) => doc.uuid === observed.document["uuid"]), oldPage = before.documents.find((doc) => doc.uuid === observed.document["uuid"]);
   if (oldPage === void 0 || newPage === void 0) {
-    fail6();
+    fail7();
   }
   for (const row of newPage.records.filter((entry) => entry.type === "ATTR" && entry.body["key"] === "Pin Number")) {
     const prior = oldPage.records.find((entry) => entry.id === row.id);
@@ -58231,16 +58657,16 @@ function alignStoredPinNumberCoordinates(history, referenceSource, observedSourc
       const bound2 = bind(history, observedSource, observed, after), priorBound = bind(history, referenceSource, reference2, before);
       const original = history.documents.find((doc) => doc.uuid === referenceSource.document["uuid"])?.records.find((row) => row.id === bound2.model.id && row.type === "COMPONENT");
       if (original === void 0 || original.body["rotation"] !== bound2.rotation || original.body["isMirror"] !== false || original.body["partId"] !== bound2.model.body["partId"]) {
-        fail6();
+        fail7();
       }
       const originalOrigin = point3(original.body);
       const originalLabel = constructorPoint(bound2.local, originalOrigin, bound2.rotation);
       if (!same13(bound2.model.body, priorBound.model.body) || !same13(bound2.pin.body, priorBound.pin.body) || !same13({ ...after.body, x: before.body["x"], y: before.body["y"] }, before.body) || !same13(point3(before.body), moved(originalLabel, originalOrigin, bound2.origin)) || !same13(point3(after.body), bound2.reconstructed)) {
-        fail6();
+        fail7();
       }
       const attr = bound2.pin.attributes.find((entry) => entry.id === before.id);
       if (attr === void 0) {
-        fail6();
+        fail7();
       }
       const beforeCoordinates = point3(before.body);
       attr.body["x"] = beforeCoordinates[0];
@@ -58285,11 +58711,11 @@ function symbolEvidence(model, history) {
   if (!(model.kind === "part" && rotation2 === 90 || model.kind === "netport" && (rotation2 === 180 || rotation2 === 270)) || model.body["isMirror"] !== false || symbol4 === void 0 || !same14(symbol4.records.find((row) => row.type === "CANVAS")?.body, { originX: 0, originY: 0 }) || !symbol4.records.some((row) => row.type === "PART" && row.id === model.body["partId"])) {
     throw new Error("Unreviewed schematic component coordinate reconstruction.");
   }
-  const hash13 = sha256Json({ uuid: symbol4.uuid, docType: symbol4.docType, metadata: symbol4.metadata, records: symbol4.records.map(({ id: id7, type: type2, body: body3 }) => ({ id: id7, type: type2, body: body3 })) });
-  if (hash13 !== symbol4.semanticSha256) {
+  const hash14 = sha256Json({ uuid: symbol4.uuid, docType: symbol4.docType, metadata: symbol4.metadata, records: symbol4.records.map(({ id: id7, type: type2, body: body3 }) => ({ id: id7, type: type2, body: body3 })) });
+  if (hash14 !== symbol4.semanticSha256) {
     throw new Error("Coordinate reconstruction library evidence changed.");
   }
-  return { hash: hash13, rotation: rotation2 };
+  return { hash: hash14, rotation: rotation2 };
 }
 function multiply2(a, b) {
   const result = [];
@@ -58929,21 +59355,21 @@ function deriveSchematicWireGroupRepair(operation, before, legacy, native, creat
   });
   return { source: source3, descriptor };
 }
-var identifier4, hash6, orderSchema, schematicWireGroupRepairDescriptorSchema, point4, equal4, ends2, line4;
+var identifier4, hash7, orderSchema, schematicWireGroupRepairDescriptorSchema, point4, equal4, ends2, line4;
 var init_schematic_layout_wire_groups = __esm({
   "server/src/schematic-layout-wire-groups.ts"() {
     init_zod();
     init_core3();
     init_schematic_wire_order();
     identifier4 = external_exports.string().regex(/^[a-f0-9]{16}$/u);
-    hash6 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hash7 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     orderSchema = external_exports.number().int().nonnegative();
     schematicWireGroupRepairDescriptorSchema = external_exports.object({
       profile: external_exports.literal("easyeda-pro-control.schematic-wire-group-repair.v1"),
-      operationSha256: hash6,
-      createdIdsSha256: hash6,
-      legacySourceSha256: hash6,
-      correctedSourceSha256: hash6,
+      operationSha256: hash7,
+      createdIdsSha256: hash7,
+      legacySourceSha256: hash7,
+      correctedSourceSha256: hash7,
       merges: external_exports.array(external_exports.object({ flagId: identifier4, mainWireId: identifier4, dropWireId: identifier4, lineId: identifier4, relevanceId: identifier4 }).strict()).min(1).max(128),
       wireOrders: external_exports.array(external_exports.object({ id: identifier4, before: orderSchema, after: orderSchema }).strict()).max(256)
     }).strict();
@@ -60611,9 +61037,13 @@ function deriveRecoveryNavigationTarget(expectedContext, checkpoint) {
   return target5;
 }
 async function prepareRecoveryNavigation(input) {
-  await verifyLibraryNativeProfile(input.assetsRoot);
-  const preCheckpoint = checkpointBindingSchema.parse(input.preCheckpoint);
-  const source3 = normalizeEasyedaProjectPath(input.expectedContext.project.path);
+  const captured = structuredClone(input), libraryAtomHeaders = captured.libraryAtomHeaders;
+  if (libraryAtomHeaders === "preserve" && ![1, 3].includes(captured.expectedContext.document.documentType)) {
+    throw new Error("Imported library history is only admitted by unchanged-project navigation, not library recovery.");
+  }
+  await verifyLibraryNativeProfile(captured.assetsRoot);
+  const preCheckpoint = checkpointBindingSchema.parse(captured.preCheckpoint);
+  const source3 = normalizeEasyedaProjectPath(captured.expectedContext.project.path);
   if (normalizeEasyedaProjectPath(preCheckpoint.source) !== source3) {
     throw new Error("Recovery navigation checkpoint belongs to another saved path.");
   }
@@ -60625,23 +61055,33 @@ async function prepareRecoveryNavigation(input) {
   if (!verified.checkpointMatchesReceipt || verified.checkpointSha256 !== preCheckpoint.checkpointSha256 || verified.checkpoint !== preCheckpoint.checkpoint || verified.receiptPath !== preCheckpoint.receiptPath || normalizeEasyedaProjectPath(verified.source) !== source3) {
     throw new Error("Recovery navigation retained checkpoint verification failed.");
   }
-  const projectUuid = input.expectedContext.project.uuid ?? input.expectedContext.project.projectUuid;
+  const projectUuid = captured.expectedContext.project.uuid ?? captured.expectedContext.project.projectUuid;
   if (projectUuid === void 0) {
     throw new Error("Recovery navigation project identity is missing.");
   }
   const checkpoint = await readNativeHistoryCheckpoint({
     checkpointPath: verified.checkpoint,
     expectedSha256: verified.checkpointSha256,
-    projectUuid
+    projectUuid,
+    ...libraryAtomHeaders === "preserve" ? { libraryAtomHeaders: "preserve" } : {}
   });
-  const target5 = deriveRecoveryNavigationTarget(input.expectedContext, checkpoint);
+  const libraryHeaderEvidence = libraryAtomHeaders === "preserve" ? await nativeLibraryHeaderEvidence(
+    checkpoint,
+    { checkpointSha256: verified.checkpointSha256, projectUuid }
+  ) : void 0;
+  const target5 = deriveRecoveryNavigationTarget(captured.expectedContext, checkpoint);
   const navigation = {
-    ...input.navigation?.navigate === void 0 ? {} : { navigate: input.navigation.navigate },
-    ...input.navigation?.requireExclusiveTabs === void 0 ? {} : { requireExclusiveTabs: input.navigation.requireExclusiveTabs },
-    ...input.navigation?.requireEditorReadiness === void 0 ? {} : { requireEditorReadiness: input.navigation.requireEditorReadiness },
+    ...captured.navigation?.navigate === void 0 ? {} : { navigate: captured.navigation.navigate },
+    ...captured.navigation?.requireExclusiveTabs === void 0 ? {} : { requireExclusiveTabs: captured.navigation.requireExclusiveTabs },
+    ...captured.navigation?.requireEditorReadiness === void 0 ? {} : { requireEditorReadiness: captured.navigation.requireEditorReadiness },
     ...checkpoint.projectOwnerUuid === void 0 ? {} : { checkpointProjectOwnerUuid: checkpoint.projectOwnerUuid }
   };
-  return { target: target5, code: buildRecoveryNavigationCode(target5, navigation), checkpointSha256: verified.checkpointSha256 };
+  return {
+    target: target5,
+    code: buildRecoveryNavigationCode(target5, navigation),
+    checkpointSha256: verified.checkpointSha256,
+    ...libraryHeaderEvidence === void 0 ? {} : { libraryHeaderEvidence }
+  };
 }
 function buildRecoveryNavigationCode(value, options = {}) {
   const target5 = targetSchema3.parse(value);
@@ -60885,7 +61325,7 @@ function buildRecoveryNavigationCode(value, options = {}) {
     if (${JSON.stringify(options.navigate === false)}) {
       const current = await inspect();
       if (current.documentUuid !== undefined) { await libraryIdentity(); await inspect(); }
-      return { ok: true, schema: ${JSON.stringify(PROFILE4)}, inspectedOnly: true, targetOpen: current.documentUuid === target.documentUuid,
+      return { ok: true, schema: ${JSON.stringify(PROFILE5)}, inspectedOnly: true, targetOpen: current.documentUuid === target.documentUuid,
         project: current.projectUuid === undefined ? null : { uuid: current.projectUuid, path: target.projectPath },
         document: current.documentUuid === undefined ? null : { uuid: current.documentUuid, documentType: target.documentType, tabId: current.tabId } };
     }
@@ -60921,13 +61361,13 @@ function buildRecoveryNavigationCode(value, options = {}) {
     if (current.projectUuid !== target.projectUuid || current.documentUuid !== target.documentUuid ||
         typeof current.tabId !== "string" || current.tabId.length === 0 || current.tabId.length > 256) fail("target-readback");
     await observeEditorReadiness(current.tabId);
-    return { ok: true, schema: ${JSON.stringify(PROFILE4)}, openedProject, openedDocument,
+    return { ok: true, schema: ${JSON.stringify(PROFILE5)}, openedProject, openedDocument,
       project: { uuid: target.projectUuid, path: target.projectPath },
       document: { uuid: target.documentUuid, documentType: target.documentType, tabId: current.tabId } };
     } catch (error) { throw classifiedError(error, 'native-unexpected'); }
   })();`;
 }
-var PROFILE4, checkpointBindingSchema, targetSchema3;
+var PROFILE5, checkpointBindingSchema, targetSchema3;
 var init_recovery_navigation = __esm({
   "server/src/recovery-navigation.ts"() {
     init_zod();
@@ -60938,7 +61378,8 @@ var init_recovery_navigation = __esm({
     init_library_native_profile();
     init_device_runtime_guard();
     init_native_diagnostics();
-    PROFILE4 = "easyeda-pro-control.recovery-navigation.v1";
+    init_native_library_header_evidence();
+    PROFILE5 = "easyeda-pro-control.recovery-navigation.v1";
     checkpointBindingSchema = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.checkpoint.v2"),
       source: external_exports.string().min(1).max(4096),
@@ -61416,7 +61857,7 @@ function replaceDocument(history, replacement) {
   return { ...history, documents, semanticSha256: sha256Json(documents.map(({ uuid: uuid8, docType, semanticSha256 }) => ({ uuid: uuid8, docType, semanticSha256 }))) };
 }
 function projectSettledPriorInverse(input, prior) {
-  if (!/^easyeda-[a-z0-9-]+$/u.test(prior.operationId) || ![prior.journalSha256, prior.inversePhaseSha256].every((hash13) => /^[a-f0-9]{64}$/u.test(hash13)) || prior.restored.sha256 !== prior.before.sha256 || canonicalJson(prior.restored) !== canonicalJson(prior.before)) {
+  if (!/^easyeda-[a-z0-9-]+$/u.test(prior.operationId) || ![prior.journalSha256, prior.inversePhaseSha256].every((hash14) => /^[a-f0-9]{64}$/u.test(hash14)) || prior.restored.sha256 !== prior.before.sha256 || canonicalJson(prior.restored) !== canonicalJson(prior.before)) {
     throw new Error("Related inverse lacks exact retained restoration evidence.");
   }
   verifyDesignBaseline({ checkpoint: input.before, source: input.expectedBefore, targets: [] });
@@ -61783,22 +62224,22 @@ var init_schematic_wire_persistence = __esm({
 });
 
 // server/src/schematic-layout-visibility-repair.ts
-function fail7() {
+function fail8() {
   throw new Error("Deferred wire-label repair is outside the exact moved-port visibility profile.");
 }
 function point5(model) {
   const x = model.body["x"], y = model.body["y"];
   if (typeof x !== "number" || !Number.isFinite(x) || typeof y !== "number" || !Number.isFinite(y)) {
-    return fail7();
+    return fail8();
   }
   return [x, y];
 }
 function segment(row) {
   const values2 = [row.body["startX"], row.body["startY"], row.body["endX"], row.body["endY"]];
   if (!values2.every((value) => typeof value === "number" && Number.isFinite(value))) {
-    return fail7();
+    return fail8();
   }
-  return [values2[0] ?? fail7(), values2[1] ?? fail7(), values2[2] ?? fail7(), values2[3] ?? fail7()];
+  return [values2[0] ?? fail8(), values2[1] ?? fail8(), values2[2] ?? fail8(), values2[3] ?? fail8()];
 }
 function touchingGroups(source3, at2, endpointsOnly) {
   const wires = new Set(source3.objects.filter((row) => row.type === "WIRE").map((row) => row.id));
@@ -61836,22 +62277,22 @@ function prepareSchematicLayoutVisibilityRepair(input, before, oldNative, create
   for (const step of requests) {
     const id7 = "primitiveId" in step.target ? step.target.primitiveId : createdIds[step.target.resultOf];
     if (id7 === void 0) {
-      return fail7();
+      return fail8();
     }
     const prior = originalRecords.get(id7);
     const expected2 = intendedRecords.get(id7);
     const current2 = records2.get(id7);
     if (expected2 === void 0) {
-      return fail7();
+      return fail8();
     }
     let created;
     if (step.action === "sch.attribute.display") {
       if (!("primitiveId" in step.target) || prior?.type !== "ATTR" || prior.body["key"] !== "NET" || !same18(Object.keys(step.patch), ["valueVisible"]) || originalRecords.get(String(prior.body["parentId"]))?.type !== "WIRE" || prior.body["valueVisible"] !== true || prior.body["locked"] !== false || expected2?.body["parentId"] !== prior.body["parentId"] || expected2.body["value"] !== prior.body["value"]) {
-        return fail7();
+        return fail8();
       }
     } else {
       if (!("resultOf" in step.target) || prior !== void 0 || !/^[a-f0-9]{16}$/u.test(id7)) {
-        return fail7();
+        return fail8();
       }
       const creatorId = step.target.resultOf;
       const creator = operation.operations.find((candidate) => candidate.id === creatorId);
@@ -61861,31 +62302,31 @@ function prepareSchematicLayoutVisibilityRepair(input, before, oldNative, create
       const wireCreator = wireCreators[0];
       const displays = operation.operations.filter((candidate) => candidate.action === "sch.net-label.display" && ("resultOf" in candidate.target ? candidate.target.resultOf === creatorId : candidate.target.primitiveId === id7));
       if (creator?.action !== "sch.net-label.create" || createdIds[creator.id] !== id7 || bindings.length !== 1 || binding2 === void 0 || wireCreators.length !== 1 || wireCreator === void 0 || !/^[a-f0-9]{16}$/u.test(binding2.wireId) || originalRecords.has(binding2.wireId) || intendedRecords.get(binding2.wireId)?.type !== "WIRE" || records2.get(binding2.wireId)?.type !== "WIRE" || displays.length !== 1 || operation.operations.indexOf(wireCreator) >= operation.operations.indexOf(creator) || operation.operations.indexOf(creator) >= operation.operations.indexOf(step) || binding2.net !== creator.properties.net || binding2.x !== creator.properties.x || binding2.y !== -creator.properties.y || expected2?.body["parentId"] !== binding2.wireId || expected2.body["value"] !== binding2.net) {
-        return fail7();
+        return fail8();
       }
       created = { labelStepId: creator.id, wireStepId: wireCreator.id };
     }
     const wireId = expected2?.body["parentId"];
     const net3 = expected2?.body["value"];
     if (expected2?.type !== "ATTR" || expected2.body["key"] !== "NET" || expected2.body["locked"] !== false || typeof wireId !== "string" || typeof net3 !== "string" || !net3 || expected2.body["valueVisible"] !== false || current2?.body["valueVisible"] !== true || !same18({ ...current2, body: { ...current2.body, valueVisible: false } }, expected2) || labels.some((label) => label.attributeId === id7)) {
-      return fail7();
+      return fail8();
     }
     const matches = intended.native.components.filter((model) => {
       if (!moved2.has(model.id) || !namedPort(model, net3)) {
         return false;
       }
-      const at2 = point5(model.pins[0] ?? fail7());
+      const at2 = point5(model.pins[0] ?? fail8());
       return same18(touchingGroups(intended.expected, at2, true), [wireId]);
     });
     if (matches.length !== 1) {
-      return fail7();
+      return fail8();
     }
-    const port = matches[0] ?? fail7();
-    const pin4 = port.pins[0] ?? fail7();
+    const port = matches[0] ?? fail8();
+    const pin4 = port.pins[0] ?? fail8();
     const oldPort = original.components.find((model) => model.id === port.id);
     const oldPin = oldPort?.pins.find((candidate) => candidate.id === pin4.id);
     if (oldPort === void 0 || oldPin === void 0 || !namedPort(oldPort, net3) || pin4.net !== net3 || oldPin.net !== net3 || pin4.noConnect?.value === "yes" || oldPin.noConnect?.value === "yes" || same18(point5(oldPin), point5(pin4)) || touchingGroups(before, point5(oldPin), true).includes(wireId) || !same18(touchingGroups(intended.expected, point5(pin4), false), [wireId])) {
-      return fail7();
+      return fail8();
     }
     labels.push({
       stepId: step.id,
@@ -61901,7 +62342,7 @@ function prepareSchematicLayoutVisibilityRepair(input, before, oldNative, create
     current2.body["valueVisible"] = false;
   }
   if (labels.length === 0) {
-    return fail7();
+    return fail8();
   }
   const semantic2 = { schema: currentSource.schema, document: currentSource.document, objects: [...records2.values()].toSorted((a, b) => a.id.localeCompare(b.id)) };
   const correctedSource = { ...semantic2, sha256: sha256Json(semantic2) };
@@ -61952,7 +62393,7 @@ function verifySchematicLayoutVisibilityRepairPersistence(operation, input, crea
       return step;
     }
     if (step.action !== "sch.net-label.display" || step.patch.valueVisible !== false) {
-      return fail7();
+      return fail8();
     }
     return Object.assign(structuredClone(step), { patch: { ...step.patch, valueVisible: true } });
   }) };
@@ -62055,7 +62496,7 @@ async function inspectDesignSaveAttempts(journal, read = readSaveAttemptArtifact
   }
   return { attempted: legacyAttempt || pending.size > 0, intentCount: intents.length, provenNotDispatchedCount: cancellations.length };
 }
-var DESIGN_SAVE_ATTEMPT_PROFILE, phaseSchema, hashSchema, scopeSchema3, intentSchema, notDispatchedSchema;
+var DESIGN_SAVE_ATTEMPT_PROFILE, phaseSchema, hashSchema2, scopeSchema3, intentSchema, notDispatchedSchema;
 var init_design_save_attempt = __esm({
   "server/src/design-save-attempt.ts"() {
     init_zod();
@@ -62063,7 +62504,7 @@ var init_design_save_attempt = __esm({
     init_core3();
     DESIGN_SAVE_ATTEMPT_PROFILE = "easyeda-pro-control.design-save-attempt.v1";
     phaseSchema = external_exports.enum(["save-reopen", "symbol-save", "footprint-save"]);
-    hashSchema = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hashSchema2 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     scopeSchema3 = external_exports.object({
       projectUuid: external_exports.string().min(1).max(256),
       documentUuid: external_exports.string().min(1).max(256),
@@ -62072,18 +62513,18 @@ var init_design_save_attempt = __esm({
     intentSchema = external_exports.object({
       profile: external_exports.literal(DESIGN_SAVE_ATTEMPT_PROFILE),
       operationId: external_exports.string(),
-      planHash: hashSchema,
+      planHash: hashSchema2,
       sequence: external_exports.number().int().positive(),
       phase: phaseSchema,
-      sourceSha256: hashSchema,
+      sourceSha256: hashSchema2,
       scope: scopeSchema3
     }).strict();
     notDispatchedSchema = external_exports.object({
       profile: external_exports.literal("easyeda-pro-control.design-save-not-dispatched.v1"),
       operationId: external_exports.string(),
-      planHash: hashSchema,
+      planHash: hashSchema2,
       phase: phaseSchema,
-      intentSha256: hashSchema,
+      intentSha256: hashSchema2,
       dispatchStarted: external_exports.literal(false),
       reason: external_exports.literal("before-dispatch-callback-failed")
     }).strict();
@@ -62161,11 +62602,19 @@ async function materialization(input) {
   };
 }
 async function verifyFlatDisplayMaterialization(input) {
-  const result = await materialization(structuredClone(input));
+  const result = await materialization({ ...structuredClone({ ...input, history: void 0 }), history: captureFlatDisplayHistory(input.history) });
   return result.proof;
 }
 async function verifyFlatDisplayRestoration(input) {
-  const captured = structuredClone(input);
+  const captured = {
+    ...structuredClone({ ...input, before: void 0, after: void 0 }),
+    before: captureFlatDisplayHistory(input.before),
+    after: captureFlatDisplayHistory(input.after)
+  };
+  const afterPeers = flatDisplayLibrarySeal(captured.after), beforePeers = flatDisplayLibrarySeal(captured.before);
+  if (beforePeers === void 0 !== (afterPeers === void 0) || beforePeers !== void 0 && !same19(beforePeers, afterPeers)) {
+    throw new Error("Flat display restoration changed imported library header peers.");
+  }
   const before = await materialization({ history: captured.before, source: captured.expectedBefore, native: captured.beforeNative });
   const after = await materialization({ history: captured.after, source: captured.expectedAfter, native: captured.afterNative });
   const comparison = verifySchematicStoragePersistence({ ...captured, before: before.coordinateCheckpoint, after: after.coordinateCheckpoint });
@@ -62186,11 +62635,16 @@ var init_flat_display_storage = __esm({
     init_schematic_source_proof();
     init_schematic_storage_persistence();
     init_cooperative_proof();
+    init_flat_display_library_peers();
     same19 = (left, right) => canonicalJson(left) === canonicalJson(right);
   }
 });
 
 // server/src/flat-display-profile.ts
+function captureEvidence(evidence) {
+  const { history, ...rest } = evidence;
+  return { ...structuredClone(rest), history: captureFlatDisplayHistory(history) };
+}
 function exactMembers2(history) {
   return history.documents.map(({ uuid: uuid8, docType, semanticSha256 }) => ({ uuid: uuid8, docType, semanticSha256 })).toSorted((left, right) => left.uuid.localeCompare(right.uuid));
 }
@@ -62224,6 +62678,7 @@ function assertNativeObservation(evidence, native) {
 }
 function evidenceState(evidence, context2, nativeInput) {
   const contextBinding = flatDisplayContextScope(context2), { checkpoint, history, observation } = evidence;
+  assertFlatDisplayLibrarySummary(history, evidence.libraryHeaderEvidence, checkpoint.checkpointSha256);
   if (checkpoint.schema !== "easyeda-pro-control.checkpoint.v2" || normalizeEasyedaProjectPath(checkpoint.source) !== contextBinding.projectPath || checkpoint.sourceDumpSha256 !== checkpoint.checkpointDumpSha256 || history.checkpointSha256 !== checkpoint.checkpointSha256 || !same20(evidence.projectBinding, flatDisplayProjectBindingFromHistory(history))) {
     throw new Error("Flat display observation is not bound to its complete checkpoint and project branch.");
   }
@@ -62266,7 +62721,8 @@ function evidenceState(evidence, context2, nativeInput) {
   return { source: source3, native, schematicUuid: scope3.schematicUuid };
 }
 async function prepareFlatDisplayProfile(input) {
-  const captured = structuredClone(input), operation = flatDisplayOperation(captured.operation);
+  const captured = { ...structuredClone({ ...input, evidence: void 0 }), evidence: captureEvidence(input.evidence) };
+  const operation = flatDisplayOperation(captured.operation);
   const { source: source3, native, schematicUuid } = evidenceState(captured.evidence, captured.context, captured.native);
   const { history, checkpoint, proof } = captured.evidence;
   const baselineProof = await verifyFlatDisplayMaterialization({ history, source: source3, native });
@@ -62278,8 +62734,10 @@ async function prepareFlatDisplayProfile(input) {
   }
   flatDisplayOperation(inverse);
   const contextBinding = flatDisplayContextScope(captured.context);
+  const libraryHeaders = flatDisplayLibrarySeal(history);
   const binding2 = flatDisplayBindingSchema.parse({
-    profile: FLAT_DISPLAY_TRANSACTION_PROFILE,
+    profile: libraryHeaders === void 0 ? FLAT_DISPLAY_TRANSACTION_PROFILE : FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE,
+    ...libraryHeaders === void 0 ? {} : { libraryHeaders },
     project: captured.evidence.projectBinding,
     projectPath: contextBinding.projectPath,
     schematicUuid,
@@ -62321,6 +62779,7 @@ function verifyFlatDisplayMembershipTopology(bindingInput, operationInput, conte
   verifyMembershipTopology(binding2, evidence, current2.schematicUuid);
 }
 function verifyMembershipTopology(binding2, evidence, schematicUuid) {
+  assertFlatDisplayLibraryPeers(binding2, evidence.history);
   if (!same20(binding2.project, evidence.projectBinding) || schematicUuid !== binding2.schematicUuid) {
     throw new Error("Flat display lifecycle project branch or schematic changed.");
   }
@@ -62332,9 +62791,14 @@ function verifyMembershipTopology(binding2, evidence, schematicUuid) {
   verifyDesignTopology(binding2.topology, evidence.proof.topology);
 }
 async function verifyFlatDisplayPersistence(input) {
-  const captured = structuredClone(input);
+  const captured = {
+    ...structuredClone({ ...input, baseline: void 0, evidence: void 0 }),
+    baseline: captureFlatDisplayHistory(input.baseline),
+    evidence: captureEvidence(input.evidence)
+  };
   const binding2 = assertFlatDisplayBinding(captured.binding, captured.operation, captured.context);
   const operation = flatDisplayOperation(captured.operation);
+  assertFlatDisplayLibraryPeers(binding2, captured.baseline);
   if (captured.baseline.checkpointSha256 !== binding2.checkpoint.checkpointSha256 || captured.baseline.semanticSha256 !== binding2.checkpoint.historySemanticSha256 || !same20(flatDisplayProjectBindingFromHistory(captured.baseline), binding2.project) || !same20(exactMembers2(captured.baseline), binding2.members) || captured.before.sha256 !== binding2.before.sourceSha256 || schematicNativeSnapshotHash(captured.beforeNative) !== binding2.before.nativeSha256 || captured.current.sha256 !== binding2[captured.allowAfter ? "after" : "before"].sourceSha256) {
     throw new Error("Flat display persistence lacks its sealed original and exact intended sources.");
   }
@@ -62380,7 +62844,9 @@ var init_flat_display_profile = __esm({
     init_flat_display_binding();
     init_schematic_storage_persistence();
     init_flat_display_storage();
+    init_flat_display_library_peers();
     init_flat_display_binding();
+    init_flat_display_library_peers();
     same20 = (left, right) => canonicalJson(left) === canonicalJson(right);
   }
 });
@@ -62530,14 +62996,14 @@ function verifyLayoutRetainedSaveAuthority(journal, afterPhase, acknowledgment) 
 }
 function verifyFlatDisplayRetainedSaveAuthority(journal, prepared, acknowledgment) {
   const binding2 = assertFlatDisplayBinding(journal.plan.flatDisplay, journal.plan.operation, journal.context);
-  const hash13 = sha256Text(canonicalJson(binding2));
-  if (!isRecord(prepared) || prepared["flatBindingSha256"] !== hash13 || typeof prepared["observationSha256"] !== "string" || !/^[a-f0-9]{64}$/u.test(prepared["observationSha256"]) || !isRecord(acknowledgment) || !isRecord(acknowledgment["flatDisplaySaveGuard"])) {
+  const hash14 = sha256Text(canonicalJson(binding2));
+  if (!isRecord(prepared) || prepared["flatBindingSha256"] !== hash14 || typeof prepared["observationSha256"] !== "string" || !/^[a-f0-9]{64}$/u.test(prepared["observationSha256"]) || !isRecord(acknowledgment) || !isRecord(acknowledgment["flatDisplaySaveGuard"])) {
     throw new Error("Retained flat display Save lacks its sealed final synchronous guard.");
   }
   const guard = acknowledgment["flatDisplaySaveGuard"];
   if (canonicalJson(guard) !== canonicalJson({
     profile: binding2.profile,
-    bindingSha256: hash13,
+    bindingSha256: hash14,
     observationSha256: prepared["observationSha256"],
     finalSynchronousCheck: true
   })) {
@@ -62622,7 +63088,7 @@ function summary(journal) {
   });
   return {
     operationId: journal.operationId,
-    profile: PROFILE5,
+    profile: PROFILE6,
     state: journal.state,
     action: journal.plan.operation.action,
     saved: journal.saved,
@@ -62650,10 +63116,10 @@ function summary(journal) {
   };
 }
 function isDesignJournal(value) {
-  return isRecord(value) && isRecord(value["plan"]) && value["plan"]["profile"] === PROFILE5 && isRecord(value["plan"]["expectedContext"]) && isRecord(value["plan"]["expectedFingerprint"]) && isRecord(value["before"]) && typeof value["before"]["sha256"] === "string" && Array.isArray(value["before"]["objects"]) && typeof value["operationId"] === "string" && typeof value["sequence"] === "number" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["journalPath"] === "string" && Array.isArray(value["artifacts"]) && isRecord(value["context"]) && isRecord(value["preCheckpoint"]) && (value["after"] === void 0 || isRecord(value["after"])) && (value["createdId"] === void 0 || typeof value["createdId"] === "string") && (value["targetId"] === void 0 || typeof value["targetId"] === "string");
+  return isRecord(value) && isRecord(value["plan"]) && value["plan"]["profile"] === PROFILE6 && isRecord(value["plan"]["expectedContext"]) && isRecord(value["plan"]["expectedFingerprint"]) && isRecord(value["before"]) && typeof value["before"]["sha256"] === "string" && Array.isArray(value["before"]["objects"]) && typeof value["operationId"] === "string" && typeof value["sequence"] === "number" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["journalPath"] === "string" && Array.isArray(value["artifacts"]) && isRecord(value["context"]) && isRecord(value["preCheckpoint"]) && (value["after"] === void 0 || isRecord(value["after"])) && (value["createdId"] === void 0 || typeof value["createdId"] === "string") && (value["targetId"] === void 0 || typeof value["targetId"] === "string");
 }
 function journalPayload(value) {
-  if (!isRecord(value) || !isRecord(value["plan"]) || value["plan"]["profile"] !== PROFILE5 || !isRecord(value["before"]) || typeof value["operationId"] !== "string") {
+  if (!isRecord(value) || !isRecord(value["plan"]) || value["plan"]["profile"] !== PROFILE6 || !isRecord(value["before"]) || typeof value["operationId"] !== "string") {
     throw new Error("Not a typed design transaction journal.");
   }
   const plan = value["plan"];
@@ -62765,7 +63231,39 @@ function durableSnapshot(checkpoint, context2) {
   }
   return readNativeHistoryCheckpoint({ checkpointPath: checkpoint["checkpoint"], expectedSha256: checkpoint["checkpointSha256"], projectUuid });
 }
-var PROFILE5, designTransactionActionSchema, DesignExecutor;
+async function journalDurableSnapshot(journal, checkpoint = journal.preCheckpoint, context2 = journal.context) {
+  if (journal.plan.flatDisplay?.profile !== FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE) {
+    return durableSnapshot(checkpoint, context2);
+  }
+  const binding2 = assertFlatDisplayBinding(journal.plan.flatDisplay, journal.plan.operation, context2);
+  const read = (receipt2) => {
+    if (typeof receipt2["checkpoint"] !== "string" || typeof receipt2["checkpointSha256"] !== "string") {
+      throw new TypeError("Imported flat display lacks an exact immutable checkpoint.");
+    }
+    return readNativeHistoryCheckpoint({
+      checkpointPath: receipt2["checkpoint"],
+      expectedSha256: receipt2["checkpointSha256"],
+      projectUuid: binding2.project.projectUuid,
+      libraryAtomHeaders: "preserve"
+    });
+  };
+  const baseline = await read(journal.preCheckpoint);
+  if (baseline.checkpointSha256 !== binding2.checkpoint.checkpointSha256 || baseline.semanticSha256 !== binding2.checkpoint.historySemanticSha256) {
+    throw new Error("Imported flat display baseline differs from its sealed original checkpoint.");
+  }
+  assertFlatDisplayLibraryPeers(binding2, baseline);
+  const current2 = checkpoint === journal.preCheckpoint ? baseline : await read(checkpoint);
+  assertFlatDisplayLibraryPeers(binding2, current2);
+  const members = new Map(binding2.members.map((entry) => [entry.uuid, entry]));
+  if (current2.projectUuid !== binding2.project.projectUuid || current2.projectOwnerUuid !== binding2.project.ownerUuid || current2.branchUuid !== binding2.project.branchUuid || current2.documents.length !== binding2.members.length || current2.documents.some((document2) => {
+    const peer2 = members.get(document2.uuid);
+    return peer2?.docType !== document2.docType || document2.uuid !== binding2.pageUuid && peer2.semanticSha256 !== document2.semanticSha256;
+  })) {
+    throw new Error("Imported flat display changed its sealed project or an immutable peer document.");
+  }
+  return current2;
+}
+var PROFILE6, designTransactionActionSchema, DesignExecutor;
 var init_design_execution = __esm({
   "server/src/design-execution.ts"() {
     init_zod();
@@ -62814,11 +63312,12 @@ var init_design_execution = __esm({
     init_schematic_layout_constructor_witness();
     init_design_save_attempt();
     init_flat_display_profile();
+    init_flat_display_library_peers();
     init_schematic_flat_read();
     init_flat_display_storage();
     init_design_inverse_attempt();
     init_flat_inverse_checkpoint();
-    PROFILE5 = "easyeda-pro-control.typed-design-transaction.v1";
+    PROFILE6 = "easyeda-pro-control.typed-design-transaction.v1";
     designTransactionActionSchema = external_exports.enum(["apply", "commit", "rollback", "inspect", "reconcile", "recover-authority", "rebind-runtime", "open-target", "load-layout-pages", "repair-layout-net-labels", "repair-layout-wire-groups", "repair-layout-label-visibility"]);
     DesignExecutor = class _DesignExecutor {
       engine;
@@ -62913,6 +63412,7 @@ var init_design_execution = __esm({
           flatBindingSha256: sha256Text(canonicalJson(binding2)),
           checkpoint: evidence.checkpoint,
           projectBinding: evidence.projectBinding,
+          ...evidence.libraryHeaderEvidence === void 0 ? {} : { libraryHeaderEvidence: evidence.libraryHeaderEvidence },
           observation: evidence.observation,
           observationSha256: sha256Text(canonicalJson(evidence.observation)),
           topologyProof: evidence.proof,
@@ -62975,7 +63475,7 @@ var init_design_execution = __esm({
           binding: assertFlatDisplayJournal(journal),
           operation: journal.plan.operation,
           context: journal.context,
-          baseline: await durableSnapshot(journal.preCheckpoint, journal.context),
+          baseline: await journalDurableSnapshot(journal),
           before: journal.before,
           beforeNative: journal.beforeNative,
           current: current2.snapshot,
@@ -63103,7 +63603,7 @@ var init_design_execution = __esm({
         if (journal.plan.operation.action !== "sch.layout.batch" || journal.createdIds === void 0) {
           throw new Error("Layout lifecycle lacks its retained typed operation and created IDs.");
         }
-        const baseline = await durableSnapshot(journal.preCheckpoint, journal.context);
+        const baseline = await journalDurableSnapshot(journal);
         const witness = constructorWitness ?? await _DesignExecutor.layoutConstructorWitness(journal, baseline);
         return { ...await verifyDesignActionCooperatively(
           compileDesignAction(journal.plan.operation),
@@ -63234,7 +63734,7 @@ var init_design_execution = __esm({
         if (unfinished.length > 0) {
           throw new Error("Resolve the existing incomplete transaction before another design write.");
         }
-        const plan = { profile: PROFILE5, operation, expectedContext: structuredClone(input.expectedContext), expectedFingerprint: structuredClone(input.expectedFingerprint) };
+        const plan = { profile: PROFILE6, operation, expectedContext: structuredClone(input.expectedContext), expectedFingerprint: structuredClone(input.expectedFingerprint) };
         await this.assertRuntime(plan);
         const context2 = await this.engine.assertContext(plan.expectedContext);
         const baselineUploads = await this.engine.awaitProjectUploads(context2);
@@ -63285,7 +63785,7 @@ var init_design_execution = __esm({
           before: before.snapshot,
           ...targetId2 === void 0 ? {} : { targetId: targetId2 }
         };
-        const baseline = await durableSnapshot(checkpoint, context2);
+        const baseline = await journalDurableSnapshot(journal, checkpoint, context2);
         const beforeState2 = state(before.snapshot, before.native, baseline, context2, layoutTemplates);
         await assertDesignActionSupportedCooperatively(operation, beforeState2, targetId2 === void 0 ? {} : { targetId: targetId2 });
         if (operation.action === "sch.layout.batch") {
@@ -63473,11 +63973,27 @@ var init_design_execution = __esm({
         if (bundles === void 0) {
           throw new Error("Installed navigation implementation identity is unavailable.");
         }
-        const prepared = await prepareRecoveryNavigation({ expectedContext: journal.plan.expectedContext, preCheckpoint: journal.preCheckpoint, assetsRoot: bundles.assetsRoot });
+        const importedPeers = journal.plan.flatDisplay?.profile === FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE;
+        if (importedPeers) {
+          await journalDurableSnapshot(journal);
+        }
+        const prepared = await prepareRecoveryNavigation({
+          expectedContext: journal.plan.expectedContext,
+          preCheckpoint: journal.preCheckpoint,
+          assetsRoot: bundles.assetsRoot,
+          ...importedPeers ? { libraryAtomHeaders: "preserve" } : {}
+        });
+        if (importedPeers && (journal.plan.flatDisplay?.profile !== FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE || prepared.libraryHeaderEvidence?.contentSha256 !== journal.plan.flatDisplay.libraryHeaders.contentSha256)) {
+          throw new Error("Flat display recovery navigation lost its sealed imported library peers.");
+        }
         journal.state = "target-open-dispatching";
         journal.hardStop = true;
         journal.nextSafeAction = "Await the single target-navigation request. Do not repeat an uncertain open.";
-        await _DesignExecutor.artifact(journal, "target-open-prepared", { target: prepared.target, codeSha256: sha256Text(prepared.code) });
+        await _DesignExecutor.artifact(journal, "target-open-prepared", {
+          target: prepared.target,
+          codeSha256: sha256Text(prepared.code),
+          ...prepared.libraryHeaderEvidence === void 0 ? {} : { libraryHeaderEvidence: prepared.libraryHeaderEvidence }
+        });
         try {
           const result = await this.engine.dispatchWithOrphanTracking(journal, "target-open", "easyeda_execute", { code: prepared.code, timeoutMs: 6e4, confirmWrite: true }, 7e4);
           await _DesignExecutor.artifact(journal, "target-open-return", extractToolPayload(result));
@@ -64033,7 +64549,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         await this.engine.awaitProjectUploads(journal.context, journal, "reconcile-upload-barrier");
         const current2 = await this.snapshot(journal.context);
         await _DesignExecutor.verifyWireGroupRepairIntent(journal);
-        const baseline = await durableSnapshot(journal.preCheckpoint, journal.context);
+        const baseline = await journalDurableSnapshot(journal);
         const constructorWitness = await _DesignExecutor.layoutConstructorWitness(journal, baseline);
         const beforeState2 = state(journal.before, journal.beforeNative, baseline, journal.context, journal.layoutTemplates, journal.layoutWireGroupRepair, constructorWitness);
         const currentState = state(current2.snapshot, current2.native);
@@ -64087,7 +64603,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           if (!("receiptPath" in checkpoint)) {
             throw new Error("Retained layout reconciliation checkpoint receipt missing.");
           }
-          const savedHistory = await durableSnapshot(checkpoint, journal.context);
+          const savedHistory = await journalDurableSnapshot(journal, checkpoint);
           const persistence = await verifySchematicLayoutPersistenceCooperatively(
             journal.plan.operation,
             {
@@ -64180,8 +64696,8 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             throw new Error("Reconciliation checkpoint receipt missing.");
           }
           const recoveryPersistenceInput = {
-            before: await durableSnapshot(journal.preCheckpoint, journal.context),
-            after: await durableSnapshot(checkpoint, journal.context),
+            before: await journalDurableSnapshot(journal),
+            after: await journalDurableSnapshot(journal, checkpoint),
             expectedBefore: journal.before,
             expectedAfter: current2.snapshot,
             ...journal.beforeNative === void 0 || current2.native === void 0 ? {} : { beforeNative: journal.beforeNative, afterNative: current2.native }
@@ -64461,8 +64977,8 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             throw new Error("Committed checkpoint receipt missing.");
           }
           const persistenceInput = {
-            before: await durableSnapshot(journal.preCheckpoint, context2),
-            after: await durableSnapshot(checkpoint, context2),
+            before: await journalDurableSnapshot(journal, journal.preCheckpoint, context2),
+            after: await journalDurableSnapshot(journal, checkpoint, context2),
             expectedBefore: journal.before,
             expectedAfter: journal.plan.operation.action === "pcb.pour.rebuild" ? journal.after : reopened.snapshot,
             ...journal.beforeNative === void 0 || reopened.native === void 0 ? {} : { beforeNative: journal.beforeNative, afterNative: reopened.native }
@@ -64654,7 +65170,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           assertFlatDisplayInverse(journal.plan.flatDisplay, journal.inverse);
         }
         const inverseTarget = "target" in journal.inverse && "primitiveId" in journal.inverse.target ? journal.inverse.target.primitiveId : void 0;
-        const prepared = await prepareDesignActionCooperatively(journal.inverse, state(current2.snapshot, current2.native, await durableSnapshot(journal.preCheckpoint, journal.context), journal.context), inverseTarget === void 0 ? {} : { targetId: inverseTarget }, flatGuard);
+        const prepared = await prepareDesignActionCooperatively(journal.inverse, state(current2.snapshot, current2.native, await journalDurableSnapshot(journal), journal.context), inverseTarget === void 0 ? {} : { targetId: inverseTarget }, flatGuard);
         try {
           journal.inverseAttempted = true;
           await _DesignExecutor.artifact(journal, "design-inverse-intent", {
@@ -64686,8 +65202,8 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             throw new Error("Rollback checkpoint receipt missing; durable restoration is unverified.");
           }
           const persistenceInput = {
-            before: await durableSnapshot(journal.preCheckpoint, journal.context),
-            after: await durableSnapshot(checkpoint, journal.context),
+            before: await journalDurableSnapshot(journal),
+            after: await journalDurableSnapshot(journal, checkpoint),
             expectedBefore: journal.before,
             expectedAfter: restored.snapshot,
             ...journal.beforeNative === void 0 || restored.native === void 0 ? {} : { beforeNative: journal.beforeNative, afterNative: restored.native }
@@ -64931,7 +65447,7 @@ const policy=async()=>{const value=JSON.parse(JSON.stringify(await eda.pcb_Drc.g
 });
 
 // server/src/native-rule-profile.ts
-import { createHash as createHash11 } from "node:crypto";
+import { createHash as createHash12 } from "node:crypto";
 import { constants as constants6 } from "node:fs";
 import { lstat as lstat10, open as open10, realpath as realpath7 } from "node:fs/promises";
 import { isAbsolute as isAbsolute11, join as join16 } from "node:path";
@@ -64949,15 +65465,15 @@ async function verifyNativeRuleReportProfile(assetsRoot, kindInput) {
     }
     const file2 = await open10(path5, constants6.O_RDONLY | constants6.O_NOFOLLOW);
     try {
-      const hash13 = createHash11("sha256");
+      const hash14 = createHash12("sha256");
       for await (const chunk of file2.createReadStream({ autoClose: false })) {
         if (!Buffer.isBuffer(chunk)) {
           throw new TypeError("Rule-check implementation stream is not binary.");
         }
-        hash13.update(chunk);
+        hash14.update(chunk);
       }
       const after = await file2.stat({ bigint: true }), current2 = await lstat10(path5, { bigint: true });
-      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.size !== current2.size || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash13.digest("hex") !== implementation.sha256) {
+      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.size !== current2.size || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash14.digest("hex") !== implementation.sha256) {
         throw new Error("Rule-check implementation differs from its reviewed profile.");
       }
     } finally {
@@ -65036,7 +65552,7 @@ if(utf8Bytes>${EXACT_READ_ENVELOPE_MAX_BYTES}||new TextEncoder().encode(JSON.str
 function summary2(journal) {
   return {
     operationId: journal.operationId,
-    profile: PROFILE6,
+    profile: PROFILE7,
     kind: journal.plan.check.kind,
     state: journal.state,
     saved: false,
@@ -65053,9 +65569,9 @@ function summary2(journal) {
   };
 }
 function isJournal(value) {
-  return isRecord(value) && isRecord(value["plan"]) && value["plan"]["profile"] === PROFILE6 && isRecord(value["plan"]["check"]) && isRecord(value["plan"]["expectedContext"]) && isRecord(value["plan"]["expectedFingerprint"]) && typeof value["plan"]["maxInlineItems"] === "number" && typeof value["operationId"] === "string" && typeof value["planHash"] === "string" && typeof value["journalPath"] === "string" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["updatedAt"] === "string" && typeof value["sequence"] === "number" && typeof value["calculationDispatched"] === "boolean" && isRecord(value["context"]) && checkpointSchema3.safeParse(value["preCheckpoint"]).success && Array.isArray(value["artifacts"]);
+  return isRecord(value) && isRecord(value["plan"]) && value["plan"]["profile"] === PROFILE7 && isRecord(value["plan"]["check"]) && isRecord(value["plan"]["expectedContext"]) && isRecord(value["plan"]["expectedFingerprint"]) && typeof value["plan"]["maxInlineItems"] === "number" && typeof value["operationId"] === "string" && typeof value["planHash"] === "string" && typeof value["journalPath"] === "string" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["updatedAt"] === "string" && typeof value["sequence"] === "number" && typeof value["calculationDispatched"] === "boolean" && isRecord(value["context"]) && checkpointSchema3.safeParse(value["preCheckpoint"]).success && Array.isArray(value["artifacts"]);
 }
-var PROFILE6, hash7, checkpointSchema3, verificationSchema, dependencies, RuleCheckExecutor;
+var PROFILE7, hash8, checkpointSchema3, verificationSchema, dependencies, RuleCheckExecutor;
 var init_check_execution = __esm({
   "server/src/check-execution.ts"() {
     init_zod();
@@ -65068,15 +65584,15 @@ var init_check_execution = __esm({
     init_recovery_navigation();
     init_design_execution();
     init_transaction_error();
-    PROFILE6 = "easyeda-pro-control.rule-check-transaction.v1";
-    hash7 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    PROFILE7 = "easyeda-pro-control.rule-check-transaction.v1";
+    hash8 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     checkpointSchema3 = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.checkpoint.v2"),
       source: external_exports.string().min(1),
       checkpoint: external_exports.string().min(1),
       receiptPath: external_exports.string().min(1),
-      checkpointSha256: hash7,
-      checkpointDumpSha256: hash7
+      checkpointSha256: hash8,
+      checkpointDumpSha256: hash8
     }).catchall(external_exports.unknown());
     verificationSchema = external_exports.object({
       ok: external_exports.literal(true),
@@ -65084,10 +65600,10 @@ var init_check_execution = __esm({
       checkpointMatchesReceipt: external_exports.literal(true),
       sourceEqualsCheckpoint: external_exports.literal(true),
       sourceChanged: external_exports.literal(false),
-      checkpointSha256: hash7,
-      checkpointDumpSha256: hash7,
-      sourceSha256: hash7,
-      sourceDumpSha256: hash7,
+      checkpointSha256: hash8,
+      checkpointDumpSha256: hash8,
+      sourceSha256: hash8,
+      sourceDumpSha256: hash8,
       checkpoint: external_exports.string().min(1),
       source: external_exports.string().min(1),
       receiptPath: external_exports.string().min(1)
@@ -65175,7 +65691,7 @@ var init_check_execution = __esm({
         if (input.expectedContext.document.documentType !== (check2.kind === "pcb-drc" ? 3 : 1)) {
           throw new Error("Native check requires the exact matching active editor.");
         }
-        const plan = { profile: PROFILE6, check: check2, expectedContext: structuredClone(input.expectedContext), expectedFingerprint: structuredClone(input.expectedFingerprint), maxInlineItems: maximumItems };
+        const plan = { profile: PROFILE7, check: check2, expectedContext: structuredClone(input.expectedContext), expectedFingerprint: structuredClone(input.expectedFingerprint), maxInlineItems: maximumItems };
         await this.runtime(plan, plan.expectedContext);
         const expectedContext = structuredClone(plan.expectedContext);
         const context2 = structuredClone(await this.engine.assertContext(expectedContext));
@@ -66173,7 +66689,7 @@ function isJournal2(value) {
     return false;
   }
   const plan = value["plan"];
-  return plan["profile"] === PROFILE7 && projectOpenTargetSchema.safeParse(plan["target"]).success && isRecord(plan["expectedFingerprint"]) && isRecord(plan["expectedContext"]) && typeof value["operationId"] === "string" && typeof value["planHash"] === "string" && typeof value["journalPath"] === "string" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["updatedAt"] === "string" && typeof value["sequence"] === "number" && isRecord(value["context"]) && hash8.safeParse(value["beforeRecordsSha256"]).success && receiptSchema2.safeParse(value["preCheckpoint"]).success && Array.isArray(value["artifacts"]);
+  return plan["profile"] === PROFILE8 && projectOpenTargetSchema.safeParse(plan["target"]).success && isRecord(plan["expectedFingerprint"]) && isRecord(plan["expectedContext"]) && typeof value["operationId"] === "string" && typeof value["planHash"] === "string" && typeof value["journalPath"] === "string" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["updatedAt"] === "string" && typeof value["sequence"] === "number" && isRecord(value["context"]) && hash9.safeParse(value["beforeRecordsSha256"]).success && receiptSchema2.safeParse(value["preCheckpoint"]).success && Array.isArray(value["artifacts"]);
 }
 function assertProjectOpenDatabaseUnchanged(input, checkpoint) {
   const value = verificationSchema2.parse(input);
@@ -66182,7 +66698,7 @@ function assertProjectOpenDatabaseUnchanged(input, checkpoint) {
   }
   return value;
 }
-var PROFILE7, failureStates, failureCategories, hash8, valueRecord, projectOpenTargetSchema, projectOpenInputSchema, identitySchema, receiptSchema2, verificationSchema2, dependencies2, ProjectOpenExecutor;
+var PROFILE8, failureStates, failureCategories, hash9, valueRecord, projectOpenTargetSchema, projectOpenInputSchema, identitySchema, receiptSchema2, verificationSchema2, dependencies2, ProjectOpenExecutor;
 var init_project_open_execution = __esm({
   "server/src/project-open-execution.ts"() {
     init_zod();
@@ -66197,7 +66713,8 @@ var init_project_open_execution = __esm({
     init_transaction_error();
     init_editor_tabs();
     init_native_diagnostics();
-    PROFILE7 = "easyeda-pro-control.project-open.v1";
+    init_native_library_header_evidence();
+    PROFILE8 = "easyeda-pro-control.project-open.v1";
     failureStates = /* @__PURE__ */ new Set(["planned", "project-open-dispatching", "editor-tabs-dispatching", "project-open-reconcile-dispatching", "project-open-reconcile-final-dispatching"]);
     failureCategories = new Map(RECOVERY_NAVIGATION_FAILURE_STAGES.flatMap((stage) => {
       const category = `native-preflight:RECOVERY_${stage.toUpperCase().replaceAll("-", "_")}`;
@@ -66217,7 +66734,7 @@ var init_project_open_execution = __esm({
     failureCategories.set("Project-open native acknowledgment is missing.", "native-acknowledgment-missing");
     failureCategories.set("Project-open tab acknowledgment disagrees with the exact active context.", "native-acknowledgment-context");
     failureCategories.set("Project-open proof changed SQLite tables or materialized document records.", "durable-baseline-changed");
-    hash8 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hash9 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     valueRecord = external_exports.record(external_exports.string(), external_exports.unknown());
     projectOpenTargetSchema = external_exports.object({
       projectUuid: external_exports.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u),
@@ -66235,11 +66752,11 @@ var init_project_open_execution = __esm({
       createdAt: external_exports.string(),
       sourceIdentity: identitySchema,
       checkpointIdentity: identitySchema,
-      sourceSha256: hash8,
-      checkpointSha256: hash8,
-      sourceDumpSha256: hash8,
-      checkpointDumpSha256: hash8,
-      receiptSha256: hash8
+      sourceSha256: hash9,
+      checkpointSha256: hash9,
+      sourceDumpSha256: hash9,
+      checkpointDumpSha256: hash9,
+      receiptSha256: hash9
     }).loose();
     verificationSchema2 = external_exports.object({
       ok: external_exports.literal(true),
@@ -66250,9 +66767,9 @@ var init_project_open_execution = __esm({
       source: external_exports.string(),
       checkpoint: external_exports.string(),
       receiptPath: external_exports.string(),
-      sourceDumpSha256: hash8,
-      checkpointDumpSha256: hash8,
-      checkpointSha256: hash8
+      sourceDumpSha256: hash9,
+      checkpointDumpSha256: hash9,
+      checkpointSha256: hash9
     }).loose();
     dependencies2 = {
       checkpointPolicy,
@@ -66313,17 +66830,31 @@ var init_project_open_execution = __esm({
         ), journal.preCheckpoint);
       }
       readHistory(checkpoint, target5) {
-        return this.services.readNativeHistoryCheckpoint({ checkpointPath: checkpoint.checkpoint, expectedSha256: checkpoint.checkpointSha256, projectUuid: target5.projectUuid });
+        return this.services.readNativeHistoryCheckpoint({
+          checkpointPath: checkpoint.checkpoint,
+          expectedSha256: checkpoint.checkpointSha256,
+          projectUuid: target5.projectUuid,
+          libraryAtomHeaders: "preserve"
+        });
       }
       async durableProof(journal) {
         const beforeCheck = await this.unchanged(journal);
+        const before = await this.readHistory(journal.preCheckpoint, journal.plan.target);
+        const beforeHeaders = await nativeLibraryHeaderEvidence(
+          before,
+          { checkpointSha256: journal.preCheckpoint.checkpointSha256, projectUuid: journal.plan.target.projectUuid }
+        );
         const checkpoint = await this.services.createCheckpoint(
           { source: journal.plan.target.projectPath, outputDir: join18(controlDataDirectory(), "checkpoints"), label: "project-open-after" },
           await this.services.checkpointPolicy(journal.plan.target.projectPath)
         );
         const after = await this.readHistory(checkpoint, journal.plan.target);
+        const afterHeaders = await nativeLibraryHeaderEvidence(
+          after,
+          { checkpointSha256: checkpoint.checkpointSha256, projectUuid: journal.plan.target.projectUuid }
+        );
         const recordsSha256 = libraryProjectRecordsHash(after);
-        if (checkpoint.checkpointDumpSha256 !== journal.preCheckpoint.checkpointDumpSha256 || recordsSha256 !== journal.beforeRecordsSha256) {
+        if (checkpoint.checkpointDumpSha256 !== journal.preCheckpoint.checkpointDumpSha256 || libraryProjectRecordsHash(before) !== journal.beforeRecordsSha256 || recordsSha256 !== journal.beforeRecordsSha256 || beforeHeaders.contentSha256 !== afterHeaders.contentSha256) {
           throw new Error("Project-open proof changed SQLite tables or materialized document records.");
         }
         assertProjectOpenDatabaseUnchanged(await this.services.verifyCheckpoint(
@@ -66339,6 +66870,7 @@ var init_project_open_execution = __esm({
           allSqliteTablesUnchanged: true,
           allSelectedBranchDocumentsUnchanged: true,
           baselineVerification: beforeCheck,
+          libraryHeaderEvidence: { before: beforeHeaders, after: afterHeaders, unchanged: true },
           checkpoint,
           scope: "Complete logical SQLite dump plus materialized selected-branch records. No unsaved-document equivalence or save is inferred."
         };
@@ -66350,16 +66882,25 @@ var init_project_open_execution = __esm({
           expectedContext: journal.plan.expectedContext,
           preCheckpoint: journal.preCheckpoint,
           assetsRoot,
+          libraryAtomHeaders: "preserve",
           navigation: { navigate, requireExclusiveTabs: true, requireEditorReadiness: navigate }
         });
         if (canonicalJson(prepared.target) !== canonicalJson(journal.plan.target)) {
           throw new Error("Prepared project-open target differs from its sealed journal.");
         }
+        if (prepared.libraryHeaderEvidence === void 0 || prepared.libraryHeaderEvidence.checkpointSha256 !== journal.preCheckpoint.checkpointSha256 || prepared.libraryHeaderEvidence.projectUuid !== journal.plan.target.projectUuid) {
+          throw new Error("Prepared project opening lacks checkpoint-bound library header evidence.");
+        }
         await this.unchanged(journal);
         journal.state = `${phase2}-dispatching`;
         journal.hardStop = true;
         journal.nextSafeAction = "Await this single tracked navigation call; never retry an uncertain open.";
-        await this.record(journal, `${phase2}-prepared`, { target: prepared.target, codeSha256: sha256Text(prepared.code), navigate });
+        await this.record(journal, `${phase2}-prepared`, {
+          target: prepared.target,
+          codeSha256: sha256Text(prepared.code),
+          navigate,
+          libraryHeaderEvidence: prepared.libraryHeaderEvidence
+        });
         const result = extractToolPayload(await this.engine.dispatchWithOrphanTracking(
           journal,
           phase2,
@@ -66394,10 +66935,11 @@ var init_project_open_execution = __esm({
         await this.runtime(input.expectedFingerprint);
         const checkpoint = await this.services.createCheckpoint({ source: target5.projectPath, outputDir: join18(controlDataDirectory(), "checkpoints"), label: "project-open-before" }, await this.services.checkpointPolicy(target5.projectPath));
         const before = await this.readHistory(checkpoint, target5);
+        const libraryHeaderEvidence = await nativeLibraryHeaderEvidence(before, { checkpointSha256: checkpoint.checkpointSha256, projectUuid: target5.projectUuid });
         const context2 = targetContext(target5);
         deriveRecoveryNavigationTarget(context2, before);
         const operationId = newOperationId();
-        const plan = { profile: PROFILE7, target: target5, expectedContext: context2, expectedFingerprint: structuredClone(input.expectedFingerprint) };
+        const plan = { profile: PROFILE8, target: target5, expectedContext: context2, expectedFingerprint: structuredClone(input.expectedFingerprint) };
         const journal = {
           schema: OPERATION_SCHEMA,
           operationId,
@@ -66422,7 +66964,13 @@ var init_project_open_execution = __esm({
         };
         await this.services.createOperation(journal);
         try {
-          await this.record(journal, "before", { target: target5, checkpoint, recordsSha256: journal.beforeRecordsSha256, documentCount: before.documents.length });
+          await this.record(journal, "before", {
+            target: target5,
+            checkpoint,
+            recordsSha256: journal.beforeRecordsSha256,
+            documentCount: before.documents.length,
+            libraryHeaderEvidence
+          });
           const native = await this.dispatch(journal, "project-open", true);
           journal.context = structuredClone(await this.engine.assertContext(context2, { allowTabChange: true }));
           if (!isRecord(native["document"]) || native["document"]["tabId"] !== journal.context.document.tabId || typeof native["openedProject"] !== "boolean" || typeof native["openedDocument"] !== "boolean") {
@@ -67178,19 +67726,19 @@ async function runPcbRouteAudit(engine2, input) {
   }
   return result;
 }
-var hash9, record4, consistencySchema3, exactPayloadSchema, routeAuditResultSchema;
+var hash10, record4, consistencySchema3, exactPayloadSchema, routeAuditResultSchema;
 var init_route_audit_execution = __esm({
   "server/src/route-audit-execution.ts"() {
     init_zod();
     init_core3();
     init_document_source();
     init_pcb_route_audit();
-    hash9 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hash10 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     record4 = external_exports.record(external_exports.string(), external_exports.unknown());
     consistencySchema3 = external_exports.object({
       stable: external_exports.literal(true),
       attempts: external_exports.literal(2),
-      snapshotSha256: hash9,
+      snapshotSha256: hash10,
       contextBinding: external_exports.object({ level: external_exports.literal("active-context-stability-required"), preAndPostChecked: external_exports.literal(true), switchAwayAndBackDetectable: external_exports.literal(false) }).strict()
     }).strict();
     exactPayloadSchema = external_exports.object({ ok: external_exports.literal(true), kind: external_exports.enum(["pcb-source", "pcb-inventory"]), documentType: external_exports.literal(3), read_consistency: consistencySchema3 }).loose();
@@ -67200,13 +67748,13 @@ var init_route_audit_execution = __esm({
       report: pcbRouteAuditReportSchema,
       proof: external_exports.object({
         context: record4,
-        fingerprintSha256: hash9,
-        sourceBeforeSnapshotSha256: hash9,
-        sourceAfterSnapshotSha256: hash9,
-        inventorySnapshotSha256: hash9,
-        sourceSha256: hash9,
-        inventorySha256: hash9,
-        reportSha256: hash9,
+        fingerprintSha256: hash10,
+        sourceBeforeSnapshotSha256: hash10,
+        sourceAfterSnapshotSha256: hash10,
+        inventorySnapshotSha256: hash10,
+        sourceSha256: hash10,
+        inventorySha256: hash10,
+        reportSha256: hash10,
         sourceUnchanged: external_exports.literal(true),
         samplesPerRead: external_exports.literal(2),
         contextBinding: consistencySchema3.shape.contextBinding,
@@ -68724,7 +69272,7 @@ var init_project_symbol_create = __esm({
 });
 
 // server/src/library-runtime.ts
-import { createHash as createHash12 } from "node:crypto";
+import { createHash as createHash13 } from "node:crypto";
 function libraryExportRefusalReason(action) {
   return unsafeExportReasons.get(action);
 }
@@ -68930,7 +69478,7 @@ function decodeLibraryFileResult(envelope, maxBytes) {
     return bytes2;
   });
   const bytes = Buffer.concat(chunks);
-  if (createHash12("sha256").update(bytes).digest("hex") !== result.sha256) {
+  if (createHash13("sha256").update(bytes).digest("hex") !== result.sha256) {
     throw new Error("Export content hash mismatch.");
   }
   return { name: result.name, mime: result.mime, bytes, sha256: result.sha256 };
@@ -69838,7 +70386,7 @@ function sourceHash(value) {
 function receipt(value) {
   return checkpointSchema4.parse(value);
 }
-var optionalServices, hashSchema2, fileIdentitySchema, checkpointSchema4, LibraryRecoveryCoordinator;
+var optionalServices, hashSchema3, fileIdentitySchema, checkpointSchema4, LibraryRecoveryCoordinator;
 var init_library_recovery = __esm({
   "server/src/library-recovery.ts"() {
     init_zod();
@@ -69863,7 +70411,7 @@ var init_library_recovery = __esm({
     init_runtime_scripts();
     init_library_undispatched_recovery();
     optionalServices = { readArtifact, updateOperation, readNativeHistoryCheckpoint, prepareRecoveryNavigation, verifyLibraryNativeProfile, verifyDeviceAssociationNativeProfile, verifySchematicNativeProfile };
-    hashSchema2 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hashSchema3 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     fileIdentitySchema = external_exports.object({ birthtimeNs: external_exports.string(), ctimeNs: external_exports.string(), dev: external_exports.string(), ino: external_exports.string() }).strict();
     checkpointSchema4 = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.checkpoint.v2"),
@@ -69871,11 +70419,11 @@ var init_library_recovery = __esm({
       source: external_exports.string().min(1),
       checkpoint: external_exports.string().min(1),
       receiptPath: external_exports.string().min(1),
-      sourceSha256: hashSchema2,
-      checkpointSha256: hashSchema2,
-      sourceDumpSha256: hashSchema2,
-      checkpointDumpSha256: hashSchema2,
-      receiptSha256: hashSchema2,
+      sourceSha256: hashSchema3,
+      checkpointSha256: hashSchema3,
+      sourceDumpSha256: hashSchema3,
+      checkpointDumpSha256: hashSchema3,
+      receiptSha256: hashSchema3,
       sourceIdentity: fileIdentitySchema,
       checkpointIdentity: fileIdentitySchema
     }).loose();
@@ -71030,7 +71578,7 @@ var init_tool_operation_envelope = __esm({
 
 // server/src/windows-authority.ts
 import { spawn as spawn2 } from "node:child_process";
-import { createHash as createHash13, randomBytes as randomBytes7 } from "node:crypto";
+import { createHash as createHash14, randomBytes as randomBytes7 } from "node:crypto";
 import { lstat as lstat11, readFile as readFile3, realpath as realpath8 } from "node:fs/promises";
 import { isIP } from "node:net";
 import path from "node:path";
@@ -71059,7 +71607,7 @@ function windowsPath(value, pattern) {
   }
   return result;
 }
-function hash10(value) {
+function hash11(value) {
   return text6(value, /^[a-f0-9]{64}$/u);
 }
 function pid(value) {
@@ -71126,9 +71674,9 @@ function createWindowsAuthoritySupervisor(transport2, policy) {
   const policySha256 = sha256Json({
     schema: HELPER_SCHEMA,
     policyId: POLICY_ID,
-    helperSha256: hash10(policy.helperSha256),
-    expectedExecutableSha256: hash10(policy.expectedExecutableSha256),
-    reviewedExecutionScopeSha256: hash10(policy.reviewedExecutionScopeSha256),
+    helperSha256: hash11(policy.helperSha256),
+    expectedExecutableSha256: hash11(policy.expectedExecutableSha256),
+    reviewedExecutionScopeSha256: hash11(policy.reviewedExecutionScopeSha256),
     containment: "atomic-launch-job-list:no-breakaway:no-kill-on-close:retained-handles",
     excluded: "outside-job-brokers-services-and-unreviewed-delegation"
   });
@@ -71174,7 +71722,7 @@ function createWindowsAuthoritySupervisor(transport2, policy) {
         schema: "easyeda-pro-control.windows-process-probe.v1",
         bindingSha256: input.bindingSha256,
         port,
-        nonce: hash10(started["nonce"])
+        nonce: hash11(started["nonce"])
       };
       const dispatched = observedDispatch(probe);
       let result;
@@ -71197,7 +71745,7 @@ function createWindowsAuthoritySupervisor(transport2, policy) {
     if (currentLaunch === void 0) {
       throw new Error("Windows authority needs an explicitly supervised EasyEDA launch.");
     }
-    hash10(input.bindingSha256);
+    hash11(input.bindingSha256);
     if (usedCaptureBindings.has(input.bindingSha256)) {
       throw new Error("Windows authority capture binding was already used.");
     }
@@ -71250,7 +71798,7 @@ function createWindowsAuthoritySupervisor(transport2, policy) {
   }
   async function proveTerminated(input) {
     requireOwned();
-    hash10(input.bindingSha256);
+    hash11(input.bindingSha256);
     const retained = authorities.get(input.priorExecutionAuthority.authoritySha256);
     if (retained === void 0 || canonicalJson(retained.evidence) !== canonicalJson(input.priorExecutionAuthority) || retained.operationId !== input.operationId || retained.orphanPhase !== input.orphanPhase || !Number.isSafeInteger(input.challengeAttempt) || input.challengeAttempt < retained.challengeAttempt || retained.bridgeSessionSha256 !== sha256Json(input.priorBridgeSession) || retained.runtimeIdentitySha256 !== sha256Json(input.priorRuntimeIdentity) || input.currentBridgeSession.sessionId === input.priorBridgeSession.sessionId || input.currentBridgeSession.gatewayInstanceId !== input.priorBridgeSession.gatewayInstanceId || input.currentRuntimeIdentity.generation === input.priorRuntimeIdentity.generation || input.currentRuntimeIdentity.timeOrigin === input.priorRuntimeIdentity.timeOrigin) {
       throw new Error("Windows termination proof lacks its retained operation/session/generation capture.");
@@ -71350,7 +71898,7 @@ async function startWindowsAuthoritySupervisor(options) {
   if (!helperStat.isFile() || helperStat.isSymbolicLink() || helperStat.nlink !== 1 || helperStat.size > 65536 || await realpath8(options.helperPath) !== options.helperPath || !path.isAbsolute(options.powershellExecutable)) {
     throw new Error("Windows authority helper requires a canonical reviewed regular file and absolute PowerShell executable.");
   }
-  const helperSha256 = createHash13("sha256").update(await readFile3(options.helperPath)).digest("hex");
+  const helperSha256 = createHash14("sha256").update(await readFile3(options.helperPath)).digest("hex");
   windowsPath(options.helperWindowsPath, /^(?:[A-Za-z]:\\|\\\\)[^"\r\n]+\.ps1$/u);
   const child = spawn2(options.powershellExecutable, [
     "-NoLogo",
@@ -71365,7 +71913,7 @@ async function startWindowsAuthoritySupervisor(options) {
   let buffer = "";
   let failed = false;
   const closed = Promise.withResolvers();
-  function fail8() {
+  function fail9() {
     failed = true;
     pending?.reject(new Error("Windows authority helper exited or violated its bounded protocol. Prior proof authority is unavailable."));
     pending = void 0;
@@ -71375,7 +71923,7 @@ async function startWindowsAuthoritySupervisor(options) {
   child.stdout.on("data", (chunk) => {
     buffer += chunk;
     if (Buffer.byteLength(buffer) > MAXIMUM_RESPONSE_BYTES) {
-      fail8();
+      fail9();
       return;
     }
     const newline = buffer.indexOf("\n");
@@ -71388,7 +71936,7 @@ async function startWindowsAuthoritySupervisor(options) {
       const response = record5(JSON.parse(line5));
       const request = pending;
       if (request === void 0 || response["id"] !== request.id || buffer.length > 0) {
-        fail8();
+        fail9();
         return;
       }
       if (response["ok"] === true) {
@@ -71399,24 +71947,24 @@ async function startWindowsAuthoritySupervisor(options) {
         pending = void 0;
         request.reject(error51);
       } else {
-        fail8();
+        fail9();
       }
     } catch {
-      fail8();
+      fail9();
     }
   });
   child.stderr.on("data", () => {
-    fail8();
+    fail9();
   });
   child.on("error", () => {
-    fail8();
+    fail9();
   });
   child.on("close", () => {
-    fail8();
+    fail9();
     closed.resolve(null);
   });
   child.stdin.on("error", () => {
-    fail8();
+    fail9();
   });
   const transport2 = {
     async request(request) {
@@ -71426,7 +71974,7 @@ async function startWindowsAuthoritySupervisor(options) {
       const id7 = randomBytes7(16).toString("hex");
       const response = Promise.withResolvers();
       pending = { id: id7, resolve: response.resolve, reject: response.reject };
-      const deadline = setTimeout(fail8, 15e3);
+      const deadline = setTimeout(fail9, 15e3);
       child.stdin.write(`${JSON.stringify({ ...request, id: id7 })}
 `);
       try {
@@ -71436,7 +71984,7 @@ async function startWindowsAuthoritySupervisor(options) {
       }
     },
     async release() {
-      fail8();
+      fail9();
       await closed.promise;
     }
   };
@@ -71453,7 +72001,7 @@ var init_windows_authority = __esm({
 });
 
 // server/src/windows-runtime.ts
-import { createHash as createHash14 } from "node:crypto";
+import { createHash as createHash15 } from "node:crypto";
 import { constants as constants7 } from "node:fs";
 import { lstat as lstat12, open as open11, realpath as realpath9 } from "node:fs/promises";
 import path2 from "node:path";
@@ -71516,7 +72064,7 @@ async function hashInstalledExecutable(executablePath, assetsRoot) {
     if (!before.isFile() || before.nlink !== 1 || before.size === 0 || before.size > 1073741824) {
       throw new Error("EasyEDA executable is not a bounded single-link regular file.");
     }
-    const digest3 = createHash14("sha256");
+    const digest3 = createHash15("sha256");
     for await (const chunk of handle.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw new TypeError("Executable hashing returned non-binary data.");
@@ -71701,7 +72249,7 @@ var init_windows_runtime = __esm({
 
 // server/src/windows-native-ui.ts
 import { spawn as spawn3 } from "node:child_process";
-import { createHash as createHash15, randomUUID as randomUUID5 } from "node:crypto";
+import { createHash as createHash16, randomUUID as randomUUID5 } from "node:crypto";
 import { constants as constants8 } from "node:fs";
 import { lstat as lstat13, open as open12, readFile as readFile4, realpath as realpath10 } from "node:fs/promises";
 import path3 from "node:path";
@@ -71724,19 +72272,19 @@ async function hashExecutable(executablePath) {
     if (!before.isFile() || before.nlink !== 1 || before.size === 0 || before.size > 1073741824) {
       throw nativeUiFailure("native-ui-installed-executable-invalid", false);
     }
-    const hash13 = createHash15("sha256");
+    const hash14 = createHash16("sha256");
     for await (const chunk of file2.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw nativeUiFailure("native-ui-installed-read-invalid", false);
       }
-      hash13.update(chunk);
+      hash14.update(chunk);
     }
     for (const after of [await file2.stat(), await lstat13(executablePath)]) {
       if (!after.isFile() || after.nlink !== 1 || after.dev !== before.dev || after.ino !== before.ino || after.size !== before.size || after.ctimeMs !== before.ctimeMs || after.mtimeMs !== before.mtimeMs) {
         throw nativeUiFailure("native-ui-installed-executable-changed", false);
       }
     }
-    return hash13.digest("hex");
+    return hash14.digest("hex");
   } finally {
     await file2.close();
   }
@@ -71804,7 +72352,7 @@ async function archiveNativeCapture(request, payload, bytes) {
     throw error51;
   }
 }
-var SCHEMA, MAX_RESPONSE, handleSchema, textSchema, bindingSchema, nativeUiAppBindingSchema, bound, windowSelection, selection, confirmed, nativeUiRequestSchema, responseSchema, discoverySchema, failedSchema, WindowsNativeUiController;
+var SCHEMA, MAX_RESPONSE, handleSchema, textSchema, bindingSchema2, nativeUiAppBindingSchema, bound, windowSelection, selection, confirmed, nativeUiRequestSchema, responseSchema, discoverySchema, failedSchema, WindowsNativeUiController;
 var init_windows_native_ui = __esm({
   "server/src/windows-native-ui.ts"() {
     init_zod();
@@ -71815,13 +72363,13 @@ var init_windows_native_ui = __esm({
     MAX_RESPONSE = 24 * 1024 * 1024;
     handleSchema = external_exports.string().regex(/^[1-9][0-9]{0,18}$/u);
     textSchema = external_exports.string().max(4096).refine((value) => !value.includes("\0"), "NUL is not native UI text.");
-    bindingSchema = external_exports.object({
+    bindingSchema2 = external_exports.object({
       rootPid: external_exports.number().int().positive(),
       rootStartTicks: external_exports.string().regex(/^[0-9]{15,20}$/u),
       executable: external_exports.string().min(1),
       executableSha256: external_exports.string().regex(/^[a-f0-9]{64}$/u)
     }).strict();
-    nativeUiAppBindingSchema = bindingSchema.extend({ authority: external_exports.literal("observed-unowned") });
+    nativeUiAppBindingSchema = bindingSchema2.extend({ authority: external_exports.literal("observed-unowned") });
     bound = { appBinding: nativeUiAppBindingSchema.optional() };
     windowSelection = { windowHandle: handleSchema, ...bound };
     selection = { ...windowSelection, name: textSchema.optional(), automationId: textSchema.optional() };
@@ -71840,7 +72388,7 @@ var init_windows_native_ui = __esm({
       external_exports.object({ action: external_exports.enum(["click", "doubleclick", "rightclick"]), ...windowSelection, x: external_exports.number().int().min(-32768).max(32767), y: external_exports.number().int().min(-32768).max(32767), ...confirmed }).strict(),
       external_exports.object({ action: external_exports.literal("keys"), ...windowSelection, text: textSchema, ...confirmed }).strict()
     ]);
-    responseSchema = external_exports.object({ schema: external_exports.literal(SCHEMA), binding: bindingSchema, action: external_exports.string(), result: external_exports.record(external_exports.string(), external_exports.json()) }).strict();
+    responseSchema = external_exports.object({ schema: external_exports.literal(SCHEMA), binding: bindingSchema2, action: external_exports.string(), result: external_exports.record(external_exports.string(), external_exports.json()) }).strict();
     discoverySchema = external_exports.object({ schema: external_exports.literal(SCHEMA), action: external_exports.literal("discover"), observations: external_exports.array(nativeUiAppBindingSchema).max(16) }).strict();
     failedSchema = external_exports.object({ schema: external_exports.literal(SCHEMA), error: external_exports.enum(["native-ui-refused", "native-ui-action-failed"]), dispatched: external_exports.boolean() }).strict();
     WindowsNativeUiController = class {
@@ -71898,7 +72446,7 @@ var init_windows_native_ui = __esm({
         const legacyHelperPath = path3.join(this.options.pluginRoot, "scripts/native-ui.ps1");
         await (this.dependencies.verifyHelper ?? verifyHelper)(helperPath);
         await (this.dependencies.verifyHelper ?? verifyHelper)(legacyHelperPath);
-        const legacySha256 = createHash15("sha256").update(await readFile4(legacyHelperPath)).digest("hex");
+        const legacySha256 = createHash16("sha256").update(await readFile4(legacyHelperPath)).digest("hex");
         const executableSha256 = runtime.state === "owned" ? runtime.executableSha256 : await (this.dependencies.hashExecutable ?? hashExecutable)(paths.executablePath);
         if (executableSha256 === null || !/^[a-f0-9]{64}$/u.test(executableSha256)) {
           throw nativeUiFailure("native-ui-installed-executable-invalid", false);
@@ -71915,14 +72463,14 @@ var init_windows_native_ui = __esm({
             if (startMatch?.[2] !== launch.jobId || startMatch[1] === void 0 || launch.root.role !== "easyeda-main") {
               throw nativeUiFailure("native-ui-root-generation-invalid", false);
             }
-            binding2 = bindingSchema.parse({ rootPid: launch.root.pid, rootStartTicks: startMatch[1], executable: paths.executableWindowsPath, executableSha256 });
+            binding2 = bindingSchema2.parse({ rootPid: launch.root.pid, rootStartTicks: startMatch[1], executable: paths.executableWindowsPath, executableSha256 });
             authority = "retained-job";
           } else {
             if (runtime.state === "owned") {
               throw nativeUiFailure("native-ui-unowned-binding-conflicts-with-owned-runtime", false);
             }
             const { authority: _authority, ...observed } = request.appBinding;
-            binding2 = bindingSchema.parse(observed);
+            binding2 = bindingSchema2.parse(observed);
             if (binding2.executable !== paths.executableWindowsPath || binding2.executableSha256 !== executableSha256) {
               throw nativeUiFailure("native-ui-observed-installation-mismatch", false);
             }
@@ -72151,7 +72699,7 @@ async function discardCloseConfirmation(input, controller, dependencies3 = {}) {
     throw transactionError(error51, { operationId: journal.operationId, state: String(journal["state"]), orphanedCallPossible: false, nextSafeAction: String(journal["nextSafeAction"]) });
   }
 }
-var hash11, targetSchema4, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
+var hash12, targetSchema4, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
 var init_native_close_recovery = __esm({
   "server/src/native-close-recovery.ts"() {
     init_zod();
@@ -72160,7 +72708,7 @@ var init_native_close_recovery = __esm({
     init_core3();
     init_windows_native_ui();
     init_transaction_error();
-    hash11 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hash12 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     targetSchema4 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
     buttonSchema = external_exports.object({ label: external_exports.literal("Leave this page"), x: external_exports.number().int().min(-32768).max(32767), y: external_exports.number().int().min(-32768).max(32767) }).strict();
     dialogSchema = external_exports.object({ title: external_exports.literal("Confirm Close"), onlyUnsavedTarget: external_exports.literal(true), targetName: external_exports.string().min(1).max(512), discardButton: buttonSchema }).strict();
@@ -72172,7 +72720,7 @@ var init_native_close_recovery = __esm({
       discardOwnUnsavedChanges: external_exports.literal(true),
       acknowledgeDurableChanges: external_exports.boolean().optional(),
       target: targetSchema4,
-      capture: external_exports.object({ receiptPath: external_exports.string().min(1), receiptSha256: hash11, imageSha256: hash11 }).strict()
+      capture: external_exports.object({ receiptPath: external_exports.string().min(1), receiptSha256: hash12, imageSha256: hash12 }).strict()
     }).strict();
     closeConfirmationRequestSchema = recoveryBaseSchema.extend({ action: external_exports.literal("discard-close-confirmation"), observedDialog: dialogSchema }).strict();
     warningButtonSchema = buttonSchema.extend({ label: external_exports.literal("Don't Save") }).strict();
@@ -76126,7 +76674,7 @@ var require_websocket = __commonJS({
     var http = __require("http");
     var net3 = __require("net");
     var tls = __require("tls");
-    var { randomBytes: randomBytes10, createHash: createHash26 } = __require("crypto");
+    var { randomBytes: randomBytes10, createHash: createHash27 } = __require("crypto");
     var { Duplex, Readable: Readable2 } = __require("stream");
     var { URL: URL2 } = __require("url");
     var PerMessageDeflate2 = require_permessage_deflate();
@@ -76794,7 +77342,7 @@ var require_websocket = __commonJS({
           abortHandshake(websocket, socket, "Invalid Upgrade header");
           return;
         }
-        const digest3 = createHash26("sha1").update(key + GUID).digest("base64");
+        const digest3 = createHash27("sha1").update(key + GUID).digest("base64");
         if (res.headers["sec-websocket-accept"] !== digest3) {
           abortHandshake(websocket, socket, "Invalid Sec-WebSocket-Accept header");
           return;
@@ -77163,7 +77711,7 @@ var require_websocket_server = __commonJS({
     var EventEmitter = __require("events");
     var http = __require("http");
     var { Duplex } = __require("stream");
-    var { createHash: createHash26 } = __require("crypto");
+    var { createHash: createHash27 } = __require("crypto");
     var extension2 = require_extension();
     var PerMessageDeflate2 = require_permessage_deflate();
     var subprotocol2 = require_subprotocol();
@@ -77470,7 +78018,7 @@ var require_websocket_server = __commonJS({
           );
         }
         if (this._state > RUNNING) return abortHandshake(socket, 503);
-        const digest3 = createHash26("sha1").update(key + GUID).digest("base64");
+        const digest3 = createHash27("sha1").update(key + GUID).digest("base64");
         const headers = [
           "HTTP/1.1 101 Switching Protocols",
           "Upgrade: websocket",
@@ -77841,7 +78389,7 @@ var init_backend_listener_authority = __esm({
 
 // server/src/authenticated-bridge-gateway.ts
 import {
-  createHash as createHash16,
+  createHash as createHash17,
   createHmac,
   randomBytes as randomBytes8,
   timingSafeEqual
@@ -78188,7 +78736,7 @@ var init_authenticated_bridge_gateway = __esm({
         if (!/^i[A-Za-z0-9_-]{43}$/u.test(options.expectedAuthenticatedIndexBuildId)) {
           throw new Error("The expected authenticated bridge build ID is invalid.");
         }
-        if (!/^[0-9a-f]{64}$/u.test(options.expectedAuthenticationKeySha256) || createHash16("sha256").update(options.authenticationKey, "utf8").digest("hex") !== options.expectedAuthenticationKeySha256) {
+        if (!/^[0-9a-f]{64}$/u.test(options.expectedAuthenticationKeySha256) || createHash17("sha256").update(options.authenticationKey, "utf8").digest("hex") !== options.expectedAuthenticationKeySha256) {
           throw new Error(
             "The expected authenticated bridge credential epoch does not match the configured key."
           );
@@ -78598,7 +79146,7 @@ var init_authenticated_bridge_gateway = __esm({
         );
         context2.session = {
           authenticatedAtEpochMs: this.#now(),
-          authenticationReceiptSha256: createHash16("sha256").update(serverReceipt, "utf8").digest("hex"),
+          authenticationReceiptSha256: createHash17("sha256").update(serverReceipt, "utf8").digest("hex"),
           sequence: this.#sessionSequence,
           sessionId
         };
@@ -78847,7 +79395,7 @@ var init_authenticated_bridge_gateway = __esm({
 });
 
 // server/src/authenticated-bridge-build-identity.ts
-import { createHash as createHash17 } from "node:crypto";
+import { createHash as createHash18 } from "node:crypto";
 import { constants as fsConstants6 } from "node:fs";
 import { lstat as lstat15, open as open14 } from "node:fs/promises";
 import { basename as basename11, dirname as dirname7, join as join22 } from "node:path";
@@ -78924,7 +79472,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
       MAXIMUM_RECEIPT_BYTES,
       "Authenticated bridge build receipt"
     );
-    const authenticationKeySha256 = createHash17("sha256").update(authenticationKey, "utf8").digest("hex");
+    const authenticationKeySha256 = createHash18("sha256").update(authenticationKey, "utf8").digest("hex");
     const parsed2 = JSON.parse(receiptFile.bytes.toString("utf8"));
     if (!isRecord5(parsed2) || typeof parsed2["outputPath"] !== "string" || typeof parsed2["outputSha256"] !== "string" || !/^[0-9a-f]{64}$/u.test(parsed2["outputSha256"])) {
       throw new Error(
@@ -78947,7 +79495,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
       "Authenticated bridge archive generation"
     );
     await controlRoot.assertCurrent();
-    const archiveSha256 = createHash17("sha256").update(archive.bytes).digest("hex");
+    const archiveSha256 = createHash18("sha256").update(archive.bytes).digest("hex");
     const authentication = isRecord5(parsed2) && isRecord5(parsed2["authentication"]) ? parsed2["authentication"] : void 0;
     const endpoint2 = isRecord5(authentication) && isRecord5(authentication["publicEndpoint"]) ? authentication["publicEndpoint"] : void 0;
     const source3 = isRecord5(parsed2) && isRecord5(parsed2["source"]) ? parsed2["source"] : void 0;
@@ -84990,7 +85538,7 @@ var init_acorn = __esm({
 });
 
 // server/src/upstream-module-execution.ts
-import { createHash as createHash18 } from "node:crypto";
+import { createHash as createHash19 } from "node:crypto";
 import { constants as fsConstants8 } from "node:fs";
 import { lstat as lstat17, open as open16 } from "node:fs/promises";
 import { createRequire, isBuiltin, registerHooks } from "node:module";
@@ -85135,7 +85683,7 @@ async function readSealedFile(path5, seals, capturedSeals) {
     }
     const bytes = await handle.readFile();
     const after = await handle.stat();
-    const sha256 = createHash18("sha256").update(bytes).digest("hex");
+    const sha256 = createHash19("sha256").update(bytes).digest("hex");
     if (!sameSeal(after, seal) || seal.sha256 !== void 0 && sha256 !== seal.sha256) {
       throw new Error(`Reviewed upstream module changed during descriptor capture: ${path5}`);
     }
@@ -85250,7 +85798,7 @@ function executionSourceFor(cwd, path5, source3) {
   }
   return {
     bytes,
-    executionSha256: createHash18("sha256").update(bytes).digest("hex"),
+    executionSha256: createHash19("sha256").update(bytes).digest("hex"),
     transform: transform2
   };
 }
@@ -85432,7 +85980,7 @@ function graphFingerprint(cwd, entrypointUrl, modules, resolutions) {
     moduleCount: moduleRows.length,
     edgeCount: edgeRows.length,
     totalBytes: moduleRows.reduce((total, module) => total + module.bytes, 0),
-    sha256: createHash18("sha256").update(JSON.stringify(projection4)).digest("hex")
+    sha256: createHash19("sha256").update(JSON.stringify(projection4)).digest("hex")
   };
 }
 async function captureUpstreamModuleGraph(cwd, entrypoint, pathSeals = []) {
@@ -85614,7 +86162,7 @@ var init_upstream_module_execution = __esm({
 });
 
 // server/src/upstream-trust.ts
-import { createHash as createHash19 } from "node:crypto";
+import { createHash as createHash20 } from "node:crypto";
 import { spawn as spawn4 } from "node:child_process";
 import { constants as fsConstants9 } from "node:fs";
 import {
@@ -85708,18 +86256,18 @@ async function hashOpenFile(path5, expected2) {
     if (!opened.isFile() || !sameIdentity4(expected2, opened)) {
       throw new Error(`Trusted upstream file changed before open: ${path5}`);
     }
-    const hash13 = createHash19("sha256");
+    const hash14 = createHash20("sha256");
     for await (const chunk of handle.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw new TypeError("Trusted upstream file yielded a non-buffer chunk.");
       }
-      hash13.update(chunk);
+      hash14.update(chunk);
     }
     const after = await handle.stat();
     if (!sameIdentity4(opened, after)) {
       throw new Error(`Trusted upstream file changed while hashing: ${path5}`);
     }
-    return { bytes: after.size, sha256: hash13.digest("hex") };
+    return { bytes: after.size, sha256: hash14.digest("hex") };
   } finally {
     await handle?.close();
   }
@@ -85815,7 +86363,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
     const pathOrder = left.path.localeCompare(right.path);
     return pathOrder === 0 ? left.kind.localeCompare(right.kind) : pathOrder;
   });
-  const closureHash = createHash19("sha256");
+  const closureHash = createHash20("sha256");
   for (const entry of sortedEntries) {
     closureHash.update(entry.kind);
     closureHash.update("\0");
@@ -85829,7 +86377,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
   const implementationFiles = sortedEntries.filter(
     (entry) => entry.kind === "file" && isWithin5(implementationRoot, join24(cwd, entry.path)) && /\.(c?m?js|json)$/iu.test(entry.path)
   );
-  const implementationHash = createHash19("sha256");
+  const implementationHash = createHash20("sha256");
   for (const entry of implementationFiles) {
     implementationHash.update(
       relative7(implementationRoot, join24(cwd, entry.path)).split(sep5).join("/")
@@ -85891,7 +86439,7 @@ async function sha256OpenHandle(handle, expected2, label) {
   if (!before.isFile() || !sameIdentity4(before, expected2)) {
     throw new Error(`${label} descriptor identity changed.`);
   }
-  const hash13 = createHash19("sha256");
+  const hash14 = createHash20("sha256");
   const buffer = Buffer.allocUnsafe(64 * 1024);
   let position = 0;
   while (position < before.size) {
@@ -85904,14 +86452,14 @@ async function sha256OpenHandle(handle, expected2, label) {
     if (bytesRead === 0) {
       throw new Error(`${label} ended before its recorded byte length.`);
     }
-    hash13.update(buffer.subarray(0, bytesRead));
+    hash14.update(buffer.subarray(0, bytesRead));
     position += bytesRead;
   }
   const after = await handle.stat();
   if (!sameIdentity4(before, after)) {
     throw new Error(`${label} changed while its bytes were captured.`);
   }
-  return hash13.digest("hex");
+  return hash14.digest("hex");
 }
 async function openReviewedExecutable(path5, expectedSha256, label, allowRootOwner, expectedMode) {
   const absolute = resolve7(path5);
@@ -86332,7 +86880,7 @@ async function assertPathSealsCurrent(seals, boundary = "before spawn") {
   }
 }
 function launcherFingerprintSha256(value) {
-  return createHash19("sha256").update(canonicalJson(value)).digest("hex");
+  return createHash20("sha256").update(canonicalJson(value)).digest("hex");
 }
 var DEFAULT_SANDBOX_COMMAND, REVIEWED_SANDBOX_VERSION, REQUIRED_SANDBOX_OPTIONS, runtimeSha256Schema, runtimeDescriptorSanitizerSchema, runtimeLauncherFingerprintSchema;
 var init_upstream_trust = __esm({
@@ -86445,7 +86993,7 @@ var init_upstream_bootstrap = __esm({
 });
 
 // server/src/private-runtime-payload.ts
-import { createHash as createHash20, randomUUID as randomUUID8 } from "node:crypto";
+import { createHash as createHash21, randomUUID as randomUUID8 } from "node:crypto";
 import { constants as fsConstants10 } from "node:fs";
 import { open as open18, unlink as unlink4 } from "node:fs/promises";
 import process12 from "node:process";
@@ -86521,7 +87069,7 @@ async function stagePrivateRuntimePayload(source3, privateDirectory) {
       throw new Error("Private runtime payload changed before descriptor open.");
     }
     const captured = await readExact(readable, source3.length);
-    const sha256 = createHash20("sha256").update(captured).digest("hex");
+    const sha256 = createHash21("sha256").update(captured).digest("hex");
     if (!captured.equals(source3)) {
       throw new Error("Private runtime payload differs from its captured source bytes.");
     }
@@ -86539,7 +87087,7 @@ async function stagePrivateRuntimePayload(source3, privateDirectory) {
       const before = await readable.stat({ bigint: true });
       const current2 = await readExact(readable, source3.length);
       const after = await readable.stat({ bigint: true });
-      if (!sameStableFile(unlinked, before) || !sameStableFile(before, after) || before.nlink !== 0n || after.nlink !== 0n || before.ctimeNs !== unlinked.ctimeNs || after.ctimeNs !== before.ctimeNs || createHash20("sha256").update(current2).digest("hex") !== sha256) {
+      if (!sameStableFile(unlinked, before) || !sameStableFile(before, after) || before.nlink !== 0n || after.nlink !== 0n || before.ctimeNs !== unlinked.ctimeNs || after.ctimeNs !== before.ctimeNs || createHash21("sha256").update(current2).digest("hex") !== sha256) {
         throw new Error("Private runtime payload changed before sandbox spawn.");
       }
     };
@@ -87117,7 +87665,7 @@ var init_sandboxed_stdio_client_transport = __esm({
         };
         let buffered = Buffer.alloc(0);
         let settled = false;
-        const fail8 = (error51) => {
+        const fail9 = (error51) => {
           const normalized2 = error51 instanceof Error ? error51 : new Error(String(error51));
           if (settled) {
             void this.failProtocol(normalized2, "status-protocol-error");
@@ -87162,17 +87710,17 @@ var init_sandboxed_stdio_client_transport = __esm({
               }
             }
           } catch (error51) {
-            fail8(error51);
+            fail9(error51);
           }
         });
-        stream.once("error", fail8);
+        stream.once("error", fail9);
         stream.once("end", () => {
           if (buffered.length > 0) {
-            fail8(new Error("Bubblewrap status ended with an incomplete record."));
+            fail9(new Error("Bubblewrap status ended with an incomplete record."));
           } else if (state2.childPid === null) {
-            fail8(new Error("Bubblewrap exited before reporting its child PID."));
+            fail9(new Error("Bubblewrap exited before reporting its child PID."));
           } else if (state2.exitCode === null) {
-            fail8(
+            fail9(
               new Error("Bubblewrap status ended without an exit record.")
             );
           }
@@ -87440,7 +87988,7 @@ var init_sandboxed_stdio_client_transport = __esm({
 });
 
 // server/src/supervisor-execution.ts
-import { createHash as createHash21 } from "node:crypto";
+import { createHash as createHash22 } from "node:crypto";
 import { constants as fsConstants12 } from "node:fs";
 import {
   lstat as lstat19,
@@ -87534,7 +88082,7 @@ async function captureReviewedSupervisor(sourcePath, expected2) {
   try {
     const captured = await readStableHandle(handle, "Upstream supervisor source");
     assertSameIdentity2(pathInfo, captured.info, "Upstream supervisor source");
-    const sha256 = createHash21("sha256").update(captured.bytes).digest("hex");
+    const sha256 = createHash22("sha256").update(captured.bytes).digest("hex");
     if (expected2.relativePath !== SUPERVISOR_BUNDLE_NAME || expected2.bytes !== captured.bytes.length || expected2.sha256 !== sha256) {
       throw new Error(
         "The upstream supervisor bytes do not match the reviewed facade bundle."
@@ -87711,7 +88259,7 @@ var init_upstream_seccomp = __esm({
 
 // server/src/upstream.ts
 import { AsyncLocalStorage } from "node:async_hooks";
-import { createHash as createHash22, randomBytes as randomBytes9 } from "node:crypto";
+import { createHash as createHash23, randomBytes as randomBytes9 } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { join as join26, resolve as resolve9 } from "node:path";
@@ -87725,15 +88273,15 @@ function startupFailureWithStderr(error51, diagnosticBytes, diagnosticSha256, st
   );
 }
 async function sha256File(path5) {
-  const hash13 = createHash22("sha256");
+  const hash14 = createHash23("sha256");
   const source3 = createReadStream(path5);
   for await (const chunk of source3) {
     if (typeof chunk !== "string" && !Buffer.isBuffer(chunk)) {
       throw new TypeError("File hashing received a non-binary stream chunk.");
     }
-    hash13.update(chunk);
+    hash14.update(chunk);
   }
-  return hash13.digest("hex");
+  return hash14.digest("hex");
 }
 function requireVersionSegment(value, label) {
   if (typeof value !== "string" || !/^[a-z0-9][a-z0-9._-]{2,80}$/iu.test(value)) {
@@ -87744,7 +88292,7 @@ function requireVersionSegment(value, label) {
   return value;
 }
 function disconnectedLifecycleBoundarySha256(lifecycle) {
-  return createHash22("sha256").update(
+  return createHash23("sha256").update(
     JSON.stringify({
       gatewayInstanceId: lifecycle.gatewayInstanceId,
       publicEndpoint: lifecycle.publicEndpoint,
@@ -87844,7 +88392,7 @@ var init_upstream = __esm({
       connectPromise = null;
       tools = null;
       stderrBytes = 0;
-      stderrDigest = createHash22("sha256");
+      stderrDigest = createHash23("sha256");
       retainedProcessDiagnostics;
       startupLauncherAdmission = null;
       bridgeGateway = null;
@@ -87888,7 +88436,7 @@ var init_upstream = __esm({
       }
       async #connect() {
         this.stderrBytes = 0;
-        this.stderrDigest = createHash22("sha256");
+        this.stderrDigest = createHash23("sha256");
         const controlRoot = this.options.controlRoot;
         if (controlRoot === void 0) {
           throw new Error(
@@ -88116,7 +88664,7 @@ var init_upstream = __esm({
             transport2.startupDiagnostics()
           );
           this.stderrBytes = 0;
-          this.stderrDigest = createHash22("sha256");
+          this.stderrDigest = createHash23("sha256");
           const cleanupErrors = [];
           let clientClosed = true;
           let transportClosed = true;
@@ -88156,7 +88704,7 @@ var init_upstream = __esm({
           throw startupError;
         }
         this.stderrBytes = 0;
-        this.stderrDigest = createHash22("sha256");
+        this.stderrDigest = createHash23("sha256");
         this.startupLauncherAdmission = launcherAdmission;
         this.client = client;
         this.transport = transport2;
@@ -88468,7 +89016,7 @@ var init_upstream = __esm({
         }
         this.startupLauncherAdmission = null;
         this.stderrBytes = 0;
-        this.stderrDigest = createHash22("sha256");
+        this.stderrDigest = createHash23("sha256");
         if (failures.length > 0) {
           throw new AggregateError(
             failures,
@@ -89019,7 +89567,7 @@ function maintainedApiCoverageRoutes() {
   }
   return result;
 }
-var groups, topologyBlock, ruleMethods, flatDisplayProfile, flatDisplayRoute, exports;
+var groups, topologyBlock, ruleMethods, flatDisplayProfiles, flatDisplayRoute, exports;
 var init_extension_api_coverage_routes = __esm({
   "server/src/extension-api-coverage-routes.ts"() {
     groups = [];
@@ -89205,7 +89753,7 @@ var init_extension_api_coverage_routes = __esm({
     add2("sch_PrimitiveAttribute", ["createNetLabel"], "easyeda_control_design", "sch.net-label.create", "native-task-equivalent", "Exact standalone native label and topology effect; public stub is not dispatched.", ["schematic-electrical-adapter.ts"], ["schematic-electrical-adapter.test.ts"]);
     add2("sch_PrimitivePin", ["modify"], "easyeda_control_design", "sch.component-pin.no-connect", "native-task-equivalent", "Exact ordinary component pin no-connect marker only; arbitrary placed-pin property changes remain unavailable.", ["schematic-electrical-adapter.ts"], ["schematic-electrical-adapter.test.ts"]);
     add2("sch_PrimitiveComponent", ["createNetFlag"], "easyeda_control_design", "sch.layout.batch;checkpoint-bound-netflag-clone", "native-task-equivalent", "Clone of an existing loaded checkpoint-bound flag template only; not general new library flag creation.", ["schematic-layout-netflag.ts", "schematic-layout-batch.ts"], ["schematic-layout-netflag.test.ts", "schematic-layout-batch.test.ts"]);
-    flatDisplayProfile = "easyeda-pro-control.flat-display-transaction.v1";
+    flatDisplayProfiles = ["easyeda-pro-control.flat-display-transaction.v1", "easyeda-pro-control.flat-display-transaction.v2"];
     flatDisplayRoute = {
       tool: "easyeda_control_design",
       documentTypes: [1],
@@ -89215,22 +89763,31 @@ var init_extension_api_coverage_routes = __esm({
       tests: ["flat-display-profile.test.ts", "flat-display-runtime.test.ts", "flat-display-execution.test.ts", "schematic-flat-read.test.ts", "schematic-flat-topology.test.ts", "design-topology-refusal.test.ts"],
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "operations", query: { family: "design", operationAction: "sch.layout.batch", includeSchemas: true } } } }
     };
-    for (const [namespace, step] of [["sch_PrimitiveAttribute", "sch.attribute.display"], ["sch_PrimitiveText", "sch.text.display"]]) {
-      groups.push({ namespace, methods: ["modify"], route: {
+    for (const flatDisplayProfile of flatDisplayProfiles) {
+      const imported = flatDisplayProfile.endsWith(".v2");
+      const route = {
         ...flatDisplayRoute,
-        selector: `sch.layout.batch;sealed-profile=${flatDisplayProfile};step=${step}`,
-        implementation: "native-task-equivalent",
-        scope: `Only ${step} inside a batch composed entirely of existing stored attribute/text display steps on exactly one ordinary project-owned schematic page. Facade-created ${flatDisplayProfile} binds the complete checkpoint, owner/branch, source/native endpoint topology and exact stored-field inverse; no caller-supplied profile or topology grants authority. Native source import runs once inside its own receiver-bound action, with final synchronous guards and complete baseline-or-intended durable classification. Only supported position/style/visibility fields are changed; no text-content or attribute-value edits, pin/net or NO_CONNECT changes, component translation, creation, deletion, mixed layout, hierarchy, variant, multipart or bus support. Not the public modify wrapper or its full declared contract; current-generation live and successful full coordinator lifecycle validation remain unclaimed.`
+        source: [...flatDisplayRoute.source, "flat-display-storage.ts", ...imported ? ["native-history.ts", "native-atom-header-history.ts", "native-library-header-evidence.ts", "flat-display-library-peers.ts", "recovery-navigation.ts"] : []],
+        tests: [...flatDisplayRoute.tests, "flat-display-lifecycle.test.ts", "flat-display-apply-encoding.test.ts", ...imported ? ["native-history-first-ticket.test.ts", "native-history-first-ticket-adversarial.test.ts", "flat-display-imported-peer-adversarial.test.ts", "flat-display-imported-lifecycle.test.ts", "recovery-navigation-capture.test.ts"] : []]
+      };
+      const peerScope = imported ? " V2 admits only unchanged imported SYMBOL/FOOTPRINT peers: every lifecycle path rereads the sealed original immutable checkpoint and retains complete atom/header/body encoding, clock, client-presence, tombstone and occurrence-order commitments plus unchanged semantic peer bodies. No library write, history compaction or missing/replayed/changed occurrence is admitted." : " V1 continues to refuse imported firstTicket provenance; its existing seals and strict reader behavior are unchanged.";
+      for (const [namespace, step] of [["sch_PrimitiveAttribute", "sch.attribute.display"], ["sch_PrimitiveText", "sch.text.display"]]) {
+        groups.push({ namespace, methods: ["modify"], route: {
+          ...route,
+          selector: `sch.layout.batch;sealed-profile=${flatDisplayProfile};step=${step}`,
+          implementation: "native-task-equivalent",
+          scope: `Only ${step} inside a batch composed entirely of existing stored attribute/text display steps on exactly one ordinary project-owned schematic page. Facade-created ${flatDisplayProfile} binds the complete checkpoint, owner/branch, source/native endpoint topology and exact stored-field inverse; no caller-supplied profile or topology grants authority. Native source import runs once inside its own receiver-bound action, with final synchronous guards and complete baseline-or-intended durable classification. Only supported position/style/visibility fields are changed; no text-content or attribute-value edits, pin/net or NO_CONNECT changes, component translation, creation, deletion, mixed layout, hierarchy, variant, multipart or bus support.${peerScope} Not the public modify wrapper or its full declared contract. Offline synthetic coordinator and runtime regression evidence only; current-generation live validation remains unclaimed.`
+        } });
+      }
+      groups.push({ namespace: "sch_Document", methods: ["save"], route: {
+        ...route,
+        selector: `execute/commit;sealed-profile=${flatDisplayProfile}`,
+        implementation: "internal-lifecycle-only",
+        scope: `Only the original sealed ${flatDisplayProfile} display-only transaction's commit lifecycle on its one exact ordinary schematic page. Complete baseline-or-intended durable proof, same-execution source/native endpoint guard after final crypto/context awaits, retained no-repeat Save intent, terminal close/ready reopen and full project persistence are required. Recovery checks the sealed original preparation and retained Save acknowledgment; it never repeats an uncertain Save.${peerScope} No standalone Save, generic schematic commit, caller-provided topology grant or broad activation of other type-1 transactions. Offline synthetic coordinator and runtime regression evidence only; current-generation live validation remains unclaimed.`,
+        source: [...route.source, "runtime-scripts.ts", "design-save-attempt.ts", "native-document-lifecycle.ts"],
+        tests: [...route.tests, "runtime-scripts.test.ts", "design-save-attempt.test.ts"]
       } });
     }
-    groups.push({ namespace: "sch_Document", methods: ["save"], route: {
-      ...flatDisplayRoute,
-      selector: `execute/commit;sealed-profile=${flatDisplayProfile}`,
-      implementation: "internal-lifecycle-only",
-      scope: `Only the original sealed ${flatDisplayProfile} display-only transaction's commit lifecycle on its one exact ordinary schematic page. Complete baseline-or-intended durable proof, same-execution source/native endpoint guard after final crypto/context awaits, retained no-repeat Save intent, terminal close/ready reopen and full project persistence are required. Recovery checks the sealed original preparation and retained Save acknowledgment; it never repeats an uncertain Save. No standalone Save, generic schematic commit, caller-provided topology grant or broad activation of other type-1 transactions. Current-generation live and successful full coordinator lifecycle validation remain unclaimed.`,
-      source: [...flatDisplayRoute.source, "runtime-scripts.ts", "design-save-attempt.ts", "native-document-lifecycle.ts"],
-      tests: [...flatDisplayRoute.tests, "runtime-scripts.test.ts", "design-save-attempt.test.ts"]
-    } });
     for (const [family2, api2] of [["symbol", "lib_Symbol"], ["footprint", "lib_Footprint"], ["device", "lib_Device"], ["model3d", "lib_3DModel"]]) {
       add2(api2, ["get"], "easyeda_control_library", `library.${family2}.get`, "public-method", "Exact identity/owner metadata, bounded double-sampled result; not complete library inventory or asset geometry.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
     }
@@ -89745,18 +90302,18 @@ async function readPcbNetMembership(engine2, requestInput, expectedContext, expe
   }
   return result;
 }
-var hash12, consistencySchema4, payloadSchema3;
+var hash13, consistencySchema4, payloadSchema3;
 var init_pcb_net_membership_read = __esm({
   "server/src/pcb-net-membership-read.ts"() {
     init_zod();
     init_core3();
     init_document_source();
     init_pcb_net_membership();
-    hash12 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hash13 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     consistencySchema4 = external_exports.object({
       stable: external_exports.literal(true),
       attempts: external_exports.literal(2),
-      snapshotSha256: hash12,
+      snapshotSha256: hash13,
       contextBinding: external_exports.object({ level: external_exports.literal("active-context-stability-required"), preAndPostChecked: external_exports.literal(true), switchAwayAndBackDetectable: external_exports.literal(false) }).strict()
     }).strict();
     payloadSchema3 = external_exports.object({ ok: external_exports.literal(true), kind: external_exports.enum(["pcb-source", "pcb-inventory"]), documentType: external_exports.literal(3), read_consistency: consistencySchema4 }).loose();
@@ -89764,7 +90321,7 @@ var init_pcb_net_membership_read = __esm({
 });
 
 // server/src/public-sdk-catalog.ts
-import { createHash as createHash23 } from "node:crypto";
+import { createHash as createHash24 } from "node:crypto";
 function queryPublicSdkReads(input = {}) {
   const query = publicSdkCatalogQuerySchema.parse(input);
   const all = publicSdkReadDescriptors();
@@ -89775,7 +90332,7 @@ function queryPublicSdkReads(input = {}) {
     const { inputSchema, ...descriptor } = entry;
     const result = { ...descriptor, ...query.includeSchemas ? {
       inputSchema,
-      inputSchemaSha256: createHash23("sha256").update(JSON.stringify(inputSchema)).digest("hex")
+      inputSchemaSha256: createHash24("sha256").update(JSON.stringify(inputSchema)).digest("hex")
     } : {} };
     if (Buffer.byteLength(JSON.stringify([...entries, result]), "utf8") > MAX_ENTRIES_BYTES) {
       if (entries.length === 0) {
@@ -89845,7 +90402,7 @@ function validatePublicSdkArguments(input) {
       executionAuthorized: false,
       nativePreflightPerformed: false,
       normalizedRequestBytes: bytes,
-      normalizedRequestSha256: createHash23("sha256").update(encoded).digest("hex"),
+      normalizedRequestSha256: createHash24("sha256").update(encoded).digest("hex"),
       ...bytes <= MAX_ENTRIES_BYTES ? { normalizedRequest: result.data } : { normalizedRequestOmitted: true }
     };
   }
@@ -89889,7 +90446,7 @@ var init_public_sdk_catalog = __esm({
 });
 
 // server/src/operation-catalog.ts
-import { createHash as createHash24 } from "node:crypto";
+import { createHash as createHash25 } from "node:crypto";
 function collectOperations(parser) {
   if (parser instanceof external_exports.ZodUnion) {
     return parser.options.flatMap((option) => {
@@ -89935,10 +90492,22 @@ function queryOperationCatalog(input) {
           reason: SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL,
           ...entry.action === "sch.layout.batch" ? { exception: {
             profile: FLAT_DISPLAY_TRANSACTION_PROFILE,
+            profiles: [FLAT_DISPLAY_TRANSACTION_PROFILE, FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE],
+            profileSelection: "facade-only: v1 without imported firstTicket provenance; v2 only when unchanged imported SYMBOL/FOOTPRINT peers have complete checkpoint-bound occurrence proofs",
             allowedSteps: ["sch.attribute.display", "sch.text.display"],
             targets: "existing stored records with literal primitiveId selectors",
             scope: "one ordinary fully represented page; complete checkpoint-bound project membership and flat topology",
             requiredProof: "exact nonempty display effect and inverse, unchanged peers, one-shot Save/reopen and complete durable delta",
+            importedLibraryPeers: {
+              profile: FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE,
+              documentTypes: ["SYMBOL", "FOOTPRINT"],
+              proof: "reread the sealed original immutable checkpoint at every lifecycle boundary; preserve all atom/header/body encodings, clocks, client presence, tombstones, occurrence order and peer semantic bodies",
+              libraryEdits: false,
+              historyCompaction: false,
+              sources: ["native-history.ts", "native-atom-header-history.ts", "native-library-header-evidence.ts", "flat-display-library-peers.ts", "flat-display-storage.ts", "design-execution.ts"],
+              tests: ["native-history-first-ticket.test.ts", "native-history-first-ticket-adversarial.test.ts", "flat-display-imported-peer-adversarial.test.ts", "flat-display-imported-lifecycle.test.ts", "flat-display-runtime.test.ts"],
+              validation: "offline-synthetic-regression;current-generation-live-unclaimed"
+            },
             electricalEdits: false,
             executionAuthorized: false,
             liveValidation: "generation-and-operation-specific;see-capability-matrix"
@@ -89947,7 +90516,7 @@ function queryOperationCatalog(input) {
       } : {},
       ...schema === void 0 ? {} : {
         inputSchema: schema,
-        inputSchemaSha256: createHash24("sha256").update(JSON.stringify(schema)).digest("hex")
+        inputSchemaSha256: createHash25("sha256").update(JSON.stringify(schema)).digest("hex")
       }
     };
     if (Buffer.byteLength(JSON.stringify([...entries, descriptor]), "utf8") > MAX_CATALOG_BYTES) {
@@ -89988,7 +90557,7 @@ function validateCatalogOperation(input) {
       valid: true,
       ...normalizedOperationBytes <= MAX_CATALOG_BYTES ? { normalizedOperation: result.data } : {},
       normalizedOperationBytes,
-      normalizedOperationSha256: createHash24("sha256").update(serialized).digest("hex"),
+      normalizedOperationSha256: createHash25("sha256").update(serialized).digest("hex"),
       normalizedOperationOmitted: normalizedOperationBytes > MAX_CATALOG_BYTES,
       offline: true,
       executionAuthorized: false,
@@ -90019,6 +90588,7 @@ var init_operation_catalog = __esm({
     init_library_execution();
     init_exact_readers();
     init_flat_display_binding();
+    init_flat_display_library_peers();
     familySchema2 = external_exports.enum(["design", "library"]);
     operationCatalogQuerySchema = external_exports.object({
       family: familySchema2,
@@ -90038,7 +90608,7 @@ var init_operation_catalog = __esm({
 
 // server/src/index.ts
 var src_exports = {};
-import { createHash as createHash25 } from "node:crypto";
+import { createHash as createHash26 } from "node:crypto";
 import {
   basename as basename14,
   dirname as dirname11,
@@ -92336,7 +92906,7 @@ var init_src = __esm({
           if (generated.byteLength !== publishedExport.bytes) {
             throw new Error("Export byte length changed after write.");
           }
-          if (publishedExport.sha256 !== createHash25("sha256").update(exportBytes).digest("hex")) {
+          if (publishedExport.sha256 !== createHash26("sha256").update(exportBytes).digest("hex")) {
             throw new Error("Export hash changed during managed publication.");
           }
           await engine.assertContext(input.expectedContext);
@@ -92789,7 +93359,7 @@ async function readJson(path5, maximumBytes, privateFile = false) {
   }
 }
 async function nodeDescriptorHash(file2, before) {
-  const hash13 = createHash("sha256");
+  const hash14 = createHash("sha256");
   if (!sameNodeFile(before, await file2.stat())) {
     throw new MachineProfileError("machine-node-changed");
   }
@@ -92800,12 +93370,12 @@ async function nodeDescriptorHash(file2, before) {
     if (total > NODE_MAX_BYTES) {
       throw new MachineProfileError("machine-node-too-large");
     }
-    hash13.update(bytes);
+    hash14.update(bytes);
   }
   if (total !== before.size || !sameNodeFile(before, await file2.stat())) {
     throw new MachineProfileError("machine-node-changed");
   }
-  return hash13.digest("hex");
+  return hash14.digest("hex");
 }
 async function retainNodeIdentity(nodeExecutable, expectedHash) {
   const before = await regularFile(nodeExecutable, NODE_MAX_BYTES, true);

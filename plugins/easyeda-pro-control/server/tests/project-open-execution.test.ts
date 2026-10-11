@@ -6,6 +6,8 @@ import { ProjectOpenExecutor } from "../src/project-open-execution.ts";
 import type { ProjectOpenDependencies, ProjectOpenEngine, ProjectOpenInput } from "../src/project-open-execution.ts";
 import { buildRecoveryNavigationCode } from "../src/recovery-navigation.ts";
 import type { NativeHistorySnapshot } from "../src/native-history.ts";
+import { materializeNativeHistory } from "../src/native-history.ts";
+import { nativeLibraryHeaderEvidence } from "../src/native-library-header-evidence.ts";
 import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
 
 type Value = Record<string, unknown>;
@@ -31,7 +33,8 @@ function fingerprint(): Value {
     installedBundles: { available: true, assetsRoot: "/opt/assets", pcbEditor: { ...manifest.installedBundles.pcbEditor, implementationPath: "/opt/assets/pcb.js" },
       publicApi: { ...manifest.installedBundles.publicApi, implementationPath: "/opt/assets/api.js", adapterPath: "/opt/assets/adapter.js", declarationsPath: "/opt/assets/api.d.ts" } } };
 }
-interface FixtureState { recordDrift: boolean; uncertain: boolean; incomplete: boolean; dispatchFailure?: unknown; failArtifact?: string; generatedEnvironment?: Value; }
+interface FixtureState { recordDrift: boolean; uncertain: boolean; incomplete: boolean; dispatchFailure?: unknown; failArtifact?: string; generatedEnvironment?: Value;
+  histories?: readonly NativeHistorySnapshot[]; omitPreparedHeaderEvidence?: boolean; sqliteDrift?: boolean; }
 function fixture(): { executor: ProjectOpenExecutor; input: ProjectOpenInput; calls: string[]; journals: Map<string, Value>; artifacts: Map<string, Value>; state: FixtureState } {
   const calls: string[] = []; const journals = new Map<string, Value>(); const artifacts = new Map<string, Value>();
   const state: FixtureState = { recordDrift: false, uncertain: false, incomplete: false }; const identity = fingerprint(); let historyReads = 0;
@@ -39,15 +42,21 @@ function fixture(): { executor: ProjectOpenExecutor; input: ProjectOpenInput; ca
   const services: ProjectOpenDependencies = {
     checkpointPolicy: (source): ReturnType<NonNullable<ProjectOpenDependencies["checkpointPolicy"]>> => Promise.resolve({ expectedSource: source, artifactRoots: ["/fixture"] }),
     createCheckpoint: (): ReturnType<NonNullable<ProjectOpenDependencies["createCheckpoint"]>> => { calls.push("checkpoint"); return Promise.resolve(structuredClone(RECEIPT)); },
-    verifyCheckpoint: (): ReturnType<NonNullable<ProjectOpenDependencies["verifyCheckpoint"]>> => Promise.resolve(structuredClone(VERIFIED)),
-    readNativeHistoryCheckpoint: (): ReturnType<NonNullable<ProjectOpenDependencies["readNativeHistoryCheckpoint"]>> => {
+    verifyCheckpoint: (): ReturnType<NonNullable<ProjectOpenDependencies["verifyCheckpoint"]>> => Promise.resolve(structuredClone(state.sqliteDrift === true ? { ...VERIFIED, sourceChanged: true } : VERIFIED)),
+    readNativeHistoryCheckpoint: (input): ReturnType<NonNullable<ProjectOpenDependencies["readNativeHistoryCheckpoint"]>> => {
+      assert.equal(input.libraryAtomHeaders, "preserve");
       historyReads += 1;
+      const selected = state.histories?.[Math.min(historyReads - 1, state.histories.length - 1)];
+      if (selected !== undefined) { return Promise.resolve(selected); }
       return Promise.resolve(state.recordDrift && historyReads > 1 ? { ...HISTORY, documents: HISTORY.documents.map((document) => ({ ...document, metadata: { changed: true } })) } : structuredClone(HISTORY));
     },
-    prepareRecoveryNavigation: (input): ReturnType<NonNullable<ProjectOpenDependencies["prepareRecoveryNavigation"]>> => {
+    prepareRecoveryNavigation: async (input): ReturnType<NonNullable<ProjectOpenDependencies["prepareRecoveryNavigation"]>> => {
       assert.equal(input.navigation?.requireExclusiveTabs, true);
       assert.equal(input.navigation?.requireEditorReadiness, input.navigation?.navigate);
-      return Promise.resolve({ target: TARGET, checkpointSha256: HASH, code: buildRecoveryNavigationCode(TARGET, input.navigation) });
+      assert.equal(input.libraryAtomHeaders, "preserve");
+      return { target: TARGET, checkpointSha256: HASH, code: buildRecoveryNavigationCode(TARGET, input.navigation),
+        ...(state.omitPreparedHeaderEvidence === true ? {} : { libraryHeaderEvidence: await nativeLibraryHeaderEvidence(state.histories?.[0] ?? HISTORY,
+          { checkpointSha256: HASH, projectUuid: TARGET.projectUuid }) }) };
     },
     verifyLibraryNativeProfile: (): ReturnType<NonNullable<ProjectOpenDependencies["verifyLibraryNativeProfile"]>> => Promise.resolve({ profile: "easyeda-pro-control.library-native.v1", version: "3.2.149.43637efe", relativePath: "pro-ui/3.2.149.43637efe/js/ui.js", sha256: "12414b9ded97913f7d7f30522a2265d2a6c995281e3347bfd1752206e647497a" }),
     createOperation: save, updateOperation: save,
@@ -108,6 +117,63 @@ void test("existing-project opening journals first and proves the full saved bas
   const run = fixture(); const result = await run.executor.openExisting(run.input);
   assert.equal(result["state"], "completed"); assert.equal(result["saved"], false);
   assert.deepEqual(run.calls, ["checkpoint", "project-open", "checkpoint"]);
+});
+
+const line = (header: Value, body: unknown): string => `${JSON.stringify(header)}||${body === null ? "" : JSON.stringify(body)}|\n`;
+function importedLibraryHistory(firstTicket = 1): NativeHistorySnapshot {
+  const source = line({ type: "DOCHEAD", ticket: 1 }, { uuid: TARGET.documentUuid, docType: "PCB", client: "fixture" })
+    + line({ type: "DOCHEAD", ticket: 1 }, { uuid: "library", docType: "SYMBOL", client: "fixture" })
+    + line({ type: "PIN", id: "pin", ticket: 9, firstTicket }, { x: 0 })
+    + line({ type: "LINE", id: "deleted", ticket: 9, firstTicket: 0 }, null);
+  const documents = materializeNativeHistory([source], HASH, { libraryAtomHeaders: "preserve" });
+  return { ...HISTORY, documents, plaintextBytes: Buffer.byteLength(source),
+    semanticSha256: sha256Json(documents.map(({ uuid, docType, semanticSha256 }) => ({ uuid, docType, semanticSha256 }))) };
+}
+
+void test("project opening retains imported header commitments and rereads the original checkpoint without Save", async () => {
+  const run = fixture(); const history = importedLibraryHistory(); run.state.histories = [history];
+  const result = await run.executor.openExisting(run.input);
+  assert.equal(result["state"], "completed"); assert.equal(result["saved"], false);
+  const before = [...run.artifacts.entries()].find(([path]) => path.endsWith("-before.json"))?.[1];
+  assert.ok(isRecord(before?.["libraryHeaderEvidence"]));
+  const evidence = before["libraryHeaderEvidence"];
+  assert.equal(evidence["checkpointSha256"], HASH);
+  const expected = await nativeLibraryHeaderEvidence(history, { checkpointSha256: HASH, projectUuid: TARGET.projectUuid });
+  assert.deepEqual(evidence["documents"], expected.documents);
+  assert.equal(JSON.stringify(evidence).includes('"occurrences":'), false);
+  const completed = result["result"]; assert.ok(isRecord(completed));
+  const proof = completed["proof"]; assert.ok(isRecord(proof));
+  assert.equal(proof["allSqliteTablesUnchanged"], true);
+  assert.deepEqual(proof["libraryHeaderEvidence"], { before: evidence, after: evidence, unchanged: true });
+  assert.deepEqual(run.calls, ["checkpoint", "project-open", "checkpoint"]);
+});
+
+void test("header-only drift cannot pass project-open's unchanged semantic body proof", async () => {
+  const run = fixture(); const after = importedLibraryHistory(2), before = importedLibraryHistory();
+  assert.equal(before.semanticSha256, after.semanticSha256);
+  run.state.histories = [before, before, after];
+  await assert.rejects(run.executor.openExisting(run.input), /materialized document records/u);
+  assert.equal(run.calls.filter((phase) => phase === "project-open").length, 1);
+  assert.equal([...run.journals.values()][0]?.["state"], "project-open-needs-review");
+  assert.equal([...run.journals.values()][0]?.["saved"], false);
+});
+
+void test("missing navigation provenance and bad original proof refuse before dispatch", async () => {
+  const missing = fixture(); missing.state.omitPreparedHeaderEvidence = true;
+  await assert.rejects(missing.executor.openExisting(missing.input), /lacks checkpoint-bound library header evidence/u);
+  assert.deepEqual(missing.calls, ["checkpoint"]);
+  const corrupt = fixture(); const history = structuredClone(importedLibraryHistory());
+  const document = history.documents.find((entry) => entry.atomHeaderHistory !== undefined); assert.ok(document?.atomHeaderHistory);
+  Reflect.set(document.atomHeaderHistory, "sha256", "0".repeat(64)); corrupt.state.histories = [history];
+  await assert.rejects(corrupt.executor.openExisting(corrupt.input), /provenance/u);
+  assert.deepEqual(corrupt.calls, ["checkpoint"]);
+});
+
+void test("valid imported proof cannot replace complete SQLite invariance", async () => {
+  const run = fixture(); run.state.histories = [importedLibraryHistory()]; run.state.sqliteDrift = true;
+  await assert.rejects(run.executor.openExisting(run.input));
+  assert.deepEqual(run.calls, ["checkpoint"]);
+  assert.equal([...run.journals.values()][0]?.["saved"], false);
 });
 void test("opening refuses another incomplete operation before checkpoint or native navigation", async () => {
   const run = fixture(); run.state.incomplete = true;

@@ -114,7 +114,7 @@ add("sch_PrimitiveComponent", ["createNetFlag"], "easyeda_control_design", "sch.
 
 // These explicit inventory entries describe the facade-owned sealed exception.
 // Keep add()'s generic schematic and shared-lifecycle blocking rules unchanged.
-const flatDisplayProfile = "easyeda-pro-control.flat-display-transaction.v1";
+const flatDisplayProfiles = ["easyeda-pro-control.flat-display-transaction.v1", "easyeda-pro-control.flat-display-transaction.v2"] as const;
 const flatDisplayRoute: Omit<ApiCoverageRoute, "selector" | "implementation" | "scope"> = {
   tool: "easyeda_control_design", documentTypes: [1], executionState: "available-with-runtime-guards",
   validation: "offline-regression;current-live-unclaimed",
@@ -122,18 +122,26 @@ const flatDisplayRoute: Omit<ApiCoverageRoute, "selector" | "implementation" | "
   tests: ["flat-display-profile.test.ts", "flat-display-runtime.test.ts", "flat-display-execution.test.ts", "schematic-flat-read.test.ts", "schematic-flat-topology.test.ts", "design-topology-refusal.test.ts"],
   inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "operations", query: { family: "design", operationAction: "sch.layout.batch", includeSchemas: true } } } },
 };
-for (const [namespace, step] of [["sch_PrimitiveAttribute", "sch.attribute.display"], ["sch_PrimitiveText", "sch.text.display"]] as const) {
-  groups.push({ namespace, methods: ["modify"], route: { ...flatDisplayRoute,
-    selector: `sch.layout.batch;sealed-profile=${flatDisplayProfile};step=${step}`, implementation: "native-task-equivalent",
-    scope: `Only ${step} inside a batch composed entirely of existing stored attribute/text display steps on exactly one ordinary project-owned schematic page. Facade-created ${flatDisplayProfile} binds the complete checkpoint, owner/branch, source/native endpoint topology and exact stored-field inverse; no caller-supplied profile or topology grants authority. Native source import runs once inside its own receiver-bound action, with final synchronous guards and complete baseline-or-intended durable classification. Only supported position/style/visibility fields are changed; no text-content or attribute-value edits, pin/net or NO_CONNECT changes, component translation, creation, deletion, mixed layout, hierarchy, variant, multipart or bus support. Not the public modify wrapper or its full declared contract; current-generation live and successful full coordinator lifecycle validation remain unclaimed.`,
+for (const flatDisplayProfile of flatDisplayProfiles) {
+  const imported = flatDisplayProfile.endsWith(".v2");
+  const route = { ...flatDisplayRoute,
+    source: [...flatDisplayRoute.source, "flat-display-storage.ts", ...(imported ? ["native-history.ts", "native-atom-header-history.ts", "native-library-header-evidence.ts", "flat-display-library-peers.ts", "recovery-navigation.ts"] : [])],
+    tests: [...flatDisplayRoute.tests, "flat-display-lifecycle.test.ts", "flat-display-apply-encoding.test.ts", ...(imported ? ["native-history-first-ticket.test.ts", "native-history-first-ticket-adversarial.test.ts", "flat-display-imported-peer-adversarial.test.ts", "flat-display-imported-lifecycle.test.ts", "recovery-navigation-capture.test.ts"] : [])],
+  };
+  const peerScope = imported ? " V2 admits only unchanged imported SYMBOL/FOOTPRINT peers: every lifecycle path rereads the sealed original immutable checkpoint and retains complete atom/header/body encoding, clock, client-presence, tombstone and occurrence-order commitments plus unchanged semantic peer bodies. No library write, history compaction or missing/replayed/changed occurrence is admitted." : " V1 continues to refuse imported firstTicket provenance; its existing seals and strict reader behavior are unchanged.";
+  for (const [namespace, step] of [["sch_PrimitiveAttribute", "sch.attribute.display"], ["sch_PrimitiveText", "sch.text.display"]] as const) {
+    groups.push({ namespace, methods: ["modify"], route: { ...route,
+      selector: `sch.layout.batch;sealed-profile=${flatDisplayProfile};step=${step}`, implementation: "native-task-equivalent",
+      scope: `Only ${step} inside a batch composed entirely of existing stored attribute/text display steps on exactly one ordinary project-owned schematic page. Facade-created ${flatDisplayProfile} binds the complete checkpoint, owner/branch, source/native endpoint topology and exact stored-field inverse; no caller-supplied profile or topology grants authority. Native source import runs once inside its own receiver-bound action, with final synchronous guards and complete baseline-or-intended durable classification. Only supported position/style/visibility fields are changed; no text-content or attribute-value edits, pin/net or NO_CONNECT changes, component translation, creation, deletion, mixed layout, hierarchy, variant, multipart or bus support.${peerScope} Not the public modify wrapper or its full declared contract. Offline synthetic coordinator and runtime regression evidence only; current-generation live validation remains unclaimed.`,
+    } });
+  }
+  groups.push({ namespace: "sch_Document", methods: ["save"], route: { ...route,
+    selector: `execute/commit;sealed-profile=${flatDisplayProfile}`, implementation: "internal-lifecycle-only",
+    scope: `Only the original sealed ${flatDisplayProfile} display-only transaction's commit lifecycle on its one exact ordinary schematic page. Complete baseline-or-intended durable proof, same-execution source/native endpoint guard after final crypto/context awaits, retained no-repeat Save intent, terminal close/ready reopen and full project persistence are required. Recovery checks the sealed original preparation and retained Save acknowledgment; it never repeats an uncertain Save.${peerScope} No standalone Save, generic schematic commit, caller-provided topology grant or broad activation of other type-1 transactions. Offline synthetic coordinator and runtime regression evidence only; current-generation live validation remains unclaimed.`,
+    source: [...route.source, "runtime-scripts.ts", "design-save-attempt.ts", "native-document-lifecycle.ts"],
+    tests: [...route.tests, "runtime-scripts.test.ts", "design-save-attempt.test.ts"],
   } });
 }
-groups.push({ namespace: "sch_Document", methods: ["save"], route: { ...flatDisplayRoute,
-  selector: `execute/commit;sealed-profile=${flatDisplayProfile}`, implementation: "internal-lifecycle-only",
-  scope: `Only the original sealed ${flatDisplayProfile} display-only transaction's commit lifecycle on its one exact ordinary schematic page. Complete baseline-or-intended durable proof, same-execution source/native endpoint guard after final crypto/context awaits, retained no-repeat Save intent, terminal close/ready reopen and full project persistence are required. Recovery checks the sealed original preparation and retained Save acknowledgment; it never repeats an uncertain Save. No standalone Save, generic schematic commit, caller-provided topology grant or broad activation of other type-1 transactions. Current-generation live and successful full coordinator lifecycle validation remain unclaimed.`,
-  source: [...flatDisplayRoute.source, "runtime-scripts.ts", "design-save-attempt.ts", "native-document-lifecycle.ts"],
-  tests: [...flatDisplayRoute.tests, "runtime-scripts.test.ts", "design-save-attempt.test.ts"],
-} });
 
 for (const [family, api] of [["symbol", "lib_Symbol"], ["footprint", "lib_Footprint"], ["device", "lib_Device"], ["model3d", "lib_3DModel"]] as const) {
   add(api, ["get"], "easyeda_control_library", `library.${family}.get`, "public-method", "Exact identity/owner metadata, bounded double-sampled result; not complete library inventory or asset geometry.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);

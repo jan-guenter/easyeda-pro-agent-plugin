@@ -98,8 +98,8 @@ void test("topology-dependent schematic routes are blocked without disabling ind
 });
 
 void test("sealed flat display coverage admits only existing attribute/text display and its internal Save lifecycle", () => {
-  const profile = "easyeda-pro-control.flat-display-transaction.v1";
   const rows = inventoryExtensionApiCoverage();
+  for (const profile of ["easyeda-pro-control.flat-display-transaction.v1", "easyeda-pro-control.flat-display-transaction.v2"]) {
   const admitted = rows.flatMap((row) => row.routes.filter((route) => route.selector.includes(`sealed-profile=${profile}`)).map((route) => ({ path: row.path, row, route })));
   assert.deepEqual(admitted.map(({ path }) => path).toSorted(), ["eda.sch_Document.save", "eda.sch_PrimitiveAttribute.modify", "eda.sch_PrimitiveText.modify"]);
   for (const { path, row, route } of admitted) {
@@ -109,7 +109,19 @@ void test("sealed flat display coverage admits only existing attribute/text disp
     assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
     assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
     assert.ok(route.source.includes("flat-display-profile.ts")); assert.ok(route.source.includes("flat-display-runtime.ts"));
-    assert.ok(route.tests.includes("flat-display-execution.test.ts")); assert.match(route.scope, /successful full coordinator lifecycle validation remain unclaimed/u);
+    assert.ok(route.tests.includes("flat-display-execution.test.ts")); assert.match(route.scope, /current-generation live validation remains unclaimed/u);
+    assert.match(route.scope, /Offline synthetic coordinator and runtime regression evidence only/u);
+    if (profile.endsWith(".v2")) {
+      for (const source of ["native-history.ts", "native-atom-header-history.ts", "native-library-header-evidence.ts", "flat-display-library-peers.ts", "flat-display-storage.ts", "recovery-navigation.ts"]) {
+        assert.ok(route.source.includes(source));
+      }
+      for (const regression of ["native-history-first-ticket.test.ts", "native-history-first-ticket-adversarial.test.ts", "flat-display-imported-peer-adversarial.test.ts", "flat-display-imported-lifecycle.test.ts", "recovery-navigation-capture.test.ts"]) {
+        assert.ok(route.tests.includes(regression));
+      }
+      assert.match(route.scope, /only unchanged imported SYMBOL\/FOOTPRINT peers/u);
+      assert.match(route.scope, /rereads the sealed original immutable checkpoint/u);
+      assert.match(route.scope, /No library write, history compaction/u);
+    } else { assert.match(route.scope, /V1 continues to refuse imported firstTicket provenance/u); }
     assert.deepEqual(route.inputDiscovery, { tool: "easyeda_control_api", arguments: { request: { action: "operations", query: { family: "design", operationAction: "sch.layout.batch", includeSchemas: true } } } });
     if (path === "eda.sch_Document.save") {
       assert.equal(route.implementation, "internal-lifecycle-only"); assert.equal(route.selector, `execute/commit;sealed-profile=${profile}`);
@@ -122,6 +134,7 @@ void test("sealed flat display coverage admits only existing attribute/text disp
       assert.match(route.scope, /no caller-supplied profile or topology grants authority/u);
       assert.equal(row.routes.find((entry) => entry.selector.includes("documentType=2"))?.executionState, "available-with-runtime-guards");
     }
+  }
   }
   assert.equal(rows.find((row) => row.path === "eda.sch_PrimitiveComponent.createNetFlag")?.routes.every((route) => route.executionState === "blocked"), true);
 });

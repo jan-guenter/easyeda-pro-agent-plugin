@@ -12,7 +12,34 @@ run against a connected editor. Passing source tests and an offline comparison
 of captured disposable-project observations do not establish that lifecycle.
 The user's production project was not inspected or changed for this work.
 The later [combined release verification](api-coverage-source-candidate-2026-10-11.md#final-combined-verification-after-the-selection-correction)
-records the completed build and full tests. Connected validation remains separate.
+records the completed build and full tests. The installed-generation evidence
+below supersedes the pending status for its specific cases only.
+
+## Installed071500 disposable validation
+
+The installed `0.3.0+codex.20261011071500` reader returned active Top Layer 1
+from two matching source/list/source cycles. The complete public enumeration
+contained 262 rows, including the six unchanged malformed inactive-color
+strings described below. Complete native source and inventory matched before
+and after; all 18 saved documents, 383 materialized records and the full logical
+SQLite dump were unchanged. Normal application close preserved the source-file
+hash. No layer change or Save was performed.
+
+The same batch validated filtered membership for two component pads and one
+via on a populated net, case-insensitive component-pad matching, and an empty
+standalone-Pad/Arc result. It did not validate nonempty standalone Pads/Arcs,
+Line ownership, primitive-type lookup, electrical connectivity or a writer.
+Two inherited silkscreen children remain outside the standalone LINE proof.
+
+The retained, independently reviewed audit is SHA-256
+`68bd56435a7c63d16d04bc9eeacffaad588dd73dc75f27b5d5da489605a97069`.
+It binds the installed payload, source closure, managed receipts, complete
+context and immutable backups. This does not admit a later facade build.
+
+An initial caller supplied only project/document UUIDs and type; it refused
+before any engine read. These native PCB readers also require the observed
+`tabId` and `parentProjectUuid`. Copy the complete fresh document context;
+do not fabricate owner fields or loosen the guard.
 
 ## Reviewed implementation
 

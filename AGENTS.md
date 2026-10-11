@@ -6,6 +6,51 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Restarted071500 validation and imported-history work, in progress
+
+- Fresh facade1982336 loads installed071500. Independent actual-byte review
+  matches all168source files/three bundles and immutable payload401ef941:
+  source3201c619, bundle0e508367, manifest8f08608f. Authenticated dispatcher
+  ded07x99dcxb504 and the external compatibility tuple are unchanged.
+- Contained29216 opened only the older disposable PCB through one tracked
+  project-open454c080d. It completed with all18documents and the full logical
+  SQLite dump unchanged. No Save, design edit or production access occurred.
+  PCB readers pass Top Layer1, two component pads plus one via, lowercase pad
+  matching and empty Pad/Arc membership. Complete native/source/inventory and
+  all18documents/383records/fullSQLite remain unchanged. Independently reviewed
+  proof68bd5643 is accepted; no Line/type/nonemptyPadArc/connectivity claim.
+- An initial active-layer request omitted observed tab/owner fields and refused
+  at its input check before any engine read. The corrected caller retains the
+  full owned identity. The original refusal remains retained; source/catalog
+  limitations and skill guidance now make this context requirement explicit.
+- The firstTicket history extension is source-only. Default history and live
+  source parsing stay strict; the internal library-atom option preserves raw
+  headers/body encodings, physical clocks, all occurrences and tombstones under
+  checkpoint-bound commitments. Project-open unchanged-SQLite integration and
+  a separately sealed imported-peer flat-display profile are under review.
+  Maintained immutable-checkpoint proofab1432a9 preserves all9old/70records,
+  exactly3imported assets and66atom occurrences/12firstTicket fields. Source
+  v2 gates and input-capture corrections pass main/independent review and156
+  focused tests; full release checks remain pending. No new parser, profile,
+  library placement or writer has connected acceptance.
+- One native click selected the old fixture's R2. Both modern and repaired
+  deprecated-name getters return its exact ID twice. Proofc707a4f0 independently
+  rehashes793inputs and confirms full native/context/saved18doc invariance.
+  No design edit, Copy/Paste or Save. Normal-close/discoverempty proves29216
+  exited; maintained offline checkpoint verify71906373 passes source970d21b3,
+  backup4ed9ca7c/logical457de32e with unchanged identities. MCP verify first
+  refused after bridge disconnect, before file verification; retain that
+  refusal. Its live-context authorization cannot simply be removed.
+- Both editors were closed before this fresh launch; the separate flat fixture
+  remains closed and import-only. Never replay its Paste or Save. PR9 remains
+  draft. Candidate083400 is built and fully locally verified:2874facade passes/
+  oneplatformskip/zerofailures;424bridge passes;types/strictlint/signatures/audit/
+  reproducibility/privacy/sevenskills/officialvalidators/actionlint pass. Source
+  493d631e/171files,bundlefe3e6bf5,manifest90d42043;externalpinsunchanged.
+  Not yet published/installed; loaded071500 is not hot-patched. First synthetic
+  bridgebuild refused an unsupported control-data path; fresh private/tmp builds
+  pass exactreproducibility. No real key/import/runtime change.
+
 ### Restarted010000 disposable validation and source corrections, earlier checkpoint
 
 - Fresh facade1926652 admits installed010000 bundle0ebf1680/manifest9fffd9f1
@@ -1159,7 +1204,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace candidate `0.3.0+codex.20261011071500` is published, installed/enabled and offline-verified against CI-tested401ef941. All540files/modes match;26tools, seven skills and175fixed readers. Loaded facade1926652 remains010000 and must stay untouched until fresh Codex pickup. Its nonempty Wire/Bus DTO reads pass exact native and complete saved-project invariance. Both disposable editors are closed and all journals are terminal. The flat fixture has an exactly diagnosed import-only library delta whose firstTicket history encoding remains outside the maintained decoder; no component was placed and no Save occurred. Never replay prior edits/inverse/rename/Save. Installed071500 adds active-layer and selection equivalents plus PCB inventory/navigation corrections. New adapters, filtered PCB membership, PCB type lookup and nonempty flat topology still need applicable connected evidence. Prior Text/property-name/Wire-ID/symbol-Pin/display/rename evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
+- Git-marketplace `0.3.0+codex.20261011071500` is installed/enabled and offline-verified against CI-tested401ef941. All540files/modes match;26tools, seven skills and175fixed readers. Fresh facade1982336 admits its exact bytes. Scoped active-layer, ComponentPad/Via membership and ordinary selected-component reads now pass complete native/saved invariance. Both disposable editors are closed and all journals are terminal. The flat fixture remains import-only; no component was placed and no Save followed its Paste. Candidate083400 adds preserved imported-library provenance and sealed display-only v2, reviewed offline but not yet built/installed/connected-validated. Never replay prior edits/inverse/rename/Save. Line/type lookup, nonempty standalone Pad/Arc and nonempty flat topology remain pending. Prior Text/property-name/Wire-ID/Bus/symbol-Pin/display/rename evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

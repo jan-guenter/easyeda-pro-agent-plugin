@@ -6,6 +6,7 @@ import { projectSchematicCoordinateCheckpoint } from "./schematic-coordinate-lif
 import { correlateSchematicNativeSource } from "./schematic-source-proof.ts";
 import { verifySchematicStoragePersistence } from "./schematic-storage-persistence.ts";
 import { yieldProofEventLoop } from "./cooperative-proof.ts";
+import { captureFlatDisplayHistory, flatDisplayLibrarySeal } from "./flat-display-library-peers.ts";
 
 type StorageInput = Parameters<typeof verifySchematicStoragePersistence>[0];
 interface MaterializationInput {
@@ -74,7 +75,7 @@ async function materialization(input: MaterializationInput): Promise<{
 }
 
 export async function verifyFlatDisplayMaterialization(input: MaterializationInput): Promise<Readonly<Record<string, unknown>>> {
-  const result = await materialization(structuredClone(input));
+  const result = await materialization({ ...structuredClone({ ...input, history: undefined }), history: captureFlatDisplayHistory(input.history) });
   return result.proof;
 }
 
@@ -82,7 +83,13 @@ export async function verifyFlatDisplayMaterialization(input: MaterializationInp
  * No write, Save, receipt or raw history is synthesized by this comparison.
  */
 export async function verifyFlatDisplayRestoration(input: StorageInput): Promise<Readonly<Record<string, unknown>>> {
-  const captured = structuredClone(input);
+  const captured = { ...structuredClone({ ...input, before: undefined, after: undefined }),
+    before: captureFlatDisplayHistory(input.before), after: captureFlatDisplayHistory(input.after) };
+  const afterPeers = flatDisplayLibrarySeal(captured.after), beforePeers = flatDisplayLibrarySeal(captured.before);
+  if ((beforePeers === undefined) !== (afterPeers === undefined) ||
+      (beforePeers !== undefined && !same(beforePeers, afterPeers))) {
+    throw new Error("Flat display restoration changed imported library header peers.");
+  }
   const before = await materialization({ history: captured.before, source: captured.expectedBefore, native: captured.beforeNative });
   const after = await materialization({ history: captured.after, source: captured.expectedAfter, native: captured.afterNative });
   const comparison = verifySchematicStoragePersistence({ ...captured, before: before.coordinateCheckpoint, after: after.coordinateCheckpoint });

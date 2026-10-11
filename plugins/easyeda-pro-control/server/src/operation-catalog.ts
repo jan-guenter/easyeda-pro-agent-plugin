@@ -5,6 +5,7 @@ import { libraryOperationSchema } from "./library-operations.ts";
 import { listLibraryExecutionCapabilities } from "./library-execution.ts";
 import { SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL } from "./exact-readers.ts";
 import { FLAT_DISPLAY_TRANSACTION_PROFILE } from "./flat-display-binding.ts";
+import { FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE } from "./flat-display-library-peers.ts";
 
 const familySchema = z.enum(["design", "library"]);
 export const operationCatalogQuerySchema = z.object({
@@ -73,10 +74,21 @@ export function queryOperationCatalog(input: unknown): Record<string, unknown> {
         executionRestrictions: [{ documentType: 1, reason: SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL,
           ...(entry.action === "sch.layout.batch" ? { exception: {
             profile: FLAT_DISPLAY_TRANSACTION_PROFILE,
+            profiles: [FLAT_DISPLAY_TRANSACTION_PROFILE, FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE],
+            profileSelection: "facade-only: v1 without imported firstTicket provenance; v2 only when unchanged imported SYMBOL/FOOTPRINT peers have complete checkpoint-bound occurrence proofs",
             allowedSteps: ["sch.attribute.display", "sch.text.display"],
             targets: "existing stored records with literal primitiveId selectors",
             scope: "one ordinary fully represented page; complete checkpoint-bound project membership and flat topology",
             requiredProof: "exact nonempty display effect and inverse, unchanged peers, one-shot Save/reopen and complete durable delta",
+            importedLibraryPeers: {
+              profile: FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE,
+              documentTypes: ["SYMBOL", "FOOTPRINT"],
+              proof: "reread the sealed original immutable checkpoint at every lifecycle boundary; preserve all atom/header/body encodings, clocks, client presence, tombstones, occurrence order and peer semantic bodies",
+              libraryEdits: false, historyCompaction: false,
+              sources: ["native-history.ts", "native-atom-header-history.ts", "native-library-header-evidence.ts", "flat-display-library-peers.ts", "flat-display-storage.ts", "design-execution.ts"],
+              tests: ["native-history-first-ticket.test.ts", "native-history-first-ticket-adversarial.test.ts", "flat-display-imported-peer-adversarial.test.ts", "flat-display-imported-lifecycle.test.ts", "flat-display-runtime.test.ts"],
+              validation: "offline-synthetic-regression;current-generation-live-unclaimed",
+            },
             electricalEdits: false,
             executionAuthorized: false,
             liveValidation: "generation-and-operation-specific;see-capability-matrix",

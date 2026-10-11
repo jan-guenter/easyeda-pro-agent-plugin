@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { runInNewContext } from "node:vm";
-import { sha256Json } from "../src/core.ts";
+import { isRecord, sha256Json } from "../src/core.ts";
 import { EasyedaControlEngine } from "../src/engine.ts";
 import type { ContextProbePayload, InstalledEasyedaBundles } from "../src/engine.ts";
 import type { CheckpointReceipt, CheckpointVerification } from "../src/checkpoint.ts";
 import type { NativeDocumentSnapshot, NativeHistorySnapshot } from "../src/native-history.ts";
+import { materializeNativeHistory } from "../src/native-history.ts";
 import { SCHEMATIC_NATIVE_IMPLEMENTATION } from "../src/native-profiles.ts";
 import { observeSchematicFlatTopology, readSchematicFlatTopology } from "../src/schematic-flat-read.ts";
 import type { FlatDisplayObservationEvidence } from "../src/schematic-flat-read.ts";
@@ -41,10 +42,12 @@ function history(): NativeHistorySnapshot {
 }
 interface Options { quarantine?: number; profileFail?: number; checkpointFail?: number; contextFail?: number;
   dispatchFail?: boolean; missingPage?: boolean; foreignDeclared?: boolean; varyingSource?: boolean; malformedPayload?: boolean;
-  checkpointProofOverride?: Record<string, unknown>; checkpointProofOverrideAt?: number; projectDriftAt?: number; historyHashDrift?: boolean }
+  checkpointProofOverride?: Record<string, unknown>; checkpointProofOverrideAt?: number; projectDriftAt?: number; historyHashDrift?: boolean;
+  importedHeaders?: "valid" | "unbranded"; mutateExpectedContext?: boolean }
 function fixture(options: Options = {}): { engine: EasyedaControlEngine; run: () => Promise<Record<string, unknown>>;
   observe: () => Promise<FlatDisplayObservationEvidence>; events: string[] } {
   const events: string[] = [];
+  const expectedContext = structuredClone(context);
   let checkpoints = 0, contexts = 0, dispatches = 0, gates = 0, profiles = 0, projectReads = 0;
   const nativeProject = { setting: { universal: { defaultNetName: true } }, netLabelInterPageConnection: true };
   const source = (): string => `${JSON.stringify({ type: "DOCHEAD" })}||${JSON.stringify({ docType: "SCH_PAGE", uuid: "page", client: "0123456789abcdef", updateTime: 1, version: "1" })}|\n` +
@@ -79,10 +82,12 @@ function fixture(options: Options = {}): { engine: EasyedaControlEngine; run: ()
     } });
   engine.assertBridgeDispatchAllowed = (): Promise<true> => {
     events.push("gate"); gates += 1;
+    if (options.mutateExpectedContext === true) { expectedContext.document.documentType = 3; expectedContext.document.uuid = "foreign"; }
     return gates === options.quarantine ? Promise.reject(new Error("fixture quarantine")) : Promise.resolve(true);
   };
-  engine.assertContext = (): Promise<ContextProbePayload> => {
+  engine.assertContext = (expected): Promise<ContextProbePayload> => {
     events.push("context"); contexts += 1;
+    if (options.mutateExpectedContext === true) { assert.deepEqual(expected, context); }
     return contexts === options.contextFail ? Promise.reject(new Error("fixture context")) : Promise.resolve(structuredClone(context));
   };
   engine.checkpoint = (args): Promise<CheckpointReceipt | CheckpointVerification> => {
@@ -93,14 +98,22 @@ function fixture(options: Options = {}): { engine: EasyedaControlEngine; run: ()
       ...(checkpoints === (options.checkpointProofOverrideAt ?? 1) ? options.checkpointProofOverride : {}) });
   };
   const dependencies = {
-    readNativeHistoryCheckpoint: (): Promise<NativeHistorySnapshot> => { events.push("history"); return Promise.resolve({ ...history(), checkpointSha256: options.historyHashDrift === true ? "f".repeat(64) : hash }); },
+    readNativeHistoryCheckpoint: (): Promise<NativeHistorySnapshot> => {
+      events.push("history"); const base = history();
+      const libraries = options.importedHeaders === undefined ? [] : materializeNativeHistory([
+        '{"type":"DOCHEAD","ticket":0}||{"uuid":"library-peer","docType":"SYMBOL"}|\n{"id":"atom","type":"LINE","ticket":2,"firstTicket":0}||{"x":1}|\n',
+      ], hash, { libraryAtomHeaders: "preserve" });
+      const documents = [...base.documents, ...(options.importedHeaders === "unbranded" ? structuredClone(libraries) : libraries)];
+      return Promise.resolve({ ...base, documents, semanticSha256: sha256Json(documents.map(({ uuid, docType, semanticSha256 }) => ({ uuid, docType, semanticSha256 }))),
+        checkpointSha256: options.historyHashDrift === true ? "f".repeat(64) : hash });
+    },
     verifySchematicNativeProfile: (): Promise<typeof SCHEMATIC_NATIVE_IMPLEMENTATION> => {
       events.push("profile"); profiles += 1;
       return profiles === options.profileFail ? Promise.reject(new Error("fixture profile")) : Promise.resolve(SCHEMATIC_NATIVE_IMPLEMENTATION);
     }, verifyDeviceAssociationNativeProfile: (): Promise<void> => Promise.resolve(),
   };
-  const run = (): Promise<Record<string, unknown>> => readSchematicFlatTopology(engine, context, dependencies);
-  const observe = (): Promise<FlatDisplayObservationEvidence> => observeSchematicFlatTopology(engine, context, dependencies);
+  const run = (): Promise<Record<string, unknown>> => readSchematicFlatTopology(engine, expectedContext, dependencies);
+  const observe = (): Promise<FlatDisplayObservationEvidence> => observeSchematicFlatTopology(engine, expectedContext, dependencies);
   return { engine, run, observe, events };
 }
 
@@ -111,6 +124,29 @@ void test("flat reader executes its actual generated capture twice with independ
   assert.equal(current.events.filter((event) => event === "dispatch").length, 2);
   assert.equal(current.events.filter((event) => event === "checkpoint-verify").length, 6);
   assert.ok(current.events.indexOf("history") < current.events.indexOf("dispatch"));
+});
+void test("public diagnostic and private observer retain fresh imported peer commitments without authorizing a transaction", async () => {
+  const publicRead = fixture({ importedHeaders: "valid" }), result = await publicRead.run();
+  const evidence = result["libraryHeaderEvidence"]; assert.ok(isRecord(evidence));
+  assert.equal(evidence["profile"], "easyeda.native-history.library-header-evidence.v1");
+  assert.equal(evidence["checkpointSha256"], hash); assert.equal(result["transactionTopology"], false);
+  assert.equal(Object.hasOwn(result, "history"), false); assert.equal(Object.hasOwn(result, "binding"), false);
+  const privateRead = fixture({ importedHeaders: "valid" });
+  const observed = await privateRead.observe();
+  assert.deepEqual(observed.libraryHeaderEvidence, evidence);
+  assert.equal(observed.history.documents.find(({ uuid }) => uuid === "library-peer")?.atomHeaderHistory?.occurrences.length, 1);
+  for (const mode of ["run", "observe"] as const) {
+    const clone = fixture({ importedHeaders: "unbranded" }); await assert.rejects(clone[mode](), /provenance/u);
+    assert.equal(clone.events.includes("dispatch"), false);
+    const changed = fixture({ importedHeaders: "valid", checkpointFail: 3 }); await assert.rejects(changed[mode]());
+    assert.equal(changed.events.filter((event) => event === "dispatch").length, 1);
+  }
+});
+void test("flat readers capture expected context before the first dependency can mutate caller data", async () => {
+  for (const mode of ["run", "observe"] as const) {
+    const current = fixture({ mutateExpectedContext: true }); await current[mode]();
+    assert.equal(current.events.filter((event) => event === "dispatch").length, 2);
+  }
 });
 void test("flat reader fails on absent loaded pages or conflicting public membership without a retry", async () => {
   for (const options of [{ missingPage: true }, { foreignDeclared: true }, { malformedPayload: true }]) {

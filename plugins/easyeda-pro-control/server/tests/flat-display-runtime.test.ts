@@ -11,7 +11,10 @@ import type { FlatDisplayRuntimeGuard } from "../src/flat-display-runtime.ts";
 import { buildSchematicLayoutAdapter, buildSchematicLayoutAdapterCooperatively } from "../src/schematic-layout-batch.ts";
 import { buildSaveReopenCode } from "../src/runtime-scripts.ts";
 import { prepareDesignActionCooperatively } from "../src/design-action.ts";
-import { context, fixture, operation, replaceSource } from "./flat-display-fixture.ts";
+import { materializeNativeHistory } from "../src/native-history.ts";
+import { nativeLibraryHeaderEvidence } from "../src/native-library-header-evidence.ts";
+import { FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE } from "../src/flat-display-library-peers.ts";
+import { context, fixture, operation, rehash, replaceSource } from "./flat-display-fixture.ts";
 import { runtimeFixture } from "./flat-display-runtime-fixture.ts";
 
 function execute(code: string, runtime: object): Promise<unknown> {
@@ -138,4 +141,39 @@ void test("flat Save rechecks after final crypto and awaited context, and never 
     assert.deepEqual(scene.calls, timing === "clean" ? ["save"] : []);
   }
   assert.throws(() => buildSaveReopenCode(context, guards, guard), /after-phase/u);
+});
+
+void test("imported v2 guards execute exact display and inverse and retain the same final synchronous Save checks", async () => {
+  const before = fixture(), checkpointSha256 = before.evidence.history.checkpointSha256;
+  const peers = materializeNativeHistory([
+    '{"type":"DOCHEAD","ticket":0}||{"uuid":"library-peer","docType":"SYMBOL"}|\n{"type":"LINE","id":"library-line","ticket":2,"firstTicket":0}||{"x":0}|\n',
+  ], checkpointSha256, { libraryAtomHeaders: "preserve" });
+  const history = rehash({ ...before.evidence.history, documents: [...before.evidence.history.documents, ...peers] });
+  before.evidence = { ...before.evidence, history, libraryHeaderEvidence: await nativeLibraryHeaderEvidence(history,
+    { checkpointSha256, projectUuid: history.projectUuid }) };
+  const prepared = await prepareFlatDisplayProfile({ ...before, context, operation });
+  assert.equal(prepared.binding.profile, FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE);
+  const guard: FlatDisplayRuntimeGuard = { binding: prepared.binding, operation, context, observation: before.evidence.observation, phase: "before" };
+  const source = parseDocumentSource(before.native.source);
+  const adapter = await buildSchematicLayoutAdapterCooperatively(operation, source, before.native, {}, undefined, guard);
+  const scene = runtimeFixture(before);
+  assert.equal(await execute(adapter.code, scene.runtime), true);
+  assert.deepEqual(scene.calls, ["action", "source"]);
+  assert.deepEqual(parseDocumentSource(scene.source.written), prepared.expectedSource);
+  const after = replaceSource(before, prepared.expectedSource, prepared.expectedNative);
+  const afterGuard: FlatDisplayRuntimeGuard = { ...guard, phase: "after", observation: after.evidence.observation };
+  const inverse = await buildSchematicLayoutAdapterCooperatively(prepared.inverse, prepared.expectedSource, prepared.expectedNative, {}, undefined, afterGuard);
+  const inverseScene = runtimeFixture(after);
+  assert.equal(await execute(inverse.code, inverseScene.runtime), true);
+  assert.deepEqual(parseDocumentSource(inverseScene.source.written), source);
+  const reference = runtimeFixture(after), request = { kind: "schematic-source" };
+  const payload = await execute(`return await ${buildExactReadExpression(request)};`, reference.runtime);
+  const code = buildSaveReopenCode(context, [{ request, expectedSnapshotSha256: sha256Json(payload) }], afterGuard);
+  assert.ok(code.includes(FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE));
+  for (const drift of [false, true]) {
+    const current = runtimeFixture(after);
+    if (drift) { current.hooks.context = (): void => { current.project.branchUuid = "f".repeat(32); }; }
+    await assert.rejects(execute(code, current.runtime), drift ? /FLAT_/u : /TEST_SAVE_BOUNDARY/u);
+    assert.deepEqual(current.calls, drift ? [] : ["save"]);
+  }
 });

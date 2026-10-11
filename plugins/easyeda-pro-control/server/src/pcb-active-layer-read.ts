@@ -14,7 +14,7 @@ const ALL_LAYERS_METHOD = "eda.pcb_Layer.getAllLayers";
 const MAX_BYTES = 2_097_152;
 export const PCB_ACTIVE_LAYER_LIMITATIONS = [
   "Native active-layer identity plus the existing public getAllLayers nine-field projection; not execution or return-parity of getCurrentLayer, whose installed API 0.2.53.aee2f57a body is empty.",
-  "Only one exact active project-owned type-3 PCB. One ACTIVE_LAYER record and one corresponding LAYER source record must identify exactly one returned layer. Missing, malformed or ambiguous state refuses; no undefined/no-active-layer result is claimed.",
+  "Only one exact active project-owned type-3 PCB. expectedContext.document must retain the observed tabId and parentProjectUuid; a minimal UUID/type selector refuses before dispatch. One ACTIVE_LAYER record and one corresponding LAYER source record must identify exactly one returned layer. Missing, malformed or ambiguous state refuses; no undefined/no-active-layer result is claimed.",
   "The selected layer's name, mapped type, locked state and use/show-derived status must match source. Colors and rounded transparency percentages retain the public getAllLayers projection, not complete native display/physical-stack parity.",
   "Color fields are bounded raw public strings, not validated CSS colors. The pinned native fractional-channel serializer can emit malformed values such as #a.492f; values are preserved, never corrected or evaluated.",
   "Two matching complete source/layers/source cycles, each observation double-sampled, require unchanged full observed context and runtime. Switch-away-and-back between observations remains undetectable.",

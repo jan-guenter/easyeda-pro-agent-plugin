@@ -61,6 +61,52 @@ Typed apply creates and verifies its pre-checkpoint before dispatch. It checks s
 
 A checkpoint is evidence and a recovery source. It is not proof that the active document contains the intended edit. The reopened audit supplies that proof.
 
+The MCP checkpoint route, including `verify`, currently needs the authenticated
+bridge and active-project context to authorize its source path. After normal
+application close it can refuse before touching files. Do not reopen a project
+or remove that guard just to hide the refusal. The maintained standalone
+`scripts/checkpoint.ts verify RECEIPT_PATH` can verify closed files without the
+bridge, but has no MCP active-project policy: first review the exact previously
+authorized receipt, source path and scope. An arbitrary receipt is not source
+authority. Retain the refusal and separate offline result. Offline success does
+not establish a Save, live recovery or absence of unsaved editor state.
+
+## Imported library provenance
+
+Imported SYMBOL/FOOTPRINT atom headers may contain `firstTicket`. It is distinct
+from the physical ticket/client used to choose the latest record body, and
+explicit zero is not a missing field. Never remove it, infer an original client
+or reinterpret it as schematic display order to make a decoder pass.
+
+The source candidate preserves every atom occurrence in an affected library
+document under a checkpoint-bound proof, including tombstones, raw header/body
+encoding hashes and field presence. Existing-project navigation and the flat
+diagnostic still require complete SQLite invariance. Default history/source
+readers and legacy flat v1 remain strict; the parser change does not authorize
+library edits, DEVICE changes, placement, wiring or a generic transaction.
+
+The sealed flat display-only v2 workflow compares the original immutable
+checkpoint with fresh checkpoint evidence at each lifecycle boundary. It keeps
+the complete peer membership and semantic records unchanged and separately
+compares ordered imported-header commitments. Different backup file bytes can
+be bound independently, but altered raw encodings, reordered/compacted history,
+removed tombstones or extra duplicate occurrences are peer changes and refuse.
+Stop and inspect the original journal; do not normalize the proof or replace its
+baseline to admit them. Save and inverse attempts remain one-shot.
+
+Compact summaries are retained evidence, not authority. They must match fresh
+maintained proofs in full, including their checkpoint binding and digests.
+Cloning or deserializing a proof cannot supply its internal fresh-reader brand;
+recovery rereads the verified immutable checkpoint. Hash commitments do not
+authenticate an arbitrarily fabricated checkpoint. No public argument enables
+this parser option or supplies a v2 seal.
+
+This is source/offline-tested support, absent from installed
+`0.3.0+codex.20261011071500`. The retained import-only fixture proves preserved
+library history and an unchanged page, not placed parts, nonempty electrical
+topology or a connected save/reopen lifecycle. A new installed generation and
+separate disposable validation are still required.
+
 ## Restore boundary
 
 The facade does not restore databases. Never overwrite the live project file while EasyEDA is open. A restore needs a separate procedure with:

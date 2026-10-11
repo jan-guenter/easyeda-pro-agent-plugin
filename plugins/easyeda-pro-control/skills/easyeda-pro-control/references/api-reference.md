@@ -86,6 +86,13 @@ the public wrapper hash alone is not sufficient. Use managed evidence with
 `summary` or `receipt-only` for large results. Undefined results remain distinct from an
 empty collection.
 
+For native PCB active-layer, net-membership and primitive-type readers, retain
+the observed `document.tabId` and `document.parentProjectUuid` as well as the
+project UUID/path and document UUID/type in `expectedContext`. Their ownership
+checks reject the minimal selector accepted by generic exact readers. Copy the
+fields from fresh `context`; do not synthesize a tab ID or owner. A refusal at
+this input check is pre-dispatch, not a failed editor operation.
+
 Most routes are public SDK observations. Three ID-only routes are explicitly
 classified as `native-task-equivalent`: schematic Text, Wire and Bus
 `getAllPrimitiveId`. They accept only `arguments:{}` on the exact active ordinary
@@ -100,7 +107,8 @@ Their native-only authority labels distinguish them from public SDK projections.
 Installed210100 returned one source-backed Text and empty Wire/Bus sets on the
 disposable frame/text fixture. Installed214400 additionally returned all four
 Wire group IDs on the populated disposable page with unchanged complete native
-state and saved project. Nonempty Bus acceptance remains pending.
+state and saved project. Installed010000 additionally validated one nonempty
+Bus group on that disposable fixture, as recorded in the capability matrix.
 That evidence does not validate later facade generations. The older public-SDK validation runner
 rejects these native routes before any dispatch; it is not their test runner.
 
@@ -172,11 +180,12 @@ The entire scene must fit 20,000 tree/source entries; both group families togeth
 must fit 256 groups, 1,024 lines, 1,024 names, 1,024 custom attributes and 262,144
 string units. Unsupported children, structural groups or incomplete selections
 refuse before returning partial data. Two scalar captures and final field/type
-reproof avoid serializers, compiler, public wrappers, RPC and Save. These routes
-have adversarial tests, not connected Wire/Bus DTO acceptance. Installed233100
+reproof avoid serializers, compiler, public wrappers, RPC and Save. Installed233100
 refused a populated Wire fixture because its adapter expected serialized style
 strings instead of native numbers. Complete native and saved state stayed
-unchanged. The corrected adapter needs a fresh installed-generation test.
+unchanged. Installed010000 subsequently validated all four Wire groups (eleven
+segments) and one Bus through `get` and `getAll`, with complete native and saved
+project invariance. This does not validate resolved connectivity or later builds.
 
 `eda.pcb_Net.getAllPrimitivesByNet` requires a nonempty `net` and an explicit
 nonempty unique `primitiveTypes` subset of `Line`, `Arc`, `Via`, `Pad` and

@@ -5,16 +5,20 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { gzipSync } from "node:zlib";
 import { readNativeHistoryCheckpoint } from "../src/native-history.ts";
+import { nativeLibraryHeaderEvidence } from "../src/native-library-header-evidence.ts";
 import type { nativeFormatFixture } from "./flat-display-native-fixture.ts";
 
 /** Real encrypted SQLite decoding with public synthetic records. Native reads
  * and dispatch in coordinator tests remain explicit isolated test seams.
  */
-export async function storedFlatFixture(value: ReturnType<typeof nativeFormatFixture>, directory: string, name: string): Promise<ReturnType<typeof nativeFormatFixture>> {
+export async function storedFlatFixture(value: ReturnType<typeof nativeFormatFixture>, directory: string, name: string,
+  options?: { readonly libraryFirstTicket: number }): Promise<ReturnType<typeof nativeFormatFixture>> {
   const checkpointPath = join(directory, `${name}.eprj2`), history = value.evidence.history;
   const key = "55".repeat(16), uuid = "66".repeat(16);
-  const plaintext = history.documents.map((document) => {
-    const records = document.records.map((row, index) => `${JSON.stringify({ type: row.type, id: row.id, ticket: index + 1 })}||${JSON.stringify(row.body)}|\n`).join("");
+  const documents = options === undefined ? history.documents : history.documents.toSorted((left, right) => left.uuid.localeCompare(right.uuid));
+  const plaintext = documents.map((document) => {
+    const records = document.records.map((row, index) => `${JSON.stringify({ type: row.type, id: row.id, ticket: index + 1,
+      ...(options !== undefined && document.docType === "SYMBOL" && row.type !== "META" ? { firstTicket: options.libraryFirstTicket } : {}) })}||${JSON.stringify(row.body)}|\n`).join("");
     return `{"type":"DOCHEAD","ticket":0}||${JSON.stringify(document.metadata)}|\n${records}`;
   }).join("");
   const cipher = createCipheriv("aes-128-gcm", Buffer.from(key, "hex"), Buffer.from(uuid, "hex"));
@@ -34,9 +38,12 @@ CREATE TABLE history_data(uuid TEXT PRIMARY KEY, history_uuid TEXT, dataStr TEXT
     database.prepare("INSERT INTO history_data VALUES(?,?,?)").run(uuid, uuid, encrypted);
   } finally { database.close(); }
   const hash = createHash("sha256").update(await readFile(checkpointPath)).digest("hex");
-  const decoded = await readNativeHistoryCheckpoint({ checkpointPath, expectedSha256: hash, projectUuid: history.projectUuid });
+  const decoded = await readNativeHistoryCheckpoint({ checkpointPath, expectedSha256: hash, projectUuid: history.projectUuid,
+    ...(options === undefined ? {} : { libraryAtomHeaders: "preserve" as const }) });
   const result = structuredClone(value);
-  result.evidence = { ...result.evidence, history: decoded, checkpoint: { ...result.evidence.checkpoint,
+  result.evidence = { ...result.evidence, history: decoded,
+    ...(options === undefined ? {} : { libraryHeaderEvidence: await nativeLibraryHeaderEvidence(decoded, { checkpointSha256: hash, projectUuid: history.projectUuid }) }),
+    checkpoint: { ...result.evidence.checkpoint,
     checkpoint: checkpointPath, checkpointSha256: hash, sourceSha256: hash, receiptPath: join(directory, `${name}.receipt.json`) } };
   return result;
 }

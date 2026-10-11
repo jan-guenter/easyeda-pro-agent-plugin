@@ -5,6 +5,7 @@ import { designActionSchema } from "../src/design-action.ts";
 import { libraryOperationSchema } from "../src/library-operations.ts";
 import { operationCatalogQuerySchema, queryOperationCatalog, validateCatalogOperation } from "../src/operation-catalog.ts";
 import { FLAT_DISPLAY_TRANSACTION_PROFILE } from "../src/flat-display-binding.ts";
+import { FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE } from "../src/flat-display-library-peers.ts";
 
 void test("schematic operation discovery exposes the current type-1 topology execution restriction", () => {
   const restricted = queryOperationCatalog({ family: "design", operationAction: "sch.wire.modify" });
@@ -32,10 +33,20 @@ void test("layout discovery describes only the sealed display exception without 
     assert.match(restriction.reason, /invoke Save All/u);
     if (action === "sch.layout.batch") {
       assert.equal(restriction.exception?.["profile"], FLAT_DISPLAY_TRANSACTION_PROFILE);
+      assert.deepEqual(restriction.exception["profiles"], [FLAT_DISPLAY_TRANSACTION_PROFILE, FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE]);
+      assert.match(String(restriction.exception["profileSelection"]), /facade-only.*v1.*v2.*unchanged imported SYMBOL\/FOOTPRINT/u);
       assert.deepEqual(restriction.exception["allowedSteps"], ["sch.attribute.display", "sch.text.display"]);
       assert.equal(restriction.exception["executionAuthorized"], false);
       assert.equal(restriction.exception["electricalEdits"], false);
       assert.match(String(restriction.exception["targets"]), /stored.*literal primitiveId/u);
+      const imported = z.record(z.string(), z.unknown()).parse(restriction.exception["importedLibraryPeers"]);
+      assert.equal(imported["profile"], FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE);
+      assert.deepEqual(imported["documentTypes"], ["SYMBOL", "FOOTPRINT"]);
+      assert.equal(imported["libraryEdits"], false); assert.equal(imported["historyCompaction"], false);
+      assert.match(String(imported["proof"]), /sealed original immutable checkpoint.*tombstones.*occurrence order/u);
+      assert.equal(imported["validation"], "offline-synthetic-regression;current-generation-live-unclaimed");
+      assert.ok(z.array(z.string()).parse(imported["sources"]).includes("native-atom-header-history.ts"));
+      assert.ok(z.array(z.string()).parse(imported["tests"]).includes("flat-display-imported-lifecycle.test.ts"));
     } else {
       assert.equal(restriction.exception, undefined);
     }
