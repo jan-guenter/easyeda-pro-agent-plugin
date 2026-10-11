@@ -36,8 +36,8 @@ does not prove the public wrapper works. An internal Save call is not a new
 standalone Save capability. Follow the returned route and its exact scope.
 
 The current source inventory contains 774 distinct paths: 193 public subsets,
-102 native equivalents, two lifecycle-only methods, seven implemented-but-blocked
-methods and 470 omissions. Its routes include 357 available with runtime guards,
+103 native equivalents, two lifecycle-only methods, seven implemented-but-blocked
+methods and 469 omissions. Its routes include 358 available with runtime guards,
 nine blocked and three partially blocked. These are implementation classifications,
 not connected validation counts; one method can have several routes.
 
@@ -81,7 +81,7 @@ specific refusal to identify unsupported input; do not substitute cached nets.
 `easyeda_control_sdk_read`. `sdk-validate` checks those arguments offline. Neither
 dispatches a method. Class-returning methods use maintained state projections;
 callers cannot select arbitrary getters, callbacks or prototype members.
-The current allowlist has 181 fixed readers, including 20 native equivalents.
+The current allowlist has 182 fixed readers, including 21 native equivalents.
 Query the installed catalog rather than assuming it matches this source version.
 
 For live execution, pass the validated `request`, fresh `expectedContext` and
@@ -98,8 +98,20 @@ empty collection.
 a 32-character lowercase-hex system-library UUID. Missing, empty or malformed
 results refuse rather than substituting a hardcoded identity. It neither lists
 account libraries nor reads assets or grants write authority. The pinned public
-implementation returns a constant; this adapter has source and offline tests
-only, with no connected case recorded.
+implementation returns a constant. Installed204104 passed one disposable read
+with two matching observations, unchanged complete native/source evidence and
+saved-checkpoint equality. That case does not admit later generations.
+
+`eda.sys_FontManager.getFontsList` is a native equivalent for configured font
+titles in the current UI, not an OS font or rendering inventory. It takes empty
+arguments on an exact active ordinary schematic, symbol, PCB or footprint tab.
+Missing configuration refuses instead of invoking the public wrapper's false-empty
+fallback. Own data fields, retained UI/project/tab/path owners and repeated
+observations preserve exact title order, duplicates, empty strings and case.
+Bounds are 512 titles, 1024 UTF-16 units per title and 131072 combined. No other
+settings, font IDs or credentials are returned; no preferences are changed.
+This source addition has offline tests only, with no connected case. It does not
+prove current-account or persisted-settings identity, installed glyphs or rendering.
 
 For native PCB active-layer, net-membership and primitive-type readers, retain
 the observed `document.tabId` and `document.parentProjectUuid` as well as the
@@ -224,8 +236,10 @@ Two synchronous captures and final scalar reproof cover unrequested members too.
 Before selection, the scene must fit 20,000 tree/source IDs, 256 Text, 256 groups,
 1,024 lines, 1,024 names, 1,024 custom attributes and 262,144 combined string units.
 Two matching facade observations retain context/runtime checks. No public generic
-or family getter, compiler, serializer, RPC or Save is called. Source and offline
-tests passed; no connected validation is recorded. These observations do not
+or family getter, compiler, serializer, RPC or Save is called. Installed204104
+passed one root Text and one populated Wire through singular and plural selectors,
+including both caller orders of their two-item selection. Bus, invalid selectors
+and later generations remain separate. These observations do not
 establish complete source, connectivity, persistence or atomic read isolation.
 
 ### PCB readers and calculations

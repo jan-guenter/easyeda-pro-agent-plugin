@@ -86,7 +86,6 @@ const stubs: Readonly<Record<string, string>> = {
 };
 const lossyReaders: Readonly<Record<string, string>> = {
   "sch_PrimitivePin.getAll": "The installed pin enumeration catches RPC and required-attribute projection errors as an empty array, so failure is indistinguishable from an empty pin inventory. Explicit-ID get and ID enumeration rethrow errors, but a complete equivalent still needs independent native membership parity.",
-  "sys_FontManager.getFontsList": "The installed wrapper catches native failures and returns an empty array, so a failed read is indistinguishable from an empty font set.",
   "sch_PrimitiveBus.get": "The installed callback wrapper catches RPC errors and returns undefined when no callback result is retained. A failed read is indistinguishable from a missing bus.",
   "sch_PrimitiveBus.getAll": "The installed callback wrapper catches RPC errors and returns an empty array, so failure is indistinguishable from an empty bus inventory.",
   "sch_PrimitiveBus.getAllPrimitiveId": "The installed callback wrapper catches errors as an empty array; no exact bus identity reader is implemented.",

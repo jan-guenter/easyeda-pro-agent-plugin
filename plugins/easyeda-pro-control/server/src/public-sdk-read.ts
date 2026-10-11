@@ -16,6 +16,7 @@ import { PCB_SELECTED_OBJECTS_LIMITATIONS, PCB_SELECTED_OBJECTS_METHOD, pcbSelec
 import { PCB_SOURCE_OBJECTS_LIMITATIONS, PCB_SOURCE_OBJECTS_METHOD, PCB_SOURCE_OBJECT_METHOD, isPcbSourceObjectsMethod, pcbSourceObjectArgumentsSchema, pcbSourceObjectsArgumentsSchema } from "./pcb-source-objects.ts";
 import { PCB_ACTIVE_LAYER_LIMITATIONS, PCB_ACTIVE_LAYER_METHOD, pcbActiveLayerArgumentsSchema } from "./pcb-active-layer-read.ts";
 import { SCHEMATIC_SELECTION_LIMITATIONS, SCHEMATIC_SELECTION_METHOD, buildSchematicSelectionReadExpression } from "./schematic-selection-read.ts";
+import { CONFIGURED_FONT_LIMITATIONS, CONFIGURED_FONT_METHOD, buildConfiguredFontReadExpression, configuredFontArgumentsSchema, configuredFontTitlesSchema } from "./configured-font-read.ts";
 
 /** This fixed allowlist is independent of the declaration catalog. Public entries
  * were reviewed against this implementation, including delegated getters.
@@ -127,6 +128,9 @@ const SYSTEM_LIBRARY_UUID_METHOD = "eda.lib_LibrariesList.getSystemLibraryUuid";
 add(SYSTEM_LIBRARY_UUID_METHOD, ALL_DOCUMENTS, "string", emptyArguments, [], { limitations: [
   "Returns only the system-library UUID as 32 lowercase hexadecimal characters; missing or malformed results refuse. No account/library enumeration, asset access or write authority is granted.",
 ] });
+add(CONFIGURED_FONT_METHOD, ALL_DOCUMENTS, "strings", configuredFontArgumentsSchema, [], {
+  implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [...CONFIGURED_FONT_LIMITATIONS],
+});
 for (const request of editorTabLookupRequestSchema.options) {
   const method = request.shape.method.value;
   add(method, ALL_DOCUMENTS, method.endsWith("getSplitScreenIdByTabId") ? "string" : "records", request.shape.arguments,
@@ -468,6 +472,7 @@ function readImplementationTestName(path: string): string {
 }
 
 function readImplementationName(path: string): string {
+  if (path === CONFIGURED_FONT_METHOD) { return "configured-font-read"; }
   if (isSchematicPrimitiveReadMethod(path)) { return "schematic-primitive-read"; }
   if (isPcbSourceObjectsMethod(path)) { return "pcb-source-objects-read"; }
   if (path === SCHEMATIC_SELECTION_METHOD) { return "schematic-selection-read"; }
@@ -541,7 +546,8 @@ export function buildPublicSdkReadCode(input: unknown): string {
     return request.arguments[key] === undefined ? "undefined" : JSON.stringify(request.arguments[key]);
   }).join(",");
   let expression = `await ${definition.path}(${args})`;
-  if (definition.path === SCHEMATIC_SELECTION_METHOD) { expression = buildSchematicSelectionReadExpression(); }
+  if (definition.path === CONFIGURED_FONT_METHOD) { expression = buildConfiguredFontReadExpression(); }
+  else if (definition.path === SCHEMATIC_SELECTION_METHOD) { expression = buildSchematicSelectionReadExpression(); }
   else if (isSchematicNativeIdMethod(definition.path)) { expression = buildSchematicNativeIdsExpression(definition.path, "sdk-failure-code"); }
   else if (definition.path === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { expression = buildSchematicComponentPropertyNamesExpression("sdk-failure-code"); }
   else if (definition.path === SYMBOL_PIN_ENUMERATION_METHOD) { expression = buildSymbolPinEnumerationExpression("sdk-failure-code"); }
@@ -741,6 +747,10 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
       z.string().length(32).regex(/^[a-f0-9]{32}$/u).parse(payload.value);
       if (payload.undefinedPaths.length > 0) { throw new Error("System-library UUID cannot contain undefined values."); }
     }
+    if (request.method === CONFIGURED_FONT_METHOD) {
+      if (payload.undefinedPaths.length > 0) { throw new Error("Configured font titles cannot contain undefined values."); }
+      configuredFontTitlesSchema.parse(payload.value);
+    }
     if (request.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) {
       if (payload.undefinedPaths.length > 0) { throw new Error("Component property-name observations cannot contain undefined values."); }
       schematicComponentPropertyNamesSchema.parse(payload.value);
@@ -807,6 +817,7 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
     ? "bounded-native-task-observation-not-complete-source-connectivity-or-persistence-proof"
     : "bounded-public-sdk-observation-not-native-or-persistence-proof";
   if (isSchematicNativeIdMethod(request.method)) { assurance = "bounded-native-id-observation-not-complete-source-connectivity-or-persistence-proof"; }
+  if (request.method === CONFIGURED_FONT_METHOD) { assurance = "bounded-configured-font-titles-not-installed-font-or-rendering-proof"; }
   if (request.method === SCHEMATIC_SELECTION_METHOD) { assurance = "bounded-public-replacement-selection-observation-not-complete-ownership-source-or-persistence-proof"; }
   if (request.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { assurance = "bounded-native-property-name-observation-not-complete-source-connectivity-or-persistence-proof"; }
   if (request.method === SYMBOL_PIN_ENUMERATION_METHOD) { assurance = "bounded-native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof"; }

@@ -54,7 +54,7 @@ async function registeredSdkRead(failure: "none" | "status" | "dispatch" | "fina
     CONTROL_VERSION: "synthetic", MAX_INLINE_RESULT_BYTES: 262_144,
     serializedLiveGuarded: (handler: Handler): Handler => handler,
     registerFacadeTool: (name: string, config: { description: string }, handler: Handler): void => {
-      assert.equal(name, "easyeda_control_sdk_read"); assert.match(config.description, /native identity, property-name, Pin-getter, Text, Wire\/Bus, filtered PCB net-membership and PCB identity-type/u); invoke = handler;
+      assert.equal(name, "easyeda_control_sdk_read"); assert.match(config.description, /native identity, property-name, Pin-getter, Text, Wire\/Bus, configured font titles, filtered PCB net-membership and PCB identity-type/u); invoke = handler;
     },
     reserveEvidencePaths: (): Promise<object> => { calls.push("reserve"); return Promise.resolve({ synthetic: true }); },
     releaseEvidenceReservation: (): Promise<void> => { calls.push("release"); return Promise.resolve(); },

@@ -33,7 +33,7 @@ export interface OperationValidationRecord {
     readonly historicalSha256: string;
     readonly reviewedSha256: string;
     readonly reviewedAt: string;
-    readonly scope: "historical-generator-without-flatGuard-only;new-sealed-wire-live-unvalidated";
+    readonly scope: "historical-explicit-false-profile-only;omitted-lock-and-sealed-wire-live-unvalidated";
     readonly reference: string;
   }[];
   readonly fixture: {
@@ -83,10 +83,10 @@ const records: readonly OperationValidationRecord[] = [{
   sourceRevisionReviews: [{
     path: "schematic-native-wire.ts",
     historicalSha256: "13db7218226c6636c51136ea9b96fc99a4bb784ad21ba10731d81ecd25e3a837",
-    reviewedSha256: "dc497d091b084139e7565bdaf0988ec5e896fba99aba7155b73028b221fefc40",
-    reviewedAt: "2026-10-11",
-    scope: "historical-generator-without-flatGuard-only;new-sealed-wire-live-unvalidated",
-    reference: "docs/api-coverage-164600-release-2026-10-11.md#historical-wire-source-review",
+    reviewedSha256: "a4336c2fae96b142a50cdfbba722e35f3456ef290847c937d23292db8f298ec9",
+    reviewedAt: "2026-10-12",
+    scope: "historical-explicit-false-profile-only;omitted-lock-and-sealed-wire-live-unvalidated",
+    reference: "docs/api-coverage-220050-release-2026-10-12.md#historical-wire-source-review",
   }],
   fixture: {
     category: "disposable-schematic-validation",
@@ -105,6 +105,7 @@ const records: readonly OperationValidationRecord[] = [{
     "no-blanket-native-shape-or-style-coverage",
     "no-runtime-admission-or-mutation-authority",
     "no-flat-wire-reroute-v1-live-validation",
+    "no-omitted-lock-live-validation",
   ],
 }];
 

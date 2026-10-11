@@ -15,12 +15,12 @@ namespaces / 749 declared signatures and 99 latest official namespaces / 806
 signatures. Its `coverage` action inventories all 774 distinct mounted method
 paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
-Current source classifications are 193 public subsets, 102 native equivalents,
-two lifecycle-only methods, seven implemented-but-blocked methods and 470
-omissions. Their execution routes comprise 357 available with runtime guards,
+Current source classifications are 193 public subsets, 103 native equivalents,
+two lifecycle-only methods, seven implemented-but-blocked methods and 469
+omissions. Their execution routes comprise 358 available with runtime guards,
 nine blocked and three partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
-See the [204104 release record](docs/api-coverage-204104-release-2026-10-11.md)
+See the [220050 release record](docs/api-coverage-220050-release-2026-10-12.md)
 for this candidate's checks and remaining connected tests.
 `sdk-reads` and `sdk-validate` expose the exact schemas and offline argument
 checks for the fixed `easyeda_control_sdk_read` allowlist. That separate live
@@ -39,8 +39,11 @@ geometry/style and all literal names instead of flattening them to one style/net
 Two mixed schematic ID readers return these same Text/Wire/Bus DTOs from one
 complete page-bound capture. Singular lookup returns one DTO; plural lookup
 preserves caller order. Missing, unsupported or wrong-owner IDs refuse the whole
-call. They do not return SDK instances or every primitive family, and have only
-source/offline validation. Complete-family bounds apply before selection.
+call. They do not return SDK instances or every primitive family. Installed204104
+passed both selectors for one root Text and one populated Wire, including both
+orders of a two-item selection, with unchanged native and saved-checkpoint
+evidence. Bus, invalid selectors and later generations remain separate cases.
+Complete-family bounds apply before selection.
 Filtered PCB net membership derives identity records from complete requested-family
 source/inventory agreement, with explicit standalone/component pad roles.
 Native PCB type lookup classifies an existing ID only after complete all-five-family
@@ -58,12 +61,16 @@ original standalone STRING. Installed164600 subsequently passed singular and
 one-element plural explicit-ID reads of one standalone STRING with no direct
 attributes, matching the complete baseline and independently verified receipts.
 Other families, multi-ID ordering and later source changes remain separate.
-The fixed read catalog has 181 routes, including 20 native equivalents and
+The fixed read catalog has 182 routes, including 21 native equivalents and
 bounded polygon splitting that preserves input source arrays and their order. It
 accepts no arbitrary method path, caller code, callbacks, navigation or writes.
 The new `lib_LibrariesList.getSystemLibraryUuid` route returns only a nonmissing
-32-character lowercase-hex identity, with no account/library enumeration. It has
-source and offline tests only, not connected validation.
+32-character lowercase-hex identity, with no account/library enumeration.
+Installed204104 passed one exact disposable read. The new source-only
+`sys_FontManager.getFontsList` equivalent reads only bounded configured titles,
+preserving order and duplicates while refusing missing or malformed settings.
+It never invokes the public wrapper's false-empty fallback or changes preferences.
+It does not establish current-account identity, OS font installation or rendering.
 None of these observations replaces complete design or persistence proof.
 
 The deprecated schematic selection getter now has an explicit replacement

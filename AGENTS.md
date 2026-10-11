@@ -2,9 +2,57 @@
 
 This file is the durable engineering record and common ground for every human or agent working in this repository. Keep it current whenever a requirement, assumption, interface, compatibility tuple, safety boundary, or test result changes. Do not silently turn an open question into a requirement.
 
-Last updated: 2026-10-11 (Europe/Berlin)
+Last updated: 2026-10-12 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
+
+### Candidate220050 release preparation; saved wire seed closed
+
+- Actual204104 facade2451662 independently matches all628installed files/modes
+  and source234eb8aa/runtimec4d9b324/manifest00e5fac6. Disposable casesR03–R08
+  pass the system-library UUID, Text/Wire explicit-ID reads and both caller
+  orders of a two-item selection. H01 passes pointer-only hover plus separate
+  visual overflow-menu proof. Full native/source/checkpoint boundaries remain
+  unchanged across these readers. See the connected ledger and204104fixture
+  report. These cases do not validate Bus, invalid selectors or later source.
+- Native UI created and named one disposable three-segment wire. One Save was
+  consumed and independently proved against all12documents: six new records,
+  all165original records,11peers and66imported atom-header occurrences exact.
+  Seed checkpoint9ccef95a/source93eb9a28/logicalb538b6c7. One subsequent reopen
+  e28c728d completed without Save; all12documents/fullSQLite remained exact.
+  Fresh sourcec9e04b15 retains all67objects. Reopened native13c5b863 differs only
+  by8unstored inherited ATTR IDs accepted by the maintained same-order lifecycle
+  proof. Flat diagnostic sees1component/2pins, not transaction authority.
+- Normal-close and empty discovery prove11836 exited. Correct checkout-based
+  closed verification29 passes the saved seed. An earlier standalone invocation
+  from the dependency-free installed cache failed before database access; its
+  empty24output is retained, and the skill now specifies reviewed-checkout
+  dependencies. No native input, navigation, seed Save or Run Command is pending
+  or repeatable. Production designs and their project records remain untouched.
+- Candidate220050 adds a bounded configured-font-title native reader and fixes
+  the wire adapter's incorrect explicit-false requirement. Native omitted lock
+  and literal false remain distinct; all other values and runtime drift refuse.
+  Main/independent reviews and23focused wire tests pass. Actual saved/reopened
+  source passes adapter/inverse/materialization checks offline. Full sealed
+  preparation is not claimed: public flat diagnostics omit the raw observation
+  and live owner binding. No raw data or seal was synthesized. The corrected
+  reroute and font reader require a new installed host and disposable live tests.
+- Current source inventory182fixed readers/21native,774methods:193public/
+  103native/2lifecycle/7blocked/469omitted;358guarded routes/9blocked/3partial.
+  Initial full verification passed3713tests but correctly refused the stale
+  historical wire source-review digest. Main/independent review preserves all
+  original historical bindings/stages and records only the reviewed explicit-
+  false behavior; omitted-lock and sealed-wire live validation remain excluded.
+  The next full run passed3714tests/oneskip/zerofailures. Final MCP-description
+  corrections now name both the wire and font profiles, with protocol-level
+  regression checks and no schema/handler/authorization change. Final clean
+  verification passes3715tests/oneskip/zerofailures,424bridge tests, strict
+  type-aware lint with zero diagnostics, all four type configurations, audits,
+  reproducible builds and all seven official skill validators. Final facade
+  log7b28f8db is retained. Publication, CI and installation remain pending.
+  Loaded204104 is neither hot-patched nor terminated. Private continuation is
+  disposable-validation-204104-UnFafx/RESUME.md. Earlier204104 pending-host and
+  empty-wire statements below describe superseded checkpoints, not replay steps.
 
 ### Candidate204104 published and installed; fresh host required
 
@@ -1851,8 +1899,8 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011204104` is published and installed/enabled with exact628file/mode and offline-startup proof. Facade2387360/runtime8610ba8c remains the old164600 loaded generation; a fresh Codex host is required before further live calls. The authorized normal UI action and private comparison9bf4428a establish pcbCommandTab false to true in the browser and one anonymous SQL residual; the SQL NULL peer and retention projections are unchanged. No current-user identity or completed asynchronous cleanup is inferred. Both disposable fixtures are closed and verified. Flat P1 open276db5a3 completed unchanged; its interrupted wire preview was cancelled after RDP recovery. Exact source33 has no WIRE/LINE additions, capture62174027 shows the cleared tool, normal-close/discover-empty prove1272 exited and closed verification71fac173 preserves the original database/checkpoint/dump. No Save or discard choice. Metadata35 matches all nine retained backup roots. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission.
-- Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct, with no later writer authority. Installed164600 separately passed one-STRING explicit singular/plural reads, explicitblack text create/delete saved/reopened lifecycles, and closed empty free-SCH creation. Scope and immutable proofs are in the connected validation ledger; these cases do not validate whole SDK contracts. Sealed wire rerouting and candidate-only hover/system-library UUID reads remain unvalidated live. Earlier text/container proofs remain generation-specific. Never access production or its project record. The user's continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation, not relaxed technical safety checks or unrelated changes.
+- Git-marketplace `0.3.0+codex.20261011204104` is published, installed/enabled and now admitted on actual facade2451662/runtimec4d9b324, with exact628file/mode proof. Candidate220050 is under release verification, not yet installed. Both disposable fixtures are closed and verified. The flat fixture now retains its saved named three-segment wire seed; checkpoint9ccef95a/source93eb9a28/logicalb538b6c7 and reopened sourcec9e04b15 pass complete peer/materialization proof. Eight unstored inherited IDs regenerated on reopen; exact same-order lifecycle proof accepts them, not blanket native equality. Closed verifier29 and all-nine-root metadata38 pass. The earlier authorized UI action/private comparison9bf4428a established pcbCommandTab false to true in browser and one anonymous SQL residual without identifying the current user. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission.
+- Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct. Installed164600 passed scoped PCB Text readers/create/delete and empty free-SCH creation;204104 passed system-library UUID, schematic Text/Wire readers with both mixed caller orders, and independently visible pointer-only hover. The connected ledger records exact scope, not whole SDK contracts. Sealed rerouting and the new configured-font reader remain unvalidated live. Candidate wire-lock correction has actual offline adapter/inverse/materialization proof, not full sealed preparation or live execution. Never access production or its project record. The user's continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation, not relaxed technical safety checks or unrelated changes.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

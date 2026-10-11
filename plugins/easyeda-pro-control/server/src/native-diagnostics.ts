@@ -11,6 +11,7 @@ import { SCHEMATIC_NETGROUP_GUARD_CODES, SCHEMATIC_NETGROUP_READ_METHODS } from 
 import { SCHEMATIC_PRIMITIVE_GUARD_CODES, SCHEMATIC_PRIMITIVE_READ_METHODS } from "./schematic-primitive-read.ts";
 import { SCHEMATIC_SELECTION_GUARD_CODES, SCHEMATIC_SELECTION_METHOD } from "./schematic-selection-read.ts";
 import { SCHEMATIC_FLAT_READ_GUARD_CODES, SCHEMATIC_FLAT_TOPOLOGY_GUARD_CODES } from "./schematic-read-diagnostics.ts";
+import { CONFIGURED_FONT_GUARD_CODES, CONFIGURED_FONT_METHOD } from "./configured-font-read.ts";
 
 /** Fixed literal errors emitted by reviewed code builders. Never echo unknown
  * native exception text, dynamic suffixes, stack traces or caller values.
@@ -250,8 +251,15 @@ const schematicPrimitiveCategories = new Map<string, string>(SCHEMATIC_PRIMITIVE
     .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
       `native-schematic-primitive:${method}:${label}`] as const)));
 
+const configuredFontCategories = new Map<string, string>(
+  [...CONFIGURED_FONT_GUARD_CODES.map((code) => [`CONFIGURED_FONTS_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${CONFIGURED_FONT_METHOD}|stage=call|code=${code}|getter=none`,
+      `native-configured-fonts:${CONFIGURED_FONT_METHOD}:${label}`] as const));
+
 export function nativeFailureCategory(message: unknown): string | null {
   if (typeof message !== "string") { return null; }
+  const configuredFontCategory = message.length <= 288 ? configuredFontCategories.get(message) : undefined;
+  if (configuredFontCategory !== undefined) { return configuredFontCategory; }
   const schematicPrimitiveCategory = message.length <= 288 ? schematicPrimitiveCategories.get(message) : undefined;
   if (schematicPrimitiveCategory !== undefined) { return schematicPrimitiveCategory; }
   const schematicSelectionCategory = message.length <= 288 ? schematicSelectionCategories.get(message) : undefined;

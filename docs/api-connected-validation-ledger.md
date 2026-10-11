@@ -274,3 +274,176 @@ that unrelated SQLite tables or other branches are unchanged. Independent review
 opened only immutable checkpoints, never the current database. The result is
 point-in-time evidence, not an atomic lock against later user or native activity.
 Sealed flat-wire rerouting remains a separate pending case.
+
+## Generation G20261011-204104
+
+These cases were recorded on 2026-10-11, Europe/Berlin, after a fresh host loaded
+installed `0.3.0+codex.20261011204104`. They extend the historical
+[204104 release record](api-coverage-204104-release-2026-10-11.md), whose pending
+live-test statements describe the earlier release boundary and remain intact.
+Only disposable data was used. Production designs and their records were not
+accessed.
+
+| Binding | Exact value |
+| --- | --- |
+| Tested payload commit | `10972c0d68b11f87fffa5570c74c2294e1068aba` |
+| Plugin package Git tree | `fe9acf1d0da7caa942a6ac3599efc7b337995709` |
+| Facade source fingerprint, 203 files | `234eb8aa7f8263649ac654ac513ff318b0ac68a23fb22bf52aa970593b512556` |
+| Runtime fingerprint, three files | `c4d9b3243e4679c55914b340813193fcd34878cc4a92b05e47dded2015fc6802` |
+| Reviewed compatibility manifest SHA-256 | `00e5fac66a3044ce7f057ecee1cad3d3414ae29c1ebbf74a6f2ec39ea3944f32` |
+| Installed inventory, 628 files and 16,896,277 bytes | `4ede1a212136aa657eed6d171bcc7d6bcc0d1b708d7ea3dc0c7fa46383c1531a` |
+| Authenticated status result SHA-256 | `e4487f128dd1aef9d16110bf0738319f986420c5624fd055caab14147e44c989` |
+
+The external application/SDK/bridge tuple remains the one recorded for
+G20261011-164600. This generation additionally binds schematic implementation
+`3.2.149.35ae2987`, SHA-256
+`3f50136fb4ba2d5593beac7ef3e20ebe5275177b56bbcfdd297e79f176a6618f`.
+The [connected follow-up report](api-coverage-204104-fixture-validation-2026-10-11.md)
+records the exact external identities and retained evidence. The frozen
+[compatibility manifest](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/10972c0d68b11f87fffa5570c74c2294e1068aba/plugins/easyeda-pro-control/reviewed-compatibility.json)
+retains all other pins. These bindings do not transfer to later source changes.
+
+### 2026-10-11: R03, public system-library identity
+
+Case result: passed two matching observations and independent receipt review.
+`easyeda_control_sdk_read` invoked the public
+`eda.lib_LibrariesList.getSystemLibraryUuid` with empty arguments on the exact
+active ordinary type-1 disposable schematic page. It returned the system-library
+constant as 32 lowercase hexadecimal characters. Independent inspection of the
+pinned public wrapper and native UI getter confirmed the returned value.
+
+This case covers one public identity read, not account-library enumeration,
+component availability, asset access or writes. No hardcoded fallback supplied
+the result, and no Save or navigation was performed by the reader.
+
+### 2026-10-11: R04 and R05, explicit-ID root Text reads
+
+Case results: passed independent receipt, source and immutable-checkpoint
+correlation. `eda.sch_Primitive.getPrimitiveByPrimitiveId` selected one existing
+root Text. `eda.sch_Primitive.getPrimitivesByPrimitiveId` selected the same Text
+with a one-element ID array and returned exactly the singular DTO in that array.
+These are native task equivalents, not execution of public primitive getters
+or production of SDK instances.
+
+All 14 DTO fields matched complete source/native evidence and the immutable
+stored TEXT body, including native coordinates, zero rotation and unresolved
+null style/alignment fields. No theme-default normalization was admitted.
+The maintained state validator accepted both exact selectors. The fixture's
+complete native snapshots before and after all three reader cases were
+canonically identical and correlated with all 61 source objects. The immutable
+checkpoint contained 12 documents and 165 records.
+
+| Retained result | SHA-256 |
+| --- | --- |
+| R03 result, 6,630 bytes | `14511deb68514a57677eed2c4483b386b09d40fb7e58b3d5b1ac6baeffb00c18` |
+| R03 receipt self-hash | `96c834500a530dfcf7054ac671cce300d2d46d0233e9c5085b1a9f17e45a8ba6` |
+| R04 result, 8,670 bytes | `adf6260bccb415162f5dd8944d5941896a153846dadeccf3e377515c1d966098` |
+| R04 receipt self-hash | `629c7d4c13693eed755ee2797fb4e9459b38f2a9f6a63c67ef539cf4e8b86953` |
+| R05 result, 8,673 bytes | `4e7a657c92aecf2eb1512242165646c9bd3c8f4bf03cd6fd74bb0b19275ef137` |
+| R05 receipt self-hash | `4540ac573c8b066d79e3dedb67e4875b470456edff7013727c5e565cbec7f05b` |
+| Common canonical native snapshot | `f4661e01f653d9790ce74d31e0138e41c878ab8cb145594e9278b5503c840364` |
+| Complete semantic source | `af079df2027d80fe7f579b4d3fd21ebb3ea1191099926e50cdcdfbc4971be3e7` |
+| Immutable checkpoint | `1d81af3757177e62983152bc7d7447be36fb076d89e320774ae0bd9f507505ee` |
+| After-reader checkpoint verification | `13e59ec0f3ccc6066f6fc399590b36ded09e3ad9fbc664d06d006b4d2bb7b9af` |
+
+All six source/native/reader result-receipt pairs passed the maintained verifier.
+Their requests, exact context, runtime fingerprint, metadata and attachment
+bindings agreed. The main agent's before/after checkpoint-verification reports
+retain unchanged source-database and complete logical-dump hashes. Independent
+review rehashed and decoded the immutable checkpoint, not the current database.
+Matching native/source evidence is separate from each reader's DTO output and
+does not establish atomic or continuing state isolation.
+
+Limits: no populated Wire/Bus, multiple-ID caller-order, missing-ID or wrong-family
+live case was tested. R04/R05 cover only the one root Text and its one-element
+plural selection. No writer, Save lifecycle or rollback was exercised.
+
+### 2026-10-11: H01, guarded hover and observed overflow menu
+
+Case result: one owned, foreground-window pointer movement succeeded, and the
+menu effect was independently observed in separate before/after captures.
+`easyeda_control_native_ui` used confirmed `request.action:"hover"` against the
+retained contained application/window. The acknowledgment reported the requested
+pointer position, `buttonInputSent:false` and `hoverEffectProven:false`.
+
+Both managed captures and their image bindings passed receipt verification.
+The independent reviewer viewed both images: the earlier capture had no expanded
+overflow bar; the later capture showed Tools, Export, Advanced, Settings and
+Help. The captures retained the same exact process-start/window binding.
+
+| Retained evidence | SHA-256 |
+| --- | --- |
+| Hover acknowledgment, 400 bytes | `67880402cf237b12a686ca0ab58a4673695feec47bd6729275223b7ba8635a7f` |
+| Before image, 121,037 bytes | `009d5ef3184cdfa6388ac6f4fe61a39f6c2373d03eb331a153a61442246d0f30` |
+| After image, 123,324 bytes | `91336a7a0b4efeb0d2685169d21974b3e073f892b6eded363407fd5455a26abc` |
+| Independent reader/hover review | `38c43c8d2348e57e09efe19397d2dd7c0367b888c9f8f3276eafdd57c42d0073` |
+
+The visual menu observation does not come from the pointer acknowledgment.
+Neither proves canvas snapping, a CAD coordinate, wire seeding, sealed wire
+rerouting or a completed writer lifecycle. No wire success is recorded here.
+The separate wire lifecycle remains pending; later native activity requires its
+own evidence. No whole-method validated count is derived from these cases.
+
+### 2026-10-11: R06–R08, populated Wire and mixed caller-order reads
+
+These later cases extend, without replacing, the earlier R04/R05 Text-only
+observations. Generation G20261011-204104, its package tree, fingerprints and
+external pins remain unchanged. Case results: passed independent exact-DTO,
+receipt, complete-source/native and immutable-checkpoint correlation.
+
+- R06 used singular `eda.sch_Primitive.getPrimitiveByPrimitiveId` on one
+  existing root Wire with three orthogonal LINE children, one literal NET and
+  one custom Relevance attribute.
+- R07 used plural `eda.sch_Primitive.getPrimitivesByPrimitiveId` with that Wire
+  followed by the existing root Text.
+- R08 requested the same two identities in reverse order, Text then Wire,
+  deliberately opposite lexical ID order. Output preserved that caller order.
+
+These are bounded native DTO equivalents. No public primitive getter, SDK class
+instance, compiler, serializer or resolved electrical-net getter was executed.
+The Wire's six root fields, each LINE's five fields, literal NET pair and custom
+attribute identity exactly matched complete source and independently decoded
+stored records. Native endpoint direction and null color/width/style were
+preserved. All 14 Text fields also matched; null font/style/alignment values were
+not resolved to theme defaults. Internal LINE/name/custom-ID sorting remains
+separate from caller-specified top-level order. Custom attributes are identity-only.
+
+The maintained state validator accepted each original selector list. All six
+source/native/reader result-receipt pairs passed verification, with matching
+exact context and runtime fingerprint. Every reader reported two matching
+observations. Complete native snapshots before/after were canonically identical
+and correlated with all 67 source objects. Independent decoding covered all
+12 documents and 171 records of the saved seed checkpoint. The retained main
+checkpoint verifier proved the source database and full logical dump still
+matched that receipt after the readers; independent review opened only the
+immutable checkpoint, not the current database.
+
+| Retained evidence | SHA-256 |
+| --- | --- |
+| R06 result, 8,964 bytes | `216af27971981e4b6ba0d2d9b0b804e99803cff99ed045ad3edf190c2b6dd873` |
+| R06 receipt self-hash | `10ac76da6ee0a9683d1e73cd88570bdc2011b9d16de2c81d972e92d79482bc3d` |
+| R07 result, 9,235 bytes | `f8d274fdefd8f1560de25f0e1c960910ddaec3c1c4fe071a1d59e1bfd5f1a1aa` |
+| R07 receipt self-hash | `a4d4b3a476c6776ff8459b07b1cba101400954384787cd16a9661bce9098651d` |
+| R08 result, 9,249 bytes | `5a0353f2134a186842d48b7e2ae8b125d52529ca909ffb628d837971f7d65b06` |
+| R08 receipt self-hash | `4a69d1f2d354943b3ce8c384e56ddb4fe6c20d1e4789f3f619bcf381abbf0ba1` |
+| Common canonical native snapshot | `e9a54c66aa977eb37cb0d3a59acae867aba0173c5135da3caa9c36d4dc2d8d83` |
+| Complete semantic source | `c9e04b15352712d36cf6ba3a641622c58d81fcccd8fa86c670a6270305d6611c` |
+| Saved immutable seed checkpoint | `9ccef95aa08d0e94c10ed77d39af875e6ebfbb00b173b444204daff15f1710aa` |
+| After-reader checkpoint verification | `c74d276051d35630613d80f1bf6d80acaf3bca13e79f0e5c2284066d35fb8e69` |
+| Independent private seed/reader review | `49c904e28cc9a16054ab0ed65a037702aef5871aad031a801d7dc32ae7026a59` |
+
+Fixture preparation was separate from these read-only cases: native UI created
+and named the disposable wire, then consumed one Save. Independent comparison
+retained all 165 original decoded records, all 11 peer documents and 66 imported
+atom-header occurrences. The sole new records were the six wire records. The
+maintained materialization proof accepted the named seed and its explicit
+stored/native attribute-encoding differences. This is not a sealed reroute or
+completed writer Save/reopen case. Offline reroute preparation on this generation
+refused the native-created WIRE's absent `locked` field; no value was fabricated
+and no guard was relaxed for these reader results.
+
+Limits: one populated Wire, one Text and the two orders of their two-element
+selection only. No Bus, missing-ID, wrong-family/owner, descendant, duplicate-ID
+or public-instance connected case is accepted. No inverse, rollback, reroute,
+atomic isolation or continuing database invariance is implied. The runtime's
+historical validation labels and whole-method counts are unchanged.

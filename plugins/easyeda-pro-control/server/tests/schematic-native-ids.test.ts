@@ -256,6 +256,7 @@ void test("three native ID descriptors preserve public defaults, strict empty ar
     "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId", "eda.pcb_Layer.getCurrentLayer", "eda.pcb_SelectControl.getAllSelectedPrimitives",
     "eda.pcb_Primitive.getPrimitiveByPrimitiveId", "eda.pcb_Primitive.getPrimitivesByPrimitiveId",
     "eda.sch_Primitive.getPrimitiveByPrimitiveId", "eda.sch_Primitive.getPrimitivesByPrimitiveId",
+    "eda.sys_FontManager.getFontsList",
   ]);
   assert.deepEqual(descriptors.filter((entry) => entry.implementation.kind === "native-task-equivalent").map((entry) => entry.path).toSorted(), [...nativePaths].toSorted());
   for (const descriptor of descriptors.filter((entry) => !nativePaths.has(entry.path))) {

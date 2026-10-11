@@ -47,14 +47,15 @@ void test("adapter changes, including comments, require a deliberate historical 
   assert.deepEqual(record.sourceRevisionReviews, [{
     path: "schematic-native-wire.ts",
     historicalSha256: "13db7218226c6636c51136ea9b96fc99a4bb784ad21ba10731d81ecd25e3a837",
-    reviewedSha256: "dc497d091b084139e7565bdaf0988ec5e896fba99aba7155b73028b221fefc40",
-    reviewedAt: "2026-10-11",
-    scope: "historical-generator-without-flatGuard-only;new-sealed-wire-live-unvalidated",
-    reference: "docs/api-coverage-164600-release-2026-10-11.md#historical-wire-source-review",
+    reviewedSha256: "a4336c2fae96b142a50cdfbba722e35f3456ef290847c937d23292db8f298ec9",
+    reviewedAt: "2026-10-12",
+    scope: "historical-explicit-false-profile-only;omitted-lock-and-sealed-wire-live-unvalidated",
+    reference: "docs/api-coverage-220050-release-2026-10-12.md#historical-wire-source-review",
   }]);
   assert.ok(record.sourceRevisionReviews.every((revision) => record.adapterBindings.some((binding) =>
     binding.path === revision.path && binding.sha256 === revision.historicalSha256)));
   assert.ok(record.exclusions.includes("no-flat-wire-reroute-v1-live-validation"));
+  assert.ok(record.exclusions.includes("no-omitted-lock-live-validation"));
   for (const binding of record.adapterBindings) {
     assert.match(binding.path, /^schematic-(?:native-wire|wire-order|wire-persistence)\.ts$/u);
     assert.match(binding.sha256, /^[a-f0-9]{64}$/u);

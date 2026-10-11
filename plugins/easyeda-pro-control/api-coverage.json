@@ -7,13 +7,13 @@
     "latestDistinctMethods": 773,
     "statuses": {
       "implemented-public-subset": 193,
-      "implemented-native-equivalent": 102,
+      "implemented-native-equivalent": 103,
       "internal-lifecycle-only": 2,
       "implemented-but-blocked": 7,
-      "omitted": 470
+      "omitted": 469
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 357,
+      "available-with-runtime-guards": 358,
       "blocked": 9,
       "partially-blocked": 3
     },
@@ -32,7 +32,6 @@
       "layer-selection-collateral-state": 1,
       "lossy-heterogeneous-primitive-projection": 2,
       "lossy-logging-selection-reader": 1,
-      "lossy-or-unawaited-public-reader": 1,
       "lossy-selected-object-projection": 1,
       "managed-file-contract-needed": 39,
       "multi-object-electrical-effect": 7,
@@ -30547,16 +30546,42 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "lossy-or-unawaited-public-reader",
-        "reason": "The installed wrapper catches native failures and returns an empty array, so a failed read is indistinguishable from an empty font set.",
-        "nextRequirement": "Use an independently complete native reader with awaited completion, source parity and failure tests; do not report a swallowed error as an empty result.",
-        "evidence": [
-          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.sys_FontManager.getFontsList",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native equivalent for the installed public font-list wrapper, which catches failures as []. Reads only the existing configured font-title list; does not invoke the public getter or its missing-configuration empty fallback. Requires one exact active ordinary schematic, symbol, PCB or footprint context in the main UI host. UI.gVars, current project, native tab, tab data and both active-tab reader receivers are retained. Missing or accessor-backed configuration/array/title fields refuse rather than becoming an empty result. Returns at most 512 configured titles, 1024 UTF-16 code units per title and 131072 combined, preserving order, duplicates, empty strings, whitespace and case without coercion. No font IDs, other preference fields, credentials or complete settings object are returned. Two synchronous complete path/row/title observations per dispatch plus the coordinator's two matching observations and context/runtime checks. Changes away and back between checks cannot be detected; this is not atomic settings isolation. Configured names in the currently loaded UI only, not current-account or persisted-settings identity, OS font installation, glyph coverage or rendering verification. No preference persistence, font add/delete, local storage, filesystem, network, navigation, design serialization or Save. Source tests do not establish connected validation.",
+          "documentTypes": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "source": [
+            "configured-font-read.ts"
+          ],
+          "tests": [
+            "configured-font-read.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.sys_FontManager.getFontsList",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

@@ -20,8 +20,8 @@ export function wireRuntimeFixture(value = flatWireFixture()) {
   const group = source.objects.find((row) => row.id === "wire"); assert.ok(group);
   const attrs: object[] = [], children: object[] = [], lines: (Change & { getConsistencyData: () => object })[] = [], names: object[] = [];
   const wire = { id: "wire", modelType: "NetGroup", tagName: "NetGroup", type: "wire", combination: null,
-    locked: false, isConnected: true, parent: shapes.root, shapeManager: shapes, lines, children, netNames: names,
-    getAttr: (): object[] => attrs, getConsistencyData: (): object => group.body,
+    locked: group.body["locked"], isConnected: true, parent: shapes.root, shapeManager: shapes, lines, children, netNames: names,
+    getAttr: (): object[] => attrs, getConsistencyData(): object { return { ...group.body, locked: this.locked }; },
     setLines: (changes: Change[]): void => {
       scene.calls.push("setLines");
       assert.equal(changes.length, lines.length);

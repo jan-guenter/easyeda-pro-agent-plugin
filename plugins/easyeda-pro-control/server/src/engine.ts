@@ -71,6 +71,7 @@ import { PCB_SELECTED_OBJECTS_METHOD } from "./pcb-selected-objects.ts";
 import { isPcbSourceObjectsMethod } from "./pcb-source-objects.ts";
 import { PCB_ACTIVE_LAYER_METHOD } from "./pcb-active-layer-read.ts";
 import { isEditorTabLookupMethod, readEditorTabLookup } from "./editor-tab-lookups.ts";
+import { CONFIGURED_FONT_METHOD } from "./configured-font-read.ts";
 import { buildSchematicNativeReadExpression } from "./schematic-native-adapter.ts";
 import { readSchematicFlatTopology } from "./schematic-flat-read.ts";
 import { buildSchematicNativeTransportCode, decodeSchematicNativeEnvelope } from "./schematic-native-transport.ts";
@@ -3306,6 +3307,7 @@ export class EasyedaControlEngine {
       ? "native-task-observation-not-complete-source-connectivity-or-persistence-proof"
       : "public-sdk-observation-not-complete-design-proof";
     if (isSchematicNativeIdMethod(parsed.method)) { authority = "native-id-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    if (parsed.method === CONFIGURED_FONT_METHOD) { authority = "configured-font-title-observation-not-whole-preferences-or-installed-font-proof"; }
     if (parsed.method === SCHEMATIC_SELECTION_METHOD) { authority = "public-replacement-selection-observation-not-complete-ownership-source-or-persistence-proof"; }
     if (parsed.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { authority = "native-property-name-observation-not-complete-source-connectivity-or-persistence-proof"; }
     if (parsed.method === SYMBOL_PIN_ENUMERATION_METHOD) { authority = "native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof"; }

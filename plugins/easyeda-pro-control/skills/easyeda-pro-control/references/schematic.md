@@ -118,6 +118,13 @@ child ordering must remain unchanged. The supported ATTRs are one hidden
 `Relevance:[]` and one nonempty `NET`. Creation, deletion and style/net changes
 remain outside this profile.
 
+The pinned native producer represents an unlocked WIRE either by omitting
+`locked` or by storing literal `false`. The adapter preserves that distinction
+and requires the matching native value throughout its action. It rejects other
+values, including an explicitly supplied `undefined`; never add a false field to
+a fixture or normalize the source to satisfy a guard. This correction has
+offline regression coverage, not connected reroute validation.
+
 Admission proves the whole page's flat pin/net topology and a multiset of contact
 vertices keyed by incident LINE/pin IDs. Pin contacts and foreign-wire contacts
 retain their coordinates. Generated marker checks refuse shared-WIRE endpoints

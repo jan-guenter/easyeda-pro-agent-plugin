@@ -109,7 +109,8 @@ export function buildSchematicNativeWireAdapter(input: unknown, sourceInput: Nat
   const wireId = operation.target.primitiveId;
   const subtree = before.objects.filter((row) => row.id === wireId || row.body["lineGroup"] === wireId || row.body["parentId"] === wireId);
   const group = subtree.find((row) => row.id === wireId);
-  if (group?.type !== "WIRE" || group.body["locked"] !== false ||
+  // Pinned native BaseModel retains undefined locks; JSON omits them. Keep omission distinct from explicit false.
+  if (group?.type !== "WIRE" || (Object.hasOwn(group.body, "locked") && group.body["locked"] !== false) ||
       (group.body["groupId"] !== undefined && group.body["groupId"] !== "") ||
       !Object.keys(group.body).every((key) => ["groupId", "locked", "zIndex"].includes(key)) || !Number.isFinite(group.body["zIndex"])) {
     throw new Error("Native wire requires an exact unlocked root WIRE profile.");
@@ -205,7 +206,7 @@ ${markerGuard === undefined ? "" : `const wireAfterMarkers=${markerGuard}(schDoc
 ${flatGuard === undefined ? "" : "const setLinesMethod=wire?.setLines;\n"}
 const bindSubtree=(rows,attributesExpected,projectOrder=false)=>{
  ${flatGuard === undefined ? "" : "if(wire?.setLines!==setLinesMethod)throw new Error('FLAT_WIRE_METHOD_DRIFT');"}
- if(manager.idManager.get(wireId)!==wire||!wire||wire.id!==wireId||wire.tagName!=='NetGroup'||wire.type!=='wire'||wire.parent?.id!=='$$root'||wire.isConnected!==true||wire.locked!==false||typeof wire.setLines!=='function'||typeof wire.getAttr!=='function'||canonical(schBody(wire))!==canonical(groupRow.body))throw new Error('SCH_WIRE_TARGET_CHANGED');
+ if(manager.idManager.get(wireId)!==wire||!wire||wire.id!==wireId||wire.tagName!=='NetGroup'||wire.type!=='wire'||wire.parent?.id!=='$$root'||wire.isConnected!==true||wire.locked!==groupRow.body.locked||typeof wire.setLines!=='function'||typeof wire.getAttr!=='function'||canonical(schBody(wire))!==canonical(groupRow.body))throw new Error('SCH_WIRE_TARGET_CHANGED');
  if(!Array.isArray(wire.lines)||!Array.isArray(wire.children))throw new Error('SCH_WIRE_CHILDREN_INVALID');
  const attributes=wire.getAttr();if(!Array.isArray(attributes)||attributes.length!==attrRows.length||new Set(attributes.map(attr=>attr.id)).size!==attributes.length)throw new Error('SCH_WIRE_ATTR_CHANGED');
  if(canonical(wire.lines.map(line=>line.id).sort())!==canonical(rows.map(row=>row.id).sort()))throw new Error('SCH_WIRE_LINES_CHANGED');

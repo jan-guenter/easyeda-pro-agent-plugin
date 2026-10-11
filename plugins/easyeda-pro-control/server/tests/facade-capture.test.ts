@@ -787,6 +787,16 @@ void describe("published facade contracts", { concurrency: false }, () => {
     assert.equal(limit["maximum"], 100);
   });
 
+  void test("published design and SDK descriptions retain narrow schematic profiles and observation limits", async () => {
+    const beforeCalls = await readFile(upstreamCallLogPath, "utf8"), listed = await client.listTools();
+    const design = listed.tools.find((tool) => tool.name === "easyeda_control_design");
+    const sdk = listed.tools.find((tool) => tool.name === "easyeda_control_sdk_read");
+    assert.ok(design); assert.ok(sdk);
+    assert.equal(design.description, "Apply one typed design operation, independently verify native records, then explicitly commit with save/reopen or restore the exact unsaved baseline. Type-1 schematic edits admit sealed single-page stored attribute/text display batches and a separate existing named orthogonal wire reroute profile; generic compiled-topology edits remain blocked. Inspect exact coverage and pending live-validation limits. A retained contained runtime is required; arbitrary JavaScript is never accepted.");
+    assert.equal(sdk.description, "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity, property-name, Pin-getter, Text, Wire/Bus, configured font titles, filtered PCB net-membership and PCB identity-type observations, plus native active-layer identity with public layer fields; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.");
+    assert.equal(await readFile(upstreamCallLogPath, "utf8"), beforeCalls, "description discovery must not dispatch upstream");
+  });
+
   void test("API schemas and refinement validation remain offline when upstream and editor context fail", async () => {
     try {
       await writeConfig({ unavailable: true });

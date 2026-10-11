@@ -15,11 +15,11 @@ PCB/footprint navigation also needs passive preference-side-effect admission.
 See [native navigation limits](native-ui.md#navigation-preference-side-effects);
 project-file invariance does not cover global preferences or backup pruning.
 
-The source inventory classifies 774 method paths as 193 public subsets, 102
-native equivalents, two lifecycle-only, seven implemented-but-blocked and 470
-omitted. It maps 357 runtime-guarded available routes, nine blocked routes and
-three partially blocked routes. The fixed SDK-read catalog has 181 entries,
-including 20 native equivalents. These counts describe implementations, not
+The source inventory classifies 774 method paths as 193 public subsets, 103
+native equivalents, two lifecycle-only, seven implemented-but-blocked and 469
+omitted. It maps 358 runtime-guarded available routes, nine blocked routes and
+three partially blocked routes. The fixed SDK-read catalog has 182 entries,
+including 21 native equivalents. These counts describe implementations, not
 whole-method live validation or admission of the installed host.
 
 | Capability | Controlled path | Current boundary |
@@ -29,14 +29,15 @@ whole-method live validation or admission of the installed host.
 | Existing project/document open | runtime open-existing | Saved PCB or schematic page; exact registry/checkpoint membership, exclusive-tab guard and complete unchanged SQLite proof. Imported SYMBOL/FOOTPRINT header provenance is retained and compared; installed083400 passed a disposable12document open. Later generations require separate admission. No creation, save, discard or replacement |
 | Exact schematic components | exact_read | Stable double samples with fixed public projections; schematic-topology disabled pending a verified non-mutating replacement |
 | API coverage and fixed reads | api coverage/sdk-reads/sdk-validate, sdk_read | Complete per-method inventory; fixed schemas and explicit public/native implementation labels; bounded observations, not complete source or persistence proof. Generation-specific cases below do not validate the full allowlist or newer source |
-| System-library identity | sdk_read, lib_LibrariesList.getSystemLibraryUuid | Empty arguments; one nonmissing 32-character lowercase-hex UUID from the pinned public implementation. Malformed or absent result refuses, with no hardcoded fallback. No account/library enumeration, asset access or write authority. Source/offline-tested only; connected validation pending |
+| System-library identity | sdk_read, lib_LibrariesList.getSystemLibraryUuid | Empty arguments; one nonmissing 32-character lowercase-hex UUID from the pinned public implementation. Malformed or absent result refuses, with no hardcoded fallback. No account/library enumeration, asset access or write authority. Installed204104 passed one disposable read with matching observations and unchanged native/source/checkpoint evidence; later generations require separate admission |
+| Configured font titles | sdk_read, sys_FontManager.getFontsList | Native title-only equivalent, empty arguments and one exact ordinary active tab. Own data fields and retained UI/project/tab/path owners; missing configuration refuses, without the public false-empty fallback. Preserves order, duplicates, empties and case; at most 512 titles, 1024 UTF-16 units each and 131072 combined. No preference writes, account/persistence identity, OS-font inventory or rendering proof. Source/offline-tested only; connected validation pending |
 | Schematic Text/Wire/Bus IDs | sdk_read, getAllPrimitiveId | Native ID-only equivalent on an ordinary active type-1 page; empty arguments only, no Wire net filters or symbol/block-instance scenes. Complete reciprocal tree/index proof and source-backed root-family membership; generated frame descendants excluded, structural GROUP records refused. Two stable observations, no callback/compiler/Save. Group IDs are not LINE IDs. Offline-tested; connected validation pending |
 | Schematic component property names | sdk_read, sch_PrimitiveComponent.getAllPropertyNames | Native key-only equivalent on one ordinary page; complete root Symbol/attribute-map/tree/index proof, including inherited/generated frame/flag keys. No values, compiler, source serializer or Save; unsupported ownership/groups refuse. Exact sorted bounded strings, not all-pages or persistence proof. Connected validation pending |
 | Deprecated schematic selected-ID getter | sdk_read, sch_SelectControl.getSelectedPrimitives_PrimitiveId | Explicit equivalent using its documented public replacement getAllSelectedPrimitives_PrimitiveId. Exact ordinary page/readiness/receiver checks, bounded ordered unique IDs, two stable samples. Never calls the obsolete iframe route, which can falsely return an empty list. Selected line children resolve to parent groups; no complete ownership or persistence claim. Installed071500 passed one selected ordinary component; later generations and other selections remain separate |
 | Ordinary symbol Pin enumeration | sdk_read, sch_PrimitivePin.getAll | Native single-PART membership plus explicit public-getter parity; 256-Pin bound, exact standard attributes, generated-dot ownership and reproof around awaits. Custom attributes/multipart/device/no-connect/junction cases refuse. Getter rotation is not stored rotation; JSON normalizes signed zero. Connected validation pending |
 | Schematic Text state | sdk_read, sch_PrimitiveText.get/getAll | Complete bounded ordinary page-root Text membership and 14 native scalar fields. Exact selected IDs or all roots; sorted arrays, native Y/null/style/alignment semantics, no public-getter parity. Synchronous reproof plus two facade observations; no compiler, serializer or Save. Installed223200 fixture evidence below; new-generation connected admission pending |
 | Schematic Wire/Bus state | sdk_read, sch_PrimitiveWire/Bus.get/getAll | Root NetGroup DTOs retain every line's native points/styles, all literal NET names and custom attribute IDs. Complete bounded reciprocal tree/index/source/child proof; no public wrappers/compiler/serializer/Save, no net filters or resolved-net claim. Installed010000 nonempty fixture evidence below; later-generation acceptance remains separate |
-| Mixed schematic ID lookup | sdk_read, sch_Primitive.getPrimitiveByPrimitiveId / getPrimitivesByPrimitiveId | One literal ID or 1–256 unique IDs in caller order. Only ordinary-page root Text and Wire/Bus NetGroup DTOs; one retained page/tree/index/source capture checks all modeled families before selection. Complete-family and combined-string bounds apply. Any missing, unsupported, descendant or wrong-owner selector refuses the whole call. No SDK instances/all-property parity, compiler, Save or complete source/connectivity/persistence proof. Source/offline-tested only; no connected validation |
+| Mixed schematic ID lookup | sdk_read, sch_Primitive.getPrimitiveByPrimitiveId / getPrimitivesByPrimitiveId | One literal ID or 1–256 unique IDs in caller order. Only ordinary-page root Text and Wire/Bus NetGroup DTOs; one retained page/tree/index/source capture checks all modeled families before selection. Complete-family and combined-string bounds apply. Any missing, unsupported, descendant or wrong-owner selector refuses the whole call. No SDK instances/all-property parity, compiler, Save or complete source/connectivity/persistence proof. Installed204104 passed one root Text and one populated Wire through singular/plural reads and both orders of their two-item selection; Bus, invalid selectors and later generations remain separate |
 | Filtered PCB net membership | sdk_read, pcb_Net.getAllPrimitivesByNet | Explicit Line/Arc/Via/standalone-Pad/ComponentPad filters and nonempty net only. Complete requested-family source/inventory correspondence before filtering, component-pad ownership and two matching source/inventory/source cycles. Full observed tab/owner context required. Identity records, not public classes/connectivity/persistence. Installed071500 passed populated ComponentPad/Via, lowercase matching and empty Pad/Arc cases; Line/type coverage remains pending |
 | PCB primitive type | sdk_read, pcb_Primitive.getPrimitiveTypeByPrimitiveId | Existing literal ID only; complete all-five-family source/inventory proof, including empty-net objects. Returns Line/Arc/Via/Pad/ComponentPad; missing, other-family and colliding IDs refuse without an absence claim. Native equivalent of an installed empty stub; two cycles/runtime/context checks, connected acceptance pending |
 | PCB active layer | sdk_read, pcb_Layer.getCurrentLayer | Empty arguments, ordinary project PCB and full observed tab/owner context only. One canonical ACTIVE_LAYER and complete bounded source are matched to the public all-layer list across two source/list/source cycles. Selected name/type/visibility/use/lock must agree; raw bounded color strings are not validated CSS. No public-stub invocation or layer change. Installed071500 passed Top Layer 1 with complete saved/native invariance; later generations remain separate |
@@ -84,7 +85,7 @@ whole-method live validation or admission of the installed host.
 | Other library and project lifecycle operations | library capabilities | Asset import/copy/delete and metadata changes outside supported profiles remain refused; inspect the actual execution-enabled action |
 | File exports | library, supported export entries | Bounded in-memory file transfer to exclusive managed artifacts; hidden-Save routes listed above refused; fabricationApproved is false; inspect actual capabilities |
 | Draft PCB DSN route context | export | Active-context/best-effort descriptor-bound artifact; not route/fabrication approval |
-| Native windows/dialogs | native_ui | Discover exact installed process, inspect current handles, confirmed focus/input/normal-close; guarded right-click is source-tested, not yet live-validated; no bridge needed for bootstrap; observed-unowned is not Job authority |
+| Native windows/dialogs | native_ui | Discover exact installed process, inspect current handles, confirmed focus/pointer/keyboard input and normal-close. Installed204104 passed one pointer-only hover with a separately observed overflow-menu effect. Input acknowledgments do not prove canvas snapping, wire creation or saved results; each workflow needs its own evidence. No bridge needed for bootstrap; observed-unowned is not Job authority |
 | Itemized native ERC/DRC | check run | Fixed reviewed calculation, complete live calculation-scope snapshot, full saved SQLite invariance, itemized managed report; both fixture paths passed, current enabled rules only |
 | Route lengths, paths, skew and widths | check route-audit | Stable exact source/pad inventory; planar lengths and typed width contracts; ambiguous contacts and omitted barrel delay remain indeterminate |
 | Schematic-to-PCB ECO | native dialog workflow | Inspect scope/rows/options; applying an ECO requires separate full identity/net audit |
@@ -98,6 +99,18 @@ whole-method live validation or admission of the installed host.
 | Raw JavaScript, automatic database restore, fabrication submission | unsupported | No unrestricted-code switch or implicit purchasing/manufacturing authority |
 
 ## Reported live coverage
+
+Installed204104 passed the system-library UUID reader and both mixed schematic
+ID readers selecting one existing root Text and one populated Wire, including
+both caller orders of their two-item selection. Every DTO field matches source
+and immutable stored records. Complete before/after native state and the saved
+checkpoint stayed unchanged. Bus and invalid-selector cases remain separate.
+One confirmed hover also opened the overflow menu, proved by separate managed
+before/after images. These cases are bound to runtimec4d9b324, not later source.
+The native-created named wire seed subsequently passed Save and reopen proof,
+with all original records and peer documents preserved. This is fixture setup,
+not a sealed reroute test. The configured-font reader and corrected wire adapter
+still need connected validation on their new installed generation.
 
 Installed164600 passed singular and one-element plural explicit-ID PCB reads of
 the same original standalone STRING with no direct ATTRs. Independent retained
@@ -121,10 +134,11 @@ record occurrences unchanged; the sole new SCH contained exactly DOCHEAD/META.
 There was no page, template, canvas, editor open, Save or automatic inverse.
 These are point-in-time disposable cases under the 164600 runtime fingerprint
 `8610ba8c5ae61406526379fe205003ce5b3418de288cdcabdd3c31c573086d77`.
-They do not admit later source changes, the source-only system-library or mixed
-schematic getters, or every argument of the tested methods. Fresh runtime/context and normal
-operation proof gates still apply; no current database was opened for the
-independent retained-evidence reviews.
+They do not admit later source changes or every argument of the tested methods.
+The system-library and mixed schematic reader cases above were tested separately
+on 204104, not by these 164600 cases. Fresh runtime/context and normal operation
+proof gates still apply; no current database was opened for the independent
+retained-evidence reviews.
 
 Installed120000 passed closed PCB and schematic-container rename, each followed
 by a separate explicit inverse transaction, then one closed free-PCB creation.

@@ -52,8 +52,12 @@ After normal application exit, that MCP tool cannot verify a closed project:
 its active-context guard still applies. For an already authorized exact project
 and retained receipt, the maintained offline `scripts/checkpoint.ts verify
 RECEIPT_PATH` command checks the same file identities, hashes and logical dumps
-without opening EasyEDA. Use the pinned Node runtime. This grants no restoration,
-new project access or transaction-recovery authority.
+without opening EasyEDA. Run it from the reviewed repository checkout with its
+locked dependencies installed, using the pinned Node runtime. Marketplace
+packages bundle the MCP runtime but do not include the dependencies needed to
+run these standalone TypeScript helpers. Do not patch the installed cache or
+remove the MCP context guard to work around a missing dependency. This grants no
+restoration, new project access or transaction-recovery authority.
 
 Checkpoint receipts have a 1 MiB whole-file read limit. After receipt publication or verification hashing, the facade rechecks the source pathname, file metadata and SQLite `data_version`. This catches both ordinary database writes and WAL-only commits that occurred after the source snapshot. Verification also rechecks the checkpoint file after hashing. A checkpoint is still a point-in-time snapshot: no check locks the editor against a later commit. Any operation that depends on current baseline equality must reverify immediately before its dispatch boundary.
 

@@ -1858,7 +1858,7 @@ registerFacadeTool(
   "easyeda_control_design",
   {
     title: "Edit and verify a typed EasyEDA design transaction",
-    description: "Apply one typed design operation, independently verify native records, then explicitly commit with save/reopen or restore the exact unsaved baseline. Type-1 schematic edits admit only sealed single-page stored attribute/text display batches; generic compiled-topology edits remain blocked. Inspect exact coverage and pending live-validation limits. A retained contained runtime is required; arbitrary JavaScript is never accepted.",
+    description: "Apply one typed design operation, independently verify native records, then explicitly commit with save/reopen or restore the exact unsaved baseline. Type-1 schematic edits admit sealed single-page stored attribute/text display batches and a separate existing named orthogonal wire reroute profile; generic compiled-topology edits remain blocked. Inspect exact coverage and pending live-validation limits. A retained contained runtime is required; arbitrary JavaScript is never accepted.",
     inputSchema: { request: designRequestSchema },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   },
@@ -1977,7 +1977,7 @@ registerFacadeTool(
   "easyeda_control_sdk_read",
   {
     title: "Read reviewed EasyEDA SDK methods",
-    description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity, property-name, Pin-getter, Text, Wire/Bus, filtered PCB net-membership and PCB identity-type observations, plus native active-layer identity with public layer fields; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
+    description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity, property-name, Pin-getter, Text, Wire/Bus, configured font titles, filtered PCB net-membership and PCB identity-type observations, plus native active-layer identity with public layer fields; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
     inputSchema: {
       request: z.unknown().pipe(publicSdkReadRequestSchema),
       expectedContext: contextSchema,

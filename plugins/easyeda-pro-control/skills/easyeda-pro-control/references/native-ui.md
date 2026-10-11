@@ -41,7 +41,7 @@ Call with `request.action:"discover"` to find independently launched instances o
 
 Put `confirmUIWrite:true` inside `request`, not at the tool's top level.
 
-Use `windows` to obtain current handles after splash or dialogs. All handles and StartTicks are strings; do not round the 64-bit start value through a JSON number. `inspect`, `focused` and `capture` are read actions. `focus`, `invoke`, `setvalue`, `filename`, `click`, `doubleclick`, `rightclick`, `keys` and `normal-close` require `confirmUIWrite:true` plus task authority. Input coordinates come from the observed window. Keyboard/pointer actions require the exact target foreground window. The packaged `rightclick` uses the same window/bounds guards as `click`; inspect the resulting menu before choosing an item. It is not a discard-recovery action.
+Use `windows` to obtain current handles after splash or dialogs. All handles and StartTicks are strings; do not round the 64-bit start value through a JSON number. `inspect`, `focused` and `capture` are read actions. `focus`, `invoke`, `setvalue`, `filename`, `click`, `doubleclick`, `rightclick`, `hover`, `keys` and `normal-close` require `confirmUIWrite:true` plus task authority. Input coordinates come from the observed window. Keyboard/pointer actions require the exact target foreground window. The packaged `rightclick` uses the same window/bounds guards as `click`; inspect the resulting menu before choosing an item. It is not a discard-recovery action.
 
 Choose the actual application window from the returned title, class and bounds. The Windows `mainWindowHandle` convenience value can temporarily refer to a tooltip; it is not authoritative. `normal-close` validates the explicitly selected visible, enabled, ownerless root application HWND and posts normal `WM_CLOSE` there. A save prompt may remain open; this action neither selects a prompt choice nor proves process exit.
 
@@ -102,7 +102,7 @@ Names and coordinates are observations, not stable APIs. Do not repeatedly toggl
 
 ### Overflow menus on the reviewed desktop build
 
-The source candidate adds confirmed `hover` with observed screen coordinates.
+Confirmed `hover` uses observed screen coordinates.
 It moves the pointer once without sending button or keyboard input, rechecks
 the reported position and refuses an observed held mouse button. It requires
 the exact foreground window and the normal process/bounds checks. It also
@@ -112,8 +112,9 @@ moving. Fresh recipient PID and thread samples must match the admitted window;
 an owned dialog's current owner chain must still reach the retained root process.
 Malformed or contradictory dispatch responses preserve uncertainty. Hover can
 change UI state, so it is not a read-only action. Its response does not prove
-that a menu opened. This new action has synthetic tests, not connected validation;
-installed164600 does not expose it.
+that a menu opened. Installed204104 passed one pointer-only overflow hover with
+separate before/after image acceptance. Older164600 does not expose this action;
+that one case does not validate all snapping or drawing behavior.
 
 Windows can clip a cursor move, so success requires the position readback, not
 only the move acknowledgment. A zero button-state sample can also mean an API
@@ -125,8 +126,16 @@ For placement that depends on snapping, separate pointer movement from the click
 hover once, inspect the visible crosshair/snap at the intended point, then click
 once and inspect the native result. The existing click acknowledgment echoes
 requested coordinates; it does not prove cursor position or renderer processing.
-This is a proposed workflow for the new hover action, not a completed live test
-or an established diagnosis of an interrupted drawing preview.
+On the pinned schematic build, a discrete jump away from a pin can leave the
+crosshair snapped to the old pin while the status bar shows the new grid point.
+The reviewed event order updates snapping before replacing the picked targets;
+the old pin candidate can survive that one event. In a disposable204104 test,
+one additional two-pixel hover within the intended grid cell made the crosshair
+and wire preview reach the intended corner. This supports the source explanation,
+not a runtime trace or a diagnosis of every stale preview. When the two displays
+disagree, do not click. Use one distinct nearby pointer-only move within the
+same observed grid cell and reinspect; an identical coordinate may emit no new
+movement event. Persistent disagreement requires inspection, not repeated clicks.
 
 The top-bar **More** arrow opens on pointer entry and closes on click. Clicking
 it or invoking its UI Automation group can therefore produce only a tooltip.

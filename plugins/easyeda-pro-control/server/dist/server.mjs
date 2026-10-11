@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "d8b35c17f58dbe98bd24d0fabf5cf255a2c164d1811fa2952fc62db9589a1edd";
+const __easyedaBundlePairId = "a4622cd35b68abd578462a791654a412fbc556c2ebd404e54da9437adb9b8f63";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -34087,10 +34087,101 @@ var init_schematic_read_diagnostics = __esm({
   }
 });
 
+// server/src/configured-font-read.ts
+function buildConfiguredFontReadExpression() {
+  return `(() => {
+const bad=reason=>{failureCode='CONFIGURED_FONTS_'+reason;throw new Error('CONFIGURED_FONTS_'+reason);};
+const object=value=>value!==null&&(typeof value==='object'||typeof value==='function')&&!Array.isArray(value);
+const data=(owner,key,reason)=>{
+ if(!object(owner))bad(reason);
+ const descriptor=Object.getOwnPropertyDescriptor(owner,key);
+ if(!descriptor||!Object.hasOwn(descriptor,'value'))bad(reason);
+ return descriptor.value;
+};
+if(globalThis.top!==undefined&&globalThis.top!==globalThis)bad('HOST');
+const ui=data(globalThis,'UI','HOST'),host=data(globalThis,'gVars','HOST');
+if(!object(ui)||!object(host)||data(ui,'gVars','HOST')!==host)bad('HOST');
+const tabs=data(ui,'tabBar','HOST'),project=data(host,'currentProject','HOST');
+const activeReader=data(tabs,'getActiveTab','HOST'),tabReader=data(tabs,'getActiveTabData','HOST');
+if(typeof activeReader!=='function'||typeof tabReader!=='function')bad('HOST');
+const tab=tabReader.call(tabs),tabData=data(tab,'data','CONTEXT');
+const check=()=>{
+ if(globalThis.top!==undefined&&globalThis.top!==globalThis)bad('HOST');
+ if(data(globalThis,'UI','HOST')!==ui||data(globalThis,'gVars','HOST')!==host||data(ui,'gVars','HOST')!==host||data(ui,'tabBar','HOST')!==tabs||data(host,'currentProject','HOST')!==project||data(tabs,'getActiveTab','HOST')!==activeReader||data(tabs,'getActiveTabData','HOST')!==tabReader)bad('OWNER_CHANGED');
+ if(![1,2,3,4].includes(EXPECTED_DOCUMENT_TYPE)||typeof EXPECTED_PROJECT_UUID!=='string'||!EXPECTED_PROJECT_UUID||typeof EXPECTED_DOCUMENT_UUID!=='string'||!EXPECTED_DOCUMENT_UUID||typeof EXPECTED_TAB_ID!=='string'||!EXPECTED_TAB_ID||data(project,'projectId','CONTEXT')!==EXPECTED_PROJECT_UUID||activeReader.call(tabs)!==EXPECTED_TAB_ID||tabReader.call(tabs)!==tab||data(tab,'data','CONTEXT')!==tabData||data(tab,'tabId','CONTEXT')!==EXPECTED_TAB_ID||data(tabData,'doctype','CONTEXT')!==EXPECTED_DOCUMENT_TYPE)bad('CONTEXT');
+ if(EXPECTED_TAB_ID!==EXPECTED_DOCUMENT_UUID&&EXPECTED_TAB_ID!==EXPECTED_DOCUMENT_UUID+'@'+EXPECTED_PROJECT_UUID)bad('CONTEXT');
+};
+const path=()=>{
+ check();
+ const profile=data(host,'profileSetting','CONFIGURATION');
+ const settings=data(profile,'commSystemSetting','CONFIGURATION');
+ const typeface=data(settings,'COMM_TYPEFACE','CONFIGURATION');
+ const list=data(typeface,'commonlyList','CONFIGURATION');
+ const rows=data(list,'value','CONFIGURATION');
+ if(!Array.isArray(rows))bad('ROWS');
+ const length=Object.getOwnPropertyDescriptor(rows,'length');
+ if(!length||!Object.hasOwn(length,'value')||!Number.isInteger(length.value)||length.value<0||length.value>${CONFIGURED_FONT_MAX_ROWS})bad('RESULT_BOUND');
+ if(Reflect.ownKeys(rows).length!==length.value+1)bad('ROWS');
+ return {profile,settings,typeface,list,rows,length:length.value};
+};
+const capture=()=>{
+ const binding=path(),members=[],titles=[];let characters=0;
+ for(let index=0;index<binding.length;index++){
+  const descriptor=Object.getOwnPropertyDescriptor(binding.rows,String(index));
+  if(!descriptor||!descriptor.enumerable||!Object.hasOwn(descriptor,'value'))bad('ROWS');
+  const row=descriptor.value,title=data(row,'title','TITLE');
+  if(typeof row!=='object'||typeof title!=='string'||title.length>${CONFIGURED_FONT_MAX_TITLE})bad('TITLE');
+  characters+=title.length;if(characters>${CONFIGURED_FONT_MAX_CHARACTERS})bad('RESULT_BOUND');
+  members.push(row);titles.push(title);
+ }
+ check();return {binding,members,titles};
+};
+const first=capture(),second=capture();
+for(const key of ['profile','settings','typeface','list','rows','length'])if(first.binding[key]!==second.binding[key])bad('SNAPSHOT_CHANGED');
+for(let index=0;index<first.members.length;index++)if(first.members[index]!==second.members[index]||first.titles[index]!==second.titles[index])bad('SNAPSHOT_CHANGED');
+const final=path();
+for(const key of ['profile','settings','typeface','list','rows','length'])if(final[key]!==second.binding[key])bad('SNAPSHOT_CHANGED');
+for(let index=0;index<second.members.length;index++){
+ const descriptor=Object.getOwnPropertyDescriptor(final.rows,String(index));
+ if(!descriptor||!descriptor.enumerable||!Object.hasOwn(descriptor,'value')||descriptor.value!==second.members[index]||data(descriptor.value,'title','TITLE')!==second.titles[index])bad('SNAPSHOT_CHANGED');
+}
+const ending=path();
+for(const key of ['profile','settings','typeface','list','rows','length'])if(ending[key]!==second.binding[key])bad('SNAPSHOT_CHANGED');
+check();return second.titles;
+})()`;
+}
+var CONFIGURED_FONT_METHOD, CONFIGURED_FONT_MAX_ROWS, CONFIGURED_FONT_MAX_TITLE, CONFIGURED_FONT_MAX_CHARACTERS, configuredFontArgumentsSchema, configuredFontTitlesSchema, CONFIGURED_FONT_LIMITATIONS, CONFIGURED_FONT_GUARD_CODES;
+var init_configured_font_read = __esm({
+  "server/src/configured-font-read.ts"() {
+    init_zod();
+    CONFIGURED_FONT_METHOD = "eda.sys_FontManager.getFontsList";
+    CONFIGURED_FONT_MAX_ROWS = 512;
+    CONFIGURED_FONT_MAX_TITLE = 1024;
+    CONFIGURED_FONT_MAX_CHARACTERS = 131072;
+    configuredFontArgumentsSchema = external_exports.object({}).strict();
+    configuredFontTitlesSchema = external_exports.array(external_exports.string().max(CONFIGURED_FONT_MAX_TITLE)).max(CONFIGURED_FONT_MAX_ROWS).refine(
+      (titles) => titles.reduce((total, title7) => total + title7.length, 0) <= CONFIGURED_FONT_MAX_CHARACTERS,
+      "Configured font titles exceed the aggregate character bound."
+    );
+    CONFIGURED_FONT_LIMITATIONS = [
+      "Native equivalent for the installed public font-list wrapper, which catches failures as []. Reads only the existing configured font-title list; does not invoke the public getter or its missing-configuration empty fallback.",
+      "Requires one exact active ordinary schematic, symbol, PCB or footprint context in the main UI host. UI.gVars, current project, native tab, tab data and both active-tab reader receivers are retained. Missing or accessor-backed configuration/array/title fields refuse rather than becoming an empty result.",
+      "Returns at most 512 configured titles, 1024 UTF-16 code units per title and 131072 combined, preserving order, duplicates, empty strings, whitespace and case without coercion. No font IDs, other preference fields, credentials or complete settings object are returned.",
+      "Two synchronous complete path/row/title observations per dispatch plus the coordinator's two matching observations and context/runtime checks. Changes away and back between checks cannot be detected; this is not atomic settings isolation.",
+      "Configured names in the currently loaded UI only, not current-account or persisted-settings identity, OS font installation, glyph coverage or rendering verification. No preference persistence, font add/delete, local storage, filesystem, network, navigation, design serialization or Save. Source tests do not establish connected validation."
+    ];
+    CONFIGURED_FONT_GUARD_CODES = ["HOST", "CONTEXT", "OWNER_CHANGED", "CONFIGURATION", "ROWS", "TITLE", "RESULT_BOUND", "SNAPSHOT_CHANGED"];
+  }
+});
+
 // server/src/native-diagnostics.ts
 function nativeFailureCategory(message) {
   if (typeof message !== "string") {
     return null;
+  }
+  const configuredFontCategory = message.length <= 288 ? configuredFontCategories.get(message) : void 0;
+  if (configuredFontCategory !== void 0) {
+    return configuredFontCategory;
   }
   const schematicPrimitiveCategory = message.length <= 288 ? schematicPrimitiveCategories.get(message) : void 0;
   if (schematicPrimitiveCategory !== void 0) {
@@ -34166,7 +34257,7 @@ function nativeFailureCategory(message) {
   const stage = message.startsWith(prefix) ? message.slice(prefix.length) : "";
   return recoveryStages.has(stage) ? `native-preflight:RECOVERY_${stage.toUpperCase().replaceAll("-", "_")}` : null;
 }
-var codes3, RECOVERY_NAVIGATION_FAILURE_STAGES, recoveryStages, tabCodes, padCodes, footprintLifecycleCodes, operationStages, operationStageCategories, activationPreferenceCategories, metadataGuardCategories, schematicIdCategories, componentPropertyCategories, symbolPinCategories, schematicTextCategories, schematicNetGroupCategories, schematicSelectionCategories, schematicPrimitiveCategories;
+var codes3, RECOVERY_NAVIGATION_FAILURE_STAGES, recoveryStages, tabCodes, padCodes, footprintLifecycleCodes, operationStages, operationStageCategories, activationPreferenceCategories, metadataGuardCategories, schematicIdCategories, componentPropertyCategories, symbolPinCategories, schematicTextCategories, schematicNetGroupCategories, schematicSelectionCategories, schematicPrimitiveCategories, configuredFontCategories;
 var init_native_diagnostics = __esm({
   "server/src/native-diagnostics.ts"() {
     init_device_runtime_guard();
@@ -34181,6 +34272,7 @@ var init_native_diagnostics = __esm({
     init_schematic_primitive_read();
     init_schematic_selection_read();
     init_schematic_read_diagnostics();
+    init_configured_font_read();
     codes3 = /* @__PURE__ */ new Set([
       ...SCHEMATIC_FLAT_READ_GUARD_CODES,
       ...SCHEMATIC_FLAT_TOPOLOGY_GUARD_CODES.map((code) => `SCH_FLAT_TOPOLOGY_${code}`),
@@ -34474,6 +34566,12 @@ var init_native_diagnostics = __esm({
       `Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
       `native-schematic-primitive:${method}:${label}`
     ])));
+    configuredFontCategories = new Map(
+      [...CONFIGURED_FONT_GUARD_CODES.map((code) => [`CONFIGURED_FONTS_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
+        `Public SDK read could not produce a complete bounded observation; method=${CONFIGURED_FONT_METHOD}|stage=call|code=${code}|getter=none`,
+        `native-configured-fonts:${CONFIGURED_FONT_METHOD}:${label}`
+      ])
+    );
   }
 });
 
@@ -48289,6 +48387,9 @@ function readImplementationTestName(path5) {
   return readImplementationName(path5);
 }
 function readImplementationName(path5) {
+  if (path5 === CONFIGURED_FONT_METHOD) {
+    return "configured-font-read";
+  }
   if (isSchematicPrimitiveReadMethod(path5)) {
     return "schematic-primitive-read";
   }
@@ -48396,7 +48497,9 @@ function buildPublicSdkReadCode(input) {
     return request.arguments[key] === void 0 ? "undefined" : JSON.stringify(request.arguments[key]);
   }).join(",");
   let expression = `await ${definition.path}(${args})`;
-  if (definition.path === SCHEMATIC_SELECTION_METHOD) {
+  if (definition.path === CONFIGURED_FONT_METHOD) {
+    expression = buildConfiguredFontReadExpression();
+  } else if (definition.path === SCHEMATIC_SELECTION_METHOD) {
     expression = buildSchematicSelectionReadExpression();
   } else if (isSchematicNativeIdMethod(definition.path)) {
     expression = buildSchematicNativeIdsExpression(definition.path, "sdk-failure-code");
@@ -48595,6 +48698,12 @@ function validatePublicSdkReadPayload(input, requestInput) {
         throw new Error("System-library UUID cannot contain undefined values.");
       }
     }
+    if (request.method === CONFIGURED_FONT_METHOD) {
+      if (payload.undefinedPaths.length > 0) {
+        throw new Error("Configured font titles cannot contain undefined values.");
+      }
+      configuredFontTitlesSchema.parse(payload.value);
+    }
     if (request.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) {
       if (payload.undefinedPaths.length > 0) {
         throw new Error("Component property-name observations cannot contain undefined values.");
@@ -48705,6 +48814,9 @@ function validatePublicSdkReadPayload(input, requestInput) {
   if (isSchematicNativeIdMethod(request.method)) {
     assurance = "bounded-native-id-observation-not-complete-source-connectivity-or-persistence-proof";
   }
+  if (request.method === CONFIGURED_FONT_METHOD) {
+    assurance = "bounded-configured-font-titles-not-installed-font-or-rendering-proof";
+  }
   if (request.method === SCHEMATIC_SELECTION_METHOD) {
     assurance = "bounded-public-replacement-selection-observation-not-complete-ownership-source-or-persistence-proof";
   }
@@ -48751,6 +48863,7 @@ var init_public_sdk_read = __esm({
     init_pcb_source_objects();
     init_pcb_active_layer_read();
     init_schematic_selection_read();
+    init_configured_font_read();
     PUBLIC_SDK_READ_API_SHA256 = "5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc";
     PUBLIC_SDK_READ_MAX_BYTES = 2097152;
     MAX_ITEMS2 = 2e4;
@@ -48810,6 +48923,11 @@ var init_public_sdk_read = __esm({
     add(SYSTEM_LIBRARY_UUID_METHOD, ALL_DOCUMENTS, "string", emptyArguments2, [], { limitations: [
       "Returns only the system-library UUID as 32 lowercase hexadecimal characters; missing or malformed results refuse. No account/library enumeration, asset access or write authority is granted."
     ] });
+    add(CONFIGURED_FONT_METHOD, ALL_DOCUMENTS, "strings", configuredFontArgumentsSchema, [], {
+      implementationKind: "native-task-equivalent",
+      parameterSupport: "narrowed",
+      limitations: [...CONFIGURED_FONT_LIMITATIONS]
+    });
     for (const request of editorTabLookupRequestSchema.options) {
       const method = request.shape.method.value;
       add(
@@ -50535,6 +50653,7 @@ var init_engine = __esm({
     init_pcb_source_objects();
     init_pcb_active_layer_read();
     init_editor_tab_lookups();
+    init_configured_font_read();
     init_schematic_native_adapter();
     init_schematic_flat_read();
     init_schematic_native_transport();
@@ -51636,6 +51755,9 @@ var init_engine = __esm({
         let authority = publicSdkReadImplementationKind(parsed2.method) === "native-task-equivalent" ? "native-task-observation-not-complete-source-connectivity-or-persistence-proof" : "public-sdk-observation-not-complete-design-proof";
         if (isSchematicNativeIdMethod(parsed2.method)) {
           authority = "native-id-observation-not-complete-source-connectivity-or-persistence-proof";
+        }
+        if (parsed2.method === CONFIGURED_FONT_METHOD) {
+          authority = "configured-font-title-observation-not-whole-preferences-or-installed-font-proof";
         }
         if (parsed2.method === SCHEMATIC_SELECTION_METHOD) {
           authority = "public-replacement-selection-observation-not-complete-ownership-source-or-persistence-proof";
@@ -55724,7 +55846,7 @@ function buildSchematicNativeWireAdapter(input, sourceInput, nativeInput, flatGu
   const wireId = operation.target.primitiveId;
   const subtree = before.objects.filter((row) => row.id === wireId || row.body["lineGroup"] === wireId || row.body["parentId"] === wireId);
   const group = subtree.find((row) => row.id === wireId);
-  if (group?.type !== "WIRE" || group.body["locked"] !== false || group.body["groupId"] !== void 0 && group.body["groupId"] !== "" || !Object.keys(group.body).every((key) => ["groupId", "locked", "zIndex"].includes(key)) || !Number.isFinite(group.body["zIndex"])) {
+  if (group?.type !== "WIRE" || Object.hasOwn(group.body, "locked") && group.body["locked"] !== false || group.body["groupId"] !== void 0 && group.body["groupId"] !== "" || !Object.keys(group.body).every((key) => ["groupId", "locked", "zIndex"].includes(key)) || !Number.isFinite(group.body["zIndex"])) {
     throw new Error("Native wire requires an exact unlocked root WIRE profile.");
   }
   const oldLines = subtree.filter((row) => row.type === "LINE").toSorted((a, b) => a.id.localeCompare(b.id));
@@ -55841,7 +55963,7 @@ ${markerGuard === void 0 ? "" : `const wireAfterMarkers=${markerGuard}(schDoc,ma
 ${flatGuard === void 0 ? "" : "const setLinesMethod=wire?.setLines;\n"}
 const bindSubtree=(rows,attributesExpected,projectOrder=false)=>{
  ${flatGuard === void 0 ? "" : "if(wire?.setLines!==setLinesMethod)throw new Error('FLAT_WIRE_METHOD_DRIFT');"}
- if(manager.idManager.get(wireId)!==wire||!wire||wire.id!==wireId||wire.tagName!=='NetGroup'||wire.type!=='wire'||wire.parent?.id!=='$$root'||wire.isConnected!==true||wire.locked!==false||typeof wire.setLines!=='function'||typeof wire.getAttr!=='function'||canonical(schBody(wire))!==canonical(groupRow.body))throw new Error('SCH_WIRE_TARGET_CHANGED');
+ if(manager.idManager.get(wireId)!==wire||!wire||wire.id!==wireId||wire.tagName!=='NetGroup'||wire.type!=='wire'||wire.parent?.id!=='$$root'||wire.isConnected!==true||wire.locked!==groupRow.body.locked||typeof wire.setLines!=='function'||typeof wire.getAttr!=='function'||canonical(schBody(wire))!==canonical(groupRow.body))throw new Error('SCH_WIRE_TARGET_CHANGED');
  if(!Array.isArray(wire.lines)||!Array.isArray(wire.children))throw new Error('SCH_WIRE_CHILDREN_INVALID');
  const attributes=wire.getAttr();if(!Array.isArray(attributes)||attributes.length!==attrRows.length||new Set(attributes.map(attr=>attr.id)).size!==attributes.length)throw new Error('SCH_WIRE_ATTR_CHANGED');
  if(canonical(wire.lines.map(line=>line.id).sort())!==canonical(rows.map(row=>row.id).sort()))throw new Error('SCH_WIRE_LINES_CHANGED');
@@ -70632,10 +70754,10 @@ var init_validation_registry = __esm({
       sourceRevisionReviews: [{
         path: "schematic-native-wire.ts",
         historicalSha256: "13db7218226c6636c51136ea9b96fc99a4bb784ad21ba10731d81ecd25e3a837",
-        reviewedSha256: "dc497d091b084139e7565bdaf0988ec5e896fba99aba7155b73028b221fefc40",
-        reviewedAt: "2026-10-11",
-        scope: "historical-generator-without-flatGuard-only;new-sealed-wire-live-unvalidated",
-        reference: "docs/api-coverage-164600-release-2026-10-11.md#historical-wire-source-review"
+        reviewedSha256: "a4336c2fae96b142a50cdfbba722e35f3456ef290847c937d23292db8f298ec9",
+        reviewedAt: "2026-10-12",
+        scope: "historical-explicit-false-profile-only;omitted-lock-and-sealed-wire-live-unvalidated",
+        reference: "docs/api-coverage-220050-release-2026-10-12.md#historical-wire-source-review"
       }],
       fixture: {
         category: "disposable-schematic-validation",
@@ -70653,7 +70775,8 @@ var init_validation_registry = __esm({
         "no-sibling-operation-validation",
         "no-blanket-native-shape-or-style-coverage",
         "no-runtime-admission-or-mutation-authority",
-        "no-flat-wire-reroute-v1-live-validation"
+        "no-flat-wire-reroute-v1-live-validation",
+        "no-omitted-lock-live-validation"
       ]
     }];
   }
@@ -94798,7 +94921,6 @@ var init_extension_api_coverage = __esm({
     };
     lossyReaders = {
       "sch_PrimitivePin.getAll": "The installed pin enumeration catches RPC and required-attribute projection errors as an empty array, so failure is indistinguishable from an empty pin inventory. Explicit-ID get and ID enumeration rethrow errors, but a complete equivalent still needs independent native membership parity.",
-      "sys_FontManager.getFontsList": "The installed wrapper catches native failures and returns an empty array, so a failed read is indistinguishable from an empty font set.",
       "sch_PrimitiveBus.get": "The installed callback wrapper catches RPC errors and returns undefined when no callback result is retained. A failed read is indistinguishable from a missing bus.",
       "sch_PrimitiveBus.getAll": "The installed callback wrapper catches RPC errors and returns an empty array, so failure is indistinguishable from an empty bus inventory.",
       "sch_PrimitiveBus.getAllPrimitiveId": "The installed callback wrapper catches errors as an empty array; no exact bus identity reader is implemented.",
@@ -97153,7 +97275,7 @@ var init_src = __esm({
       "easyeda_control_design",
       {
         title: "Edit and verify a typed EasyEDA design transaction",
-        description: "Apply one typed design operation, independently verify native records, then explicitly commit with save/reopen or restore the exact unsaved baseline. Type-1 schematic edits admit only sealed single-page stored attribute/text display batches; generic compiled-topology edits remain blocked. Inspect exact coverage and pending live-validation limits. A retained contained runtime is required; arbitrary JavaScript is never accepted.",
+        description: "Apply one typed design operation, independently verify native records, then explicitly commit with save/reopen or restore the exact unsaved baseline. Type-1 schematic edits admit sealed single-page stored attribute/text display batches and a separate existing named orthogonal wire reroute profile; generic compiled-topology edits remain blocked. Inspect exact coverage and pending live-validation limits. A retained contained runtime is required; arbitrary JavaScript is never accepted.",
         inputSchema: { request: designRequestSchema },
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
       },
@@ -97338,7 +97460,7 @@ var init_src = __esm({
       "easyeda_control_sdk_read",
       {
         title: "Read reviewed EasyEDA SDK methods",
-        description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity, property-name, Pin-getter, Text, Wire/Bus, filtered PCB net-membership and PCB identity-type observations, plus native active-layer identity with public layer fields; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
+        description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity, property-name, Pin-getter, Text, Wire/Bus, configured font titles, filtered PCB net-membership and PCB identity-type observations, plus native active-layer identity with public layer fields; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
         inputSchema: {
           request: external_exports.unknown().pipe(publicSdkReadRequestSchema),
           expectedContext: contextSchema2,
