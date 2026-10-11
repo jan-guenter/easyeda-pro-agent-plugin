@@ -92,6 +92,28 @@ change use the ordinary rebind and target recovery first. The retained fixture
 recovery and fresh 16-document wire lifecycle completed Sept25. This is a
 narrow source/lifecycle profile, not blanket permission for wire changes.
 
+### Retained PCB text creation Save
+
+For `pcb.text.create`, reconciliation can reuse the original six sealed phases
+and exactly one successful Save/close/reopen acknowledgment. It checks fresh
+source, complete durable records, peer raw histories, checkpoint stability and
+the pinned native decoder implementation. It does not create text, regenerate
+an ID, navigate or Save. Missing or conflicting evidence stays a review stop.
+Consumed-Save text modification and deletion are not covered by this path.
+
+Creation profile v2 requires exact explicit-black source and storage. The legacy
+v1 exception accepts only one original black STRING followed by the reserved
+null STRING, with its full raw creation suffix and historical decode order
+proved. Components/templates, mixed global FONT/BLOB families and every other
+source or durable change refuse. The journal's original null intent stays
+unchanged; the observed black export is separate evidence, never normalization.
+
+This is read-only completion, not permission for a later inverse or text edit.
+Use a fresh clean disposable target for v2 lifecycle validation unless a separate
+strict preflight proves that a later write will preserve the legacy stored null.
+Do not delete the recovered text, repeat Save or repair its color automatically.
+Source/offline tests do not yet establish connected recovery success.
+
 ## Native UI failures
 
 A native input failure may report `dispatched:true`; that is uncertainty, not permission to repeat a click, key or import. Reinspect the exact owned window and affected design when bridge quarantine permits it. UI inspection is not a save/reopen or connectivity proof. `observed-unowned` process binding supports native bootstrap but never substitutes for retained Job authority.

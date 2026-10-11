@@ -19684,19 +19684,25 @@
           "tool": "easyeda_control_design",
           "selector": "pcb.text.create",
           "implementation": "native-task-equivalent",
-          "scope": "One project-owned type-3 standalone top-silkscreen default-font STRING addition or unlocked exact-ID removal. Creation has explicit x/y/text/fontSize/strokeWidth and a facade-reserved identity sealed with the prepared program before dispatch; no caller ID or native public-wrapper generation claim. Exact source/peer proof, captured frame, original acknowledgment and saved-project proof remain mandatory. Creation inverse deletes only its retained original identity; deletion has no inverse. No regeneration or redispatch during recovery, component ATTR, inherited text, fonts/styles/layers outside the conservative profile, pours or generated copper. Not public-wrapper parity or connected lifecycle validation.",
+          "scope": "One project-owned type-3 standalone top-silkscreen default-font STRING addition or unlocked exact-ID removal. Creation has explicit x/y/text/fontSize/strokeWidth and a facade-reserved identity sealed with the prepared program before dispatch; no caller ID or native public-wrapper generation claim. Creation profile v2 fixes specialColor to explicit native-UI-default #000000; existing null/black values remain distinct and unchanged. Exact source/peer proof, captured frame, original acknowledgment and saved-project proof remain mandatory. Creation inverse deletes only its retained original identity; deletion has no inverse. No regeneration or redispatch during recovery, component ATTR, inherited text, fonts/styles/layers outside the conservative profile, pours or generated copper. Not public-wrapper parity or connected lifecycle validation. Creation-only retained-Save reconciliation requires the original six sealed phases and one successful Save/close/reopen acknowledgment. Exact v2 source, or the narrowly proven legacy v1 two-STRING cached-decoder case, may finish by read-only full-project proof. Legacy storage stays null, observed export stays black, and no Save, navigation or creation is repeated. Missing evidence or other deltas refuse.",
           "source": [
             "pcb-text-lifecycle.ts",
             "pcb-text-lifecycle-runtime.ts",
             "pcb-text-action.ts",
             "pcb-exact-frame.ts",
             "design-action.ts",
-            "design-execution.ts"
+            "design-execution.ts",
+            "pcb-text-retained-save.ts",
+            "pcb-text-reload-history.ts",
+            "native-history.ts"
           ],
           "tests": [
             "pcb-text-lifecycle.test.ts",
             "pcb-text-action.test.ts",
-            "design-persistence.test.ts"
+            "design-persistence.test.ts",
+            "pcb-text-retained-save.test.ts",
+            "pcb-text-retained-save-coordinator.test.ts",
+            "pcb-text-reload-history.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "available-with-runtime-guards",
@@ -19786,7 +19792,7 @@
           "tool": "easyeda_control_design",
           "selector": "pcb.text.delete",
           "implementation": "native-task-equivalent",
-          "scope": "One project-owned type-3 standalone top-silkscreen default-font STRING addition or unlocked exact-ID removal. Creation has explicit x/y/text/fontSize/strokeWidth and a facade-reserved identity sealed with the prepared program before dispatch; no caller ID or native public-wrapper generation claim. Exact source/peer proof, captured frame, original acknowledgment and saved-project proof remain mandatory. Creation inverse deletes only its retained original identity; deletion has no inverse. No regeneration or redispatch during recovery, component ATTR, inherited text, fonts/styles/layers outside the conservative profile, pours or generated copper. Not public-wrapper parity or connected lifecycle validation.",
+          "scope": "One project-owned type-3 standalone top-silkscreen default-font STRING addition or unlocked exact-ID removal. Creation has explicit x/y/text/fontSize/strokeWidth and a facade-reserved identity sealed with the prepared program before dispatch; no caller ID or native public-wrapper generation claim. Creation profile v2 fixes specialColor to explicit native-UI-default #000000; existing null/black values remain distinct and unchanged. Exact source/peer proof, captured frame, original acknowledgment and saved-project proof remain mandatory. Creation inverse deletes only its retained original identity; deletion has no inverse. No regeneration or redispatch during recovery, component ATTR, inherited text, fonts/styles/layers outside the conservative profile, pours or generated copper. Not public-wrapper parity or connected lifecycle validation. Consumed-Save deletion has no retained-Save recovery route.",
           "source": [
             "pcb-text-lifecycle.ts",
             "pcb-text-lifecycle-runtime.ts",

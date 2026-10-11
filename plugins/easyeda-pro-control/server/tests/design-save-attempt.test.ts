@@ -118,7 +118,7 @@ void test("legacy successful returns, durable intents and dispatch phases remain
   assert.throws(() => attempts.hasLegacyDesignSaveEvidence({ ...current, saveAttemptProtocol: "unknown" }));
 });
 
-void test("ordinary PCB geometry, text lifecycle, rules and stack failed Saves cannot reconcile to commit-ready or dispatch a second Save", async () => {
+void test("PCB geometry, text lifecycle, rules and stack failed Saves without retained proof cannot become commit-ready or dispatch a second Save", async () => {
   const operations = [{ id: "line", action: "pcb.line.modify", target: { primitiveId: "line" }, patch: { lineWidth: 8 } },
     { id: "text-create", action: "pcb.text.create", properties: { x: 0, y: 0, text: "Fixture1", fontSize: 120, strokeWidth: 8 } },
     { id: "text-delete", action: "pcb.text.delete", target: { primitiveId: "a".repeat(16) } },
@@ -142,9 +142,20 @@ void test("ordinary PCB geometry, text lifecycle, rules and stack failed Saves c
     const engine = new engines.EasyedaControlEngine({ callTool: (): Promise<unknown> => { calls.push("unexpected-dispatch"); return Promise.reject(new Error("No native calls allowed")); } });
     await engine.controlFingerprintPromise;
     const executor = new executors.DesignExecutor(engine);
+    let runtimeChecks = 0;
+    if (operation.action === "pcb.text.create") {
+      // Creation now has a retained-Save proof. Isolate successful read-only
+      // Runtime admission to reach its real six-phase evidence gate; this
+      // Fixture has only the consumed intent and no successful Save return.
+      // No native read/write dispatcher is mocked into success.
+      Object.defineProperty(executor, "assertRuntime", { value: (): Promise<void> => {
+        runtimeChecks += 1; return Promise.resolve();
+      } });
+    }
     for (const state of ["commit-needs-recovery", "runtime-rebound-needs-reconciliation", "applied-unsaved"]) {
       journal.state = state; await artifacts.updateOperation(journal);
-      await assert.rejects(executor.reconcile(operationId), /Save was already attempted/u);
+      await assert.rejects(executor.reconcile(operationId), operation.action === "pcb.text.create"
+        ? /PCB text original lifecycle phases are missing or out of order\./u : /Save was already attempted/u);
       await assert.rejects(executor.commit(operationId), /Save was already attempted/u);
       await assert.rejects(executor.rollback(operationId), /Save was already attempted/u);
       await assert.rejects(executor.repairLayoutNetLabels(operationId, true), /Save was already attempted/u);
@@ -152,8 +163,12 @@ void test("ordinary PCB geometry, text lifecycle, rules and stack failed Saves c
       await assert.rejects(executor.repairLayoutWireGroups(operationId, true), /Save was already attempted/u);
       const retained = await artifacts.loadOperation(operationId);
       assert.equal(retained.planHash, journal.planHash); assert.equal(retained["state"], state);
+      assert.equal(retained["saved"], false); assert.equal(retained["reopened"], false);
+      assert.deepEqual(await attempts.inspectDesignSaveAttempts({ ...journal, after: source }),
+        { attempted: true, intentCount: 1, provenNotDispatchedCount: 0 });
       assert.deepEqual(calls, []);
     }
+    assert.equal(runtimeChecks, operation.action === "pcb.text.create" ? 3 : 0);
     journal.state = "completed"; await artifacts.updateOperation(journal);
   }
 });

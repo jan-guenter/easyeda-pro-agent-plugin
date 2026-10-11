@@ -284,6 +284,16 @@ void test("PCB text create/delete discovery retains the separate type-3 identity
     assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
     assert.match(route.scope, /facade-reserved identity sealed with the prepared program before dispatch/u);
     assert.match(route.scope, /deletion has no inverse/u); assert.match(route.scope, /No regeneration or redispatch/u);
+    assert.match(route.scope, /Creation profile v2 fixes specialColor to explicit native-UI-default #000000/u);
+    if (method === "create") {
+      assert.match(route.scope, /original six sealed phases and one successful Save\/close\/reopen acknowledgment/u);
+      assert.match(route.scope, /Legacy storage stays null, observed export stays black/u);
+      assert.ok(route.source.includes("pcb-text-retained-save.ts"));
+      assert.ok(route.tests.includes("pcb-text-retained-save-coordinator.test.ts"));
+    } else {
+      assert.match(route.scope, /Consumed-Save deletion has no retained-Save recovery route/u);
+      assert.equal(route.source.includes("pcb-text-retained-save.ts"), false);
+    }
     assert.ok(route.source.includes("pcb-text-lifecycle.ts")); assert.ok(route.tests.includes("pcb-text-lifecycle.test.ts"));
     const query = { family: "design", operationAction: route.selector, includeSchemas: true };
     assert.deepEqual(route.inputDiscovery, { tool: "easyeda_control_api", arguments: { request: { action: "operations", query } } });

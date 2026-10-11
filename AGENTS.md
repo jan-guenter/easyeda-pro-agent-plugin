@@ -39,6 +39,28 @@ Last updated: 2026-10-11 (Europe/Berlin)
   type-aware lint have zero diagnostics. No connected reader proof is claimed.
   Inventory774paths/192public/97native/2lifecycle/8blocked/475omitted. PR9 remains draft.
   Production and its project record remain untouched.
+- Text recovery8787ef2 integratedas0febb80. Root and independent review accept
+  v2 explicitblack creation and original-six-phase retained-Save reconciliation.
+  Legacy proof keeps storednull/observedblack separate, checks all physical ID
+  history and exact DOCHEAD/STRING suffix, excludes component/template decoding
+  and admits only exact global FONT/BLOB families. Generic comparisons unchanged.
+  No inverse/Save/navigation/creation is dispatched by recovery. New source is
+  not yet installed or connected-validated; originaljournalc92a61b7 stays unresolved.
+- Immutable historical-fixture proof4faba00a passed once with candidate source
+  2dd9e358:11documents/10peers/131originaltargetrecords exact, oldestoriginal
+  ticket257 precedescreated265. All16listedprivateinputs/1267554bytes independently
+  rehashed; journalcac825fe unchanged. Failed helper-only context-shape assertion
+  retained; corrected helperba51ec67 compares exact expected/observed shapes.
+  This pure proof is not live reconciliation. Private report:
+  text-recovery-offline-150000-q3nBSO/02-candidate-proof-v3.json.
+- Final local150000 verification passes3425facadetests/oneplatformskip/zerofailures
+  and424bridge tests. Fulltypes/type-awarelint0diagnostics, cleaninstall151registry
+  signatures/40attestations/audit0; repository/privacy, package, sevenskills,
+  eightofficialvalidators/actionlint/doctor pass. Facade/sanitizer/syntheticbridge
+  reproduce exactly. Source192/df7a4f32,runtime5a487af9,manifest996d4e86;
+  externalpins unchanged. Finalfacadelog51de1e0d. Two stale test expectations
+  corrected with no productionguard changes; finalfullsuite rerunpassed. Git/CI/
+  officialinstallation remainpending. See docs/api-coverage-150000-release-2026-10-11.md.
 
 ### Candidate131000 published and installed; fresh host required
 

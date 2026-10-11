@@ -36,7 +36,11 @@ source/inventory agreement, including unassigned objects. Missing or unsupported
 IDs refuse rather than reporting false absence. The native active-layer reader
 matches the native document source's selected layer to the complete public layer list.
 It preserves raw color strings, including malformed values returned by EasyEDA.
-The fixed read catalog has 175 routes, including
+The selected PCB object equivalent preserves exact selection order and returns
+complete native-source records for supported root objects. It refuses unsupported
+or generated selections instead of returning a partial array; public primitive
+instances and persistence are not claimed.
+The fixed read catalog has 176 routes, including
 bounded polygon splitting that preserves input source arrays and their order. It
 accepts no arbitrary method path, caller code, callbacks, navigation or writes.
 None of these observations replaces complete design or persistence proof.
@@ -67,12 +71,19 @@ paths. Their scopes and remaining connected acceptance are explicit; a public
 acknowledgment alone never completes a lifecycle operation. A separate closed
 PCB/schematic-container rename adapter requires one other clean PCB, complete
 checkpoint invariants and independent DOM checks. It preserves the original
-acknowledgment through recovery, performs no Save and has no connected acceptance
-yet. Creation and container rename now preserve every raw per-document history
+acknowledgment through recovery and performs no Save. Installed120000 passed
+forward/reverse PCB and schematic-container rename and one free-PCB creation;
+those results do not admit a later generation. Creation and container rename preserve every raw per-document history
 occurrence. Closed free-PCB creation requires an absent board name and creates
 only META, with no canvas initialization, open, Save or automatic inverse.
-A separate narrow PCB text modifier admits existing top-silkscreen default-font
-x/y/text changes. Both additions need connected validation. The
+A separate free-schematic route creates only a closed META container, with no
+page, template, canvas or Save. Standalone PCB text supports bounded modify,
+create and delete. Installed131000 passed forward/reverse modification, but its
+v1 create journal remains unresolved after a cached null-to-black reload.
+New v2 creation fixes explicit black; creation-only retained-Save recovery proves
+the original storage and observed reload separately without another Save.
+New schematic creation, selected-object reading and text lifecycle/recovery still
+need connected validation. See [candidate150000](docs/api-coverage-150000-release-2026-10-11.md). The
 [remaining-effects review](docs/api-remaining-method-effects-2026-10-11.md)
 records blockers for layer selection, page ordering, pad-pair groups and broader
 PCB text cases. A separate checkpoint-bound flat-topology

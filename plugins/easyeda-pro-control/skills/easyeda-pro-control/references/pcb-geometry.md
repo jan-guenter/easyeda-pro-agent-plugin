@@ -54,7 +54,7 @@ These are current implementation limits, not permanent SDK limits.
 
 Modification changes only x/y/text. Creation takes explicit x/y/text/fontSize/
 strokeWidth and fixes layer 3, default font, LEFT_BOTTOM, zero angle, unlocked,
-zIndex -1 and null specialColor. The facade reserves its ID once and journals it
+zIndex -1 and explicit black specialColor in creation profile v2. The facade reserves its ID once and journals it
 with the generated program before dispatch. Recovery must reuse that original
 identity for proof, never generate or dispatch another creation. The creation
 inverse deletes that exact ID. Deletion takes one existing ID and has no
@@ -63,7 +63,13 @@ history.
 
 The adapter preserves component ATTR ownership and all peer records, binds one
 captured PCB frame across awaited reads. Its synthetic tests are not connected
-Save/reopen evidence. A native disposable text fixture exposed two unused-layer
+Save/reopen evidence. Installed131000 passed one forward modification and an
+explicit reverse modification with complete saved/reopened project proof.
+Its v1 creation retained one successful Save/close/reopen, then refused the new
+STRING's null-to-black export after reload. That journal is still unresolved;
+v2 creation, deletion and retained-Save recovery have not passed connected tests.
+See [creation recovery](failure-recovery.md#retained-pcb-text-creation-save) before
+handling an already consumed Save. A native disposable text fixture exposed two unused-layer
 color differences between saved records and reopened FileSource on the pinned
 build. Keep both observations. The maintained baseline checks intended target
 fields; it does not require every unchanged exported body to equal storage.

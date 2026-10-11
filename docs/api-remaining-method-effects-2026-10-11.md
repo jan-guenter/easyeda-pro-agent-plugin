@@ -36,7 +36,11 @@ the partially mutating public wrapper. Installed131000 passed forward and
 explicit reverse modification with complete saved/reopened proof. Creation
 consumed one successful Save/close/reopen but stopped on a new STRING's null-to-
 black reload difference; its original journal remains unresolved. Deletion has
-not been live-tested. Source-only correction and recovery are under review.
+not been live-tested. The reviewed source correction creates explicit black
+in profile v2. Creation-only retained-Save recovery preserves original null
+storage and proves the exact legacy cached-decoder effect separately. It never
+repeats Save, navigation or creation. Source/offline acceptance is not connected
+recovery completion; see [the reload investigation](pcb-text-cached-reload-recovery-2026-10-11.md).
 The broader finding below still applies to unimplemented public argument branches.
 
 | Method or family | Demonstrated issue | Work needed before admission |
