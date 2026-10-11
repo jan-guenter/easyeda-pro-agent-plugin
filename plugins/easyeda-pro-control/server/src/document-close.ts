@@ -125,7 +125,7 @@ function observer(plan: DocumentClosePlan): string {
 ${DEVICE_NATIVE_HOST_GUARD}
 const localUI=globalThis.UI,outerUI=globalThis.top?.UI;if(localUI!=null&&outerUI!=null&&localUI!==outerUI)throw new Error('AMBIGUOUS_UI');
 const tabs=(localUI??outerUI)?.tabBar,timers=globalThis.window?.top,project=eda.dmt_Project,select=eda.dmt_SelectControl;
-if(typeof tabs?.getFilterTabs!=='function'||typeof tabs.getActiveTab!=='function'||typeof tabs.hasTabUnSaved!=='function'||typeof tabs.isTabUnSaved!=='function'||typeof tabs.getTabContainer!=='function'||typeof timers?.document?.getElementById!=='function'||typeof timers.setTimeout!=='function'||typeof timers.clearTimeout!=='function'||typeof project?.getCurrentProjectInfo!=='function'||typeof select?.getCurrentDocumentInfo!=='function')throw new Error('APIS');
+if(typeof tabs?.getFilterTabs!=='function'||typeof tabs.getActiveTab!=='function'||typeof tabs.getContainerInfo!=='function'||typeof tabs.hasTabUnSaved!=='function'||typeof tabs.isTabUnSaved!=='function'||typeof tabs.getTabContainer!=='function'||typeof timers?.document?.getElementById!=='function'||typeof timers.setTimeout!=='function'||typeof timers.clearTimeout!=='function'||typeof project?.getCurrentProjectInfo!=='function'||typeof select?.getCurrentDocumentInfo!=='function')throw new Error('APIS');
 const fail=()=>{throw new Error('STATE');},record=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 ${NATIVE_PROJECT_PLACEHOLDER_PREDICATE}
 const identity=(value,key,alias)=>{if(!record(value))fail();if(value[key]!==undefined&&value[alias]!==undefined&&value[key]!==value[alias])fail();return value[key]??value[alias];};
@@ -145,6 +145,8 @@ const ids=tabs.containerIds;if(!Array.isArray(ids)||ids.length!==1||typeof ids[0
 if(containerId!==undefined&&containerId!==ids[0])fail();containerId=ids[0];
 const tree=tabs.containerTree;if(!record(tree)||tree.id!==containerId||tree.children!==undefined)fail();
 const all=tabs.getFilterTabs([]);if(!Array.isArray(all)||all.length<1||all.length>4)fail();
+// deleteTab uses per-container activeTabId, not the global getActiveTab value.
+const container=tabs.getContainerInfo(containerId);if(!record(container)||container.activeTabId!==PLAN.active.tabId||!Array.isArray(container.tabs)||container.tabs.length!==all.length||container.tabs.some((tab,index)=>tab!==all[index]))fail();
 let active=0,target=0,start=0,placeholder=0;const seen=new Set();
 for(const tab of all){if(!record(tab)||typeof tab.tabId!=='string'||seen.has(tab.tabId))fail();seen.add(tab.tabId);
 if(tab.tabId==='0'){if(++placeholder!==1||!isNativeProjectPlaceholder(tab)||tabs.isTabUnSaved('0')!==false)fail();continue;}

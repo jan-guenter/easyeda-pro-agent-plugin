@@ -9,7 +9,8 @@ import { materializeNativeHistory } from "../src/native-history.ts";
 import { libraryOperationSchema } from "../src/library-operations.ts";
 import { libraryRuntimeFailureCategory } from "../src/library-runtime-guard.ts";
 
-function execute(expression: string, eda: unknown, nativeGlobal: unknown = globalThis): Promise<unknown> {
+const SAFE_NATIVE_GLOBAL = { ...globalThis, window: { top: { localStorage: { getItem: (): string => '{"pcbCommandTab":true}' } } } };
+function execute(expression: string, eda: unknown, nativeGlobal: unknown = SAFE_NATIVE_GLOBAL): Promise<unknown> {
   // oxlint-disable-next-line typescript/no-implied-eval, no-new-func -- Execute only the fixed compiler output against an isolated API fixture, never user code.
   const run = new Function("eda", "globalThis", `return ${expression};`);
   // oxlint-disable-next-line typescript/no-unsafe-call -- The fixture executes the compiler-owned function and immediately confines its result to unknown.
@@ -30,6 +31,22 @@ function history(documents: readonly NativeDocumentSnapshot[]): NativeHistorySna
 const exportOperation = { id: "export", action: "export.pcb.dsn", fileName: "board", maxBytes: 1000 };
 
 void describe("typed library execution", () => {
+  void it("PCB and footprint opening guard before dispatch and after the opening acknowledgment", async () => {
+    for (const type of [3, 4] as const) {
+      const operation = type === 3 ? { id: "open", action: "document.open", target: { uuid: "asset" } } :
+        { id: "open", action: "library.footprint.open", libraryUuid: "project", target: { uuid: "asset" } };
+      const scope = { projectUuid: "project", uuid: "asset", documentType: type, ...(type === 4 ? { metadataOwnerUuid: "owner" } : {}) };
+      for (const late of [false, true]) {
+        const calls: string[] = [];
+        let preference = late;
+        const open = (): Promise<string> => { calls.push("open"); preference = false; return Promise.resolve("asset@project"); };
+        const eda = { dmt_EditorControl: { openDocument: open, openLibraryDocument: open, activateDocument: (): never => assert.fail("Unsafe activation") } };
+        const native = { window: { top: { localStorage: { getItem: (): string => JSON.stringify({ pcbCommandTab: preference }) } } } };
+        await assert.rejects(execute(buildLibraryExecutionExpression(operation, false, scope), eda, native), /PCB_NAVIGATION_PREFERENCES_UNSAFE/u);
+        assert.deepEqual(calls, late ? ["open"] : []);
+      }
+    }
+  });
   void it("opens symbols through the native library route without the late tabChange wait", async () => {
     const operation = { id: "symbol-open", action: "library.symbol.open", libraryUuid: "project", target: { uuid: "symbol" } };
     const scope = { projectUuid: "project", uuid: "symbol", documentType: 2 as const, metadataOwnerUuid: "owner" };

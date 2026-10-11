@@ -69,6 +69,8 @@ export function runtimeFixture(value = fixture()) {
   } } };
   let digests = 0;
   const runtime = { SCH: { docMemoryManager: manager }, gVars: host, Blob, DecompressionStream, Uint8Array, DataView, TextDecoder, TextEncoder, Map, Set, atob, btoa,
+    UI: { tabBar: { containerIds: ["main"], containerTree: { id: "main" }, getActiveTab: (): string => context.document.tabId,
+      getFilterTabs: (): unknown[] => [{ tabId: context.document.tabId, data: { doctype: 1, pid: projectUuid } }] } },
     crypto: { subtle: { digest: async (algorithm: string, bytes: Uint8Array<ArrayBuffer>): Promise<ArrayBuffer> => {
       const result = await webcrypto.subtle.digest(algorithm, bytes); digests += 1; hooks.digest(digests); return result;
     } } },

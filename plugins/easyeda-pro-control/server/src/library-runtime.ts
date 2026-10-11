@@ -15,6 +15,7 @@ import { projectSymbolCreateOperation } from "./project-symbol-create.ts";
 import { documentContainerRenameOperation } from "./document-container-rename.ts";
 import { projectPcbCreateOperation } from "./project-pcb-create.ts";
 import { projectSchematicCreateOperation } from "./project-schematic-create.ts";
+import { PCB_NAVIGATION_PREFERENCE_GUARD } from "./pcb-navigation-preferences.ts";
 
 /** Single-dispatch files stay below the existing escaped JSON transport limit. */
 export const LIBRARY_FILE_EXECUTION_MAX_BYTES = 2 * 1024 * 1024;
@@ -115,6 +116,7 @@ try {
 const api = eda[${JSON.stringify(call.api)}];
 const method = api?.[${JSON.stringify(call.method)}];
 if (typeof method !== "function") throw new Error("LIBRARY_NATIVE_METHOD_MISSING");
+${kind === "document-open" ? `${PCB_NAVIGATION_PREFERENCE_GUARD}\nconst pcbOpenPreferences=()=>{if([3,4].includes(${JSON.stringify(openScope?.documentType ?? null)}))assertPcbNavigationPreferences();};\npcbOpenPreferences();` : ""}
 stage = 'api-call';
 const result = await method.call(api,${args});
 stage = 'result-check';
@@ -144,6 +146,7 @@ if (${JSON.stringify(kind)} === "file-export") {
   const editor = eda.dmt_EditorControl;
   stage = 'activate';
   if (typeof editor?.activateDocument !== "function") throw new Error("LIBRARY_OPEN_ACTIVATION_FAILED");
+  pcbOpenPreferences();
   const activated = await editor.activateDocument(result);
   if (typeof activated !== 'boolean') throw new Error("LIBRARY_OPEN_ACTIVATION_FAILED");
   const scope = ${JSON.stringify(openScope ?? null)};

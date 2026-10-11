@@ -282,7 +282,7 @@ function failingNativeEnvironment(stage: string, error: unknown): { environment:
   let document: Value | undefined, project: Value | undefined;
   const failAt = (boundary: string): void => { if (stage === boundary) { throw error; } };
   const active = { ...CONTEXT.document, parentProjectUuid: TARGET.projectUuid };
-  return { calls, environment: { TextDecoder, Uint8Array, window: { top: { setTimeout, clearTimeout } }, eda: {
+  return { calls, environment: { TextDecoder, Uint8Array, window: { top: { setTimeout, clearTimeout, localStorage: { getItem: (): string => '{"pcbCommandTab":true}' } } }, eda: {
     dmt_Project: {
       getCurrentProjectInfo: (): Promise<unknown> => { failAt("project-info"); return Promise.resolve(project); },
       openProject: (): Promise<boolean> => { calls.push("open-project"); project = CONTEXT.project; failAt("open-project"); return Promise.resolve(true); },

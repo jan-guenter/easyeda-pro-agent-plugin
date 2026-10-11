@@ -4,7 +4,8 @@ import { runInNewContext } from "node:vm";
 import { buildNativeDocumentCloseFunction, buildNativeDocumentOpenFunction } from "../src/native-document-lifecycle.ts";
 import type { NativeDocumentLifecycleScope } from "../src/native-document-lifecycle.ts";
 
-async function fixture(documentType: 1 | 2 | 3 | 4, mode: "success" | "timeout" | "shared" | "wrong-owner" = "success"): Promise<{ result?: unknown; error?: unknown; calls: string[] }> {
+async function fixture(documentType: 1 | 2 | 3 | 4, mode: "success" | "timeout" | "shared" | "wrong-owner" = "success",
+  preferenceFailure?: "initial" | "close-context" | "before-open" | "open-ack" | "before-activate"): Promise<{ result?: unknown; error?: unknown; calls: string[] }> {
   const calls: string[] = [], tab = "document@project";
   const scope: NativeDocumentLifecycleScope = { projectUuid: "project", documentUuid: "document", documentType,
     ...(documentType === 2 || documentType === 4 ? { metadataOwnerUuid: "owner" } : {}) };
@@ -13,6 +14,7 @@ async function fixture(documentType: 1 | 2 | 3 | 4, mode: "success" | "timeout" 
   let polls = 0, timerId = 0;
   const timers = new Map<number, () => void>();
   let open = true, owner = "owner";
+  let contextReads = 0, preferencesSafe = preferenceFailure !== "initial";
   const element = (): { tagName: string; isConnected: boolean; getAttribute: (key: string) => string | null } => ({
     tagName: documentType <= 2 ? "DIV" : "IFRAME", isConnected: true,
     getAttribute: (key) => { if (key === "c_dbid") { return tab; } if (key === "c_doctype") { return String(documentType); } return null; },
@@ -21,7 +23,9 @@ async function fixture(documentType: 1 | 2 | 3 | 4, mode: "success" | "timeout" 
   const host = { currentProject: { projectId: "project" }, messageBus: {
     rpcCall: (method: string, argument: unknown): Promise<unknown> => {
       if (method === "getModelTabId") { assert.equal(argument, tab); return Promise.resolve({ message: mode === "shared" ? "alias@project" : tab }); }
-      assert.equal(method, "isOpenTab"); assert.equal(JSON.stringify(argument), JSON.stringify([tab])); return Promise.resolve({ message: open });
+      assert.equal(method, "isOpenTab"); assert.equal(JSON.stringify(argument), JSON.stringify([tab]));
+      if (preferenceFailure === "before-open" && !open || preferenceFailure === "before-activate" && calls.includes("open-once")) { preferencesSafe = false; }
+      return Promise.resolve({ message: open });
     },
     // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Models the pinned native message-bus subscription contract.
     subscribe: (event: string, callback: (value: unknown) => void): { cancel: () => void } => {
@@ -31,6 +35,7 @@ async function fixture(documentType: 1 | 2 | 3 | 4, mode: "success" | "timeout" 
   } };
   const openDocument = (): Promise<string> => {
     calls.push("open-once"); assert.equal(open, false); assert.equal(frame, null);
+    if (preferenceFailure === "open-ack") { preferencesSafe = false; }
     owner = "";
     setImmediate(() => {
       frame = element(); open = true;
@@ -40,6 +45,7 @@ async function fixture(documentType: 1 | 2 | 3 | 4, mode: "success" | "timeout" 
     return Promise.resolve(tab);
   };
   const environment = { gVars: host, window: { top: {
+    localStorage: { getItem: (): string => JSON.stringify({ pcbCommandTab: preferencesSafe }) },
     document: { getElementById: (id: string): unknown => { assert.equal(id, `frame_${tab}`); return frame; } },
     setTimeout: (callback: () => void, delay: number): number => {
       assert.ok(delay === 15_000 || delay === 50);
@@ -55,7 +61,8 @@ async function fixture(documentType: 1 | 2 | 3 | 4, mode: "success" | "timeout" 
     clearTimeout: (timer: number): void => { if (timers.get(timer) === timeout) { timeout = undefined; } timers.delete(timer); },
   } }, eda: {
     dmt_Project: { getCurrentProjectInfo: (): Promise<unknown> => Promise.resolve({ uuid: "project" }) },
-    dmt_SelectControl: { getCurrentDocumentInfo: (): Promise<unknown> => Promise.resolve({ uuid: "document", documentType, tabId: tab, parentLibraryUuid: owner }) },
+    dmt_SelectControl: { getCurrentDocumentInfo: (): Promise<unknown> => { contextReads += 1; if (preferenceFailure === "close-context" && contextReads === 2) { preferencesSafe = false; }
+      return Promise.resolve({ uuid: "document", documentType, tabId: tab, parentLibraryUuid: owner }); } },
     dmt_EditorControl: {
       closeDocument: (id: string): Promise<boolean> => {
         assert.equal(id, tab); calls.push("close-once");
@@ -97,4 +104,26 @@ void test("close timeout, shared model and changed library owner cannot become a
   const wrongOwner = await fixture(2, "wrong-owner");
   assert.match(String(wrongOwner.error), /NATIVE_LIFECYCLE_OPEN_TIMEOUT/u);
   assert.equal(wrongOwner.calls.filter((call) => call === "open-once").length, 1);
+});
+
+void test("every editor refuses before close when preferences are unsafe or change in its final context await", async () => {
+  for (const type of [1, 2, 3, 4] as const) {
+    for (const phase of ["initial", "close-context"] as const) {
+      const result = await fixture(type, "success", phase);
+      assert.match(String(result.error), /PCB_NAVIGATION_PREFERENCES_UNSAFE/u);
+      assert.deepEqual(result.calls, phase === "initial" ? [] : ["cancel"]);
+    }
+  }
+});
+
+void test("PCB and footprint recheck before open and after awaited open/readiness without repeating any dispatch", async () => {
+  for (const type of [3, 4] as const) {
+    for (const phase of ["before-open", "open-ack", "before-activate"] as const) {
+      const result = await fixture(type, "success", phase);
+      assert.match(String(result.error), /PCB_NAVIGATION_PREFERENCES_UNSAFE/u);
+      assert.equal(result.calls.filter((call) => call === "close-once").length, 1);
+      assert.equal(result.calls.filter((call) => call === "open-once").length, phase === "before-open" ? 0 : 1);
+      assert.equal(result.calls.includes("activate"), false);
+    }
+  }
 });

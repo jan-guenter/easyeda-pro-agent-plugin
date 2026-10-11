@@ -5,6 +5,7 @@ import type { NativeDocumentLifecycleScope } from "./native-document-lifecycle.t
 import { buildFlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
 import type { FlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
 import { sha256Json } from "./core.ts";
+import { PCB_NAVIGATION_PREFERENCE_GUARD } from "./pcb-navigation-preferences.ts";
 
 export interface ExpectedContext {
   project?:
@@ -670,6 +671,7 @@ return await (async () => {
   const EXPECTED_UUID = ${jsString(expectedUuid)};
   const EXPECTED_TYPE = ${expectedType};
   const EXPECTED_TAB_ID = ${jsString(expectedTabId)};
+  ${PCB_NAVIGATION_PREFERENCE_GUARD}
   const readDocument = async () => {
     const api = eda.dmt_SelectControl;
     if (!api?.getCurrentDocumentInfo) throw new Error("DMT_SelectControl.getCurrentDocumentInfo unavailable");
@@ -738,7 +740,8 @@ ${flatGuard === undefined ? "" : `  const flatDisplayGuard=await ${buildFlatDisp
   // Invoke save synchronously in this continuation after the second complete
   // exact-guard pass and final context check. The public API exposes no CAS or
   // editor lock, so the runtime-disabled writer still requires connected proof.
-${flatGuard === undefined ? "" : "  flatDisplayGuard.check();\n"}  const savePending = saveDocument();
+${flatGuard === undefined ? "" : "  flatDisplayGuard.check();\n"}  assertPcbLifecyclePreferences(${JSON.stringify(lifecycle)},EXPECTED_TAB_ID);
+  const savePending = saveDocument();
   const saved = await savePending;
   if (saved !== true) throw new Error("document save did not return exactly true");
   const projectUploadBarrier = await ${uploadBarrier};
@@ -796,6 +799,7 @@ export function buildActivateRecoveryTargetCode(
   }
   return `
 return await (async () => {
+  ${PCB_NAVIGATION_PREFERENCE_GUARD}
   const EXPECTED_PROJECT_UUID = ${jsString(expectedProjectUuid)};
   const EXPECTED_UUID = ${jsString(expectedUuid)};
   const EXPECTED_TYPE = ${expectedType};
@@ -815,8 +819,10 @@ return await (async () => {
   let document = await documentApi.getCurrentDocumentInfo();
   let openedOrActivated = false;
   if (uuidOf(document) !== EXPECTED_UUID || typeOf(document) !== EXPECTED_TYPE) {
+    if([3,4].includes(EXPECTED_TYPE))assertPcbNavigationPreferences();
     const targetTab = await editor.openDocument(EXPECTED_UUID);
     if (!targetTab) throw new Error("openDocument could not locate the recovery target");
+    if([3,4].includes(EXPECTED_TYPE))assertPcbNavigationPreferences();
     const activated = await editor.activateDocument(targetTab);
     if (activated !== true) throw new Error("activateDocument could not select the recovery target");
     openedOrActivated = true;
@@ -865,6 +871,7 @@ export function buildReopenOnlyCode(
     ...(metadataOwnerUuid === undefined ? {} : { metadataOwnerUuid }) };
   return `
 return await (async () => {
+  ${PCB_NAVIGATION_PREFERENCE_GUARD}
   const EXPECTED_PROJECT_UUID = ${jsString(expectedProjectUuid)};
   const EXPECTED_UUID = ${jsString(expectedUuid)};
   const EXPECTED_TYPE = ${expectedType};
@@ -889,8 +896,10 @@ return await (async () => {
     throw new Error("active document or tab changed before reopen-only lifecycle call");
   }
   if (uuidOf(before) !== EXPECTED_UUID || typeOf(before) !== EXPECTED_TYPE) {
+    if([3,4].includes(EXPECTED_TYPE))assertPcbNavigationPreferences();
     const targetTab = await editor.openDocument(EXPECTED_UUID);
     if (!targetTab) throw new Error("openDocument could not locate the recovery target");
+    if([3,4].includes(EXPECTED_TYPE))assertPcbNavigationPreferences();
     const activatedTarget = await editor.activateDocument(targetTab);
     if (activatedTarget !== true) throw new Error("activateDocument could not select the recovery target");
     before = await documentApi.getCurrentDocumentInfo();

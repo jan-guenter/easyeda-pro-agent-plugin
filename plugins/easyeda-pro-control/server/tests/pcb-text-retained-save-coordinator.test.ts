@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import vm from "node:vm";
 import { canonicalJson } from "../src/core.ts";
+import { flatTransactionBinding } from "../src/flat-transaction-binding.ts";
 import { verifyPcbTextRetainedSaveAuthority, verifyPcbTextRetainedSaveEffect } from "../src/pcb-text-retained-save.ts";
 import { CREATED, fixture, phase, recolor } from "./pcb-text-retained-save-fixture.ts";
 
@@ -47,7 +48,7 @@ async function harness(legacy = true): Promise<{
     },
     assertContext: (): Promise<void> => { calls.push("context"); return config.contextDrift ? Promise.reject(new Error("Synthetic context drift")) : Promise.resolve(); },
   };
-  const scope = { engine, join, canonicalJson, verifyPcbTextRetainedSaveAuthority, verifyPcbTextRetainedSaveEffect,
+  const scope = { engine, join, canonicalJson, flatTransactionBinding, verifyPcbTextRetainedSaveAuthority, verifyPcbTextRetainedSaveEffect,
     selectDesignPhaseDescriptor: (descriptors: { phase: string }[], name: string): { phase: string } | undefined => {
       const found = descriptors.filter((row) => row.phase === name);
       if (found.length > 1) { throw new Error("Duplicate synthetic phase"); } return found[0];

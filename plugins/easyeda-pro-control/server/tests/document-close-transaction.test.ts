@@ -94,6 +94,8 @@ function fixture(options: Options = {}): { executor: LibraryExecutor; request: L
     return Promise.resolve(input.receiptPath === undefined ? checkpoint(label) : { ...checkpoint(label), ok: !(options.finalBaselineDrift === true && checks === 2), sourceChanged: false, sourceEqualsCheckpoint: true, sourceMatchesReceipt: true, checkpointMatchesReceipt: true });
   });
   const boardFrame = frame("board", 3), targetFrame = frame("footprint", 4);
+  const boardTab = { tabId: "board@project", data: { doctype: 3, pid: "project" } }, footprintTab = { tabId: "footprint@project", data: { doctype: 4, owner: "owner" } };
+  const getTabs = (): unknown[] => [boardTab, ...(present ? [footprintTab] : [])];
   const listeners = new Map<string, (value: unknown) => void>();
   const environment = { TextEncoder, eda: {
     dmt_Project: { getCurrentProjectInfo: (): Promise<unknown> => Promise.resolve(active.project) },
@@ -107,7 +109,7 @@ function fixture(options: Options = {}): { executor: LibraryExecutor; request: L
     messageBus: { rpcCall: (topic: string): Promise<unknown> => { assert.equal(topic, "isOpenTab"); return Promise.resolve({ message: present }); },
       // oxlint-disable-next-line promise/prefer-await-to-callbacks -- Mirrors native subscription delivery and verifies cancellation.
       subscribe: (topic: string, callback: (value: unknown) => void): { cancel: () => void } => { listeners.set(topic, callback); return { cancel: (): void => { listeners.delete(topic); } }; },
-    } }, UI: { tabBar: { getFilterTabs: (): unknown[] => [{ tabId: "board@project", data: { doctype: 3, pid: "project" } }, ...(present ? [{ tabId: "footprint@project", data: { doctype: 4, owner: "owner" } }] : [])],
+    } }, UI: { tabBar: { getFilterTabs: getTabs, getContainerInfo: (): unknown => ({ activeTabId: active.document.tabId, tabs: getTabs() }),
     getActiveTab: (): string => active.document.tabId ?? "", hasTabUnSaved: (): boolean => options.dirty === true, isTabUnSaved: (): boolean => options.dirty === true,
     getTabContainer: (): string => "main", containerIds: ["main"], containerTree: { id: "main" },
   } }, window: { top: { document: { getElementById: (id: string): unknown => { if (id === "frame_board@project") { return boardFrame; } return present ? targetFrame : null; } },

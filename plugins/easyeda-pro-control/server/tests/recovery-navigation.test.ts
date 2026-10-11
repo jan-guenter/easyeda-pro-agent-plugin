@@ -43,7 +43,7 @@ void test("library recovery opens only a checkpoint-owned asset and rejects meta
       } }) } });
     } } };
     const run = (): Promise<unknown> => {
-      const result: unknown = runInNewContext(`(async () => {${buildRecoveryNavigationCode(target)}})()`, { eda, TextDecoder, Uint8Array });
+      const result: unknown = runInNewContext(`(async () => {${buildRecoveryNavigationCode(target)}})()`, { eda, TextDecoder, Uint8Array, window: { top: { localStorage: { getItem: (): string => '{"pcbCommandTab":true}' } } } });
       return Promise.resolve(result);
     };
     if (metadataOwner === "owner") { await run(); assert.deepEqual(calls, ["project", [target.projectUuid, "4", target.documentUuid], "activate"]); }
@@ -79,7 +79,7 @@ void test("symbol recovery proves native display title and avoids the hanging li
 
 function fixture(options: { project?: RecordValue; document?: RecordValue; registryPath?: string; openProjectResult?: boolean;
   openDocumentResult?: string | null; activateResult?: boolean | null; wrongReadback?: boolean; delayedReadback?: boolean; projectRace?: boolean; registryBytes?: Uint8Array; tree?: unknown; navigation?: RecoveryNavigationOptions;
-  nativeException?: { stage: string; error: unknown } } = {}): {
+  nativeException?: { stage: string; error: unknown }; preferences?: string } = {}): {
     calls: string[]; execute: () => Promise<unknown>;
   } {
   const calls: string[] = [];
@@ -119,7 +119,7 @@ function fixture(options: { project?: RecordValue; document?: RecordValue; regis
     Object.defineProperty(eda, "dmt_Project", { get: (): never => { throw options.nativeException?.error; } });
   }
   return { calls, execute: async () => {
-    const result: unknown = runInNewContext(`(async () => {${buildRecoveryNavigationCode(TARGET, options.navigation)}})()`, { eda, TextDecoder, Uint8Array, window: { top: { setTimeout, clearTimeout } } });
+    const result: unknown = runInNewContext(`(async () => {${buildRecoveryNavigationCode(TARGET, options.navigation)}})()`, { eda, TextDecoder, Uint8Array, window: { top: { setTimeout, clearTimeout, localStorage: { getItem: (): string => options.preferences ?? '{"pcbCommandTab":true}' } } } });
     return await result;
   } };
 }
@@ -132,6 +132,19 @@ void test("empty Start Page opens only the checkpoint-proven project/document an
   assert.deepEqual(run.calls.filter((call) => !call.startsWith("registry-")), [
     `project:${TARGET.projectUuid}`, `document:${TARGET.documentUuid}`, "activate:reopened-tab",
   ]);
+});
+
+void test("project restoration always needs safe preferences even with a SCH target; inspect-only is passive", async () => {
+  const unsafe = fixture({ preferences: '{"pcbCommandTab":false}' });
+  await assert.rejects(unsafe.execute(), /PCB_NAVIGATION_PREFERENCES_UNSAFE/u);
+  assert.equal(unsafe.calls.every((call) => call.startsWith("registry-")), true);
+  const inspected = fixture({ preferences: '{}', navigation: { navigate: false } });
+  await inspected.execute();
+  assert.equal(inspected.calls.every((call) => call.startsWith("registry-")), true);
+  // The project is already loaded and direct SCH open does not restore PCB tabs.
+  const loaded = fixture({ preferences: '{}', project: PROJECT });
+  await loaded.execute();
+  assert.equal(loaded.calls.some((call) => call.startsWith("project:")), false);
 });
 
 void test("exclusive Start Page navigation rejects hidden foreign editors and malformed tab trees before opening", async () => {
@@ -289,7 +302,7 @@ void test("an absent post-activation document settles to the exact target withou
   ]);
 });
 
-type ReadinessMode = "delayed" | "owner-drift" | "auxiliary-drift" | "container-drift" | "page-drift" | "tab-drift" | "identity-alias" | "late-owner-drift" | "timeout" | "getter-hangs" | "getter-throws" | "page-getter-throws";
+type ReadinessMode = "delayed" | "owner-drift" | "auxiliary-drift" | "container-drift" | "page-drift" | "tab-drift" | "identity-alias" | "late-owner-drift" | "timeout" | "getter-hangs" | "getter-throws" | "page-getter-throws" | "preferences-before-open" | "preferences-after-open";
 async function readinessFixture(documentType: 1 | 3, mode: ReadinessMode): Promise<{ result?: unknown; error?: unknown; calls: string[]; polls: number }> {
   const calls: string[] = [], target = { ...TARGET, documentType };
   const tabId = `${target.documentUuid}@${target.projectUuid}`;
@@ -312,6 +325,7 @@ async function readinessFixture(documentType: 1 | 3, mode: ReadinessMode): Promi
       ...(mode === "identity-alias" ? { documentUuid: "foreign-alias" } : {}) });
   };
   const environment = { TextDecoder, Uint8Array, window: { top: {
+    localStorage: { getItem: (): string => JSON.stringify({ pcbCommandTab: mode !== "preferences-before-open" && !(mode === "preferences-after-open" && calls.includes("open")) }) },
     setTimeout: (callback: () => void, delay: number): number => {
       timerId += 1; const id = timerId; timers.set(id, callback);
       if (delay === 15_000) { timeout = callback; }
@@ -362,6 +376,14 @@ void test("project opening observes delayed parent ownership and auxiliary readi
     assert.equal(run.error, undefined); assert.notEqual(run.result, undefined);
     assert.deepEqual(run.calls, ["open", "activate"]);
     assert.equal(run.polls, 3);
+  }
+});
+
+void test("recovery navigation checks PCB preference immediately before open and after its acknowledgment", async () => {
+  for (const mode of ["preferences-before-open", "preferences-after-open"] as const) {
+    const result = await readinessFixture(3, mode);
+    assert.match(String(result.error), /PCB_NAVIGATION_PREFERENCES_UNSAFE/u);
+    assert.deepEqual(result.calls, mode === "preferences-before-open" ? [] : ["open"]);
   }
 });
 

@@ -37,6 +37,7 @@ interface Options {
   sharedModel?: boolean; symbolType?: number; symbolSchematic?: boolean; symbolCanvasRetained?: boolean; symbolManagerRetained?: boolean;
   nativeThrow?: string; recoveryDrift?: boolean; malformedUnsavedStatus?: boolean;
   placeholder?: Tab; duplicatePlaceholder?: boolean; placeholderDirty?: unknown; cancelThrows?: boolean; neverResolveClose?: boolean;
+  containerActiveTarget?: boolean; containerActiveAfterAwait?: boolean; containerRowsMismatch?: boolean;
 }
 function fixture(options: Options = {}): { run: (reconcile?: boolean) => Promise<unknown>; calls: string[]; plan: DocumentClosePlan; timers: Set<ReturnType<typeof setTimeout>>; listeners: Map<string, (value: unknown) => void> } {
   const activeType = options.activeType ?? 3, targetType = options.targetType ?? 4;
@@ -67,6 +68,8 @@ function fixture(options: Options = {}): { run: (reconcile?: boolean) => Promise
     ...(options.duplicateTab === true ? [activeTab] : []), ...(options.otherTab === undefined ? [] : [options.otherTab]),
     ...(options.placeholder === undefined ? [] : [options.placeholder]), ...(options.duplicatePlaceholder === true && options.placeholder !== undefined ? [options.placeholder] : [])];
   const rawTabs = { getFilterTabs: getTabs, getActiveTab: (): string => context.document.tabId ?? "", hasTabUnSaved: (): unknown => options.dirtyResult ?? dirty,
+    getContainerInfo: (): unknown => ({ activeTabId: options.containerActiveTarget === true || options.containerActiveAfterAwait === true && documentReads >= 5 ? plan.target.tabId : context.document.tabId,
+      tabs: options.containerRowsMismatch === true ? [activeTab] : getTabs() }),
     isTabUnSaved: (tabId: string): unknown => {
       if (tabId === "0" && Object.hasOwn(options, "placeholderDirty")) { return options.placeholderDirty; }
       return options.malformedUnsavedStatus === true ? "false" : dirty;
@@ -189,6 +192,14 @@ void test("foreign tabs, owners, split screens, aliases, malformed Start Page, a
 });
 void test("a dirty mutation queued at the final context await is caught synchronously before dispatch", async () => {
   const run = fixture({ dirtyAfterAwait: true }); await assert.rejects(run.run(), /dispatch-state/u); assert.deepEqual(run.calls, ["cancel"]);
+});
+void test("inactive close binds native container-active state as well as the global active tab before dispatch", async () => {
+  for (const options of [{ containerActiveTarget: true }, { containerActiveAfterAwait: true }, { containerRowsMismatch: true }]) {
+    const run = fixture(options);
+    await assert.rejects(run.run(), /before-state|dispatch-state/u);
+    assert.equal(run.calls.includes("close"), false);
+    assert.equal(run.listeners.size, 0); assert.equal(run.timers.size, 0);
+  }
 });
 void test("symbol close refuses shared models, derived types, schematic ownership and missing cleanup evidence", async () => {
   for (const options of [{ sharedModel: true }, { symbolType: 17 }, { symbolSchematic: true }]) {

@@ -12,6 +12,7 @@ import { DEVICE_NATIVE_HOST_GUARD } from "./device-runtime-guard.ts";
 import { RECOVERY_NAVIGATION_FAILURE_STAGES } from "./native-diagnostics.ts";
 import { nativeLibraryHeaderEvidence } from "./native-library-header-evidence.ts";
 import type { NativeLibraryHeaderEvidence } from "./native-library-header-evidence.ts";
+import { PCB_NAVIGATION_PREFERENCE_GUARD, PCB_NAVIGATION_PREFERENCE_REFUSAL } from "./pcb-navigation-preferences.ts";
 
 const PROFILE = "easyeda-pro-control.recovery-navigation.v1";
 const checkpointBindingSchema = z.object({ schema: z.literal("easyeda-pro-control.checkpoint.v2"), source: z.string().min(1).max(4096),
@@ -139,6 +140,7 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
     knownFailures.add('NATIVE_LIFECYCLE_CLOSE_TIMEOUT');
     knownFailures.add('DEVICE_NATIVE_HOST_AMBIGUOUS');
     knownFailures.add('DEVICE_NATIVE_BUS_MISSING');
+    knownFailures.add(${JSON.stringify(PCB_NAVIGATION_PREFERENCE_REFUSAL)});
     const classifiedError = (error, stage) => {
       let message;
       try {
@@ -152,6 +154,7 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
       try { return await call(); } catch (error) { throw classifiedError(error, stage); }
     };
     try {
+    ${PCB_NAVIGATION_PREFERENCE_GUARD}
     const project = eda.dmt_Project, select = eda.dmt_SelectControl, editor = eda.dmt_EditorControl;
     if (typeof project?.getCurrentProjectInfo !== "function" || typeof project?.openProject !== "function" ||
         typeof select?.getCurrentDocumentInfo !== "function" || typeof editor?.openDocument !== "function" ||
@@ -369,6 +372,8 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
     }
     let current = await inspect(), openedProject = false, openedDocument = false;
     if (current.projectUuid === undefined) {
+      // Project restoration can activate a remembered PCB even for a SCH target.
+      assertPcbNavigationPreferences();
       if (await nativeCall('native-open-project', () => project.openProject(target.projectUuid)) !== true) fail("open-project-result");
       openedProject = true;
       current = await inspect();
@@ -380,6 +385,7 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
       current = await inspect();
       if (current.projectUuid !== target.projectUuid) fail("project-changed-before-document");
       if (current.documentUuid === undefined) {
+        if([3,4].includes(target.documentType))assertPcbNavigationPreferences();
         const tabId = target.documentType === 2 ? await nativeCall('native-open-library', () => libraryApi.openInEditor(target.documentUuid,target.projectUuid)) : library ?
           await nativeCall('native-open-library', () => editor.openLibraryDocument(target.projectUuid,String(target.documentType),target.documentUuid)) :
           await nativeCall('native-open-document', () => editor.openDocument(target.documentUuid));
@@ -387,6 +393,7 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
         if (typeof tabId !== "string" || tabId.length === 0 || tabId.length > 256) fail("open-document-result");
         // Native isOpenTab can return false while the opened target is already
         // selected. Its boolean alone neither proves nor disproves the effect.
+        if([3,4].includes(target.documentType))assertPcbNavigationPreferences();
         const activated = await nativeCall('native-activate-document', () => editor.activateDocument(tabId));
         if (typeof activated !== "boolean") fail("activate-result");
         current = await inspectActivated(tabId);

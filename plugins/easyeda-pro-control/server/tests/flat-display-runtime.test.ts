@@ -41,9 +41,11 @@ void test("flat generated display executes once inside its exact owned running a
    * try/catch around getSchPinNet. Ownership, baseline and dispatch code is
    * byte-identical. Keep an independent pin for both current entrypoints. */
   assert.equal(sha256Text(plain.code), "0c4c20facc84713f729538f967da4f1bd5d96e87ba0b8db939d4173627097ca5");
-  const historicalSave = buildSaveReopenCode(context, [{ request: { kind: "schematic-source" }, expectedSnapshotSha256: "a".repeat(64) }]);
-  assert.equal(sha256Text(historicalSave),
-    "c314829e192c18136900386dfd8842d6b3c5863b3ba9efc66ee3dc24a2a3a76d");
+  // Save now includes the passive PCB-peer preference guard, including before
+  // Closing a schematic is included. Keep this fixed-program regression pin.
+  const guardedSave = buildSaveReopenCode(context, [{ request: { kind: "schematic-source" }, expectedSnapshotSha256: "a".repeat(64) }]);
+  assert.equal(sha256Text(guardedSave),
+    "a7cbb29ba7b4cdec5c007fe232e3aa912e540daa1834cc56078f63b7dc1bd5c4");
   const scene = runtimeFixture(before);
   scene.hooks.start = (): void => { assert.equal(scene.runner.running, true); assert.equal(scene.runner.currentAction?.status, "running"); };
   assert.equal(await execute(adapter.code, scene.runtime), true);
@@ -155,12 +157,18 @@ void test("flat Save rechecks after final crypto and awaited context, and never 
   const code = buildSaveReopenCode(context, guards, afterGuard);
   // oxlint-disable-next-line unicorn/no-useless-undefined -- Explicit absent internal option must generate byte-identical historical Save code.
   assert.equal(buildSaveReopenCode(context, guards), buildSaveReopenCode(context, guards, undefined));
-  for (const timing of ["clean", "digest", "context", "busy"] as const) {
+  for (const timing of ["clean", "digest", "context", "busy", "pcb-peer"] as const) {
     const scene = runtimeFixture(after);
     if (timing === "digest") { scene.hooks.digest = (count): void => { if (count === 4) { scene.pin.origin.x = 1; } }; }
     if (timing === "context") { scene.hooks.context = (): void => { scene.project.branchUuid = "f".repeat(32); }; }
     if (timing === "busy") { scene.hooks.context = (): void => { scene.runner.currentAction = { status: "running" }; }; }
-    await assert.rejects(execute(code, scene.runtime), timing === "clean" ? /TEST_SAVE_BOUNDARY/u : /FLAT_|SHAPES/u);
+    if (timing === "pcb-peer") { const original = scene.runtime.UI.tabBar.getFilterTabs; scene.hooks.context = (): void => {
+      scene.runtime.UI.tabBar.getFilterTabs = (): unknown[] => [...original(), { tabId: "pcb@project", data: { doctype: 3 } }];
+    }; }
+    let expectedError = /FLAT_|SHAPES/u;
+    if (timing === "clean") { expectedError = /TEST_SAVE_BOUNDARY/u; }
+    if (timing === "pcb-peer") { expectedError = /PCB_NAVIGATION_PREFERENCES_UNSAFE/u; }
+    await assert.rejects(execute(code, scene.runtime), expectedError);
     assert.deepEqual(scene.calls, timing === "clean" ? ["save"] : []);
   }
   assert.throws(() => buildSaveReopenCode(context, guards, guard), /after-phase/u);

@@ -4,7 +4,9 @@ import { describe, test } from "node:test";
 import {
   CONTEXT_PROBE_CODE,
   RUNTIME_IDENTITY_PROBE_CODE,
+  buildActivateRecoveryTargetCode,
   buildComponentMutationCode,
+  buildReopenOnlyCode,
   buildSaveReopenCode,
   contextFailureDiagnostics,
   wrapWithContextGuard,
@@ -36,6 +38,8 @@ interface PcbEdaOptions {
   openedTab?: string;
   activated?: boolean | null;
   uploadSettled?: boolean;
+  preferences?: string;
+  latePreferences?: string;
 }
 
 interface PcbEdaFixture {
@@ -105,6 +109,7 @@ function pcbEda(options: PcbEdaOptions = {}): PcbEdaFixture {
   };
   const eda = {
     nativeLifecycleTestWindow: { top: { document: { getElementById: (): unknown => frame },
+      localStorage: { getItem: (): string => calls.includes("read-document") && options.latePreferences !== undefined ? options.latePreferences : (options.preferences ?? '{"pcbCommandTab":true}') },
       setTimeout: (callback: () => void, delay: number): NodeJS.Timeout => setTimeout(callback, delay === 15_000 ? 100 : 1), clearTimeout } },
     nativeUploadTestHost: { currentProject: { projectId: SAVE_PROJECT }, messageBus: { rpcCall: async (topic: string, args: unknown): Promise<unknown> => {
       if (topic === "isOpenTab") { assert.deepEqual(args, [SAVE_TAB]); return { message: open }; }
@@ -727,6 +732,13 @@ void describe("generated exact readers and component mutations", () => {
 });
 
 void describe("exact save, close, reopen, activate, and identity proof", () => {
+  void test("unsafe preferences stop before the first Save, including drift during the final context read", async () => {
+    for (const options of [{ preferences: '{"pcbCommandTab":false}' }, { latePreferences: '{}' }]) {
+      const scene = pcbEda(options);
+      await assert.rejects(runGenerated(buildEmptyPcbSaveCode(), scene.eda), /PCB_NAVIGATION_PREFERENCES_UNSAFE/u);
+      assert.deepEqual(scene.calls, ["guard-components", "guard-components", "read-document"]);
+    }
+  });
   void test("performs PCB persistence in strict order and verifies reopened identity", async () => {
     const { eda, calls } = pcbEda();
     const result = await runGenerated(
@@ -856,4 +868,21 @@ void describe("exact save, close, reopen, activate, and identity proof", () => {
       );
     }
   });
+});
+
+void test("recovery-only direct open paths check PCB preferences before open and again before activation", async () => {
+  const expected = { project: { uuid: SAVE_PROJECT }, document: { uuid: "document-1", documentType: 3, tabId: SAVE_TAB } };
+  for (const code of [buildActivateRecoveryTargetCode(expected), buildReopenOnlyCode(expected, { allowDifferentActiveDocument: true })]) {
+    for (const late of [false, true]) {
+      const calls: string[] = [];
+      let preference = late;
+      const eda = { dmt_Project: { getCurrentProjectInfo: (): Promise<unknown> => Promise.resolve({ uuid: SAVE_PROJECT }) },
+        dmt_SelectControl: { getCurrentDocumentInfo: (): Promise<unknown> => Promise.resolve({ uuid: "other", documentType: 3 }) },
+        dmt_EditorControl: { openDocument: (): Promise<string> => { calls.push("open"); preference = false; return Promise.resolve(SAVE_TAB); },
+          activateDocument: (): never => assert.fail("Unsafe activation"), closeDocument: (): never => assert.fail("Unsafe close") } };
+      const globals = { window: { top: { localStorage: { getItem: (): string => JSON.stringify({ pcbCommandTab: preference }) } } } };
+      await assert.rejects(new AsyncFunction("eda", "globalThis", code)(eda, globals), /PCB_NAVIGATION_PREFERENCES_UNSAFE/u);
+      assert.deepEqual(calls, late ? ["open"] : []);
+    }
+  }
 });

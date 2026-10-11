@@ -5,6 +5,7 @@ import { test } from "node:test";
 import vm from "node:vm";
 import { isRecord } from "../src/core.ts";
 import { decodeExactReadEnvelope } from "../src/exact-readers.ts";
+import { flatTransactionBinding } from "../src/flat-transaction-binding.ts";
 
 type Invoke = (journal: Record<string, unknown>, phase: string) => Promise<unknown>;
 async function harness(failure: "none" | "missing" | "before" | "after" | "dispatch" | "manager-after", enveloped = false): Promise<{
@@ -19,6 +20,7 @@ async function harness(failure: "none" | "missing" | "before" | "after" | "dispa
   // Exercise the maintained coordinator method, not a copied ordering model.
   // All authorities and artifact writes are synthetic; no live engine exists.
   const scope = {
+    flatTransactionBinding,
     register: (value: Invoke): void => { invoke = value; },
     runtime: (): Promise<void> => { calls.push("runtime"); return Promise.resolve(); },
     engine: {

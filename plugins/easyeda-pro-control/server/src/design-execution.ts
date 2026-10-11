@@ -73,6 +73,7 @@ import { verifyFlatInverseCheckpoint } from "./flat-inverse-checkpoint.ts";
 import { assertPcbTextCreateRetainedAuthority, assertPcbTextLifecycleAcknowledgment } from "./pcb-text-lifecycle.ts";
 import { verifyPcbTextRetainedSaveAuthority, verifyPcbTextRetainedSaveEffect } from "./pcb-text-retained-save.ts";
 import { verifyNativeRuleReportProfile } from "./native-rule-profile.ts";
+import { PCB_NAVIGATION_PREFLIGHT_PROFILE, buildPcbNavigationPreferencePreflight } from "./pcb-navigation-preflight.ts";
 
 type RecordValue = Record<string, unknown>;
 const PROFILE = "easyeda-pro-control.typed-design-transaction.v1";
@@ -529,6 +530,32 @@ export class DesignExecutor {
     const nativePayload = context.document.documentType === 1 ? await this.engine.schematicNativeRead(context) : undefined;
     const native = nativePayload === undefined ? undefined : schematicNativeSnapshotSchema.parse(nativePayload["snapshot"]);
     return { payload, snapshot: sourceSnapshot(payload, context), ...(native === undefined ? {} : { native }) };
+  }
+
+  private async assertNavigationPreferences(context: ExpectedContext): Promise<void> {
+    await this.engine.assertBridgeDispatchAllowed();
+    const installed = await this.engine.upstream.installedEasyedaBundles?.();
+    if (installed === undefined) { throw new Error("Navigation preference preflight UI implementation identity is unavailable."); }
+    await verifyLibraryNativeProfile(installed.assetsRoot);
+    const code = buildPcbNavigationPreferencePreflight(context);
+    const result = await this.engine.upstream.callTool("easyeda_execute", { code, timeoutMs: 15_000, confirmWrite: true }, 25_000);
+    const payload = extractToolPayload(result);
+    if (canonicalJson(payload) !== canonicalJson({ profile: PCB_NAVIGATION_PREFLIGHT_PROFILE, admitted: true })) {
+      throw new Error("Navigation preference preflight did not return its exact admission.");
+    }
+    await verifyLibraryNativeProfile(installed.assetsRoot);
+    await this.engine.assertContext(context);
+  }
+
+  /** Execute promises a later Save/reopen, unlike standalone unsaved apply. */
+  public async preflightSaveNavigation(input: DesignApplyInput): Promise<void> {
+    if (!input.confirmWrite) { throw new Error("Typed design writes need explicit confirmation."); }
+    const plan: DesignPlan = { profile: PROFILE, operation: designActionSchema.parse(input.operation),
+      expectedContext: structuredClone(input.expectedContext), expectedFingerprint: structuredClone(input.expectedFingerprint) };
+    await this.engine.assertBridgeDispatchAllowed();
+    await this.assertRuntime(plan);
+    const context = await this.engine.assertContext(plan.expectedContext);
+    await this.assertNavigationPreferences(context);
   }
 
   /** Read already loaded template pages without changing the active tab. The
@@ -1693,6 +1720,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
     if (journal.state === "saved-awaiting-reopen" && !resumeSaved) { throw new Error("Saved library recovery has no retained Save evidence."); }
     await DesignExecutor.verifyWireGroupRepairIntent(journal);
     await this.assertRuntime(journal.plan, journal.context, journal.runtimeFingerprint);
+    await this.assertNavigationPreferences(journal.context);
     // Resolve retained constructor provenance before any Save dispatch. It is
     // Internal evidence never grants a caller-provided exception to source equality.
     const constructorWitness = await DesignExecutor.layoutConstructorWitness(journal);
