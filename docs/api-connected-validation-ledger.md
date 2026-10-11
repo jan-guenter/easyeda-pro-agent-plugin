@@ -447,3 +447,85 @@ selection only. No Bus, missing-ID, wrong-family/owner, descendant, duplicate-ID
 or public-instance connected case is accepted. No inverse, rollback, reroute,
 atomic isolation or continuing database invariance is implied. The runtime's
 historical validation labels and whole-method counts are unchanged.
+
+## Generation G20261011-220050
+
+These cases were recorded on 2026-10-12, Europe/Berlin, after a fresh host loaded
+installed `0.3.0+codex.20261011220050`. They extend the historical
+[220050 release record](api-coverage-220050-release-2026-10-12.md); its earlier
+pending-live statements remain intact. Only disposable data was used. Production
+designs and their records were not accessed.
+
+| Binding | Exact value |
+| --- | --- |
+| Tested payload commit | `e566f2ab8bc73c8748e86c5f2cecdf5f2a86114b` |
+| Plugin package Git tree | `2cfe8e8e1054efd44eb4035bb4a569097b6ebdad` |
+| Facade source fingerprint, 204 files | `bea391898a967dc51a49fee7d04b34372fdcd0758c267f914043713db6a0e083` |
+| Runtime fingerprint, three files | `a350c6fe19e782d595a173d9208d7e4c394eb49d9b88dba88e8ef2719224acbc` |
+| Reviewed compatibility manifest SHA-256 | `e1baee7c8aeb9eb30c673c2f27e0e2fde627096e20bb61c1caf69dc4eaef6144` |
+| Installed inventory, 631 files and 16,950,087 bytes | `78fe67d2929cd0cd16dbea6425ac49782308dfc23951be6604c0c1f56ea6ecc7` |
+| Independent fresh-host package audit | `434aadbb4aa06ee1905aad4ab72eb166df8ba6a29d5a2bc8b139bb607780b33d` |
+| Authenticated status result SHA-256 | `9ed6ed9bc87822df23dccb8196c7ad474a006e91c3d3d8d585b2646febb5e465` |
+
+The external application/SDK/bridge tuple remains the one recorded for
+G20261011-164600, including EasyEDA Pro `3.2.149.88089769`, public API
+`0.2.53.aee2f57a` and dispatcher `ded07x99dcxb504`. The schematic implementation
+remains `3.2.149.35ae2987`, SHA-256
+`3f50136fb4ba2d5593beac7ef3e20ebe5275177b56bbcfdd297e79f176a6618f`.
+The [frozen compatibility manifest](https://github.com/jan-guenter/easyeda-pro-agent-plugin/blob/e566f2ab8bc73c8748e86c5f2cecdf5f2a86114b/plugins/easyeda-pro-control/reviewed-compatibility.json)
+retains all remaining pins. The independent audit matched every installed file
+and committed mode and bound the actual host entrypoint, executable and process
+identity to those bytes. It is not a process-memory attestation. Authenticated
+status separately reported the matching runtime tuple and no incomplete
+operations at its recorded boundary. No later generation inherits this admission.
+
+### 2026-10-12: R09, configured font-title observation
+
+Case result: passed two matching observations and independent receipt,
+native/source and immutable-checkpoint verification. `easyeda_control_sdk_read`
+used `eda.sys_FontManager.getFontsList` with exactly empty arguments on the
+owned ordinary type-1 disposable schematic page.
+
+This is the bounded configured-title native equivalent, not public getter
+execution or an operating-system font inventory. Its authority is
+`configured-font-title-observation-not-whole-preferences-or-installed-font-proof`.
+The result contained 10 ordered titles totaling 52 UTF-16 code units, within the
+512-title, 1,024-code-unit-per-title and 131,072-combined-unit bounds. Titles
+remain private. The maintained payload validator reconstructed the complete
+enriched result from its six raw fields. Its value was present, with no undefined
+paths, and the two-attempt sample commitment matched.
+
+The maintained evidence verifier accepted every before/read/after result-receipt
+pair, including explicit success, self-hash, result-byte, request, context and
+complete fingerprint checks. Complete native snapshots before and after were
+canonically identical and correlated with all 67 semantic source objects.
+Comparison with the previous generation's reopened seed accepted only eight
+unstored inherited attribute IDs regenerated at unchanged order. Stored IDs,
+geometry, values, styles, visibility and pin nets remained exact.
+
+Both immutable checkpoints matched the original saved seed. Independent decoding
+reproduced 12 documents and 171 materialized current records, including all 11
+unchanged peers and 66 imported atom-header occurrences. The current-record
+count is not a raw history-occurrence count. Source/native materialization and
+the complete logical dump matched at both boundaries. The reviewer opened only
+immutable checkpoints, not the current project database or preferences.
+
+| Retained evidence | SHA-256 |
+| --- | --- |
+| R09 result, 7,963 bytes | `6d4628d0229ff3dec07190f32b12b034b8b47c5da1482ba171b9940d794b9493` |
+| R09 receipt self-hash | `f361cb1bbff69d19b93ae778d60aba2d391c4969c03f49e5f32df0be14b39755` |
+| Stable complete sample | `a3c485c24fa8840e70658c5f6b36ee09a67b924dc03126d2c4c1a93603770b11` |
+| Common canonical native snapshot | `f2c026737cadcdf4e06bd9dc21f34eeae7233b6b67c49b54d1edae89204fb616` |
+| Complete semantic source | `c9e04b15352712d36cf6ba3a641622c58d81fcccd8fa86c670a6270305d6611c` |
+| Before and after immutable checkpoint | `9ccef95aa08d0e94c10ed77d39af875e6ebfbb00b173b444204daff15f1710aa` |
+| Complete logical dump | `b538b6c7cf3504150bb576459d69c4bc6711693ad4e1392efaeef9cbc72f5cb2` |
+| Independently reproduced font proof | `4eb5d0d84e8b32410ae18ff50b22108e33865634c6192077019129baacb363f2` |
+| Independent private review | `a9d75f59d31fd1530bbae8804822be317b4eac1713692a76011efedd501e42d9` |
+
+Limits: one successful configured-title observation in one ordinary schematic
+context. It establishes neither installed fonts, rendering, current-account
+identity, persisted preferences, whole-preference equality, other document types
+nor atomic or continuing state isolation. No Save or design mutation was part
+of R09. Runtime historical validation labels and whole-method counts remain
+unchanged. The separate wire execute was pending when this entry was recorded;
+no wire effect, saved/reopened result, inverse or rollback is accepted here.
