@@ -6,6 +6,35 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Restarted131000 text validation and candidate follow-through
+
+- Actual fresh facade2222443 independently matches installed131000:581files and
+  modes, sourcecf942fd2/runtime518ffece/manifest20278cb6. Contained11964 used only
+  the disposable container fixture. Forward and explicit reverse text modify
+  transactions completed one Save/close/reopen each, complete11document proof
+  and unchanged ten peer raw chains. Pair reportbdac5ec6. No unsaved rollback
+  claim; reversing restores native source, not history or database bytes.
+- Creation journalc92a61b7 stopped commit-needs-recovery after one retained
+  successful Save/close/reopen acknowledgment. Sole native difference is its
+  original new STRINGspecialColor null to black; complete durable proof retains
+  null and every original target record/tenpeer current/raw chain unchanged.
+  Diagnostic15fe8ae9 reports the refusal without accepting the transaction.
+  Installed131000 has no text retained-Save recovery. Never repeat create, Save,
+  navigation or delete. Original reservation and all six artifacts remain intact.
+- Root normal-close/discoverempty proves11964 exited without Save/Discard choice.
+  Maintained offline checkpoint verification preserves source3c9956a4,
+  backupc788baa6 and logical0215d984. No live call remains pending. Source-only
+  explicit-color creation correction and narrow retained-Save recovery underway.
+  Private resume:disposable-validation-131000-mmrayV/resume-live-131000.md.
+- Closed empty free-schematic creation integrated from independently reviewed
+  a79f5d9 as e761157.195focused tests and independent76tests pass, strict targeted
+  lint/types clean in its isolated source branch. Scope excludes inline component
+  setters, hierarchy/inheritance/imported atom headers and all schematic canvases.
+  It creates no page/template/Save; native callbacks are not atomic against user
+  project switches. Root coverage/docs integration and full release checks remain.
+  New selected-object reader is under development separately. PR9 remains draft.
+  Production and its project record remain untouched.
+
 ### Candidate131000 published and installed; fresh host required
 
 - Payload4f5edf911a3797781b2c9e235cb4c1da93efad97 passedCI38143221419:

@@ -7,13 +7,13 @@
     "latestDistinctMethods": 773,
     "statuses": {
       "implemented-public-subset": 192,
-      "implemented-native-equivalent": 95,
+      "implemented-native-equivalent": 96,
       "internal-lifecycle-only": 2,
       "implemented-but-blocked": 8,
-      "omitted": 477
+      "omitted": 476
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 348,
+      "available-with-runtime-guards": 349,
       "blocked": 9,
       "partially-blocked": 3
     },
@@ -44,7 +44,7 @@
       "panel-context-not-admitted": 1,
       "private-url-state-projection-needed": 2,
       "reviewed-native-stub": 27,
-      "scoped-effect-adapter-needed": 111,
+      "scoped-effect-adapter-needed": 110,
       "selection-marker-or-history-mutation": 8,
       "shared-asset-owner-projection-needed": 3,
       "simulation-editor-not-admitted": 1,
@@ -2836,14 +2836,54 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "dmt_Schematic.createSchematic has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_library",
+          "selector": "document.schematic.create",
+          "implementation": "native-task-equivalent",
+          "scope": "Creates one closed META-only free schematic with boardName absent and one clean direct-open ordinary PCB active. Exact project-qualified worker, checkpoint-derived name and retained original UUID. Complete peer record clocks/header lineage and per-document raw occurrence chains; exactly one new DOCHEAD/META pair. Requires local ordinary symbol references and absent or empty inline component attrs. No board attachment, page/template/canvas initialization, editor opening, Save/reopen or automatic inverse. Refuses hierarchy, CBB, inheritance, imported atom histories and hidden/pooled/export frames. Changed recovery requires the original native return and never recreates. Native subscribers are not atomic against concurrent project changes; context/readback detect observed drift. Not public sheet-producing workflow parity or connected validation.",
+          "source": [
+            "project-schematic-create.ts",
+            "project-schematic-create-runtime.ts",
+            "project-schematic-create-native-profile.ts",
+            "document-container-rename-dom.ts",
+            "native-history.ts",
+            "native-document-record-history.ts",
+            "library-execution.ts",
+            "library-recovery-state.ts",
+            "library-recovery.ts",
+            "library-undispatched-recovery.ts"
+          ],
+          "tests": [
+            "project-schematic-create.test.ts",
+            "project-schematic-create-runtime.test.ts",
+            "project-schematic-create-transaction.test.ts",
+            "native-history.test.ts",
+            "native-document-record-history.test.ts",
+            "library-undispatched-recovery.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "documentTypes": [
+            3
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "library",
+                  "operationAction": "document.schematic.create",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

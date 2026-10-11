@@ -560,6 +560,7 @@ export function listLibraryExecutionCapabilities(): Value[] {
     else if (action === "document.pcb.rename" || action === "document.schematic.rename") { status = "implemented-closed-ordinary-document-rename-proof"; }
     else if (action === "document.page.create") { status = "implemented-closed-empty-project-page-create-proof"; }
     else if (action === "document.pcb.create") { status = "implemented-closed-empty-free-pcb-create-proof"; }
+    else if (action === "document.schematic.create") { status = "implemented-closed-empty-free-schematic-create-proof"; }
     else if (action === "document.activate") { status = "implemented-current-project-document-activation"; }
     else if (action === "document.close") { status = "implemented-inactive-clean-project-document-close"; }
     else if (["document.open", "library.footprint.open", "library.symbol.open"].includes(action)) { status = "implemented-current-project-document-open"; }
@@ -582,6 +583,14 @@ export function listLibraryExecutionCapabilities(): Value[] {
       activeDocumentTypes: [3], otherCleanDirectOpenPcbRequired: true, pooledPanelsAndHiddenExports: false,
       importedAtomHeaderHistories: false, hierarchicalOrCbbProjects: false, inheritedDocuments: false,
       completeRecordClocksAndPeerHeaderLineage: true, recoveryRequiresOriginalNativeIdentity: true, automaticInverse: false,
+    } : {}), ...(action === "document.schematic.create" ? {
+      adapterKind: "native-task-equivalent", boardNameMustBeAbsent: true, emptySchematic: true, freeSchematic: true,
+      pageCreated: false, canvasInitialized: false, editorOpened: false, saveInvoked: false, reopened: false, currentGenerationLiveValidated: false,
+      activeDocumentTypes: [3], otherCleanDirectOpenPcbRequired: true, pooledPanelsAndHiddenExports: false,
+      importedAtomHeaderHistories: false, hierarchicalOrCbbProjects: false, inheritedDocuments: false,
+      exactLocalOrdinarySymbolReferencesRequired: true, nonemptyInlineComponentAttributes: false,
+      completeRecordClocksAndPeerHeaderLineage: true, recoveryRequiresOriginalNativeIdentity: true, automaticInverse: false,
+      nativeSubscriberAtomicProjectIsolation: false,
     } : {}), ...(action === "library.symbol.create" ? { adapterKind: "native-task-equivalent", ordinarySymbolOnly: true,
       emptySymbol: true, canvasInitialized: false, editorOpened: false, saveInvoked: false, currentGenerationLiveValidated: false,
       activeDocumentTypes: [3], classification: false, inheritedSource: false, hierarchicalOrCbbProjects: false,

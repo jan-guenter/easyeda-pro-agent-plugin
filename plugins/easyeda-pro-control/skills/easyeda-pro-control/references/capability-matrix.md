@@ -55,6 +55,7 @@ its narrow boundary and pending live validation are listed separately below.
 | Closed project page rename | library, document.page.rename | Checkpoint-member ordinary page with one clean active sibling; exact writable branch, owner and locale duplicate-name checks; one native metadata write, complete saved title/header and unchanged peer/source proof; no Save, reopen, UI-caption refresh or current-generation connected-writer claim |
 | Closed empty schematic-page creation | library, document.page.create | Existing ordinary local schematic parent only; one clean owned PCB or sibling page active; exact writable branch and native name/order defaults; one project-qualified native addition with original returned ID and complete unchanged peer/hierarchy proof. Not the public template/drawing-frame/open workflow; no Save, reopen, automatic inverse or current-generation live claim |
 | Closed empty free-PCB creation | library, document.pcb.create | Absent boardName only; one other clean direct-open PCB. Retained UUID, checkpoint-derived name, exact DOCHEAD/META addition and unchanged raw per-document peer chains. Installed120000 passed one disposable creation. No canvas initialization, board attachment, open, Save or inverse |
+| Closed empty schematic-container creation | library, document.schematic.create | Absent boardName; one clean direct-open PCB. Original returned UUID, exact DOCHEAD/META addition and unchanged peer raw chains. Ordinary local symbol references and absent/empty inline component attrs required. No page/template/canvas, board attachment, open, Save or inverse. Offline-tested only; asynchronous native subscribers are not atomic against project switching |
 | Already-open document activation | library, document.activate | Exact checkpoint-member current-project tab and complete tab ownership; PCB/footprint target requires existing pcbCommandTab=true to avoid an account-preference write. One activation, two coherent target observations and unchanged saved database; no setting change, reopen or current-generation connected claim |
 | Inactive clean document close | library, document.close | Ordinary symbol (2), PCB (3) or footprint (4) target with a separate clean PCB/footprint active; exactly two owned project tabs, one unsplit container. Await terminal tab/frame cleanup and prove unchanged active source/context and complete logical database. No Save, reopen, exact inverse or current-generation live claim; post-dispatch failure remains quarantined until retained runtime termination |
 | Project footprint library create/modify | library | Scoped current-project record proof; save and reopen facts reported separately |
@@ -102,7 +103,20 @@ equality check was overbroad: native decode skips unchanged live layer records,
 and maintained baseline admission checks the intended target fields. Offline
 regressions preserve both color representations and reject changed durable layer
 bodies, types or membership. They do not prove unchanged raw history clocks.
-No typed text lifecycle has passed on this fixture.
+Installed131000 subsequently passed explicit text x/y/content modification and
+reverse transactions, each with one Save/close/reopen, complete 11-document proof
+and unchanged peer raw chains. The reverse restored the original native source,
+not history timestamps or database bytes. This is not unsaved rollback proof.
+
+A following text-creation transaction passed immediate effect verification and
+received its Save/close/reopen acknowledgment, then stopped at the source check.
+The sole difference was its new STRING's `specialColor`, null before Save and
+black after reopen. The checkpoint retains null; all original target records
+and ten peer documents remain unchanged. Native full-load decode reuses a text
+decoder that retains the preceding color across null. The retained journal is
+unfinished, and installed131000 has no text retained-Save recovery. Do not repeat
+creation, Save, navigation or deletion to hide this mismatch. Source correction
+and a separate operation-specific recovery proof remain required.
 
 Installed103000 passed five PCB reader cases: Line-only and combined five-family
 nonempty-net membership, one track type lookup and two neutral inherited

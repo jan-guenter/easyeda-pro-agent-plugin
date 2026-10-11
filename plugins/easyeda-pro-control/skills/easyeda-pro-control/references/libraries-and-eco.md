@@ -134,6 +134,31 @@ unchanged-baseline proof does not infer or require a created identity.
 Never create again or infer identity from a matching name.
 There is no automatic delete, inverse, opening or canvas-initialization recovery.
 
+## Create one closed empty schematic container
+
+`document.schematic.create` with `boardName` absent creates a closed, unbound
+`SCH` container. It does not create a page. Keep one clean ordinary PCB active
+and no other design editor open. The adapter derives the next `Schematic`
+numeric name from the checkpoint. There is no caller title, board attachment,
+template, drawing frame, canvas initialization, opening or Save.
+
+Admission requires ordinary local symbol references for every existing page
+component and absent or empty inline component attributes. Native inline
+attributes invoke model setters and can turn an apparently ordinary symbol into
+a block symbol. Hierarchy, CBB, inherited documents, imported atom histories,
+hidden exports and pooled editors refuse. Do not remove those attributes or
+change a design merely to satisfy admission.
+
+Success requires the original returned ID, exactly one DOCHEAD/META pair,
+unchanged complete peer records and raw occurrence chains, and unchanged active
+source/context. Recovery inspects that same journal without recreating, opening
+or deleting the result. It cannot infer identity from a matching title.
+Native subscribers are asynchronous, so keep the project unchanged throughout;
+context checks detect observed drift but do not provide atomic project isolation.
+This adapter has offline tests, not connected validation or parity with the
+public page-producing workflow. Query separate page operations when a drawable
+sheet is needed.
+
 ## Close one inactive clean document
 
 `document.close` accepts an exact project-qualified `tabId` for a loaded ordinary
@@ -195,7 +220,8 @@ upgrade; they are not silently migrated or permission to replay a write.
 ## Recover an unpublished preparation
 
 For `document.activate`, `document.close`, `document.page.create`,
-`document.pcb.rename`, `document.schematic.rename`, `document.pcb.create` and
+`document.pcb.rename`, `document.schematic.rename`, `document.pcb.create`,
+`document.schematic.create` and
 `library.symbol.create`, a failed
 journal publication can leave an initial plan without its preparation artifact.
 Use the original journal's reconciliation on the same compatible runtime. Only

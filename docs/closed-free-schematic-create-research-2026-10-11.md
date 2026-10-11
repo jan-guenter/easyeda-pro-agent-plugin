@@ -129,6 +129,6 @@ prefix proof. All result flags retain `saveInvoked:false`, `reopened:false` and
 Public sheet-producing parity, board-attached creation, hierarchy/CBB projects,
 imported atom-header histories, arbitrary caller names, unknown symbol
 references, nonempty component inline attributes and live fixture validation
-are separate work. The generated API
-coverage/catalog and release manifests are intentionally not regenerated in
-this isolated implementation branch.
+are separate work. The integrated catalog reports the empty-container limits
+separately from the public argument schema. Release manifests and connected
+validation require their own final verification.

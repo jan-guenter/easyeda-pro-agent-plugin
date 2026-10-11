@@ -177,7 +177,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 192, "implemented-native-equivalent": 95, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 477,
+    "implemented-public-subset": 192, "implemented-native-equivalent": 96, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 476,
   });
 });
 
@@ -205,6 +205,23 @@ void test("closed free PCB creation exposes only its checkpoint-bound native sub
   assert.equal(validateCatalogOperation({ family: "library", operation: { id: "create-bound", action: "document.pcb.create", boardName: "Board" } })["valid"], true);
   // Structural acceptance of the optional public argument does not make that
   // Branch execution-enabled; the runtime rejects every supplied boardName.
+});
+
+void test("closed free schematic creation reports empty-container support without public sheet parity", () => {
+  const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.dmt_Schematic.createSchematic");
+  assert.ok(row); assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
+  assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+  assert.equal(row.routes.length, 1); const route = row.routes[0]; assert.ok(route);
+  assert.equal(route.selector, "document.schematic.create"); assert.deepEqual(route.documentTypes, [3]);
+  assert.equal(route.executionState, "available-with-runtime-guards");
+  const catalog = queryOperationCatalog({ family: "library", operationAction: "document.schematic.create", includeSchemas: true });
+  const entries = catalog["entries"]; assert.ok(Array.isArray(entries)); assert.equal(entries.length, 1);
+  const entry: unknown = entries[0]; assert.ok(isRecord(entry));
+  assert.match(JSON.stringify(entry), /implemented-closed-empty-free-schematic-create-proof/u);
+  const capabilities = entry["executionCapabilities"]; assert.ok(isRecord(capabilities));
+  for (const key of ["pageCreated", "editorOpened", "saveInvoked", "reopened", "currentGenerationLiveValidated", "automaticInverse", "nonemptyInlineComponentAttributes", "nativeSubscriberAtomicProjectIsolation"]) { assert.equal(capabilities[key], false); }
+  for (const key of ["boardNameMustBeAbsent", "emptySchematic", "recoveryRequiresOriginalNativeIdentity", "exactLocalOrdinarySymbolReferencesRequired"]) { assert.equal(capabilities[key], true); }
+  assert.equal(validateCatalogOperation({ family: "library", operation: { id: "free-sch", action: "document.schematic.create" } })["valid"], true);
 });
 
 void test("String footprint routes retain their type-4 scope alongside the separate narrow PCB routes", () => {
