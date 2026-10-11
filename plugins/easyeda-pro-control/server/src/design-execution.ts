@@ -66,6 +66,8 @@ import { verifyFlatDisplayMaterialization, verifyFlatDisplayRestoration } from "
 import { hasDesignInverseAttempt } from "./design-inverse-attempt.ts";
 import { verifyFlatInverseCheckpoint } from "./flat-inverse-checkpoint.ts";
 import { assertPcbTextCreateRetainedAuthority, assertPcbTextLifecycleAcknowledgment } from "./pcb-text-lifecycle.ts";
+import { verifyPcbTextRetainedSaveAuthority, verifyPcbTextRetainedSaveEffect } from "./pcb-text-retained-save.ts";
+import { verifyNativeRuleReportProfile } from "./native-rule-profile.ts";
 
 type RecordValue = Record<string, unknown>;
 const PROFILE = "easyeda-pro-control.typed-design-transaction.v1";
@@ -385,7 +387,7 @@ interface LibraryLifecycle { readonly family: "symbol" | "footprint"; readonly s
 type RetainedPhase = "before" | "flat-inverse-prepared" | "flat-inverse-verification" | "flat-save-prepared" | "after" | "reconciled" | "layout-net-label-repair-verified" | "layout-visibility-repair-verified" | "layout-wire-group-repair-prepared" | "layout-wire-group-repair-verified" | "apply" | "prepared" | "save-reopen" | "inverse" | "inverse-verified" |
   "symbol-save" | "footprint-save" | "symbol-durable-before-close" | "footprint-durable-before-close" |
   "symbol-reopen" | "footprint-reopen" | "symbol-reopen-recovery" | "footprint-reopen-recovery" |
-  "library-reopen-recovery-intent" | "library-reopen-recovery-not-dispatched";
+  "library-reopen-recovery-intent" | "library-reopen-recovery-not-dispatched" | "design-save-intent";
 export function selectDesignPhaseDescriptor(artifacts: readonly ArtifactDescriptor[], phase: RetainedPhase, latest = false): ArtifactDescriptor | undefined {
   const pattern = new RegExp(`^[0-9]+-${phase}\\.json$`, "u");
   const descriptors = artifacts.filter((entry) => pattern.test(basename(entry.path)));
@@ -1347,7 +1349,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
     if (isTerminalOperation(journal)) { return summary(journal); }
     if (journal.orphanedCallPossible) { throw new Error("Prior execution may still be running. Prove retained runtime termination before reconciliation."); }
     const saveEvidence = await inspectDesignSaveAttempts(journal);
-    const retainedProfile = [2, 4].includes(journal.context.document.documentType) || ["sch.wire.modify", "pcb.pour.rebuild"].includes(journal.plan.operation.action) ||
+    const retainedProfile = [2, 4].includes(journal.context.document.documentType) || ["sch.wire.modify", "pcb.pour.rebuild", "pcb.text.create"].includes(journal.plan.operation.action) ||
       (journal.plan.operation.action === "sch.layout.batch" && !journal.plan.operation.operations.some((step) => step.action === "sch.wire.replace"));
     if (saveEvidence.attempted && !retainedProfile) { throw new Error("A design Save was already attempted; no maintained retained-Save proof applies to this state. Do not downgrade it to applied-unsaved or repeat Save."); }
     if (saveEvidence.attempted && [2, 4].includes(journal.context.document.documentType) && !DesignExecutor.hasLibrarySaveEvidence(journal)) {
@@ -1358,6 +1360,10 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
     }
     await this.engine.assertRecoveryOperationIsolated(operationId);
     await this.assertRuntime(journal.plan, journal.context, journal.runtimeFingerprint);
+    if (saveEvidence.attempted && journal.plan.operation.action === "pcb.text.create") {
+      if (saveEvidence.intentCount !== 1 || saveEvidence.provenNotDispatchedCount !== 0) { throw new Error("PCB text retained Save requires exactly one consumed original intent."); }
+      return this.reconcileSavedPcbText(journal);
+    }
     const retainedWireSave = journal.plan.operation.action === "sch.wire.modify" && saveEvidence.attempted;
     if (retainedWireSave && selectDesignPhaseDescriptor(journal.artifacts, "save-reopen") === undefined) {
       throw new Error("Wire Save was attempted without a retained success acknowledgment; do not repeat Save or downgrade to applied-unsaved.");
@@ -1537,6 +1543,69 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
     }
     await DesignExecutor.artifact(journal, "reconciled", { ...current, ...(durableNoMutation === undefined ? {} : { durableNoMutation }),
       ...(flatVerification === undefined ? {} : { flatVerification }) });
+    return summary(journal);
+  }
+
+  /** Creation-only retained lifecycle proof. The original source, ID and Save
+   * remain immutable authority; no preparation, Save, inverse or navigation
+   * program is generated or dispatched by this recovery path.
+   */
+  private async reconcileSavedPcbText(journal: DesignJournal): Promise<RecordValue> {
+    if (hasDesignInverseAttempt(journal) || journal.beforeTopology !== undefined || journal.plan.expectedTopology !== undefined || journal.plan.flatDisplay !== undefined) {
+      throw new Error("PCB text retained Save has unsupported inverse or topology authority.");
+    }
+    const names = ["before", "prepared", "apply", "after", "design-save-intent", "save-reopen"] as const;
+    const descriptors = names.map((name) => selectDesignPhaseDescriptor(journal.artifacts, name));
+    let previous = -1;
+    for (const descriptor of descriptors) {
+      const index = descriptor === undefined ? -1 : journal.artifacts.indexOf(descriptor);
+      if (index <= previous) { throw new Error("PCB text original lifecycle phases are missing or out of order."); }
+      previous = index;
+    }
+    const [before, prepared, apply, after, intent, save] = await Promise.all(names.map((name) => DesignExecutor.phase(journal, name)));
+    const authority = verifyPcbTextRetainedSaveAuthority(journal, { before, prepared, apply, after, intent, save });
+    const native = await this.engine.upstream.installedEasyedaBundles?.();
+    if (native === undefined) { throw new Error("PCB text reload implementation identity is unavailable."); }
+    // Reuse exact asset verifiers: PCB/UI/API plus manager/worker. No DRC or
+    // Device operation is called; these functions read and hash files only.
+    await verifyNativeRuleReportProfile(native.assetsRoot, "pcb-drc");
+    await verifyDeviceAssociationNativeProfile(native.assetsRoot);
+    const read = (checkpoint: RecordValue): Promise<NativeHistorySnapshot> => {
+      if (typeof checkpoint["checkpoint"] !== "string" || typeof checkpoint["checkpointSha256"] !== "string") { throw new TypeError("PCB text recovery checkpoint is incomplete."); }
+      return readNativeHistoryCheckpoint({ checkpointPath: checkpoint["checkpoint"], expectedSha256: checkpoint["checkpointSha256"],
+        projectUuid: authority.projectUuid, documentRecordHistory: "preserve", ...(authority.legacy ? { pcbTextReloadOrder: "preserve" as const } : {}) });
+    };
+    const baseline = await read(journal.preCheckpoint);
+    await this.engine.awaitProjectUploads(journal.context, journal, "pcb-text-retained-save-upload-barrier");
+    const current = await this.snapshot(journal.context);
+    const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path,
+      outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-pcb-text-retained-save" });
+    if (!("receiptPath" in checkpoint) || typeof checkpoint.receiptPath !== "string") { throw new Error("PCB text recovery checkpoint receipt is missing."); }
+    const proof = verifyPcbTextRetainedSaveEffect(authority, { before: baseline, after: await read(checkpoint),
+      current: current.snapshot, currentPayload: current.payload });
+    await verifyNativeRuleReportProfile(native.assetsRoot, "pcb-drc");
+    await verifyDeviceAssociationNativeProfile(native.assetsRoot);
+    await this.assertRuntime(journal.plan, journal.context, journal.runtimeFingerprint);
+    const final = await this.snapshot(journal.context);
+    if (canonicalJson(final) !== canonicalJson(current)) { throw new Error("PCB text changed during retained Save proof."); }
+    const checkpointVerification = await this.engine.checkpoint({ receiptPath: checkpoint.receiptPath });
+    if (checkpointVerification.ok !== true || checkpointVerification.sourceChanged !== false ||
+        checkpointVerification.checkpointMatchesReceipt !== true || checkpointVerification.sourceMatchesReceipt !== true ||
+        checkpointVerification.sourceEqualsCheckpoint !== true || checkpointVerification.checkpointSha256 !== checkpoint.checkpointSha256 ||
+        checkpointVerification.sourceSha256 !== checkpoint.sourceSha256 || checkpointVerification.checkpoint !== checkpoint.checkpoint ||
+        checkpointVerification.receiptPath !== checkpoint.receiptPath || checkpointVerification.source !== journal.context.project.path) {
+      throw new Error("PCB text durable source changed during retained Save verification.");
+    }
+    await this.engine.assertContext(journal.context);
+    await DesignExecutor.artifact(journal, "pcb-text-retained-save-reconciled", { ...final, checkpoint, checkpointVerification, proof,
+      originalPhaseArtifacts: descriptors, retainedSaveAcknowledgment: save, retainedPreparation: prepared,
+      originalIntendedSourceSha256: journal.after?.sha256, saveDispatchedByRecovery: false, navigationDispatchedByRecovery: false,
+      creationProgramRegenerated: false, sourceNormalized: false });
+    journal.saved = true; journal.reopened = true; journal.state = "completed"; journal.mutationState = "after"; journal.hardStop = false;
+    journal.nextSafeAction = authority.legacy ?
+      "The original Save/reopen and durable null STRING are verified with one exact native cached-decoder black export. No source was normalized or action repeated; further writes still require their own strict baseline." :
+      "The original Save/reopen, exact created text and complete durable project are verified. No Save, navigation or design action was repeated.";
+    await updateOperation(journal);
     return summary(journal);
   }
 

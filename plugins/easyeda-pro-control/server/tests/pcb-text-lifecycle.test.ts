@@ -73,7 +73,7 @@ void test("PCB text create projects one fixed STRING and its original-ID deletio
   const before = snapshot(), retained = structuredClone(before);
   const after = expectedPcbTextLifecycleSource(create, before, { createdId });
   const delta = verifyPcbTextLifecycleSourceEffect(create, before, after, { createdId });
-  assert.deepEqual(delta.added, [{ id: createdId, type: "STRING", body: { ...textBody, ...create.properties } }]);
+  assert.deepEqual(delta.added, [{ id: createdId, type: "STRING", body: { ...textBody, ...create.properties, specialColor: "#000000" } }]);
   assert.deepEqual(delta.changed, []); assert.deepEqual(delta.removed, []); assert.equal(delta.documentChanged, false);
   const inverse = inversePcbTextLifecycleOperation(create, before, { createdId });
   assert.ok(inverse);

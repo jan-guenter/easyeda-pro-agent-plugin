@@ -9,7 +9,7 @@ import type { NativeHistorySnapshot } from "./native-history.ts";
 import { assertPcbTextSourceProfile, pcbTextCreateFieldsSchema, pcbTextRuntimeScope, selectPcbTextString } from "./pcb-text-action.ts";
 import { buildPcbTextLifecycleRuntime } from "./pcb-text-lifecycle-runtime.ts";
 
-export const PCB_TEXT_LIFECYCLE_PROFILE = "easyeda-pro-control.pcb-standalone-text-lifecycle.v1";
+export const PCB_TEXT_LIFECYCLE_PROFILE = "easyeda-pro-control.pcb-standalone-text-lifecycle.v2";
 const id = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/u);
 const nativeId = z.string().regex(/^[a-f0-9]{16}$/u);
 export const pcbTextLifecycleOperationSchema = z.discriminatedUnion("action", [
@@ -78,10 +78,12 @@ function createString(operation: Extract<PcbTextLifecycleOperation, { action: "p
   // PCB SHA65401cdc: S4 at4002049 feeds and retains numeric zIndex; its
   // Finish assigns it to the model. buildText5840719/addtextByModel7890861
   // Retain that model and ID. s3 at4435183 emits zIndex unchanged; j2's
-  // Getter3378952 defaults to -1. No generated ordering or public defaults.
+  // Getter3378952 defaults to -1. Explicit native UI default tW458223
+  // Is black; null is unsafe because reopen's cached S4.feed2 retains a
+  // Previous STRING color when S4.clear does not clear specialColor.
   return { id: nativeId.parse(createdId), type: "STRING", body: { partitionId: "", groupId: 0, layerId: 3,
     ...operation.properties, fontFamily: "default", bold: 0, italic: 0, origin: "LEFT_BOTTOM", angle: 0,
-    reverse: false, expansion: 0, mirror: false, locked: false, zIndex: -1, specialColor: null } };
+    reverse: false, expansion: 0, mirror: false, locked: false, zIndex: -1, specialColor: "#000000" } };
 }
 
 export function expectedPcbTextLifecycleSource(input: unknown, before: NativeSourceSnapshot, ids: PcbTextLifecycleIds = {}): NativeSourceSnapshot {
@@ -145,6 +147,6 @@ export const PCB_TEXT_LIFECYCLE_LIMITATIONS = Object.freeze([
   "Creates one default-font top-silkscreen STRING with explicit native-mil x/y/fontSize/strokeWidth and bounded text; fixed LEFT_BOTTOM, zero angle, no mirror/reverse/expansion, unlocked and zIndex -1. No caller-supplied native ID, parent, style, layer or ordering.",
   "Creation identity is allocated once during preparation and retained with the exact program before dispatch. Verification and an explicit creation inverse use only that original journal identity; recovery never regenerates or repeats creation.",
   "Deletes one existing unlocked standalone STRING under the same full-source profile. Deletion has no automatic inverse; recreating text would not restore its original identity or history.",
-  "All existing STRINGs and every source record must satisfy the existing conservative text profile. Existing exact null or #000000 color is preserved, while new text uses explicit null. Pours/generated copper, custom fonts, groups, partitions, ambiguous ATTR ownership and unsupported record families refuse.",
+  "All existing STRINGs and every source record must satisfy the existing conservative text profile. Existing exact null or #000000 color is preserved; creation profile v2 writes explicit native-UI-default #000000 to avoid cached-reload color carryover. Pours/generated copper, custom fonts, groups, partitions, ambiguous ATTR ownership and unsupported record families refuse.",
   "Uses one captured project/branch/tab/frame receiver and preserves unchanged raw source rows. Original decoder acknowledgment precedes post-write checks. Complete live and saved-project peer proofs remain mandatory; no visual, clearance or fabrication acceptance is inferred.",
 ]);
