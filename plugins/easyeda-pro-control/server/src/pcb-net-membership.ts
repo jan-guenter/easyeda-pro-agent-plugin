@@ -109,7 +109,7 @@ function family(input: unknown): z.infer<typeof familySchema> {
   }
   return parsed;
 }
-function sourceIdentity(source: NativeSourceSnapshot, documentUuid: string): void {
+export function assertPcbMembershipSource(source: NativeSourceSnapshot, documentUuid: string): void {
   identity.parse(documentUuid);
   if (source.objects.length > PCB_NET_MEMBERSHIP_MAX_ITEMS || Buffer.byteLength(JSON.stringify(source)) > 16_777_216 || source.schema !== "easyeda-pro-control.document-source.v1" || source.document["docType"] !== "PCB" ||
       source.document["uuid"] !== documentUuid || source.document["editVersion"] !== PCB_NET_MEMBERSHIP_SOURCE_EDIT_VERSION ||
@@ -194,7 +194,7 @@ function verifyPadLinks(expected: Map<string, Member>, componentIds: Set<string>
  */
 export function derivePcbPhysicalMembers(source: NativeSourceSnapshot, inventoryInput: unknown, documentUuid: string,
   primitiveTypes: readonly PrimitiveType[], inherited?: PcbInheritedLineEvidence): (Member | PcbInheritedLine)[] {
-  sourceIdentity(source, documentUuid);
+  assertPcbMembershipSource(source, documentUuid);
   const inventory = inventorySchema.parse(inventoryInput);
   const selected = new Set(z.array(primitiveType).min(1).max(5).parse(primitiveTypes));
   if (selected.size !== primitiveTypes.length) { throw new Error("PCB physical membership has duplicate requested families."); }

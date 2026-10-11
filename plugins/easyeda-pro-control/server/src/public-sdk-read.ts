@@ -11,6 +11,7 @@ import { buildSchematicNetGroupReadExpression, isSchematicNetGroupReadMethod, sc
 import { PCB_NET_MEMBERSHIP_LIMITATIONS, PCB_NET_MEMBERSHIP_METHOD, pcbNetMembershipArgumentsSchema } from "./pcb-net-membership.ts";
 // oxlint-disable-next-line import/max-dependencies -- Each fixed reader supplies its reviewed schema and provenance; duplicating that contract would permit drift.
 import { PCB_PRIMITIVE_TYPE_LIMITATIONS, PCB_PRIMITIVE_TYPE_METHOD, pcbPrimitiveTypeArgumentsSchema } from "./pcb-primitive-type-read.ts";
+import { PCB_SELECTED_OBJECTS_LIMITATIONS, PCB_SELECTED_OBJECTS_METHOD, pcbSelectedObjectsArgumentsSchema } from "./pcb-selected-objects.ts";
 import { PCB_ACTIVE_LAYER_LIMITATIONS, PCB_ACTIVE_LAYER_METHOD, pcbActiveLayerArgumentsSchema } from "./pcb-active-layer-read.ts";
 import { SCHEMATIC_SELECTION_LIMITATIONS, SCHEMATIC_SELECTION_METHOD, buildSchematicSelectionReadExpression } from "./schematic-selection-read.ts";
 
@@ -187,6 +188,9 @@ add(PCB_NET_MEMBERSHIP_METHOD, [3], "records", pcbNetMembershipArgumentsSchema, 
 });
 add(PCB_PRIMITIVE_TYPE_METHOD, [3], "string", pcbPrimitiveTypeArgumentsSchema, ["id"], {
   implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [...PCB_PRIMITIVE_TYPE_LIMITATIONS],
+});
+add(PCB_SELECTED_OBJECTS_METHOD, [3], "records", pcbSelectedObjectsArgumentsSchema, [], {
+  implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [...PCB_SELECTED_OBJECTS_LIMITATIONS],
 });
 for (const method of ["getAllNetName", "getAllNetsName"]) { add(`eda.pcb_Net.${method}`, [3], "strings"); }
 for (const [method, output] of [["getNet", "record"], ["getNetColor", "json"], ["getNetLength", "number"]] as const) {
@@ -437,6 +441,7 @@ function readImplementationName(path: string): string {
   if (path === SCHEMATIC_SELECTION_METHOD) { return "schematic-selection-read"; }
   if (path === PCB_ACTIVE_LAYER_METHOD) { return "pcb-active-layer-read"; }
   if (path === PCB_PRIMITIVE_TYPE_METHOD) { return "pcb-primitive-type-read"; }
+  if (path === PCB_SELECTED_OBJECTS_METHOD) { return "pcb-selected-objects-read"; }
   if (path === PCB_NET_MEMBERSHIP_METHOD) { return "pcb-net-membership-read"; }
   if (isSchematicNetGroupReadMethod(path)) { return "schematic-netgroup-read"; }
   if (isSchematicTextReadMethod(path)) { return "schematic-text-read"; }
@@ -494,6 +499,7 @@ export function buildPublicSdkReadCode(input: unknown): string {
   if (isEditorTabLookupMethod(request.method)) { throw new Error("Owned editor lookups require the checkpoint-bound specialized reader."); }
   if (request.method === PCB_NET_MEMBERSHIP_METHOD) { throw new Error("PCB net membership requires the source/inventory/source specialized reader."); }
   if (request.method === PCB_PRIMITIVE_TYPE_METHOD) { throw new Error("PCB primitive type requires the source/inventory/source specialized reader."); }
+  if (request.method === PCB_SELECTED_OBJECTS_METHOD) { throw new Error("Selected PCB source objects require the source/selection/inventory specialized reader."); }
   if (request.method === PCB_ACTIVE_LAYER_METHOD) { throw new Error("PCB active layer requires the source/layers/source specialized reader."); }
   const definition = definitions.get(request.method);
   if (definition === undefined) { throw new Error("Unsupported fixed SDK method."); }
@@ -681,6 +687,7 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
   if (isEditorTabLookupMethod(request.method)) { throw new Error("Owned editor lookup results require the checkpoint-bound specialized verifier."); }
   if (request.method === PCB_NET_MEMBERSHIP_METHOD) { throw new Error("PCB net membership results require the complete source/inventory specialized verifier."); }
   if (request.method === PCB_PRIMITIVE_TYPE_METHOD) { throw new Error("PCB primitive type results require the complete source/inventory specialized verifier."); }
+  if (request.method === PCB_SELECTED_OBJECTS_METHOD) { throw new Error("Selected PCB source object results require the complete source/selection/inventory specialized verifier."); }
   if (request.method === PCB_ACTIVE_LAYER_METHOD) { throw new Error("PCB active layer results require the complete source/layers specialized verifier."); }
   const definition = definitions.get(request.method);
   if (definition === undefined) { throw new Error("Unsupported fixed SDK method."); }

@@ -84,6 +84,8 @@ import { isSchematicNetGroupReadMethod } from "./schematic-netgroup-read.ts";
 import { PCB_NET_MEMBERSHIP_METHOD } from "./pcb-net-membership.ts";
 import { readPcbNetMembership } from "./pcb-net-membership-read.ts";
 import { PCB_PRIMITIVE_TYPE_METHOD, readPcbPrimitiveType } from "./pcb-primitive-type-read.ts";
+import { PCB_SELECTED_OBJECTS_METHOD } from "./pcb-selected-objects.ts";
+import { readPcbSelectedObjects } from "./pcb-selected-objects-read.ts";
 import { PCB_ACTIVE_LAYER_METHOD, readPcbActiveLayer } from "./pcb-active-layer-read.ts";
 import { publicSdkCatalogQuerySchema, publicSdkValidationQuerySchema, queryPublicSdkReads, validatePublicSdkArguments } from "./public-sdk-catalog.ts";
 import { operationCatalogQuerySchema, operationValidationRequestSchema, queryOperationCatalog, validateCatalogOperation } from "./operation-catalog.ts";
@@ -2000,6 +2002,7 @@ registerFacadeTool(
     if (isSchematicNetGroupReadMethod(input.request.method)) { reader = "fixed-native-netgroup-state-observation"; effect = "fixed-native-netgroup-state-read"; }
     if (input.request.method === PCB_NET_MEMBERSHIP_METHOD) { reader = "fixed-native-net-membership-observation"; effect = "fixed-native-net-membership-read"; }
     if (input.request.method === PCB_PRIMITIVE_TYPE_METHOD) { reader = "fixed-native-pcb-type-observation"; effect = "fixed-native-pcb-type-read"; }
+    if (input.request.method === PCB_SELECTED_OBJECTS_METHOD) { reader = "fixed-native-selected-source-observation"; effect = "fixed-native-selected-source-read"; }
     if (input.request.method === PCB_ACTIVE_LAYER_METHOD) { reader = "fixed-native-active-layer-observation"; effect = "fixed-native-active-layer-read"; }
     try {
       validatePrivateFingerprint(input.expectedFingerprint);
@@ -2007,7 +2010,7 @@ registerFacadeTool(
       // Not repeat their initial full launcher scan at this same entry boundary.
       // Ordinary SDK readers still need the registration-owned admission.
       const coordinated = input.request.method === PCB_NET_MEMBERSHIP_METHOD ||
-        input.request.method === PCB_PRIMITIVE_TYPE_METHOD || input.request.method === PCB_ACTIVE_LAYER_METHOD;
+        input.request.method === PCB_PRIMITIVE_TYPE_METHOD || input.request.method === PCB_ACTIVE_LAYER_METHOD || input.request.method === PCB_SELECTED_OBJECTS_METHOD;
       if (!coordinated) {
         const status = await engine.status();
         assertSubset(status.stableFingerprint, input.expectedFingerprint, "EasyEDA SDK read runtime fingerprint");
@@ -2020,6 +2023,8 @@ registerFacadeTool(
         result = await readPcbNetMembership(engine, input.request, input.expectedContext, input.expectedFingerprint);
       } else if (input.request.method === PCB_PRIMITIVE_TYPE_METHOD) {
         result = await readPcbPrimitiveType(engine, input.request, input.expectedContext, input.expectedFingerprint);
+      } else if (input.request.method === PCB_SELECTED_OBJECTS_METHOD) {
+        result = await readPcbSelectedObjects(engine, input.request, input.expectedContext, input.expectedFingerprint);
       } else if (input.request.method === PCB_ACTIVE_LAYER_METHOD) {
         result = await readPcbActiveLayer(engine, input.request, input.expectedContext, input.expectedFingerprint);
       } else { result = await engine.publicSdkRead(input.request, input.expectedContext); }

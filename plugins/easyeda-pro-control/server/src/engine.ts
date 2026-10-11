@@ -66,6 +66,7 @@ import { isSchematicTextReadMethod } from "./schematic-text-read.ts";
 import { isSchematicNetGroupReadMethod } from "./schematic-netgroup-read.ts";
 import { PCB_NET_MEMBERSHIP_METHOD } from "./pcb-net-membership.ts";
 import { PCB_PRIMITIVE_TYPE_METHOD } from "./pcb-primitive-type-read.ts";
+import { PCB_SELECTED_OBJECTS_METHOD } from "./pcb-selected-objects.ts";
 import { PCB_ACTIVE_LAYER_METHOD } from "./pcb-active-layer-read.ts";
 import { isEditorTabLookupMethod, readEditorTabLookup } from "./editor-tab-lookups.ts";
 import { buildSchematicNativeReadExpression } from "./schematic-native-adapter.ts";
@@ -3274,6 +3275,7 @@ export class EasyedaControlEngine {
     const parsed = validatePublicSdkReadRequest(request, boundContext.document.documentType);
     if (parsed.method === PCB_NET_MEMBERSHIP_METHOD) { throw new Error("PCB net membership requires its exact-runtime source/inventory coordinator."); }
     if (parsed.method === PCB_PRIMITIVE_TYPE_METHOD) { throw new Error("PCB primitive type requires its exact-runtime source/inventory coordinator."); }
+    if (parsed.method === PCB_SELECTED_OBJECTS_METHOD) { throw new Error("Selected PCB source objects require their exact-runtime source/selection/inventory coordinator."); }
     if (parsed.method === PCB_ACTIVE_LAYER_METHOD) { throw new Error("PCB active layer requires its exact-runtime source/layers coordinator."); }
     if (isEditorTabLookupMethod(parsed.method)) { return readEditorTabLookup(this, parsed, boundContext); }
     await this.assertBridgeDispatchAllowed();

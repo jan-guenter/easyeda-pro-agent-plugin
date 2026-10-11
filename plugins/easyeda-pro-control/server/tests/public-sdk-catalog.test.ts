@@ -8,6 +8,8 @@ import { PCB_NET_MEMBERSHIP_METHOD } from "../src/pcb-net-membership.ts";
 import { PCB_PRIMITIVE_TYPE_METHOD } from "../src/pcb-primitive-type-read.ts";
 import { PCB_ACTIVE_LAYER_METHOD } from "../src/pcb-active-layer-read.ts";
 import { SCHEMATIC_SELECTION_METHOD } from "../src/schematic-selection-read.ts";
+// oxlint-disable-next-line import/max-dependencies -- Test each real fixed native authority rather than a copied classifier.
+import { PCB_SELECTED_OBJECTS_METHOD } from "../src/pcb-selected-objects.ts";
 
 void test("offline SDK-read pages cover the exact executable descriptor set", () => {
   const paths: string[] = [];
@@ -104,6 +106,19 @@ void test("offline active-layer discovery admits only empty arguments and advert
   assert.equal(descriptor.implementation.test, "server/tests/pcb-active-layer-read.test.ts");
   assert.deepEqual(descriptor.result, { kind: "record", optional: false, getterFields: [], primitiveType: null });
   assert.match(descriptor.limitations.join(" "), /body is empty/u); assert.match(descriptor.limitations.join(" "), /no undefined\/no-active-layer result/u);
+});
+
+void test("offline selected-object discovery advertises native source DTOs and exact empty arguments", () => {
+  const method = PCB_SELECTED_OBJECTS_METHOD, result = queryPublicSdkReads({ method, includeSchemas: true });
+  assert.equal(result["authority"], "native-selected-source-objects-not-public-instance-or-persistence-proof");
+  assert.equal(result["executionAuthorized"], false); assert.equal(result["matched"], 1);
+  assert.equal(validatePublicSdkArguments({ request: { method, arguments: {} } })["valid"], true);
+  for (const argumentsData of [{ ids: [] }, { code: "any()" }, { primitiveTypes: ["String"] }, { all: true }]) {
+    assert.equal(validatePublicSdkArguments({ request: { method, arguments: argumentsData } })["valid"], false);
+  }
+  const descriptor = publicSdkReadDescriptors().find((entry) => entry.path === method); assert.ok(descriptor);
+  assert.equal(descriptor.implementation.kind, "native-task-equivalent");
+  assert.ok(descriptor.limitations.some((line) => line.includes("STRING") && line.includes("entire result")));
 });
 
 void test("deprecated selection discovery exposes precise replacement authority without promoting mixed or empty matches", () => {
