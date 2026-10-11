@@ -34,12 +34,12 @@ export interface PreparedFlatDisplayProfile {
 }
 const same = (left: unknown, right: unknown): boolean => canonicalJson(left) === canonicalJson(right);
 
-function captureEvidence(evidence: FlatDisplayObservationEvidence): FlatDisplayObservationEvidence {
+export function captureFlatEvidence(evidence: FlatDisplayObservationEvidence): FlatDisplayObservationEvidence {
   const { history, ...rest } = evidence;
   return { ...structuredClone(rest), history: captureFlatDisplayHistory(history) };
 }
 
-function exactMembers(history: NativeHistorySnapshot): FlatDisplayBinding["members"] {
+export function exactFlatMembers(history: NativeHistorySnapshot): FlatDisplayBinding["members"] {
   return history.documents.map(({ uuid, docType, semanticSha256 }) => ({ uuid, docType, semanticSha256 })).toSorted((left, right) => left.uuid.localeCompare(right.uuid));
 }
 function attributes(items: readonly { readonly id: string; readonly key: string; readonly value: unknown; readonly body: unknown }[]): unknown {
@@ -70,7 +70,7 @@ function assertNativeObservation(evidence: FlatDisplayObservationEvidence, nativ
     }
   }
 }
-function evidenceState(evidence: FlatDisplayObservationEvidence, context: ExpectedContext, nativeInput: unknown): {
+export function flatEvidenceState(evidence: FlatDisplayObservationEvidence, context: ExpectedContext, nativeInput: unknown): {
   source: NativeSourceSnapshot; native: SchematicNativeSnapshot; schematicUuid: string;
 } {
   const contextBinding = flatDisplayContextScope(context), { checkpoint, history, observation } = evidence;
@@ -122,9 +122,9 @@ function evidenceState(evidence: FlatDisplayObservationEvidence, context: Expect
  */
 export async function prepareFlatDisplayProfile(input: { readonly operation: unknown; readonly context: ExpectedContext;
   readonly evidence: FlatDisplayObservationEvidence; readonly native: unknown }): Promise<PreparedFlatDisplayProfile> {
-  const captured = { ...structuredClone({ ...input, evidence: undefined }), evidence: captureEvidence(input.evidence) };
+  const captured = { ...structuredClone({ ...input, evidence: undefined }), evidence: captureFlatEvidence(input.evidence) };
   const operation = flatDisplayOperation(captured.operation);
-  const { source, native, schematicUuid } = evidenceState(captured.evidence, captured.context, captured.native);
+  const { source, native, schematicUuid } = flatEvidenceState(captured.evidence, captured.context, captured.native);
   const { history, checkpoint, proof } = captured.evidence;
   const baselineProof = await verifyFlatDisplayMaterialization({ history, source, native });
   const layoutEvidence = { history, templates: {} };
@@ -142,7 +142,7 @@ export async function prepareFlatDisplayProfile(input: { readonly operation: unk
     operationSha256: sha256Json(operation), inverseSha256: sha256Json(inverse), checkpoint: { receiptPath: checkpoint.receiptPath,
       receiptSha256: checkpoint.receiptSha256, checkpointSha256: checkpoint.checkpointSha256, sourceSha256: checkpoint.sourceSha256,
       sourceDumpSha256: checkpoint.sourceDumpSha256, checkpointDumpSha256: checkpoint.checkpointDumpSha256, historySemanticSha256: history.semanticSha256 },
-    members: exactMembers(history), before: { sourceSha256: source.sha256, nativeSha256: schematicNativeSnapshotHash(native) },
+    members: exactFlatMembers(history), before: { sourceSha256: source.sha256, nativeSha256: schematicNativeSnapshotHash(native) },
     after: { sourceSha256: projected.expected.sha256, nativeSha256: schematicNativeSnapshotHash(projected.native) },
     topology: proof.topology, beforeObservationSha256: proof.observationSha256, baselineProofSha256: sha256Json(baselineProof) });
   return { binding, operation, inverse, expectedSource: projected.expected, expectedNative: projected.native, baselineProof };
@@ -159,7 +159,7 @@ export async function prepareFlatDisplayProfile(input: { readonly operation: unk
 export function verifyFlatDisplayObservation(bindingInput: unknown, operationInput: unknown, context: ExpectedContext,
   evidence: FlatDisplayObservationEvidence, nativeInput: unknown, phase: "before" | "after"): void {
   const binding = assertFlatDisplayBinding(bindingInput, operationInput, context);
-  const current = evidenceState(evidence, context, nativeInput);
+  const current = flatEvidenceState(evidence, context, nativeInput);
   const nativeSource = parseDocumentSource(current.native.source);
   const comparisonNative = phase === "after" ? { ...current.native, source: encodeSchematicLayoutSource(nativeSource) } : current.native;
   if (!same(binding.project, evidence.projectBinding) || current.schematicUuid !== binding.schematicUuid ||
@@ -177,7 +177,7 @@ export function verifyFlatDisplayObservation(bindingInput: unknown, operationInp
 export function verifyFlatDisplayMembershipTopology(bindingInput: unknown, operationInput: unknown, context: ExpectedContext,
   evidence: FlatDisplayObservationEvidence, nativeInput: unknown): void {
   const binding = assertFlatDisplayBinding(bindingInput, operationInput, context);
-  const current = evidenceState(evidence, context, nativeInput);
+  const current = flatEvidenceState(evidence, context, nativeInput);
   verifyMembershipTopology(binding, evidence, current.schematicUuid);
 }
 
@@ -186,7 +186,7 @@ function verifyMembershipTopology(binding: FlatDisplayBinding, evidence: FlatDis
   if (!same(binding.project, evidence.projectBinding) || schematicUuid !== binding.schematicUuid) {
     throw new Error("Flat display lifecycle project branch or schematic changed.");
   }
-  const members = exactMembers(evidence.history);
+  const members = exactFlatMembers(evidence.history);
   const previous = new Map(binding.members.map((entry) => [entry.uuid, entry.semanticSha256]));
   if (!same(members.map(({ uuid, docType }) => ({ uuid, docType })), binding.members.map(({ uuid, docType }) => ({ uuid, docType }))) ||
       members.some((entry) => entry.uuid !== binding.pageUuid && previous.get(entry.uuid) !== entry.semanticSha256)) {
@@ -206,12 +206,12 @@ export async function verifyFlatDisplayPersistence(input: {
   readonly evidence: FlatDisplayObservationEvidence; readonly allowAfter: boolean;
 }): Promise<Readonly<Record<string, unknown>>> {
   const captured = { ...structuredClone({ ...input, baseline: undefined, evidence: undefined }),
-    baseline: captureFlatDisplayHistory(input.baseline), evidence: captureEvidence(input.evidence) };
+    baseline: captureFlatDisplayHistory(input.baseline), evidence: captureFlatEvidence(input.evidence) };
   const binding = assertFlatDisplayBinding(captured.binding, captured.operation, captured.context);
   const operation = flatDisplayOperation(captured.operation);
   assertFlatDisplayLibraryPeers(binding, captured.baseline);
   if (captured.baseline.checkpointSha256 !== binding.checkpoint.checkpointSha256 || captured.baseline.semanticSha256 !== binding.checkpoint.historySemanticSha256 ||
-      !same(flatDisplayProjectBindingFromHistory(captured.baseline), binding.project) || !same(exactMembers(captured.baseline), binding.members) ||
+      !same(flatDisplayProjectBindingFromHistory(captured.baseline), binding.project) || !same(exactFlatMembers(captured.baseline), binding.members) ||
       captured.before.sha256 !== binding.before.sourceSha256 || schematicNativeSnapshotHash(captured.beforeNative) !== binding.before.nativeSha256 ||
       captured.current.sha256 !== binding[captured.allowAfter ? "after" : "before"].sourceSha256) {
     throw new Error("Flat display persistence lacks its sealed original and exact intended sources.");

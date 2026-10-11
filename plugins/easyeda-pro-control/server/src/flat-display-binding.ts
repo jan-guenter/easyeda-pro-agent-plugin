@@ -16,7 +16,7 @@ const projectBindingSchema = z.strictObject({ projectUuid: z.string().regex(/^(?
 export type FlatDisplayProjectBinding = z.infer<typeof projectBindingSchema>;
 const member = z.strictObject({ uuid: identity, docType: z.string().min(1).max(128), semanticSha256: hash });
 const sourceBinding = z.strictObject({ sourceSha256: hash, nativeSha256: hash });
-const commonBindingSchema = z.strictObject({ project: projectBindingSchema,
+export const flatCommonBindingSchema = z.strictObject({ project: projectBindingSchema,
   projectPath: z.string().min(1).max(4096), schematicUuid: identity, pageUuid: identity, tabId: z.string().min(1).max(512),
   operationSha256: hash, inverseSha256: hash, checkpoint: z.strictObject({ receiptPath: z.string().min(1).max(4096), receiptSha256: hash,
     checkpointSha256: hash, sourceSha256: hash, sourceDumpSha256: hash, checkpointDumpSha256: hash, historySemanticSha256: hash }),
@@ -24,8 +24,8 @@ const commonBindingSchema = z.strictObject({ project: projectBindingSchema,
   topology: designTopologySchema, beforeObservationSha256: hash, baselineProofSha256: hash,
 });
 export const flatDisplayBindingSchema = z.discriminatedUnion("profile", [
-  z.strictObject({ profile: z.literal(FLAT_DISPLAY_TRANSACTION_PROFILE), ...commonBindingSchema.shape }),
-  z.strictObject({ profile: z.literal(FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE), ...commonBindingSchema.shape, libraryHeaders: flatDisplayLibrarySealSchema }),
+  z.strictObject({ profile: z.literal(FLAT_DISPLAY_TRANSACTION_PROFILE), ...flatCommonBindingSchema.shape }),
+  z.strictObject({ profile: z.literal(FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE), ...flatCommonBindingSchema.shape, libraryHeaders: flatDisplayLibrarySealSchema }),
 ]).superRefine((value, context) => {
   if (new Set(value.members.map((entry) => entry.uuid)).size !== value.members.length ||
       value.members.filter((entry) => entry.uuid === value.pageUuid && entry.docType === "SCH_PAGE").length !== 1 ||

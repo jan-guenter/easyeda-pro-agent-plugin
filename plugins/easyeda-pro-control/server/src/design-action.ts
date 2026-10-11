@@ -126,7 +126,13 @@ export function prepareDesignAction(input: unknown, before: DesignActionState, i
  */
 export async function prepareDesignActionCooperatively(input: unknown, before: DesignActionState, ids: ActionIds = {}, flatGuard?: FlatDisplayRuntimeGuard): Promise<PreparedDesignAction> {
   const captured = structuredClone({ action: designActionSchema.parse(input), before, ids, flatGuard });
-  if (captured.flatGuard !== undefined && captured.action.action !== "sch.layout.batch") { throw new Error("Flat display guard requires its exact layout action."); }
+  if (captured.flatGuard !== undefined && captured.action.action !== "sch.layout.batch" && captured.action.action !== "sch.wire.modify") { throw new Error("Flat guard requires its exact layout action or sealed wire reroute."); }
+  if (captured.flatGuard !== undefined && captured.action.action === "sch.wire.modify") {
+    assertDesignActionSupported(captured.action, captured.before, captured.ids);
+    const adapter = buildSchematicNativeWireAdapter(captured.action, captured.before.source, captured.before.schematic, captured.flatGuard);
+    return finishPreparedDesignAction(captured.action, captured.ids, { compiled: compileSchematicOperation(captured.action),
+      expression: adapter.expression, adapterProfile: adapter.profile, expectedSource: adapter.expected, sourceAdapter: false });
+  }
   if (captured.action.action === "sch.layout.batch") {
     await assertDesignActionSupportedCooperatively(captured.action, captured.before, captured.ids);
     const adapter = await buildSchematicLayoutAdapterCooperatively(captured.action, captured.before.source,
