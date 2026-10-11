@@ -1,6 +1,6 @@
 {
   "name": "easyeda-pro-control",
-  "version": "0.3.0+codex.20261011002000",
+  "version": "0.3.0+codex.20261011010000",
   "description": "Safety-gated EasyEDA API coverage, fixed typed SDK reads, design operations and seven engineering skills.",
   "author": {
     "name": "Jan G\u00fcnter",

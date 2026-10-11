@@ -131,6 +131,14 @@ Last updated: 2026-10-11 (Europe/Berlin)
   A supported refresh under022 remains pending. Never manually edit the cache.
   Both disposable editors stay closed; no live call follows installation.
 
+- The changed-HEAD refresh under022 rebuilt marketplace32bbaeb with0644 files,
+  but cache replacement failed with a reported backup permission error. Existing
+  installed002000 bytes/modes remain unchanged. No manual cache repair, owner
+  termination or permission-check bypass occurred. Source candidate010000 changes
+  only the plugin manifest version so the supported installer can create a fresh
+  cache directory. Runtime source, bundles and all reviewed pins remain exactly
+  the CI-tested9ba9455 payload. New-generation CI/install proof remains pending.
+
 ### Restarted223200 acceptance and next source candidate
 
 - Fresh facade1829230 admitted installed223200 bundled75d864d/manifest14c02f1f
@@ -978,7 +986,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Installed Git-marketplace candidate233100 remains loaded by host1864397. Source candidate `0.3.0+codex.20261011002000` has26tools, seven skills and174fixed readers; local release checks pass, publication/installation remain pending. Connected233100 Wire DTO inspection refused and led to a tested source correction, not a successful reader claim. Its disposable bus fixture now has exact saved and cold-reopened source/full-project proof. Both disposable editors are closed and all journals are terminal. Never replay prior edits/inverse/rename/Save. Corrected Wire/Bus DTOs, filtered PCB membership, new PCB type lookup and nonempty flat topology need fresh installed-generation validation. Prior Text/property-name/Wire-ID/symbol-Pin/display/rename evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
+- Host1864397 still loads233100. CLI installed002000, but its restrictive cache modes failed proof before startup and supported replacement reported a permission error. Source candidate `0.3.0+codex.20261011010000` changes only the installation version, retaining26tools, seven skills,174fixed readers and the CI-verified runtime payload. Publication/installation proof remains pending. Connected233100 Wire DTO inspection refused and led to a tested source correction, not a successful reader claim. Its disposable bus fixture now has exact saved and cold-reopened source/full-project proof. Both disposable editors are closed and all journals are terminal. Never replay prior edits/inverse/rename/Save. Corrected Wire/Bus DTOs, filtered PCB membership, new PCB type lookup and nonempty flat topology need fresh installed-generation validation. Prior Text/property-name/Wire-ID/symbol-Pin/display/rename evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
