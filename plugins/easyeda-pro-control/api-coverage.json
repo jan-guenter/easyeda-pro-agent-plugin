@@ -7,13 +7,13 @@
     "latestDistinctMethods": 773,
     "statuses": {
       "implemented-public-subset": 192,
-      "implemented-native-equivalent": 96,
+      "implemented-native-equivalent": 97,
       "internal-lifecycle-only": 2,
       "implemented-but-blocked": 8,
-      "omitted": 476
+      "omitted": 475
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 349,
+      "available-with-runtime-guards": 350,
       "blocked": 9,
       "partially-blocked": 3
     },
@@ -30,7 +30,7 @@
       "interactive-export-resource-lifecycle": 1,
       "interactive-ui-resource": 37,
       "layer-selection-collateral-state": 1,
-      "lossy-heterogeneous-primitive-projection": 3,
+      "lossy-heterogeneous-primitive-projection": 2,
       "lossy-logging-selection-reader": 1,
       "lossy-or-unawaited-public-reader": 1,
       "lossy-selected-object-projection": 1,
@@ -20882,17 +20882,39 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "lossy-heterogeneous-primitive-projection",
-        "reason": "The installed wrapper's type switch skips Text and unknown selected types. A stable projected array can omit selected primitives, even when complete selected-ID enumeration is available.",
-        "nextRequirement": "Bind complete selected IDs before and after the getter; project only reviewed primitive families and reject any missing, duplicate or unsupported identity. Do not treat the wrapper's array as complete selection evidence.",
-        "evidence": [
-          "public-sdk-read.ts",
-          "docs/api-execution-feasibility-2026-10-10.md"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.pcb_SelectControl.getAllSelectedPrimitives",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native-source DTO equivalent, not public primitive instances or public all-selected execution/parity. The installed public mapper silently drops Text; the raw selected-object handler filters objects without toJSON. Neither is called. Exact selected-ID order and membership are preserved. Only root Line, Arc, Via, standalone Pad, Component and STRING (String) are supported. Any missing, inherited, generated, grouped, unsupported or colliding selected identity refuses the entire result; no partial array is returned. Each DTO contains the complete exported native source record and its source-backed direct ATTR records. Fields retain native source encoding, including units, nulls and spelling; no SDK unit conversion, default resolution or native model serialization is invented. Component source and source-backed attributes do not contain complete inherited footprint geometry or generated attributes. Component pads, selected labels, outline children, footprint text and inherited tracks are not admitted as selected objects. Complete source/inventory correspondence is required for each selected owning family before returning any DTO. All inventory families are checked for duplicate and cross-family identity collisions. Pad correspondence includes the complete component-owned pad correlation, even though selected ComponentPad objects refuse. Two identical source/selected-IDs/inventory/selected-IDs/source cycles bind an active project-owned type-3 PCB and private runtime fingerprint. Each constituent read is independently double-sampled. Switching away and back between observations remains undetectable; no atomic snapshot or persistence claim. Line family correspondence may require the maintained fresh checkpoint proof for unselected inherited footprint lines. Its existing narrow ownership/geometry restrictions remain unchanged; selected inherited lines still refuse. Generated poured-state correlation must be exactly empty. Selected IDs may not use the ratline prefix, an existing component's descendant prefix, or any source object's generated polygon Line/Arc suffix; these drawing identities are outside ordinary family inventories. At most 256 selected IDs, 20000 source records and identities per inventory family, 16 MiB source evidence and 2 MiB result. Exceeding bounds refuses without truncation. No selection changes, public object mapper, navigation, Save, mutation or retry.",
+          "documentTypes": [
+            3
+          ],
+          "source": [
+            "pcb-selected-objects-read.ts"
+          ],
+          "tests": [
+            "pcb-selected-objects-read.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.pcb_SelectControl.getAllSelectedPrimitives",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

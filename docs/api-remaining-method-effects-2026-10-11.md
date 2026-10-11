@@ -32,9 +32,12 @@ creation and deletion with exact-frame binding and strict source/durable proof.
 Modification changes x/y/text; creation fixes the default-font top-silkscreen
 style and reserves an identity before dispatch; deletion has no automatic inverse.
 Other styles, layers, fonts and pours remain refused. These routes do not call
-the partially mutating public wrapper. Connected lifecycle validation remains
-pending. The broader finding below still applies to unimplemented public
-argument branches.
+the partially mutating public wrapper. Installed131000 passed forward and
+explicit reverse modification with complete saved/reopened proof. Creation
+consumed one successful Save/close/reopen but stopped on a new STRING's null-to-
+black reload difference; its original journal remains unresolved. Deletion has
+not been live-tested. Source-only correction and recovery are under review.
+The broader finding below still applies to unimplemented public argument branches.
 
 | Method or family | Demonstrated issue | Work needed before admission |
 | --- | --- | --- |

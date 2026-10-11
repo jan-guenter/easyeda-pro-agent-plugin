@@ -31,8 +31,13 @@ Last updated: 2026-10-11 (Europe/Berlin)
   lint/types clean in its isolated source branch. Scope excludes inline component
   setters, hierarchy/inheritance/imported atom headers and all schematic canvases.
   It creates no page/template/Save; native callbacks are not atomic against user
-  project switches. Root coverage/docs integration and full release checks remain.
-  New selected-object reader is under development separately. PR9 remains draft.
+  project switches. Root coverage/docs integration passes; full release checks remain.
+  Selected-object reader8eeba8d is integrated as9af8e68 with complete selected
+  root Line/Arc/Via/Pad/Component/String source DTOs, whole-read refusal on
+  unsupported identities and exact-empty generated-pour admission. Author715
+  focused/adjacent tests and root187integrationtests pass; strict types and full
+  type-aware lint have zero diagnostics. No connected reader proof is claimed.
+  Inventory774paths/192public/97native/2lifecycle/8blocked/475omitted. PR9 remains draft.
   Production and its project record remain untouched.
 
 ### Candidate131000 published and installed; fresh host required
@@ -1493,7 +1498,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011131000` is published and installed/enabled with exact581file/mode and offline startup proof. It adds text create/delete and exact black-color support, but needs fresh connected admission and text lifecycle tests. Loaded facade2150787 remains120000 and is not hot-patched or terminated. That prior generation passed four closed PCB/schematic title transactions and one closed free-PCB creation with complete peer raw-history proof. Its native text fixture was saved/reopened once, but no typed text writer ran. All disposable editors are closed and journals terminal. See the latest record and release report. Historical evidence remains operation/generation-specific. Never replay completed creation, placement, transactions or Save; do not access production or its project record.
+- Git-marketplace `0.3.0+codex.20261011131000` is published and installed/enabled with exact581file/mode and offline startup proof. Actual facade2222443 is independently admitted on this generation. Forward and explicit reverse text modification passed complete saved/reopened proof. Creation journalc92a61b7 is NOT terminal: it retains one successful Save/close/reopen but refuses the sole new STRING's null-to-black reload difference. EasyEDA11964 is closed; no Save, creation, navigation or deletion may be replayed. Source-only explicit-color creation and original-journal retained-Save recovery are under review, not installed or live-validated. Prior120000 passed four closed PCB/schematic title transactions and one closed free-PCB creation. Historical evidence remains operation/generation-specific. Never access production or its project record.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

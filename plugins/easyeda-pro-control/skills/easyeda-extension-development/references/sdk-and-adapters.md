@@ -81,6 +81,14 @@ order, hidden attributes and locks. Geometric contact is not native connectivity
 Define unsupported shapes up front. If a general inverse cannot preserve exact
 identity, say it is unavailable; do not advertise automatic rollback.
 
+Review full-load and incremental decode separately. The pinned PCB text decoder
+is instantiated per record during source merge but reused by record type during
+reopen. Its clear method leaves specialColor intact, and a null input does not
+assign that field. A null STRING following a black STRING therefore reloads as
+black despite correct stored null. A single-record constructor test misses this
+bug. Test mixed ordered records through both lifecycles, preserve the raw order,
+and never turn one observed conversion into global null/color equivalence.
+
 Test stored and exported representations independently. Native page exports omit
 the stored META record and can include an unstored origin CANVAS or initialized
 drawing-frame order. A synthetic fixture that copies saved records verbatim into

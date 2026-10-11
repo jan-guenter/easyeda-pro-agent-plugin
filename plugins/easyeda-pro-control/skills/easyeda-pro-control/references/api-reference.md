@@ -219,6 +219,23 @@ project-owned PCB and two-cycle checks as net membership, without inventing a
 net filter. Source-tested only; it does not establish geometry, connectivity or
 persistence.
 
+`eda.pcb_SelectControl.getAllSelectedPrimitives` accepts empty arguments and
+returns ordered native-source DTOs, not public class instances. Each row retains
+its exact source record and all direct source-backed ATTR records. Root Line,
+Arc, Via, standalone Pad, Component and String are supported. One unsupported,
+inherited, missing or ambiguous selected ID refuses the whole call. Components
+do not include inherited footprint geometry or generated attributes.
+
+The reader brackets inventory with source and selected IDs, then repeats the
+whole cycle. Each constituent read is independently double-sampled. Complete
+selected-family membership must agree; generated poured state must be empty.
+Inherited unselected Lines can require the existing checkpoint-bound footprint
+proof, but selected inherited Lines still refuse. Supply the complete observed
+PCB tab and owner context. Limits are 256 selected IDs, 20,000 source records
+and 2 MiB output; excess data refuses without truncation. This source-tested
+reader changes neither selection nor design. Stable observations are not an
+atomic snapshot, resolved connectivity or persistence proof.
+
 `eda.pcb_MathPolygon.splitPolygon` accepts JSON `complexPolygons`: one to eight
 groups, each a source array or one to eight source arrays, each at most 1024 tokens.
 Shared aggregate bounds still apply. The facade constructs temporary SDK objects
