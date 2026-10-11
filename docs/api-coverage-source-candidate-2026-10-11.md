@@ -293,3 +293,81 @@ The inherited-Line ownership omission and pending nonempty flat-topology
 validation remain as described above. No new writer, Save, restoration or
 fabrication approval follows from these checks. Publication, CI and installed
 package parity must be recorded separately against their exact commit.
+
+## Published payload and GitHub verification
+
+Payload `401ef941dd8253203c3721df16061fca902a9861` passed
+[GitHub CI 38122060255](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38122060255).
+The actual tested PR merge `db4b12b3bdb7dfa16dec9d62a1db92ec3243d1bb`
+has the same tree `a2132bad93057120624c212f31ef70daca30f543` as that payload.
+The complete log has SHA-256
+`1cc43305b52fddb6b86afbba42caa93431adb53db3d0e76aed289b093db350cf`.
+
+CI reports 2,818 facade passes, four platform skips and zero failures, plus
+424 bridge passes. The skips cover a Windows-mounted checkpoint fixture, two
+installed-Windows-bundle presence checks, and the Windows desktop diagnostic.
+Their producer regressions still ran. Both type-aware linters report zero
+warnings and errors. Dependency audits, type checks, source fingerprints,
+reproducible bundles and synthetic bridge archive, package/privacy checks and
+artifact upload passed. Official Codex validators were absent on the runner;
+all seven had passed locally, and maintained CI validators ran.
+
+This is publication and CI evidence only. Installation and actual configured
+offline startup still need their separate package-parity proof. No new connected
+acceptance follows from CI. The draft PR remains open because the broader API
+coverage task is unfinished.
+
+## Installed package verification
+
+The official Git-marketplace upgrade installed and enabled
+`0.3.0+codex.20261011071500`. Its marketplace snapshot is the CI-tested payload
+`401ef941dd8253203c3721df16061fca902a9861`. The installer inherited umask022;
+evidence outputs were created separately under077. No cache edits or owner
+termination occurred.
+
+The independently reviewed offline verifier matches all 540 packaged files,
+15,264,756 bytes and exact committed modes, without missing or extra files.
+It repeats that inventory after probing. Inventory SHA-256 is
+`aea6c04ce067d31bf58fbc525bd4ab28452eb15358b0c863b58755b39848b5a2`;
+the complete verification report is
+`937ca2be790d0b0026505595ad45c47c19864d335ac0b55307deccba5d717229`.
+The helper exited successfully with empty stderr.
+
+Actual configured bundled startup hands ambient Node26 to pinned Node24. It
+exposes 26 tools, seven skills, 175 fixed readers, 15 explicit equivalents,
+all 774 coverage entries, reviewed/latest SDK signatures749/806, and105/68
+design/library schemas. Complete paginated catalogs, exact authority and
+provenance, valid data, malformed inputs and caller-code refusal pass. Across
+330 process observations there is no upstream child or nonstdio socket, and
+the synthetic upstream sentinel remains absent. This is a sampled offline
+startup proof, not a continuous syscall trace or connected admission.
+
+The old facade remains loaded and was not modified. No live call followed the
+upgrade. Fresh Codex pickup is required before connected validation of the new
+readers. The broader request remains unfinished.
+
+## Separate disposable import format finding
+
+One native Paste command imported three library assets without placing a
+component. Escape ended the tool. No second Paste, placement, wire or Save
+followed. Native page snapshots are equal. Normal close and empty process
+discovery prove the editor exited without a prompt choice; maintained offline
+checkpoint verification proves exact byte, identity and logical-dump equality
+with the retained import-only checkpoint.
+
+Root and independent immutable-history review preserve all 73 appended raw
+records. All nine existing documents and70records are unchanged. The three
+new IDs are disjoint from existing documents. All19symbol and46footprint body
+records match the copied source definitions; the single DEVICE record changes
+only its two local asset-reference IDs. Exact bookkeeping changes are retained
+separately. No source definitions were uploaded or published.
+
+The maintained history decoder still rejects twelve serialized `firstTicket`
+headers, including one inherited tombstone. The pinned native worker supports
+these fields, but simply allowing or stripping them would lose provenance.
+Earliest physical revision, serialized first ticket and cold-import order have
+different rules, especially for zero and META. A narrow library-history parser
+extension with separately hashed provenance is feasible follow-up work. It
+must preserve deleted-record evidence and existing schematic-order refusals.
+The raw diagnostic is not maintained after-state materialization, a completed
+electrical fixture, nonempty connectivity coverage or a validated writer.

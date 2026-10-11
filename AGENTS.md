@@ -99,6 +99,53 @@ Last updated: 2026-10-11 (Europe/Berlin)
   remains010000. Do not replace its files, terminate its owner or call a newly
   installed generation through that old process.
 
+### Candidate071500 publication
+
+- Payload401ef941dd8253203c3721df16061fca902a9861 passed
+  [CI38122060255](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38122060255)
+  in draftPR9. Its tested merge db4b12b3 has the exact payload treea2132bad.
+  CI passes2,818facade tests/four platform skips/zero failures and424bridge
+  tests. All four skips are platform-presence checks; local verification passes
+  2,821with one skip. Both type-aware linters report zero warnings/errors.
+  Reproducible bundles, private synthetic bridge build, privacy/package checks
+  and uploaded artifact pass. FullCI log1cc43305 and metadatae954d6bb retained.
+- Official Git-marketplace installation and installed parity remain pending.
+  Loaded1926652 still010000; both disposable editors stay closed. The ongoing
+  raw imported-library diagnostic does not authorize another Paste or Save.
+
+### Candidate071500 installed, fresh-chat barrier
+
+- Official Git-marketplace upgrade completed with no errors under umask022.
+  CLI confirms installed/enabled0.3.0+codex.20261011071500 from the GitHub URL;
+  marketplaceHEAD equals CI-tested401ef941. The fully reviewed offline proof
+  937ca2be matches all540files/15,264,756bytes and committed modes, with no extra
+  files or changes during the probe. Inventoryaea6c04c. Actual configured
+  ambientNode26 hands off to pinnedNode24,26tools/seven skills/175readers,
+  15native equivalents and all774coverage entries. Exact schemas, provenance,
+  refusal cases and no upstream/nonstdio sockets pass330process observations.
+  This is installed/offline proof, not connected new-generation admission.
+- Both disposable editors remain closed. Flat closed-file proof03db3013 passes
+  exact source11c33f99/checkpoint0a16c42f/logical9b7d91bf after normal exit;
+  no Save or prompt choice. Root and independent review accept raw diagnostic
+  71a51d24 and supplementa4cc6873: all9existing documents/70records unchanged,
+  exactly3new library IDs, exact19symbol/46footprint bodies and one DEVICE with
+  only2asset-reference remaps. All12firstTicket headers and the imported old
+  LINE tombstone are preserved, with exact metadata-only bookkeeping changes.
+- This raw proof does not admit the history format in the maintained decoder.
+  A future narrow SYMBOL/FOOTPRINT parser extension needs separately committed
+  header provenance, including tombstones. The native earliest physical clock,
+  serialized firstTicket and cold-order key differ; explicit zero and META have
+  separate semantics. Do not strip the field, infer original clients or take a
+  generic minimum. SCH_PAGE order consumers need separate review. No component
+  placement, wire, completed electrical fixture or nonempty-topology acceptance.
+- Loaded facade1926652 remains010000 and was not terminated or hot-patched.
+  No live call followed installation. The extension-development release skill
+  requires a fresh Codex chat/restart before connected071500 calls. Next work:
+  validate new selection/active-layer and filtered PCB readers on the existing
+  older disposable, then implement the preserved-provenance history extension
+  against immutable checkpoints before resuming the flat fixture. PR9 stays
+  draft and the overall API-coverage request remains unfinished.
+
 ### Restarted233100 validation and candidate002000
 
 - Fresh facade1864397 admitted installed233100 with the unchanged external
@@ -1112,7 +1159,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace candidate `0.3.0+codex.20261011010000` is published, installed/enabled and fully offline-verified against CI-tested4c9ed5f. All536files/modes match;26tools, seven skills and174fixed readers. Fresh facade1926652 loads010000 and must remain untouched. Its nonempty Wire/Bus DTO reads now pass exact native and complete saved-project invariance. Both disposable editors are closed and all journals are terminal. The flat fixture has an import-only library delta whose firstTicket history encoding remains outside the maintained decoder; no component was placed and no Save occurred. Never replay prior edits/inverse/rename/Save. Source candidate071500 adds active-layer and selection equivalents plus PCB inventory/navigation corrections; local tests pass but publication/install remain pending. Those adapters, filtered PCB membership, PCB type lookup and nonempty flat topology still require applicable connected evidence. Prior Text/property-name/Wire-ID/symbol-Pin/display/rename evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
+- Git-marketplace candidate `0.3.0+codex.20261011071500` is published, installed/enabled and offline-verified against CI-tested401ef941. All540files/modes match;26tools, seven skills and175fixed readers. Loaded facade1926652 remains010000 and must stay untouched until fresh Codex pickup. Its nonempty Wire/Bus DTO reads pass exact native and complete saved-project invariance. Both disposable editors are closed and all journals are terminal. The flat fixture has an exactly diagnosed import-only library delta whose firstTicket history encoding remains outside the maintained decoder; no component was placed and no Save occurred. Never replay prior edits/inverse/rename/Save. Installed071500 adds active-layer and selection equivalents plus PCB inventory/navigation corrections. New adapters, filtered PCB membership, PCB type lookup and nonempty flat topology still need applicable connected evidence. Prior Text/property-name/Wire-ID/symbol-Pin/display/rename evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
