@@ -110,6 +110,23 @@ void test("standalone PCB text rejects incomplete native STRING shapes, ownershi
   assert.throws(() => expectedPcbTextSource(operation, change(before, peerId, { fontFamily: "custom" })));
 });
 
+void test("standalone PCB text preserves exact absent or pinned default-black color without admitting color edits", () => {
+  for (const specialColor of [null, "#000000"]) {
+    // Shape observed from native default-font placement, with synthetic IDs.
+    const before = change(change(snapshot(), targetId, { specialColor, x: 95, y: 210, text: "Fixture1", fontSize: 120, strokeWidth: 8 }), peerId, { specialColor });
+    const after = expectedPcbTextSource(operation, before);
+    assert.equal(after.objects.find((row) => row.id === targetId)?.body["specialColor"], specialColor);
+    assert.equal(after.objects.find((row) => row.id === peerId)?.body["specialColor"], specialColor);
+    assert.deepEqual(expectedPcbTextSource(inversePcbTextOperation(operation, before), after), before);
+    assert.doesNotThrow(() => buildPcbTextAdapter(operation, before));
+    assert.throws(() => verifyPcbTextSourceEffect(operation, before, change(after, targetId, { specialColor: specialColor === null ? "#000000" : null })), /beyond its exact/u);
+  }
+  for (const specialColor of ["#FFFFFF", "#000", "black", "#000000FF", "#000000 ", "", undefined, 0]) {
+    assert.throws(() => expectedPcbTextSource(operation, change(snapshot(), targetId, { specialColor })));
+    assert.throws(() => expectedPcbTextSource(operation, change(snapshot(), peerId, { specialColor })));
+  }
+});
+
 void test("standalone PCB text validates complete document structure and native ATTR ownership before generation", () => {
   const before = snapshot();
   for (const type of ["POUR", "POURED", "LAYER_FILL", "TEARDROP", "GROUP", "PARTITION", "PANELIZE_STAMP", "REUSE_BLOCK", "FONT", "DIMENSION", "UNKNOWN"]) {

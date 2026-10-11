@@ -92,6 +92,12 @@ add("pcb_PrimitiveString", ["modify"], "easyeda_control_design", "pcb.text.modif
   "One existing unlocked project-owned type-3 standalone STRING: exact x/y/text changes through the reviewed native source merge, complete native-source effect, explicit inverse and saved-project peer proof. All STRINGs require the bounded default-font/top-silkscreen/LEFT_BOTTOM/zero-angle/nonreverse profile. No creation, deletion, component ATTR, inherited text, custom fonts, groups, partitions, pours or generated copper. This does not invoke the public wrapper or its partial-assignment failure branch; no public-method parity, full declared-contract or current-generation connected lifecycle claim.",
   ["pcb-text-action.ts", "pcb-text-runtime.ts", "pcb-exact-frame.ts", "design-action.ts", "design-native-adapter.ts", "design-execution.ts"],
   ["pcb-text-action.test.ts", "design-native-adapter.test.ts", "pcb-dispatch-profile.test.ts", "design-persistence.test.ts"], [3]);
+for (const method of ["create", "delete"]) {
+  add("pcb_PrimitiveString", [method], "easyeda_control_design", `pcb.text.${method}`, "native-task-equivalent",
+    "One project-owned type-3 standalone top-silkscreen default-font STRING addition or unlocked exact-ID removal. Creation has explicit x/y/text/fontSize/strokeWidth and a facade-reserved identity sealed with the prepared program before dispatch; no caller ID or native public-wrapper generation claim. Exact source/peer proof, captured frame, original acknowledgment and saved-project proof remain mandatory. Creation inverse deletes only its retained original identity; deletion has no inverse. No regeneration or redispatch during recovery, component ATTR, inherited text, fonts/styles/layers outside the conservative profile, pours or generated copper. Not public-wrapper parity or connected lifecycle validation.",
+    ["pcb-text-lifecycle.ts", "pcb-text-lifecycle-runtime.ts", "pcb-text-action.ts", "pcb-exact-frame.ts", "design-action.ts", "design-execution.ts"],
+    ["pcb-text-lifecycle.test.ts", "pcb-text-action.test.ts", "design-persistence.test.ts"], [3]);
+}
 add("pcb_PrimitivePour", ["rebuildCopperRegions"], "easyeda_control_design", "pcb.pour.rebuild", "native-task-equivalent",
   "Selected-parent derived copper rebuild with complete scoped effect proof; no global uncontrolled rebuild.", ["design-copper-adapter.ts", "copper-persistence.ts"], ["design-copper-adapter.test.ts", "design-persistence.test.ts"]);
 const ruleMethods: Readonly<Record<string, string>> = {

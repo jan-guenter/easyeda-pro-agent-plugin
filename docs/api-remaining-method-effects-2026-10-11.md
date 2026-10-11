@@ -40,6 +40,7 @@ retained because it still applies to the unimplemented public argument branches.
 | `dmt_Schematic.reorderSchematicPages` | Sequential writes, doubling indices, insufficient duplicate validation and mutable project lookup between awaits. | Unique complete permutation, fixed project identity, per-write receipts and partial-progress recovery. |
 | Pad-pair group rename/edit | Updating replaces the group and its persistent identity. | Preserve or explicitly project group identity, color, pairs and affected rule references; verify complete source and persistence. |
 | PCB type-3 String writers | A native modify failure can occur after earlier property assignments. | Fully prevalidated properties, complete text/font/source effect proof, and recovery that does not assume false means no mutation. |
+| `pcb_Document.setCanvasOrigin` | Origin changes upload the complete CANVAS and also flush private pending geometry queues. A blank current source does not prove those queues empty. | Enforceable native-queue quiescence or equivalent continuous lifecycle provenance, complete CANVAS baseline/projection and inverse, and disposable persistence validation. No executable route is admitted. |
 
 These are unfinished engineering tasks, not evidence of inherent impossibility.
 The bounded footprint type-4 text routes do not establish PCB type-3 coverage
@@ -119,7 +120,68 @@ executing the queued command and publishing the normal success events. Thus
 native false does not prove that the object remained unchanged. This is an
 in-memory partial-effect finding, not a claim that a particular failed call
 was durably saved. The create/delete handlers at 10286106/10286614 likewise
-need their own bounded lifecycle proof before adding type-3 routes.
+need their own bounded lifecycle proof. The new type-3 routes use a separate
+exact-source adapter, not those public handlers. They reserve a creation ID
+before dispatch, retain it for recovery and a creation inverse, and advertise
+no deletion inverse. Their offline tests do not establish connected execution.
+
+Native fixture preparation also exposed two saved/exported layer-color
+differences before typed dispatch. The exact causes and rejected remedies are
+recorded in [the color round-trip investigation](pcb-text-fixture-color-findings-2026-10-11.md).
+The adapter now preserves an existing exact null or black text color separately;
+that does not resolve or normalize unrelated LAYER differences.
+
+### PCB canvas origin: unresolved predispatch proof
+
+The public contract defines offsets relative to the data origin, in native mil
+even when the canvas displays another unit.
+[Official setCanvasOrigin reference](https://prodocs.easyeda.com/en/api/reference/pro-api.pcb_document.setcanvasorigin.html).
+The wrapper at `api.js` 1440540 forwards the two offsets. The PCB handler at
+10215588 divides them by 10 and calls `D3` (7837738); the getter multiplies the
+internal origin by 10. Type 4 additionally repositions hidden attributes, so a
+PCB-only proof cannot admit footprints.
+
+The complete CANVAS field table is at `pcb.js` 3962299. Encoder `Q8` (4425338)
+exports origin coordinates through `De(value,4)` (3366766), alongside unit,
+grid/snap/alternate-snap sizes, grid types, grid ratio and highlight value.
+All 13 fields must be preserved. An absent stored CANVAS or omitted baseline
+field cannot be silently materialized while claiming an exact inverse.
+
+`D3` creates an `SV` command (5806917) holding the old origin. Command execution
+(7854220) calls its upload synchronously before `D3` assigns the new origin;
+`kp` (7291491) then uploads the new complete CANVAS. This demonstrates two
+native upload calls, not an exact count of durable history records or chunks:
+buffering and storage coalescing require separate proof. The native boolean is
+not persistence evidence.
+
+The blocking collateral path is command-group upload (7848624): it also flushes
+`ZS` (4815340, pending BOARD flag), `kT` (4685279, pending POURED IDs), and
+`v6` (4801900, pending LAYER_FILL IDs). Command execution publishes
+`flushTearDrop`; its subscriber at 9013374 schedules deferred queue processing.
+The origin command itself adds none of that geometry, but it can flush work
+left by earlier activity. No reviewed read-only predicate for these private
+queues was found. Their pending state is not part of FileSource.
+
+A blank/text-only source therefore does not establish safe predispatch state
+after prior physical-geometry edits or deletion. Materialized history loses
+deleted objects, and even complete stored history cannot exclude unsaved
+create/delete activity in the current frame. Existing fresh-open receipts do
+not retain an uninterrupted no-physical-edit binding through dispatch. A caller
+assertion or a successful controlled blank-fixture experiment cannot substitute
+for that reusable precondition.
+
+A private, unregistered prototype passed nine isolated Node 24 tests, both
+TypeScript configurations and strict type-aware lint. Those tests covered full
+CANVAS projection/inverse, stored baseline requirements, captured-frame identity,
+26 late-reply refusals, acknowledgment retention and no retry. The prototype
+was removed from the production tree before registration or publication; no
+connected call, available capability or execution-coverage claim follows.
+
+Future admission requires a source-pinned read-only empty-queue/idle predicate
+bound through the mutation boundary, or an enforceable lifecycle/provenance
+mechanism establishing the same invariant. Complete native-source and durable
+peer proofs, an exact inverse and disposable lifecycle validation still follow.
+This is an unfinished adapter proof, not a permanent limitation of the SDK.
 
 ## Closed PCB/schematic rename: a bounded task equivalent
 

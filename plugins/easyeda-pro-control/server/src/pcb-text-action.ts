@@ -22,6 +22,9 @@ const patchSchema = z.object({ x: scalar.optional(), y: scalar.optional(), text:
   Object.values(patch).length > 0 && Object.values(patch).every((value) => value !== undefined), "Expected explicit nonempty text patch values.");
 export const pcbTextOperationSchema = z.object({ id, action: z.literal("pcb.text.modify"),
   target: z.object({ primitiveId: nativeId }).strict(), patch: patchSchema }).strict();
+export const pcbTextCreateFieldsSchema = z.object({ x: scalar, y: scalar, text,
+  fontSize: scalar.refine((value) => value > 0), strokeWidth: scalar.refine((value) => value > 0) }).strict()
+  .refine((body) => body.strokeWidth < body.fontSize, "Text stroke must be smaller than its font size.");
 export type PcbTextOperation = z.infer<typeof pcbTextOperationSchema>;
 export function compilePcbTextOperation(input: unknown): { profile: typeof PCB_TEXT_ACTION_PROFILE; id: string;
   action: "pcb.text.modify"; documentType: 3; resultKind: "boolean"; operation: PcbTextOperation } {
@@ -35,11 +38,15 @@ export function compilePcbTextOperation(input: unknown): { profile: typeof PCB_T
 // Without a parent. ATTR and inherited component text are different records.
 // Bold/italic encode as numeric zero. The selected profile excludes decoder
 // Fallbacks (missing coordinates, custom fonts, reverse expansion and layer remap).
+// Pinned tW458223/Jr.addText7891151 and defaultText8152657 use #000000.
+// S4 decodes it through ee.of3 and s3 emits it unchanged. It is NOT equivalent
+// To null: getSilkColor5873069 marks only absent color as followDefault. Admit
+// Both exact representations, preserving the original scalar without coercion.
 const stringBodySchema = z.object({ partitionId: z.literal(""), groupId: z.literal(0), layerId: z.literal(3),
   x: scalar, y: scalar, text, fontFamily: z.literal("default"), fontSize: scalar.refine((value) => value > 0),
   strokeWidth: scalar.refine((value) => value > 0), bold: z.literal(0), italic: z.literal(0),
   origin: z.literal("LEFT_BOTTOM"), angle: z.literal(0), reverse: z.literal(false), expansion: z.literal(0),
-  mirror: z.literal(false), locked: z.boolean(), zIndex: z.number().int().min(-1), specialColor: z.null() }).strict()
+  mirror: z.literal(false), locked: z.boolean(), zIndex: z.number().int().min(-1), specialColor: z.union([z.null(), z.literal("#000000")]) }).strict()
   .refine((body) => body.strokeWidth < body.fontSize, "Text stroke must be smaller than its font size.");
 const panelDimension = z.number().positive();
 const panelQuantity = z.number().int().min(1).max(20_000);
@@ -60,7 +67,7 @@ const supportedRecords = new Set(["CANVAS", "LAYER", "LAYER_PHYS", "ACTIVE_LAYER
   "PAD_NET", "COMPONENT", "ATTR", "STRING", "POLY", "REGION", "FILL"]);
 const jsonObject = z.record(z.string(), z.json());
 
-function selectedString(operation: PcbTextOperation, source: NativeSourceSnapshot): NativeSourceObject {
+export function assertPcbTextSourceProfile(source: NativeSourceSnapshot): void {
   if (source.schema !== "easyeda-pro-control.document-source.v1" || source.document["docType"] !== "PCB" ||
       source.document["editVersion"] !== "3.2.149.88089769" || typeof source.document["uuid"] !== "string" || !/^[a-f0-9]{16}$/u.test(source.document["uuid"]) ||
       source.objects.length > 20_000 || Buffer.byteLength(JSON.stringify(source)) > 8_388_608 ||
@@ -106,7 +113,12 @@ function selectedString(operation: PcbTextOperation, source: NativeSourceSnapsho
   if (layers.length !== 1 || layers[0]?.body["locked"] !== false || layers[0].body["use"] !== true || layers[0].body["show"] !== true) {
     throw new Error("Standalone PCB text requires exactly one enabled, visible, unlocked top-silkscreen layer.");
   }
-  const selected = records.get(operation.target.primitiveId);
+}
+
+export function selectPcbTextString(primitiveId: string, source: NativeSourceSnapshot): NativeSourceObject {
+  nativeId.parse(primitiveId);
+  assertPcbTextSourceProfile(source);
+  const selected = source.objects.find((row) => row.id === primitiveId);
   if (selected?.type !== "STRING" || selected.body["locked"] !== false) {
     throw new Error("Standalone PCB text requires an existing unlocked STRING, never ATTR or a component child.");
   }
@@ -115,7 +127,7 @@ function selectedString(operation: PcbTextOperation, source: NativeSourceSnapsho
 
 export function expectedPcbTextSource(input: unknown, before: NativeSourceSnapshot): NativeSourceSnapshot {
   const operation = pcbTextOperationSchema.parse(input);
-  const selected = selectedString(operation, before);
+  const selected = selectPcbTextString(operation.target.primitiveId, before);
   if (Object.entries(operation.patch).every(([key, value]) => selected.body[key] === value)) {
     throw new Error("Standalone PCB text patch has no source effect.");
   }
@@ -126,7 +138,7 @@ export function expectedPcbTextSource(input: unknown, before: NativeSourceSnapsh
 export function verifyPcbTextSourceEffect(input: unknown, before: NativeSourceSnapshot, after: NativeSourceSnapshot): NativeSourceDelta {
   const operation = pcbTextOperationSchema.parse(input);
   const expected = expectedPcbTextSource(operation, before);
-  selectedString(operation, after);
+  selectPcbTextString(operation.target.primitiveId, after);
   if (canonicalJson(expected) !== canonicalJson(after)) {
     throw new Error("Standalone PCB text changed metadata, native attributes, fonts or peer records beyond its exact x/y/text effect.");
   }
@@ -134,7 +146,7 @@ export function verifyPcbTextSourceEffect(input: unknown, before: NativeSourceSn
 }
 export function inversePcbTextOperation(input: unknown, before: NativeSourceSnapshot): PcbTextOperation {
   const operation = pcbTextOperationSchema.parse(input);
-  const selected = selectedString(operation, before);
+  const selected = selectPcbTextString(operation.target.primitiveId, before);
   const patch = Object.fromEntries(Object.keys(operation.patch).map((key) => [key, selected.body[key]]));
   const inverse = pcbTextOperationSchema.parse({ ...operation, id: `inverse-${sha256Json(operation).slice(0, 32)}`, patch });
   const restored = expectedPcbTextSource(inverse, expectedPcbTextSource(operation, before));
@@ -146,14 +158,19 @@ export function buildPcbTextAdapter(input: unknown, before: NativeSourceSnapshot
   const expected = expectedPcbTextSource(operation, before);
   verifyPcbTextSourceEffect(operation, before, expected);
   const adapter = buildReviewedNativeSourceMerge(before, expected);
+  const scope = pcbTextRuntimeScope(before, history);
+  // Reuse the strict merge validation/profile, never its mutable current-tab
+  // Runtime. This action reads and decodes on one captured PCB frame instead.
+  return { ...adapter, code: buildPcbTextRuntime(before, expected, scope) };
+}
+
+export function pcbTextRuntimeScope(before: NativeSourceSnapshot, history?: NativeHistorySnapshot): { projectUuid: string; branchUuid: string } {
   if (history?.profile !== "easyeda.native-history.linear-gcm-gzip.v1" || !/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.test(history.projectUuid) ||
       !/^[a-f0-9]{32}$/u.test(history.branchUuid) || !/^[a-f0-9]{64}$/u.test(history.checkpointSha256) ||
       history.documents.filter((row) => row.uuid === before.document["uuid"] && row.docType === "PCB" && !isNativeDocumentDeleted(row)).length !== 1) {
     throw new Error("Standalone PCB text requires the journal-owned complete checkpoint and exact native project branch.");
   }
-  // Reuse the strict merge validation/profile, never its mutable current-tab
-  // Runtime. This action reads and decodes on one captured PCB frame instead.
-  return { ...adapter, code: buildPcbTextRuntime(before, expected, { projectUuid: history.projectUuid, branchUuid: history.branchUuid }) };
+  return { projectUuid: history.projectUuid, branchUuid: history.branchUuid };
 }
 
 export const PCB_TEXT_LIMITATIONS = Object.freeze([
@@ -162,6 +179,7 @@ export const PCB_TEXT_LIMITATIONS = Object.freeze([
   "Modifies only x/y/text of one existing unlocked top-silkscreen standalone STRING on a project-owned type-3 PCB. No creation, deletion, component labels, ATTR, footprint text or inherited text.",
   "All stored STRINGs must use the exact default-font, LEFT_BOTTOM, zero-angle, nonmirrored, nonreverse, zero-expansion profile. Only letters, digits, spaces, dot, underscore and hyphen are supported, with at least one letter or digit.",
   "Only explicit four-decimal native-mil coordinates are accepted; no rounding, font/style/layer change, unlock or missing-field materialization.",
+  "Existing specialColor must be exactly null or the pinned default #000000, and is preserved unchanged. These representations are not normalized or claimed equivalent; arbitrary custom colors and color edits are not admitted.",
   "Groups, partitions, generated copper, pours, custom fonts and unmodeled record families refuse; component ATTR ownership and uniqueness and one visible unlocked top-silkscreen layer must be explicit. Only the canonical disabled default panel configuration is admitted.",
   "The reused source merge publishes native autoFill, panelization and HistoryFlushService; a text-only derived-state profile has not been reviewed. The POUR exclusion is conservative, not proof that every text edit rebuilds copper or a permanent SDK limitation.",
   "Complete native-source and saved-project peer proofs remain mandatory; no visual placement, silkscreen clearance or fabrication acceptance is inferred.",

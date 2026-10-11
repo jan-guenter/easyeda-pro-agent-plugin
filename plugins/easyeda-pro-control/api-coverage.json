@@ -13,13 +13,14 @@
       "omitted": 477
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 346,
+      "available-with-runtime-guards": 348,
       "blocked": 9,
       "partially-blocked": 3
     },
     "omissions": {
       "account-or-library-scope-needed": 41,
       "callback-or-registration-lifecycle": 27,
+      "canvas-origin-pending-geometry-queues": 1,
       "cross-tab-netlist-export-scope": 1,
       "extension-or-global-settings-state": 15,
       "external-commercial-action": 6,
@@ -43,7 +44,7 @@
       "panel-context-not-admitted": 1,
       "private-url-state-projection-needed": 2,
       "reviewed-native-stub": 27,
-      "scoped-effect-adapter-needed": 112,
+      "scoped-effect-adapter-needed": 111,
       "selection-marker-or-history-mutation": 8,
       "shared-asset-owner-projection-needed": 3,
       "simulation-editor-not-admitted": 1,
@@ -7431,10 +7432,13 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "pcb_Document.setCanvasOrigin has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
+        "code": "canvas-origin-pending-geometry-queues",
+        "reason": "The installed origin command uploads the complete 13-field CANVAS and flushes private pending BOARD, POURED and LAYER_FILL queues plus deferred teardrops. Blank current FileSource and complete stored history cannot exclude earlier unsaved geometry activity; no reviewed read-only empty-queue predicate is available.",
+        "nextRequirement": "Implement an enforceable empty-queue or continuous no-physical-edit provenance check bound through dispatch, exact CANVAS projection/inverse and complete disposable persistence proof. This is unfinished adapter work, not inherent infeasibility; no executable route is admitted.",
+        "evidence": [
+          "docs/api-remaining-method-effects-2026-10-11.md",
+          "assets/pro-pcb/3.2.149.5378b690/js/pcb.js@sha256:65401cdc0a8f244db2ff2d8da88fd835b6e1fb3a3ecdbcfd975781502cb04b54;utf16:10215588,7837738,4425338,7848624,9013374"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -19635,6 +19639,43 @@
               }
             }
           }
+        },
+        {
+          "tool": "easyeda_control_design",
+          "selector": "pcb.text.create",
+          "implementation": "native-task-equivalent",
+          "scope": "One project-owned type-3 standalone top-silkscreen default-font STRING addition or unlocked exact-ID removal. Creation has explicit x/y/text/fontSize/strokeWidth and a facade-reserved identity sealed with the prepared program before dispatch; no caller ID or native public-wrapper generation claim. Exact source/peer proof, captured frame, original acknowledgment and saved-project proof remain mandatory. Creation inverse deletes only its retained original identity; deletion has no inverse. No regeneration or redispatch during recovery, component ATTR, inherited text, fonts/styles/layers outside the conservative profile, pours or generated copper. Not public-wrapper parity or connected lifecycle validation.",
+          "source": [
+            "pcb-text-lifecycle.ts",
+            "pcb-text-lifecycle-runtime.ts",
+            "pcb-text-action.ts",
+            "pcb-exact-frame.ts",
+            "design-action.ts",
+            "design-execution.ts"
+          ],
+          "tests": [
+            "pcb-text-lifecycle.test.ts",
+            "pcb-text-action.test.ts",
+            "design-persistence.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "documentTypes": [
+            3
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "design",
+                  "operationAction": "pcb.text.create",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
         }
       ],
       "omission": null,
@@ -19695,6 +19736,43 @@
                 "query": {
                   "family": "design",
                   "operationAction": "footprint.text.delete",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
+          "tool": "easyeda_control_design",
+          "selector": "pcb.text.delete",
+          "implementation": "native-task-equivalent",
+          "scope": "One project-owned type-3 standalone top-silkscreen default-font STRING addition or unlocked exact-ID removal. Creation has explicit x/y/text/fontSize/strokeWidth and a facade-reserved identity sealed with the prepared program before dispatch; no caller ID or native public-wrapper generation claim. Exact source/peer proof, captured frame, original acknowledgment and saved-project proof remain mandatory. Creation inverse deletes only its retained original identity; deletion has no inverse. No regeneration or redispatch during recovery, component ATTR, inherited text, fonts/styles/layers outside the conservative profile, pours or generated copper. Not public-wrapper parity or connected lifecycle validation.",
+          "source": [
+            "pcb-text-lifecycle.ts",
+            "pcb-text-lifecycle-runtime.ts",
+            "pcb-text-action.ts",
+            "pcb-exact-frame.ts",
+            "design-action.ts",
+            "design-execution.ts"
+          ],
+          "tests": [
+            "pcb-text-lifecycle.test.ts",
+            "pcb-text-action.test.ts",
+            "design-persistence.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "documentTypes": [
+            3
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "design",
+                  "operationAction": "pcb.text.delete",
                   "includeSchemas": true
                 }
               }

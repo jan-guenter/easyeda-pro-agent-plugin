@@ -31,6 +31,7 @@ import type { SymbolScope } from "./symbol-action.ts";
 import { MODEL_TRANSFORM_ACTION_PROFILE, buildModelTransformAdapter, compileModelTransformOperation, expectedModelTransformSource, inverseModelTransformOperation, modelTransformOperationSchema, verifyModelTransformSourceEffect } from "./model-transform-action.ts";
 import type { CompiledModelTransformOperation } from "./model-transform-action.ts";
 import { PCB_TEXT_ACTION_PROFILE, buildPcbTextAdapter, compilePcbTextOperation, expectedPcbTextSource, inversePcbTextOperation, pcbTextOperationSchema, verifyPcbTextSourceEffect } from "./pcb-text-action.ts";
+import { PCB_TEXT_LIFECYCLE_PROFILE, assertPcbTextLifecycleSupported, buildPcbTextLifecycleAdapter, compilePcbTextLifecycleOperation, inversePcbTextLifecycleOperation, pcbTextLifecycleOperationSchema, verifyPcbTextLifecycleSourceEffect } from "./pcb-text-lifecycle.ts";
 import { SCHEMATIC_LAYOUT_PROFILE, buildSchematicLayoutAdapter, buildSchematicLayoutAdapterCooperatively, compileSchematicLayoutBatch, expectedSchematicLayout, expectedSchematicLayoutCooperatively, inverseSchematicLayout, inverseSchematicLayoutCooperatively, schematicLayoutBatchSchema, verifySchematicLayoutEffect, verifySchematicLayoutEffectCooperatively } from "./schematic-layout-batch.ts";
 import type { SchematicLayoutEvidence } from "./schematic-layout-batch.ts";
 import type { SchematicLayoutConstructorWitness } from "./schematic-layout-constructor-witness.ts";
@@ -38,9 +39,9 @@ import type { SchematicWireGroupRepairDescriptor } from "./schematic-layout-wire
 import { yieldProofEventLoop } from "./cooperative-proof.ts";
 import type { FlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
 
-export const designActionSchema = z.union([designOperationSchema, schematicOperationSchema, designStackOperationSchema, designBatchOperationSchema, footprintOperationSchema, modelTransformOperationSchema, pcbTextOperationSchema, schematicLayoutBatchSchema]);
+export const designActionSchema = z.union([designOperationSchema, schematicOperationSchema, designStackOperationSchema, designBatchOperationSchema, footprintOperationSchema, modelTransformOperationSchema, pcbTextOperationSchema, pcbTextLifecycleOperationSchema, schematicLayoutBatchSchema]);
 export type DesignAction = z.infer<typeof designActionSchema>;
-export type CompiledDesignAction = CompiledDesignOperation | CompiledSchematicOperation | ReturnType<typeof compileDesignStackOperation> | ReturnType<typeof compileDesignBatchOperation> | ReturnType<typeof compileFootprintOperation> | CompiledModelTransformOperation | ReturnType<typeof compilePcbTextOperation> | ReturnType<typeof compileSchematicLayoutBatch>;
+export type CompiledDesignAction = CompiledDesignOperation | CompiledSchematicOperation | ReturnType<typeof compileDesignStackOperation> | ReturnType<typeof compileDesignBatchOperation> | ReturnType<typeof compileFootprintOperation> | CompiledModelTransformOperation | ReturnType<typeof compilePcbTextOperation> | ReturnType<typeof compilePcbTextLifecycleOperation> | ReturnType<typeof compileSchematicLayoutBatch>;
 export interface DesignActionState { readonly source: NativeSourceSnapshot; readonly schematic?: SchematicNativeSnapshot; readonly history?: NativeHistorySnapshot; readonly footprintScope?: FootprintScope; readonly symbolScope?: SymbolScope; readonly layoutTemplates?: Readonly<Record<string, SchematicNativeSnapshot>>; readonly layoutWireGroupRepair?: SchematicWireGroupRepairDescriptor; readonly layoutConstructorWitness?: SchematicLayoutConstructorWitness }
 export interface ActionIds { readonly targetId?: string; readonly createdId?: string; readonly derivedResult?: unknown; readonly createdIds?: Readonly<Record<string, string>>; readonly componentCreate?: SchematicComponentCreateAdapter; readonly layoutCloneLifecycle?: true }
 export interface PreparedDesignAction {
@@ -57,6 +58,7 @@ export function compileDesignAction(input: unknown): CompiledDesignAction {
   const action = designActionSchema.parse(input);
   if (action.action === "sch.layout.batch") { return compileSchematicLayoutBatch(action); }
   if (action.action === "pcb.text.modify") { return compilePcbTextOperation(action); }
+  if (action.action === "pcb.text.create" || action.action === "pcb.text.delete") { return compilePcbTextLifecycleOperation(action); }
   if (action.action === "pcb.component.model-transform" || action.action === "footprint.model-transform") { return compileModelTransformOperation(action); }
   if (action.action === "pcb.batch") { return compileDesignBatchOperation(action); }
   if (action.action === "pcb.stack.replace") { return compileDesignStackOperation(action); }
@@ -72,6 +74,7 @@ function layoutEvidence(before: DesignActionState): SchematicLayoutEvidence | un
 export function assertDesignActionSupported(input: unknown, before: DesignActionState, ids: ActionIds = {}): void {
   const action = designActionSchema.parse(input);
   if (action.action === "sch.layout.batch") { expectedSchematicLayout(action, before.source, before.schematic, ids.createdIds, layoutEvidence(before)); return; }
+  if (action.action === "pcb.text.create" || action.action === "pcb.text.delete") { assertPcbTextLifecycleSupported(action, before.source, ids); return; }
   if (action.action === "pcb.text.modify") {
     if (ids.targetId !== undefined && ids.targetId !== action.target.primitiveId) { throw new Error("Standalone PCB text target disagrees with its journal identity."); }
     expectedPcbTextSource(action, before.source);
@@ -158,6 +161,11 @@ function prepareSupportedDesignAction(action: DesignAction, before: DesignAction
     const adapter = buildPcbTextAdapter(action, before.source, before.history);
     expression = `(async () => {${adapter.code}\n})()`;
     adapterProfile = PCB_TEXT_ACTION_PROFILE; expectedSource = adapter.expected; sourceAdapter = true;
+  } else if (action.action === "pcb.text.create" || action.action === "pcb.text.delete") {
+    compiled = compilePcbTextLifecycleOperation(action);
+    const adapter = buildPcbTextLifecycleAdapter(action, before.source, before.history, ids);
+    expression = `(async () => {${adapter.code}\n})()`;
+    adapterProfile = PCB_TEXT_LIFECYCLE_PROFILE; createdId = adapter.createdId; expectedSource = adapter.expected; sourceAdapter = true;
   } else if (action.action === "pcb.component.model-transform" || action.action === "footprint.model-transform") {
     compiled = compileModelTransformOperation(action);
     const adapter = buildModelTransformAdapter(action, before.source, before.footprintScope);
@@ -289,6 +297,7 @@ return {ok:true,kind:"typed-design-result",id:${JSON.stringify(action.id)},primi
 export function verifyDesignAction(compiled: CompiledDesignAction, before: DesignActionState, after: DesignActionState, ids: ActionIds = {}): NativeSourceDelta {
   if (compiled.profile === SCHEMATIC_LAYOUT_PROFILE) { return verifySchematicLayoutEffect(compiled.operation, before.source, after.source, before.schematic, after.schematic, ids.createdIds, layoutEvidence(before), ids.layoutCloneLifecycle === true); }
   if (compiled.profile === PCB_TEXT_ACTION_PROFILE) { return verifyPcbTextSourceEffect(compiled.operation, before.source, after.source); }
+  if (compiled.profile === PCB_TEXT_LIFECYCLE_PROFILE) { return verifyPcbTextLifecycleSourceEffect(compiled.operation, before.source, after.source, ids); }
   if (compiled.profile === MODEL_TRANSFORM_ACTION_PROFILE) { return verifyModelTransformSourceEffect(compiled.operation, before.source, after.source); }
   if (compiled.profile === "easyeda-pro-control.footprint-geometry.v1") { return verifyFootprintSourceEffect(compiled.operation, before.source, after.source, ids); }
   if (compiled.profile === "easyeda-pro-control.pcb-batch.v1") { return verifyDesignBatchSourceEffect(compiled.operation, before.source, after.source, ids.createdIds); }
@@ -334,6 +343,7 @@ export function inverseDesignAction(action: unknown, before: DesignActionState, 
   const input = designActionSchema.parse(action);
   if (input.action === "sch.layout.batch") { return inverseSchematicLayout(input, before.source, before.schematic, ids.createdIds, layoutEvidence(before)); }
   if (input.action === "pcb.text.modify") { return inversePcbTextOperation(input, before.source); }
+  if (input.action === "pcb.text.create" || input.action === "pcb.text.delete") { return inversePcbTextLifecycleOperation(input, before.source, ids); }
   if (input.action === "pcb.component.model-transform" || input.action === "footprint.model-transform") { return inverseModelTransformOperation(input, before.source); }
   if (input.action.startsWith("footprint.")) {
     if (input.action === "footprint.pad.modify" || input.action === "footprint.pad.delete") {

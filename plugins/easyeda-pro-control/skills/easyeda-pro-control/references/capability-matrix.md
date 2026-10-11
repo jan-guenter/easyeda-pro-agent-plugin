@@ -32,7 +32,7 @@ its narrow boundary and pending live validation are listed separately below.
 | Polygon splitting | sdk_read, pcb_MathPolygon.splitPolygon | Bounded JSON complex-polygon groups, temporary SDK constructors and exact ordered source-array output with duplicates retained. No native handles or CAD mutation; shared aggregate limits apply. Offline-tested including pinned constructor bodies; connected validation pending |
 | Owned editor tab/split-screen lookup | sdk_read, getSplitScreenIdByTabId / getTabsBySplitScreenId | Exact existing selector, complete bounded owned tree and saved project membership; identity-only direct result checked against the tree before/after, two matching samples and unchanged checkpoint/context. No foreign projects, empty leaves, title/data export, navigation or current-generation live claim |
 | Single-page stored display changes | design sch.layout.batch, sealed flat-display profiles | Existing literal-ID attribute/text display patches only; complete inverse, unchanged endpoint topology, sole page of one ordinary schematic and full saved-project proof. V1 remains strict; v2 additionally seals unchanged imported-library header occurrences from immutable checkpoints at every lifecycle gate. No electrical edits, NO_CONNECT, creation/deletion, translation, non-display steps or historical repair/page loading. Installed083400 passed a nonempty Designator-coordinate forward/reverse Save/reopen; unsaved rollback and newer generation remain separate. See schematic.md |
-| Closed PCB/schematic rename | library document.pcb.rename / document.schematic.rename | Separate native title-only adapter, one other clean owned PCB, closed target/children, independent DOM-frame inventory, strict nonimported history and fixed META shape. Full peer records/clocks/provenance preserved; original acknowledgment required for changed-result recovery. No public CBB counterpart behavior, Save, reopen, automatic inverse or current-generation connected claim. See libraries-and-eco.md |
+| Closed PCB/schematic rename | library document.pcb.rename / document.schematic.rename | Separate native title-only adapter, one other clean owned PCB, closed target/children, independent DOM-frame inventory, strict nonimported history and fixed META shape. Complete peer raw chains preserved; original acknowledgment required for changed-result recovery. Installed120000 passed both explicit forward/reverse title pairs. No public CBB counterpart behavior, Save, reopen or automatic inverse. See libraries-and-eco.md |
 | Historical presentation-only schematic batch | design sch.layout.batch, compiled profile | Currently blocked by the compiled reader. Historical translation, wire/label edits and flag clones passed selected saved/reopened checks, but that does not enable this route now |
 | Existing schematic wire geometry | design sch.wire.modify | Native adapter with explicit cardinal geometry/style, net omitted, exact graph-derived child indices and awaited history; identity-only unstored-attribute alignment on reopen; exact source/topology and complete durable proof; disposable 16-document lifecycle and retained-Save recovery completed Sept25; no general inverse or arbitrary WIRE shape support |
 | Retained split-wire layout repair | design repair-layout-wire-groups | Exact original island/drop/flag identities only; S06 correction and retained Save reconciliation completed live with original topology restored; consumed repairs must never be replayed |
@@ -42,7 +42,7 @@ its narrow boundary and pending live validation are listed separately below.
 | PCB component pose/layer/lock | design | Typed effect plus attached records and whole-source comparison |
 | PCB component / footprint 3D transform | design, pcb.component.model-transform / footprint.model-transform | Exact existing `3D Model Transform` ATTR value only; typed legacy mil/degree fields or native v2 affine; lock ancestry and full source/durable invariants; connected validation pending |
 | PCB line/arc/via/pad/polyline/region/pour/fill create/modify/delete | design | Only representable installed source profiles; unsupported shapes fail before dispatch; create IDs are journal-owned; exact inverse not universal |
-| Standalone PCB text modification | design, pcb.text.modify | Existing exact-ID top-silkscreen default-font STRING; only x/y/text, bounded ASCII and four-decimal mil coordinates. Requires sealed project/branch and exact ordinary receiver; refuses pours, groups and other styles. Complete inverse/source/persistence proof; no create/delete or connected-validation claim |
+| Standalone PCB text | design, pcb.text.create / modify / delete | Top-silkscreen default-font STRINGs with bounded ASCII and four-decimal native mil. Modify changes x/y/text and preserves exact null or black color; create fixes style and reserves one journal-owned ID; creation inverse deletes that ID, delete has no inverse. Sealed project/branch/receiver and complete source/persistence proofs; pours/groups/other styles refuse. Offline-tested, connected validation pending. See pcb-geometry.md |
 | Multiple PCB operations | design, pcb.batch | 1–256 sequential typed effects; geometry-only source merge or ordered source-bound public steps when rules are included; prior create references; initially locked records and descendants protected; no stack/rebuild inside batch |
 | Net classes, differential pairs, equal-length and numeric rule collections | design | Typed collection/source adapters; support depends on exact representable records, not arbitrary rule JSON invocation |
 | Physical layer stack | design, pcb.stack.replace | Complete typed physical layer list and enabled copper IDs; preserves existing native IDs/unknown metadata; native thickness quantization is explicit |
@@ -54,7 +54,7 @@ its narrow boundary and pending live validation are listed separately below.
 | Closed empty ordinary symbol creation | library, library.symbol.create | Ordinary clean PCB active; unique project-local title and optional description; original native ID and META-only addition with complete unchanged-peer proof. No PART/template/canvas initialization, classification, open, Save or inverse. Native permission denial may display a dialog. Installed194400 passed one disposable creation with all17existing documents unchanged; no general symbol-editor lifecycle claim |
 | Closed project page rename | library, document.page.rename | Checkpoint-member ordinary page with one clean active sibling; exact writable branch, owner and locale duplicate-name checks; one native metadata write, complete saved title/header and unchanged peer/source proof; no Save, reopen, UI-caption refresh or current-generation connected-writer claim |
 | Closed empty schematic-page creation | library, document.page.create | Existing ordinary local schematic parent only; one clean owned PCB or sibling page active; exact writable branch and native name/order defaults; one project-qualified native addition with original returned ID and complete unchanged peer/hierarchy proof. Not the public template/drawing-frame/open workflow; no Save, reopen, automatic inverse or current-generation live claim |
-| Closed empty free-PCB creation | library, document.pcb.create | Absent boardName only; one other clean direct-open PCB. Retained UUID, checkpoint-derived name, exact DOCHEAD/META addition and unchanged raw per-document peer chains. No canvas initialization, board attachment, open, Save, inverse or current-generation connected claim |
+| Closed empty free-PCB creation | library, document.pcb.create | Absent boardName only; one other clean direct-open PCB. Retained UUID, checkpoint-derived name, exact DOCHEAD/META addition and unchanged raw per-document peer chains. Installed120000 passed one disposable creation. No canvas initialization, board attachment, open, Save or inverse |
 | Already-open document activation | library, document.activate | Exact checkpoint-member current-project tab and complete tab ownership; PCB/footprint target requires existing pcbCommandTab=true to avoid an account-preference write. One activation, two coherent target observations and unchanged saved database; no setting change, reopen or current-generation connected claim |
 | Inactive clean document close | library, document.close | Ordinary symbol (2), PCB (3) or footprint (4) target with a separate clean PCB/footprint active; exactly two owned project tabs, one unsplit container. Await terminal tab/frame cleanup and prove unchanged active source/context and complete logical database. No Save, reopen, exact inverse or current-generation live claim; post-dispatch failure remains quarantined until retained runtime termination |
 | Project footprint library create/modify | library | Scoped current-project record proof; save and reopen facts reported separately |
@@ -82,6 +82,27 @@ its narrow boundary and pending live validation are listed separately below.
 | Raw JavaScript, automatic database restore, fabrication submission | unsupported | No unrestricted-code switch or implicit purchasing/manufacturing authority |
 
 ## Reported live coverage
+
+Installed120000 passed closed PCB and schematic-container rename, each followed
+by a separate explicit inverse transaction, then one closed free-PCB creation.
+All five original acknowledgments and exact target DOCHEAD/META changes passed
+complete raw per-document history checks. The project went from 10 documents
+and 69 materialized records to 11 documents and 70 records. Every peer and the
+active PCB source stayed exact. Reversing the titles did not restore timestamps
+or history bytes. No Save, target open/reopen, automatic inverse or deletion ran.
+These tests do not establish public-wrapper counterpart renaming, initialized
+PCB creation or later-generation admission.
+
+Native preparation of a separate text fixture in that disposable project saved
+and reopened one default black STRING. Before any typed text dispatch, preflight
+refused two layer-color differences between saved records and exported source,
+and the former null-only text-color restriction. The source candidate admits
+exact black without changing its meaning. The private whole-source/storage
+equality check was overbroad: native decode skips unchanged live layer records,
+and maintained baseline admission checks the intended target fields. Offline
+regressions preserve both color representations and reject changed durable layer
+bodies, types or membership. They do not prove unchanged raw history clocks.
+No typed text lifecycle has passed on this fixture.
 
 Installed103000 passed five PCB reader cases: Line-only and combined five-family
 nonempty-net membership, one track type lookup and two neutral inherited

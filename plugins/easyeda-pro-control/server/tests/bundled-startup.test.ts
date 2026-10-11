@@ -147,7 +147,7 @@ void describe("self-contained packaged machine startup", () => {
         assert.equal(sdk["invocationEnabled"], false);
         assert.equal(record(sdk["totals"])["methods"], methods);
       }
-      for (const [family, total] of [["design", 106], ["library", 68]] as const) {
+      for (const [family, total] of [["design", 108], ["library", 68]] as const) {
         const operations = await api(client, { action: "operations", query: { family, limit: 1, includeSchemas: true } });
         assert.equal(operations["total"], total);
         assert.equal(operations["executionAuthorized"], false);

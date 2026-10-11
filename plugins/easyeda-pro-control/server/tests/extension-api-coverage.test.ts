@@ -207,14 +207,14 @@ void test("closed free PCB creation exposes only its checkpoint-bound native sub
   // Branch execution-enabled; the runtime rejects every supplied boardName.
 });
 
-void test("String footprint routes retain their type-4 scope alongside the separate narrow PCB modify route", () => {
+void test("String footprint routes retain their type-4 scope alongside the separate narrow PCB routes", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   for (const method of ["create", "modify", "delete"]) {
     const row = rows.get(`eda.pcb_PrimitiveString.${method}`); assert.ok(row);
     assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
     assert.equal(row.reviewedRuntimeDeclaration, true); assert.equal(row.completeDeclaredContractSupported, false);
     assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
-    assert.equal(row.routes.length, method === "modify" ? 2 : 1);
+    assert.equal(row.routes.length, 2);
     const route = row.routes.find((entry) => entry.selector === `footprint.text.${method}`); assert.ok(route);
     assert.equal(route.tool, "easyeda_control_design"); assert.equal(route.selector, `footprint.text.${method}`);
     assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [4]);
@@ -235,7 +235,7 @@ void test("String footprint routes retain their type-4 scope alongside the separ
     const schema = entry["inputSchema"]; assert.ok(isRecord(schema)); assert.equal(schema["additionalProperties"], false);
     const properties = schema["properties"]; assert.ok(isRecord(properties));
     assert.deepEqual(properties["action"], { type: "string", const: route.selector });
-    assert.equal(queryOperationCatalog({ family: "design", operationAction: `pcb.text.${method}` })["matched"], method === "modify" ? 1 : 0);
+    assert.equal(queryOperationCatalog({ family: "design", operationAction: `pcb.text.${method}` })["matched"], 1);
   }
 });
 
@@ -257,6 +257,28 @@ void test("PCB String modification discovers only its strict source-merge subset
     assert.equal(validateCatalogOperation({ family: "design", operation: { ...operation, patch } })["valid"], false);
   }
   assert.equal(validateCatalogOperation({ family: "design", operation: { ...operation, code: "caller" } })["valid"], false);
+});
+
+void test("PCB text create/delete discovery retains the separate type-3 identity and inverse boundaries", () => {
+  for (const method of ["create", "delete"] as const) {
+    const row = inventoryExtensionApiCoverage().find((entry) => entry.path === `eda.pcb_PrimitiveString.${method}`); assert.ok(row);
+    const route = row.routes.find((entry) => entry.selector === `pcb.text.${method}`); assert.ok(route);
+    assert.deepEqual(route.documentTypes, [3]); assert.equal(route.implementation, "native-task-equivalent");
+    assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+    assert.match(route.scope, /facade-reserved identity sealed with the prepared program before dispatch/u);
+    assert.match(route.scope, /deletion has no inverse/u); assert.match(route.scope, /No regeneration or redispatch/u);
+    assert.ok(route.source.includes("pcb-text-lifecycle.ts")); assert.ok(route.tests.includes("pcb-text-lifecycle.test.ts"));
+    const query = { family: "design", operationAction: route.selector, includeSchemas: true };
+    assert.deepEqual(route.inputDiscovery, { tool: "easyeda_control_api", arguments: { request: { action: "operations", query } } });
+    const catalog = queryOperationCatalog(query); assert.equal(catalog["matched"], 1); assert.equal(catalog["executionAuthorized"], false);
+    const operation = method === "create"
+      ? { id: "create-pcb-text", action: route.selector, properties: { x: 95, y: 210, text: "Fixture 1", fontSize: 120, strokeWidth: 8 } }
+      : { id: "delete-pcb-text", action: route.selector, target: { primitiveId: "0123456789abcdef" } };
+    assert.equal(validateCatalogOperation({ family: "design", operation })["valid"], true);
+    for (const extra of [{ createdId: "0123456789abcdef" }, { code: "caller" }, { documentType: 4 }]) {
+      assert.equal(validateCatalogOperation({ family: "design", operation: { ...operation, ...extra } })["valid"], false);
+    }
+  }
 });
 
 void test("PCB and schematic rename coverage is an exact closed-target native task, not public wrapper or live execution proof", () => {

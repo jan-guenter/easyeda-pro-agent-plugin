@@ -39,19 +39,38 @@ tests and retained-fixture replay are not connected validation of this candidate
 
 ### Standalone silkscreen text
 
-The source candidate adds `pcb.text.modify` for x/y/text on one existing unlocked
-top-silkscreen STRING. It is not component Designator editing or a footprint
-operation. Query the installed schema first; older packages have no such action.
+The source candidate supports `pcb.text.modify`, `pcb.text.create` and
+`pcb.text.delete` for standalone top-silkscreen STRINGs. These are not component
+Designator edits or footprint operations. Query the installed schema first;
+older packages lack some or all of these actions.
 All stored STRINGs must fit the default-font, LEFT_BOTTOM, zero-angle,
 nonmirrored/nonreverse profile. Coordinates use exact four-decimal native mil;
 supported text contains letters, digits, spaces, dot, underscore and hyphen.
 Custom fonts, formula text, pours, generated copper, groups, partitions and
-unmodeled record families refuse. No create/delete, layer/style change or unlock
-is included. These are current implementation limits, not permanent SDK limits.
+unmodeled record families refuse. Existing text admits exactly `null` or
+`"#000000"` specialColor and preserves that scalar. They are different native
+states, not interchangeable colors. No layer/style change or unlock is included.
+These are current implementation limits, not permanent SDK limits.
+
+Modification changes only x/y/text. Creation takes explicit x/y/text/fontSize/
+strokeWidth and fixes layer 3, default font, LEFT_BOTTOM, zero angle, unlocked,
+zIndex -1 and null specialColor. The facade reserves its ID once and journals it
+with the generated program before dispatch. Recovery must reuse that original
+identity for proof, never generate or dispatch another creation. The creation
+inverse deletes that exact ID. Deletion takes one existing ID and has no
+automatic inverse; creating replacement text would not restore its identity or
+history.
 
 The adapter preserves component ATTR ownership and all peer records, binds one
-captured PCB frame across awaited reads, and has an exact source inverse. Its
-synthetic tests are not connected Save/reopen evidence. Text position approval
+captured PCB frame across awaited reads. Its synthetic tests are not connected
+Save/reopen evidence. A native disposable text fixture exposed two unused-layer
+color differences between saved records and reopened FileSource on the pinned
+build. Keep both observations. The maintained baseline checks intended target
+fields; it does not require every unchanged exported body to equal storage.
+Source apply computes a live-record diff, and complete durable proof must keep
+each untouched saved layer's type and body exact. Do not add a blanket equality
+test, normalize colors, change global palettes or repeat Save as a workaround.
+Other queued native effects still require the normal proof gates. Text position approval
 still requires visual inspection and silkscreen-clearance review; an exact
 source delta alone cannot establish either.
 

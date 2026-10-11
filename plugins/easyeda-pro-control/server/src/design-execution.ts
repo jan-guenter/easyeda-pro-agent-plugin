@@ -65,6 +65,7 @@ import type { FlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
 import { verifyFlatDisplayMaterialization, verifyFlatDisplayRestoration } from "./flat-display-storage.ts";
 import { hasDesignInverseAttempt } from "./design-inverse-attempt.ts";
 import { verifyFlatInverseCheckpoint } from "./flat-inverse-checkpoint.ts";
+import { assertPcbTextCreateRetainedAuthority, assertPcbTextLifecycleAcknowledgment } from "./pcb-text-lifecycle.ts";
 
 type RecordValue = Record<string, unknown>;
 const PROFILE = "easyeda-pro-control.typed-design-transaction.v1";
@@ -901,6 +902,9 @@ export class DesignExecutor {
         ...(flatPrepared === undefined ? {} : { flatBindingSha256: sha256Text(canonicalJson(flatPrepared.binding)) }) });
       const result = await this.call(journal, "apply", prepared.code);
       if (!isRecord(result) || result["ok"] !== true || result["id"] !== operation.id) { throw new Error("Typed operation acknowledgment is invalid."); }
+      if (operation.action === "pcb.text.create" || operation.action === "pcb.text.delete") {
+        assertPcbTextLifecycleAcknowledgment(operation, journal.createdId === undefined ? {} : { createdId: journal.createdId }, result);
+      }
       if (journal.createdIds !== undefined && canonicalJson(journal.createdIds) !== canonicalJson(result["createdIds"])) { throw new Error("Batch acknowledgment differs from journal-owned identities."); }
       if (compiled.resultKind === "created-primitive") {
         if (typeof result["createdId"] !== "string") { throw new TypeError("Created identity is unavailable."); }
@@ -1502,7 +1506,15 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         return summary(journal);
       }
       const ids = { ...(journal.targetId === undefined ? {} : { targetId: journal.targetId }), ...(journal.createdId === undefined ? {} : { createdId: journal.createdId }), ...(journal.createdIds === undefined ? {} : { createdIds: journal.createdIds }), ...(journal.derivedResult === undefined ? {} : { derivedResult: journal.derivedResult }), ...(journal.componentCreate === undefined ? {} : { componentCreate: journal.componentCreate }) };
-      const prepared = journal.plan.operation.action === "sch.component.create" ? undefined : await prepareDesignActionCooperatively(journal.plan.operation, beforeState, ids);
+      if (journal.plan.operation.action === "pcb.text.create") {
+        assertPcbTextCreateRetainedAuthority(journal.plan.operation, journal.createdId,
+          await DesignExecutor.phase(journal, "prepared"), await DesignExecutor.phase(journal, "apply"));
+      }
+      // Creation code allocates an identity only during original preparation.
+      // Reconciliation proves the retained journal identity without rebuilding
+      // Or redispatching that program or minting a replacement identity.
+      const prepared = journal.plan.operation.action === "sch.component.create" || journal.plan.operation.action === "pcb.text.create"
+        ? undefined : await prepareDesignActionCooperatively(journal.plan.operation, beforeState, ids);
       const compiled = prepared?.compiled ?? compileDesignAction(journal.plan.operation);
       const proof = flatEffectProof(journal, await verifyDesignActionCooperatively(compiled, beforeState, currentState, { ...ids, ...(journal.plan.operation.action === "sch.layout.batch" ? { layoutCloneLifecycle: true as const } : {}) }));
       if (journal.plan.expectedTopology !== undefined) {

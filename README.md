@@ -58,7 +58,7 @@ acceptance. Project-open failures now retain fixed diagnostic categories through
 recovery without storing raw private error messages or repeating navigation.
 
 Latest declarations are not runtime admission. Exact operation schemas cover
-106 design actions and 68 library/lifecycle actions; schema availability does
+108 design actions and 68 library/lifecycle actions; schema availability does
 not guarantee execution support. The [coverage inventory](docs/api-coverage-inventory-2026-10-10.md)
 and [feasibility review](docs/api-execution-feasibility-2026-10-10.md) name the
 remaining work. Closed symbol/page metadata, empty-page and empty-symbol creation, existing-tab

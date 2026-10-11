@@ -118,8 +118,10 @@ void test("legacy successful returns, durable intents and dispatch phases remain
   assert.throws(() => attempts.hasLegacyDesignSaveEvidence({ ...current, saveAttemptProtocol: "unknown" }));
 });
 
-void test("ordinary PCB geometry, rules and stack failed Saves cannot reconcile to commit-ready or dispatch a second Save", async () => {
+void test("ordinary PCB geometry, text lifecycle, rules and stack failed Saves cannot reconcile to commit-ready or dispatch a second Save", async () => {
   const operations = [{ id: "line", action: "pcb.line.modify", target: { primitiveId: "line" }, patch: { lineWidth: 8 } },
+    { id: "text-create", action: "pcb.text.create", properties: { x: 0, y: 0, text: "Fixture1", fontSize: 120, strokeWidth: 8 } },
+    { id: "text-delete", action: "pcb.text.delete", target: { primitiveId: "a".repeat(16) } },
     { id: "rules", action: "pcb.rules.net.replace", value: [] },
     { id: "stack", action: "pcb.stack.replace", enabledCopperLayers: [1, 2], layers: [1, 361, 2].map((id, index) =>
       ({ layerId: id, material: id === 361 ? "FR4" : null, thicknessMm: id === 361 ? 1.5 : 0.035, permittivity: null, lossTangent: null, isKeepIsland: true, zIndex: index })) }];

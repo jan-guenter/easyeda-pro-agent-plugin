@@ -4,6 +4,7 @@ import { isRecord } from "../src/core.ts";
 import { extensionApiCoverageSummary, inventoryExtensionApiCoverage, queryExtensionApiCoverage } from "../src/extension-api-coverage.ts";
 
 const cases = [
+  { path: "eda.pcb_Document.setCanvasOrigin", code: "canvas-origin-pending-geometry-queues", facts: [/13-field CANVAS/u, /pending BOARD, POURED and LAYER_FILL/u, /unsaved geometry/u, /no reviewed read-only empty-queue/u], next: /bound through dispatch/u },
   { path: "eda.pcb_Layer.selectLayer", code: "layer-selection-collateral-state", facts: [/returns true even/u, /visibility, colors, ordering/u, /ACTIVE_LAYER/u], next: /complete before\/after/u },
   { path: "eda.dmt_Schematic.reorderSchematicPages", code: "page-order-partial-write-lifecycle", facts: [/not duplicate page IDs/u, /1,2,4,8/u, /currentProject\.projectId/u], next: /partial-progress recovery without batch replay/u },
   { path: "eda.pcb_Drc.modifyPadPairGroupName", code: "pad-pair-group-replacement-effects", facts: [/deletes its old EQLEN_GRP/u, /fresh native number/u, /old color/u, /no explicit RULE or RULE_SELECTOR write/u], next: /delete\/create interval/u },

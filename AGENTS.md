@@ -6,6 +6,50 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Restarted120000 container validation and text follow-through
+
+- Actual facade2150787 independently matches installed120000:576files/modes,
+  sourceaf63440d, runtime3687ff1b and manifest7ea4fa1d. The external tuple and
+  authenticated dispatcher ded07x99dcxb504 are unchanged. Only the named
+  disposable container fixture was accessed; production and its record remain
+  untouched.
+- Closed PCB and schematic-container rename each completed an explicit forward
+  and inverse title transaction. A fifth transaction created one closed free
+  PCB. All original acknowledgments, complete peer raw-history chains and exact
+  target DOCHEAD/META deltas pass. Final11documents/70records/96raw occurrences;
+  active PCB source stayed exact. Independent rehash covers858inputs/12762663
+  bytes. Report50d7024d, helperc1e7489f. No Save, target open/reopen or automatic
+  inverse. Never replay any of these five completed operations.
+- Native preparation placed one default black text object, invoked one current-
+  document Save and reopened the fixture once. Before any typed text dispatch,
+  strict preflight refused native black specialColor and two unchanged stored
+  layer colors differing from reopened FileSource. Investigation proves a
+  native color-cache collision and fractional-hex encoding defect. Incremental
+  Save cannot repair unrelated layers; Layer Manager has broad collateral.
+  No color normalization, second Save or typed text write was performed.
+- Follow-up source review proves decode compares against the current live model
+  and excludes unchanged layers. The private whole-source/storage equality
+  condition was overbroad; maintained admission is target-field scoped. Ten
+  new regressions admit unchanged stored/exported representations and reject
+  durable layer body/type/identity/membership or peer changes. Persistence proves
+  materialized record semantics, not unchanged raw history clocks. No production
+  guard was changed and no color repair is needed merely for that difference.
+- Contained17108 closed normally without a prompt choice; discovery is empty.
+  Maintained closed-checkpoint verification preserves source9f8cd660,
+  backup3c3d22f6 and logical51acf515 exactly. All live calls/journals are terminal.
+  Private continuation: disposable-validation-120000-Iu061G/resume-live-120000.md.
+- Source work adds strict standalone PCB text creation/deletion, exact null or
+  black preservation, original-ID-only recovery and no deletion inverse.
+  Source review and final local verification pass3166facadetests/oneplatformskip/
+  zerofailures and424bridgetests. Strict types/type-aware lint have zero diagnostics;
+  dependencies/signatures/privacy/officialplugin/sevenskills/actionlint/doctor and
+  reproducible facade/syntheticbridge builds pass. Frozen185sourcecf942fd2,
+  runtime518ffece,manifest20278cb6; external pins unchanged. Full log5ba65638.
+  Candidate131000 is not yet published/installed; GitHub CI remains pending.
+  Canvas-origin execution remains omitted because its command flushes private
+  pending geometry queues with no enforceable empty-queue predicate. The removed
+  private prototype is not a shipped capability. PR9 remains draft.
+
 ### Candidate120000 published and installed; fresh host required
 
 - Payloadc1182b68c91c7109b4a501d7615b26adbd9b7a12 passedCI38137714430:
@@ -1387,7 +1431,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011120000` is published, installed/enabled and offline-verified against CI-tested payloadc1182b68. All576files/modes match;26tools, seven skills and175fixed readers. Loaded facade2090211 remains103000 and is left intact; use a fresh chat before connected admission. Installed103000 passed five Line/net/type readers with complete18document/native/fullSQLite invariance; both inherited neutral-Line cases passed. Installed083400 passed imported-project open, nonempty flat diagnostics and forward/reverse Designator-coordinate transactions with Save/reopen and complete12document proof. All disposable editors are closed and journals terminal. Never replay prior creation, Paste, placement, identity edits, transactions or Save. Earlier071500 active-layer, ComponentPad/Via membership and selected-component evidence remains scoped to that generation. Closed PCB/SCH rename, free-PCB creation, PCB-text modification, nonempty standalone Pad/Arc, electrical writers and unsaved v2 rollback remain pending live validation. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
+- Git-marketplace `0.3.0+codex.20261011120000` is published, installed/enabled and independently admitted by actual facade2150787. All576files/modes and the external tuple match. This generation passed four explicit closed PCB/schematic title transactions and one closed free-PCB creation with complete peer raw-history proof. Its native text fixture was saved/reopened once, but no typed text writer ran. All disposable editors are now closed and journals terminal. Source candidate131000 adds text create/delete and exact black-color support; it is not yet published or live-validated. See the latest record above and the dated release report. Historical reader, display, electrical and library evidence remains operation/generation-specific. Never replay completed creation, placement, transactions or Save; do not access production or its project record.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
