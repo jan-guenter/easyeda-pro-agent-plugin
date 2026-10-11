@@ -1,8 +1,10 @@
 # Candidate 204104
 
-`0.3.0+codex.20261011204104` passed local release checks;
-publication and installation are not yet claimed. Production designs and their
-project records remain untouched. Both disposable editors are normally closed.
+`0.3.0+codex.20261011204104` is published and installed through the GitHub
+marketplace. Local release checks, exact-head CI and installed offline proof
+passed. Production designs and their project records remain untouched. Both
+disposable editors are normally closed. A fresh Codex host is required before
+connected testing of this generation; the broader API task remains unfinished.
 
 ## Changes
 
@@ -89,6 +91,42 @@ Three-file runtime fingerprint:
 Compatibility manifest:
 `00e5fac66a3044ce7f057ecee1cad3d3414ae29c1ebbf74a6f2ec39ea3944f32`.
 External application, SDK, bridge and sanitizer pins have not been refreshed.
+
+## Publication and installation
+
+Payload `10972c0d68b11f87fffa5570c74c2294e1068aba` passed
+[CI38174294732](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38174294732)
+in [PR9](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/9).
+The PR remains draft for the unfinished broader task. CI passed 3,678 facade
+tests, four platform skips and zero failures, plus 424 bridge tests. Compared
+with the local run, two installed-Windows source-body checks and one Windows
+desktop diagnostic skip on the Linux runner. Both environments retain the
+mounted-drive fixture skip. CI also passed audits, strict lint/types, all
+maintained package/repository checks, reproducible builds and artifact upload.
+
+The official CLI upgraded the configured Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` under umask022.
+It returned no errors and lists the plugin installed/enabled at204104. The
+marketplace checkout HEAD equals the payload commit. Its plugin subtree is
+`fe9acf1d0da7caa942a6ac3599efc7b337995709`; root-only follow-up records do not
+change that tested package.
+
+Installed verification compared all 628 files, 16,896,277 bytes and their Git
+modes, with no extra files or changes during the probe. Inventory commitment:
+`4ede1a212136aa657eed6d171bcc7d6bcc0d1b708d7ea3dc0c7fa46383c1531a`.
+Installed proof:
+`73d1f69e32c7e3280899f08314ee3f7e5e8ae9c74540bba8a3e9c5f2e8de99b9`.
+The actual configured bundled entrypoint handed ambient Node26.7.0 to pinned
+Node24.18.0. Process samples and a synthetic forbidden-upstream sentinel found
+no upstream child or nonstdio socket. These are sampled offline observations,
+not a continuous trace or connected admission.
+
+The probe enumerated 26 tools, seven skills, 749/806 declaration signatures,
+108/68 operation schemas, every coverage entry and all 181 fixed readers. It
+verified the three new reader schemas/refusals and hover's listed schema and
+reviewed code without invoking those live tools. No installed-cache edit,
+host termination, hot patch, CAD call or bridge import occurred. Loaded164600
+remains distinct from the newly installed204104 package.
 
 ## Remaining work
 

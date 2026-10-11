@@ -6,6 +6,34 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Candidate204104 published and installed; fresh host required
+
+- Payload10972c0d68b11f87fffa5570c74c2294e1068aba passed required
+  [CI38174294732](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38174294732).
+  CI has3678facade passes/four documented platform skips/zerofailures and424
+  bridge passes, plus audits, strict checks, reproducible builds and artifact
+  upload. Local3681passes/oneskip exercised the three Windows-dependent cases
+  unavailable on the Linux runner. The package subtree isfe9acf1d, not the root
+  repository tree. PR9 remains draft because the broader live-coverage work is
+  unfinished; the new payload is published on its feature ref.
+- Official Git-marketplace upgrade underumask022 installed/enabled
+  `0.3.0+codex.20261011204104`, with no CLI errors. Marketplace checkout HEAD
+  equals10972c0d. Exact628files/16896277bytes and committed modes match, with
+  no extras or changes during the private offline probe. Inventory4ede1a21 and
+  installed proof73d1f69e are retained. The configured bundled entrypoint hands
+  ambientNode26.7.0 to pinned24.18.0 with no upstream child/nonstdio socket and
+  the forbidden-upstream sentinel absent at all sampled boundaries.
+- Offline proof covers26tools/seven skills,749/806signature counts,108/68typed
+  schemas, the complete774-method/181-reader catalogs, the three new reader
+  schemas/refusals and hover's listed schema/reviewed source. It invokes neither
+  the new readers nor native UI. No live204104 admission is claimed.
+- Both disposable fixtures remain closed with verified saved baselines. No
+  unfinished wire/source change or Save is pending. Leave EasyEDA closed until
+  a fresh Codex host has admitted the actual204104 package; then resume disposable
+  hover/readers and named-wire fixture testing. Loaded164600 was not killed or
+  hot-patched. Never repeat completed navigation, Run Command, fixture setup or
+  Saves. Production designs and their project records remain untouched.
+
 ### Candidate204104 local release verified; disposable editor closed
 
 - Source candidate204104 adds confirmed pointer-only hover, one strict public
@@ -31,8 +59,8 @@ Last updated: 2026-10-11 (Europe/Berlin)
   pass. Original failed logbd2de341 is retained.
 - Both facade bundles and sanitizer reproduce exactly; the synthetic bridge
   archives also match. Source203files/234eb8aa, runtime3/c4d9b324 and manifest
-  00e5fac6 are frozen. External pins are unchanged. Publication and installation
-  are not yet claimed; loaded164600 is not hot-patched or terminated. Never replay
+  00e5fac6 are frozen. External pins are unchanged. The subsequent publication
+  and installation proof is above; loaded164600 is not hot-patched or terminated. Never replay
   completed live tests, fixture placement, Saves or the Run Command action.
 
 ### Historical164600 preference comparison and disposable reopen
@@ -1823,7 +1851,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011164600` is published and installed/enabled with exact624file/mode proof. Facade2387360/runtime8610ba8c remains loaded; candidate204104 is not installed yet. The authorized normal UI action and private comparison9bf4428a establish pcbCommandTab false to true in the browser and one anonymous SQL residual; the SQL NULL peer and retention projections are unchanged. No current-user identity or completed asynchronous cleanup is inferred. Both disposable fixtures are closed and verified. Flat P1 open276db5a3 completed unchanged; its interrupted wire preview was cancelled after RDP recovery. Exact source33 has no WIRE/LINE additions, capture62174027 shows the cleared tool, normal-close/discover-empty prove1272 exited and closed verification71fac173 preserves the original database/checkpoint/dump. No Save or discard choice. Metadata35 matches all nine retained backup roots. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission.
+- Git-marketplace `0.3.0+codex.20261011204104` is published and installed/enabled with exact628file/mode and offline-startup proof. Facade2387360/runtime8610ba8c remains the old164600 loaded generation; a fresh Codex host is required before further live calls. The authorized normal UI action and private comparison9bf4428a establish pcbCommandTab false to true in the browser and one anonymous SQL residual; the SQL NULL peer and retention projections are unchanged. No current-user identity or completed asynchronous cleanup is inferred. Both disposable fixtures are closed and verified. Flat P1 open276db5a3 completed unchanged; its interrupted wire preview was cancelled after RDP recovery. Exact source33 has no WIRE/LINE additions, capture62174027 shows the cleared tool, normal-close/discover-empty prove1272 exited and closed verification71fac173 preserves the original database/checkpoint/dump. No Save or discard choice. Metadata35 matches all nine retained backup roots. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission.
 - Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct, with no later writer authority. Installed164600 separately passed one-STRING explicit singular/plural reads, explicitblack text create/delete saved/reopened lifecycles, and closed empty free-SCH creation. Scope and immutable proofs are in the connected validation ledger; these cases do not validate whole SDK contracts. Sealed wire rerouting and candidate-only hover/system-library UUID reads remain unvalidated live. Earlier text/container proofs remain generation-specific. Never access production or its project record. The user's continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation, not relaxed technical safety checks or unrelated changes.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
