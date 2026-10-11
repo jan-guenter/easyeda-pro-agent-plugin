@@ -6,7 +6,7 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
-### Candidate103000 locally verified; publication pending
+### Candidate103000 published and installed; fresh host required
 
 - Candidate0.3.0+codex.20261011103000 passes3,030facade tests/oneplatformskip/
   zerofailures and424bridge tests. Strict types and both type-aware linters have
@@ -25,13 +25,28 @@ Last updated: 2026-10-11 (Europe/Berlin)
   point to existing footprint-only String operations. Three concrete omissions
   record layer selection, page-order partial writes and pad-pair replacement.
   Feasible API work remains unfinished; PR9 stays draft.
-- Both disposable editors are closed and all journals terminal. Loaded2019730
-  remains083400; do not hot-patch or terminate it. Candidate CI acceptance and
-  installation are pending. Release details: docs/api-coverage-103000-release-2026-10-11.md.
-- Payloadca5cc57 is pushed, but CI38131470295 failed two PowerShell child
-  timeouts after3025passes/fourplatformskips. CI scheduling now serializes the
-  unchanged isolated suite; no assertions, deadlines or packaged bytes change.
-  Exact timeout cause is not established. Installation remains pending.
+- Payloadca5cc57941b4ba010d1fcc2df7bf38107140d8de is published. CI-only
+  follow-up2133a2233ff74f0f75f085133ee7fb36b5e70fac has the identical package
+  tree56da179d. CI38132001260 passed3027facade tests/fourplatformskips and424bridge
+  tests. Testedmerge8dced383 has the exact2133a223 tree d6646c03. Local full serial
+  run repeats3030passes/oneskip. All assertions and child deadlines are unchanged.
+- First CI38131470295 failed two PowerShell child timeouts after3025passes and
+  fourskips. Serial CI scheduling bounds startup contention without claiming its
+  exact cause. Both PowerShell tests pass within their original deadlines in the
+  accepted run. Failed and successful logs are retained; no test was removed.
+- Official Git-marketplace upgrade underumask022 installed/enabled103000 from
+  https://github.com/jan-guenter/easyeda-pro-agent-plugin.git. MarketplaceHEAD
+  equals2133a223. All560packaged files/15723083bytes and committed modes match
+  before/after the offline probe, inventory52911140/reportc4cb3e48. Complete
+  catalogs, rename structural/refusal discovery and inherited-Line restrictions
+  pass. These are not connected rename or reader proofs.
+- Configured bundled startup hands ambientNode26.7.0 to pinnedNode24.18.0 using
+  synthetic isolated configuration. All375process samples show no upstreamchild
+  or nonstdiosocket; sentinel absent/stderr empty. No actual live admission follows
+  installation. Both disposable editors remain closed and all journals terminal.
+  Loaded2019730 remains083400; do not hot-patch or terminate it. Start a fresh
+  Codex chat before connected work. Release details and next-fixture requirements:
+  docs/api-coverage-103000-release-2026-10-11.md. Production remains untouched.
 
 ### Restarted083400 fixture validation, completed before candidate103000
 
@@ -1301,7 +1316,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011083400` is published, installed/enabled and offline-verified against CI-tested e73c84d. All548files/modes match;26tools, seven skills and175fixed readers. Actual facade2019730 matches that payload. Installed083400 passed imported-project open, nonempty flat diagnostics and forward/reverse Designator-coordinate transactions with Save/reopen and complete12document proof. Both disposable editors are closed and all journals are terminal. Never replay prior Paste, placement, identity edits, transactions or Save. Earlier071500 active-layer, ComponentPad/Via membership and selected-component evidence remains scoped to that generation. Line/type lookup, nonempty standalone Pad/Arc, electrical writers and unsaved v2 rollback remain pending. New source adapters have no connected acceptance yet. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
+- Git-marketplace `0.3.0+codex.20261011103000` is published, installed/enabled and offline-verified against CI-tested2133a223, package payloadca5cc57. All560files/modes match;26tools, seven skills and175fixed readers. Loaded facade2019730 remains083400 and is left intact; use a fresh chat before connected admission. Installed083400 passed imported-project open, nonempty flat diagnostics and forward/reverse Designator-coordinate transactions with Save/reopen and complete12document proof. Both disposable editors are closed and all journals are terminal. Never replay prior Paste, placement, identity edits, transactions or Save. Earlier071500 active-layer, ComponentPad/Via membership and selected-component evidence remains scoped to that generation. Closed PCB/SCH rename, inherited-Line/type lookup, nonempty standalone Pad/Arc, electrical writers and unsaved v2 rollback remain pending live validation. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
