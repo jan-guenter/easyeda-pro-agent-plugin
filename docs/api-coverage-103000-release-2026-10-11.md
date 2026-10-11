@@ -72,6 +72,14 @@ documented in the [source review](api-remaining-method-effects-2026-10-11.md).
 
 ## Publication and installation
 
+The first payload CI run, `38131470295`, failed two PowerShell child deadlines
+with empty output: desktop diagnostics at 15 seconds and geometry at 10 seconds.
+It passed 3,025 facade tests and skipped four platform-specific tests. All prior
+lint, type, build and bridge-test steps passed. The failed log is retained.
+CI now runs the same isolated facade suite serially to bound native-runtime
+startup contention. Test assertions, child deadlines and packaged runtime are
+unchanged. This scheduling change does not establish the exact timeout cause.
+
 Pending. Keep the loaded083400 host intact. After successful CI and official
 Git-marketplace installation, verify exact committed bytes and file modes,
 offline catalogs and configured startup, then use a fresh chat for connected

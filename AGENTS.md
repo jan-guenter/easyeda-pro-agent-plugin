@@ -26,8 +26,12 @@ Last updated: 2026-10-11 (Europe/Berlin)
   record layer selection, page-order partial writes and pad-pair replacement.
   Feasible API work remains unfinished; PR9 stays draft.
 - Both disposable editors are closed and all journals terminal. Loaded2019730
-  remains083400; do not hot-patch or terminate it. No candidate publication or
-  installation yet. Release details: docs/api-coverage-103000-release-2026-10-11.md.
+  remains083400; do not hot-patch or terminate it. Candidate CI acceptance and
+  installation are pending. Release details: docs/api-coverage-103000-release-2026-10-11.md.
+- Payloadca5cc57 is pushed, but CI38131470295 failed two PowerShell child
+  timeouts after3025passes/fourplatformskips. CI scheduling now serializes the
+  unchanged isolated suite; no assertions, deadlines or packaged bytes change.
+  Exact timeout cause is not established. Installation remains pending.
 
 ### Restarted083400 fixture validation, completed before candidate103000
 

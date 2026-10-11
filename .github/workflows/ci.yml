@@ -174,7 +174,10 @@ jobs:
           exec 145</etc/group
           test "$(readlink /proc/self/fd/142)" = "/etc/hosts"
           test "$(readlink /proc/self/fd/145)" = "/etc/group"
-          npm test
+          # Equivalent to npm test, with a CI-only native-startup concurrency bound.
+          # Put the option before paths; npm's appended arguments do not set it.
+          # Keep every test, the isolation preload and the original child deadlines.
+          node --import ./scripts/test-isolation.ts --test --test-concurrency=1 server/tests/*.test.ts
 
       - name: Run offline plugin checks
         working-directory: plugins/easyeda-pro-control
