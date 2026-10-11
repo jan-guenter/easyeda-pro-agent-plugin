@@ -1,6 +1,6 @@
 # Candidate 131000
 
-Candidate `0.3.0+codex.20261011131000` continues draft PR9. The broader API task
+Published and installed `0.3.0+codex.20261011131000` continues draft PR9. The broader API task
 remains unfinished. Only named disposable projects were used; production and
 its project record were not accessed.
 
@@ -92,18 +92,56 @@ Manifest: `20278cb651b7f7447602b0cf604c10de6b4828e77170192212496205d796ae78`.
 Full facade log: `5ba65638d2cbfea351ed27850bc1fcd8cc88f46a14fb5420901903077dc16159`.
 External application, API, native implementation and bridge pins are unchanged.
 
+A private candidate preflight also passed against the actual retained fixture
+source and immutable checkpoint. All ten peers and their raw-history chains
+remain exact. Integrated preparation, target-field baseline, expected source and
+inverse pass for the proposed text edit. A clearly labelled hypothetical
+11-document persistence check preserves both stored layer colors and rejects
+copying either exported color into storage. No generated CAD code was executed.
+Independent review rehashed all 918 inputs, totaling 17,154,501 bytes. Report:
+`64291d5af327e4c4052c49148516b26dc50b7b9d21eb96da27b06d5f9cbd6545`.
+Its first helper incorrectly applied candidate fingerprint admission to retained
+older evidence and refused. That log is retained; the corrected helper binds
+the original authenticated fingerprint separately without claiming fresh admission.
+
 The first full suite ran before generated bundle/fingerprint refresh and failed
 the source-identity/catalog admission checks. That diagnostic log is retained;
-the entire final suite was rerun after all tests were added. Publication, CI and
-installation are not yet claimed here.
+the entire final suite was rerun after all tests were added.
+
+## Publication and installation
+
+Payload `4f5edf911a3797781b2c9e235cb4c1da93efad97` passed
+[CI38143221419](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38143221419).
+CI passed 3,163 facade tests with four platform skips and zero failures, plus
+424 bridge tests. All required checks and the packaged artifact passed. The
+actual tested merge `78f1cdd86dc39a8746c61d1f24d6f5b75310fae7` has the exact
+payload tree `b34737c11c6626e1e399a3d22da48abd006ab638`.
+The package tree is `05993ebd041c4f28231d9dd87125000a7a2ab2d8`.
+
+The official Git-marketplace upgrade installed and enabled this version from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, on the feature
+ref used by draft PR9. The marketplace snapshot matches the tested payload.
+Installation ran under umask022; private evidence outputs remained mode0600.
+All 581 packaged files, 16,116,249 bytes and committed modes match Git, with no
+extra files or changes during the offline probe.
+Inventory: `a708116bce6882881cca88d91eedfba26d4cb64210e22ef20a2a58ab814e2376`.
+Proof report: `03149cd868008b69e0be4df9a1bba6804ad560fd4b22967634e7bd6e48e0e84d`.
+
+Configured cached startup handed ambient Node26.7.0 to pinned Node24.18.0.
+All catalogs and the new text schemas/refusals passed. The 570 process samples
+showed no upstream child or nonstdio socket; the synthetic upstream sentinel
+was absent and stderr empty. This is sampled offline startup evidence, not a
+continuous syscall trace or connected writer validation. No cache hotpatch,
+host termination, extension import or live call followed installation.
 
 ## Remaining work
 
 Text modification/creation/deletion still need connected complete lifecycle
 validation, including an explicit creation inverse and documented deletion
-semantics. The retained fixture needs fresh maintained target-scoped baseline
-admission. The private all-source-equals-storage condition was overbroad: the
-decoder compares current live records and skips unchanged layers. Preserve both
+semantics. The retained fixture passed offline target-scoped preparation but
+still needs fresh runtime and baseline admission. The private requirement that
+all source match storage was overbroad. The decoder compares current live records
+and skips unchanged layers. Preserve both
 raw representations and prove untouched durable layer bodies remain unchanged.
 Narrow STRING history is being investigated as an alternative to full-source
 decode, but has its own queued-work and created-ID constraints. No replacement

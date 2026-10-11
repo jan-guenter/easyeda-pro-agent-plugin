@@ -6,6 +6,33 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Candidate131000 published and installed; fresh host required
+
+- Payload4f5edf911a3797781b2c9e235cb4c1da93efad97 passedCI38143221419:
+  3163facadepasses/fourplatformskips/zerofailures and424bridgetests. Actual tested
+  merge78f1cdd8 has exactpayloadtreeb34737c1. Local3166passes/oneskip and all
+  strict/reproducibility/dependency/privacy/official validators pass. Full CI
+  log1d5627d9 is retained. PR9 remains draft; the broader API task is unfinished.
+- Official Git-marketplace upgrade underumask022 installed/enabled131000 from
+  https://github.com/jan-guenter/easyeda-pro-agent-plugin.git and the feature ref.
+  MarketplaceHEAD equals4f5edf9. All581packagedfiles/16116249bytes and committed
+  modes match, with no extras or changes during offline proof. Inventorya708116b,
+  report03149cd8. Catalog26tools/sevenskills/175fixed15nativereaders/108design/
+  68libraryschemas; exact text create/delete limits and origin omission verified.
+- Actual configured cached startup hands ambientNode26.7 to pinned24.18 with
+  570process samples showing no upstream child or nonstdio socket, absent sentinel
+  and empty stderr. This is offline proof, not new-generation connected admission.
+  Loaded2150787 remains120000 and is untouched. No live calls followed installation.
+  All disposable editors remain closed and all journals terminal. Start fresh
+  Codex before text lifecycle validation; never replay native fixture Save or
+  the five completed metadata transactions. Production and its record untouched.
+- The new text lifecycle and native black-color support are source/offline-tested.
+  Immutable actual-fixture preparation passes with unchanged independent layer
+  representations; no color repair or production guard change is needed merely
+  for those differences. Connected text save/reopen/inverse validation remains
+  next. Release: docs/api-coverage-131000-release-2026-10-11.md. Private resume:
+  release-131000-DHiiWK/resume-131000.md.
+
 ### Restarted120000 container validation and text follow-through
 
 - Actual facade2150787 independently matches installed120000:576files/modes,
@@ -34,6 +61,12 @@ Last updated: 2026-10-11 (Europe/Berlin)
   durable layer body/type/identity/membership or peer changes. Persistence proves
   materialized record semantics, not unchanged raw history clocks. No production
   guard was changed and no color repair is needed merely for that difference.
+- Candidate-only immutable preflight passes integrated preparation, target-field
+  baseline, exact source/inverse and a labelled hypothetical11document persistence
+  check. All10peer raw/current records remain exact; both color normalization
+  attempts refuse. Independent audit rehashes918inputs/17154501bytes, report64291d5a.
+  First helper's cross-generation fingerprint refusal is retained and corrected
+  only in its historical-evidence binding. No generated CAD code was executed.
 - Contained17108 closed normally without a prompt choice; discovery is empty.
   Maintained closed-checkpoint verification preserves source9f8cd660,
   backup3c3d22f6 and logical51acf515 exactly. All live calls/journals are terminal.
@@ -45,7 +78,7 @@ Last updated: 2026-10-11 (Europe/Berlin)
   dependencies/signatures/privacy/officialplugin/sevenskills/actionlint/doctor and
   reproducible facade/syntheticbridge builds pass. Frozen185sourcecf942fd2,
   runtime518ffece,manifest20278cb6; external pins unchanged. Full log5ba65638.
-  Candidate131000 is not yet published/installed; GitHub CI remains pending.
+  Candidate131000 publication/installation evidence is recorded above.
   Canvas-origin execution remains omitted because its command flushes private
   pending geometry queues with no enforceable empty-queue predicate. The removed
   private prototype is not a shipped capability. PR9 remains draft.
@@ -1431,7 +1464,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011120000` is published, installed/enabled and independently admitted by actual facade2150787. All576files/modes and the external tuple match. This generation passed four explicit closed PCB/schematic title transactions and one closed free-PCB creation with complete peer raw-history proof. Its native text fixture was saved/reopened once, but no typed text writer ran. All disposable editors are now closed and journals terminal. Source candidate131000 adds text create/delete and exact black-color support; it is not yet published or live-validated. See the latest record above and the dated release report. Historical reader, display, electrical and library evidence remains operation/generation-specific. Never replay completed creation, placement, transactions or Save; do not access production or its project record.
+- Git-marketplace `0.3.0+codex.20261011131000` is published and installed/enabled with exact581file/mode and offline startup proof. It adds text create/delete and exact black-color support, but needs fresh connected admission and text lifecycle tests. Loaded facade2150787 remains120000 and is not hot-patched or terminated. That prior generation passed four closed PCB/schematic title transactions and one closed free-PCB creation with complete peer raw-history proof. Its native text fixture was saved/reopened once, but no typed text writer ran. All disposable editors are closed and journals terminal. See the latest record and release report. Historical evidence remains operation/generation-specific. Never replay completed creation, placement, transactions or Save; do not access production or its project record.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
