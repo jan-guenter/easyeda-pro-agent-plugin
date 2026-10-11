@@ -18,6 +18,7 @@ import { schematicNativeSnapshotHash } from "../src/schematic-native-adapter.ts"
 import { context as fixtureContext } from "./flat-display-fixture.ts";
 import { nativeFormatAfter, nativeFormatFixture, nativeFormatOperation as operation } from "./flat-display-native-fixture.ts";
 import { storedFlatFixture } from "./flat-display-sqlite-fixture.ts";
+import { installNavigationPreflight } from "./navigation-preflight-fixture.ts";
 
 type Fixture = ReturnType<typeof nativeFormatFixture>;
 interface Snapshot { payload: Record<string, unknown>; snapshot: ReturnType<typeof parseDocumentSource>; native: Fixture["native"] }
@@ -82,6 +83,7 @@ void test("actual flat apply and retained v1 reconciliation accept exporter enco
       });
       t.mock.method(engine, "clearOrphanedCallRisk", (): Promise<void> => Promise.resolve());
       const executor = new DesignExecutor(engine);
+      await installNavigationPreflight(t, executor, context);
       // Generated writer and authority guards have separate runtime tests.
       // Only native observation/dispatch are replaced; the full coordinator,
       // Original v1 seals, artifact retention and durable proofs run unchanged.

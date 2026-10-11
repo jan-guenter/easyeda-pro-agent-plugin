@@ -18,6 +18,7 @@ import { schematicNativeSnapshotHash } from "../src/schematic-native-adapter.ts"
 import { context as fixtureContext } from "./flat-display-fixture.ts";
 import { flatWireFixture, wireOperation as operation, wireAfter } from "./flat-wire-fixture.ts";
 import { storedFlatFixture } from "./flat-display-sqlite-fixture.ts";
+import { installNavigationPreflight } from "./navigation-preflight-fixture.ts";
 
 type Fixture = ReturnType<typeof flatWireFixture>;
 interface Snapshot { payload: Record<string, unknown>; snapshot: ReturnType<typeof parseDocumentSource>; native: Fixture["native"] }
@@ -82,6 +83,7 @@ void test("actual flat wire apply and same sealed-profile reconciliation accept 
       });
       t.mock.method(engine, "clearOrphanedCallRisk", (): Promise<void> => Promise.resolve());
       const executor = new DesignExecutor(engine);
+      await installNavigationPreflight(t, executor, context);
       // Generated writer and authority guards have separate runtime tests.
       // Only native observation/dispatch are replaced; the full coordinator,
       // Original flat-wire seals, artifact retention and durable proofs run unchanged.

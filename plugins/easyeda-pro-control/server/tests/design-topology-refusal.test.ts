@@ -55,7 +55,7 @@ function journalFixture(documentType = 1): DispatchOperationJournal {
 
 function refusal(): { message: string } { return { message: readers.SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL }; }
 
-void test("schematic apply refuses before runtime, upload, source, checkpoint or journal creation", async (t) => {
+void test("schematic creates, deletes and electrical wire changes refuse before runtime or journal creation", async (t) => {
   const calls: string[] = [];
   const engine = new engines.EasyedaControlEngine({ callTool: (): Promise<unknown> => {
     calls.push("upstream"); return Promise.reject(new Error("No upstream call allowed"));
@@ -65,8 +65,36 @@ void test("schematic apply refuses before runtime, upload, source, checkpoint or
     t.mock.method(engine, method, () => { calls.push(method); throw new Error("No runtime calls allowed"); });
   }
   const originalOperations = await artifacts.listOperationStates();
-  await assert.rejects(new executors.DesignExecutor(engine).apply({ operation: OPERATION, expectedContext: CONTEXT,
-    expectedFingerprint: {}, confirmWrite: true }), refusal());
+  const blockedOperations = [
+    { id: "create-wire", action: "sch.wire.create", documentType: 1, properties: { ...OPERATION.patch, net: "SIGNAL" } },
+    { id: "delete-wire", action: "sch.wire.delete", documentType: 1, target: OPERATION.target },
+    { ...OPERATION, patch: { ...OPERATION.patch, net: "RENAMED" } },
+  ];
+  for (const operation of blockedOperations) {
+    await assert.rejects(new executors.DesignExecutor(engine).apply({ operation, expectedContext: CONTEXT,
+      expectedFingerprint: {}, confirmWrite: true }), refusal());
+    assert.deepEqual(calls, []);
+    assert.deepEqual(await artifacts.listOperationStates(), originalOperations);
+  }
+});
+
+void test("flat wire candidates need retained runtime authority and cannot override derived topology", async (t) => {
+  const calls: string[] = [];
+  const engine = new engines.EasyedaControlEngine({ callTool: (): Promise<unknown> => {
+    calls.push("upstream"); return Promise.reject(new Error("No upstream call allowed"));
+  } });
+  await engine.controlFingerprintPromise;
+  for (const method of ["status", "assertContext", "awaitProjectUploads", "exactRead", "checkpoint", "dispatchWithOrphanTracking"] as const) {
+    t.mock.method(engine, method, () => { calls.push(method); throw new Error("No runtime calls allowed"); });
+  }
+  const originalOperations = await artifacts.listOperationStates();
+  const executor = new executors.DesignExecutor(engine);
+  const input = { operation: OPERATION, expectedContext: CONTEXT, expectedFingerprint: {}, confirmWrite: true as const };
+  await assert.rejects(executor.apply(input), { message: "Launch EasyEDA through the retained runtime supervisor before design writes." });
+  assert.deepEqual(calls, []);
+  assert.deepEqual(await artifacts.listOperationStates(), originalOperations);
+  await assert.rejects(executor.apply({ ...input, expectedTopology: [] }),
+    { message: "A sealed flat transaction derives complete unchanged topology; caller overrides are not authority." });
   assert.deepEqual(calls, []);
   assert.deepEqual(await artifacts.listOperationStates(), originalOperations);
 });

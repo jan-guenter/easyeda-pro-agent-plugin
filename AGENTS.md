@@ -6,6 +6,39 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Candidate164600 release verification
+
+- New source adds the sealed flat-wire reroute profile, two explicit-ID PCB
+  source readers, selected-reader guard coalescing and passive timing evidence.
+  Navigation guards reject unsafe shared-preference state before execute edits,
+  commit Save intent and affected final dispatches. Inactive close now checks
+  complete container/global active-tab agreement. Native awaits still prevent
+  an atomic preference-state guarantee. No settings are changed by admission.
+- Root/independent source reviews accept these changes. Guard author467 and
+  independent152 tests pass. Final integrated types/type-aware lint are clean,
+  dependencies verify151signatures/40attestations/audit0, bridge424 pass, and
+  validators/doctor/reproducible builds pass. Initial full facade run3584pass/
+  55fail/oneskip exposed missing synthetic preflight/VM bindings, stale catalogue
+  expectations and the historical wire digest review gate. Test-only repairs
+  preserve data/no-repeat assertions. Complete final rerun passes3640tests/
+  oneplatformskip/zerofailures with inherited descriptors142/145 and isolated
+  test roots. Full logface9da1e retained; no test/deadline/guard removed.
+- Original historical wire bindings remain13db7218/7bb6624c/fc97eac7. Separate
+  deliberate source revision20a01c9e binds current wiredc497d09, excludes the new
+  sealed branch from historical live claims and retains the future byte-drift
+  test gate. This is a source review, not new connected validation.
+- Frozen facade202source6c7f57ee/runtime8610ba8c/manifestbda17ee5; external pins
+  unchanged. Candidate164600 is not published/installed yet. Installed/loaded
+  150000 stays untouched. All journals terminal, EasyEDA closed and seed Save
+  already consumed. No live calls or production/project-record access.
+- Source research shows a generic browser profile flag cannot isolate the
+  Documents-based preference database, registered projects or adjacent backups.
+  The maintained Job launcher provides ownership, not filesystem isolation.
+  No real settings/database/backups were inspected or changed. Navigation stays
+  paused; no native-click or cache-flag workaround is authorized. See
+  docs/disposable-desktop-profile-isolation-2026-10-11.md and the164600 release
+  note. Private release logs:release-navigation-Bha46k. PR9 remains draft.
+
 ### Restarted150000 retained text recovery
 
 - Fresh facade2292140 independently matches installed150000:600files/modes,

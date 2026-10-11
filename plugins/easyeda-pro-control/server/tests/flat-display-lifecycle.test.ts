@@ -14,6 +14,7 @@ import type { FlatDisplayObservationEvidence } from "../src/schematic-flat-read.
 import { context, rehash } from "./flat-display-fixture.ts";
 import { nativeFormatAfter, nativeFormatFixture, nativeFormatOperation as operation } from "./flat-display-native-fixture.ts";
 import { storedFlatFixture as storedFixture } from "./flat-display-sqlite-fixture.ts";
+import { installNavigationPreflight } from "./navigation-preflight-fixture.ts";
 
 type Fixture = ReturnType<typeof nativeFormatFixture>;
 interface Snapshot { payload: Record<string, unknown>; snapshot: ReturnType<typeof parseDocumentSource>; native: Fixture["native"] }
@@ -75,6 +76,7 @@ async function coordinator(t: TestContext, action: Action, drift: "none" | "meta
   t.mock.method(engine, "checkpoint", (): Promise<unknown> => Promise.resolve(persisted.evidence.checkpoint));
   t.mock.method(engine, "rebindAfterLifecycle", (): Promise<typeof context> => Promise.resolve(context));
   const executor = new DesignExecutor(engine);
+  await installNavigationPreflight(t, executor, context);
   // These tests own only coordinator/persistence wiring. Generated native
   // Programs and authority capture have separate adversarial runtime tests.
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Test-only private read/dispatch seams, never a public authority bypass.

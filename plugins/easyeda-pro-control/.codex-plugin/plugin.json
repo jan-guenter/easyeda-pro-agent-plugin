@@ -1,6 +1,6 @@
 {
   "name": "easyeda-pro-control",
-  "version": "0.3.0+codex.20261011150000",
+  "version": "0.3.0+codex.20261011164600",
   "description": "Safety-gated EasyEDA API coverage, fixed typed SDK reads, design operations and seven engineering skills.",
   "author": {
     "name": "Jan G\u00fcnter",
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "EasyEDA Pro Control",
     "shortDescription": "Inspect and control EasyEDA Pro",
-    "longDescription": "Seven skills cover control, schematics, PCB layout, libraries, manufacturing, design review and extensions. The facade provides a complete per-method coverage inventory, fixed typed reads with explicit public/native labels, guarded typed API operations, closed symbol/page metadata updates, separately guarded closed PCB/schematic title changes, closed empty-page and empty-symbol creation, existing-tab activation, inactive clean-tab close, native controls, checkpoints and recovery. Native schematic Text/Wire/Bus ID equivalents avoid public callback/compiler paths. A checkpoint-bound flat topology diagnostic and sealed single-page display-only profiles have separate narrow contracts. Generic compiled topology and dependent transactions remain blocked for hidden annotation and Save All; affected exports are refused. Bounded observations do not replace complete source, connectivity or saved-project proof. The historical reviewed external tuple is connected-read-admitted; future mismatches fail closed. Historical live evidence remains generation-specific; new adapters need disposable validation. Runtime identity and operation-specific evidence remain mandatory. Arbitrary JavaScript, blind retry and unrestricted Save are refused; the legacy writer is runtime-disabled.",
+    "longDescription": "Seven skills cover control, schematics, PCB layout, libraries, manufacturing, design review and extensions. The facade provides a complete per-method coverage inventory, fixed typed reads with explicit public/native labels, guarded typed API operations, closed symbol/page metadata updates, separately guarded closed PCB/schematic title changes, closed empty-page and empty-symbol creation, existing-tab activation, inactive clean-tab close, native controls, checkpoints and recovery. Native schematic Text/Wire/Bus ID equivalents avoid public callback/compiler paths. A checkpoint-bound flat topology diagnostic, sealed single-page display-only profiles and an existing orthogonal wire reroute profile have separate narrow contracts. Generic compiled topology and dependent transactions remain blocked for hidden annotation and Save All; affected exports are refused. PCB navigation rejects known unsafe preference state without changing settings. Bounded observations do not replace complete source, connectivity or saved-project proof. The historical reviewed external tuple is connected-read-admitted; future mismatches fail closed. Historical live evidence remains generation-specific; new adapters need disposable validation. Runtime identity and operation-specific evidence remain mandatory. Arbitrary JavaScript, blind retry and unrestricted Save are refused; the legacy writer is runtime-disabled.",
     "developerName": "JanGuenter",
     "category": "Developer Tools",
     "capabilities": [

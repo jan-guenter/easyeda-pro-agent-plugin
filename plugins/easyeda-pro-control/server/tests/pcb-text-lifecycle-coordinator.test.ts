@@ -10,6 +10,7 @@ import { assertDesignActionSupportedCooperatively, compileDesignAction, designAc
   prepareDesignActionCooperatively, verifyDesignActionCooperatively } from "../src/design-action.ts";
 import type { PreparedDesignAction } from "../src/design-action.ts";
 import type { NativeSourceSnapshot } from "../src/document-source.ts";
+import { flatTransactionBinding } from "../src/flat-transaction-binding.ts";
 import type { NativeHistorySnapshot } from "../src/native-history.ts";
 import { PCB_TEXT_LIFECYCLE_PROFILE, assertPcbTextCreateRetainedAuthority, assertPcbTextLifecycleAcknowledgment,
   expectedPcbTextLifecycleSource } from "../src/pcb-text-lifecycle.ts";
@@ -60,7 +61,7 @@ async function harness(failure: "none" | "lost-ack" | "foreign-ack" | "wrong-pri
   }
   const scope = {
     OPERATION_SCHEMA, PROFILE: "easyeda-pro-control.typed-design-transaction.v1", DESIGN_SAVE_ATTEMPT_PROFILE: "synthetic-save",
-    structuredClone, join, buildPlanHash, canonicalJson, isRecord, sha256Text,
+    structuredClone, join, buildPlanHash, canonicalJson, isRecord, sha256Text, flatTransactionBinding,
     designActionSchema, compileDesignAction, assertDesignActionSupportedCooperatively, verifyDesignActionCooperatively,
     inverseDesignActionCooperatively, assertPcbTextCreateRetainedAuthority, assertPcbTextLifecycleAcknowledgment,
     prepareDesignActionCooperatively: async (...args: Parameters<typeof prepareDesignActionCooperatively>): Promise<PreparedDesignAction> => {

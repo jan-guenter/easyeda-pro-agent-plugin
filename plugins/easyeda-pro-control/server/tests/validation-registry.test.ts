@@ -43,11 +43,24 @@ void test("adapter changes, including comments, require a deliberate historical 
   assert.ok(record);
   assert.deepEqual(record.adapterBindings.map((entry) => entry.path), ["schematic-native-wire.ts", "schematic-wire-order.ts", "schematic-wire-persistence.ts"]);
   assert.equal(new Set(record.adapterBindings.map((entry) => entry.path)).size, record.adapterBindings.length);
+  assert.equal(new Set(record.sourceRevisionReviews?.map((entry) => entry.path)).size, record.sourceRevisionReviews?.length);
+  assert.deepEqual(record.sourceRevisionReviews, [{
+    path: "schematic-native-wire.ts",
+    historicalSha256: "13db7218226c6636c51136ea9b96fc99a4bb784ad21ba10731d81ecd25e3a837",
+    reviewedSha256: "dc497d091b084139e7565bdaf0988ec5e896fba99aba7155b73028b221fefc40",
+    reviewedAt: "2026-10-11",
+    scope: "historical-generator-without-flatGuard-only;new-sealed-wire-live-unvalidated",
+    reference: "docs/api-coverage-164600-release-2026-10-11.md#historical-wire-source-review",
+  }]);
+  assert.ok(record.sourceRevisionReviews.every((revision) => record.adapterBindings.some((binding) =>
+    binding.path === revision.path && binding.sha256 === revision.historicalSha256)));
+  assert.ok(record.exclusions.includes("no-flat-wire-reroute-v1-live-validation"));
   for (const binding of record.adapterBindings) {
     assert.match(binding.path, /^schematic-(?:native-wire|wire-order|wire-persistence)\.ts$/u);
     assert.match(binding.sha256, /^[a-f0-9]{64}$/u);
     const bytes = await readFile(new URL(`../src/${binding.path}`, import.meta.url));
-    assert.equal(createHash("sha256").update(bytes).digest("hex"), binding.sha256,
+    const reviewedSha256: string | undefined = record.sourceRevisionReviews.find((entry) => entry.path === binding.path)?.reviewedSha256;
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), reviewedSha256 ?? binding.sha256,
       `Historical validation registry review required for ${binding.path}; do not automatically refresh its digest.`);
   }
 });
@@ -71,6 +84,9 @@ void test("capability and record responses cannot mutate maintained historical e
   assert.ok(Reflect.set(binding, "sha256", "changed"));
   assert.ok(Reflect.set(stage, "date", "changed"));
   assert.ok(Reflect.set(record.fixture, "durableDocumentCount", 0));
+  const revision = record.sourceRevisionReviews?.[0];
+  assert.ok(revision);
+  assert.ok(Reflect.set(revision, "reviewedSha256", "changed"));
   assert.deepEqual(getOperationValidationRegistry(), original);
   const individual = getOperationValidationRecord("sch.wire.modify");
   assert.ok(individual);

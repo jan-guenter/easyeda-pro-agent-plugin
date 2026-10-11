@@ -19,6 +19,18 @@ persistence, forge a tab state or replace a refusal with a UI click. Missing or
 ambiguous evidence refuses. Keep preferences and tabs quiescent: native awaits
 mean a pre-dispatch check cannot prevent every concurrent settings change.
 
+The execute coordinator checks before the edit; commit checks before consuming
+Save intent. Final dispatches check again. A refusal grants no retry after a
+possibly dispatched edit or Save. Inactive-close admission also requires exact
+container/global active-tab agreement; a global inactive label alone is unsafe.
+
+A generic `--user-data-dir` flag is not a disposable EasyEDA profile. The pinned
+desktop build derives configuration and `web.db` under Documents independently
+of browser storage, and backup pruning follows registered project paths. The
+contained launcher owns the process tree but does not restrict file access.
+No same-user profile-isolation route is validated. Do not copy a real profile,
+redirect folders or change environment variables to bypass this boundary.
+
 Whole-application normal-close is a separate path. It still requires exact
 process/window binding, inspection of any prompt and subsequent exit proof;
 it is not authority to choose Save/Discard or to claim design rollback.

@@ -14,6 +14,7 @@ import type { FlatDisplayObservationEvidence } from "../src/schematic-flat-read.
 import { context as fixtureContext, rehash } from "./flat-display-fixture.ts";
 import { nativeFormatAfter, nativeFormatFixture, nativeFormatOperation as operation } from "./flat-display-native-fixture.ts";
 import { storedFlatFixture } from "./flat-display-sqlite-fixture.ts";
+import { installNavigationPreflight } from "./navigation-preflight-fixture.ts";
 
 type Fixture = ReturnType<typeof nativeFormatFixture>;
 interface Snapshot { payload: Record<string, unknown>; snapshot: ReturnType<typeof parseDocumentSource>; native: Fixture["native"] }
@@ -60,6 +61,7 @@ void test("imported-peer v2 apply, retained recovery, Save and inverse use real 
         t.mock.method(engine, "checkpoint", (): Promise<unknown> => Promise.resolve(current.evidence.checkpoint));
         t.mock.method(engine, "rebindAfterLifecycle", (): Promise<typeof context> => Promise.resolve(context));
         const executor = new DesignExecutor(engine);
+        await installNavigationPreflight(t, executor, context);
         // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Test-only native seams leave real coordinator, immutable SQLite reads, seal validation and artifact proofs intact.
         const seams = executor as unknown as { assertRuntime: () => Promise<void>; snapshot: () => Promise<Snapshot>;
           observeFlat: () => Promise<FlatDisplayObservationEvidence>; call: (journal: DispatchOperationJournal, phase: string) => Promise<unknown> };

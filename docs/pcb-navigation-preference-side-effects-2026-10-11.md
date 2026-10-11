@@ -80,6 +80,14 @@ a possible PCB replacement; an ambiguous registry cannot grant that exemption.
 Project opening still needs the preference predicate because it can restore
 tabs not present in the current registry.
 
+The maintained execute coordinator now checks this condition before applying
+an edit that promises Save/reopen. Commit checks it before consuming Save intent.
+Final generated dispatches repeat the guard after their last context await.
+The inactive-close adapter also proves the sole container's active-tab identity
+matches the global active tab and that both readers return the same complete
+ordered tab objects. Without that agreement, deletion could select a replacement
+even when the global reader labels the target inactive.
+
 Do not toggle settings, monkeypatch persistence, block requests or fake internal
 tab state to make the operation pass. Native awaits leave a concurrency limit:
 a pre-dispatch check cannot make later preference state atomic against user or
@@ -94,3 +102,7 @@ earlier queued preference request.
 The initial disposable activation refused before dispatch and reconciled with
 unchanged complete project state. Subsequent whole-app close and offline
 checkpoint verification preserved the fixture. No quiet replacement was run.
+
+Source research also rejects a generic browser-cache flag as a complete
+isolation solution. Native preferences and backups use independent paths.
+See [disposable desktop profile isolation](disposable-desktop-profile-isolation-2026-10-11.md).
