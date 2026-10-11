@@ -66,10 +66,13 @@ passed. No settings or files were changed. Private audit result:
 `f467d1c68c2817316158b30117b33642b06343cc5c3d8faf8df0028b46058012`.
 Its values and counts are not published. This audit does not establish safe
 runtime navigation or predict exact deletion targets.
-The user subsequently selected planning a controlled change in the existing
-profile. The [controlled settings plan](controlled-navigation-preference-plan-2026-10-11.md)
-traces the normal menu action, BOM-storage effects and required preflight.
-It is planning only, not permission to launch EasyEDA or change settings.
+The user first selected planning a controlled change in the existing profile,
+then authorized task-scoped EasyEDA changes and necessary preservation. The
+[controlled settings plan](controlled-navigation-preference-plan-2026-10-11.md)
+records that continuation, the completed private captures and offline preference
+checks, and the remaining live launch conditions. No application launch or setting change has yet
+occurred. The authorization does not replace technical admission or extend to
+production designs.
 
 The inventory covers 774 method paths: 192 public subsets, 100 native equivalents,
 two lifecycle-only entries, seven blocked and 473 omitted. Execution-route
@@ -103,9 +106,9 @@ dispatch on preference admission; read-only reconciliation completed without
 mutation. Whole-application normal-close and offline checkpoint verification
 preserved the fixture. All journals are terminal. Seed reopen and v2 typed
 create/delete remain unrun; do not repeat seed placement or Save. Navigation
-remains paused until safe admission is established without changing shared
-preferences. Whole-app close is not rollback or cancellation of a prior queued
-preference request.
+remains paused until the authorized controlled-settings procedure establishes
+safe admission. Whole-app close is not rollback or cancellation of a prior
+queued preference request.
 
 ## Local release checks
 

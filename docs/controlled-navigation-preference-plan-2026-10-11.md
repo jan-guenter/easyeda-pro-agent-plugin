@@ -1,6 +1,69 @@
 # Controlled navigation-preference change plan
 
-Date: 2026-10-11. Status: source research and planning only, not execution-ready.
+Date: 2026-10-11. Original status: source research and planning only.
+
+## Authorized continuation
+
+The user subsequently authorized EasyEDA changes needed to continue this task.
+The earlier planning-only and repeated-approval requirements below are historical;
+task-scoped settings changes and necessary private preservation are now authorized.
+Production designs remain excluded. The technical preflight, context, persistence
+and no-repeat requirements still apply.
+
+The expanded read-only inventory has completed after root/independent source
+review and synthetic tests. It covers configured shallow startup discovery,
+persisted history, the explicit disposable target, backup metadata and persisted
+BOM migration indicators. Its private report is bound by SHA-256
+`74dfe46026fe9899cbb7bee344cf2c4d60fb73cd2211afa8537bd305063b3784`.
+No design contents or browser state were inspected by that audit. It does not admit
+preference saving: current browser values and user binding, future runtime
+membership and whole-object submissions remain unresolved. A separate bounded
+installed-archive metadata review has resolved the exact bundled-example target
+names; it did not decompress or execute any member.
+
+Separate private, hash-verified opaque captures now preserve the exact bundled
+example targets, settings database, configuration and dedicated Chromium profile.
+The profile includes its companion files unchanged; the capture decoded no contents.
+The scoped completion receipts are `9dab215b` and `ae7cc0e`. Originals are unchanged.
+These captures are not a tested restore or complete launch/pruning rollback proof.
+
+A later exact-key projection completed once from separately derived database
+copies in a filesystem/network-isolated reader. Root and independent review
+accepted its source, and each ran 48 passing synthetic checks. The reader emits
+only approved preference fields; native database recovery can internally process
+other records. Originals and the preserved snapshot were not mounted. Independent
+post-run verification matched all selected preserved input bytes and the separate
+read-only SQLite derivative. Private projection proof:
+`413709d5f47f04b20ee909aa38665b5c4f2d0c72454b006ff21e7a277513909a`.
+No settings values, template contents or backup counts are published here.
+
+The captured numeric retention candidates resolve consistently and satisfy the
+recorded backup-count inequality. The anonymous NULL row remains distinct; no
+current-user identity was inferred. BOM migration is still possible, and neither
+CacheStorage membership nor an exact resave count was inspected. A subsequent
+closed-profile metadata check and repeated startup/backup audit matched the
+retained evidence exactly. This is a point-in-time result, not continuing
+runtime admission after projects or other inputs change.
+
+EasyEDA remains closed; no setting change has occurred. The installed update
+matches its reviewed files, but the current Codex host still runs the previous
+plugin generation. Connected testing must wait for a fresh host and rechecked
+launch conditions. The remainder records the source analysis and proposed
+procedure, not actions already taken.
+
+## Preservation distinction
+
+A closed Chromium-profile snapshot must retain its admitted files together,
+including database companion files. A WAL can persist after connections close
+and contains persistent state that must accompany the database when copied.
+Opening a database with a hot rollback journal can itself perform recovery.
+Opaque preservation therefore does not open, checkpoint or normalize browser
+databases. The standalone preference-database audit's separate no-sidecar gate
+is unchanged. Neither filename suffixes nor a successful byte copy prove logical
+database health or a tested restore. See the [SQLite WAL guidance](https://sqlite.org/wal.html#the_wal_file)
+and [hot-journal rules](https://sqlite.org/lockingv3.html#dealing_with_hot_journals).
+
+## Original source analysis
 
 The pinned application sets `pcbCommandTab` to Boolean `true` when the user opens
 the PCB Command panel. This is a panel-state preference, not a checkbox found in
@@ -9,11 +72,22 @@ The save can migrate BOM-template storage and start backup-retention cleanup.
 Changing one intended preference therefore needs a broader, explicitly bounded
 side-effect plan.
 
+There is an earlier boundary too: the pinned UI can save preferences while
+initializing the Start Page. Its document-ready chain at `ui.js:16823481`
+conditionally saves `commSystemSetting` and later saves
+`isShowPCBBottomLayersBar` before reporting `system.startupFinished`. `FWt` at
+`16344766` awaits BOM-related work before replacing browser preferences, but the
+Ajax wrapper at `16247550` does not return or await that asynchronous callback.
+Persisted-user preference loading is therefore not a proven barrier before the
+first startup save. A closed-profile browser-preference projection is needed
+before launch; do not launch merely to inspect those values on the Start Page.
+The relevant application key is localStorage `preferences` (`15795648`).
+
 This note records no actual user preferences, backup counts, private paths or
-project names. No application launch, setting change, backup copy, deletion or
-design open was performed for this research. Planning permission does not
-authorize those actions. The plugin's existing navigation refusal remains in
-force.
+project names. During the original source-only research, no application launch,
+setting change, backup copy, deletion or design open was performed. Planning
+permission alone did not authorize those actions. The plugin's existing
+navigation refusal remains in force.
 
 ## Pinned sources and public documentation
 
@@ -24,6 +98,7 @@ not byte offsets. Source inspection did not execute these files.
 | Source | SHA-256 |
 | --- | --- |
 | `assets/pro-ui/3.2.149.43637efe/js/ui.js` | `12414b9ded97913f7d7f30522a2265d2a6c995281e3347bfd1752206e647497a` |
+| `assets/pro-ui/3.2.149.43637efe/js/worker.js` | `8136f81f3f8a13bfed94bb70b736a15f22ef25c97ba5db805fe1bf4a05dd84e3` |
 | `app.js` | `10a427460d498667f6d1df9cd8899a1740afd9644cbf83ecaf80365d590869bb` |
 
 The [official Command documentation](https://prodocs.easyeda.com/en/pcb/tools-command/)
@@ -101,6 +176,14 @@ directories through `W0` at `1322297` before a project is opened. A blank Start
 Page does not prove an empty retention candidate set. History rows are not an
 upper bound on that set.
 
+Startup also invokes `CM` at `app.js:1368878` before that discovery. It schedules
+unawaited extraction of the bundled `assets/db/example-projects.zip` members into
+the default example-projects directory, without a per-file existence guard.
+Launching is therefore not a read-only inventory operation: bundled example
+outputs can be overwritten. The archive member names and existing exact output
+files need separate review and, where required, opaque preservation before launch.
+Do not infer that current directory metadata is the complete future startup set.
+
 Backup listing at `2214705` derives a sibling backup root from the project file's
 basename. Deletion derives its root from `G.show(project).name`. These can differ.
 The recursive listing at `2215160` considers regular files without an extension
@@ -123,6 +206,18 @@ the relevant current browser-preference projection and all possible submissions
 from BOM migration. Unknown roots, symlinks, scan limits, changing files or
 ambiguous coercible retention values must refuse the condition. The proof is
 point-in-time, not an atomic lock against concurrent application or user changes.
+
+Automatic backups also matter after navigation. Startup's `Are()` registers its
+workers without requesting an immediate action. The inspected backup callback
+requires a current project; automatic Save selects actual unsaved editor tabs,
+not the directory registry. Those paths cannot add backups on a genuinely empty
+Start Page. Once a project opens, however, a timer can add a backup without a
+new user action. The worker's `Mn` at `worker.js:2683427` rejects only `NaN`
+intervals, so a nominal default
+interval is not a reliable timing guarantee. Recheck the relevant boundary
+before later preference-writing navigation; a prelaunch count is not an ongoing
+bound. Restored tabs, external open intents and other startup handlers remain
+separate conditions, not covered by this narrow timer review.
 
 Persisted preference rows also do not identify the active user. Startup's
 `zN` at `2567445` selects a user through the license username; the database has

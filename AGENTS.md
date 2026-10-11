@@ -6,6 +6,67 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Controlled settings continuation authorized
+
+- The user now authorizes EasyEDA changes needed to continue this task. This
+  supersedes the previous planning-only boundary for the controlled shared-
+  preference change, necessary private preservation and disposable validation.
+  Production designs and their project records remain excluded. Existing runtime,
+  context, journal and no-repeat Save checks still apply; approval is not evidence
+  that a proposed action is technically safe or that a live test passed.
+- The fresh-host check still finds the original150000 facade2292140, not164600.
+  Installed164600 independently matches its202source and3runtime files/modes;
+  static installation equality does not admit the old running generation.
+  EasyEDA remains closed. No host termination, cache patch, live tool, launch or
+  settings change has been performed during this continuation.
+- Expanded private preflight63042727 passed root/independent full review and
+  22synthetic tests on each review run. One actual read-only invocation after a
+  fresh closed-process check completed with stable double metadata samples and
+  verified read-only SQLite descriptors. Report74dfe460 remains private; it
+  inventories configured startup candidates, saved history, the disposable target,
+  backup metadata and persisted BOM migration indicators. No project contents,
+  browser storage or credentials were inspected. Current-user/browser/runtime
+  scope remains unestablished and no-deletion admission is explicitly false.
+  See the authorized continuation in
+  docs/controlled-navigation-preference-plan-2026-10-11.md.
+- Pinned startup source also overwrites bundled example outputs. A bounded
+  central/local ZIP-header inventory identified the exact target set without
+  decompression. Those targets and the shared database have a verified private
+  opaque capture, authoritative receipt9dab215b. No example was opened in CAD.
+- The first profile inventory refused before copying because Chromium contained
+  journal-named companion files; its refusal and separate diagnostic are retained.
+  Reviewed v2 preserves every admitted file in the complete closed browser root,
+  including companions, without opening SQLite or decoding contents. Standalone
+  web.db sidecar refusal and all identity, privacy and copy checks remain.
+  Seventeen synthetic tests pass in root/independent runs. One actual private
+  capture of the exact database/config/browser roots completed, receiptae7cc0e;
+  fresh Windows process counts were zero before and after. No originals changed,
+  no restoration/deletion/launch occurred, and no full rollback or navigation
+  admission is claimed. Independent private-only verification rehashed the
+  complete capture, checked exact membership/modes/receipt bindings and matched
+  its shared database to the separate example capture.
+  Helpers and private data are outside the repository and are not plugin runtime
+  dependencies. The packaged tree remains unchanged; no reinstall is needed.
+- Further pinned source review finds startup itself can save shared preferences
+  before reporting readiness, with no awaited persisted-load ordering barrier.
+  A Start Page launch cannot substitute for browser-preference preflight.
+  The subsequent exact-key offline projection413709d5 completed once from a
+  separate derivative, with originals and the preserved snapshot excluded from
+  its sandbox. Root/independent source review and48synthetic tests on each run
+  passed. Twelve selected preserved inputs were independently rehashed afterward;
+  the separate read-only SQLite derivative is unchanged. Only fixed preference
+  fields were emitted; native recovery can internally process other records.
+  All captured numeric retention candidates resolve consistently. Current-user
+  identity was not inferred, and BOM migration/resave count remains separate.
+- A final closed-profile metadata check matches inventory30eb887e exactly. A
+  fresh read-only startup/backup audit reproduces74dfe460/6f538422 byte-for-byte.
+  The captured numeric candidates satisfy the recorded backup-count inequality,
+  but this is not ongoing runtime admission. The inspected automatic-backup
+  path requires a current project; counts can change after one is opened.
+  EasyEDA is still closed, no setting change or CAD operation occurred, and
+  connected164600 testing still needs a fresh Codex host. No helper/private
+  data was added to the package or repository.
+
 ### Candidate164600 published and installed; fresh host required
 
 - New source adds the sealed flat-wire reroute profile, two explicit-ID PCB
@@ -1661,7 +1722,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011164600` is published and installed/enabled with exact624file/mode proof. Loaded150000 facade2292140 is left intact; connected164600 admission requires fresh Codex. Contained26924 remains normally closed. Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct, with no later writer authority. Only empty/one-STRING selected-source reads have150000 live evidence. PCB3 seed was saved once and closed-checkpoint verified; activation refused on preference side effects and reconciled without mutation. All journals are terminal. No reopening or settings workaround until safe navigation admission. New explicit-ID readers, sealed wire rerouting, explicitblack v2 create/delete and closed free-SCH creation still need connected validation. Earlier text/container proofs remain generation-specific. Never access production or its project record; the separately approved shared-preference/backup-count audit is read-only and grants no design or settings changes.
+- Git-marketplace `0.3.0+codex.20261011164600` is published and installed/enabled with exact624file/mode proof. Loaded150000 facade2292140 is left intact; connected164600 admission requires fresh Codex. Contained26924 remains normally closed. Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct, with no later writer authority. Only empty/one-STRING selected-source reads have150000 live evidence. PCB3 seed was saved once and closed-checkpoint verified; activation refused on preference side effects and reconciled without mutation. All journals are terminal. No reopening or settings workaround until safe navigation admission. New explicit-ID readers, sealed wire rerouting, explicitblack v2 create/delete and closed free-SCH creation still need connected validation. Earlier text/container proofs remain generation-specific. Never access production or its project record. The user's latest continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation; this supersedes the earlier planning-only grant, not the technical safety requirements. Read-only preflight has completed; settings changes have not.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
