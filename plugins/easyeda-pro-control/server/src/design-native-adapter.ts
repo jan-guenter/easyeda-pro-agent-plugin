@@ -5,6 +5,7 @@ import { buildExpectedDesignSource, verifyDesignSourceEffect } from "./design-so
 import type { DesignSourceIds } from "./design-source-proof.ts";
 import type { NativeSourceSnapshot } from "./document-source.ts";
 import { buildDesignRulePublicAdapter, isDesignRuleAction } from "./design-rule-public-adapter.ts";
+import { buildPcbExactFrameBinding } from "./pcb-exact-frame.ts";
 
 export const DESIGN_NATIVE_ADAPTER_PROFILE = "easyeda-pro-control.pcb-source-merge.v1";
 export interface DesignNativeAdapter {
@@ -16,8 +17,8 @@ export interface DesignNativeAdapter {
   readonly code: string;
 }
 
-/** Reviewed native route: SYS_FileManager.setDocumentSource -> UI _Nt ->
- * pcb/decode -> xV.parseSourceByCompiler/build. The build creates one native
+/** Reviewed native route: exact captured MSG_BUS_PCB receiver -> pcb/decode
+ * -> xV.parseSourceByCompiler/build. The build creates one native
  * mi command group "modify by file source", computes vV's source difference,
  * then executes the group once. This is not a general source-write endpoint.
  * Call only from the version-pinned, journaled, supervised design executor.
@@ -85,10 +86,10 @@ const parseMergeSource = (source) => {
   return { document, objects, rows };
 };
 if (typeof EXPECTED_DOCUMENT_UUID !== 'string' || typeof EXPECTED_TAB_ID !== 'string' || EXPECTED_DOCUMENT_TYPE !== ${documentType} || MERGE_BASELINE.document.uuid !== EXPECTED_DOCUMENT_UUID) throw new Error('Native merge requires the outer context guard');
-const mergeFileApi = eda.sys_FileManager;
-if (typeof mergeFileApi?.getDocumentSource !== 'function' || (${documentType} === 3 && typeof mergeFileApi?.setDocumentSource !== 'function')) throw new Error('Native source merge APIs unavailable');
-let mergeBus;
 ${documentType === 4 ? `
+const mergeFileApi = eda.sys_FileManager;
+if (typeof mergeFileApi?.getDocumentSource !== 'function') throw new Error('Native source merge APIs unavailable');
+let mergeBus;
 mergeStage = 'frame';
 const mergeWindows = [globalThis.window?.top], mergeBuses = [], mergeSeen = new Set();
 for (let index = 0; index < mergeWindows.length; index++) {
@@ -109,12 +110,20 @@ for (const bus of mergeBuses) {
   }
 }
 if (!mergeBus) throw new Error('Exact native merge frame not found');
-` : ""}
 mergeStage = 'context';
 const mergeDocument = await eda.dmt_SelectControl.getCurrentDocumentInfo();
 if (String(mergeDocument?.uuid ?? mergeDocument?.documentUuid ?? mergeDocument?.id ?? '') !== EXPECTED_DOCUMENT_UUID || String(mergeDocument?.tabId ?? '') !== EXPECTED_TAB_ID || Number(mergeDocument?.documentType ?? mergeDocument?.docType) !== ${documentType}) throw new Error('Native merge context changed');
+` : `
+mergeStage = 'frame';
+${buildPcbExactFrameBinding("{projectUuid:typeof EXPECTED_PCB_PROJECT_UUID==='string'?EXPECTED_PCB_PROJECT_UUID:null,branchUuid:typeof EXPECTED_PCB_BRANCH_UUID==='string'?EXPECTED_PCB_BRANCH_UUID:null}")}
+mergeStage = 'context';
+const mergeIdentity=(await pcbFrameRpc.call(pcbFrameChannel,'getTabIdAndDocType',{}))?.message;
+assertPcbFrameCurrent();
+if(mergeIdentity?.tabId!==EXPECTED_TAB_ID||mergeIdentity?.docType!==3)throw new Error('Native merge context changed');
+`}
 mergeStage = 'baseline';
-const current = parseMergeSource(${documentType === 4 ? "(await mergeBus.messageBus.rpcCall('FileSource', {}))?.message" : "await mergeFileApi.getDocumentSource()"});
+const current = parseMergeSource(${documentType === 4 ? "(await mergeBus.messageBus.rpcCall('FileSource', {}))?.message" : "(await pcbFrameRpc.call(pcbFrameChannel,'FileSource',{}))?.message"});
+${documentType === 3 ? "assertPcbFrameCurrent();" : ""}
 if (current.document.editVersion !== '3.2.149.88089769' || mergeCanonical({document:current.document, objects:current.objects}) !== mergeCanonical(MERGE_BASELINE)) throw new Error('Native merge baseline drift; nothing dispatched');
 const wanted = new Map(MERGE_DESIRED.objects.map(object => [object.id, object]));
 mergeStage = 'encode';
@@ -133,12 +142,14 @@ for (const object of MERGE_DESIRED.objects) {
 const merged = output.join('|\\n') + '|\\n';
 const check = parseMergeSource(merged);
 if (mergeCanonical({document:check.document,objects:check.objects}) !== mergeCanonical(MERGE_DESIRED)) throw new Error('Generated merge does not match its typed effect');
-// No awaited boundary between the final complete baseline comparison and
-// invoking the native history handler. The SDK has no atomic source compare-and-swap.
+// The type-3 synchronous proof follows every awaited read and immediately
+// precedes the captured receiver dispatch; no public current-tab reselection.
+// This does not provide an atomic source compare-and-swap or a document lock.
 // Type 4 calls the exact decoder without UI file-dialog handling. Native false
 // has been observed after a partial edit; retain it and prove the whole effect.
 mergeStage = 'dispatch';
-const applied = ${documentType === 4 ? "(await mergeBus.messageBus.rpcCall('pcb/decode', merged))?.message" : "await mergeFileApi.setDocumentSource(merged)"};
+${documentType === 3 ? "assertPcbFrameCurrent();" : ""}
+const applied = ${documentType === 4 ? "(await mergeBus.messageBus.rpcCall('pcb/decode', merged))?.message" : "(await pcbFrameRpc.call(pcbFrameChannel,'pcb/decode',merged))?.message"};
 mergeStage = 'acknowledgment';
 ${documentType === 4 ? `
 if (typeof applied !== 'boolean') throw new Error('Native source apply acknowledgment is malformed');

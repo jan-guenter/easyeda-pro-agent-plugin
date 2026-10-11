@@ -2055,28 +2055,29 @@ async function verifyOperationArtifacts(
   }
 }
 
-function retainOperationValidation(
-  operationId: string,
-  bytesSha256: string,
-  artifacts: readonly ArtifactDescriptor[],
-): ValidatedOperationBytes {
+function forgetOperationValidation(operationId: string): void {
   const previous = validatedOperationBytes.get(operationId);
   if (previous !== undefined) {
     validatedOperationCacheBytes -= previous.cacheBytes;
     validatedOperationBytes.delete(operationId);
   }
+}
+
+function retainOperationValidation(
+  operationId: string,
+  bytesSha256: string,
+  artifacts: readonly ArtifactDescriptor[],
+): ValidatedOperationBytes {
+  forgetOperationValidation(operationId);
   const copied = artifacts.map((artifact) => ({ ...artifact }));
   const cacheBytes = Buffer.byteLength(JSON.stringify(copied)) + operationId.length + 64;
   const validation = { artifacts: copied, bytesSha256, cacheBytes };
-  if (cacheBytes > MAX_OPERATION_PROOF_CACHE_BYTES) { return validation; }
+  // Sorted full scans must not evict the entries they are about to revisit.
+  // A full cache declines new admissions; every miss still validates all bytes.
+  if (validatedOperationBytes.size >= MAX_OPERATION_CACHE_ENTRIES ||
+      validatedOperationCacheBytes + cacheBytes > MAX_OPERATION_PROOF_CACHE_BYTES) { return validation; }
   validatedOperationBytes.set(operationId, validation);
   validatedOperationCacheBytes += cacheBytes;
-  while (validatedOperationBytes.size > MAX_OPERATION_CACHE_ENTRIES || validatedOperationCacheBytes > MAX_OPERATION_PROOF_CACHE_BYTES) {
-    const oldest = validatedOperationBytes.entries().next().value;
-    if (oldest === undefined) { break; }
-    validatedOperationBytes.delete(oldest[0]);
-    validatedOperationCacheBytes -= oldest[1].cacheBytes;
-  }
   return validation;
 }
 
@@ -2087,6 +2088,7 @@ async function loadValidatedOperation(operationId: string): Promise<{
   const journalFile = await readManagedFile(operationPath(operationId), "Operation journal");
   const bytesSha256 = createHash("sha256").update(journalFile.bytes).digest("hex");
   const previous = validatedOperationBytes.get(operationId);
+  if (previous?.bytesSha256 !== bytesSha256) { forgetOperationValidation(operationId); }
   const operation = parseOperationJournal(operationId, journalFile.bytes, previous?.bytesSha256 === bytesSha256);
   const artifacts = operation.artifacts ?? [];
   await verifyOperationArtifacts(operationId, artifacts);
@@ -2236,12 +2238,21 @@ function projectionCacheEncoding(value: unknown): string | undefined {
   return JSON.stringify(value, (_key: string, item: unknown): unknown => item === undefined ? null : item);
 }
 
+function forgetOperationProjection<T>(cache: OperationProjectionCache<T>, operationId: string): void {
+  const previous = cache.entries.get(operationId);
+  if (previous !== undefined) {
+    cache.bytes -= previous.cacheBytes;
+    cache.entries.delete(operationId);
+  }
+}
+
 function retainOperationProjection<T>(
   cache: OperationProjectionCache<T>,
   operationId: string,
   bytesSha256: string,
   value: T | undefined,
 ): void {
+  forgetOperationProjection(cache, operationId);
   // The public generic scan also accepts projections which are not cloneable.
   // Such a result keeps its original behavior and simply receives no cache.
   let copy: T | undefined;
@@ -2253,19 +2264,10 @@ function retainOperationProjection<T>(
     if (cacheBytes > MAX_OPERATION_PROJECTION_BYTES) { return; }
     copy = structuredClone(value);
   } catch { return; }
-  const previous = cache.entries.get(operationId);
-  if (previous !== undefined) {
-    cache.bytes -= previous.cacheBytes;
-    cache.entries.delete(operationId);
-  }
+  if (cache.entries.size >= MAX_OPERATION_CACHE_ENTRIES ||
+      cache.bytes + cacheBytes > MAX_OPERATION_PROJECTION_CACHE_BYTES) { return; }
   cache.entries.set(operationId, { bytesSha256, cacheBytes, value: copy });
   cache.bytes += cacheBytes;
-  while (cache.entries.size > MAX_OPERATION_CACHE_ENTRIES || cache.bytes > MAX_OPERATION_PROJECTION_CACHE_BYTES) {
-    const oldest = cache.entries.entries().next().value;
-    if (oldest === undefined) { break; }
-    cache.entries.delete(oldest[0]);
-    cache.bytes -= oldest[1].cacheBytes;
-  }
 }
 
 async function verifiedOperationProjection<T>(
@@ -2274,9 +2276,17 @@ async function verifiedOperationProjection<T>(
 ): Promise<{ value: T | undefined } | undefined> {
   const projection = cache?.entries.get(operationId);
   const validation = validatedOperationBytes.get(operationId);
-  if (projection === undefined || validation?.bytesSha256 !== projection.bytesSha256) { return undefined; }
+  if (projection === undefined) { return undefined; }
+  if (validation?.bytesSha256 !== projection.bytesSha256) {
+    if (cache !== undefined) { forgetOperationProjection(cache, operationId); }
+    return undefined;
+  }
   const current = await hashManagedJsonFile(operationPath(operationId), "Operation journal");
-  if (current.sha256 !== validation.bytesSha256) { return undefined; }
+  if (current.sha256 !== validation.bytesSha256) {
+    forgetOperationValidation(operationId);
+    if (cache !== undefined) { forgetOperationProjection(cache, operationId); }
+    return undefined;
+  }
   await verifyOperationArtifacts(operationId, validation.artifacts);
   return { value: structuredClone(projection.value) };
 }
@@ -2319,7 +2329,8 @@ async function scanOperationProjections<T>(
     }
     // Projection failures are not corrupt-journal observations.
     const selected = operation === undefined ? cached?.value : select(operation);
-    if (cache !== undefined && currentValidation !== undefined) {
+    if (cache !== undefined && currentValidation !== undefined &&
+        validatedOperationBytes.get(operationId)?.bytesSha256 === currentValidation.bytesSha256) {
       retainOperationProjection(cache, operationId, currentValidation.bytesSha256, selected);
     }
     if (selected !== undefined) { output.push(selected); }

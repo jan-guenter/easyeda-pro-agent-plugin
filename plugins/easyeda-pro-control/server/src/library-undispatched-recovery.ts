@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- Each preparation reuses its exact typed derivation rather than duplicating the security contract in recovery. */
 import { basename } from "node:path";
 import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, sha256Json } from "./core.ts";
 import type { LibraryJournal } from "./library-execution.ts";
@@ -7,12 +8,14 @@ import { prepareDocumentClose } from "./document-close.ts";
 import { prepareDocumentPageCreate } from "./document-page-create.ts";
 import { prepareProjectSymbolCreate } from "./project-symbol-create.ts";
 import { prepareDocumentContainerRename } from "./document-container-rename.ts";
+import { prepareProjectPcbCreate } from "./project-pcb-create.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
 
 const preparations = {
   "document.activate": { key: "activationPlan", phase: "activation-prepared", derive: prepareDocumentActivation },
   "document.close": { key: "closePlan", phase: "close-prepared", derive: prepareDocumentClose },
   "document.page.create": { key: "pageCreatePlan", phase: "page-create-prepared", derive: prepareDocumentPageCreate },
+  "document.pcb.create": { key: "pcbCreatePlan", phase: "pcb-create-prepared", derive: prepareProjectPcbCreate },
   "library.symbol.create": { key: "symbolCreatePlan", phase: "symbol-create-prepared", derive: prepareProjectSymbolCreate },
   "document.pcb.rename": { key: "documentRenamePlan", phase: "document-rename-prepared", derive: prepareDocumentContainerRename },
   "document.schematic.rename": { key: "documentRenamePlan", phase: "document-rename-prepared", derive: prepareDocumentContainerRename },
@@ -23,7 +26,7 @@ const initialKeys = new Set(["schema", "operationId", "journalPath", "planHash",
 
 function preparation(journal: LibraryJournal): (typeof preparations)[keyof typeof preparations] {
   const action = journal.plan.operation.action;
-  if (action !== "document.activate" && action !== "document.close" && action !== "document.page.create" && action !== "library.symbol.create" && action !== "document.pcb.rename" && action !== "document.schematic.rename") {
+  if (action !== "document.activate" && action !== "document.close" && action !== "document.page.create" && action !== "library.symbol.create" && action !== "document.pcb.rename" && action !== "document.schematic.rename" && action !== "document.pcb.create") {
     throw new Error("Undispatched preparation invalidation does not support this operation.");
   }
   return preparations[action];
@@ -34,7 +37,7 @@ function preparation(journal: LibraryJournal): (typeof preparations)[keyof typeo
  */
 export function hasMissingLibraryPreparation(journal: LibraryJournal): boolean {
   const action = journal.plan.operation.action;
-  if (action !== "document.activate" && action !== "document.close" && action !== "document.page.create" && action !== "library.symbol.create" && action !== "document.pcb.rename" && action !== "document.schematic.rename") { return false; }
+  if (action !== "document.activate" && action !== "document.close" && action !== "document.page.create" && action !== "library.symbol.create" && action !== "document.pcb.rename" && action !== "document.schematic.rename" && action !== "document.pcb.create") { return false; }
   const { phase } = preparations[action];
   return !journal.artifacts.some((entry) => new RegExp(`^[0-9]+-${phase}\\.json$`, "u").test(basename(entry.path)));
 }

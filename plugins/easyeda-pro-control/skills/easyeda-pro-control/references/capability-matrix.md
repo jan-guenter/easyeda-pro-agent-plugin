@@ -42,6 +42,7 @@ its narrow boundary and pending live validation are listed separately below.
 | PCB component pose/layer/lock | design | Typed effect plus attached records and whole-source comparison |
 | PCB component / footprint 3D transform | design, pcb.component.model-transform / footprint.model-transform | Exact existing `3D Model Transform` ATTR value only; typed legacy mil/degree fields or native v2 affine; lock ancestry and full source/durable invariants; connected validation pending |
 | PCB line/arc/via/pad/polyline/region/pour/fill create/modify/delete | design | Only representable installed source profiles; unsupported shapes fail before dispatch; create IDs are journal-owned; exact inverse not universal |
+| Standalone PCB text modification | design, pcb.text.modify | Existing exact-ID top-silkscreen default-font STRING; only x/y/text, bounded ASCII and four-decimal mil coordinates. Requires sealed project/branch and exact ordinary receiver; refuses pours, groups and other styles. Complete inverse/source/persistence proof; no create/delete or connected-validation claim |
 | Multiple PCB operations | design, pcb.batch | 1–256 sequential typed effects; geometry-only source merge or ordered source-bound public steps when rules are included; prior create references; initially locked records and descendants protected; no stack/rebuild inside batch |
 | Net classes, differential pairs, equal-length and numeric rule collections | design | Typed collection/source adapters; support depends on exact representable records, not arbitrary rule JSON invocation |
 | Physical layer stack | design, pcb.stack.replace | Complete typed physical layer list and enabled copper IDs; preserves existing native IDs/unknown metadata; native thickness quantization is explicit |
@@ -53,6 +54,7 @@ its narrow boundary and pending live validation are listed separately below.
 | Closed empty ordinary symbol creation | library, library.symbol.create | Ordinary clean PCB active; unique project-local title and optional description; original native ID and META-only addition with complete unchanged-peer proof. No PART/template/canvas initialization, classification, open, Save or inverse. Native permission denial may display a dialog. Installed194400 passed one disposable creation with all17existing documents unchanged; no general symbol-editor lifecycle claim |
 | Closed project page rename | library, document.page.rename | Checkpoint-member ordinary page with one clean active sibling; exact writable branch, owner and locale duplicate-name checks; one native metadata write, complete saved title/header and unchanged peer/source proof; no Save, reopen, UI-caption refresh or current-generation connected-writer claim |
 | Closed empty schematic-page creation | library, document.page.create | Existing ordinary local schematic parent only; one clean owned PCB or sibling page active; exact writable branch and native name/order defaults; one project-qualified native addition with original returned ID and complete unchanged peer/hierarchy proof. Not the public template/drawing-frame/open workflow; no Save, reopen, automatic inverse or current-generation live claim |
+| Closed empty free-PCB creation | library, document.pcb.create | Absent boardName only; one other clean direct-open PCB. Retained UUID, checkpoint-derived name, exact DOCHEAD/META addition and unchanged raw per-document peer chains. No canvas initialization, board attachment, open, Save, inverse or current-generation connected claim |
 | Already-open document activation | library, document.activate | Exact checkpoint-member current-project tab and complete tab ownership; PCB/footprint target requires existing pcbCommandTab=true to avoid an account-preference write. One activation, two coherent target observations and unchanged saved database; no setting change, reopen or current-generation connected claim |
 | Inactive clean document close | library, document.close | Ordinary symbol (2), PCB (3) or footprint (4) target with a separate clean PCB/footprint active; exactly two owned project tabs, one unsplit container. Await terminal tab/frame cleanup and prove unchanged active source/context and complete logical database. No Save, reopen, exact inverse or current-generation live claim; post-dispatch failure remains quarantined until retained runtime termination |
 | Project footprint library create/modify | library | Scoped current-project record proof; save and reopen facts reported separately |
@@ -80,6 +82,15 @@ its narrow boundary and pending live validation are listed separately below.
 | Raw JavaScript, automatic database restore, fabrication submission | unsupported | No unrestricted-code switch or implicit purchasing/manufacturing authority |
 
 ## Reported live coverage
+
+Installed103000 passed five PCB reader cases: Line-only and combined five-family
+nonempty-net membership, one track type lookup and two neutral inherited
+footprint-Line type lookups. The empty-net inherited lines were excluded from
+the nonempty net result. Complete native source/inventory/context, all18saved
+documents/383records and the full SQLite dump stayed unchanged. Normal close
+and maintained offline checkpoint verification also passed, without Save.
+These cases do not validate nonempty standalone Pad/Arc, electrical connectivity,
+public-stub parity, writers or the unpublished latency changes.
 
 Installed071500 passed the active Top Layer reader and filtered PCB membership
 for two component pads and one via, lowercase component-pad matching, and empty
@@ -117,10 +128,10 @@ adapter; the scoped installed071500 evidence above now tests that adapter.
 The same fixture exposed two PCB admission gaps before net/type dispatch.
 The current source now accepts the actual identity-only component inventory and
 one exact disabled default PANELIZE record. Active, malformed or aliased panel
-records still refuse. A newer source-only adapter binds inherited neutral lines
+records still refuse. A separately guarded adapter binds inherited neutral lines
 to exact footprint-library records through fresh complete checkpoints. Its narrow
-geometry and ownership limits are in pcb-geometry.md; connected acceptance is
-pending. Do not infer owners from ID prefixes or claim complete Line/type coverage.
+geometry and ownership limits are in pcb-geometry.md; the scoped installed103000
+acceptance is above. Do not infer owners from ID prefixes or claim complete Line/type coverage.
 Installed071500 covers the active-layer
 and filtered non-Line cases listed above, not the full method domains.
 

@@ -13,7 +13,7 @@ export function listDesignActionCapabilities(): Record<string, unknown> {
     ...schematicOperationSchema.options.map((entry) => entry.shape.action.value),
     ...footprintOperationSchema.options.map((entry) => entry.shape.action.value),
     ...modelTransformOperationSchema.options.map((entry) => entry.shape.action.value),
-    "pcb.batch", "pcb.stack.replace", "sch.layout.batch",
+    "pcb.batch", "pcb.stack.replace", "pcb.text.modify", "sch.layout.batch",
   ].toSorted();
   return {
     actions,
@@ -31,6 +31,7 @@ export function listDesignActionCapabilities(): Record<string, unknown> {
       copper: "clear-derived-before-source-edit-then-explicit-rebuild",
       symbolGeometry: "existing-project-single-part-circle-rectangle-text-pin-attribute-with-exact-library-save-reopen",
       modelTransform: "exact-existing-stored-attribute-only-legacy-mil-or-affine-v2-preserving-model-binding",
+      pcbText: "native-equivalent-source-merge;type-3-project-owned-existing-unlocked-standalone-STRING;top-silkscreen-default-font-left-bottom-zero-angle-nonreverse;exact-x-y-text-only;no-ATTR-or-inherited-text;synthetic-tests-not-connected-lifecycle-validation",
       netFlagsAndPorts: "historical-existing-kind-translation;netflag-clone-needs-loaded-template-and-checkpoint-asset-proof;other-creation-not-admitted-by-catalog-alone;compiled-topology-type-1-execution-blocked",
     },
     operationValidation: getOperationValidationRegistry(),

@@ -177,18 +177,45 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 192, "implemented-native-equivalent": 94, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 478,
+    "implemented-public-subset": 192, "implemented-native-equivalent": 95, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 477,
   });
 });
 
-void test("String mutation coverage is only the existing type-4 footprint native equivalent, never PCB or public-wrapper support", () => {
+void test("closed free PCB creation exposes only its checkpoint-bound native subset", () => {
+  const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.dmt_Pcb.createPcb");
+  assert.ok(row);
+  assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
+  assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+  assert.equal(row.runtimeAdmission, "not-granted-by-inventory"); assert.equal(row.routes.length, 1);
+  const route = row.routes[0]; assert.ok(route);
+  assert.equal(route.selector, "document.pcb.create"); assert.equal(route.implementation, "native-task-equivalent");
+  assert.deepEqual(route.documentTypes, [3]); assert.equal(route.executionState, "available-with-runtime-guards");
+  assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+  assert.match(route.scope, /boardName absent/u); assert.match(route.scope, /retained original UUID/u);
+  assert.match(route.scope, /No board creation or attachment/u); assert.match(route.scope, /never recreates/u);
+  for (const source of ["project-pcb-create.ts", "project-pcb-create-runtime.ts", "native-history.ts", "native-document-record-history.ts", "library-recovery.ts", "library-undispatched-recovery.ts"]) { assert.ok(route.source.includes(source)); }
+  for (const file of ["native-history.test.ts", "native-document-record-history.test.ts", "library-undispatched-recovery.test.ts"]) { assert.ok(route.tests.includes(file)); }
+  assert.match(route.scope, /per-document raw occurrence chains/u);
+  const catalog = queryOperationCatalog({ family: "library", operationAction: "document.pcb.create", includeSchemas: true });
+  const entries = catalog["entries"]; assert.ok(Array.isArray(entries)); assert.equal(entries.length, 1);
+  const entry: unknown = entries[0]; assert.ok(isRecord(entry));
+  assert.match(JSON.stringify(entry), /implemented-closed-empty-free-pcb-create-proof/u);
+  assert.match(JSON.stringify(entry), /boardNameMustBeAbsent/u);
+  assert.equal(validateCatalogOperation({ family: "library", operation: { id: "create-free", action: "document.pcb.create" } })["valid"], true);
+  assert.equal(validateCatalogOperation({ family: "library", operation: { id: "create-bound", action: "document.pcb.create", boardName: "Board" } })["valid"], true);
+  // Structural acceptance of the optional public argument does not make that
+  // Branch execution-enabled; the runtime rejects every supplied boardName.
+});
+
+void test("String footprint routes retain their type-4 scope alongside the separate narrow PCB modify route", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   for (const method of ["create", "modify", "delete"]) {
     const row = rows.get(`eda.pcb_PrimitiveString.${method}`); assert.ok(row);
     assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
     assert.equal(row.reviewedRuntimeDeclaration, true); assert.equal(row.completeDeclaredContractSupported, false);
     assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
-    assert.equal(row.routes.length, 1); const route = row.routes[0]; assert.ok(route);
+    assert.equal(row.routes.length, method === "modify" ? 2 : 1);
+    const route = row.routes.find((entry) => entry.selector === `footprint.text.${method}`); assert.ok(route);
     assert.equal(route.tool, "easyeda_control_design"); assert.equal(route.selector, `footprint.text.${method}`);
     assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [4]);
     assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
@@ -208,8 +235,28 @@ void test("String mutation coverage is only the existing type-4 footprint native
     const schema = entry["inputSchema"]; assert.ok(isRecord(schema)); assert.equal(schema["additionalProperties"], false);
     const properties = schema["properties"]; assert.ok(isRecord(properties));
     assert.deepEqual(properties["action"], { type: "string", const: route.selector });
-    assert.equal(queryOperationCatalog({ family: "design", operationAction: `pcb.text.${method}` })["matched"], 0);
+    assert.equal(queryOperationCatalog({ family: "design", operationAction: `pcb.text.${method}` })["matched"], method === "modify" ? 1 : 0);
   }
+});
+
+void test("PCB String modification discovers only its strict source-merge subset, with no public or connected parity", () => {
+  const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.pcb_PrimitiveString.modify"); assert.ok(row);
+  const route = row.routes.find((entry) => entry.selector === "pcb.text.modify"); assert.ok(route);
+  assert.deepEqual(route.documentTypes, [3]); assert.equal(route.tool, "easyeda_control_design");
+  assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.executionState, "available-with-runtime-guards");
+  assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+  assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.completeDeclaredContractSupported, false);
+  assert.match(route.scope, /exact x\/y\/text changes/u); assert.match(route.scope, /does not invoke the public wrapper/u);
+  assert.match(route.scope, /No creation, deletion, component ATTR, inherited text/u);
+  const query = { family: "design", operationAction: "pcb.text.modify", includeSchemas: true };
+  assert.deepEqual(route.inputDiscovery, { tool: "easyeda_control_api", arguments: { request: { action: "operations", query } } });
+  const catalog = queryOperationCatalog(query); assert.equal(catalog["matched"], 1); assert.equal(catalog["executionAuthorized"], false);
+  const operation = { id: "pcb-text", action: "pcb.text.modify", target: { primitiveId: "0123456789abcdef" }, patch: { x: 12.5, text: "MARK 1" } };
+  assert.equal(validateCatalogOperation({ family: "design", operation })["valid"], true);
+  for (const patch of [{}, { x: undefined }, { x: 0.00001 }, { text: "{value}" }, { fontFamily: "external" }, { reverse: true }, { layer: 4 }]) {
+    assert.equal(validateCatalogOperation({ family: "design", operation: { ...operation, patch } })["valid"], false);
+  }
+  assert.equal(validateCatalogOperation({ family: "design", operation: { ...operation, code: "caller" } })["valid"], false);
 });
 
 void test("PCB and schematic rename coverage is an exact closed-target native task, not public wrapper or live execution proof", () => {
@@ -225,6 +272,9 @@ void test("PCB and schematic rename coverage is an exact closed-target native ta
     assert.match(route.scope, /nonimported checkpoint and full peer record clocks\/header lineage/u);
     assert.match(route.scope, /No public wrapper, Save\/reopen, automatic inverse or current-generation live-validation claim/u);
     assert.ok(route.source.includes("document-container-rename-native-profile.ts")); assert.ok(route.source.includes("library-undispatched-recovery.ts"));
+    for (const file of ["native-history.ts", "native-document-record-history.ts"]) { assert.ok(route.source.includes(file)); }
+    for (const file of ["native-history.test.ts", "native-document-record-history.test.ts"]) { assert.ok(route.tests.includes(file)); }
+    assert.match(route.scope, /per-document raw occurrence chains/u);
     const discovery = route.inputDiscovery?.arguments["request"]; assert.ok(isRecord(discovery));
     const catalog = queryOperationCatalog(discovery["query"]); assert.equal(catalog["offline"], true); assert.equal(catalog["executionAuthorized"], false);
     const entries = catalog["entries"]; assert.ok(Array.isArray(entries)); assert.equal(entries.length, 1);

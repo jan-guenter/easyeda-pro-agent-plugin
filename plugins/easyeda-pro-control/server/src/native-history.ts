@@ -10,6 +10,9 @@ import type { UnknownRecord } from "./core.ts";
 import { yieldProofEventLoop } from "./cooperative-proof.ts";
 import { createNativeAtomHeaderHistorySteps } from "./native-atom-header-history.ts";
 import type { NativeAtomHeaderHistory, NativeAtomHeaderOccurrence } from "./native-atom-header-history.ts";
+// oxlint-disable-next-line import/max-dependencies -- The explicit closed-container opt-in reuses one audited record commitment helper without changing default history semantics.
+import { appendNativeDocumentRecordChain, emptyNativeDocumentRecordChain, sealNativeDocumentRecordHistory } from "./native-document-record-history.ts";
+import type { NativeDocumentRecordChain, NativeDocumentRecordHistory } from "./native-document-record-history.ts";
 
 const unzip = promisify(gunzip);
 const UUID = /^[a-f0-9]{32}$/u;
@@ -59,11 +62,14 @@ export interface NativeDocumentSnapshot {
   readonly headerHistory?: NativeDocumentHeaderHistory;
   /** Explicit readonly library-import profile only; never semantic content. */
   readonly atomHeaderHistory?: NativeAtomHeaderHistory;
+  /** Explicit closed-container writer opt-in; not semantic content. */
+  readonly documentRecordHistory?: NativeDocumentRecordHistory;
 }
 
 export interface NativeHistoryMaterializationOptions {
   /** Internal readonly opt-in. Existing lifecycle/writer callers stay strict. */
   readonly libraryAtomHeaders?: "preserve";
+  readonly documentRecordHistory?: "preserve";
 }
 
 export interface NativeDocumentHeaderHistory {
@@ -93,6 +99,7 @@ interface NativeRecord {
   readonly body: UnknownRecord | null;
   readonly headerSha256?: string;
   readonly bodyEncodingSha256?: string | null;
+  readonly recordEncodingSha256?: string;
 }
 
 interface LibraryAtomHistory {
@@ -111,6 +118,7 @@ interface MutableDocument {
   /** Null disables supplemental proof after stale clocks or any deletion marker. */
   metadataHeaders: { readonly ticket: number; readonly metadata: UnknownRecord }[] | null;
   readonly libraryAtoms?: LibraryAtomHistory;
+  documentRecordChain?: NativeDocumentRecordChain;
 }
 
 interface NativeFirstClock {
@@ -263,7 +271,7 @@ function finishMaterializationSteps<Result>(steps: Generator<void, Result, undef
  * precedence even when a later malformed record follows an earlier conflict.
  * Individual JSON parsing and framing remain synchronous bounded operations.
  */
-function* parseNativeRecordSteps(plaintext: string, preserveLibraryAtoms = false): Generator<void, NativeRecord[], undefined> {
+function* parseNativeRecordSteps(plaintext: string, preserveLibraryAtoms = false, preserveDocumentRecords = false): Generator<void, NativeRecord[], undefined> {
   if (Buffer.byteLength(plaintext) > MAX_CHUNK_BYTES) {fail();}
   const lines = plaintext.split("|\n");
   if (lines.at(-1) === "") {lines.pop();}
@@ -286,6 +294,7 @@ function* parseNativeRecordSteps(plaintext: string, preserveLibraryAtoms = false
     }
     const bodySource = line.slice(split + 2);
     entries.push({ header, body: bodySource === "" ? null : parseObject(bodySource),
+      ...(preserveDocumentRecords ? { recordEncodingSha256: createHash("sha256").update(line).digest("hex") } : {}),
       ...(preserveLibraryAtoms ? { headerSha256: createHash("sha256").update(headerSource).digest("hex"),
         bodyEncodingSha256: bodySource === "" ? null : createHash("sha256").update(bodySource).digest("hex") } : {}) });
     if (materializationBatchReached(budget, Buffer.byteLength(line))) { yield; }
@@ -391,6 +400,7 @@ export function isNativeDocumentDeleted(document: NativeDocumentSnapshot): boole
 function* materializeNativeHistorySteps(plaintextChunks: readonly string[], checkpointSha256?: string,
   options: NativeHistoryMaterializationOptions = {}): Generator<void, readonly NativeDocumentSnapshot[], undefined> {
   if (checkpointSha256 !== undefined && !/^[a-f0-9]{64}$/u.test(checkpointSha256)) { fail("checkpoint-hash"); }
+  if (options.documentRecordHistory === "preserve" && checkpointSha256 === undefined) { fail("checkpoint-hash"); }
   const documents = new Map<string, MutableDocument>();
   let totalBytes = 0;
   let totalRecords = 0;
@@ -399,7 +409,7 @@ function* materializeNativeHistorySteps(plaintextChunks: readonly string[], chec
     if (totalBytes > MAX_TOTAL_BYTES) {fail("total-bytes-limit");}
     let current: MutableDocument | undefined;
     let currentClient: string | undefined;
-    const entries = yield* parseNativeRecordSteps(plaintext, options.libraryAtomHeaders === "preserve");
+    const entries = yield* parseNativeRecordSteps(plaintext, options.libraryAtomHeaders === "preserve", options.documentRecordHistory === "preserve");
     yield;
     const budget = { records: 0, bytes: 0 };
     for (const [recordIndex, entry] of entries.entries()) {
@@ -420,6 +430,7 @@ function* materializeNativeHistorySteps(plaintextChunks: readonly string[], chec
         if (!current) {
           current = { uuid: documentUuid, docType, metadata: body, metadataTicket: ticket, objects: new Map(), firstClocks: new Map(),
             metadataHeaders: docType === "SCH_PAGE" ? [{ ticket, metadata: body }] : null,
+            ...(options.documentRecordHistory === "preserve" ? { documentRecordChain: emptyNativeDocumentRecordChain(documentUuid) } : {}),
             ...(options.libraryAtomHeaders === "preserve" && (docType === "SYMBOL" || docType === "FOOTPRINT")
               ? { libraryAtoms: { occurrences: [], clocks: new Map(), hasFirstTicket: false } } : {}) };
           documents.set(documentUuid, current);
@@ -435,6 +446,10 @@ function* materializeNativeHistorySteps(plaintextChunks: readonly string[], chec
         retainLibraryAtom(current, entry, currentClient, chunkIndex, recordIndex, checkpointSha256);
         if (entry.header["type"] === "DELETE_DOC" || entry.header["id"] === "DELETE_DOC") { current.metadataHeaders = null; }
         applyRecord(current, entry, currentClient);
+      }
+      if (type !== "EDIT_HEAD" && options.documentRecordHistory === "preserve") {
+        if (current?.documentRecordChain === undefined || entry.recordEncodingSha256 === undefined) { fail(); }
+        current.documentRecordChain = appendNativeDocumentRecordChain(current.documentRecordChain, entry.recordEncodingSha256, integer(entry.header["ticket"]));
       }
       if (materializationBatchReached(budget)) { yield; }
     }
@@ -474,6 +489,10 @@ function* materializeNativeHistorySteps(plaintextChunks: readonly string[], chec
       const atomHeaderHistory = yield* createNativeAtomHeaderHistorySteps({ checkpointSha256, documentUuid: document.uuid,
         docType: document.docType }, document.libraryAtoms.occurrences);
       Object.assign(completed, { atomHeaderHistory });
+    }
+    if (document.documentRecordChain !== undefined) {
+      if (checkpointSha256 === undefined) { fail("checkpoint-hash"); }
+      Object.assign(completed, { documentRecordHistory: sealNativeDocumentRecordHistory(document.documentRecordChain, checkpointSha256, document.uuid) });
     }
     snapshots.push(completed);
     yield;
@@ -520,8 +539,9 @@ export async function readNativeHistoryCheckpoint(input: {
   readonly expectedSha256: string;
   readonly projectUuid: string;
   readonly libraryAtomHeaders?: "preserve";
+  readonly documentRecordHistory?: "preserve";
 }): Promise<NativeHistorySnapshot> {
-  const { checkpointPath, expectedSha256, projectUuid: requestedProjectUuid, libraryAtomHeaders } = input;
+  const { checkpointPath, expectedSha256, projectUuid: requestedProjectUuid, libraryAtomHeaders, documentRecordHistory } = input;
   let stage: NativeHistoryStage = "checkpoint-input";
   if (!isAbsolute(checkpointPath) || !/\.eprj2$/iu.test(checkpointPath) || !/^[a-f0-9]{64}$/u.test(expectedSha256)) {fail();}
   const projectUuid = text(requestedProjectUuid, 64);
@@ -580,7 +600,7 @@ export async function readNativeHistoryCheckpoint(input: {
       }
     }
     const documents = await materializeNativeHistoryCooperatively(plaintext, expectedSha256,
-      libraryAtomHeaders === undefined ? {} : { libraryAtomHeaders });
+      { ...(libraryAtomHeaders === undefined ? {} : { libraryAtomHeaders }), ...(documentRecordHistory === undefined ? {} : { documentRecordHistory }) });
     stage = "checkpoint-stability";
     const after = await file.stat({ bigint: true });
     const pathAfter = await lstat(checkpointPath, { bigint: true });

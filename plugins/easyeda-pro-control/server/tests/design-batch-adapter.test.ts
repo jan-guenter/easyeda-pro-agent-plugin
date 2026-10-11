@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { runInNewContext } from "node:vm";
 import { z } from "zod";
 import { sha256Json } from "../src/core.ts";
 import { buildDesignBatchAdapter, compileDesignBatchOperation, designBatchOperationSchema, expectedDesignBatchSource, inverseDesignBatchOperation, verifyDesignBatchSourceEffect } from "../src/design-batch-adapter.ts";
 import { parseDocumentSource } from "../src/document-source.ts";
 import type { NativeSourceObject, NativeSourceSnapshot } from "../src/document-source.ts";
+import { pcbExactFrameFixture } from "./pcb-exact-frame-fixture.ts";
 
 function snapshot(objects: readonly NativeSourceObject[]): NativeSourceSnapshot {
   const value = { schema: "easyeda-pro-control.document-source.v1" as const,
@@ -39,12 +39,9 @@ void test("placement batch validates sequential component/attribute changes and 
   assert.equal(adapter.stepProofs.length, 3);
   assert.equal(adapter.stepProofs[0]?.afterSha256, adapter.stepProofs[1]?.beforeSha256);
   assert.equal(adapter.stepProofs[1]?.afterSha256, adapter.stepProofs[2]?.beforeSha256);
-  const calls: string[] = [];
-  const result: unknown = runInNewContext(`(async()=>{const EXPECTED_DOCUMENT_UUID='fixture',EXPECTED_TAB_ID='tab',EXPECTED_DOCUMENT_TYPE=3;${adapter.code}})()`, { eda: {
-    dmt_SelectControl: { getCurrentDocumentInfo: () => Promise.resolve({ uuid: "fixture", tabId: "tab", documentType: 3 }) },
-    sys_FileManager: { getDocumentSource: () => Promise.resolve(source(BEFORE)), setDocumentSource: (next: string) => { calls.push(next); return Promise.resolve(true); } },
-  } });
-  assert.equal(await result, true);
+  const fixture = pcbExactFrameFixture("fixture", source(BEFORE));
+  const calls = fixture.state.writes;
+  assert.equal(await fixture.run(adapter.code), true);
   assert.equal(calls.length, 1);
   const saved = calls[0];
   assert.notEqual(saved, undefined);

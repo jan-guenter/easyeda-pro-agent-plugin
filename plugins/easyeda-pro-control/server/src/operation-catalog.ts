@@ -66,6 +66,7 @@ export function queryOperationCatalog(input: unknown): Record<string, unknown> {
     const descriptor: Record<string, unknown> = {
       action: entry.action,
       status: query.family === "library" ? libraryStatuses.get(entry.action)?.["status"] : "typed-operation-specific-native-preflight",
+      ...(query.family === "library" ? { executionCapabilities: libraryStatuses.get(entry.action) } : {}),
       ...(query.family === "library" && libraryStatuses.get(entry.action)?.["executionRefusal"] !== undefined ? {
         executionRefusal: libraryStatuses.get(entry.action)?.["executionRefusal"],
       } : {}),

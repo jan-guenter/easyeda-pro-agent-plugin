@@ -9,6 +9,7 @@ import { parseDocumentSource } from "../src/document-source.ts";
 import type { NativeSourceSnapshot } from "../src/document-source.ts";
 import { assertDesignActionSupported, compileDesignAction, inverseDesignAction, prepareDesignAction, verifyDesignAction } from "../src/design-action.ts";
 import { listDesignActionCapabilities } from "../src/design-capabilities.ts";
+import { pcbExactFrameFixture } from "./pcb-exact-frame-fixture.ts";
 
 const legacy: ModelTransform = { format: "legacy", dimensionsMil: { x: 100, y: 200, z: 300 }, rotationDegrees: { x: 10, y: 20, z: 30 }, offsetMil: { x: 1, y: 2, z: -3 } };
 const affine: ModelTransform = { format: "affine-v2", linearColumnMajor: [1, 2, 3, 4, 5, 6, 7, 8, 10], translationMil: { x: 11, y: 12, z: 13 } };
@@ -132,15 +133,11 @@ void test("footprint transform binds its native library owner and preserves geom
 void test("generated native merge dispatches once and refuses complete baseline drift before mutation", async () => {
   const before = snapshot();
   const adapter = buildModelTransformAdapter(operation, before);
-  let source = encodeSource(before), writes = 0;
-  const eda = { dmt_SelectControl: { getCurrentDocumentInfo: (): Promise<unknown> => Promise.resolve({ uuid: "document", tabId: "tab", documentType: 3 }) },
-    sys_FileManager: { getDocumentSource: (): Promise<string> => Promise.resolve(source), setDocumentSource: (value: string): Promise<boolean> => { source = value; writes += 1; return Promise.resolve(true); } } };
-  // oxlint-disable-next-line eslint/no-new-func, typescript/no-implied-eval, typescript/no-unsafe-type-assertion -- Execute only the facade-owned generated program with its known async signature against an isolated mock; no caller source or live bridge exists.
-  const run = new Function("eda", "EXPECTED_DOCUMENT_UUID", "EXPECTED_TAB_ID", "EXPECTED_DOCUMENT_TYPE", `return (async () => {${adapter.code}})();`) as (...args: unknown[]) => Promise<unknown>;
-  assert.equal(await run(eda, "document", "tab", 3), true);
-  assert.equal(writes, 1);
-  assert.deepEqual(parseDocumentSource(source), adapter.expected);
-  source = encodeSource(change(before, "pad", { net: "OTHER" }));
-  await assert.rejects(run(eda, "document", "tab", 3), /baseline drift/u);
-  assert.equal(writes, 1);
+  const fixture = pcbExactFrameFixture("document", encodeSource(before));
+  assert.equal(await fixture.run(adapter.code), true);
+  assert.equal(fixture.state.writes.length, 1);
+  assert.deepEqual(parseDocumentSource(fixture.state.source), adapter.expected);
+  fixture.state.source = encodeSource(change(before, "pad", { net: "OTHER" }));
+  await assert.rejects(fixture.run(adapter.code), /baseline drift/u);
+  assert.equal(fixture.state.writes.length, 1);
 });

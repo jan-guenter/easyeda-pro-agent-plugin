@@ -44,6 +44,22 @@ the protocol boundary without swallowing native failures or printing private
 source/credentials. Main-thread computations must yield cooperatively while
 retaining exact context/source checks; never relax the checks for speed.
 
+An awaited current-document getter and a later current-document setter can
+select different PCB frames. Capture the exact ordinary iframe and its native
+receiver first; after each await, synchronously recheck the sealed project,
+branch, tab, frame and writable state before using that captured receiver.
+Pin both the UI frame registry and native PCB implementation. Check stack
+changes before their first physical-layer mutation, not only inside a later
+source merge. Receiver binding is not an atomic source compare-and-swap;
+independent post-effect and durable proofs remain necessary.
+
+Large journal directories can defeat a cache that evicts the oldest entry for
+every new scan result. Test more entries than the cache cap. Preserve useful
+resident entries when declining a new admission, but still rehash current journal
+and artifact bytes on every use. File size, timestamps and an open descriptor do
+not prove that file contents stayed unchanged. Synthetic cache improvements
+must not be reported as measured connected latency improvements.
+
 ## Narrow execution contract
 
 Use literal action discriminators, bounded strings/arrays/numbers, strict nested

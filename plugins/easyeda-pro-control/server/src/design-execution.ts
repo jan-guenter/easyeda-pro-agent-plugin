@@ -749,9 +749,14 @@ export class DesignExecutor {
     if (Object.hasOwn(journal.plan, "flatDisplay")) { await DesignExecutor.assertFlatDispatch(journal, phase, code); }
     await this.assertRuntime(journal.plan, journal.context, journal.runtimeFingerprint);
     const nativeLifecycle = ["save-reopen", "footprint-reopen", "footprint-reopen-recovery", "symbol-reopen", "symbol-reopen-recovery"].includes(phase);
-    const persistenceNative = nativeLifecycle ? await this.engine.upstream.installedEasyedaBundles?.() : undefined;
+    const pcbScopedDispatch = journal.context.document.documentType === 3;
+    const installedNative = nativeLifecycle || pcbScopedDispatch ? await this.engine.upstream.installedEasyedaBundles?.() : undefined;
+    const persistenceNative = nativeLifecycle ? installedNative : undefined;
+    const pcbNative = pcbScopedDispatch ? installedNative : undefined;
     if (nativeLifecycle && persistenceNative === undefined) { throw new Error("Save/reopen project-manager implementation identity is unavailable."); }
+    if (pcbScopedDispatch && pcbNative === undefined) { throw new Error("PCB dispatch UI implementation identity is unavailable."); }
     if (persistenceNative !== undefined) { await verifyDeviceAssociationNativeProfile(persistenceNative.assetsRoot); }
+    if (pcbNative !== undefined) { await verifyLibraryNativeProfile(pcbNative.assetsRoot); }
     const savePhase = designSavePhase(phase);
     if (savePhase !== undefined) {
       const saveEvidence = await inspectDesignSaveAttempts(journal);
@@ -801,10 +806,14 @@ export class DesignExecutor {
       }
       throw error;
     }
-    if (persistenceNative !== undefined) { await verifyDeviceAssociationNativeProfile(persistenceNative.assetsRoot); }
     const extracted = extractToolPayload(result);
     const payload = isRecord(extracted) && extracted["schema"] === "easyeda-pro-control.exact-json.v1" ? decodeExactReadEnvelope(extracted) : extracted;
     await DesignExecutor.artifact(journal, phase, payload);
+    // Preserve the original return before any post-dispatch implementation check
+    // Can fail, including the lifecycle manager verifier's nested UI check.
+    // Changed implementation bytes never permit replay of the completed call.
+    if (persistenceNative !== undefined) { await verifyDeviceAssociationNativeProfile(persistenceNative.assetsRoot); }
+    if (pcbNative !== undefined) { await verifyLibraryNativeProfile(pcbNative.assetsRoot); }
     return payload;
   }
 

@@ -1,6 +1,7 @@
 import { canonicalJson, sha256Json } from "./core.ts";
 import { buildReviewedNativeSourceMerge } from "./design-native-adapter.ts";
 import type { NativeSourceObject, NativeSourceSnapshot } from "./document-source.ts";
+import { buildPcbExactFrameBinding } from "./pcb-exact-frame.ts";
 
 export const NATIVE_STACK_PERSISTENCE_PROFILE = "easyeda-pro-control.native-stack-persistence.v1";
 
@@ -91,30 +92,29 @@ const stackParse=source=>{
   return{document,objects};
 };
 if(EXPECTED_DOCUMENT_TYPE!==3||STACK_BEFORE.document.uuid!==EXPECTED_DOCUMENT_UUID)throw new Error('Native stack requires exact PCB context');
-const stackWindows=[globalThis.window?.top],stackBuses=[],stackSeen=new Set();
-for(let index=0;index<stackWindows.length;index++){
-  if(stackWindows.length>64)throw new Error('Native stack frame bound exceeded');
-  const frame=stackWindows[index];if(!frame||stackSeen.has(frame))continue;stackSeen.add(frame);
-  let bus;try{bus=frame.MSG_BUS_PCB;for(let child=0;child<frame.frames.length;child++)stackWindows.push(frame.frames[child]);}catch{continue;}
-  if(bus&&typeof bus.messageBus?.rpcCall==='function'&&!stackBuses.includes(bus))stackBuses.push(bus);
-}
-if(stackBuses.length===0||stackBuses.length>8)throw new Error('Native stack PCB frame scope unavailable');
-let stackBus;
-for(const bus of stackBuses){const identity=(await bus.messageBus.rpcCall('getTabIdAndDocType',{}))?.message;if(identity?.tabId===EXPECTED_TAB_ID&&identity?.docType===3){if(stackBus)throw new Error('Native stack frame identity is duplicated');stackBus=bus;}}
-if(!stackBus)throw new Error('Exact native stack frame not found');
+${buildPcbExactFrameBinding("{projectUuid:typeof EXPECTED_PCB_PROJECT_UUID==='string'?EXPECTED_PCB_PROJECT_UUID:null,branchUuid:typeof EXPECTED_PCB_BRANCH_UUID==='string'?EXPECTED_PCB_BRANCH_UUID:null}")}
+const stackIdentity=(await pcbFrameRpc.call(pcbFrameChannel,'getTabIdAndDocType',{}))?.message;
+assertPcbFrameCurrent();
+if(stackIdentity?.tabId!==EXPECTED_TAB_ID||stackIdentity?.docType!==3)throw new Error('Exact native stack frame not found');
+const stackBus=pcbFrameNative,stackPublish=pcbFrameChannel.publish;
+if(typeof stackPublish!=='function')throw new Error('Native stack publisher unavailable');
 ${CAPTURE_NATIVE_STACK_HANDLER_CODE}
 const stackHandler=captureNativeStackHandler(stackBus);
 for(let index=0;index<STACK_ROWS.length;index++)if(stackHandler.getPhyZIndex(STACK_ROWS[index]['Layer Id'],index)!==STACK_ROWS[index].zIndex)throw new Error('Native physical order profile changed');
-const stackFinalBaseline=stackParse((await stackBus.messageBus.rpcCall('FileSource',{}))?.message);
+const stackFinalBaseline=stackParse((await pcbFrameRpc.call(pcbFrameChannel,'FileSource',{}))?.message);
+assertPcbFrameCurrent();
 if(stackCanonical(stackFinalBaseline)!==stackCanonical(STACK_BEFORE))throw new Error('Native stack baseline changed before apply');
 // The only direct native mutation here uploads physical rows through yF.
 // No full applyConfig/updateCanvas, preference changes or unused-pad cleanup.
+assertPcbFrameCurrent();
 stackHandler.applyLayerPhysConfig({layerPhysConfigArr:STACK_ROWS});
 const stackMergeResult=await(async()=>{${merge.code}})();
 if(stackMergeResult!==true)throw new Error('Native stack presentation restore failed');
 // No visible/locked fields means the existing handler performs _p(id) only,
 // plus normal rendering refresh. It persists the exact restored layer model.
-stackBus.messageBus.publish('toggleLayerState',{layeridarr:STACK_UPLOAD_IDS.map(id=>({id}))});
+assertPcbFrameCurrent();
+if(pcbFrameChannel.publish!==stackPublish)throw new Error('Native stack publisher changed');
+stackPublish.call(pcbFrameChannel,'toggleLayerState',{layeridarr:STACK_UPLOAD_IDS.map(id=>({id}))});
 return true;
 `;
 }

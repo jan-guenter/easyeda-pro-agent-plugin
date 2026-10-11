@@ -111,6 +111,29 @@ complete unchanged-peer evidence. As with page creation, reconcile the original
 journal after uncertainty; never identify a result by name alone or repeat
 creation. There is no automatic deletion/inverse or connected-validation claim.
 
+## Create one closed empty free PCB
+
+`document.pcb.create` admits only an absent `boardName`. A supplied board name,
+even an empty string, is outside this execution profile. Keep one clean ordinary
+PCB active and no other design editors open. The adapter derives the next `PCB`
+numeric name from the complete checkpoint and creates one closed, unbound,
+META-only PCB. It does not initialize layers, canvas, rules, placeable objects
+or a template, open the result, invoke Save, or create a board.
+
+The original native UUID is retained before readback. Completion requires its
+exact DOCHEAD/META pair, unchanged raw record chains for every existing document,
+unchanged active source/context and complete checkpoint proof. Imported atom
+histories, inherited documents, hierarchical/CBB projects and hidden or pooled
+editor frames refuse. `saved:false`, `reopened:false`, `saveInvoked:false` and
+`canvasInitialized:false` remain separate from verified native persistence.
+Current-generation live validation is not claimed.
+
+After uncertainty, reconcile the original journal using its retained preparation.
+Changed-result recovery also requires the original native return; an exact
+unchanged-baseline proof does not infer or require a created identity.
+Never create again or infer identity from a matching name.
+There is no automatic delete, inverse, opening or canvas-initialization recovery.
+
 ## Close one inactive clean document
 
 `document.close` accepts an exact project-qualified `tabId` for a loaded ordinary
@@ -148,8 +171,12 @@ refuses inherited/CBB/variant projects, imported atom-header histories, unknown
 target metadata and non-null target ordering. It does not invoke the public
 wrapper's paired-design renames, update open editor titles or perform Save.
 Complete checkpoint proof preserves peer records, clocks, insertion provenance
-and schematic-header lineage. Only the target META title and reviewed native
-clock/header bookkeeping may change. Completion reports `saved:false`,
+and schematic-header lineage. Checkpoint-bound per-document raw occurrence
+chains also retain repeated/stale headers, overwritten records and tombstones.
+Every peer chain must be unchanged; the target appends exactly the pinned
+DOCHEAD/META pair. EDIT_HEAD, chunk boundaries and interdocument ordering are
+outside this per-document commitment. Only the target META title and reviewed
+native clock/header bookkeeping may change. Completion reports `saved:false`,
 `reopened:false`, and `saveInvoked:false` despite verified native persistence.
 Current-generation connected acceptance remains pending.
 
@@ -160,10 +187,16 @@ necessary, but do not open the target or children for this recovery. An inverse
 is a separately admitted new transaction using the original name, not automatic
 rollback. A project checkpoint does not prove the tree caption refreshed.
 
+The raw-occurrence proof corrects a gap in installed103000's materialized-only
+container proof. Do not validate that older rename adapter by dispatching it.
+Previously prepared plans without the new commitment fail rederivation after
+upgrade; they are not silently migrated or permission to replay a write.
+
 ## Recover an unpublished preparation
 
 For `document.activate`, `document.close`, `document.page.create`,
-`document.pcb.rename`, `document.schematic.rename` and `library.symbol.create`, a failed
+`document.pcb.rename`, `document.schematic.rename`, `document.pcb.create` and
+`library.symbol.create`, a failed
 journal publication can leave an initial plan without its preparation artifact.
 Use the original journal's reconciliation on the same compatible runtime. Only
 exact initial publication states with no dispatch, orphan, Save or recovery

@@ -9,6 +9,8 @@ import { parseDocumentSource } from "../src/document-source.ts";
 import type { NativeSourceObject, NativeSourceSnapshot } from "../src/document-source.ts";
 import { verifyRulePersistence } from "../src/rule-persistence.ts";
 import type { NativeHistorySnapshot } from "../src/native-history.ts";
+// oxlint-disable-next-line import/max-dependencies -- This mixed-adapter regression also needs the shared exact-frame test fixture; reusing it avoids an incomplete duplicate receiver model.
+import { pcbExactFrameFixture } from "./pcb-exact-frame-fixture.ts";
 
 function snapshot(objects: readonly NativeSourceObject[]): NativeSourceSnapshot {
   const value = { schema: "easyeda-pro-control.document-source.v1" as const, document: { uuid: "rules-fixture", docType: "PCB", editVersion: "3.2.149.88089769" }, objects: objects.toSorted((a, b) => a.id.localeCompare(b.id)) };
@@ -74,12 +76,14 @@ void test("mixed rule batches retain step order and journaled geometry IDs", asy
   const batch = buildDesignBatchAdapter({ id: "mixed", action: "pcb.batch", operations: [CREATE, line] }, BEFORE);
   let current = BEFORE;
   const calls: string[] = [];
-  const result: unknown = runInNewContext(`(async()=>{const EXPECTED_DOCUMENT_UUID='rules-fixture', EXPECTED_TAB_ID='tab', EXPECTED_DOCUMENT_TYPE=3;${batch.code}})()`, { eda: {
-    dmt_SelectControl: { getCurrentDocumentInfo: () => Promise.resolve({ uuid: "rules-fixture", tabId: "tab", documentType: 3 }) },
-    sys_FileManager: { getDocumentSource: () => Promise.resolve(source(current)), setDocumentSource: (next: string) => { calls.push("geometry"); current = parseDocumentSource(next); return Promise.resolve(true); } },
-    pcb_Drc: { getCurrentRuleConfiguration: () => Promise.resolve({ NetDifferentails: [], Rule: {} }), createNetClass: () => { calls.push("class"); current = classAdapter.expected; return Promise.resolve(true); } },
-  } });
-  assert.equal(await result, true);
+  const fixture = pcbExactFrameFixture("rules-fixture", source(current));
+  fixture.state.onDecode = (): void => { calls.push("geometry"); current = parseDocumentSource(fixture.state.source); };
+  const eda = {
+    dmt_SelectControl: { getCurrentDocumentInfo: (): Promise<unknown> => Promise.resolve({ uuid: "rules-fixture", tabId: fixture.tabId, documentType: 3 }) },
+    sys_FileManager: { getDocumentSource: (): Promise<string> => Promise.resolve(source(current)), setDocumentSource: (): never => assert.fail("No mutable current-tab setter") },
+    pcb_Drc: { getCurrentRuleConfiguration: (): Promise<unknown> => Promise.resolve({ NetDifferentails: [], Rule: {} }), createNetClass: (): Promise<boolean> => { calls.push("class"); current = classAdapter.expected; fixture.state.source = source(current); return Promise.resolve(true); } },
+  };
+  assert.equal(await fixture.run(batch.code, { ...fixture.runtime, eda }), true);
   assert.deepEqual(calls, ["class", "geometry"]);
   assert.equal(current.sha256, batch.expected.sha256);
   assert.equal(current.objects.some((record) => record.id === batch.createdIds["line"]), true);

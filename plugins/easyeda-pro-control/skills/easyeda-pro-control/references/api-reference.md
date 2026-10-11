@@ -248,6 +248,14 @@ custom refinements. Library status distinguishes unavailable operations. Design
 actions still need their operation-specific context, source, authority and
 durable proof. The [capability matrix](capability-matrix.md) records live coverage.
 
+When present, a library entry's `executionCapabilities` retains the executor's
+full scope alongside the structural schema. Check it before assembling a write.
+For example, `document.pcb.create` structurally accepts the SDK's optional
+`boardName`, but its native executor requires that field to be absent. Closed
+target requirements, supported editor types and original-return recovery limits
+are execution conditions, not JSON Schema validation. Older installed catalogs
+may expose only the status; query the library capabilities tool in that case.
+
 ```json
 {"request":{"action":"validate","query":{"family":"design","operation":{"action":"sch.wire.modify"}}}}
 ```

@@ -12,6 +12,7 @@ import type { AuthenticatedBridgeDispatchBinding, EasyedaControlEngine, Executio
 import type { CheckpointReceipt } from "../src/checkpoint.ts";
 import { LIBRARY_NATIVE_IMPLEMENTATION } from "../src/library-native-profile.ts";
 import { SCHEMATIC_NATIVE_IMPLEMENTATION } from "../src/native-profiles.ts";
+import { fixtureDocumentRecordHistory } from "./document-record-history-fixture.ts";
 
 type Value = Record<string, unknown>;
 let originalRoot: string | undefined, root = "";
@@ -43,7 +44,8 @@ function history(kind: "pcb" | "schematic", renamed = false, peerChanged = false
     const body: Value = { title: uuid === "target" && renamed ? "Renamed" : uuid, source: "", zIndex: docType === "SCH_PAGE" ? 1 : null,
       ...(docType === "SCH_PAGE" ? { schematic: kind === "schematic" ? "target" : "parent" } : { board: "" }), ...(docType === "PCB" ? { parent: "" } : {}) };
     const records = [{ id: "META", type: "META", body, ticket: peerChanged && uuid === "active" ? 99 : time, client: uuid === "target" && renamed ? "a".repeat(16) : null }];
-    return { uuid, docType, metadata, records, semanticSha256: sha256Json({ uuid, docType, metadata, records: records.map(({ id, type, body: content }) => ({ id, type, body: content })) }) };
+    const baseline = uuid === "target" && renamed ? history(kind).documents.find((entry) => entry.uuid === uuid) : undefined;
+    return fixtureDocumentRecordHistory({ uuid, docType, metadata, records, semanticSha256: sha256Json({ uuid, docType, metadata, records: records.map(({ id, type, body: content }) => ({ id, type, body: content })) }) }, HASH, baseline);
   });
   return { profile: "easyeda.native-history.linear-gcm-gzip.v1", projectUuid: "project", projectOwnerUuid: "owner", branchUuid: "branch", headHistoryUuid: "head",
     checkpointSha256: HASH, historyRowCount: 1, chunkCount: 1, plaintextBytes: 1, documents,
@@ -162,8 +164,9 @@ function fixture(options: { readonly kind?: "pcb" | "schematic"; readonly public
   });
   engine.upstream.callTool = (name, args): Promise<unknown> => { assert.ok(dispatchJournal); assert.ok(args); return executeNative(dispatchJournal, name, args); };
   const executor = new library.LibraryExecutor(engine, {
-    readNativeHistoryCheckpoint: (input): Promise<NativeHistorySnapshot> => Promise.resolve(history(kind, input.checkpointPath !== "/fixture/library-before.sqlite" && writes > 0,
-      input.checkpointPath !== "/fixture/library-before.sqlite" && peer)),
+    readNativeHistoryCheckpoint: (input): Promise<NativeHistorySnapshot> => { assert.equal(input.documentRecordHistory, "preserve");
+      return Promise.resolve(history(kind, input.checkpointPath !== "/fixture/library-before.sqlite" && writes > 0,
+        input.checkpointPath !== "/fixture/library-before.sqlite" && peer)); },
     verifyLibraryNativeProfile: (): Promise<typeof LIBRARY_NATIVE_IMPLEMENTATION> => Promise.resolve(LIBRARY_NATIVE_IMPLEMENTATION),
     verifyDeviceAssociationNativeProfile: (): Promise<void> => Promise.resolve(),
     verifySchematicNativeProfile: (): Promise<typeof SCHEMATIC_NATIVE_IMPLEMENTATION> => Promise.resolve(SCHEMATIC_NATIVE_IMPLEMENTATION),

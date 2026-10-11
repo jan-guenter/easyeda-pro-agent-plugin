@@ -37,6 +37,26 @@ tests and retained-fixture replay are not connected validation of this candidate
 
 ## Live bounds and placement
 
+### Standalone silkscreen text
+
+The source candidate adds `pcb.text.modify` for x/y/text on one existing unlocked
+top-silkscreen STRING. It is not component Designator editing or a footprint
+operation. Query the installed schema first; older packages have no such action.
+All stored STRINGs must fit the default-font, LEFT_BOTTOM, zero-angle,
+nonmirrored/nonreverse profile. Coordinates use exact four-decimal native mil;
+supported text contains letters, digits, spaces, dot, underscore and hyphen.
+Custom fonts, formula text, pours, generated copper, groups, partitions and
+unmodeled record families refuse. No create/delete, layer/style change or unlock
+is included. These are current implementation limits, not permanent SDK limits.
+
+The adapter preserves component ATTR ownership and all peer records, binds one
+captured PCB frame across awaited reads, and has an exact source inverse. Its
+synthetic tests are not connected Save/reopen evidence. Text position approval
+still requires visual inspection and silkscreen-clearance review; an exact
+source delta alone cannot establish either.
+
+### Component placement
+
 Use live placed primitive bounding boxes for clearance decisions. Offline envelopes may omit graphics or body extents. For typed placement:
 
 1. Journal the target's primitive ID, reference, `UniqueId`, coordinates, rotation, layer, and lock state.

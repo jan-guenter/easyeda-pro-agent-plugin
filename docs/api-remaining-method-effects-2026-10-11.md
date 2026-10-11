@@ -27,6 +27,13 @@ validation separate.
 
 ## Feasible methods still requiring dedicated effect proofs
 
+Source follow-through now implements a narrow standalone type-3 text modifier
+for default-font top-silkscreen x/y/text changes, with exact-frame binding and
+strict source/durable proof. It refuses other styles, layers, fonts, pours and
+creation/deletion; it does not call the partially mutating public wrapper.
+Connected lifecycle validation remains pending. The broader finding below is
+retained because it still applies to the unimplemented public argument branches.
+
 | Method or family | Demonstrated issue | Work needed before admission |
 | --- | --- | --- |
 | `pcb_Layer.selectLayer` | Invalid native IDs can return true; valid changes affect more than the active ID. | Exact layer admission, complete view/source delta, context-bound readback and explicit inverse. |
@@ -225,6 +232,13 @@ is not itself a header change. Unsupported extra envelope fields and imported
 atom-header provenance remain refused. No-mutation recovery uses this complete
 projection in addition to logical-database and semantic equality, so a reticket
 with unchanged content cannot be accepted as unchanged.
+
+Candidate120000 corrects the scope of that older claim: it covered retained,
+materialized rows, not every native history occurrence. Review found that an
+extra non-SCH_PAGE DOCHEAD could escape that projection. Creation and container
+rename now require checkpoint-bound raw per-document chains, including repeated,
+stale, tombstoned and header records. Chunk boundaries, EDIT_HEAD and
+interdocument packaging remain outside that per-document commitment.
 
 Only the target META title and its reviewed writer envelope may change. The
 new META ticket must advance beyond all visible baseline record and retained

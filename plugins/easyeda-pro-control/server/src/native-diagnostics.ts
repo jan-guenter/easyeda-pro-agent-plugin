@@ -2,7 +2,7 @@
 import { deviceFailureCategory } from "./device-runtime-guard.ts";
 import { libraryRuntimeFailureCategory } from "./library-runtime-guard.ts";
 import { projectUploadBarrierFailureCategory } from "./project-upload-barrier.ts";
-import { DOCUMENT_RENAME_NATIVE_GUARD_CODES, METADATA_NATIVE_GUARD_CODES } from "./metadata-native-diagnostics.ts";
+import { DOCUMENT_RENAME_NATIVE_GUARD_CODES, METADATA_NATIVE_GUARD_CODES, PCB_CREATE_NATIVE_GUARD_CODES } from "./metadata-native-diagnostics.ts";
 import { SCHEMATIC_NATIVE_ID_GUARD_CODES, SCHEMATIC_NATIVE_ID_METHODS } from "./schematic-native-ids.ts";
 import { SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES, SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
 import { SYMBOL_PIN_ENUMERATION_GUARD_CODES, SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
@@ -197,6 +197,7 @@ const operationStages = [
   { prefix: "Document activation refused: ", category: "native-document-activation", stages: ["api", "before-context", "before-tabs", "loaded-frames", "preferences", "dispatch-context", "activate", "target-readiness"] },
   { prefix: "Closed page rename refused at ", category: "native-page-rename", stages: ["host", "before-read", "closed-target", "rename", "after-read"] },
   { prefix: "Closed document rename refused at ", category: "native-document-rename", stages: ["host", "before-read", "closed-target", "rename", "after-read"] },
+  { prefix: "Closed free PCB creation refused at ", category: "native-pcb-create", stages: ["host", "before-read", "permission", "closed-target", "create", "after-read"] },
   { prefix: "Symbol metadata operation refused at ", category: "native-symbol-metadata", stages: ["host", "permission", "before-read", "target-closed", "modify", "after-read"] },
 ];
 const operationStageCategories = new Map(operationStages.flatMap(({ prefix, category, stages }) => stages.map((stage) => [`${prefix}${stage}`, `${category}:${stage}`] as const)));
@@ -206,6 +207,9 @@ const activationPreferenceCategories = new Map<string, string>(["preferences", "
     .map((code) => [`Document activation refused: ${stage}:${code}`, `native-document-activation:${stage}:${code}`] as const)));
 const metadataGuardCategories = new Map<string, string>(operationStages.filter(({ category }) => category === "native-page-rename" || category === "native-symbol-metadata" || category === "native-document-rename")
   .flatMap(({ prefix, category, stages }) => stages.flatMap((stage) => (category === "native-document-rename" ? DOCUMENT_RENAME_NATIVE_GUARD_CODES : METADATA_NATIVE_GUARD_CODES).map((code) => [`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`] as const))));
+for (const { prefix, category, stages } of operationStages.filter((entry) => entry.category === "native-pcb-create")) {
+  for (const stage of stages) { for (const code of PCB_CREATE_NATIVE_GUARD_CODES) { metadataGuardCategories.set(`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`); } }
+}
 const schematicIdCategories = new Map<string, string>(SCHEMATIC_NATIVE_ID_METHODS.flatMap((method) =>
   [...SCHEMATIC_NATIVE_ID_GUARD_CODES.map((code) => [`SCH_NATIVE_IDS_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
     .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,

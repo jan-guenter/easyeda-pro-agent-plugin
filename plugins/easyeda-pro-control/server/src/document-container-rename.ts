@@ -4,6 +4,7 @@ import { libraryOperationSchema } from "./library-operations.ts";
 import { isNativeDocumentDeleted } from "./native-history.ts";
 import type { NativeDocumentSnapshot, NativeHistorySnapshot } from "./native-history.ts";
 import type { ExpectedContext } from "./engine.ts";
+import { appendClosedContainerMetadataRecords, nativeDocumentRecordHistoryProjection, validateNativeDocumentRecordHistory } from "./native-document-record-history.ts";
 
 export const DOCUMENT_CONTAINER_RENAME_PROFILE = "easyeda-pro-control.closed-document-rename.v1";
 const identifier = z.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
@@ -68,8 +69,9 @@ function validateHistory(history: NativeHistorySnapshot): void {
         records: document.records.map(({ id, type, body }) => ({ id, type, body })) }) ||
       new Set(document.records.map((record) => record.id)).size !== document.records.length) { throw new Error("Document rename checkpoint document integrity failed."); }
     known.add(document.uuid);
+    validateNativeDocumentRecordHistory(document, history.checkpointSha256);
     validateHeaderHistory(document, history);
-    if (Object.keys(document).some((key) => !["uuid", "docType", "metadata", "records", "semanticSha256", "headerHistory", "atomHeaderHistory"].includes(key)) ||
+    if (Object.keys(document).some((key) => !["uuid", "docType", "metadata", "records", "semanticSha256", "headerHistory", "atomHeaderHistory", "documentRecordHistory"].includes(key)) ||
       document.records.some((record) => !Number.isSafeInteger(record.ticket) || record.ticket < 0 ||
         (record.client !== null && typeof record.client !== "string") ||
         (Object.hasOwn(record, "firstTicket") !== Object.hasOwn(record, "firstClient")) ||
@@ -148,7 +150,7 @@ export function prepareDocumentContainerRename(input: unknown, history: NativeHi
 function projection(document: NativeDocumentSnapshot): unknown {
   // A new checkpoint rebinds the lineage receipt, not its retained headers.
   // Preserve all record clocks/insertion provenance, unlike semantic-only hashes.
-  return { uuid: document.uuid, docType: document.docType, metadata: document.metadata, records: document.records,
+  return { uuid: document.uuid, docType: document.docType, metadata: document.metadata, records: document.records, documentRecordHistory: nativeDocumentRecordHistoryProjection(document),
     ...(document.headerHistory === undefined ? {} : { headerHistory: { profile: document.headerHistory.profile, documentUuid: document.headerHistory.documentUuid, headers: document.headerHistory.headers } }) };
 }
 function completeProjectHash(history: NativeHistorySnapshot): string { return sha256Json(history.documents.map((document) => projection(document))); }
@@ -181,17 +183,21 @@ export function verifyDocumentContainerRenameEffect(input: DocumentContainerRena
   const newMeta = current.records.find((record) => record.id === "META"), oldMeta = old.records.find((record) => record.id === "META");
   let maximumTicket = 0;
   for (const document of before.documents) {
+    maximumTicket = Math.max(maximumTicket, nativeDocumentRecordHistoryProjection(document).maximumTicket);
     for (const record of document.records) { maximumTicket = Math.max(maximumTicket, record.ticket); }
     for (const header of document.headerHistory?.headers ?? []) { maximumTicket = Math.max(maximumTicket, header.ticket); }
   }
   // The vi.newTicket getter advances the global clock; DOCHEAD and META use
-  // The same next ticket. Materialized records do not expose tombstone maxima,
-  // So a strict advance is provable here, not an invented exact +1 expectation.
+  // The same next ticket. The raw occurrence proof retains tombstone maxima;
+  // An intervening worker clock may still advance without a project record.
   if (oldMeta === undefined || newMeta === undefined || newMeta.ticket <= maximumTicket || newMeta.client !== current.metadata["client"]) {
     throw new Error("Document rename META clock or inherited client is invalid.");
   }
   const expectedMeta = { ...oldMeta, ticket: newMeta.ticket, client: newMeta.client, body: { ...oldMeta.body, title: plan.desiredTitle } };
-  const expected = { ...old, metadata: current.metadata, records: old.records.map((record) => record.id === "META" ? expectedMeta : record) };
+  if (canonicalJson(nativeDocumentRecordHistoryProjection(current)) !== canonicalJson(appendClosedContainerMetadataRecords(nativeDocumentRecordHistoryProjection(old), current))) {
+    throw new Error("Document rename raw record history is not exactly the pinned DOCHEAD and META suffix.");
+  }
+  const expected = { ...old, metadata: current.metadata, records: old.records.map((record) => record.id === "META" ? expectedMeta : record), documentRecordHistory: validateNativeDocumentRecordHistory(current, after.checkpointSha256) };
   if (canonicalJson(projection(expected)) !== canonicalJson(projection(current))) { throw new Error("Document rename changed geometry or unrequested metadata."); }
   return { profile: DOCUMENT_CONTAINER_RENAME_PROFILE, targetId: plan.targetUuid, kind: plan.kind, childCount: plan.childUuids.length,
     beforeProjectSha256: plan.beforeProjectSha256, afterProjectSha256: completeProjectHash(after), documentCount: after.documents.length,

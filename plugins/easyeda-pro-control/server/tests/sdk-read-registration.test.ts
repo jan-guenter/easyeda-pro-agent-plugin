@@ -18,13 +18,30 @@ import { PCB_ACTIVE_LAYER_METHOD } from "../src/pcb-active-layer-read.ts";
 
 interface Input { request: { method: string; arguments: Record<string, unknown> }; expectedContext: object; expectedFingerprint: object; evidence: object; returnMode: "full"; maxInlineBytes: number }
 type Handler = (input: Input) => Promise<Record<string, unknown>>;
-async function registeredSdkRead(failure: "none" | "status" | "dispatch"): Promise<{ invoke: Handler; calls: string[]; effects: Record<string, unknown>[] }> {
+async function registeredSdkRead(failure: "none" | "status" | "dispatch" | "final-status" | "fingerprint"): Promise<{ invoke: Handler; calls: string[]; effects: Record<string, unknown>[] }> {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
   const start = source.indexOf('registerFacadeTool(\n  "easyeda_control_sdk_read",');
   const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_exact_read",', start);
   assert.ok(start !== -1 && end > start);
   const calls: string[] = [], effects: Record<string, unknown>[] = [];
+  let statuses = 0;
   let invoke: Handler | undefined;
+  const status = (): Promise<object> => {
+    calls.push("status"); statuses += 1;
+    return failure === "status" || failure === "final-status" && statuses === 2
+      ? Promise.reject(new Error("synthetic status failure")) : Promise.resolve({ stableFingerprint: {} });
+  };
+  const coordinatedRead = async (route: string): Promise<object> => {
+    calls.push(route);
+    // Real coordinator tests separately prove these runtime/quarantine checks.
+    // Here the production registration must leave their admission ownership
+    // Intact, without adding a third full status or swallowing either refusal.
+    await status();
+    calls.push("coordinator-subset");
+    if (failure === "dispatch") { throw new Error("synthetic dispatch failure"); }
+    await status();
+    return { synthetic: true };
+  };
   const scope = {
     z, publicSdkReadRequestSchema, publicSdkReadImplementationKind, isSchematicNativeIdMethod, SCHEMATIC_COMPONENT_PROPERTY_METHOD, SYMBOL_PIN_ENUMERATION_METHOD, isSchematicTextReadMethod,
     isSchematicNetGroupReadMethod, PCB_NET_MEMBERSHIP_METHOD, PCB_PRIMITIVE_TYPE_METHOD, PCB_ACTIVE_LAYER_METHOD,
@@ -39,24 +56,27 @@ async function registeredSdkRead(failure: "none" | "status" | "dispatch"): Promi
     finalizeDispatchedFailure: (_reservation: unknown, _request: unknown, _error: unknown, metadata: Record<string, unknown>): Promise<void> => {
       calls.push("retain-failure"); effects.push(metadata); return Promise.resolve();
     },
-    validatePrivateFingerprint: (): void => { calls.push("fingerprint"); },
+    validatePrivateFingerprint: (): void => {
+      calls.push("fingerprint");
+      if (failure === "fingerprint") { throw new Error("synthetic fingerprint failure"); }
+    },
     assertSubset: (): void => { calls.push("subset"); },
     readPcbNetMembership: (_engine: unknown, request: Input["request"], expectedContext: object, expectedFingerprint: object): Promise<object> => {
       assert.equal(request.method, PCB_NET_MEMBERSHIP_METHOD); assert.deepEqual(expectedContext, {}); assert.deepEqual(expectedFingerprint, {});
-      calls.push("pcb-membership"); return failure === "dispatch" ? Promise.reject(new Error("synthetic dispatch failure")) : Promise.resolve({ synthetic: true });
+      return coordinatedRead("pcb-membership");
     },
     readPcbPrimitiveType: (_engine: unknown, request: Input["request"], expectedContext: object, expectedFingerprint: object): Promise<object> => {
       assert.equal(request.method, PCB_PRIMITIVE_TYPE_METHOD); assert.deepEqual(request.arguments, { id: "fixture" });
       assert.deepEqual(expectedContext, {}); assert.deepEqual(expectedFingerprint, {});
-      calls.push("pcb-type"); return failure === "dispatch" ? Promise.reject(new Error("synthetic dispatch failure")) : Promise.resolve({ synthetic: true });
+      return coordinatedRead("pcb-type");
     },
     readPcbActiveLayer: (_engine: unknown, request: Input["request"], expectedContext: object, expectedFingerprint: object): Promise<object> => {
       assert.equal(request.method, PCB_ACTIVE_LAYER_METHOD); assert.deepEqual(request.arguments, {});
       assert.deepEqual(expectedContext, {}); assert.deepEqual(expectedFingerprint, {});
-      calls.push("active-layer"); return failure === "dispatch" ? Promise.reject(new Error("synthetic dispatch failure")) : Promise.resolve({ synthetic: true });
+      return coordinatedRead("active-layer");
     },
     engine: {
-      status: (): Promise<object> => { calls.push("status"); return failure === "status" ? Promise.reject(new Error("synthetic status failure")) : Promise.resolve({ stableFingerprint: {} }); },
+      status,
       publicSdkRead: (): Promise<object> => { calls.push("read"); return failure === "dispatch" ? Promise.reject(new Error("synthetic dispatch failure")) : Promise.resolve({ synthetic: true }); },
     },
     withEvidence: (_request: unknown, _result: unknown, _evidence: unknown, metadata: Record<string, unknown>): Promise<Record<string, unknown>> => {
@@ -90,15 +110,24 @@ for (const method of ["eda.sys_Environment.getEditorCurrentVersion", "eda.sch_Pr
     if (method === PCB_NET_MEMBERSHIP_METHOD) { dispatch = "pcb-membership"; }
     if (method === PCB_PRIMITIVE_TYPE_METHOD) { dispatch = "pcb-type"; }
     if (method === PCB_ACTIVE_LAYER_METHOD) { dispatch = "active-layer"; }
-    for (const failure of ["none", "status", "dispatch"] as const) {
+    const coordinated = dispatch !== "read";
+    for (const failure of ["none", "status", "dispatch", "fingerprint", ...(coordinated ? ["final-status" as const] : [])] as const) {
       const current = await registeredSdkRead(failure);
       if (failure === "none") {
         const result = await current.invoke(input);
         assert.equal(result["reader"], reader);
-        assert.deepEqual(current.calls, ["reserve", "fingerprint", "status", "subset", dispatch, "evidence"]);
+        assert.deepEqual(current.calls, coordinated
+          ? ["reserve", "fingerprint", dispatch, "status", "coordinator-subset", "status", "evidence"]
+          : ["reserve", "fingerprint", "status", "subset", dispatch, "evidence"]);
       } else {
         await assert.rejects(current.invoke(input), /synthetic/u);
-        if (failure === "status") {
+        if (failure === "fingerprint") {
+          assert.deepEqual(current.calls, ["reserve", "fingerprint", "release"]); assert.equal(current.effects.length, 0);
+        } else if (coordinated) {
+          const beforeFailure = failure === "status" ? [] : ["coordinator-subset", ...(failure === "final-status" ? ["status"] : [])];
+          assert.deepEqual(current.calls, ["reserve", "fingerprint", dispatch, "status", ...beforeFailure, "retain-failure"]);
+          assert.equal(current.effects[0]?.["effect"], effect);
+        } else if (failure === "status") {
           assert.deepEqual(current.calls, ["reserve", "fingerprint", "status", "release"]); assert.equal(current.effects.length, 0);
         } else {
           assert.deepEqual(current.calls, ["reserve", "fingerprint", "status", "subset", dispatch, "retain-failure"]);

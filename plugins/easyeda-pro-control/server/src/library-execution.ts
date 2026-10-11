@@ -44,6 +44,9 @@ import { DOCUMENT_CONTAINER_RENAME_PROFILE, prepareDocumentContainerRename, veri
 import type { DocumentContainerRenamePlan } from "./document-container-rename.ts";
 import { buildDocumentContainerRenameExpression, buildDocumentContainerRenameReadbackExpression, validateDocumentContainerRenameReadback } from "./document-container-rename-runtime.ts";
 import { verifyDocumentContainerRenameNativeProfile } from "./document-container-rename-native-profile.ts";
+import { PROJECT_PCB_CREATE_PROFILE, prepareProjectPcbCreate, verifyProjectPcbCreateEffect } from "./project-pcb-create.ts";
+import type { ProjectPcbCreatePlan } from "./project-pcb-create.ts";
+import { buildProjectPcbCreateExpression, buildProjectPcbCreateReadbackExpression, validateProjectPcbCreateReadback } from "./project-pcb-create-runtime.ts";
 
 type Value = Record<string, unknown>;
 const libraryExecutionServices = { readNativeHistoryCheckpoint, verifyLibraryNativeProfile, verifyDeviceAssociationNativeProfile, verifySchematicNativeProfile, verifyDocumentContainerRenameNativeProfile };
@@ -71,6 +74,7 @@ export interface LibraryJournal extends DispatchOperationJournal {
   pageRenamePlan?: DocumentPageRenamePlan;
   documentRenamePlan?: DocumentContainerRenamePlan;
   pageCreatePlan?: DocumentPageCreatePlan;
+  pcbCreatePlan?: ProjectPcbCreatePlan;
   activationPlan?: DocumentActivationPlan;
   closePlan?: DocumentClosePlan;
 }
@@ -144,8 +148,10 @@ export class LibraryExecutor {
     if (!isCheckpoint(checkpoint)) { throw new Error("Library checkpoint receipt missing."); }
     return checkpoint;
   }
-  private history(checkpoint: CheckpointReceipt, context: ExpectedContext): Promise<NativeHistorySnapshot> {
-    return this.services.readNativeHistoryCheckpoint({ checkpointPath: checkpoint.checkpoint, expectedSha256: checkpoint.checkpointSha256, projectUuid: projectId(context) });
+  private history(checkpoint: CheckpointReceipt, context: ExpectedContext, operation?: LibraryOperation): Promise<NativeHistorySnapshot> {
+    const preserve = operation !== undefined && ["document.pcb.create", "document.pcb.rename", "document.schematic.rename"].includes(operation.action);
+    return this.services.readNativeHistoryCheckpoint({ checkpointPath: checkpoint.checkpoint, expectedSha256: checkpoint.checkpointSha256, projectUuid: projectId(context),
+      ...(preserve ? { documentRecordHistory: "preserve" } : {}) });
   }
   private static async record(journal: LibraryJournal, phase: string, value: unknown): Promise<void> {
     journal.sequence += 1;
@@ -153,11 +159,11 @@ export class LibraryExecutor {
     journal.updatedAt = new Date().toISOString();
     await updateOperation(journal);
   }
-  private async dispatch(input: LibraryExecuteInput, journal: LibraryJournal, operation: LibraryOperation, phase: string, association?: DeviceAssociationPlan | DeviceCreatePlan | DeviceTransformPlan | ProjectSymbolMetadataPlan | ProjectSymbolCreatePlan | DocumentPageRenamePlan | DocumentPageCreatePlan | DocumentContainerRenamePlan, openScope?: LibraryOpenScope): Promise<unknown> {
+  private async dispatch(input: LibraryExecuteInput, journal: LibraryJournal, operation: LibraryOperation, phase: string, association?: DeviceAssociationPlan | DeviceCreatePlan | DeviceTransformPlan | ProjectSymbolMetadataPlan | ProjectSymbolCreatePlan | DocumentPageRenamePlan | DocumentPageCreatePlan | DocumentContainerRenamePlan | ProjectPcbCreatePlan, openScope?: LibraryOpenScope): Promise<unknown> {
     await this.runtime(input);
     const nativeSymbolMetadata = operation.action === "library.symbol.get" && operation.libraryUuid === projectId(input.expectedContext);
     const kind = libraryExecutionKind(operation);
-    await this.nativeProfile(association !== undefined || nativeSymbolMetadata, operation.action === "document.activate" || operation.action === "document.close" || operation.action === "document.page.rename" || operation.action === "document.page.create" || operation.action === "library.symbol.modify", kind === "project-document-rename");
+    await this.nativeProfile(association !== undefined || nativeSymbolMetadata, operation.action === "document.activate" || operation.action === "document.close" || operation.action === "document.page.rename" || operation.action === "document.page.create" || operation.action === "library.symbol.modify", kind === "project-document-rename" || kind === "project-pcb-create");
     if (kind.startsWith("project-") || kind === "document-activate" || kind === "document-close") {
       // Admission can scan substantial retained evidence. Reprove the baseline
       // After those awaits, immediately before the journaled native dispatch.
@@ -186,9 +192,10 @@ export class LibraryExecutor {
     else if (association.profile === DOCUMENT_PAGE_RENAME_PROFILE) { expression = buildDocumentPageRenameExpression(association, input.expectedContext); }
     else if (association.profile === DOCUMENT_CONTAINER_RENAME_PROFILE) { expression = buildDocumentContainerRenameExpression(association, input.expectedContext); }
     else if (association.profile === DOCUMENT_PAGE_CREATE_PROFILE) { expression = buildDocumentPageCreateExpression(association, input.expectedContext); }
+    else if (association.profile === PROJECT_PCB_CREATE_PROFILE) { expression = buildProjectPcbCreateExpression(association, input.expectedContext); }
     else { expression = buildDeviceAssociationExpression(association); }
     const code = wrapWithContextGuard(`return await ${expression};`, input.expectedContext);
-    const requiresEarlyRetention = kind === "project-symbol-create" || kind === "project-page-create" || kind === "project-page-rename" || kind === "project-document-rename";
+    const requiresEarlyRetention = kind === "project-symbol-create" || kind === "project-page-create" || kind === "project-page-rename" || kind === "project-document-rename" || kind === "project-pcb-create";
     let mutationIdentityRetained = false, settledResultObserved = false;
     let invalidMutationResult: { readonly error: unknown } | undefined;
     const retainSettledResult = requiresEarlyRetention ? async (raw: unknown): Promise<void> => {
@@ -234,12 +241,23 @@ export class LibraryExecutor {
     await LibraryExecutor.record(journal, phase, result);
   }
 
+  private async pcbCreateReadback(input: LibraryExecuteInput, journal: LibraryJournal, plan: ProjectPcbCreatePlan, phase: string): Promise<void> {
+    await this.runtime(input);
+    await this.nativeProfile(false, false, true);
+    const createdId = journal.mutationReceipt?.createdId;
+    if (typeof createdId !== "string") { throw new TypeError("PCB creation readback requires the retained native identity."); }
+    const code = wrapWithContextGuard(`return await ${buildProjectPcbCreateReadbackExpression(plan, input.expectedContext, createdId)};`, input.expectedContext);
+    const raw = await this.engine.dispatchWithOrphanTracking(journal, phase, "easyeda_execute", { code, timeoutMs: 60_000, confirmWrite: true }, 70_000);
+    const result = validateProjectPcbCreateReadback(decodeExactReadEnvelope(extractToolPayload(raw)), createdId);
+    await LibraryExecutor.record(journal, phase, result);
+  }
+
   public async execute(request: LibraryExecuteInput): Promise<Value> {
     const input = structuredClone(request);
     const operation = libraryOperationSchema.parse(input.operation);
     const kind = libraryExecutionKind(operation);
     const compiled = compileLibraryOperation(operation);
-    const mutation = kind === "project-footprint-write" || kind === "project-device-association" || kind === "project-device-create" || kind === "project-device-transform" || kind === "project-symbol-metadata" || kind === "project-symbol-create" || kind === "project-page-rename" || kind === "project-document-rename" || kind === "project-page-create";
+    const mutation = kind === "project-footprint-write" || kind === "project-device-association" || kind === "project-device-create" || kind === "project-device-transform" || kind === "project-symbol-metadata" || kind === "project-symbol-create" || kind === "project-page-rename" || kind === "project-document-rename" || kind === "project-page-create" || kind === "project-pcb-create";
     if ((mutation || kind === "document-open" || kind === "document-activate" || kind === "document-close") && input.confirmWrite !== true) { throw new Error("Library/context changes require explicit confirmation."); }
     if (kind === "project-symbol-metadata" && "target" in operation && "uuid" in operation.target &&
         operation.target.uuid === (input.expectedContext.document.uuid ?? input.expectedContext.document.documentUuid)) {
@@ -255,8 +273,8 @@ export class LibraryExecutor {
     const beforeSource = await this.engine.exactRead({ kind: sourceKind(context) }, context);
     const checkpoint = await this.checkpoint(context, "library-before");
     const projectMetadata = kind === "metadata-read" && compiled.target?.libraryUuid === projectId(context);
-    const beforeHistory = mutation || kind === "document-open" || kind === "document-activate" || kind === "document-close" || projectMetadata ? await this.history(checkpoint, context) : undefined;
-    let association: DeviceAssociationPlan | DeviceCreatePlan | DeviceTransformPlan | ProjectSymbolMetadataPlan | ProjectSymbolCreatePlan | DocumentPageRenamePlan | DocumentPageCreatePlan | DocumentContainerRenamePlan | undefined;
+    const beforeHistory = mutation || kind === "document-open" || kind === "document-activate" || kind === "document-close" || projectMetadata ? await this.history(checkpoint, context, operation) : undefined;
+    let association: DeviceAssociationPlan | DeviceCreatePlan | DeviceTransformPlan | ProjectSymbolMetadataPlan | ProjectSymbolCreatePlan | DocumentPageRenamePlan | DocumentPageCreatePlan | DocumentContainerRenamePlan | ProjectPcbCreatePlan | undefined;
     if (mutation) {
       if (beforeHistory === undefined) { throw new Error("Missing library inventory."); }
       if (kind === "project-footprint-write") { assertProjectLibraryWriteTarget(operation, beforeHistory); }
@@ -273,6 +291,8 @@ export class LibraryExecutor {
     if (kind === "project-symbol-create" && symbolCreatePlan === undefined) { throw new Error("Symbol creation checkpoint is unavailable."); }
     const documentRenamePlan = kind === "project-document-rename" && beforeHistory !== undefined ? prepareDocumentContainerRename(operation, beforeHistory, context) : undefined;
     if (kind === "project-document-rename" && documentRenamePlan === undefined) { throw new Error("Document rename checkpoint is unavailable."); }
+    const pcbCreatePlan = kind === "project-pcb-create" && beforeHistory !== undefined ? prepareProjectPcbCreate(operation, beforeHistory, context) : undefined;
+    if (kind === "project-pcb-create" && pcbCreatePlan === undefined) { throw new Error("PCB creation checkpoint is unavailable."); }
     const operationId = newOperationId();
     const plan: LibraryJournal["plan"] = { profile: LIBRARY_EXECUTION_PROFILE, operation: structuredClone(operation), expectedFingerprint: structuredClone(input.expectedFingerprint), expectedContext: structuredClone(context) };
     const journal: LibraryJournal = { schema: OPERATION_SCHEMA, operationId, journalPath: operationPath(operationId), planHash: buildPlanHash(plan), plan,
@@ -282,6 +302,10 @@ export class LibraryExecutor {
     await createOperation(journal);
     await LibraryExecutor.record(journal, "before", { source: beforeSource, baselineUploads, ...(beforeHistory === undefined ? {} : { projectRecordsSha256: libraryProjectRecordsHash(beforeHistory) }) });
     try {
+      if (pcbCreatePlan !== undefined) {
+        association = pcbCreatePlan; journal.pcbCreatePlan = structuredClone(association);
+        await LibraryExecutor.record(journal, "pcb-create-prepared", association);
+      }
       if (documentRenamePlan !== undefined) {
         association = documentRenamePlan; journal.documentRenamePlan = structuredClone(association);
         await LibraryExecutor.record(journal, "document-rename-prepared", association);
@@ -341,11 +365,12 @@ export class LibraryExecutor {
       if (sourceHash(recheck) !== sourceHash(beforeSource)) { throw new Error("Active design changed before library dispatch."); }
       journal.mutationMayHaveOccurred = mutation;
       const envelope = await this.dispatch(input, journal, operation, "execute", association, openTarget === undefined ? undefined : { ...openTarget, projectUuid: projectId(context) });
-      const mutationIdentityRetained = kind === "project-symbol-create" || kind === "project-page-create" || kind === "project-page-rename" || kind === "project-document-rename";
+      const mutationIdentityRetained = kind === "project-symbol-create" || kind === "project-page-create" || kind === "project-page-rename" || kind === "project-document-rename" || kind === "project-pcb-create";
       if (mutation && !mutationIdentityRetained) { journal.mutationReceipt = libraryMutationReceipt(operation, decodeExactReadEnvelope(envelope)); }
       if (!mutationIdentityRetained && (mutation || kind === "document-open" || kind === "document-activate" || kind === "document-close" || kind === "metadata-read")) { await LibraryExecutor.record(journal, "native-return", decodeExactReadEnvelope(envelope)); }
       if (association?.profile === DOCUMENT_PAGE_RENAME_PROFILE) { await this.pageRenameReadback(input, journal, association); }
       if (association?.profile === DOCUMENT_CONTAINER_RENAME_PROFILE) { await this.documentRenameReadback(input, journal, association, "document-rename-readback"); }
+      if (association?.profile === PROJECT_PCB_CREATE_PROFILE) { await this.pcbCreateReadback(input, journal, association, "pcb-create-readback"); }
       let finalContext: ExpectedContext = context;
       let result: Value;
       if (kind === "document-close") {
@@ -406,13 +431,13 @@ export class LibraryExecutor {
           const acknowledgment = decodeExactReadEnvelope(envelope);
           let expectedTargetId: string | undefined;
           if (association?.profile === PROJECT_SYMBOL_METADATA_PROFILE || association?.profile === DOCUMENT_PAGE_RENAME_PROFILE || association?.profile === DOCUMENT_CONTAINER_RENAME_PROFILE) { expectedTargetId = association.targetUuid; }
-          else if (association !== undefined && association.profile !== DEVICE_CREATE_PROFILE && association.profile !== DOCUMENT_PAGE_CREATE_PROFILE && association.profile !== PROJECT_SYMBOL_CREATE_PROFILE) { expectedTargetId = association.deviceUuid; }
+          else if (association !== undefined && association.profile !== DEVICE_CREATE_PROFILE && association.profile !== DOCUMENT_PAGE_CREATE_PROFILE && association.profile !== PROJECT_SYMBOL_CREATE_PROFILE && association.profile !== PROJECT_PCB_CREATE_PROFILE) { expectedTargetId = association.deviceUuid; }
           if (!isRecord(acknowledgment) || acknowledgment["kind"] !== kind || beforeHistory === undefined ||
               (expectedTargetId !== undefined && acknowledgment["targetId"] !== expectedTargetId)) { throw new Error("Library write result missing."); }
           const createdId = typeof acknowledgment["createdId"] === "string" ? acknowledgment["createdId"] : undefined;
           await this.engine.awaitProjectUploads(context, journal, "library-write-upload-barrier");
           const final = await this.checkpoint(context, "library-after");
-          const afterHistory = await this.history(final, context);
+          const afterHistory = await this.history(final, context, operation);
           let proof: Value;
           if (association === undefined) { proof = verifyProjectLibraryEffect(operation, beforeHistory, afterHistory, createdId); }
           else if (association.profile === DEVICE_CREATE_PROFILE) { proof = verifyDeviceCreateEffect(association, beforeHistory, afterHistory, createdId); }
@@ -422,12 +447,13 @@ export class LibraryExecutor {
           else if (association.profile === DOCUMENT_PAGE_RENAME_PROFILE) { proof = verifyDocumentPageRenameEffect(association, beforeHistory, afterHistory); }
           else if (association.profile === DOCUMENT_CONTAINER_RENAME_PROFILE) { proof = verifyDocumentContainerRenameEffect(association, beforeHistory, afterHistory); }
           else if (association.profile === DOCUMENT_PAGE_CREATE_PROFILE) { proof = verifyDocumentPageCreateEffect(association, beforeHistory, afterHistory, createdId); }
+          else if (association.profile === PROJECT_PCB_CREATE_PROFILE) { proof = verifyProjectPcbCreateEffect(association, beforeHistory, afterHistory, createdId); }
           else { proof = verifyDeviceAssociationEffect(association, beforeHistory, afterHistory); }
           journal.finalCheckpoint = final;
-          journal.saved = kind !== "project-document-rename"; journal.mutationState = "after";
+          journal.saved = kind !== "project-document-rename" && kind !== "project-pcb-create"; journal.mutationState = "after";
           result = { kind, proof, createdId: createdId ?? null, persistence: "complete-project-checkpoint-records-verified", reopened: false,
-            ...(kind === "project-symbol-metadata" || kind === "project-symbol-create" || kind === "project-page-rename" || kind === "project-page-create" || kind === "project-document-rename" ? { currentGenerationLiveValidated: false } : {}),
-            ...(kind === "project-document-rename" ? { saveInvoked: false } : {}) };
+            ...(kind === "project-symbol-metadata" || kind === "project-symbol-create" || kind === "project-page-rename" || kind === "project-page-create" || kind === "project-document-rename" || kind === "project-pcb-create" ? { currentGenerationLiveValidated: false } : {}),
+            ...(kind === "project-document-rename" || kind === "project-pcb-create" ? { saveInvoked: false } : {}) };
         }
         if (!mutation) {
           await this.engine.awaitProjectUploads(context, journal, "library-read-upload-barrier");
@@ -436,7 +462,7 @@ export class LibraryExecutor {
         }
       }
       await this.runtime(input, finalContext);
-      await this.nativeProfile(association !== undefined || (operation.action === "library.symbol.get" && operation.libraryUuid === projectId(context)), kind === "document-activate" || kind === "document-close" || kind === "project-page-rename" || kind === "project-page-create" || kind === "project-symbol-metadata", kind === "project-document-rename");
+      await this.nativeProfile(association !== undefined || (operation.action === "library.symbol.get" && operation.libraryUuid === projectId(context)), kind === "document-activate" || kind === "document-close" || kind === "project-page-rename" || kind === "project-page-create" || kind === "project-symbol-metadata", kind === "project-document-rename" || kind === "project-pcb-create");
       if (kind !== "document-open") {
         if (kind !== "document-activate" && sourceHash(await this.engine.exactRead({ kind: sourceKind(context) }, context)) !== journal.beforeSourceSha256) { throw new Error("Active source changed before library result completion."); }
         const finalReceipt = journal.finalCheckpoint ?? checkpoint;
@@ -447,6 +473,12 @@ export class LibraryExecutor {
           await this.documentRenameReadback(input, journal, association, "document-rename-final-readback");
           if (sourceHash(await this.engine.exactRead({ kind: sourceKind(context) }, context)) !== journal.beforeSourceSha256) { throw new Error("Active source changed during final document rename observation."); }
           assertUnchangedLibraryCheckpoint(await this.engine.checkpoint({ receiptPath: finalReceipt.receiptPath }), finalReceipt, "Durable document rename evidence changed during final readback.");
+          await this.engine.assertContext(structuredClone(finalContext));
+        }
+        if (association?.profile === PROJECT_PCB_CREATE_PROFILE) {
+          await this.pcbCreateReadback(input, journal, association, "pcb-create-final-readback");
+          if (sourceHash(await this.engine.exactRead({ kind: sourceKind(context) }, context)) !== journal.beforeSourceSha256) { throw new Error("Active source changed during final PCB creation observation."); }
+          assertUnchangedLibraryCheckpoint(await this.engine.checkpoint({ receiptPath: finalReceipt.receiptPath }), finalReceipt, "Durable PCB creation evidence changed during final readback.");
           await this.engine.assertContext(structuredClone(finalContext));
         }
       }
@@ -495,6 +527,7 @@ export function listLibraryExecutionCapabilities(): Value[] {
     else if (action === "document.page.rename") { status = "implemented-closed-project-page-rename-proof"; }
     else if (action === "document.pcb.rename" || action === "document.schematic.rename") { status = "implemented-closed-ordinary-document-rename-proof"; }
     else if (action === "document.page.create") { status = "implemented-closed-empty-project-page-create-proof"; }
+    else if (action === "document.pcb.create") { status = "implemented-closed-empty-free-pcb-create-proof"; }
     else if (action === "document.activate") { status = "implemented-current-project-document-activation"; }
     else if (action === "document.close") { status = "implemented-inactive-clean-project-document-close"; }
     else if (["document.open", "library.footprint.open", "library.symbol.open"].includes(action)) { status = "implemented-current-project-document-open"; }
@@ -511,6 +544,12 @@ export function listLibraryExecutionCapabilities(): Value[] {
     } : {}), ...(action === "document.page.create" ? { adapterKind: "native-task-equivalent", parentOnly: true, ordinarySchematicOnly: true,
       emptyPage: true, drawingFrameInitialized: false, editorOpened: false, saveInvoked: false, currentGenerationLiveValidated: false,
       activeDocumentTypes: [1, 3], hierarchicalOrCbbProjects: false, recoveryRequiresOriginalNativeIdentity: true, automaticInverse: false,
+    } : {}), ...(action === "document.pcb.create" ? {
+      adapterKind: "native-task-equivalent", boardNameMustBeAbsent: true, emptyPcb: true, freePcb: true,
+      canvasInitialized: false, editorOpened: false, saveInvoked: false, reopened: false, currentGenerationLiveValidated: false,
+      activeDocumentTypes: [3], otherCleanDirectOpenPcbRequired: true, pooledPanelsAndHiddenExports: false,
+      importedAtomHeaderHistories: false, hierarchicalOrCbbProjects: false, inheritedDocuments: false,
+      completeRecordClocksAndPeerHeaderLineage: true, recoveryRequiresOriginalNativeIdentity: true, automaticInverse: false,
     } : {}), ...(action === "library.symbol.create" ? { adapterKind: "native-task-equivalent", ordinarySymbolOnly: true,
       emptySymbol: true, canvasInitialized: false, editorOpened: false, saveInvoked: false, currentGenerationLiveValidated: false,
       activeDocumentTypes: [3], classification: false, inheritedSource: false, hierarchicalOrCbbProjects: false,

@@ -6,6 +6,7 @@ import type { NativeDocumentSnapshot, NativeHistorySnapshot } from "../src/nativ
 import { decodeExactReadEnvelope } from "../src/exact-readers.ts";
 import { prepareDocumentContainerRename } from "../src/document-container-rename.ts";
 import { buildDocumentContainerRenameExpression, buildDocumentContainerRenameReadbackExpression, validateDocumentContainerRenameReadback } from "../src/document-container-rename-runtime.ts";
+import { fixtureDocumentRecordHistory } from "./document-record-history-fixture.ts";
 
 type Value = Record<string, unknown>;
 type Kind = "pcb" | "schematic";
@@ -65,7 +66,7 @@ function history(): NativeHistorySnapshot {
   const documents: NativeDocumentSnapshot[] = entries.map(([uuid, docType, body]) => {
     const metadata = { uuid, docType, client: "a".repeat(16), updateTime: 1, version: "1", editVersion: "3.2" };
     const records = [{ id: "META", type: "META", ticket: 1, client: null, body }];
-    return { uuid, docType, metadata, records, semanticSha256: sha256Json({ uuid, docType, metadata, records: records.map(({ id, type, body: value }) => ({ id, type, body: value })) }) };
+    return fixtureDocumentRecordHistory({ uuid, docType, metadata, records, semanticSha256: sha256Json({ uuid, docType, metadata, records: records.map(({ id, type, body: value }) => ({ id, type, body: value })) }) }, "a".repeat(64));
   });
   return { profile: "easyeda.native-history.linear-gcm-gzip.v1", projectUuid: "project", projectOwnerUuid: "owner", branchUuid: "branch", headHistoryUuid: "head",
     checkpointSha256: "a".repeat(64), historyRowCount: 1, chunkCount: 1, plaintextBytes: 1, documents,

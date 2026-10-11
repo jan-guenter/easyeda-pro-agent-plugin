@@ -58,7 +58,7 @@ acceptance. Project-open failures now retain fixed diagnostic categories through
 recovery without storing raw private error messages or repeating navigation.
 
 Latest declarations are not runtime admission. Exact operation schemas cover
-105 design actions and 68 library/lifecycle actions; schema availability does
+106 design actions and 68 library/lifecycle actions; schema availability does
 not guarantee execution support. The [coverage inventory](docs/api-coverage-inventory-2026-10-10.md)
 and [feasibility review](docs/api-execution-feasibility-2026-10-10.md) name the
 remaining work. Closed symbol/page metadata, empty-page and empty-symbol creation, existing-tab
@@ -68,9 +68,14 @@ acknowledgment alone never completes a lifecycle operation. A separate closed
 PCB/schematic-container rename adapter requires one other clean PCB, complete
 checkpoint invariants and independent DOM checks. It preserves the original
 acknowledgment through recovery, performs no Save and has no connected acceptance
-yet. The [remaining-effects review](docs/api-remaining-method-effects-2026-10-11.md)
-also records concrete blockers for layer selection, page ordering, pad-pair groups
-and PCB text. A separate checkpoint-bound flat-topology
+yet. Creation and container rename now preserve every raw per-document history
+occurrence. Closed free-PCB creation requires an absent board name and creates
+only META, with no canvas initialization, open, Save or automatic inverse.
+A separate narrow PCB text modifier admits existing top-silkscreen default-font
+x/y/text changes. Both additions need connected validation. The
+[remaining-effects review](docs/api-remaining-method-effects-2026-10-11.md)
+records blockers for layer selection, page ordering, pad-pair groups and broader
+PCB text cases. A separate checkpoint-bound flat-topology
 diagnostic avoids the mutating netlist exporter. A separate sealed single-page
 profile admits only existing stored attribute/text display patches, with exact
 inverse, endpoint and whole-project persistence checks. It does not re-enable

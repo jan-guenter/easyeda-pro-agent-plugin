@@ -4,6 +4,7 @@ import { sha256Json } from "../src/core.ts";
 import type { ExpectedContext } from "../src/engine.ts";
 import type { NativeDocumentSnapshot, NativeHistorySnapshot } from "../src/native-history.ts";
 import { assertDocumentContainerRenameContext, documentContainerRenameInverse, isDocumentContainerRenameProjectUnchanged, prepareDocumentContainerRename, verifyDocumentContainerRenameEffect } from "../src/document-container-rename.ts";
+import { fixtureDocumentRecordHistory, fixtureRebindDocumentRecordHistory } from "./document-record-history-fixture.ts";
 
 type Value = Record<string, unknown>;
 const CONTEXT: ExpectedContext = { project: { uuid: "project", path: "/fixture/project.eprj2" }, document: { uuid: "active", documentType: 3,
@@ -14,7 +15,7 @@ function document(uuid: string, docType: string, body: Value): NativeDocumentSna
     records: [{ id: "META", type: "META", ticket: 1, client: null, body }], semanticSha256: "" };
 }
 function rehash(documents: readonly NativeDocumentSnapshot[]): NativeHistorySnapshot {
-  const updated = documents.map((entry) => ({ ...entry, semanticSha256: sha256Json({ uuid: entry.uuid, docType: entry.docType,
+  const updated = documents.map((entry) => ({ ...fixtureRebindDocumentRecordHistory(entry, "a".repeat(64)), semanticSha256: sha256Json({ uuid: entry.uuid, docType: entry.docType,
     metadata: entry.metadata, records: entry.records.map(({ id, type, body }) => ({ id, type, body })) }) }));
   return { profile: "easyeda.native-history.linear-gcm-gzip.v1", projectUuid: "project", projectOwnerUuid: "owner", branchUuid: "branch", headHistoryUuid: "head",
     checkpointSha256: "a".repeat(64), historyRowCount: 1, chunkCount: 1, plaintextBytes: 1, documents: updated,
@@ -29,12 +30,15 @@ function history(): NativeHistorySnapshot {
 }
 function mutate(before: NativeHistorySnapshot, uuid: string, update: (value: NativeDocumentSnapshot) => void): NativeHistorySnapshot {
   const documents = structuredClone(before.documents), target = documents.find((entry) => entry.uuid === uuid); assert.ok(target);
-  update(target); return { ...rehash(documents), checkpointSha256: before.checkpointSha256 };
+  update(target); const result = rehash(documents);
+  return { ...result, checkpointSha256: before.checkpointSha256, documents: result.documents.map((entry) => fixtureRebindDocumentRecordHistory(entry, before.checkpointSha256)) };
 }
 function desired(before: NativeHistorySnapshot, kind: "pcb" | "schematic"): NativeHistorySnapshot {
   return mutate(before, kind, (entry) => { const meta = entry.records[0]; assert.ok(meta); meta.body["title"] = "Renamed document";
     Reflect.set(meta, "ticket", 2); Reflect.set(meta, "client", "a".repeat(16));
-    entry.metadata["updateTime"] = 2; entry.metadata["version"] = "2"; delete entry.metadata["user"]; });
+    entry.metadata["updateTime"] = 2; entry.metadata["version"] = "2"; delete entry.metadata["user"];
+    const old = before.documents.find((value) => value.uuid === entry.uuid); assert.ok(old);
+    Object.assign(entry, fixtureDocumentRecordHistory(entry, before.checkpointSha256, old)); });
 }
 for (const kind of ["pcb", "schematic"] as const) {
   void test(`${kind} rename preserves every peer and schematic child with metadata-only persistence`, () => {

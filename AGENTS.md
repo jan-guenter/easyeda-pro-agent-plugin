@@ -6,6 +6,56 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Restarted103000 reader validation complete; candidate120000 verification
+
+- Fresh actual facade2090211 independently matches installed103000:560files,
+  exact committed modes,177source094fc7f8,threebundles1759c855,manifest0224cc46.
+  Contained15060 authenticated the unchanged ded07x99dcxb504 dispatcher/tuple.
+  Only the older disposable validation PCB was opened. One tracked project open
+  cc6d2be5 completed with all18documents and fullSQLite unchanged. No CAD write
+  or Save was performed on that fixture; production is untouched.
+- All five readers passed: Line-only/combined net membership, track type and
+  both inherited neutral-Line types. Root/independent reportca219dab verifies
+  all819inputs,18documents383records, complete native source/inventory/context
+  and fullSQLite unchanged. Normal-close/discoverempty and maintained offline
+  checkpoint verification pass. Never replay readers or open. Private evidence:
+  disposable-validation-103000-LBu6L7; verifier6fd4afed ran once successfully.
+- A separate native blank project was created with twoPCBs and oneSCHchild.
+  Its default drawing-frame symbol/device remain; no imports/copies/placement.
+  Strict10document/69record/86raw-occurrence checkpoint admits both rename plans
+  and freePCBcreation offline. It closed normally; discoverempty and final
+  maintained verification pass. No documentSave or typedwrite. All CAD closed,
+  no pending journal. Private preparation audit8468c008 records scope/limits.
+- Unpublished source adds standalone PCB x/y/text modification, exact captured
+  PCB-frame receiver binding for source merges/physical-stack writes, UI pins
+  before/after PCB dispatch, scan-resistant bounded journal-cache admission and
+  removal of three duplicate outer reader status calls. Independent source
+  review and focused tests pass; these are not connected latency/writer claims.
+- Closed free-PCB creation is implemented and independently reviewed.
+  Review found a real gap shared by installed103000 container rename: materialized
+  history does not preserve non-SCH_PAGE DOCHEAD-only retickets. An unexpected
+  peer header occurrence could therefore pass the claimed complete peer proof.
+  DO NOT live-test installed103000 PCB/schematic-container rename. No such write
+  was dispatched. Both paths now require exact checkpoint-bound per-document
+  raw occurrence chains, including stale/repeated/tombstoned rows. Peers exact;
+  target onlypinnedDOCHEAD/META pair/suffix. Packaging is explicitly outside
+  that per-document commitment. Old prepared renameplans failclosed. Independent
+  142tests and author580tests pass. No connected newwriter claim.
+- Offline library argument discovery now preserves full execution-capability
+  limits separately from structural schema validity. Candidate catalog includes
+  one extra design schema and a narrow free-PCB route:774paths,192public/95native/
+  2lifecycle/8blocked/477omitted;106design/68libraryschemas,26tools/sevenskills.
+  Generated inventory/bundles/manifest refreshed for candidate120000:183sources
+  af63440d,threebundles3687ff1b. Review fixed lifecycle ACK retention beforeALL
+  post-dispatch manager/UIchecks; fivefocusedtests/independentacceptance pass.
+  Full serial suite passes3138tests/oneplatformskip/zerofailures;424bridge tests,
+  alltypes/strictlinters, signatures/security, reproducible facade/syntheticbridge,
+  officialplugin/sevenskills, workflowlint, repository/privacy and offline doctor
+  pass. First full run found only an outdated105schema expectation; corrected106
+  and reran the entire suite. No test/deadline removed. Installedcache103000
+  unchanged; CI/publication/install pending, PR9 stays draft. Private
+  release-120000-y6w466 holds checks.
+
 ### Candidate103000 published and installed; fresh host required
 
 - Candidate0.3.0+codex.20261011103000 passes3,030facade tests/oneplatformskip/

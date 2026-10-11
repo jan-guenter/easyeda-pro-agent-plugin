@@ -10,8 +10,8 @@ The inventory covers 774 distinct method paths. The reviewed installed SDK has
 697, the newer official reference has 773, and one older dialog method appears
 only in the reviewed SDK. These counts are method paths, not overload counts.
 The original 749 and 806 declaration signatures remain in the inventory.
-The current source inventory has 192 public subsets, 94 native equivalents,
-two lifecycle-only methods, eight blocked methods and 478 omissions. The fixed
+The current source inventory has 192 public subsets, 95 native equivalents,
+two lifecycle-only methods, eight blocked methods and 477 omissions. The fixed
 SDK-read catalog has 175 routes. These are implementation counts, not live-test
 counts.
 
@@ -22,6 +22,11 @@ Container rename has independent frame inventory, one other clean PCB, exact
 whole-project record/provenance proof and original-acknowledgment recovery. It
 does not perform Save or claim connected acceptance. Concrete remaining native
 effects are in the [October11 review](api-remaining-method-effects-2026-10-11.md).
+A later source candidate adds narrow PCB type-3 x/y/text modification and
+closed free-PCB creation. It also strengthens creation/container rename with
+exact checkpoint-bound per-document raw occurrence chains. New writers are
+offline-tested, not connected-validated. See the
+[closed creation contract](closed-free-pcb-create-research-2026-10-11.md).
 
 Component-property names have a separate fixed native equivalent for the exact
 active ordinary schematic page. It includes all direct component attribute
@@ -64,7 +69,9 @@ required. Two complete source/inventory/source cycles prove every requested
 family before net filtering, including PAD_NET/component ownership. Unfiltered
 membership and other native shapes remain unsupported; this is not SDK class
 parity, connectivity or persistence proof. Installed071500 passed ComponentPad/Via
-and empty Pad/Arc cases; Line and newer-generation validation remain pending.
+and empty Pad/Arc cases. Installed103000 subsequently passed Line-only and
+combined five-family nonempty-net membership, with complete native and saved
+invariance. Nonempty standalone Pad/Arc and newer generations remain separate.
 Ordinary text, reviewed metadata and BOARD outlines are admitted. Pinned source
 review distinguishes BOARD drawing controllers from electrical Track/ArcTrack
 models. Complete electrical-family correspondence remains mandatory; outline
@@ -75,14 +82,17 @@ proof. It requires explicit Footprint bindings, exact complete saved history and
 matching native geometry on unlocked top-side zero-rotation components with
 zero-origin libraries. No ID-prefix ownership guess is accepted. These inherited
 lines can satisfy complete membership or a Line type result, but their empty
-nets never enter a nonempty-net result. This addition is offline-tested only.
+nets never enter a nonempty-net result. Installed103000 passed type lookups for
+two inherited neutral lines and one track, with all18documents/383records and
+the full saved SQLite unchanged. This is not connectivity or writer validation.
 
 `pcb_Primitive.getPrimitiveTypeByPrimitiveId` classifies an existing literal ID
 as Line, Arc, Via, Pad or ComponentPad only after complete all-five-family
 source/inventory proof, including empty-net objects. Missing IDs, unsupported
 families and identity collisions refuse. It does not call the installed empty
-public stub or claim absence, geometry or connectivity. Connected testing is
-pending.
+public stub or claim absence, geometry or connectivity. The three installed103000
+Line cases above do not establish other classifications or later-generation
+acceptance.
 
 Two corrected inventory rows now identify existing capture workflows:
 `dmt_EditorControl.getCurrentRenderedAreaImage` in visible-canvas capture and

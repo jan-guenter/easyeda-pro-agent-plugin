@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { z } from "zod";
 import { designActionSchema } from "../src/design-action.ts";
 import { libraryOperationSchema } from "../src/library-operations.ts";
+import { listLibraryExecutionCapabilities } from "../src/library-execution.ts";
 import { operationCatalogQuerySchema, queryOperationCatalog, validateCatalogOperation } from "../src/operation-catalog.ts";
 import { FLAT_DISPLAY_TRANSACTION_PROFILE } from "../src/flat-display-binding.ts";
 import { FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE } from "../src/flat-display-library-peers.ts";
@@ -73,6 +74,26 @@ void test("catalog pagination covers every strict design and library discriminat
     assert.equal(new Set(actions).size, actions.length);
     assert.ok(actions.length > 50);
   }
+});
+
+void test("offline library discovery retains complete executor scope separately from structural schemas", () => {
+  const capabilities = new Map(listLibraryExecutionCapabilities().map((entry) => [entry["action"], entry]));
+  const catalog = queryOperationCatalog({ family: "library", limit: 100 });
+  assert.equal(catalog["hasMore"], false);
+  const actions = z.array(z.object({ action: z.string() })).parse(catalog["entries"]);
+  for (const { action } of actions) {
+    const capability = capabilities.get(action); assert.ok(capability);
+    const result = queryOperationCatalog({ family: "library", operationAction: action, includeSchemas: true });
+    const [entry] = z.array(z.record(z.string(), z.unknown())).parse(result["entries"]);
+    assert.ok(entry);
+    assert.deepEqual(entry["executionCapabilities"], capability);
+    assert.equal(entry["status"], capability["status"]);
+    assert.equal(result["executionAuthorized"], false);
+    assert.equal(typeof entry["inputSchema"], "object");
+  }
+  const pcb = queryOperationCatalog({ family: "design", operationAction: "pcb.text.modify" });
+  const [entry] = z.array(z.record(z.string(), z.unknown())).parse(pcb["entries"]);
+  assert.ok(entry); assert.equal(Object.hasOwn(entry, "executionCapabilities"), false);
 });
 
 void test("exact action schemas preserve nested tuples, strict fields and parser defaults", () => {

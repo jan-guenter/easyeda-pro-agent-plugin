@@ -1077,7 +1077,13 @@ void describe("fresh-byte operation scan projections", () => {
     assert.equal(calls, 40);
     const second = await scan();
     assert.equal(second.length, 40);
-    assert.equal(calls, 80);
+    // The bounded cache keeps its resident projections instead of evicting
+    // Every upcoming hit during the second sorted scan.
+    assert.ok(calls > 40 && calls < 80);
+    const uncachedCalls = calls - 40;
+    const third = await scan();
+    assert.equal(third.length, 40);
+    assert.equal(calls, 40 + 2 * uncachedCalls);
     const fails = artifacts.createOperationScanner(() => { throw new Error("projection failed"); });
     await assert.rejects(fails(), /projection failed/u);
   });

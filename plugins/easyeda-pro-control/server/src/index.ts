@@ -2003,8 +2003,17 @@ registerFacadeTool(
     if (input.request.method === PCB_ACTIVE_LAYER_METHOD) { reader = "fixed-native-active-layer-observation"; effect = "fixed-native-active-layer-read"; }
     try {
       validatePrivateFingerprint(input.expectedFingerprint);
-      const status = await engine.status();
-      assertSubset(status.stableFingerprint, input.expectedFingerprint, "EasyEDA SDK read runtime fingerprint");
+      // These coordinators own fresh initial and final runtime admission. Do
+      // Not repeat their initial full launcher scan at this same entry boundary.
+      // Ordinary SDK readers still need the registration-owned admission.
+      const coordinated = input.request.method === PCB_NET_MEMBERSHIP_METHOD ||
+        input.request.method === PCB_PRIMITIVE_TYPE_METHOD || input.request.method === PCB_ACTIVE_LAYER_METHOD;
+      if (!coordinated) {
+        const status = await engine.status();
+        assertSubset(status.stableFingerprint, input.expectedFingerprint, "EasyEDA SDK read runtime fingerprint");
+      }
+      // A coordinator can dispatch its own status probe before refusing. Retain
+      // Conservative failure evidence from its entry, including local refusals.
       dispatched = true;
       let result: Record<string, unknown>;
       if (input.request.method === PCB_NET_MEMBERSHIP_METHOD) {

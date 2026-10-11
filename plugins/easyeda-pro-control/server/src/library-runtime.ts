@@ -13,11 +13,12 @@ import { documentPageRenameOperation } from "./document-page-rename.ts";
 import { documentPageCreateOperation } from "./document-page-create.ts";
 import { projectSymbolCreateOperation } from "./project-symbol-create.ts";
 import { documentContainerRenameOperation } from "./document-container-rename.ts";
+import { projectPcbCreateOperation } from "./project-pcb-create.ts";
 
 /** Single-dispatch files stay below the existing escaped JSON transport limit. */
 export const LIBRARY_FILE_EXECUTION_MAX_BYTES = 2 * 1024 * 1024;
 export const LIBRARY_EXECUTION_PROFILE = "easyeda-pro-control.library-execution.v1";
-export type LibraryExecutionKind = "metadata-read" | "file-export" | "project-footprint-write" | "project-device-association" | "project-device-create" | "project-device-transform" | "project-symbol-metadata" | "project-symbol-create" | "project-page-rename" | "project-document-rename" | "project-page-create" | "document-open" | "document-activate" | "document-close";
+export type LibraryExecutionKind = "metadata-read" | "file-export" | "project-footprint-write" | "project-device-association" | "project-device-create" | "project-device-transform" | "project-symbol-metadata" | "project-symbol-create" | "project-page-rename" | "project-document-rename" | "project-page-create" | "project-pcb-create" | "document-open" | "document-activate" | "document-close";
 const openScopeSchema = z.object({ projectUuid: z.string().min(1).max(256), uuid: z.string().min(1).max(256), documentType: z.number().int().min(1).max(4), metadataOwnerUuid: z.string().min(1).max(256).optional() }).strict();
 export type LibraryOpenScope = z.infer<typeof openScopeSchema>;
 
@@ -66,6 +67,7 @@ export function libraryExecutionKind(input: unknown): LibraryExecutionKind {
   if (operation.action === "document.page.rename") { documentPageRenameOperation(operation); return "project-page-rename"; }
   if (operation.action === "document.pcb.rename" || operation.action === "document.schematic.rename") { documentContainerRenameOperation(operation); return "project-document-rename"; }
   if (operation.action === "document.page.create") { documentPageCreateOperation(operation); return "project-page-create"; }
+  if (operation.action === "document.pcb.create") { projectPcbCreateOperation(operation); return "project-pcb-create"; }
   if (operation.action === "document.open" || operation.action === "library.footprint.open" || operation.action === "library.symbol.open") { return "document-open"; }
   if (operation.action === "document.activate") { return "document-activate"; }
   if (operation.action === "document.close") { return "document-close"; }
@@ -91,6 +93,7 @@ export function buildLibraryExecutionExpression(input: unknown, projectSymbolMet
   if (kind === "project-page-rename") { throw new Error("Page rename requires a checkpoint-bound closed-target plan."); }
   if (kind === "project-document-rename") { throw new Error("Document rename requires a checkpoint-bound closed-target and frame plan."); }
   if (kind === "project-page-create") { throw new Error("Empty page creation requires a checkpoint-bound parent-only plan."); }
+  if (kind === "project-pcb-create") { throw new Error("Empty free PCB creation requires a checkpoint-bound closed-target and frame plan."); }
   if (kind === "document-activate") { throw new Error("Document activation requires a checkpoint-bound ownership plan."); }
   if (kind === "document-close") { throw new Error("Document close requires a checkpoint-bound inactive-clean-tab plan."); }
   const compiled = compileLibraryOperation(operation);
