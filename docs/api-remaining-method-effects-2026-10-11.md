@@ -27,12 +27,14 @@ validation separate.
 
 ## Feasible methods still requiring dedicated effect proofs
 
-Source follow-through now implements a narrow standalone type-3 text modifier
-for default-font top-silkscreen x/y/text changes, with exact-frame binding and
-strict source/durable proof. It refuses other styles, layers, fonts, pours and
-creation/deletion; it does not call the partially mutating public wrapper.
-Connected lifecycle validation remains pending. The broader finding below is
-retained because it still applies to the unimplemented public argument branches.
+Source follow-through now implements narrow standalone type-3 text modification,
+creation and deletion with exact-frame binding and strict source/durable proof.
+Modification changes x/y/text; creation fixes the default-font top-silkscreen
+style and reserves an identity before dispatch; deletion has no automatic inverse.
+Other styles, layers, fonts and pours remain refused. These routes do not call
+the partially mutating public wrapper. Connected lifecycle validation remains
+pending. The broader finding below still applies to unimplemented public
+argument branches.
 
 | Method or family | Demonstrated issue | Work needed before admission |
 | --- | --- | --- |
