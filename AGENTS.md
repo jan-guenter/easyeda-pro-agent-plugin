@@ -60,7 +60,29 @@ Last updated: 2026-10-11 (Europe/Berlin)
   reproduce exactly. Source192/df7a4f32,runtime5a487af9,manifest996d4e86;
   externalpins unchanged. Finalfacadelog51de1e0d. Two stale test expectations
   corrected with no productionguard changes; finalfullsuite rerunpassed. Git/CI/
-  officialinstallation remainpending. See docs/api-coverage-150000-release-2026-10-11.md.
+  officialinstallation results follow below. See docs/api-coverage-150000-release-2026-10-11.md.
+
+### Candidate150000 published and installed; fresh host required
+
+- Payloadc465cb81d5a0bd27387853dde453f151c37697b8 passedCI38150852682:
+  3422facadepasses/fourplatformskips/zerofailures and424bridgetests. Actualtested
+  merge6af842f7 has exactpayloadtreea9ea9d0d; packagetreea0d8c598. FullCIlogc8395dd8
+  retained. PR9 remainsdraft and the broadAPI task is not complete.
+- Official Gitmarketplace upgrade underumask022 installed/enabled150000 from
+  the repoURL/feature ref, marketplaceHEADc465cb81. All600files/16462497bytes and
+  committedmodes match; inventory32087b77/report4281bf9c. Actualconfiguredcached
+  startup handsambient26.7 to pinned24.18.610processsamples observe no upstream
+  child/nonstdio socket, sentinelabsent/stderrempty. Catalog26tools/sevenskills,
+  176fixed/16native readers,108design/68library schemas and full newlimits pass.
+- Installedproof is offline only. Previously loaded2222443/131000 leftuntouched;
+  no livecall/hosttermination/cachepatch/import followedinstallation. Original
+  createjournalc92a61b7 remainscommit-needs-recovery/nonorphan with sixoriginal
+  artifacts and one retained successful Save/close/reopen. EasyEDA remainsclosed.
+  StartfreshCodex for exactnewgenerationadmission then samejournal rebind/open/
+  reconcile. Neverrepeatcreate/Save/delete or completedmodifytransactions. Use a
+  freshcleandisposabletarget for later v2lifecycle tests unless independently
+  provenstrictpreflight preserveslegacystorednull. Production/record untouched.
+  Privatecontinuation:release-next-IB9MTI/resume.md.
 
 ### Candidate131000 published and installed; fresh host required
 
@@ -1520,7 +1542,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011131000` is published and installed/enabled with exact581file/mode and offline startup proof. Actual facade2222443 is independently admitted on this generation. Forward and explicit reverse text modification passed complete saved/reopened proof. Creation journalc92a61b7 is NOT terminal: it retains one successful Save/close/reopen but refuses the sole new STRING's null-to-black reload difference. EasyEDA11964 is closed; no Save, creation, navigation or deletion may be replayed. Source-only explicit-color creation and original-journal retained-Save recovery are under review, not installed or live-validated. Prior120000 passed four closed PCB/schematic title transactions and one closed free-PCB creation. Historical evidence remains operation/generation-specific. Never access production or its project record.
+- Git-marketplace `0.3.0+codex.20261011150000` is published and installed/enabled with exact600file/mode and offline startup proof. It includes guarded closed free-SCH creation, selected PCB source DTOs, explicitblack v2 text creation and narrow original-journal retained-Save recovery. Fresh Codex is required before new-generation connected admission. Prior facade2222443/131000 passed forward/reverse text modification, but creationjournalc92a61b7 is NOT terminal. Its one retained successful Save/close/reopen and sixartifacts must not be replayed; storednull/exportblack remain distinct. The immutable historical predicate passed, not live reconciliation. EasyEDA11964 is closed. Prior120000 passed four closed PCB/schematic title transactions and one closed free-PCB creation. Historical evidence remains operation/generation-specific. Never access production or its project record.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

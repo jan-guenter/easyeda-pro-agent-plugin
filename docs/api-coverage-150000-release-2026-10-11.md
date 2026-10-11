@@ -1,6 +1,6 @@
 # Candidate 150000
 
-`0.3.0+codex.20261011150000` continues draft PR9. The broader API task remains
+Published and installed `0.3.0+codex.20261011150000` continues draft PR9. The broader API task remains
 unfinished. This continuation changed only the plugin and private validation
 evidence. EasyEDA stayed closed; production and its project record were untouched.
 
@@ -84,8 +84,40 @@ reader catalog and one for the new creation-specific retained-Save gate. Both
 tests were corrected and strengthened without changing production guards.
 Their failed logs remain retained. The complete final facade log is
 `51de1e0d0d7939ac26a18340876fdcd910c8e6db9167cdb81ea103d448a96b17`.
-GitHub CI and official Git-marketplace installation remain pending.
+GitHub CI and official Git-marketplace installation passed as recorded below.
 
 The selected reader, schematic creation, v2 text lifecycle and live recovery
 still require their own connected validation. Publication or installation alone
 cannot establish those results.
+
+## Publication and installation
+
+Payload `c465cb81d5a0bd27387853dde453f151c37697b8` passed
+[CI38150852682](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38150852682).
+CI passed 3,422 facade tests with four platform skips and zero failures, plus
+424 bridge tests. The actual tested merge
+`6af842f7c6397073885c2c42b89d9d1829a4ed00` has the exact payload tree
+`a9ea9d0dc6568053a1ef1e483b04435d01c4b96e`. Package tree:
+`a0d8c5984c6e9882e8bca966c8aefcc3c849b0c4`. Full retained CI log:
+`c8395dd8f1ac0e88b8f96baaf8f12c72911a7ec4325a7af5c0acb41fc62de883`.
+
+The official marketplace upgrade installed and enabled this version from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, on the feature
+ref used by draft PR9. Marketplace HEAD equals the tested payload. Installation
+ran under umask022 with private evidence outputs under077 and no reported errors.
+All 600 packaged files, 16,462,497 bytes and committed modes match, with no extra
+files or cache changes during the offline probe.
+Inventory: `32087b77264d5586405e8de219bbb1ff1ed30ff20841e738aa0a853e125ca3d3`.
+Proof report: `4281bf9c49233c34445ab30637b7fd7b6e345d67981743414b3a60a6f84e0eff`.
+
+Actual configured cached startup handed ambient Node26.7.0 to pinned24.18.0.
+Exact catalogs, schemas and refusal checks passed, including new schematic,
+selection and text contracts. Across 610 process samples, no upstream child or
+nonstdio socket was observed; the synthetic sentinel was absent and stderr empty.
+This is sampled offline evidence, not a continuous syscall trace or connected
+admission. No live call, host termination, cache patch or extension import followed.
+
+Start fresh Codex before using the new generation. Leave the disposable editor
+closed until the original retained journal's recovery starts. Its creation,
+Save and prior completed modifications must never be replayed. The broad API
+task and PR9 remain unfinished.
