@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildSync } from 'esbuild';
 import { afterEach, describe, expect, it } from 'vitest';
-import { REGISTER_OPEN_CALLBACK_TIMEOUT_MS } from '../src/connection-policy.js';
+import { PRIMARY_CONNECT_TIMEOUT_MS, RECONNECT_BASE_MS, REGISTER_OPEN_CALLBACK_TIMEOUT_MS } from '../src/connection-policy.js';
 
 // Runtime regression tests bundle in memory with synthetic keys. Credential-
 // Bearing filesystem output belongs exclusively to the enclosing facade's
@@ -63,6 +63,55 @@ function callContextMethod(
   }
   const result: unknown = Reflect.apply(method, receiver, []);
   return result;
+}
+
+interface ManualTimeout {
+  readonly callback: () => void;
+  readonly delayMs: number;
+  readonly deadlineMs: number;
+  fired: boolean;
+  cancelled: boolean;
+}
+
+function manualTimeouts(): {
+  scheduled: ManualTimeout[];
+  pending: () => ManualTimeout[];
+  setTimeout: (callback: () => void, delayMs: number) => ManualTimeout;
+  clearTimeout: (timer: ManualTimeout) => void;
+  advance: (elapsedMs: number) => void;
+} {
+  let nowMs = 0;
+  const scheduled: ManualTimeout[] = [];
+  const pending = (): ManualTimeout[] => scheduled.filter((timer) => !timer.fired && !timer.cancelled);
+  return {
+    scheduled,
+    pending,
+    setTimeout: (callback, delayMs) => {
+      const timer = { callback, delayMs, deadlineMs: nowMs + delayMs, fired: false, cancelled: false };
+      scheduled.push(timer);
+      return timer;
+    },
+    clearTimeout: (timer) => {
+      expect(scheduled).toContain(timer);
+      timer.cancelled = true;
+    },
+    advance: (elapsedMs) => {
+      const target = nowMs + elapsedMs;
+      // Preserve real deadlines without depending on host scheduling. The old
+      // 4 ms primary / 0 ms register timers could race during synchronous setup.
+      for (let callbacks = 0; callbacks < 20; callbacks += 1) {
+        const next = pending().sort((left, right) => left.deadlineMs - right.deadlineMs)[0];
+        if (next === undefined || next.deadlineMs > target) {
+          nowMs = target;
+          return;
+        }
+        nowMs = next.deadlineMs;
+        next.fired = true;
+        next.callback();
+      }
+      throw new Error('Manual timeout callback bound exceeded.');
+    },
+  };
 }
 
 function authenticationResponse(
@@ -469,8 +518,7 @@ describe('authenticated bridge bundle', () => {
       }
     }
 
-    const nativeSetTimeout = setTimeout;
-    const nativeClearTimeout = clearTimeout;
+    const timers = manualTimeouts();
     const context = vm.createContext({
       console,
       crypto: webcrypto,
@@ -478,18 +526,8 @@ describe('authenticated bridge bundle', () => {
       TextDecoder,
       URL,
       Promise,
-      setTimeout: (callback: () => void, delayMs: number) => {
-        if (delayMs === REGISTER_OPEN_CALLBACK_TIMEOUT_MS) {return nativeSetTimeout(callback, 0);}
-        if (delayMs >= 8000) {return nativeSetTimeout(callback, 20);}
-        if (delayMs === 1000) {return nativeSetTimeout(callback, 10);}
-        return { ignored: true, delayMs };
-      },
-      clearTimeout: (
-        handle: ReturnType<typeof setTimeout> | { ignored: true; delayMs: number },
-      ) => {
-        if ('ignored' in handle) {return;}
-        nativeClearTimeout(handle);
-      },
+      setTimeout: timers.setTimeout,
+      clearTimeout: timers.clearTimeout,
       setInterval: () => ({ ignored: true }),
       clearInterval: () => {},
       localStorage: {
@@ -520,18 +558,38 @@ describe('authenticated bridge bundle', () => {
     });
 
     vm.runInContext(bundle, context);
-    await callContextMethod(context, 'edaEsbuildExportName', 'connect');
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const connecting = callContextMethod(context, 'edaEsbuildExportName', 'connect');
+      expect(timers.pending().map((timer) => timer.delayMs)).toEqual([
+        PRIMARY_CONNECT_TIMEOUT_MS, REGISTER_OPEN_CALLBACK_TIMEOUT_MS,
+      ]);
+      const primaryTimeout = timers.pending()[0];
+      timers.advance(REGISTER_OPEN_CALLBACK_TIMEOUT_MS - 1);
+      expect(registerClosedIds).toHaveLength(attempt - 1);
+      expect(primaryTimeout?.cancelled).toBe(false);
+      timers.advance(1);
+      await connecting;
 
-    expect(registerCalls).toBe(1);
-    expect(registerSendCalls).toBe(0);
-    expect(registerClosedIds).toHaveLength(1);
-    expect(createCalls).toBe(0);
-    expect(createdSocket).toBeUndefined();
-    expect(rawHandshakePayloads).toEqual([]);
-    expect(toastMessages).not.toContain('EasyEDA Pro Control Bridge connected to local server');
-    expect(toastMessages.at(-1)).toContain('did not invoke its open callback');
+      expect(registerCalls).toBe(attempt);
+      expect(registerSendCalls).toBe(0);
+      expect(registerClosedIds).toHaveLength(attempt);
+      expect(createCalls).toBe(0);
+      expect(createdSocket).toBeUndefined();
+      expect(rawHandshakePayloads).toEqual([]);
+      expect(toastMessages).not.toContain('EasyEDA Pro Control Bridge connected to local server');
+      expect(toastMessages.at(-1)).toContain('did not invoke its open callback');
+      expect(toastMessages.at(-1)).toContain('port 49621');
+      expect(primaryTimeout).toMatchObject({ cancelled: true, fired: false });
+      expect(timers.pending().map((timer) => timer.delayMs)).toEqual([RECONNECT_BASE_MS]);
 
-    callContextMethod(context, 'edaEsbuildExportName', 'disconnect');
+      callContextMethod(context, 'edaEsbuildExportName', 'disconnect');
+      expect(timers.pending()).toEqual([]);
+      const messagesAfterDisconnect = [...toastMessages];
+      timers.advance(PRIMARY_CONNECT_TIMEOUT_MS);
+      expect(toastMessages).toEqual(messagesAfterDisconnect);
+      expect(registerCalls).toBe(attempt);
+      expect(registerClosedIds).toHaveLength(attempt);
+    }
   });
 
   it('refuses globalThis.WebSocket when the native API is absent', async () => {
@@ -622,8 +680,10 @@ describe('authenticated bridge bundle', () => {
     const bundle = buildInMemory({ MCP_DEV_HOTSWAP: '' });
 
     const toastMessages: string[] = [];
-    const nativeSetTimeout = setTimeout;
-    const nativeClearTimeout = clearTimeout;
+    const timers = manualTimeouts();
+    const registerClosedIds: string[] = [];
+    let registerCalls = 0;
+    let registerSendCalls = 0;
     const context = vm.createContext({
       console,
       crypto: webcrypto,
@@ -631,40 +691,52 @@ describe('authenticated bridge bundle', () => {
       TextDecoder,
       URL,
       Promise,
-      setTimeout: (callback: () => void, delayMs: number) => {
-        if (delayMs === REGISTER_OPEN_CALLBACK_TIMEOUT_MS) {return nativeSetTimeout(callback, 0);}
-        if (delayMs >= 8000) {return nativeSetTimeout(callback, 4);}
-        if (delayMs === 1000) {return nativeSetTimeout(callback, 2);}
-        return { ignored: true, delayMs };
-      },
-      clearTimeout: (
-        handle: ReturnType<typeof setTimeout> | { ignored: true; delayMs: number },
-      ) => {
-        if ('ignored' in handle) {return;}
-        nativeClearTimeout(handle);
-      },
+      setTimeout: timers.setTimeout,
+      clearTimeout: timers.clearTimeout,
       setInterval: () => ({ ignored: true }),
       clearInterval: () => {},
       SYS_Message: {
         showToastMessage: (message: string) => toastMessages.push(message),
       },
       SYS_WebSocket: {
-        register: () => {},
-        send: () => {},
-        close: () => {},
+        register: () => { registerCalls += 1; },
+        send: () => { registerSendCalls += 1; },
+        close: (id: string) => { registerClosedIds.push(id); },
       },
     });
 
     vm.runInContext(bundle, context);
-    await callContextMethod(context, 'edaEsbuildExportName', 'connect');
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const connecting = callContextMethod(context, 'edaEsbuildExportName', 'connect');
+      expect(timers.pending().map((timer) => timer.delayMs)).toEqual([
+        PRIMARY_CONNECT_TIMEOUT_MS, REGISTER_OPEN_CALLBACK_TIMEOUT_MS,
+      ]);
+      const primaryTimeout = timers.pending()[0];
+      timers.advance(REGISTER_OPEN_CALLBACK_TIMEOUT_MS - 1);
+      expect(registerClosedIds).toHaveLength(attempt - 1);
+      expect(primaryTimeout?.cancelled).toBe(false);
+      timers.advance(1);
+      await connecting;
 
-    expect(toastMessages.at(-1)).toContain(
-      'EasyEDA Pro Control Bridge offline: no local server found',
-    );
-    expect(toastMessages.at(-1)).toContain('did not invoke its open callback');
-    expect(toastMessages.at(-1)).toContain('port 49621');
+      expect(toastMessages.at(-1)).toContain(
+        'EasyEDA Pro Control Bridge offline: no local server found',
+      );
+      expect(toastMessages.at(-1)).toContain('did not invoke its open callback');
+      expect(toastMessages.at(-1)).toContain('port 49621');
+      expect(registerCalls).toBe(attempt);
+      expect(registerSendCalls).toBe(0);
+      expect(registerClosedIds).toHaveLength(attempt);
+      expect(primaryTimeout).toMatchObject({ cancelled: true, fired: false });
+      expect(timers.pending().map((timer) => timer.delayMs)).toEqual([RECONNECT_BASE_MS]);
 
-    callContextMethod(context, 'edaEsbuildExportName', 'disconnect');
+      callContextMethod(context, 'edaEsbuildExportName', 'disconnect');
+      expect(timers.pending()).toEqual([]);
+      const messagesAfterDisconnect = [...toastMessages];
+      timers.advance(PRIMARY_CONNECT_TIMEOUT_MS);
+      expect(toastMessages).toEqual(messagesAfterDisconnect);
+      expect(registerCalls).toBe(attempt);
+      expect(registerClosedIds).toHaveLength(attempt);
+    }
   });
 
   it('publishes EasyEDA lifecycle and menu exports through the official IIFE global', () => {

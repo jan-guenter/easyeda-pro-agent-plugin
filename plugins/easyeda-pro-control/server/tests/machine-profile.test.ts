@@ -134,6 +134,8 @@ void describe("installation-generated machine profiles", () => {
     const marker = join(options.pluginRoot, "replacement-executed");
     await rename(nodeExecutable, `${nodeExecutable}.retained`);
     await writeFile(nodeExecutable, `#!/bin/sh\nprintf executed > '${marker}'\nprintf 'v24.18.0\\n'\n`, { mode: 0o755 });
+    // Reach the digest check under restrictive caller umasks as well.
+    await chmod(nodeExecutable, 0o755);
     await assert.rejects(readMachineProfile(profilePath), /machine-node-hash-mismatch/u);
     await assert.rejects(openVerifiedMachineNode(profile.runtime), /machine-node-hash-mismatch/u);
     await assert.rejects(lstat(marker), { code: "ENOENT" });

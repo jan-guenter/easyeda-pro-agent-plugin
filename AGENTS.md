@@ -71,6 +71,49 @@ Last updated: 2026-10-11 (Europe/Berlin)
   Publication and installation evidence must follow; source tests are not live
   validation of the corrected Wire/Bus reader or new PCB type reader.
 
+### Candidate002000 deterministic bridge-test follow-up
+
+- Initial payloade797511 passed PR CI38098801998 with2,559facade passes/two
+  platform skips and424bridge passes. Review of prior root-only CI38095768411
+  found a real test race: compressed0ms/4ms timers could report the overall
+  connection timeout instead of the registration-callback timeout under load.
+  That failed run is retained, not counted as a pass.
+- Two bridge tests now use deterministic real-deadline scheduling. They prove
+  the599ms/600ms boundary, primary timeout cancellation, reconnect cancellation,
+  absence of late callbacks and three repeated connections. Existing specific
+  diagnostics and fallback refusals remain required. Root and independent full
+  diff review accept test9a6634c8;10focused/424bridge/types/strictlint pass.
+- Tests remain inside the reviewed70-file source closure. Only its reviewed
+  hash/byte count changed, c5cb4d9e/853680 to3281712d/856665. Runtime source and
+  external pins for the bridge are unchanged. Same-synthetic-key before/after private builds
+  prove byte-identical archivea81166a9 and executables, proofb5e9003d retained.
+- The local actual build receipt was refreshed through the maintained builder,
+  preserving its old receipt1861c35f privately. Fresh receipt6cff8aa4 differs
+  only in source closure hash/bytes; actual archive00c7d22b, index67be979d,
+  dispatchercf9283e9, dispatcher ID and key epoch are unchanged. No token
+  provisioning/rotation, import, activation or runtime replacement occurred.
+  Final full checks, corrected payload CI and installation follow separately.
+- The first full rerun correctly rejected a stale duplicate facade source-closure
+  identity. Its exact hash/bytes, capture-test receipt and repository validator
+  are now synchronized with the reviewed closure; no admission check was removed.
+  The same run exposed a test fixture that inherited umask077 and missed its
+  intended digest check. It now explicitly applies0755 inside its private test
+  directory, retaining both digest refusals and the no-execution assertion.
+  Failed log195ed1bf is retained. Final facade rebuild/manifest and verification
+  must use these corrections, not the earlier successful bundle hashes.
+- Corrected focused checks pass under both umask022 and077: seven machine-profile
+  tests each and49 identity/capture/source/authentication tests. Root and
+  independent review accept all four corrections. Final full verify under077
+  with inherited142/145 passes2,560facade tests/one platform skip/zero failures
+  or cancellations and424bridge tests. Strict types/type-aware lint have zero
+  diagnostics; log779c2db4 retained. New source166files91b4b3eb and bundle0ebf1680
+  bind the corrected identity. Only facade projections and review time changed
+  in the compatibility manifest; external/native/sanitizer pins remain exact.
+- Final offline doctor45/45, repository/privacy165checks, package validation,
+  seven packaged and seven official skill checks and actionlint pass. A separate
+  rebuild reproduces exact facade/supervisor/license bytes and manifest9fffd9f1.
+  Final Git CI and official installation remain separate pending evidence.
+
 ### Restarted223200 acceptance and next source candidate
 
 - Fresh facade1829230 admitted installed223200 bundled75d864d/manifest14c02f1f

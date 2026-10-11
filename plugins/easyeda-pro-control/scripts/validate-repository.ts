@@ -658,7 +658,7 @@ check(
       '"cc8893215e736f9efca78e4216033469008ea8e9"',
     ) &&
     reviewedBridgeSource.includes(
-      '"c5cb4d9ed0d5a93bca655f4f846f4f2e9337633941b2df3482aa3b91d7e43ee5"',
+      '"3281712da24240fa4962fd47855795df71878bb651d820e0c73960875bc701f2"',
     ) &&
     reviewedBridgeSource.includes("captureVendoredSourceClosure") &&
     reviewedBridgeSource.includes('"src/mutual-auth.ts"') &&
