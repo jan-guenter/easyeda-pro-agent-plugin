@@ -62,7 +62,7 @@ function fixture(): {
   };
   const bus = addGroup("a-bus", "bus"), wire = addGroup("z-wire", "wire");
   const line = addLine(wire, "z-line"), name = addName(wire, "z-name", "NET_A");
-  const other = addLine(wire, "a-line"); other["strokeColor"] = "#112233"; other["strokeWidth"] = 2; other["strokeStyle"] = "DOT_DASH";
+  const other = addLine(wire, "a-line"); other["strokeColor"] = "#112233"; other["strokeWidth"] = 2; other["strokeStyle"] = 3;
   addName(wire, "a-name", "NET_B"); addLine(bus, "bus-line"); addName(bus, "bus-name", "DATA[0:7]");
   for (const type of ["Junction", "UnConnectDot"]) {
     addChild(wire, { id: type, modelType: type, tagName: type, cmdKey: type.toLowerCase(), notAddHistory: true, shapeManager: shapes, isConnected: true }, false);
@@ -86,14 +86,48 @@ void test("NetGroup DTOs preserve every line style, literal name and native coor
   for (const target of ["a-bus", "z-line", "z-name", "missing"]) { assert.throws(() => read(current, request("Wire", target)), /SCH_NETGROUP_TARGET/u); }
 });
 
-void test("NetGroup reads retain one-point lines, signed zero, duplicate name values and all raw style variants", () => {
+void test("NetGroup reads retain one-point lines, signed zero, duplicate name values and nullable numeric style enums", () => {
   const current = fixture(); current.line["points"] = [{ x: -0, y: -0 }]; current.line["strokeWidth"] = -0; current.line["strokeColor"] = "";
   current.name["value"] = "\u0000\n é e\u0301 __proto__"; current.addName(current.wire, "second-name", "NET_B");
-  for (const style of [null, "SOLID", "SHORT_DASH", "DOT", "DOT_DASH"]) {
+  for (const [style, expected] of [[null, null], [0, "SOLID"], [-0, "SOLID"], [1, "SHORT_DASH"], [2, "DOT"], [3, "DOT_DASH"]] as const) {
     current.line["strokeStyle"] = style; const rows = schematicNetGroupStatesSchema.parse(read(current)); const line = rows[0]?.lines.find((item) => item.primitiveId === "z-line"); assert.ok(line);
-    assert.equal(line.strokeStyle, style); assert.equal(line.color, ""); assert.equal(line.points.length, 1); assert.ok(Object.is(line.points[0]?.[0], -0) && Object.is(line.points[0]?.[1], -0) && Object.is(line.width, -0));
+    assert.equal(line.strokeStyle, expected); assert.equal(line.color, ""); assert.equal(line.points.length, 1); assert.ok(Object.is(line.points[0]?.[0], -0) && Object.is(line.points[0]?.[1], -0) && Object.is(line.width, -0));
     assert.equal(rows[0]?.names.find((item) => item.primitiveId === "z-name")?.value, current.name["value"]);
   }
+});
+
+void test("pinned NetGroupLine source decoding and serialization agree with native style reads", () => {
+  // Pinned SCH 3f50136f: Ka at 2141617 is used by source decoding at
+  // 2144276 and getConsistencyData at 2146362. Keep the exact small converter
+  // Independent from the reader: source strings are not backing-field values.
+  const pinnedConversion = `var k8e={SOLID:0,SHORT_DASH:1,DOT:2,DOT_DASH:3,0:"SOLID",1:"SHORT_DASH",2:"DOT",3:"DOT_DASH"};
+function Ka(i){return i==null?null:k8e[i]}
+({native:Ka(sourceStyle),serialized:Ka(Ka(sourceStyle))})`;
+  for (const [sourceStyle, nativeStyle] of [[null, null], ["SOLID", 0], ["SHORT_DASH", 1], ["DOT", 2], ["DOT_DASH", 3]] as const) {
+    const decoded: unknown = structuredClone(runInNewContext(pinnedConversion, { sourceStyle }, { timeout: 1000 }));
+    assert.deepEqual(decoded, { native: nativeStyle, serialized: sourceStyle });
+    assert.ok(decoded !== null && typeof decoded === "object" && "native" in decoded);
+    const current = fixture(); current.line["strokeStyle"] = decoded.native;
+    const rows = schematicNetGroupStatesSchema.parse(read(current));
+    assert.equal(rows[0]?.lines.find((item) => item.primitiveId === current.line.id)?.strokeStyle, sourceStyle);
+  }
+});
+
+void test("four synthetic stored wire groups with eleven decoded SOLID lines are complete", () => {
+  const current = fixture(); current.index.clear(); current.sources.clear(); current.family.clear(); current.root.children = [];
+  const expectedCounts = [6, 1, 1, 3];
+  for (const [groupIndex, count] of expectedCounts.entries()) {
+    const group = current.addGroup(`wire-${String(groupIndex)}`, "wire");
+    for (let lineIndex = 0; lineIndex < count; lineIndex += 1) {
+      const line = current.addLine(group, `line-${String(groupIndex)}-${String(lineIndex)}`);
+      line["strokeStyle"] = 0; line["strokeWidth"] = 1;
+    }
+  }
+  const rows = schematicNetGroupStatesSchema.parse(read(current));
+  assert.deepEqual(rows.map((row) => row.lines.length), expectedCounts);
+  assert.ok(rows.flatMap((row) => row.lines).every((line) => line.strokeStyle === "SOLID" && line.width === 1 && line.color === null));
+  assert.deepEqual(read(current, request("Bus")), []);
+  validateSchematicNetGroupStates(rows, request());
 });
 
 void test("an empty family requires complete ownership and source inventory", () => {
@@ -145,7 +179,7 @@ for (const [name, corrupt] of Object.entries(corruptions)) {
 }
 
 for (const [field, values] of Object.entries({ points: [[], [{ x: 0, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 2 }], [{ x: Number.NaN, y: 0 }], [{ x: 0, y: Infinity }], [{ x: "0", y: 0 }], [{ x: 1_000_000_001, y: 0 }]],
-  strokeColor: [undefined, false, "x".repeat(4097)], strokeWidth: [undefined, -1, Infinity, "1"], strokeStyle: [undefined, 0, "DASHED", "unknown"] })) {
+  strokeColor: [undefined, false, "x".repeat(4097)], strokeWidth: [undefined, -1, Infinity, "1"], strokeStyle: [undefined, false, Number.NaN, Infinity, -Infinity, -1, 0.5, 4, "0", "SOLID", "SHORT_DASH", "DOT", "DOT_DASH", "DASHED", "unknown"] })) {
   void test(`NetGroup read refuses malformed ${field}`, () => { for (const value of values) { const current = fixture(); current.line[field] = value; assert.throws(() => read(current), /SCH_NETGROUP_STATE/u); } });
 }
 void test("NetGroup name strings are explicit and bounded", () => {
@@ -160,7 +194,7 @@ const drifts: Record<string, (current: Fixture) => void> = {
   "line order": (current) => { const lines = current.wire["lines"]; assert.ok(Array.isArray(lines)); lines.reverse(); },
   "child order": (current) => { current.wire.children?.reverse(); },
   "name value": (current) => { current.name["value"] = "changed"; },
-  "line style": (current) => { current.line["strokeStyle"] = "SOLID"; },
+  "line style": (current) => { current.line["strokeStyle"] = 0; },
   "point signed zero": (current) => { current.line["points"] = [{ x: -0, y: -10 }, { x: 20, y: -30 }]; },
   "lock": (current) => { current.line["locked"] = true; },
   "identity replacement": (current) => { current.index.set(current.line.id, { ...current.line }); },
@@ -181,11 +215,23 @@ void test("NetGroup reader reproves scalars changed by the final source-inventor
         if (field === "name") { current.name["value"] = "late-name"; }
         if (field === "color") { current.line["strokeColor"] = "#123456"; }
         if (field === "width") { current.line["strokeWidth"] = 3; }
-        if (field === "style") { current.line["strokeStyle"] = "DOT"; }
+        if (field === "style") { current.line["strokeStyle"] = 2; }
         if (field === "points") { current.line["points"] = [{ x: 99, y: 0 }]; }
       }
       return new Map(current.sources);
     };
+    assert.throws(() => read(current), /SCH_NETGROUP_CHANGED/u);
+  }
+});
+
+void test("style projection cannot conceal native signed-zero drift between captures or after the final source read", () => {
+  for (const boundary of ["capture", "source"]) {
+    const current = fixture(); current.line["strokeStyle"] = 0; let calls = 0;
+    if (boundary === "capture") {
+      current.shapes["getModels"] = (): Model[] => { calls += 1; if (calls === 2) { current.line["strokeStyle"] = -0; } return [...current.family]; };
+    } else {
+      current.handler.getSourceCodeIdMap = (): Map<string, number> => { calls += 1; if (calls === 4) { current.line["strokeStyle"] = -0; } return new Map(current.sources); };
+    }
     assert.throws(() => read(current), /SCH_NETGROUP_CHANGED/u);
   }
 });

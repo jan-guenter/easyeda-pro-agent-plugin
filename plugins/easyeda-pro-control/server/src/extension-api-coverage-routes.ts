@@ -52,6 +52,14 @@ function add(namespace: string, methods: readonly string[], tool: string, select
 
 add("sys_FileManager", ["getDocumentSource"], "easyeda_control_exact_read", "*-source", "public-method",
   "Complete active schematic, symbol, PCB or footprint source, bounded and normalized only for volatile DOCHEAD export fields.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
+add("dmt_EditorControl", ["getCurrentRenderedAreaImage"], "easyeda_control_capture", "easyeda_canvas_capture", "public-method",
+  "Existing visible-canvas capture only, with an explicit tab equal to the proven active tab, unchanged before/after runtime fingerprint and post-capture context. The bridge calls the public image method and converts its Blob; the facade validates one complete bounded PNG and archives managed image evidence. Viewport-image observation only, not complete source, connectivity, persistence or visual acceptance. No omitted-tab default, foreign-tab access, native canvas-receiver identity or full declared-contract claim.",
+  ["index.ts", "../../easyeda-bridge-extension/src/canvas-operations.ts", "../../easyeda-bridge-extension/src/binary-result-policy.ts"],
+  ["facade-capture.test.ts", "../../easyeda-bridge-extension/tests/canvas-operations.test.ts"]);
+add("dmt_EditorControl", ["zoomToRegion"], "easyeda_control_capture", "easyeda_canvas_capture_region", "public-method",
+  "Only the existing capture-region workflow on the explicit proven active tab: finite nonzero bounds are normalized by the bridge, public zoomToRegion must not return false, and a bounded repaint wait precedes PNG capture. Runtime fingerprint and context are rechecked before managed evidence publication. This changes the visible viewport; there is no standalone zoom operation, native receiver binding, exact viewport-restoration promise, design-state proof or visual acceptance.",
+  ["index.ts", "../../easyeda-bridge-extension/src/canvas-operations.ts"],
+  ["facade-capture.test.ts", "../../easyeda-bridge-extension/tests/canvas-operations.test.ts"]);
 for (const family of ["sch", "pcb"]) {
   add(`${family}_PrimitiveComponent`, ["getAll", "getAllPrimitiveId", "getAllPinsByPrimitiveId"], "easyeda_control_exact_read", `${family === "sch" ? "schematic" : "pcb"}-components`, "public-method",
     "Double-sampled complete component identities and selected state fields; mapper omissions remain reported.", ["exact-readers.ts"], ["exact-readers.test.ts"]);

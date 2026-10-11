@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "b60fcf13aaa32d9a07c387320a727b5f1b161b4c5b102029c60fc898d3355344";
+const __easyedaBundlePairId = "f32e8ff32d2dba9a8453ac0bf17bf34b298100d87a62e360644ac1bea62534a3";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -24871,10 +24871,10 @@ var require_util = __commonJS({
     var codegen_1 = require_codegen();
     var code_1 = require_code();
     function toHash(arr) {
-      const hash11 = {};
+      const hash12 = {};
       for (const item2 of arr)
-        hash11[item2] = true;
-      return hash11;
+        hash12[item2] = true;
+      return hash12;
     }
     exports2.toHash = toHash;
     function alwaysValidSchema(it, schema) {
@@ -33637,6 +33637,7 @@ const captureSource=tree=>{const source=sourceReader.call(handler);if(!(source i
 const sameSource=(before,after)=>{if(before.size!==after.size)bad('CHANGED');for(const [id,marker] of before){if(after.get(id)!==marker)bad('CHANGED');}};
 const boundedArray=(value,limit)=>{if(!Array.isArray(value)||value.length>limit||new Set(value).size!==value.length)bad('CHILDREN');return [...value];};
 const finite=value=>{if(typeof value!=='number'||!Number.isFinite(value)||Math.abs(value)>1000000000)bad('STATE');return value;};
+const styleName=value=>{if(value===null)return null;if(typeof value!=='number'||!Number.isInteger(value)||value<0||value>3)bad('STATE');return ['SOLID','SHORT_DASH','DOT','DOT_DASH'][value];};
 const capture=()=>{
  check();const tree=captureTree(),source=captureSource(tree),family=modelMap.get('NetGroup'),models=modelReader.call(shapes,'NetGroup');
  if(family!==undefined&&(!(family instanceof Set)||family.size>256)||!Array.isArray(models)||models.length>256||models.length!==(family?.size??0))bad('FAMILY');
@@ -33646,14 +33647,16 @@ const capture=()=>{
   if(members.has(id)||model.modelType!=='NetGroup'||model.cmdKey!=='netGroup'||model.tagName!=='NetGroup'||!['wire','bus'].includes(model.type)||model.parent!==root||model.shapeManager!==shapes||index.get(id)!==model||!family?.has(model)||source.get(id)!==1||model.combination)bad('FAMILY');
   const lines=boundedArray(model.lines,1024),names=boundedArray(model.netNames,1024),children=boundedArray(model.children,20000);
   if(!lines.length)bad('CHILDREN');const expectedLineType=model.type==='wire'?'Wire':'Bus';
-  const lineSet=new Set(lines),nameSet=new Set(names),custom=[],markers=[];
+  const lineSet=new Set(lines),nameSet=new Set(names),lineStyles=new Map(),custom=[],markers=[];
   const child=(item)=>{validId(item?.id);if(item.parent!==model||item.shapeManager!==shapes||index.get(item.id)!==item||!children.includes(item)||!tree.has(item.id)||(item.children!==undefined&&(!Array.isArray(item.children)||item.children.length)))bad('CHILDREN');};
   const lineStates=lines.map(item=>{
    child(item);if(++lineCount>1024)bad('BOUND');
    if(item.modelType!==expectedLineType||item.tagName!=='NetGroupLine'||item.type!==model.type||item.cmdKey!==model.type||source.get(item.id)!==1)bad('CHILDREN');
    const points=item.points;if(!Array.isArray(points)||points.length<1||points.length>2)bad('STATE');
-   const result={primitiveId:item.id,points:points.map(point=>[finite(point?.x),finite(point?.y)]),color:item.strokeColor,width:item.strokeWidth,strokeStyle:item.strokeStyle};
-   if(!(result.color===null||typeof result.color==='string'&&result.color.length<=4096)||result.width!==null&&(typeof result.width!=='number'||!Number.isFinite(result.width)||result.width<0||result.width>1000000000)||result.strokeStyle!==null&&!['SOLID','SHORT_DASH','DOT','DOT_DASH'].includes(result.strokeStyle))bad('STATE');
+   const nativeStyle=item.strokeStyle;
+   const result={primitiveId:item.id,points:points.map(point=>[finite(point?.x),finite(point?.y)]),color:item.strokeColor,width:item.strokeWidth,strokeStyle:styleName(nativeStyle)};
+   if(!(result.color===null||typeof result.color==='string'&&result.color.length<=4096)||result.width!==null&&(typeof result.width!=='number'||!Number.isFinite(result.width)||result.width<0||result.width>1000000000))bad('STATE');
+   lineStyles.set(item.id,nativeStyle);
    characters+=result.color?.length??0;return result;
   });
   const nameStates=names.map(item=>{
@@ -33668,7 +33671,7 @@ const capture=()=>{
    else bad('CHILDREN');
   }
   if(characters>262144)bad('BOUND');
-  members.set(id,model);collections.set(id,{lines,names,children:[...children],markers});
+  members.set(id,model);collections.set(id,{lines,names,children:[...children],markers,lineStyles});
   states.set(id,{primitiveId:id,modelType:'NetGroup',kind:model.type,lines:lineStates.sort((a,b)=>a.primitiveId<b.primitiveId?-1:1),names:nameStates.sort((a,b)=>a.primitiveId<b.primitiveId?-1:1),customAttributeIds:custom.sort()});
  }
  for(const [id,entry] of tree){if(entry.type==='NetGroup'&&entry.parent===root&&members.get(id)!==entry.model)bad('FAMILY');}
@@ -33683,7 +33686,7 @@ for(const [id,model] of before.members){
  if(after.members.get(id)!==model)bad('CHANGED');const left=before.states.get(id),right=after.states.get(id),lc=before.collections.get(id),rc=after.collections.get(id);
  for(const key of ['lines','names','children','markers'])sameList(lc[key],rc[key]);
  if(left.kind!==right.kind||left.lines.length!==right.lines.length||left.names.length!==right.names.length)bad('CHANGED');sameList(left.customAttributeIds,right.customAttributeIds);
- for(let i=0;i<left.lines.length;i++){const a=left.lines[i],b=right.lines[i];if(a.primitiveId!==b.primitiveId||!Object.is(a.color,b.color)||!Object.is(a.width,b.width)||!Object.is(a.strokeStyle,b.strokeStyle)||a.points.length!==b.points.length)bad('CHANGED');for(let j=0;j<a.points.length;j++){if(!Object.is(a.points[j][0],b.points[j][0])||!Object.is(a.points[j][1],b.points[j][1]))bad('CHANGED');}}
+ for(let i=0;i<left.lines.length;i++){const a=left.lines[i],b=right.lines[i];if(a.primitiveId!==b.primitiveId||!Object.is(a.color,b.color)||!Object.is(a.width,b.width)||!Object.is(a.strokeStyle,b.strokeStyle)||!Object.is(lc.lineStyles.get(a.primitiveId),rc.lineStyles.get(b.primitiveId))||a.points.length!==b.points.length)bad('CHANGED');for(let j=0;j<a.points.length;j++){if(!Object.is(a.points[j][0],b.points[j][0])||!Object.is(a.points[j][1],b.points[j][1]))bad('CHANGED');}}
  for(let i=0;i<left.names.length;i++){if(left.names[i].primitiveId!==right.names[i].primitiveId||left.names[i].value!==right.names[i].value)bad('CHANGED');}
 }
 // Reprove retained scalar fields after the final source/tree collection. This
@@ -33693,7 +33696,7 @@ for(const [id,model] of after.members){
  if(model.type!==state.kind||model.modelType!=='NetGroup'||model.cmdKey!=='netGroup'||model.tagName!=='NetGroup')bad('CHANGED');
  sameList(collection.lines,boundedArray(model.lines,1024));sameList(collection.names,boundedArray(model.netNames,1024));sameList(collection.children,boundedArray(model.children,20000));
  const lines=new Map(collection.lines.map(item=>[item.id,item])),names=new Map(collection.names.map(item=>[item.id,item])),children=new Map(collection.children.map(item=>[item.id,item]));
- for(const row of state.lines){const current=lines.get(row.primitiveId),points=current?.points;if(!current||current.modelType!==(state.kind==='wire'?'Wire':'Bus')||current.tagName!=='NetGroupLine'||current.cmdKey!==state.kind||current.type!==state.kind||!Array.isArray(points)||points.length!==row.points.length||!Object.is(current.strokeColor,row.color)||!Object.is(current.strokeWidth,row.width)||!Object.is(current.strokeStyle,row.strokeStyle))bad('CHANGED');for(let j=0;j<points.length;j++){if(!Object.is(points[j]?.x,row.points[j][0])||!Object.is(points[j]?.y,row.points[j][1]))bad('CHANGED');}}
+ for(const row of state.lines){const current=lines.get(row.primitiveId),points=current?.points;if(!current||current.modelType!==(state.kind==='wire'?'Wire':'Bus')||current.tagName!=='NetGroupLine'||current.cmdKey!==state.kind||current.type!==state.kind||!Array.isArray(points)||points.length!==row.points.length||!Object.is(current.strokeColor,row.color)||!Object.is(current.strokeWidth,row.width)||!Object.is(current.strokeStyle,collection.lineStyles.get(row.primitiveId)))bad('CHANGED');for(let j=0;j<points.length;j++){if(!Object.is(points[j]?.x,row.points[j][0])||!Object.is(points[j]?.y,row.points[j][1]))bad('CHANGED');}}
  for(const row of state.names){const current=names.get(row.primitiveId);if(!current||current.modelType!=='NetLabel'||current.tagName!=='NetName'||current.cmdKey!=='netlabel'||current.key!=='Name'||current.keyInSourceCode!=='NET'||current.value!==row.value)bad('CHANGED');}
  for(const id of state.customAttributeIds){const current=children.get(id);if(current?.modelType!=='Attr'||current.tagName!=='Attr')bad('CHANGED');}
  for(const id of collection.markers){const current=children.get(id);if(!current||!['Junction','UnConnectDot'].includes(current.modelType)||current.tagName!==current.modelType||current.notAddHistory!==true)bad('CHANGED');}
@@ -33846,7 +33849,7 @@ function nativeFailureCategory(message) {
   const stage = message.startsWith(prefix) ? message.slice(prefix.length) : "";
   return recoveryStages.has(stage) ? `native-preflight:RECOVERY_${stage.toUpperCase().replaceAll("-", "_")}` : null;
 }
-var codes3, recoveryStages, tabCodes, padCodes, footprintLifecycleCodes, operationStages, operationStageCategories, activationPreferenceCategories, metadataGuardCategories, schematicIdCategories, componentPropertyCategories, symbolPinCategories, schematicTextCategories, schematicNetGroupCategories;
+var codes3, RECOVERY_NAVIGATION_FAILURE_STAGES, recoveryStages, tabCodes, padCodes, footprintLifecycleCodes, operationStages, operationStageCategories, activationPreferenceCategories, metadataGuardCategories, schematicIdCategories, componentPropertyCategories, symbolPinCategories, schematicTextCategories, schematicNetGroupCategories;
 var init_native_diagnostics = __esm({
   "server/src/native-diagnostics.ts"() {
     init_device_runtime_guard();
@@ -33990,7 +33993,7 @@ var init_native_diagnostics = __esm({
       "SYMBOL_SOURCE_RECORD",
       "SYMBOL_SOURCE_REJECTED"
     ]);
-    recoveryStages = /* @__PURE__ */ new Set([
+    RECOVERY_NAVIGATION_FAILURE_STAGES = [
       "api-unavailable",
       "identity-shape",
       "identity-alias",
@@ -34023,8 +34026,16 @@ var init_native_diagnostics = __esm({
       "tab-record",
       "tab-data",
       "tab-type-alias",
-      "unrelated-editor-tab"
-    ]);
+      "unrelated-editor-tab",
+      "editor-readiness-api",
+      "editor-readiness-project",
+      "editor-readiness-document",
+      "editor-readiness-owner",
+      "editor-readiness-pcb",
+      "editor-readiness-page",
+      "editor-readiness-container"
+    ];
+    recoveryStages = new Set(RECOVERY_NAVIGATION_FAILURE_STAGES);
     tabCodes = /* @__PURE__ */ new Set(["EDITOR_TABS_API_MISSING", "EDITOR_TABS_FIELD_BOUND", "EDITOR_TABS_PROJECT_DRIFT", "EDITOR_TABS_TREE_BOUND", "EDITOR_TABS_CONTEXT_DRIFT", "EDITOR_TABS_OUTPUT_BOUND"]);
     padCodes = /* @__PURE__ */ new Map([
       ["Pad frame bound exceeded", "PAD_FRAME_BOUND"],
@@ -35849,7 +35860,7 @@ async function hashManagedJsonFile(path5, label) {
     const before = await opened.handle.stat();
     assertFileStayedUnchanged(opened.info, before, label);
     assertManagedJsonByteLimit(before.size, label);
-    const hash11 = createHash3("sha256");
+    const hash12 = createHash3("sha256");
     const buffer = Buffer.alloc(Math.min(1024 * 1024, before.size + 1));
     let total = 0;
     while (total <= before.size) {
@@ -35859,7 +35870,7 @@ async function hashManagedJsonFile(path5, label) {
         break;
       }
       total += bytesRead;
-      hash11.update(buffer.subarray(0, bytesRead));
+      hash12.update(buffer.subarray(0, bytesRead));
     }
     const after = await opened.handle.stat();
     assertFileStayedUnchanged(before, after, label);
@@ -35868,7 +35879,7 @@ async function hashManagedJsonFile(path5, label) {
       throw new Error(`${label} changed while it was being read.`);
     }
     await assertManagedFilePathCurrent(opened.absolute, opened.directory, after, label);
-    return { bytes: total, sha256: hash11.digest("hex") };
+    return { bytes: total, sha256: hash12.digest("hex") };
   } finally {
     await closeManagedFile(opened);
   }
@@ -35902,7 +35913,7 @@ async function hashOpenManagedAttachment(opened, label) {
   const { handle } = opened;
   await handle.sync();
   const before = await handle.stat();
-  const hash11 = createHash3("sha256");
+  const hash12 = createHash3("sha256");
   let bytesRead = 0;
   for await (const chunk of handle.createReadStream({
     autoClose: false,
@@ -35913,7 +35924,7 @@ async function hashOpenManagedAttachment(opened, label) {
       throw new TypeError("Evidence stream yielded a non-buffer chunk.");
     }
     bytesRead += chunk.length;
-    hash11.update(chunk);
+    hash12.update(chunk);
   }
   const after = await handle.stat();
   assertFileStayedUnchanged(before, after, label);
@@ -35924,7 +35935,7 @@ async function hashOpenManagedAttachment(opened, label) {
   return {
     path: opened.absolute,
     bytes: after.size,
-    sha256: hash11.digest("hex"),
+    sha256: hash12.digest("hex"),
     mtimeMs: after.mtimeMs,
     identity: {
       device: String(after.dev),
@@ -37524,7 +37535,7 @@ async function readStableText(file2, label) {
 }
 async function sha256Handle(handle, label) {
   const before = await handle.stat({ bigint: true });
-  const hash11 = createHash4("sha256");
+  const hash12 = createHash4("sha256");
   const buffer = Buffer.allocUnsafe(1024 * 1024);
   let position = 0;
   while (true) {
@@ -37537,12 +37548,12 @@ async function sha256Handle(handle, label) {
     if (bytesRead === 0) {
       break;
     }
-    hash11.update(buffer.subarray(0, bytesRead));
+    hash12.update(buffer.subarray(0, bytesRead));
     position += bytesRead;
   }
   const after = await handle.stat({ bigint: true });
   assertStableFile(before, after, label);
-  return { info: after, sha256: hash11.digest("hex") };
+  return { info: after, sha256: hash12.digest("hex") };
 }
 async function trustedSqliteBinary() {
   for (const candidate of SQLITE_BINARY_CANDIDATES) {
@@ -38660,14 +38671,14 @@ async function readNativeHistoryCheckpoint(input) {
     if (!before.isFile() || before.nlink !== 1n || before.size > BigInt(MAX_DATABASE_BYTES)) {
       fail();
     }
-    const hash11 = createHash5("sha256");
+    const hash12 = createHash5("sha256");
     for await (const chunk of file2.createReadStream({ autoClose: false, start: 0 })) {
       if (!Buffer.isBuffer(chunk)) {
         fail();
       }
-      hash11.update(chunk);
+      hash12.update(chunk);
     }
-    if (hash11.digest("hex") !== expectedSha256) {
+    if (hash12.digest("hex") !== expectedSha256) {
       fail("checkpoint-hash");
     }
     stage = "project-scope";
@@ -41588,14 +41599,14 @@ function compileSchematicOperation(input) {
   if (["port", "net-flag"].includes(family2)) {
     limitations.push("default-library-symbol-associations-must-be-captured-and-proven");
   }
-  let identity15 = "preserve";
+  let identity16 = "preserve";
   if (deleting) {
-    identity15 = "delete";
+    identity16 = "delete";
   }
   if (creating) {
-    identity15 = "create";
+    identity16 = "create";
   }
-  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field2, value]) => expected(family2, field2, value)), inverse, effect: { family: family2, target: target5, identity: identity15, fields: fields2, collateral }, requiredPreservation, limitations };
+  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field2, value]) => expected(family2, field2, value)), inverse, effect: { family: family2, target: target5, identity: identity16, fields: fields2, collateral }, requiredPreservation, limitations };
 }
 function referenceFamily(action) {
   const family2 = action.split(".")[1];
@@ -42724,8 +42735,8 @@ function document(history, uuid8, type2) {
   if (values2.length !== 1 || value === void 0) {
     fail3();
   }
-  const hash11 = sha256Json({ uuid: value.uuid, docType: value.docType, metadata: value.metadata, records: value.records.map(({ id: id7, type: recordType2, body: body3 }) => ({ id: id7, type: recordType2, body: body3 })) });
-  if (hash11 !== value.semanticSha256) {
+  const hash12 = sha256Json({ uuid: value.uuid, docType: value.docType, metadata: value.metadata, records: value.records.map(({ id: id7, type: recordType2, body: body3 }) => ({ id: id7, type: recordType2, body: body3 })) });
+  if (hash12 !== value.semanticSha256) {
     fail3();
   }
   return value;
@@ -45165,16 +45176,16 @@ async function verifySchematicNativeProfile(assetsRoot) {
   }
   const file2 = await open6(path5, constants2.O_RDONLY | constants2.O_NOFOLLOW);
   try {
-    const hash11 = createHash7("sha256");
+    const hash12 = createHash7("sha256");
     for await (const chunk of file2.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw new TypeError("Native implementation stream is not binary.");
       }
-      hash11.update(chunk);
+      hash12.update(chunk);
     }
     const after = await file2.stat({ bigint: true });
     const current2 = await lstat6(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash11.digest("hex") !== SCHEMATIC_NATIVE_IMPLEMENTATION.sha256) {
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash12.digest("hex") !== SCHEMATIC_NATIVE_IMPLEMENTATION.sha256) {
       throw new Error("Installed schematic native implementation differs from its reviewed profile.");
     }
     return SCHEMATIC_NATIVE_IMPLEMENTATION;
@@ -45210,16 +45221,16 @@ async function verifyLibraryNativeProfile(assetsRoot) {
   }
   const file2 = await open7(path5, constants3.O_RDONLY | constants3.O_NOFOLLOW);
   try {
-    const hash11 = createHash8("sha256");
+    const hash12 = createHash8("sha256");
     for await (const chunk of file2.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw new TypeError("Native implementation stream is not binary.");
       }
-      hash11.update(chunk);
+      hash12.update(chunk);
     }
     const after = await file2.stat({ bigint: true });
     const current2 = await lstat7(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash11.digest("hex") !== LIBRARY_NATIVE_IMPLEMENTATION.sha256) {
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash12.digest("hex") !== LIBRARY_NATIVE_IMPLEMENTATION.sha256) {
       throw new Error("Native library implementation differs from the reviewed profile.");
     }
     return LIBRARY_NATIVE_IMPLEMENTATION;
@@ -45257,16 +45268,16 @@ async function verifyDeviceAssociationNativeProfile(assetsRoot) {
     }
     const file2 = await open8(path5, constants4.O_RDONLY | constants4.O_NOFOLLOW);
     try {
-      const hash11 = createHash9("sha256");
+      const hash12 = createHash9("sha256");
       for await (const chunk of file2.createReadStream({ autoClose: false })) {
         if (!Buffer.isBuffer(chunk)) {
           throw new TypeError("Native device implementation stream is not binary.");
         }
-        hash11.update(chunk);
+        hash12.update(chunk);
       }
       const after = await file2.stat({ bigint: true });
       const current2 = await lstat8(path5, { bigint: true });
-      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash11.digest("hex") !== implementation.sha256) {
+      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash12.digest("hex") !== implementation.sha256) {
         throw new Error("Native device implementation differs from the reviewed profile.");
       }
     } finally {
@@ -45635,9 +45646,6 @@ function sourceIdentity(source3, documentUuid) {
     throw new Error("PCB net membership source identity, bound or commitment is invalid.");
   }
   for (const row of source3.objects) {
-    if (row.type === "BOARD") {
-      throw new Error("PCB net membership does not yet prove BOARD-generated Line/Arc controller ownership.");
-    }
     if (!supportedRecords.has(row.type)) {
       throw new Error("PCB net membership source contains an unmodeled record family.");
     }
@@ -45719,11 +45727,13 @@ function verifyPadLinks(expected2, componentIds, input) {
     }
   }
 }
-function derivePcbNetMembership(source3, inventoryInput, requestInput, documentUuid) {
-  const request = pcbNetMembershipRequestSchema.parse(requestInput);
+function derivePcbPhysicalMembers(source3, inventoryInput, documentUuid, primitiveTypes3) {
   sourceIdentity(source3, documentUuid);
   const inventory = inventorySchema.parse(inventoryInput);
-  const selected = new Set(request.arguments.primitiveTypes);
+  const selected = new Set(external_exports.array(primitiveType).min(1).max(5).parse(primitiveTypes3));
+  if (selected.size !== primitiveTypes3.length) {
+    throw new Error("PCB physical membership has duplicate requested families.");
+  }
   const members = [];
   for (const definition of families) {
     if (selected.has(definition.type)) {
@@ -45755,6 +45765,12 @@ function derivePcbNetMembership(source3, inventoryInput, requestInput, documentU
   if (members.length > PCB_NET_MEMBERSHIP_MAX_ITEMS || new Set(members.map((row) => row.primitiveId)).size !== members.length) {
     throw new Error("PCB net membership result families overlap or exceed their bound.");
   }
+  return members;
+}
+function derivePcbNetMembership(source3, inventoryInput, requestInput, documentUuid) {
+  const request = pcbNetMembershipRequestSchema.parse(requestInput);
+  const selected = new Set(request.arguments.primitiveTypes);
+  const members = derivePcbPhysicalMembers(source3, inventoryInput, documentUuid, request.arguments.primitiveTypes);
   const netKey = net2.min(1).parse(request.arguments.net.toUpperCase());
   const result = pcbNetMembershipItemsSchema.parse(members.filter((row) => selected.has(row.primitiveType) && row.net !== "" && row.net.toUpperCase() === netKey).map(({ padNumber: _padNumber, ...row }) => row).toSorted((left, right) => left.primitiveId < right.primitiveId ? -1 : 1));
   if (Buffer.byteLength(JSON.stringify(result)) > PCB_NET_MEMBERSHIP_MAX_BYTES) {
@@ -45779,7 +45795,7 @@ var init_pcb_net_membership = __esm({
       "Requires a nonempty net and explicit nonempty unique filters from Line, Arc, Via, Pad and ComponentPad; unfiltered, empty-net and other-family requests are unsupported.",
       "Pad means standalone physical pads; ComponentPad means component-owned physical pads. These disjoint roles differ from the direct Pad enumerator, which also includes component pads.",
       "Requires one exact active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769; library, partition and unmodeled source records are unsupported.",
-      "STRING, FONT, RULE_TEMPLATE, PRIMITIVE, PREFERENCE and SILK_OPTS are admitted as nonselected text/metadata. BOARD remains unsupported because its polygon decoder registers generated Line/Arc controllers whose inventory ownership is not proven by this profile.",
+      "STRING, FONT, RULE_TEMPLATE, PRIMITIVE, PREFERENCE and SILK_OPTS are admitted as nonselected text/metadata. BOARD is a nonselected display outline: its generated Line/Arc drawing controllers are not the Track/ArcTrack objects enumerated by the electrical inventory. Outline geometry and drawing-child ownership are not returned or validated.",
       "Net matching uses uppercase keys and preserves stored spelling. Full requested-family source/inventory correspondence is checked before filtering; this is not electrical connectivity, DRC, saved-file or persistence proof.",
       "Two matching source/inventory/source cycles require unchanged runtime and full observed context. Switching away and back between observations remains undetectable.",
       "Bounded to 20,000 native source records, 16 MiB native source evidence and 2 MiB result; exceeding bounds refuses without truncation."
@@ -45861,13 +45877,170 @@ var init_pcb_net_membership = __esm({
       "RULE_TEMPLATE",
       "PRIMITIVE",
       "PREFERENCE",
-      "SILK_OPTS"
+      "SILK_OPTS",
+      "BOARD"
     ]);
     families = [
       { name: "lines", type: "Line", sourceType: "LINE" },
       { name: "arcs", type: "Arc", sourceType: "ARC" },
       { name: "vias", type: "Via", sourceType: "VIA" }
     ];
+  }
+});
+
+// server/src/pcb-primitive-type-read.ts
+function derivePcbPrimitiveType(source3, inventory, requestInput, documentUuid) {
+  const request = pcbPrimitiveTypeRequestSchema.parse(requestInput);
+  const members = derivePcbPhysicalMembers(source3, inventory, documentUuid, PCB_NET_MEMBERSHIP_TYPES);
+  const sourceIds = new Set(source3.objects.map((row) => row.id));
+  if (members.some((row) => row.sourceRecordId !== row.primitiveId && sourceIds.has(row.primitiveId))) {
+    throw new Error("PCB primitive type inherited identity collides with another source record.");
+  }
+  const selected = members.find((row) => row.primitiveId === request.arguments.id);
+  if (selected === void 0) {
+    throw new Error("PCB primitive type requires an existing identity in the five supported physical families; absence or other families are not classified.");
+  }
+  return pcbPrimitiveTypeResultSchema.parse(selected.primitiveType);
+}
+function ownedContext(context2) {
+  const project2 = context2.project.uuid ?? context2.project.projectUuid;
+  const document2 = context2.document.uuid ?? context2.document.documentUuid;
+  if (context2.project.uuid !== void 0 && context2.project.projectUuid !== void 0 && context2.project.uuid !== context2.project.projectUuid || context2.document.uuid !== void 0 && context2.document.documentUuid !== void 0 && context2.document.uuid !== context2.document.documentUuid || typeof project2 !== "string" || project2.length === 0 || typeof document2 !== "string" || document2.length === 0 || context2.document.documentType !== 3 || context2.document["parentProjectUuid"] !== project2 || context2.document["parentLibraryUuid"] !== void 0 || context2.document.tabId !== document2 && context2.document.tabId !== `${document2}@${project2}`) {
+    throw new Error("PCB primitive type requires one exact active project-owned type-3 PCB.");
+  }
+  return document2;
+}
+function checkedPayload(input, kind) {
+  const payload = payloadSchema.parse(input), { read_consistency: consistency, ...sample } = payload;
+  if (payload.kind !== kind || sha256Json(sample) !== consistency.snapshotSha256) {
+    throw new Error("PCB primitive type exact observation commitment is invalid.");
+  }
+  return payload;
+}
+async function readPcbPrimitiveType(engine2, requestInput, expectedContext, expectedFingerprint) {
+  const request = pcbPrimitiveTypeRequestSchema.parse(requestInput);
+  const expected2 = structuredClone(expectedContext);
+  const documentUuid = ownedContext(expected2);
+  const expectedRuntime = structuredClone(expectedFingerprint);
+  validatePrivateFingerprint(expectedRuntime);
+  assertSubset(expectedRuntime, { installedBundles: {
+    pcbEditor: { implementationSha256: PCB_NET_MEMBERSHIP_PCB_SHA256 },
+    publicApi: { implementationSha256: PCB_NET_MEMBERSHIP_API_SHA256 }
+  } }, "PCB primitive type reviewed implementation");
+  await engine2.assertBridgeDispatchAllowed();
+  const initialStatus = await engine2.status();
+  const fingerprint = structuredClone(initialStatus.stableFingerprint);
+  validatePrivateFingerprint(fingerprint);
+  assertSubset(fingerprint, expectedRuntime, "PCB primitive type runtime");
+  const context2 = structuredClone(await engine2.assertContext(expected2));
+  assertSubset(context2, expected2, "PCB primitive type active context");
+  if (ownedContext(context2) !== documentUuid) {
+    throw new Error("PCB primitive type active identity changed.");
+  }
+  const observe = async (kind) => {
+    await engine2.assertBridgeDispatchAllowed();
+    if (canonicalJson(await engine2.assertContext(context2)) !== canonicalJson(context2)) {
+      throw new Error("PCB primitive type context changed before observation.");
+    }
+    const payload = checkedPayload(await engine2.exactRead({ kind }, context2), kind);
+    if (canonicalJson(await engine2.assertContext(context2)) !== canonicalJson(context2)) {
+      throw new Error("PCB primitive type context changed after observation.");
+    }
+    return payload;
+  };
+  const cycle = async () => {
+    const beforePayload = await observe("pcb-source");
+    const inventory = await observe("pcb-inventory");
+    const afterPayload = await observe("pcb-source");
+    const before = parseDocumentSource(external_exports.string().max(16777216).parse(beforePayload["source"]));
+    const after = parseDocumentSource(external_exports.string().max(16777216).parse(afterPayload["source"]));
+    if (before.sha256 !== after.sha256) {
+      throw new Error("PCB primitive type native source changed around the inventory.");
+    }
+    return {
+      value: derivePcbPrimitiveType(before, inventory, request, documentUuid),
+      sourceSha256: before.sha256,
+      sourceBeforeSnapshotSha256: beforePayload.read_consistency.snapshotSha256,
+      sourceAfterSnapshotSha256: afterPayload.read_consistency.snapshotSha256,
+      inventorySnapshotSha256: inventory.read_consistency.snapshotSha256,
+      contextBinding: inventory.read_consistency.contextBinding
+    };
+  };
+  const first = await cycle(), second = await cycle();
+  if (canonicalJson(first) !== canonicalJson(second)) {
+    throw new Error("PCB primitive type complete observations changed between cycles.");
+  }
+  await engine2.assertBridgeDispatchAllowed();
+  const finalStatus = await engine2.status();
+  const finalFingerprint = finalStatus.stableFingerprint;
+  validatePrivateFingerprint(finalFingerprint);
+  if (canonicalJson(finalFingerprint) !== canonicalJson(fingerprint) || canonicalJson(await engine2.assertContext(context2)) !== canonicalJson(context2)) {
+    throw new Error("PCB primitive type runtime or active context changed.");
+  }
+  const sample = {
+    ok: true,
+    kind: "public-sdk-read",
+    method: request.method,
+    present: true,
+    value: second.value,
+    undefinedPaths: [],
+    authority: "native-pcb-identity-type-not-public-method-parity",
+    implementationKind: "native-task-equivalent",
+    assurance: "bounded-native-pcb-type-not-complete-design-state",
+    publicApiSha256: PCB_NET_MEMBERSHIP_API_SHA256,
+    nativePcbEditorSha256: PCB_NET_MEMBERSHIP_PCB_SHA256,
+    liveValidation: "not-yet-validated",
+    limitations: [...PCB_PRIMITIVE_TYPE_LIMITATIONS],
+    proof: {
+      profile: PCB_PRIMITIVE_TYPE_PROFILE,
+      primitiveId: request.arguments.id,
+      sourceSha256: second.sourceSha256,
+      sourceBeforeSnapshotSha256: second.sourceBeforeSnapshotSha256,
+      sourceAfterSnapshotSha256: second.sourceAfterSnapshotSha256,
+      inventorySnapshotSha256: second.inventorySnapshotSha256,
+      sourceUnchanged: true,
+      sourceEditVersion: PCB_NET_MEMBERSHIP_SOURCE_EDIT_VERSION,
+      samplesPerRead: 2,
+      observationCycles: 2,
+      completeFamilies: [...PCB_NET_MEMBERSHIP_TYPES],
+      fingerprintSha256: sha256Json(fingerprint)
+    }
+  };
+  const result = { ...sample, read_consistency: { stable: true, attempts: 2, snapshotSha256: sha256Json(sample), contextBinding: second.contextBinding } };
+  if (Buffer.byteLength(JSON.stringify(result)) > PCB_NET_MEMBERSHIP_MAX_BYTES) {
+    throw new Error("PCB primitive type proof exceeds its byte bound.");
+  }
+  return result;
+}
+var PCB_PRIMITIVE_TYPE_METHOD, PCB_PRIMITIVE_TYPE_PROFILE, PCB_PRIMITIVE_TYPE_LIMITATIONS, identity8, pcbPrimitiveTypeArgumentsSchema, pcbPrimitiveTypeRequestSchema, pcbPrimitiveTypeResultSchema, hash4, consistencySchema, payloadSchema;
+var init_pcb_primitive_type_read = __esm({
+  "server/src/pcb-primitive-type-read.ts"() {
+    init_zod();
+    init_core3();
+    init_document_source();
+    init_pcb_net_membership();
+    PCB_PRIMITIVE_TYPE_METHOD = "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId";
+    PCB_PRIMITIVE_TYPE_PROFILE = "easyeda-pro-control.pcb-primitive-type.v1";
+    PCB_PRIMITIVE_TYPE_LIMITATIONS = [
+      "Native identity classification, not execution or return-parity of the installed public method, whose body is empty in API 0.2.53.aee2f57a.",
+      "One literal existing ID, restricted to Line, Arc, Via, standalone Pad and component-owned ComponentPad. Missing IDs, other families and ambiguous membership refuse; no undefined/absence claim is made.",
+      "Requires complete source/inventory correspondence for all five supported families, including empty-net objects, before classifying the requested ID. Physical pad owner and PAD_NET correlation must agree.",
+      "Requires one active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769. Library, partition and unmodeled source records are unsupported; nonselected outline/text/metadata contributes no type result.",
+      "Two matching source/inventory/source cycles require unchanged runtime and full observed context. Switching away and back between observations remains undetectable.",
+      "Bounded to 20,000 native source records, 16 MiB source evidence and 2 MiB result; no truncation, electrical-connectivity, geometry, saved-file or persistence proof."
+    ];
+    identity8 = external_exports.string().min(1).max(256).regex(/^[^\u0000-\u001F\u007F]+$/u);
+    pcbPrimitiveTypeArgumentsSchema = external_exports.object({ id: identity8 }).strict();
+    pcbPrimitiveTypeRequestSchema = external_exports.object({ method: external_exports.literal(PCB_PRIMITIVE_TYPE_METHOD), arguments: pcbPrimitiveTypeArgumentsSchema }).strict();
+    pcbPrimitiveTypeResultSchema = external_exports.enum(PCB_NET_MEMBERSHIP_TYPES);
+    hash4 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    consistencySchema = external_exports.object({
+      stable: external_exports.literal(true),
+      attempts: external_exports.literal(2),
+      snapshotSha256: hash4,
+      contextBinding: external_exports.object({ level: external_exports.literal("active-context-stability-required"), preAndPostChecked: external_exports.literal(true), switchAwayAndBackDetectable: external_exports.literal(false) }).strict()
+    }).strict();
+    payloadSchema = external_exports.object({ ok: external_exports.literal(true), kind: external_exports.enum(["pcb-source", "pcb-inventory"]), documentType: external_exports.literal(3), read_consistency: consistencySchema }).loose();
   }
 });
 
@@ -45981,6 +46154,9 @@ function readImplementationTestName(path5) {
   return readImplementationName(path5);
 }
 function readImplementationName(path5) {
+  if (path5 === PCB_PRIMITIVE_TYPE_METHOD) {
+    return "pcb-primitive-type-read";
+  }
   if (path5 === PCB_NET_MEMBERSHIP_METHOD) {
     return "pcb-net-membership-read";
   }
@@ -46046,6 +46222,9 @@ function buildPublicSdkReadCode(input) {
   }
   if (request.method === PCB_NET_MEMBERSHIP_METHOD) {
     throw new Error("PCB net membership requires the source/inventory/source specialized reader.");
+  }
+  if (request.method === PCB_PRIMITIVE_TYPE_METHOD) {
+    throw new Error("PCB primitive type requires the source/inventory/source specialized reader.");
   }
   const definition = definitions.get(request.method);
   if (definition === void 0) {
@@ -46212,6 +46391,9 @@ function validatePublicSdkReadPayload(input, requestInput) {
   if (request.method === PCB_NET_MEMBERSHIP_METHOD) {
     throw new Error("PCB net membership results require the complete source/inventory specialized verifier.");
   }
+  if (request.method === PCB_PRIMITIVE_TYPE_METHOD) {
+    throw new Error("PCB primitive type results require the complete source/inventory specialized verifier.");
+  }
   const definition = definitions.get(request.method);
   if (definition === void 0) {
     throw new Error("Unsupported fixed SDK method.");
@@ -46220,7 +46402,7 @@ function validatePublicSdkReadPayload(input, requestInput) {
   if (Buffer.byteLength(JSON.stringify(input), "utf8") > PUBLIC_SDK_READ_MAX_BYTES) {
     throw new Error("Public SDK observation exceeds the byte bound.");
   }
-  const payload = payloadSchema.parse(input);
+  const payload = payloadSchema2.parse(input);
   if (payload.method !== request.method || !Object.hasOwn(payload, "value") || !payload.present && (!definition.optionalResult || payload.value !== null || payload.undefinedPaths.length !== 1 || payload.undefinedPaths[0] !== "/value")) {
     throw new Error("Public SDK read result does not match its request.");
   }
@@ -46359,7 +46541,7 @@ function validatePublicSdkReadPayload(input, requestInput) {
     limitations: [...definition.limitations]
   };
 }
-var PUBLIC_SDK_READ_API_SHA256, PUBLIC_SDK_READ_MAX_BYTES, MAX_ITEMS, MAX_NODES, ALL_DOCUMENTS, SCHEMATIC_DOCUMENTS, PCB_DOCUMENTS, id3, text3, name3, coordinate3, ids, primitiveIds, emptyArguments2, layerInner, layerCustom, layerCopper, layerLine, layerImage, layerFill, layer, layerLineSchema, layerImageSchema, optionalLock, optionalNet, definitions, interpolationValues, linePoints, splitLinesSchema, boundedPolygon, boundedComplexPolygon, splitPolygonGroups, SPLIT_POLYGON_METHOD, pcbGetters, schGetters, regionRuleTypes, pcbFilters, requestShape, publicSdkReadRequestSchema, payloadSchema, stringsResult, recordResult, rgbaResult, splitLineValue, splitLinesResult, symbolPinRows, resultSchemas, numericStateFields, booleanStateFields, stringStateFields, optionalComponentFields, nullableStyleFields;
+var PUBLIC_SDK_READ_API_SHA256, PUBLIC_SDK_READ_MAX_BYTES, MAX_ITEMS, MAX_NODES, ALL_DOCUMENTS, SCHEMATIC_DOCUMENTS, PCB_DOCUMENTS, id3, text3, name3, coordinate3, ids, primitiveIds, emptyArguments2, layerInner, layerCustom, layerCopper, layerLine, layerImage, layerFill, layer, layerLineSchema, layerImageSchema, optionalLock, optionalNet, definitions, interpolationValues, linePoints, splitLinesSchema, boundedPolygon, boundedComplexPolygon, splitPolygonGroups, SPLIT_POLYGON_METHOD, pcbGetters, schGetters, regionRuleTypes, pcbFilters, requestShape, publicSdkReadRequestSchema, payloadSchema2, stringsResult, recordResult, rgbaResult, splitLineValue, splitLinesResult, symbolPinRows, resultSchemas, numericStateFields, booleanStateFields, stringStateFields, optionalComponentFields, nullableStyleFields;
 var init_public_sdk_read = __esm({
   "server/src/public-sdk-read.ts"() {
     init_zod();
@@ -46372,6 +46554,7 @@ var init_public_sdk_read = __esm({
     init_schematic_text_read();
     init_schematic_netgroup_read();
     init_pcb_net_membership();
+    init_pcb_primitive_type_read();
     PUBLIC_SDK_READ_API_SHA256 = "5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc";
     PUBLIC_SDK_READ_MAX_BYTES = 2097152;
     MAX_ITEMS = 2e4;
@@ -46542,6 +46725,11 @@ var init_public_sdk_read = __esm({
       parameterSupport: "narrowed",
       limitations: [...PCB_NET_MEMBERSHIP_LIMITATIONS]
     });
+    add(PCB_PRIMITIVE_TYPE_METHOD, [3], "string", pcbPrimitiveTypeArgumentsSchema, ["id"], {
+      implementationKind: "native-task-equivalent",
+      parameterSupport: "narrowed",
+      limitations: [...PCB_PRIMITIVE_TYPE_LIMITATIONS]
+    });
     for (const method of ["getAllNetName", "getAllNetsName"]) {
       add(`eda.pcb_Net.${method}`, [3], "strings");
     }
@@ -46617,7 +46805,7 @@ var init_public_sdk_read = __esm({
         limitations: [
           "Native root Wire/Bus NetGroup DTOs on an ordinary active SCH_PAGE, not public SDK getter parity. Symbol/block-instance pages, structural GROUP records, descendant selectors and net filters refuse.",
           "get and getAll return arrays sorted by primitiveId, including singular get. Selected get accepts one ID or 1-256 distinct IDs; any missing or wrong-family target refuses. Complete Wire and Bus ownership is checked even for a selected read.",
-          "Each group returns primitiveId, modelType=NetGroup, kind, lines, names and customAttributeIds. Every line retains its identity, one or two native XY pairs, nullable color/width/strokeStyle. Y is not inverted. Styles are raw null or SOLID/SHORT_DASH/DOT/DOT_DASH, not public numeric enums or theme defaults.",
+          "Each group returns primitiveId, modelType=NetGroup, kind, lines, names and customAttributeIds. Every line retains its identity, one or two native XY pairs, nullable color/width/strokeStyle. Y is not inverted. Styles are null or SOLID/SHORT_DASH/DOT/DOT_DASH projected from exact native enums 0\u20133, with raw values retained for drift checks; no theme defaults are resolved.",
           "Every source-backed NET child returns its identity and literal value, including empty or conflicting values. No first-name selection, net compilation or connectivity claim. Custom attributes are identity-only; generated junction/disconnection markers are ownership-checked but omitted from DTOs.",
           "Complete reciprocal tree/index/source/root-family and child-collection proof; at most 20000 models/source IDs, 256 groups and across both families 1024 lines, 1024 names, 1024 custom attributes, 262144 string units. Limits apply before selection. Native signed zero is checked but JSON transport normalizes it.",
           "Two scalar captures plus final scalar reproof; no public wrappers, serializers, compiler, AST/name lookup, RPC, display getters, settings, navigation or Save. This is bounded group state, not complete source, resolved nets or durable-state proof."
@@ -46797,7 +46985,7 @@ var init_public_sdk_read = __esm({
         return external_exports.NEVER;
       }
     });
-    payloadSchema = external_exports.object({ ok: external_exports.literal(true), kind: external_exports.literal("public-sdk-read"), method: external_exports.string(), present: external_exports.boolean(), value: external_exports.unknown(), undefinedPaths: external_exports.array(external_exports.string().max(4096)).max(MAX_NODES) }).strict();
+    payloadSchema2 = external_exports.object({ ok: external_exports.literal(true), kind: external_exports.literal("public-sdk-read"), method: external_exports.string(), present: external_exports.boolean(), value: external_exports.unknown(), undefinedPaths: external_exports.array(external_exports.string().max(4096)).max(MAX_NODES) }).strict();
     stringsResult = external_exports.array(external_exports.string()).max(MAX_ITEMS);
     recordResult = external_exports.record(external_exports.string(), external_exports.unknown());
     rgbaResult = external_exports.object({ r: external_exports.number(), g: external_exports.number(), b: external_exports.number(), alpha: external_exports.number() }).strict().nullable();
@@ -48090,6 +48278,7 @@ var init_engine = __esm({
     init_schematic_text_read();
     init_schematic_netgroup_read();
     init_pcb_net_membership();
+    init_pcb_primitive_type_read();
     init_editor_tab_lookups();
     init_schematic_native_adapter();
     init_schematic_flat_read();
@@ -49152,6 +49341,9 @@ var init_engine = __esm({
         const parsed2 = validatePublicSdkReadRequest(request, boundContext.document.documentType);
         if (parsed2.method === PCB_NET_MEMBERSHIP_METHOD) {
           throw new Error("PCB net membership requires its exact-runtime source/inventory coordinator.");
+        }
+        if (parsed2.method === PCB_PRIMITIVE_TYPE_METHOD) {
+          throw new Error("PCB primitive type requires its exact-runtime source/inventory coordinator.");
         }
         if (isEditorTabLookupMethod(parsed2.method)) {
           return readEditorTabLookup(this, parsed2, boundContext);
@@ -53403,7 +53595,7 @@ var init_schematic_native_wire = __esm({
 });
 
 // server/src/stack-native-persistence.ts
-function identity8(object4) {
+function identity9(object4) {
   const value = JSON.parse(object4.id);
   if (!Array.isArray(value) || value.length !== 2 || value[0] !== object4.type || typeof value[1] !== "number") {
     throw new Error("Invalid native stack record identity.");
@@ -53424,7 +53616,7 @@ function expectedNativeStackIntermediate(before, expected2) {
       return previous;
     }
     return { id: object4.id, type: object4.type, body: {
-      layerId: identity8(object4),
+      layerId: identity9(object4),
       layerType: "SUBSTRATE",
       layerName: object4.body["layerName"],
       use: false,
@@ -53444,8 +53636,8 @@ function buildNativeStackPersistenceCode(before, expected2) {
   const merge2 = buildReviewedNativeSourceMerge(intermediate, expected2);
   const physical = expected2.objects.filter((object4) => object4.type === "LAYER_PHYS").toSorted((left, right) => Number(left.body["zIndex"]) - Number(right.body["zIndex"]));
   const rows = physical.map((object4) => {
-    const layerId = identity8(object4);
-    const layer4 = expected2.objects.find((entry) => entry.type === "LAYER" && identity8(entry) === layerId);
+    const layerId = identity9(object4);
+    const layer4 = expected2.objects.find((entry) => entry.type === "LAYER" && identity9(entry) === layerId);
     if (layer4 === void 0 || typeof object4.body["thickness"] !== "number") {
       throw new Error("Native physical layer is incomplete.");
     }
@@ -53461,10 +53653,10 @@ function buildNativeStackPersistenceCode(before, expected2) {
       zIndex: object4.body["zIndex"]
     };
   });
-  const uploadIds = expected2.objects.filter((object4) => object4.type === "LAYER" && canonicalJson(before.objects.find((old) => old.id === object4.id) ?? null) !== canonicalJson(object4)).map((object4) => identity8(object4));
+  const uploadIds = expected2.objects.filter((object4) => object4.type === "LAYER" && canonicalJson(before.objects.find((old) => old.id === object4.id) ?? null) !== canonicalJson(object4)).map((object4) => identity9(object4));
   for (const object4 of expected2.objects) {
-    if (object4.type === "LAYER" && object4.body["layerType"] === "SUBSTRATE" && !uploadIds.includes(identity8(object4))) {
-      uploadIds.push(identity8(object4));
+    if (object4.type === "LAYER" && object4.body["layerType"] === "SUBSTRATE" && !uploadIds.includes(identity9(object4))) {
+      uploadIds.push(identity9(object4));
     }
   }
   return `
@@ -56877,15 +57069,15 @@ async function workerProfile(assetsRoot) {
   }
   const file2 = await open9(path5, constants5.O_RDONLY | constants5.O_NOFOLLOW);
   try {
-    const hash11 = createHash10("sha256");
+    const hash12 = createHash10("sha256");
     for await (const chunk of file2.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         fail5();
       }
-      hash11.update(chunk);
+      hash12.update(chunk);
     }
     const after = await file2.stat({ bigint: true }), current2 = await lstat9(path5, { bigint: true });
-    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash11.digest("hex") !== WORKER.sha256) {
+    if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash12.digest("hex") !== WORKER.sha256) {
       fail5();
     }
   } finally {
@@ -57678,11 +57870,11 @@ function symbolEvidence(model, history) {
   if (!(model.kind === "part" && rotation2 === 90 || model.kind === "netport" && (rotation2 === 180 || rotation2 === 270)) || model.body["isMirror"] !== false || symbol4 === void 0 || !same14(symbol4.records.find((row) => row.type === "CANVAS")?.body, { originX: 0, originY: 0 }) || !symbol4.records.some((row) => row.type === "PART" && row.id === model.body["partId"])) {
     throw new Error("Unreviewed schematic component coordinate reconstruction.");
   }
-  const hash11 = sha256Json({ uuid: symbol4.uuid, docType: symbol4.docType, metadata: symbol4.metadata, records: symbol4.records.map(({ id: id7, type: type2, body: body3 }) => ({ id: id7, type: type2, body: body3 })) });
-  if (hash11 !== symbol4.semanticSha256) {
+  const hash12 = sha256Json({ uuid: symbol4.uuid, docType: symbol4.docType, metadata: symbol4.metadata, records: symbol4.records.map(({ id: id7, type: type2, body: body3 }) => ({ id: id7, type: type2, body: body3 })) });
+  if (hash12 !== symbol4.semanticSha256) {
     throw new Error("Coordinate reconstruction library evidence changed.");
   }
-  return { hash: hash11, rotation: rotation2 };
+  return { hash: hash12, rotation: rotation2 };
 }
 function multiply2(a, b) {
   const result = [];
@@ -58322,21 +58514,21 @@ function deriveSchematicWireGroupRepair(operation, before, legacy, native, creat
   });
   return { source: source3, descriptor };
 }
-var identifier4, hash4, orderSchema, schematicWireGroupRepairDescriptorSchema, point4, equal4, ends2, line4;
+var identifier4, hash5, orderSchema, schematicWireGroupRepairDescriptorSchema, point4, equal4, ends2, line4;
 var init_schematic_layout_wire_groups = __esm({
   "server/src/schematic-layout-wire-groups.ts"() {
     init_zod();
     init_core3();
     init_schematic_wire_order();
     identifier4 = external_exports.string().regex(/^[a-f0-9]{16}$/u);
-    hash4 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hash5 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     orderSchema = external_exports.number().int().nonnegative();
     schematicWireGroupRepairDescriptorSchema = external_exports.object({
       profile: external_exports.literal("easyeda-pro-control.schematic-wire-group-repair.v1"),
-      operationSha256: hash4,
-      createdIdsSha256: hash4,
-      legacySourceSha256: hash4,
-      correctedSourceSha256: hash4,
+      operationSha256: hash5,
+      createdIdsSha256: hash5,
+      legacySourceSha256: hash5,
+      correctedSourceSha256: hash5,
       merges: external_exports.array(external_exports.object({ flagId: identifier4, mainWireId: identifier4, dropWireId: identifier4, lineId: identifier4, relevanceId: identifier4 }).strict()).min(1).max(128),
       wireOrders: external_exports.array(external_exports.object({ id: identifier4, before: orderSchema, after: orderSchema }).strict()).max(256)
     }).strict();
@@ -60784,7 +60976,7 @@ function replaceDocument(history, replacement) {
   return { ...history, documents, semanticSha256: sha256Json(documents.map(({ uuid: uuid8, docType, semanticSha256 }) => ({ uuid: uuid8, docType, semanticSha256 }))) };
 }
 function projectSettledPriorInverse(input, prior) {
-  if (!/^easyeda-[a-z0-9-]+$/u.test(prior.operationId) || ![prior.journalSha256, prior.inversePhaseSha256].every((hash11) => /^[a-f0-9]{64}$/u.test(hash11)) || prior.restored.sha256 !== prior.before.sha256 || canonicalJson(prior.restored) !== canonicalJson(prior.before)) {
+  if (!/^easyeda-[a-z0-9-]+$/u.test(prior.operationId) || ![prior.journalSha256, prior.inversePhaseSha256].every((hash12) => /^[a-f0-9]{64}$/u.test(hash12)) || prior.restored.sha256 !== prior.before.sha256 || canonicalJson(prior.restored) !== canonicalJson(prior.before)) {
     throw new Error("Related inverse lacks exact retained restoration evidence.");
   }
   verifyDesignBaseline({ checkpoint: input.before, source: input.expectedBefore, targets: [] });
@@ -61074,7 +61266,7 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
     changedPins
   };
 }
-var generatedNet, identity9, misnamedPinsSchema;
+var generatedNet, identity10, misnamedPinsSchema;
 var init_schematic_layout_repair_topology = __esm({
   "server/src/schematic-layout-repair-topology.ts"() {
     init_zod();
@@ -61082,11 +61274,11 @@ var init_schematic_layout_repair_topology = __esm({
     init_design_topology();
     init_schematic_native_adapter();
     generatedNet = /^\$[0-9]+N[0-9]+$/u;
-    identity9 = external_exports.string().min(1).max(512);
+    identity10 = external_exports.string().min(1).max(512);
     misnamedPinsSchema = external_exports.array(external_exports.object({
-      componentId: identity9,
-      pinId: identity9,
-      expectedNet: identity9,
+      componentId: identity10,
+      pinId: identity10,
+      expectedNet: identity10,
       observedNet: external_exports.string().max(512).regex(generatedNet),
       wireId: external_exports.string().regex(/^[a-f0-9]{16}$/u)
     }).strict()).min(1).max(4096);
@@ -61898,14 +62090,14 @@ function verifyLayoutRetainedSaveAuthority(journal, afterPhase, acknowledgment) 
 }
 function verifyFlatDisplayRetainedSaveAuthority(journal, prepared, acknowledgment) {
   const binding2 = assertFlatDisplayBinding(journal.plan.flatDisplay, journal.plan.operation, journal.context);
-  const hash11 = sha256Text(canonicalJson(binding2));
-  if (!isRecord(prepared) || prepared["flatBindingSha256"] !== hash11 || typeof prepared["observationSha256"] !== "string" || !/^[a-f0-9]{64}$/u.test(prepared["observationSha256"]) || !isRecord(acknowledgment) || !isRecord(acknowledgment["flatDisplaySaveGuard"])) {
+  const hash12 = sha256Text(canonicalJson(binding2));
+  if (!isRecord(prepared) || prepared["flatBindingSha256"] !== hash12 || typeof prepared["observationSha256"] !== "string" || !/^[a-f0-9]{64}$/u.test(prepared["observationSha256"]) || !isRecord(acknowledgment) || !isRecord(acknowledgment["flatDisplaySaveGuard"])) {
     throw new Error("Retained flat display Save lacks its sealed final synchronous guard.");
   }
   const guard = acknowledgment["flatDisplaySaveGuard"];
   if (canonicalJson(guard) !== canonicalJson({
     profile: binding2.profile,
-    bindingSha256: hash11,
+    bindingSha256: hash12,
     observationSha256: prepared["observationSha256"],
     finalSynchronousCheck: true
   })) {
@@ -64317,15 +64509,15 @@ async function verifyNativeRuleReportProfile(assetsRoot, kindInput) {
     }
     const file2 = await open10(path5, constants6.O_RDONLY | constants6.O_NOFOLLOW);
     try {
-      const hash11 = createHash11("sha256");
+      const hash12 = createHash11("sha256");
       for await (const chunk of file2.createReadStream({ autoClose: false })) {
         if (!Buffer.isBuffer(chunk)) {
           throw new TypeError("Rule-check implementation stream is not binary.");
         }
-        hash11.update(chunk);
+        hash12.update(chunk);
       }
       const after = await file2.stat({ bigint: true }), current2 = await lstat10(path5, { bigint: true });
-      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.size !== current2.size || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash11.digest("hex") !== implementation.sha256) {
+      if (before.dev !== after.dev || before.ino !== after.ino || before.size !== after.size || before.mtimeNs !== after.mtimeNs || before.ctimeNs !== after.ctimeNs || after.dev !== current2.dev || after.ino !== current2.ino || after.size !== current2.size || after.mtimeNs !== current2.mtimeNs || after.ctimeNs !== current2.ctimeNs || hash12.digest("hex") !== implementation.sha256) {
         throw new Error("Rule-check implementation differs from its reviewed profile.");
       }
     } finally {
@@ -64423,7 +64615,7 @@ function summary2(journal) {
 function isJournal(value) {
   return isRecord(value) && isRecord(value["plan"]) && value["plan"]["profile"] === PROFILE6 && isRecord(value["plan"]["check"]) && isRecord(value["plan"]["expectedContext"]) && isRecord(value["plan"]["expectedFingerprint"]) && typeof value["plan"]["maxInlineItems"] === "number" && typeof value["operationId"] === "string" && typeof value["planHash"] === "string" && typeof value["journalPath"] === "string" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["updatedAt"] === "string" && typeof value["sequence"] === "number" && typeof value["calculationDispatched"] === "boolean" && isRecord(value["context"]) && checkpointSchema3.safeParse(value["preCheckpoint"]).success && Array.isArray(value["artifacts"]);
 }
-var PROFILE6, hash5, checkpointSchema3, verificationSchema, dependencies, RuleCheckExecutor;
+var PROFILE6, hash6, checkpointSchema3, verificationSchema, dependencies, RuleCheckExecutor;
 var init_check_execution = __esm({
   "server/src/check-execution.ts"() {
     init_zod();
@@ -64437,14 +64629,14 @@ var init_check_execution = __esm({
     init_design_execution();
     init_transaction_error();
     PROFILE6 = "easyeda-pro-control.rule-check-transaction.v1";
-    hash5 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hash6 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     checkpointSchema3 = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.checkpoint.v2"),
       source: external_exports.string().min(1),
       checkpoint: external_exports.string().min(1),
       receiptPath: external_exports.string().min(1),
-      checkpointSha256: hash5,
-      checkpointDumpSha256: hash5
+      checkpointSha256: hash6,
+      checkpointDumpSha256: hash6
     }).catchall(external_exports.unknown());
     verificationSchema = external_exports.object({
       ok: external_exports.literal(true),
@@ -64452,10 +64644,10 @@ var init_check_execution = __esm({
       checkpointMatchesReceipt: external_exports.literal(true),
       sourceEqualsCheckpoint: external_exports.literal(true),
       sourceChanged: external_exports.literal(false),
-      checkpointSha256: hash5,
-      checkpointDumpSha256: hash5,
-      sourceSha256: hash5,
-      sourceDumpSha256: hash5,
+      checkpointSha256: hash6,
+      checkpointDumpSha256: hash6,
+      sourceSha256: hash6,
+      sourceDumpSha256: hash6,
       checkpoint: external_exports.string().min(1),
       source: external_exports.string().min(1),
       receiptPath: external_exports.string().min(1)
@@ -64718,15 +64910,15 @@ var init_check_execution = __esm({
 // server/src/library-operations.ts
 function assetOperations(family2) {
   return [
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family2}.get`), libraryUuid: uuid5, target: identity10 }).strict(),
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family2}.delete`), libraryUuid: uuid5, target: identity10 }).strict(),
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family2}.copy`), libraryUuid: uuid5, target: identity10, targetLibraryUuid: uuid5, classification: classification.optional(), name: name4 }).strict()
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family2}.get`), libraryUuid: uuid5, target: identity11 }).strict(),
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family2}.delete`), libraryUuid: uuid5, target: identity11 }).strict(),
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family2}.copy`), libraryUuid: uuid5, target: identity11, targetLibraryUuid: uuid5, classification: classification.optional(), name: name4 }).strict()
   ];
 }
 function sourceOperations(family2) {
   return [
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family2}.source.replace`), libraryUuid: uuid5, target: identity10, documentSource: external_exports.string().min(1).max(1048576) }).strict(),
-    external_exports.object({ id: id6, action: external_exports.literal(`library.${family2}.open`), libraryUuid: uuid5, target: identity10, splitScreenId: uuid5.optional() }).strict()
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family2}.source.replace`), libraryUuid: uuid5, target: identity11, documentSource: external_exports.string().min(1).max(1048576) }).strict(),
+    external_exports.object({ id: id6, action: external_exports.literal(`library.${family2}.open`), libraryUuid: uuid5, target: identity11, splitScreenId: uuid5.optional() }).strict()
   ];
 }
 function simpleExport(action) {
@@ -65079,7 +65271,7 @@ function listLibraryOperationCapabilities() {
     ...LIBRARY_OPERATION_GAPS.map(({ action, status: status2 }) => ({ action, status: status2 }))
   ];
 }
-var LIBRARY_OPERATION_PROFILE, MANAGED_FILE_MAX_BYTES, id6, uuid5, name4, text5, fileName, identity10, classification, symbolType2, associationIdentity, association, propertyScalar, propertyMap, deviceProperty, metadataPatch, nonemptyPatch, managedFileInputSchema, exportOptions, bomOptions, netlistOptions, primitiveSources, libraryOperationSchema, literal4, optional2, ref, source2, tabs, project, assetApis, documentApis, simpleExports, LIBRARY_OPERATION_GAPS;
+var LIBRARY_OPERATION_PROFILE, MANAGED_FILE_MAX_BYTES, id6, uuid5, name4, text5, fileName, identity11, classification, symbolType2, associationIdentity, association, propertyScalar, propertyMap, deviceProperty, metadataPatch, nonemptyPatch, managedFileInputSchema, exportOptions, bomOptions, netlistOptions, primitiveSources, libraryOperationSchema, literal4, optional2, ref, source2, tabs, project, assetApis, documentApis, simpleExports, LIBRARY_OPERATION_GAPS;
 var init_library_operations = __esm({
   "server/src/library-operations.ts"() {
     init_zod();
@@ -65091,7 +65283,7 @@ var init_library_operations = __esm({
     name4 = external_exports.string().min(1).max(512);
     text5 = external_exports.string().max(65536);
     fileName = external_exports.string().regex(/^[A-Za-z0-9][A-Za-z0-9_. -]{0,127}$/u).refine((value) => !value.includes("..") && !value.endsWith(".") && !value.endsWith(" "));
-    identity10 = external_exports.union([external_exports.object({ uuid: uuid5 }).strict(), external_exports.object({ resultOf: id6 }).strict()]);
+    identity11 = external_exports.union([external_exports.object({ uuid: uuid5 }).strict(), external_exports.object({ resultOf: id6 }).strict()]);
     classification = external_exports.array(name4).max(2);
     symbolType2 = external_exports.union([external_exports.literal(2), external_exports.literal(18), external_exports.literal(19), external_exports.literal(20), external_exports.literal(21), external_exports.literal(22), external_exports.literal(25), external_exports.literal(31), external_exports.literal(17)]);
     associationIdentity = external_exports.object({ uuid: uuid5, libraryUuid: uuid5 }).strict();
@@ -65123,30 +65315,30 @@ var init_library_operations = __esm({
       external_exports.object({ id: id6, action: external_exports.literal("library.footprint.create"), libraryUuid: uuid5, name: name4, classification: classification.optional(), description: text5.optional() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("library.device.create"), libraryUuid: uuid5, name: name4, classification: classification.optional(), association: association.extend({ symbol: associationIdentity, footprint: associationIdentity.optional(), model3D: associationIdentity.optional() }).strict(), description: text5.optional(), property: deviceProperty.optional() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("library.model3d.create"), libraryUuid: uuid5, file: managedFileInputSchema, classification: classification.optional(), unit: external_exports.enum(["mm", "cm", "m", "mil", "inch"]) }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("library.symbol.modify"), libraryUuid: uuid5, target: identity10, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("library.footprint.modify"), libraryUuid: uuid5, target: identity10, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("library.model3d.modify"), libraryUuid: uuid5, target: identity10, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("library.device.modify"), libraryUuid: uuid5, target: identity10, patch: metadataPatch.extend({ association: association.refine(nonemptyPatch).optional(), property: deviceProperty.refine(nonemptyPatch).optional() }).strict().refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("library.symbol.modify"), libraryUuid: uuid5, target: identity11, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("library.footprint.modify"), libraryUuid: uuid5, target: identity11, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("library.model3d.modify"), libraryUuid: uuid5, target: identity11, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("library.device.modify"), libraryUuid: uuid5, target: identity11, patch: metadataPatch.extend({ association: association.refine(nonemptyPatch).optional(), property: deviceProperty.refine(nonemptyPatch).optional() }).strict().refine(nonemptyPatch, "Empty patch.") }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("library.device.model-transform"), libraryUuid: uuid5, target: external_exports.object({ uuid: uuid5 }).strict(), transform: modelTransformSchema, inheritedInstances: external_exports.array(external_exports.object({ documentUuid: uuid5, documentType: external_exports.enum(["PCB", "SCH_PAGE"]), componentUuid: uuid5 }).strict()).max(2e4) }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("project.create"), name: name4, projectName: external_exports.string().regex(/^[A-Za-z0-9-]{1,128}$/u).optional(), teamUuid: uuid5, folderUuid: uuid5.optional(), description: text5.optional() }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("project.open"), target: identity10 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.open"), target: identity10, splitScreenId: uuid5.optional() }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("project.open"), target: identity11 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.open"), target: identity11, splitScreenId: uuid5.optional() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("document.activate"), tabId: uuid5 }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("document.close"), tabId: uuid5 }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("document.pcb.create"), boardName: name4.optional() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("document.schematic.create"), boardName: name4.optional() }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.page.create"), schematic: identity10 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.copy"), target: identity10, boardName: name4.optional() }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.copy"), target: identity10, boardName: name4.optional() }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.page.copy"), target: identity10, schematic: identity10 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.rename"), target: identity10, name: name4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.rename"), target: identity10, name: name4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.page.rename"), target: identity10, name: name4 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.delete"), target: identity10 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.delete"), target: identity10 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.page.delete"), target: identity10 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.save"), target: identity10 }).strict(),
-      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.save"), target: identity10 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.page.create"), schematic: identity11 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.copy"), target: identity11, boardName: name4.optional() }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.copy"), target: identity11, boardName: name4.optional() }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.page.copy"), target: identity11, schematic: identity11 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.rename"), target: identity11, name: name4 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.rename"), target: identity11, name: name4 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.page.rename"), target: identity11, name: name4 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.delete"), target: identity11 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.delete"), target: identity11 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.page.delete"), target: identity11 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.pcb.save"), target: identity11 }).strict(),
+      external_exports.object({ id: id6, action: external_exports.literal("document.schematic.save"), target: identity11 }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("export.pcb.gerber"), ...exportOptions, colorSilkscreen: external_exports.boolean(), unit: external_exports.enum(["mm", "inch"]), digitalFormat: external_exports.object({ integerNumber: external_exports.number().int().min(1).max(6), decimalNumber: external_exports.number().int().min(1).max(6) }).strict(), other: external_exports.object({ metallicDrillingInformation: external_exports.boolean(), nonMetallicDrillingInformation: external_exports.boolean(), drillTable: external_exports.boolean(), flyingProbeTestingFile: external_exports.boolean() }).strict(), layers: external_exports.array(external_exports.object({ layerId: external_exports.number().int().min(1).max(100), isMirror: external_exports.boolean() }).strict()).min(1).max(100), objects: external_exports.array(external_exports.enum(primitiveSources)).min(1).max(17) }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("export.pcb.model3d"), ...exportOptions, fileType: external_exports.enum(["step", "obj"]), elements: external_exports.array(external_exports.enum(["Component Model", "Via", "Silkscreen", "Wire In Signal Layer"])).max(4), modelMode: external_exports.enum(["Outfit", "Parts"]), autoGenerateModels: external_exports.boolean() }).strict(),
       external_exports.object({ id: id6, action: external_exports.literal("export.pcb.pick-and-place"), ...exportOptions, fileType: external_exports.enum(["xlsx", "csv"]), unit: external_exports.enum(["mm", "mil"]) }).strict(),
@@ -65369,14 +65561,14 @@ var init_library_persistence_proof = __esm({
 
 // server/src/editor-tabs.ts
 function buildEditorTargetAbsentExpression(input) {
-  const identity15 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
+  const identity16 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
   const active = external_exports.object({
-    uuid: identity15,
+    uuid: identity16,
     documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]),
     // oxlint-disable-next-line eslint/no-control-regex -- Native tab identities must not contain control characters.
     tabId: external_exports.string().min(1).max(512).regex(/^[^\u0000-\u001F]+$/u)
   }).strict();
-  const scope3 = external_exports.object({ targetUuid: identity15, projectUuid: identity15, ownerUuid: identity15, active }).strict().parse(input);
+  const scope3 = external_exports.object({ targetUuid: identity16, projectUuid: identity16, ownerUuid: identity16, active }).strict().parse(input);
   if (scope3.active.uuid === scope3.targetUuid || scope3.active.tabId.split("@")[0] !== scope3.active.uuid) {
     throw new Error("Closed-target proof requires one exact different active tab.");
   }
@@ -65504,6 +65696,17 @@ var init_editor_tabs = __esm({
 
 // server/src/project-open-execution.ts
 import { join as join18 } from "node:path";
+function failureCategory(error51) {
+  try {
+    if (typeof error51 !== "object" || error51 === null) {
+      return "unclassified-operation-failure";
+    }
+    const message = Object.getOwnPropertyDescriptor(error51, "message")?.value;
+    return typeof message === "string" && message.length <= 512 ? failureCategories.get(message) ?? "unclassified-operation-failure" : "unclassified-operation-failure";
+  } catch {
+    return "unclassified-operation-failure";
+  }
+}
 async function checkpointPolicy(source3) {
   return { expectedSource: source3, artifactRoots: [join18(controlDataDirectory(), "checkpoints")], controlRoot: await controlRootCapability() };
 }
@@ -65530,7 +65733,7 @@ function isJournal2(value) {
     return false;
   }
   const plan = value["plan"];
-  return plan["profile"] === PROFILE7 && projectOpenTargetSchema.safeParse(plan["target"]).success && isRecord(plan["expectedFingerprint"]) && isRecord(plan["expectedContext"]) && typeof value["operationId"] === "string" && typeof value["planHash"] === "string" && typeof value["journalPath"] === "string" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["updatedAt"] === "string" && typeof value["sequence"] === "number" && isRecord(value["context"]) && hash6.safeParse(value["beforeRecordsSha256"]).success && receiptSchema2.safeParse(value["preCheckpoint"]).success && Array.isArray(value["artifacts"]);
+  return plan["profile"] === PROFILE7 && projectOpenTargetSchema.safeParse(plan["target"]).success && isRecord(plan["expectedFingerprint"]) && isRecord(plan["expectedContext"]) && typeof value["operationId"] === "string" && typeof value["planHash"] === "string" && typeof value["journalPath"] === "string" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["updatedAt"] === "string" && typeof value["sequence"] === "number" && isRecord(value["context"]) && hash7.safeParse(value["beforeRecordsSha256"]).success && receiptSchema2.safeParse(value["preCheckpoint"]).success && Array.isArray(value["artifacts"]);
 }
 function assertProjectOpenDatabaseUnchanged(input, checkpoint) {
   const value = verificationSchema2.parse(input);
@@ -65539,7 +65742,7 @@ function assertProjectOpenDatabaseUnchanged(input, checkpoint) {
   }
   return value;
 }
-var PROFILE7, hash6, valueRecord, projectOpenTargetSchema, projectOpenInputSchema, identitySchema, receiptSchema2, verificationSchema2, dependencies2, ProjectOpenExecutor;
+var PROFILE7, failureStates, failureCategories, hash7, valueRecord, projectOpenTargetSchema, projectOpenInputSchema, identitySchema, receiptSchema2, verificationSchema2, dependencies2, ProjectOpenExecutor;
 var init_project_open_execution = __esm({
   "server/src/project-open-execution.ts"() {
     init_zod();
@@ -65553,8 +65756,28 @@ var init_project_open_execution = __esm({
     init_recovery_navigation();
     init_transaction_error();
     init_editor_tabs();
+    init_native_diagnostics();
     PROFILE7 = "easyeda-pro-control.project-open.v1";
-    hash6 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    failureStates = /* @__PURE__ */ new Set(["planned", "project-open-dispatching", "editor-tabs-dispatching", "project-open-reconcile-dispatching", "project-open-reconcile-final-dispatching"]);
+    failureCategories = new Map(RECOVERY_NAVIGATION_FAILURE_STAGES.flatMap((stage) => {
+      const category = `native-preflight:RECOVERY_${stage.toUpperCase().replaceAll("-", "_")}`;
+      const entries = [[`Recovery navigation refused: ${stage}`, category]];
+      for (const kind of ["failure", "failure or unavailability"]) {
+        entries.push([`The upstream EasyEDA tool reported ${kind} [${category}].`, category]);
+      }
+      return entries;
+    }));
+    for (const category of ["unclassified-upstream-failure", "invalid-envelope", "native-api-error", "payload-too-large", "invalid-input", "unavailable", "unstable-read"]) {
+      for (const kind of ["failure", "failure or unavailability"]) {
+        failureCategories.set(`The upstream EasyEDA tool reported ${kind} [${category}].`, category);
+      }
+    }
+    failureCategories.set("The upstream bridge timed out without proving native execution ended [bridge-timeout;execution-unsettled].", "bridge-timeout");
+    failureCategories.set("The native lifecycle deadline expired without proving execution ended [native-lifecycle-timeout;execution-unsettled].", "native-lifecycle-timeout");
+    failureCategories.set("Project-open native acknowledgment is missing.", "native-acknowledgment-missing");
+    failureCategories.set("Project-open tab acknowledgment disagrees with the exact active context.", "native-acknowledgment-context");
+    failureCategories.set("Project-open proof changed SQLite tables or materialized document records.", "durable-baseline-changed");
+    hash7 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     valueRecord = external_exports.record(external_exports.string(), external_exports.unknown());
     projectOpenTargetSchema = external_exports.object({
       projectUuid: external_exports.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u),
@@ -65572,11 +65795,11 @@ var init_project_open_execution = __esm({
       createdAt: external_exports.string(),
       sourceIdentity: identitySchema,
       checkpointIdentity: identitySchema,
-      sourceSha256: hash6,
-      checkpointSha256: hash6,
-      sourceDumpSha256: hash6,
-      checkpointDumpSha256: hash6,
-      receiptSha256: hash6
+      sourceSha256: hash7,
+      checkpointSha256: hash7,
+      sourceDumpSha256: hash7,
+      checkpointDumpSha256: hash7,
+      receiptSha256: hash7
     }).loose();
     verificationSchema2 = external_exports.object({
       ok: external_exports.literal(true),
@@ -65587,9 +65810,9 @@ var init_project_open_execution = __esm({
       source: external_exports.string(),
       checkpoint: external_exports.string(),
       receiptPath: external_exports.string(),
-      sourceDumpSha256: hash6,
-      checkpointDumpSha256: hash6,
-      checkpointSha256: hash6
+      sourceDumpSha256: hash7,
+      checkpointDumpSha256: hash7,
+      checkpointSha256: hash7
     }).loose();
     dependencies2 = {
       checkpointPolicy,
@@ -65775,14 +65998,26 @@ var init_project_open_execution = __esm({
           await this.record(journal, "verified", journal.result);
           return summary3(journal);
         } catch (error51) {
-          return this.failed(journal, error51);
+          return this.failed(journal, error51, "open-existing");
         }
       }
-      async failed(journal, error51) {
+      async failed(journal, error51, action) {
+        const diagnostic = {
+          schema: "easyeda-pro-control.project-open-failure.v1",
+          action,
+          phase: failureStates.has(journal.state) ? journal.state : "unclassified-phase",
+          category: failureCategory(error51),
+          orphanedCallPossible: journal.orphanedCallPossible
+        };
         journal.state = journal.orphanedCallPossible ? "project-open-outcome-unknown" : "project-open-needs-review";
         journal.hardStop = true;
         journal.nextSafeAction = "Inspect the retained journal. Recover authority if necessary, then reconcile without opening, saving or retrying.";
         await this.services.updateOperation(journal);
+        try {
+          await this.record(journal, "failure", diagnostic);
+        } catch {
+          throw transactionError(new Error("Project-open failure evidence could not be retained; the operation remains stopped."), journal);
+        }
         throw transactionError(error51, journal);
       }
       async inspect(operationId) {
@@ -65818,7 +66053,7 @@ var init_project_open_execution = __esm({
           await this.record(journal, "editor-tabs-verified", { database, snapshotSha256: sha256Text(canonicalJson(snapshot6)) });
           return { ...summary3(journal), action: "inspect-editor-tabs", editorTabs: snapshot6, allSqliteTablesUnchanged: true };
         } catch (error51) {
-          return this.failed(journal, error51);
+          return this.failed(journal, error51, "inspect-editor-tabs");
         }
       }
       async recoverAuthority(operationId) {
@@ -65879,7 +66114,7 @@ var init_project_open_execution = __esm({
           await this.record(journal, "reconciled-no-mutation", journal.result);
           return summary3(journal);
         } catch (error51) {
-          return this.failed(journal, error51);
+          return this.failed(journal, error51, "reconcile-open");
         }
       }
     };
@@ -65896,7 +66131,7 @@ function bodyRecord(value) {
   }
   return value;
 }
-function identity11(object4, type2) {
+function identity12(object4, type2) {
   const value = JSON.parse(object4.id);
   if (!Array.isArray(value) || value[0] !== type2) {
     throw new Error("Native route source identity is malformed.");
@@ -65904,7 +66139,7 @@ function identity11(object4, type2) {
   return value;
 }
 function netName(object4) {
-  return external_exports.string().parse(identity11(object4, "NET")[1]);
+  return external_exports.string().parse(identity12(object4, "NET")[1]);
 }
 function note(code, objectIds, detail) {
   return { code, objectIds, detail };
@@ -65926,8 +66161,8 @@ function rule(source3, family2, reference2) {
   if (reference2 !== void 0 && reference2 !== null && typeof reference2 !== "string") {
     return null;
   }
-  const candidates = source3.objects.filter((entry) => entry.type === "RULE" && identity11(entry, "RULE")[1] === family2);
-  const selected = typeof reference2 === "string" && reference2 !== "default" && reference2 !== "" ? candidates.filter((entry) => identity11(entry, "RULE")[2] === reference2) : candidates.filter((entry) => entry.body["ruleState"] === "DEFAULT");
+  const candidates = source3.objects.filter((entry) => entry.type === "RULE" && identity12(entry, "RULE")[1] === family2);
+  const selected = typeof reference2 === "string" && reference2 !== "default" && reference2 !== "" ? candidates.filter((entry) => identity12(entry, "RULE")[2] === reference2) : candidates.filter((entry) => entry.body["ruleState"] === "DEFAULT");
   if (selected.length !== 1 || selected[0] === void 0) {
     return null;
   }
@@ -65958,7 +66193,7 @@ function checkedPads(source3, inventoryInput) {
   const expected2 = /* @__PURE__ */ new Map();
   for (const object4 of source3.objects) {
     if (object4.type === "PAD_NET") {
-      const id7 = identity11(object4, "PAD_NET");
+      const id7 = identity12(object4, "PAD_NET");
       if (id7.length !== 4 || !id7.slice(1).every((entry) => typeof entry === "string")) {
         throw new Error("Native PAD_NET identity is incomplete.");
       }
@@ -66311,7 +66546,7 @@ function auditPcbRoutes(source3, inventory, input) {
         return false;
       }
       if (entry.type === "POURED") {
-        const parent = identity11(entry, "POURED")[1];
+        const parent = identity12(entry, "POURED")[1];
         return source3.objects.some((candidate) => candidate.type === "POUR" && candidate.id === parent && candidate.body["netName"] === net3);
       }
       return entry.body["netName"] === net3;
@@ -66503,38 +66738,38 @@ async function runPcbRouteAudit(engine2, input) {
   }
   return result;
 }
-var hash7, record4, consistencySchema, exactPayloadSchema, routeAuditResultSchema;
+var hash8, record4, consistencySchema2, exactPayloadSchema, routeAuditResultSchema;
 var init_route_audit_execution = __esm({
   "server/src/route-audit-execution.ts"() {
     init_zod();
     init_core3();
     init_document_source();
     init_pcb_route_audit();
-    hash7 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hash8 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     record4 = external_exports.record(external_exports.string(), external_exports.unknown());
-    consistencySchema = external_exports.object({
+    consistencySchema2 = external_exports.object({
       stable: external_exports.literal(true),
       attempts: external_exports.literal(2),
-      snapshotSha256: hash7,
+      snapshotSha256: hash8,
       contextBinding: external_exports.object({ level: external_exports.literal("active-context-stability-required"), preAndPostChecked: external_exports.literal(true), switchAwayAndBackDetectable: external_exports.literal(false) }).strict()
     }).strict();
-    exactPayloadSchema = external_exports.object({ ok: external_exports.literal(true), kind: external_exports.enum(["pcb-source", "pcb-inventory"]), documentType: external_exports.literal(3), read_consistency: consistencySchema }).loose();
+    exactPayloadSchema = external_exports.object({ ok: external_exports.literal(true), kind: external_exports.enum(["pcb-source", "pcb-inventory"]), documentType: external_exports.literal(3), read_consistency: consistencySchema2 }).loose();
     routeAuditResultSchema = external_exports.object({
       ok: external_exports.literal(true),
       kind: external_exports.literal("pcb-route-audit"),
       report: pcbRouteAuditReportSchema,
       proof: external_exports.object({
         context: record4,
-        fingerprintSha256: hash7,
-        sourceBeforeSnapshotSha256: hash7,
-        sourceAfterSnapshotSha256: hash7,
-        inventorySnapshotSha256: hash7,
-        sourceSha256: hash7,
-        inventorySha256: hash7,
-        reportSha256: hash7,
+        fingerprintSha256: hash8,
+        sourceBeforeSnapshotSha256: hash8,
+        sourceAfterSnapshotSha256: hash8,
+        inventorySnapshotSha256: hash8,
+        sourceSha256: hash8,
+        inventorySha256: hash8,
+        reportSha256: hash8,
         sourceUnchanged: external_exports.literal(true),
         samplesPerRead: external_exports.literal(2),
-        contextBinding: consistencySchema.shape.contextBinding,
+        contextBinding: consistencySchema2.shape.contextBinding,
         scope: external_exports.literal("read-only-derived-active-PCB; no native calculation or save; no durable-state certification")
       }).strict()
     }).strict();
@@ -66681,23 +66916,23 @@ function deviceRequestedModel(input) {
   if (model === void 0 || model === null) {
     return void 0;
   }
-  if (!identity12.test(model.uuid) || !identity12.test(model.libraryUuid)) {
+  if (!identity13.test(model.uuid) || !identity13.test(model.libraryUuid)) {
     throw new Error("Existing model assignment requires exact 32-hex asset and external collection identities, not filenames or paths.");
   }
   return { uuid: model.uuid, libraryUuid: model.libraryUuid };
 }
 function validateDeviceModelMetadata(input, expected2) {
-  if (!identity12.test(expected2.uuid) || !identity12.test(expected2.libraryUuid) || !isRecord(input) || input["uuid"] !== expected2.uuid || input["libraryUuid"] !== expected2.libraryUuid || input["libraryType"] !== "5" || typeof input["name"] !== "string" || input["name"].length === 0 || input["name"].length > 512) {
+  if (!identity13.test(expected2.uuid) || !identity13.test(expected2.libraryUuid) || !isRecord(input) || input["uuid"] !== expected2.uuid || input["libraryUuid"] !== expected2.libraryUuid || input["libraryType"] !== "5" || typeof input["name"] !== "string" || input["name"].length === 0 || input["name"].length > 512) {
     throw new Error("Existing external model metadata identity, owner, type or title differs.");
   }
   return { ...expected2, metadata: structuredClone(input) };
 }
-var identity12, DEVICE_MODEL_RUNTIME_GUARD;
+var identity13, DEVICE_MODEL_RUNTIME_GUARD;
 var init_device_model = __esm({
   "server/src/device-model.ts"() {
     init_core3();
     init_library_operations();
-    identity12 = /^[a-f0-9]{32}$/u;
+    identity13 = /^[a-f0-9]{32}$/u;
     DEVICE_MODEL_RUNTIME_GUARD = `if(PLAN.model!==undefined){const api=eda.lib_3DModel;if(typeof api?.get!=='function')throw new Error('DEVICE_MODEL_GETTER_MISSING');const actual=await api.get(PLAN.model.uuid,PLAN.model.libraryUuid);const encoded=JSON.stringify(actual);if(typeof encoded!=='string'||new TextEncoder().encode(encoded).byteLength>1048576||stable(JSON.parse(encoded))!==stable(PLAN.model.metadata))throw new Error('DEVICE_MODEL_METADATA_DRIFT');await assertProject();}`;
   }
 });
@@ -66735,8 +66970,8 @@ function prepareDeviceAssociation(input, history, modelInput) {
   const associations = [];
   const requestedModel = deviceRequestedModel(parsed2);
   const model = requestedModel === void 0 ? void 0 : validateDeviceModelMetadata(modelInput, requestedModel);
-  for (const [family2, identity15] of Object.entries(parsed2.patch.association ?? {})) {
-    if (family2 === "model3D" && identity15 === null) {
+  for (const [family2, identity16] of Object.entries(parsed2.patch.association ?? {})) {
+    if (family2 === "model3D" && identity16 === null) {
       attributes2["3D Model"] = "";
     } else if (family2 === "model3D" && model !== void 0) {
       attributes2["3D Model"] = `${model.uuid}|${model.libraryUuid}`;
@@ -66746,13 +66981,13 @@ function prepareDeviceAssociation(input, history, modelInput) {
         throw new Error("Unreviewed project association family.");
       }
       const key = family2 === "symbol" ? "Symbol" : "Footprint";
-      if (identity15 === null && family2 === "footprint") {
+      if (identity16 === null && family2 === "footprint") {
         attributes2[key] = "";
       } else {
-        if (!isRecord(identity15) || identity15.libraryUuid !== history.projectUuid || typeof identity15.uuid !== "string") {
+        if (!isRecord(identity16) || identity16.libraryUuid !== history.projectUuid || typeof identity16.uuid !== "string") {
           throw new Error("Association may not import or reference an off-project asset.");
         }
-        const target5 = history.documents.find((entry) => entry.uuid === identity15.uuid && entry.docType === (family2 === "symbol" ? "SYMBOL" : "FOOTPRINT") && !isNativeDocumentDeleted(entry));
+        const target5 = history.documents.find((entry) => entry.uuid === identity16.uuid && entry.docType === (family2 === "symbol" ? "SYMBOL" : "FOOTPRINT") && !isNativeDocumentDeleted(entry));
         const title4 = target5?.records.find((entry) => entry.id === "META" && entry.type === "META")?.body["title"];
         if (target5 === void 0 || typeof title4 !== "string" || title4.length === 0) {
           throw new Error("Association asset is absent from the complete checkpoint.");
@@ -68782,7 +69017,7 @@ const json=JSON.stringify(payload);return{schema:'easyeda-pro-control.exact-json
 }catch{throw new Error('Document activation refused: '+stage+(preferenceFailure===undefined?'':':'+preferenceFailure));}
 })()`;
 }
-var DOCUMENT_ACTIVATION_PROFILE, identity13, documentType, member3, contextSchema, planSchema5;
+var DOCUMENT_ACTIVATION_PROFILE, identity14, documentType, member3, contextSchema, planSchema5;
 var init_document_activation = __esm({
   "server/src/document-activation.ts"() {
     init_zod();
@@ -68792,15 +69027,15 @@ var init_document_activation = __esm({
     init_native_history();
     init_device_runtime_guard();
     DOCUMENT_ACTIVATION_PROFILE = "easyeda-pro-control.document-activation.v1";
-    identity13 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
+    identity14 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
     documentType = external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]);
-    member3 = external_exports.object({ uuid: identity13, documentType }).strict();
+    member3 = external_exports.object({ uuid: identity14, documentType }).strict();
     contextSchema = member3.extend({ tabId: external_exports.string().min(1).max(512) }).strict();
     planSchema5 = external_exports.object({
       profile: external_exports.literal(DOCUMENT_ACTIVATION_PROFILE),
-      projectUuid: identity13,
-      projectOwnerUuid: identity13,
-      branchUuid: identity13,
+      projectUuid: identity14,
+      projectOwnerUuid: identity14,
+      branchUuid: identity14,
       projectPath: external_exports.string().min(1).max(4096),
       before: contextSchema,
       target: contextSchema,
@@ -68993,7 +69228,7 @@ return envelope({kind:'document-close-reconciliation',profile:PLAN.profile,planS
 }finally{clear();}
 }catch(_){throw new Error('Clean document close refused at '+stage);}})()`;
 }
-var DOCUMENT_CLOSE_PROFILE, identity14, scopeSchema4, planSchema6, resultSchema2, reconcileSchema;
+var DOCUMENT_CLOSE_PROFILE, identity15, scopeSchema4, planSchema6, resultSchema2, reconcileSchema;
 var init_document_close = __esm({
   "server/src/document-close.ts"() {
     init_zod();
@@ -69004,13 +69239,13 @@ var init_document_close = __esm({
     init_native_history();
     init_native_editor_tab_guards();
     DOCUMENT_CLOSE_PROFILE = "easyeda-pro-control.inactive-clean-document-close.v1";
-    identity14 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
-    scopeSchema4 = external_exports.object({ uuid: identity14, documentType: external_exports.union([external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]), tabId: external_exports.string().min(1).max(512) }).strict();
+    identity15 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
+    scopeSchema4 = external_exports.object({ uuid: identity15, documentType: external_exports.union([external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]), tabId: external_exports.string().min(1).max(512) }).strict();
     planSchema6 = external_exports.object({
       profile: external_exports.literal(DOCUMENT_CLOSE_PROFILE),
-      projectUuid: identity14,
-      ownerUuid: identity14,
-      branchUuid: identity14,
+      projectUuid: identity15,
+      ownerUuid: identity15,
+      branchUuid: identity15,
       projectPath: external_exports.string().min(1).max(4096),
       active: scopeSchema4,
       target: scopeSchema4,
@@ -70384,7 +70619,7 @@ function windowsPath(value, pattern) {
   }
   return result;
 }
-function hash8(value) {
+function hash9(value) {
   return text6(value, /^[a-f0-9]{64}$/u);
 }
 function pid(value) {
@@ -70451,9 +70686,9 @@ function createWindowsAuthoritySupervisor(transport2, policy) {
   const policySha256 = sha256Json({
     schema: HELPER_SCHEMA,
     policyId: POLICY_ID,
-    helperSha256: hash8(policy.helperSha256),
-    expectedExecutableSha256: hash8(policy.expectedExecutableSha256),
-    reviewedExecutionScopeSha256: hash8(policy.reviewedExecutionScopeSha256),
+    helperSha256: hash9(policy.helperSha256),
+    expectedExecutableSha256: hash9(policy.expectedExecutableSha256),
+    reviewedExecutionScopeSha256: hash9(policy.reviewedExecutionScopeSha256),
     containment: "atomic-launch-job-list:no-breakaway:no-kill-on-close:retained-handles",
     excluded: "outside-job-brokers-services-and-unreviewed-delegation"
   });
@@ -70499,7 +70734,7 @@ function createWindowsAuthoritySupervisor(transport2, policy) {
         schema: "easyeda-pro-control.windows-process-probe.v1",
         bindingSha256: input.bindingSha256,
         port,
-        nonce: hash8(started["nonce"])
+        nonce: hash9(started["nonce"])
       };
       const dispatched = observedDispatch(probe);
       let result;
@@ -70522,7 +70757,7 @@ function createWindowsAuthoritySupervisor(transport2, policy) {
     if (currentLaunch === void 0) {
       throw new Error("Windows authority needs an explicitly supervised EasyEDA launch.");
     }
-    hash8(input.bindingSha256);
+    hash9(input.bindingSha256);
     if (usedCaptureBindings.has(input.bindingSha256)) {
       throw new Error("Windows authority capture binding was already used.");
     }
@@ -70575,7 +70810,7 @@ function createWindowsAuthoritySupervisor(transport2, policy) {
   }
   async function proveTerminated(input) {
     requireOwned();
-    hash8(input.bindingSha256);
+    hash9(input.bindingSha256);
     const retained = authorities.get(input.priorExecutionAuthority.authoritySha256);
     if (retained === void 0 || canonicalJson(retained.evidence) !== canonicalJson(input.priorExecutionAuthority) || retained.operationId !== input.operationId || retained.orphanPhase !== input.orphanPhase || !Number.isSafeInteger(input.challengeAttempt) || input.challengeAttempt < retained.challengeAttempt || retained.bridgeSessionSha256 !== sha256Json(input.priorBridgeSession) || retained.runtimeIdentitySha256 !== sha256Json(input.priorRuntimeIdentity) || input.currentBridgeSession.sessionId === input.priorBridgeSession.sessionId || input.currentBridgeSession.gatewayInstanceId !== input.priorBridgeSession.gatewayInstanceId || input.currentRuntimeIdentity.generation === input.priorRuntimeIdentity.generation || input.currentRuntimeIdentity.timeOrigin === input.priorRuntimeIdentity.timeOrigin) {
       throw new Error("Windows termination proof lacks its retained operation/session/generation capture.");
@@ -71049,19 +71284,19 @@ async function hashExecutable(executablePath) {
     if (!before.isFile() || before.nlink !== 1 || before.size === 0 || before.size > 1073741824) {
       throw nativeUiFailure("native-ui-installed-executable-invalid", false);
     }
-    const hash11 = createHash15("sha256");
+    const hash12 = createHash15("sha256");
     for await (const chunk of file2.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw nativeUiFailure("native-ui-installed-read-invalid", false);
       }
-      hash11.update(chunk);
+      hash12.update(chunk);
     }
     for (const after of [await file2.stat(), await lstat13(executablePath)]) {
       if (!after.isFile() || after.nlink !== 1 || after.dev !== before.dev || after.ino !== before.ino || after.size !== before.size || after.ctimeMs !== before.ctimeMs || after.mtimeMs !== before.mtimeMs) {
         throw nativeUiFailure("native-ui-installed-executable-changed", false);
       }
     }
-    return hash11.digest("hex");
+    return hash12.digest("hex");
   } finally {
     await file2.close();
   }
@@ -71476,7 +71711,7 @@ async function discardCloseConfirmation(input, controller, dependencies3 = {}) {
     throw transactionError(error51, { operationId: journal.operationId, state: String(journal["state"]), orphanedCallPossible: false, nextSafeAction: String(journal["nextSafeAction"]) });
   }
 }
-var hash9, targetSchema4, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
+var hash10, targetSchema4, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
 var init_native_close_recovery = __esm({
   "server/src/native-close-recovery.ts"() {
     init_zod();
@@ -71485,7 +71720,7 @@ var init_native_close_recovery = __esm({
     init_core3();
     init_windows_native_ui();
     init_transaction_error();
-    hash9 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    hash10 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     targetSchema4 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
     buttonSchema = external_exports.object({ label: external_exports.literal("Leave this page"), x: external_exports.number().int().min(-32768).max(32767), y: external_exports.number().int().min(-32768).max(32767) }).strict();
     dialogSchema = external_exports.object({ title: external_exports.literal("Confirm Close"), onlyUnsavedTarget: external_exports.literal(true), targetName: external_exports.string().min(1).max(512), discardButton: buttonSchema }).strict();
@@ -71497,7 +71732,7 @@ var init_native_close_recovery = __esm({
       discardOwnUnsavedChanges: external_exports.literal(true),
       acknowledgeDurableChanges: external_exports.boolean().optional(),
       target: targetSchema4,
-      capture: external_exports.object({ receiptPath: external_exports.string().min(1), receiptSha256: hash9, imageSha256: hash9 }).strict()
+      capture: external_exports.object({ receiptPath: external_exports.string().min(1), receiptSha256: hash10, imageSha256: hash10 }).strict()
     }).strict();
     closeConfirmationRequestSchema = recoveryBaseSchema.extend({ action: external_exports.literal("discard-close-confirmation"), observedDialog: dialogSchema }).strict();
     warningButtonSchema = buttonSchema.extend({ label: external_exports.literal("Don't Save") }).strict();
@@ -71540,8 +71775,8 @@ function privateMode(mode) {
 function identityOf2(information) {
   return { device: information.dev, inode: information.ino };
 }
-function sameIdentity2(information, identity15) {
-  return information.dev === identity15.device && information.ino === identity15.inode;
+function sameIdentity2(information, identity16) {
+  return information.dev === identity16.device && information.ino === identity16.inode;
 }
 function assertPrivateLeaseFile(information, label, expectedLinkCount = 1n) {
   if (information.isSymbolicLink() || !information.isFile() || information.nlink !== expectedLinkCount || privateMode(information.mode) !== 384 || information.size <= 0n || information.size > MAXIMUM_LEASE_RECORD_BYTES || typeof process7.getuid === "function" && information.uid !== BigInt(process7.getuid())) {
@@ -71639,16 +71874,16 @@ async function writeNewPrivateRecord(handle, path5, value, label) {
   ]);
   assertPrivateLeaseFile(opened, label);
   assertPrivateLeaseFile(currentPath, label);
-  const identity15 = identityOf2(opened);
-  if (!sameIdentity2(currentPath, identity15)) {
+  const identity16 = identityOf2(opened);
+  if (!sameIdentity2(currentPath, identity16)) {
     throw new Error(`${label} changed during exclusive publication.`);
   }
-  return identity15;
+  return identity16;
 }
-async function unlinkExpectedPrivateRecord(root, path5, identity15, label) {
+async function unlinkExpectedPrivateRecord(root, path5, identity16, label) {
   const pathInformation = await lstat14(path5, { bigint: true });
   assertPrivateLeaseFile(pathInformation, label);
-  if (!sameIdentity2(pathInformation, identity15)) {
+  if (!sameIdentity2(pathInformation, identity16)) {
     throw new Error(`${label} identity changed before cleanup.`);
   }
   const handle = await open13(
@@ -71663,13 +71898,13 @@ async function unlinkExpectedPrivateRecord(root, path5, identity15, label) {
     ]);
     assertPrivateLeaseFile(opened, label);
     assertPrivateLeaseFile(currentPath, label);
-    if (!sameIdentity2(opened, identity15) || !sameIdentity2(currentPath, identity15)) {
+    if (!sameIdentity2(opened, identity16) || !sameIdentity2(currentPath, identity16)) {
       throw new Error(`${label} identity changed before unlink.`);
     }
     await unlink3(path5);
     await syncControlRoot(root);
     const unlinked = await handle.stat({ bigint: true });
-    if (!sameIdentity2(unlinked, identity15) || unlinked.nlink !== 0n) {
+    if (!sameIdentity2(unlinked, identity16) || unlinked.nlink !== 0n) {
       throw new Error(`${label} did not become descriptor-only after unlink.`);
     }
   } catch (error51) {
@@ -71691,10 +71926,10 @@ async function unlinkExpectedPrivateRecord(root, path5, identity15, label) {
     throw operationFailure instanceof Error ? operationFailure : new Error(`${label} cleanup failed.`, { cause: operationFailure });
   }
 }
-function unlinkExpectedPrivateRecordSync(path5, identity15, label) {
+function unlinkExpectedPrivateRecordSync(path5, identity16, label) {
   const pathInformation = lstatSync(path5, { bigint: true });
   assertPrivateLeaseFile(pathInformation, label);
-  if (!sameIdentity2(pathInformation, identity15)) {
+  if (!sameIdentity2(pathInformation, identity16)) {
     throw new Error(`${label} identity changed before synchronous cleanup.`);
   }
   const descriptor = openSync(
@@ -71706,12 +71941,12 @@ function unlinkExpectedPrivateRecordSync(path5, identity15, label) {
     const currentPath = lstatSync(path5, { bigint: true });
     assertPrivateLeaseFile(opened, label);
     assertPrivateLeaseFile(currentPath, label);
-    if (!sameIdentity2(opened, identity15) || !sameIdentity2(currentPath, identity15)) {
+    if (!sameIdentity2(opened, identity16) || !sameIdentity2(currentPath, identity16)) {
       throw new Error(`${label} identity changed before synchronous unlink.`);
     }
     unlinkSync(path5);
     const unlinked = fstatSync(descriptor, { bigint: true });
-    if (!sameIdentity2(unlinked, identity15) || unlinked.nlink !== 0n) {
+    if (!sameIdentity2(unlinked, identity16) || unlinked.nlink !== 0n) {
       throw new Error(
         `${label} did not become descriptor-only after synchronous unlink.`
       );
@@ -71858,7 +72093,7 @@ async function acquireCleanupLease(root, cleanupPath, staleToken) {
         fsConstants5.O_WRONLY | fsConstants5.O_CREAT | fsConstants5.O_EXCL | fsConstants5.O_NOFOLLOW,
         384
       );
-      const identity15 = await writeNewPrivateRecord(
+      const identity16 = await writeNewPrivateRecord(
         handle,
         cleanupPath,
         record6,
@@ -71867,7 +72102,7 @@ async function acquireCleanupLease(root, cleanupPath, staleToken) {
       await handle.close();
       handle = void 0;
       await syncControlRoot(root);
-      return { identity: identity15, record: record6 };
+      return { identity: identity16, record: record6 };
     } catch (error51) {
       await retryHandleCloseAfterFailure(
         handle,
@@ -85033,18 +85268,18 @@ async function hashOpenFile(path5, expected2) {
     if (!opened.isFile() || !sameIdentity4(expected2, opened)) {
       throw new Error(`Trusted upstream file changed before open: ${path5}`);
     }
-    const hash11 = createHash19("sha256");
+    const hash12 = createHash19("sha256");
     for await (const chunk of handle.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw new TypeError("Trusted upstream file yielded a non-buffer chunk.");
       }
-      hash11.update(chunk);
+      hash12.update(chunk);
     }
     const after = await handle.stat();
     if (!sameIdentity4(opened, after)) {
       throw new Error(`Trusted upstream file changed while hashing: ${path5}`);
     }
-    return { bytes: after.size, sha256: hash11.digest("hex") };
+    return { bytes: after.size, sha256: hash12.digest("hex") };
   } finally {
     await handle?.close();
   }
@@ -85216,7 +85451,7 @@ async function sha256OpenHandle(handle, expected2, label) {
   if (!before.isFile() || !sameIdentity4(before, expected2)) {
     throw new Error(`${label} descriptor identity changed.`);
   }
-  const hash11 = createHash19("sha256");
+  const hash12 = createHash19("sha256");
   const buffer = Buffer.allocUnsafe(64 * 1024);
   let position = 0;
   while (position < before.size) {
@@ -85229,14 +85464,14 @@ async function sha256OpenHandle(handle, expected2, label) {
     if (bytesRead === 0) {
       throw new Error(`${label} ended before its recorded byte length.`);
     }
-    hash11.update(buffer.subarray(0, bytesRead));
+    hash12.update(buffer.subarray(0, bytesRead));
     position += bytesRead;
   }
   const after = await handle.stat();
   if (!sameIdentity4(before, after)) {
     throw new Error(`${label} changed while its bytes were captured.`);
   }
-  return hash11.digest("hex");
+  return hash12.digest("hex");
 }
 async function openReviewedExecutable(path5, expectedSha256, label, allowRootOwner, expectedMode) {
   const absolute = resolve7(path5);
@@ -87050,15 +87285,15 @@ function startupFailureWithStderr(error51, diagnosticBytes, diagnosticSha256, st
   );
 }
 async function sha256File(path5) {
-  const hash11 = createHash22("sha256");
+  const hash12 = createHash22("sha256");
   const source3 = createReadStream(path5);
   for await (const chunk of source3) {
     if (typeof chunk !== "string" && !Buffer.isBuffer(chunk)) {
       throw new TypeError("File hashing received a non-binary stream chunk.");
     }
-    hash11.update(chunk);
+    hash12.update(chunk);
   }
-  return hash11.digest("hex");
+  return hash12.digest("hex");
 }
 function requireVersionSegment(value, label) {
   if (typeof value !== "string" || !/^[a-z0-9][a-z0-9._-]{2,80}$/iu.test(value)) {
@@ -88359,6 +88594,26 @@ var init_extension_api_coverage_routes = __esm({
       ["exact-readers.ts"],
       ["exact-readers.test.ts"]
     );
+    add2(
+      "dmt_EditorControl",
+      ["getCurrentRenderedAreaImage"],
+      "easyeda_control_capture",
+      "easyeda_canvas_capture",
+      "public-method",
+      "Existing visible-canvas capture only, with an explicit tab equal to the proven active tab, unchanged before/after runtime fingerprint and post-capture context. The bridge calls the public image method and converts its Blob; the facade validates one complete bounded PNG and archives managed image evidence. Viewport-image observation only, not complete source, connectivity, persistence or visual acceptance. No omitted-tab default, foreign-tab access, native canvas-receiver identity or full declared-contract claim.",
+      ["index.ts", "../../easyeda-bridge-extension/src/canvas-operations.ts", "../../easyeda-bridge-extension/src/binary-result-policy.ts"],
+      ["facade-capture.test.ts", "../../easyeda-bridge-extension/tests/canvas-operations.test.ts"]
+    );
+    add2(
+      "dmt_EditorControl",
+      ["zoomToRegion"],
+      "easyeda_control_capture",
+      "easyeda_canvas_capture_region",
+      "public-method",
+      "Only the existing capture-region workflow on the explicit proven active tab: finite nonzero bounds are normalized by the bridge, public zoomToRegion must not return false, and a bounded repaint wait precedes PNG capture. Runtime fingerprint and context are rechecked before managed evidence publication. This changes the visible viewport; there is no standalone zoom operation, native receiver binding, exact viewport-restoration promise, design-state proof or visual acceptance.",
+      ["index.ts", "../../easyeda-bridge-extension/src/canvas-operations.ts"],
+      ["facade-capture.test.ts", "../../easyeda-bridge-extension/tests/canvas-operations.test.ts"]
+    );
     for (const family2 of ["sch", "pcb"]) {
       add2(
         `${family2}_PrimitiveComponent`,
@@ -88942,7 +89197,7 @@ var init_extension_api_coverage = __esm({
 });
 
 // server/src/pcb-net-membership-read.ts
-function ownedContext(context2) {
+function ownedContext2(context2) {
   const project2 = context2.project.uuid ?? context2.project.projectUuid;
   const document2 = context2.document.uuid ?? context2.document.documentUuid;
   if (context2.project.uuid !== void 0 && context2.project.projectUuid !== void 0 && context2.project.uuid !== context2.project.projectUuid || context2.document.uuid !== void 0 && context2.document.documentUuid !== void 0 && context2.document.uuid !== context2.document.documentUuid || typeof project2 !== "string" || project2.length === 0 || typeof document2 !== "string" || document2.length === 0 || context2.document.documentType !== 3 || context2.document["parentProjectUuid"] !== project2 || context2.document["parentLibraryUuid"] !== void 0 || context2.document.tabId !== document2 && context2.document.tabId !== `${document2}@${project2}`) {
@@ -88950,8 +89205,8 @@ function ownedContext(context2) {
   }
   return document2;
 }
-function checkedPayload(input, kind) {
-  const payload = payloadSchema2.parse(input), { read_consistency: consistency, ...sample } = payload;
+function checkedPayload2(input, kind) {
+  const payload = payloadSchema3.parse(input), { read_consistency: consistency, ...sample } = payload;
   if (payload.kind !== kind || sha256Json(sample) !== consistency.snapshotSha256) {
     throw new Error("PCB net membership exact observation commitment is invalid.");
   }
@@ -88960,7 +89215,7 @@ function checkedPayload(input, kind) {
 async function readPcbNetMembership(engine2, requestInput, expectedContext, expectedFingerprint) {
   const request = pcbNetMembershipRequestSchema.parse(requestInput);
   const expected2 = structuredClone(expectedContext);
-  const documentUuid = ownedContext(expected2);
+  const documentUuid = ownedContext2(expected2);
   const expectedRuntime = structuredClone(expectedFingerprint);
   validatePrivateFingerprint(expectedRuntime);
   assertSubset(expectedRuntime, { installedBundles: {
@@ -88974,7 +89229,7 @@ async function readPcbNetMembership(engine2, requestInput, expectedContext, expe
   assertSubset(fingerprint, expectedRuntime, "PCB net membership runtime");
   const context2 = structuredClone(await engine2.assertContext(expected2));
   assertSubset(context2, expected2, "PCB net membership active context");
-  if (ownedContext(context2) !== documentUuid) {
+  if (ownedContext2(context2) !== documentUuid) {
     throw new Error("PCB net membership active identity changed.");
   }
   const observe = async (kind) => {
@@ -88982,7 +89237,7 @@ async function readPcbNetMembership(engine2, requestInput, expectedContext, expe
     if (canonicalJson(await engine2.assertContext(context2)) !== canonicalJson(context2)) {
       throw new Error("PCB net membership context changed before observation.");
     }
-    const payload = checkedPayload(await engine2.exactRead({ kind }, context2), kind);
+    const payload = checkedPayload2(await engine2.exactRead({ kind }, context2), kind);
     if (canonicalJson(await engine2.assertContext(context2)) !== canonicalJson(context2)) {
       throw new Error("PCB net membership context changed after observation.");
     }
@@ -89050,21 +89305,21 @@ async function readPcbNetMembership(engine2, requestInput, expectedContext, expe
   }
   return result;
 }
-var hash10, consistencySchema2, payloadSchema2;
+var hash11, consistencySchema3, payloadSchema3;
 var init_pcb_net_membership_read = __esm({
   "server/src/pcb-net-membership-read.ts"() {
     init_zod();
     init_core3();
     init_document_source();
     init_pcb_net_membership();
-    hash10 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
-    consistencySchema2 = external_exports.object({
+    hash11 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    consistencySchema3 = external_exports.object({
       stable: external_exports.literal(true),
       attempts: external_exports.literal(2),
-      snapshotSha256: hash10,
+      snapshotSha256: hash11,
       contextBinding: external_exports.object({ level: external_exports.literal("active-context-stability-required"), preAndPostChecked: external_exports.literal(true), switchAwayAndBackDetectable: external_exports.literal(false) }).strict()
     }).strict();
-    payloadSchema2 = external_exports.object({ ok: external_exports.literal(true), kind: external_exports.enum(["pcb-source", "pcb-inventory"]), documentType: external_exports.literal(3), read_consistency: consistencySchema2 }).loose();
+    payloadSchema3 = external_exports.object({ ok: external_exports.literal(true), kind: external_exports.enum(["pcb-source", "pcb-inventory"]), documentType: external_exports.literal(3), read_consistency: consistencySchema3 }).loose();
   }
 });
 
@@ -89111,6 +89366,9 @@ function queryPublicSdkReads(input = {}) {
     }
     if (matched.every((entry) => entry.path === PCB_NET_MEMBERSHIP_METHOD)) {
       authority = "native-filtered-net-membership-not-connectivity-or-persistence-proof";
+    }
+    if (matched.every((entry) => entry.path === PCB_PRIMITIVE_TYPE_METHOD)) {
+      authority = "native-pcb-identity-type-not-public-method-parity";
     }
   }
   return {
@@ -89169,6 +89427,7 @@ var init_public_sdk_catalog = __esm({
     init_schematic_text_read();
     init_schematic_netgroup_read();
     init_pcb_net_membership();
+    init_pcb_primitive_type_read();
     publicSdkCatalogQuerySchema = external_exports.object({
       method: external_exports.string().min(1).max(160).optional(),
       search: external_exports.string().min(1).max(100).optional(),
@@ -90058,6 +90317,7 @@ var init_src = __esm({
     init_schematic_netgroup_read();
     init_pcb_net_membership();
     init_pcb_net_membership_read();
+    init_pcb_primitive_type_read();
     init_public_sdk_catalog();
     init_operation_catalog();
     MAX_INLINE_RESULT_BYTES = 256 * 1024;
@@ -90954,7 +91214,7 @@ var init_src = __esm({
       "easyeda_control_sdk_read",
       {
         title: "Read reviewed EasyEDA SDK methods",
-        description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity, property-name, Pin-getter, Text, Wire/Bus and filtered PCB net-membership observations; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
+        description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity, property-name, Pin-getter, Text, Wire/Bus, filtered PCB net-membership and PCB identity-type observations; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
         inputSchema: {
           request: external_exports.unknown().pipe(publicSdkReadRequestSchema),
           expectedContext: contextSchema2,
@@ -90999,12 +91259,23 @@ var init_src = __esm({
           reader = "fixed-native-net-membership-observation";
           effect = "fixed-native-net-membership-read";
         }
+        if (input.request.method === PCB_PRIMITIVE_TYPE_METHOD) {
+          reader = "fixed-native-pcb-type-observation";
+          effect = "fixed-native-pcb-type-read";
+        }
         try {
           validatePrivateFingerprint(input.expectedFingerprint);
           const status2 = await engine.status();
           assertSubset(status2.stableFingerprint, input.expectedFingerprint, "EasyEDA SDK read runtime fingerprint");
           dispatched = true;
-          const result = input.request.method === PCB_NET_MEMBERSHIP_METHOD ? await readPcbNetMembership(engine, input.request, input.expectedContext, input.expectedFingerprint) : await engine.publicSdkRead(input.request, input.expectedContext);
+          let result;
+          if (input.request.method === PCB_NET_MEMBERSHIP_METHOD) {
+            result = await readPcbNetMembership(engine, input.request, input.expectedContext, input.expectedFingerprint);
+          } else if (input.request.method === PCB_PRIMITIVE_TYPE_METHOD) {
+            result = await readPcbPrimitiveType(engine, input.request, input.expectedContext, input.expectedFingerprint);
+          } else {
+            result = await engine.publicSdkRead(input.request, input.expectedContext);
+          }
           return await withEvidence(
             request,
             result,
@@ -91407,6 +91678,10 @@ var init_src = __esm({
           });
           const capturePayload = { ...payload };
           delete capturePayload.image_base64;
+          const finalStatus = await engine.status();
+          if (canonicalJson(finalStatus.stableFingerprint) !== canonicalJson(status2.stableFingerprint)) {
+            throw new Error("EasyEDA runtime fingerprint changed during canvas capture; image evidence was not accepted.");
+          }
           await engine.assertContext(input.expectedContext);
           const evidence = await archiveCaptureEvidence({
             reservation,
@@ -92059,7 +92334,7 @@ async function readJson(path5, maximumBytes, privateFile = false) {
   }
 }
 async function nodeDescriptorHash(file2, before) {
-  const hash11 = createHash("sha256");
+  const hash12 = createHash("sha256");
   if (!sameNodeFile(before, await file2.stat())) {
     throw new MachineProfileError("machine-node-changed");
   }
@@ -92070,12 +92345,12 @@ async function nodeDescriptorHash(file2, before) {
     if (total > NODE_MAX_BYTES) {
       throw new MachineProfileError("machine-node-too-large");
     }
-    hash11.update(bytes);
+    hash12.update(bytes);
   }
   if (total !== before.size || !sameNodeFile(before, await file2.stat())) {
     throw new MachineProfileError("machine-node-changed");
   }
-  return hash11.digest("hex");
+  return hash12.digest("hex");
 }
 async function retainNodeIdentity(nodeExecutable, expectedHash) {
   const before = await regularFile(nodeExecutable, NODE_MAX_BYTES, true);

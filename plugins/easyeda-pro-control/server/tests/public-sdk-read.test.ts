@@ -8,8 +8,10 @@ import { PUBLIC_SDK_READ_MAX_BYTES, buildPublicSdkReadCode, publicSdkReadDescrip
 import type { PublicSdkReadDescriptor, PublicSdkReadRequest } from "../src/public-sdk-read.ts";
 import { SCHEMATIC_NETGROUP_READ_METHODS } from "../src/schematic-netgroup-read.ts";
 import { PCB_NET_MEMBERSHIP_METHOD } from "../src/pcb-net-membership.ts";
+import { PCB_PRIMITIVE_TYPE_METHOD } from "../src/pcb-primitive-type-read.ts";
 import { EasyedaControlEngine } from "../src/engine.ts";
 import type { ContextProbePayload, ExpectedContext } from "../src/engine.ts";
+// oxlint-disable-next-line import/max-dependencies -- Exercise the real context wrapper and every registered reader guard, not test-local replacements.
 import { wrapWithContextGuard } from "../src/runtime-scripts.ts";
 
 const descriptors = publicSdkReadDescriptors();
@@ -128,6 +130,22 @@ void test("PCB net membership cannot execute or validate through the generic SDK
   const context = { ...netGroupContext, document: { ...netGroupContext.document, documentType: 3 } };
   await assert.rejects(engine.publicSdkRead(request, context), /source\/inventory coordinator/u);
   assert.equal(calls, 0);
+});
+
+void test("PCB type lookup cannot fall through to the installed empty-body public method", async () => {
+  const request = { method: PCB_PRIMITIVE_TYPE_METHOD, arguments: { id: "physical-pad" } };
+  assert.deepEqual(validatePublicSdkReadRequest(request, 3), request);
+  for (const documentType of [1, 2, 4, 15]) { assert.throws(() => validatePublicSdkReadRequest(request, documentType)); }
+  assert.throws(() => buildPublicSdkReadCode(request), /source\/inventory\/source specialized reader/u);
+  for (const payload of [{ ok: true, kind: "public-sdk-read", method: request.method, present: true, value: "ComponentPad", undefinedPaths: [] },
+    { ok: true, kind: "public-sdk-read", method: request.method, present: false, value: null, undefinedPaths: ["/value"] }]) {
+    assert.throws(() => validatePublicSdkReadPayload(payload, request), /specialized verifier/u);
+  }
+  let calls = 0;
+  const engine = new EasyedaControlEngine({ callTool: (): Promise<unknown> => { calls += 1; return Promise.reject(new Error("Public type lookup must not dispatch.")); } });
+  engine.assertBridgeDispatchAllowed = (): Promise<true> => { calls += 1; return Promise.reject(new Error("Generic type admission must not run.")); };
+  const context = { ...netGroupContext, document: { ...netGroupContext.document, documentType: 3 } };
+  await assert.rejects(engine.publicSdkRead(request, context), /source\/inventory coordinator/u); assert.equal(calls, 0);
 });
 
 void test("real NetGroup coordinator distinguishes native authority and refuses second-sample context, profile, quarantine and state drift", async () => {

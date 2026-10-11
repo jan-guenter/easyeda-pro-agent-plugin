@@ -6,6 +6,71 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Restarted233100 validation and candidate002000
+
+- Fresh facade1864397 admitted installed233100 with the unchanged external
+  tuple. The older disposable fixture alone opened. Open journala107be2f
+  returned an unclassified failure, then read-only reconciliation proved the
+  correct P1 open and all18documents/fullSQLite unchanged. Navigation was not
+  repeated. Missing failure artifacts prevent an exact cause claim.
+- Wire.getAll refused native-schematic-netgroup STATE. Full native before/after
+  and checkpoint invariance pass; this is not reader acceptance. Pinned getter,
+  decoder and serializer inspection proves native strokeStyle is numeric0–3,
+  not serialized strings. The corrected adapter projects to the existing string
+  DTO and preserves raw scalar drift checks. Independent regressions pass;
+  fresh installed connected validation remains required.
+- One isolated bus was prepared through observed native controls, then received
+  one current-sheet Save. Never replay creation or Save. Complete immutable
+  comparison51d1edaa and independent decode prove all380existing records across
+  18documents unchanged, exactly3new bus records, and17unchanged peers. Root
+  accepts the exact target client/time/version changes and one DOCHEAD ticket764,
+  not a generic header exemption. Native state is unchanged across Save; the
+  saved source970d21b3/checkpoint4ed9ca7c/logical457de32e verifies. Native fixture
+  preparation is not typed writer acceptance.
+- Source candidate002000 adds one bounded PCB identity/type reader, with complete
+  source/inventory correspondence for all five supported electrical families,
+  including empty nets. Missing/unsupported/ambiguous IDs refuse. BOARD source
+  review distinguishes display-outline children from electrical Track/ArcTrack
+  inventory; complete selected-family parity remains mandatory. Outline geometry
+  and drawing-child ownership are not returned or validated.
+- Capture coverage now records two existing public workflows and checks the
+  complete runtime fingerprint after capture. No standalone zoom, native canvas
+  receiver binding or full declared-contract claim. Open failures now retain
+  fixed-category diagnostics without raw error text; navigation and Save remain
+  one-shot. Root and independent source reviews pass.
+- Inventory774paths:193public subsets/87native equivalents/2lifecycle/8blocked/
+  484omitted, with concrete omission reasons. Fixed readers174, including13native
+  reader methods. These are source implementation counts, not connected coverage.
+  Overall API work remains unfinished and PR9 stays draft.
+
+- Normal close and empty discovery proved the original editor exited. A new
+  contained31516 opened P1 once; generic upstream failure again led to original
+  journal6f5420e9 inspection and read-only reconciliation, not another open.
+  Terminal53255a09 proves targetOpenNow and all18documents/fullSQLite unchanged.
+  Fresh reopened native2c4c5d2f retains exact source64a04bc9; maintained lifecycle
+  proof16195495 admits only63unstored attribute IDs with unchanged order, no
+  other native changes. Final normal-close and empty discovery prove31516 exited;
+  maintained closed-file verification repeats source970d21b3/logical457de32e.
+  No pending CAD/recovery and no production project access.
+
+### Candidate002000 local verification
+
+- Exact Node24.18.0/npm11.16.0, core dumps disabled, clean dependencies,
+  151registry signatures/40attestations and zero vulnerabilities pass. Full
+  verification with inherited descriptors142/145 passes2,560facade tests,
+  one platform skip, zero failures/cancellations, and424bridge tests. Strict
+  types and type-aware lint have zero diagnostics. Full log1cdcf158 retained.
+- Package/seven skills, all seven official skill checks, repository/privacy,
+  actionlint and offline doctor45/45 pass. Optional plugin-creator validator is
+  absent; all maintained mandatory validators pass. Explicit second build proves
+  identical facade/supervisor/license bytes, log0e84dcbe. Source166files04ee58af,
+  bundle97ed84c0, manifestabf546f0; external/native/sanitizer pins unchanged.
+- Private installation proof was fully reviewed by root and independently.
+  Review caught one invalid test expectation for an already-supported schematic
+  reader; the sole-line correction is frozen as ddb1b088. It is not yet executed.
+  Publication and installation evidence must follow; source tests are not live
+  validation of the corrected Wire/Bus reader or new PCB type reader.
+
 ### Restarted223200 acceptance and next source candidate
 
 - Fresh facade1829230 admitted installed223200 bundled75d864d/manifest14c02f1f
@@ -853,7 +918,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- The installed Git-marketplace candidate is `0.3.0+codex.20261010233100`, with 26 tools, seven skills and173 fixed readers, from the draft feature ref. CI, exact installed files/modes and configured offline startup pass. The still-loaded223200 host passed scoped connected native Text readers and one frame-attribute display Save/close/reopen case, with full native and nine-document/eight-peer proof. Prior property-name, Wire-ID, symbol-Pin and rename evidence remains generation-bound. Both disposable editors are closed; no recovery is pending. All prior edit/inverse/rename/Save cases are terminal and never replayable. No live calls followed upgrade. New Wire/Bus DTOs, filtered PCB membership and corrected nonempty flat topology need fresh233100 admission and disposable tests. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
+- Installed Git-marketplace candidate233100 remains loaded by host1864397. Source candidate `0.3.0+codex.20261011002000` has26tools, seven skills and174fixed readers; local release checks pass, publication/installation remain pending. Connected233100 Wire DTO inspection refused and led to a tested source correction, not a successful reader claim. Its disposable bus fixture now has exact saved and cold-reopened source/full-project proof. Both disposable editors are closed and all journals are terminal. Never replay prior edits/inverse/rename/Save. Corrected Wire/Bus DTOs, filtered PCB membership, new PCB type lookup and nonempty flat topology need fresh installed-generation validation. Prior Text/property-name/Wire-ID/symbol-Pin/display/rename evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

@@ -7,6 +7,7 @@ import { SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
 import { isSchematicTextReadMethod } from "./schematic-text-read.ts";
 import { isSchematicNetGroupReadMethod } from "./schematic-netgroup-read.ts";
 import { PCB_NET_MEMBERSHIP_METHOD } from "./pcb-net-membership.ts";
+import { PCB_PRIMITIVE_TYPE_METHOD } from "./pcb-primitive-type-read.ts";
 
 export const publicSdkCatalogQuerySchema = z.object({
   method: z.string().min(1).max(160).optional(),
@@ -48,6 +49,7 @@ export function queryPublicSdkReads(input: unknown = {}): Record<string, unknown
     if (matched.every((entry) => isSchematicTextReadMethod(entry.path))) { authority = "native-text-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
     if (matched.every((entry) => isSchematicNetGroupReadMethod(entry.path))) { authority = "native-netgroup-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
     if (matched.every((entry) => entry.path === PCB_NET_MEMBERSHIP_METHOD)) { authority = "native-filtered-net-membership-not-connectivity-or-persistence-proof"; }
+    if (matched.every((entry) => entry.path === PCB_PRIMITIVE_TYPE_METHOD)) { authority = "native-pcb-identity-type-not-public-method-parity"; }
   }
   return { schema: "easyeda-pro-control.public-sdk-read-catalog.v1", offline: true, executionAuthorized: false,
     tool: "easyeda_control_sdk_read", total: all.length, matched: matched.length, entries,

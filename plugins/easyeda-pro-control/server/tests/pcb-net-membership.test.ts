@@ -107,9 +107,58 @@ for (const [type, body] of nonselectedMetadata) {
     assert.equal(pcbNetMembershipRequestSchema.safeParse({ ...request, arguments: { net: "SIGNAL", primitiveTypes: [type] } }).success, false);
   });
 }
-void test("BOARD stays explicitly unsupported because generated Line/Arc controller ownership is unproven", () => {
-  const state = fixture(); state.objects.push(object("BOARD", "board-outline", { path: [0, 0, "L", 100, 0, "ARC", 90, 100, 100, "L", 0, 0] }));
-  assert.throws(() => derive(state), /BOARD-generated Line\/Arc controller ownership/u);
+const boardPaths: [string, unknown[]][] = [
+  ["polygon with drawing Line and Arc children", [0, 0, "L", 100, 0, "ARC", 90, 100, 100, "L", 0, 0]],
+  ["nested polygon", [[0, 0, "L", 100, 0, 100, 100, 0, 100, 0, 0]]],
+  ["rectangle", ["R", 0, 0, 100, 100, 0, 0]],
+  ["circle", ["CIRCLE", 0, 0, 100]],
+];
+for (const [label, path] of boardPaths) {
+  void test(`BOARD ${label} contributes no electrical identities or source changes`, () => {
+    const state = fixture();
+    const expected = derive(state);
+    // The native decoder reads path only, not an apparent net field.
+    // That field is not an electrical assignment and cannot fabricate a member.
+    state.objects.push(object("BOARD", "board-outline", { path, netName: "SIGNAL" }));
+    const before = structuredClone(state);
+    assert.deepEqual(derive(state), expected);
+    assert.deepEqual(state, before);
+    for (const primitiveType of ["Line", "Arc", "Via", "Pad", "ComponentPad"]) {
+      const input = { ...request, arguments: { net: "SIGNAL", primitiveTypes: [primitiveType] } };
+      assert.deepEqual(derive(state, input), derive(fixture(), input));
+    }
+  });
+}
+for (const [name, type] of [["lines", "Line"], ["arcs", "Arc"]] as const) {
+  for (const assignedNet of [null, "", "OTHER", "SIGNAL"]) {
+    void test(`BOARD cannot excuse an extra ${type} inventory identity with net ${String(assignedNet)}`, () => {
+      const state = fixture(); state.objects.push(object("BOARD", "board-outline", { path: boardPaths[0]?.[1] }));
+      const rows = getFamily(state, name);
+      rows.primitiveIds.push("board-outline-child"); rows.count += 1;
+      rows.byPrimitiveId["board-outline-child"] = { primitiveId: "board-outline-child", primitiveType: type, net: assignedNet };
+      assert.throws(() => derive(state), /incomplete or ambiguous/u);
+    });
+  }
+}
+for (const id of ["line", "other-line", "unassigned"]) {
+  void test(`BOARD cannot excuse the missing electrical inventory identity ${id}`, () => {
+    const state = fixture(); state.objects.push(object("BOARD", "board-outline", { path: boardPaths[0]?.[1] }));
+    const rows = getFamily(state, "lines");
+    rows.byPrimitiveId = Object.fromEntries(Object.entries(rows.byPrimitiveId).filter(([key]) => key !== id));
+    rows.primitiveIds = rows.primitiveIds.filter((value) => value !== id); rows.count -= 1;
+    assert.throws(() => derive(state), /incomplete or ambiguous/u);
+  });
+}
+void test("BOARD admission retains partition, source commitment and request/result family restrictions", () => {
+  const state = fixture(); state.objects.push(object("BOARD", "board-outline", { path: boardPaths[0]?.[1] }));
+  const before = snapshot(state.objects);
+  source(state, "board-outline").body["path"] = ["CIRCLE", 1, 1, 100];
+  assert.throws(() => derivePcbNetMembership({ ...before, objects: state.objects }, state.inventory, request, "board"), /commitment/u);
+  source(state, "board-outline").body["partitionId"] = "partition";
+  assert.throws(() => derive(state), /partition descendants/u);
+  assert.equal(pcbNetMembershipRequestSchema.safeParse({ ...request, arguments: { net: "SIGNAL", primitiveTypes: ["BOARD"] } }).success, false);
+  assert.equal(pcbNetMembershipItemsSchema.safeParse([{ primitiveId: "board-outline", primitiveType: "Line", net: "SIGNAL",
+    parentComponentPrimitiveId: null, sourceRecordId: "board-outline", sourceType: "BOARD" }]).success, false);
 });
 for (const invalid of [undefined, {}, { ...request, code: "arbitrary()" }, { ...request, method: "eda.pcb_Net.selectNet" },
   { ...request, arguments: { net: "SIGNAL" } }, { ...request, arguments: { net: "SIGNAL", primitiveTypes: [] } },
@@ -216,9 +265,10 @@ function sourceString(objects: NativeSourceObject[]): string {
   const value = snapshot(objects); return [`{"type":"DOCHEAD"}||${JSON.stringify(value.document)}`,
     ...value.objects.map((row) => `${JSON.stringify({ type: row.type, id: row.id })}||${JSON.stringify(row.body)}`)].join("|\n");
 }
-interface RuntimeOptions { failContext?: number; quarantine?: number; runtimeDrift?: boolean; corruptHash?: number; sourceDrift?: boolean; failRead?: number; changeKind?: number; cycleDrift?: boolean; inventoryDrift?: boolean; foreignProject?: boolean; metadataDrift?: boolean; }
+interface RuntimeOptions { failContext?: number; quarantine?: number; runtimeDrift?: boolean; corruptHash?: number; sourceDrift?: boolean; failRead?: number; changeKind?: number; cycleDrift?: boolean; inventoryDrift?: boolean; foreignProject?: boolean; metadataDrift?: boolean; boardDrift?: number; }
 function runtime(options: RuntimeOptions = {}): { engine: PcbNetMembershipEngine; calls: string[]; counts: { contexts: number; gates: number; statuses: number } } {
   const state = fixture();
+  if (options.boardDrift !== undefined) { state.objects.push(object("BOARD", "board-outline", { path: boardPaths[0]?.[1] })); }
   const originalFingerprint = fingerprint();
   const calls: string[] = [];
   const counts = { contexts: 0, gates: 0, statuses: 0 };
@@ -235,6 +285,7 @@ function runtime(options: RuntimeOptions = {}): { engine: PcbNetMembershipEngine
       if (calls.length === options.failRead) { return Promise.reject(new Error("native read failed")); }
       if (options.sourceDrift === true && calls.length === 3) { source(state, "other-line").body["netName"] = "CHANGED"; }
       if (options.metadataDrift === true && calls.length === 3) { state.objects.push(object("PREFERENCE", "routing-settings", { removeAntenna: false })); }
+      if (calls.length === options.boardDrift) { source(state, "board-outline").body["path"] = ["CIRCLE", 1, 1, 100]; }
       if (options.cycleDrift === true && calls.length === 4) { source(state, "other-line").body["netName"] = "CHANGED"; item(state, "lines", "other-line").net = "CHANGED"; }
       const sample = kind === "pcb-source" ? { ok: true, kind, documentType: 3, source: sourceString(state.objects) } : state.inventory;
       const payload = exact({ ...sample, ...(options.inventoryDrift === true && calls.length === 5 ? { unrelatedNativeMetadata: "changed" } : {}) });
@@ -260,7 +311,7 @@ void test("coordinator uses source/inventory/source exact observations and recor
   assert.deepEqual(current.counts, { contexts: 14, gates: 8, statuses: 2 });
 });
 for (const option of [...Array.from({ length: 6 }, (_, index) => ({ failRead: index + 1 })), ...Array.from({ length: 6 }, (_, index) => ({ corruptHash: index + 1 })),
-  { changeKind: 1 }, { sourceDrift: true }, { metadataDrift: true }, { cycleDrift: true }, { inventoryDrift: true }, { foreignProject: true }, { runtimeDrift: true }, ...Array.from({ length: 14 }, (_, index) => ({ failContext: index + 1 })),
+  { changeKind: 1 }, { sourceDrift: true }, { metadataDrift: true }, { boardDrift: 3 }, { boardDrift: 4 }, { cycleDrift: true }, { inventoryDrift: true }, { foreignProject: true }, { runtimeDrift: true }, ...Array.from({ length: 14 }, (_, index) => ({ failContext: index + 1 })),
   ...Array.from({ length: 8 }, (_, index) => ({ quarantine: index + 1 }))]) {
   void test(`coordinator refuses ${JSON.stringify(option)} without retry or a write path`, async () => {
     const current = runtime(option); await assert.rejects(readPcbNetMembership(current.engine, request, context, fingerprint()));

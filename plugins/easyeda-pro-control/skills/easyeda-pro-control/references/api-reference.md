@@ -161,7 +161,9 @@ complete Wire and Bus membership is checked even when selecting one group.
 Each group has `primitiveId`, `modelType: "NetGroup"`, `kind`, `lines`, `names`
 and `customAttributeIds`. Each line retains its own ID, one or two native XY
 pairs, nullable `color`, `width` and `strokeStyle`. Styles are native
-`SOLID/SHORT_DASH/DOT/DOT_DASH`, not public numeric enums. Names retain every
+`SOLID/SHORT_DASH/DOT/DOT_DASH`, projected from exact native enum values 0–3.
+Null remains null; the original numeric value is retained for drift checks.
+These are not resolved theme defaults. Names retain every
 source-backed NET child's ID and literal value; conflicting or empty strings
 are not interpreted as resolved nets. Custom attributes are IDs only. Generated
 junction/disconnection markers are ownership-checked but not returned.
@@ -171,7 +173,10 @@ must fit 256 groups, 1,024 lines, 1,024 names, 1,024 custom attributes and 262,1
 string units. Unsupported children, structural groups or incomplete selections
 refuse before returning partial data. Two scalar captures and final field/type
 reproof avoid serializers, compiler, public wrappers, RPC and Save. These routes
-have adversarial tests, not connected Wire/Bus DTO acceptance.
+have adversarial tests, not connected Wire/Bus DTO acceptance. Installed233100
+refused a populated Wire fixture because its adapter expected serialized style
+strings instead of native numbers. Complete native and saved state stayed
+unchanged. The corrected adapter needs a fresh installed-generation test.
 
 `eda.pcb_Net.getAllPrimitivesByNet` requires a nonempty `net` and an explicit
 nonempty unique `primitiveTypes` subset of `Line`, `Arc`, `Via`, `Pad` and
@@ -189,9 +194,21 @@ supported; unfiltered/empty-net queries, other shapes, partitions and unmodeled
 source records refuse. It is source-tested, not yet connected-validated, and
 does not establish electrical connectivity or saved-file invariance.
 Ordinary STRING text and FONT/RULE_TEMPLATE/PRIMITIVE/PREFERENCE/SILK_OPTS
-metadata are admitted. BOARD records remain refused: their decoder registers
-generated Line/Arc controllers, whose complete inventory ownership has not
-been proved by this profile. A PCB with such a record is not an admitted fixture.
+metadata and BOARD outlines are admitted. The pinned BOARD decoder produces
+non-electrical drawing controllers, not the Track/ArcTrack models enumerated by
+the electrical inventory. Extra or missing electrical identities still refuse.
+Outline geometry and drawing-child ownership are not part of this result.
+
+`eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId` accepts one literal `id` and
+returns `Line`, `Arc`, `Via`, `Pad` or `ComponentPad`. It proves all five complete
+source/inventory families, including unassigned objects, before classifying the
+ID. Pad roles are disjoint and component-owned identities must match canonical
+PAD_NET ownership. Unknown IDs, unsupported families and ambiguous identities
+refuse; a refusal is not proof of absence. The installed public method is empty,
+so this is an explicitly labeled native equivalent. It uses the same pinned
+project-owned PCB and two-cycle checks as net membership, without inventing a
+net filter. Source-tested only; it does not establish geometry, connectivity or
+persistence.
 
 `eda.pcb_MathPolygon.splitPolygon` accepts JSON `complexPolygons`: one to eight
 groups, each a source array or one to eight source arrays, each at most 1024 tokens.

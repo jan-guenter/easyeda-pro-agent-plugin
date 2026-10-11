@@ -11,6 +11,33 @@ import { SCHEMATIC_TEXT_GUARD_CODES, SCHEMATIC_TEXT_READ_METHODS } from "../src/
 // oxlint-disable-next-line import/max-dependencies -- This diagnostic matrix covers every fixed native classifier using its production guard inventory.
 import { SCHEMATIC_NETGROUP_GUARD_CODES, SCHEMATIC_NETGROUP_READ_METHODS } from "../src/schematic-netgroup-read.ts";
 
+const readinessStages = ["api", "project", "document", "owner", "pcb", "page", "container"];
+void test("all seven project-open readiness refusals survive structured, text and nested envelopes without private suffixes", () => {
+  for (const stage of readinessStages) {
+    const message = `Recovery navigation refused: editor-readiness-${stage}`;
+    const category = `native-preflight:RECOVERY_EDITOR_READINESS_${stage.toUpperCase()}`;
+    assert.equal(nativeFailureCategory(message), category);
+    for (const envelope of [
+      { structuredContent: { ok: false, error: message } },
+      { structuredContent: { success: false, error: { code: "EASYEDA_API_ERROR", message } } },
+      { content: [{ type: "text", text: JSON.stringify({ success: false, result: { success: false, error: message } }) }] },
+    ]) {
+      assert.throws(() => extractToolPayload(envelope), { message: `The upstream EasyEDA tool reported ${"content" in envelope ? "failure or unavailability" : "failure"} [${category}].` });
+    }
+    for (const invalid of [`${message} /private/design.eprj2`, `${message}\n`, `${message}\0`, `${message}:PRIVATE_SECRET`, `Error: ${message}`,
+      "Recovery navigation refused: editor-readiness-unknown", "x".repeat(1024)]) {
+      assert.equal(nativeFailureCategory(invalid), null);
+      assert.throws(() => extractToolPayload({ structuredContent: { ok: false, error: invalid } }),
+        { message: "The upstream EasyEDA tool reported failure [unclassified-upstream-failure]." });
+    }
+  }
+});
+void test("readiness diagnostic inventory covers every fixed readiness refusal emitted by navigation", async () => {
+  const source = await readFile(new URL("../src/recovery-navigation.ts", import.meta.url), "utf8");
+  const emitted = [...source.matchAll(/fail\('editor-readiness-([a-z-]+)'\)/gu)].map((match) => { assert.equal(typeof match[1], "string"); return String(match[1]); });
+  assert.deepEqual([...new Set(emitted)].toSorted((left, right) => left.localeCompare(right)), readinessStages.toSorted((left, right) => left.localeCompare(right)));
+});
+
 void test("native NetGroup diagnostics admit only exact fixed method/stage/code tuples", () => {
   for (const method of SCHEMATIC_NETGROUP_READ_METHODS) {
     for (const [code, label] of [...SCHEMATIC_NETGROUP_GUARD_CODES.map((entry) => [`SCH_NETGROUP_${entry}`, entry]), ["native-error", "EXCEPTION"]]) {

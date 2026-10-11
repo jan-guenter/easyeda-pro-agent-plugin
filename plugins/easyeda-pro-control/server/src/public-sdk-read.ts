@@ -9,6 +9,8 @@ import { SYMBOL_PIN_ENUMERATION_METHOD, SYMBOL_PIN_GETTER_FIELDS, buildSymbolPin
 import { buildSchematicTextReadExpression, isSchematicTextReadMethod, schematicTextReadRequestSchema, validateSchematicTextStates } from "./schematic-text-read.ts";
 import { buildSchematicNetGroupReadExpression, isSchematicNetGroupReadMethod, schematicNetGroupReadRequestSchema, validateSchematicNetGroupStates } from "./schematic-netgroup-read.ts";
 import { PCB_NET_MEMBERSHIP_LIMITATIONS, PCB_NET_MEMBERSHIP_METHOD, pcbNetMembershipArgumentsSchema } from "./pcb-net-membership.ts";
+// oxlint-disable-next-line import/max-dependencies -- Each fixed reader supplies its reviewed schema and provenance; duplicating that contract would permit drift.
+import { PCB_PRIMITIVE_TYPE_LIMITATIONS, PCB_PRIMITIVE_TYPE_METHOD, pcbPrimitiveTypeArgumentsSchema } from "./pcb-primitive-type-read.ts";
 
 /** This fixed allowlist is independent of the declaration catalog. Public entries
  * were reviewed against this implementation, including delegated getters.
@@ -178,6 +180,9 @@ add("eda.pcb_Net.getAllNets", [3], "records");
 add(PCB_NET_MEMBERSHIP_METHOD, [3], "records", pcbNetMembershipArgumentsSchema, ["net", "primitiveTypes"], {
   implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [...PCB_NET_MEMBERSHIP_LIMITATIONS],
 });
+add(PCB_PRIMITIVE_TYPE_METHOD, [3], "string", pcbPrimitiveTypeArgumentsSchema, ["id"], {
+  implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [...PCB_PRIMITIVE_TYPE_LIMITATIONS],
+});
 for (const method of ["getAllNetName", "getAllNetsName"]) { add(`eda.pcb_Net.${method}`, [3], "strings"); }
 for (const [method, output] of [["getNet", "record"], ["getNetColor", "json"], ["getNetLength", "number"]] as const) {
   add(`eda.pcb_Net.${method}`, [3], output, z.object({ net: text }).strict(), ["net"], { optionalResult: true });
@@ -233,7 +238,7 @@ for (const schema of schematicNetGroupReadRequestSchema.options) {
     implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [
       "Native root Wire/Bus NetGroup DTOs on an ordinary active SCH_PAGE, not public SDK getter parity. Symbol/block-instance pages, structural GROUP records, descendant selectors and net filters refuse.",
       "get and getAll return arrays sorted by primitiveId, including singular get. Selected get accepts one ID or 1-256 distinct IDs; any missing or wrong-family target refuses. Complete Wire and Bus ownership is checked even for a selected read.",
-      "Each group returns primitiveId, modelType=NetGroup, kind, lines, names and customAttributeIds. Every line retains its identity, one or two native XY pairs, nullable color/width/strokeStyle. Y is not inverted. Styles are raw null or SOLID/SHORT_DASH/DOT/DOT_DASH, not public numeric enums or theme defaults.",
+      "Each group returns primitiveId, modelType=NetGroup, kind, lines, names and customAttributeIds. Every line retains its identity, one or two native XY pairs, nullable color/width/strokeStyle. Y is not inverted. Styles are null or SOLID/SHORT_DASH/DOT/DOT_DASH projected from exact native enums 0–3, with raw values retained for drift checks; no theme defaults are resolved.",
       "Every source-backed NET child returns its identity and literal value, including empty or conflicting values. No first-name selection, net compilation or connectivity claim. Custom attributes are identity-only; generated junction/disconnection markers are ownership-checked but omitted from DTOs.",
       "Complete reciprocal tree/index/source/root-family and child-collection proof; at most 20000 models/source IDs, 256 groups and across both families 1024 lines, 1024 names, 1024 custom attributes, 262144 string units. Limits apply before selection. Native signed zero is checked but JSON transport normalizes it.",
       "Two scalar captures plus final scalar reproof; no public wrappers, serializers, compiler, AST/name lookup, RPC, display getters, settings, navigation or Save. This is bounded group state, not complete source, resolved nets or durable-state proof.",
@@ -422,6 +427,7 @@ function readImplementationTestName(path: string): string {
 }
 
 function readImplementationName(path: string): string {
+  if (path === PCB_PRIMITIVE_TYPE_METHOD) { return "pcb-primitive-type-read"; }
   if (path === PCB_NET_MEMBERSHIP_METHOD) { return "pcb-net-membership-read"; }
   if (isSchematicNetGroupReadMethod(path)) { return "schematic-netgroup-read"; }
   if (isSchematicTextReadMethod(path)) { return "schematic-text-read"; }
@@ -478,6 +484,7 @@ export function buildPublicSdkReadCode(input: unknown): string {
   const request = publicSdkReadRequestSchema.parse(input);
   if (isEditorTabLookupMethod(request.method)) { throw new Error("Owned editor lookups require the checkpoint-bound specialized reader."); }
   if (request.method === PCB_NET_MEMBERSHIP_METHOD) { throw new Error("PCB net membership requires the source/inventory/source specialized reader."); }
+  if (request.method === PCB_PRIMITIVE_TYPE_METHOD) { throw new Error("PCB primitive type requires the source/inventory/source specialized reader."); }
   const definition = definitions.get(request.method);
   if (definition === undefined) { throw new Error("Unsupported fixed SDK method."); }
   const args = definition.parameters.map((key) => {
@@ -662,6 +669,7 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
   const request = publicSdkReadRequestSchema.parse(requestInput);
   if (isEditorTabLookupMethod(request.method)) { throw new Error("Owned editor lookup results require the checkpoint-bound specialized verifier."); }
   if (request.method === PCB_NET_MEMBERSHIP_METHOD) { throw new Error("PCB net membership results require the complete source/inventory specialized verifier."); }
+  if (request.method === PCB_PRIMITIVE_TYPE_METHOD) { throw new Error("PCB primitive type results require the complete source/inventory specialized verifier."); }
   const definition = definitions.get(request.method);
   if (definition === undefined) { throw new Error("Unsupported fixed SDK method."); }
   assertExactTransportValue(input);

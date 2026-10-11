@@ -164,8 +164,42 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 191, "implemented-native-equivalent": 86, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 487,
+    "implemented-public-subset": 193, "implemented-native-equivalent": 87, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 484,
   });
+});
+
+void test("PCB type lookup coverage exposes the native classification subset instead of its public stub", () => {
+  const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId"); assert.ok(row);
+  assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
+  assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+  assert.equal(row.runtimeAdmission, "not-granted-by-inventory"); assert.equal(row.routes.length, 1);
+  const route = row.routes[0]; assert.ok(route);
+  assert.equal(route.tool, "easyeda_control_sdk_read"); assert.equal(route.selector, row.path);
+  assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [3]);
+  assert.deepEqual(route.source, ["pcb-primitive-type-read.ts"]); assert.deepEqual(route.tests, ["pcb-primitive-type-read.test.ts"]);
+  assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+  assert.match(route.scope, /body is empty/u); assert.match(route.scope, /empty-net objects/u); assert.match(route.scope, /ambiguous membership refuse/u);
+});
+
+void test("existing capture workflows have truthful public-subset coverage without enabling standalone navigation", () => {
+  const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
+  for (const [method, selector] of [["getCurrentRenderedAreaImage", "easyeda_canvas_capture"], ["zoomToRegion", "easyeda_canvas_capture_region"]]) {
+    const row = rows.get(`eda.dmt_EditorControl.${method}`); assert.ok(row);
+    assert.equal(row.status, "implemented-public-subset"); assert.equal(row.omission, null);
+    assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+    assert.equal(row.runtimeAdmission, "not-granted-by-inventory"); assert.equal(row.routes.length, 1);
+    const route = row.routes[0]; assert.ok(route);
+    assert.equal(route.tool, "easyeda_control_capture"); assert.equal(route.selector, selector);
+    assert.equal(route.implementation, "public-method"); assert.equal(route.executionState, "available-with-runtime-guards");
+    assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+    assert.ok(route.source.includes("index.ts")); assert.ok(route.source.includes("../../easyeda-bridge-extension/src/canvas-operations.ts"));
+    assert.ok(route.tests.includes("facade-capture.test.ts")); assert.match(route.scope, /visual acceptance/u);
+  }
+  assert.match(rows.get("eda.dmt_EditorControl.getCurrentRenderedAreaImage")?.routes[0]?.scope ?? "", /Viewport-image observation only/u);
+  assert.match(rows.get("eda.dmt_EditorControl.zoomToRegion")?.routes[0]?.scope ?? "", /no standalone zoom operation/u);
+  for (const method of ["zoomTo", "zoomToAllPrimitives", "zoomToSelectedPrimitives"]) {
+    assert.equal(rows.get(`eda.dmt_EditorControl.${method}`)?.status, "omitted");
+  }
 });
 
 void test("omitted heterogeneous geometric getters retain proven projection defects", () => {

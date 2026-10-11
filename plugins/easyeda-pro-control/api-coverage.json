@@ -6,14 +6,14 @@
     "reviewedDistinctMethods": 697,
     "latestDistinctMethods": 773,
     "statuses": {
-      "implemented-public-subset": 191,
-      "implemented-native-equivalent": 86,
+      "implemented-public-subset": 193,
+      "implemented-native-equivalent": 87,
       "internal-lifecycle-only": 2,
       "implemented-but-blocked": 8,
-      "omitted": 487
+      "omitted": 484
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 332,
+      "available-with-runtime-guards": 335,
       "blocked": 9,
       "partially-blocked": 3
     },
@@ -34,12 +34,12 @@
       "lossy-selected-object-projection": 1,
       "managed-file-contract-needed": 39,
       "multi-object-electrical-effect": 7,
-      "navigation-or-viewport-adapter-needed": 17,
-      "non-json-result-or-callback": 9,
+      "navigation-or-viewport-adapter-needed": 16,
+      "non-json-result-or-callback": 8,
       "not-in-reviewed-runtime": 76,
       "panel-context-not-admitted": 1,
       "private-url-state-projection-needed": 2,
-      "reviewed-native-stub": 29,
+      "reviewed-native-stub": 28,
       "scoped-effect-adapter-needed": 121,
       "selection-marker-or-history-mutation": 8,
       "shared-asset-owner-projection-needed": 3,
@@ -669,14 +669,27 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "non-json-result-or-callback",
-        "reason": "dmt_EditorControl.getCurrentRenderedAreaImage includes executable callbacks, browser/file objects or extension class state whose serialization is not defined by a JSON method call.",
-        "nextRequirement": "Create a fixed data projection or managed resource/file adapter with receiver-bound access and complete failure tests. Never serialize methods, prototype state or arbitrary callback source.",
-        "evidence": []
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_capture",
+          "selector": "easyeda_canvas_capture",
+          "implementation": "public-method",
+          "scope": "Existing visible-canvas capture only, with an explicit tab equal to the proven active tab, unchanged before/after runtime fingerprint and post-capture context. The bridge calls the public image method and converts its Blob; the facade validates one complete bounded PNG and archives managed image evidence. Viewport-image observation only, not complete source, connectivity, persistence or visual acceptance. No omitted-tab default, foreign-tab access, native canvas-receiver identity or full declared-contract claim.",
+          "source": [
+            "index.ts",
+            "../../easyeda-bridge-extension/src/canvas-operations.ts",
+            "../../easyeda-bridge-extension/src/binary-result-policy.ts"
+          ],
+          "tests": [
+            "facade-capture.test.ts",
+            "../../easyeda-bridge-extension/tests/canvas-operations.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards"
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -1210,14 +1223,26 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "navigation-or-viewport-adapter-needed",
-        "reason": "dmt_EditorControl.zoomToRegion changes editor, viewport or window state without a maintained method-specific one-shot completion/ownership proof.",
-        "nextRequirement": "Add strict target/viewport arguments, original owner/context proof, non-replayed dispatch and bounded observable completion; closing must never imply Save or discard.",
-        "evidence": []
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_capture",
+          "selector": "easyeda_canvas_capture_region",
+          "implementation": "public-method",
+          "scope": "Only the existing capture-region workflow on the explicit proven active tab: finite nonzero bounds are normalized by the bridge, public zoomToRegion must not return false, and a bounded repaint wait precedes PNG capture. Runtime fingerprint and context are rechecked before managed evidence publication. This changes the visible viewport; there is no standalone zoom operation, native receiver binding, exact viewport-restoration promise, design-state proof or visual acceptance.",
+          "source": [
+            "index.ts",
+            "../../easyeda-bridge-extension/src/canvas-operations.ts"
+          ],
+          "tests": [
+            "facade-capture.test.ts",
+            "../../easyeda-bridge-extension/tests/canvas-operations.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards"
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -13596,7 +13621,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_Net.getAllPrimitivesByNet",
           "implementation": "native-task-equivalent",
-          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native task-equivalent identity records, not public primitive instances, native my(item) DTOs or public-method execution parity. Requires a nonempty net and explicit nonempty unique filters from Line, Arc, Via, Pad and ComponentPad; unfiltered, empty-net and other-family requests are unsupported. Pad means standalone physical pads; ComponentPad means component-owned physical pads. These disjoint roles differ from the direct Pad enumerator, which also includes component pads. Requires one exact active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769; library, partition and unmodeled source records are unsupported. STRING, FONT, RULE_TEMPLATE, PRIMITIVE, PREFERENCE and SILK_OPTS are admitted as nonselected text/metadata. BOARD remains unsupported because its polygon decoder registers generated Line/Arc controllers whose inventory ownership is not proven by this profile. Net matching uses uppercase keys and preserves stored spelling. Full requested-family source/inventory correspondence is checked before filtering; this is not electrical connectivity, DRC, saved-file or persistence proof. Two matching source/inventory/source cycles require unchanged runtime and full observed context. Switching away and back between observations remains undetectable. Bounded to 20,000 native source records, 16 MiB native source evidence and 2 MiB result; exceeding bounds refuses without truncation.",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native task-equivalent identity records, not public primitive instances, native my(item) DTOs or public-method execution parity. Requires a nonempty net and explicit nonempty unique filters from Line, Arc, Via, Pad and ComponentPad; unfiltered, empty-net and other-family requests are unsupported. Pad means standalone physical pads; ComponentPad means component-owned physical pads. These disjoint roles differ from the direct Pad enumerator, which also includes component pads. Requires one exact active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769; library, partition and unmodeled source records are unsupported. STRING, FONT, RULE_TEMPLATE, PRIMITIVE, PREFERENCE and SILK_OPTS are admitted as nonselected text/metadata. BOARD is a nonselected display outline: its generated Line/Arc drawing controllers are not the Track/ArcTrack objects enumerated by the electrical inventory. Outline geometry and drawing-child ownership are not returned or validated. Net matching uses uppercase keys and preserves stored spelling. Full requested-family source/inventory correspondence is checked before filtering; this is not electrical connectivity, DRC, saved-file or persistence proof. Two matching source/inventory/source cycles require unchanged runtime and full observed context. Switching away and back between observations remains undetectable. Bounded to 20,000 native source records, 16 MiB native source evidence and 2 MiB result; exceeding bounds refuses without truncation.",
           "documentTypes": [
             3
           ],
@@ -14297,16 +14322,39 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "reviewed-native-stub",
-        "reason": "Installed method has an empty body and cannot identify primitive type.",
-        "nextRequirement": "Implement a separately reviewed native task adapter with exact effects, or validate a newer runtime where the public method works.",
-        "evidence": [
-          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native identity classification, not execution or return-parity of the installed public method, whose body is empty in API 0.2.53.aee2f57a. One literal existing ID, restricted to Line, Arc, Via, standalone Pad and component-owned ComponentPad. Missing IDs, other families and ambiguous membership refuse; no undefined/absence claim is made. Requires complete source/inventory correspondence for all five supported families, including empty-net objects, before classifying the requested ID. Physical pad owner and PAD_NET correlation must agree. Requires one active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769. Library, partition and unmodeled source records are unsupported; nonselected outline/text/metadata contributes no type result. Two matching source/inventory/source cycles require unchanged runtime and full observed context. Switching away and back between observations remains undetectable. Bounded to 20,000 native source records, 16 MiB source evidence and 2 MiB result; no truncation, electrical-connectivity, geometry, saved-file or persistence proof.",
+          "documentTypes": [
+            3
+          ],
+          "source": [
+            "pcb-primitive-type-read.ts"
+          ],
+          "tests": [
+            "pcb-primitive-type-read.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -23048,7 +23096,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sch_PrimitiveBus.get",
           "implementation": "native-task-equivalent",
-          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native root Wire/Bus NetGroup DTOs on an ordinary active SCH_PAGE, not public SDK getter parity. Symbol/block-instance pages, structural GROUP records, descendant selectors and net filters refuse. get and getAll return arrays sorted by primitiveId, including singular get. Selected get accepts one ID or 1-256 distinct IDs; any missing or wrong-family target refuses. Complete Wire and Bus ownership is checked even for a selected read. Each group returns primitiveId, modelType=NetGroup, kind, lines, names and customAttributeIds. Every line retains its identity, one or two native XY pairs, nullable color/width/strokeStyle. Y is not inverted. Styles are raw null or SOLID/SHORT_DASH/DOT/DOT_DASH, not public numeric enums or theme defaults. Every source-backed NET child returns its identity and literal value, including empty or conflicting values. No first-name selection, net compilation or connectivity claim. Custom attributes are identity-only; generated junction/disconnection markers are ownership-checked but omitted from DTOs. Complete reciprocal tree/index/source/root-family and child-collection proof; at most 20000 models/source IDs, 256 groups and across both families 1024 lines, 1024 names, 1024 custom attributes, 262144 string units. Limits apply before selection. Native signed zero is checked but JSON transport normalizes it. Two scalar captures plus final scalar reproof; no public wrappers, serializers, compiler, AST/name lookup, RPC, display getters, settings, navigation or Save. This is bounded group state, not complete source, resolved nets or durable-state proof.",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native root Wire/Bus NetGroup DTOs on an ordinary active SCH_PAGE, not public SDK getter parity. Symbol/block-instance pages, structural GROUP records, descendant selectors and net filters refuse. get and getAll return arrays sorted by primitiveId, including singular get. Selected get accepts one ID or 1-256 distinct IDs; any missing or wrong-family target refuses. Complete Wire and Bus ownership is checked even for a selected read. Each group returns primitiveId, modelType=NetGroup, kind, lines, names and customAttributeIds. Every line retains its identity, one or two native XY pairs, nullable color/width/strokeStyle. Y is not inverted. Styles are null or SOLID/SHORT_DASH/DOT/DOT_DASH projected from exact native enums 0–3, with raw values retained for drift checks; no theme defaults are resolved. Every source-backed NET child returns its identity and literal value, including empty or conflicting values. No first-name selection, net compilation or connectivity claim. Custom attributes are identity-only; generated junction/disconnection markers are ownership-checked but omitted from DTOs. Complete reciprocal tree/index/source/root-family and child-collection proof; at most 20000 models/source IDs, 256 groups and across both families 1024 lines, 1024 names, 1024 custom attributes, 262144 string units. Limits apply before selection. Native signed zero is checked but JSON transport normalizes it. Two scalar captures plus final scalar reproof; no public wrappers, serializers, compiler, AST/name lookup, RPC, display getters, settings, navigation or Save. This is bounded group state, not complete source, resolved nets or durable-state proof.",
           "documentTypes": [
             1
           ],
@@ -23106,7 +23154,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sch_PrimitiveBus.getAll",
           "implementation": "native-task-equivalent",
-          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native root Wire/Bus NetGroup DTOs on an ordinary active SCH_PAGE, not public SDK getter parity. Symbol/block-instance pages, structural GROUP records, descendant selectors and net filters refuse. get and getAll return arrays sorted by primitiveId, including singular get. Selected get accepts one ID or 1-256 distinct IDs; any missing or wrong-family target refuses. Complete Wire and Bus ownership is checked even for a selected read. Each group returns primitiveId, modelType=NetGroup, kind, lines, names and customAttributeIds. Every line retains its identity, one or two native XY pairs, nullable color/width/strokeStyle. Y is not inverted. Styles are raw null or SOLID/SHORT_DASH/DOT/DOT_DASH, not public numeric enums or theme defaults. Every source-backed NET child returns its identity and literal value, including empty or conflicting values. No first-name selection, net compilation or connectivity claim. Custom attributes are identity-only; generated junction/disconnection markers are ownership-checked but omitted from DTOs. Complete reciprocal tree/index/source/root-family and child-collection proof; at most 20000 models/source IDs, 256 groups and across both families 1024 lines, 1024 names, 1024 custom attributes, 262144 string units. Limits apply before selection. Native signed zero is checked but JSON transport normalizes it. Two scalar captures plus final scalar reproof; no public wrappers, serializers, compiler, AST/name lookup, RPC, display getters, settings, navigation or Save. This is bounded group state, not complete source, resolved nets or durable-state proof.",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native root Wire/Bus NetGroup DTOs on an ordinary active SCH_PAGE, not public SDK getter parity. Symbol/block-instance pages, structural GROUP records, descendant selectors and net filters refuse. get and getAll return arrays sorted by primitiveId, including singular get. Selected get accepts one ID or 1-256 distinct IDs; any missing or wrong-family target refuses. Complete Wire and Bus ownership is checked even for a selected read. Each group returns primitiveId, modelType=NetGroup, kind, lines, names and customAttributeIds. Every line retains its identity, one or two native XY pairs, nullable color/width/strokeStyle. Y is not inverted. Styles are null or SOLID/SHORT_DASH/DOT/DOT_DASH projected from exact native enums 0–3, with raw values retained for drift checks; no theme defaults are resolved. Every source-backed NET child returns its identity and literal value, including empty or conflicting values. No first-name selection, net compilation or connectivity claim. Custom attributes are identity-only; generated junction/disconnection markers are ownership-checked but omitted from DTOs. Complete reciprocal tree/index/source/root-family and child-collection proof; at most 20000 models/source IDs, 256 groups and across both families 1024 lines, 1024 names, 1024 custom attributes, 262144 string units. Limits apply before selection. Native signed zero is checked but JSON transport normalizes it. Two scalar captures plus final scalar reproof; no public wrappers, serializers, compiler, AST/name lookup, RPC, display getters, settings, navigation or Save. This is bounded group state, not complete source, resolved nets or durable-state proof.",
           "documentTypes": [
             1
           ],
@@ -26755,7 +26803,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sch_PrimitiveWire.get",
           "implementation": "native-task-equivalent",
-          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native root Wire/Bus NetGroup DTOs on an ordinary active SCH_PAGE, not public SDK getter parity. Symbol/block-instance pages, structural GROUP records, descendant selectors and net filters refuse. get and getAll return arrays sorted by primitiveId, including singular get. Selected get accepts one ID or 1-256 distinct IDs; any missing or wrong-family target refuses. Complete Wire and Bus ownership is checked even for a selected read. Each group returns primitiveId, modelType=NetGroup, kind, lines, names and customAttributeIds. Every line retains its identity, one or two native XY pairs, nullable color/width/strokeStyle. Y is not inverted. Styles are raw null or SOLID/SHORT_DASH/DOT/DOT_DASH, not public numeric enums or theme defaults. Every source-backed NET child returns its identity and literal value, including empty or conflicting values. No first-name selection, net compilation or connectivity claim. Custom attributes are identity-only; generated junction/disconnection markers are ownership-checked but omitted from DTOs. Complete reciprocal tree/index/source/root-family and child-collection proof; at most 20000 models/source IDs, 256 groups and across both families 1024 lines, 1024 names, 1024 custom attributes, 262144 string units. Limits apply before selection. Native signed zero is checked but JSON transport normalizes it. Two scalar captures plus final scalar reproof; no public wrappers, serializers, compiler, AST/name lookup, RPC, display getters, settings, navigation or Save. This is bounded group state, not complete source, resolved nets or durable-state proof.",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native root Wire/Bus NetGroup DTOs on an ordinary active SCH_PAGE, not public SDK getter parity. Symbol/block-instance pages, structural GROUP records, descendant selectors and net filters refuse. get and getAll return arrays sorted by primitiveId, including singular get. Selected get accepts one ID or 1-256 distinct IDs; any missing or wrong-family target refuses. Complete Wire and Bus ownership is checked even for a selected read. Each group returns primitiveId, modelType=NetGroup, kind, lines, names and customAttributeIds. Every line retains its identity, one or two native XY pairs, nullable color/width/strokeStyle. Y is not inverted. Styles are null or SOLID/SHORT_DASH/DOT/DOT_DASH projected from exact native enums 0–3, with raw values retained for drift checks; no theme defaults are resolved. Every source-backed NET child returns its identity and literal value, including empty or conflicting values. No first-name selection, net compilation or connectivity claim. Custom attributes are identity-only; generated junction/disconnection markers are ownership-checked but omitted from DTOs. Complete reciprocal tree/index/source/root-family and child-collection proof; at most 20000 models/source IDs, 256 groups and across both families 1024 lines, 1024 names, 1024 custom attributes, 262144 string units. Limits apply before selection. Native signed zero is checked but JSON transport normalizes it. Two scalar captures plus final scalar reproof; no public wrappers, serializers, compiler, AST/name lookup, RPC, display getters, settings, navigation or Save. This is bounded group state, not complete source, resolved nets or durable-state proof.",
           "documentTypes": [
             1
           ],
@@ -26813,7 +26861,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sch_PrimitiveWire.getAll",
           "implementation": "native-task-equivalent",
-          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native root Wire/Bus NetGroup DTOs on an ordinary active SCH_PAGE, not public SDK getter parity. Symbol/block-instance pages, structural GROUP records, descendant selectors and net filters refuse. get and getAll return arrays sorted by primitiveId, including singular get. Selected get accepts one ID or 1-256 distinct IDs; any missing or wrong-family target refuses. Complete Wire and Bus ownership is checked even for a selected read. Each group returns primitiveId, modelType=NetGroup, kind, lines, names and customAttributeIds. Every line retains its identity, one or two native XY pairs, nullable color/width/strokeStyle. Y is not inverted. Styles are raw null or SOLID/SHORT_DASH/DOT/DOT_DASH, not public numeric enums or theme defaults. Every source-backed NET child returns its identity and literal value, including empty or conflicting values. No first-name selection, net compilation or connectivity claim. Custom attributes are identity-only; generated junction/disconnection markers are ownership-checked but omitted from DTOs. Complete reciprocal tree/index/source/root-family and child-collection proof; at most 20000 models/source IDs, 256 groups and across both families 1024 lines, 1024 names, 1024 custom attributes, 262144 string units. Limits apply before selection. Native signed zero is checked but JSON transport normalizes it. Two scalar captures plus final scalar reproof; no public wrappers, serializers, compiler, AST/name lookup, RPC, display getters, settings, navigation or Save. This is bounded group state, not complete source, resolved nets or durable-state proof.",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native root Wire/Bus NetGroup DTOs on an ordinary active SCH_PAGE, not public SDK getter parity. Symbol/block-instance pages, structural GROUP records, descendant selectors and net filters refuse. get and getAll return arrays sorted by primitiveId, including singular get. Selected get accepts one ID or 1-256 distinct IDs; any missing or wrong-family target refuses. Complete Wire and Bus ownership is checked even for a selected read. Each group returns primitiveId, modelType=NetGroup, kind, lines, names and customAttributeIds. Every line retains its identity, one or two native XY pairs, nullable color/width/strokeStyle. Y is not inverted. Styles are null or SOLID/SHORT_DASH/DOT/DOT_DASH projected from exact native enums 0–3, with raw values retained for drift checks; no theme defaults are resolved. Every source-backed NET child returns its identity and literal value, including empty or conflicting values. No first-name selection, net compilation or connectivity claim. Custom attributes are identity-only; generated junction/disconnection markers are ownership-checked but omitted from DTOs. Complete reciprocal tree/index/source/root-family and child-collection proof; at most 20000 models/source IDs, 256 groups and across both families 1024 lines, 1024 names, 1024 custom attributes, 262144 string units. Limits apply before selection. Native signed zero is checked but JSON transport normalizes it. Two scalar captures plus final scalar reproof; no public wrappers, serializers, compiler, AST/name lookup, RPC, display getters, settings, navigation or Save. This is bounded group state, not complete source, resolved nets or durable-state proof.",
           "documentTypes": [
             1
           ],

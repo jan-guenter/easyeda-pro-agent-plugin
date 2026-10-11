@@ -13,6 +13,7 @@ import { SYMBOL_PIN_ENUMERATION_METHOD } from "../src/symbol-pin-enumeration.ts"
 import { SCHEMATIC_TEXT_READ_METHODS, isSchematicTextReadMethod } from "../src/schematic-text-read.ts";
 import { SCHEMATIC_NETGROUP_READ_METHODS, isSchematicNetGroupReadMethod } from "../src/schematic-netgroup-read.ts";
 import { PCB_NET_MEMBERSHIP_METHOD } from "../src/pcb-net-membership.ts";
+import { PCB_PRIMITIVE_TYPE_METHOD } from "../src/pcb-primitive-type-read.ts";
 
 interface Input { request: { method: string; arguments: Record<string, unknown> }; expectedContext: object; expectedFingerprint: object; evidence: object; returnMode: "full"; maxInlineBytes: number }
 type Handler = (input: Input) => Promise<Record<string, unknown>>;
@@ -25,12 +26,12 @@ async function registeredSdkRead(failure: "none" | "status" | "dispatch"): Promi
   let invoke: Handler | undefined;
   const scope = {
     z, publicSdkReadRequestSchema, publicSdkReadImplementationKind, isSchematicNativeIdMethod, SCHEMATIC_COMPONENT_PROPERTY_METHOD, SYMBOL_PIN_ENUMERATION_METHOD, isSchematicTextReadMethod,
-    isSchematicNetGroupReadMethod, PCB_NET_MEMBERSHIP_METHOD,
+    isSchematicNetGroupReadMethod, PCB_NET_MEMBERSHIP_METHOD, PCB_PRIMITIVE_TYPE_METHOD,
     contextSchema: z.object({}), privateFingerprintSchema: z.object({}), evidenceSchema: z.object({}),
     CONTROL_VERSION: "synthetic", MAX_INLINE_RESULT_BYTES: 262_144,
     serializedLiveGuarded: (handler: Handler): Handler => handler,
     registerFacadeTool: (name: string, config: { description: string }, handler: Handler): void => {
-      assert.equal(name, "easyeda_control_sdk_read"); assert.match(config.description, /native identity, property-name, Pin-getter, Text, Wire\/Bus and filtered PCB net-membership/u); invoke = handler;
+      assert.equal(name, "easyeda_control_sdk_read"); assert.match(config.description, /native identity, property-name, Pin-getter, Text, Wire\/Bus, filtered PCB net-membership and PCB identity-type/u); invoke = handler;
     },
     reserveEvidencePaths: (): Promise<object> => { calls.push("reserve"); return Promise.resolve({ synthetic: true }); },
     releaseEvidenceReservation: (): Promise<void> => { calls.push("release"); return Promise.resolve(); },
@@ -42,6 +43,11 @@ async function registeredSdkRead(failure: "none" | "status" | "dispatch"): Promi
     readPcbNetMembership: (_engine: unknown, request: Input["request"], expectedContext: object, expectedFingerprint: object): Promise<object> => {
       assert.equal(request.method, PCB_NET_MEMBERSHIP_METHOD); assert.deepEqual(expectedContext, {}); assert.deepEqual(expectedFingerprint, {});
       calls.push("pcb-membership"); return failure === "dispatch" ? Promise.reject(new Error("synthetic dispatch failure")) : Promise.resolve({ synthetic: true });
+    },
+    readPcbPrimitiveType: (_engine: unknown, request: Input["request"], expectedContext: object, expectedFingerprint: object): Promise<object> => {
+      assert.equal(request.method, PCB_PRIMITIVE_TYPE_METHOD); assert.deepEqual(request.arguments, { id: "fixture" });
+      assert.deepEqual(expectedContext, {}); assert.deepEqual(expectedFingerprint, {});
+      calls.push("pcb-type"); return failure === "dispatch" ? Promise.reject(new Error("synthetic dispatch failure")) : Promise.resolve({ synthetic: true });
     },
     engine: {
       status: (): Promise<object> => { calls.push("status"); return failure === "status" ? Promise.reject(new Error("synthetic status failure")) : Promise.resolve({ stableFingerprint: {} }); },
@@ -58,7 +64,7 @@ async function registeredSdkRead(failure: "none" | "status" | "dispatch"): Promi
   return { invoke, calls, effects };
 }
 
-for (const method of ["eda.sys_Environment.getEditorCurrentVersion", "eda.sch_PrimitiveText.getAllPrimitiveId", "eda.sch_PrimitiveWire.getAllPrimitiveId", "eda.sch_PrimitiveBus.getAllPrimitiveId", SCHEMATIC_COMPONENT_PROPERTY_METHOD, SYMBOL_PIN_ENUMERATION_METHOD, ...SCHEMATIC_TEXT_READ_METHODS, ...SCHEMATIC_NETGROUP_READ_METHODS, PCB_NET_MEMBERSHIP_METHOD]) {
+for (const method of ["eda.sys_Environment.getEditorCurrentVersion", "eda.sch_PrimitiveText.getAllPrimitiveId", "eda.sch_PrimitiveWire.getAllPrimitiveId", "eda.sch_PrimitiveBus.getAllPrimitiveId", SCHEMATIC_COMPONENT_PROPERTY_METHOD, SYMBOL_PIN_ENUMERATION_METHOD, ...SCHEMATIC_TEXT_READ_METHODS, ...SCHEMATIC_NETGROUP_READ_METHODS, PCB_NET_MEMBERSHIP_METHOD, PCB_PRIMITIVE_TYPE_METHOD]) {
   void test(`registered SDK reader labels success and failure evidence correctly: ${method}`, async () => {
     const native = isSchematicNativeIdMethod(method);
     let reader = native ? "fixed-native-id-observation" : "fixed-public-sdk-observation";
@@ -68,10 +74,14 @@ for (const method of ["eda.sys_Environment.getEditorCurrentVersion", "eda.sch_Pr
     if (isSchematicTextReadMethod(method)) { reader = "fixed-native-text-state-observation"; effect = "fixed-native-text-state-read"; }
     if (isSchematicNetGroupReadMethod(method)) { reader = "fixed-native-netgroup-state-observation"; effect = "fixed-native-netgroup-state-read"; }
     if (method === PCB_NET_MEMBERSHIP_METHOD) { reader = "fixed-native-net-membership-observation"; effect = "fixed-native-net-membership-read"; }
+    if (method === PCB_PRIMITIVE_TYPE_METHOD) { reader = "fixed-native-pcb-type-observation"; effect = "fixed-native-pcb-type-read"; }
     let argumentsData: Record<string, unknown> = method.endsWith(".get") ? { primitiveIds: "fixture" } : {};
     if (method === PCB_NET_MEMBERSHIP_METHOD) { argumentsData = { net: "GND", primitiveTypes: ["Line"] }; }
+    if (method === PCB_PRIMITIVE_TYPE_METHOD) { argumentsData = { id: "fixture" }; }
     const input: Input = { request: { method, arguments: argumentsData }, expectedContext: {}, expectedFingerprint: {}, evidence: {}, returnMode: "full", maxInlineBytes: 1024 };
-    const dispatch = method === PCB_NET_MEMBERSHIP_METHOD ? "pcb-membership" : "read";
+    let dispatch = "read";
+    if (method === PCB_NET_MEMBERSHIP_METHOD) { dispatch = "pcb-membership"; }
+    if (method === PCB_PRIMITIVE_TYPE_METHOD) { dispatch = "pcb-type"; }
     for (const failure of ["none", "status", "dispatch"] as const) {
       const current = await registeredSdkRead(failure);
       if (failure === "none") {

@@ -30,8 +30,10 @@ function fingerprint(): Value {
     installedBundles: { available: true, assetsRoot: "/opt/assets", pcbEditor: { ...manifest.installedBundles.pcbEditor, implementationPath: "/opt/assets/pcb.js" },
       publicApi: { ...manifest.installedBundles.publicApi, implementationPath: "/opt/assets/api.js", adapterPath: "/opt/assets/adapter.js", declarationsPath: "/opt/assets/api.d.ts" } } };
 }
-function fixture(): { executor: ProjectOpenExecutor; input: ProjectOpenInput; calls: string[]; journals: Map<string, Value>; state: { recordDrift: boolean; uncertain: boolean; incomplete: boolean } } {
-  const calls: string[] = []; const journals = new Map<string, Value>(); const state = { recordDrift: false, uncertain: false, incomplete: false }; const identity = fingerprint(); let historyReads = 0;
+interface FixtureState { recordDrift: boolean; uncertain: boolean; incomplete: boolean; dispatchFailure?: unknown; failArtifact?: string; }
+function fixture(): { executor: ProjectOpenExecutor; input: ProjectOpenInput; calls: string[]; journals: Map<string, Value>; artifacts: Map<string, Value>; state: FixtureState } {
+  const calls: string[] = []; const journals = new Map<string, Value>(); const artifacts = new Map<string, Value>();
+  const state: FixtureState = { recordDrift: false, uncertain: false, incomplete: false }; const identity = fingerprint(); let historyReads = 0;
   const save = (journal: Value): Promise<string> => { const id = journal["operationId"]; assert.equal(typeof id, "string"); if (typeof id !== "string") { throw new TypeError("Missing fixture journal ID"); } journals.set(id, structuredClone(journal)); return Promise.resolve(`/fixture/${id}.json`); };
   const services: ProjectOpenDependencies = {
     checkpointPolicy: (source): ReturnType<NonNullable<ProjectOpenDependencies["checkpointPolicy"]>> => Promise.resolve({ expectedSource: source, artifactRoots: ["/fixture"] }),
@@ -53,7 +55,12 @@ function fixture(): { executor: ProjectOpenExecutor; input: ProjectOpenInput; ca
       const value = journals.get(id); assert.ok(value !== undefined && isRecord(value["plan"]) && typeof value["planHash"] === "string");
       return Promise.resolve({ ...structuredClone(value), operationId: id, plan: value["plan"], planHash: value["planHash"] });
     },
-    writePhaseArtifact: (id, sequence, phase, value): ReturnType<NonNullable<ProjectOpenDependencies["writePhaseArtifact"]>> => Promise.resolve({ path: `/fixture/${id}/${sequence}-${phase}.json`, bytes: JSON.stringify(value).length, sha256: sha256Json(value) }),
+    writePhaseArtifact: (id, sequence, phase, value): ReturnType<NonNullable<ProjectOpenDependencies["writePhaseArtifact"]>> => {
+      if (phase === state.failArtifact) { return Promise.reject(new Error("PRIVATE_ARTIFACT_FAILURE")); }
+      const path = `/fixture/${id}/${sequence}-${phase}.json`; assert.equal(artifacts.has(path), false); assert.ok(isRecord(value));
+      artifacts.set(path, structuredClone(value));
+      return Promise.resolve({ path, bytes: JSON.stringify(value).length, sha256: sha256Json(value) });
+    },
   };
   const engine: ProjectOpenEngine = {
     executionAuthorityValidator: {}, status: (): Promise<{ stableFingerprint: Value }> => Promise.resolve({ stableFingerprint: identity }),
@@ -63,6 +70,7 @@ function fixture(): { executor: ProjectOpenExecutor; input: ProjectOpenInput; ca
     recoverDispatchAuthority: (): Promise<never> => Promise.reject(new Error("Unused fixture recovery")),
     dispatchWithOrphanTracking: async (journal, phase): Promise<unknown> => {
       calls.push(phase); assert.equal(journals.get(journal.operationId)?.["state"], `${phase}-dispatching`);
+      if (Object.hasOwn(state, "dispatchFailure")) { throw state.dispatchFailure; }
       if (state.uncertain) { journal.orphanedCallPossible = true; await save(journal); throw new Error("uncertain open"); }
       if (phase === "editor-tabs") {
         const absent = { kind: "undefined" };
@@ -75,7 +83,7 @@ function fixture(): { executor: ProjectOpenExecutor; input: ProjectOpenInput; ca
       return { structuredContent: payload };
     },
   };
-  return { executor: new ProjectOpenExecutor(engine, services), input: { action: "open-existing", ...TARGET, expectedFingerprint: identity, confirmOpen: true }, calls, journals, state };
+  return { executor: new ProjectOpenExecutor(engine, services), input: { action: "open-existing", ...TARGET, expectedFingerprint: identity, confirmOpen: true }, calls, journals, artifacts, state };
 }
 void test("existing-project opening journals first and proves the full saved baseline unchanged without save", async () => {
   const run = fixture(); const result = await run.executor.openExisting(run.input);
@@ -115,4 +123,71 @@ void test("changed records and uncertain opens never complete or cause an automa
   const uncertainId = [...uncertain.journals.keys()][0]; assert.ok(typeof uncertainId === "string");
   await assert.rejects(uncertain.executor.reconcileNoMutation(uncertainId), /Recover retained authority/u);
   assert.equal(uncertain.calls.filter((phase) => phase === "project-open").length, 1);
+});
+
+function failureArtifacts(run: ReturnType<typeof fixture>): Value[] {
+  return [...run.artifacts.values()].filter((value) => value["schema"] === "easyeda-pro-control.project-open-failure.v1");
+}
+void test("fixed readiness failure evidence survives later inspection and reconciliation without replaying navigation", async () => {
+  for (const stage of ["api", "project", "document", "owner", "pcb", "page", "container"]) {
+    const run = fixture();
+    const category = `native-preflight:RECOVERY_EDITOR_READINESS_${stage.toUpperCase()}`;
+    run.state.dispatchFailure = new Error(`The upstream EasyEDA tool reported failure [${category}].`);
+    await assert.rejects(run.executor.openExisting(run.input));
+    const id = [...run.journals.keys()][0]; assert.ok(typeof id === "string");
+    const original = { schema: "easyeda-pro-control.project-open-failure.v1", action: "open-existing", phase: "project-open-dispatching", category, orphanedCallPossible: false };
+    assert.deepEqual(failureArtifacts(run), [original]);
+    delete run.state.dispatchFailure;
+    await run.executor.inspectEditorTabs(id);
+    await run.executor.reconcileNoMutation(id);
+    assert.deepEqual(failureArtifacts(run), [original]);
+    assert.equal(run.journals.get(id)?.["state"], "reconciled-no-mutation");
+    assert.equal(run.calls.filter((phase) => phase === "project-open").length, 1);
+  }
+});
+void test("unknown errors, private suffixes and accessors never enter project-open failure evidence", async () => {
+  let getterReads = 0;
+  const accessor = new Error("Replaced by an accessor before dispatch.");
+  Object.defineProperty(accessor, "message", { get: (): string => { getterReads += 1; return "PRIVATE_ACCESSOR"; } });
+  const sensitive = new Error("PRIVATE_SOURCE /private/project.eprj2");
+  Object.assign(sensitive, { upstreamResult: { secret: "PRIVATE_KEY" }, cause: new Error("PRIVATE_CAUSE") });
+  for (const error of [sensitive, new Error("Recovery navigation refused: editor-readiness-page PRIVATE_SUFFIX"),
+    new Error("The upstream EasyEDA tool reported failure [native-preflight:RECOVERY_EDITOR_READINESS_PAGE].\nPRIVATE_STACK"),
+    new Error("PRIVATE_OVERSIZED".repeat(1000)), accessor, { private: "PRIVATE_OBJECT" }, "PRIVATE_STRING"]) {
+    const run = fixture(); run.state.dispatchFailure = error;
+    await assert.rejects(run.executor.openExisting(run.input), () => true);
+    const failures = failureArtifacts(run);
+    assert.equal(failures.length, 1); assert.equal(failures[0]?.["category"], "unclassified-operation-failure");
+    assert.equal(JSON.stringify(failures).includes("PRIVATE"), false);
+    assert.equal(JSON.stringify([...run.journals.values()]).includes("PRIVATE"), false);
+    assert.equal(run.calls.filter((phase) => phase === "project-open").length, 1);
+  }
+  assert.equal(getterReads, 0);
+});
+void test("failure evidence preserves uncertain authority and distinct recovery phases", async () => {
+  const run = fixture(); run.state.uncertain = true;
+  await assert.rejects(run.executor.openExisting(run.input));
+  const id = [...run.journals.keys()][0]; assert.ok(typeof id === "string");
+  assert.equal(failureArtifacts(run)[0]?.["orphanedCallPossible"], true);
+  assert.equal(run.journals.get(id)?.["state"], "project-open-outcome-unknown");
+  await assert.rejects(run.executor.reconcileNoMutation(id), /Recover retained authority/u);
+  assert.deepEqual(run.calls, ["checkpoint", "project-open"]);
+  const settled = fixture(); settled.state.dispatchFailure = new Error("The upstream EasyEDA tool reported failure [unclassified-upstream-failure].");
+  await assert.rejects(settled.executor.openExisting(settled.input));
+  const settledId = [...settled.journals.keys()][0]; assert.ok(typeof settledId === "string");
+  await assert.rejects(settled.executor.inspectEditorTabs(settledId));
+  await assert.rejects(settled.executor.reconcileNoMutation(settledId));
+  assert.deepEqual(failureArtifacts(settled).map(({ action, phase, category }) => ({ action, phase, category })), [
+    { action: "open-existing", phase: "project-open-dispatching", category: "unclassified-upstream-failure" },
+    { action: "inspect-editor-tabs", phase: "editor-tabs-dispatching", category: "unclassified-upstream-failure" },
+    { action: "reconcile-open", phase: "project-open-reconcile-dispatching", category: "unclassified-upstream-failure" },
+  ]);
+});
+void test("failure artifact publication failure cannot clear the durably retained stop or cause navigation retry", async () => {
+  const run = fixture(); run.state.dispatchFailure = new Error("PRIVATE_SOURCE"); run.state.failArtifact = "failure";
+  await assert.rejects(run.executor.openExisting(run.input), { message: "Project-open failure evidence could not be retained; the operation remains stopped." });
+  const journal = [...run.journals.values()][0]; assert.ok(journal);
+  assert.equal(journal["state"], "project-open-needs-review"); assert.equal(journal["hardStop"], true);
+  assert.equal(journal["saved"], false); assert.equal(journal["orphanedCallPossible"], false);
+  assert.equal(failureArtifacts(run).length, 0); assert.deepEqual(run.calls, ["checkpoint", "project-open"]);
 });

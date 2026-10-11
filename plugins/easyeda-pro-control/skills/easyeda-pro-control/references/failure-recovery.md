@@ -25,6 +25,14 @@ If full schematic topology is unavailable after reopening, `load-layout-pages` w
 
 An unfinished runtime `open-existing` operation uses `inspect-open`, `recover-open-authority`, `rebind-open-runtime` and `reconcile-open`, not the design/library recovery actions. Reconciliation inspects the current exclusive tab and unchanged database without repeating navigation. See [connection-and-context.md](connection-and-context.md#open-an-existing-saved-project-from-start-page).
 
+New project-open failures retain a fixed category and coordinator phase in an
+immutable failure artifact. It survives later inspection and reconciliation;
+raw error messages and private payloads are not retained there. Recognized
+`RECOVERY_EDITOR_READINESS_*` categories identify the failed readiness check,
+not permission to retry navigation. Older journals may lack this artifact. A
+later observed open tab does not reconstruct a missing initial acknowledgment
+or establish the initial failure's exact cause.
+
 Rule checks have their own inspect, recover-authority, open-target, rebind-runtime and reconcile-no-mutation actions under `easyeda_control_check`. A failed or timed-out check is never rerun by recovery. Reconciliation compares the retained full calculation scope and complete saved SQLite baseline; it does not manufacture a report from an unknown check outcome. Other incomplete operations block a new check.
 
 ## Saved library edit awaiting reopen

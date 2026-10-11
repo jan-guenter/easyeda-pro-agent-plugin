@@ -143,7 +143,7 @@ const codes = new Set([
   "SYMBOL_SOURCE_RECORD",
   "SYMBOL_SOURCE_REJECTED",
 ]);
-const recoveryStages = new Set([
+export const RECOVERY_NAVIGATION_FAILURE_STAGES = [
   "api-unavailable", "identity-shape", "identity-alias", "identity-missing",
   "registry-path", "registry-response", "registry-chunk", "registry-bound",
   "registry-json", "registry-membership", "registry-target-mismatch",
@@ -153,7 +153,10 @@ const recoveryStages = new Set([
   "activate-readback", "target-readback",
   "library-api-unavailable", "library-identity-drift", "library-context-owner",
   "tab-tree-api", "tab-tree-shape", "tab-tree-branch", "tab-tree-leaf", "tab-record", "tab-data", "tab-type-alias", "unrelated-editor-tab",
-]);
+  "editor-readiness-api", "editor-readiness-project", "editor-readiness-document", "editor-readiness-owner",
+  "editor-readiness-pcb", "editor-readiness-page", "editor-readiness-container",
+] as const;
+const recoveryStages: ReadonlySet<string> = new Set(RECOVERY_NAVIGATION_FAILURE_STAGES);
 const tabCodes = new Set(["EDITOR_TABS_API_MISSING", "EDITOR_TABS_FIELD_BOUND", "EDITOR_TABS_PROJECT_DRIFT", "EDITOR_TABS_TREE_BOUND", "EDITOR_TABS_CONTEXT_DRIFT", "EDITOR_TABS_OUTPUT_BOUND"]);
 const padCodes = new Map([
   ["Pad frame bound exceeded", "PAD_FRAME_BOUND"], ["Pad frame scope unavailable", "PAD_FRAME_SCOPE"], ["Duplicate pad frame", "PAD_FRAME_DUPLICATE"],

@@ -31,10 +31,18 @@ styles, not public-getter parity. Wire/Bus `get/getAll` preserve every line's na
 geometry/style and all literal names instead of flattening them to one style/net.
 Filtered PCB net membership derives identity records from complete requested-family
 source/inventory agreement, with explicit standalone/component pad roles.
-The fixed read catalog has 173 routes, including
+Native PCB type lookup classifies an existing ID only after complete all-five-family
+source/inventory agreement, including unassigned objects. Missing or unsupported
+IDs refuse rather than reporting false absence. The fixed read catalog has 174 routes, including
 bounded polygon splitting that preserves input source arrays and their order. It
 accepts no arbitrary method path, caller code, callbacks, navigation or writes.
 None of these observations replaces complete design or persistence proof.
+
+The inventory also maps the existing visible-canvas image and region-zoom
+workflows. Capture rechecks the complete runtime fingerprint before accepting
+managed PNG evidence. This is viewport evidence, not design-state or visual
+acceptance. Project-open failures now retain fixed diagnostic categories through
+recovery without storing raw private error messages or repeating navigation.
 
 Latest declarations are not runtime admission. Exact operation schemas cover
 105 design actions and 68 library/lifecycle actions; schema availability does

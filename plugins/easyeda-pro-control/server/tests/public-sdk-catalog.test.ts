@@ -5,6 +5,7 @@ import { queryPublicSdkReads, validatePublicSdkArguments } from "../src/public-s
 import { publicSdkReadDescriptors } from "../src/public-sdk-read.ts";
 import { SCHEMATIC_NETGROUP_READ_METHODS } from "../src/schematic-netgroup-read.ts";
 import { PCB_NET_MEMBERSHIP_METHOD } from "../src/pcb-net-membership.ts";
+import { PCB_PRIMITIVE_TYPE_METHOD } from "../src/pcb-primitive-type-read.ts";
 
 void test("offline SDK-read pages cover the exact executable descriptor set", () => {
   const paths: string[] = [];
@@ -78,8 +79,29 @@ void test("SDK catalog distinguishes native-only, public-only and mixed discover
   assert.equal(netMembership["authority"], "native-filtered-net-membership-not-connectivity-or-persistence-proof");
   assert.equal(netMembership["executionAuthorized"], false);
   assert.equal(netMembership["matched"], 1);
+  const primitiveType = queryPublicSdkReads({ method: PCB_PRIMITIVE_TYPE_METHOD, includeSchemas: true });
+  assert.equal(primitiveType["authority"], "native-pcb-identity-type-not-public-method-parity");
+  assert.equal(primitiveType["executionAuthorized"], false); assert.equal(primitiveType["matched"], 1);
   assert.equal(queryPublicSdkReads()["authority"], "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof");
   assert.equal(queryPublicSdkReads({ limit: 1, offset: 0 })["authority"], "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof");
+});
+
+void test("offline PCB type lookup exposes its exact literal selector and native enum contract", () => {
+  const method = PCB_PRIMITIVE_TYPE_METHOD;
+  const result = validatePublicSdkArguments({ request: { method, arguments: { id: "physical-pad" } } });
+  assert.equal(result["valid"], true); assert.equal(result["executionAuthorized"], false); assert.equal(result["nativePreflightPerformed"], false);
+  assert.deepEqual(result["normalizedRequest"], { method, arguments: { id: "physical-pad" } });
+  for (const argumentsData of [undefined, {}, { id: "" }, { id: "pad\n" }, { id: ["pad"] }, { primitiveId: "pad" },
+    { id: "pad", primitiveType: "Fill" }, { id: "pad", net: "GND" }, { id: "x".repeat(257) }]) {
+    assert.equal(validatePublicSdkArguments({ request: { method, arguments: argumentsData } })["valid"], false);
+  }
+  const descriptor = publicSdkReadDescriptors().find((entry) => entry.path === method); assert.ok(descriptor);
+  assert.deepEqual(descriptor.documentTypes, [3]); assert.equal(descriptor.parameterSupport, "narrowed");
+  assert.equal(descriptor.implementation.kind, "native-task-equivalent"); assert.equal(descriptor.liveValidation, "not-yet-validated");
+  assert.equal(descriptor.implementation.source, "server/src/pcb-primitive-type-read.ts");
+  assert.equal(descriptor.implementation.test, "server/tests/pcb-primitive-type-read.test.ts");
+  assert.deepEqual(descriptor.result, { kind: "string", optional: false, getterFields: [], primitiveType: null });
+  assert.match(descriptor.limitations.join(" "), /Missing IDs, other families and ambiguous membership refuse/u);
 });
 
 void test("offline native NetGroup and PCB membership validation retain strict narrowed selectors", () => {

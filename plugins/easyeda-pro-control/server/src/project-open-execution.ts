@@ -14,9 +14,36 @@ import { deriveRecoveryNavigationTarget, prepareRecoveryNavigation } from "./rec
 import type { RecoveryNavigationTarget } from "./recovery-navigation.ts";
 import { transactionError } from "./transaction-error.ts";
 import { buildEditorTabsReadCode, parseEditorTabsRead } from "./editor-tabs.ts";
+import { RECOVERY_NAVIGATION_FAILURE_STAGES } from "./native-diagnostics.ts";
 
 type Value = Record<string, unknown>;
 const PROFILE = "easyeda-pro-control.project-open.v1";
+type FailureAction = "open-existing" | "inspect-editor-tabs" | "reconcile-open";
+const failureStates: ReadonlySet<string> = new Set(["planned", "project-open-dispatching", "editor-tabs-dispatching", "project-open-reconcile-dispatching", "project-open-reconcile-final-dispatching"]);
+const failureCategories = new Map<string, string>(RECOVERY_NAVIGATION_FAILURE_STAGES.flatMap((stage) => {
+  const category = `native-preflight:RECOVERY_${stage.toUpperCase().replaceAll("-", "_")}`;
+  const entries: [string, string][] = [[`Recovery navigation refused: ${stage}`, category]];
+  for (const kind of ["failure", "failure or unavailability"]) { entries.push([`The upstream EasyEDA tool reported ${kind} [${category}].`, category]); }
+  return entries;
+}));
+for (const category of ["unclassified-upstream-failure", "invalid-envelope", "native-api-error", "payload-too-large", "invalid-input", "unavailable", "unstable-read"]) {
+  for (const kind of ["failure", "failure or unavailability"]) { failureCategories.set(`The upstream EasyEDA tool reported ${kind} [${category}].`, category); }
+}
+failureCategories.set("The upstream bridge timed out without proving native execution ended [bridge-timeout;execution-unsettled].", "bridge-timeout");
+failureCategories.set("The native lifecycle deadline expired without proving execution ended [native-lifecycle-timeout;execution-unsettled].", "native-lifecycle-timeout");
+failureCategories.set("Project-open native acknowledgment is missing.", "native-acknowledgment-missing");
+failureCategories.set("Project-open tab acknowledgment disagrees with the exact active context.", "native-acknowledgment-context");
+failureCategories.set("Project-open proof changed SQLite tables or materialized document records.", "durable-baseline-changed");
+function failureCategory(error: unknown): string {
+  // Never inspect upstreamResult, stack, cause, toString or an error accessor.
+  // Whole-message membership emits fixed categories only, including for spoofed
+  // Error objects. Unknown and oversized messages retain no private material.
+  try {
+    if (typeof error !== "object" || error === null) { return "unclassified-operation-failure"; }
+    const message: unknown = Object.getOwnPropertyDescriptor(error, "message")?.value;
+    return typeof message === "string" && message.length <= 512 ? failureCategories.get(message) ?? "unclassified-operation-failure" : "unclassified-operation-failure";
+  } catch { return "unclassified-operation-failure"; }
+}
 const hash = z.string().regex(/^[a-f0-9]{64}$/u);
 const valueRecord = z.record(z.string(), z.unknown());
 export const projectOpenTargetSchema = z.object({ projectUuid: z.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u), projectPath: z.string().min(1).max(4096),
@@ -169,12 +196,20 @@ export class ProjectOpenExecutor {
       journal.state = "completed"; journal.hardStop = false;
       journal.nextSafeAction = "Existing target is open and the complete saved database is unchanged. Inspect exact live design state before editing.";
       await this.record(journal, "verified", journal.result); return summary(journal);
-    } catch (error) { return this.failed(journal, error); }
+    } catch (error) { return this.failed(journal, error, "open-existing"); }
   }
-  private async failed(journal: OpenJournal, error: unknown): Promise<never> {
+  private async failed(journal: OpenJournal, error: unknown, action: FailureAction): Promise<never> {
+    const diagnostic = { schema: "easyeda-pro-control.project-open-failure.v1", action,
+      phase: failureStates.has(journal.state) ? journal.state : "unclassified-phase", category: failureCategory(error),
+      orphanedCallPossible: journal.orphanedCallPossible };
     journal.state = journal.orphanedCallPossible ? "project-open-outcome-unknown" : "project-open-needs-review";
     journal.hardStop = true; journal.nextSafeAction = "Inspect the retained journal. Recover authority if necessary, then reconcile without opening, saving or retrying.";
-    await this.services.updateOperation(journal); throw transactionError(error, journal);
+    // Commit the stop before fallible evidence publication. Each failure is a
+    // New immutable phase artifact; later inspection/reconciliation keeps it.
+    await this.services.updateOperation(journal);
+    try { await this.record(journal, "failure", diagnostic); }
+    catch { throw transactionError(new Error("Project-open failure evidence could not be retained; the operation remains stopped."), journal); }
+    throw transactionError(error, journal);
   }
   public async inspect(operationId: string): Promise<Value> { return summary(await this.load(operationId)); }
   public async inspectEditorTabs(operationId: string): Promise<Value> {
@@ -198,7 +233,7 @@ export class ProjectOpenExecutor {
       journal.nextSafeAction = "Inspect the retained tab fields, then reconcile the existing open journal. Inspection does not complete it or repeat navigation.";
       await this.record(journal, "editor-tabs-verified", { database, snapshotSha256: sha256Text(canonicalJson(snapshot)) });
       return { ...summary(journal), action: "inspect-editor-tabs", editorTabs: snapshot, allSqliteTablesUnchanged: true };
-    } catch (error) { return this.failed(journal, error); }
+    } catch (error) { return this.failed(journal, error, "inspect-editor-tabs"); }
   }
   public async recoverAuthority(operationId: string): Promise<Value> {
     const journal = await this.load(operationId);
@@ -235,6 +270,6 @@ export class ProjectOpenExecutor {
       journal.state = "reconciled-no-mutation"; journal.hardStop = false; journal.mutationMayHaveOccurred = false;
       journal.nextSafeAction = "Saved database is unchanged. No navigation was repeated and the earlier open result was not inferred.";
       await this.record(journal, "reconciled-no-mutation", journal.result); return summary(journal);
-    } catch (error) { return this.failed(journal, error); }
+    } catch (error) { return this.failed(journal, error, "reconcile-open"); }
   }
 }

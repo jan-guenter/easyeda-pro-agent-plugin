@@ -14,7 +14,7 @@ export const PCB_NET_MEMBERSHIP_LIMITATIONS = [
   "Requires a nonempty net and explicit nonempty unique filters from Line, Arc, Via, Pad and ComponentPad; unfiltered, empty-net and other-family requests are unsupported.",
   "Pad means standalone physical pads; ComponentPad means component-owned physical pads. These disjoint roles differ from the direct Pad enumerator, which also includes component pads.",
   "Requires one exact active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769; library, partition and unmodeled source records are unsupported.",
-  "STRING, FONT, RULE_TEMPLATE, PRIMITIVE, PREFERENCE and SILK_OPTS are admitted as nonselected text/metadata. BOARD remains unsupported because its polygon decoder registers generated Line/Arc controllers whose inventory ownership is not proven by this profile.",
+  "STRING, FONT, RULE_TEMPLATE, PRIMITIVE, PREFERENCE and SILK_OPTS are admitted as nonselected text/metadata. BOARD is a nonselected display outline: its generated Line/Arc drawing controllers are not the Track/ArcTrack objects enumerated by the electrical inventory. Outline geometry and drawing-child ownership are not returned or validated.",
   "Net matching uses uppercase keys and preserves stored spelling. Full requested-family source/inventory correspondence is checked before filtering; this is not electrical connectivity, DRC, saved-file or persistence proof.",
   "Two matching source/inventory/source cycles require unchanged runtime and full observed context. Switching away and back between observations remains undetectable.",
   "Bounded to 20,000 native source records, 16 MiB native source evidence and 2 MiB result; exceeding bounds refuses without truncation.",
@@ -49,7 +49,7 @@ const inventorySchema = z.object({ ok: z.literal(true), kind: z.literal("pcb-inv
   families: z.record(z.string(), z.unknown()), componentPadCorrelation: padCorrelationSchema }).loose();
 const supportedRecords = new Set(["LINE", "ARC", "VIA", "PAD", "PAD_NET", "COMPONENT", "ATTR", "CANVAS", "LAYER", "LAYER_PHYS",
   "ACTIVE_LAYER", "NET", "RULE", "RULE_SELECTOR", "POLY", "REGION", "POUR", "FILL", "TEXT", "STRING", "DIMENSION", "IMAGE", "OBJECT", "GROUP",
-  "FONT", "RULE_TEMPLATE", "PRIMITIVE", "PREFERENCE", "SILK_OPTS"]);
+  "FONT", "RULE_TEMPLATE", "PRIMITIVE", "PREFERENCE", "SILK_OPTS", "BOARD"]);
 // Pinned PCB 65401cdc: STRING fields 3969387 and S4 decoder 4002049 are text-only.
 // S4 creates go.addText/$E objects, not selected electrical primitives.
 // Native source and full requested-family inventory still must correspond.
@@ -57,9 +57,15 @@ const supportedRecords = new Set(["LINE", "ARC", "VIA", "PAD", "PAD_NET", "COMPO
 // PRIMITIVE/rne 4768822 changes Ui pick/visible; SILK_OPTS/ine 4772996 sets colors.
 // PREFERENCE/ene 4763570 changes routing defaults; ll setters 7286703/7289867
 // Store options only, without calling Hi(). No metadata decoder runs here.
-// BOARD is different: one 4781396 calls Es.getShape 4382216, which creates
-// Line/Arc controllers through bde/Pde 7918269/7918772 and registers them in Db.
-// Its generated-child inventory ownership needs a separate proof.
+// BOARD/one 4781396 fixes type Board, layer 1006 and null net.
+// Mu 4083197 keeps that net null; yd 4090475 creates uncached outline models.
+// Es 4382216 wraps polygon children as ft/_t drawing controllers.
+// The bde/Pde factories 7918269/7918772 call Db.updateItem 7745368.
+// That only updates stashed selection IDs, not On's Track/ArcTrack models.
+// Exact Line/Arc getAll maps to track-getAll/arc-getAll 10290781/10244162.
+// Those enumerate dr/Xh 7877954 backed by On, filtered to _r/Si controllers.
+// BOARD therefore contributes no selected identity; extra inventory IDs still
+// Fail complete source correspondence. No outline decoder runs here.
 const families = [{ name: "lines", type: "Line", sourceType: "LINE" }, { name: "arcs", type: "Arc", sourceType: "ARC" },
   { name: "vias", type: "Via", sourceType: "VIA" }] as const;
 interface Member { primitiveId: string; primitiveType: PrimitiveType; net: string; parentComponentPrimitiveId: string | null; sourceRecordId: string; sourceType: PcbNetMembershipItem["sourceType"]; padNumber?: string; }
@@ -97,7 +103,6 @@ function sourceIdentity(source: NativeSourceSnapshot, documentUuid: string): voi
       source.sha256 !== sha256Json({ schema: source.schema, document: source.document, objects: source.objects }) ||
       new Set(source.objects.map((row) => row.id)).size !== source.objects.length) { throw new Error("PCB net membership source identity, bound or commitment is invalid."); }
   for (const row of source.objects) {
-    if (row.type === "BOARD") { throw new Error("PCB net membership does not yet prove BOARD-generated Line/Arc controller ownership."); }
     if (!supportedRecords.has(row.type)) { throw new Error("PCB net membership source contains an unmodeled record family."); }
     // Partition/panel/template descendants can have additional native membership.
     if (row.body["partitionId"] !== undefined && row.body["partitionId"] !== "" && row.body["partitionId"] !== null) {
@@ -165,11 +170,12 @@ function verifyPadLinks(expected: Map<string, Member>, componentIds: Set<string>
  * neither native call nor serializer invocation here. Pad and ComponentPad
  * are disjoint physical-owner roles, unlike the direct Pad enumerator.
  */
-export function derivePcbNetMembership(source: NativeSourceSnapshot, inventoryInput: unknown, requestInput: unknown, documentUuid: string): PcbNetMembershipItem[] {
-  const request = pcbNetMembershipRequestSchema.parse(requestInput);
+export function derivePcbPhysicalMembers(source: NativeSourceSnapshot, inventoryInput: unknown, documentUuid: string,
+  primitiveTypes: readonly PrimitiveType[]): Member[] {
   sourceIdentity(source, documentUuid);
   const inventory = inventorySchema.parse(inventoryInput);
-  const selected = new Set<PrimitiveType>(request.arguments.primitiveTypes);
+  const selected = new Set(z.array(primitiveType).min(1).max(5).parse(primitiveTypes));
+  if (selected.size !== primitiveTypes.length) { throw new Error("PCB physical membership has duplicate requested families."); }
   const members: Member[] = [];
   for (const definition of families) {
     if (selected.has(definition.type)) {
@@ -196,6 +202,13 @@ export function derivePcbNetMembership(source: NativeSourceSnapshot, inventoryIn
   if (members.length > PCB_NET_MEMBERSHIP_MAX_ITEMS || new Set(members.map((row) => row.primitiveId)).size !== members.length) {
     throw new Error("PCB net membership result families overlap or exceed their bound.");
   }
+  return members;
+}
+
+export function derivePcbNetMembership(source: NativeSourceSnapshot, inventoryInput: unknown, requestInput: unknown, documentUuid: string): PcbNetMembershipItem[] {
+  const request = pcbNetMembershipRequestSchema.parse(requestInput);
+  const selected = new Set<PrimitiveType>(request.arguments.primitiveTypes);
+  const members = derivePcbPhysicalMembers(source, inventoryInput, documentUuid, request.arguments.primitiveTypes);
   const netKey = net.min(1).parse(request.arguments.net.toUpperCase());
   const result = pcbNetMembershipItemsSchema.parse(members.filter((row) => selected.has(row.primitiveType) && row.net !== "" && row.net.toUpperCase() === netKey)
     .map(({ padNumber: _padNumber, ...row }) => row).toSorted((left, right) => left.primitiveId < right.primitiveId ? -1 : 1));

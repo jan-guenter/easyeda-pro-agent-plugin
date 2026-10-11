@@ -45,7 +45,9 @@ export function isSchematicNetGroupReadMethod(method: string): boolean { return 
 
 /** Pinned SCH source: NetGroup lines/netNames copy their Sets (3928158,
  * 3929563); line points/styles are backing-field getters (2139137). The raw
- * style strings decode through Ka (2141617), not the public numeric enum.
+ * style getter returns null or numeric 0–3. Ka (2141617) decodes source style
+ * strings to numbers (2144276) and encodes them back (2146362). This DTO uses
+ * those literal strings while retaining the native number for drift proof.
  * NetName is modelType NetLabel, tagName NetName (4267994/4272655). Its value
  * getter returns _value; no AST/compiler/name resolution or serializer is used.
  * The complete connected tree, root family and direct child collections must
@@ -93,6 +95,7 @@ const captureSource=tree=>{const source=sourceReader.call(handler);if(!(source i
 const sameSource=(before,after)=>{if(before.size!==after.size)bad('CHANGED');for(const [id,marker] of before){if(after.get(id)!==marker)bad('CHANGED');}};
 const boundedArray=(value,limit)=>{if(!Array.isArray(value)||value.length>limit||new Set(value).size!==value.length)bad('CHILDREN');return [...value];};
 const finite=value=>{if(typeof value!=='number'||!Number.isFinite(value)||Math.abs(value)>1000000000)bad('STATE');return value;};
+const styleName=value=>{if(value===null)return null;if(typeof value!=='number'||!Number.isInteger(value)||value<0||value>3)bad('STATE');return ['SOLID','SHORT_DASH','DOT','DOT_DASH'][value];};
 const capture=()=>{
  check();const tree=captureTree(),source=captureSource(tree),family=modelMap.get('NetGroup'),models=modelReader.call(shapes,'NetGroup');
  if(family!==undefined&&(!(family instanceof Set)||family.size>256)||!Array.isArray(models)||models.length>256||models.length!==(family?.size??0))bad('FAMILY');
@@ -102,14 +105,16 @@ const capture=()=>{
   if(members.has(id)||model.modelType!=='NetGroup'||model.cmdKey!=='netGroup'||model.tagName!=='NetGroup'||!['wire','bus'].includes(model.type)||model.parent!==root||model.shapeManager!==shapes||index.get(id)!==model||!family?.has(model)||source.get(id)!==1||model.combination)bad('FAMILY');
   const lines=boundedArray(model.lines,1024),names=boundedArray(model.netNames,1024),children=boundedArray(model.children,20000);
   if(!lines.length)bad('CHILDREN');const expectedLineType=model.type==='wire'?'Wire':'Bus';
-  const lineSet=new Set(lines),nameSet=new Set(names),custom=[],markers=[];
+  const lineSet=new Set(lines),nameSet=new Set(names),lineStyles=new Map(),custom=[],markers=[];
   const child=(item)=>{validId(item?.id);if(item.parent!==model||item.shapeManager!==shapes||index.get(item.id)!==item||!children.includes(item)||!tree.has(item.id)||(item.children!==undefined&&(!Array.isArray(item.children)||item.children.length)))bad('CHILDREN');};
   const lineStates=lines.map(item=>{
    child(item);if(++lineCount>1024)bad('BOUND');
    if(item.modelType!==expectedLineType||item.tagName!=='NetGroupLine'||item.type!==model.type||item.cmdKey!==model.type||source.get(item.id)!==1)bad('CHILDREN');
    const points=item.points;if(!Array.isArray(points)||points.length<1||points.length>2)bad('STATE');
-   const result={primitiveId:item.id,points:points.map(point=>[finite(point?.x),finite(point?.y)]),color:item.strokeColor,width:item.strokeWidth,strokeStyle:item.strokeStyle};
-   if(!(result.color===null||typeof result.color==='string'&&result.color.length<=4096)||result.width!==null&&(typeof result.width!=='number'||!Number.isFinite(result.width)||result.width<0||result.width>1000000000)||result.strokeStyle!==null&&!['SOLID','SHORT_DASH','DOT','DOT_DASH'].includes(result.strokeStyle))bad('STATE');
+   const nativeStyle=item.strokeStyle;
+   const result={primitiveId:item.id,points:points.map(point=>[finite(point?.x),finite(point?.y)]),color:item.strokeColor,width:item.strokeWidth,strokeStyle:styleName(nativeStyle)};
+   if(!(result.color===null||typeof result.color==='string'&&result.color.length<=4096)||result.width!==null&&(typeof result.width!=='number'||!Number.isFinite(result.width)||result.width<0||result.width>1000000000))bad('STATE');
+   lineStyles.set(item.id,nativeStyle);
    characters+=result.color?.length??0;return result;
   });
   const nameStates=names.map(item=>{
@@ -124,7 +129,7 @@ const capture=()=>{
    else bad('CHILDREN');
   }
   if(characters>262144)bad('BOUND');
-  members.set(id,model);collections.set(id,{lines,names,children:[...children],markers});
+  members.set(id,model);collections.set(id,{lines,names,children:[...children],markers,lineStyles});
   states.set(id,{primitiveId:id,modelType:'NetGroup',kind:model.type,lines:lineStates.sort((a,b)=>a.primitiveId<b.primitiveId?-1:1),names:nameStates.sort((a,b)=>a.primitiveId<b.primitiveId?-1:1),customAttributeIds:custom.sort()});
  }
  for(const [id,entry] of tree){if(entry.type==='NetGroup'&&entry.parent===root&&members.get(id)!==entry.model)bad('FAMILY');}
@@ -139,7 +144,7 @@ for(const [id,model] of before.members){
  if(after.members.get(id)!==model)bad('CHANGED');const left=before.states.get(id),right=after.states.get(id),lc=before.collections.get(id),rc=after.collections.get(id);
  for(const key of ['lines','names','children','markers'])sameList(lc[key],rc[key]);
  if(left.kind!==right.kind||left.lines.length!==right.lines.length||left.names.length!==right.names.length)bad('CHANGED');sameList(left.customAttributeIds,right.customAttributeIds);
- for(let i=0;i<left.lines.length;i++){const a=left.lines[i],b=right.lines[i];if(a.primitiveId!==b.primitiveId||!Object.is(a.color,b.color)||!Object.is(a.width,b.width)||!Object.is(a.strokeStyle,b.strokeStyle)||a.points.length!==b.points.length)bad('CHANGED');for(let j=0;j<a.points.length;j++){if(!Object.is(a.points[j][0],b.points[j][0])||!Object.is(a.points[j][1],b.points[j][1]))bad('CHANGED');}}
+ for(let i=0;i<left.lines.length;i++){const a=left.lines[i],b=right.lines[i];if(a.primitiveId!==b.primitiveId||!Object.is(a.color,b.color)||!Object.is(a.width,b.width)||!Object.is(a.strokeStyle,b.strokeStyle)||!Object.is(lc.lineStyles.get(a.primitiveId),rc.lineStyles.get(b.primitiveId))||a.points.length!==b.points.length)bad('CHANGED');for(let j=0;j<a.points.length;j++){if(!Object.is(a.points[j][0],b.points[j][0])||!Object.is(a.points[j][1],b.points[j][1]))bad('CHANGED');}}
  for(let i=0;i<left.names.length;i++){if(left.names[i].primitiveId!==right.names[i].primitiveId||left.names[i].value!==right.names[i].value)bad('CHANGED');}
 }
 // Reprove retained scalar fields after the final source/tree collection. This
@@ -149,7 +154,7 @@ for(const [id,model] of after.members){
  if(model.type!==state.kind||model.modelType!=='NetGroup'||model.cmdKey!=='netGroup'||model.tagName!=='NetGroup')bad('CHANGED');
  sameList(collection.lines,boundedArray(model.lines,1024));sameList(collection.names,boundedArray(model.netNames,1024));sameList(collection.children,boundedArray(model.children,20000));
  const lines=new Map(collection.lines.map(item=>[item.id,item])),names=new Map(collection.names.map(item=>[item.id,item])),children=new Map(collection.children.map(item=>[item.id,item]));
- for(const row of state.lines){const current=lines.get(row.primitiveId),points=current?.points;if(!current||current.modelType!==(state.kind==='wire'?'Wire':'Bus')||current.tagName!=='NetGroupLine'||current.cmdKey!==state.kind||current.type!==state.kind||!Array.isArray(points)||points.length!==row.points.length||!Object.is(current.strokeColor,row.color)||!Object.is(current.strokeWidth,row.width)||!Object.is(current.strokeStyle,row.strokeStyle))bad('CHANGED');for(let j=0;j<points.length;j++){if(!Object.is(points[j]?.x,row.points[j][0])||!Object.is(points[j]?.y,row.points[j][1]))bad('CHANGED');}}
+ for(const row of state.lines){const current=lines.get(row.primitiveId),points=current?.points;if(!current||current.modelType!==(state.kind==='wire'?'Wire':'Bus')||current.tagName!=='NetGroupLine'||current.cmdKey!==state.kind||current.type!==state.kind||!Array.isArray(points)||points.length!==row.points.length||!Object.is(current.strokeColor,row.color)||!Object.is(current.strokeWidth,row.width)||!Object.is(current.strokeStyle,collection.lineStyles.get(row.primitiveId)))bad('CHANGED');for(let j=0;j<points.length;j++){if(!Object.is(points[j]?.x,row.points[j][0])||!Object.is(points[j]?.y,row.points[j][1]))bad('CHANGED');}}
  for(const row of state.names){const current=names.get(row.primitiveId);if(!current||current.modelType!=='NetLabel'||current.tagName!=='NetName'||current.cmdKey!=='netlabel'||current.key!=='Name'||current.keyInSourceCode!=='NET'||current.value!==row.value)bad('CHANGED');}
  for(const id of state.customAttributeIds){const current=children.get(id);if(current?.modelType!=='Attr'||current.tagName!=='Attr')bad('CHANGED');}
  for(const id of collection.markers){const current=children.get(id);if(!current||!['Junction','UnConnectDot'].includes(current.modelType)||current.tagName!==current.modelType||current.notAddHistory!==true)bad('CHANGED');}

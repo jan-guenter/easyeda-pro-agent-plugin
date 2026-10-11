@@ -166,6 +166,7 @@ async function capture(
   config: FixtureConfig,
   label: string,
   requestOverrides: Record<string, unknown> = {},
+  upstreamTool: "easyeda_canvas_capture" | "easyeda_canvas_capture_region" | "easyeda_schematic_capture_full_page" = "easyeda_schematic_capture_full_page",
 ): Promise<ToolCallResult> {
   await writeConfig(config);
   const documentType = config.documentType ?? 1;
@@ -174,12 +175,13 @@ async function capture(
       name: "easyeda_control_capture",
       arguments: {
         request: {
-          upstreamTool: "easyeda_schematic_capture_full_page",
+          upstreamTool,
           arguments: {
-            projectId: "project-1",
+            ...(upstreamTool === "easyeda_schematic_capture_full_page" ? {
+              projectId: "project-1", padding: 0, allowInferredA4: false,
+            } : {}),
+            ...(upstreamTool === "easyeda_canvas_capture_region" ? { left: 0, right: 100, top: 80, bottom: 0 } : {}),
             tabId: "tab-1",
-            padding: 0,
-            allowInferredA4: false,
             ...requestOverrides,
           },
         },
@@ -387,6 +389,8 @@ before(async () => {
           'easyeda_schematic_capture_full_page',
           { readOnlyHint: true, idempotentHint: true },
         ),
+        tool('easyeda_canvas_capture', { readOnlyHint: true, idempotentHint: false }),
+        tool('easyeda_canvas_capture_region', { readOnlyHint: true, idempotentHint: false }),
         tool('easyeda_schematic_components', { readOnlyHint: true, idempotentHint: true }),
         tool('easyeda_pcb_components', { readOnlyHint: true, idempotentHint: true }),
         tool('easyeda_pcb_constraint_check', { readOnlyHint: true, idempotentHint: true }),
@@ -464,12 +468,16 @@ before(async () => {
           throw new Error('Fixture upstream and editor context are unavailable.');
         }
         if (request.params.name === 'easyeda_health_check') {
+          if (config.captureReturned === true && config.captureFingerprintDrift === 'unavailable') {
+            throw new Error('Fixture health probe disappeared after capture.');
+          }
           return result({
             version: '1.0.0-rc.1',
             node_version: '24.18.0',
             bridge_connected: true,
             easyeda_version: '3.2.149.88089769',
-            extension_version: '1.0.0-rc.1',
+            extension_version: config.captureReturned === true && config.captureFingerprintDrift === 'version'
+              ? 'fixture-changed-after-capture' : '1.0.0-rc.1',
             extension_version_mismatch: false,
             registry_mismatch: false,
           });
@@ -516,7 +524,7 @@ before(async () => {
               : {},
           });
         }
-        if (request.params.name === 'easyeda_schematic_capture_full_page') {
+        if (['easyeda_canvas_capture', 'easyeda_canvas_capture_region', 'easyeda_schematic_capture_full_page'].includes(request.params.name)) {
           const width = config.pngWidth ?? 2;
           const height = config.pngHeight ?? 3;
           const png = makePng(
@@ -557,6 +565,9 @@ before(async () => {
             mimeType: config.imageMimeType ?? 'image/png',
           };
           const images = Array.from({ length: config.imageCount ?? 1 }, () => image);
+          if (config.captureFingerprintDrift) {
+            await writeFile('/data/capture-config.json', JSON.stringify({ ...config, captureReturned: true }), 'utf8');
+          }
           return result(payload, images);
         }
         if (
@@ -974,6 +985,7 @@ void describe("generic read context binding", { concurrency: false }, () => {
       [3, "easyeda_component_probe", /diagnostic-only/u],
       [3, "easyeda_live_smoke_report", /diagnostic-only/u],
       [1, "easyeda_wire_probe", /diagnostic-only/u],
+      [1, "easyeda_canvas_locate", /not on the reviewed local-only generic-read allowlist|excluded from generic reads/u],
       [
         1,
         "easyeda_bom_validate",
@@ -1041,6 +1053,36 @@ void describe(
   "full-page schematic capture facade",
   { concurrency: false },
   () => {
+    void test("existing visible and region capture modes retain viewport-only managed image evidence", async () => {
+      for (const mode of ["easyeda_canvas_capture", "easyeda_canvas_capture_region"] as const) {
+        const accepted = await capture({}, `existing-${mode}`, {}, mode);
+        assert.notEqual(accepted.isError, true, JSON.stringify(accepted.content));
+        assert.equal(requireArray(accepted.content, "capture content").filter((item) => isRecord(item) && item["type"] === "image").length, 1);
+        const evidence = requireRecord(structured(accepted)["evidence"], "capture evidence");
+        const archived: unknown = JSON.parse(await readFile(String(evidence["resultPath"]), "utf8"));
+        assert.equal(requireRecord(requireRecord(archived, "archived evidence")["request"], "archived request")["upstreamTool"], mode);
+        assert.equal(requireRecord(requireRecord(archived, "archived evidence")["metadata"], "capture metadata")["effect"], "viewport-read");
+      }
+    });
+
+    void test("runtime drift or failed health reproof after any capture mode refuses the image without replay", async () => {
+      for (const mode of ["easyeda_canvas_capture", "easyeda_canvas_capture_region", "easyeda_schematic_capture_full_page"] as const) {
+        for (const drift of ["version", "unavailable"]) {
+          const previousLog = await readFile(upstreamCallLogPath, "utf8");
+          const rejected = await capture({ captureFingerprintDrift: drift }, `runtime-drift-${mode}-${drift}`, {}, mode);
+          assert.match(failureMessage(rejected), /runtime fingerprint changed during canvas capture/u);
+          assert.equal(requireArray(rejected.content, "refused capture content").some((item) => isRecord(item) && item["type"] === "image"), false);
+          const currentLog = await readFile(upstreamCallLogPath, "utf8");
+          const appended = currentLog.slice(previousLog.length).trim().split("\n").map((line) => {
+            const entry: unknown = JSON.parse(line); return requireRecord(entry, "upstream call")["tool"];
+          });
+          assert.equal(appended.filter((tool) => tool === mode).length, 1, "a refused image must not repeat capture or zoom");
+          const capturedAt = appended.indexOf(mode);
+          assert.ok(capturedAt !== -1 && appended.lastIndexOf("easyeda_health_check") > capturedAt, "runtime identity must be reproved after image generation");
+        }
+      }
+    });
+
     void test("requires a schematic document and binds the returned project identity", async () => {
       const wrongEditor = await capture({ documentType: 3 }, "wrong-editor");
       assert.match(

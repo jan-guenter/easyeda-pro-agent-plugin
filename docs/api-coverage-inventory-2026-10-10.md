@@ -10,9 +10,9 @@ The inventory covers 774 distinct method paths. The reviewed installed SDK has
 697, the newer official reference has 773, and one older dialog method appears
 only in the reviewed SDK. These counts are method paths, not overload counts.
 The original 749 and 806 declaration signatures remain in the inventory.
-The current source inventory has 191 public subsets, 86 native equivalents,
-two lifecycle-only methods, eight blocked methods and 487 omissions. The fixed
-SDK-read catalog has 173 routes. These are implementation counts, not live-test
+The current source inventory has 193 public subsets, 87 native equivalents,
+two lifecycle-only methods, eight blocked methods and 484 omissions. The fixed
+SDK-read catalog has 174 routes. These are implementation counts, not live-test
 counts.
 
 Component-property names have a separate fixed native equivalent for the exact
@@ -43,6 +43,11 @@ identities. They do not collapse heterogeneous styles or choose a first net name
 Complete tree/index/source/child membership, two captures and late scalar/type
 reproof replace the swallowed-error public wrappers. No compiler or serializer
 is called; connected nonempty Wire/Bus DTO validation remains pending.
+Installed233100 refused populated Wire state because the adapter confused
+serialized style strings with native numeric enums. The source fix preserves
+the string DTO and compares raw numeric values for drift. Native and saved
+fixture state stayed unchanged after the refusal; this is not successful reader
+validation.
 
 `pcb_Net.getAllPrimitivesByNet` now has a filtered native identity adapter for
 Line, Arc, Via, standalone Pad and ComponentPad. Filters and a nonempty net are
@@ -50,10 +55,24 @@ required. Two complete source/inventory/source cycles prove every requested
 family before net filtering, including PAD_NET/component ownership. Unfiltered
 membership and other native shapes remain unsupported; this is not SDK class
 parity, connectivity or persistence proof. Connected validation remains pending.
-Ordinary text and reviewed metadata records are admitted; BOARD records refuse
-because their decoder creates registered Line/Arc controllers with unproven
-inventory ownership. This is a concrete remaining shape-ownership limitation,
-not a claim that all ordinary boards are covered.
+Ordinary text, reviewed metadata and BOARD outlines are admitted. Pinned source
+review distinguishes BOARD drawing controllers from electrical Track/ArcTrack
+models. Complete electrical-family correspondence remains mandatory; outline
+geometry is not returned or validated.
+
+`pcb_Primitive.getPrimitiveTypeByPrimitiveId` classifies an existing literal ID
+as Line, Arc, Via, Pad or ComponentPad only after complete all-five-family
+source/inventory proof, including empty-net objects. Missing IDs, unsupported
+families and identity collisions refuse. It does not call the installed empty
+public stub or claim absence, geometry or connectivity. Connected testing is
+pending.
+
+Two corrected inventory rows now identify existing capture workflows:
+`dmt_EditorControl.getCurrentRenderedAreaImage` in visible-canvas capture and
+`zoomToRegion` in region capture. Both require an explicit proven active tab,
+bounded PNG evidence and before/after runtime/context checks. Region capture
+changes the viewport. Neither is full source or visual acceptance, and standalone
+zoom remains unavailable. These corrections do not add two SDK-read methods.
 
 ## What the statuses mean
 
