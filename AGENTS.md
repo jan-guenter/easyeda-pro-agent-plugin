@@ -6,7 +6,108 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
-### Controlled settings continuation authorized
+### Candidate204104 local release verified; disposable editor closed
+
+- Source candidate204104 adds confirmed pointer-only hover, one strict public
+  system-library UUID reader and two narrow native schematic Text/Wire/Bus ID
+  readers. Main and independent reviews accept the changes. The inventory now
+  has181fixed readers/20native and774method paths:193public/102native/
+  2lifecycle/7blocked/470omitted. No new adapter has connected validation.
+- RDP later returned active/unlocked with the same1272 process and exact flat
+  P1 context. One observed right-click cancelled the unfinished path; Escape
+  removed the drawing cursor. Capture0e34e3b5/image62174027 records the cleared
+  tool. Source33 is byte-identical to28/32. No WIRE/LINE was created, no Save or
+  Save/Discard prompt choice was made. Whole-app normal-close followed by empty
+  discovery proves1272 exited. Closed verification71fac173 proves source1a6862c9,
+  checkpoint1d81af37 and logical4d6820b9 unchanged. Metadata35/08624811 matches
+  all nine retained backup roots. Wire reroute validation remains pending.
+- Clean Node24.18.0/npm11.16.0 install,151signatures/40attestations/audit0,
+  TypeScript and strict type-aware lint pass. Final full verification passes
+  3681facade tests/oneplatformskip/zerofailures and424bridge tests, all seven
+  official/package skill checks, privacy/licenses, repository/package, doctor and
+  actionlint. Final log151ac851 retained. The first full run had one stale
+  native-reader catalog expectation; only the two admitted literal paths were
+  added, preserving every assertion. Its71focused tests and the complete rerun
+  pass. Original failed logbd2de341 is retained.
+- Both facade bundles and sanitizer reproduce exactly; the synthetic bridge
+  archives also match. Source203files/234eb8aa, runtime3/c4d9b324 and manifest
+  00e5fac6 are frozen. External pins are unchanged. Publication and installation
+  are not yet claimed; loaded164600 is not hot-patched or terminated. Never replay
+  completed live tests, fixture placement, Saves or the Run Command action.
+
+### Historical164600 preference comparison and disposable reopen
+
+The following records the earlier connected sequence. Its active-editor and
+RDP-pause instructions are superseded by the closed-fixture204104 release
+handoff above. Do not reopen or replay any completed action from this section.
+
+- Fresh facade2387360 independently matches the published164600 package, all624
+  files/modes and202source/3runtime identities. Connected status authenticates the
+  unchanged bridge tuple. Contained39600 opened only the disposable container
+  project and its already-saved PCB3 seed. Production remains untouched.
+- Native More is hover-open/click-close. An observed File menu and separately
+  inspected Left actions exposed Help, Settings, Advanced. One observed Run
+  Command selection opened the empty panel, captureacd78d92. No text or Enter,
+  repeated menu action, panel-close, design edit or Save occurred. An earlier
+  guessed Alt+A selected an apparent tool; Escape cleared it before canvas input.
+- Whole-app normal-close and empty discovery prove39600 exited without a
+  Save/Discard choice. Maintained offline checkpoint verification proves the
+  fixture's sourced572d11b/logical8c7ca53d unchanged. Backup metadata checks before
+  and after the panel action and after exit match the complete retained baseline.
+  This is point-in-time evidence, not ongoing or atomic side-effect admission.
+- Fresh private captures and the confined offline pair comparison9bf4428a prove
+  the sole semantic preference change was pcbCommandTab false to true, both in
+  the browser and the single anonymous SQL residual pair. The other SQL NULL row
+  and retention projections are unchanged. This compares the complete capture
+  interval, not the menu action alone, and does not identify the current user.
+  Independent verification rehashed24selected preserved files/6026433bytes,
+  seven reader sources and both SQLite derivatives with exact receipt bindings.
+  Pure comparator78211bc5 retains complete changed-key commitments and anonymous
+  row ambiguity. No raw preferences, template contents or credentials are public.
+- Current164600 facade2387360/runtime8610ba8c authenticates contained7616 with
+  its retained exact process-start and Job binding. Latest pre-open status reports
+  no incomplete operations. Boundary17 metadata proofd15ab360 equals the complete
+  backup baseline; closed-fixture proofd3691374 verifies unchanged design state.
+  One open-existing requestad8b8b2b for the exact disposable PCB3 completed with
+  all11documents and the complete SQLite dump unchanged. No Save was invoked.
+  Fresh context/capture and the post-open metadata check pass. These are
+  point-in-time observations, not atomic state or asynchronous-cleanup completion.
+  No API writer success follows from this preference change. Private continuation:
+  disposable-validation-164600-pU6VxGFM/RESUME.md. Never replay Run Command or the
+  already-consumed PCB3 seed Save.
+
+- Explicit-ID singular and one-element plural readers completed against the
+  original saved STRING. Both retain sourceb4097f14; managed receipts verify and
+  the post-read checkpoint remainsd572d11b/logical8c7ca53d. This covers one root
+  text object, not every supported family. V2 text-create65433c56 and explicit
+  delete19baf03b each completed one Save/close/reopen. Independent recomputation
+  proves all11documents, ten peer raw histories and131pre-existing target records
+  preserved. Delete restored native sourceb4097f14, not SQLite/history bytes.
+  Original seed remains. Never replay either operation or Save.
+- Closed free-SCH creationd6cb58ec completed with native-return ID bound to the
+  sole new SCH. Independent proof covers all11pre-existing documents,331current
+  records and368raw occurrences unchanged; the new history is exactly DOCHEAD
+  plus META. No page, editor, Save or inverse. Terminal6f19784d and final
+  checkpoint78ecbf34 retained. Normal-close/empty discovery prove7616 exited;
+  closed verification2684a2d6 passes. See docs/api-connected-validation-ledger.md.
+- New contained1272/start639273466817834577/job8f6d2637e09d421aad6c851cbb048392
+  authenticates the same164600 facade. Exact flat-fixture open276db5a3 completed
+  with all12documents, imported atom histories and complete SQLite unchanged.
+  It is active on P1/c7b01117d39a1531. Baseline source/native/flat reads pass;
+  checkpoint remains1d81af37/logical4d6820b9. Native Wire was selected and two
+  canvas clicks acknowledged. Before the next bend click, the RDP session
+  disconnected/locked; input refused dispatchedfalse. Stop native input until
+  a fresh visible session is observed. Exact source32 remainsaf079df2, with no
+  wire/LINE additions, but an unfinished drawing preview may remain. No Save or
+  completed wire setup. Inspect before continuing; never infer effect from a
+  click acknowledgment. Metadata27 matches all nine preserved backup roots. Do not
+  replay the open, completed tests, seed Saves or Run Command panel action.
+
+### Historical prelaunch record: controlled settings continuation authorized
+
+The observations below preceded the fresh164600 continuation recorded above.
+Their old-host, closed-application and no-settings-change statements describe
+those earlier checkpoints, not the current state or instructions to repeat work.
 
 - The user now authorizes EasyEDA changes needed to continue this task. This
   supersedes the previous planning-only boundary for the controlled shared-
@@ -67,7 +168,7 @@ Last updated: 2026-10-11 (Europe/Berlin)
   connected164600 testing still needs a fresh Codex host. No helper/private
   data was added to the package or repository.
 
-### Candidate164600 published and installed; fresh host required
+### Historical release record: candidate164600 published; fresh host then required
 
 - New source adds the sealed flat-wire reroute profile, two explicit-ID PCB
   source readers, selected-reader guard coalescing and passive timing evidence.
@@ -1722,7 +1823,8 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011164600` is published and installed/enabled with exact624file/mode proof. Loaded150000 facade2292140 is left intact; connected164600 admission requires fresh Codex. Contained26924 remains normally closed. Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct, with no later writer authority. Only empty/one-STRING selected-source reads have150000 live evidence. PCB3 seed was saved once and closed-checkpoint verified; activation refused on preference side effects and reconciled without mutation. All journals are terminal. No reopening or settings workaround until safe navigation admission. New explicit-ID readers, sealed wire rerouting, explicitblack v2 create/delete and closed free-SCH creation still need connected validation. Earlier text/container proofs remain generation-specific. Never access production or its project record. The user's latest continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation; this supersedes the earlier planning-only grant, not the technical safety requirements. Read-only preflight has completed; settings changes have not.
+- Git-marketplace `0.3.0+codex.20261011164600` is published and installed/enabled with exact624file/mode proof. Facade2387360/runtime8610ba8c remains loaded; candidate204104 is not installed yet. The authorized normal UI action and private comparison9bf4428a establish pcbCommandTab false to true in the browser and one anonymous SQL residual; the SQL NULL peer and retention projections are unchanged. No current-user identity or completed asynchronous cleanup is inferred. Both disposable fixtures are closed and verified. Flat P1 open276db5a3 completed unchanged; its interrupted wire preview was cancelled after RDP recovery. Exact source33 has no WIRE/LINE additions, capture62174027 shows the cleared tool, normal-close/discover-empty prove1272 exited and closed verification71fac173 preserves the original database/checkpoint/dump. No Save or discard choice. Metadata35 matches all nine retained backup roots. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission.
+- Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct, with no later writer authority. Installed164600 separately passed one-STRING explicit singular/plural reads, explicitblack text create/delete saved/reopened lifecycles, and closed empty free-SCH creation. Scope and immutable proofs are in the connected validation ledger; these cases do not validate whole SDK contracts. Sealed wire rerouting and candidate-only hover/system-library UUID reads remain unvalidated live. Earlier text/container proofs remain generation-specific. Never access production or its project record. The user's continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation, not relaxed technical safety checks or unrelated changes.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

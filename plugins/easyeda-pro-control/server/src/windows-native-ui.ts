@@ -31,7 +31,7 @@ export const nativeUiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("invoke"), ...selection, ...confirmed }).strict(),
   z.object({ action: z.literal("setvalue"), ...selection, text: textSchema, ...confirmed }).strict(),
   z.object({ action: z.literal("filename"), ...windowSelection, controlHandle: handleSchema, text: textSchema, ...confirmed }).strict(),
-  z.object({ action: z.enum(["click", "doubleclick", "rightclick"]), ...windowSelection, x: z.number().int().min(-32_768).max(32_767), y: z.number().int().min(-32_768).max(32_767), ...confirmed }).strict(),
+  z.object({ action: z.enum(["click", "doubleclick", "rightclick", "hover"]), ...windowSelection, x: z.number().int().min(-32_768).max(32_767), y: z.number().int().min(-32_768).max(32_767), ...confirmed }).strict(),
   z.object({ action: z.literal("keys"), ...windowSelection, text: textSchema, ...confirmed }).strict(),
 ]);
 export type NativeUiRequest = z.infer<typeof nativeUiRequestSchema>;
@@ -197,14 +197,30 @@ export class WindowsNativeUiController {
         ...(recoveryCloseConfirmation === undefined ? {} : { recoveryCloseConfirmation }) } });
     if (canonicalJson(this.options.runtime.status()) !== canonicalJson(runtime)) { throw nativeUiFailure("native-ui-runtime-changed-after-dispatch", "confirmUIWrite" in request); }
     const failure = failedSchema.safeParse(result);
-    if (failure.success) { throw nativeUiFailure(failure.data.error, failure.data.dispatched); }
+    if (failure.success) {
+      if (request.action === "hover" && failure.data.error === "native-ui-action-failed" && !failure.data.dispatched) {
+        throw nativeUiFailure("native-ui-hover-response-invalid", true);
+      }
+      throw nativeUiFailure(failure.data.error, failure.data.dispatched);
+    }
     if (request.action === "discover") {
       const discovery = discoverySchema.parse(result);
       if (discovery.observations.some((observed) => observed.executable !== paths.executableWindowsPath || observed.executableSha256 !== executableSha256)) { throw nativeUiFailure("native-ui-discovery-installation-mismatch", false); }
       return discovery;
     }
-    const response = responseSchema.parse(result);
+    const parsedResponse = responseSchema.safeParse(result);
+    if (!parsedResponse.success) {
+      if (request.action === "hover") { throw nativeUiFailure("native-ui-hover-response-invalid", true); }
+      throw parsedResponse.error;
+    }
+    const response = parsedResponse.data;
     if (response.action !== request.action || canonicalJson(response.binding) !== canonicalJson(binding)) { throw nativeUiFailure("native-ui-response-binding-mismatch", "confirmUIWrite" in request); }
+    if (request.action === "hover") {
+      const pointer = z.object({ pointerMovedTo: z.tuple([z.number().int(), z.number().int()]), buttonInputSent: z.literal(false), hoverEffectProven: z.literal(false) }).strict().safeParse(response.result);
+      if (!pointer.success || pointer.data.pointerMovedTo[0] !== request.x || pointer.data.pointerMovedTo[1] !== request.y) {
+        throw nativeUiFailure("native-ui-hover-position-not-proven", true);
+      }
+    }
     if (request.action !== "capture") { return { ...response, authority }; }
     const encoded = response.result["pngBase64"];
     if (typeof encoded !== "string" || encoded.length > 22_369_624 || encoded.length % 4 !== 0 || /[^A-Za-z0-9+/=]/u.test(encoded)) { throw nativeUiFailure("native-ui-capture-invalid", false); }

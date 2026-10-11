@@ -6,19 +6,19 @@
     "reviewedDistinctMethods": 697,
     "latestDistinctMethods": 773,
     "statuses": {
-      "implemented-public-subset": 192,
-      "implemented-native-equivalent": 100,
+      "implemented-public-subset": 193,
+      "implemented-native-equivalent": 102,
       "internal-lifecycle-only": 2,
       "implemented-but-blocked": 7,
-      "omitted": 473
+      "omitted": 470
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 354,
+      "available-with-runtime-guards": 357,
       "blocked": 9,
       "partially-blocked": 3
     },
     "omissions": {
-      "account-or-library-scope-needed": 41,
+      "account-or-library-scope-needed": 40,
       "callback-or-registration-lifecycle": 27,
       "canvas-origin-pending-geometry-queues": 1,
       "cross-tab-netlist-export-scope": 1,
@@ -37,7 +37,7 @@
       "managed-file-contract-needed": 39,
       "multi-object-electrical-effect": 7,
       "navigation-or-viewport-adapter-needed": 14,
-      "non-json-result-or-callback": 8,
+      "non-json-result-or-callback": 6,
       "not-in-reviewed-runtime": 76,
       "pad-pair-group-replacement-effects": 1,
       "page-order-partial-write-lifecycle": 1,
@@ -5739,14 +5739,42 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "account-or-library-scope-needed",
-        "reason": "lib_LibrariesList.getSystemLibraryUuid reaches account, workspace, folder, project or shared-library metadata outside the active disposable document.",
-        "nextRequirement": "Define explicit owner, collection/search bounds and privacy rules; mutations also need cloud/shared-asset authority and a durable independent verifier. Read-only catalog discovery is still feasible without granting writes.",
-        "evidence": []
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.lib_LibrariesList.getSystemLibraryUuid",
+          "implementation": "public-method",
+          "scope": "Fixed complete argument subset; bounded double-sampled public SDK observation, not complete native-source/connectivity/persistence proof. Returns only the system-library UUID as 32 lowercase hexadecimal characters; missing or malformed results refuse. No account/library enumeration, asset access or write authority is granted.",
+          "documentTypes": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "source": [
+            "public-sdk-read.ts"
+          ],
+          "tests": [
+            "system-library-read.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.lib_LibrariesList.getSystemLibraryUuid",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -22643,14 +22671,39 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "non-json-result-or-callback",
-        "reason": "sch_Primitive.getPrimitiveByPrimitiveId includes executable callbacks, browser/file objects or extension class state whose serialization is not defined by a JSON method call.",
-        "nextRequirement": "Create a fixed data projection or managed resource/file adapter with receiver-bound access and complete failure tests. Never serialize methods, prototype state or arbitrary callback source.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.sch_Primitive.getPrimitiveByPrimitiveId",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Fixed synchronous mixed native DTO lookup, not public SDK instances or all-property parity. Ordinary active SCH_PAGE root Text and Wire/Bus NetGroup only; symbol/block-instance pages, structural GROUP records, combined groups, components/pins, geometric shapes and descendant selectors refuse. Singular accepts exactly id and returns one DTO. Plural accepts exactly ids with 1-256 unique identities and returns DTOs in caller order. Duplicate, missing, unsupported or wrong-owner identities refuse the whole request; no silent omission, partial array or undefined result. DTO fields are exactly those of the modeled Text and Wire/Bus readers. Native Y, nullable styles and literal NET values are retained; line styles use null or SOLID/SHORT_DASH/DOT/DOT_DASH. Custom attributes are identity-only. Generated markers are ownership-checked, not returned. No electrical net resolution or theme defaults. One retained page/manager and reciprocal tree/index/source prove complete mixed Text and NetGroup membership. Two synchronous captures and final scalar reproof cover all modeled families, including unrequested members. Bounds apply before selection: 20000 tree/source IDs, 256 Text, 256 groups, 1024 lines/names/custom attributes each and 262144 combined string units. Text fields retain the Text DTO's finite +/-1e9 geometry, null or 0/1/2 alignment, nullable booleans, 65536-unit values and 4096-unit color/font strings. Line geometry and widths retain NetGroup bounds. Signed zero is distinct during native reproof but JSON transport normalizes it. No public generic/type/family getter, compiler, serializer, AST, RPC, settings, navigation or Save. This is point-in-time bounded native state, not complete source/connectivity/persistence proof or atomic read isolation. The official plural method is beta; unsupported SDK families remain unavailable here.",
+          "documentTypes": [
+            1
+          ],
+          "source": [
+            "schematic-primitive-read.ts"
+          ],
+          "tests": [
+            "schematic-primitive-read.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.sch_Primitive.getPrimitiveByPrimitiveId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -22749,14 +22802,39 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "non-json-result-or-callback",
-        "reason": "sch_Primitive.getPrimitivesByPrimitiveId includes executable callbacks, browser/file objects or extension class state whose serialization is not defined by a JSON method call.",
-        "nextRequirement": "Create a fixed data projection or managed resource/file adapter with receiver-bound access and complete failure tests. Never serialize methods, prototype state or arbitrary callback source.",
-        "evidence": []
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.sch_Primitive.getPrimitivesByPrimitiveId",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Fixed synchronous mixed native DTO lookup, not public SDK instances or all-property parity. Ordinary active SCH_PAGE root Text and Wire/Bus NetGroup only; symbol/block-instance pages, structural GROUP records, combined groups, components/pins, geometric shapes and descendant selectors refuse. Singular accepts exactly id and returns one DTO. Plural accepts exactly ids with 1-256 unique identities and returns DTOs in caller order. Duplicate, missing, unsupported or wrong-owner identities refuse the whole request; no silent omission, partial array or undefined result. DTO fields are exactly those of the modeled Text and Wire/Bus readers. Native Y, nullable styles and literal NET values are retained; line styles use null or SOLID/SHORT_DASH/DOT/DOT_DASH. Custom attributes are identity-only. Generated markers are ownership-checked, not returned. No electrical net resolution or theme defaults. One retained page/manager and reciprocal tree/index/source prove complete mixed Text and NetGroup membership. Two synchronous captures and final scalar reproof cover all modeled families, including unrequested members. Bounds apply before selection: 20000 tree/source IDs, 256 Text, 256 groups, 1024 lines/names/custom attributes each and 262144 combined string units. Text fields retain the Text DTO's finite +/-1e9 geometry, null or 0/1/2 alignment, nullable booleans, 65536-unit values and 4096-unit color/font strings. Line geometry and widths retain NetGroup bounds. Signed zero is distinct during native reproof but JSON transport normalizes it. No public generic/type/family getter, compiler, serializer, AST, RPC, settings, navigation or Save. This is point-in-time bounded native state, not complete source/connectivity/persistence proof or atomic read isolation. The official plural method is beta; unsupported SDK families remain unavailable here.",
+          "documentTypes": [
+            1
+          ],
+          "source": [
+            "schematic-primitive-read.ts"
+          ],
+          "tests": [
+            "schematic-primitive-read.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.sch_Primitive.getPrimitivesByPrimitiveId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"

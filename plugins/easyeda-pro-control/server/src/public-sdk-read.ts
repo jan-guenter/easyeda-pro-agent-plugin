@@ -8,8 +8,9 @@ import { SCHEMATIC_COMPONENT_PROPERTY_METHOD, buildSchematicComponentPropertyNam
 import { SYMBOL_PIN_ENUMERATION_METHOD, SYMBOL_PIN_GETTER_FIELDS, buildSymbolPinEnumerationExpression } from "./symbol-pin-enumeration.ts";
 import { buildSchematicTextReadExpression, isSchematicTextReadMethod, schematicTextReadRequestSchema, validateSchematicTextStates } from "./schematic-text-read.ts";
 import { buildSchematicNetGroupReadExpression, isSchematicNetGroupReadMethod, schematicNetGroupReadRequestSchema, validateSchematicNetGroupStates } from "./schematic-netgroup-read.ts";
-import { PCB_NET_MEMBERSHIP_LIMITATIONS, PCB_NET_MEMBERSHIP_METHOD, pcbNetMembershipArgumentsSchema } from "./pcb-net-membership.ts";
+import { SCHEMATIC_PRIMITIVE_READ_METHODS, buildSchematicPrimitiveReadExpression, isSchematicPrimitiveReadMethod, schematicPrimitiveReadRequestSchema, validateSchematicPrimitiveStates } from "./schematic-primitive-read.ts";
 // oxlint-disable-next-line import/max-dependencies -- Each fixed reader supplies its reviewed schema and provenance; duplicating that contract would permit drift.
+import { PCB_NET_MEMBERSHIP_LIMITATIONS, PCB_NET_MEMBERSHIP_METHOD, pcbNetMembershipArgumentsSchema } from "./pcb-net-membership.ts";
 import { PCB_PRIMITIVE_TYPE_LIMITATIONS, PCB_PRIMITIVE_TYPE_METHOD, pcbPrimitiveTypeArgumentsSchema } from "./pcb-primitive-type-read.ts";
 import { PCB_SELECTED_OBJECTS_LIMITATIONS, PCB_SELECTED_OBJECTS_METHOD, pcbSelectedObjectsArgumentsSchema } from "./pcb-selected-objects.ts";
 import { PCB_SOURCE_OBJECTS_LIMITATIONS, PCB_SOURCE_OBJECTS_METHOD, PCB_SOURCE_OBJECT_METHOD, isPcbSourceObjectsMethod, pcbSourceObjectArgumentsSchema, pcbSourceObjectsArgumentsSchema } from "./pcb-source-objects.ts";
@@ -118,6 +119,14 @@ add("eda.dmt_Panel.getPanelInfo", ALL_DOCUMENTS, "record", z.object({ panelUuid:
 add("eda.dmt_Pcb.getPcbInfo", ALL_DOCUMENTS, "record", z.object({ pcbUuid: id }).strict(), ["pcbUuid"], { optionalResult: true,
   limitations: ["The pinned implementation looks up the UUID only in the active project's getAllPcbsInfo result."] });
 add("eda.lib_LibrariesList.getProjectLibraryUuid", ALL_DOCUMENTS, "string", emptyArguments, [], { optionalResult: true });
+const SYSTEM_LIBRARY_UUID_METHOD = "eda.lib_LibrariesList.getSystemLibraryUuid";
+// Reviewed API 59236967 at UTF-16 1333091 delegates to UI 12414b9d at
+// 17072465. The getter returns the constant declared at 8615407 without
+// Account-library enumeration. This pinned implementation cannot return
+// Undefined; a missing result must not become an empty library identity.
+add(SYSTEM_LIBRARY_UUID_METHOD, ALL_DOCUMENTS, "string", emptyArguments, [], { limitations: [
+  "Returns only the system-library UUID as 32 lowercase hexadecimal characters; missing or malformed results refuse. No account/library enumeration, asset access or write authority is granted.",
+] });
 for (const request of editorTabLookupRequestSchema.options) {
   const method = request.shape.method.value;
   add(method, ALL_DOCUMENTS, method.endsWith("getSplitScreenIdByTabId") ? "string" : "records", request.shape.arguments,
@@ -260,6 +269,19 @@ for (const schema of schematicNetGroupReadRequestSchema.options) {
       "Every source-backed NET child returns its identity and literal value, including empty or conflicting values. No first-name selection, net compilation or connectivity claim. Custom attributes are identity-only; generated junction/disconnection markers are ownership-checked but omitted from DTOs.",
       "Complete reciprocal tree/index/source/root-family and child-collection proof; at most 20000 models/source IDs, 256 groups and across both families 1024 lines, 1024 names, 1024 custom attributes, 262144 string units. Limits apply before selection. Native signed zero is checked but JSON transport normalizes it.",
       "Two scalar captures plus final scalar reproof; no public wrappers, serializers, compiler, AST/name lookup, RPC, display getters, settings, navigation or Save. This is bounded group state, not complete source, resolved nets or durable-state proof.",
+    ],
+  });
+}
+for (const schema of schematicPrimitiveReadRequestSchema.options) {
+  const singular = schema.shape.method.value === SCHEMATIC_PRIMITIVE_READ_METHODS[0];
+  add(schema.shape.method.value, [1], singular ? "record" : "records", schema.shape.arguments, [singular ? "id" : "ids"], {
+    implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [
+      "Fixed synchronous mixed native DTO lookup, not public SDK instances or all-property parity. Ordinary active SCH_PAGE root Text and Wire/Bus NetGroup only; symbol/block-instance pages, structural GROUP records, combined groups, components/pins, geometric shapes and descendant selectors refuse.",
+      "Singular accepts exactly id and returns one DTO. Plural accepts exactly ids with 1-256 unique identities and returns DTOs in caller order. Duplicate, missing, unsupported or wrong-owner identities refuse the whole request; no silent omission, partial array or undefined result.",
+      "DTO fields are exactly those of the modeled Text and Wire/Bus readers. Native Y, nullable styles and literal NET values are retained; line styles use null or SOLID/SHORT_DASH/DOT/DOT_DASH. Custom attributes are identity-only. Generated markers are ownership-checked, not returned. No electrical net resolution or theme defaults.",
+      "One retained page/manager and reciprocal tree/index/source prove complete mixed Text and NetGroup membership. Two synchronous captures and final scalar reproof cover all modeled families, including unrequested members. Bounds apply before selection: 20000 tree/source IDs, 256 Text, 256 groups, 1024 lines/names/custom attributes each and 262144 combined string units.",
+      "Text fields retain the Text DTO's finite +/-1e9 geometry, null or 0/1/2 alignment, nullable booleans, 65536-unit values and 4096-unit color/font strings. Line geometry and widths retain NetGroup bounds. Signed zero is distinct during native reproof but JSON transport normalizes it.",
+      "No public generic/type/family getter, compiler, serializer, AST, RPC, settings, navigation or Save. This is point-in-time bounded native state, not complete source/connectivity/persistence proof or atomic read isolation. The official plural method is beta; unsupported SDK families remain unavailable here.",
     ],
   });
 }
@@ -439,12 +461,14 @@ export function publicSdkReadDescriptors(): PublicSdkReadDescriptor[] {
 }
 
 function readImplementationTestName(path: string): string {
+  if (path === SYSTEM_LIBRARY_UUID_METHOD) { return "system-library-read"; }
   if (path === SPLIT_POLYGON_METHOD) { return "public-sdk-polygon-split"; }
   if (path === PCB_NET_MEMBERSHIP_METHOD) { return "pcb-net-membership"; }
   return readImplementationName(path);
 }
 
 function readImplementationName(path: string): string {
+  if (isSchematicPrimitiveReadMethod(path)) { return "schematic-primitive-read"; }
   if (isPcbSourceObjectsMethod(path)) { return "pcb-source-objects-read"; }
   if (path === SCHEMATIC_SELECTION_METHOD) { return "schematic-selection-read"; }
   if (path === PCB_ACTIVE_LAYER_METHOD) { return "pcb-active-layer-read"; }
@@ -523,6 +547,7 @@ export function buildPublicSdkReadCode(input: unknown): string {
   else if (definition.path === SYMBOL_PIN_ENUMERATION_METHOD) { expression = buildSymbolPinEnumerationExpression("sdk-failure-code"); }
   else if (isSchematicTextReadMethod(definition.path)) { expression = buildSchematicTextReadExpression(request, "sdk-failure-code"); }
   else if (isSchematicNetGroupReadMethod(definition.path)) { expression = buildSchematicNetGroupReadExpression(request, "sdk-failure-code"); }
+  else if (isSchematicPrimitiveReadMethod(definition.path)) { expression = buildSchematicPrimitiveReadExpression(request, "sdk-failure-code"); }
   else if (definition.path === SPLIT_POLYGON_METHOD) { expression = splitPolygonExpression(request); }
   const membership = definition.membership === undefined ? "" : `
   stage = "membership";
@@ -607,6 +632,7 @@ try {
   const native = ${expression};
   stage = "projection";
   const present = native !== undefined;
+  ${definition.path === SYSTEM_LIBRARY_UUID_METHOD ? 'if (typeof native !== "string" || native.length !== 32 || !/^[a-f0-9]{32}$/.test(native)) fail("sdk-system-library-uuid");' : ""}
   ${definition.membership === undefined ? "" : `if (!native || native.uuid !== ${JSON.stringify(request.arguments[definition.membership.argument])}) fail("sdk-wrong-document");`}
   if (!present && ${JSON.stringify(!definition.optionalResult)}) fail("sdk-missing-result");
   let projected = native;
@@ -711,6 +737,10 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
     if (payload.undefinedPaths.includes("/value")) { throw new Error("Public SDK read presence is contradictory."); }
     if (definition.output !== "primitive" && definition.output !== "json" && definition.output !== "polygon") { resultSchemas[definition.output].parse(payload.value); }
     if (definition.output === "polygon") { boundedComplexPolygon.parse(payload.value); }
+    if (request.method === SYSTEM_LIBRARY_UUID_METHOD) {
+      z.string().length(32).regex(/^[a-f0-9]{32}$/u).parse(payload.value);
+      if (payload.undefinedPaths.length > 0) { throw new Error("System-library UUID cannot contain undefined values."); }
+    }
     if (request.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) {
       if (payload.undefinedPaths.length > 0) { throw new Error("Component property-name observations cannot contain undefined values."); }
       schematicComponentPropertyNamesSchema.parse(payload.value);
@@ -722,6 +752,10 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
     if (isSchematicNetGroupReadMethod(request.method)) {
       if (payload.undefinedPaths.length > 0) { throw new Error("Native NetGroup state cannot contain undefined fields."); }
       validateSchematicNetGroupStates(payload.value, request);
+    }
+    if (isSchematicPrimitiveReadMethod(request.method)) {
+      if (payload.undefinedPaths.length > 0) { throw new Error("Native mixed primitive state cannot contain undefined fields."); }
+      validateSchematicPrimitiveStates(payload.value, request);
     }
     if (request.method === SYMBOL_PIN_ENUMERATION_METHOD) {
       const rows = symbolPinRows.parse(payload.value);
@@ -778,6 +812,7 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
   if (request.method === SYMBOL_PIN_ENUMERATION_METHOD) { assurance = "bounded-native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof"; }
   if (isSchematicTextReadMethod(request.method)) { assurance = "bounded-native-text-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
   if (isSchematicNetGroupReadMethod(request.method)) { assurance = "bounded-native-netgroup-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
+  if (isSchematicPrimitiveReadMethod(request.method)) { assurance = "bounded-native-mixed-primitive-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
   return { ...payload, assurance,
     ...(definition.implementationKind === "native-task-equivalent" ? { implementationKind: definition.implementationKind } : {}),
     publicApiSha256: PUBLIC_SDK_READ_API_SHA256, liveValidation: "not-yet-validated", limitations: [...definition.limitations] };

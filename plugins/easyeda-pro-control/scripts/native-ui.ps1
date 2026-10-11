@@ -1,5 +1,5 @@
 param(
-  [ValidateSet('inspect','invoke','focus','focused','capture','click','doubleclick','keys','setvalue','filename','enableexternal','close')][string]$Action = 'inspect',
+  [ValidateSet('inspect','invoke','focus','focused','capture','click','doubleclick','hover','keys','setvalue','filename','enableexternal','close')][string]$Action = 'inspect',
   [Parameter(Mandatory=$true)][int]$TargetPid,
   [Parameter(Mandatory=$true)][long]$TargetHandle,
   [Parameter(Mandatory=$true)][long]$ProcessStartTicks,
@@ -22,6 +22,15 @@ Add-Type @'
 using System;
 using System.Runtime.InteropServices;
 public static class EasyedaNativeUi {
+  [StructLayout(LayoutKind.Sequential)] public struct Point { public int X, Y; }
+  [StructLayout(LayoutKind.Sequential)] public struct HoverRect { public int Left, Top, Right, Bottom; }
+  [StructLayout(LayoutKind.Sequential)] public struct GuiThreadInfo {
+    public uint Size, Flags;
+    public IntPtr Active, Focus, Capture, MenuOwner, MoveSize, Caret;
+    public HoverRect CaretRect;
+  }
+  [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(Point point);
+  [DllImport("user32.dll")] public static extern bool GetGUIThreadInfo(uint thread, ref GuiThreadInfo info);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
   [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hwnd, int command);
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hwnd);
@@ -34,10 +43,61 @@ public static class EasyedaNativeUi {
   [DllImport("user32.dll", EntryPoint="SendMessageW", CharSet=CharSet.Unicode)] public static extern IntPtr ReadEditText(IntPtr hwnd, uint message, IntPtr wparam, System.Text.StringBuilder value);
   [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+  [DllImport("user32.dll")] public static extern bool GetCursorPos(out Point point);
+  [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int key);
   [DllImport("user32.dll")] public static extern void mouse_event(uint flags, uint x, uint y, uint data, UIntPtr extra);
   [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
 }
 '@
+function Move-HoverPointer([IntPtr]$handle, [double[]]$bounds, [int]$x, [int]$y, [uint32]$expectedWindowPid, [uint32]$rootPid) {
+  # Keep this direct-helper leaf identical to the controller's pointer-only
+  # implementation except for its native class name. No button input is sent.
+  if ($bounds.Count -ne 4 -or $bounds[2] -le 0 -or $bounds[3] -le 0 -or $bounds[2] -gt 16384 -or $bounds[3] -gt 16384) { throw 'hover-bounds' }
+  foreach ($value in $bounds) { if ([double]::IsNaN($value) -or [double]::IsInfinity($value)) { throw 'hover-bounds' } }
+  if ($x -lt -32768 -or $x -gt 32767 -or $y -lt -32768 -or $y -gt 32767 -or $x -lt $bounds[0] -or $x -ge $bounds[0]+$bounds[2] -or $y -lt $bounds[1] -or $y -ge $bounds[1]+$bounds[3]) { throw 'hover-outside-window' }
+  if ([EasyedaNativeUi]::IsIconic($handle) -or [EasyedaNativeUi]::GetForegroundWindow() -ne $handle) { throw 'hover-target-not-foreground' }
+  foreach ($key in @(1,2,4,5,6)) { if ([EasyedaNativeUi]::GetAsyncKeyState($key) -lt 0) { throw 'hover-button-held' } }
+  # Window bounds and foreground alone do not exclude a non-activating overlay.
+  # These passive samples do not lock out concurrent input or window changes.
+  $requestedPoint = New-Object EasyedaNativeUi+Point
+  $requestedPoint.X = $x; $requestedPoint.Y = $y
+  $hit = [EasyedaNativeUi]::WindowFromPoint($requestedPoint)
+  if ($hit -eq [IntPtr]::Zero -or [EasyedaNativeUi]::GetAncestor($hit,2) -ne $handle) { throw 'hover-point-not-owned' }
+  $targetOwner = [uint32]0; $hitOwner = [uint32]0
+  $targetThread = [EasyedaNativeUi]::GetWindowThreadProcessId($handle,[ref]$targetOwner)
+  $hitThread = [EasyedaNativeUi]::GetWindowThreadProcessId($hit,[ref]$hitOwner)
+  if ($expectedWindowPid -eq 0 -or $rootPid -eq 0 -or $targetThread -eq 0 -or $hitThread -eq 0 -or $targetOwner -ne $expectedWindowPid -or $hitOwner -ne $targetOwner) { throw 'hover-point-owner-unverified' }
+  foreach ($thread in @($targetThread,$hitThread)) {
+    $gui = New-Object EasyedaNativeUi+GuiThreadInfo
+    $gui.Size = [Runtime.InteropServices.Marshal]::SizeOf($gui)
+    if (-not [EasyedaNativeUi]::GetGUIThreadInfo($thread,[ref]$gui) -or $gui.Capture -ne [IntPtr]::Zero -or ($thread -eq $targetThread -and $gui.Active -ne $handle)) { throw 'hover-capture-state-unverified' }
+  }
+  if ([EasyedaNativeUi]::GetForegroundWindow() -ne $handle -or [EasyedaNativeUi]::WindowFromPoint($requestedPoint) -ne $hit) { throw 'hover-recipient-changed' }
+  $finalTargetOwner = [uint32]0; $finalHitOwner = [uint32]0
+  if ([EasyedaNativeUi]::GetAncestor($hit,2) -ne $handle -or
+      [EasyedaNativeUi]::GetWindowThreadProcessId($handle,[ref]$finalTargetOwner) -ne $targetThread -or
+      [EasyedaNativeUi]::GetWindowThreadProcessId($hit,[ref]$finalHitOwner) -ne $hitThread -or
+      $finalTargetOwner -ne $expectedWindowPid -or $finalHitOwner -ne $expectedWindowPid) { throw 'hover-recipient-owner-changed' }
+  # Owned dialogs may belong to another process. Retain their exact admitted
+  # PID and require their bounded current owner chain to reach this root PID.
+  $ownerHandle = $handle; $seenOwners = @{}; $owned = $false
+  for ($depth = 0; $depth -lt 8 -and $ownerHandle -ne [IntPtr]::Zero; $depth++) {
+    $ownerKey = $ownerHandle.ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture)
+    if ($seenOwners.ContainsKey($ownerKey)) { break }; $seenOwners[$ownerKey] = $true
+    $ownerPid = [uint32]0
+    if ([EasyedaNativeUi]::GetWindowThreadProcessId($ownerHandle,[ref]$ownerPid) -eq 0 -or $ownerPid -eq 0) { break }
+    if ($depth -eq 0 -and $ownerPid -ne $expectedWindowPid) { break }
+    if ($ownerPid -eq $rootPid) { $owned = $true; break }
+    $ownerHandle = [EasyedaNativeUi]::GetWindow($ownerHandle,4)
+  }
+  if (-not $owned) { throw 'hover-owner-chain-changed' }
+  $script:dispatched = $true
+  if (-not [EasyedaNativeUi]::SetCursorPos($x,$y)) { throw 'hover-move-failed' }
+  $point = New-Object EasyedaNativeUi+Point
+  if (-not [EasyedaNativeUi]::GetCursorPos([ref]$point) -or $point.X -ne $x -or $point.Y -ne $y) { throw 'hover-position-unverified' }
+  if ([EasyedaNativeUi]::GetForegroundWindow() -ne $handle) { throw 'hover-foreground-changed' }
+  return @{pointerMovedTo=@($x,$y);buttonInputSent=$false;hoverEffectProven=$false}
+}
 [void][EasyedaNativeUi]::SetProcessDPIAware()
 $target = Get-Process -Id $TargetPid
 if ($target.ProcessName -ne 'easyeda-pro' -or $target.Path -cne $ExpectedExecutable -or $target.StartTime.ToUniversalTime().Ticks -ne $ProcessStartTicks) { throw 'Exact EasyEDA executable/process generation not available.' }
@@ -148,6 +208,16 @@ if ($Action -eq 'capture') {
   try { $graphics.CopyFromScreen([int]$bounds.X,[int]$bounds.Y,0,0,$bitmap.Size);$bitmap.Save($OutputPath,[System.Drawing.Imaging.ImageFormat]::Png) }
   finally {$graphics.Dispose();$bitmap.Dispose()}
   @{path=$OutputPath;bounds=@($bounds.X,$bounds.Y,$bounds.Width,$bounds.Height)} | ConvertTo-Json -Compress
+} elseif ($Action -eq 'hover') {
+  $target.Refresh()
+  if ($target.HasExited -or $target.ProcessName -cne 'easyeda-pro' -or $target.Path -cne $ExpectedExecutable -or $target.StartTime.ToUniversalTime().Ticks -ne $ProcessStartTicks) { throw 'Hover process generation changed.' }
+  [void][EasyedaNativeUi]::GetWindowThreadProcessId($windowHandle,[ref]$windowPid)
+  if ($windowPid -ne $TargetPid) { throw 'Hover window owner changed.' }
+  $bounds = $window.Current.BoundingRectangle
+  $hover = Move-HoverPointer $windowHandle @($bounds.X,$bounds.Y,$bounds.Width,$bounds.Height) $X $Y ([uint32]$TargetPid) ([uint32]$TargetPid)
+  $target.Refresh()
+  if ($target.HasExited -or $target.Path -cne $ExpectedExecutable -or $target.StartTime.ToUniversalTime().Ticks -ne $ProcessStartTicks) { throw 'Hover process generation changed after input.' }
+  $hover | ConvertTo-Json -Compress
 } elseif ($Action -eq 'click' -or $Action -eq 'doubleclick') {
   if ($X -lt $bounds.X -or $X -ge $bounds.Right -or $Y -lt $bounds.Y -or $Y -ge $bounds.Bottom) {throw 'Click is outside the exact EasyEDA window.'}
   [void][EasyedaNativeUi]::SetCursorPos($X,$Y)

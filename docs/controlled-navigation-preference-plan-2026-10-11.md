@@ -35,7 +35,8 @@ other records. Originals and the preserved snapshot were not mounted. Independen
 post-run verification matched all selected preserved input bytes and the separate
 read-only SQLite derivative. Private projection proof:
 `413709d5f47f04b20ee909aa38665b5c4f2d0c72454b006ff21e7a277513909a`.
-No settings values, template contents or backup counts are published here.
+No unrelated settings values, template contents or backup counts are published
+here; the task's Boolean panel preference is reported below.
 
 The captured numeric retention candidates resolve consistently and satisfy the
 recorded backup-count inequality. The anonymous NULL row remains distinct; no
@@ -45,11 +46,47 @@ closed-profile metadata check and repeated startup/backup audit matched the
 retained evidence exactly. This is a point-in-time result, not continuing
 runtime admission after projects or other inputs change.
 
-EasyEDA remains closed; no setting change has occurred. The installed update
-matches its reviewed files, but the current Codex host still runs the previous
-plugin generation. Connected testing must wait for a fresh host and rechecked
-launch conditions. The remainder records the source analysis and proposed
-procedure, not actions already taken.
+The subsequent fresh host independently matched the installed164600 package and
+authenticated the reviewed bridge. A contained launch opened only the disposable
+container project and its already-saved PCB3 seed. The observed Advanced menu's
+Run Command row was selected once; the empty Command panel was captured, with no
+text or Enter sent. Whole-application normal-close then completed without a Save
+or Discard choice. The maintained closed-file checkpoint verifier proves the
+fixture unchanged. Backup metadata samples before and after the action and after
+exit all match the retained baseline. These samples are not an atomic guarantee.
+
+A new bounded private capture and confined offline pair comparison have now
+completed. Comparison9bf4428a proves the sole semantic preference change is
+`pcbCommandTab` from Boolean `false` to `true` in the browser and the single
+anonymous SQL residual pair. The other SQL NULL row and retention projections
+are unchanged. This is a complete capture-interval comparison, not attribution
+to the menu click alone or proof of the active user's identity. Independent
+verification rehashed 24 selected preserved files, totaling 6,026,433 bytes,
+plus seven reader sources and both SQLite derivatives against their receipt
+bindings. No raw preferences, template contents or credentials were disclosed.
+
+After the comparison, facade2387360 on164600, runtime8610ba8c, authenticated
+contained process7616 with its retained exact process-start and Job binding.
+Pre-open status reported no incomplete operations. Boundary17 metadata proofd15ab360
+matches the complete retained baseline, and closed-fixture proofd3691374 confirms
+unchanged design state. One open-existing request for the exact disposable PCB3
+completed with all 11 saved documents and the complete logical database unchanged.
+Fresh context and capture proved the intended PCB was open; that navigation
+invoked no Save.
+The post-open backup metadata sample also matches. Do not repeat the open.
+These checks are point-in-time evidence, not an atomic guarantee or proof that
+all asynchronous side effects completed. They grant no CAD writer validation.
+
+Later disposable reader and writer tests completed separately, as recorded in
+the [connected validation ledger](api-connected-validation-ledger.md). Process7616
+then closed normally and its final closed checkpoint passed. The runtime and
+current fixture state are maintained in the repository engineering record, not
+in this historical preference-change plan.
+
+Do not repeat Run Command or close its panel as a reset. The remainder retains
+the original source analysis and proposed procedure; its earlier planning-only
+grant and unfinished-preflight statements are historical. Existing runtime
+preference, context, journal and no-repeat guards still apply to the continuation.
 
 ## Preservation distinction
 
@@ -83,8 +120,8 @@ first startup save. A closed-profile browser-preference projection is needed
 before launch; do not launch merely to inspect those values on the Start Page.
 The relevant application key is localStorage `preferences` (`15795648`).
 
-This note records no actual user preferences, backup counts, private paths or
-project names. During the original source-only research, no application launch,
+The original source analysis recorded no actual user preferences, backup counts,
+private paths or project names. During that research, no application launch,
 setting change, backup copy, deletion or design open was performed. Planning
 permission alone did not authorize those actions. The plugin's existing
 navigation refusal remains in force.
@@ -111,7 +148,8 @@ alone is not an execution selector.
 ## Exact native UI action and its limits
 
 In `ui.js`, the Advanced menu at `10360258` binds `Run Command...` to
-`command-tool`. The default `Command` shortcut at `8156039` is `C`. The menu's
+`command-tool`. The `Command` menu mnemonic at `8156039` is `C`; that is not proof
+of a standalone editor shortcut. The menu's
 mode configuration omits this action on Home, a blank workspace, schematics and
 symbols. Use only an explicitly approved disposable PCB for the proposed action.
 There is no reviewed Start Page checkbox that avoids opening an editor.
@@ -225,7 +263,7 @@ no equivalent current-user flag. Do not infer the active row from row order or
 nonempty preferences, and do not read credentials or license contents to fill
 that gap under this plan.
 
-## Candidate controlled procedure
+## Original candidate controlled procedure, historical
 
 ### Phase A: finish the read-only preflight
 
@@ -295,7 +333,7 @@ Do not repeat the menu action, close the Command tab to reset it, or replay a
 preference save after an ambiguous result. Stop and review the original evidence.
 Any rollback needs its own plan because the ordinary setter can prune again.
 
-## Handoff
+## Original planning handoff, historical
 
 The source establishes a normal UI route and explains its side effects. It does
 not establish a complete current preflight, preservation set or execution grant.

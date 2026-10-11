@@ -19,6 +19,7 @@ const guardedInputs = [
   { action: "click", x: 1, y: 2, ...confirmed },
   { action: "doubleclick", x: 1, y: 2, ...confirmed },
   { action: "rightclick", x: 1, y: 2, ...confirmed },
+  { action: "hover", x: 1, y: 2, ...confirmed },
 ];
 
 void test("native inspection and recovery controls never invoke the unused journal scan", async () => {

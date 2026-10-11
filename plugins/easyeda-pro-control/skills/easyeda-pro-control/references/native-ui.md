@@ -39,6 +39,8 @@ it is not authority to choose Save/Discard or to claim design rollback.
 
 Call with `request.action:"discover"` to find independently launched instances of the exact installed executable. Retain the returned `appBinding`, including `authority:"observed-unowned"`, PID, executable digest and string `rootStartTicks`. Pass it to `windows` and later actions when there is no retained runtime. With an owned runtime, omit appBinding; the controller uses the retained Job launch. Neither discovery nor a PID grants API execution authority.
 
+Put `confirmUIWrite:true` inside `request`, not at the tool's top level.
+
 Use `windows` to obtain current handles after splash or dialogs. All handles and StartTicks are strings; do not round the 64-bit start value through a JSON number. `inspect`, `focused` and `capture` are read actions. `focus`, `invoke`, `setvalue`, `filename`, `click`, `doubleclick`, `rightclick`, `keys` and `normal-close` require `confirmUIWrite:true` plus task authority. Input coordinates come from the observed window. Keyboard/pointer actions require the exact target foreground window. The packaged `rightclick` uses the same window/bounds guards as `click`; inspect the resulting menu before choosing an item. It is not a discard-recovery action.
 
 Choose the actual application window from the returned title, class and bounds. The Windows `mainWindowHandle` convenience value can temporarily refer to a tooltip; it is not authoritative. `normal-close` validates the explicitly selected visible, enabled, ownerless root application HWND and posts normal `WM_CLOSE` there. A save prompt may remain open; this action neither selects a prompt choice nor proves process exit.
@@ -97,6 +99,51 @@ Run the script with Windows PowerShell, including from WSL through its observed 
 - `enableexternal` is narrowly bound to the authenticated companion UUID and its selected native permission checkbox. It changes Off to On only. A separate read must confirm the asynchronous update.
 
 Names and coordinates are observations, not stable APIs. Do not repeatedly toggle a setting from an old read. Native helper dialogs can have another process ID; their bounded owner chain must lead to the bound EasyEDA window.
+
+### Overflow menus on the reviewed desktop build
+
+The source candidate adds confirmed `hover` with observed screen coordinates.
+It moves the pointer once without sending button or keyboard input, rechecks
+the reported position and refuses an observed held mouse button. It requires
+the exact foreground window and the normal process/bounds checks. It also
+checks that the window under the pointer belongs to the target and that neither
+observed GUI thread holds mouse capture, then resamples the recipient before
+moving. Fresh recipient PID and thread samples must match the admitted window;
+an owned dialog's current owner chain must still reach the retained root process.
+Malformed or contradictory dispatch responses preserve uncertainty. Hover can
+change UI state, so it is not a read-only action. Its response does not prove
+that a menu opened. This new action has synthetic tests, not connected validation;
+installed164600 does not expose it.
+
+Windows can clip a cursor move, so success requires the position readback, not
+only the move acknowledgment. A zero button-state sample can also mean an API
+failure and does not exclude concurrent input. Keep other input quiescent.
+See [SetCursorPos](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setcursorpos)
+and [GetAsyncKeyState](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getasynckeystate).
+
+For placement that depends on snapping, separate pointer movement from the click:
+hover once, inspect the visible crosshair/snap at the intended point, then click
+once and inspect the native result. The existing click acknowledgment echoes
+requested coordinates; it does not prove cursor position or renderer processing.
+This is a proposed workflow for the new hover action, not a completed live test
+or an established diagnosis of an interrupted drawing preview.
+
+The top-bar **More** arrow opens on pointer entry and closes on click. Clicking
+it or invoking its UI Automation group can therefore produce only a tooltip.
+Do not repeat the click or infer an open menu from input acknowledgment.
+
+An alternative tested on 3.2.149 is to open an observed visible top-level menu,
+then send one Left or Right arrow and inspect the resulting menu. The menu
+keyboard handler traverses hidden top-level entries too and opens the overflow
+bar when needed. In the disposable test, File followed by three separately
+inspected Left actions exposed Help, Settings, then Advanced. This is an example,
+not a fixed count for other layouts. Select only a freshly observed enabled row.
+
+Do not infer global shortcuts from parenthesized menu mnemonics. Alt+A selected
+an apparent drawing tool instead of opening Advanced in that test. Escape cleared
+its preview before any canvas click. The observed Run Command(C)... row opens a
+command input; opening it, entering a command and persisting its panel preference
+are different actions. The navigation-side-effect restrictions above still apply.
 
 An enabled UI Automation `Text` label does not prove its enclosing menu action is
 enabled. In the disposable identity test, `Save(S)` reported `enabled:true` as a

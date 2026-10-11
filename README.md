@@ -15,6 +15,13 @@ namespaces / 749 declared signatures and 99 latest official namespaces / 806
 signatures. Its `coverage` action inventories all 774 distinct mounted method
 paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
+Current source classifications are 193 public subsets, 102 native equivalents,
+two lifecycle-only methods, seven implemented-but-blocked methods and 470
+omissions. Their execution routes comprise 357 available with runtime guards,
+nine blocked and three partially blocked. Method and route counts differ;
+neither is a live-validated-method count.
+See the [204104 release record](docs/api-coverage-204104-release-2026-10-11.md)
+for this candidate's checks and remaining connected tests.
 `sdk-reads` and `sdk-validate` expose the exact schemas and offline argument
 checks for the fixed `easyeda_control_sdk_read` allowlist. That separate live
 tool performs local getters, fixed primitive-state projections and bounded pure
@@ -29,6 +36,11 @@ getter fields; custom attributes and multipart symbols refuse. Native Text
 `get/getAll` return bounded root-Text state with native coordinates and nullable
 styles, not public-getter parity. Wire/Bus `get/getAll` preserve every line's native
 geometry/style and all literal names instead of flattening them to one style/net.
+Two mixed schematic ID readers return these same Text/Wire/Bus DTOs from one
+complete page-bound capture. Singular lookup returns one DTO; plural lookup
+preserves caller order. Missing, unsupported or wrong-owner IDs refuse the whole
+call. They do not return SDK instances or every primitive family, and have only
+source/offline validation. Complete-family bounds apply before selection.
 Filtered PCB net membership derives identity records from complete requested-family
 source/inventory agreement, with explicit standalone/component pad roles.
 Native PCB type lookup classifies an existing ID only after complete all-five-family
@@ -41,12 +53,17 @@ complete native-source records for supported root objects. It refuses unsupporte
 or generated selections instead of returning a partial array; public primitive
 instances and persistence are not claimed. Two explicit-ID equivalents use the
 same source DTOs without reading or changing selection. Missing or unsupported
-IDs refuse the whole call. Installed150000 passed only empty selection and one
-original standalone STRING; explicit-ID routes and newer reader optimizations
-still need connected validation.
-The fixed read catalog has 178 routes, including
+IDs refuse the whole call. Installed150000 passed empty selection and one
+original standalone STRING. Installed164600 subsequently passed singular and
+one-element plural explicit-ID reads of one standalone STRING with no direct
+attributes, matching the complete baseline and independently verified receipts.
+Other families, multi-ID ordering and later source changes remain separate.
+The fixed read catalog has 181 routes, including 20 native equivalents and
 bounded polygon splitting that preserves input source arrays and their order. It
 accepts no arbitrary method path, caller code, callbacks, navigation or writes.
+The new `lib_LibrariesList.getSystemLibraryUuid` route returns only a nonmissing
+32-character lowercase-hex identity, with no account/library enumeration. It has
+source and offline tests only, not connected validation.
 None of these observations replaces complete design or persistence proof.
 
 The deprecated schematic selection getter now has an explicit replacement
@@ -88,8 +105,16 @@ New v2 creation fixes explicit black; creation-only retained-Save recovery prove
 the original storage and observed reload separately without another Save.
 Installed150000 completed that retained-Save recovery with full unchanged peer
 history and exact original storage/reload proof, without another Save or edit.
-New schematic creation and v2 text creation/deletion still need connected
-validation. See [candidate150000](docs/api-coverage-150000-release-2026-10-11.md). The
+Installed164600 then passed separate explicit-black v2 creation and deletion,
+each with exactly one acknowledged Save/close/reopen and complete 11-document
+proof. Deletion restored the original source, not history or database bytes.
+One closed free-schematic creation also passed: 11 existing documents remained
+exact and the only addition was DOCHEAD/META, with no page, template, editor open
+or Save. These are fixed disposable cases, not whole-method or later-generation
+admission. Exact generation bindings, argument domains and evidence commitments
+are in the append-only [connected validation ledger](docs/api-connected-validation-ledger.md).
+The earlier [candidate150000 report](docs/api-coverage-150000-release-2026-10-11.md)
+retains its historical status. The
 [remaining-effects review](docs/api-remaining-method-effects-2026-10-11.md)
 records blockers for layer selection, page ordering, pad-pair groups and broader
 PCB text cases. A separate checkpoint-bound flat-topology
@@ -216,8 +241,9 @@ an arbitrary descriptor inherited by the facade's shell cannot reach it.
 
 ## Implemented capabilities
 
-The live evidence in this section is historical and operation-specific. It is
-not a connected test of the October facade generation.
+The live evidence in this section is historical and operation-specific. The
+separately recorded 164600 cases above do not transfer these older results to
+that generation or admit later source changes.
 
 The October API audit found hidden annotation and Save All in the previously
 used schematic netlist path. Current code refuses `schematic-topology` and

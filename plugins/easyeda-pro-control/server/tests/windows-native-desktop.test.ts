@@ -111,8 +111,8 @@ $cases+=@{mode=$mode;probe=$probe;target=$target;input=$input;session=$session;c
   assert.equal(JSON.stringify(actual).includes("private detail"), false);
   assert.ok(helper.includes("desktopStatus=(Get-DesktopStatus $targetSessionId $diagnosticHandle)"));
   for (const unchangedGuard of [
-    "if ($action -in @('focused','capture','click','doubleclick','rightclick','keys') -and -not (Owned-Window ([EasyedaUiController]::GetForegroundWindow()))) { throw 'foreign-foreground' }",
-    "if ($action -in @('click','doubleclick','rightclick','keys') -and [EasyedaUiController]::GetForegroundWindow() -ne $windowHandle) { throw 'input-target-is-not-foreground' }",
+    "if ($action -in @('focused','capture','click','doubleclick','rightclick','hover','keys') -and -not (Owned-Window ([EasyedaUiController]::GetForegroundWindow()))) { throw 'foreign-foreground' }",
+    "if ($action -in @('click','doubleclick','rightclick','hover','keys') -and [EasyedaUiController]::GetForegroundWindow() -ne $windowHandle) { throw 'input-target-is-not-foreground' }",
     "if ($writes -and $request.confirmUIWrite -ne $true) { throw 'confirmation-false' }",
   ]) { assert.ok(helper.includes(unchangedGuard)); }
 });

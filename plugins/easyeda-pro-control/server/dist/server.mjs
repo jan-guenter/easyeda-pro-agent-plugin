@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "e815247900c44f5911e42d7410825035eca1809842b749cdc52b4e3f444666c4";
+const __easyedaBundlePairId = "d8b35c17f58dbe98bd24d0fabf5cf255a2c164d1811fa2952fc62db9589a1edd";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -33781,6 +33781,213 @@ var init_schematic_netgroup_read = __esm({
   }
 });
 
+// server/src/schematic-primitive-read.ts
+function isSchematicPrimitiveReadMethod(method) {
+  return SCHEMATIC_PRIMITIVE_READ_METHODS.some((entry) => entry === method);
+}
+function buildSchematicPrimitiveReadExpression(input, diagnostics) {
+  const request = schematicPrimitiveReadRequestSchema.parse(input);
+  if (diagnostics !== void 0 && diagnostics !== "sdk-failure-code") {
+    throw new Error("Unsupported schematic primitive diagnostics.");
+  }
+  const singular = request.method === SCHEMATIC_PRIMITIVE_READ_METHODS[0];
+  const selected = "id" in request.arguments ? [request.arguments.id] : request.arguments.ids;
+  return `(() => {
+const bad=reason=>{${diagnostics === "sdk-failure-code" ? "failureCode='SCH_PRIMITIVE_'+reason;" : ""}throw new Error('SCH_PRIMITIVE_'+reason);};
+const selected=${JSON.stringify(selected)},singular=${JSON.stringify(singular)};
+const validId=value=>{if(typeof value!=='string'||!value||value.length>256||[...value].some(c=>c.charCodeAt(0)<32||c.charCodeAt(0)===127))bad('IDENTITY');return value;};
+const sch=globalThis.SCH,ui=globalThis.UI,tabs=ui?.tabBar,manager=sch?.docMemoryManager;
+const activeReader=manager?.getActiveDoc,tabReader=tabs?.getActiveTab;
+if(typeof activeReader!=='function'||typeof tabReader!=='function')bad('MANAGER');
+const page=activeReader.call(manager),shapes=page?.shapeManager,ids=page?.idManager,index=ids?.idMap;
+const project=page?.projectMgr,modelMap=shapes?.modelMap,modelReader=shapes?.getModels,root=shapes?.root;
+const consistency=page?.consistencyImpl,handler=consistency?.decodeAndRealTimeSyncHandler,sourceReader=handler?.getSourceCodeIdMap,action=shapes?.actionRunner;
+if(!page||!project||!(index instanceof Map)||index.size>20000||!(modelMap instanceof Map)||modelMap.size>1000||typeof modelReader!=='function'||typeof sourceReader!=='function')bad('INVENTORY');
+const check=()=>{
+ if(globalThis.SCH!==sch||globalThis.UI!==ui||ui.tabBar!==tabs||tabs.getActiveTab!==tabReader||sch.docMemoryManager!==manager||manager.getActiveDoc!==activeReader||activeReader.call(manager)!==page||tabReader.call(tabs)!==EXPECTED_TAB_ID||EXPECTED_DOCUMENT_TYPE!==1||page.uuid!==EXPECTED_DOCUMENT_UUID||page.project_uuid!==EXPECTED_PROJECT_UUID||page.tabId!==EXPECTED_TAB_ID||EXPECTED_TAB_ID!==EXPECTED_DOCUMENT_UUID+'@'+EXPECTED_PROJECT_UUID||page.isSchSheetDoc?.()!==true||page.isBlockSymbolInstancePage!==false)bad('CONTEXT');
+ if(page.projectMgr!==project||project.uuid!==EXPECTED_PROJECT_UUID||page.shapeManager!==shapes||page.idManager!==ids||shapes.docManager!==page||shapes.idManager!==ids||ids.docManager!==page||ids.idMap!==index||shapes.modelMap!==modelMap||shapes.getModels!==modelReader||page.consistencyImpl!==consistency||consistency.docManager!==page||consistency.decodeAndRealTimeSyncHandler!==handler||consistency.handler!==handler||handler.consistencyImpl!==consistency||handler.docManager!==page||handler.getSourceCodeIdMap!==sourceReader||shapes.actionRunner!==action)bad('OWNER');
+ if(consistency.state!=='initialized'||action?.running!==false)bad('READY');
+ if(shapes.root!==root||!root||root.modelType!=='Root'||root.parent!=null||root.isConnected!==true||root.shapeManager!==shapes)bad('TREE');
+};
+const captureTree=()=>{
+ const tree=new Map(),pending=[root];
+ for(let offset=0;offset<pending.length;offset++){
+  const parent=pending[offset],children=parent.children;
+  if(children===undefined){if(parent===root)bad('TREE');continue;}
+  if(!Array.isArray(children)||children.length>20000||new Set(children).size!==children.length)bad('TREE');
+  for(const [position,model] of children.entries()){
+   const id=validId(model?.id);
+   if(tree.has(id)||model===root||model.parent!==parent||model.shapeManager!==shapes||model.isConnected!==true||index.get(id)!==model||model.locked!==undefined&&typeof model.locked!=='boolean')bad('TREE');
+   tree.set(id,{model,parent,position,type:model.modelType,locked:model.locked});pending.push(model);if(tree.size>20000)bad('BOUND');
+  }
+ }
+ if(tree.size!==index.size)bad('TREE');for(const [id,model] of index){if(tree.get(id)?.model!==model)bad('TREE');}return tree;
+};
+const sameTree=(before,after)=>{if(before.size!==after.size)bad('CHANGED');for(const [id,left] of before){const right=after.get(id);if(!right||left.model!==right.model||left.parent!==right.parent||left.position!==right.position||left.type!==right.type||!Object.is(left.locked,right.locked))bad('CHANGED');}};
+const captureSource=tree=>{const source=sourceReader.call(handler);if(!(source instanceof Map)||source.size>20000)bad('SOURCE');for(const [id,marker] of source){validId(id);if(marker!==1||!tree.has(id)||tree.get(id).model!==index.get(id))bad('SOURCE');}return new Map(source);};
+const sameSource=(before,after)=>{if(before.size!==after.size)bad('CHANGED');for(const [id,marker] of before){if(after.get(id)!==marker)bad('CHANGED');}};
+const boundedArray=(value,limit)=>{if(!Array.isArray(value)||value.length>limit||new Set(value).size!==value.length)bad('CHILDREN');return [...value];};
+const finite=value=>{if(typeof value!=='number'||!Number.isFinite(value)||Math.abs(value)>1000000000)bad('STATE');return value;};
+const styleName=value=>{if(value===null)return null;if(typeof value!=='number'||!Number.isInteger(value)||value<0||value>3)bad('STATE');return ['SOLID','SHORT_DASH','DOT','DOT_DASH'][value];};
+const textFields=['modelType','x','y','value','rotation','color','fontFamily','fontSize','fontWeight','italic','underline','hAlign','vAlign'];
+const captureText=(tree,source)=>{
+ const family=modelMap.get('Text'),models=modelReader.call(shapes,'Text');
+ if(family!==undefined&&(!(family instanceof Set)||family.size>256)||!Array.isArray(models)||models.length>256||models.length!==(family?.size??0))bad('FAMILY');
+ const members=new Map(),states=new Map();let characters=0;
+ for(const model of models){
+  const id=validId(model?.id);
+  if(members.has(id)||model.modelType!=='Text'||model.cmdKey!=='text'||model.parent!==root||model.shapeManager!==shapes||index.get(id)!==model||!family?.has(model)||source.get(id)!==1)bad('FAMILY');
+  const state={primitiveId:id};for(const field of textFields)state[field]=model[field];
+  for(const field of ['x','y','rotation','fontSize']){const value=state[field];if(value!==null&&(typeof value!=='number'||!Number.isFinite(value)||Math.abs(value)>1000000000||field==='fontSize'&&value<0))bad('STATE');}
+  for(const field of ['fontWeight','italic','underline']){if(state[field]!==null&&typeof state[field]!=='boolean')bad('STATE');}
+  for(const field of ['hAlign','vAlign']){if(state[field]!==null&&![0,1,2].includes(state[field]))bad('STATE');}
+  if(state.modelType!=='Text'||typeof state.value!=='string'||state.value.length>65536||!(state.color===null||typeof state.color==='string'&&state.color.length<=4096)||!(state.fontFamily===null||typeof state.fontFamily==='string'&&state.fontFamily.length<=4096))bad('STATE');
+  characters+=state.value.length+(state.color?.length??0)+(state.fontFamily?.length??0);if(characters>262144)bad('BOUND');
+  members.set(id,model);states.set(id,state);
+ }
+ for(const [id,entry] of tree){if(entry.type==='Text'&&entry.parent===root&&members.get(id)!==entry.model)bad('FAMILY');}
+ return{family,members,states,characters};
+};
+const reproveText=snapshot=>{
+ if(modelMap.get('Text')!==snapshot.family||(snapshot.family?.size??0)!==snapshot.members.size)bad('CHANGED');
+ for(const [id,model] of snapshot.members){
+  if(!snapshot.family.has(model)||model.id!==id||model.cmdKey!=='text'||model.parent!==root||model.shapeManager!==shapes||index.get(id)!==model||model.isConnected!==true)bad('CHANGED');
+  const state=snapshot.states.get(id);for(const field of textFields){if(!Object.is(state[field],model[field]))bad('CHANGED');}
+ }
+};
+const capture=()=>{
+ check();const tree=captureTree(),source=captureSource(tree),text=captureText(tree,source);
+ check();const family=modelMap.get('NetGroup'),models=modelReader.call(shapes,'NetGroup');
+ if(family!==undefined&&(!(family instanceof Set)||family.size>256)||!Array.isArray(models)||models.length>256||models.length!==(family?.size??0))bad('FAMILY');
+ const members=new Map(),states=new Map(),collections=new Map();let lineCount=0,nameCount=0,attributeCount=0,characters=text.characters;
+ for(const model of models){
+  const id=validId(model?.id);
+  if(members.has(id)||text.members.has(id)||model.modelType!=='NetGroup'||model.cmdKey!=='netGroup'||model.tagName!=='NetGroup'||!['wire','bus'].includes(model.type)||model.parent!==root||model.shapeManager!==shapes||index.get(id)!==model||!family?.has(model)||source.get(id)!==1||model.combination)bad('FAMILY');
+  const lines=boundedArray(model.lines,1024),names=boundedArray(model.netNames,1024),children=boundedArray(model.children,20000);
+  if(!lines.length)bad('CHILDREN');const expectedLineType=model.type==='wire'?'Wire':'Bus';
+  const lineSet=new Set(lines),nameSet=new Set(names),lineStyles=new Map(),custom=[],markers=[];
+  const child=(item)=>{validId(item?.id);if(item.parent!==model||item.shapeManager!==shapes||index.get(item.id)!==item||!children.includes(item)||!tree.has(item.id)||(item.children!==undefined&&(!Array.isArray(item.children)||item.children.length)))bad('CHILDREN');};
+  const lineStates=lines.map(item=>{
+   child(item);if(++lineCount>1024)bad('BOUND');
+   if(item.modelType!==expectedLineType||item.tagName!=='NetGroupLine'||item.type!==model.type||item.cmdKey!==model.type||source.get(item.id)!==1)bad('CHILDREN');
+   const points=item.points;if(!Array.isArray(points)||points.length<1||points.length>2)bad('STATE');
+   const nativeStyle=item.strokeStyle;
+   const result={primitiveId:item.id,points:points.map(point=>[finite(point?.x),finite(point?.y)]),color:item.strokeColor,width:item.strokeWidth,strokeStyle:styleName(nativeStyle)};
+   if(!(result.color===null||typeof result.color==='string'&&result.color.length<=4096)||result.width!==null&&(typeof result.width!=='number'||!Number.isFinite(result.width)||result.width<0||result.width>1000000000))bad('STATE');
+   lineStyles.set(item.id,nativeStyle);
+   characters+=result.color?.length??0;return result;
+  });
+  const nameStates=names.map(item=>{
+   child(item);if(++nameCount>1024)bad('BOUND');
+   if(item.modelType!=='NetLabel'||item.tagName!=='NetName'||item.cmdKey!=='netlabel'||item.key!=='Name'||item.keyInSourceCode!=='NET'||source.get(item.id)!==1)bad('CHILDREN');
+   const value=item.value;if(typeof value!=='string'||value.length>65536)bad('STATE');characters+=value.length;return{primitiveId:item.id,value};
+  });
+  for(const item of children){
+   child(item);if(lineSet.has(item)||nameSet.has(item))continue;
+   if(item.modelType==='Attr'&&item.tagName==='Attr'){if(++attributeCount>1024)bad('BOUND');if(source.get(item.id)!==1)bad('CHILDREN');custom.push(item.id);}
+   else if(['Junction','UnConnectDot'].includes(item.modelType)&&item.tagName===item.modelType&&item.notAddHistory===true&&!source.has(item.id)){markers.push(item.id);}
+   else bad('CHILDREN');
+  }
+  if(characters>262144)bad('BOUND');
+  members.set(id,model);collections.set(id,{lines,names,children:[...children],markers,lineStyles});
+  states.set(id,{primitiveId:id,modelType:'NetGroup',kind:model.type,lines:lineStates.sort((a,b)=>a.primitiveId<b.primitiveId?-1:1),names:nameStates.sort((a,b)=>a.primitiveId<b.primitiveId?-1:1),customAttributeIds:custom.sort()});
+ }
+ for(const [id,entry] of tree){if(entry.type==='NetGroup'&&entry.parent===root&&members.get(id)!==entry.model)bad('FAMILY');}
+ sameSource(source,captureSource(tree));sameTree(tree,captureTree());if(modelMap.get('NetGroup')!==family||(family?.size??0)!==members.size)bad('CHANGED');
+ for(const model of members.values()){if(!family?.has(model)||model.cmdKey!=='netGroup'||model.tagName!=='NetGroup'||model.combination)bad('CHANGED');}
+ reproveText(text);check();return{tree,source,family,members,states,collections,text};
+};
+const before=capture(),after=capture();
+if(before.text.family!==after.text.family||before.text.members.size!==after.text.members.size)bad('CHANGED');
+for(const [id,model] of before.text.members){if(after.text.members.get(id)!==model)bad('CHANGED');const left=before.text.states.get(id),right=after.text.states.get(id);for(const field of textFields){if(!Object.is(left[field],right[field]))bad('CHANGED');}}
+if(before.family!==after.family||before.members.size!==after.members.size)bad('CHANGED');sameTree(before.tree,after.tree);sameSource(before.source,after.source);
+const sameList=(left,right)=>{if(left.length!==right.length||left.some((item,index)=>item!==right[index]))bad('CHANGED');};
+for(const [id,model] of before.members){
+ if(after.members.get(id)!==model)bad('CHANGED');const left=before.states.get(id),right=after.states.get(id),lc=before.collections.get(id),rc=after.collections.get(id);
+ for(const key of ['lines','names','children','markers'])sameList(lc[key],rc[key]);
+ if(left.kind!==right.kind||left.lines.length!==right.lines.length||left.names.length!==right.names.length)bad('CHANGED');sameList(left.customAttributeIds,right.customAttributeIds);
+ for(let i=0;i<left.lines.length;i++){const a=left.lines[i],b=right.lines[i];if(a.primitiveId!==b.primitiveId||!Object.is(a.color,b.color)||!Object.is(a.width,b.width)||!Object.is(a.strokeStyle,b.strokeStyle)||!Object.is(lc.lineStyles.get(a.primitiveId),rc.lineStyles.get(b.primitiveId))||a.points.length!==b.points.length)bad('CHANGED');for(let j=0;j<a.points.length;j++){if(!Object.is(a.points[j][0],b.points[j][0])||!Object.is(a.points[j][1],b.points[j][1]))bad('CHANGED');}}
+ for(let i=0;i<left.names.length;i++){if(left.names[i].primitiveId!==right.names[i].primitiveId||left.names[i].value!==right.names[i].value)bad('CHANGED');}
+}
+// Reprove retained scalar fields after the final source/tree collection. This
+// Prevents a late inventory callback from changing geometry after capture.
+// Text reproof precedes group reproof so it cannot conceal a later line change.
+reproveText(after.text);
+for(const [id,model] of after.members){
+ const state=after.states.get(id),collection=after.collections.get(id);
+ if(model.type!==state.kind||model.modelType!=='NetGroup'||model.cmdKey!=='netGroup'||model.tagName!=='NetGroup')bad('CHANGED');
+ sameList(collection.lines,boundedArray(model.lines,1024));sameList(collection.names,boundedArray(model.netNames,1024));sameList(collection.children,boundedArray(model.children,20000));
+ const lines=new Map(collection.lines.map(item=>[item.id,item])),names=new Map(collection.names.map(item=>[item.id,item])),children=new Map(collection.children.map(item=>[item.id,item]));
+ for(const row of state.lines){const current=lines.get(row.primitiveId),points=current?.points;if(!current||current.modelType!==(state.kind==='wire'?'Wire':'Bus')||current.tagName!=='NetGroupLine'||current.cmdKey!==state.kind||current.type!==state.kind||!Array.isArray(points)||points.length!==row.points.length||!Object.is(current.strokeColor,row.color)||!Object.is(current.strokeWidth,row.width)||!Object.is(current.strokeStyle,collection.lineStyles.get(row.primitiveId)))bad('CHANGED');for(let j=0;j<points.length;j++){if(!Object.is(points[j]?.x,row.points[j][0])||!Object.is(points[j]?.y,row.points[j][1]))bad('CHANGED');}}
+ for(const row of state.names){const current=names.get(row.primitiveId);if(!current||current.modelType!=='NetLabel'||current.tagName!=='NetName'||current.cmdKey!=='netlabel'||current.key!=='Name'||current.keyInSourceCode!=='NET'||current.value!==row.value)bad('CHANGED');}
+ for(const id of state.customAttributeIds){const current=children.get(id);if(current?.modelType!=='Attr'||current.tagName!=='Attr')bad('CHANGED');}
+ for(const id of collection.markers){const current=children.get(id);if(!current||!['Junction','UnConnectDot'].includes(current.modelType)||current.tagName!==current.modelType||current.notAddHistory!==true)bad('CHANGED');}
+}
+const states=new Map([...before.text.states,...before.states]);
+for(const id of selected){if(!states.has(id))bad('TARGET');}
+check();const rows=selected.map(id=>states.get(id));return singular?rows[0]:rows;
+})()`;
+}
+function validateSchematicPrimitiveStates(value, input) {
+  const request = schematicPrimitiveReadRequestSchema.parse(input);
+  const rows = "id" in request.arguments ? [schematicPrimitiveStateSchema.parse(value)] : schematicPrimitiveStatesSchema.parse(value);
+  const wanted = "id" in request.arguments ? [request.arguments.id] : request.arguments.ids;
+  if (rows.length !== wanted.length || rows.some((row, index) => row.primitiveId !== wanted[index])) {
+    throw new Error("Primitive observation differs from the exact ordered selectors.");
+  }
+  const text8 = rows.filter((row) => row.modelType === "Text").toSorted((a, b) => a.primitiveId < b.primitiveId ? -1 : 1);
+  const groups2 = rows.filter((row) => row.modelType === "NetGroup").toSorted((a, b) => a.primitiveId < b.primitiveId ? -1 : 1);
+  schematicTextStatesSchema.parse(text8);
+  schematicNetGroupStatesSchema.parse(groups2);
+  const allIds = [...text8.map((row) => row.primitiveId), ...groups2.flatMap((row) => [
+    row.primitiveId,
+    ...row.lines.map((line5) => line5.primitiveId),
+    ...row.names.map((name6) => name6.primitiveId),
+    ...row.customAttributeIds
+  ])];
+  const characters = text8.reduce((sum, row) => sum + row.value.length + (row.color?.length ?? 0) + (row.fontFamily?.length ?? 0), 0) + groups2.reduce((sum, row) => sum + row.names.reduce((count2, name6) => count2 + name6.value.length, 0) + row.lines.reduce((count2, line5) => count2 + (line5.color?.length ?? 0), 0), 0);
+  if (new Set(allIds).size !== allIds.length || characters > 262144) {
+    throw new Error("Primitive observation has aliased identities or exceeds the combined string bound.");
+  }
+}
+var SCHEMATIC_PRIMITIVE_READ_METHODS, identity3, identities2, multipleArguments, schematicPrimitiveReadRequestSchema, schematicPrimitiveStateSchema, schematicPrimitiveStatesSchema, SCHEMATIC_PRIMITIVE_GUARD_CODES;
+var init_schematic_primitive_read = __esm({
+  "server/src/schematic-primitive-read.ts"() {
+    init_zod();
+    init_schematic_text_read();
+    init_schematic_netgroup_read();
+    SCHEMATIC_PRIMITIVE_READ_METHODS = [
+      "eda.sch_Primitive.getPrimitiveByPrimitiveId",
+      "eda.sch_Primitive.getPrimitivesByPrimitiveId"
+    ];
+    identity3 = external_exports.string().min(1).max(256).regex(/^[^\u0000-\u001F\u007F]+$/u);
+    identities2 = external_exports.array(identity3).min(1).max(256).refine((ids2) => new Set(ids2).size === ids2.length, "Duplicate selectors.");
+    multipleArguments = external_exports.object({ ids: identities2 }).strict();
+    schematicPrimitiveReadRequestSchema = external_exports.discriminatedUnion("method", [
+      external_exports.object({ method: external_exports.literal(SCHEMATIC_PRIMITIVE_READ_METHODS[0]), arguments: external_exports.object({ id: identity3 }).strict() }).strict(),
+      external_exports.object({ method: external_exports.literal(SCHEMATIC_PRIMITIVE_READ_METHODS[1]), arguments: multipleArguments }).strict()
+    ]);
+    schematicPrimitiveStateSchema = external_exports.discriminatedUnion("modelType", [schematicTextStateSchema, schematicNetGroupStateSchema]);
+    schematicPrimitiveStatesSchema = external_exports.array(schematicPrimitiveStateSchema).min(1).max(256);
+    SCHEMATIC_PRIMITIVE_GUARD_CODES = [
+      "IDENTITY",
+      "MANAGER",
+      "INVENTORY",
+      "CONTEXT",
+      "OWNER",
+      "READY",
+      "TREE",
+      "SOURCE",
+      "FAMILY",
+      "CHILDREN",
+      "STATE",
+      "BOUND",
+      "TARGET",
+      "CHANGED"
+    ];
+  }
+});
+
 // server/src/schematic-selection-read.ts
 function buildSchematicSelectionReadExpression() {
   return `await (async () => {
@@ -33885,6 +34092,10 @@ function nativeFailureCategory(message) {
   if (typeof message !== "string") {
     return null;
   }
+  const schematicPrimitiveCategory = message.length <= 288 ? schematicPrimitiveCategories.get(message) : void 0;
+  if (schematicPrimitiveCategory !== void 0) {
+    return schematicPrimitiveCategory;
+  }
   const schematicSelectionCategory = message.length <= 288 ? schematicSelectionCategories.get(message) : void 0;
   if (schematicSelectionCategory !== void 0) {
     return schematicSelectionCategory;
@@ -33955,7 +34166,7 @@ function nativeFailureCategory(message) {
   const stage = message.startsWith(prefix) ? message.slice(prefix.length) : "";
   return recoveryStages.has(stage) ? `native-preflight:RECOVERY_${stage.toUpperCase().replaceAll("-", "_")}` : null;
 }
-var codes3, RECOVERY_NAVIGATION_FAILURE_STAGES, recoveryStages, tabCodes, padCodes, footprintLifecycleCodes, operationStages, operationStageCategories, activationPreferenceCategories, metadataGuardCategories, schematicIdCategories, componentPropertyCategories, symbolPinCategories, schematicTextCategories, schematicNetGroupCategories, schematicSelectionCategories;
+var codes3, RECOVERY_NAVIGATION_FAILURE_STAGES, recoveryStages, tabCodes, padCodes, footprintLifecycleCodes, operationStages, operationStageCategories, activationPreferenceCategories, metadataGuardCategories, schematicIdCategories, componentPropertyCategories, symbolPinCategories, schematicTextCategories, schematicNetGroupCategories, schematicSelectionCategories, schematicPrimitiveCategories;
 var init_native_diagnostics = __esm({
   "server/src/native-diagnostics.ts"() {
     init_device_runtime_guard();
@@ -33967,6 +34178,7 @@ var init_native_diagnostics = __esm({
     init_symbol_pin_enumeration();
     init_schematic_text_read();
     init_schematic_netgroup_read();
+    init_schematic_primitive_read();
     init_schematic_selection_read();
     init_schematic_read_diagnostics();
     codes3 = /* @__PURE__ */ new Set([
@@ -34258,6 +34470,10 @@ var init_native_diagnostics = __esm({
         `native-selection-replacement:${SCHEMATIC_SELECTION_METHOD}:${label}`
       ])
     );
+    schematicPrimitiveCategories = new Map(SCHEMATIC_PRIMITIVE_READ_METHODS.flatMap((method) => [...SCHEMATIC_PRIMITIVE_GUARD_CODES.map((code) => [`SCH_PRIMITIVE_${code}`, code]), ["native-error", "EXCEPTION"]].map(([code, label]) => [
+      `Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
+      `native-schematic-primitive:${method}:${label}`
+    ])));
   }
 });
 
@@ -42173,14 +42389,14 @@ function verifyDesignTopology(expected2, actual) {
     throw new Error("Compiled component/pin/net endpoints differ from the explicit transaction topology; no save is authorized.");
   }
 }
-var identity3, pin, designTopologySchema;
+var identity4, pin, designTopologySchema;
 var init_design_topology = __esm({
   "server/src/design-topology.ts"() {
     init_zod();
     init_core3();
-    identity3 = external_exports.string().min(1).max(512);
-    pin = external_exports.object({ pinNumber: identity3, net: external_exports.string().max(512).nullable() }).strict();
-    designTopologySchema = external_exports.array(external_exports.object({ uniqueId: identity3, designator: external_exports.string().max(512).nullable(), pins: external_exports.array(pin).max(4096) }).strict()).max(2e4).superRefine((value, context2) => {
+    identity4 = external_exports.string().min(1).max(512);
+    pin = external_exports.object({ pinNumber: identity4, net: external_exports.string().max(512).nullable() }).strict();
+    designTopologySchema = external_exports.array(external_exports.object({ uniqueId: identity4, designator: external_exports.string().max(512).nullable(), pins: external_exports.array(pin).max(4096) }).strict()).max(2e4).superRefine((value, context2) => {
       if (new Set(value.map((entry) => entry.uniqueId)).size !== value.length || value.some((entry) => new Set(entry.pins.map((item2) => item2.pinNumber)).size !== entry.pins.length)) {
         context2.addIssue({ code: "custom", message: "Topology identities must be unique." });
       }
@@ -42333,14 +42549,14 @@ function compileSchematicOperation(input) {
   if (["port", "net-flag"].includes(family2)) {
     limitations.push("default-library-symbol-associations-must-be-captured-and-proven");
   }
-  let identity20 = "preserve";
+  let identity21 = "preserve";
   if (deleting) {
-    identity20 = "delete";
+    identity21 = "delete";
   }
   if (creating) {
-    identity20 = "create";
+    identity21 = "create";
   }
-  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field2, value]) => expected(family2, field2, value)), inverse, effect: { family: family2, target: target5, identity: identity20, fields: fields2, collateral }, requiredPreservation, limitations };
+  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field2, value]) => expected(family2, field2, value)), inverse, effect: { family: family2, target: target5, identity: identity21, fields: fields2, collateral }, requiredPreservation, limitations };
 }
 function referenceFamily(action) {
   const family2 = action.split(".")[1];
@@ -44158,7 +44374,7 @@ function assertFlatDisplayInverse(bindingInput, inverseInput) {
   }
   return inverse;
 }
-var FLAT_DISPLAY_TRANSACTION_PROFILE, identity4, hash4, projectBindingSchema, member, sourceBinding, flatCommonBindingSchema, flatDisplayBindingSchema;
+var FLAT_DISPLAY_TRANSACTION_PROFILE, identity5, hash4, projectBindingSchema, member, sourceBinding, flatCommonBindingSchema, flatDisplayBindingSchema;
 var init_flat_display_binding = __esm({
   "server/src/flat-display-binding.ts"() {
     init_zod();
@@ -44168,20 +44384,20 @@ var init_flat_display_binding = __esm({
     init_schematic_layout_schema();
     init_flat_display_library_peers();
     FLAT_DISPLAY_TRANSACTION_PROFILE = "easyeda-pro-control.flat-display-transaction.v1";
-    identity4 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
+    identity5 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
     hash4 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     projectBindingSchema = external_exports.strictObject({
       projectUuid: external_exports.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u),
       ownerUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
       branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u)
     });
-    member = external_exports.strictObject({ uuid: identity4, docType: external_exports.string().min(1).max(128), semanticSha256: hash4 });
+    member = external_exports.strictObject({ uuid: identity5, docType: external_exports.string().min(1).max(128), semanticSha256: hash4 });
     sourceBinding = external_exports.strictObject({ sourceSha256: hash4, nativeSha256: hash4 });
     flatCommonBindingSchema = external_exports.strictObject({
       project: projectBindingSchema,
       projectPath: external_exports.string().min(1).max(4096),
-      schematicUuid: identity4,
-      pageUuid: identity4,
+      schematicUuid: identity5,
+      pageUuid: identity5,
       tabId: external_exports.string().min(1).max(512),
       operationSha256: hash4,
       inverseSha256: hash4,
@@ -44241,7 +44457,7 @@ function assertFlatWireInverse(bindingInput, inverseInput) {
   }
   return inverse;
 }
-var FLAT_WIRE_TRANSACTION_PROFILE, identity5, hash5, flatWireBindingSchema;
+var FLAT_WIRE_TRANSACTION_PROFILE, identity6, hash5, flatWireBindingSchema;
 var init_flat_wire_binding = __esm({
   "server/src/flat-wire-binding.ts"() {
     init_zod();
@@ -44250,14 +44466,14 @@ var init_flat_wire_binding = __esm({
     init_flat_display_library_peers();
     init_schematic_operations();
     FLAT_WIRE_TRANSACTION_PROFILE = "easyeda-pro-control.flat-wire-reroute.v1";
-    identity5 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
+    identity6 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
     hash5 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     flatWireBindingSchema = external_exports.strictObject({
       profile: external_exports.literal(FLAT_WIRE_TRANSACTION_PROFILE),
       ...flatCommonBindingSchema.shape,
       libraryHeaders: flatDisplayLibrarySealSchema.optional(),
-      wireId: identity5,
-      lineIds: external_exports.array(identity5).min(1).max(4096),
+      wireId: identity6,
+      lineIds: external_exports.array(identity6).min(1).max(4096),
       contactIncidenceSha256: hash5
     }).superRefine((value, context2) => {
       const members = new Map(value.members.map((entry) => [entry.uuid, entry.docType]));
@@ -44625,7 +44841,7 @@ check();if(project.setting.universal.defaultNetName!==true||project.netLabelInte
 return{profile:${JSON.stringify(SCHEMATIC_FLAT_TOPOLOGY_PROFILE)},scope,settings,pages};
 })()`;
 }
-var SCHEMATIC_FLAT_TOPOLOGY_PROFILE, identity6, coordinate2, point, body2, attribute2, pin3, symbol2, line2, wire, contact, schematicFlatTopologyScopeSchema, pageSchema, schematicFlatTopologyObservationSchema, same6, VISUAL_SOURCE_TYPES;
+var SCHEMATIC_FLAT_TOPOLOGY_PROFILE, identity7, coordinate2, point, body2, attribute2, pin3, symbol2, line2, wire, contact, schematicFlatTopologyScopeSchema, pageSchema, schematicFlatTopologyObservationSchema, same6, VISUAL_SOURCE_TYPES;
 var init_schematic_flat_topology = __esm({
   "server/src/schematic-flat-topology.ts"() {
     init_zod();
@@ -44633,14 +44849,14 @@ var init_schematic_flat_topology = __esm({
     init_document_source();
     init_design_topology();
     SCHEMATIC_FLAT_TOPOLOGY_PROFILE = "easyeda-pro-control.schematic-flat-named-wire-topology.v1";
-    identity6 = external_exports.string().min(1).max(512);
+    identity7 = external_exports.string().min(1).max(512);
     coordinate2 = external_exports.number().int().min(-1e6).max(1e6);
     point = external_exports.tuple([coordinate2, coordinate2]);
     body2 = external_exports.record(external_exports.string(), external_exports.json());
-    attribute2 = external_exports.strictObject({ id: identity6, key: identity6, value: external_exports.json(), body: body2 });
+    attribute2 = external_exports.strictObject({ id: identity7, key: identity7, value: external_exports.json(), body: body2 });
     pin3 = external_exports.strictObject({
-      id: identity6,
-      number: identity6,
+      id: identity7,
+      number: identity7,
       origin: point,
       noConnect: external_exports.boolean(),
       body: body2,
@@ -44648,7 +44864,7 @@ var init_schematic_flat_topology = __esm({
       attributes: external_exports.array(attribute2).max(4096)
     });
     symbol2 = external_exports.strictObject({
-      id: identity6,
+      id: identity7,
       kind: external_exports.enum(["part", "sheet"]),
       body: body2,
       partCount: external_exports.literal(1),
@@ -44656,19 +44872,19 @@ var init_schematic_flat_topology = __esm({
       attributes: external_exports.array(attribute2).max(4096),
       pins: external_exports.array(pin3).max(4096)
     });
-    line2 = external_exports.strictObject({ id: identity6, body: body2, points: external_exports.tuple([point, point]) });
-    wire = external_exports.strictObject({ id: identity6, body: body2, names: external_exports.array(attribute2).length(1), lines: external_exports.array(line2).min(1).max(2e4) });
-    contact = external_exports.strictObject({ point, lineIds: external_exports.array(identity6).max(2e4), pinIds: external_exports.array(identity6).max(2e4) });
+    line2 = external_exports.strictObject({ id: identity7, body: body2, points: external_exports.tuple([point, point]) });
+    wire = external_exports.strictObject({ id: identity7, body: body2, names: external_exports.array(attribute2).length(1), lines: external_exports.array(line2).min(1).max(2e4) });
+    contact = external_exports.strictObject({ point, lineIds: external_exports.array(identity7).max(2e4), pinIds: external_exports.array(identity7).max(2e4) });
     schematicFlatTopologyScopeSchema = external_exports.strictObject({
-      projectUuid: identity6,
-      schematicUuid: identity6,
-      activePageUuid: identity6,
-      activeTabId: identity6,
-      pageIds: external_exports.array(identity6).min(1).max(256)
+      projectUuid: identity7,
+      schematicUuid: identity7,
+      activePageUuid: identity7,
+      activeTabId: identity7,
+      pageIds: external_exports.array(identity7).min(1).max(256)
     });
     pageSchema = external_exports.strictObject({
-      uuid: identity6,
-      tabId: identity6,
+      uuid: identity7,
+      tabId: identity7,
       source: external_exports.string().min(1).max(4194304),
       symbols: external_exports.array(symbol2).max(2e4),
       wires: external_exports.array(wire).max(2e4),
@@ -45822,12 +46038,12 @@ function compilePrimitive(operation, family2) {
       inverse = { kind: "restore-from-checkpoint", reason: "deleted-identity" };
     }
   }
-  const identities3 = { purpose: "family-identities", api: catalog2.api, method: "getAllPrimitiveId", args: [] };
-  const beforeReads = [sourceRead2, identities3];
+  const identities4 = { purpose: "family-identities", api: catalog2.api, method: "getAllPrimitiveId", args: [] };
+  const beforeReads = [sourceRead2, identities4];
   if (target5 !== null) {
     beforeReads.push({ purpose: "target", api: catalog2.api, method: "get", args: [targetArgument(target5)] });
   }
-  const afterReads = [sourceRead2, identities3];
+  const afterReads = [sourceRead2, identities4];
   if (method !== "delete") {
     afterReads.push({ purpose: "target", api: catalog2.api, method: "get", args: [targetArgument(target5 ?? { resultOf: operation.id })] });
   }
@@ -46532,7 +46748,7 @@ async function readEditorTabLookup(engine2, requestInput, expectedContext, overr
     );
   };
   await unchanged();
-  const projectUuid = identity7.parse(contextIdentity(context2).projectUuid);
+  const projectUuid = identity8.parse(contextIdentity(context2).projectUuid);
   const history = await dependencies3.readNativeHistoryCheckpoint({
     checkpointPath: checkpoint.checkpoint,
     expectedSha256: checkpoint.checkpointSha256,
@@ -46579,7 +46795,7 @@ async function readEditorTabLookup(engine2, requestInput, expectedContext, overr
     }
   };
 }
-var TAB_METHOD, SPLIT_METHOD, PROFILE4, MAX_BYTES, identity7, selector, type, member2, editorTabLookupRequestSchema, scopeSchema, tabSchema, nodeSchema, resultSchema, services, hash6, fileIdentity, checkpointSchema;
+var TAB_METHOD, SPLIT_METHOD, PROFILE4, MAX_BYTES, identity8, selector, type, member2, editorTabLookupRequestSchema, scopeSchema, tabSchema, nodeSchema, resultSchema, services, hash6, fileIdentity, checkpointSchema;
 var init_editor_tab_lookups = __esm({
   "server/src/editor-tab-lookups.ts"() {
     init_zod();
@@ -46595,27 +46811,27 @@ var init_editor_tab_lookups = __esm({
     SPLIT_METHOD = "eda.dmt_EditorControl.getTabsBySplitScreenId";
     PROFILE4 = "easyeda-pro-control.owned-editor-tab-lookup.v1";
     MAX_BYTES = 262144;
-    identity7 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
+    identity8 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
     selector = external_exports.string().min(1).max(512).regex(/^[^\u0000-\u001F\u007F]+$/u);
     type = external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]);
-    member2 = external_exports.object({ uuid: identity7, documentType: type }).strict();
+    member2 = external_exports.object({ uuid: identity8, documentType: type }).strict();
     editorTabLookupRequestSchema = external_exports.discriminatedUnion("method", [
       external_exports.object({ method: external_exports.literal(TAB_METHOD), arguments: external_exports.object({ tabId: selector }).strict() }).strict(),
       external_exports.object({ method: external_exports.literal(SPLIT_METHOD), arguments: external_exports.object({ splitScreenId: selector }).strict() }).strict()
     ]);
     scopeSchema = external_exports.object({
-      projectUuid: identity7,
-      ownerUuid: identity7,
-      branchUuid: identity7,
+      projectUuid: identity8,
+      ownerUuid: identity8,
+      branchUuid: identity8,
       active: member2.extend({ tabId: selector }).strict(),
       members: external_exports.array(member2).min(1).max(8192)
     }).strict();
     tabSchema = external_exports.object({
       tabId: selector,
-      uuid: identity7.nullable(),
+      uuid: identity8.nullable(),
       documentType: external_exports.union([type, external_exports.literal(-1)]),
-      parentProjectUuid: identity7.nullable(),
-      parentLibraryUuid: identity7.nullable()
+      parentProjectUuid: identity8.nullable(),
+      parentLibraryUuid: identity8.nullable()
     }).strict();
     nodeSchema = external_exports.object({
       id: selector,
@@ -46739,7 +46955,7 @@ function pcbNeedsInheritedLineEvidence(source3, inventory) {
   return lines3["primitiveIds"].some((id9) => typeof id9 === "string" && !standalone2.has(id9));
 }
 function derivePcbInheritedLines(source3, inventory, history) {
-  const pcbUuid = identity8.parse(source3.document["uuid"]);
+  const pcbUuid = identity9.parse(source3.document["uuid"]);
   if (source3.document["docType"] !== "PCB" || source3.document["editVersion"] !== EDIT_VERSION || source3.sha256 !== sha256Json({ schema: source3.schema, document: source3.document, objects: source3.objects }) || source3.objects.length > MAX_ITEMS || Buffer.byteLength(JSON.stringify(history)) > 32 * 1024 * 1024 || new Set(history.documents.map((row) => row.uuid)).size !== history.documents.length) {
     throw new Error("PCB inherited Line source or checkpoint bound is invalid.");
   }
@@ -46765,11 +46981,11 @@ function derivePcbInheritedLines(source3, inventory, history) {
   }
   const links = /* @__PURE__ */ new Map();
   for (const attr of attrs) {
-    const owner = identity8.parse(attr.body["parentId"]);
+    const owner = identity9.parse(attr.body["parentId"]);
     if (links.has(owner)) {
       throw new Error("PCB inherited Line requires one explicit Footprint association per component.");
     }
-    links.set(owner, identity8.parse(attr.body["value"]));
+    links.set(owner, identity9.parse(attr.body["value"]));
   }
   const lines3 = families2["lines"];
   if (!isRecord(lines3) || !isRecord(lines3["byPrimitiveId"])) {
@@ -46780,7 +46996,7 @@ function derivePcbInheritedLines(source3, inventory, history) {
   const validatedFootprints = /* @__PURE__ */ new Map();
   for (const component2 of components) {
     const pose = componentSchema.parse(component2.body);
-    const footprintUuid = identity8.parse(links.get(component2.id));
+    const footprintUuid = identity9.parse(links.get(component2.id));
     const footprint2 = documents.get(footprintUuid);
     if (footprint2?.docType !== "FOOTPRINT") {
       throw new Error("PCB inherited Line ordinary footprint is absent from the checkpoint.");
@@ -46798,7 +47014,7 @@ function derivePcbInheritedLines(source3, inventory, history) {
     }
     usedFootprints.set(footprintUuid, footprint2.semanticSha256);
     for (const record6 of templates) {
-      const primitiveId3 = identity8.parse(component2.id + identity8.parse(record6.id)), template = lineSchema2.parse(record6.body);
+      const primitiveId3 = identity9.parse(component2.id + identity9.parse(record6.id)), template = lineSchema2.parse(record6.body);
       if (sourceIds.has(primitiveId3) || generatedIds.has(primitiveId3) || members.length >= MAX_ITEMS) {
         throw new Error("PCB inherited Line generated identities collide or exceed their bound.");
       }
@@ -46851,8 +47067,8 @@ function assertPcbInheritedLineEvidence(evidence, source3, inventory) {
 }
 async function capturePcbInheritedLineScope(engine2, expectedContext, overrides = {}) {
   const context2 = structuredClone(expectedContext), dependencies3 = { ...services2, ...overrides };
-  const projectUuid = identity8.parse(context2.project.uuid ?? context2.project.projectUuid);
-  const documentUuid = identity8.parse(context2.document.uuid ?? context2.document.documentUuid);
+  const projectUuid = identity9.parse(context2.project.uuid ?? context2.project.projectUuid);
+  const documentUuid = identity9.parse(context2.document.uuid ?? context2.document.documentUuid);
   if (context2.document.documentType !== 3 || context2.document["parentProjectUuid"] !== projectUuid || context2.document["parentLibraryUuid"] !== void 0 || context2.document.tabId !== documentUuid && context2.document.tabId !== `${documentUuid}@${projectUuid}` || typeof context2.project.path !== "string" || context2.project.path.length === 0) {
     throw new Error("PCB inherited Line requires a project-owned active PCB and an explicit checkpoint source path.");
   }
@@ -46887,7 +47103,7 @@ async function capturePcbInheritedLineScope(engine2, expectedContext, overrides 
   await reprove();
   return Object.freeze({ reprove, derive: (source3, inventory) => derivePcbInheritedLines(source3, inventory, history), receiptPath: checkpoint.receiptPath, libraryHeaderEvidenceSha256: headers.sha256 });
 }
-var MAX_ITEMS, EDIT_VERSION, hash7, identity8, finite2, componentSchema, lineSchema2, canvasSchema, observedLineSchema, componentInventorySchema, fileIdentity2, checkpointSchema2, ordinaryFootprintRecords, generatedEvidence, services2;
+var MAX_ITEMS, EDIT_VERSION, hash7, identity9, finite2, componentSchema, lineSchema2, canvasSchema, observedLineSchema, componentInventorySchema, fileIdentity2, checkpointSchema2, ordinaryFootprintRecords, generatedEvidence, services2;
 var init_pcb_inherited_lines = __esm({
   "server/src/pcb-inherited-lines.ts"() {
     init_zod();
@@ -46899,7 +47115,7 @@ var init_pcb_inherited_lines = __esm({
     MAX_ITEMS = 2e4;
     EDIT_VERSION = "3.2.149.88089769";
     hash7 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
-    identity8 = external_exports.string().min(1).max(256).regex(/^[^\u0000-\u001F\u007F]+$/u);
+    identity9 = external_exports.string().min(1).max(256).regex(/^[^\u0000-\u001F\u007F]+$/u);
     finite2 = external_exports.number();
     componentSchema = external_exports.object({
       partitionId: external_exports.literal(""),
@@ -46937,7 +47153,7 @@ var init_pcb_inherited_lines = __esm({
       highlightValue: finite2
     }).strict();
     observedLineSchema = external_exports.object({
-      primitiveId: identity8,
+      primitiveId: identity9,
       primitiveType: external_exports.literal("Line"),
       net: external_exports.literal(""),
       layer: external_exports.literal(3),
@@ -46951,7 +47167,7 @@ var init_pcb_inherited_lines = __esm({
     componentInventorySchema = external_exports.object({
       status: external_exports.literal("adapter-enumerated"),
       count: external_exports.number().int().min(0).max(MAX_ITEMS),
-      primitiveIds: external_exports.array(identity8).max(MAX_ITEMS)
+      primitiveIds: external_exports.array(identity9).max(MAX_ITEMS)
     }).strict();
     fileIdentity2 = external_exports.object({ birthtimeNs: external_exports.string().min(1), ctimeNs: external_exports.string().min(1), dev: external_exports.string().min(1), ino: external_exports.string().min(1) });
     checkpointSchema2 = external_exports.object({
@@ -47007,7 +47223,7 @@ function family(input) {
   return parsed2;
 }
 function assertPcbMembershipSource(source3, documentUuid) {
-  identity9.parse(documentUuid);
+  identity10.parse(documentUuid);
   if (source3.objects.length > PCB_NET_MEMBERSHIP_MAX_ITEMS || Buffer.byteLength(JSON.stringify(source3)) > 16777216 || source3.schema !== "easyeda-pro-control.document-source.v1" || source3.document["docType"] !== "PCB" || source3.document["uuid"] !== documentUuid || source3.document["editVersion"] !== PCB_NET_MEMBERSHIP_SOURCE_EDIT_VERSION || source3.sha256 !== sha256Json({ schema: source3.schema, document: source3.document, objects: source3.objects }) || new Set(source3.objects.map((row) => row.id)).size !== source3.objects.length) {
     throw new Error("PCB net membership source identity, bound or commitment is invalid.");
   }
@@ -47030,7 +47246,7 @@ function standalone(row, type2, sourceType) {
     throw new Error("PCB net membership source has an unsupported inherited owner.");
   }
   return {
-    primitiveId: identity9.parse(row.id),
+    primitiveId: identity10.parse(row.id),
     primitiveType: type2,
     net: net2.parse(row.body["netName"]),
     parentComponentPrimitiveId: null,
@@ -47061,7 +47277,7 @@ function sourcePads(source3, componentIds) {
         throw new Error("PCB net membership PAD_NET owner or canonical identity is invalid.");
       }
       member4 = {
-        primitiveId: identity9.parse(tuple2[1] + tuple2[3]),
+        primitiveId: identity10.parse(tuple2[1] + tuple2[3]),
         primitiveType: "ComponentPad",
         net: net2.parse(row.body["padNet"]),
         parentComponentPrimitiveId: tuple2[1],
@@ -47128,7 +47344,7 @@ function derivePcbPhysicalMembers(source3, inventoryInput, documentUuid, primiti
   }
   if (selected.has("Pad") || selected.has("ComponentPad")) {
     const components = source3.objects.filter((row) => row.type === "COMPONENT");
-    const componentIds = new Set(components.map((row) => identity9.parse(row.id)));
+    const componentIds = new Set(components.map((row) => identity10.parse(row.id)));
     const componentFamily = componentFamilySchema.parse(inventory.families["components"]);
     if (componentFamily.count !== componentIds.size) {
       throw new Error("PCB net membership component count is inconsistent.");
@@ -47155,7 +47371,7 @@ function derivePcbNetMembership(source3, inventoryInput, requestInput, documentU
   }
   return result;
 }
-var PCB_NET_MEMBERSHIP_METHOD, PCB_NET_MEMBERSHIP_PROFILE, PCB_NET_MEMBERSHIP_MAX_ITEMS, PCB_NET_MEMBERSHIP_MAX_BYTES, PCB_NET_MEMBERSHIP_SOURCE_EDIT_VERSION, PCB_NET_MEMBERSHIP_API_SHA256, PCB_NET_MEMBERSHIP_PCB_SHA256, PCB_NET_MEMBERSHIP_LIMITATIONS, identity9, net2, padNetKeySchema, PCB_NET_MEMBERSHIP_TYPES, primitiveType, pcbNetMembershipArgumentsSchema, pcbNetMembershipRequestSchema, pcbNetMembershipItemSchema, pcbNetMembershipItemsSchema, count, identities2, inventoryItem, familySchema, componentFamilySchema, padLinkSchema, padCorrelationSchema, inventorySchema, panelDimension, panelQuantity, panelStampSchema, panelSideSchema, disabledPanelSchema, supportedRecords, families;
+var PCB_NET_MEMBERSHIP_METHOD, PCB_NET_MEMBERSHIP_PROFILE, PCB_NET_MEMBERSHIP_MAX_ITEMS, PCB_NET_MEMBERSHIP_MAX_BYTES, PCB_NET_MEMBERSHIP_SOURCE_EDIT_VERSION, PCB_NET_MEMBERSHIP_API_SHA256, PCB_NET_MEMBERSHIP_PCB_SHA256, PCB_NET_MEMBERSHIP_LIMITATIONS, identity10, net2, padNetKeySchema, PCB_NET_MEMBERSHIP_TYPES, primitiveType, pcbNetMembershipArgumentsSchema, pcbNetMembershipRequestSchema, pcbNetMembershipItemSchema, pcbNetMembershipItemsSchema, count, identities3, inventoryItem, familySchema, componentFamilySchema, padLinkSchema, padCorrelationSchema, inventorySchema, panelDimension, panelQuantity, panelStampSchema, panelSideSchema, disabledPanelSchema, supportedRecords, families;
 var init_pcb_net_membership = __esm({
   "server/src/pcb-net-membership.ts"() {
     init_zod();
@@ -47180,9 +47396,9 @@ var init_pcb_net_membership = __esm({
       "Line reads with explicit Footprint associations or extra inventory identities require a fresh managed checkpoint and repeated complete-database invariance. Only direct empty-net top-silkscreen footprint LINEs on unlocked top-side, zero-rotation components with zero library origin are supported; custom chains, replacements, partitions and ambiguous owners refuse. Their explicit footprint provenance is separate from PCB source records; they never enter a nonempty-net result.",
       "Bounded to 20,000 native source records, 16 MiB native source evidence and 2 MiB result; inherited Line proof also limits decoded checkpoint history to 32 MiB and each referenced document to 20,000 records. Exceeding bounds refuses without truncation."
     ];
-    identity9 = external_exports.string().min(1).max(256).regex(/^[^\u0000-\u001F\u007F]+$/u);
+    identity10 = external_exports.string().min(1).max(256).regex(/^[^\u0000-\u001F\u007F]+$/u);
     net2 = external_exports.string().max(1024).regex(/^[^\u0000-\u001F\u007F]*$/u);
-    padNetKeySchema = external_exports.tuple([external_exports.literal("PAD_NET"), identity9, external_exports.string().max(256), identity9]);
+    padNetKeySchema = external_exports.tuple([external_exports.literal("PAD_NET"), identity10, external_exports.string().max(256), identity10]);
     PCB_NET_MEMBERSHIP_TYPES = ["Line", "Arc", "Via", "Pad", "ComponentPad"];
     primitiveType = external_exports.enum(PCB_NET_MEMBERSHIP_TYPES);
     pcbNetMembershipArgumentsSchema = external_exports.object({
@@ -47191,10 +47407,10 @@ var init_pcb_net_membership = __esm({
     }).strict();
     pcbNetMembershipRequestSchema = external_exports.object({ method: external_exports.literal(PCB_NET_MEMBERSHIP_METHOD), arguments: pcbNetMembershipArgumentsSchema }).strict();
     pcbNetMembershipItemSchema = external_exports.object({
-      primitiveId: identity9,
+      primitiveId: identity10,
       primitiveType,
       net: net2.min(1),
-      parentComponentPrimitiveId: identity9.nullable(),
+      parentComponentPrimitiveId: identity10.nullable(),
       sourceRecordId: external_exports.string().min(1).max(2048),
       sourceType: external_exports.enum(["LINE", "ARC", "VIA", "PAD", "PAD_NET"])
     }).strict();
@@ -47203,23 +47419,23 @@ var init_pcb_net_membership = __esm({
       "Membership identities must be unique, sorted and bound to their native owner role."
     );
     count = external_exports.number().int().min(0).max(PCB_NET_MEMBERSHIP_MAX_ITEMS);
-    identities2 = external_exports.array(identity9).max(PCB_NET_MEMBERSHIP_MAX_ITEMS);
+    identities3 = external_exports.array(identity10).max(PCB_NET_MEMBERSHIP_MAX_ITEMS);
     inventoryItem = external_exports.object({
-      primitiveId: identity9,
+      primitiveId: identity10,
       primitiveType: external_exports.string(),
       net: net2.nullable(),
-      parentComponentPrimitiveId: identity9.optional(),
+      parentComponentPrimitiveId: identity10.optional(),
       padNumber: external_exports.string().max(256).optional()
     }).loose();
-    familySchema = external_exports.object({ count, primitiveIds: identities2, byPrimitiveId: external_exports.record(identity9, inventoryItem) }).loose();
-    componentFamilySchema = external_exports.object({ status: external_exports.literal("adapter-enumerated"), count, primitiveIds: identities2 }).strict();
-    padLinkSchema = external_exports.object({ primitiveId: identity9, parentComponentPrimitiveId: identity9, padNumber: external_exports.string().max(256), net: net2.nullable() }).loose();
+    familySchema = external_exports.object({ count, primitiveIds: identities3, byPrimitiveId: external_exports.record(identity10, inventoryItem) }).loose();
+    componentFamilySchema = external_exports.object({ status: external_exports.literal("adapter-enumerated"), count, primitiveIds: identities3 }).strict();
+    padLinkSchema = external_exports.object({ primitiveId: identity10, parentComponentPrimitiveId: identity10, padNumber: external_exports.string().max(256), net: net2.nullable() }).loose();
     padCorrelationSchema = external_exports.object({
       status: external_exports.literal("exact-subset"),
       count,
-      primitiveIds: identities2,
-      byPrimitiveId: external_exports.record(identity9, padLinkSchema),
-      byComponentPrimitiveId: external_exports.record(identity9, identities2)
+      primitiveIds: identities3,
+      byPrimitiveId: external_exports.record(identity10, padLinkSchema),
+      byComponentPrimitiveId: external_exports.record(identity10, identities3)
     }).loose();
     inventorySchema = external_exports.object({
       ok: external_exports.literal(true),
@@ -47444,7 +47660,7 @@ async function readPcbPrimitiveType(engine2, requestInput, expectedContext, expe
   }
   return result;
 }
-var PCB_PRIMITIVE_TYPE_METHOD, PCB_PRIMITIVE_TYPE_PROFILE, PCB_PRIMITIVE_TYPE_LIMITATIONS, identity10, pcbPrimitiveTypeArgumentsSchema, pcbPrimitiveTypeRequestSchema, pcbPrimitiveTypeResultSchema, hash8, consistencySchema, payloadSchema;
+var PCB_PRIMITIVE_TYPE_METHOD, PCB_PRIMITIVE_TYPE_PROFILE, PCB_PRIMITIVE_TYPE_LIMITATIONS, identity11, pcbPrimitiveTypeArgumentsSchema, pcbPrimitiveTypeRequestSchema, pcbPrimitiveTypeResultSchema, hash8, consistencySchema, payloadSchema;
 var init_pcb_primitive_type_read = __esm({
   "server/src/pcb-primitive-type-read.ts"() {
     init_zod();
@@ -47463,8 +47679,8 @@ var init_pcb_primitive_type_read = __esm({
       "Direct empty-net top-silkscreen footprint LINEs additionally require explicit component/Footprint associations from a fresh unchanged complete checkpoint, exact inventory geometry and separately labelled inherited provenance. Only unlocked top-side zero-rotation components and zero-origin ordinary footprints are supported; custom, rotated, bottom, replaced-layer and ambiguous cases refuse.",
       "Bounded to 20,000 native source records, 16 MiB source evidence and 2 MiB result; inherited Line proof additionally bounds decoded checkpoint history to 32 MiB and referenced documents to 20,000 records. No truncation, electrical-connectivity, general geometry, saved-file or persistence proof."
     ];
-    identity10 = external_exports.string().min(1).max(256).regex(/^[^\u0000-\u001F\u007F]+$/u);
-    pcbPrimitiveTypeArgumentsSchema = external_exports.object({ id: identity10 }).strict();
+    identity11 = external_exports.string().min(1).max(256).regex(/^[^\u0000-\u001F\u007F]+$/u);
+    pcbPrimitiveTypeArgumentsSchema = external_exports.object({ id: identity11 }).strict();
     pcbPrimitiveTypeRequestSchema = external_exports.object({ method: external_exports.literal(PCB_PRIMITIVE_TYPE_METHOD), arguments: pcbPrimitiveTypeArgumentsSchema }).strict();
     pcbPrimitiveTypeResultSchema = external_exports.enum(PCB_NET_MEMBERSHIP_TYPES);
     hash8 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
@@ -47549,7 +47765,7 @@ function derivePcbSelectedObjects(source3, inventoryInput, selectedInput, reques
   const attributes2 = /* @__PURE__ */ new Map();
   for (const row of source3.objects) {
     if (row.type === "ATTR") {
-      const owner = identity11.parse(row.body["parentId"]);
+      const owner = identity12.parse(row.body["parentId"]);
       if (!rows.has(owner)) {
         throw new Error("PCB source attribute has an unresolved owner.");
       }
@@ -47576,7 +47792,7 @@ function derivePcbSelectedObjects(source3, inventoryInput, selectedInput, reques
   }
   return result;
 }
-var PCB_SELECTED_OBJECTS_METHOD, PCB_SELECTED_OBJECTS_IDS_METHOD, PCB_SELECTED_OBJECTS_PROFILE, PCB_SELECTED_OBJECTS_MAX_SELECTED, PCB_SELECTED_OBJECTS_LIMITATIONS, identity11, pcbSelectedObjectsArgumentsSchema, pcbSelectedObjectsRequestSchema, pcbSelectedObjectIdsSchema, sourceRecord, pcbSelectedObjectsResultSchema, familySchema2, inventorySchema2, familyDefinitions, familyNames;
+var PCB_SELECTED_OBJECTS_METHOD, PCB_SELECTED_OBJECTS_IDS_METHOD, PCB_SELECTED_OBJECTS_PROFILE, PCB_SELECTED_OBJECTS_MAX_SELECTED, PCB_SELECTED_OBJECTS_LIMITATIONS, identity12, pcbSelectedObjectsArgumentsSchema, pcbSelectedObjectsRequestSchema, pcbSelectedObjectIdsSchema, sourceRecord, pcbSelectedObjectsResultSchema, familySchema2, inventorySchema2, familyDefinitions, familyNames;
 var init_pcb_selected_objects = __esm({
   "server/src/pcb-selected-objects.ts"() {
     init_zod();
@@ -47597,13 +47813,13 @@ var init_pcb_selected_objects = __esm({
       "Generated poured-state correlation must be exactly empty. Selected IDs may not use the ratline prefix, an existing component's descendant prefix, or any source object's generated polygon Line/Arc suffix; these drawing identities are outside ordinary family inventories.",
       "At most 256 selected IDs, 20000 source records and identities per inventory family, 16 MiB source evidence and 2 MiB result. Exceeding bounds refuses without truncation. No selection changes, public object mapper, navigation, Save, mutation or retry."
     ];
-    identity11 = external_exports.string().min(1).max(256).regex(/^[^\u0000-\u001F\u007F]+$/u);
+    identity12 = external_exports.string().min(1).max(256).regex(/^[^\u0000-\u001F\u007F]+$/u);
     pcbSelectedObjectsArgumentsSchema = external_exports.object({}).strict();
     pcbSelectedObjectsRequestSchema = external_exports.object({ method: external_exports.literal(PCB_SELECTED_OBJECTS_METHOD), arguments: pcbSelectedObjectsArgumentsSchema }).strict();
-    pcbSelectedObjectIdsSchema = external_exports.array(identity11).max(PCB_SELECTED_OBJECTS_MAX_SELECTED).refine((ids2) => new Set(ids2).size === ids2.length, "Selection identities must be unique.");
-    sourceRecord = external_exports.object({ id: identity11, type: external_exports.string().min(1).max(64), body: external_exports.record(external_exports.string(), external_exports.json()) }).strict();
+    pcbSelectedObjectIdsSchema = external_exports.array(identity12).max(PCB_SELECTED_OBJECTS_MAX_SELECTED).refine((ids2) => new Set(ids2).size === ids2.length, "Selection identities must be unique.");
+    sourceRecord = external_exports.object({ id: identity12, type: external_exports.string().min(1).max(64), body: external_exports.record(external_exports.string(), external_exports.json()) }).strict();
     pcbSelectedObjectsResultSchema = external_exports.array(external_exports.object({
-      primitiveId: identity11,
+      primitiveId: identity12,
       primitiveType: external_exports.enum(["Line", "Arc", "Via", "Pad", "Component", "String"]),
       sourceRecord,
       sourceAttributes: external_exports.array(sourceRecord).max(PCB_NET_MEMBERSHIP_MAX_ITEMS)
@@ -47611,8 +47827,8 @@ var init_pcb_selected_objects = __esm({
     familySchema2 = external_exports.object({
       status: external_exports.literal("adapter-enumerated"),
       count: external_exports.number().int().min(0).max(PCB_NET_MEMBERSHIP_MAX_ITEMS),
-      primitiveIds: external_exports.array(identity11).max(PCB_NET_MEMBERSHIP_MAX_ITEMS),
-      byPrimitiveId: external_exports.record(identity11, external_exports.unknown()).optional()
+      primitiveIds: external_exports.array(identity12).max(PCB_NET_MEMBERSHIP_MAX_ITEMS),
+      byPrimitiveId: external_exports.record(identity12, external_exports.unknown()).optional()
     }).loose();
     inventorySchema2 = external_exports.object({
       ok: external_exports.literal(true),
@@ -47623,7 +47839,7 @@ var init_pcb_selected_objects = __esm({
       pouredCorrelation: external_exports.object({
         status: external_exports.literal("derived-subset"),
         count: external_exports.literal(0),
-        pourPrimitiveIds: external_exports.array(identity11).length(0),
+        pourPrimitiveIds: external_exports.array(identity12).length(0),
         byPourPrimitiveId: external_exports.object({}).strict()
       }).strict()
     }).loose();
@@ -47657,7 +47873,7 @@ function derivePcbSourceObjects(source3, inventory, requestInput, documentUuid, 
     inherited
   );
 }
-var PCB_SOURCE_OBJECT_METHOD, PCB_SOURCE_OBJECTS_METHOD, PCB_SOURCE_OBJECTS_PROFILE, PCB_SOURCE_OBJECTS_LIMITATIONS, identity12, pcbSourceObjectArgumentsSchema, pcbSourceObjectsArgumentsSchema, pcbSourceObjectsRequestSchema;
+var PCB_SOURCE_OBJECT_METHOD, PCB_SOURCE_OBJECTS_METHOD, PCB_SOURCE_OBJECTS_PROFILE, PCB_SOURCE_OBJECTS_LIMITATIONS, identity13, pcbSourceObjectArgumentsSchema, pcbSourceObjectsArgumentsSchema, pcbSourceObjectsRequestSchema;
 var init_pcb_source_objects = __esm({
   "server/src/pcb-source-objects.ts"() {
     init_zod();
@@ -47674,8 +47890,8 @@ var init_pcb_source_objects = __esm({
       "Unselected inherited footprint lines may require the maintained fresh checkpoint proof. Its existing ownership and geometry restrictions remain unchanged. Generated poured-state correlation must be exactly empty; generated polygon and component-descendant identity namespaces refuse.",
       "At most 20000 source records and identities per inventory family, 16 MiB source evidence and 2 MiB result. Exceeding bounds refuses without truncation. No navigation, Save, mutation or retry. Offline tests do not establish connected validation for any family."
     ];
-    identity12 = pcbSelectedObjectIdsSchema.element;
-    pcbSourceObjectArgumentsSchema = external_exports.object({ id: identity12 }).strict();
+    identity13 = pcbSelectedObjectIdsSchema.element;
+    pcbSourceObjectArgumentsSchema = external_exports.object({ id: identity13 }).strict();
     pcbSourceObjectsArgumentsSchema = external_exports.object({ ids: pcbSelectedObjectIdsSchema.min(1) }).strict();
     pcbSourceObjectsRequestSchema = external_exports.discriminatedUnion("method", [
       external_exports.object({ method: external_exports.literal(PCB_SOURCE_OBJECT_METHOD), arguments: pcbSourceObjectArgumentsSchema }).strict(),
@@ -48061,6 +48277,9 @@ function publicSdkReadDescriptors() {
   }));
 }
 function readImplementationTestName(path5) {
+  if (path5 === SYSTEM_LIBRARY_UUID_METHOD) {
+    return "system-library-read";
+  }
   if (path5 === SPLIT_POLYGON_METHOD) {
     return "public-sdk-polygon-split";
   }
@@ -48070,6 +48289,9 @@ function readImplementationTestName(path5) {
   return readImplementationName(path5);
 }
 function readImplementationName(path5) {
+  if (isSchematicPrimitiveReadMethod(path5)) {
+    return "schematic-primitive-read";
+  }
   if (isPcbSourceObjectsMethod(path5)) {
     return "pcb-source-objects-read";
   }
@@ -48186,6 +48408,8 @@ function buildPublicSdkReadCode(input) {
     expression = buildSchematicTextReadExpression(request, "sdk-failure-code");
   } else if (isSchematicNetGroupReadMethod(definition.path)) {
     expression = buildSchematicNetGroupReadExpression(request, "sdk-failure-code");
+  } else if (isSchematicPrimitiveReadMethod(definition.path)) {
+    expression = buildSchematicPrimitiveReadExpression(request, "sdk-failure-code");
   } else if (definition.path === SPLIT_POLYGON_METHOD) {
     expression = splitPolygonExpression(request);
   }
@@ -48272,6 +48496,7 @@ try {
   const native = ${expression};
   stage = "projection";
   const present = native !== undefined;
+  ${definition.path === SYSTEM_LIBRARY_UUID_METHOD ? 'if (typeof native !== "string" || native.length !== 32 || !/^[a-f0-9]{32}$/.test(native)) fail("sdk-system-library-uuid");' : ""}
   ${definition.membership === void 0 ? "" : `if (!native || native.uuid !== ${JSON.stringify(request.arguments[definition.membership.argument])}) fail("sdk-wrong-document");`}
   if (!present && ${JSON.stringify(!definition.optionalResult)}) fail("sdk-missing-result");
   let projected = native;
@@ -48364,6 +48589,12 @@ function validatePublicSdkReadPayload(input, requestInput) {
     if (definition.output === "polygon") {
       boundedComplexPolygon.parse(payload.value);
     }
+    if (request.method === SYSTEM_LIBRARY_UUID_METHOD) {
+      external_exports.string().length(32).regex(/^[a-f0-9]{32}$/u).parse(payload.value);
+      if (payload.undefinedPaths.length > 0) {
+        throw new Error("System-library UUID cannot contain undefined values.");
+      }
+    }
     if (request.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) {
       if (payload.undefinedPaths.length > 0) {
         throw new Error("Component property-name observations cannot contain undefined values.");
@@ -48381,6 +48612,12 @@ function validatePublicSdkReadPayload(input, requestInput) {
         throw new Error("Native NetGroup state cannot contain undefined fields.");
       }
       validateSchematicNetGroupStates(payload.value, request);
+    }
+    if (isSchematicPrimitiveReadMethod(request.method)) {
+      if (payload.undefinedPaths.length > 0) {
+        throw new Error("Native mixed primitive state cannot contain undefined fields.");
+      }
+      validateSchematicPrimitiveStates(payload.value, request);
     }
     if (request.method === SYMBOL_PIN_ENUMERATION_METHOD) {
       const rows = symbolPinRows.parse(payload.value);
@@ -48483,6 +48720,9 @@ function validatePublicSdkReadPayload(input, requestInput) {
   if (isSchematicNetGroupReadMethod(request.method)) {
     assurance = "bounded-native-netgroup-state-observation-not-complete-source-connectivity-or-persistence-proof";
   }
+  if (isSchematicPrimitiveReadMethod(request.method)) {
+    assurance = "bounded-native-mixed-primitive-state-observation-not-complete-source-connectivity-or-persistence-proof";
+  }
   return {
     ...payload,
     assurance,
@@ -48492,7 +48732,7 @@ function validatePublicSdkReadPayload(input, requestInput) {
     limitations: [...definition.limitations]
   };
 }
-var PUBLIC_SDK_READ_API_SHA256, PUBLIC_SDK_READ_MAX_BYTES, MAX_ITEMS2, MAX_NODES, ALL_DOCUMENTS, SCHEMATIC_DOCUMENTS, PCB_DOCUMENTS, id3, text3, name3, coordinate3, ids, primitiveIds, emptyArguments2, layerInner, layerCustom, layerCopper, layerLine, layerImage, layerFill, layer, layerLineSchema, layerImageSchema, optionalLock, optionalNet, definitions, interpolationValues, linePoints, splitLinesSchema, boundedPolygon, boundedComplexPolygon, splitPolygonGroups, SPLIT_POLYGON_METHOD, pcbGetters, schGetters, regionRuleTypes, pcbFilters, requestShape, publicSdkReadRequestSchema, payloadSchema2, stringsResult, recordResult, rgbaResult, splitLineValue, splitLinesResult, symbolPinRows, resultSchemas, numericStateFields, booleanStateFields, stringStateFields, optionalComponentFields, nullableStyleFields;
+var PUBLIC_SDK_READ_API_SHA256, PUBLIC_SDK_READ_MAX_BYTES, MAX_ITEMS2, MAX_NODES, ALL_DOCUMENTS, SCHEMATIC_DOCUMENTS, PCB_DOCUMENTS, id3, text3, name3, coordinate3, ids, primitiveIds, emptyArguments2, layerInner, layerCustom, layerCopper, layerLine, layerImage, layerFill, layer, layerLineSchema, layerImageSchema, optionalLock, optionalNet, definitions, SYSTEM_LIBRARY_UUID_METHOD, interpolationValues, linePoints, splitLinesSchema, boundedPolygon, boundedComplexPolygon, splitPolygonGroups, SPLIT_POLYGON_METHOD, pcbGetters, schGetters, regionRuleTypes, pcbFilters, requestShape, publicSdkReadRequestSchema, payloadSchema2, stringsResult, recordResult, rgbaResult, splitLineValue, splitLinesResult, symbolPinRows, resultSchemas, numericStateFields, booleanStateFields, stringStateFields, optionalComponentFields, nullableStyleFields;
 var init_public_sdk_read = __esm({
   "server/src/public-sdk-read.ts"() {
     init_zod();
@@ -48504,6 +48744,7 @@ var init_public_sdk_read = __esm({
     init_symbol_pin_enumeration();
     init_schematic_text_read();
     init_schematic_netgroup_read();
+    init_schematic_primitive_read();
     init_pcb_net_membership();
     init_pcb_primitive_type_read();
     init_pcb_selected_objects();
@@ -48565,6 +48806,10 @@ var init_public_sdk_read = __esm({
       limitations: ["The pinned implementation looks up the UUID only in the active project's getAllPcbsInfo result."]
     });
     add("eda.lib_LibrariesList.getProjectLibraryUuid", ALL_DOCUMENTS, "string", emptyArguments2, [], { optionalResult: true });
+    SYSTEM_LIBRARY_UUID_METHOD = "eda.lib_LibrariesList.getSystemLibraryUuid";
+    add(SYSTEM_LIBRARY_UUID_METHOD, ALL_DOCUMENTS, "string", emptyArguments2, [], { limitations: [
+      "Returns only the system-library UUID as 32 lowercase hexadecimal characters; missing or malformed results refuse. No account/library enumeration, asset access or write authority is granted."
+    ] });
     for (const request of editorTabLookupRequestSchema.options) {
       const method = request.shape.method.value;
       add(
@@ -48788,6 +49033,21 @@ var init_public_sdk_read = __esm({
           "Every source-backed NET child returns its identity and literal value, including empty or conflicting values. No first-name selection, net compilation or connectivity claim. Custom attributes are identity-only; generated junction/disconnection markers are ownership-checked but omitted from DTOs.",
           "Complete reciprocal tree/index/source/root-family and child-collection proof; at most 20000 models/source IDs, 256 groups and across both families 1024 lines, 1024 names, 1024 custom attributes, 262144 string units. Limits apply before selection. Native signed zero is checked but JSON transport normalizes it.",
           "Two scalar captures plus final scalar reproof; no public wrappers, serializers, compiler, AST/name lookup, RPC, display getters, settings, navigation or Save. This is bounded group state, not complete source, resolved nets or durable-state proof."
+        ]
+      });
+    }
+    for (const schema2 of schematicPrimitiveReadRequestSchema.options) {
+      const singular = schema2.shape.method.value === SCHEMATIC_PRIMITIVE_READ_METHODS[0];
+      add(schema2.shape.method.value, [1], singular ? "record" : "records", schema2.shape.arguments, [singular ? "id" : "ids"], {
+        implementationKind: "native-task-equivalent",
+        parameterSupport: "narrowed",
+        limitations: [
+          "Fixed synchronous mixed native DTO lookup, not public SDK instances or all-property parity. Ordinary active SCH_PAGE root Text and Wire/Bus NetGroup only; symbol/block-instance pages, structural GROUP records, combined groups, components/pins, geometric shapes and descendant selectors refuse.",
+          "Singular accepts exactly id and returns one DTO. Plural accepts exactly ids with 1-256 unique identities and returns DTOs in caller order. Duplicate, missing, unsupported or wrong-owner identities refuse the whole request; no silent omission, partial array or undefined result.",
+          "DTO fields are exactly those of the modeled Text and Wire/Bus readers. Native Y, nullable styles and literal NET values are retained; line styles use null or SOLID/SHORT_DASH/DOT/DOT_DASH. Custom attributes are identity-only. Generated markers are ownership-checked, not returned. No electrical net resolution or theme defaults.",
+          "One retained page/manager and reciprocal tree/index/source prove complete mixed Text and NetGroup membership. Two synchronous captures and final scalar reproof cover all modeled families, including unrequested members. Bounds apply before selection: 20000 tree/source IDs, 256 Text, 256 groups, 1024 lines/names/custom attributes each and 262144 combined string units.",
+          "Text fields retain the Text DTO's finite +/-1e9 geometry, null or 0/1/2 alignment, nullable booleans, 65536-unit values and 4096-unit color/font strings. Line geometry and widths retain NetGroup bounds. Signed zero is distinct during native reproof but JSON transport normalizes it.",
+          "No public generic/type/family getter, compiler, serializer, AST, RPC, settings, navigation or Save. This is point-in-time bounded native state, not complete source/connectivity/persistence proof or atomic read isolation. The official plural method is beta; unsupported SDK families remain unavailable here."
         ]
       });
     }
@@ -50268,6 +50528,7 @@ var init_engine = __esm({
     init_schematic_selection_read();
     init_schematic_text_read();
     init_schematic_netgroup_read();
+    init_schematic_primitive_read();
     init_pcb_net_membership();
     init_pcb_primitive_type_read();
     init_pcb_selected_objects();
@@ -51390,6 +51651,9 @@ var init_engine = __esm({
         }
         if (isSchematicNetGroupReadMethod(parsed2.method)) {
           authority = "native-netgroup-state-observation-not-complete-source-connectivity-or-persistence-proof";
+        }
+        if (isSchematicPrimitiveReadMethod(parsed2.method)) {
+          authority = "native-mixed-primitive-state-observation-not-complete-source-connectivity-or-persistence-proof";
         }
         return { ...second, authority, read_consistency: {
           stable: true,
@@ -55662,7 +55926,7 @@ var init_schematic_native_wire = __esm({
 });
 
 // server/src/stack-native-persistence.ts
-function identity13(object4) {
+function identity14(object4) {
   const value = JSON.parse(object4.id);
   if (!Array.isArray(value) || value.length !== 2 || value[0] !== object4.type || typeof value[1] !== "number") {
     throw new Error("Invalid native stack record identity.");
@@ -55683,7 +55947,7 @@ function expectedNativeStackIntermediate(before, expected2) {
       return previous;
     }
     return { id: object4.id, type: object4.type, body: {
-      layerId: identity13(object4),
+      layerId: identity14(object4),
       layerType: "SUBSTRATE",
       layerName: object4.body["layerName"],
       use: false,
@@ -55703,8 +55967,8 @@ function buildNativeStackPersistenceCode(before, expected2) {
   const merge2 = buildReviewedNativeSourceMerge(intermediate, expected2);
   const physical = expected2.objects.filter((object4) => object4.type === "LAYER_PHYS").toSorted((left, right) => Number(left.body["zIndex"]) - Number(right.body["zIndex"]));
   const rows = physical.map((object4) => {
-    const layerId2 = identity13(object4);
-    const layer4 = expected2.objects.find((entry) => entry.type === "LAYER" && identity13(entry) === layerId2);
+    const layerId2 = identity14(object4);
+    const layer4 = expected2.objects.find((entry) => entry.type === "LAYER" && identity14(entry) === layerId2);
     if (layer4 === void 0 || typeof object4.body["thickness"] !== "number") {
       throw new Error("Native physical layer is incomplete.");
     }
@@ -55720,10 +55984,10 @@ function buildNativeStackPersistenceCode(before, expected2) {
       zIndex: object4.body["zIndex"]
     };
   });
-  const uploadIds = expected2.objects.filter((object4) => object4.type === "LAYER" && canonicalJson(before.objects.find((old) => old.id === object4.id) ?? null) !== canonicalJson(object4)).map((object4) => identity13(object4));
+  const uploadIds = expected2.objects.filter((object4) => object4.type === "LAYER" && canonicalJson(before.objects.find((old) => old.id === object4.id) ?? null) !== canonicalJson(object4)).map((object4) => identity14(object4));
   for (const object4 of expected2.objects) {
-    if (object4.type === "LAYER" && object4.body["layerType"] === "SUBSTRATE" && !uploadIds.includes(identity13(object4))) {
-      uploadIds.push(identity13(object4));
+    if (object4.type === "LAYER" && object4.body["layerType"] === "SUBSTRATE" && !uploadIds.includes(identity14(object4))) {
+      uploadIds.push(identity14(object4));
     }
   }
   return `
@@ -58693,11 +58957,11 @@ function assertPcbTextSourceProfile(source3) {
       if (typeof parent !== "string" || !componentIds.has(parent) || typeof key !== "string" || !key || typeof row.body["value"] !== "string" || typeof row.body["keyVisible"] !== "boolean" || typeof row.body["valueVisible"] !== "boolean") {
         throw new Error("Standalone PCB text requires explicit native component-attribute ownership; root or malformed ATTR is unsupported.");
       }
-      const identity20 = JSON.stringify([parent, key]);
-      if (attributes2.has(identity20)) {
+      const identity21 = JSON.stringify([parent, key]);
+      if (attributes2.has(identity21)) {
         throw new Error("Standalone PCB text refuses duplicate native component attributes.");
       }
-      attributes2.add(identity20);
+      attributes2.add(identity21);
     } else if (parent !== void 0 && parent !== "") {
       throw new Error("Standalone PCB text source has ambiguous native parent ownership.");
     }
@@ -58970,16 +59234,16 @@ function assertPcbTextCreateRetainedAuthority(input, createdId, prepared, acknow
   if (operation.action !== "pcb.text.create") {
     throw new Error("Retained PCB text creation authority requires its original create plan.");
   }
-  const identity20 = nativeId3.parse(createdId);
+  const identity21 = nativeId3.parse(createdId);
   external_exports.object({
     adapterProfile: external_exports.literal(PCB_TEXT_LIFECYCLE_PROFILE),
-    createdId: external_exports.literal(identity20),
+    createdId: external_exports.literal(identity21),
     createdIds: external_exports.null(),
     componentCreate: external_exports.null(),
     codeSha256: external_exports.string().regex(/^[a-f0-9]{64}$/u)
   }).strict().parse(prepared);
   if (acknowledgment !== void 0) {
-    assertPcbTextLifecycleAcknowledgment(operation, { createdId: identity20 }, acknowledgment);
+    assertPcbTextLifecycleAcknowledgment(operation, { createdId: identity21 }, acknowledgment);
   }
 }
 function compilePcbTextLifecycleOperation(input) {
@@ -63388,14 +63652,14 @@ function comparePoured(left, right) {
     return invalid("derived record fields or child count changed.");
   }
   const differences = [];
-  const identities3 = /* @__PURE__ */ new Set();
+  const identities4 = /* @__PURE__ */ new Set();
   for (let fillIndex = 0; fillIndex < oldFills.length; fillIndex += 1) {
     const oldFill = oldFills[fillIndex];
     const newFill = newFills[fillIndex];
-    if (!isRecord(oldFill) || !isRecord(newFill) || typeof oldFill["id"] !== "string" || identities3.has(oldFill["id"]) || !same17({ ...oldFill, path: null }, { ...newFill, path: null }) || !Array.isArray(oldFill["path"]) || !Array.isArray(newFill["path"]) || oldFill["path"].length !== newFill["path"].length) {
+    if (!isRecord(oldFill) || !isRecord(newFill) || typeof oldFill["id"] !== "string" || identities4.has(oldFill["id"]) || !same17({ ...oldFill, path: null }, { ...newFill, path: null }) || !Array.isArray(oldFill["path"]) || !Array.isArray(newFill["path"]) || oldFill["path"].length !== newFill["path"].length) {
       return invalid("copper identity, width, style or path count changed.");
     }
-    identities3.add(oldFill["id"]);
+    identities4.add(oldFill["id"]);
     for (let pathIndex = 0; pathIndex < oldFill["path"].length; pathIndex += 1) {
       differences.push(...comparePath(oldFill["path"][pathIndex], newFill["path"][pathIndex], left.id, oldFill["id"], pathIndex));
       if (differences.length > 1e4) {
@@ -63889,7 +64153,7 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
     throw new Error("Ground repair native pin identities are ambiguous.");
   }
   const components = new Map(native.components.map((component2) => [component2.id, component2]));
-  const identities3 = /* @__PURE__ */ new Map();
+  const identities4 = /* @__PURE__ */ new Map();
   const uniqueIds = /* @__PURE__ */ new Set();
   for (const component2 of native.components.filter((entry) => entry.kind === "part")) {
     const uniqueId = attributeValue(component2.attributes, component2.id, "Unique ID");
@@ -63898,7 +64162,7 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
       throw new Error("Ground repair real-part identities are duplicated.");
     }
     uniqueIds.add(uniqueId);
-    identities3.set(component2.id, { uniqueId, designator });
+    identities4.set(component2.id, { uniqueId, designator });
   }
   const originalById = new Map(original.map((part) => [part.uniqueId, part]));
   const existingNets = new Set(original.flatMap((part) => part.pins.map((pin4) => pin4.net)));
@@ -63910,7 +64174,7 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
   const generatedOwners = /* @__PURE__ */ new Map();
   const changedPins = [];
   for (const change of misnamed) {
-    const component2 = components.get(change.componentId), identityValue = identities3.get(change.componentId);
+    const component2 = components.get(change.componentId), identityValue = identities4.get(change.componentId);
     const pin4 = component2?.pins.find((entry) => entry.id === change.pinId);
     if (component2?.kind !== "part" || identityValue === void 0 || pin4 === void 0 || selectedPins.has(pin4.id) || pin4.net !== change.expectedNet || generatedNet.test(change.expectedNet) || existingNets.has(change.observedNet)) {
       throw new Error("Ground repair names an extra, duplicate, non-part or mismatched native pin/net.");
@@ -63947,7 +64211,7 @@ function verifyLayoutWireGroupRepairTopology(beforeNative, beforeTopology, curre
     changedPins
   };
 }
-var generatedNet, identity14, misnamedPinsSchema;
+var generatedNet, identity15, misnamedPinsSchema;
 var init_schematic_layout_repair_topology = __esm({
   "server/src/schematic-layout-repair-topology.ts"() {
     init_zod();
@@ -63955,11 +64219,11 @@ var init_schematic_layout_repair_topology = __esm({
     init_design_topology();
     init_schematic_native_adapter();
     generatedNet = /^\$[0-9]+N[0-9]+$/u;
-    identity14 = external_exports.string().min(1).max(512);
+    identity15 = external_exports.string().min(1).max(512);
     misnamedPinsSchema = external_exports.array(external_exports.object({
-      componentId: identity14,
-      pinId: identity14,
-      expectedNet: identity14,
+      componentId: identity15,
+      pinId: identity15,
+      expectedNet: identity15,
       observedNet: external_exports.string().max(512).regex(generatedNet),
       wireId: external_exports.string().regex(/^[a-f0-9]{16}$/u)
     }).strict()).min(1).max(4096);
@@ -68385,15 +68649,15 @@ var init_check_execution = __esm({
 // server/src/library-operations.ts
 function assetOperations(family2) {
   return [
-    external_exports.object({ id: id8, action: external_exports.literal(`library.${family2}.get`), libraryUuid: uuid5, target: identity15 }).strict(),
-    external_exports.object({ id: id8, action: external_exports.literal(`library.${family2}.delete`), libraryUuid: uuid5, target: identity15 }).strict(),
-    external_exports.object({ id: id8, action: external_exports.literal(`library.${family2}.copy`), libraryUuid: uuid5, target: identity15, targetLibraryUuid: uuid5, classification: classification.optional(), name: name4 }).strict()
+    external_exports.object({ id: id8, action: external_exports.literal(`library.${family2}.get`), libraryUuid: uuid5, target: identity16 }).strict(),
+    external_exports.object({ id: id8, action: external_exports.literal(`library.${family2}.delete`), libraryUuid: uuid5, target: identity16 }).strict(),
+    external_exports.object({ id: id8, action: external_exports.literal(`library.${family2}.copy`), libraryUuid: uuid5, target: identity16, targetLibraryUuid: uuid5, classification: classification.optional(), name: name4 }).strict()
   ];
 }
 function sourceOperations(family2) {
   return [
-    external_exports.object({ id: id8, action: external_exports.literal(`library.${family2}.source.replace`), libraryUuid: uuid5, target: identity15, documentSource: external_exports.string().min(1).max(1048576) }).strict(),
-    external_exports.object({ id: id8, action: external_exports.literal(`library.${family2}.open`), libraryUuid: uuid5, target: identity15, splitScreenId: uuid5.optional() }).strict()
+    external_exports.object({ id: id8, action: external_exports.literal(`library.${family2}.source.replace`), libraryUuid: uuid5, target: identity16, documentSource: external_exports.string().min(1).max(1048576) }).strict(),
+    external_exports.object({ id: id8, action: external_exports.literal(`library.${family2}.open`), libraryUuid: uuid5, target: identity16, splitScreenId: uuid5.optional() }).strict()
   ];
 }
 function simpleExport(action) {
@@ -68764,7 +69028,7 @@ function listLibraryOperationCapabilities() {
     ...LIBRARY_OPERATION_GAPS.map(({ action, status: status2 }) => ({ action, status: status2 }))
   ];
 }
-var LIBRARY_OPERATION_PROFILE, MANAGED_FILE_MAX_BYTES, id8, uuid5, name4, text6, fileName, identity15, classification, symbolType2, associationIdentity, association, propertyScalar, propertyMap, deviceProperty, metadataPatch, nonemptyPatch, managedFileInputSchema, exportOptions, bomOptions, netlistOptions, primitiveSources, libraryOperationSchema, literal4, optional2, ref, source2, tabs, project, assetApis, documentApis, simpleExports, LIBRARY_OPERATION_GAPS;
+var LIBRARY_OPERATION_PROFILE, MANAGED_FILE_MAX_BYTES, id8, uuid5, name4, text6, fileName, identity16, classification, symbolType2, associationIdentity, association, propertyScalar, propertyMap, deviceProperty, metadataPatch, nonemptyPatch, managedFileInputSchema, exportOptions, bomOptions, netlistOptions, primitiveSources, libraryOperationSchema, literal4, optional2, ref, source2, tabs, project, assetApis, documentApis, simpleExports, LIBRARY_OPERATION_GAPS;
 var init_library_operations = __esm({
   "server/src/library-operations.ts"() {
     init_zod();
@@ -68776,7 +69040,7 @@ var init_library_operations = __esm({
     name4 = external_exports.string().min(1).max(512);
     text6 = external_exports.string().max(65536);
     fileName = external_exports.string().regex(/^[A-Za-z0-9][A-Za-z0-9_. -]{0,127}$/u).refine((value) => !value.includes("..") && !value.endsWith(".") && !value.endsWith(" "));
-    identity15 = external_exports.union([external_exports.object({ uuid: uuid5 }).strict(), external_exports.object({ resultOf: id8 }).strict()]);
+    identity16 = external_exports.union([external_exports.object({ uuid: uuid5 }).strict(), external_exports.object({ resultOf: id8 }).strict()]);
     classification = external_exports.array(name4).max(2);
     symbolType2 = external_exports.union([external_exports.literal(2), external_exports.literal(18), external_exports.literal(19), external_exports.literal(20), external_exports.literal(21), external_exports.literal(22), external_exports.literal(25), external_exports.literal(31), external_exports.literal(17)]);
     associationIdentity = external_exports.object({ uuid: uuid5, libraryUuid: uuid5 }).strict();
@@ -68808,30 +69072,30 @@ var init_library_operations = __esm({
       external_exports.object({ id: id8, action: external_exports.literal("library.footprint.create"), libraryUuid: uuid5, name: name4, classification: classification.optional(), description: text6.optional() }).strict(),
       external_exports.object({ id: id8, action: external_exports.literal("library.device.create"), libraryUuid: uuid5, name: name4, classification: classification.optional(), association: association.extend({ symbol: associationIdentity, footprint: associationIdentity.optional(), model3D: associationIdentity.optional() }).strict(), description: text6.optional(), property: deviceProperty.optional() }).strict(),
       external_exports.object({ id: id8, action: external_exports.literal("library.model3d.create"), libraryUuid: uuid5, file: managedFileInputSchema, classification: classification.optional(), unit: external_exports.enum(["mm", "cm", "m", "mil", "inch"]) }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("library.symbol.modify"), libraryUuid: uuid5, target: identity15, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("library.footprint.modify"), libraryUuid: uuid5, target: identity15, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("library.model3d.modify"), libraryUuid: uuid5, target: identity15, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("library.device.modify"), libraryUuid: uuid5, target: identity15, patch: metadataPatch.extend({ association: association.refine(nonemptyPatch).optional(), property: deviceProperty.refine(nonemptyPatch).optional() }).strict().refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("library.symbol.modify"), libraryUuid: uuid5, target: identity16, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("library.footprint.modify"), libraryUuid: uuid5, target: identity16, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("library.model3d.modify"), libraryUuid: uuid5, target: identity16, patch: metadataPatch.refine(nonemptyPatch, "Empty patch.") }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("library.device.modify"), libraryUuid: uuid5, target: identity16, patch: metadataPatch.extend({ association: association.refine(nonemptyPatch).optional(), property: deviceProperty.refine(nonemptyPatch).optional() }).strict().refine(nonemptyPatch, "Empty patch.") }).strict(),
       external_exports.object({ id: id8, action: external_exports.literal("library.device.model-transform"), libraryUuid: uuid5, target: external_exports.object({ uuid: uuid5 }).strict(), transform: modelTransformSchema, inheritedInstances: external_exports.array(external_exports.object({ documentUuid: uuid5, documentType: external_exports.enum(["PCB", "SCH_PAGE"]), componentUuid: uuid5 }).strict()).max(2e4) }).strict(),
       external_exports.object({ id: id8, action: external_exports.literal("project.create"), name: name4, projectName: external_exports.string().regex(/^[A-Za-z0-9-]{1,128}$/u).optional(), teamUuid: uuid5, folderUuid: uuid5.optional(), description: text6.optional() }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("project.open"), target: identity15 }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("document.open"), target: identity15, splitScreenId: uuid5.optional() }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("project.open"), target: identity16 }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("document.open"), target: identity16, splitScreenId: uuid5.optional() }).strict(),
       external_exports.object({ id: id8, action: external_exports.literal("document.activate"), tabId: uuid5 }).strict(),
       external_exports.object({ id: id8, action: external_exports.literal("document.close"), tabId: uuid5 }).strict(),
       external_exports.object({ id: id8, action: external_exports.literal("document.pcb.create"), boardName: name4.optional() }).strict(),
       external_exports.object({ id: id8, action: external_exports.literal("document.schematic.create"), boardName: name4.optional() }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("document.page.create"), schematic: identity15 }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("document.pcb.copy"), target: identity15, boardName: name4.optional() }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("document.schematic.copy"), target: identity15, boardName: name4.optional() }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("document.page.copy"), target: identity15, schematic: identity15 }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("document.pcb.rename"), target: identity15, name: name4 }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("document.schematic.rename"), target: identity15, name: name4 }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("document.page.rename"), target: identity15, name: name4 }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("document.pcb.delete"), target: identity15 }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("document.schematic.delete"), target: identity15 }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("document.page.delete"), target: identity15 }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("document.pcb.save"), target: identity15 }).strict(),
-      external_exports.object({ id: id8, action: external_exports.literal("document.schematic.save"), target: identity15 }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("document.page.create"), schematic: identity16 }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("document.pcb.copy"), target: identity16, boardName: name4.optional() }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("document.schematic.copy"), target: identity16, boardName: name4.optional() }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("document.page.copy"), target: identity16, schematic: identity16 }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("document.pcb.rename"), target: identity16, name: name4 }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("document.schematic.rename"), target: identity16, name: name4 }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("document.page.rename"), target: identity16, name: name4 }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("document.pcb.delete"), target: identity16 }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("document.schematic.delete"), target: identity16 }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("document.page.delete"), target: identity16 }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("document.pcb.save"), target: identity16 }).strict(),
+      external_exports.object({ id: id8, action: external_exports.literal("document.schematic.save"), target: identity16 }).strict(),
       external_exports.object({ id: id8, action: external_exports.literal("export.pcb.gerber"), ...exportOptions, colorSilkscreen: external_exports.boolean(), unit: external_exports.enum(["mm", "inch"]), digitalFormat: external_exports.object({ integerNumber: external_exports.number().int().min(1).max(6), decimalNumber: external_exports.number().int().min(1).max(6) }).strict(), other: external_exports.object({ metallicDrillingInformation: external_exports.boolean(), nonMetallicDrillingInformation: external_exports.boolean(), drillTable: external_exports.boolean(), flyingProbeTestingFile: external_exports.boolean() }).strict(), layers: external_exports.array(external_exports.object({ layerId: external_exports.number().int().min(1).max(100), isMirror: external_exports.boolean() }).strict()).min(1).max(100), objects: external_exports.array(external_exports.enum(primitiveSources)).min(1).max(17) }).strict(),
       external_exports.object({ id: id8, action: external_exports.literal("export.pcb.model3d"), ...exportOptions, fileType: external_exports.enum(["step", "obj"]), elements: external_exports.array(external_exports.enum(["Component Model", "Via", "Silkscreen", "Wire In Signal Layer"])).max(4), modelMode: external_exports.enum(["Outfit", "Parts"]), autoGenerateModels: external_exports.boolean() }).strict(),
       external_exports.object({ id: id8, action: external_exports.literal("export.pcb.pick-and-place"), ...exportOptions, fileType: external_exports.enum(["xlsx", "csv"]), unit: external_exports.enum(["mm", "mil"]) }).strict(),
@@ -69054,14 +69318,14 @@ var init_library_persistence_proof = __esm({
 
 // server/src/editor-tabs.ts
 function buildEditorTargetAbsentExpression(input) {
-  const identity20 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
+  const identity21 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
   const active = external_exports.object({
-    uuid: identity20,
+    uuid: identity21,
     documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]),
     // oxlint-disable-next-line eslint/no-control-regex -- Native tab identities must not contain control characters.
     tabId: external_exports.string().min(1).max(512).regex(/^[^\u0000-\u001F]+$/u)
   }).strict();
-  const scope3 = external_exports.object({ targetUuid: identity20, projectUuid: identity20, ownerUuid: identity20, active }).strict().parse(input);
+  const scope3 = external_exports.object({ targetUuid: identity21, projectUuid: identity21, ownerUuid: identity21, active }).strict().parse(input);
   if (scope3.active.uuid === scope3.targetUuid || scope3.active.tabId.split("@")[0] !== scope3.active.uuid) {
     throw new Error("Closed-target proof requires one exact different active tab.");
   }
@@ -69656,7 +69920,7 @@ function bodyRecord(value) {
   }
   return value;
 }
-function identity16(object4, type2) {
+function identity17(object4, type2) {
   const value = JSON.parse(object4.id);
   if (!Array.isArray(value) || value[0] !== type2) {
     throw new Error("Native route source identity is malformed.");
@@ -69664,7 +69928,7 @@ function identity16(object4, type2) {
   return value;
 }
 function netName(object4) {
-  return external_exports.string().parse(identity16(object4, "NET")[1]);
+  return external_exports.string().parse(identity17(object4, "NET")[1]);
 }
 function note(code, objectIds, detail) {
   return { code, objectIds, detail };
@@ -69686,8 +69950,8 @@ function rule(source3, family2, reference2) {
   if (reference2 !== void 0 && reference2 !== null && typeof reference2 !== "string") {
     return null;
   }
-  const candidates = source3.objects.filter((entry) => entry.type === "RULE" && identity16(entry, "RULE")[1] === family2);
-  const selected = typeof reference2 === "string" && reference2 !== "default" && reference2 !== "" ? candidates.filter((entry) => identity16(entry, "RULE")[2] === reference2) : candidates.filter((entry) => entry.body["ruleState"] === "DEFAULT");
+  const candidates = source3.objects.filter((entry) => entry.type === "RULE" && identity17(entry, "RULE")[1] === family2);
+  const selected = typeof reference2 === "string" && reference2 !== "default" && reference2 !== "" ? candidates.filter((entry) => identity17(entry, "RULE")[2] === reference2) : candidates.filter((entry) => entry.body["ruleState"] === "DEFAULT");
   if (selected.length !== 1 || selected[0] === void 0) {
     return null;
   }
@@ -69718,7 +69982,7 @@ function checkedPads(source3, inventoryInput) {
   const expected2 = /* @__PURE__ */ new Map();
   for (const object4 of source3.objects) {
     if (object4.type === "PAD_NET") {
-      const id9 = identity16(object4, "PAD_NET");
+      const id9 = identity17(object4, "PAD_NET");
       if (id9.length !== 4 || !id9.slice(1).every((entry) => typeof entry === "string")) {
         throw new Error("Native PAD_NET identity is incomplete.");
       }
@@ -70071,7 +70335,7 @@ function auditPcbRoutes(source3, inventory, input) {
         return false;
       }
       if (entry.type === "POURED") {
-        const parent = identity16(entry, "POURED")[1];
+        const parent = identity17(entry, "POURED")[1];
         return source3.objects.some((candidate) => candidate.type === "POUR" && candidate.id === parent && candidate.body["netName"] === net3);
       }
       return entry.body["netName"] === net3;
@@ -70458,23 +70722,23 @@ function deviceRequestedModel(input) {
   if (model === void 0 || model === null) {
     return void 0;
   }
-  if (!identity17.test(model.uuid) || !identity17.test(model.libraryUuid)) {
+  if (!identity18.test(model.uuid) || !identity18.test(model.libraryUuid)) {
     throw new Error("Existing model assignment requires exact 32-hex asset and external collection identities, not filenames or paths.");
   }
   return { uuid: model.uuid, libraryUuid: model.libraryUuid };
 }
 function validateDeviceModelMetadata(input, expected2) {
-  if (!identity17.test(expected2.uuid) || !identity17.test(expected2.libraryUuid) || !isRecord(input) || input["uuid"] !== expected2.uuid || input["libraryUuid"] !== expected2.libraryUuid || input["libraryType"] !== "5" || typeof input["name"] !== "string" || input["name"].length === 0 || input["name"].length > 512) {
+  if (!identity18.test(expected2.uuid) || !identity18.test(expected2.libraryUuid) || !isRecord(input) || input["uuid"] !== expected2.uuid || input["libraryUuid"] !== expected2.libraryUuid || input["libraryType"] !== "5" || typeof input["name"] !== "string" || input["name"].length === 0 || input["name"].length > 512) {
     throw new Error("Existing external model metadata identity, owner, type or title differs.");
   }
   return { ...expected2, metadata: structuredClone(input) };
 }
-var identity17, DEVICE_MODEL_RUNTIME_GUARD;
+var identity18, DEVICE_MODEL_RUNTIME_GUARD;
 var init_device_model = __esm({
   "server/src/device-model.ts"() {
     init_core3();
     init_library_operations();
-    identity17 = /^[a-f0-9]{32}$/u;
+    identity18 = /^[a-f0-9]{32}$/u;
     DEVICE_MODEL_RUNTIME_GUARD = `if(PLAN.model!==undefined){const api=eda.lib_3DModel;if(typeof api?.get!=='function')throw new Error('DEVICE_MODEL_GETTER_MISSING');const actual=await api.get(PLAN.model.uuid,PLAN.model.libraryUuid);const encoded=JSON.stringify(actual);if(typeof encoded!=='string'||new TextEncoder().encode(encoded).byteLength>1048576||stable(JSON.parse(encoded))!==stable(PLAN.model.metadata))throw new Error('DEVICE_MODEL_METADATA_DRIFT');await assertProject();}`;
   }
 });
@@ -70512,8 +70776,8 @@ function prepareDeviceAssociation(input, history, modelInput) {
   const associations = [];
   const requestedModel = deviceRequestedModel(parsed2);
   const model = requestedModel === void 0 ? void 0 : validateDeviceModelMetadata(modelInput, requestedModel);
-  for (const [family2, identity20] of Object.entries(parsed2.patch.association ?? {})) {
-    if (family2 === "model3D" && identity20 === null) {
+  for (const [family2, identity21] of Object.entries(parsed2.patch.association ?? {})) {
+    if (family2 === "model3D" && identity21 === null) {
       attributes2["3D Model"] = "";
     } else if (family2 === "model3D" && model !== void 0) {
       attributes2["3D Model"] = `${model.uuid}|${model.libraryUuid}`;
@@ -70523,13 +70787,13 @@ function prepareDeviceAssociation(input, history, modelInput) {
         throw new Error("Unreviewed project association family.");
       }
       const key = family2 === "symbol" ? "Symbol" : "Footprint";
-      if (identity20 === null && family2 === "footprint") {
+      if (identity21 === null && family2 === "footprint") {
         attributes2[key] = "";
       } else {
-        if (!isRecord(identity20) || identity20.libraryUuid !== history.projectUuid || typeof identity20.uuid !== "string") {
+        if (!isRecord(identity21) || identity21.libraryUuid !== history.projectUuid || typeof identity21.uuid !== "string") {
           throw new Error("Association may not import or reference an off-project asset.");
         }
-        const target5 = history.documents.find((entry) => entry.uuid === identity20.uuid && entry.docType === (family2 === "symbol" ? "SYMBOL" : "FOOTPRINT") && !isNativeDocumentDeleted(entry));
+        const target5 = history.documents.find((entry) => entry.uuid === identity21.uuid && entry.docType === (family2 === "symbol" ? "SYMBOL" : "FOOTPRINT") && !isNativeDocumentDeleted(entry));
         const title7 = target5?.records.find((entry) => entry.id === "META" && entry.type === "META")?.body["title"];
         if (target5 === void 0 || typeof title7 !== "string" || title7.length === 0) {
           throw new Error("Association asset is absent from the complete checkpoint.");
@@ -73399,7 +73663,7 @@ const json=JSON.stringify(payload);return{schema:'easyeda-pro-control.exact-json
 }catch{throw new Error('Document activation refused: '+stage+(preferenceFailure===undefined?'':':'+preferenceFailure));}
 })()`;
 }
-var DOCUMENT_ACTIVATION_PROFILE, identity18, documentType, member3, contextSchema, planSchema5;
+var DOCUMENT_ACTIVATION_PROFILE, identity19, documentType, member3, contextSchema, planSchema5;
 var init_document_activation = __esm({
   "server/src/document-activation.ts"() {
     init_zod();
@@ -73410,15 +73674,15 @@ var init_document_activation = __esm({
     init_device_runtime_guard();
     init_pcb_navigation_preferences();
     DOCUMENT_ACTIVATION_PROFILE = "easyeda-pro-control.document-activation.v1";
-    identity18 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
+    identity19 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
     documentType = external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]);
-    member3 = external_exports.object({ uuid: identity18, documentType }).strict();
+    member3 = external_exports.object({ uuid: identity19, documentType }).strict();
     contextSchema = member3.extend({ tabId: external_exports.string().min(1).max(512) }).strict();
     planSchema5 = external_exports.object({
       profile: external_exports.literal(DOCUMENT_ACTIVATION_PROFILE),
-      projectUuid: identity18,
-      projectOwnerUuid: identity18,
-      branchUuid: identity18,
+      projectUuid: identity19,
+      projectOwnerUuid: identity19,
+      branchUuid: identity19,
       projectPath: external_exports.string().min(1).max(4096),
       before: contextSchema,
       target: contextSchema,
@@ -73613,7 +73877,7 @@ return envelope({kind:'document-close-reconciliation',profile:PLAN.profile,planS
 }finally{clear();}
 }catch(_){throw new Error('Clean document close refused at '+stage);}})()`;
 }
-var DOCUMENT_CLOSE_PROFILE, identity19, scopeSchema5, planSchema6, resultSchema2, reconcileSchema;
+var DOCUMENT_CLOSE_PROFILE, identity20, scopeSchema5, planSchema6, resultSchema2, reconcileSchema;
 var init_document_close = __esm({
   "server/src/document-close.ts"() {
     init_zod();
@@ -73624,13 +73888,13 @@ var init_document_close = __esm({
     init_native_history();
     init_native_editor_tab_guards();
     DOCUMENT_CLOSE_PROFILE = "easyeda-pro-control.inactive-clean-document-close.v1";
-    identity19 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
-    scopeSchema5 = external_exports.object({ uuid: identity19, documentType: external_exports.union([external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]), tabId: external_exports.string().min(1).max(512) }).strict();
+    identity20 = external_exports.string().regex(/^[a-zA-Z0-9_-]{1,128}$/u);
+    scopeSchema5 = external_exports.object({ uuid: identity20, documentType: external_exports.union([external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]), tabId: external_exports.string().min(1).max(512) }).strict();
     planSchema6 = external_exports.object({
       profile: external_exports.literal(DOCUMENT_CLOSE_PROFILE),
-      projectUuid: identity19,
-      ownerUuid: identity19,
-      branchUuid: identity19,
+      projectUuid: identity20,
+      ownerUuid: identity20,
+      branchUuid: identity20,
       projectPath: external_exports.string().min(1).max(4096),
       active: scopeSchema5,
       target: scopeSchema5,
@@ -76535,7 +76799,7 @@ var init_windows_native_ui = __esm({
       external_exports.object({ action: external_exports.literal("invoke"), ...selection, ...confirmed }).strict(),
       external_exports.object({ action: external_exports.literal("setvalue"), ...selection, text: textSchema, ...confirmed }).strict(),
       external_exports.object({ action: external_exports.literal("filename"), ...windowSelection, controlHandle: handleSchema, text: textSchema, ...confirmed }).strict(),
-      external_exports.object({ action: external_exports.enum(["click", "doubleclick", "rightclick"]), ...windowSelection, x: external_exports.number().int().min(-32768).max(32767), y: external_exports.number().int().min(-32768).max(32767), ...confirmed }).strict(),
+      external_exports.object({ action: external_exports.enum(["click", "doubleclick", "rightclick", "hover"]), ...windowSelection, x: external_exports.number().int().min(-32768).max(32767), y: external_exports.number().int().min(-32768).max(32767), ...confirmed }).strict(),
       external_exports.object({ action: external_exports.literal("keys"), ...windowSelection, text: textSchema, ...confirmed }).strict()
     ]);
     responseSchema = external_exports.object({ schema: external_exports.literal(SCHEMA), binding: bindingSchema2, action: external_exports.string(), result: external_exports.record(external_exports.string(), external_exports.json()) }).strict();
@@ -76649,6 +76913,9 @@ var init_windows_native_ui = __esm({
         }
         const failure2 = failedSchema.safeParse(result);
         if (failure2.success) {
+          if (request.action === "hover" && failure2.data.error === "native-ui-action-failed" && !failure2.data.dispatched) {
+            throw nativeUiFailure("native-ui-hover-response-invalid", true);
+          }
           throw nativeUiFailure(failure2.data.error, failure2.data.dispatched);
         }
         if (request.action === "discover") {
@@ -76658,9 +76925,22 @@ var init_windows_native_ui = __esm({
           }
           return discovery;
         }
-        const response = responseSchema.parse(result);
+        const parsedResponse = responseSchema.safeParse(result);
+        if (!parsedResponse.success) {
+          if (request.action === "hover") {
+            throw nativeUiFailure("native-ui-hover-response-invalid", true);
+          }
+          throw parsedResponse.error;
+        }
+        const response = parsedResponse.data;
         if (response.action !== request.action || canonicalJson(response.binding) !== canonicalJson(binding2)) {
           throw nativeUiFailure("native-ui-response-binding-mismatch", "confirmUIWrite" in request);
+        }
+        if (request.action === "hover") {
+          const pointer = external_exports.object({ pointerMovedTo: external_exports.tuple([external_exports.number().int(), external_exports.number().int()]), buttonInputSent: external_exports.literal(false), hoverEffectProven: external_exports.literal(false) }).strict().safeParse(response.result);
+          if (!pointer.success || pointer.data.pointerMovedTo[0] !== request.x || pointer.data.pointerMovedTo[1] !== request.y) {
+            throw nativeUiFailure("native-ui-hover-position-not-proven", true);
+          }
         }
         if (request.action !== "capture") {
           return { ...response, authority };
@@ -76913,8 +77193,8 @@ function privateMode(mode) {
 function identityOf2(information) {
   return { device: information.dev, inode: information.ino };
 }
-function sameIdentity2(information, identity20) {
-  return information.dev === identity20.device && information.ino === identity20.inode;
+function sameIdentity2(information, identity21) {
+  return information.dev === identity21.device && information.ino === identity21.inode;
 }
 function assertPrivateLeaseFile(information, label, expectedLinkCount = 1n) {
   if (information.isSymbolicLink() || !information.isFile() || information.nlink !== expectedLinkCount || privateMode(information.mode) !== 384 || information.size <= 0n || information.size > MAXIMUM_LEASE_RECORD_BYTES || typeof process7.getuid === "function" && information.uid !== BigInt(process7.getuid())) {
@@ -77012,16 +77292,16 @@ async function writeNewPrivateRecord(handle, path5, value, label) {
   ]);
   assertPrivateLeaseFile(opened, label);
   assertPrivateLeaseFile(currentPath, label);
-  const identity20 = identityOf2(opened);
-  if (!sameIdentity2(currentPath, identity20)) {
+  const identity21 = identityOf2(opened);
+  if (!sameIdentity2(currentPath, identity21)) {
     throw new Error(`${label} changed during exclusive publication.`);
   }
-  return identity20;
+  return identity21;
 }
-async function unlinkExpectedPrivateRecord(root, path5, identity20, label) {
+async function unlinkExpectedPrivateRecord(root, path5, identity21, label) {
   const pathInformation = await lstat16(path5, { bigint: true });
   assertPrivateLeaseFile(pathInformation, label);
-  if (!sameIdentity2(pathInformation, identity20)) {
+  if (!sameIdentity2(pathInformation, identity21)) {
     throw new Error(`${label} identity changed before cleanup.`);
   }
   const handle = await open15(
@@ -77036,13 +77316,13 @@ async function unlinkExpectedPrivateRecord(root, path5, identity20, label) {
     ]);
     assertPrivateLeaseFile(opened, label);
     assertPrivateLeaseFile(currentPath, label);
-    if (!sameIdentity2(opened, identity20) || !sameIdentity2(currentPath, identity20)) {
+    if (!sameIdentity2(opened, identity21) || !sameIdentity2(currentPath, identity21)) {
       throw new Error(`${label} identity changed before unlink.`);
     }
     await unlink3(path5);
     await syncControlRoot(root);
     const unlinked = await handle.stat({ bigint: true });
-    if (!sameIdentity2(unlinked, identity20) || unlinked.nlink !== 0n) {
+    if (!sameIdentity2(unlinked, identity21) || unlinked.nlink !== 0n) {
       throw new Error(`${label} did not become descriptor-only after unlink.`);
     }
   } catch (error51) {
@@ -77064,10 +77344,10 @@ async function unlinkExpectedPrivateRecord(root, path5, identity20, label) {
     throw operationFailure instanceof Error ? operationFailure : new Error(`${label} cleanup failed.`, { cause: operationFailure });
   }
 }
-function unlinkExpectedPrivateRecordSync(path5, identity20, label) {
+function unlinkExpectedPrivateRecordSync(path5, identity21, label) {
   const pathInformation = lstatSync(path5, { bigint: true });
   assertPrivateLeaseFile(pathInformation, label);
-  if (!sameIdentity2(pathInformation, identity20)) {
+  if (!sameIdentity2(pathInformation, identity21)) {
     throw new Error(`${label} identity changed before synchronous cleanup.`);
   }
   const descriptor = openSync(
@@ -77079,12 +77359,12 @@ function unlinkExpectedPrivateRecordSync(path5, identity20, label) {
     const currentPath = lstatSync(path5, { bigint: true });
     assertPrivateLeaseFile(opened, label);
     assertPrivateLeaseFile(currentPath, label);
-    if (!sameIdentity2(opened, identity20) || !sameIdentity2(currentPath, identity20)) {
+    if (!sameIdentity2(opened, identity21) || !sameIdentity2(currentPath, identity21)) {
       throw new Error(`${label} identity changed before synchronous unlink.`);
     }
     unlinkSync(path5);
     const unlinked = fstatSync(descriptor, { bigint: true });
-    if (!sameIdentity2(unlinked, identity20) || unlinked.nlink !== 0n) {
+    if (!sameIdentity2(unlinked, identity21) || unlinked.nlink !== 0n) {
       throw new Error(
         `${label} did not become descriptor-only after synchronous unlink.`
       );
@@ -77231,7 +77511,7 @@ async function acquireCleanupLease(root, cleanupPath, staleToken) {
         fsConstants5.O_WRONLY | fsConstants5.O_CREAT | fsConstants5.O_EXCL | fsConstants5.O_NOFOLLOW,
         384
       );
-      const identity20 = await writeNewPrivateRecord(
+      const identity21 = await writeNewPrivateRecord(
         handle,
         cleanupPath,
         record6,
@@ -77240,7 +77520,7 @@ async function acquireCleanupLease(root, cleanupPath, staleToken) {
       await handle.close();
       handle = void 0;
       await syncControlRoot(root);
-      return { identity: identity20, record: record6 };
+      return { identity: identity21, record: record6 };
     } catch (error51) {
       await retryHandleCloseAfterFailure(
         handle,

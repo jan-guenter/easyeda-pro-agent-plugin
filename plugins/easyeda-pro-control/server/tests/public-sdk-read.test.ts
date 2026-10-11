@@ -244,6 +244,7 @@ function primitiveFixture(descriptor: PublicSdkReadDescriptor, primitiveId = "pr
 }
 
 function resultFor(descriptor: PublicSdkReadDescriptor): unknown {
+  if (descriptor.path === "eda.lib_LibrariesList.getSystemLibraryUuid") { return "0819f05c4eef4c71ace90d822a990e87"; }
   if (descriptor.membership !== null) { return { uuid: argumentsFor(descriptor)[descriptor.membership.argument] }; }
   if (descriptor.path === "eda.pcb_Document.getCalculatingRatlineStatus") { return "active"; }
   if (descriptor.path === "eda.sys_Window.getCurrentTheme") { return "light"; }

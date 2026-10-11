@@ -35,6 +35,12 @@ omission with the evidence and work required to support it. A native equivalent
 does not prove the public wrapper works. An internal Save call is not a new
 standalone Save capability. Follow the returned route and its exact scope.
 
+The current source inventory contains 774 distinct paths: 193 public subsets,
+102 native equivalents, two lifecycle-only methods, seven implemented-but-blocked
+methods and 470 omissions. Its routes include 357 available with runtime guards,
+nine blocked and three partially blocked. These are implementation classifications,
+not connected validation counts; one method can have several routes.
+
 An omission marked as needing a scoped adapter is remaining implementation work,
 not a claim that the method is impossible. Newer-only declarations require a
 reviewed installed implementation. Known native stubs must not return fabricated
@@ -75,6 +81,8 @@ specific refusal to identify unsupported input; do not substitute cached nets.
 `easyeda_control_sdk_read`. `sdk-validate` checks those arguments offline. Neither
 dispatches a method. Class-returning methods use maintained state projections;
 callers cannot select arbitrary getters, callbacks or prototype members.
+The current allowlist has 181 fixed readers, including 20 native equivalents.
+Query the installed catalog rather than assuming it matches this source version.
 
 For live execution, pass the validated `request`, fresh `expectedContext` and
 `expectedFingerprint` to `easyeda_control_sdk_read`. The facade serializes the
@@ -85,6 +93,13 @@ implementation hashes are checked before dispatch and before releasing results;
 the public wrapper hash alone is not sufficient. Use managed evidence with
 `summary` or `receipt-only` for large results. Undefined results remain distinct from an
 empty collection.
+
+`eda.lib_LibrariesList.getSystemLibraryUuid` takes `arguments:{}` and returns only
+a 32-character lowercase-hex system-library UUID. Missing, empty or malformed
+results refuse rather than substituting a hardcoded identity. It neither lists
+account libraries nor reads assets or grants write authority. The pinned public
+implementation returns a constant; this adapter has source and offline tests
+only, with no connected case recorded.
 
 For native PCB active-layer, net-membership and primitive-type readers, retain
 the observed `document.tabId` and `document.parentProjectUuid` as well as the
@@ -187,6 +202,34 @@ unchanged. Installed010000 subsequently validated all four Wire groups (eleven
 segments) and one Bus through `get` and `getAll`, with complete native and saved
 project invariance. This does not validate resolved connectivity or later builds.
 
+### Mixed schematic ID lookup
+
+`eda.sch_Primitive.getPrimitiveByPrimitiveId` takes `{id}` and returns one DTO.
+`getPrimitivesByPrimitiveId` takes `{ids}` with 1–256 unique IDs and returns DTOs
+in caller order, unlike the sorted family readers above. Any missing,
+unsupported, descendant or wrong-owner ID refuses the whole call. Empty or
+duplicate selections refuse; no `undefined`, skipped row or partial array is
+returned.
+
+Only source-backed root Text and Wire/Bus NetGroup on the exact active ordinary
+type-1 page are supported. The fields are the Text and NetGroup DTOs described
+above, including native Y, nullable styles, literal NET values and identity-only
+custom attributes. Components, pins, other shapes, symbol/block-instance scenes
+and combined groups refuse. These are narrower native equivalents, not public
+SDK instances or all-property parity; the official plural method is beta.
+
+One retained page/manager, reciprocal tree/index/source and complete mixed-family
+membership are checked together, not stitched from independent family results.
+Two synchronous captures and final scalar reproof cover unrequested members too.
+Before selection, the scene must fit 20,000 tree/source IDs, 256 Text, 256 groups,
+1,024 lines, 1,024 names, 1,024 custom attributes and 262,144 combined string units.
+Two matching facade observations retain context/runtime checks. No public generic
+or family getter, compiler, serializer, RPC or Save is called. Source and offline
+tests passed; no connected validation is recorded. These observations do not
+establish complete source, connectivity, persistence or atomic read isolation.
+
+### PCB readers and calculations
+
 `eda.pcb_Net.getAllPrimitivesByNet` requires a nonempty `net` and an explicit
 nonempty unique `primitiveTypes` subset of `Line`, `Arc`, `Via`, `Pad` and
 `ComponentPad`. Pad means standalone; ComponentPad means a physical pad owned by
@@ -247,7 +290,11 @@ reading or changing selection. They repeat source/inventory/source observations,
 with the same owner, inherited-source and whole-call refusal rules above. Missing
 IDs refuse rather than returning `undefined` or a partial array. The installed
 singular public method is empty and the plural wrapper delegates to that stub;
-neither is called. Explicit-ID connected validation remains pending.
+neither is called. Installed164600 passed one singular read and one one-element
+plural read of the same original standalone STRING, with an empty direct-ATTR
+array. Independent receipt and complete-baseline correlation matched every DTO
+field and both source/inventory/source cycles. This does not validate multi-ID
+ordering, other families, live missing-ID refusal or later source revisions.
 
 `eda.pcb_MathPolygon.splitPolygon` accepts JSON `complexPolygons`: one to eight
 groups, each a source array or one to eight source arrays, each at most 1024 tokens.
@@ -280,11 +327,21 @@ durable proof. The [capability matrix](capability-matrix.md) records live covera
 
 When present, a library entry's `executionCapabilities` retains the executor's
 full scope alongside the structural schema. Check it before assembling a write.
-For example, `document.pcb.create` structurally accepts the SDK's optional
-`boardName`, but its native executor requires that field to be absent. Closed
-target requirements, supported editor types and original-return recovery limits
+For example, `document.pcb.create` and `document.schematic.create` structurally
+accept the SDK's optional `boardName`, but their native executors require that
+field to be absent. Closed-target requirements, supported editor types and
+original-return recovery limits
 are execution conditions, not JSON Schema validation. Older installed catalogs
 may expose only the status; query the library capabilities tool in that case.
+
+Installed164600 completed one closed free-schematic creation with its original
+native-return identity. Complete checkpoint proof found exactly one DOCHEAD/META
+addition and all 11 prior documents unchanged, with no page, template, open or
+Save. The same generation separately completed one explicit-black v2 PCB text
+creation and its saved deletion, each with one Save/close/reopen. See the packaged
+[capability matrix](capability-matrix.md#reported-live-coverage) and
+[text contract](pcb-geometry.md#standalone-silkscreen-text) for the tested domains.
+These cases do not make every structurally valid request executable.
 
 ```json
 {"request":{"action":"validate","query":{"family":"design","operation":{"action":"sch.wire.modify"}}}}

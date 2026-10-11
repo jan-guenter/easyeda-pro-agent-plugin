@@ -64,6 +64,7 @@ import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
 import { SCHEMATIC_SELECTION_METHOD } from "./schematic-selection-read.ts";
 import { isSchematicTextReadMethod } from "./schematic-text-read.ts";
 import { isSchematicNetGroupReadMethod } from "./schematic-netgroup-read.ts";
+import { isSchematicPrimitiveReadMethod } from "./schematic-primitive-read.ts";
 import { PCB_NET_MEMBERSHIP_METHOD } from "./pcb-net-membership.ts";
 import { PCB_PRIMITIVE_TYPE_METHOD } from "./pcb-primitive-type-read.ts";
 import { PCB_SELECTED_OBJECTS_METHOD } from "./pcb-selected-objects.ts";
@@ -3310,6 +3311,7 @@ export class EasyedaControlEngine {
     if (parsed.method === SYMBOL_PIN_ENUMERATION_METHOD) { authority = "native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof"; }
     if (isSchematicTextReadMethod(parsed.method)) { authority = "native-text-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
     if (isSchematicNetGroupReadMethod(parsed.method)) { authority = "native-netgroup-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    if (isSchematicPrimitiveReadMethod(parsed.method)) { authority = "native-mixed-primitive-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
     return { ...second, authority, read_consistency: {
       stable: true, attempts: 2, snapshotSha256,
       contextBinding: { level: "active-context-stability-required", preAndPostChecked: true, switchAwayAndBackDetectable: false },

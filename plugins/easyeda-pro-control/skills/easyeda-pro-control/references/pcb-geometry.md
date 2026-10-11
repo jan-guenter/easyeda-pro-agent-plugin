@@ -39,7 +39,7 @@ tests and retained-fixture replay are not connected validation of this candidate
 
 ### Standalone silkscreen text
 
-The source candidate supports `pcb.text.modify`, `pcb.text.create` and
+The source package supports `pcb.text.modify`, `pcb.text.create` and
 `pcb.text.delete` for standalone top-silkscreen STRINGs. These are not component
 Designator edits or footprint operations. Query the installed schema first;
 older packages lack some or all of these actions.
@@ -61,13 +61,30 @@ inverse deletes that exact ID. Deletion takes one existing ID and has no
 automatic inverse; creating replacement text would not restore its identity or
 history.
 
-The adapter preserves component ATTR ownership and all peer records, binds one
-captured PCB frame across awaited reads. Its synthetic tests are not connected
+The adapter preserves component ATTR ownership and all peer records and binds
+one captured PCB frame across awaited reads. Its synthetic tests are not connected
 Save/reopen evidence. Installed131000 passed one forward modification and an
 explicit reverse modification with complete saved/reopened project proof.
 Its v1 creation retained one successful Save/close/reopen, then refused the new
-STRING's null-to-black export after reload. That journal is still unresolved;
-v2 creation, deletion and retained-Save recovery have not passed connected tests.
+STRING's null-to-black export after reload. Installed150000 subsequently completed
+that journal's narrow retained-Save recovery without repeating creation, Save or
+navigation. Stored null and exported black remain distinct. This recovery does
+not validate the v2 explicit-black writer or deletion.
+
+Installed164600 separately completed one v2 creation with synthetic text at
+native-mil x195/y900, fontSize120 and strokeWidth8, with explicit black retained
+through Save/reopen. A new transaction then deleted exactly that journal-owned
+identity. Each consumed one Save intent and retained one successful
+Save/close/reopen acknowledgment. Independent complete checkpoints proved all
+ten peer histories and 131 original target records unchanged across each
+transaction. Creation appended exactly DOCHEAD/STRING; deletion appended
+DOCHEAD and the created STRING's tombstone. The original seed remained exact,
+and deletion restored the full pre-create source, not history or database bytes.
+This validates those two default-profile cases, not unsaved rollback, replacement
+IDs, arbitrary text/color combinations or a later source generation. Never
+replay either completed edit or Save; legacy retained recovery still grants no
+future writer authority.
+
 See [creation recovery](failure-recovery.md#retained-pcb-text-creation-save) before
 handling an already consumed Save. A native disposable text fixture exposed two unused-layer
 color differences between saved records and reopened FileSource on the pinned

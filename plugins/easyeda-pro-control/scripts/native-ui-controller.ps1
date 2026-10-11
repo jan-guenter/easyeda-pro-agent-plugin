@@ -10,6 +10,57 @@ function Get-FiniteWindowBounds([double[]]$values) {
   }
   return ,$values
 }
+function Move-HoverPointer([IntPtr]$handle, [double[]]$bounds, [int]$x, [int]$y, [uint32]$expectedWindowPid, [uint32]$rootPid) {
+  # Pinned UI12414b9d top-menu More opens on mouse-enter but closes on click
+  # (UTF-16 166313xx). Pointer movement must never synthesize a button event.
+  if ($bounds.Count -ne 4 -or $bounds[2] -le 0 -or $bounds[3] -le 0 -or $bounds[2] -gt 16384 -or $bounds[3] -gt 16384) { throw 'hover-bounds' }
+  foreach ($value in $bounds) { if ([double]::IsNaN($value) -or [double]::IsInfinity($value)) { throw 'hover-bounds' } }
+  if ($x -lt -32768 -or $x -gt 32767 -or $y -lt -32768 -or $y -gt 32767 -or $x -lt $bounds[0] -or $x -ge $bounds[0]+$bounds[2] -or $y -lt $bounds[1] -or $y -ge $bounds[1]+$bounds[3]) { throw 'hover-outside-window' }
+  if ([EasyedaUiController]::IsIconic($handle) -or [EasyedaUiController]::GetForegroundWindow() -ne $handle) { throw 'hover-target-not-foreground' }
+  # Refuse an observed held mouse button. GetAsyncKeyState returning zero is
+  # not a proof against concurrent input or desktop/API failure.
+  foreach ($key in @(1,2,4,5,6)) { if ([EasyedaUiController]::GetAsyncKeyState($key) -lt 0) { throw 'hover-button-held' } }
+  # Window bounds and foreground alone do not exclude a non-activating overlay.
+  # These passive samples do not lock out concurrent input or window changes.
+  $requestedPoint = New-Object EasyedaUiController+Point
+  $requestedPoint.X = $x; $requestedPoint.Y = $y
+  $hit = [EasyedaUiController]::WindowFromPoint($requestedPoint)
+  if ($hit -eq [IntPtr]::Zero -or [EasyedaUiController]::GetAncestor($hit,2) -ne $handle) { throw 'hover-point-not-owned' }
+  $targetOwner = [uint32]0; $hitOwner = [uint32]0
+  $targetThread = [EasyedaUiController]::GetWindowThreadProcessId($handle,[ref]$targetOwner)
+  $hitThread = [EasyedaUiController]::GetWindowThreadProcessId($hit,[ref]$hitOwner)
+  if ($expectedWindowPid -eq 0 -or $rootPid -eq 0 -or $targetThread -eq 0 -or $hitThread -eq 0 -or $targetOwner -ne $expectedWindowPid -or $hitOwner -ne $targetOwner) { throw 'hover-point-owner-unverified' }
+  foreach ($thread in @($targetThread,$hitThread)) {
+    $gui = New-Object EasyedaUiController+GuiThreadInfo
+    $gui.Size = [Runtime.InteropServices.Marshal]::SizeOf($gui)
+    if (-not [EasyedaUiController]::GetGUIThreadInfo($thread,[ref]$gui) -or $gui.Capture -ne [IntPtr]::Zero -or ($thread -eq $targetThread -and $gui.Active -ne $handle)) { throw 'hover-capture-state-unverified' }
+  }
+  if ([EasyedaUiController]::GetForegroundWindow() -ne $handle -or [EasyedaUiController]::WindowFromPoint($requestedPoint) -ne $hit) { throw 'hover-recipient-changed' }
+  $finalTargetOwner = [uint32]0; $finalHitOwner = [uint32]0
+  if ([EasyedaUiController]::GetAncestor($hit,2) -ne $handle -or
+      [EasyedaUiController]::GetWindowThreadProcessId($handle,[ref]$finalTargetOwner) -ne $targetThread -or
+      [EasyedaUiController]::GetWindowThreadProcessId($hit,[ref]$finalHitOwner) -ne $hitThread -or
+      $finalTargetOwner -ne $expectedWindowPid -or $finalHitOwner -ne $expectedWindowPid) { throw 'hover-recipient-owner-changed' }
+  # Owned dialogs may belong to another process. Retain their exact admitted
+  # PID and require their bounded current owner chain to reach this root PID.
+  $ownerHandle = $handle; $seenOwners = @{}; $owned = $false
+  for ($depth = 0; $depth -lt 8 -and $ownerHandle -ne [IntPtr]::Zero; $depth++) {
+    $ownerKey = $ownerHandle.ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture)
+    if ($seenOwners.ContainsKey($ownerKey)) { break }; $seenOwners[$ownerKey] = $true
+    $ownerPid = [uint32]0
+    if ([EasyedaUiController]::GetWindowThreadProcessId($ownerHandle,[ref]$ownerPid) -eq 0 -or $ownerPid -eq 0) { break }
+    if ($depth -eq 0 -and $ownerPid -ne $expectedWindowPid) { break }
+    if ($ownerPid -eq $rootPid) { $owned = $true; break }
+    $ownerHandle = [EasyedaUiController]::GetWindow($ownerHandle,4)
+  }
+  if (-not $owned) { throw 'hover-owner-chain-changed' }
+  $script:dispatched = $true
+  if (-not [EasyedaUiController]::SetCursorPos($x,$y)) { throw 'hover-move-failed' }
+  $point = New-Object EasyedaUiController+Point
+  if (-not [EasyedaUiController]::GetCursorPos([ref]$point) -or $point.X -ne $x -or $point.Y -ne $y) { throw 'hover-position-unverified' }
+  if ([EasyedaUiController]::GetForegroundWindow() -ne $handle) { throw 'hover-foreground-changed' }
+  return @{pointerMovedTo=@($x,$y);buttonInputSent=$false;hoverEffectProven=$false}
+}
 function Get-DesktopStatus([int]$targetSessionId, [IntPtr]$targetHandle) {
   # Advisory only. Unavailable observations never authorize input or change the
   # independent foreground, ownership, generation or confirmation guards.
@@ -68,6 +119,14 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 public static class EasyedaUiController {
   [StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left, Top, Right, Bottom; }
+  [StructLayout(LayoutKind.Sequential)] public struct Point { public int X, Y; }
+  [StructLayout(LayoutKind.Sequential)] public struct GuiThreadInfo {
+    public uint Size, Flags;
+    public IntPtr Active, Focus, Capture, MenuOwner, MoveSize, Caret;
+    public Rect CaretRect;
+  }
+  [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(Point point);
+  [DllImport("user32.dll")] public static extern bool GetGUIThreadInfo(uint thread, ref GuiThreadInfo info);
   public delegate bool EnumCallback(IntPtr handle, IntPtr value);
   [DllImport("user32.dll")] static extern bool EnumWindows(EnumCallback callback, IntPtr value);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr handle);
@@ -84,6 +143,8 @@ public static class EasyedaUiController {
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr handle, out Rect rect);
   [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
   [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+  [DllImport("user32.dll")] public static extern bool GetCursorPos(out Point point);
+  [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int key);
   [DllImport("user32.dll")] public static extern void mouse_event(uint flags, uint x, uint y, uint data, UIntPtr extra);
   public static IntPtr[] Windows() { var result = new List<IntPtr>(); EnumWindows((handle, value) => { if(IsWindowVisible(handle)) result.Add(handle); return true; }, IntPtr.Zero); return result.ToArray(); }
 }
@@ -187,8 +248,8 @@ public static class EasyedaDesktopDiagnostic {
     return @{ handle=$handle.ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture); pid=(Window-Pid $handle); title=$element.Current.Name; className=$element.Current.ClassName; bounds=$bounds; boundsSource=$boundsSource; minimized=[EasyedaUiController]::IsIconic($handle); owner=[EasyedaUiController]::GetWindow($handle,4).ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture) }
   }
   $action = [string]$request.action
-  if ($action -notin @('windows','inspect','focused','capture','focus','invoke','setvalue','filename','click','doubleclick','rightclick','keys','normal-close')) { throw 'action-not-admitted' }
-  $writes = $action -in @('focus','invoke','setvalue','filename','click','doubleclick','rightclick','keys','normal-close')
+  if ($action -notin @('windows','inspect','focused','capture','focus','invoke','setvalue','filename','click','doubleclick','rightclick','hover','keys','normal-close')) { throw 'action-not-admitted' }
+  $writes = $action -in @('focus','invoke','setvalue','filename','click','doubleclick','rightclick','hover','keys','normal-close')
   if ($writes -and $request.confirmUIWrite -isnot [bool]) { throw 'confirmation-missing' }
   if ($writes -and $request.confirmUIWrite -ne $true) { throw 'confirmation-false' }
   $binding = @{rootPid=[int]$request.rootPid;rootStartTicks=[string]$request.rootStartTicks;executable=[string]$request.executable;executableSha256=[string]$request.executableSha256}
@@ -216,8 +277,8 @@ public static class EasyedaDesktopDiagnostic {
     Assert-Root
     # Pointer and keyboard operations may not reach another application, even if
     # an unrelated process steals focus while a dialog is being inspected.
-    if ($action -in @('focused','capture','click','doubleclick','rightclick','keys') -and -not (Owned-Window ([EasyedaUiController]::GetForegroundWindow()))) { throw 'foreign-foreground' }
-    if ($action -in @('click','doubleclick','rightclick','keys') -and [EasyedaUiController]::GetForegroundWindow() -ne $windowHandle) { throw 'input-target-is-not-foreground' }
+    if ($action -in @('focused','capture','click','doubleclick','rightclick','hover','keys') -and -not (Owned-Window ([EasyedaUiController]::GetForegroundWindow()))) { throw 'foreign-foreground' }
+    if ($action -in @('click','doubleclick','rightclick','hover','keys') -and [EasyedaUiController]::GetForegroundWindow() -ne $windowHandle) { throw 'input-target-is-not-foreground' }
     if ($request.PSObject.Properties.Name -contains 'recoveryCloseConfirmation') {
       # The dedicated journal coordinator supplies this, never ordinary UI input.
       # No click occurs if any pixels, bounds, foreground or process changed.
@@ -270,6 +331,14 @@ public static class EasyedaDesktopDiagnostic {
         if ($stream.Length -gt 16777216) { throw 'capture-byte-bound' }
         $result = @{pngBase64=[Convert]::ToBase64String($stream.ToArray());bounds=@($rect.X,$rect.Y,$rect.Width,$rect.Height)}
       } finally { $stream.Dispose(); $graphics.Dispose(); $bitmap.Dispose() }
+    } elseif ($action -eq 'hover') {
+      # Same fixed path for application and owned-dialog HWNDs; never delegate
+      # to a click implementation or report the resulting application UI effect.
+      Assert-Root
+      $hoverWindowPid = Window-Pid $windowHandle
+      if ($hoverWindowPid -eq 0 -or -not (Owned-Window $windowHandle) -or -not [EasyedaUiController]::IsWindowVisible($windowHandle) -or (Window-Pid $windowHandle) -ne $hoverWindowPid) { throw 'hover-window-changed' }
+      $rect = $window.Current.BoundingRectangle
+      $result = Move-HoverPointer $windowHandle @($rect.X,$rect.Y,$rect.Width,$rect.Height) ([int]$request.x) ([int]$request.y) $hoverWindowPid ([uint32]$request.rootPid)
     } elseif ($windowPid -eq $request.rootPid -and $action -notin @('focused','rightclick')) {
       # Reuse the packaged, fixed helper for the ordinary application and same-
       # process dialogs. Right-click uses the guarded pointer branch below;

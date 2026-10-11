@@ -8,6 +8,7 @@ import { SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES, SCHEMATIC_COMPONENT_PROPERTY_
 import { SYMBOL_PIN_ENUMERATION_GUARD_CODES, SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
 import { SCHEMATIC_TEXT_GUARD_CODES, SCHEMATIC_TEXT_READ_METHODS } from "./schematic-text-read.ts";
 import { SCHEMATIC_NETGROUP_GUARD_CODES, SCHEMATIC_NETGROUP_READ_METHODS } from "./schematic-netgroup-read.ts";
+import { SCHEMATIC_PRIMITIVE_GUARD_CODES, SCHEMATIC_PRIMITIVE_READ_METHODS } from "./schematic-primitive-read.ts";
 import { SCHEMATIC_SELECTION_GUARD_CODES, SCHEMATIC_SELECTION_METHOD } from "./schematic-selection-read.ts";
 import { SCHEMATIC_FLAT_READ_GUARD_CODES, SCHEMATIC_FLAT_TOPOLOGY_GUARD_CODES } from "./schematic-read-diagnostics.ts";
 
@@ -244,8 +245,15 @@ const schematicSelectionCategories = new Map<string, string>(
     .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${SCHEMATIC_SELECTION_METHOD}|stage=call|code=${code}|getter=none`,
       `native-selection-replacement:${SCHEMATIC_SELECTION_METHOD}:${label}`] as const));
 
+const schematicPrimitiveCategories = new Map<string, string>(SCHEMATIC_PRIMITIVE_READ_METHODS.flatMap((method) =>
+  [...SCHEMATIC_PRIMITIVE_GUARD_CODES.map((code) => [`SCH_PRIMITIVE_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
+      `native-schematic-primitive:${method}:${label}`] as const)));
+
 export function nativeFailureCategory(message: unknown): string | null {
   if (typeof message !== "string") { return null; }
+  const schematicPrimitiveCategory = message.length <= 288 ? schematicPrimitiveCategories.get(message) : undefined;
+  if (schematicPrimitiveCategory !== undefined) { return schematicPrimitiveCategory; }
   const schematicSelectionCategory = message.length <= 288 ? schematicSelectionCategories.get(message) : undefined;
   if (schematicSelectionCategory !== undefined) { return schematicSelectionCategory; }
   const schematicNetGroupCategory = message.length <= 288 ? schematicNetGroupCategories.get(message) : undefined;

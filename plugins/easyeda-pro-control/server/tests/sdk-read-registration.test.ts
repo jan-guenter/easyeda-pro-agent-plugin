@@ -12,6 +12,7 @@ import { SYMBOL_PIN_ENUMERATION_METHOD } from "../src/symbol-pin-enumeration.ts"
 // oxlint-disable-next-line import/max-dependencies -- The real registration handler needs each production authority classifier, not a duplicated test classifier.
 import { SCHEMATIC_TEXT_READ_METHODS, isSchematicTextReadMethod } from "../src/schematic-text-read.ts";
 import { SCHEMATIC_NETGROUP_READ_METHODS, isSchematicNetGroupReadMethod } from "../src/schematic-netgroup-read.ts";
+import { SCHEMATIC_PRIMITIVE_READ_METHODS } from "../src/schematic-primitive-read.ts";
 import { PCB_NET_MEMBERSHIP_METHOD } from "../src/pcb-net-membership.ts";
 import { PCB_PRIMITIVE_TYPE_METHOD } from "../src/pcb-primitive-type-read.ts";
 import { PCB_ACTIVE_LAYER_METHOD } from "../src/pcb-active-layer-read.ts";
@@ -106,11 +107,12 @@ async function registeredSdkRead(failure: "none" | "status" | "dispatch" | "fina
   return { invoke, calls, effects };
 }
 
-for (const method of ["eda.sys_Environment.getEditorCurrentVersion", "eda.sch_PrimitiveText.getAllPrimitiveId", "eda.sch_PrimitiveWire.getAllPrimitiveId", "eda.sch_PrimitiveBus.getAllPrimitiveId", SCHEMATIC_COMPONENT_PROPERTY_METHOD, SYMBOL_PIN_ENUMERATION_METHOD, ...SCHEMATIC_TEXT_READ_METHODS, ...SCHEMATIC_NETGROUP_READ_METHODS, PCB_NET_MEMBERSHIP_METHOD, PCB_PRIMITIVE_TYPE_METHOD, PCB_ACTIVE_LAYER_METHOD, PCB_SELECTED_OBJECTS_METHOD, PCB_SOURCE_OBJECT_METHOD, PCB_SOURCE_OBJECTS_METHOD]) {
+for (const method of ["eda.sys_Environment.getEditorCurrentVersion", "eda.sch_PrimitiveText.getAllPrimitiveId", "eda.sch_PrimitiveWire.getAllPrimitiveId", "eda.sch_PrimitiveBus.getAllPrimitiveId", SCHEMATIC_COMPONENT_PROPERTY_METHOD, SYMBOL_PIN_ENUMERATION_METHOD, ...SCHEMATIC_TEXT_READ_METHODS, ...SCHEMATIC_NETGROUP_READ_METHODS, ...SCHEMATIC_PRIMITIVE_READ_METHODS, PCB_NET_MEMBERSHIP_METHOD, PCB_PRIMITIVE_TYPE_METHOD, PCB_ACTIVE_LAYER_METHOD, PCB_SELECTED_OBJECTS_METHOD, PCB_SOURCE_OBJECT_METHOD, PCB_SOURCE_OBJECTS_METHOD]) {
   void test(`registered SDK reader labels success and failure evidence correctly: ${method}`, async () => {
-    const native = isSchematicNativeIdMethod(method);
-    let reader = native ? "fixed-native-id-observation" : "fixed-public-sdk-observation";
-    let effect = native ? "fixed-native-id-read" : "fixed-public-sdk-read";
+    const native = publicSdkReadImplementationKind(method) === "native-task-equivalent";
+    let reader = native ? "fixed-native-task-observation" : "fixed-public-sdk-observation";
+    let effect = native ? "fixed-native-task-read" : "fixed-public-sdk-read";
+    if (isSchematicNativeIdMethod(method)) { reader = "fixed-native-id-observation"; effect = "fixed-native-id-read"; }
     if (method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { reader = "fixed-native-property-name-observation"; effect = "fixed-native-property-name-read"; }
     if (method === SYMBOL_PIN_ENUMERATION_METHOD) { reader = "fixed-native-pin-getter-observation"; effect = "fixed-native-pin-getter-read"; }
     if (isSchematicTextReadMethod(method)) { reader = "fixed-native-text-state-observation"; effect = "fixed-native-text-state-read"; }
@@ -124,6 +126,8 @@ for (const method of ["eda.sys_Environment.getEditorCurrentVersion", "eda.sch_Pr
     if (method === PCB_NET_MEMBERSHIP_METHOD) { argumentsData = { net: "GND", primitiveTypes: ["Line"] }; }
     if (method === PCB_PRIMITIVE_TYPE_METHOD) { argumentsData = { id: "fixture" }; }
     if (isPcbSourceObjectsMethod(method)) { argumentsData = method === PCB_SOURCE_OBJECT_METHOD ? { id: "fixture" } : { ids: ["fixture"] }; }
+    if (method === SCHEMATIC_PRIMITIVE_READ_METHODS[0]) { argumentsData = { id: "fixture" }; }
+    if (method === SCHEMATIC_PRIMITIVE_READ_METHODS[1]) { argumentsData = { ids: ["fixture"] }; }
     const input: Input = { request: { method, arguments: argumentsData }, expectedContext: {}, expectedFingerprint: {}, evidence: {}, returnMode: "full", maxInlineBytes: 1024 };
     let dispatch = "read";
     if (method === PCB_NET_MEMBERSHIP_METHOD) { dispatch = "pcb-membership"; }

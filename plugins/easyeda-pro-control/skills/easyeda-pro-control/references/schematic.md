@@ -5,6 +5,28 @@ netlist getter can annotate and Save All. Historical wire, component and repair
 workflows below remain documentation, not permission to execute those paths.
 The sealed display and wire profiles below are separate narrow exceptions.
 
+## Mixed object inspection
+
+For known root Text or Wire/Bus group IDs, use `easyeda_control_sdk_read` with
+`eda.sch_Primitive.getPrimitiveByPrimitiveId` and `{id}`, or
+`getPrimitivesByPrimitiveId` and `{ids}`. Singular returns one native DTO;
+plural accepts 1–256 distinct IDs and preserves caller order. Missing,
+unsupported, descendant or wrong-owner IDs refuse the whole request.
+
+The exact active ordinary page's complete Text and NetGroup families must pass
+one combined ownership/state proof, including unrequested members. Text fields
+and each group's line geometry/styles, literal NET names and custom attribute
+IDs retain the existing family DTO semantics. Native Y is not public Y, nulls
+are not resolved theme defaults, and literal names are not connectivity proof.
+Components, pins, other shapes and symbol/block-instance pages are outside this
+reader. It does not call public primitive wrappers, compile, serialize or Save.
+
+Use the [API reference](api-reference.md#mixed-schematic-id-lookup) for complete
+bounds and field contracts. These new routes have source/offline tests only,
+not connected validation or complete SDK-instance parity. Matching observations
+are not atomic source, topology or persistence proof and do not enable a blocked
+transaction.
+
 ## Single-page display-only transactions
 
 Use `sch.layout.batch` containing only `sch.attribute.display` and
@@ -183,7 +205,19 @@ Source-imported `WIRE` identities matter: a ground flag names only the native wi
 
 For presentation-only sheet rework, `sch.layout.batch` groups up to 256 typed translations, stored-attribute/text display changes, wire and net-label edits, and existing ground/power-flag clones into one history action. Use explicit wire deletion and creation: `sch.wire.replace` remains schema-readable for older recovery journals but is refused before any new layout write. The batch retains the complete original compiled topology; `expectedTopology` overrides are forbidden. Component rotation, device replacement, attribute-value changes and arbitrary source input are outside this profile. Coordinates are native drawing units (10 mil each), with public y opposite stored y. A cloned flag must use a same-project, already-loaded template whose symbol and native state match the retained checkpoint, and attach to an existing same-net pin through the final wire graph. Do not rename a template rail. Prefer an existing reconstructed template: a newly placed native-UI flag can retain unsupported child ordering even after closing its tab, because EasyEDA caches the document. A normal application reload reconstructs it; verify the fresh template before using it. Inverse availability depends on the operations; batches containing deletions or flag clones have none. Inspect any interrupted journal before further edits.
 
-The exact `schematic-topology` reader compiles component `UniqueId`, designator, pin number, and pin net from `sch_ManufactureData.getNetlistFile("easyeda-control-topology", "JLCEDA")`. This returns an in-memory File; no save, download or dialog is requested. Its exact filename, text/plain type, positive size up to 16 MiB and decoded UTF-8 byte count must agree before JSON parsing. It rejects malformed or silently skipped entries and requires exact identity/count and per-component pin-number-set equality. Explicitly open all declared schematic pages before the read: the pinned all-page component API sees only loaded pages, and the public per-component pin lookup sees only the active page. The version-pinned reader therefore verifies complete declared/loaded page equality and obtains pins from each owning native document. It never opens or initializes pages itself, and rechecks scope after compilation.
+### Historical compiled topology, disabled
+
+The following describes the former implementation, not an available workflow.
+Its apparently read-only file request can annotate and invoke Save All inside
+EasyEDA. Do not call it, load pages to revive it or substitute the deprecated
+netlist getter. Use the supported flat diagnostic only within its stated limits.
+
+The former `schematic-topology` reader compiled component `UniqueId`, designator,
+pin number and pin net from `sch_ManufactureData.getNetlistFile`. It checked the
+in-memory File's exact name, MIME type, bounded size and UTF-8 length, plus
+complete declared/loaded page and component/pin membership. Those data checks
+did not prove the absence of annotation or Save All. Its historical results
+below do not grant execution authority.
 
 The deprecated `sch_Netlist.getNetlist` also resolves each footprint's display title after compiling. That enrichment is not needed for pin connectivity and is omitted; the explicit file name also avoids a BOM-name lookup. There is no fallback to the deprecated getter. Both APIs share the native compiler route, so a file-reader timeout still requires investigation and cannot prove an empty netlist.
 
