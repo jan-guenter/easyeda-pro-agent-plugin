@@ -53,6 +53,20 @@ Last updated: 2026-10-11 (Europe/Berlin)
   paused; no native-click or cache-flag workaround is authorized. See
   docs/disposable-desktop-profile-isolation-2026-10-11.md and the164600 release
   note. Private release logs:release-navigation-Bha46k. PR9 remains draft.
+- User selected planning a controlled settings change in the existing profile,
+  not execution. Source research identifies Advanced > Run Command as the normal
+  true setter. Whole-preference persistence can also migrate BOM storage, issue
+  multiple requests and start unawaited backup pruning. Startup scans configured
+  project directories, so saved history is not the complete cleanup scope.
+  The plan in docs/controlled-navigation-preference-plan-2026-10-11.md requires
+  a complete read-only preflight and explicit change/preservation authority.
+  No launch, setting change, backup copy or production access is authorized.
+- Record-only CI38158976472 on c02f7ba had3636passes/fourplatformskips/onefailure:
+  the synthetic desktop diagnostic's Linux PowerShell child exceeded15000ms,
+  was terminated and returned no stdout/stderr. Its subsequent bounds-projection
+  test passed. Package tree remains exactly the installed db98b5e1. Full failed
+  log2965ad6c retained; no test, assertion or deadline has been changed and no
+  specific cause is established from the silent timeout alone.
 
 ### Restarted150000 retained text recovery
 

@@ -66,6 +66,10 @@ passed. No settings or files were changed. Private audit result:
 `f467d1c68c2817316158b30117b33642b06343cc5c3d8faf8df0028b46058012`.
 Its values and counts are not published. This audit does not establish safe
 runtime navigation or predict exact deletion targets.
+The user subsequently selected planning a controlled change in the existing
+profile. The [controlled settings plan](controlled-navigation-preference-plan-2026-10-11.md)
+traces the normal menu action, BOM-storage effects and required preflight.
+It is planning only, not permission to launch EasyEDA or change settings.
 
 The inventory covers 774 method paths: 192 public subsets, 100 native equivalents,
 two lifecycle-only entries, seven blocked and 473 omitted. Execution-route
@@ -181,6 +185,22 @@ explicit-ID reader contracts. All 706 process samples showed no upstream child
 or non-stdio socket; the upstream sentinel was absent and startup stderr empty.
 This is sampled offline proof, not continuous syscall tracing or live admission.
 No bridge import, key rotation, cache patch or host-owner termination occurred.
+
+### Follow-up CI timeout
+
+The root-record-only commit `c02f7ba7e2dea96132087fd7cb067ae04e8fa37a` retained
+the exact installed package tree. Its
+[CI38158976472](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38158976472)
+reported 3,636 facade passes, four skips and one failure. The synthetic desktop
+diagnostic's Linux PowerShell child exceeded its 15-second limit and was
+terminated with empty stdout and stderr. The subsequent PowerShell bounds test
+passed. The silent timeout does not establish a specific cause. No assertion,
+test or deadline was removed or relaxed. The original failed log is retained:
+`2965ad6cb2cbd16ed6b5a1f23dbe8863d79c4c8606fa09693275bb5e154af402`.
+Both focused diagnostic tests passed locally afterward using Windows PowerShell;
+that does not reproduce or explain the Linux PowerShell timeout.
+The earlier payload run remains passing evidence; the later failure is not
+erased by that result or by any subsequent run.
 
 Fresh-host admission and new connected validation: **pending**. Publication and
 installation do not admit this generation. Use a fresh Codex session after the
