@@ -17,11 +17,12 @@ import { prepareDocumentPageCreate, verifyDocumentPageCreateEffect } from "./doc
 import { prepareProjectSymbolCreate, verifyProjectSymbolCreateEffect } from "./project-symbol-create.ts";
 import { prepareDocumentContainerRename, verifyDocumentContainerRenameEffect } from "./document-container-rename.ts";
 import { prepareProjectPcbCreate, verifyProjectPcbCreateEffect } from "./project-pcb-create.ts";
+import { prepareProjectSchematicCreate, verifyProjectSchematicCreateEffect } from "./project-schematic-create.ts";
 import type { ExpectedContext } from "./engine.ts";
 import { EXACT_READ_ENVELOPE_MAX_BYTES } from "./exact-readers.ts";
 
 const receiptSchema = z.object({ schema: z.literal("easyeda-pro-control.library-mutation-receipt.v1"),
-  kind: z.enum(["project-footprint-write", "project-device-association", "project-device-create", "project-device-transform", "project-symbol-metadata", "project-symbol-create", "project-page-rename", "project-document-rename", "project-page-create", "project-pcb-create"]),
+  kind: z.enum(["project-footprint-write", "project-device-association", "project-device-create", "project-device-transform", "project-symbol-metadata", "project-symbol-create", "project-page-rename", "project-document-rename", "project-page-create", "project-pcb-create", "project-schematic-create"]),
   createdId: z.string().min(1).max(256).nullable(), targetId: z.string().min(1).max(256).nullable(),
   nativeReturnSha256: z.string().regex(/^[a-f0-9]{64}$/u) }).strict();
 export type LibraryMutationReceipt = z.infer<typeof receiptSchema>;
@@ -33,12 +34,12 @@ export function libraryMutationReceipt(operationInput: unknown, nativeReturn: un
   const operation = libraryOperationSchema.parse(operationInput);
   const kind = libraryExecutionKind(operation);
   if (!isRecord(nativeReturn) || nativeReturn["kind"] !== kind) { throw new Error("Library mutation acknowledgment kind is missing or contradictory."); }
-  const creating = operation.action === "library.footprint.create" || operation.action === "library.device.create" || operation.action === "document.page.create" || operation.action === "library.symbol.create" || operation.action === "document.pcb.create";
+  const creating = operation.action === "library.footprint.create" || operation.action === "library.device.create" || operation.action === "document.page.create" || operation.action === "library.symbol.create" || (operation.action === "document.pcb.create" || operation.action === "document.schematic.create");
   const association = operation.action === "library.device.modify" || operation.action === "library.device.model-transform" || operation.action === "library.symbol.modify" || operation.action === "document.page.rename" || operation.action === "document.pcb.rename" || operation.action === "document.schematic.rename";
   if (!creating && !association && operation.action !== "library.footprint.modify") { throw new Error("No supported library mutation receipt for this action."); }
   const createdId = nativeReturn["createdId"] ?? null;
   let targetId: unknown = null;
-  if (operation.action === "document.page.create" || operation.action === "library.symbol.create" || operation.action === "document.pcb.create") {
+  if (operation.action === "document.page.create" || operation.action === "library.symbol.create" || (operation.action === "document.pcb.create" || operation.action === "document.schematic.create")) {
     targetId = nativeReturn["targetId"];
     if (targetId !== createdId) { throw new Error("Creation acknowledgment identities disagree."); }
   }
@@ -88,7 +89,7 @@ async function readBoundedLibraryRecoveryArtifact(descriptor: ArtifactDescriptor
   if (sha256Text(text) !== descriptor.sha256) { throw new Error("Library recovery artifact hash mismatch."); }
   return JSON.parse(text) as unknown;
 }
-export function uniqueLibraryRecoveryArtifact(artifacts: readonly ArtifactDescriptor[], phase: "native-return" | "device-prepared" | "symbol-prepared" | "symbol-create-prepared" | "activation-prepared" | "page-rename-prepared" | "document-rename-prepared" | "page-create-prepared" | "pcb-create-prepared" | "close-prepared"): ArtifactDescriptor {
+export function uniqueLibraryRecoveryArtifact(artifacts: readonly ArtifactDescriptor[], phase: "native-return" | "device-prepared" | "symbol-prepared" | "symbol-create-prepared" | "activation-prepared" | "page-rename-prepared" | "document-rename-prepared" | "page-create-prepared" | "pcb-create-prepared" | "schematic-create-prepared" | "close-prepared"): ArtifactDescriptor {
   const matches = artifacts.filter((entry) => new RegExp(`^[0-9]+-${phase}\\.json$`, "u").test(basename(entry.path)));
   if (matches.length !== 1 || matches[0] === undefined) { throw new Error(`Library recovery requires exactly one retained ${phase} artifact.`); }
   return matches[0];
@@ -97,7 +98,7 @@ export function uniqueLibraryRecoveryArtifact(artifacts: readonly ArtifactDescri
 export function verifyRecoveredLibraryMutation(input: {
   readonly operation: unknown; readonly before: NativeHistorySnapshot; readonly after: NativeHistorySnapshot;
   readonly nativeReturn: unknown; readonly retainedReceipt?: unknown; readonly preparedDevice?: unknown; readonly preparedSymbol?: unknown;
-  readonly preparedPageRename?: unknown; readonly preparedDocumentRename?: unknown; readonly preparedPageCreate?: unknown; readonly preparedSymbolCreate?: unknown; readonly preparedPcbCreate?: unknown; readonly expectedContext?: ExpectedContext;
+  readonly preparedPageRename?: unknown; readonly preparedDocumentRename?: unknown; readonly preparedPageCreate?: unknown; readonly preparedSymbolCreate?: unknown; readonly preparedPcbCreate?: unknown; readonly preparedSchematicCreate?: unknown; readonly expectedContext?: ExpectedContext;
 }): { receipt: LibraryMutationReceipt; proof: Record<string, unknown> } {
   const operation = libraryOperationSchema.parse(input.operation);
   const receipt = libraryMutationReceipt(operation, input.nativeReturn);
@@ -118,6 +119,11 @@ export function verifyRecoveredLibraryMutation(input: {
     const expected = prepareProjectPcbCreate(operation, input.before, input.expectedContext);
     if (!isRecord(input.preparedPcbCreate) || canonicalJson(expected) !== canonicalJson(input.preparedPcbCreate)) { throw new Error("Retained PCB creation plan differs from the immutable operation and baseline."); }
     proof = verifyProjectPcbCreateEffect(expected, input.before, input.after, createdId);
+  } else if (operation.action === "document.schematic.create") {
+    if (input.expectedContext === undefined || createdId === undefined) { throw new Error("Original schematic creation context and native identity are required for recovery."); }
+    const expected = prepareProjectSchematicCreate(operation, input.before, input.expectedContext);
+    if (!isRecord(input.preparedSchematicCreate) || canonicalJson(expected) !== canonicalJson(input.preparedSchematicCreate)) { throw new Error("Retained schematic creation plan differs from the immutable operation and baseline."); }
+    proof = verifyProjectSchematicCreateEffect(expected, input.before, input.after, createdId);
   } else if (operation.action === "document.page.create") {
     if (input.expectedContext === undefined || createdId === undefined) { throw new Error("Original page creation context and native identity are required for recovery."); }
     const expected = prepareDocumentPageCreate(operation, input.before, input.expectedContext);

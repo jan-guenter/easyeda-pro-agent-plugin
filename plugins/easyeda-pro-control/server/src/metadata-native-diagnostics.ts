@@ -11,6 +11,7 @@ export const METADATA_NATIVE_GUARD_CODES = [
 ] as const;
 export const DOCUMENT_RENAME_NATIVE_GUARD_CODES = [...METADATA_NATIVE_GUARD_CODES, "DOCUMENT_METADATA", "EDITOR_FRAME_STATE"] as const;
 export const PCB_CREATE_NATIVE_GUARD_CODES = [...DOCUMENT_RENAME_NATIVE_GUARD_CODES, "PCB_MEMBERSHIP"] as const;
+export const SCHEMATIC_CREATE_NATIVE_GUARD_CODES = [...DOCUMENT_RENAME_NATIVE_GUARD_CODES, "SCHEMATIC_MEMBERSHIP"] as const;
 
 export const METADATA_NATIVE_DIAGNOSTIC_CATCH = `let code='EXCEPTION';try{
 const descriptor=error!==null&&(typeof error==='object'||typeof error==='function')?Object.getOwnPropertyDescriptor(error,'message'):undefined;

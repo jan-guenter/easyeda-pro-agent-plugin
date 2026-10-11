@@ -33,15 +33,20 @@ import type { DocumentContainerRenamePlan } from "./document-container-rename.ts
 import { buildDocumentContainerRenameReadbackExpression, validateDocumentContainerRenameReadback } from "./document-container-rename-runtime.ts";
 import { verifyDocumentContainerRenameNativeProfile } from "./document-container-rename-native-profile.ts";
 import { assertProjectPcbCreateContext, isProjectPcbCreateProjectUnchanged, prepareProjectPcbCreate } from "./project-pcb-create.ts";
+import { assertProjectSchematicCreateContext, isProjectSchematicCreateProjectUnchanged, prepareProjectSchematicCreate } from "./project-schematic-create.ts";
 import type { ProjectPcbCreatePlan } from "./project-pcb-create.ts";
+import type { ProjectSchematicCreatePlan } from "./project-schematic-create.ts";
 import { buildProjectPcbCreateReadbackExpression, validateProjectPcbCreateReadback } from "./project-pcb-create-runtime.ts";
+import { buildProjectSchematicCreateReadbackExpression, validateProjectSchematicCreateReadback } from "./project-schematic-create-runtime.ts";
+
+import { verifyProjectSchematicCreateNativeProfile } from "./project-schematic-create-native-profile.ts";
 
 type Value = Record<string, unknown>;
 export type LibraryRecoveryEngine = Pick<EasyedaControlEngine, "assertContext" | "assertRecoveryOperationIsolated" | "awaitProjectUploads" | "checkpoint" | "context" | "dispatchWithOrphanTracking" | "ensureRuntimeRestartChallenge" | "recoverDispatchAuthority" | "exactRead"> & {
   readonly status: () => Promise<{ stableFingerprint: Value }>;
   readonly upstream: { readonly installedEasyedaBundles?: () => Promise<{ assetsRoot: string }> };
 };
-const optionalServices = { readArtifact, updateOperation, readNativeHistoryCheckpoint, prepareRecoveryNavigation, verifyLibraryNativeProfile, verifyDeviceAssociationNativeProfile, verifySchematicNativeProfile, verifyDocumentContainerRenameNativeProfile };
+const optionalServices = { readArtifact, updateOperation, readNativeHistoryCheckpoint, prepareRecoveryNavigation, verifyLibraryNativeProfile, verifyDeviceAssociationNativeProfile, verifySchematicNativeProfile, verifyDocumentContainerRenameNativeProfile, verifyProjectSchematicCreateNativeProfile };
 export interface LibraryRecoveryServices extends Partial<typeof optionalServices> {
   readonly load: (operationId: string) => Promise<LibraryJournal>;
   readonly record: (journal: LibraryJournal, phase: string, value: unknown) => Promise<void>;
@@ -94,7 +99,8 @@ export class LibraryRecoveryCoordinator {
     if (installed === undefined) { throw new Error("Library recovery native implementation is unavailable."); }
     const device = ["library.device.create", "library.device.modify", "library.device.model-transform", "library.symbol.modify", "library.symbol.create", "document.page.rename", "document.page.create"].includes(journal.plan.operation.action);
     const documentRename = journal.plan.operation.action === "document.pcb.rename" || journal.plan.operation.action === "document.schematic.rename" || journal.plan.operation.action === "document.pcb.create";
-    if (documentRename) { await this.services.verifyDocumentContainerRenameNativeProfile(installed.assetsRoot); }
+    if (journal.plan.operation.action === "document.schematic.create") { await this.services.verifyProjectSchematicCreateNativeProfile(installed.assetsRoot); }
+    else if (documentRename) { await this.services.verifyDocumentContainerRenameNativeProfile(installed.assetsRoot); }
     else { await (device ? this.services.verifyDeviceAssociationNativeProfile(installed.assetsRoot) : this.services.verifyLibraryNativeProfile(installed.assetsRoot)); }
     if (journal.plan.operation.action === "document.activate" || journal.plan.operation.action === "document.close" || journal.plan.operation.action === "document.page.rename" || journal.plan.operation.action === "document.page.create" || journal.plan.operation.action === "library.symbol.modify") { await this.services.verifySchematicNativeProfile(installed.assetsRoot); }
     if (requireContext) { await this.engine.assertContext(structuredClone(journal.context)); }
@@ -107,7 +113,7 @@ export class LibraryRecoveryCoordinator {
   private history(checkpoint: CheckpointReceipt, context: ExpectedContext, operation?: LibraryOperation): ReturnType<typeof readNativeHistoryCheckpoint> {
     const projectUuid = context.project.uuid ?? context.project.projectUuid;
     if (projectUuid === undefined || checkpoint.source !== context.project.path) { throw new Error("Library recovery checkpoint project/path differs."); }
-    const preserve = operation !== undefined && ["document.pcb.create", "document.pcb.rename", "document.schematic.rename"].includes(operation.action);
+    const preserve = operation !== undefined && ["document.pcb.create", "document.schematic.create", "document.pcb.rename", "document.schematic.rename"].includes(operation.action);
     return this.services.readNativeHistoryCheckpoint({ checkpointPath: checkpoint.checkpoint, expectedSha256: checkpoint.checkpointSha256, projectUuid,
       ...(preserve ? { documentRecordHistory: "preserve" } : {}) });
   }
@@ -131,6 +137,9 @@ export class LibraryRecoveryCoordinator {
     if (journal.plan.operation.action === "document.pcb.create") {
       journal.nextSafeAction = "Restore the original clean PCB context separately; keep any created PCB closed, then reconcile its retained identity without replay.";
     }
+    if (journal.plan.operation.action === "document.schematic.create") {
+      journal.nextSafeAction = "Restore the original clean PCB context separately; keep any created schematic closed, then reconcile its retained identity without replay.";
+    }
     await this.services.record(journal, "runtime-rebound", { oldFingerprint, newFingerprint: current, originalPlanHash: journal.planHash, activeTargetVerified: false });
     return summary(journal);
   }
@@ -142,6 +151,7 @@ export class LibraryRecoveryCoordinator {
     if (journal.plan.operation.action === "document.close") { throw new Error("Close recovery never opens, closes or reactivates a tab. Reconcile its current exact state instead."); }
     if (journal.plan.operation.action === "document.pcb.rename" || journal.plan.operation.action === "document.schematic.rename") { throw new Error("Closed document rename recovery never opens its target or children. Restore the original clean PCB context separately, then reconcile without replay."); }
     if (journal.plan.operation.action === "document.pcb.create") { throw new Error("Closed free PCB creation recovery never opens or initializes a PCB. Restore the original clean PCB context separately, then reconcile without replay."); }
+    if (journal.plan.operation.action === "document.schematic.create") { throw new Error("Closed free schematic creation recovery never opens or initializes a schematic. Restore the original clean PCB context separately, then reconcile without replay."); }
     await this.isolated(journal);
     const assetsRoot = await this.runtime(journal, false);
     const prepared = await this.services.prepareRecoveryNavigation({ expectedContext: journal.plan.expectedContext, preCheckpoint: journal.preCheckpoint, assetsRoot });
@@ -186,6 +196,10 @@ export class LibraryRecoveryCoordinator {
         const before = await this.history(receipt(journal.preCheckpoint), journal.plan.expectedContext, journal.plan.operation);
         const plan = prepareProjectPcbCreate(journal.plan.operation, before, journal.plan.expectedContext);
         assertProjectPcbCreateContext(plan, await this.engine.assertContext(structuredClone(journal.plan.expectedContext)));
+      } else if (journal.plan.operation.action === "document.schematic.create") {
+        const before = await this.history(receipt(journal.preCheckpoint), journal.plan.expectedContext, journal.plan.operation);
+        const plan = prepareProjectSchematicCreate(journal.plan.operation, before, journal.plan.expectedContext);
+        assertProjectSchematicCreateContext(plan, await this.engine.assertContext(structuredClone(journal.plan.expectedContext)));
       } else if (journal.plan.operation.action === "library.symbol.create") {
         const before = await this.history(receipt(journal.preCheckpoint), journal.plan.expectedContext, journal.plan.operation);
         const plan = prepareProjectSymbolCreate(journal.plan.operation, before, journal.plan.expectedContext);
@@ -208,6 +222,9 @@ export class LibraryRecoveryCoordinator {
       }
       if (journal.plan.operation.action === "document.pcb.create") {
         journal.nextSafeAction = "Prior execution terminated. Restore the original clean PCB context separately; keep any created PCB closed, then reconcile without replay.";
+      }
+      if (journal.plan.operation.action === "document.schematic.create") {
+        journal.nextSafeAction = "Prior execution terminated. Restore the original clean PCB context separately; keep any created schematic closed, then reconcile without replay.";
       }
       await this.services.record(journal, "authority-recovered-needs-target", { boundary: boundary ?? null });
       throw transactionError(error, journal);
@@ -236,11 +253,18 @@ export class LibraryRecoveryCoordinator {
       let preparedSymbolCreate: unknown;
       let preparedDocumentRename: DocumentContainerRenamePlan | undefined;
       let preparedPcbCreate: ProjectPcbCreatePlan | undefined;
+      let preparedSchematicCreate: ProjectSchematicCreatePlan | undefined;
       if (journal.plan.operation.action === "document.pcb.create") {
         const retained = await readLibraryRecoveryArtifact(uniqueLibraryRecoveryArtifact(journal.artifacts, "pcb-create-prepared"), this.services.readArtifact);
         preparedPcbCreate = prepareProjectPcbCreate(journal.plan.operation, before, journal.plan.expectedContext);
         if (canonicalJson(preparedPcbCreate) !== canonicalJson(retained) || canonicalJson(preparedPcbCreate) !== canonicalJson(journal.pcbCreatePlan)) { throw new Error("Retained PCB creation plan differs from its original operation and checkpoint."); }
         assertProjectPcbCreateContext(preparedPcbCreate, await this.engine.assertContext(structuredClone(journal.plan.expectedContext)));
+      }
+      if (journal.plan.operation.action === "document.schematic.create") {
+        const retained = await readLibraryRecoveryArtifact(uniqueLibraryRecoveryArtifact(journal.artifacts, "schematic-create-prepared"), this.services.readArtifact);
+        preparedSchematicCreate = prepareProjectSchematicCreate(journal.plan.operation, before, journal.plan.expectedContext);
+        if (canonicalJson(preparedSchematicCreate) !== canonicalJson(retained) || canonicalJson(preparedSchematicCreate) !== canonicalJson(journal.schematicCreatePlan)) { throw new Error("Retained schematic creation plan differs from its original operation and checkpoint."); }
+        assertProjectSchematicCreateContext(preparedSchematicCreate, await this.engine.assertContext(structuredClone(journal.plan.expectedContext)));
       }
       if (journal.plan.operation.action === "document.pcb.rename" || journal.plan.operation.action === "document.schematic.rename") {
         const retained = await readLibraryRecoveryArtifact(uniqueLibraryRecoveryArtifact(journal.artifacts, "document-rename-prepared"), this.services.readArtifact);
@@ -268,7 +292,8 @@ export class LibraryRecoveryCoordinator {
       let result: Value;
       const unchanged = baseline.checkpointDumpSha256 === afterReceipt.checkpointDumpSha256 && libraryProjectRecordsHash(before) === libraryProjectRecordsHash(after) &&
         (preparedDocumentRename === undefined || isDocumentContainerRenameProjectUnchanged(preparedDocumentRename, before, after)) &&
-        (preparedPcbCreate === undefined || isProjectPcbCreateProjectUnchanged(preparedPcbCreate, before, after));
+        (preparedPcbCreate === undefined || isProjectPcbCreateProjectUnchanged(preparedPcbCreate, before, after)) &&
+        (preparedSchematicCreate === undefined || isProjectSchematicCreateProjectUnchanged(preparedSchematicCreate, before, after));
       if (unchanged) {
         result = { kind: "library-recovery", persistence: "complete-logical-database-and-project-records-unchanged", actionRepeated: false, saveInvoked: false, closeInvoked: false };
       } else {
@@ -288,11 +313,12 @@ export class LibraryRecoveryCoordinator {
           ...(preparedPageCreate === undefined ? {} : { preparedPageCreate, expectedContext: journal.plan.expectedContext }),
           ...(preparedDocumentRename === undefined ? {} : { preparedDocumentRename, expectedContext: journal.plan.expectedContext }),
           ...(preparedPcbCreate === undefined ? {} : { preparedPcbCreate, expectedContext: journal.plan.expectedContext }),
+          ...(preparedSchematicCreate === undefined ? {} : { preparedSchematicCreate, expectedContext: journal.plan.expectedContext }),
           ...(preparedSymbolCreate === undefined ? {} : { preparedSymbolCreate, expectedContext: journal.plan.expectedContext }) });
         journal.mutationReceipt = verified.receipt;
         result = { kind, proof: verified.proof, createdId: verified.receipt.createdId, persistence: "complete-project-checkpoint-records-verified",
           actionRepeated: false, saveInvoked: false, closeInvoked: false, reopened: false,
-          ...(kind === "project-symbol-metadata" || kind === "project-symbol-create" || kind === "project-page-rename" || kind === "project-page-create" || kind === "project-document-rename" || kind === "project-pcb-create" ? { currentGenerationLiveValidated: false } : {}) };
+          ...(kind === "project-symbol-metadata" || kind === "project-symbol-create" || kind === "project-page-rename" || kind === "project-page-create" || kind === "project-document-rename" || kind === "project-pcb-create" || kind === "project-schematic-create" ? { currentGenerationLiveValidated: false } : {}) };
       }
       await this.runtime(journal);
       if (sourceHash(await this.engine.exactRead({ kind: sourceKind(journal.context) }, journal.context)) !== journal.beforeSourceSha256) { throw new Error("Active source changed during library reconciliation."); }
@@ -313,10 +339,18 @@ export class LibraryRecoveryCoordinator {
         assertUnchangedLibraryCheckpoint(await this.engine.checkpoint({ receiptPath: afterReceipt.receiptPath }), afterReceipt, "Durable PCB creation evidence changed during reconciliation readback.");
         assertProjectPcbCreateContext(preparedPcbCreate, await this.engine.assertContext(structuredClone(journal.plan.expectedContext)));
       }
+      if (preparedSchematicCreate !== undefined) {
+        const createdId = unchanged ? undefined : journal.mutationReceipt?.createdId;
+        if (!unchanged && typeof createdId !== "string") { throw new Error("schematic creation reconciliation requires the retained native identity."); }
+        await this.schematicCreateReadback(journal, preparedSchematicCreate, createdId ?? undefined);
+        if (sourceHash(await this.engine.exactRead({ kind: sourceKind(journal.context) }, journal.context)) !== journal.beforeSourceSha256) { throw new Error("Active source changed during schematic creation reconciliation readback."); }
+        assertUnchangedLibraryCheckpoint(await this.engine.checkpoint({ receiptPath: afterReceipt.receiptPath }), afterReceipt, "Durable schematic creation evidence changed during reconciliation readback.");
+        assertProjectSchematicCreateContext(preparedSchematicCreate, await this.engine.assertContext(structuredClone(journal.plan.expectedContext)));
+      }
       journal.finalCheckpoint = afterReceipt; journal.result = result; journal.hardStop = false;
       journal.state = unchanged ? "reconciled-no-mutation" : "completed";
       journal.mutationState = unchanged ? "before" : "after"; journal.mutationMayHaveOccurred = !unchanged;
-      if (!unchanged) { journal.saved = preparedDocumentRename === undefined && preparedPcbCreate === undefined; journal.reopened = false; }
+      if (!unchanged) { journal.saved = preparedDocumentRename === undefined && preparedPcbCreate === undefined && preparedSchematicCreate === undefined; journal.reopened = false; }
       journal.nextSafeAction = unchanged ? "Exact baseline recovered; no mutation or save was repeated." : "Original returned library mutation is durably verified. No library reopen or additional save is inferred.";
       await this.services.record(journal, "reconciled", { result, checkpoint: afterReceipt });
       return summary(journal);
@@ -346,6 +380,15 @@ export class LibraryRecoveryCoordinator {
     const raw = await this.engine.dispatchWithOrphanTracking(journal, "pcb-create-reconciliation-readback", "easyeda_execute", { code, timeoutMs: 60_000, confirmWrite: true }, 70_000);
     const observation = validateProjectPcbCreateReadback(decodeExactReadEnvelope(extractToolPayload(raw)), createdId);
     await this.services.record(journal, "pcb-create-reconciliation-readback", observation);
+  }
+  private async schematicCreateReadback(journal: LibraryJournal, plan: ProjectSchematicCreatePlan, createdId?: string): Promise<void> {
+    await this.runtime(journal);
+    const context = journal.plan.expectedContext;
+    assertProjectSchematicCreateContext(plan, await this.engine.assertContext(structuredClone(context)));
+    const code = wrapWithContextGuard(`return await ${buildProjectSchematicCreateReadbackExpression(plan, context, createdId)};`, context);
+    const raw = await this.engine.dispatchWithOrphanTracking(journal, "schematic-create-reconciliation-readback", "easyeda_execute", { code, timeoutMs: 60_000, confirmWrite: true }, 70_000);
+    const observation = validateProjectSchematicCreateReadback(decodeExactReadEnvelope(extractToolPayload(raw)), createdId);
+    await this.services.record(journal, "schematic-create-reconciliation-readback", observation);
   }
 
   private async invalidateUndispatchedPreparation(journal: LibraryJournal): Promise<Value> {

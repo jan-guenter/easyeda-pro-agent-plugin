@@ -21,11 +21,12 @@ import { prepareDocumentPageCreate } from "../src/document-page-create.ts";
 import { prepareProjectSymbolCreate } from "../src/project-symbol-create.ts";
 import { prepareDocumentContainerRename } from "../src/document-container-rename.ts";
 import { prepareProjectPcbCreate } from "../src/project-pcb-create.ts";
+import { prepareProjectSchematicCreate } from "../src/project-schematic-create.ts";
 import { fixtureDocumentRecordHistory } from "./document-record-history-fixture.ts";
 import { assertUndispatchedLibraryPreparation, hasMissingLibraryPreparation } from "../src/library-undispatched-recovery.ts";
 
 type Value = Record<string, unknown>;
-type Action = "document.activate" | "document.close" | "document.page.create" | "library.symbol.create" | "document.pcb.rename" | "document.schematic.rename" | "document.pcb.create";
+type Action = "document.activate" | "document.close" | "document.page.create" | "library.symbol.create" | "document.pcb.rename" | "document.schematic.rename" | "document.pcb.create" | "document.schematic.create";
 type Prefix = "before-failed" | "before-retained" | "preparation-failed";
 type Fault = "none" | "source" | "history" | "clock" | "database" | "context" | "final-context" | "final-source" | "baseline" | "final-checkpoint" | "runtime" | "journal" | "update" | "load-context" | "isolation-context";
 let originalRoot: string | undefined, root = "";
@@ -79,6 +80,7 @@ function checkpoint(label: string, changed = false): CheckpointReceipt {
 }
 function operation(action: Action): LibraryOperation {
   if (action === "document.pcb.create") { return { id: "create-pcb", action }; }
+  if (action === "document.schematic.create") { return { id: "create-schematic", action }; }
   if (action === "document.pcb.rename" || action === "document.schematic.rename") { return { id: "rename", action, target: { uuid: action === "document.pcb.rename" ? "pcb" : "parent" }, name: "Renamed" }; }
   if (action === "library.symbol.create") { return { id: "create-symbol", action, libraryUuid: "project", name: "Empty symbol", symbolType: 2 }; }
   return action === "document.page.create" ? { id: "create-page", action, schematic: { uuid: "parent" } } : { id: "lifecycle", action, tabId: "footprint@project" };
@@ -107,6 +109,7 @@ async function fixture(action: Action = "document.page.create", prefix: Prefix =
       else if (action === "library.symbol.create") { journal.symbolCreatePlan = prepareProjectSymbolCreate(plan.operation, history(), CONTEXT); phase = "symbol-create-prepared"; }
       else if (action === "document.pcb.rename" || action === "document.schematic.rename") { journal.documentRenamePlan = prepareDocumentContainerRename(plan.operation, history(), CONTEXT); phase = "document-rename-prepared"; }
       else if (action === "document.pcb.create") { journal.pcbCreatePlan = prepareProjectPcbCreate(plan.operation, history(), CONTEXT); phase = "pcb-create-prepared"; }
+      else if (action === "document.schematic.create") { journal.schematicCreatePlan = prepareProjectSchematicCreate(plan.operation, history(), CONTEXT); phase = "schematic-create-prepared"; }
       else { journal.pageCreatePlan = prepareDocumentPageCreate(plan.operation, history(), CONTEXT); phase = "page-create-prepared"; }
       journal.sequence += 1;
       await artifacts.writePhaseArtifact(operationId, journal.sequence, phase, { publicationCollision: true });
@@ -150,18 +153,19 @@ async function fixture(action: Action = "document.page.create", prefix: Prefix =
     record: (): Promise<never> => { counts.record += 1; return Promise.reject(new Error("Invalidation must not publish another phase artifact")); },
     updateOperation: (updated): Promise<Awaited<ReturnType<typeof artifacts.updateOperation>>> => fault.value === "update" ? Promise.reject(new Error("terminal journal publication failed")) : artifacts.updateOperation(updated),
     readNativeHistoryCheckpoint: (input): Promise<NativeHistorySnapshot> => {
-      const preserve = ["document.pcb.create", "document.pcb.rename", "document.schematic.rename"].includes(action);
+      const preserve = ["document.pcb.create", "document.schematic.create", "document.pcb.rename", "document.schematic.rename"].includes(action);
       assert.equal(input.documentRecordHistory, preserve ? "preserve" : undefined);
       return Promise.resolve(history(fault.value === "history" && input.checkpointPath !== "/fixture/library-before.sqlite", fault.value === "clock" && input.checkpointPath !== "/fixture/library-before.sqlite")); },
     verifyLibraryNativeProfile: (): Promise<typeof LIBRARY_NATIVE_IMPLEMENTATION> => Promise.resolve(LIBRARY_NATIVE_IMPLEMENTATION),
     verifyDeviceAssociationNativeProfile: (): Promise<void> => Promise.resolve(),
     verifyDocumentContainerRenameNativeProfile: (): Promise<void> => Promise.resolve(),
+    verifyProjectSchematicCreateNativeProfile: (): Promise<void> => Promise.resolve(),
     verifySchematicNativeProfile: (): Promise<typeof SCHEMATIC_NATIVE_IMPLEMENTATION> => Promise.resolve(SCHEMATIC_NATIVE_IMPLEMENTATION),
   });
   return { journal, coordinator, fault, counts };
 }
 
-for (const action of ["document.activate", "document.close", "document.page.create", "library.symbol.create", "document.pcb.rename", "document.schematic.rename", "document.pcb.create"] as const) {
+for (const action of ["document.activate", "document.close", "document.page.create", "library.symbol.create", "document.pcb.rename", "document.schematic.rename", "document.pcb.create", "document.schematic.create"] as const) {
   for (const prefix of ["before-failed", "before-retained", "preparation-failed"] as const) {
     // oxlint-disable-next-line eslint/no-loop-func -- Hooks initialize module handles before each independent immutable case executes.
     void test(`${action} ${prefix} invalidates the sealed attempt without a dispatch or another publication phase`, async () => {

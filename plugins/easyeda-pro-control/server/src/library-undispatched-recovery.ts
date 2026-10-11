@@ -9,6 +9,7 @@ import { prepareDocumentPageCreate } from "./document-page-create.ts";
 import { prepareProjectSymbolCreate } from "./project-symbol-create.ts";
 import { prepareDocumentContainerRename } from "./document-container-rename.ts";
 import { prepareProjectPcbCreate } from "./project-pcb-create.ts";
+import { prepareProjectSchematicCreate } from "./project-schematic-create.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
 
 const preparations = {
@@ -16,6 +17,7 @@ const preparations = {
   "document.close": { key: "closePlan", phase: "close-prepared", derive: prepareDocumentClose },
   "document.page.create": { key: "pageCreatePlan", phase: "page-create-prepared", derive: prepareDocumentPageCreate },
   "document.pcb.create": { key: "pcbCreatePlan", phase: "pcb-create-prepared", derive: prepareProjectPcbCreate },
+  "document.schematic.create": { key: "schematicCreatePlan", phase: "schematic-create-prepared", derive: prepareProjectSchematicCreate },
   "library.symbol.create": { key: "symbolCreatePlan", phase: "symbol-create-prepared", derive: prepareProjectSymbolCreate },
   "document.pcb.rename": { key: "documentRenamePlan", phase: "document-rename-prepared", derive: prepareDocumentContainerRename },
   "document.schematic.rename": { key: "documentRenamePlan", phase: "document-rename-prepared", derive: prepareDocumentContainerRename },
@@ -26,7 +28,7 @@ const initialKeys = new Set(["schema", "operationId", "journalPath", "planHash",
 
 function preparation(journal: LibraryJournal): (typeof preparations)[keyof typeof preparations] {
   const action = journal.plan.operation.action;
-  if (action !== "document.activate" && action !== "document.close" && action !== "document.page.create" && action !== "library.symbol.create" && action !== "document.pcb.rename" && action !== "document.schematic.rename" && action !== "document.pcb.create") {
+  if (action !== "document.activate" && action !== "document.close" && action !== "document.page.create" && action !== "library.symbol.create" && action !== "document.pcb.rename" && action !== "document.schematic.rename" && action !== "document.pcb.create" && action !== "document.schematic.create") {
     throw new Error("Undispatched preparation invalidation does not support this operation.");
   }
   return preparations[action];
@@ -37,7 +39,7 @@ function preparation(journal: LibraryJournal): (typeof preparations)[keyof typeo
  */
 export function hasMissingLibraryPreparation(journal: LibraryJournal): boolean {
   const action = journal.plan.operation.action;
-  if (action !== "document.activate" && action !== "document.close" && action !== "document.page.create" && action !== "library.symbol.create" && action !== "document.pcb.rename" && action !== "document.schematic.rename" && action !== "document.pcb.create") { return false; }
+  if (action !== "document.activate" && action !== "document.close" && action !== "document.page.create" && action !== "library.symbol.create" && action !== "document.pcb.rename" && action !== "document.schematic.rename" && action !== "document.pcb.create" && action !== "document.schematic.create") { return false; }
   const { phase } = preparations[action];
   return !journal.artifacts.some((entry) => new RegExp(`^[0-9]+-${phase}\\.json$`, "u").test(basename(entry.path)));
 }
