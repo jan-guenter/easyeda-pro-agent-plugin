@@ -1,5 +1,11 @@
 # Candidate 150000
 
+Post-installation continuation: the original retained text journal is now
+terminal and two selected-reader cases passed. See the
+[scoped fixture report](api-coverage-150000-fixture-validation-2026-10-11.md).
+The release-time statements below are historical; never replay the original
+creation, Save or completed recovery.
+
 Published and installed `0.3.0+codex.20261011150000` continues draft PR9. The broader API task remains
 unfinished. This continuation changed only the plugin and private validation
 evidence. EasyEDA stayed closed; production and its project record were untouched.

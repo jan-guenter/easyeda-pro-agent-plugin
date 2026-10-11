@@ -11,9 +11,11 @@ This source package has typed design transactions, operation-specific library/ex
 
 Current restriction: compiled schematic topology and transactions depending on
 it are disabled because the installed netlist getter can annotate parts and
-Save All. A separate sealed profile supports only stored attribute/text display
-changes on one verified ordinary page; read [schematic.md](references/schematic.md#single-page-display-only-transactions).
-Its source tests are not connected lifecycle validation. Several File exports
+Save All. Separate sealed profiles support stored attribute/text display changes
+and identity-preserving wire endpoint rerouting on one verified ordinary page;
+read [schematic.md](references/schematic.md#single-page-display-only-transactions)
+and its [wire limits](references/schematic.md#single-page-wire-rerouting).
+Source tests are not connected lifecycle validation. Several File exports
 remain refused for hidden Save All. Inspect the installed capabilities; do not
 bypass refusals or replay historical work.
 
@@ -25,6 +27,7 @@ bypass refusals or replay historical work.
 - For API edits, inspect `easyeda_control_runtime`. Editing requires EasyEDA launched by `launch-contained`, with retained Windows Job and authenticated process proof. An ordinary PID or a newly connected renderer is not that proof.
 - From Start Page, establish authenticated status and use runtime `open-existing` for an exact saved PCB or schematic-page target; see the connection reference. An unfinished design or library journal uses its own `open-target` recovery instead.
 - When sibling editor tabs are already open, use supported library `document.open`, not exclusive Start Page `open-existing`. Successful navigation can precede editor readiness; observe fresh exact context without repeating the open.
+- Before navigation or Save/reopen, read [navigation side effects](references/native-ui.md#navigation-preference-side-effects). PCB/footprint tab changes can write global preferences and prune local backups. A native tree click is not a workaround; do not change settings to pass admission.
 - If the user started EasyEDA separately, use `easyeda_control_native_ui` discover, retain its observed-unowned `appBinding`, then inspect windows. A confirmed normal-close may request closure before a contained launch. Read [native-ui.md](references/native-ui.md); do not choose Save or Discard for unrelated work.
 - Before bridge design calls, require responsive authenticated `easyeda_control_status`, then `easyeda_control_context` with the actual project path/UUID, document UUID/type and tab. Type 15 is a 3D preview, not PCB.
 - The reviewed tuple is connected-read-admitted. A `validation-required` mismatch permits only the bounded public validation workflow; never refresh pins merely to make it pass.

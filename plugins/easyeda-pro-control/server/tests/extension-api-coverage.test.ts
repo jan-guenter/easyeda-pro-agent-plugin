@@ -36,7 +36,7 @@ void test("coverage enumerates every distinct mounted method and retains every o
 
 void test("coverage does not promote schema-only, native equivalent, stub, latest-only or historical evidence to public execution", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
-  assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.status, "implemented-but-blocked");
+  assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.status, "implemented-native-equivalent");
   assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.routes[0]?.implementation, "native-task-equivalent");
   assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.currentGenerationLiveValidation, "not-recorded");
   assert.equal(rows.get("eda.lib_Symbol.create")?.status, "implemented-native-equivalent");
@@ -79,8 +79,10 @@ void test("topology-dependent schematic routes are blocked without disabling ind
   for (const path of ["eda.sch_PrimitiveComponent.create", "eda.sch_PrimitiveComponent.modify", "eda.sch_PrimitiveComponent.delete",
     "eda.sch_PrimitiveWire.create", "eda.sch_PrimitiveWire.modify", "eda.sch_PrimitiveWire.delete", "eda.sch_PrimitiveAttribute.createNetLabel", "eda.sch_PrimitiveComponent.createNetFlag"]) {
     const row = rows.get(path); assert.ok(row);
-    assert.equal(row.status, "implemented-but-blocked");
-    for (const route of row.routes) {
+    assert.equal(row.status, path === "eda.sch_PrimitiveWire.modify" ? "implemented-native-equivalent" : "implemented-but-blocked");
+    const genericRoutes = row.routes.filter((route) => !route.selector.includes("sealed-profile="));
+    assert.ok(genericRoutes.length > 0);
+    for (const route of genericRoutes) {
       assert.equal(route.executionState, "blocked"); assert.deepEqual(route.blockedDocumentTypes, [1]);
       assert.match(route.blockedReason ?? "", /SaveAll/u); assert.ok(route.source.includes("design-topology.ts"));
     }
@@ -95,6 +97,27 @@ void test("topology-dependent schematic routes are blocked without disabling ind
   const compact = queryExtensionApiCoverage({ search: "eda.sch_PrimitiveWire.modify" })["entries"];
   assert.ok(Array.isArray(compact) && isRecord(compact[0]));
   assert.ok(JSON.stringify(compact).includes("blockedReason"));
+});
+
+void test("sealed wire coverage admits only endpoint reroute and its internal no-repeat Save lifecycle", () => {
+  const profile = "easyeda-pro-control.flat-wire-reroute.v1";
+  const admitted = inventoryExtensionApiCoverage().flatMap((row) => row.routes
+    .filter((route) => route.selector.includes(`sealed-profile=${profile}`)).map((route) => ({ row, route })));
+  assert.deepEqual(admitted.map(({ row }) => row.path).toSorted(), ["eda.sch_Document.save", "eda.sch_PrimitiveWire.modify"]);
+  for (const { row, route } of admitted) {
+    assert.deepEqual(route.documentTypes, [1]); assert.equal(route.executionState, "available-with-runtime-guards");
+    assert.equal(route.blockedReason, undefined); assert.equal(route.blockedDocumentTypes, undefined);
+    assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+    assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+    assert.ok(route.source.includes("flat-wire-markers.ts")); assert.ok(route.tests.includes("flat-wire-lifecycle.test.ts"));
+    assert.match(route.scope, /contact-incidence multiset/u); assert.match(route.scope, /fresh unchanged durable baseline/u);
+    assert.match(route.scope, /refuses shared-WIRE endpoints and pin-bearing junctions/u);
+    assert.match(route.scope, /no caller override or historical journal migration/u);
+    assert.deepEqual(route.inputDiscovery, { tool: "easyeda_control_api", arguments: { request: {
+      action: "operations", query: { family: "design", operationAction: "sch.wire.modify", includeSchemas: true },
+    } } });
+    assert.equal(route.implementation, row.path === "eda.sch_Document.save" ? "internal-lifecycle-only" : "native-task-equivalent");
+  }
 });
 
 void test("sealed flat display coverage admits only existing attribute/text display and its internal Save lifecycle", () => {
@@ -177,7 +200,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 192, "implemented-native-equivalent": 99, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 473,
+    "implemented-public-subset": 192, "implemented-native-equivalent": 100, "internal-lifecycle-only": 2, "implemented-but-blocked": 7, omitted: 473,
   });
 });
 

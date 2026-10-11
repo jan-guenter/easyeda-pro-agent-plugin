@@ -7,13 +7,13 @@
     "latestDistinctMethods": 773,
     "statuses": {
       "implemented-public-subset": 192,
-      "implemented-native-equivalent": 97,
+      "implemented-native-equivalent": 100,
       "internal-lifecycle-only": 2,
-      "implemented-but-blocked": 8,
-      "omitted": 475
+      "implemented-but-blocked": 7,
+      "omitted": 473
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 350,
+      "available-with-runtime-guards": 354,
       "blocked": 9,
       "partially-blocked": 3
     },
@@ -36,15 +36,15 @@
       "lossy-selected-object-projection": 1,
       "managed-file-contract-needed": 39,
       "multi-object-electrical-effect": 7,
-      "navigation-or-viewport-adapter-needed": 16,
+      "navigation-or-viewport-adapter-needed": 14,
       "non-json-result-or-callback": 8,
       "not-in-reviewed-runtime": 76,
       "pad-pair-group-replacement-effects": 1,
       "page-order-partial-write-lifecycle": 1,
       "panel-context-not-admitted": 1,
       "private-url-state-projection-needed": 2,
-      "reviewed-native-stub": 27,
-      "scoped-effect-adapter-needed": 110,
+      "reviewed-native-stub": 30,
+      "scoped-effect-adapter-needed": 107,
       "selection-marker-or-history-mutation": 8,
       "shared-asset-owner-projection-needed": 3,
       "simulation-editor-not-admitted": 1,
@@ -454,7 +454,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "partially-blocked",
-          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ]
@@ -575,7 +575,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "partially-blocked",
-          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ]
@@ -14378,16 +14378,39 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "reviewed-native-stub",
-        "reason": "Installed method has an empty body and cannot return a primitive.",
-        "nextRequirement": "Implement a separately reviewed native task adapter with exact effects, or validate a newer runtime where the public method works.",
-        "evidence": [
-          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.pcb_Primitive.getPrimitiveByPrimitiveId",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native-source DTO equivalent, not public primitive instances or public getter execution/parity. The installed singular getter is empty; the plural wrapper delegates to it. Neither is called. One exact ID or 1–256 unique IDs in caller order. Missing IDs refuse, rather than returning undefined or a partial array. Only root Line, Arc, Via, standalone Pad, Component and STRING (String) are supported; inherited, generated, grouped, unsupported or colliding requested identities refuse the entire call. Each DTO retains the complete exported native source record and its direct source-backed ATTR records, including native units, nulls and spelling. No SDK getter conversion, defaults or model serialization. Component DTOs omit inherited footprint geometry and generated attributes. Complete source/inventory correspondence is required for every requested owning family, with duplicate and cross-family identity checks across all inventory families. Pad proof includes component-owned pad correlation; requested ComponentPad and inherited tracks still refuse. Two identical source/inventory/source cycles bind an active project-owned type-3 PCB and private runtime fingerprint. Each constituent read is independently double-sampled. No selection RPC or UI changes. Switching away and back between observations remains undetectable; no atomic snapshot or persistence claim. Unselected inherited footprint lines may require the maintained fresh checkpoint proof. Its existing ownership and geometry restrictions remain unchanged. Generated poured-state correlation must be exactly empty; generated polygon and component-descendant identity namespaces refuse. At most 20000 source records and identities per inventory family, 16 MiB source evidence and 2 MiB result. Exceeding bounds refuses without truncation. No navigation, Save, mutation or retry. Offline tests do not establish connected validation for any family.",
+          "documentTypes": [
+            3
+          ],
+          "source": [
+            "pcb-source-objects-read.ts"
+          ],
+          "tests": [
+            "pcb-source-objects-read.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.pcb_Primitive.getPrimitiveByPrimitiveId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -14486,16 +14509,39 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "reviewed-native-stub",
-        "reason": "Installed method delegates to the empty singular getter; the declared array result is not useful coverage.",
-        "nextRequirement": "Implement a separately reviewed native task adapter with exact effects, or validate a newer runtime where the public method works.",
-        "evidence": [
-          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.pcb_Primitive.getPrimitivesByPrimitiveId",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native-source DTO equivalent, not public primitive instances or public getter execution/parity. The installed singular getter is empty; the plural wrapper delegates to it. Neither is called. One exact ID or 1–256 unique IDs in caller order. Missing IDs refuse, rather than returning undefined or a partial array. Only root Line, Arc, Via, standalone Pad, Component and STRING (String) are supported; inherited, generated, grouped, unsupported or colliding requested identities refuse the entire call. Each DTO retains the complete exported native source record and its direct source-backed ATTR records, including native units, nulls and spelling. No SDK getter conversion, defaults or model serialization. Component DTOs omit inherited footprint geometry and generated attributes. Complete source/inventory correspondence is required for every requested owning family, with duplicate and cross-family identity checks across all inventory families. Pad proof includes component-owned pad correlation; requested ComponentPad and inherited tracks still refuse. Two identical source/inventory/source cycles bind an active project-owned type-3 PCB and private runtime fingerprint. Each constituent read is independently double-sampled. No selection RPC or UI changes. Switching away and back between observations remains undetectable; no atomic snapshot or persistence claim. Unselected inherited footprint lines may require the maintained fresh checkpoint proof. Its existing ownership and geometry restrictions remain unchanged. Generated poured-state correlation must be exactly empty; generated polygon and component-descendant identity namespaces refuse. At most 20000 source records and identities per inventory family, 16 MiB source evidence and 2 MiB result. Exceeding bounds refuses without truncation. No navigation, Save, mutation or retry. Offline tests do not establish connected validation for any family.",
+          "documentTypes": [
+            3
+          ],
+          "source": [
+            "pcb-source-objects-read.ts"
+          ],
+          "tests": [
+            "pcb-source-objects-read.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.pcb_Primitive.getPrimitivesByPrimitiveId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -14978,10 +15024,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "pcb_PrimitiveAttribute.create has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
+        "code": "reviewed-native-stub",
+        "reason": "Installed method has an empty body and does not create an attribute. Existing field modifications do not establish new parent ownership, native child defaults or exact persistence for creation.",
+        "nextRequirement": "Implement a separately reviewed native task adapter with exact effects, or validate a newer runtime where the public method works.",
+        "evidence": [
+          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -18931,10 +18979,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "pcb_PrimitivePoured.create has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
+        "code": "reviewed-native-stub",
+        "reason": "Installed method has an empty body and does not create generated copper. Pour definition edits or calculation are distinct operations, not this declared creation contract.",
+        "nextRequirement": "Implement a separately reviewed native task adapter with exact effects, or validate a newer runtime where the public method works.",
+        "evidence": [
+          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -19216,10 +19266,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "pcb_PrimitivePoured.modify has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
+        "code": "reviewed-native-stub",
+        "reason": "Installed method has an empty body and does not modify generated copper. A native equivalent requires generated-piece ownership, recalculation effects and complete persistence proof; no route is admitted.",
+        "nextRequirement": "Implement a separately reviewed native task adapter with exact effects, or validate a newer runtime where the public method works.",
+        "evidence": [
+          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -21366,10 +21418,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "navigation-or-viewport-adapter-needed",
-        "reason": "sch_Document.navigateToCoordinates changes editor, viewport or window state without a maintained method-specific one-shot completion/ownership proof.",
-        "nextRequirement": "Add strict target/viewport arguments, original owner/context proof, non-replayed dispatch and bounded observable completion; closing must never imply Save or discard.",
-        "evidence": []
+        "code": "reviewed-native-stub",
+        "reason": "Installed method returns constant false without dispatching schematic navigation. A viewport equivalent would need a separately reviewed native route and exact owner/view effects.",
+        "nextRequirement": "Implement a separately reviewed native task adapter with exact effects, or validate a newer runtime where the public method works.",
+        "evidence": [
+          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -21399,10 +21453,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "navigation-or-viewport-adapter-needed",
-        "reason": "sch_Document.navigateToRegion changes editor, viewport or window state without a maintained method-specific one-shot completion/ownership proof.",
-        "nextRequirement": "Add strict target/viewport arguments, original owner/context proof, non-replayed dispatch and bounded observable completion; closing must never imply Save or discard.",
-        "evidence": []
+        "code": "reviewed-native-stub",
+        "reason": "Installed method returns constant false without dispatching schematic navigation. A region equivalent would need a separately reviewed native route and bounded view/overlay effects.",
+        "nextRequirement": "Implement a separately reviewed native task adapter with exact effects, or validate a newer runtime where the public method works.",
+        "evidence": [
+          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
@@ -21543,6 +21599,55 @@
         },
         {
           "tool": "easyeda_control_design",
+          "documentTypes": [
+            1
+          ],
+          "executionState": "available-with-runtime-guards",
+          "validation": "offline-regression;current-live-unclaimed",
+          "source": [
+            "flat-wire-binding.ts",
+            "flat-wire-profile.ts",
+            "flat-wire-markers.ts",
+            "flat-transaction-binding.ts",
+            "flat-transaction-profile.ts",
+            "flat-display-runtime.ts",
+            "flat-display-storage.ts",
+            "schematic-flat-read.ts",
+            "schematic-flat-topology.ts",
+            "schematic-native-wire.ts",
+            "design-action.ts",
+            "design-execution.ts",
+            "runtime-scripts.ts",
+            "design-save-attempt.ts",
+            "native-document-lifecycle.ts"
+          ],
+          "tests": [
+            "flat-wire-profile.test.ts",
+            "flat-wire-runtime.test.ts",
+            "flat-wire-apply.test.ts",
+            "flat-wire-execution.test.ts",
+            "flat-wire-lifecycle.test.ts",
+            "design-save-attempt.test.ts"
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "design",
+                  "operationAction": "sch.wire.modify",
+                  "includeSchemas": true
+                }
+              }
+            }
+          },
+          "selector": "execute/commit;sealed-profile=easyeda-pro-control.flat-wire-reroute.v1",
+          "implementation": "internal-lifecycle-only",
+          "scope": "Original sealed wire transaction only: final source/topology/marker reproof, complete durable peer comparison and one-shot Save/close/reopen. Retained-Save recovery requires its original successful synchronous-guard acknowledgment; no repeat Save, inverse or navigation. No standalone Save or generic type-1 admission. Facade-only sealed plan.flatWire on one ordinary complete project-owned page; no caller override or historical journal migration. One unlocked named WIRE changes only integer endpoints of nonzero orthogonal segments belonging to its existing LINE IDs. LINE count/style, literal net name, every ATTR field and category-derived child order remain exact. Complete checkpoint-bound flat topology plus contact-incidence multiset preserve pins, same-name islands and foreign contacts. Generated-marker proof refuses shared-WIRE endpoints and pin-bearing junctions. Exact ID-to-segment inverse requires a fresh unchanged durable baseline; auto-persisted forward effects refuse unsaved rollback. No creation/deletion, style/net changes, compilation, annotation, Save All or public-wrapper parity. Offline synthetic tests only; current-generation live validation remains unclaimed."
+        },
+        {
+          "tool": "easyeda_control_design",
           "selector": "execute/commit",
           "implementation": "internal-lifecycle-only",
           "scope": "Save is available only inside an original journal's verified no-repeat commit lifecycle; never an unrestricted standalone Save.",
@@ -21560,7 +21665,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "partially-blocked",
-          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ]
@@ -23105,7 +23210,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -24257,7 +24362,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -24365,7 +24470,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -24523,7 +24628,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -24992,7 +25097,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -26078,7 +26183,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -27281,7 +27386,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -27349,7 +27454,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -27585,7 +27690,7 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "implemented-but-blocked",
+      "status": "implemented-native-equivalent",
       "routes": [
         {
           "tool": "easyeda_control_design",
@@ -27605,7 +27710,7 @@
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "blocked",
-          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.",
+          "blockedReason": "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.",
           "blockedDocumentTypes": [
             1
           ],
@@ -27625,6 +27730,51 @@
               }
             }
           }
+        },
+        {
+          "tool": "easyeda_control_design",
+          "documentTypes": [
+            1
+          ],
+          "executionState": "available-with-runtime-guards",
+          "validation": "offline-regression;current-live-unclaimed",
+          "source": [
+            "flat-wire-binding.ts",
+            "flat-wire-profile.ts",
+            "flat-wire-markers.ts",
+            "flat-transaction-binding.ts",
+            "flat-transaction-profile.ts",
+            "flat-display-runtime.ts",
+            "flat-display-storage.ts",
+            "schematic-flat-read.ts",
+            "schematic-flat-topology.ts",
+            "schematic-native-wire.ts",
+            "design-action.ts",
+            "design-execution.ts"
+          ],
+          "tests": [
+            "flat-wire-profile.test.ts",
+            "flat-wire-runtime.test.ts",
+            "flat-wire-apply.test.ts",
+            "flat-wire-execution.test.ts",
+            "flat-wire-lifecycle.test.ts"
+          ],
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "operations",
+                "query": {
+                  "family": "design",
+                  "operationAction": "sch.wire.modify",
+                  "includeSchemas": true
+                }
+              }
+            }
+          },
+          "selector": "sch.wire.modify;sealed-profile=easyeda-pro-control.flat-wire-reroute.v1",
+          "implementation": "native-task-equivalent",
+          "scope": "Facade-only sealed plan.flatWire on one ordinary complete project-owned page; no caller override or historical journal migration. One unlocked named WIRE changes only integer endpoints of nonzero orthogonal segments belonging to its existing LINE IDs. LINE count/style, literal net name, every ATTR field and category-derived child order remain exact. Complete checkpoint-bound flat topology plus contact-incidence multiset preserve pins, same-name islands and foreign contacts. Generated-marker proof refuses shared-WIRE endpoints and pin-bearing junctions. Exact ID-to-segment inverse requires a fresh unchanged durable baseline; auto-persisted forward effects refuse unsaved rollback. No creation/deletion, style/net changes, compilation, annotation, Save All or public-wrapper parity. Offline synthetic tests only; current-generation live validation remains unclaimed."
         }
       ],
       "omission": null,

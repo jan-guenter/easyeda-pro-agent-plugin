@@ -75,6 +75,15 @@ compare native source, connected endpoints and the complete durable selected
 branch. Creation IDs belong to the original journal. Existing descendants,
 library templates and inherited instances need explicit scope.
 
+Trace navigation through native event subscribers, not only its public wrapper.
+The pinned PCB/footprint tab-click handler may persist global preferences and
+prune local backups. Project opening can restore tabs; closing an active symbol
+or schematic can activate a PCB peer. Refuse known unsafe state before Save,
+close or open, and recheck immediately after awaited work. A passive check is
+not an atomic guarantee across native awaits. Do not implement a bypass by
+toggling preferences, suppressing persistence or updating only part of the
+private active-frame state. A lower-level route must prove the entire lifecycle.
+
 Public API stubs or lossy mappers can justify a reviewed, version-pinned native
 adapter—not arbitrary private invocation. Preserve unknown fields, parent/child
 order, hidden attributes and locks. Geometric contact is not native connectivity.

@@ -6,6 +6,63 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Restarted150000 retained text recovery
+
+- Fresh facade2292140 independently matches installed150000:600files/modes,
+  source192df7a4f32/runtime5a487af9/manifest996d4e86. Contained26924 authenticated
+  the unchanged external tuple and dispatcher. Only the disposable fixture was
+  accessed; production and its project record remain untouched.
+- Original creationjournalc92a61b7 completed after facade-only rebind, one retained
+  target open and read-only reconciliation. Its original six phases, created ID,
+  null source intent and successful Save/close/reopen acknowledgment remain exact.
+  Terminal2061bacf verifies11documents/10unchangedpeerhistories/131originaltarget
+  records, plus the exact DOCHEAD/STRING suffix and old-ticket257/new-ticket265
+  decoder order. Storednull and observedblack remain separate. No edit, Save,
+  inverse, deletion or normalization was repeated; no later writer is authorized
+  by this legacy recovery. The new checkpoint is byte-identical to the retained
+  saved checkpoint. Independent audit rehashed27inputs/3937319bytes and all12
+  phases, with all three immutable checkpoint dumps matching their receipts.
+  This establishes the narrow installed150000 recovery, not v2 writer validation.
+- Selected-object reader passed empty selection and one original standalone
+  STRING. Results c169bbf9/df047d3a retain exact source2087c744 and unchanged
+  database3c9956a4/logical0215d984. Independent review rehashed seven evidence
+  files and matched every DTO field and direct ATTR against terminal native
+  source. This validates those two cases only, not other families or public
+  mapper parity. No design edit or Save occurred in either read.
+- Guard coalescing1689000 and passive stage timingscf0d2ce passed independent
+  source review. Both observation cycles and all constituent samples remain;
+  ten redundant outer boundaries were removed. Timings contain fixed bounded
+  labels/counts/durations outside semantic hashes. Author254focused tests/types/
+  targeted strict lint pass; root integration/full release checks remain. These
+  source changes are not installed and have no measured connected speedup yet.
+- PCB3 was opened once through the observed tree. One default black top-silkscreen
+  text was placed, then current-document Save was clicked once. Checkpoint23
+  d572d11b/5ff5b728/logical8c7ca53d and immutable comparison prove all ten peer
+  histories unchanged and every current target source object stored exactly.
+  Typed activation ff1cbea0 refused before dispatch on unsafe pcbCommandTab
+  preferences; read-only reconciliation completed with no mutation. Never repeat
+  either Save or activation. Seed reopen and v2 text writer tests remain unrun.
+- Source review found PCB/footprint navigation can save global preferences when
+  pcbCommandTab is absent or false. Desktop handling writes local preferences
+  and can prune project backups under the existing retention setting. Remote
+  upload and actual past pruning are not established. Native tree navigation and
+  active-tab close can reach the same branch; UI is not a safe workaround.
+  Whole-app normal-close27 and empty discovery28 prove26924 exited without a
+  Save/Discard prompt choice. Maintained offline checkpoint verification29b
+  proves the closed fixture unchanged. No reopening until this is addressed.
+- Source-only wire profile87c7e1c and explicit-ID PCB readers3836435 are integrated
+  after root/independent review. Both need full release checks and connected
+  validation. Root174 selected-reader tests and353combined wire/reader/catalogue
+  tests pass. Full pre-guard typecheck and type-aware lint have zero diagnostics;
+  repository/privacy and seven-skill validators pass. Coverage now774paths,
+  192public/100native/2lifecycle/7blocked/473omitted,178fixedreaders/18native.
+  Generic wire remains separately blocked. Skill/docs independent review accepts
+  the narrow exception and no-UI-bypass boundary. Navigation guard work and its
+  final independent review are still pending. Installed150000
+  remains untouched; no new installation or restart requested. All journals are
+  terminal. Legacy PCB2 is not a writer target. Private continuation:
+  disposable-validation-150000-vrVKlC/resume-live-150000.md. PR9 remains draft.
+
 ### Restarted131000 text validation and candidate follow-through
 
 - Actual fresh facade2222443 independently matches installed131000:581files and
@@ -1542,7 +1599,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011150000` is published and installed/enabled with exact600file/mode and offline startup proof. It includes guarded closed free-SCH creation, selected PCB source DTOs, explicitblack v2 text creation and narrow original-journal retained-Save recovery. Fresh Codex is required before new-generation connected admission. Prior facade2222443/131000 passed forward/reverse text modification, but creationjournalc92a61b7 is NOT terminal. Its one retained successful Save/close/reopen and sixartifacts must not be replayed; storednull/exportblack remain distinct. The immutable historical predicate passed, not live reconciliation. EasyEDA11964 is closed. Prior120000 passed four closed PCB/schematic title transactions and one closed free-PCB creation. Historical evidence remains operation/generation-specific. Never access production or its project record.
+- Git-marketplace `0.3.0+codex.20261011150000` is published and installed/enabled with exact600file/mode proof. Fresh facade2292140 is admitted; contained26924 is now normally closed after disposable-only work. Original creation journalc92a61b7 is terminal after retained-Save reconciliation; its original Save/edit must never be replayed. Storednull/exportblack remain distinct, and this recovery grants no later writer authority. Empty and one-STRING selected-source reads passed with unchanged complete source/database. PCB3 seed was saved once and its closed checkpoint verified. Activation refused before dispatch on preference side effects and reconciled with no mutation. All journals are terminal; no reopening until navigation admission is addressed. Explicitblack v2 text creation, closed free-SCH creation, new explicit-ID readers and sealed wire rerouting still need connected validation. Prior131000 text modification and prior120000 container transactions retain their narrower historical evidence. Never access production or its project record.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

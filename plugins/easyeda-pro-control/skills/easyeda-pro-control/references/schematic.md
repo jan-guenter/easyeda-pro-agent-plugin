@@ -3,7 +3,7 @@
 Current compiled-topology transactions are blocked because the installed
 netlist getter can annotate and Save All. Historical wire, component and repair
 workflows below remain documentation, not permission to execute those paths.
-The only new type-1 transaction exception is the sealed profile below.
+The sealed display and wire profiles below are separate narrow exceptions.
 
 ## Single-page display-only transactions
 
@@ -86,6 +86,35 @@ Do not use `easyeda_schematic_verify_write` for component proof in the pinned up
 
 Use `easyeda_control_exact_read` with `schematic-components` for placed component state. It exposes primitive and unique IDs, normal component/symbol/footprint associations, CBB/project and CBB-symbol UUIDs, pose, BOM/PCB inclusion, sourcing fields, adapter-filtered component `OtherProperty`, and optional pins and bounds. The pinned Component3 mapper removes `3D Model`, title/transform, Channel ID, Group ID, Reuse Block, supplier, and supplierId keys from component `OtherProperty`; it also does not populate pin `OtherProperty` or either CBB `libraryUuid`. Those filtered ownership/property fields are unavailable. The reader is read-only. Typed schematic edits use complete source/native profiles through `easyeda_control_design`, not the disabled legacy PCB state machine.
 
+## Single-page wire rerouting
+
+`sch.wire.modify` has a separate facade-owned `flat-wire-reroute.v1` profile.
+It changes only integer endpoints of nonzero orthogonal segments in one existing
+unlocked named WIRE. Use a literal WIRE ID and explicit geometry/style fields, with `net`
+omitted. Every LINE ID/count/style, every ATTR field and the category-derived
+child ordering must remain unchanged. The supported ATTRs are one hidden
+`Relevance:[]` and one nonempty `NET`. Creation, deletion and style/net changes
+remain outside this profile.
+
+Admission proves the whole page's flat pin/net topology and a multiset of contact
+vertices keyed by incident LINE/pin IDs. Pin contacts and foreign-wire contacts
+retain their coordinates. Generated marker checks refuse shared-WIRE endpoints
+and pin-bearing junctions; do not guess their native parent order. No compiler,
+annotation or Save All is used. The sealed binding is not an operation argument,
+and historical wire journals are never migrated to it.
+
+An exact inverse preserves the original LINE ID-to-segment association. It is
+available only while a fresh complete durable checkpoint still matches the
+baseline. Auto-persisted forward effects refuse unsaved rollback. Save/reopen
+and retained-Save reconciliation keep the existing one-shot intent rules and
+complete peer proof. If navigation admission fails, do not substitute native UI
+or change preferences. Keep the editor quiescent; these observations are not an
+atomic lock against concurrent changes.
+
+This profile has adversarial source tests, not connected validation. The older
+September wire lifecycle below used a different compiled profile and does not
+validate this implementation or grant production authority.
+
 ## Work sheet by sheet
 
 Schematic primitives are sheet-local. Require the target sheet to be active, verify its identity, edit that sheet only, and complete live plus reopened verification before moving to another sheet. Do not collision-scan coordinates from different sheets as if they share one plane. Page borders and title blocks are not electrical obstacles.
@@ -127,7 +156,7 @@ Public graphic creation in a type-2 symbol editor has routed rectangles or polyg
 
 Build a new net as a connected explicit-vertex tree. Do not rely on visually overlapping stubs. Prove connectivity through netlist membership and pin-net readback.
 
-Standalone `sch.wire.modify` uses the fixed native adapter only for an unlocked
+The historical compiled-profile `sch.wire.modify` used the fixed native adapter for an unlocked
 root WIRE with explicit cardinal `line`, `color`, `lineWidth` and `lineType`, and
 with `net` omitted. Its supported child profile is one hidden `Relevance:[]`
 attribute and one nonempty `NET`. It preserves their identities and all fields

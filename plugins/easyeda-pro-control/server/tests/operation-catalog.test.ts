@@ -7,6 +7,7 @@ import { listLibraryExecutionCapabilities } from "../src/library-execution.ts";
 import { operationCatalogQuerySchema, queryOperationCatalog, validateCatalogOperation } from "../src/operation-catalog.ts";
 import { FLAT_DISPLAY_TRANSACTION_PROFILE } from "../src/flat-display-binding.ts";
 import { FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE } from "../src/flat-display-library-peers.ts";
+import { FLAT_WIRE_TRANSACTION_PROFILE } from "../src/flat-wire-binding.ts";
 
 void test("schematic operation discovery exposes the current type-1 topology execution restriction", () => {
   const restricted = queryOperationCatalog({ family: "design", operationAction: "sch.wire.modify" });
@@ -25,7 +26,7 @@ void test("layout discovery describes only the sealed display exception without 
   });
   const descriptorSchema = z.object({ executionRestrictions: z.array(restrictionSchema) });
   const entriesSchema = z.array(descriptorSchema);
-  for (const action of ["sch.layout.batch", "sch.wire.modify", "sch.component.create", "sch.text.modify"]) {
+  for (const action of ["sch.layout.batch", "sch.wire.create", "sch.component.create", "sch.text.modify"]) {
     const result = queryOperationCatalog({ family: "design", operationAction: action });
     const [entry] = entriesSchema.parse(result["entries"]);
     assert.ok(entry);
@@ -52,6 +53,26 @@ void test("layout discovery describes only the sealed display exception without 
       assert.equal(restriction.exception, undefined);
     }
   }
+});
+
+void test("wire discovery isolates the sealed endpoint-only exception from generic schematic writes", () => {
+  const result = queryOperationCatalog({ family: "design", operationAction: "sch.wire.modify" });
+  const restrictionSchema = z.object({
+    documentType: z.literal(1), reason: z.string(), exception: z.record(z.string(), z.unknown()),
+  });
+  const descriptorSchema = z.object({ executionRestrictions: z.array(restrictionSchema) });
+  const [entry] = z.array(descriptorSchema).parse(result["entries"]);
+  const restriction = entry?.executionRestrictions[0]; assert.ok(restriction);
+  assert.match(restriction.reason, /invoke Save All/u);
+  const exception = restriction.exception;
+  assert.equal(exception["profile"], FLAT_WIRE_TRANSACTION_PROFILE);
+  assert.equal(exception["executionAuthorized"], false);
+  assert.equal(exception["electricalConnectivityChanges"], false);
+  assert.equal(exception["liveValidation"], "offline-regression;current-generation-live-unclaimed");
+  assert.match(String(exception["targets"]), /preserve every LINE ID\/count\/style and every ATTR field/u);
+  assert.match(String(exception["requiredProof"]), /contact-incidence multiset/u);
+  assert.match(String(exception["inverse"]), /fresh complete durable checkpoint remains the baseline/u);
+  assert.match(String(exception["markerRestrictions"]), /no shared-WIRE endpoints or pin-bearing junctions/u);
 });
 
 void test("catalog pagination covers every strict design and library discriminator once", () => {

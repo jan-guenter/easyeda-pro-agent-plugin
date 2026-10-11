@@ -1,5 +1,11 @@
 # Connection and context
 
+Before opening a project or document, review the pinned
+[navigation preference side effects](native-ui.md#navigation-preference-side-effects).
+Project opening may restore PCB tabs, and public or native tab navigation may
+write global preferences and prune backups. A safe target type alone is not
+sufficient. Do not change settings or use a UI fallback to pass admission.
+
 ## Open an existing saved project from Start Page
 
 After contained launch and authenticated status, `easyeda_control_runtime` accepts `request.action:"open-existing"` with `projectUuid`, `projectPath`, `documentUuid`, `documentType:1|3`, the current `expectedFingerprint`, and `confirmOpen:true`. The target must already exist in the saved `.eprj2` checkpoint and the native project-path registry. This path does not require a fabricated active-editor context.

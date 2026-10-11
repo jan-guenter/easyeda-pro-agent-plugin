@@ -39,8 +39,12 @@ It preserves raw color strings, including malformed values returned by EasyEDA.
 The selected PCB object equivalent preserves exact selection order and returns
 complete native-source records for supported root objects. It refuses unsupported
 or generated selections instead of returning a partial array; public primitive
-instances and persistence are not claimed.
-The fixed read catalog has 176 routes, including
+instances and persistence are not claimed. Two explicit-ID equivalents use the
+same source DTOs without reading or changing selection. Missing or unsupported
+IDs refuse the whole call. Installed150000 passed only empty selection and one
+original standalone STRING; explicit-ID routes and newer reader optimizations
+still need connected validation.
+The fixed read catalog has 178 routes, including
 bounded polygon splitting that preserves input source arrays and their order. It
 accepts no arbitrary method path, caller code, callbacks, navigation or writes.
 None of these observations replaces complete design or persistence proof.
@@ -79,11 +83,13 @@ only META, with no canvas initialization, open, Save or automatic inverse.
 A separate free-schematic route creates only a closed META container, with no
 page, template, canvas or Save. Standalone PCB text supports bounded modify,
 create and delete. Installed131000 passed forward/reverse modification, but its
-v1 create journal remains unresolved after a cached null-to-black reload.
+v1 creation exposed a cached null-to-black reload.
 New v2 creation fixes explicit black; creation-only retained-Save recovery proves
 the original storage and observed reload separately without another Save.
-New schematic creation, selected-object reading and text lifecycle/recovery still
-need connected validation. See [candidate150000](docs/api-coverage-150000-release-2026-10-11.md). The
+Installed150000 completed that retained-Save recovery with full unchanged peer
+history and exact original storage/reload proof, without another Save or edit.
+New schematic creation and v2 text creation/deletion still need connected
+validation. See [candidate150000](docs/api-coverage-150000-release-2026-10-11.md). The
 [remaining-effects review](docs/api-remaining-method-effects-2026-10-11.md)
 records blockers for layer selection, page ordering, pad-pair groups and broader
 PCB text cases. A separate checkpoint-bound flat-topology
@@ -101,6 +107,19 @@ complete 12-document fixture proof retained imported headers and both pin nets.
 See the [scoped fixture evidence](docs/api-coverage-083400-fixture-validation-2026-10-11.md).
 The reverse restored the original source exactly. Unsaved rollback and the newer
 source generation remain separate validation.
+A separate [sealed wire profile](docs/flat-wire-reroute-2026-10-11.md) now supports
+endpoint-only rerouting with existing LINE identities, unchanged styles/names,
+full contact-incidence proof and an exact inverse only while the durable baseline
+is unchanged. It has source tests, not connected validation, and does not enable
+the generic compiled route.
+
+Source review found that PCB/footprint opening, activation and some active-tab
+closes can write shared local preferences and prune backups under EasyEDA's
+retention setting. Project opening may restore PCB tabs even for a schematic
+target. No past pruning or remote upload is established. Passive admission must
+precede navigation and Save/reopen; native UI is not a bypass, and this plugin
+does not change preferences to pass. See the skill's
+[navigation limits](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/native-ui.md#navigation-preference-side-effects).
 The `202803` disposable text edit reached the intended
 state but stopped before Save on a raw source-format comparison defect. Installed
 `210100` recovered that journal after one inverse and delayed native persistence,

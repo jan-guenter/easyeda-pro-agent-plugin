@@ -23,7 +23,7 @@ interface RouteGroup {
   readonly route: ApiCoverageRoute;
 }
 const groups: RouteGroup[] = [];
-const topologyBlock = "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display-only routes do not activate this route or other schematic operations.";
+const topologyBlock = "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.";
 
 function add(namespace: string, methods: readonly string[], tool: string, selector: string,
   implementation: ApiCoverageRoute["implementation"], scope: string, source: readonly string[], tests: readonly string[], admittedDocumentTypes?: readonly number[]): void {
@@ -161,6 +161,24 @@ for (const flatDisplayProfile of flatDisplayProfiles) {
     tests: [...route.tests, "runtime-scripts.test.ts", "design-save-attempt.test.ts"],
   } });
 }
+
+const flatWireProfile = "easyeda-pro-control.flat-wire-reroute.v1";
+const flatWireRoute: Omit<ApiCoverageRoute, "selector" | "implementation" | "scope"> = {
+  tool: "easyeda_control_design", documentTypes: [1], executionState: "available-with-runtime-guards",
+  validation: "offline-regression;current-live-unclaimed",
+  source: ["flat-wire-binding.ts", "flat-wire-profile.ts", "flat-wire-markers.ts", "flat-transaction-binding.ts", "flat-transaction-profile.ts", "flat-display-runtime.ts", "flat-display-storage.ts", "schematic-flat-read.ts", "schematic-flat-topology.ts", "schematic-native-wire.ts", "design-action.ts", "design-execution.ts"],
+  tests: ["flat-wire-profile.test.ts", "flat-wire-runtime.test.ts", "flat-wire-apply.test.ts", "flat-wire-execution.test.ts", "flat-wire-lifecycle.test.ts"],
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "operations", query: { family: "design", operationAction: "sch.wire.modify", includeSchemas: true } } } },
+};
+const flatWireScope = "Facade-only sealed plan.flatWire on one ordinary complete project-owned page; no caller override or historical journal migration. One unlocked named WIRE changes only integer endpoints of nonzero orthogonal segments belonging to its existing LINE IDs. LINE count/style, literal net name, every ATTR field and category-derived child order remain exact. Complete checkpoint-bound flat topology plus contact-incidence multiset preserve pins, same-name islands and foreign contacts. Generated-marker proof refuses shared-WIRE endpoints and pin-bearing junctions. Exact ID-to-segment inverse requires a fresh unchanged durable baseline; auto-persisted forward effects refuse unsaved rollback. No creation/deletion, style/net changes, compilation, annotation, Save All or public-wrapper parity. Offline synthetic tests only; current-generation live validation remains unclaimed.";
+groups.push({ namespace: "sch_PrimitiveWire", methods: ["modify"], route: { ...flatWireRoute,
+  selector: `sch.wire.modify;sealed-profile=${flatWireProfile}`, implementation: "native-task-equivalent", scope: flatWireScope,
+} }, { namespace: "sch_Document", methods: ["save"], route: { ...flatWireRoute,
+  selector: `execute/commit;sealed-profile=${flatWireProfile}`, implementation: "internal-lifecycle-only",
+  scope: `Original sealed wire transaction only: final source/topology/marker reproof, complete durable peer comparison and one-shot Save/close/reopen. Retained-Save recovery requires its original successful synchronous-guard acknowledgment; no repeat Save, inverse or navigation. No standalone Save or generic type-1 admission. ${flatWireScope}`,
+  source: [...flatWireRoute.source, "runtime-scripts.ts", "design-save-attempt.ts", "native-document-lifecycle.ts"],
+  tests: [...flatWireRoute.tests, "design-save-attempt.test.ts"],
+} });
 
 for (const [family, api] of [["symbol", "lib_Symbol"], ["footprint", "lib_Footprint"], ["device", "lib_Device"], ["model3d", "lib_3DModel"]] as const) {
   add(api, ["get"], "easyeda_control_library", `library.${family}.get`, "public-method", "Exact identity/owner metadata, bounded double-sampled result; not complete library inventory or asset geometry.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);

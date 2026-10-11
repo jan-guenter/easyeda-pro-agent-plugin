@@ -234,7 +234,20 @@ proof, but selected inherited Lines still refuse. Supply the complete observed
 PCB tab and owner context. Limits are 256 selected IDs, 20,000 source records
 and 2 MiB output; excess data refuses without truncation. This source-tested
 reader changes neither selection nor design. Stable observations are not an
-atomic snapshot, resolved connectivity or persistence proof.
+atomic snapshot, resolved connectivity or persistence proof. Installed150000
+passed empty selection and one original standalone STRING, with complete saved
+fixture invariance. Other families and the newer optimized reader remain untested
+live. Fixed stage timings are diagnostic only and excluded from semantic hashes;
+inclusive timings overlap and do not establish an end-to-end speedup.
+
+`eda.pcb_Primitive.getPrimitiveByPrimitiveId` accepts `{id}`;
+`getPrimitivesByPrimitiveId` accepts `{ids}` with 1–256 unique IDs in caller order.
+These native equivalents return the same complete supported source DTOs without
+reading or changing selection. They repeat source/inventory/source observations,
+with the same owner, inherited-source and whole-call refusal rules above. Missing
+IDs refuse rather than returning `undefined` or a partial array. The installed
+singular public method is empty and the plural wrapper delegates to that stub;
+neither is called. Explicit-ID connected validation remains pending.
 
 `eda.pcb_MathPolygon.splitPolygon` accepts JSON `complexPolygons`: one to eight
 groups, each a source array or one to eight source arrays, each at most 1024 tokens.

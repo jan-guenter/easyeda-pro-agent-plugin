@@ -2,6 +2,27 @@
 
 Use `easyeda_control_native_ui` for authorized visible EasyEDA work, including genuine API gaps and dialogs. Its fixed packaged shim reuses `scripts/native-ui.ps1` where appropriate. This is Windows UI Automation and mouse/keyboard input, not an EasyEDA API writer. It does not claim the guarded writer's automatic collateral or database-delta proof. Never use it to evade an unresolved ambiguous operation or the facade quarantine.
 
+## Navigation preference side effects
+
+On the reviewed 3.2.149 build, opening or activating a PCB/footprint can save
+global preferences when `pcbCommandTab` is absent or false. The desktop handler
+writes local preferences and can delete excess project backups according to the
+existing retention setting. This is an implementation finding, not evidence that
+a particular earlier navigation pruned backups or uploaded account settings.
+
+Public open/activate, tree doubleclick and active-tab close can reach the same
+handler. Project opening can restore stored PCB tabs even when the requested
+target is a schematic. Already-active activation is not a harmless no-op.
+Use a supported passive admission check before navigation and before a Save
+whose lifecycle will close/reopen. Never toggle the preference, suppress its
+persistence, forge a tab state or replace a refusal with a UI click. Missing or
+ambiguous evidence refuses. Keep preferences and tabs quiescent: native awaits
+mean a pre-dispatch check cannot prevent every concurrent settings change.
+
+Whole-application normal-close is a separate path. It still requires exact
+process/window binding, inspection of any prompt and subsequent exit proof;
+it is not authority to choose Save/Discard or to claim design rollback.
+
 ## MCP controller
 
 Call with `request.action:"discover"` to find independently launched instances of the exact installed executable. Retain the returned `appBinding`, including `authority:"observed-unowned"`, PID, executable digest and string `rootStartTicks`. Pass it to `windows` and later actions when there is no retained runtime. With an owned runtime, omit appBinding; the controller uses the retained Job launch. Neither discovery nor a PID grants API execution authority.

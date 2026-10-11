@@ -6,6 +6,7 @@ import { listLibraryExecutionCapabilities } from "./library-execution.ts";
 import { SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL } from "./exact-readers.ts";
 import { FLAT_DISPLAY_TRANSACTION_PROFILE } from "./flat-display-binding.ts";
 import { FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE } from "./flat-display-library-peers.ts";
+import { FLAT_WIRE_TRANSACTION_PROFILE } from "./flat-wire-binding.ts";
 
 const familySchema = z.enum(["design", "library"]);
 export const operationCatalogQuerySchema = z.object({
@@ -93,6 +94,19 @@ export function queryOperationCatalog(input: unknown): Record<string, unknown> {
             electricalEdits: false,
             executionAuthorized: false,
             liveValidation: "generation-and-operation-specific;see-capability-matrix",
+          } } : {}),
+          ...(entry.action === "sch.wire.modify" ? { exception: {
+            profile: FLAT_WIRE_TRANSACTION_PROFILE,
+            profileSelection: "facade-only plan.flatWire; mutually exclusive with display profiles; historical journals are not migrated",
+            targets: "one existing unlocked named WIRE with literal primitiveId; preserve every LINE ID/count/style and every ATTR field",
+            geometry: "integer endpoints of nonzero orthogonal LINE segments only; unchanged category-derived child order",
+            requiredProof: "complete checkpoint-bound flat topology and contact-incidence multiset; fixed pin and foreign-wire contact coordinates; exact generated-marker indexes and complete durable peer proof",
+            markerRestrictions: "no shared-WIRE endpoints or pin-bearing junctions",
+            inverse: "original ID-to-segment association only while a fresh complete durable checkpoint remains the baseline",
+            lifecycle: "no-repeat Save/reopen or retained original successful Save acknowledgment; no compiler, annotation or Save All",
+            electricalConnectivityChanges: false,
+            executionAuthorized: false,
+            liveValidation: "offline-regression;current-generation-live-unclaimed",
           } } : {}),
         }],
       } : {}),
