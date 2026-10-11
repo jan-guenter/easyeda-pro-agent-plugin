@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { extractToolPayload } from "../src/core.ts";
-import { nativeFailureCategory } from "../src/native-diagnostics.ts";
+import { RECOVERY_NAVIGATION_FAILURE_STAGES, nativeFailureCategory } from "../src/native-diagnostics.ts";
 import { SCHEMATIC_NATIVE_ID_GUARD_CODES, SCHEMATIC_NATIVE_ID_METHODS } from "../src/schematic-native-ids.ts";
 import { SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES, SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "../src/schematic-component-properties.ts";
 import { METADATA_NATIVE_GUARD_CODES } from "../src/metadata-native-diagnostics.ts";
@@ -36,6 +36,28 @@ void test("readiness diagnostic inventory covers every fixed readiness refusal e
   const source = await readFile(new URL("../src/recovery-navigation.ts", import.meta.url), "utf8");
   const emitted = [...source.matchAll(/fail\('editor-readiness-([a-z-]+)'\)/gu)].map((match) => { assert.equal(typeof match[1], "string"); return String(match[1]); });
   assert.deepEqual([...new Set(emitted)].toSorted((left, right) => left.localeCompare(right)), readinessStages.toSorted((left, right) => left.localeCompare(right)));
+});
+
+void test("every fixed native navigation exception stage survives upstream code loss without private suffixes", async () => {
+  const stages = RECOVERY_NAVIGATION_FAILURE_STAGES.filter((stage) => stage.startsWith("native-"));
+  const source = await readFile(new URL("../src/recovery-navigation.ts", import.meta.url), "utf8");
+  const emitted = [...source.matchAll(/(?:nativeCall\(|classifiedError\(error, )'(native-[a-z-]+)'/gu)].map((match) => {
+    assert.equal(typeof match[1], "string"); return String(match[1]);
+  });
+  assert.deepEqual([...new Set(emitted)].toSorted(), [...stages].toSorted());
+  for (const stage of stages) {
+    const category = `native-preflight:RECOVERY_${stage.toUpperCase().replaceAll("-", "_")}`, message = `Recovery navigation refused: ${stage}`;
+    assert.equal(nativeFailureCategory(message), category);
+    for (const envelope of [{ structuredContent: { ok: false, error: message } },
+      { structuredContent: { success: false, error: { code: "EASYEDA_API_ERROR", message } } },
+      { content: [{ type: "text", text: JSON.stringify({ success: false, result: { success: false, error: message } }) }] }]) {
+      assert.throws(() => extractToolPayload(envelope), { message: `The upstream EasyEDA tool reported ${"content" in envelope ? "failure or unavailability" : "failure"} [${category}].` });
+    }
+    for (const invalid of [`${message}\nPRIVATE`, `${message}\0`, `${message}:PRIVATE`, `PRIVATE ${message}`, "Recovery navigation refused: native-private"]) {
+      assert.equal(nativeFailureCategory(invalid), null);
+      assert.throws(() => extractToolPayload({ structuredContent: { ok: false, error: invalid } }), { message: "The upstream EasyEDA tool reported failure [unclassified-upstream-failure]." });
+    }
+  }
 });
 
 void test("native NetGroup diagnostics admit only exact fixed method/stage/code tuples", () => {

@@ -33,10 +33,18 @@ Filtered PCB net membership derives identity records from complete requested-fam
 source/inventory agreement, with explicit standalone/component pad roles.
 Native PCB type lookup classifies an existing ID only after complete all-five-family
 source/inventory agreement, including unassigned objects. Missing or unsupported
-IDs refuse rather than reporting false absence. The fixed read catalog has 174 routes, including
+IDs refuse rather than reporting false absence. The native active-layer reader
+matches the native document source's selected layer to the complete public layer list.
+It preserves raw color strings, including malformed values returned by EasyEDA.
+The fixed read catalog has 175 routes, including
 bounded polygon splitting that preserves input source arrays and their order. It
 accepts no arbitrary method path, caller code, callbacks, navigation or writes.
 None of these observations replaces complete design or persistence proof.
+
+The deprecated schematic selection getter now has an explicit replacement
+adapter. It uses the documented modern getter under ordinary-page checks and
+never calls the obsolete iframe path that can silently report no selection.
+Returned wire-segment selections retain the replacement's parent-group IDs.
 
 The inventory also maps the existing visible-canvas image and region-zoom
 workflows. Capture rechecks the complete runtime fingerprint before accepting

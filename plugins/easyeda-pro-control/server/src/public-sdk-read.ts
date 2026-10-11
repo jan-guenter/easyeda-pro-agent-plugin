@@ -11,6 +11,8 @@ import { buildSchematicNetGroupReadExpression, isSchematicNetGroupReadMethod, sc
 import { PCB_NET_MEMBERSHIP_LIMITATIONS, PCB_NET_MEMBERSHIP_METHOD, pcbNetMembershipArgumentsSchema } from "./pcb-net-membership.ts";
 // oxlint-disable-next-line import/max-dependencies -- Each fixed reader supplies its reviewed schema and provenance; duplicating that contract would permit drift.
 import { PCB_PRIMITIVE_TYPE_LIMITATIONS, PCB_PRIMITIVE_TYPE_METHOD, pcbPrimitiveTypeArgumentsSchema } from "./pcb-primitive-type-read.ts";
+import { PCB_ACTIVE_LAYER_LIMITATIONS, PCB_ACTIVE_LAYER_METHOD, pcbActiveLayerArgumentsSchema } from "./pcb-active-layer-read.ts";
+import { SCHEMATIC_SELECTION_LIMITATIONS, SCHEMATIC_SELECTION_METHOD, buildSchematicSelectionReadExpression } from "./schematic-selection-read.ts";
 
 /** This fixed allowlist is independent of the declaration catalog. Public entries
  * were reviewed against this implementation, including delegated getters.
@@ -175,6 +177,9 @@ add("eda.pcb_Drc.getRuleConfiguration", [3], "record", z.object({ configurationN
 add("eda.pcb_Drc.getAllRuleConfigurations", [3], "records", z.object({ includeSystem: z.boolean().optional() }).strict(), ["includeSystem"]);
 add("eda.pcb_Drc.getPadPairGroupMinWireLength", [3], "records", z.object({ padPairGroupName: name }).strict(), ["padPairGroupName"]);
 add("eda.pcb_Layer.getAllLayers", PCB_DOCUMENTS, "records");
+add(PCB_ACTIVE_LAYER_METHOD, [3], "record", pcbActiveLayerArgumentsSchema, [], {
+  implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [...PCB_ACTIVE_LAYER_LIMITATIONS],
+});
 add("eda.pcb_Layer.getTheNumberOfCopperLayers", PCB_DOCUMENTS, "number");
 add("eda.pcb_Net.getAllNets", [3], "records");
 add(PCB_NET_MEMBERSHIP_METHOD, [3], "records", pcbNetMembershipArgumentsSchema, ["net", "primitiveTypes"], {
@@ -193,7 +198,9 @@ for (const [prefix, documents] of [["pcb", PCB_DOCUMENTS], ["sch", SCHEMATIC_DOC
   add(`eda.${prefix}_SelectControl.getAllSelectedPrimitives_PrimitiveId`, documents, "ids");
   add(`eda.${prefix}_SelectControl.getCurrentMousePosition`, documents, "point", emptyArguments, [], { optionalResult: true });
 }
-add("eda.sch_SelectControl.getSelectedPrimitives_PrimitiveId", SCHEMATIC_DOCUMENTS, "ids");
+add(SCHEMATIC_SELECTION_METHOD, [1], "ids", emptyArguments, [], {
+  implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [...SCHEMATIC_SELECTION_LIMITATIONS],
+});
 add("eda.sch_Primitive.getPrimitiveTypeByPrimitiveId", SCHEMATIC_DOCUMENTS, "string", z.object({ id }).strict(), ["id"], { optionalResult: true });
 add("eda.pcb_ManufactureData.getBomTemplates", [3], "strings");
 add("eda.sch_ManufactureData.getBomTemplates", [1], "strings");
@@ -427,6 +434,8 @@ function readImplementationTestName(path: string): string {
 }
 
 function readImplementationName(path: string): string {
+  if (path === SCHEMATIC_SELECTION_METHOD) { return "schematic-selection-read"; }
+  if (path === PCB_ACTIVE_LAYER_METHOD) { return "pcb-active-layer-read"; }
   if (path === PCB_PRIMITIVE_TYPE_METHOD) { return "pcb-primitive-type-read"; }
   if (path === PCB_NET_MEMBERSHIP_METHOD) { return "pcb-net-membership-read"; }
   if (isSchematicNetGroupReadMethod(path)) { return "schematic-netgroup-read"; }
@@ -485,6 +494,7 @@ export function buildPublicSdkReadCode(input: unknown): string {
   if (isEditorTabLookupMethod(request.method)) { throw new Error("Owned editor lookups require the checkpoint-bound specialized reader."); }
   if (request.method === PCB_NET_MEMBERSHIP_METHOD) { throw new Error("PCB net membership requires the source/inventory/source specialized reader."); }
   if (request.method === PCB_PRIMITIVE_TYPE_METHOD) { throw new Error("PCB primitive type requires the source/inventory/source specialized reader."); }
+  if (request.method === PCB_ACTIVE_LAYER_METHOD) { throw new Error("PCB active layer requires the source/layers/source specialized reader."); }
   const definition = definitions.get(request.method);
   if (definition === undefined) { throw new Error("Unsupported fixed SDK method."); }
   const args = definition.parameters.map((key) => {
@@ -492,7 +502,8 @@ export function buildPublicSdkReadCode(input: unknown): string {
     return request.arguments[key] === undefined ? "undefined" : JSON.stringify(request.arguments[key]);
   }).join(",");
   let expression = `await ${definition.path}(${args})`;
-  if (isSchematicNativeIdMethod(definition.path)) { expression = buildSchematicNativeIdsExpression(definition.path, "sdk-failure-code"); }
+  if (definition.path === SCHEMATIC_SELECTION_METHOD) { expression = buildSchematicSelectionReadExpression(); }
+  else if (isSchematicNativeIdMethod(definition.path)) { expression = buildSchematicNativeIdsExpression(definition.path, "sdk-failure-code"); }
   else if (definition.path === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { expression = buildSchematicComponentPropertyNamesExpression("sdk-failure-code"); }
   else if (definition.path === SYMBOL_PIN_ENUMERATION_METHOD) { expression = buildSymbolPinEnumerationExpression("sdk-failure-code"); }
   else if (isSchematicTextReadMethod(definition.path)) { expression = buildSchematicTextReadExpression(request, "sdk-failure-code"); }
@@ -670,6 +681,7 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
   if (isEditorTabLookupMethod(request.method)) { throw new Error("Owned editor lookup results require the checkpoint-bound specialized verifier."); }
   if (request.method === PCB_NET_MEMBERSHIP_METHOD) { throw new Error("PCB net membership results require the complete source/inventory specialized verifier."); }
   if (request.method === PCB_PRIMITIVE_TYPE_METHOD) { throw new Error("PCB primitive type results require the complete source/inventory specialized verifier."); }
+  if (request.method === PCB_ACTIVE_LAYER_METHOD) { throw new Error("PCB active layer results require the complete source/layers specialized verifier."); }
   const definition = definitions.get(request.method);
   if (definition === undefined) { throw new Error("Unsupported fixed SDK method."); }
   assertExactTransportValue(input);
@@ -744,6 +756,7 @@ export function validatePublicSdkReadPayload(input: unknown, requestInput: unkno
     ? "bounded-native-task-observation-not-complete-source-connectivity-or-persistence-proof"
     : "bounded-public-sdk-observation-not-native-or-persistence-proof";
   if (isSchematicNativeIdMethod(request.method)) { assurance = "bounded-native-id-observation-not-complete-source-connectivity-or-persistence-proof"; }
+  if (request.method === SCHEMATIC_SELECTION_METHOD) { assurance = "bounded-public-replacement-selection-observation-not-complete-ownership-source-or-persistence-proof"; }
   if (request.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { assurance = "bounded-native-property-name-observation-not-complete-source-connectivity-or-persistence-proof"; }
   if (request.method === SYMBOL_PIN_ENUMERATION_METHOD) { assurance = "bounded-native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof"; }
   if (isSchematicTextReadMethod(request.method)) { assurance = "bounded-native-text-state-observation-not-complete-source-connectivity-or-persistence-proof"; }

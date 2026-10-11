@@ -10,8 +10,9 @@ import { PCB_PRIMITIVE_TYPE_LIMITATIONS, PCB_PRIMITIVE_TYPE_METHOD, PCB_PRIMITIV
 type Value = Record<string, unknown>;
 interface Item { primitiveId: string; primitiveType: string; net: string | null; parentComponentPrimitiveId?: string; padNumber?: string; }
 interface Family { count: number; primitiveIds: string[]; byPrimitiveId: Record<string, Item>; }
+interface ComponentFamily { status: string; count: number; primitiveIds: string[]; }
 interface Link { primitiveId: string; parentComponentPrimitiveId: string; padNumber: string; net: string | null; }
-interface Inventory { ok: true; kind: "pcb-inventory"; documentType: 3; families: Record<string, Family>;
+interface Inventory { ok: true; kind: "pcb-inventory"; documentType: 3; families: Record<string, Family | ComponentFamily>;
   componentPadCorrelation: { status: "exact-subset"; count: number; primitiveIds: string[]; byPrimitiveId: Record<string, Link>; byComponentPrimitiveId: Record<string, string[]> }; }
 interface Fixture { objects: NativeSourceObject[]; inventory: Inventory; }
 const request = { method: PCB_PRIMITIVE_TYPE_METHOD, arguments: { id: "line" } };
@@ -32,12 +33,12 @@ function fixture(net = "SIGNAL"): Fixture {
     lines: family([{ primitiveId: "line", primitiveType: "Line", net }, { primitiveId: "unassigned", primitiveType: "Line", net: null }]),
     arcs: family([{ primitiveId: "arc", primitiveType: "Arc", net }]), vias: family([{ primitiveId: "via", primitiveType: "Via", net }]),
     pads: family([{ primitiveId: "pad", primitiveType: "Pad", net, padNumber: "3" }, { primitiveId: "componentlocal", primitiveType: "Pad", net, padNumber: "1", parentComponentPrimitiveId: "component" }]),
-    components: family([{ primitiveId: "component", primitiveType: "Component", net: null }]),
+    components: { status: "adapter-enumerated", count: 1, primitiveIds: ["component"] },
   }, componentPadCorrelation: { status: "exact-subset", count: 1, primitiveIds: ["componentlocal"],
     byPrimitiveId: { componentlocal: { primitiveId: "componentlocal", parentComponentPrimitiveId: "component", padNumber: "1", net } },
     byComponentPrimitiveId: { component: ["componentlocal"] } } } };
 }
-function getFamily(state: Fixture, name: string): Family { const value = state.inventory.families[name]; assert.ok(value); return value; }
+function getFamily(state: Fixture, name: string): Family { const value = state.inventory.families[name]; assert.ok(value && "byPrimitiveId" in value); return value; }
 function source(state: Fixture, id: string): NativeSourceObject { const value = state.objects.find((row) => row.id === id); assert.ok(value); return value; }
 function derive(state: Fixture, id = "line"): ReturnType<typeof derivePcbPrimitiveType> {
   return derivePcbPrimitiveType(snapshot(state.objects), state.inventory, { ...request, arguments: { id } }, "board");
@@ -61,8 +62,8 @@ for (const name of ["lines", "arcs", "vias", "pads", "components"]) {
     assert.throws(() => derive(state));
   });
   void test(`all-five-family type lookup refuses extra ${name} even for a known line`, () => {
-    const state = fixture(); const rows = getFamily(state, name); rows.count += 1; rows.primitiveIds.push("extra");
-    rows.byPrimitiveId["extra"] = { primitiveId: "extra", primitiveType: "Line", net: "" };
+    const state = fixture(); const rows = state.inventory.families[name]; assert.ok(rows); rows.count += 1; rows.primitiveIds.push("extra");
+    if ("byPrimitiveId" in rows) { rows.byPrimitiveId["extra"] = { primitiveId: "extra", primitiveType: "Line", net: "" }; }
     assert.throws(() => derive(state));
   });
 }

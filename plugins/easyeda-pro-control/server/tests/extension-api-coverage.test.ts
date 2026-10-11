@@ -66,7 +66,7 @@ void test("coverage does not promote schema-only, native equivalent, stub, lates
   assert.equal(rows.get("eda.dmt_Project.createProject")?.status, "omitted");
   assert.equal(rows.get("eda.sch_PrimitiveBus.create")?.status, "omitted");
   assert.equal(rows.get("eda.pcb_Document.save")?.status, "internal-lifecycle-only");
-  assert.equal(rows.get("eda.pcb_Layer.getCurrentLayer")?.omission?.code, "reviewed-native-stub");
+  assert.equal(rows.get("eda.pcb_Layer.getCurrentLayer")?.status, "implemented-native-equivalent");
   assert.equal(rows.get("eda.sch_PrimitiveText.getAllPrimitiveId")?.status, "implemented-native-equivalent");
   assert.equal(rows.get("eda.sch_PrimitiveText.getAllPrimitiveId")?.routes[0]?.implementation, "native-task-equivalent");
   assert.equal(rows.get("eda.sys_Help.help")?.omission?.code, "not-in-reviewed-runtime");
@@ -164,8 +164,20 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 193, "implemented-native-equivalent": 87, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 484,
+    "implemented-public-subset": 192, "implemented-native-equivalent": 89, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 483,
   });
+});
+
+void test("active layer coverage separates its native identity/public fields from the empty public stub", () => {
+  const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.pcb_Layer.getCurrentLayer"); assert.ok(row);
+  assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
+  assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+  assert.equal(row.runtimeAdmission, "not-granted-by-inventory"); assert.equal(row.routes.length, 1);
+  const route = row.routes[0]; assert.ok(route);
+  assert.equal(route.tool, "easyeda_control_sdk_read"); assert.deepEqual(route.documentTypes, [3]);
+  assert.deepEqual(route.source, ["pcb-active-layer-read.ts"]); assert.deepEqual(route.tests, ["pcb-active-layer-read.test.ts"]);
+  assert.match(route.scope, /body is empty/u); assert.match(route.scope, /source\/layers\/source/u);
+  assert.match(route.scope, /public getAllLayers projection/u); assert.match(route.scope, /no undefined\/no-active-layer result/u);
 });
 
 void test("PCB type lookup coverage exposes the native classification subset instead of its public stub", () => {

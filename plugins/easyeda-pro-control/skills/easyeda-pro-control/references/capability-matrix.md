@@ -21,11 +21,13 @@ its narrow boundary and pending live validation are listed separately below.
 | API coverage and fixed reads | api coverage/sdk-reads/sdk-validate, sdk_read | Complete per-method inventory; fixed schemas and explicit public/native implementation labels; bounded observations, not complete source or persistence proof; current-generation live validation pending |
 | Schematic Text/Wire/Bus IDs | sdk_read, getAllPrimitiveId | Native ID-only equivalent on an ordinary active type-1 page; empty arguments only, no Wire net filters or symbol/block-instance scenes. Complete reciprocal tree/index proof and source-backed root-family membership; generated frame descendants excluded, structural GROUP records refused. Two stable observations, no callback/compiler/Save. Group IDs are not LINE IDs. Offline-tested; connected validation pending |
 | Schematic component property names | sdk_read, sch_PrimitiveComponent.getAllPropertyNames | Native key-only equivalent on one ordinary page; complete root Symbol/attribute-map/tree/index proof, including inherited/generated frame/flag keys. No values, compiler, source serializer or Save; unsupported ownership/groups refuse. Exact sorted bounded strings, not all-pages or persistence proof. Connected validation pending |
+| Deprecated schematic selected-ID getter | sdk_read, sch_SelectControl.getSelectedPrimitives_PrimitiveId | Explicit equivalent using its documented public replacement getAllSelectedPrimitives_PrimitiveId. Exact ordinary page/readiness/receiver checks, bounded ordered unique IDs, two stable samples. Never calls the obsolete iframe route, which can falsely return an empty list. Selected line children resolve to parent groups; no complete ownership or persistence claim. New adapter connected validation pending |
 | Ordinary symbol Pin enumeration | sdk_read, sch_PrimitivePin.getAll | Native single-PART membership plus explicit public-getter parity; 256-Pin bound, exact standard attributes, generated-dot ownership and reproof around awaits. Custom attributes/multipart/device/no-connect/junction cases refuse. Getter rotation is not stored rotation; JSON normalizes signed zero. Connected validation pending |
 | Schematic Text state | sdk_read, sch_PrimitiveText.get/getAll | Complete bounded ordinary page-root Text membership and 14 native scalar fields. Exact selected IDs or all roots; sorted arrays, native Y/null/style/alignment semantics, no public-getter parity. Synchronous reproof plus two facade observations; no compiler, serializer or Save. Installed223200 fixture evidence below; new-generation connected admission pending |
-| Schematic Wire/Bus state | sdk_read, sch_PrimitiveWire/Bus.get/getAll | Root NetGroup DTOs retain every line's native points/styles, all literal NET names and custom attribute IDs. Complete bounded reciprocal tree/index/source/child proof; no public wrappers/compiler/serializer/Save, no net filters or resolved-net claim. Source/adversarial tests only; connected acceptance pending |
+| Schematic Wire/Bus state | sdk_read, sch_PrimitiveWire/Bus.get/getAll | Root NetGroup DTOs retain every line's native points/styles, all literal NET names and custom attribute IDs. Complete bounded reciprocal tree/index/source/child proof; no public wrappers/compiler/serializer/Save, no net filters or resolved-net claim. Installed010000 nonempty fixture evidence below; later-generation acceptance remains separate |
 | Filtered PCB net membership | sdk_read, pcb_Net.getAllPrimitivesByNet | Explicit Line/Arc/Via/standalone-Pad/ComponentPad filters and nonempty net only. Complete requested-family source/inventory correspondence before filtering, component-pad ownership and two matching source/inventory/source cycles. Identity records, not public classes/connectivity/persistence. Connected acceptance pending |
 | PCB primitive type | sdk_read, pcb_Primitive.getPrimitiveTypeByPrimitiveId | Existing literal ID only; complete all-five-family source/inventory proof, including empty-net objects. Returns Line/Arc/Via/Pad/ComponentPad; missing, other-family and colliding IDs refuse without an absence claim. Native equivalent of an installed empty stub; two cycles/runtime/context checks, connected acceptance pending |
+| PCB active layer | sdk_read, pcb_Layer.getCurrentLayer | Empty arguments and ordinary project PCB only. One canonical ACTIVE_LAYER and complete bounded source are matched to the public all-layer list across two source/list/source cycles. Selected name/type/visibility/use/lock must agree; raw bounded color strings are not validated CSS. No public-stub invocation or layer change. Source-tested; installed connected acceptance pending |
 | Visible and region canvas capture | capture, easyeda_canvas_capture / easyeda_canvas_capture_region | Existing public image and zoomToRegion calls on the explicit active tab, bounded PNG and managed evidence; before/after runtime/context proof. Region mode changes viewport. No standalone zoom, native receiver identity, complete-design or visual-acceptance claim |
 | Polygon splitting | sdk_read, pcb_MathPolygon.splitPolygon | Bounded JSON complex-polygon groups, temporary SDK constructors and exact ordered source-array output with duplicates retained. No native handles or CAD mutation; shared aggregate limits apply. Offline-tested including pinned constructor bodies; connected validation pending |
 | Owned editor tab/split-screen lookup | sdk_read, getSplitScreenIdByTabId / getTabsBySplitScreenId | Exact existing selector, complete bounded owned tree and saved project membership; identity-only direct result checked against the tree before/after, two matching samples and unchanged checkpoint/context. No foreign projects, empty leaves, title/data export, navigation or current-generation live claim |
@@ -77,6 +79,27 @@ its narrow boundary and pending live validation are listed separately below.
 | Raw JavaScript, automatic database restore, fabrication submission | unsupported | No unrestricted-code switch or implicit purchasing/manufacturing authority |
 
 ## Reported live coverage
+
+Installed010000 Wire/Bus get and getAll matched four Wire groups containing
+eleven segments and one Bus on the disposable fixture. Independent reconstruction
+matched every retained geometry/style/name/custom-attribute identity. Complete
+native snapshots, all 383 stored records and all 18 documents stayed unchanged.
+These are native DTO observations, not public-wrapper parity, resolved electrical
+connectivity, writer validation or admission of a later facade generation.
+
+The same installed generation exposed a false-empty legacy selection result.
+The native panel showed one selected resistor while the deprecated getter
+returned an empty list. Its documented modern replacement returned that exact
+component ID twice. The new explicit replacement adapter is source-tested;
+that earlier public observation does not admit the newer adapter generation.
+
+The same fixture exposed two PCB admission gaps before net/type dispatch.
+The current source now accepts the actual identity-only component inventory and
+one exact disabled default PANELIZE record. Active, malformed or aliased panel
+records still refuse. The fixture's two inherited silkscreen lines remain outside
+the standalone LINE source proof. Do not infer their owners from ID prefixes or
+claim complete Line/type coverage. The new active-layer reader and these contract
+corrections still need installed-generation connected validation.
 
 Installed223200 Text get/getAll returned exactly one root Text and all fourteen
 native fields. Raw null/null alignment agrees with the stored null alignment

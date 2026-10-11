@@ -7,6 +7,7 @@ import { SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES, SCHEMATIC_COMPONENT_PROPERTY_
 import { SYMBOL_PIN_ENUMERATION_GUARD_CODES, SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
 import { SCHEMATIC_TEXT_GUARD_CODES, SCHEMATIC_TEXT_READ_METHODS } from "./schematic-text-read.ts";
 import { SCHEMATIC_NETGROUP_GUARD_CODES, SCHEMATIC_NETGROUP_READ_METHODS } from "./schematic-netgroup-read.ts";
+import { SCHEMATIC_SELECTION_GUARD_CODES, SCHEMATIC_SELECTION_METHOD } from "./schematic-selection-read.ts";
 
 /** Fixed literal errors emitted by reviewed code builders. Never echo unknown
  * native exception text, dynamic suffixes, stack traces or caller values.
@@ -155,6 +156,9 @@ export const RECOVERY_NAVIGATION_FAILURE_STAGES = [
   "tab-tree-api", "tab-tree-shape", "tab-tree-branch", "tab-tree-leaf", "tab-record", "tab-data", "tab-type-alias", "unrelated-editor-tab",
   "editor-readiness-api", "editor-readiness-project", "editor-readiness-document", "editor-readiness-owner",
   "editor-readiness-pcb", "editor-readiness-page", "editor-readiness-container",
+  "native-project-info", "native-document-info", "native-tab-tree", "native-registry-request", "native-registry-read",
+  "native-library-info", "native-open-project", "native-open-document", "native-open-library", "native-activate-document",
+  "native-schematic-info", "native-schematic-page-info", "native-pcb-info", "native-unexpected",
 ] as const;
 const recoveryStages: ReadonlySet<string> = new Set(RECOVERY_NAVIGATION_FAILURE_STAGES);
 const tabCodes = new Set(["EDITOR_TABS_API_MISSING", "EDITOR_TABS_FIELD_BOUND", "EDITOR_TABS_PROJECT_DRIFT", "EDITOR_TABS_TREE_BOUND", "EDITOR_TABS_CONTEXT_DRIFT", "EDITOR_TABS_OUTPUT_BOUND"]);
@@ -219,8 +223,15 @@ const schematicNetGroupCategories = new Map<string, string>(SCHEMATIC_NETGROUP_R
     .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
       `native-schematic-netgroup:${method}:${label}`] as const)));
 
+const schematicSelectionCategories = new Map<string, string>(
+  [...SCHEMATIC_SELECTION_GUARD_CODES.map((code) => [`SCH_SELECTION_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${SCHEMATIC_SELECTION_METHOD}|stage=call|code=${code}|getter=none`,
+      `native-selection-replacement:${SCHEMATIC_SELECTION_METHOD}:${label}`] as const));
+
 export function nativeFailureCategory(message: unknown): string | null {
   if (typeof message !== "string") { return null; }
+  const schematicSelectionCategory = message.length <= 288 ? schematicSelectionCategories.get(message) : undefined;
+  if (schematicSelectionCategory !== undefined) { return schematicSelectionCategory; }
   const schematicNetGroupCategory = message.length <= 288 ? schematicNetGroupCategories.get(message) : undefined;
   if (schematicNetGroupCategory !== undefined) { return schematicNetGroupCategory; }
   const schematicTextCategory = message.length <= 288 ? schematicTextCategories.get(message) : undefined;

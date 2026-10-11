@@ -2,16 +2,19 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { isRecord, loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json } from "../src/core.ts";
 import type { NativeSourceObject, NativeSourceSnapshot } from "../src/document-source.ts";
+import { buildExactReadCode, decodeExactReadEnvelope, validateExactReadPayload } from "../src/exact-readers.ts";
 import { PCB_NET_MEMBERSHIP_API_SHA256, PCB_NET_MEMBERSHIP_LIMITATIONS, PCB_NET_MEMBERSHIP_METHOD, PCB_NET_MEMBERSHIP_PCB_SHA256,
   derivePcbNetMembership, pcbNetMembershipItemsSchema, pcbNetMembershipRequestSchema } from "../src/pcb-net-membership.ts";
 import { readPcbNetMembership } from "../src/pcb-net-membership-read.ts";
 import type { PcbNetMembershipEngine } from "../src/pcb-net-membership-read.ts";
+import { PCB_PRIMITIVE_TYPE_METHOD, derivePcbPrimitiveType, readPcbPrimitiveType } from "../src/pcb-primitive-type-read.ts";
 
 type Value = Record<string, unknown>;
 interface Item { primitiveId: string; primitiveType: string; net: string | null; parentComponentPrimitiveId?: string; padNumber?: string; }
 interface Family { count: number; primitiveIds: string[]; byPrimitiveId: Record<string, Item>; }
+interface ComponentFamily { status: string; count: number; primitiveIds: string[]; }
 interface Link { primitiveId: string; parentComponentPrimitiveId: string; padNumber: string; net: string | null; }
-interface Inventory { ok: true; kind: "pcb-inventory"; documentType: 3; families: Record<string, Family>;
+interface Inventory { ok: true; kind: "pcb-inventory"; documentType: 3; families: Record<string, Family | ComponentFamily>;
   componentPadCorrelation: { status: "exact-subset"; count: number; primitiveIds: string[]; byPrimitiveId: Record<string, Link>; byComponentPrimitiveId: Record<string, string[]> }; }
 interface Fixture { objects: NativeSourceObject[]; inventory: Inventory; }
 const request = { method: PCB_NET_MEMBERSHIP_METHOD, arguments: { net: "signal", primitiveTypes: ["Line", "Arc", "Via", "Pad", "ComponentPad"] } };
@@ -34,19 +37,91 @@ function fixture(): Fixture {
     arcs: family([{ primitiveId: "arc", primitiveType: "Arc", net: "Signal" }]), vias: family([{ primitiveId: "via", primitiveType: "Via", net: "SIGNAL" }]),
     pads: family([{ primitiveId: "pad", primitiveType: "Pad", net: "SIGNAL", padNumber: "3" },
       { primitiveId: "componentlocal", primitiveType: "Pad", net: "SIGNAL", padNumber: "1", parentComponentPrimitiveId: "component" }]),
-    components: family([{ primitiveId: "component", primitiveType: "Component", net: null }]),
+    components: { status: "adapter-enumerated", count: 1, primitiveIds: ["component"] },
   }, componentPadCorrelation: { status: "exact-subset", count: 1, primitiveIds: ["componentlocal"],
     byPrimitiveId: { componentlocal: { primitiveId: "componentlocal", parentComponentPrimitiveId: "component", padNumber: "1", net: "SIGNAL" } },
     byComponentPrimitiveId: { component: ["componentlocal"] } } } };
 }
 function item(state: Fixture, name: string, id: string): Item {
-  const row = state.inventory.families[name]?.byPrimitiveId[id]; assert.ok(row); return row;
+  const row = getFamily(state, name).byPrimitiveId[id]; assert.ok(row); return row;
 }
-function getFamily(state: Fixture, name: string): Family { const value = state.inventory.families[name]; assert.ok(value); return value; }
+function getFamily(state: Fixture, name: string): Family { const value = state.inventory.families[name]; assert.ok(value && "byPrimitiveId" in value); return value; }
+function getComponents(state: Fixture): ComponentFamily { const value = state.inventory.families["components"]; assert.ok(value && "status" in value); return value; }
 function source(state: Fixture, id: string): NativeSourceObject { const value = state.objects.find((row) => row.id === id); assert.ok(value); return value; }
 function derive(state: Fixture, input: unknown = request): ReturnType<typeof derivePcbNetMembership> {
   return derivePcbNetMembership(snapshot(state.objects), state.inventory, input, "board");
 }
+function disabledPanel(): Value {
+  const stamp = { on: false, stampHoleGroupQuantity: 1, stampHoleDiameter: 20, stampHoleQuantityPerGroup: 8, stampHoleSpacing: 30 };
+  const side = { on: false, sideHeight: 200, positionHoleDiameter: 80, markDiameter: 40, markExpansion: 20 };
+  return { on: false, row: 1, column: 1, rowSpacing: 0, columnSpacing: 0, onlyOutline: true,
+    horizontalStamp: { ...stamp }, verticalStamp: { ...stamp }, horizontalSize: { ...side }, verticalSize: { ...side, on: true } };
+}
+
+void test("disabled default PANELIZE retains dormant settings without adding members or weakening type proof", () => {
+  const state = fixture();
+  const original = derive(state);
+  state.objects.push(object("PANELIZE", "PANELIZE", disabledPanel()));
+  const before = structuredClone(state);
+  assert.deepEqual(derive(state), original);
+  for (const [id, type] of [["line", "Line"], ["arc", "Arc"], ["via", "Via"], ["pad", "Pad"], ["componentlocal", "ComponentPad"]]) {
+    assert.equal(derivePcbPrimitiveType(snapshot(state.objects), state.inventory, { method: PCB_PRIMITIVE_TYPE_METHOD, arguments: { id } }, "board"), type);
+  }
+  assert.deepEqual(state, before);
+});
+const panelDefects: [string, (body: Value) => void][] = [
+  ["enabled", (body) => { body["on"] = true; }], ["coerced off", (body) => { body["on"] = 0; }],
+  ["extra field", (body) => { body["futureGeometry"] = []; }],
+  ...["row", "column", "rowSpacing", "columnSpacing", "onlyOutline"].map((key): [string, (body: Value) => void] =>
+    [`nondefault ${key}`, (body) => { body[key] = key === "onlyOutline" ? false : 2; }]),
+  ...Object.keys(disabledPanel()).map((key): [string, (body: Value) => void] => [`missing ${key}`, (body) => { Reflect.deleteProperty(body, key); }]),
+];
+for (const group of ["horizontalStamp", "verticalStamp", "horizontalSize", "verticalSize"]) {
+  const nested = disabledPanel()[group]; assert.ok(isRecord(nested));
+  for (const key of [...Object.keys(nested), "extra"]) {
+    panelDefects.push([`${group} ${key} malformed`, (body): void => {
+      const fields = body[group]; assert.ok(isRecord(fields)); fields[key] = key === "on" ? 0 : "invalid";
+    }]);
+    if (key !== "extra") { panelDefects.push([`${group} ${key} missing`, (body): void => { const fields = body[group]; assert.ok(isRecord(fields)); Reflect.deleteProperty(fields, key); }]); }
+  }
+}
+for (const value of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, "20", null]) {
+  panelDefects.push([`invalid nested dimension ${String(value)}`, (body): void => { const fields = body["verticalSize"]; assert.ok(isRecord(fields)); fields["markDiameter"] = value; }]);
+}
+for (const value of [0, -1, 1.5, 20_001, Number.POSITIVE_INFINITY]) {
+  panelDefects.push([`invalid nested quantity ${String(value)}`, (body): void => { const fields = body["horizontalStamp"]; assert.ok(isRecord(fields)); fields["stampHoleGroupQuantity"] = value; }]);
+}
+for (const [label, mutate] of panelDefects) {
+  void test(`PANELIZE refuses ${label} for membership and type`, () => {
+    const body = disabledPanel(), state = fixture(); mutate(body); state.objects.push(object("PANELIZE", "PANELIZE", body));
+    assert.throws(() => derive(state), /PANELIZE/u);
+    assert.throws(() => derivePcbPrimitiveType(snapshot(state.objects), state.inventory, { method: PCB_PRIMITIVE_TYPE_METHOD, arguments: { id: "via" } }, "board"), /PANELIZE/u);
+  });
+}
+for (const rows of [
+  [object("PANELIZE", "alias", disabledPanel())], [object("CANVAS", "PANELIZE", disabledPanel())],
+  [object("PANELIZE", "PANELIZE", disabledPanel()), object("PANELIZE", "alias", disabledPanel())],
+  [object("PANELIZE", "PANELIZE", disabledPanel()), object("PANELIZE", "PANELIZE", disabledPanel())],
+  [object("PANELIZE", "PANELIZE", disabledPanel()), object("PANELIZE_STAMP", "stamp", { on: false })],
+]) {
+  void test(`PANELIZE refuses noncanonical/ambiguous/descendant headers ${JSON.stringify(rows.map((row) => [row.type, row.id]))}`, () => {
+    const state = fixture(); state.objects.push(...rows); assert.throws(() => derive(state));
+  });
+}
+void test("disabled PANELIZE never excuses missing or inherited inventory and never discards source fields", () => {
+  const state = fixture(); state.objects.push(object("PANELIZE", "PANELIZE", disabledPanel()));
+  const before = snapshot(state.objects), panel = source(state, "PANELIZE").body["verticalSize"]; assert.ok(isRecord(panel));
+  panel["markDiameter"] = 41;
+  assert.throws(() => derivePcbNetMembership({ ...before, objects: state.objects }, state.inventory, request, "board"), /commitment/u);
+  const lines = getFamily(state, "lines"); lines.primitiveIds.push("component-silk-line"); lines.count += 1;
+  lines.byPrimitiveId["component-silk-line"] = { primitiveId: "component-silk-line", primitiveType: "Line", net: "" };
+  assert.throws(() => derive(state), /incomplete or ambiguous/u);
+  assert.throws(() => derivePcbPrimitiveType(snapshot(state.objects), state.inventory, { method: PCB_PRIMITIVE_TYPE_METHOD, arguments: { id: "via" } }, "board"), /incomplete or ambiguous/u);
+  const narrowed = { ...request, arguments: { net: "SIGNAL", primitiveTypes: ["Via", "Arc", "ComponentPad"] } };
+  assert.deepEqual(derive(state, narrowed).map((row) => row.primitiveId), ["arc", "componentlocal", "via"]);
+  const vias = getFamily(state, "vias"); vias.primitiveIds = []; vias.count = 0; vias.byPrimitiveId = {};
+  assert.throws(() => derive(state, narrowed), /incomplete or ambiguous/u);
+});
 
 void test("native net membership preserves spelling, case-folds lookup and proves disjoint physical pad owners", () => {
   const state = fixture();
@@ -193,9 +268,11 @@ const defects: [string, (state: Fixture) => void][] = [
   ["inherited parent lost", (state) => { delete item(state, "pads", "componentlocal").parentComponentPrimitiveId; }],
   ["standalone falsely inherited", (state) => { item(state, "pads", "pad").parentComponentPrimitiveId = "component"; }],
   ["pad number contradiction", (state) => { item(state, "pads", "componentlocal").padNumber = "2"; }],
-  ["component count missing", (state) => { getFamily(state, "components").count = 0; }],
-  ["component identity substitution", (state) => { item(state, "components", "component").primitiveId = "other"; }],
-  ["component native type substitution", (state) => { item(state, "components", "component").primitiveType = "Pad"; }],
+  ["component count missing", (state) => { getComponents(state).count = 0; }],
+  ["component identity substitution", (state) => { getComponents(state).primitiveIds = ["other"]; }],
+  ["component enumeration status substitution", (state) => { getComponents(state).status = "unknown"; }],
+  ["component duplicate identity", (state) => { getComponents(state).primitiveIds.push("component"); getComponents(state).count += 1; }],
+  ["component fabricated state index", (state) => { state.inventory.families["components"] = { ...getComponents(state), byPrimitiveId: { component: { primitiveId: "component", primitiveType: "Component", net: null } } }; }],
   ["component correlation extra key", (state) => { state.inventory.componentPadCorrelation.byPrimitiveId["extra"] = { primitiveId: "extra", parentComponentPrimitiveId: "component", net: "SIGNAL", padNumber: "2" }; }],
   ["component correlation missing owner", (state) => { delete state.inventory.componentPadCorrelation.byComponentPrimitiveId["component"]; }],
   ["component correlation duplicate child", (state) => { state.inventory.componentPadCorrelation.byComponentPrimitiveId["component"] = ["componentlocal", "componentlocal"]; }],
@@ -265,10 +342,11 @@ function sourceString(objects: NativeSourceObject[]): string {
   const value = snapshot(objects); return [`{"type":"DOCHEAD"}||${JSON.stringify(value.document)}`,
     ...value.objects.map((row) => `${JSON.stringify({ type: row.type, id: row.id })}||${JSON.stringify(row.body)}`)].join("|\n");
 }
-interface RuntimeOptions { failContext?: number; quarantine?: number; runtimeDrift?: boolean; corruptHash?: number; sourceDrift?: boolean; failRead?: number; changeKind?: number; cycleDrift?: boolean; inventoryDrift?: boolean; foreignProject?: boolean; metadataDrift?: boolean; boardDrift?: number; }
+interface RuntimeOptions { failContext?: number; quarantine?: number; runtimeDrift?: boolean; corruptHash?: number; sourceDrift?: boolean; failRead?: number; changeKind?: number; cycleDrift?: boolean; inventoryDrift?: boolean; foreignProject?: boolean; metadataDrift?: boolean; boardDrift?: number; panelDrift?: number; }
 function runtime(options: RuntimeOptions = {}): { engine: PcbNetMembershipEngine; calls: string[]; counts: { contexts: number; gates: number; statuses: number } } {
   const state = fixture();
   if (options.boardDrift !== undefined) { state.objects.push(object("BOARD", "board-outline", { path: boardPaths[0]?.[1] })); }
+  if (options.panelDrift !== undefined) { state.objects.push(object("PANELIZE", "PANELIZE", disabledPanel())); }
   const originalFingerprint = fingerprint();
   const calls: string[] = [];
   const counts = { contexts: 0, gates: 0, statuses: 0 };
@@ -286,6 +364,7 @@ function runtime(options: RuntimeOptions = {}): { engine: PcbNetMembershipEngine
       if (options.sourceDrift === true && calls.length === 3) { source(state, "other-line").body["netName"] = "CHANGED"; }
       if (options.metadataDrift === true && calls.length === 3) { state.objects.push(object("PREFERENCE", "routing-settings", { removeAntenna: false })); }
       if (calls.length === options.boardDrift) { source(state, "board-outline").body["path"] = ["CIRCLE", 1, 1, 100]; }
+      if (calls.length === options.panelDrift) { const side = source(state, "PANELIZE").body["verticalSize"]; assert.ok(isRecord(side)); side["markDiameter"] = 41; }
       if (options.cycleDrift === true && calls.length === 4) { source(state, "other-line").body["netName"] = "CHANGED"; item(state, "lines", "other-line").net = "CHANGED"; }
       const sample = kind === "pcb-source" ? { ok: true, kind, documentType: 3, source: sourceString(state.objects) } : state.inventory;
       const payload = exact({ ...sample, ...(options.inventoryDrift === true && calls.length === 5 ? { unrelatedNativeMetadata: "changed" } : {}) });
@@ -311,7 +390,7 @@ void test("coordinator uses source/inventory/source exact observations and recor
   assert.deepEqual(current.counts, { contexts: 14, gates: 8, statuses: 2 });
 });
 for (const option of [...Array.from({ length: 6 }, (_, index) => ({ failRead: index + 1 })), ...Array.from({ length: 6 }, (_, index) => ({ corruptHash: index + 1 })),
-  { changeKind: 1 }, { sourceDrift: true }, { metadataDrift: true }, { boardDrift: 3 }, { boardDrift: 4 }, { cycleDrift: true }, { inventoryDrift: true }, { foreignProject: true }, { runtimeDrift: true }, ...Array.from({ length: 14 }, (_, index) => ({ failContext: index + 1 })),
+  { changeKind: 1 }, { sourceDrift: true }, { metadataDrift: true }, { boardDrift: 3 }, { boardDrift: 4 }, { panelDrift: 3 }, { panelDrift: 4 }, { cycleDrift: true }, { inventoryDrift: true }, { foreignProject: true }, { runtimeDrift: true }, ...Array.from({ length: 14 }, (_, index) => ({ failContext: index + 1 })),
   ...Array.from({ length: 8 }, (_, index) => ({ quarantine: index + 1 }))]) {
   void test(`coordinator refuses ${JSON.stringify(option)} without retry or a write path`, async () => {
     const current = runtime(option); await assert.rejects(readPcbNetMembership(current.engine, request, context, fingerprint()));
@@ -337,3 +416,117 @@ void test("coordinator rejects missing or substituted runtime proof before a gat
     assert.equal(current.counts.gates, 0); assert.equal(current.calls.length, 0);
   }
 });
+
+type StateObject = Record<string, () => unknown>;
+interface InventoryApi { getAllPrimitiveId: () => string[]; getAll: () => StateObject[]; getAllPinsByPrimitiveId?: (id: string) => StateObject[]; }
+type AsyncFunctionConstructor = new (...parameters: string[]) => (eda: unknown) => Promise<unknown>;
+/* oxlint-disable typescript/no-unsafe-type-assertion, typescript/no-unsafe-member-access -- Execute the actual generated exact-reader program with synthetic SDK receivers, never a live bridge. */
+const AsyncFunction = Object.getPrototypeOf(async (): Promise<void> => { await Promise.resolve(); }).constructor as AsyncFunctionConstructor;
+/* oxlint-enable typescript/no-unsafe-type-assertion, typescript/no-unsafe-member-access */
+function stateObject(values: Value): StateObject {
+  return Object.fromEntries(Object.entries(values).map(([name, value]) => [`getState_${name}`, () => value]));
+}
+function physicalState(name: string, row: Item): StateObject {
+  const base = { PrimitiveId: row.primitiveId, PrimitiveType: row.primitiveType, Net: row.net, PrimitiveLock: false };
+  if (name === "pads") {
+    return stateObject({ ...base, Layer: 1, PadNumber: row.padNumber, X: 0, Y: 0, Rotation: 0, Pad: ["ELLIPSE", 20, 20], SpecialPad: null,
+      Hole: ["ROUND", 10], HoleOffsetX: 0, HoleOffsetY: 0, HoleRotation: 0, Metallization: true, PadType: 1,
+      SolderMaskAndPasteMaskExpansion: { topSolderMask: 4, bottomSolderMask: 4, topPasteMask: 0, bottomPasteMask: 0 },
+      HeatWelding: { connectionMethod: "Divergent", divergenceSpacing: 8, divergenceLineWidth: 10, divergenceAngle: 45 } });
+  }
+  if (name === "vias") {
+    return stateObject({ ...base, X: 0, Y: 0, HoleDiameter: 10, Diameter: 20, ViaType: 0, DesignRuleBlindViaName: null,
+      SolderMaskExpansion: { topSolderMask: 2, bottomSolderMask: 2 } });
+  }
+  return stateObject({ ...base, Layer: 1, StartX: 0, StartY: 0, EndX: 10, EndY: 10, LineWidth: 5,
+    ...(name === "arcs" ? { ArcAngle: 90, InteractiveMode: 0 } : {}) });
+}
+function inventoryApis(state: Fixture): Record<string, InventoryApi> {
+  const definitions = [["components", "Component"], ["pads", "Pad"], ["vias", "Via"], ["lines", "Line"], ["arcs", "Arc"],
+    ["strings", "String"], ["attributes", "Attribute"], ["polylines", "Polyline"], ["regions", "Region"], ["pours", "Pour"],
+    ["fills", "Fill"], ["dimensions", "Dimension"], ["images", "Image"], ["objects", "Object"], ["poured", "Poured"]] as const;
+  return Object.fromEntries(definitions.map(([name, suffix]): [string, InventoryApi] => {
+    const ids = state.inventory.families[name]?.primitiveIds ?? [];
+    const objects = name === "components" ? ids.map((id) => stateObject({ PrimitiveId: id })) : ids.map((id) => physicalState(name, item(state, name, id)));
+    const api: InventoryApi = { getAllPrimitiveId: () => [...ids], getAll: () => objects };
+    if (name === "components") {
+      api.getAllPinsByPrimitiveId = (id): StateObject[] => Object.values(getFamily(state, "pads").byPrimitiveId)
+        .filter((row) => row.parentComponentPrimitiveId === id)
+        .map((row) => stateObject({ PrimitiveId: row.primitiveId, PrimitiveType: "ComponentPad", ParentComponentPrimitiveId: id,
+          PadNumber: row.padNumber, Net: row.net }));
+    }
+    return [`pcb_Primitive${suffix}`, api];
+  }));
+}
+async function producedInventory(state: Fixture): Promise<Value> {
+  const query = { kind: "pcb-inventory" } as const;
+  const envelope = await new AsyncFunction("eda", buildExactReadCode(query))(inventoryApis(state));
+  const payload = validateExactReadPayload(decodeExactReadEnvelope(envelope), query);
+  assert.ok(isRecord(payload));
+  return payload;
+}
+function record(value: unknown): Value { assert.ok(isRecord(value)); return value; }
+function addEmptyPadAndPadlessOwner(state: Fixture): void {
+  state.objects.push(object("PAD_NET", '["PAD_NET","component","2","empty"]', { padNet: "" }), object("COMPONENT", "padless", {}));
+  const pads = getFamily(state, "pads"); pads.count += 1; pads.primitiveIds.push("componentempty"); pads.primitiveIds.sort();
+  pads.byPrimitiveId["componentempty"] = { primitiveId: "componentempty", primitiveType: "Pad", net: null, padNumber: "2", parentComponentPrimitiveId: "component" };
+  const components = getComponents(state); components.count += 1; components.primitiveIds.push("padless");
+}
+void test("actual exact inventory producer/transport/validator feeds complete membership and type readers", async () => {
+  const state = fixture(); addEmptyPadAndPadlessOwner(state);
+  const payload = await producedInventory(state);
+  const components = record(record(payload["families"])["components"]);
+  assert.deepEqual(components, { status: "adapter-enumerated", count: 2, primitiveIds: ["component", "padless"] });
+  assert.equal(Object.hasOwn(components, "byPrimitiveId"), false);
+  const correlation = record(payload["componentPadCorrelation"]);
+  assert.deepEqual(record(correlation["byComponentPrimitiveId"])["padless"], []);
+  const result = derivePcbNetMembership(snapshot(state.objects), payload, request, "board");
+  assert.deepEqual(result, derive(fixture()));
+  for (const [id, type] of [["line", "Line"], ["arc", "Arc"], ["via", "Via"], ["pad", "Pad"], ["componentlocal", "ComponentPad"], ["componentempty", "ComponentPad"]]) {
+    assert.equal(derivePcbPrimitiveType(snapshot(state.objects), payload, { method: PCB_PRIMITIVE_TYPE_METHOD, arguments: { id } }, "board"), type);
+  }
+});
+const producedDefects: [string, (payload: Value) => void][] = [
+  ["missing component family", (payload) => { delete record(payload["families"])["components"]; }],
+  ["missing component IDs", (payload) => { delete record(record(payload["families"])["components"])["primitiveIds"]; }],
+  ["duplicate component IDs", (payload) => { record(record(payload["families"])["components"])["primitiveIds"] = ["component", "component"]; }],
+  ["wrong component count", (payload) => { record(record(payload["families"])["components"])["count"] = 0; }],
+  ["unproved component status", (payload) => { record(record(payload["families"])["components"])["status"] = "unknown"; }],
+  ["fabricated component details", (payload) => { record(record(payload["families"])["components"])["byPrimitiveId"] = {}; }],
+  ["missing padless owner correlation", (payload) => { delete record(record(payload["componentPadCorrelation"])["byComponentPrimitiveId"])["padless"]; }],
+  ["component pad owner substitution", (payload) => { record(record(record(payload["componentPadCorrelation"])["byPrimitiveId"])["componentlocal"])["parentComponentPrimitiveId"] = "padless"; }],
+];
+for (const [label, corrupt] of producedDefects) {
+  void test(`actual inventory integration refuses ${label}`, async () => {
+    const state = fixture(); addEmptyPadAndPadlessOwner(state);
+    const payload = await producedInventory(state); corrupt(payload);
+    assert.throws(() => validateExactReadPayload(payload, { kind: "pcb-inventory" }));
+    assert.throws(() => derivePcbNetMembership(snapshot(state.objects), payload, request, "board"));
+    assert.throws(() => derivePcbPrimitiveType(snapshot(state.objects), payload, { method: PCB_PRIMITIVE_TYPE_METHOD, arguments: { id: "line" } }, "board"));
+  });
+}
+for (const typeLookup of [false, true]) {
+  for (const drift of [false, true]) {
+    void test(`coordinator consumes actual produced inventory for type=${String(typeLookup)} drift=${String(drift)}`, async () => {
+      const current = runtime(), state = fixture();
+      const originalRead = current.engine.exactRead; let inventories = 0;
+      current.engine.exactRead = async (query, expected): ReturnType<PcbNetMembershipEngine["exactRead"]> => {
+        const sample = await originalRead(query, expected);
+        assert.ok(isRecord(query));
+        if (query["kind"] !== "pcb-inventory") { return sample; }
+        inventories += 1;
+        if (drift && inventories === 2) { getComponents(state).primitiveIds = ["different"]; }
+        return exact(await producedInventory(state));
+      };
+      const result = typeLookup
+        ? readPcbPrimitiveType(current.engine, { method: PCB_PRIMITIVE_TYPE_METHOD, arguments: { id: "componentlocal" } }, context, fingerprint())
+        : readPcbNetMembership(current.engine, request, context, fingerprint());
+      if (drift) { await assert.rejects(result, /complete component inventory is incomplete or ambiguous/u); } else {
+        const observed = await result;
+        assert.deepEqual(observed["value"], typeLookup ? "ComponentPad" : derive(state));
+      }
+      assert.equal(inventories, 2);
+      assert.deepEqual(current.calls, ["pcb-source", "pcb-inventory", "pcb-source", "pcb-source", "pcb-inventory", "pcb-source"]);
+    });
+  }
+}

@@ -15,6 +15,7 @@ export const PCB_NET_MEMBERSHIP_LIMITATIONS = [
   "Pad means standalone physical pads; ComponentPad means component-owned physical pads. These disjoint roles differ from the direct Pad enumerator, which also includes component pads.",
   "Requires one exact active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769; library, partition and unmodeled source records are unsupported.",
   "STRING, FONT, RULE_TEMPLATE, PRIMITIVE, PREFERENCE and SILK_OPTS are admitted as nonselected text/metadata. BOARD is a nonselected display outline: its generated Line/Arc drawing controllers are not the Track/ArcTrack objects enumerated by the electrical inventory. Outline geometry and drawing-child ownership are not returned or validated.",
+  "PANELIZE is admitted only as one canonical disabled default record: on=false, row=column=1, zero spacing and onlyOutline=true, with all ten settings and exact nested shapes retained. Nested stamp/side flags remain dormant settings; enabled, malformed and descendant panel state is unsupported.",
   "Net matching uses uppercase keys and preserves stored spelling. Full requested-family source/inventory correspondence is checked before filtering; this is not electrical connectivity, DRC, saved-file or persistence proof.",
   "Two matching source/inventory/source cycles require unchanged runtime and full observed context. Switching away and back between observations remains undetectable.",
   "Bounded to 20,000 native source records, 16 MiB native source evidence and 2 MiB result; exceeding bounds refuses without truncation.",
@@ -41,15 +42,24 @@ const identities = z.array(identity).max(PCB_NET_MEMBERSHIP_MAX_ITEMS);
 const inventoryItem = z.object({ primitiveId: identity, primitiveType: z.string(), net: net.nullable(),
   parentComponentPrimitiveId: identity.optional(), padNumber: z.string().max(256).optional() }).loose();
 const familySchema = z.object({ count, primitiveIds: identities, byPrimitiveId: z.record(identity, inventoryItem) }).loose();
-const componentItemSchema = z.object({ primitiveId: identity, primitiveType: z.literal("Component") }).loose();
+const componentFamilySchema = z.object({ status: z.literal("adapter-enumerated"), count, primitiveIds: identities }).strict();
 const padLinkSchema = z.object({ primitiveId: identity, parentComponentPrimitiveId: identity, padNumber: z.string().max(256), net: net.nullable() }).loose();
 const padCorrelationSchema = z.object({ status: z.literal("exact-subset"), count, primitiveIds: identities,
   byPrimitiveId: z.record(identity, padLinkSchema), byComponentPrimitiveId: z.record(identity, identities) }).loose();
 const inventorySchema = z.object({ ok: z.literal(true), kind: z.literal("pcb-inventory"), documentType: z.literal(3),
   families: z.record(z.string(), z.unknown()), componentPadCorrelation: padCorrelationSchema }).loose();
+const panelDimension = z.number().positive();
+const panelQuantity = z.number().int().min(1).max(PCB_NET_MEMBERSHIP_MAX_ITEMS);
+const panelStampSchema = z.object({ on: z.boolean(), stampHoleGroupQuantity: panelQuantity, stampHoleDiameter: panelDimension,
+  stampHoleQuantityPerGroup: panelQuantity, stampHoleSpacing: panelDimension }).strict();
+const panelSideSchema = z.object({ on: z.boolean(), sideHeight: panelDimension, positionHoleDiameter: panelDimension,
+  markDiameter: panelDimension, markExpansion: panelDimension }).strict();
+const disabledPanelSchema = z.object({ on: z.literal(false), row: z.literal(1), column: z.literal(1), rowSpacing: z.literal(0),
+  columnSpacing: z.literal(0), onlyOutline: z.literal(true), horizontalStamp: panelStampSchema, verticalStamp: panelStampSchema,
+  horizontalSize: panelSideSchema, verticalSize: panelSideSchema }).strict();
 const supportedRecords = new Set(["LINE", "ARC", "VIA", "PAD", "PAD_NET", "COMPONENT", "ATTR", "CANVAS", "LAYER", "LAYER_PHYS",
   "ACTIVE_LAYER", "NET", "RULE", "RULE_SELECTOR", "POLY", "REGION", "POUR", "FILL", "TEXT", "STRING", "DIMENSION", "IMAGE", "OBJECT", "GROUP",
-  "FONT", "RULE_TEMPLATE", "PRIMITIVE", "PREFERENCE", "SILK_OPTS", "BOARD"]);
+  "FONT", "RULE_TEMPLATE", "PRIMITIVE", "PREFERENCE", "SILK_OPTS", "BOARD", "PANELIZE"]);
 // Pinned PCB 65401cdc: STRING fields 3969387 and S4 decoder 4002049 are text-only.
 // S4 creates go.addText/$E objects, not selected electrical primitives.
 // Native source and full requested-family inventory still must correspond.
@@ -102,6 +112,14 @@ function sourceIdentity(source: NativeSourceSnapshot, documentUuid: string): voi
       source.document["uuid"] !== documentUuid || source.document["editVersion"] !== PCB_NET_MEMBERSHIP_SOURCE_EDIT_VERSION ||
       source.sha256 !== sha256Json({ schema: source.schema, document: source.document, objects: source.objects }) ||
       new Set(source.objects.map((row) => row.id)).size !== source.objects.length) { throw new Error("PCB net membership source identity, bound or commitment is invalid."); }
+  // Pinned PCB 65401cdc: Ug.getPanelize 3973367/nF 4448423 encode ten settings.
+  // Dp.applyPanelize 5830549 clears Ii/ai derived arrays before the !on return,
+  // Setting success=false before copies, stamps, borders or marks can generate.
+  // Dormant nested flags are preserved, not executed. No panel decoder runs here.
+  const panels = source.objects.filter((row) => row.type === "PANELIZE" || row.id === "PANELIZE");
+  if (panels.length > 1 || panels.some((row) => row.type !== "PANELIZE" || row.id !== "PANELIZE" || !disabledPanelSchema.safeParse(row.body).success)) {
+    throw new Error("PCB net membership only admits one canonical disabled default PANELIZE record.");
+  }
   for (const row of source.objects) {
     if (!supportedRecords.has(row.type)) { throw new Error("PCB net membership source contains an unmodeled record family."); }
     // Partition/panel/template descendants can have additional native membership.
@@ -189,11 +207,12 @@ export function derivePcbPhysicalMembers(source: NativeSourceSnapshot, inventory
   if (selected.has("Pad") || selected.has("ComponentPad")) {
     const components = source.objects.filter((row) => row.type === "COMPONENT");
     const componentIds = new Set(components.map((row) => identity.parse(row.id)));
-    const componentFamily = z.object({ count, primitiveIds: identities, byPrimitiveId: z.record(identity, componentItemSchema) }).loose().parse(inventory.families["components"]);
+    // Exact pcb-inventory identity-counts components without emitting state rows.
+    // Its producer proves getAll/getAllPrimitiveId parity.
+    // Source IDs and reciprocal pad correlation below prove complete owners.
+    const componentFamily = componentFamilySchema.parse(inventory.families["components"]);
     if (componentFamily.count !== componentIds.size) { throw new Error("PCB net membership component count is inconsistent."); }
     sameSet(componentFamily.primitiveIds, [...componentIds], "complete component inventory");
-    sameSet(Object.keys(componentFamily.byPrimitiveId), [...componentIds], "component identity keys");
-    if (Object.entries(componentFamily.byPrimitiveId).some(([key, row]) => key !== row.primitiveId)) { throw new Error("PCB net membership component substitutes an identity."); }
     const expected = sourcePads(source, componentIds);
     verifyFamily(expected, family(inventory.families["pads"]), "Pad");
     verifyPadLinks(expected, componentIds, inventory.componentPadCorrelation);

@@ -6,6 +6,99 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Restarted010000 disposable validation and source corrections, earlier checkpoint
+
+- Fresh facade1926652 admits installed010000 bundle0ebf1680/manifest9fffd9f1
+  with the unchanged external tuple. Contained27916 authenticates dispatcher
+  ded07x99dcxb504. One exact P1 open48dce60a returned an unclassified exception;
+  original-tab inspection and read-only reconciliation164cd847 prove the target
+  open and all18documents/fullSQLite unchanged. No navigation retry or Save.
+- Four nonempty native Wire/Bus DTO reads pass: four Wire groups/eleven segments,
+  one Bus, exact literal names and custom-attribute identities. Complete native
+  before/after and all383stored records/18documents are unchanged. Root and
+  independent receipt/source/history review accept reporta27321f3, native86988d66,
+  Wiree35224a0 and Bus239b07ff. No public-wrapper parity, connectivity or writer
+  claim. Fresh full fingerprint/context remain unchanged; no incomplete journals.
+- Sibling PCB openbb9a73fa completed through document.open. Exact source and
+  inventory before/after public all-layer enumeration are unchanged; source970d21b3
+  and logical457de32e repeat in the managed checkpoint and its verification.
+  No membership/type call was attempted: default disabled PANELIZE is outside
+  the installed source profile, and Line inventory includes two inherited
+  silkscreen children not represented by standalone source LINE records.
+- Review found a separate real producer/consumer defect: component inventory
+  is identity-only, while membership/type fixtures invented component state
+  rows. The narrow correction and real-producer integration pass271focused
+  tests, strict types and zero-warning type-aware lint. It is source-only.
+- Native open exceptions lose their bridge code upstream. Fixed per-call stage
+  tags now retain actionable categories without raw text; existing refusal and
+  timeout/quarantine behavior is preserved. Root review accepts48focused tests
+  plus12classifier tests and clean types/lint. This does not establish the
+  cause of the earlier exception or claim that navigation itself is fixed.
+- Active-layer native-equivalent work and strict disabled-panel admission passed
+  root and independent source review. Actual all-layer output has262rows; six disabled custom layers
+  contain malformed raw inactive-color strings from the pinned fractional-channel
+  formatter. Never normalize these or claim validated CSS colors. New adapters
+  remain uninstalled and require fresh-generation disposable validation.
+- The older disposable fixture returned to P1 through one completed activation
+  aa110d9c; complete tabs/source/database unchanged. No design edit or Save
+  occurred. The separate flat fixture remains closed and has no electrical
+  parts, so nonempty flat-topology validation is still pending. No production
+  project was opened, read, edited or saved. PR9 remains draft; task unfinished.
+
+### Candidate071500 selection follow-up, before final verification
+
+- Native UI showed one selected ordinary resistor, but the deprecated schematic
+  selected-ID getter returned an empty array twice. Its declared replacement
+  getAllSelectedPrimitives_PrimitiveId returned the exact selected identity in
+  two samples. Pinned source traces the old getter through an obsolete iframe
+  shim that swallows missing-command/readiness failures into undefined, then
+  the wrapper converts that to an empty array. The exact live swallowed branch
+  remains unknown. It does not explain the separate project-open exception.
+- An explicit type-1-only equivalent now calls the documented modern public
+  replacement, never the legacy path. It checks native page/project/tab/receiver
+  and readiness around the await; bounded unique IDs preserve parent-group
+  semantics. Root and independent review accept292focused tests and clean
+  strict types/type-aware lint. No connected new-adapter claim.
+- The older fixture received one native Copy only, after exact modern-ID/UI
+  agreement. Full native and preclose SQLite invariance pass; normal close and
+  empty discovery prove its editor exited. Separate flat fixture openc133a593
+  completed with all9documents/source13b54112/logical0829119a unchanged.
+  Native paste preparation is unfinished; no Save or electrical validation.
+- Prior combined-source verification passed2802facade tests/one platform skip
+  and424bridge tests. One stale native-reader expectation and one public-doc
+  privacy mention were corrected; failed attempts remain retained. This result
+  predates the selection adapter. Final combined verification/publication/install
+  remain pending. Only facade source/bundle projections and review time changed;
+  external pins and actual authenticated bridge artifact are unchanged.
+
+### Candidate071500 final local verification and fixture stop
+
+- The combined candidate passes2,821facade tests/one platform skip/zero failures
+  and424bridge tests. Strict types/type-aware lint have zero warnings. Package65,
+  repository/privacy165, offline doctor45, all seven official skill checks and
+  actionlint pass. Separate rebuild reproduces the exact bundles and licenses.
+  Final source168files3201c619, bundle0e508367 and manifest8f08608f replace the
+  earlier pre-selection hashes. External pins remain unchanged. Full logs and
+  retained unsuccessful checks are recorded in the source-candidate report.
+- Inventory774paths now classifies192public subsets/89native equivalents/
+  2internal/8blocked/483omitted. The175fixed readers include15native equivalents.
+  These are source implementation counts, not connected coverage. New selection,
+  PCB membership and active-layer adapters require fresh-generation validation.
+- One native Paste command on the separate flat disposable fixture imported
+  library data without placing a component. Escape ended the tool; complete
+  native page before/after is unchanged. No second Paste, placement, wire or
+  Save occurred. The maintained history decoder refuses firstTicket headers in
+  the imported library history. Raw immutable checkpoint analysis is retained;
+  do not strip these fields or claim complete maintained materialization.
+- Normal close and empty discovery prove44860 exited without a prompt choice.
+  Both disposable editors are now closed. The older fixture's separately
+  reviewed offline verification140f7aa8 repeats exact source970d21b3 and
+  logical457de32e. The flat fixture's imported-library state is not a completed
+  electrical fixture or a validated writer. No production project access.
+- Source publication, CI and installation are still pending. Loaded facade1926652
+  remains010000. Do not replace its files, terminate its owner or call a newly
+  installed generation through that old process.
+
 ### Restarted233100 validation and candidate002000
 
 - Fresh facade1864397 admitted installed233100 with the unchanged external
@@ -1019,7 +1112,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace candidate `0.3.0+codex.20261011010000` is published, installed/enabled and fully offline-verified against CI-tested4c9ed5f. All536files/modes match;26tools, seven skills and174fixed readers. It changes only the installation version over the tested002000 runtime and resolves that earlier cache-mode failure. Host1864397 still loads233100 and must remain untouched; fresh Codex pickup is required before live calls. Connected233100 Wire DTO inspection refused and led to a tested source correction, not a successful reader claim. Its disposable bus fixture now has exact saved and cold-reopened source/full-project proof. Both disposable editors are closed and all journals are terminal. Never replay prior edits/inverse/rename/Save. Corrected Wire/Bus DTOs, filtered PCB membership, new PCB type lookup and nonempty flat topology need fresh installed-generation validation. Prior Text/property-name/Wire-ID/symbol-Pin/display/rename evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
+- Git-marketplace candidate `0.3.0+codex.20261011010000` is published, installed/enabled and fully offline-verified against CI-tested4c9ed5f. All536files/modes match;26tools, seven skills and174fixed readers. Fresh facade1926652 loads010000 and must remain untouched. Its nonempty Wire/Bus DTO reads now pass exact native and complete saved-project invariance. Both disposable editors are closed and all journals are terminal. The flat fixture has an import-only library delta whose firstTicket history encoding remains outside the maintained decoder; no component was placed and no Save occurred. Never replay prior edits/inverse/rename/Save. Source candidate071500 adds active-layer and selection equivalents plus PCB inventory/navigation corrections; local tests pass but publication/install remain pending. Those adapters, filtered PCB membership, PCB type lookup and nonempty flat topology still require applicable connected evidence. Prior Text/property-name/Wire-ID/symbol-Pin/display/rename evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

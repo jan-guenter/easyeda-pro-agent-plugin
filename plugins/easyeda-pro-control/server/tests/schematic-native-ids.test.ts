@@ -249,10 +249,11 @@ void test("three native ID descriptors preserve public defaults, strict empty ar
     assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null); assert.equal(row.completeDeclaredContractSupported, false);
   }
   const nativePaths = new Set([
+    "eda.sch_SelectControl.getSelectedPrimitives_PrimitiveId",
     "eda.sch_PrimitiveText.getAllPrimitiveId", "eda.sch_PrimitiveWire.getAllPrimitiveId", "eda.sch_PrimitiveBus.getAllPrimitiveId",
     "eda.sch_PrimitiveComponent.getAllPropertyNames", "eda.sch_PrimitivePin.getAll", "eda.sch_PrimitiveText.get", "eda.sch_PrimitiveText.getAll",
     "eda.sch_PrimitiveWire.get", "eda.sch_PrimitiveWire.getAll", "eda.sch_PrimitiveBus.get", "eda.sch_PrimitiveBus.getAll", "eda.pcb_Net.getAllPrimitivesByNet",
-    "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId",
+    "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId", "eda.pcb_Layer.getCurrentLayer",
   ]);
   assert.deepEqual(descriptors.filter((entry) => entry.implementation.kind === "native-task-equivalent").map((entry) => entry.path).toSorted(), [...nativePaths].toSorted());
   for (const descriptor of descriptors.filter((entry) => !nativePaths.has(entry.path))) {

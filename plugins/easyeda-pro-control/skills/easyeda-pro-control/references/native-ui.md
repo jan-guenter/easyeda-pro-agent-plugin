@@ -65,6 +65,14 @@ Run the script with Windows PowerShell, including from WSL through its observed 
 
 Names and coordinates are observations, not stable APIs. Do not repeatedly toggle a setting from an old read. Native helper dialogs can have another process ID; their bounded owner chain must lead to the bound EasyEDA window.
 
+For a schematic region capture on the pinned 3.2.149 tuple, public
+`zoomToRegion` negates both supplied Y bounds before constructing the native
+rectangle. A native source rectangle with Y from -580 to -360 therefore needs
+public bounds `top:580,bottom:360`, not the negative native values. X is unchanged.
+The bridge orders the supplied bounds but does not convert coordinate systems.
+Confirm the resulting view before deriving any screen click. This observation
+does not establish PCB coordinates or the behavior of another EasyEDA version.
+
 ## Companion replacement
 
 The observed native importer replaces an existing UUID even at the same version. Do not uninstall or bump the version merely to force replacement. Directly setting an absolute archive filename and pressing Open has closed the picker without replacing the extension. The verified workflow is to open Import, navigate to the exact parent directory, inspect the exact content-addressed archive row, and double-click that row. Review the resulting Safety Tips or upgrade dialog. Reopen the manager and verify UUID, Enabled and external-interaction On. Use native Download extension to a fresh private path and compare its hash with the selected builder archive before claiming replacement. Keep exported credential-bearing archives private and never print their contents. Finally prove the authenticated loaded identity after normal restart.

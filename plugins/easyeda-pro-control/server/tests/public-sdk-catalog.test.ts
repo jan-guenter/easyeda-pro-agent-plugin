@@ -6,6 +6,8 @@ import { publicSdkReadDescriptors } from "../src/public-sdk-read.ts";
 import { SCHEMATIC_NETGROUP_READ_METHODS } from "../src/schematic-netgroup-read.ts";
 import { PCB_NET_MEMBERSHIP_METHOD } from "../src/pcb-net-membership.ts";
 import { PCB_PRIMITIVE_TYPE_METHOD } from "../src/pcb-primitive-type-read.ts";
+import { PCB_ACTIVE_LAYER_METHOD } from "../src/pcb-active-layer-read.ts";
+import { SCHEMATIC_SELECTION_METHOD } from "../src/schematic-selection-read.ts";
 
 void test("offline SDK-read pages cover the exact executable descriptor set", () => {
   const paths: string[] = [];
@@ -82,8 +84,43 @@ void test("SDK catalog distinguishes native-only, public-only and mixed discover
   const primitiveType = queryPublicSdkReads({ method: PCB_PRIMITIVE_TYPE_METHOD, includeSchemas: true });
   assert.equal(primitiveType["authority"], "native-pcb-identity-type-not-public-method-parity");
   assert.equal(primitiveType["executionAuthorized"], false); assert.equal(primitiveType["matched"], 1);
+  const activeLayer = queryPublicSdkReads({ method: PCB_ACTIVE_LAYER_METHOD, includeSchemas: true });
+  assert.equal(activeLayer["authority"], "native-active-layer-with-public-fields-not-public-method-parity");
+  assert.equal(activeLayer["executionAuthorized"], false); assert.equal(activeLayer["matched"], 1);
   assert.equal(queryPublicSdkReads()["authority"], "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof");
   assert.equal(queryPublicSdkReads({ limit: 1, offset: 0 })["authority"], "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof");
+});
+
+void test("offline active-layer discovery admits only empty arguments and advertises native/public-field limits", () => {
+  const method = PCB_ACTIVE_LAYER_METHOD;
+  assert.equal(validatePublicSdkArguments({ request: { method, arguments: {} } })["valid"], true);
+  for (const argumentsData of [{ layer: 1 }, { id: 1 }, { tabId: "foreign" }, { code: "arbitrary()" }]) {
+    assert.equal(validatePublicSdkArguments({ request: { method, arguments: argumentsData } })["valid"], false);
+  }
+  const descriptor = publicSdkReadDescriptors().find((entry) => entry.path === method); assert.ok(descriptor);
+  assert.deepEqual(descriptor.documentTypes, [3]); assert.equal(descriptor.parameterSupport, "narrowed");
+  assert.equal(descriptor.implementation.kind, "native-task-equivalent"); assert.equal(descriptor.liveValidation, "not-yet-validated");
+  assert.equal(descriptor.implementation.source, "server/src/pcb-active-layer-read.ts");
+  assert.equal(descriptor.implementation.test, "server/tests/pcb-active-layer-read.test.ts");
+  assert.deepEqual(descriptor.result, { kind: "record", optional: false, getterFields: [], primitiveType: null });
+  assert.match(descriptor.limitations.join(" "), /body is empty/u); assert.match(descriptor.limitations.join(" "), /no undefined\/no-active-layer result/u);
+});
+
+void test("deprecated selection discovery exposes precise replacement authority without promoting mixed or empty matches", () => {
+  for (const query of [{ method: SCHEMATIC_SELECTION_METHOD }, { search: SCHEMATIC_SELECTION_METHOD }]) {
+    const result = queryPublicSdkReads({ ...query, includeSchemas: true });
+    assert.equal(result["authority"], "public-replacement-selection-observation-not-complete-ownership-source-or-persistence-proof");
+    assert.equal(result["offline"], true); assert.equal(result["executionAuthorized"], false); assert.equal(result["matched"], 1);
+  }
+  assert.equal(queryPublicSdkReads({ search: "sch_SelectControl" })["authority"], "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof");
+  assert.equal(queryPublicSdkReads({ method: `${SCHEMATIC_SELECTION_METHOD}Missing` })["authority"], "public-sdk-observation-not-complete-design-proof");
+  for (const request of [{ method: SCHEMATIC_SELECTION_METHOD }, { method: SCHEMATIC_SELECTION_METHOD, arguments: {} }]) {
+    const result = validatePublicSdkArguments({ request });
+    assert.equal(result["valid"], true); assert.equal(result["nativePreflightPerformed"], false); assert.equal(result["executionAuthorized"], false);
+  }
+  for (const args of [{ code: "caller" }, { ids: ["id"] }, { all: true }]) {
+    assert.equal(validatePublicSdkArguments({ request: { method: SCHEMATIC_SELECTION_METHOD, arguments: args } })["valid"], false);
+  }
 });
 
 void test("offline PCB type lookup exposes its exact literal selector and native enum contract", () => {

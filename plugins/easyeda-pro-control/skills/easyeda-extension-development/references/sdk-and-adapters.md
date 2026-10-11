@@ -92,3 +92,22 @@ An upload barrier is not a flush command. Test inverse intent consumption,
 auto-persistence between preflight and dispatch, live-only restoration, and
 read-only reconciliation after delayed persistence. Retain the fresh checkpoint,
 raw observer and complete proof, not only a success flag or their summary hashes.
+
+Test adapters against the maintained producer, not only a hand-written fixture.
+PCB component inventory is identity-only; it has no per-component state map.
+Inherited footprint drawing lines can appear in inventory without standalone
+LINE source records. An ID prefix does not prove parent ownership. A disabled
+PANELIZE record is safe to admit only when its full canonical shape is checked
+and the pinned native path returns before generating panel geometry.
+
+Preserve public layer color strings as bounded raw data. The pinned fractional
+RGB formatter can emit malformed strings on disabled custom layers. Do not
+silently repair them or label them valid CSS. Active-layer selection needs both
+the canonical source identity and matching public layer state, not just an ID.
+
+Check deprecated getters for silent failure. On the pinned tuple, the old
+schematic selected-ID getter turns a missing obsolete iframe-command response
+into an empty list. Its declared replacement uses the modern selection manager
+and promotes selected wire segments to parent groups. An explicit replacement
+adapter must identify that route, retain the returned group semantics and refuse
+missing results. Never call a swallowed error proof of an empty selection.

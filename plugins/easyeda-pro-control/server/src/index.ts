@@ -84,6 +84,7 @@ import { isSchematicNetGroupReadMethod } from "./schematic-netgroup-read.ts";
 import { PCB_NET_MEMBERSHIP_METHOD } from "./pcb-net-membership.ts";
 import { readPcbNetMembership } from "./pcb-net-membership-read.ts";
 import { PCB_PRIMITIVE_TYPE_METHOD, readPcbPrimitiveType } from "./pcb-primitive-type-read.ts";
+import { PCB_ACTIVE_LAYER_METHOD, readPcbActiveLayer } from "./pcb-active-layer-read.ts";
 import { publicSdkCatalogQuerySchema, publicSdkValidationQuerySchema, queryPublicSdkReads, validatePublicSdkArguments } from "./public-sdk-catalog.ts";
 import { operationCatalogQuerySchema, operationValidationRequestSchema, queryOperationCatalog, validateCatalogOperation } from "./operation-catalog.ts";
 
@@ -1963,7 +1964,7 @@ registerFacadeTool(
   "easyeda_control_sdk_read",
   {
     title: "Read reviewed EasyEDA SDK methods",
-    description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity, property-name, Pin-getter, Text, Wire/Bus, filtered PCB net-membership and PCB identity-type observations; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
+    description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity, property-name, Pin-getter, Text, Wire/Bus, filtered PCB net-membership and PCB identity-type observations, plus native active-layer identity with public layer fields; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
     inputSchema: {
       request: z.unknown().pipe(publicSdkReadRequestSchema),
       expectedContext: contextSchema,
@@ -1991,6 +1992,7 @@ registerFacadeTool(
     if (isSchematicNetGroupReadMethod(input.request.method)) { reader = "fixed-native-netgroup-state-observation"; effect = "fixed-native-netgroup-state-read"; }
     if (input.request.method === PCB_NET_MEMBERSHIP_METHOD) { reader = "fixed-native-net-membership-observation"; effect = "fixed-native-net-membership-read"; }
     if (input.request.method === PCB_PRIMITIVE_TYPE_METHOD) { reader = "fixed-native-pcb-type-observation"; effect = "fixed-native-pcb-type-read"; }
+    if (input.request.method === PCB_ACTIVE_LAYER_METHOD) { reader = "fixed-native-active-layer-observation"; effect = "fixed-native-active-layer-read"; }
     try {
       validatePrivateFingerprint(input.expectedFingerprint);
       const status = await engine.status();
@@ -2001,6 +2003,8 @@ registerFacadeTool(
         result = await readPcbNetMembership(engine, input.request, input.expectedContext, input.expectedFingerprint);
       } else if (input.request.method === PCB_PRIMITIVE_TYPE_METHOD) {
         result = await readPcbPrimitiveType(engine, input.request, input.expectedContext, input.expectedFingerprint);
+      } else if (input.request.method === PCB_ACTIVE_LAYER_METHOD) {
+        result = await readPcbActiveLayer(engine, input.request, input.expectedContext, input.expectedFingerprint);
       } else { result = await engine.publicSdkRead(input.request, input.expectedContext); }
       return await withEvidence(request, result, input.evidence,
         { facadeVersion: CONTROL_VERSION, reader },

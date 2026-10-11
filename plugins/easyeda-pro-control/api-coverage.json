@@ -6,14 +6,14 @@
     "reviewedDistinctMethods": 697,
     "latestDistinctMethods": 773,
     "statuses": {
-      "implemented-public-subset": 193,
-      "implemented-native-equivalent": 87,
+      "implemented-public-subset": 192,
+      "implemented-native-equivalent": 89,
       "internal-lifecycle-only": 2,
       "implemented-but-blocked": 8,
-      "omitted": 484
+      "omitted": 483
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 335,
+      "available-with-runtime-guards": 336,
       "blocked": 9,
       "partially-blocked": 3
     },
@@ -39,7 +39,7 @@
       "not-in-reviewed-runtime": 76,
       "panel-context-not-admitted": 1,
       "private-url-state-projection-needed": 2,
-      "reviewed-native-stub": 28,
+      "reviewed-native-stub": 27,
       "scoped-effect-adapter-needed": 121,
       "selection-marker-or-history-mutation": 8,
       "shared-asset-owner-projection-needed": 3,
@@ -10632,16 +10632,39 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "reviewed-native-stub",
-        "reason": "Installed method has an empty body and cannot identify the selected layer.",
-        "nextRequirement": "Implement a separately reviewed native task adapter with exact effects, or validate a newer runtime where the public method works.",
-        "evidence": [
-          "assets/pro-api/0.2.53.aee2f57a/api.js@sha256:5923696711fc5e4f3027ce500d5ba6aee57b9d8f9903fdba84820432066125fc"
-        ]
-      },
+      "status": "implemented-native-equivalent",
+      "routes": [
+        {
+          "tool": "easyeda_control_sdk_read",
+          "selector": "eda.pcb_Layer.getCurrentLayer",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native active-layer identity plus the existing public getAllLayers nine-field projection; not execution or return-parity of getCurrentLayer, whose installed API 0.2.53.aee2f57a body is empty. Only one exact active project-owned type-3 PCB. One ACTIVE_LAYER record and one corresponding LAYER source record must identify exactly one returned layer. Missing, malformed or ambiguous state refuses; no undefined/no-active-layer result is claimed. The selected layer's name, mapped type, locked state and use/show-derived status must match source. Colors and rounded transparency percentages retain the public getAllLayers projection, not complete native display/physical-stack parity. Color fields are bounded raw public strings, not validated CSS colors. The pinned native fractional-channel serializer can emit malformed values such as #a.492f; values are preserved, never corrected or evaluated. Two matching complete source/layers/source cycles, each observation double-sampled, require unchanged full observed context and runtime. Switch-away-and-back between observations remains undetectable. At most 20,000 source records, 512 layer rows and the existing 3 MiB source/2 MiB SDK observation limits. Unknown unrelated source records are retained, not interpreted or stripped; no complete layer-manager membership, connectivity, saved-file or persistence claim. No public getCurrentLayer stub, private invocation, selection, layer change, navigation, settings write or Save. Connected validation is separate from source tests.",
+          "documentTypes": [
+            3
+          ],
+          "source": [
+            "pcb-active-layer-read.ts"
+          ],
+          "tests": [
+            "pcb-active-layer-read.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "sdk-reads",
+                "query": {
+                  "method": "eda.pcb_Layer.getCurrentLayer",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -13621,7 +13644,7 @@
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_Net.getAllPrimitivesByNet",
           "implementation": "native-task-equivalent",
-          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native task-equivalent identity records, not public primitive instances, native my(item) DTOs or public-method execution parity. Requires a nonempty net and explicit nonempty unique filters from Line, Arc, Via, Pad and ComponentPad; unfiltered, empty-net and other-family requests are unsupported. Pad means standalone physical pads; ComponentPad means component-owned physical pads. These disjoint roles differ from the direct Pad enumerator, which also includes component pads. Requires one exact active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769; library, partition and unmodeled source records are unsupported. STRING, FONT, RULE_TEMPLATE, PRIMITIVE, PREFERENCE and SILK_OPTS are admitted as nonselected text/metadata. BOARD is a nonselected display outline: its generated Line/Arc drawing controllers are not the Track/ArcTrack objects enumerated by the electrical inventory. Outline geometry and drawing-child ownership are not returned or validated. Net matching uses uppercase keys and preserves stored spelling. Full requested-family source/inventory correspondence is checked before filtering; this is not electrical connectivity, DRC, saved-file or persistence proof. Two matching source/inventory/source cycles require unchanged runtime and full observed context. Switching away and back between observations remains undetectable. Bounded to 20,000 native source records, 16 MiB native source evidence and 2 MiB result; exceeding bounds refuses without truncation.",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Native task-equivalent identity records, not public primitive instances, native my(item) DTOs or public-method execution parity. Requires a nonempty net and explicit nonempty unique filters from Line, Arc, Via, Pad and ComponentPad; unfiltered, empty-net and other-family requests are unsupported. Pad means standalone physical pads; ComponentPad means component-owned physical pads. These disjoint roles differ from the direct Pad enumerator, which also includes component pads. Requires one exact active project-owned type-3 PCB, the reviewed runtime and source editVersion 3.2.149.88089769; library, partition and unmodeled source records are unsupported. STRING, FONT, RULE_TEMPLATE, PRIMITIVE, PREFERENCE and SILK_OPTS are admitted as nonselected text/metadata. BOARD is a nonselected display outline: its generated Line/Arc drawing controllers are not the Track/ArcTrack objects enumerated by the electrical inventory. Outline geometry and drawing-child ownership are not returned or validated. PANELIZE is admitted only as one canonical disabled default record: on=false, row=column=1, zero spacing and onlyOutline=true, with all ten settings and exact nested shapes retained. Nested stamp/side flags remain dormant settings; enabled, malformed and descendant panel state is unsupported. Net matching uses uppercase keys and preserves stored spelling. Full requested-family source/inventory correspondence is checked before filtering; this is not electrical connectivity, DRC, saved-file or persistence proof. Two matching source/inventory/source cycles require unchanged runtime and full observed context. Switching away and back between observations remains undetectable. Bounded to 20,000 native source records, 16 MiB native source evidence and 2 MiB result; exceeding bounds refuses without truncation.",
           "documentTypes": [
             3
           ],
@@ -27322,22 +27345,21 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "implemented-public-subset",
+      "status": "implemented-native-equivalent",
       "routes": [
         {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sch_SelectControl.getSelectedPrimitives_PrimitiveId",
-          "implementation": "public-method",
-          "scope": "Fixed complete argument subset; bounded double-sampled public SDK observation, not complete native-source/connectivity/persistence proof.",
+          "implementation": "native-task-equivalent",
+          "scope": "Fixed narrowed argument subset; bounded double-sampled native task-equivalent observation, not complete native-source/connectivity/persistence proof. Explicit equivalent for the deprecated getter: calls the documented public replacement eda.sch_SelectControl.getAllSelectedPrimitives_PrimitiveId, never the legacy iframe getSelected route or its missing-response empty fallback. Only the exact active ordinary SCH_PAGE is admitted; symbol and block-instance pages refuse. Native page/project/tab/receiver/readiness identities are checked before and after the awaited public call, in addition to the coordinator's context, runtime and double-sample checks. Returns the replacement's ordered, bounded unique ID observation without coercion, sorting or empty fallback. The pinned replacement promotes selected NetGroupLine children to their parent group and deduplicates; it does not promise physical LINE IDs. Selection observation only, not complete selected-model ownership, source, connectivity or persistence proof. No selection changes, private bus calls, navigation, serialization or Save; switch-away-and-back between checks remains undetectable.",
           "documentTypes": [
-            1,
-            2
+            1
           ],
           "source": [
-            "public-sdk-read.ts"
+            "schematic-selection-read.ts"
           ],
           "tests": [
-            "public-sdk-read.test.ts"
+            "schematic-selection-read.test.ts"
           ],
           "validation": "offline-regression;current-live-unclaimed",
           "executionState": "available-with-runtime-guards",

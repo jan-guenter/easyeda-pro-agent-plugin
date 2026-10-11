@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { isRecord, loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json } from "../src/core.ts";
+import { runInNewContext } from "node:vm";
+import { assertUpstreamReplySettled, isRecord, loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json } from "../src/core.ts";
 import { ProjectOpenExecutor } from "../src/project-open-execution.ts";
 import type { ProjectOpenDependencies, ProjectOpenEngine, ProjectOpenInput } from "../src/project-open-execution.ts";
 import { buildRecoveryNavigationCode } from "../src/recovery-navigation.ts";
@@ -30,7 +31,7 @@ function fingerprint(): Value {
     installedBundles: { available: true, assetsRoot: "/opt/assets", pcbEditor: { ...manifest.installedBundles.pcbEditor, implementationPath: "/opt/assets/pcb.js" },
       publicApi: { ...manifest.installedBundles.publicApi, implementationPath: "/opt/assets/api.js", adapterPath: "/opt/assets/adapter.js", declarationsPath: "/opt/assets/api.d.ts" } } };
 }
-interface FixtureState { recordDrift: boolean; uncertain: boolean; incomplete: boolean; dispatchFailure?: unknown; failArtifact?: string; }
+interface FixtureState { recordDrift: boolean; uncertain: boolean; incomplete: boolean; dispatchFailure?: unknown; failArtifact?: string; generatedEnvironment?: Value; }
 function fixture(): { executor: ProjectOpenExecutor; input: ProjectOpenInput; calls: string[]; journals: Map<string, Value>; artifacts: Map<string, Value>; state: FixtureState } {
   const calls: string[] = []; const journals = new Map<string, Value>(); const artifacts = new Map<string, Value>();
   const state: FixtureState = { recordDrift: false, uncertain: false, incomplete: false }; const identity = fingerprint(); let historyReads = 0;
@@ -68,10 +69,28 @@ function fixture(): { executor: ProjectOpenExecutor; input: ProjectOpenInput; ca
     assertContext: (): Promise<typeof CONTEXT> => Promise.resolve(structuredClone(CONTEXT)),
     assertRecoveryOperationIsolated: (): Promise<true> => Promise.resolve(true), ensureRuntimeRestartChallenge: (): Promise<string> => Promise.resolve("fixture-challenge"),
     recoverDispatchAuthority: (): Promise<never> => Promise.reject(new Error("Unused fixture recovery")),
-    dispatchWithOrphanTracking: async (journal, phase): Promise<unknown> => {
+    dispatchWithOrphanTracking: async (journal, phase, _name, args): Promise<unknown> => {
       calls.push(phase); assert.equal(journals.get(journal.operationId)?.["state"], `${phase}-dispatching`);
       if (Object.hasOwn(state, "dispatchFailure")) { throw state.dispatchFailure; }
       if (state.uncertain) { journal.orphanedCallPossible = true; await save(journal); throw new Error("uncertain open"); }
+      if (state.generatedEnvironment !== undefined) {
+        let reply: unknown;
+        try {
+          assert.equal(typeof args["code"], "string");
+          const pending: unknown = runInNewContext(`(async()=>{${String(args["code"])}})()`, state.generatedEnvironment);
+          reply = { structuredContent: { ok: true, result: await pending } };
+        } catch (error) {
+          // The loader's EASYEDA_API_ERROR code survives the bridge manager,
+          // But upstream easyeda_execute drops it and retains only its message.
+          assert.ok(error !== null && typeof error === "object");
+          const message: unknown = Object.getOwnPropertyDescriptor(error, "message")?.value;
+          assert.equal(typeof message, "string");
+          const bridgeReply = { ok: false, error: { code: "EASYEDA_API_ERROR", message } };
+          reply = { structuredContent: { ok: false, error: bridgeReply.error.message } };
+        }
+        try { assertUpstreamReplySettled(reply); } catch (error) { journal.orphanedCallPossible = true; await save(journal); throw error; }
+        return reply;
+      }
       if (phase === "editor-tabs") {
         const absent = { kind: "undefined" };
         const context = { projectUuid: { kind: "string", value: TARGET.projectUuid }, projectUuidAlias: absent, documentUuid: absent, documentUuidAlias: absent, documentType: absent, tabId: absent, parentProjectUuid: absent, parentLibraryUuid: absent };
@@ -190,4 +209,53 @@ void test("failure artifact publication failure cannot clear the durably retaine
   assert.equal(journal["state"], "project-open-needs-review"); assert.equal(journal["hardStop"], true);
   assert.equal(journal["saved"], false); assert.equal(journal["orphanedCallPossible"], false);
   assert.equal(failureArtifacts(run).length, 0); assert.deepEqual(run.calls, ["checkpoint", "project-open"]);
+});
+
+function failingNativeEnvironment(stage: string, error: unknown): { environment: Value; calls: string[] } {
+  const calls: string[] = [];
+  let document: Value | undefined, project: Value | undefined;
+  const failAt = (boundary: string): void => { if (stage === boundary) { throw error; } };
+  const active = { ...CONTEXT.document, parentProjectUuid: TARGET.projectUuid };
+  return { calls, environment: { TextDecoder, Uint8Array, window: { top: { setTimeout, clearTimeout } }, eda: {
+    dmt_Project: {
+      getCurrentProjectInfo: (): Promise<unknown> => { failAt("project-info"); return Promise.resolve(project); },
+      openProject: (): Promise<boolean> => { calls.push("open-project"); project = CONTEXT.project; failAt("open-project"); return Promise.resolve(true); },
+    },
+    dmt_SelectControl: { getCurrentDocumentInfo: (): Promise<unknown> => Promise.resolve(document) },
+    dmt_EditorControl: {
+      getSplitScreenTree: (): Promise<unknown> => Promise.resolve({ id: "root", tabs: document === undefined ? [] : [{ tabId: CONTEXT.document.tabId, documentType: 3, parentProjectUuid: TARGET.projectUuid }] }),
+      openDocument: (): Promise<string> => { calls.push("open-document"); document = active; failAt("open-document"); return Promise.resolve(CONTEXT.document.tabId); },
+      activateDocument: (): Promise<boolean> => { calls.push("activate"); failAt("activate-document"); return Promise.resolve(true); },
+    },
+    dmt_Pcb: { getCurrentPcbInfo: (): Promise<unknown> => { failAt("pcb-info"); return Promise.resolve(active); } },
+    sys_ClientUrl: { request: (url: string): Promise<unknown> => Promise.resolve({ ok: true, url,
+      body: Response.json({ success: true, result: { [TARGET.projectUuid]: { path: TARGET.projectPath } } }).body }) },
+  } } };
+}
+void test("generated native exceptions survive upstream code loss as fixed retained stages without navigation retry", async () => {
+  for (const stage of ["project-info", "open-project", "open-document", "activate-document", "pcb-info"]) {
+    const run = fixture(); const native = failingNativeEnvironment(stage, new TypeError("PRIVATE_NATIVE_REPLY /private/project.eprj2"));
+    run.state.generatedEnvironment = native.environment;
+    const category = `native-preflight:RECOVERY_NATIVE_${stage.toUpperCase().replaceAll("-", "_")}`;
+    await assert.rejects(run.executor.openExisting(run.input), { message: `The upstream EasyEDA tool reported failure [${category}].` });
+    assert.deepEqual(failureArtifacts(run), [{ schema: "easyeda-pro-control.project-open-failure.v1", action: "open-existing",
+      phase: "project-open-dispatching", category, orphanedCallPossible: false }]);
+    assert.equal(JSON.stringify([...run.artifacts.values()]).includes("PRIVATE"), false);
+    assert.equal(JSON.stringify([...run.journals.values()]).includes("PRIVATE"), false);
+    const expectedCounts: Record<string, number> = { "project-info": 0, "open-project": 1, "open-document": 2, "activate-document": 3, "pcb-info": 3 };
+    const expected = ["open-project", "open-document", "activate"].slice(0, expectedCounts[stage]);
+    assert.deepEqual(native.calls, expected); assert.deepEqual(run.calls, ["checkpoint", "project-open"]);
+  }
+});
+void test("generated timeout errors retain unsettled authority after upstream code loss", async () => {
+  for (const message of ["NATIVE_LIFECYCLE_OPEN_TIMEOUT", "NATIVE_LIFECYCLE_CLOSE_TIMEOUT"]) {
+    const run = fixture(); const native = failingNativeEnvironment("open-document", new Error(message));
+    run.state.generatedEnvironment = native.environment;
+    await assert.rejects(run.executor.openExisting(run.input), /native-lifecycle-timeout;execution-unsettled/u);
+    assert.equal(failureArtifacts(run)[0]?.["category"], "native-lifecycle-timeout");
+    assert.equal(failureArtifacts(run)[0]?.["orphanedCallPossible"], true);
+    const journal = [...run.journals.values()][0];
+    assert.equal(journal?.["state"], "project-open-outcome-unknown"); assert.equal(journal?.["hardStop"], true);
+    assert.deepEqual(native.calls, ["open-project", "open-document"]); assert.deepEqual(run.calls, ["checkpoint", "project-open"]);
+  }
 });

@@ -8,6 +8,7 @@ import { isNativeDocumentDeleted, readNativeHistoryCheckpoint } from "./native-h
 import type { NativeHistorySnapshot } from "./native-history.ts";
 import { verifyLibraryNativeProfile } from "./library-native-profile.ts";
 import { DEVICE_NATIVE_HOST_GUARD } from "./device-runtime-guard.ts";
+import { RECOVERY_NAVIGATION_FAILURE_STAGES } from "./native-diagnostics.ts";
 
 const PROFILE = "easyeda-pro-control.recovery-navigation.v1";
 const checkpointBindingSchema = z.object({ schema: z.literal("easyeda-pro-control.checkpoint.v2"), source: z.string().min(1).max(4096),
@@ -119,6 +120,24 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
     const target = ${JSON.stringify(target)};
     const checkpointProjectOwnerUuid = ${JSON.stringify(checkpointProjectOwnerUuid ?? null)};
     const fail = (stage) => { throw new Error("Recovery navigation refused: " + stage); };
+    const knownFailures = new Set(${JSON.stringify(RECOVERY_NAVIGATION_FAILURE_STAGES)}.map(stage => "Recovery navigation refused: " + stage));
+    knownFailures.add('NATIVE_LIFECYCLE_OPEN_TIMEOUT');
+    knownFailures.add('NATIVE_LIFECYCLE_CLOSE_TIMEOUT');
+    knownFailures.add('DEVICE_NATIVE_HOST_AMBIGUOUS');
+    knownFailures.add('DEVICE_NATIVE_BUS_MISSING');
+    const classifiedError = (error, stage) => {
+      let message;
+      try {
+        if (error !== null && typeof error === 'object') message = Object.getOwnPropertyDescriptor(error, 'message')?.value;
+      } catch (_) {}
+      return new Error(typeof message === 'string' && message.length <= 512 && knownFailures.has(message) ? message : "Recovery navigation refused: " + stage);
+    };
+    // Native exceptions otherwise lose their code in the upstream execute tool.
+    // Keep only a fixed boundary, never raw messages, accessors, stacks or causes.
+    const nativeCall = async (stage, call) => {
+      try { return await call(); } catch (error) { throw classifiedError(error, stage); }
+    };
+    try {
     const project = eda.dmt_Project, select = eda.dmt_SelectControl, editor = eda.dmt_EditorControl;
     if (typeof project?.getCurrentProjectInfo !== "function" || typeof project?.openProject !== "function" ||
         typeof select?.getCurrentDocumentInfo !== "function" || typeof editor?.openDocument !== "function" ||
@@ -135,11 +154,11 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
       if (target.documentType === 2) {
         ${DEVICE_NATIVE_HOST_GUARD}
         if (host.currentProject?.projectId !== target.projectUuid) fail("library-identity-drift");
-        const value = (await bus.rpcCall('/PrjDB/symbol/getData',[target.documentUuid,target.projectUuid])).message;
+        const value = (await nativeCall('native-library-info', () => bus.rpcCall('/PrjDB/symbol/getData',[target.documentUuid,target.projectUuid]))).message;
         if (host.currentProject?.projectId !== target.projectUuid || value?.uuid !== target.documentUuid || value?.project_uuid !== target.projectUuid || value?.owner?.uuid !== target.libraryOwnerUuid || value?.display_title !== target.libraryName) fail("library-identity-drift");
         return;
       }
-      const value = await libraryApi.get(target.documentUuid,target.projectUuid);
+      const value = await nativeCall('native-library-info', () => libraryApi.get(target.documentUuid,target.projectUuid));
       if (value?.uuid !== target.documentUuid || value?.libraryUuid !== target.libraryOwnerUuid || value?.name !== target.libraryName) fail("library-identity-drift");
     };
     const identity = (item, primary, alias) => {
@@ -161,7 +180,8 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
     };
     const registryPath = async () => {
       const url = "https://client/api/client/projectPaths";
-      const response = await eda.sys_ClientUrl.request(url, "GET");
+      const response = await nativeCall('native-registry-request', () => eda.sys_ClientUrl.request(url, "GET"));
+      return await nativeCall('native-registry-read', async () => {
       if (response?.ok !== true || response.url !== url || typeof response.body?.getReader !== "function") fail("registry-response");
       const reader = response.body.getReader(), decoder = new TextDecoder("utf-8", { fatal: true });
       let text = "", bytes = 0;
@@ -181,11 +201,12 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
       const entries = envelope?.success === true ? envelope.result : undefined;
       if (!entries || typeof entries !== "object" || Array.isArray(entries) || !Object.prototype.hasOwnProperty.call(entries, target.projectUuid)) fail("registry-membership");
       if (path(entries[target.projectUuid]?.path) !== target.projectPath) fail("registry-target-mismatch");
+      });
     };
     const exclusiveTabs = async (activeProject) => {
       if (!${JSON.stringify(options.requireExclusiveTabs === true)}) return;
       if (typeof editor.getSplitScreenTree !== "function") fail("tab-tree-api");
-      const tree = await editor.getSplitScreenTree(), pending = [{ value: tree, depth: 0 }], seen = new Set();
+      const tree = await nativeCall('native-tab-tree', () => editor.getSplitScreenTree()), pending = [{ value: tree, depth: 0 }], seen = new Set();
       let tabs = 0;
       while (pending.length) {
         const item = pending.pop(), node = item.value;
@@ -223,7 +244,8 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
       }
     };
     const inspect = async () => {
-      const p = await project.getCurrentProjectInfo(), observedDocument = await select.getCurrentDocumentInfo();
+      const p = await nativeCall('native-project-info', () => project.getCurrentProjectInfo()),
+        observedDocument = await nativeCall('native-document-info', () => select.getCurrentDocumentInfo());
       await exclusiveTabs(p);
       // Native Start Page has this exact observed non-document sentinel. A UUID
       // "0" with any real editor type, other tab or disagreeing alias is not empty.
@@ -282,7 +304,7 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
         if (current.projectUuid !== target.projectUuid) fail('editor-readiness-project');
         if (current.documentUuid === undefined) return false;
         if (current.documentUuid !== target.documentUuid || current.tabId !== tabId) fail('editor-readiness-document');
-        const value = await select.getCurrentDocumentInfo();
+        const value = await nativeCall('native-document-info', () => select.getCurrentDocumentInfo());
         if (value === undefined || value === null) return false;
         if (identity(value, 'uuid', 'documentUuid') !== target.documentUuid || value.documentType !== target.documentType || value.tabId !== tabId ||
             value.parentLibraryUuid !== undefined || (value.parentProjectUuid !== undefined && value.parentProjectUuid !== target.projectUuid)) fail('editor-readiness-owner');
@@ -290,14 +312,14 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
       };
       const auxiliary = async () => {
         if (target.documentType === 3) {
-          const value = await eda.dmt_Pcb.getCurrentPcbInfo();
+          const value = await nativeCall('native-pcb-info', () => eda.dmt_Pcb.getCurrentPcbInfo());
           const uuid = identity(value, 'uuid', 'documentUuid');
           if (uuid === undefined) return false;
           if (uuid !== target.documentUuid || (value.tabId !== undefined && value.tabId !== '' && value.tabId !== tabId)) fail('editor-readiness-pcb');
           return true;
         }
-        const schematic = await eda.dmt_Schematic.getCurrentSchematicInfo();
-        const page = await eda.dmt_Schematic.getCurrentSchematicPageInfo();
+        const schematic = await nativeCall('native-schematic-info', () => eda.dmt_Schematic.getCurrentSchematicInfo());
+        const page = await nativeCall('native-schematic-page-info', () => eda.dmt_Schematic.getCurrentSchematicPageInfo());
         const schematicUuid = identity(schematic, 'uuid', 'documentUuid'), pageUuid = identity(page, 'uuid', 'documentUuid');
         if (pageUuid !== undefined && (pageUuid !== target.documentUuid ||
             (page.tabId !== undefined && page.tabId !== '' && page.tabId !== tabId))) fail('editor-readiness-page');
@@ -333,7 +355,7 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
     }
     let current = await inspect(), openedProject = false, openedDocument = false;
     if (current.projectUuid === undefined) {
-      if (await project.openProject(target.projectUuid) !== true) fail("open-project-result");
+      if (await nativeCall('native-open-project', () => project.openProject(target.projectUuid)) !== true) fail("open-project-result");
       openedProject = true;
       current = await inspect();
       if (current.projectUuid !== target.projectUuid) fail("open-project-readback");
@@ -344,12 +366,14 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
       current = await inspect();
       if (current.projectUuid !== target.projectUuid) fail("project-changed-before-document");
       if (current.documentUuid === undefined) {
-        const tabId = target.documentType === 2 ? await libraryApi.openInEditor(target.documentUuid,target.projectUuid) : library ? await editor.openLibraryDocument(target.projectUuid,String(target.documentType),target.documentUuid) : await editor.openDocument(target.documentUuid);
+        const tabId = target.documentType === 2 ? await nativeCall('native-open-library', () => libraryApi.openInEditor(target.documentUuid,target.projectUuid)) : library ?
+          await nativeCall('native-open-library', () => editor.openLibraryDocument(target.projectUuid,String(target.documentType),target.documentUuid)) :
+          await nativeCall('native-open-document', () => editor.openDocument(target.documentUuid));
         openedDocument = true;
         if (typeof tabId !== "string" || tabId.length === 0 || tabId.length > 256) fail("open-document-result");
         // Native isOpenTab can return false while the opened target is already
         // selected. Its boolean alone neither proves nor disproves the effect.
-        const activated = await editor.activateDocument(tabId);
+        const activated = await nativeCall('native-activate-document', () => editor.activateDocument(tabId));
         if (typeof activated !== "boolean") fail("activate-result");
         current = await inspectActivated(tabId);
       }
@@ -364,5 +388,6 @@ export function buildRecoveryNavigationCode(value: RecoveryNavigationTarget, opt
     return { ok: true, schema: ${JSON.stringify(PROFILE)}, openedProject, openedDocument,
       project: { uuid: target.projectUuid, path: target.projectPath },
       document: { uuid: target.documentUuid, documentType: target.documentType, tabId: current.tabId } };
+    } catch (error) { throw classifiedError(error, 'native-unexpected'); }
   })();`;
 }

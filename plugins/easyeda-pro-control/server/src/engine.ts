@@ -61,10 +61,12 @@ import { buildPublicSdkReadCode, publicSdkReadImplementationKind, validatePublic
 import { SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
 import { SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
 import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
+import { SCHEMATIC_SELECTION_METHOD } from "./schematic-selection-read.ts";
 import { isSchematicTextReadMethod } from "./schematic-text-read.ts";
 import { isSchematicNetGroupReadMethod } from "./schematic-netgroup-read.ts";
 import { PCB_NET_MEMBERSHIP_METHOD } from "./pcb-net-membership.ts";
 import { PCB_PRIMITIVE_TYPE_METHOD } from "./pcb-primitive-type-read.ts";
+import { PCB_ACTIVE_LAYER_METHOD } from "./pcb-active-layer-read.ts";
 import { isEditorTabLookupMethod, readEditorTabLookup } from "./editor-tab-lookups.ts";
 import { buildSchematicNativeReadExpression } from "./schematic-native-adapter.ts";
 import { readSchematicFlatTopology } from "./schematic-flat-read.ts";
@@ -3272,6 +3274,7 @@ export class EasyedaControlEngine {
     const parsed = validatePublicSdkReadRequest(request, boundContext.document.documentType);
     if (parsed.method === PCB_NET_MEMBERSHIP_METHOD) { throw new Error("PCB net membership requires its exact-runtime source/inventory coordinator."); }
     if (parsed.method === PCB_PRIMITIVE_TYPE_METHOD) { throw new Error("PCB primitive type requires its exact-runtime source/inventory coordinator."); }
+    if (parsed.method === PCB_ACTIVE_LAYER_METHOD) { throw new Error("PCB active layer requires its exact-runtime source/layers coordinator."); }
     if (isEditorTabLookupMethod(parsed.method)) { return readEditorTabLookup(this, parsed, boundContext); }
     await this.assertBridgeDispatchAllowed();
     await this.assertPublicSdkImplementation();
@@ -3298,6 +3301,7 @@ export class EasyedaControlEngine {
       ? "native-task-observation-not-complete-source-connectivity-or-persistence-proof"
       : "public-sdk-observation-not-complete-design-proof";
     if (isSchematicNativeIdMethod(parsed.method)) { authority = "native-id-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    if (parsed.method === SCHEMATIC_SELECTION_METHOD) { authority = "public-replacement-selection-observation-not-complete-ownership-source-or-persistence-proof"; }
     if (parsed.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { authority = "native-property-name-observation-not-complete-source-connectivity-or-persistence-proof"; }
     if (parsed.method === SYMBOL_PIN_ENUMERATION_METHOD) { authority = "native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof"; }
     if (isSchematicTextReadMethod(parsed.method)) { authority = "native-text-state-observation-not-complete-source-connectivity-or-persistence-proof"; }

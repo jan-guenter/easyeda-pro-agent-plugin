@@ -9,9 +9,10 @@ import type { PublicSdkReadDescriptor, PublicSdkReadRequest } from "../src/publi
 import { SCHEMATIC_NETGROUP_READ_METHODS } from "../src/schematic-netgroup-read.ts";
 import { PCB_NET_MEMBERSHIP_METHOD } from "../src/pcb-net-membership.ts";
 import { PCB_PRIMITIVE_TYPE_METHOD } from "../src/pcb-primitive-type-read.ts";
+import { PCB_ACTIVE_LAYER_METHOD } from "../src/pcb-active-layer-read.ts";
+// oxlint-disable-next-line import/max-dependencies -- Exercise the real context wrapper and every registered reader guard, not test-local replacements.
 import { EasyedaControlEngine } from "../src/engine.ts";
 import type { ContextProbePayload, ExpectedContext } from "../src/engine.ts";
-// oxlint-disable-next-line import/max-dependencies -- Exercise the real context wrapper and every registered reader guard, not test-local replacements.
 import { wrapWithContextGuard } from "../src/runtime-scripts.ts";
 
 const descriptors = publicSdkReadDescriptors();
@@ -146,6 +147,19 @@ void test("PCB type lookup cannot fall through to the installed empty-body publi
   engine.assertBridgeDispatchAllowed = (): Promise<true> => { calls += 1; return Promise.reject(new Error("Generic type admission must not run.")); };
   const context = { ...netGroupContext, document: { ...netGroupContext.document, documentType: 3 } };
   await assert.rejects(engine.publicSdkRead(request, context), /source\/inventory coordinator/u); assert.equal(calls, 0);
+});
+
+void test("active layer cannot fall through to its empty-body public method or accept an absence result", async () => {
+  const request = { method: PCB_ACTIVE_LAYER_METHOD, arguments: {} };
+  assert.deepEqual(validatePublicSdkReadRequest(request, 3), request);
+  for (const documentType of [1, 2, 4, 15]) { assert.throws(() => validatePublicSdkReadRequest(request, documentType)); }
+  assert.throws(() => buildPublicSdkReadCode(request), /source\/layers\/source specialized reader/u);
+  assert.throws(() => validatePublicSdkReadPayload({ ok: true, kind: "public-sdk-read", method: request.method, present: false, value: null, undefinedPaths: ["/value"] }, request), /specialized verifier/u);
+  let calls = 0;
+  const engine = new EasyedaControlEngine({ callTool: (): Promise<unknown> => { calls += 1; return Promise.reject(new Error("Public active layer stub must not dispatch.")); } });
+  engine.assertBridgeDispatchAllowed = (): Promise<true> => { calls += 1; return Promise.reject(new Error("Generic active layer admission must not run.")); };
+  const activeContext = { ...netGroupContext, document: { ...netGroupContext.document, documentType: 3 } };
+  await assert.rejects(engine.publicSdkRead(request, activeContext), /source\/layers coordinator/u); assert.equal(calls, 0);
 });
 
 void test("real NetGroup coordinator distinguishes native authority and refuses second-sample context, profile, quarantine and state drift", async () => {
