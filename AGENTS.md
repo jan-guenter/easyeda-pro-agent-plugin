@@ -114,6 +114,23 @@ Last updated: 2026-10-11 (Europe/Berlin)
   rebuild reproduces exact facade/supervisor/license bytes and manifest9fffd9f1.
   Final Git CI and official installation remain separate pending evidence.
 
+### Candidate002000 publication and installation verification
+
+- Payload9ba94559c8afbdce542fc16d0f4d4528167e2329 passed
+  [CI38099812749](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38099812749)
+  in draftPR9:2,559facade passes/two platform skips/zero failures or
+  cancellations and424bridge passes. Actual merge040d16c2 has the exact payload
+  tree33f29011. Complete CI log9e79a011 and commit metadata are retained.
+- Official marketplace upgrade reported success and CLI list confirms002000
+  installed/enabled from the Git URL. However, the first exact installed proof
+  stopped before startup because the installer inherited the evidence-log
+  umask077. Independent full audit proves all536files/15,125,338bytes match Git,
+  but535regular files are0600 instead of0644 and the executable0700 instead of0755.
+  Failed stderr33bf2cbd is retained; no installed-runtime success is claimed.
+  Same-HEAD upgrade and re-add under022 are observed no-ops, not repairs.
+  A supported refresh under022 remains pending. Never manually edit the cache.
+  Both disposable editors stay closed; no live call follows installation.
+
 ### Restarted223200 acceptance and next source candidate
 
 - Fresh facade1829230 admitted installed223200 bundled75d864d/manifest14c02f1f
@@ -1057,6 +1074,11 @@ runtime does not invoke them.
 - Marketplace, plugin manifest, README, skill frontmatter, agent metadata, and MCP tool descriptions must agree about enabled capabilities.
 - CI must be green and the built bundle reproducible before publishing.
 - Scan the staged tree for secrets and user design artifacts.
+- Run the official marketplace installer with umask022. Open private evidence
+  outputs under077 separately, then set022 only for the installer subprocess.
+  Verify exact committed file modes as well as bytes after installation; a
+  successful CLI result alone does not prove executable permissions. A same-HEAD
+  marketplace upgrade may be a no-op and must not be reported as a repair.
 - Record the test count, commit, marketplace URL, and local installation result in this file and the originating project record.
 - Use a new Codex task after installing a new marketplace snapshot.
 
