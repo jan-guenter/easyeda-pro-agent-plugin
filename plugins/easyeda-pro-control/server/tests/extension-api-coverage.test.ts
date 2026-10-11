@@ -177,8 +177,31 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 192, "implemented-native-equivalent": 97, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 475,
+    "implemented-public-subset": 192, "implemented-native-equivalent": 99, "internal-lifecycle-only": 2, "implemented-but-blocked": 8, omitted: 473,
   });
+});
+
+void test("explicit-ID PCB object coverage advertises complete narrowed source DTOs instead of public stubs", () => {
+  const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
+  for (const name of ["getPrimitiveByPrimitiveId", "getPrimitivesByPrimitiveId"]) {
+    const row = rows.get(`eda.pcb_Primitive.${name}`); assert.ok(row);
+    assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
+    assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
+    assert.equal(row.routes.length, 1); const route = row.routes[0]; assert.ok(route);
+    assert.deepEqual(route.documentTypes, [3]); assert.equal(route.implementation, "native-task-equivalent");
+    assert.deepEqual(route.source, ["pcb-source-objects-read.ts"]); assert.deepEqual(route.tests, ["pcb-source-objects-read.test.ts"]);
+    assert.match(route.scope, /Missing IDs refuse/u); assert.match(route.scope, /No selection RPC/u);
+    assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /1–256 unique IDs/u);
+  }
+});
+void test("five reviewed empty or constant-false methods remain omitted with concrete implementation reasons", () => {
+  const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
+  for (const path of ["sch_Document.navigateToCoordinates", "sch_Document.navigateToRegion", "pcb_PrimitiveAttribute.create", "pcb_PrimitivePoured.create", "pcb_PrimitivePoured.modify"]) {
+    const row = rows.get(`eda.${path}`); assert.ok(row);
+    assert.equal(row.status, "omitted"); assert.equal(row.routes.length, 0);
+    assert.equal(row.omission?.code, "reviewed-native-stub"); assert.match(row.omission.reason, /empty body|constant false/u);
+    assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
+  }
 });
 
 void test("closed free PCB creation exposes only its checkpoint-bound native subset", () => {

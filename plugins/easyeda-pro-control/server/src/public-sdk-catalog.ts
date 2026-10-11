@@ -12,6 +12,7 @@ import { PCB_PRIMITIVE_TYPE_METHOD } from "./pcb-primitive-type-read.ts";
 import { PCB_ACTIVE_LAYER_METHOD } from "./pcb-active-layer-read.ts";
 import { SCHEMATIC_SELECTION_METHOD } from "./schematic-selection-read.ts";
 import { PCB_SELECTED_OBJECTS_METHOD } from "./pcb-selected-objects.ts";
+import { isPcbSourceObjectsMethod } from "./pcb-source-objects.ts";
 
 export const publicSdkCatalogQuerySchema = z.object({
   method: z.string().min(1).max(160).optional(),
@@ -55,6 +56,7 @@ export function queryPublicSdkReads(input: unknown = {}): Record<string, unknown
     if (matched.every((entry) => entry.path === PCB_NET_MEMBERSHIP_METHOD)) { authority = "native-filtered-net-membership-not-connectivity-or-persistence-proof"; }
     if (matched.every((entry) => entry.path === PCB_PRIMITIVE_TYPE_METHOD)) { authority = "native-pcb-identity-type-not-public-method-parity"; }
     if (matched.every((entry) => entry.path === PCB_SELECTED_OBJECTS_METHOD)) { authority = "native-selected-source-objects-not-public-instance-or-persistence-proof"; }
+    if (matched.every((entry) => isPcbSourceObjectsMethod(entry.path))) { authority = "native-explicit-source-objects-not-public-instance-or-persistence-proof"; }
     if (matched.every((entry) => entry.path === PCB_ACTIVE_LAYER_METHOD)) { authority = "native-active-layer-with-public-fields-not-public-method-parity"; }
     if (matched.every((entry) => entry.path === SCHEMATIC_SELECTION_METHOD)) { authority = "public-replacement-selection-observation-not-complete-ownership-source-or-persistence-proof"; }
   }

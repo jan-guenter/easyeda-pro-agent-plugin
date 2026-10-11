@@ -12,6 +12,7 @@ import { PCB_NET_MEMBERSHIP_LIMITATIONS, PCB_NET_MEMBERSHIP_METHOD, pcbNetMember
 // oxlint-disable-next-line import/max-dependencies -- Each fixed reader supplies its reviewed schema and provenance; duplicating that contract would permit drift.
 import { PCB_PRIMITIVE_TYPE_LIMITATIONS, PCB_PRIMITIVE_TYPE_METHOD, pcbPrimitiveTypeArgumentsSchema } from "./pcb-primitive-type-read.ts";
 import { PCB_SELECTED_OBJECTS_LIMITATIONS, PCB_SELECTED_OBJECTS_METHOD, pcbSelectedObjectsArgumentsSchema } from "./pcb-selected-objects.ts";
+import { PCB_SOURCE_OBJECTS_LIMITATIONS, PCB_SOURCE_OBJECTS_METHOD, PCB_SOURCE_OBJECT_METHOD, isPcbSourceObjectsMethod, pcbSourceObjectArgumentsSchema, pcbSourceObjectsArgumentsSchema } from "./pcb-source-objects.ts";
 import { PCB_ACTIVE_LAYER_LIMITATIONS, PCB_ACTIVE_LAYER_METHOD, pcbActiveLayerArgumentsSchema } from "./pcb-active-layer-read.ts";
 import { SCHEMATIC_SELECTION_LIMITATIONS, SCHEMATIC_SELECTION_METHOD, buildSchematicSelectionReadExpression } from "./schematic-selection-read.ts";
 
@@ -191,6 +192,12 @@ add(PCB_PRIMITIVE_TYPE_METHOD, [3], "string", pcbPrimitiveTypeArgumentsSchema, [
 });
 add(PCB_SELECTED_OBJECTS_METHOD, [3], "records", pcbSelectedObjectsArgumentsSchema, [], {
   implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [...PCB_SELECTED_OBJECTS_LIMITATIONS],
+});
+add(PCB_SOURCE_OBJECT_METHOD, [3], "record", pcbSourceObjectArgumentsSchema, ["id"], {
+  implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [...PCB_SOURCE_OBJECTS_LIMITATIONS],
+});
+add(PCB_SOURCE_OBJECTS_METHOD, [3], "records", pcbSourceObjectsArgumentsSchema, ["ids"], {
+  implementationKind: "native-task-equivalent", parameterSupport: "narrowed", limitations: [...PCB_SOURCE_OBJECTS_LIMITATIONS],
 });
 for (const method of ["getAllNetName", "getAllNetsName"]) { add(`eda.pcb_Net.${method}`, [3], "strings"); }
 for (const [method, output] of [["getNet", "record"], ["getNetColor", "json"], ["getNetLength", "number"]] as const) {
@@ -438,6 +445,7 @@ function readImplementationTestName(path: string): string {
 }
 
 function readImplementationName(path: string): string {
+  if (isPcbSourceObjectsMethod(path)) { return "pcb-source-objects-read"; }
   if (path === SCHEMATIC_SELECTION_METHOD) { return "schematic-selection-read"; }
   if (path === PCB_ACTIVE_LAYER_METHOD) { return "pcb-active-layer-read"; }
   if (path === PCB_PRIMITIVE_TYPE_METHOD) { return "pcb-primitive-type-read"; }
@@ -496,6 +504,7 @@ function splitPolygonExpression(request: PublicSdkReadRequest): string {
  */
 export function buildPublicSdkReadCode(input: unknown): string {
   const request = publicSdkReadRequestSchema.parse(input);
+  if (isPcbSourceObjectsMethod(request.method)) { throw new Error("Explicit PCB source objects require the source/inventory/source specialized reader."); }
   if (isEditorTabLookupMethod(request.method)) { throw new Error("Owned editor lookups require the checkpoint-bound specialized reader."); }
   if (request.method === PCB_NET_MEMBERSHIP_METHOD) { throw new Error("PCB net membership requires the source/inventory/source specialized reader."); }
   if (request.method === PCB_PRIMITIVE_TYPE_METHOD) { throw new Error("PCB primitive type requires the source/inventory/source specialized reader."); }
@@ -684,6 +693,7 @@ function validatePrimitiveFields(row: Record<string, unknown>, rowIndex: number,
 
 export function validatePublicSdkReadPayload(input: unknown, requestInput: unknown): Record<string, unknown> {
   const request = publicSdkReadRequestSchema.parse(requestInput);
+  if (isPcbSourceObjectsMethod(request.method)) { throw new Error("Explicit PCB source object results require the complete source/inventory specialized verifier."); }
   if (isEditorTabLookupMethod(request.method)) { throw new Error("Owned editor lookup results require the checkpoint-bound specialized verifier."); }
   if (request.method === PCB_NET_MEMBERSHIP_METHOD) { throw new Error("PCB net membership results require the complete source/inventory specialized verifier."); }
   if (request.method === PCB_PRIMITIVE_TYPE_METHOD) { throw new Error("PCB primitive type results require the complete source/inventory specialized verifier."); }

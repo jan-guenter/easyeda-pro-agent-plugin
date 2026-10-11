@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { runInNewContext } from "node:vm";
 import { buildExactReadExpression, validateExactReadPayload } from "../src/exact-readers.ts";
 import { PCB_SELECTED_OBJECTS_METHOD, derivePcbSelectedObjects } from "../src/pcb-selected-objects.ts";
+import { PCB_SOURCE_OBJECTS_METHOD, derivePcbSourceObjects } from "../src/pcb-source-objects.ts";
 import { object, snapshot } from "./pcb-selected-objects-fixture.ts";
 
 type State = Record<string, () => unknown>;
@@ -36,10 +37,12 @@ void test("real inventory producer and maintained validator admit selected Compo
   assert.deepEqual(result.map((row) => row.primitiveId), ["text", "component"]);
   assert.equal(result[0]?.sourceRecord.body["specialColor"], null);
   assert.deepEqual(result[1]?.sourceAttributes.map((row) => row.id), ["name"]);
+  assert.deepEqual(derivePcbSourceObjects(source, inventory, { method: PCB_SOURCE_OBJECTS_METHOD, arguments: { ids: ["text", "component"] } }, "board"), result);
 });
 void test("real producer/validator permit a pour-piece/root ID collision but selected source coordinator refuses it", async () => {
   const inventory = await produce("text"), source = snapshot([object("COMPONENT", "component", { x: 10, y: 20 }),
     object("STRING", "text", { text: "Collision target" }), object("ATTR", "name", { parentId: "component", key: "Name", value: "Part" }),
     object("POUR", "pour", { netName: "GND" })]);
   assert.throws(() => derivePcbSelectedObjects(source, inventory, ["text"], { method: PCB_SELECTED_OBJECTS_METHOD, arguments: {} }, "board"));
+  assert.throws(() => derivePcbSourceObjects(source, inventory, { method: PCB_SOURCE_OBJECTS_METHOD, arguments: { ids: ["text"] } }, "board"));
 });

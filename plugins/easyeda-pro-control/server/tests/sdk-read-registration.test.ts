@@ -16,6 +16,7 @@ import { PCB_NET_MEMBERSHIP_METHOD } from "../src/pcb-net-membership.ts";
 import { PCB_PRIMITIVE_TYPE_METHOD } from "../src/pcb-primitive-type-read.ts";
 import { PCB_ACTIVE_LAYER_METHOD } from "../src/pcb-active-layer-read.ts";
 import { PCB_SELECTED_OBJECTS_METHOD } from "../src/pcb-selected-objects.ts";
+import { PCB_SOURCE_OBJECTS_METHOD, PCB_SOURCE_OBJECT_METHOD, isPcbSourceObjectsMethod } from "../src/pcb-source-objects.ts";
 import { PcbSelectedReadTimings } from "../src/pcb-selected-read-timings.ts";
 import { isRecord } from "../src/core.ts";
 
@@ -47,7 +48,7 @@ async function registeredSdkRead(failure: "none" | "status" | "dispatch" | "fina
   };
   const scope = {
     z, publicSdkReadRequestSchema, publicSdkReadImplementationKind, isSchematicNativeIdMethod, SCHEMATIC_COMPONENT_PROPERTY_METHOD, SYMBOL_PIN_ENUMERATION_METHOD, isSchematicTextReadMethod,
-    isSchematicNetGroupReadMethod, PCB_NET_MEMBERSHIP_METHOD, PCB_PRIMITIVE_TYPE_METHOD, PCB_ACTIVE_LAYER_METHOD, PCB_SELECTED_OBJECTS_METHOD, PcbSelectedReadTimings, isRecord,
+    isSchematicNetGroupReadMethod, PCB_NET_MEMBERSHIP_METHOD, PCB_PRIMITIVE_TYPE_METHOD, PCB_ACTIVE_LAYER_METHOD, PCB_SELECTED_OBJECTS_METHOD, PcbSelectedReadTimings, isRecord, isPcbSourceObjectsMethod,
     contextSchema: z.object({}), privateFingerprintSchema: z.object({}), evidenceSchema: z.object({}),
     CONTROL_VERSION: "synthetic", MAX_INLINE_RESULT_BYTES: 262_144,
     serializedLiveGuarded: (handler: Handler): Handler => handler,
@@ -84,6 +85,12 @@ async function registeredSdkRead(failure: "none" | "status" | "dispatch" | "fina
       assert.ok(timings instanceof PcbSelectedReadTimings);
       return timings.measure("source-read", () => coordinatedRead("selected-source"));
     },
+    readPcbSourceObjects: (_engine: unknown, request: Input["request"], expectedContext: object, expectedFingerprint: object): Promise<object> => {
+      assert.ok(isPcbSourceObjectsMethod(request.method));
+      assert.deepEqual(request.arguments, request.method === PCB_SOURCE_OBJECT_METHOD ? { id: "fixture" } : { ids: ["fixture"] });
+      assert.deepEqual(expectedContext, {}); assert.deepEqual(expectedFingerprint, {});
+      return coordinatedRead("explicit-source");
+    },
     engine: {
       status,
       publicSdkRead: (): Promise<object> => { calls.push("read"); return failure === "dispatch" ? Promise.reject(new Error("synthetic dispatch failure")) : Promise.resolve({ synthetic: true }); },
@@ -99,7 +106,7 @@ async function registeredSdkRead(failure: "none" | "status" | "dispatch" | "fina
   return { invoke, calls, effects };
 }
 
-for (const method of ["eda.sys_Environment.getEditorCurrentVersion", "eda.sch_PrimitiveText.getAllPrimitiveId", "eda.sch_PrimitiveWire.getAllPrimitiveId", "eda.sch_PrimitiveBus.getAllPrimitiveId", SCHEMATIC_COMPONENT_PROPERTY_METHOD, SYMBOL_PIN_ENUMERATION_METHOD, ...SCHEMATIC_TEXT_READ_METHODS, ...SCHEMATIC_NETGROUP_READ_METHODS, PCB_NET_MEMBERSHIP_METHOD, PCB_PRIMITIVE_TYPE_METHOD, PCB_ACTIVE_LAYER_METHOD, PCB_SELECTED_OBJECTS_METHOD]) {
+for (const method of ["eda.sys_Environment.getEditorCurrentVersion", "eda.sch_PrimitiveText.getAllPrimitiveId", "eda.sch_PrimitiveWire.getAllPrimitiveId", "eda.sch_PrimitiveBus.getAllPrimitiveId", SCHEMATIC_COMPONENT_PROPERTY_METHOD, SYMBOL_PIN_ENUMERATION_METHOD, ...SCHEMATIC_TEXT_READ_METHODS, ...SCHEMATIC_NETGROUP_READ_METHODS, PCB_NET_MEMBERSHIP_METHOD, PCB_PRIMITIVE_TYPE_METHOD, PCB_ACTIVE_LAYER_METHOD, PCB_SELECTED_OBJECTS_METHOD, PCB_SOURCE_OBJECT_METHOD, PCB_SOURCE_OBJECTS_METHOD]) {
   void test(`registered SDK reader labels success and failure evidence correctly: ${method}`, async () => {
     const native = isSchematicNativeIdMethod(method);
     let reader = native ? "fixed-native-id-observation" : "fixed-public-sdk-observation";
@@ -112,15 +119,18 @@ for (const method of ["eda.sys_Environment.getEditorCurrentVersion", "eda.sch_Pr
     if (method === PCB_PRIMITIVE_TYPE_METHOD) { reader = "fixed-native-pcb-type-observation"; effect = "fixed-native-pcb-type-read"; }
     if (method === PCB_ACTIVE_LAYER_METHOD) { reader = "fixed-native-active-layer-observation"; effect = "fixed-native-active-layer-read"; }
     if (method === PCB_SELECTED_OBJECTS_METHOD) { reader = "fixed-native-selected-source-observation"; effect = "fixed-native-selected-source-read"; }
+    if (isPcbSourceObjectsMethod(method)) { reader = "fixed-native-explicit-source-observation"; effect = "fixed-native-explicit-source-read"; }
     let argumentsData: Record<string, unknown> = method.endsWith(".get") ? { primitiveIds: "fixture" } : {};
     if (method === PCB_NET_MEMBERSHIP_METHOD) { argumentsData = { net: "GND", primitiveTypes: ["Line"] }; }
     if (method === PCB_PRIMITIVE_TYPE_METHOD) { argumentsData = { id: "fixture" }; }
+    if (isPcbSourceObjectsMethod(method)) { argumentsData = method === PCB_SOURCE_OBJECT_METHOD ? { id: "fixture" } : { ids: ["fixture"] }; }
     const input: Input = { request: { method, arguments: argumentsData }, expectedContext: {}, expectedFingerprint: {}, evidence: {}, returnMode: "full", maxInlineBytes: 1024 };
     let dispatch = "read";
     if (method === PCB_NET_MEMBERSHIP_METHOD) { dispatch = "pcb-membership"; }
     if (method === PCB_PRIMITIVE_TYPE_METHOD) { dispatch = "pcb-type"; }
     if (method === PCB_ACTIVE_LAYER_METHOD) { dispatch = "active-layer"; }
     if (method === PCB_SELECTED_OBJECTS_METHOD) { dispatch = "selected-source"; }
+    if (isPcbSourceObjectsMethod(method)) { dispatch = "explicit-source"; }
     const coordinated = dispatch !== "read";
     for (const failure of ["none", "status", "dispatch", "fingerprint", ...(coordinated ? ["final-status" as const] : [])] as const) {
       const current = await registeredSdkRead(failure);

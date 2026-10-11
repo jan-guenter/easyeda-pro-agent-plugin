@@ -19,6 +19,8 @@ import type { PcbNetMembershipEngine } from "../src/pcb-net-membership-read.ts";
 import { PCB_PRIMITIVE_TYPE_METHOD, derivePcbPrimitiveType, readPcbPrimitiveType } from "../src/pcb-primitive-type-read.ts";
 import { PCB_SELECTED_OBJECTS_IDS_METHOD, PCB_SELECTED_OBJECTS_METHOD } from "../src/pcb-selected-objects.ts";
 import { readPcbSelectedObjects } from "../src/pcb-selected-objects-read.ts";
+import { PCB_SOURCE_OBJECTS_METHOD } from "../src/pcb-source-objects.ts";
+import { readPcbSourceObjects } from "../src/pcb-source-objects-read.ts";
 import { validatePublicSdkReadPayload } from "../src/public-sdk-read.ts";
 
 type Value = Record<string, unknown>;
@@ -320,3 +322,25 @@ for (const failedVerification of [undefined, ...Array.from({ length: 14 }, (_, i
     assert.equal(current.counts.creations, 1);
   });
 }
+for (const failedVerification of [undefined, ...Array.from({ length: 10 }, (_, index) => index + 1)]) {
+  void test(`explicit source DTOs retain inherited checkpoint proof ${String(failedVerification)} without selection`, async () => {
+    const current = await runtime(fixture(), failedVerification);
+    const pending = readPcbSourceObjects(current.engine, { method: PCB_SOURCE_OBJECTS_METHOD, arguments: { ids: ["standalone"] } }, context, fingerprint());
+    if (failedVerification === undefined) {
+      const result = await pending;
+      assert.deepEqual(current.counts, { observations: 9, creations: 1, verifications: 10 });
+      const proof = result["proof"]; assert.ok(isRecord(proof)); assert.ok(isRecord(proof["inheritedLines"]));
+      assert.deepEqual(proof["requestedPrimitiveIds"], ["standalone"]); assert.equal(proof["observationCycles"], 2);
+    } else {
+      await assert.rejects(pending, /unchanged complete checkpoint/u);
+      assert.equal(current.counts.verifications, failedVerification); assert.ok(current.counts.observations <= 9);
+      if (failedVerification <= 3) { assert.equal(current.counts.observations, 3); }
+    }
+    assert.equal(current.counts.creations, 1);
+  });
+}
+void test("explicit source refuses inherited requested ID even when its library geometry is available", async () => {
+  const current = await runtime(fixture());
+  await assert.rejects(readPcbSourceObjects(current.engine, { method: PCB_SOURCE_OBJECTS_METHOD, arguments: { ids: ["standalone", "component-1template-line"] } }, context, fingerprint()), /generated or inherited/u);
+  assert.equal(current.counts.creations, 1); assert.equal(current.counts.observations, 6);
+});
