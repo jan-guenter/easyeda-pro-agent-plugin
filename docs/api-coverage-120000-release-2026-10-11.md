@@ -1,4 +1,4 @@
-# Candidate 120000 release verification
+# Candidate 120000 published and installed
 
 Candidate `0.3.0+codex.20261011120000` continues draft PR9. The broader API task
 is unfinished. Only named disposable projects were used; the production project
@@ -81,12 +81,40 @@ The compatibility manifest hash is
 `7ea4fa1d08bf9745ad05392b3c6ddb55130f8ed1880e0f6d8356e97969a67f70`.
 External runtime pins are unchanged. Independent source reviews accepted the
 history, creation, frame-binding, acknowledgment, cache and discovery changes.
-CI, publication and installation remain pending.
+
+Payload `c1182b68c91c7109b4a501d7615b26adbd9b7a12` passed
+[CI38137714430](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38137714430):
+3,135 facade tests passed, four platform skips, zero failures, and 424 bridge
+tests passed. The checkout log identifies tested merge
+`73fb9dba4d7e39a1f2953c953185c0a269916ed5`; its complete tree
+`a686776eafd44c646948f839236f5724ac7d2e27` equals the payload tree.
+
+The official Git-marketplace upgrade installed and enabled
+`0.3.0+codex.20261011120000` from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, feature ref
+`feature/api-execution-coverage`. The marketplace snapshot equals the payload.
+The installer ran with umask022 and returned no errors. All 576 packaged files,
+16,011,661 bytes and committed modes match, with no extra files and unchanged
+inventory before/after the configured offline probe. Inventory hash:
+`a8d588c3bb2b4df8a3a4ed880b0d98e06d57a9bce85e073366e40c3a9690cc3c`.
+Installed report hash:
+`f6e4583469211d72f9e4a5f1ef2b634d79e6fe0e120a0a4eefe8353577c04348`.
+
+The actual cached bundle's configured startup hands ambient Node26.7.0 to
+pinned Node24.18.0. The isolated offline probe checked all coverage rows,
+175 fixed readers, 15 native readers, all 68 library capability descriptors,
+the 106/68 operation schemas, seven skills and 26 tools. New creation, rename
+history and PCB-text restrictions were checked separately from structural
+schema acceptance. All 449 process samples show no upstream child or nonstdio
+socket; the synthetic upstream sentinel stayed absent and stderr was empty.
+This is offline installation evidence, not connected admission or a continuous
+system-call trace. No live call followed installation. The old host is intact,
+all editors are closed and there is no pending CAD journal.
 
 ## Next connected work
 
-After publication and official marketplace installation, start a fresh Codex
-chat and reprove the actual package and authenticated contained editor. Leave
+Start a fresh Codex chat and reprove the actual package and authenticated
+contained editor, as required by the validation-and-release skill. Leave
 the old host alone. Use the prepared plain fixture, keep only its other clean
 PCB active, and rederive each plan from a fresh complete checkpoint. Run rename
 and explicit inverse transactions separately, then closed free-PCB creation.

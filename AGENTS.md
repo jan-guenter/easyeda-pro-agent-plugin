@@ -6,7 +6,28 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
-### Restarted103000 reader validation complete; candidate120000 verification
+### Candidate120000 published and installed; fresh host required
+
+- Payloadc1182b68c91c7109b4a501d7615b26adbd9b7a12 passedCI38137714430:
+  3135facadepasses/fourplatformskips/zerofailures and424bridgetests. Testedmerge
+  73fb9dba has exactpayloadtreea686776e. Local3138passes/oneskip, allstrictchecks,
+  reproducibility/dependency/privacy and validators pass. No guard/test removed.
+- Official Git-marketplace upgrade installed/enabled120000 from the repository
+  URL and feature/api-execution-coverage ref. MarketplaceHEAD equalsc1182b68;
+  installerumask022/errorsempty. All576packagedfiles/16011661bytes/modes match;
+  inventorya8d588c3/reportf6e45834, unchanged through actualcachedofflineprobe.
+  Catalog26tools/sevenskills/175fixed15nativereaders/749and806SDKsignatures/
+  106design68libraryschemas. Full68librarycapabilities and newwriterlimits pass.
+- Configuredcachedstartup handsambientNode26.7 topinned24.18, with449samples
+  showingnoupstreamchild/nonsocket; sentinelabsent/stderrempty. This is not live
+  admission. Loaded2090211 remains103000 and is left intact. No live call after
+  install; allCADclosed/alljournalsterminal. StartfreshCodex before connected
+  rename/create/text validation. Production and its record remain untouched.
+  PR9 staysdraft, broadAPI taskunfinished. Release details and next work:
+  docs/api-coverage-120000-release-2026-10-11.md. Private resume:
+  release-120000-y6w466/resume-120000.md.
+
+### Restarted103000 reader validation and candidate120000 implementation
 
 - Fresh actual facade2090211 independently matches installed103000:560files,
   exact committed modes,177source094fc7f8,threebundles1759c855,manifest0224cc46.
@@ -26,7 +47,7 @@ Last updated: 2026-10-11 (Europe/Berlin)
   and freePCBcreation offline. It closed normally; discoverempty and final
   maintained verification pass. No documentSave or typedwrite. All CAD closed,
   no pending journal. Private preparation audit8468c008 records scope/limits.
-- Unpublished source adds standalone PCB x/y/text modification, exact captured
+- Candidate120000 adds standalone PCB x/y/text modification, exact captured
   PCB-frame receiver binding for source merges/physical-stack writes, UI pins
   before/after PCB dispatch, scan-resistant bounded journal-cache admission and
   removal of three duplicate outer reader status calls. Independent source
@@ -52,8 +73,8 @@ Last updated: 2026-10-11 (Europe/Berlin)
   alltypes/strictlinters, signatures/security, reproducible facade/syntheticbridge,
   officialplugin/sevenskills, workflowlint, repository/privacy and offline doctor
   pass. First full run found only an outdated105schema expectation; corrected106
-  and reran the entire suite. No test/deadline removed. Installedcache103000
-  unchanged; CI/publication/install pending, PR9 stays draft. Private
+  and reran the entire suite. No test/deadline removed. The completed release
+  and installation evidence is recorded above; PR9 stays draft. Private
   release-120000-y6w466 holds checks.
 
 ### Candidate103000 published and installed; fresh host required
@@ -1366,7 +1387,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011103000` is published, installed/enabled and offline-verified against CI-tested2133a223, package payloadca5cc57. All560files/modes match;26tools, seven skills and175fixed readers. Loaded facade2019730 remains083400 and is left intact; use a fresh chat before connected admission. Installed083400 passed imported-project open, nonempty flat diagnostics and forward/reverse Designator-coordinate transactions with Save/reopen and complete12document proof. Both disposable editors are closed and all journals are terminal. Never replay prior Paste, placement, identity edits, transactions or Save. Earlier071500 active-layer, ComponentPad/Via membership and selected-component evidence remains scoped to that generation. Closed PCB/SCH rename, inherited-Line/type lookup, nonempty standalone Pad/Arc, electrical writers and unsaved v2 rollback remain pending live validation. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
+- Git-marketplace `0.3.0+codex.20261011120000` is published, installed/enabled and offline-verified against CI-tested payloadc1182b68. All576files/modes match;26tools, seven skills and175fixed readers. Loaded facade2090211 remains103000 and is left intact; use a fresh chat before connected admission. Installed103000 passed five Line/net/type readers with complete18document/native/fullSQLite invariance; both inherited neutral-Line cases passed. Installed083400 passed imported-project open, nonempty flat diagnostics and forward/reverse Designator-coordinate transactions with Save/reopen and complete12document proof. All disposable editors are closed and journals terminal. Never replay prior creation, Paste, placement, identity edits, transactions or Save. Earlier071500 active-layer, ComponentPad/Via membership and selected-component evidence remains scoped to that generation. Closed PCB/SCH rename, free-PCB creation, PCB-text modification, nonempty standalone Pad/Arc, electrical writers and unsaved v2 rollback remain pending live validation. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
