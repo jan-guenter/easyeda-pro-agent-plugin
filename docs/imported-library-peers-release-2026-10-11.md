@@ -1,9 +1,9 @@
 # Imported-library peer support and disposable reader validation
 
-Candidate `0.3.0+codex.20261011083400` continues the API-coverage work in draft
-PR9. At this checkpoint it is source-only; publication, installation and new
-connected validation are separate steps. The user's production project was
-not opened, inspected, edited or saved.
+Version `0.3.0+codex.20261011083400` is published and installed through the Git
+marketplace. It continues the API-coverage work in draft PR9; new connected
+validation remains pending. The user's production project was not opened,
+inspected, edited or saved.
 
 ## What changed
 
@@ -97,5 +97,45 @@ Reviewed identities: source `493d631e5febc7e2ec2616a365968818118fd38f142c4369410
 (171 files), bundle `fe3e6bf563e77cdc991d540c4e32d2d98c3884af550586de2c1e33c1868964f8`,
 manifest `90d42043f81548fe96356e2e466e946b00c46a726d077a998df5cc2f052d912a`.
 Only the facade projections and review timestamp changed; external pins stayed
-exact. CI publication, package parity and installation are recorded separately
-after execution.
+exact.
+
+## Publication and installation
+
+Payload `e73c84d83f595f039c58d02100ef22c0e9039880` is published on the
+`feature/api-execution-coverage` branch of the user's GitHub repository.
+[CI38125583556](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38125583556)
+passed 2,871 facade tests with four platform-specific skips and zero failures;
+all 424 bridge tests and release gates passed. Its tested PR merge commit has
+the exact same tree as the payload. The broader task remains unfinished, so
+[PR9](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/9) stays draft.
+
+The official Git-marketplace upgrade installed and enabled this version from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, with the existing
+feature-branch ref. The installer ran under umask022; private evidence remained
+under077. The marketplace snapshot equals the tested payload. No manual cache
+edits or host termination were used.
+
+The reviewed installed-package verifier matches all 548 files, 15,431,424 bytes
+and committed file modes, then repeats that inventory after its offline probe.
+Inventory SHA-256 is `da35fb684131240c9fdc1b804d69f3907316790015ebc596041e329fe0afd008`;
+verification report SHA-256 is
+`27c9a2393a9126662548a46e14c43d1d324b0e4fee467b9259f1c8c79eadf91e`.
+It verifies exact dual-profile metadata and rejects caller-supplied profile or
+parser overrides. Complete catalogs retain 774 method paths, 175 fixed readers
+including 15 explicit equivalents, 26 tools, seven skills, reviewed/latest
+749/806 signatures and 105/68 operation schemas.
+
+The actual configured startup command hands ambient Node26.7.0 to pinned
+Node24.18.0 under an isolated synthetic machine profile. Across 337 process
+observations there is no upstream child or nonstdio socket; the upstream-start
+sentinel remains absent and stderr is empty. This is sampled offline startup
+evidence, not a continuous syscall trace or connected runtime admission.
+
+Three instruction-only skill exercises correctly distinguished a pre-dispatch
+context refusal, forbidden imported-history compaction and closed-file offline
+verification. They are guidance checks, not CAD execution tests.
+
+The old071500 host was left untouched and no live call followed installation.
+The extension-development release workflow requires a fresh Codex chat before
+connected tests of imported-header navigation, diagnostics or v2 transactions.
+Both disposable editors remain closed. Never replay the prior Paste or Save.

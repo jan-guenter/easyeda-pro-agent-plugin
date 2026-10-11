@@ -6,6 +6,30 @@ Last updated: 2026-10-11 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Candidate083400 published and installed; fresh host required
+
+- Payload e73c84d83f595f039c58d02100ef22c0e9039880 is pushed on
+  feature/api-execution-coverage. PR9 remains draft; broader API coverage is
+  unfinished. CI38125583556 passed:2871facade passes/fourplatform skips/zero
+  failures,424bridge passes. Tested merge e12bf3c has the exact payload tree
+  f82bf366. Local2874passes/oneskip and all release checks are recorded below.
+- Official Git-marketplace upgrade with umask022 installed/enabled
+  0.3.0+codex.20261011083400. MarketplaceHEAD equals e73c84d; all548packaged
+  files/15431424bytes and committed modes match before and after offline probe.
+  Inventoryda35fb68, report27c9a239. Exact v1/v2 catalog, caller-override
+  refusals,774method paths,175fixed/15native readers,26tools/sevenskills and
+  reviewed/latest749/806signatures with105/68operation schemas pass.
+- Actual configured startup hands ambientNode26.7.0 to pinnedNode24.18.0 using
+  an isolated synthetic machine profile. All337process observations show no
+  upstreamchild/nonstdiosocket; sentinel absent/stderr empty. Sampled offline
+  proof is not connected admission. No manual cache edits or host termination.
+- Loaded host1982336 remains071500 and is left alone. No live calls followed
+  installation. Both disposable editors are closed, all journals terminal.
+  New imported-header project-open/flat-diagnostic/v2 writer validation and
+  nonempty flat topology remain pending. Never replay the flat fixture's Paste
+  or prior edits/Save. Resume evidence: private release-083400-y7e6dU directory.
+  Start a fresh Codex chat before continuing live work; production untouched.
+
 ### Restarted071500 validation and imported-history work, in progress
 
 - Fresh facade1982336 loads installed071500. Independent actual-byte review
@@ -1204,7 +1228,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011071500` is installed/enabled and offline-verified against CI-tested401ef941. All540files/modes match;26tools, seven skills and175fixed readers. Fresh facade1982336 admits its exact bytes. Scoped active-layer, ComponentPad/Via membership and ordinary selected-component reads now pass complete native/saved invariance. Both disposable editors are closed and all journals are terminal. The flat fixture remains import-only; no component was placed and no Save followed its Paste. Candidate083400 adds preserved imported-library provenance and sealed display-only v2, reviewed offline but not yet built/installed/connected-validated. Never replay prior edits/inverse/rename/Save. Line/type lookup, nonempty standalone Pad/Arc and nonempty flat topology remain pending. Prior Text/property-name/Wire-ID/Bus/symbol-Pin/display/rename evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
+- Git-marketplace `0.3.0+codex.20261011083400` is published, installed/enabled and offline-verified against CI-tested e73c84d. All548files/modes match;26tools, seven skills and175fixed readers. Loaded facade1982336 remains071500; fresh Codex pickup and actual-byte admission are required before live use. Its scoped active-layer, ComponentPad/Via membership and ordinary selected-component reads passed complete native/saved invariance. Both disposable editors are closed and all journals are terminal. The flat fixture remains import-only; no component was placed and no Save followed its Paste. Installed083400 adds preserved imported-library provenance and sealed display-only v2; connected project-open/diagnostic/writer acceptance remains pending. Never replay prior edits/inverse/rename/Save. Line/type lookup, nonempty standalone Pad/Arc and nonempty flat topology remain pending. Prior Text/property-name/Wire-ID/Bus/symbol-Pin/display/rename evidence remains generation-bound. Runtime use requires the exact reviewed tuple and operation-specific guards. Supported live editing is WSL plus pinned Windows EasyEDA; upstream is separately prepared. Historical tests do not validate a newer facade generation.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
