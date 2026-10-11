@@ -1,9 +1,9 @@
 # Candidate 164600
 
-`0.3.0+codex.20261011164600` is a local source and build candidate. It is not
-published or installed. Local release checks pass; GitHub CI, publication and
-installed-package proof remain pending below. Installed150000 remains the
-separately admitted generation. No connected validation is claimed for this
+`0.3.0+codex.20261011164600` is published and installed through the Git
+marketplace. Local release checks, GitHub CI and exact installed-package proof
+pass. Loaded150000 remains the separately admitted generation until a fresh
+Codex chat. No connected validation is claimed for the installed164600
 candidate, and the broader API task remains unfinished.
 
 This work changes only the plugin and private disposable validation evidence.
@@ -58,7 +58,14 @@ exposed. See the [source findings and limitations](pcb-navigation-preference-sid
 The [desktop profile investigation](disposable-desktop-profile-isolation-2026-10-11.md)
 also found that a generic browser-cache flag cannot isolate EasyEDA's native
 preferences, registered projects and backup destinations. No isolated profile
-was launched, and no current user's settings or backup inventory was inspected.
+was launched. A later, explicitly approved read-only audit inspected only the
+relevant persisted preference fields and backup-directory metadata. It did not
+identify the active user, inspect browser state or read any design or backup
+contents. SQLite read-only descriptor checks and two matching metadata samples
+passed. No settings or files were changed. Private audit result:
+`f467d1c68c2817316158b30117b33642b06343cc5c3d8faf8df0028b46058012`.
+Its values and counts are not published. This audit does not establish safe
+runtime navigation or predict exact deletion targets.
 
 The inventory covers 774 method paths: 192 public subsets, 100 native equivalents,
 two lifecycle-only entries, seven blocked and 473 omitted. Execution-route
@@ -142,18 +149,38 @@ Its three-file runtime projection is:
 `8610ba8c5ae61406526379fe205003ce5b3418de288cdcabdd3c31c573086d77`.
 Manifest SHA-256:
 `bda17ee5420c04ada6c3c9f5c176c5a493f85e592f99259d958a98ec4ff99224`.
-External EasyEDA, SDK, implementation and bridge pins are unchanged. These are
-candidate build identities, not an installed or connected runtime assertion.
+External EasyEDA, SDK, implementation and bridge pins are unchanged. Exact
+installed files match this build; connected admission remains separate.
 
 ## Publication and installation
 
-Git payload and GitHub CI: **pending**. Record the exact published commit,
-tested tree, required CI result and test counts after they are observed.
+Payload `b2f60013123fb94d1fee2f3d6ddf2dad1f97fffe` passed
+[CI38157845032](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38157845032).
+CI passed 3,637 facade tests with four platform skips and zero failures, plus
+424 bridge tests. The tested merge
+`86b55bc3c42cba1ff1589f9b49f531c559c2334f` has the exact payload tree
+`4a9c32262375a6223323263dfd33d93c30f2156c`. Package tree:
+`db98b5e1ef0bf5934e949e0904fbc9405c65deac`. Full retained CI log:
+`6b34c05896f12c10321aca803b9c9d142c6db566ec340a5c8aced8f4a696824c`.
+Official Codex validators were unavailable on the CI runner; repository checks
+passed there and all installed official validators passed locally.
 
-Official Git-marketplace installation: **pending**. Record the installed version,
-exact committed byte/mode inventory, configured cached offline startup and
-catalog/schema/refusal proof only after installation and independent verification.
-No current candidate installed-package proof is claimed.
+The official named Git-marketplace upgrade installed and enabled164600 from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, using the feature
+ref for draft PR9. Marketplace HEAD equals the tested payload. The installer
+ran under umask022, with private evidence outputs under077 and no reported errors.
+All 624 packaged files, 16,766,483 bytes and committed modes match, with no extra
+files or cache changes during the offline probe. Inventory:
+`175ad2d3084dea549085abe49b51ca4af0f41b02e1bbef6f0bddb7c9a47ede66`.
+Installed proof report:
+`72b74888744506e94479b90cc3deb18bf79f4bc98ab2ef8afb218185452a94c9`.
+
+Actual configured cached startup handed ambient Node26.7.0 to pinned24.18.0.
+Exact catalog/schema/refusal checks passed, including the new sealed wire and
+explicit-ID reader contracts. All 706 process samples showed no upstream child
+or non-stdio socket; the upstream sentinel was absent and startup stderr empty.
+This is sampled offline proof, not continuous syscall tracing or live admission.
+No bridge import, key rotation, cache patch or host-owner termination occurred.
 
 Fresh-host admission and new connected validation: **pending**. Publication and
 installation do not admit this generation. Use a fresh Codex session after the
