@@ -6,6 +6,37 @@ Last updated: 2026-10-12 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Candidate220050 published and installed; fresh host required
+
+- Payload e566f2ab8bc73c8748e86c5f2cecdf5f2a86114b is published on
+  feature/api-execution-coverage. Required
+  [CI38180472471](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38180472471)
+  passed3712facade tests/four platform skips/zerofailures and424bridge tests.
+  Local3715passes/oneskip cover the three unavailable Windows-dependent cases.
+  All CI steps, reproducible builds, packaging and artifact upload passed.
+  The PR merge tree matches payload package subtree2cfe8e8e1054efd44eb4035bb4a569097b6ebdad.
+  PR9 stays draft: broader live API coverage is unfinished.
+- Official Git-marketplace upgrade underumask022 installed/enabled
+  `0.3.0+codex.20261011220050` with errors[] and empty stderr. The marketplace
+  checkout matches e566f2ab. Exact631files/16950087bytes and all committed modes
+  match, with no extras or changes during the private offline proof. Inventory
+  78fe67d2 and proof9ddd4daf are retained. The configured bundled entrypoint
+  hands ambientNode26.7.0 to pinned24.18.0. No upstream child/nonstdio socket
+  was observed and the forbidden-upstream sentinel remained absent at sampled
+  boundaries. This is offline startup/catalog proof, not connected admission.
+- Offline checks cover26tools/seven skills,749/806SDK signatures,108/68typed
+  schemas and the complete774method/182reader/21native-reader catalogs. The
+  font input schema accepts only empty arguments;21malformed requests refuse.
+  No font titles, native UI, SDK execution or wire mutation were observed.
+- EasyEDA remains closed with the saved/reopened disposable wire seed verified.
+  The loaded204104 host was not terminated or hot-patched. Use a fresh Codex
+  host and admit actual220050 bytes before font and forward/reverse wire tests.
+  Private NEXT-220050.md760147a2 retains consumed-action exclusions and the
+  approved startup/preference procedure. Never repeat Run Command, seed setup,
+  naming, Save or completed navigation. Production and its record stay excluded.
+  Source204bea39189/runtime3a350c6fe/manifeste1baee7c remain the frozen payload.
+  Root-only publication records do not change that installed package tree.
+
 ### Candidate220050 release preparation; saved wire seed closed
 
 - Actual204104 facade2451662 independently matches all628installed files/modes
@@ -1899,7 +1930,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011204104` is published, installed/enabled and now admitted on actual facade2451662/runtimec4d9b324, with exact628file/mode proof. Candidate220050 is under release verification, not yet installed. Both disposable fixtures are closed and verified. The flat fixture now retains its saved named three-segment wire seed; checkpoint9ccef95a/source93eb9a28/logicalb538b6c7 and reopened sourcec9e04b15 pass complete peer/materialization proof. Eight unstored inherited IDs regenerated on reopen; exact same-order lifecycle proof accepts them, not blanket native equality. Closed verifier29 and all-nine-root metadata38 pass. The earlier authorized UI action/private comparison9bf4428a established pcbCommandTab false to true in browser and one anonymous SQL residual without identifying the current user. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission.
+- Git-marketplace `0.3.0+codex.20261011220050` is published and installed/enabled after exact-head CI38180472471. All631files/16950087bytes/modes match payloade566f2ab, package subtree2cfe8e8e; offline proof9ddd4daf passes. Actual previously admitted facade2451662 still belongs to204104 and was neither patched nor terminated. Fresh-host220050 admission and font/omitted-lock wire live tests remain pending. Both disposable fixtures are closed and verified. The flat fixture retains its saved named three-segment wire seed; checkpoint9ccef95a/source93eb9a28/logicalb538b6c7 and reopened sourcec9e04b15 pass complete peer/materialization proof. Eight unstored inherited IDs regenerated on reopen; exact same-order lifecycle proof accepts them, not blanket native equality. Closed verifier29 and all-nine-root metadata38 pass. The earlier authorized UI action/private comparison9bf4428a established pcbCommandTab false to true in browser and one anonymous SQL residual without identifying the current user. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission.
 - Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct. Installed164600 passed scoped PCB Text readers/create/delete and empty free-SCH creation;204104 passed system-library UUID, schematic Text/Wire readers with both mixed caller orders, and independently visible pointer-only hover. The connected ledger records exact scope, not whole SDK contracts. Sealed rerouting and the new configured-font reader remain unvalidated live. Candidate wire-lock correction has actual offline adapter/inverse/materialization proof, not full sealed preparation or live execution. Never access production or its project record. The user's continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation, not relaxed technical safety checks or unrelated changes.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.

@@ -1,9 +1,9 @@
 # Candidate 220050
 
 `0.3.0+codex.20261011220050` adds a configured-font reader and corrects the
-native wire adapter's unlocked-state handling. Publication and installation are
-pending final release verification. Production designs and their project
-records remain untouched. The disposable named-wire seed is saved, reopened,
+native wire adapter's unlocked-state handling. It is published and installed
+from the Git marketplace's feature ref after passing CI. Production designs and
+their project records remain untouched. The disposable named-wire seed is saved, reopened,
 verified and now closed. Do not repeat its setup or Save.
 
 ## Implementation changes
@@ -117,7 +117,7 @@ facade run passes 3,715 tests, with one platform-specific skip and zero failures
 or cancellations. All seven official skill validators pass. Its retained log
 commitment is
 `7b28f8db12d1c6c1cfcad050ca36d74de5b6ec404f2e17259502d72a352e31cb`.
-CI, publication and installation remain pending.
+Exact-head CI and official installation also pass, as recorded below.
 
 Two facade builds reproduce exactly, as does the reviewed descriptor sanitizer.
 Two synthetic-key bridge archives also match; no real bridge key, import or
@@ -128,3 +128,42 @@ Three-file runtime fingerprint:
 `a350c6fe19e782d595a173d9208d7e4c394eb49d9b88dba88e8ef2719224acbc`.
 Compatibility manifest:
 `e1baee7c8aeb9eb30c673c2f27e0e2fde627096e20bb61c1caf69dc4eaef6144`.
+
+## Publication and installed proof
+
+Payload `e566f2ab8bc73c8748e86c5f2cecdf5f2a86114b` is published on
+`feature/api-execution-coverage` in the
+[Git marketplace](https://github.com/jan-guenter/easyeda-pro-agent-plugin).
+[CI 38180472471](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38180472471)
+passed 3,712 facade tests with four platform skips and zero failures, plus all
+424 bridge tests. The skipped cases cover Windows-mounted checkpoint paths,
+installed PCB/API source parity and the native Windows desktop observation.
+Synthetic PowerShell geometry/hover tests passed. The three extra CI skips ran
+locally. CI had no external official Codex validator; all seven official skill
+validators passed locally. Audits, types, lint, reproducibility, package checks
+and artifact upload passed. The PR merge commit's package tree equals the payload
+tree `2cfe8e8e1054efd44eb4035bb4a569097b6ebdad`. PR9 remains draft because the
+broader connected-coverage task is unfinished.
+
+The official Git-marketplace upgrade ran under `umask 022` with private evidence
+outputs under `077`. It returned no errors; the CLI lists 220050 installed and
+enabled. Marketplace checkout HEAD equals the payload. The separately reviewed
+offline verifier compared all 631 files, 16,950,087 bytes and committed modes against
+Git, with no extras or changes during its run. Inventory commitment:
+`78fe67d2929cd0cd16dbea6425ac49782308dfc23951be6604c0c1f56ea6ecc7`.
+Installed proof commitment:
+`9ddd4daf78f89541e38a02c04f4b453219765253d36ae8511216ff955c1a5e8a`.
+
+The actual configured entrypoint handed ambient Node26.7.0 to pinned24.18.0.
+It exposed 26 tools, seven skills, 749/806 SDK signatures, 108 design/68 library
+schemas and the complete 774-method/182-reader/21-native-reader catalogs. The font parser
+accepted omitted or empty arguments and rejected 21 malformed requests. No font
+list or native reader/writer ran. Sampled process checks found no upstream child
+or nonstdio socket, and the forbidden-upstream sentinel remained absent. This
+is not a continuous system-call trace, connected admission or live validation.
+
+The already loaded 204104 host was neither terminated nor patched. The extension
+release procedure requires a fresh Codex host to load and admit 220050 before
+the planned disposable font read and saved/reopened forward/reverse wire tests.
+EasyEDA stays closed; the saved wire seed and completed actions must not be
+replayed. Source tests and installation do not make those live tests complete.
