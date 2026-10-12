@@ -170,6 +170,14 @@ The bridge orders the supplied bounds but does not convert coordinate systems.
 Confirm the resulting view before deriving any screen click. This observation
 does not establish PCB coordinates or the behavior of another EasyEDA version.
 
+Check the returned image's actual framing too. In a disposable schematic test,
+region capture returned a full-sheet overview although a subsequent owned native
+desktop capture showed the requested close-up. The tool's `captured:true` and
+bounded repaint wait therefore do not establish that its PNG matches the new
+viewport. Retain that image, compare it with a fresh native capture, and use the
+legible observation for visual review. Do not repeat a design edit to correct a
+stale or unexpectedly framed image.
+
 ## Companion replacement
 
 The observed native importer replaces an existing UUID even at the same version. Do not uninstall or bump the version merely to force replacement. Directly setting an absolute archive filename and pressing Open has closed the picker without replacing the extension. The verified workflow is to open Import, navigate to the exact parent directory, inspect the exact content-addressed archive row, and double-click that row. Review the resulting Safety Tips or upgrade dialog. Reopen the manager and verify UUID, Enabled and external-interaction On. Use native Download extension to a fresh private path and compare its hash with the selected builder archive before claiming replacement. Keep exported credential-bearing archives private and never print their contents. Finally prove the authenticated loaded identity after normal restart.

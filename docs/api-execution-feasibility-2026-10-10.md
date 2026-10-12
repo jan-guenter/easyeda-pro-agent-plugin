@@ -189,6 +189,11 @@ After resolving transaction topology, the most useful narrow increments are:
    public `$3` completion: its individual service deletions are unawaited.
    Footprint/device deletion needs the corresponding manager and dependency
    review, not an assumed shared implementation.
+   The [October12 follow-through](symbol-delete-native-effects-2026-10-12.md)
+   also found preview/close-tab/cache subscribers and a debounced structure-table
+   write outside the ordinary upload barrier. A closed META-only target does not
+   remove those effects. The exact tombstone proof is necessary but insufficient;
+   runtime enablement still needs request-bound completion of that lifecycle.
 3. **Closed ordinary schematic/PCB creation.** Public creation
    already requests `notOpen:true` or `unOpen:true`, but traverses
    `DMT_CreateNew` and can create board/default records. Review project-qualified

@@ -719,7 +719,11 @@ export class DesignExecutor {
     while (offset < descriptor.bytes) {
       let length = Math.min(256 * 1024, descriptor.bytes - offset);
       let chunk = await readArtifact(descriptor.path, offset, length);
-      for (let attempt = 0; attempt < 3 && Buffer.byteLength(chunk.text, "utf8") !== chunk.bytesRead; attempt += 1) {
+      // Three truncated bytes of a four-byte character decode to an equal-size U+FFFD.
+      // Retreat from that ambiguity once, then stop at the first byte-exact boundary:
+      // A genuine complete U+FFFD immediately before it must not trigger more retreats.
+      for (let attempt = 0; attempt < 3 && ((attempt === 0 && chunk.text.endsWith("\uFFFD")) ||
+        Buffer.byteLength(chunk.text, "utf8") !== chunk.bytesRead); attempt += 1) {
         length -= 1; chunk = await readArtifact(descriptor.path, offset, length);
       }
       if (chunk.size !== descriptor.bytes || chunk.offset !== offset || chunk.bytesRead < 1 || Buffer.byteLength(chunk.text, "utf8") !== chunk.bytesRead) { throw new Error("Retained design phase changed or its UTF-8 chunk boundary is unsupported."); }

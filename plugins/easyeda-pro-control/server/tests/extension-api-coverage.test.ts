@@ -7,6 +7,20 @@ import { extensionApiCoverageQuerySchema, extensionApiCoverageSummary, inventory
 import { queryOperationCatalog, validateCatalogOperation } from "../src/operation-catalog.ts";
 import { queryPublicSdkReads } from "../src/public-sdk-catalog.ts";
 import { isRecord } from "../src/core.ts";
+import { buildLibraryExecutionExpression, libraryExecutionKind } from "../src/library-runtime.ts";
+
+void test("symbol deletion remains nonexecutable until subscriber and delayed structure effects have a completion proof", () => {
+  const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.lib_Symbol.delete");
+  assert.ok(row);
+  assert.equal(row.status, "omitted"); assert.deepEqual(row.routes, []);
+  assert.ok(row.omission);
+  assert.equal(row.omission?.code, "symbol-delete-subscriber-and-structure-lifecycle");
+  assert.ok(row.omission.evidence.includes("docs/symbol-delete-native-effects-2026-10-12.md"));
+  assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
+  const operation = { id: "closed-symbol-delete", action: "library.symbol.delete", libraryUuid: "project", target: { uuid: "symbol" } };
+  assert.throws(() => libraryExecutionKind(operation), /no completed execution proof profile/u);
+  assert.throws(() => buildLibraryExecutionExpression(operation), /no completed execution proof profile/u);
+});
 
 void test("coverage enumerates every distinct mounted method and retains every overload in both pinned snapshots", () => {
   const rows = inventoryExtensionApiCoverage();

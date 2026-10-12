@@ -43,11 +43,12 @@
       "panel-context-not-admitted": 1,
       "private-url-state-projection-needed": 2,
       "reviewed-native-stub": 30,
-      "scoped-effect-adapter-needed": 107,
+      "scoped-effect-adapter-needed": 106,
       "selection-marker-or-history-mutation": 8,
       "shared-asset-owner-projection-needed": 3,
       "simulation-editor-not-admitted": 1,
       "source-decoder-and-save-lifecycle": 2,
+      "symbol-delete-subscriber-and-structure-lifecycle": 1,
       "unrestricted-transport-or-service": 22
     },
     "currentGenerationLiveValidatedMethods": 0,
@@ -6371,10 +6372,13 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "scoped-effect-adapter-needed",
-        "reason": "lib_Symbol.delete has no maintained complete effect/ownership verifier for its declared mutation or application-state change. The method is not classified as inherently impossible.",
-        "nextRequirement": "Implement strict typed arguments, exact before/after affected state, collateral invariants, durable intent and recovery; design mutations additionally need disposable save/close/reopen and inverse or explicit no-inverse proof.",
-        "evidence": []
+        "code": "symbol-delete-subscriber-and-structure-lifecycle",
+        "reason": "The project-qualified symbol delData worker ACK covers local queue acceptance, not native subscriber completion. Deletion emits DOCHEAD/DELETE_DOC, starts preview and close-tab/cache work, and schedules a debounced project_structures update. The ordinary awaitUploadEnd barrier waits task1, not the future timer/task2 write. A closed META-only symbol still takes these paths.",
+        "nextRequirement": "Implement a complete dependency/editor/cache baseline, exact tombstone/raw-history and peer proof, retained ACK plus request-bound subscriber completion, and exact project_structures ticket/tree persistence with no pending duplicate. Stable polling or a delay alone is not a drain. This is unfinished bounded adapter work, not permanent API infeasibility.",
+        "evidence": [
+          "docs/symbol-delete-native-effects-2026-10-12.md",
+          "assets/pro-mgr/3.2.148.154949d9/js/project-worker.js@sha256:2792c6c87e3c60e09c43f03494a9cbb24e4ebe9c385372bbaf877ed75083a949;utf16:1927903,2091543,2117630"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",

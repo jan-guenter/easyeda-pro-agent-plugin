@@ -80,7 +80,9 @@ async function readBoundedLibraryRecoveryArtifact(descriptor: ArtifactDescriptor
     for (let retry = 0; retry < 4; retry += 1) {
       const result = await read(descriptor.path, offset, length);
       if (result.path !== descriptor.path || result.size !== descriptor.bytes || result.offset !== offset || result.bytesRead !== length) { throw new Error("Library recovery artifact identity/size changed."); }
-      if (Buffer.byteLength(result.text, "utf8") === result.bytesRead) { page = result; break; }
+      // An initial trailing U+FFFD may replace three truncated bytes without
+      // Changing the byte count. After retreating, preserve a genuine preceding U+FFFD.
+      if ((retry > 0 || !result.text.endsWith("\uFFFD")) && Buffer.byteLength(result.text, "utf8") === result.bytesRead) { page = result; break; }
       length -= 1;
     }
     if (page === undefined || page.bytesRead < 1) { throw new Error("Library recovery artifact UTF-8 is invalid."); }

@@ -20,8 +20,12 @@ two lifecycle-only methods, seven implemented-but-blocked methods and 469
 omissions. Their execution routes comprise 358 available with runtime guards,
 nine blocked and three partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
-See the [013324 release record](docs/api-coverage-013324-release-2026-10-12.md)
-for this candidate's checks. Flat transactions now retain their final raw
+See the [024750 release record](docs/api-coverage-024750-release-2026-10-12.md)
+for this candidate's Unicode evidence-reader fixes and verification status.
+Two new disposable wire commits on installed013324 passed saved/reopened
+source, connectivity and full-project checks, recorded as
+[C06/C07](docs/api-connected-validation-ledger.md#2026-10-12-c06-final-wire-observation-retained-on-013324).
+Those results do not validate the newer parser build. Flat transactions retain their final raw
 connectivity observation in a separate bounded artifact, without adding reads
 or changing Save/recovery authority. It does not replace durable proof or
 retroactively fill gaps in historical journals.

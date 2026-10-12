@@ -38,10 +38,13 @@ The observer checkpoint is not the later terminal checkpoint. An observation
 can survive a subsequent persistence failure without proving completion. Inspect
 the terminal state and complete durable proof separately. Page the descriptor
 through the managed artifact reader; transaction summaries do not inline raw
-observations. Its byte offsets can split UTF-8 characters: if a text page ends
-with a replacement character or its re-encoded byte count differs from
-`bytesRead`, reread with up to three fewer bytes before advancing. Verify the
-complete reconstructed hash. Matching byte counts alone cannot detect every
+observations. Its byte offsets can split UTF-8 characters. If the initial page
+ends with U+FFFD or its re-encoded byte count differs from `bytesRead`, reduce
+the requested length by one and reread. Continue reducing only while the byte
+counts differ, with at most three reductions total. Stop at the first byte-exact
+retry even if it ends with U+FFFD: that can be a genuine complete character just
+before the split. Advance by the accepted `bytesRead`, then verify the complete
+reconstructed hash. Matching byte counts on the initial read cannot detect every
 four-byte character split; a failed hash is not acceptable evidence.
 Older journals may lack this artifact. Do not fabricate it or
 replay a completed transaction to fill the gap. This retention change adds no

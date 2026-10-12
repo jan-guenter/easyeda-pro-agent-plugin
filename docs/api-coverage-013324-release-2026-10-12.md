@@ -3,8 +3,12 @@
 `0.3.0+codex.20261012013324` retains the final flat-connectivity observations
 that earlier executors verified but discarded. It is published and installed
 from the Git marketplace after exact-payload CI and offline installation checks.
-Connected validation of this generation remains unclaimed.
-EasyEDA remains closed. No design, preference, Save or navigation call was made.
+The initial publication below made no live calls. Subsequent fresh-host
+disposable validation completed two new saved/reopened wire reroutes, including
+independent reconstruction of the retained final contact observations. See
+[C06 and C07](api-connected-validation-ledger.md#2026-10-12-c06-final-wire-observation-retained-on-013324).
+The disposable editor is closed and its final checkpoint verified. This tests
+the new commit path only, not the four other final-observation retention paths.
 
 ## Evidence retention
 

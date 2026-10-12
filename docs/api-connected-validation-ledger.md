@@ -687,3 +687,116 @@ The main agent's listing-only post-close comparison reports all nine retained
 backup roots unchanged. It neither opened their designs nor deleted backups.
 Metadata equality is not backup-content verification or deletion admission.
 These are point-in-time closure checks, not continuing state-isolation claims.
+
+### 2026-10-12: C06, final wire observation retained on 013324
+
+Generation G20261012-013324 was admitted against the complete installed package,
+its source/runtime fingerprints and unchanged external pins. The independent
+process/disk audit checked all 636 files, 17,048,335 bytes and committed modes;
+authenticated runtime admission followed separately. This does not attest
+process memory. Production designs and their records were excluded.
+
+A new disposable `sch.wire.modify` transaction used
+`easyeda-pro-control.flat-wire-reroute.v1` to move the same ordinary named wire's
+two bends by 20 native units in X. It completed saved/reopened with no hard stop
+or orphan. This was a new operation with a fresh baseline, not replay of C04.
+Root and independent review verified all 14 phase hashes, exactly three LINE
+coordinate changes, eight permitted unstored same-order inherited identities,
+one consumed Save intent and one successful Save/close/reopen acknowledgment.
+
+The final raw flat observation is now retained independently of the terminal
+durable proof. Its original plan/profile/context and source/native hashes pass;
+independent reconstruction reproduces all five contact vertices and the
+unchanged pin nets. Observer and terminal checkpoint receipts are distinct,
+although their immutable database hashes match in this case. Before, apply and
+pre-Save observations remain separately verified.
+
+Complete saved-project proof checks all 12 documents, 171 materialized records,
+11 unchanged peers and 66 imported header occurrences. Only the six existing
+wire-family records receive permitted new clocks. WIRE, NET and Relevance bodies
+remain exact, including stored Relevance order4. All 62 other target records
+remain exact. DOCHEAD changes only the admitted client/time/version fields.
+No historical order0-to4 exception is used for this new transaction.
+
+Two managed artifact pages reconstruct the complete 56,467-byte final
+observation with its original hash and JSON. A fresh two-read native result
+equals the terminal native snapshot exactly; the main agent separately accepted
+the close-up. Pixels corroborate geometry, not electrical or durable proof.
+
+| Retained evidence | SHA-256 |
+| --- | --- |
+| Actual installed process/disk admission | `a97d9fdd7578aca237f80db108e5b36ea5f92be3b58b47788f1d98bb922b2001` |
+| Final raw observation artifact | `39d09e1ae44afe1c1ac278c2757b7cd631da7ecbd32b45649b4382fdd5f475d2` |
+| Terminal reopened artifact | `1a2b3d6f7fd32b239123dabc75a765993db94b71cb486ff6300bf3e1d9fcf646` |
+| Observer and terminal immutable checkpoint | `78e2cf5a7d7a15f0707be543867e2475fb81c62cb419ee44f6c4d67fa4e73dc0` |
+| Independent complete exact-case proof | `335d06740b79618b0ca6e6c95ce250d455a588111a77a36792b80304c9eac0d6` |
+| Independent terminal and fresh-native review | `b0b93da7f313da3eeff83dd826923d6095d021d23ab2781b2ec9d5d54e4bf7d9` |
+| Managed two-page transcript | `e8c291d7cf90aaa65e21f9bec7da04fadd671c3710d9bc91bd2dab66f2460256` |
+| Fresh native snapshot | `85b201b4e151859d3876d2d38b57631d04946602b15ac3beee695cefc1adecff` |
+
+Acceptance covers this new commit path only. It does not validate the four other
+new final-observation retention paths, failure recovery, rollback, arbitrary
+wire creation/deletion, other graph shapes or a later installed generation.
+A separately journaled reverse operation was pending when this entry was written.
+
+### 2026-10-12: C07, separately journaled reverse with retained final contacts
+
+After C06 acceptance, a new `sch.wire.modify` transaction on the same installed
+G20261012-013324 generation returned the three LINE coordinates to their prior
+positions. This was a separately prepared forward operation in the opposite
+direction, not rollback, recovery or replay of C05/C06. It completed
+saved/reopened with no hard stop or orphan and exactly one consumed Save intent.
+
+Complete proof preserves all 12 documents, 171 materialized records, 11 peers
+and 66 imported header occurrences. Only the intended three LINE geometries
+change. The six existing wire-family records receive new clocks; WIRE, NET and
+Relevance bodies remain exact, including Relevance order4. The other 62 target
+records remain exact. Original source geometry is restored, not the earlier
+SQLite file, record clocks or history.
+
+This case also observed the exact intended durable effect before Save. Its
+post-apply checkpoint still matched the baseline, while the separate pre-Save
+checkpoint already contained the intended reverse effect. The maintained
+complete-project proof admitted that exact effect; it did not infer it from a
+timestamp or broaden the permitted delta. The executor then consumed its one
+Save/close/reopen attempt and checked the final durable state again.
+
+The retained final raw observation independently reproduces all five contact
+vertices and unchanged pin nets. Its source/native/context and original
+plan/profile bindings pass. Observer and terminal checkpoint receipt paths are
+distinct, while their immutable database hashes match. A separate two-read
+native result equals the terminal native snapshot exactly.
+
+| Retained evidence | SHA-256 |
+| --- | --- |
+| Final raw observation artifact | `fe394fd1b0fa09586ebd018954b60830f6d86e43e78997a070949c1b9481f983` |
+| Terminal reopened artifact | `219696e446525fa8f904e895c1f6dd18a0d81fb8e85ffa203953e657a2e655fb` |
+| Observer and terminal immutable checkpoint | `eadbdb76f0b8ba685f30d1021e59e5771aac51edb9e14a3df747f72f09fa0c91` |
+| Independent complete exact-case proof | `da5be4bb56463cad919fecea54c1034c9e7968efb16540c10a00950b135e0275` |
+| Independent terminal and fresh-native review | `4a8d713290c77d0865bcde60d17d9f605aaa089450d42cd5ade4db8b70fcce30` |
+| Fresh native snapshot | `60933b01d414449e323c12edc06b10f76ef967f9c76418d345fcfcf426b872ae` |
+
+This validates another new commit path on the same narrow reroute profile.
+It does not validate rollback, retained-Save recovery, baseline reconciliation,
+arbitrary wire creation/deletion, other graph shapes or later generations.
+Managed paging was tested separately in C06 and was not repeated for C07.
+The API region-capture PNG was a full-sheet overview, so it was not accepted as
+a close-up. A subsequent owned native desktop capture showed the requested
+close-up with the restored geometry and legible caption; the main agent accepted
+that image. Native PNG commitment is
+`fcb235b3a29de13ed3e75bc476ec66f714d729f6fb4b88aa9715c77f0021687c`.
+These pixels do not replace the electrical and durable proofs above.
+
+Normal application close followed by empty native discovery proves the retained
+disposable editor exited. No Save/Discard prompt choice or extra Save was made.
+The maintained closed-file checkpoint verifier reports unchanged source,
+matching recorded file hashes and equal complete logical dumps. Closed-source
+SHA-256 is `e7106f2084f673160d9edc7bf2f0ac97d2c8c9a5d07b85ce7ea07cdb4a918413`;
+logical dump is `4bc3a64f44464d614977d3a7058c2b6b12a69bd23d284509fda23759540b0fa5`.
+Closed verifier result commitment is
+`69e7578f51163e3f270aa8e0cd040b4c93c652f144ec1dedb5b6734457e91683`.
+The listing-only backup metadata comparison reports all nine retained roots
+unchanged, commitment
+`678b58ee002e2afebf52da572b951c56c964d21175369e27591405caa8ba6744`.
+It did not read their entry contents or grant deletion authority. These are
+point-in-time observations, not continuing isolation guarantees.

@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "34a9895fa8aa425167b4398cac0c68ba822d8dbf396956305124ffb0c46985e0";
+const __easyedaBundlePairId = "7e03088f9dec4cae60eb0876858c6f5ab1fe41858176c89f57253be11f4001d9";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -59995,7 +59995,7 @@ async function phaseText(descriptor) {
   while (offset2 < descriptor.bytes) {
     let length = Math.min(256 * 1024, descriptor.bytes - offset2);
     let chunk = await readArtifact(descriptor.path, offset2, length);
-    for (let attempt = 0; attempt < 3 && Buffer.byteLength(chunk.text) !== chunk.bytesRead; attempt += 1) {
+    for (let attempt = 0; attempt < 3 && (attempt === 0 && chunk.text.endsWith("\uFFFD") || Buffer.byteLength(chunk.text) !== chunk.bytesRead); attempt += 1) {
       length -= 1;
       chunk = await readArtifact(descriptor.path, offset2, length);
     }
@@ -66585,7 +66585,7 @@ var init_design_execution = __esm({
         while (offset2 < descriptor.bytes) {
           let length = Math.min(256 * 1024, descriptor.bytes - offset2);
           let chunk = await readArtifact(descriptor.path, offset2, length);
-          for (let attempt = 0; attempt < 3 && Buffer.byteLength(chunk.text, "utf8") !== chunk.bytesRead; attempt += 1) {
+          for (let attempt = 0; attempt < 3 && (attempt === 0 && chunk.text.endsWith("\uFFFD") || Buffer.byteLength(chunk.text, "utf8") !== chunk.bytesRead); attempt += 1) {
             length -= 1;
             chunk = await readArtifact(descriptor.path, offset2, length);
           }
@@ -73544,7 +73544,7 @@ async function readBoundedLibraryRecoveryArtifact(descriptor, read2, maxBytes) {
       if (result.path !== descriptor.path || result.size !== descriptor.bytes || result.offset !== offset2 || result.bytesRead !== length) {
         throw new Error("Library recovery artifact identity/size changed.");
       }
-      if (Buffer.byteLength(result.text, "utf8") === result.bytesRead) {
+      if ((retry > 0 || !result.text.endsWith("\uFFFD")) && Buffer.byteLength(result.text, "utf8") === result.bytesRead) {
         page = result;
         break;
       }
@@ -95004,6 +95004,7 @@ var init_extension_api_coverage = __esm({
       "sch_PrimitiveText.getAllPrimitiveId": "The installed wrapper publishes its callback without awaiting completion; an empty result can precede actual enumeration."
     };
     concreteOmissions = {
+      "lib_Symbol.delete": omitted("symbol-delete-subscriber-and-structure-lifecycle", "The project-qualified symbol delData worker ACK covers local queue acceptance, not native subscriber completion. Deletion emits DOCHEAD/DELETE_DOC, starts preview and close-tab/cache work, and schedules a debounced project_structures update. The ordinary awaitUploadEnd barrier waits task1, not the future timer/task2 write. A closed META-only symbol still takes these paths.", "Implement a complete dependency/editor/cache baseline, exact tombstone/raw-history and peer proof, retained ACK plus request-bound subscriber completion, and exact project_structures ticket/tree persistence with no pending duplicate. Stable polling or a delay alone is not a drain. This is unfinished bounded adapter work, not permanent API infeasibility.", ["docs/symbol-delete-native-effects-2026-10-12.md", "assets/pro-mgr/3.2.148.154949d9/js/project-worker.js@sha256:2792c6c87e3c60e09c43f03494a9cbb24e4ebe9c385372bbaf877ed75083a949;utf16:1927903,2091543,2117630"]),
       "pcb_Document.setCanvasOrigin": omitted("canvas-origin-pending-geometry-queues", "The installed origin command uploads the complete 13-field CANVAS and flushes private pending BOARD, POURED and LAYER_FILL queues plus deferred teardrops. Blank current FileSource and complete stored history cannot exclude earlier unsaved geometry activity; no reviewed read-only empty-queue predicate is available.", "Implement an enforceable empty-queue or continuous no-physical-edit provenance check bound through dispatch, exact CANVAS projection/inverse and complete disposable persistence proof. This is unfinished adapter work, not inherent infeasibility; no executable route is admitted.", ["docs/api-remaining-method-effects-2026-10-11.md", "assets/pro-pcb/3.2.149.5378b690/js/pcb.js@sha256:65401cdc0a8f244db2ff2d8da88fd835b6e1fb3a3ecdbcfd975781502cb04b54;utf16:10215588,7837738,4425338,7848624,9013374"]),
       "pcb_Layer.selectLayer": omitted("layer-selection-collateral-state", "The installed native handler returns true even when the layer lookup is absent. Valid selection changes active/last-active IDs, visibility, colors, ordering and plane/UI state; the native ACTIVE_LAYER source model also observes the change. A true result or switching back to the prior ID does not prove the complete effect or restoration.", "Implement an exact existing-layer subset with bound context, complete before/after layer/view/source effects and an explicit inverse or no-inverse proof. This is feasible unfinished adapter work, not an inherently unavailable method.", ["docs/api-remaining-method-effects-2026-10-11.md", "assets/pro-pcb/3.2.149.5378b690/js/pcb.js@sha256:65401cdc0a8f244db2ff2d8da88fd835b6e1fb3a3ecdbcfd975781502cb04b54;utf16:10234952,7863491,7864588,4426612,10827552"]),
       "dmt_Schematic.reorderSchematicPages": omitted("page-order-partial-write-lifecycle", "The installed implementation checks equal lengths and membership but not duplicate page IDs, writes pages sequentially with zIndex 1,2,4,8 via doubling, and rereads mutable currentProject.projectId between awaited writes. A thrown update can leave an earlier prefix changed, and individual update acknowledgments are not checked.", "Implement a complete unique page permutation bound to one project and explicit stored-order semantics, per-write durable intent/acknowledgments, complete-project effect checks and partial-progress recovery without batch replay. The API is beta; this is unfinished transaction support, not inherent infeasibility.", ["docs/api-remaining-method-effects-2026-10-11.md", "assets/pro-ui/3.2.149.43637efe/js/ui.js@sha256:12414b9ded97913f7d7f30522a2265d2a6c995281e3347bfd1752206e647497a;utf16:17082000"]),
