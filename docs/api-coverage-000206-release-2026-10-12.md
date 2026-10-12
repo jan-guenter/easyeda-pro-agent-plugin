@@ -1,7 +1,8 @@
 # Candidate 000206
 
 `0.3.0+codex.20261012000206` adds historical reader-test metadata to offline
-API discovery. Local verification passed; publication and installation are pending.
+API discovery. It is published and installed from the Git marketplace feature
+ref after exact-payload CI and installed offline verification passed.
 It changes no live reader/writer handler or argument schema. Production designs
 and their project records remain untouched; the disposable editor is closed.
 
@@ -86,7 +87,45 @@ Only the facade projections and review timestamp changed; all external pins
 remain unchanged. The supervisor's only byte change is the reproducible bundle
 pair identity. The descriptor sanitizer remains unchanged.
 
-Required exact-payload CI and official Git-marketplace installation are pending.
-New offline discovery does not need a live design mutation; installed
-catalog/startup proof and fresh-host admission remain separate. PR9 remains
-draft while broader API execution work is unfinished.
+## Publication and installation
+
+Payload `ac9f0a74229f899436a27e5ca0a30e59b620104e` is published on
+`feature/api-execution-coverage`; package tree is
+`369d8572b997f2b88a057bc635cb6aead1736ce3`.
+[Required CI38187143546](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38187143546)
+passed 3,722 facade tests/four platform skips/zero failures, plus 424 bridge
+tests. Local runs exercised the three Windows-dependent cases unavailable on
+the Linux runner. All CI steps, reproducible builds and artifact upload passed.
+
+The official named marketplace upgrade used
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` under installer
+umask022, with private outputs under077. It returned `errors:[]` and empty
+stderr; the CLI lists000206 installed and enabled. The marketplace checkout
+HEAD equals the payload commit. No cache or configuration was manually patched.
+
+The independently source-reviewed installed verifier passed once, checking
+633 files/17,006,218 bytes against committed Git blobs and modes, with no extras
+or package changes during the probe. Inventory commitment is
+`f38a69b4f591a481743a5aebc4e20492c7280cff711fe257ae42acbadeb1b408`;
+complete private proof commitment is
+`c146a756e58f0f2e81f55924a5b3d354ac87b330db84487310ac5ff644e0817b`.
+
+Actual configured bundled startup hands ambient Node26.7.0 to pinned24.18.0
+without source dependencies. Across843 process samples no upstream child or
+nonstdio socket was observed, and the forbidden-upstream sentinel remained
+absent. This is bounded offline evidence, not continuous tracing or live
+admission. No reader, writer, UI action, Save or navigation was invoked.
+
+Installed queries verify26tools/seven skills,749/806SDK signatures,108/68
+operation schemas, the complete774-method/182-reader/21-native-reader catalogs,
+all182reader schemas in bounded pages, exactR01–R09 across six methods and176
+explicit empty histories. Eighteen metadata-authority injections and four
+nonliteral lookups refuse. Historical projection remains6f17d3aa; complete
+schema projection is
+`6b45707c107550aab7c56eee2d4af418067408358f3d5e5244588d5023ff474c`.
+No historical case was reexecuted or promoted into current-generation evidence.
+
+EasyEDA remains closed. The host-owned220050 facade was neither terminated nor
+hot-patched. The extension-development release procedure requires a fresh Codex
+chat before further connected work. New offline discovery needs no live design
+mutation. PR9 remains draft while broader API execution work is unfinished.
