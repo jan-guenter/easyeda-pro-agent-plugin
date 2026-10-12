@@ -30,7 +30,7 @@ whole-method live validation or admission of the installed host.
 | Exact schematic components | exact_read | Stable double samples with fixed public projections; schematic-topology disabled pending a verified non-mutating replacement |
 | API coverage and fixed reads | api coverage/sdk-reads/sdk-validate, sdk_read | Complete per-method inventory; fixed schemas and explicit public/native implementation labels; bounded observations, not complete source or persistence proof. Generation-specific cases below do not validate the full allowlist or newer source |
 | System-library identity | sdk_read, lib_LibrariesList.getSystemLibraryUuid | Empty arguments; one nonmissing 32-character lowercase-hex UUID from the pinned public implementation. Malformed or absent result refuses, with no hardcoded fallback. No account/library enumeration, asset access or write authority. Installed204104 passed one disposable read with matching observations and unchanged native/source/checkpoint evidence; later generations require separate admission |
-| Configured font titles | sdk_read, sys_FontManager.getFontsList | Native title-only equivalent, empty arguments and one exact ordinary active tab. Own data fields and retained UI/project/tab/path owners; missing configuration refuses, without the public false-empty fallback. Preserves order, duplicates, empties and case; at most 512 titles, 1024 UTF-16 units each and 131072 combined. No preference writes, account/persistence identity, OS-font inventory or rendering proof. Source/offline-tested only; connected validation pending |
+| Configured font titles | sdk_read, sys_FontManager.getFontsList | Native title-only equivalent, empty arguments and one exact ordinary active tab. Own data fields and retained UI/project/tab/path owners; missing configuration refuses, without the public false-empty fallback. Preserves order, duplicates, empties and case; at most 512 titles, 1024 UTF-16 units each and 131072 combined. No preference writes, account/persistence identity, OS-font inventory or rendering proof. Installed220050 passed one ordinary schematic case with unchanged native/source and complete saved checkpoint; other document types and later generations remain separate |
 | Schematic Text/Wire/Bus IDs | sdk_read, getAllPrimitiveId | Native ID-only equivalent on an ordinary active type-1 page; empty arguments only, no Wire net filters or symbol/block-instance scenes. Complete reciprocal tree/index proof and source-backed root-family membership; generated frame descendants excluded, structural GROUP records refused. Two stable observations, no callback/compiler/Save. Group IDs are not LINE IDs. Offline-tested; connected validation pending |
 | Schematic component property names | sdk_read, sch_PrimitiveComponent.getAllPropertyNames | Native key-only equivalent on one ordinary page; complete root Symbol/attribute-map/tree/index proof, including inherited/generated frame/flag keys. No values, compiler, source serializer or Save; unsupported ownership/groups refuse. Exact sorted bounded strings, not all-pages or persistence proof. Connected validation pending |
 | Deprecated schematic selected-ID getter | sdk_read, sch_SelectControl.getSelectedPrimitives_PrimitiveId | Explicit equivalent using its documented public replacement getAllSelectedPrimitives_PrimitiveId. Exact ordinary page/readiness/receiver checks, bounded ordered unique IDs, two stable samples. Never calls the obsolete iframe route, which can falsely return an empty list. Selected line children resolve to parent groups; no complete ownership or persistence claim. Installed071500 passed one selected ordinary component; later generations and other selections remain separate |
@@ -49,7 +49,7 @@ whole-method live validation or admission of the installed host.
 | Single-page stored display changes | design sch.layout.batch, sealed flat-display profiles | Existing literal-ID attribute/text display patches only; complete inverse, unchanged endpoint topology, sole page of one ordinary schematic and full saved-project proof. V1 remains strict; v2 additionally seals unchanged imported-library header occurrences from immutable checkpoints at every lifecycle gate. No electrical edits, NO_CONNECT, creation/deletion, translation, non-display steps or historical repair/page loading. Installed083400 passed a nonempty Designator-coordinate forward/reverse Save/reopen; unsaved rollback and newer generation remain separate. See schematic.md |
 | Closed PCB/schematic rename | library document.pcb.rename / document.schematic.rename | Separate native title-only adapter, one other clean owned PCB, closed target/children, independent DOM-frame inventory, strict nonimported history and fixed META shape. Complete peer raw chains preserved; original acknowledgment required for changed-result recovery. Installed120000 passed both explicit forward/reverse title pairs. No public CBB counterpart behavior, Save, reopen or automatic inverse. See libraries-and-eco.md |
 | Historical presentation-only schematic batch | design sch.layout.batch, compiled profile | Currently blocked by the compiled reader. Historical translation, wire/label edits and flag clones passed selected saved/reopened checks, but that does not enable this route now |
-| Single-page wire rerouting | design sch.wire.modify, sealed flat-wire-reroute.v1 | Existing unlocked named WIRE endpoint changes only; every LINE ID/count/style, ATTR field and child order preserved. Complete flat topology and contact-incidence multiset, fixed pin/foreign contacts and generated-marker index proof. No shared-WIRE endpoints or pin-bearing junctions. Exact ID-to-segment inverse only while durable baseline remains unchanged; one-shot Save/reopen and full peer proof. Source-tested, connected validation pending. See schematic.md |
+| Single-page wire rerouting | design sch.wire.modify, sealed flat-wire-reroute.v1 | Existing unlocked named WIRE endpoint changes only; every LINE ID/count/style, ATTR field and child order preserved. Complete flat topology and contact-incidence multiset, fixed pin/foreign contacts and generated-marker index proof. No shared-WIRE endpoints or pin-bearing junctions. Exact ID-to-segment inverse only while durable baseline remains unchanged; one-shot Save/reopen and full peer proof. Installed220050 passed one three-segment forward/reverse saved/reopened pair with omitted lock and complete 12-document proof. Not unsaved rollback or original-history restoration; other shapes and later generations remain separate. See schematic.md |
 | Historical compiled wire geometry | design sch.wire.modify, compiled profile | Currently blocked by compiled topology. Sept25 disposable lifecycle/retained-Save evidence belongs to that older profile and does not admit the new sealed wire route |
 | Retained split-wire layout repair | design repair-layout-wire-groups | Exact original island/drop/flag identities only; S06 correction and retained Save reconciliation completed live with original topology restored; consumed repairs must never be replayed |
 | Recovery schematic page loading | design load-layout-pages | Unfinished layout or restored standalone wire baseline; one-shot sibling navigation, no Save, original topology and unchanged active native state required; restored-wire recovery passed nine-page loading and 850-document reconciliation, not writer validation |
@@ -100,6 +100,18 @@ whole-method live validation or admission of the installed host.
 
 ## Reported live coverage
 
+Installed220050 passed one configured-font-title observation in an ordinary
+schematic and a named three-segment wire's forward/reverse Save/reopen pair.
+Independent source/native and full-project proof retained all 12 documents,
+11 peers and 66 imported atom-header occurrences. The reverse restored source
+geometry, not original SQLite history. Independent raw contact reconstruction
+covers before/apply/pre-Save, while final source/native/persistence and a fresh
+native read were independently verified; the executor did not retain its final
+raw flat observation. Unsaved rollback and later generations remain separate.
+Offline reader discovery now indexes nine historical cases with exact scope,
+generation and exclusions. The index does not grant current execution authority
+or whole-method validation; absence means no indexed case, not never tested.
+
 Installed204104 passed the system-library UUID reader and both mixed schematic
 ID readers selecting one existing root Text and one populated Wire, including
 both caller orders of their two-item selection. Every DTO field matches source
@@ -109,8 +121,8 @@ One confirmed hover also opened the overflow menu, proved by separate managed
 before/after images. These cases are bound to runtimec4d9b324, not later source.
 The native-created named wire seed subsequently passed Save and reopen proof,
 with all original records and peer documents preserved. This is fixture setup,
-not a sealed reroute test. The configured-font reader and corrected wire adapter
-still need connected validation on their new installed generation.
+not a sealed reroute test. The later220050 cases above provide separate evidence
+for the configured-font reader and one corrected wire-adapter profile.
 
 Installed164600 passed singular and one-element plural explicit-ID PCB reads of
 the same original standalone STRING with no direct ATTRs. Independent retained

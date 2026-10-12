@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "bea391898a967dc51a49fee7d04b34372fdcd0758c267f914043713db6a0e083",
-      "fileCount": 204,
+      "sha256": "8d2f84bfec4866f4e6cf5e313ae1a0169c9ea9ccca7c4e86eb89b2f9b7ad6aa6",
+      "fileCount": 205,
       "files": [
         {
           "relativePath": "artifacts.ts",
@@ -678,8 +678,8 @@
         },
         {
           "relativePath": "public-sdk-catalog.ts",
-          "bytes": 6585,
-          "sha256": "d5766b8b0a2a7f883b3cfe13f07f9a17dfcc425dd18c5ebcf84577ba5327959d"
+          "bytes": 6808,
+          "sha256": "c00690efd2ac8d511942e615410648a817bdf25ab6fdf822f96649c1a539e6e5"
         },
         {
           "relativePath": "public-sdk-read.ts",
@@ -907,6 +907,11 @@
           "sha256": "fc97eac7cb16c4db3b284a356bcce1afecc7877168442758b462478cf8be047b"
         },
         {
+          "relativePath": "sdk-read-validation-history.ts",
+          "bytes": 18184,
+          "sha256": "18f11bbb501b4599378d6edb88dbf5c8b10ebf6ac820e788318235fc06937d4b"
+        },
+        {
           "relativePath": "shutdown.ts",
           "bytes": 3558,
           "sha256": "8c3c70f419683a2dac6f156d41e3eb54dfc56fc726a8c1c0f51a16afaa330650"
@@ -1031,7 +1036,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "a350c6fe19e782d595a173d9208d7e4c394eb49d9b88dba88e8ef2719224acbc",
+      "sha256": "afdec3fcaee2dbce0b3f8e39a3fbd1db167f34ad840c16c21f6956883c38f280",
       "fileCount": 3,
       "files": [
         {
@@ -1041,19 +1046,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 5146995,
-          "sha256": "3e9a295f8e1b4fec7883404115d7d412c91943f52b12d42e8e4a01e11b20c93b"
+          "bytes": 5164292,
+          "sha256": "7cab8704d3f8b48a72708ebc78fced88faa0371d13edebde152dad2eb478f0c4"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 786360,
-          "sha256": "2356f64dd877cf271e7122b6ff5d23beb053ecbd4e7f0f6e9c12c18472a73e82"
+          "sha256": "9a7766ff1752808835046fd9bc7ddcf41e59119a7fda33d10337494b94a5bcfa"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-10-11T22:19:39.584Z",
+  "reviewedAt": "2026-10-12T00:08:45.533Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

@@ -529,3 +529,161 @@ nor atomic or continuing state isolation. No Save or design mutation was part
 of R09. Runtime historical validation labels and whole-method counts remain
 unchanged. The separate wire execute was pending when this entry was recorded;
 no wire effect, saved/reopened result, inverse or rollback is accepted here.
+
+### 2026-10-12: C04, sealed three-segment wire reroute
+
+This terminal entry resolves the forward wire case pending at R09's recording
+boundary. Generation G20261011-220050 is unchanged. The typed `sch.wire.modify`
+operation used `easyeda-pro-control.flat-wire-reroute.v1` on one ordinary
+single-page schematic. It moved two bends of one existing named, unlocked WIRE
+by 20 native units in X, preserving all three LINE identities and directions,
+styles, caption fields, free/pin endpoints and the complete one-component,
+two-pin topology. The WIRE's stored `locked` field remained absent.
+
+The executor derived the original binding from its own complete observation and
+checkpoint. It reached completed with saved/reopened true and no hard stop or
+orphan. Independent review checked all 13 phase hashes, the original proposal
+and binding, immediate/reopened source and native effect, one consumed Save
+intent, one successful Save/close/reopen acknowledgment and complete durable
+project proofs. No compiler, annotation, Save All, repair or replay was used.
+
+The exact semantic source effect changes only three LINE coordinate records.
+Eight unstored inherited native attribute IDs regenerated at unchanged order;
+the maintained lifecycle proof accepts only that identity difference. Before,
+apply and pre-Save retained complete graph observations independently reproduce
+the same contact-incidence commitment and pin nets. The final reopened raw flat
+observation is not retained by the executor: its final topology check is
+separate from the independently recomputed source/native/persistence evidence.
+Do not represent that final raw observation as independently reconstructed.
+
+All 12 saved documents, 171 current records, 11 peer documents and 66 imported
+header occurrences were checked. The native wire action reuploaded its six
+existing group records with new tickets/client. WIRE and NET bodies stayed
+exact. Stored Relevance order changed from 0 to 4, matching the original and
+final native order already observed as 4; every other Relevance field stayed
+exact. All 62 other target records, including their clocks, remained exact.
+DOCHEAD changed only its client/time/version bookkeeping.
+
+An extra fixture-audit assertion initially rejected those non-LINE storage
+updates. Its failure is retained. A separate exact-case verifier binds all six
+clock pairs, original/final clients, unchanged first-ticket metadata, complete
+bodies and the immutable after-checkpoint. The unchanged maintained wire
+persistence verifier independently reproduces the executor's proof. No general
+storage, source or transaction guard was changed to accept this case.
+
+| Retained evidence | SHA-256 |
+| --- | --- |
+| Terminal reopened proof, 128,768 bytes | `8dc984cbf861ad8f233dbfb4011b7ef795cb8a498081cb0b217eea7c815733c3` |
+| Before semantic source | `c9e04b15352712d36cf6ba3a641622c58d81fcccd8fa86c670a6270305d6611c` |
+| Reopened semantic source | `4d778f7bcdb3978e495b315d61dd6589bc1bb76ef022a471636e317778cce148` |
+| After immutable checkpoint | `b4810435f176dea7a8c4e18a6b4ed006074cc5dee1a365278893e657270b92f1` |
+| Complete contact incidence | `6e5ca63ba49a2ef17334269fa6ab04a60170b5b1c37981e14f39a876f34e5af5` |
+| Maintained durable proof | `ef58a2180b8a28927f2c6fc5fa7fd513814868bb6a26f8cd427270d4587ce16e` |
+| Exact-case independent proof | `0a0882557c05d146a94aba502bb2c6270122bafdc379c588ec32fe7eebd415ce` |
+| Independent private review | `9c30dd2d3e2e2ebec24a66bd4943bccdac9c8d18da16373bd327c99f49b7aad5` |
+| Separate accepted close-up PNG | `4c6b20e73f76e1ebbf407004111d2da0fcaddf32f35bf358ed86cfa40025c5f5` |
+
+The separate managed close-up visibly shows the intended reroute with its
+original caption and endpoints. Pixels corroborate geometry, not connectivity
+or persistence. The subsequent reverse transaction was pending when this entry
+was written; it is not rollback or recovery. C04 does not cover wire creation,
+deletion, net/style changes, Bus, shared or pin-bearing junctions, arbitrary
+schematics, recovery, unsaved inverse, production work or later generations.
+
+### 2026-10-12: C05, sealed reverse wire reroute
+
+This terminal entry resolves the reverse transaction pending at C04's recording
+boundary. It used the same admitted G20261011-220050 generation, typed
+`sch.wire.modify` route and `easyeda-pro-control.flat-wire-reroute.v1` profile.
+The executor created a new transaction from a fresh baseline. Independent review
+proved that its complete before-source, before-native and checkpoint matched
+C04's accepted final state exactly. This was not an inverse/recovery dispatch.
+
+The reverse restored the original bend positions through exactly three LINE
+coordinate changes, preserving all three identities, directions and styles,
+caption fields, free/pin endpoints and the one-component, two-pin topology.
+All 67 semantic source objects remain. WIRE, ATTR, component and pin source
+fields stayed exact, including the WIRE's absent `locked` field. The native
+lifecycle proof admits only eight unstored inherited attribute IDs regenerated
+at unchanged order. The complete fresh native snapshot after reopen equals the
+terminal native snapshot exactly, with matching result/receipt, context,
+implementation fingerprint and two-read consistency proofs.
+
+The unchanged independently reviewed verifier passed once against the completed
+journal, all 13 phase hashes and immutable checkpoints. State is saved/reopened
+true, with no hard stop or orphan. Exactly one Save intent and one successful
+Save/close/reopen acknowledgment passed the retained authority checks. No extra
+Save, replay, compiler, annotation, Save All or recovery phase was used.
+
+All 12 saved documents and 171 materialized current records were checked. All
+11 peers and 66 imported atom-header occurrences remain exact. Six existing
+wire-group records received new ticket/client metadata; the independent verifier
+requires six distinct newer tickets, clients matching the corresponding
+DOCHEADs and unchanged remaining metadata. Each full record body must match its
+before or intended-after source object. WIRE, NET and Relevance bodies remain
+identical across the reverse. Relevance stays at stored/native order4; no stored
+body correction is admitted. All 62 other target records, including their
+clocks, remain exact. Target DOCHEAD changes only client/time/version.
+
+The original semantic source is restored, but the original SQLite bytes and
+history are not. In particular, C04's materialization of Relevance order4 remains
+stored. The seed's stored order0 is not restored or claimed as restored. The
+unchanged maintained persistence and materialization verifiers independently
+reproduce the complete saved-project proofs.
+
+Retained complete before, post-apply and pre-Save raw flat observations
+independently reproduce the original contact incidence and literal pin nets.
+The final raw flat observation is not retained by the executor. Its separate
+successful final topology check is not an independently reconstructed raw
+observation. Final source/native/persistence are independently verified. Marker
+projection and successful runtime guards preserve the sole free-end marker;
+there is no separately retained complete marker-model snapshot.
+
+| Retained evidence | SHA-256 |
+| --- | --- |
+| Terminal reopened proof, 128,370 bytes | `cd40ce350447b629161881a692c6dd08ad654f6186d62824a0208721baaee6f9` |
+| Before semantic source, C04 final | `4d778f7bcdb3978e495b315d61dd6589bc1bb76ef022a471636e317778cce148` |
+| Reopened semantic source, original geometry | `c9e04b15352712d36cf6ba3a641622c58d81fcccd8fa86c670a6270305d6611c` |
+| After immutable checkpoint | `621cb2f6d3caea3a090302897b5660b174572039edfc908f61fb50c2afad6d83` |
+| Complete logical dump | `ea3da0fa99b20b8e3bd269e97340ecee0cdbd3d50cb6d1acf1070ef10a28cd21` |
+| Complete contact incidence | `6e5ca63ba49a2ef17334269fa6ab04a60170b5b1c37981e14f39a876f34e5af5` |
+| Maintained durable proof | `63a238d478ff72b2a41a0c2c06550dc8ac307dec942352e3084e70aeab99606c` |
+| Exact-case independent proof | `96b1b3881b98d1e25433ae351c1b668febb86cd21b1265171a6f40b5cd437ee2` |
+| Independent private terminal review | `86b551ff19679ca6b0c55059f5ac14258c3f5edd1ca265066d5eeecf5d4e83fd` |
+| Fresh native result | `893ef71e3e83b014b6fd76e03cb61bdfff028eb0014f96b56eb5a078f2b8d0f6` |
+| Fresh native receipt self-hash | `a55a8ceb4cb2068319eda0af483ecf9896a3a9a645703d6d5a6940a3cc2c52fb` |
+| Complete fresh and terminal native snapshot | `eeebbc2f8865ec3afd3cc63b1a22e7e89722ddaee72a4e012751080bb6bb8599` |
+| Independent fresh-native correlation | `e9ac24c0d27f6b1990856c3db24c5ab130674c049972c642049d101d826e32a9` |
+| Separate accepted reverse close-up PNG | `428a92b21c57157ef14b44bd7898cb8716b3013fd739a3264b5be90a9139b511` |
+
+The main agent separately accepted the managed close-up showing the original
+geometry, caption and endpoints. Pixels corroborate geometry, not connectivity
+or persistence. Acceptance covers this ordinary named three-segment wire's
+reverse saved/reopened reroute only. It does not validate rollback, failure
+recovery, unsaved inverse, creation/deletion, arbitrary net/style changes, Bus,
+shared or pin-bearing junctions, production designs, continuing state isolation
+or later generations. Historical runtime validation labels and whole-method
+counts remain unchanged. Subsequent editor closure and closed-file checks are
+separate evidence, not part of this terminal transaction entry.
+
+After this terminal review, the main agent requested normal closure of the
+contained disposable editor. The native result reports requested true and no
+prompt choice; subsequent discovery returned no editor observations, proving
+exit at that boundary. No extra Save or Save/Discard prompt action was taken.
+The maintained closed-file verifier returned explicit success, unchanged source,
+both files matching their recorded hashes and equal complete logical dumps.
+The closed source hash remains
+`471d6b9e0aaad04d6efe55a5d2122bd468c0d4e5bff76534ce8e6dcf456edf89`;
+checkpoint and logical hashes remain those recorded above. Their physical file
+hashes differ, so logical equality is not byte equality. The independent
+reviewer checked the retained closed-verifier result, not the current database.
+
+| Subsequent closure evidence | SHA-256 |
+| --- | --- |
+| Maintained closed-file verification result | `66a958a015b1ddbb77d9061dbb179703787ab6a011e8828428067f8eb7356160` |
+| Main-agent post-close retention-metadata comparison | `241b99472adc5ebfb0f02a6e637860f376779c630fd92b8d8ce8c58a79babfaa` |
+
+The main agent's listing-only post-close comparison reports all nine retained
+backup roots unchanged. It neither opened their designs nor deleted backups.
+Metadata equality is not backup-content verification or deletion admission.
+These are point-in-time closure checks, not continuing state-isolation claims.

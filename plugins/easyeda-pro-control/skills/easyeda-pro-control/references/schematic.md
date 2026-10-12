@@ -122,8 +122,9 @@ The pinned native producer represents an unlocked WIRE either by omitting
 `locked` or by storing literal `false`. The adapter preserves that distinction
 and requires the matching native value throughout its action. It rejects other
 values, including an explicitly supplied `undefined`; never add a false field to
-a fixture or normalize the source to satisfy a guard. This correction has
-offline regression coverage, not connected reroute validation.
+a fixture or normalize the source to satisfy a guard. Installed220050 passed
+the omitted-lock case described below; literal-false and later generations
+remain separate connected cases.
 
 Admission proves the whole page's flat pin/net topology and a multiset of contact
 vertices keyed by incident LINE/pin IDs. Pin contacts and foreign-wire contacts
@@ -140,9 +141,23 @@ complete peer proof. If navigation admission fails, do not substitute native UI
 or change preferences. Keep the editor quiescent; these observations are not an
 atomic lock against concurrent changes.
 
-This profile has adversarial source tests, not connected validation. The older
-September wire lifecycle below used a different compiled profile and does not
-validate this implementation or grant production authority.
+Installed `0.3.0+codex.20261011220050` passed one named three-segment wire's
+forward and reverse reroutes, each through one Save/close/reopen. Independent
+source/native and complete 12-document persistence checks preserved 11 peers
+and 66 imported atom-header occurrences. The reverse restored original source
+geometry, not original SQLite history. The first Save materialized Relevance
+order from stored 0 to its already observed native 4; subsequent reverse kept 4.
+Six wire-family upload clocks and DOCHEAD bookkeeping changed; all 62 other
+target content records stayed exact.
+This is an exact-case encoding proof, not permission to normalize other records.
+
+Independent contact reconstruction covers retained before/apply/pre-Save raw
+observations. The executor's final reopened topology check succeeded, but its
+raw final observation was not retained for separate reconstruction. Final
+source/native/persistence and a fresh native read were independently verified.
+Unsaved rollback, failure recovery, shared junctions, other wire shapes and later
+generations remain separate cases. The older September compiled lifecycle below
+does not validate this sealed implementation or grant production authority.
 
 ## Work sheet by sheet
 

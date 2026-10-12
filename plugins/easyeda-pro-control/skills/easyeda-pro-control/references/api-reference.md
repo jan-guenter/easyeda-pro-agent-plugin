@@ -84,6 +84,14 @@ callers cannot select arbitrary getters, callbacks or prototype members.
 The current allowlist has 182 fixed readers, including 21 native equivalents.
 Query the installed catalog rather than assuming it matches this source version.
 
+Discovery's `historicalValidation` indexes separately reviewed connected cases,
+with their tested generation, exact argument domain, evidence and exclusions.
+It is not current-runtime admission or whole-method validation. An empty case
+list means no indexed case, not proof that the method has never been tested.
+Follow the immutable ledger link for the full record. Live reader payloads keep
+their original validation metadata and consistency hashes; discovery history
+does not change them or grant execution authority.
+
 For live execution, pass the validated `request`, fresh `expectedContext` and
 `expectedFingerprint` to `easyeda_control_sdk_read`. The facade serializes the
 call within one authenticated session, enforces the editor family, proves context
@@ -110,8 +118,11 @@ fallback. Own data fields, retained UI/project/tab/path owners and repeated
 observations preserve exact title order, duplicates, empty strings and case.
 Bounds are 512 titles, 1024 UTF-16 units per title and 131072 combined. No other
 settings, font IDs or credentials are returned; no preferences are changed.
-This source addition has offline tests only, with no connected case. It does not
-prove current-account or persisted-settings identity, installed glyphs or rendering.
+Installed220050 passed one ordinary schematic case with two matching configured-
+title observations and unchanged complete native/source/saved-project evidence.
+That historical case does not admit a new generation or the other editor types.
+It does not prove current-account or persisted-settings identity, installed
+glyphs or rendering.
 
 For native PCB active-layer, net-membership and primitive-type readers, retain
 the observed `document.tabId` and `document.parentProjectUuid` as well as the

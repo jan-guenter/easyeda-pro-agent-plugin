@@ -6,6 +6,52 @@ Last updated: 2026-10-12 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Actual220050 font and forward/reverse wire tests complete; editor closed
+
+- Fresh facade2527645/start195699858 independently matches the complete631file
+  installed payload and frozen source204bea39189/runtime3a350c6fe/manifeste1baee7c.
+  Independent admission434aadbb passes; authenticated status admits contained
+  EasyEDA16764/start639273587066735206 and dispatcher ded07x99dcxb504. No
+  cache patch, owner termination, external pin change or production access.
+- New disposable open deb723c2 completed without Save; all12documents and the
+  complete saved SQLite state remain unchanged. Fresh native baseline passes
+  maintained materialization/lifecycle proof, admitting only8unstored same-order
+  inherited IDs. One configured-font read passed two matching observations.
+  Root/independent font proof4eb5d0d8/reviewa9d75f59 proves before/after native,
+  source and complete saved baseline unchanged:12documents/171records/11peers/
+  66imported header occurrences. Ten configured titles remain private. This is
+  one ordinary schematic context, not OS fonts, rendering, persisted settings
+  or other document types. Both metadata rechecks39/40 retain all9roots.
+- Forward6790a8c9 and separate reversee01b4674 completed saved/reopenedtrue,
+  hardStop/orphanfalse, each consuming exactly one Save. Root/independent
+  source/native/persistence proofs accept exactly three LINE endpoint changes
+  per operation, all12documents/171records/11peers/66imported headers. Reverse
+  restores original sourcec9e04b15, not original SQLite/history. The forward
+  storedRelevance0-to-existing-native4 encoding and six wire-family clock
+  rewrites have an exact-case proof;62other target records stay exact. Initial
+  extra-strict audit refusal is retained; no runtime/shared guard changed.
+  Independent raw contacts cover before/apply/pre-Save; final raw observation
+  is not retained. Executor final topology, independent final source/native/
+  durable proofs, fresh native and root visual reviews pass. See ledgerC04/C05.
+- Normal-close plus empty native discovery proves16764 exited without a Save/
+  Discard choice. Closed11proof66a958a0 passes source471d6b9e/checkpoint621cb2f6/
+  logicalea3da0fa. Metadata41proof241b9947 retains all9listing roots; no deletion
+  authority. No CAD call or Save is pending or repeatable. Private continuation:
+  disposable-validation-220050-5qh2bLxQ/RESUME.md. Earlier pending-font/wire and
+  fresh-host entries are historical. Production and its record stay excluded.
+- Candidate000206 adds offline historical reader-case metadata only, plus
+  scoped guides and viewport omission research. It preserves current-generation
+  unclaimed status, false execution authority, exact argument/runtime domains
+  and immutable evidence. Existing182readers/774methods/108+68schemas remain.
+  Clean full verification passes3725facade tests/oneplatformskip/zerofailures,
+  424bridge tests, types/lint0, dependency audits, all7official skill validators,
+  repository/privacy/license checks, doctor and actionlint. A second complete
+  hostile-descriptor run passes identically; rebuild bytes and compatibility
+  match. Source2058d2f84bf/runtime3afdec3fc/manifest74b931b6 are frozen, external
+  pins unchanged. Publication and installation remain in progress. Loaded
+  actual220050 is neither hot-patched nor terminated; no new generation is
+  live-admitted by these source-only changes.
+
 ### Candidate220050 published and installed; fresh host required
 
 - Payload e566f2ab8bc73c8748e86c5f2cecdf5f2a86114b is published on
@@ -1930,8 +1976,8 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261011220050` is published and installed/enabled after exact-head CI38180472471. All631files/16950087bytes/modes match payloade566f2ab, package subtree2cfe8e8e; offline proof9ddd4daf passes. Actual previously admitted facade2451662 still belongs to204104 and was neither patched nor terminated. Fresh-host220050 admission and font/omitted-lock wire live tests remain pending. Both disposable fixtures are closed and verified. The flat fixture retains its saved named three-segment wire seed; checkpoint9ccef95a/source93eb9a28/logicalb538b6c7 and reopened sourcec9e04b15 pass complete peer/materialization proof. Eight unstored inherited IDs regenerated on reopen; exact same-order lifecycle proof accepts them, not blanket native equality. Closed verifier29 and all-nine-root metadata38 pass. The earlier authorized UI action/private comparison9bf4428a established pcbCommandTab false to true in browser and one anonymous SQL residual without identifying the current user. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission.
-- Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct. Installed164600 passed scoped PCB Text readers/create/delete and empty free-SCH creation;204104 passed system-library UUID, schematic Text/Wire readers with both mixed caller orders, and independently visible pointer-only hover. The connected ledger records exact scope, not whole SDK contracts. Sealed rerouting and the new configured-font reader remain unvalidated live. Candidate wire-lock correction has actual offline adapter/inverse/materialization proof, not full sealed preparation or live execution. Never access production or its project record. The user's continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation, not relaxed technical safety checks or unrelated changes.
+- Git-marketplace `0.3.0+codex.20261011220050` is published and installed/enabled after exact-head CI38180472471. All631files/16950087bytes/modes match payloade566f2ab, package subtree2cfe8e8e; offline proof9ddd4daf passes. Actual facade2527645 is independently admitted220050. The font case and omitted-lock three-segment wire forward/reverse saved/reopened pair pass their exact scoped proofs. Both disposable fixtures are closed; final flat sourcec9e04b15/checkpoint621cb2f6/database471d6b9e/logicalea3da0fa are verified. Original source geometry is restored, not original SQLite history. Closed verifier11 and all-nine-root metadata41 pass. The earlier authorized UI action/private comparison9bf4428a established pcbCommandTab false to true in browser and one anonymous SQL residual without identifying the current user. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission. Candidate000206 offline history metadata is undergoing release verification; it has no new live admission.
+- Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct. Installed164600 passed scoped PCB Text readers/create/delete and empty free-SCH creation;204104 passed system-library UUID, schematic Text/Wire readers with both mixed caller orders, and independently visible pointer-only hover. Installed220050 adds configured-font R09 and sealed-wire C04/C05 exact-case evidence. Unsaved wire rollback, failure recovery, broader wire shapes, literal-false connected input and later generations remain separate. The connected ledger records scope, not whole SDK contracts. Never access production or its project record. The user's continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation, not relaxed technical safety checks or unrelated changes.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.

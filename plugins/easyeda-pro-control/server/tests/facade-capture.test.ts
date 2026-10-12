@@ -803,6 +803,14 @@ void describe("published facade contracts", { concurrency: false }, () => {
       const unavailable = await client.callTool({ name: "easyeda_control_context", arguments: {} });
       assert.equal(unavailable.isError, true, "mock editor context must genuinely be unavailable");
       const beforeCalls = await readFile(upstreamCallLogPath, "utf8");
+      const readerHistory = await apiReference({ action: "sdk-reads", query: { method: "eda.sys_FontManager.getFontsList", includeSchemas: true } });
+      assert.equal(readerHistory["offline"], true); assert.equal(readerHistory["executionAuthorized"], false);
+      const readerEntry = requireRecord(requireArray(readerHistory["entries"], "font reader entries")[0], "font reader");
+      assert.equal(readerEntry["liveValidation"], "current-generation-unclaimed;historical-cases-separate");
+      const history = requireRecord(readerEntry["historicalValidation"], "historical font evidence");
+      assert.equal(history["executionAuthorized"], false); assert.equal(history["currentGenerationLiveValidation"], "not-asserted-by-this-index");
+      const historicalCase = requireRecord(requireArray(history["cases"], "historical font cases")[0], "R09");
+      assert.equal(historicalCase["id"], "R09"); assert.equal(historicalCase["generationId"], "G20261011-220050");
       const sdk = await apiReference({ action: "sdk", query: { reference: "official-latest", namespace: "sys_Help", detail: true, limit: 1 } });
       assert.equal(requireRecord(sdk["provenance"], "SDK provenance")["version"], "0.4.26");
       const method = requireRecord(requireArray(sdk["entries"], "SDK entries")[0], "SDK method");

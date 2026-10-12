@@ -13,6 +13,7 @@ import { PCB_ACTIVE_LAYER_METHOD } from "./pcb-active-layer-read.ts";
 import { SCHEMATIC_SELECTION_METHOD } from "./schematic-selection-read.ts";
 import { PCB_SELECTED_OBJECTS_METHOD } from "./pcb-selected-objects.ts";
 import { isPcbSourceObjectsMethod } from "./pcb-source-objects.ts";
+import { getSdkReadValidationHistory } from "./sdk-read-validation-history.ts";
 
 export const publicSdkCatalogQuerySchema = z.object({
   method: z.string().min(1).max(160).optional(),
@@ -34,7 +35,8 @@ export function queryPublicSdkReads(input: unknown = {}): Record<string, unknown
   const entries: Record<string, unknown>[] = [];
   for (const entry of matched.slice(query.offset, query.offset + query.limit)) {
     const { inputSchema, ...descriptor } = entry;
-    const result = { ...descriptor, ...(query.includeSchemas ? { inputSchema,
+    const result = { ...descriptor, liveValidation: "current-generation-unclaimed;historical-cases-separate",
+      historicalValidation: getSdkReadValidationHistory(entry.path), ...(query.includeSchemas ? { inputSchema,
       inputSchemaSha256: createHash("sha256").update(JSON.stringify(inputSchema)).digest("hex") } : {}) };
     if (Buffer.byteLength(JSON.stringify([...entries, result]), "utf8") > MAX_ENTRIES_BYTES) {
       if (entries.length === 0) { throw new Error("Individual SDK-read schema exceeds the inline catalog budget."); }

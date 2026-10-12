@@ -20,8 +20,11 @@ two lifecycle-only methods, seven implemented-but-blocked methods and 469
 omissions. Their execution routes comprise 358 available with runtime guards,
 nine blocked and three partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
-See the [220050 release record](docs/api-coverage-220050-release-2026-10-12.md)
-for this candidate's checks and remaining connected tests.
+See the [000206 release record](docs/api-coverage-000206-release-2026-10-12.md)
+for this candidate's checks. Offline discovery now includes nine indexed
+historical reader cases with exact generation, argument scope, evidence and
+exclusions. These records neither grant execution authority nor validate the
+whole method or current package generation.
 `sdk-reads` and `sdk-validate` expose the exact schemas and offline argument
 checks for the fixed `easyeda_control_sdk_read` allowlist. That separate live
 tool performs local getters, fixed primitive-state projections and bounded pure
@@ -66,11 +69,14 @@ bounded polygon splitting that preserves input source arrays and their order. It
 accepts no arbitrary method path, caller code, callbacks, navigation or writes.
 The new `lib_LibrariesList.getSystemLibraryUuid` route returns only a nonmissing
 32-character lowercase-hex identity, with no account/library enumeration.
-Installed204104 passed one exact disposable read. The new source-only
+Installed204104 passed one exact disposable read. The native
 `sys_FontManager.getFontsList` equivalent reads only bounded configured titles,
 preserving order and duplicates while refusing missing or malformed settings.
 It never invokes the public wrapper's false-empty fallback or changes preferences.
 It does not establish current-account identity, OS font installation or rendering.
+Installed220050 passed one ordinary schematic case with unchanged complete
+native/source/checkpoint evidence; other document types and later generations
+remain separate cases.
 None of these observations replaces complete design or persistence proof.
 
 The deprecated schematic selection getter now has an explicit replacement
@@ -142,8 +148,11 @@ source generation remain separate validation.
 A separate [sealed wire profile](docs/flat-wire-reroute-2026-10-11.md) now supports
 endpoint-only rerouting with existing LINE identities, unchanged styles/names,
 full contact-incidence proof and an exact inverse only while the durable baseline
-is unchanged. It has source tests, not connected validation, and does not enable
-the generic compiled route.
+is unchanged. Installed220050 passed one three-segment forward/reverse pair,
+each through Save/reopen with complete 12-document collateral proof. Original
+source geometry was restored, not original database history. Unsaved rollback,
+other shapes and later generations remain separate; the generic compiled route
+stays blocked. See the [connected case report](docs/api-coverage-220050-fixture-validation-2026-10-12.md).
 
 Source review found that PCB/footprint opening, activation and some active-tab
 closes can write shared local preferences and prune backups under EasyEDA's

@@ -101,3 +101,97 @@ This root-only report changes no packaged source, runtime pin, historical
 validation registry or whole-method count. The retained runtime's historical
 `liveValidation:not-yet-validated` field remains unchanged evidence. Broader API
 work and PR9 remain unfinished.
+
+## Later terminal result: C04 wire reroute
+
+The same installed generation subsequently completed one sealed three-segment
+wire reroute through one Save/close/reopen. Independent review accepted the exact
+three-LINE source change, complete native/pin evidence, all 12 durable documents,
+11 unchanged peers and 66 imported-header occurrences. The original omitted
+WIRE lock representation remained absent. The
+[C04 ledger entry](api-connected-validation-ledger.md#2026-10-12-c04-sealed-three-segment-wire-reroute)
+retains phase, checkpoint, contact, independent-proof and visual commitments.
+
+Saved history reuploaded all six wire-group records. In addition to the intended
+LINE geometry and their clock changes, it materialized the existing Relevance
+order from stored 0 to the already observed native 4. The initial extra-strict
+audit refusal remains retained; a separate exact-case audit and the unchanged
+maintained persistence proof account for these encodings. No shared verifier
+or runtime guard was relaxed. All other target records and peers stayed exact.
+
+Retained complete graph observations were independently recomputed before,
+after apply and before Save. Final reopened source/native/persistence were
+independently verified; the executor's final raw flat observation was not
+retained and is not claimed as independently reconstructed. The reverse remains
+a separate pending transaction, not recovery, rollback or byte-identical history
+restoration. C04 is one constrained wire case, not whole-method validation.
+
+## Later terminal result: C05 reverse wire reroute
+
+The same admitted generation subsequently completed a separate reverse
+`sch.wire.modify` transaction through one Save/close/reopen. Independent review
+proved that the complete reverse before-source, before-native and checkpoint
+equal C04's accepted final state. Only the three intended LINE coordinate
+records changed, restoring original semantic source
+`c9e04b15352712d36cf6ba3a641622c58d81fcccd8fa86c670a6270305d6611c`.
+The retained WIRE still omits `locked`. No WIRE, ATTR, component or pin source
+field changed. All 67 source objects and complete native/pin state remain,
+apart from eight regenerated unstored inherited IDs at unchanged order.
+
+The unchanged reviewed offline verifier passed once against all 13 terminal
+artifacts and complete immutable checkpoints. It independently reproduced the
+maintained source/native, materialization and durable-state proofs. The saved
+project retains 12 documents, 171 materialized current records, 11 exact peers
+and all 66 imported header occurrences. Only the six existing wire-group
+records received new clock metadata. Their three non-LINE bodies and all 62
+other complete target records remain exact. Relevance stays stored/native
+order4, so restoration of the original source geometry is not restoration of the
+seed's original SQLite bytes, stored order0 or history.
+
+The independent terminal proof is
+`96b1b3881b98d1e25433ae351c1b668febb86cd21b1265171a6f40b5cd437ee2`.
+Final immutable checkpoint is
+`621cb2f6d3caea3a090302897b5660b174572039edfc908f61fb50c2afad6d83`,
+with complete logical dump
+`ea3da0fa99b20b8e3bd269e97340ecee0cdbd3d50cb6d1acf1070ef10a28cd21`.
+A separate fresh native result and its receipt pass maintained verification and
+equal the entire reopened native snapshot. Independent correlation proof is
+`e9ac24c0d27f6b1990856c3db24c5ab130674c049972c642049d101d826e32a9`.
+The main agent accepted the managed reverse close-up PNG,
+`428a92b21c57157ef14b44bd7898cb8716b3013fd739a3264b5be90a9139b511`.
+The [C05 ledger entry](api-connected-validation-ledger.md#2026-10-12-c05-sealed-reverse-wire-reroute)
+retains the remaining exact commitments and scope.
+
+Exactly one Save intent was consumed. Saved/reopened are true, with no hard stop,
+orphan, replay or recovery phase. Retained before/apply/pre-Save complete graph
+observations independently preserve contacts and literal pin nets. The final
+raw flat observation remains unavailable for independent recomputation; final
+source/native/persistence and the executor's separate final topology check are
+distinct evidence. The visual review corroborates geometry only.
+
+This resolves the earlier pending reverse case. It does not validate rollback,
+unsaved inverse, failure recovery, arbitrary wire operations or whole-method
+support. The original failed forward audit remains retained. No general runtime
+or storage guard was relaxed, and no transaction was replayed for documentation.
+Subsequent editor closure and closed-file checks are separate work. Production
+designs and their records remain outside scope. These root-only records do not
+alter packaged source or transfer this generation's admission to a later one.
+
+After this terminal review, the main agent normally closed the disposable
+editor without a Save/Discard prompt choice. Empty native discovery confirmed
+exit. The maintained closed-file verifier then passed with unchanged source,
+matching recorded source/checkpoint hashes and equal complete logical dumps.
+Its retained result SHA is
+`66a958a015b1ddbb77d9061dbb179703787ab6a011e8828428067f8eb7356160`.
+The current source hash remains
+`471d6b9e0aaad04d6efe55a5d2122bd468c0d4e5bff76534ce8e6dcf456edf89`;
+checkpoint and logical hashes remain those recorded above. Logical equality
+does not imply equal physical file bytes. Independent review inspected the
+retained verifier result, not the current database.
+
+The main agent's listing-only post-close retention-metadata comparison,
+`241b99472adc5ebfb0f02a6e637860f376779c630fd92b8d8ce8c58a79babfaa`,
+reports all nine retained backup roots unchanged. No backup deletion, design
+opening or content-verification claim follows from that metadata comparison.
+The editor is closed at this recorded boundary. These checks do not authorize
+replay or establish continuing state isolation.
