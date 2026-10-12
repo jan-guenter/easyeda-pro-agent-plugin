@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "b3439e7e0475549e0708262ef28efabc4ca4f683195a421d3d19b9d4bba22c4f";
+const __easyedaBundlePairId = "c58ba818928e18d12c4b46f470f3f8dac80e3952effb1a7cf5ff8d04b219d66d";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -15195,7 +15195,7 @@ async function duplicateDirectoryHandle(descriptorPath, expected2, label) {
     throw error51;
   }
 }
-async function openControlRootCapability(input) {
+async function openControlRootCapability(input, createRoot = true) {
   if (process3.platform !== "linux") {
     throw new Error(
       "EasyEDA control-root confinement requires Linux /proc file descriptors."
@@ -15223,6 +15223,9 @@ async function openControlRootCapability(input) {
         before = await lstat(childPath, { bigint: true });
       } catch (error51) {
         if (errorCode(error51) !== "ENOENT") {
+          throw error51;
+        }
+        if (!createRoot) {
           throw error51;
         }
         if (index !== segments3.length - 1) {
@@ -36327,8 +36330,8 @@ async function ensureManagedDirectory(path5) {
   await directory.handle.close();
   return directory.absolute;
 }
-function controlRootCapability() {
-  retainedControlRoot ??= openControlRootCapability(CONTROL_DATA_DIR);
+function controlRootCapability(createRoot = true) {
+  retainedControlRoot ??= openControlRootCapability(CONTROL_DATA_DIR, createRoot);
   return retainedControlRoot;
 }
 function inspectManagedFile(path5, label = "Artifact") {

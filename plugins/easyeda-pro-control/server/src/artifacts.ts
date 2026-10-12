@@ -756,8 +756,8 @@ export async function ensureManagedDirectory(path: string): Promise<string> {
   return directory.absolute;
 }
 
-export function controlRootCapability(): Promise<ControlRootCapability> {
-  retainedControlRoot ??= openControlRootCapability(CONTROL_DATA_DIR);
+export function controlRootCapability(createRoot = true): Promise<ControlRootCapability> {
+  retainedControlRoot ??= openControlRootCapability(CONTROL_DATA_DIR, createRoot);
   return retainedControlRoot;
 }
 

@@ -6,6 +6,37 @@ Last updated: 2026-10-12 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Closed-session stages, local integration
+
+- Internal first-launch, authenticated-admission and normal-close stages now
+  retain actual returned receipts before later checks can fail. Their focused
+  synthetic suites pass34,51 and31 tests respectively. Admission and close
+  regressions reproduce late durable-journal changes and verify refusal. A
+  repeated read-only termination query does not repeat the close request.
+- The historical closed-copy reader verifies the exact operation-owned artifact
+  and full SQL digests without opening the original source. Its existing-only
+  control-root access does not create a missing directory. All37 focused tests
+  pass. Serialized evidence never reconstructs process or copy authority.
+- One completed standalone Windows PowerShell5.1 test compiled the private clock
+  collector and passed64 checks, including14 fake wrapper dispatches. The full
+  proposed helper was parsed, not run. No EasyEDA application, real Job class,
+  profile or project was loaded, and no environment variable was changed. The
+  retained result07179617 is not APP-clock or native lifecycle qualification.
+  Never replay that completed scratch test.
+- Full integration verification passes5993facade tests/oneplatformskip/zero
+  failures and424bridge tests. Allfourtypes, strict type-aware lint, package/
+  repository, seven official skill checks and offline doctor pass. Fullverify
+  0f5eabef, repositorya5849ede and doctor3bcd73ac are retained privately.
+  Source231files8cf91aa4/runtime3files0f8e8946 preserve external pins69a0bb0b.
+  Rebuild03 verifies exact bundle bytes and modes. The first private comparison
+  helper used canonical JSON against a compact-JSON hash; that helper-only
+  refusal is retained separately. Both representations now have explicit hashes.
+  Copy orchestration, startup/marker integration and native clock qualification
+  remain private unfinished work.
+  These stages are not registered tools. No execution gate, route, API coverage,
+  publication or installation changed. Installed030626 remains unchanged.
+  Production and its record remain excluded; no CAD action is pending.
+
 ### Actor-bound compiler and storage continuity, local integration
 
 - Internal dual-actor capture now retains the startup actor and cookie projection

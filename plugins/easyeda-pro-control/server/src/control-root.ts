@@ -95,6 +95,7 @@ async function duplicateDirectoryHandle(
  */
 export async function openControlRootCapability(
   input: string,
+  createRoot = true,
 ): Promise<ControlRootCapability> {
   if (process.platform !== "linux") {
     throw new Error(
@@ -125,6 +126,9 @@ export async function openControlRootCapability(
         before = await lstat(childPath, { bigint: true });
       } catch (error) {
         if (errorCode(error) !== "ENOENT") {
+          throw error;
+        }
+        if (!createRoot) {
           throw error;
         }
         if (index !== segments.length - 1) {
