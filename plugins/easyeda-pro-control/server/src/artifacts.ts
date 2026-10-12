@@ -828,9 +828,11 @@ function assertManagedJsonByteLimit(bytes: number, label: string): void {
 async function readOpenManagedBytes(
   file: OpenManagedFile,
   label: string,
+  maximumBytes = MAX_MANAGED_JSON_BYTES,
 ): Promise<Buffer> {
   const before = await file.handle.stat();
   assertManagedJsonByteLimit(before.size, label);
+  if (before.size > maximumBytes) { throw new Error(`${label} exceeds its exact byte bound.`); }
   // Admit one bounded allocation and detect growth with an extra byte.
   const bytes = Buffer.alloc(before.size + 1);
   let offset = 0;
@@ -2350,6 +2352,53 @@ const scanOperationStates = createOperationScanner((operation) => ({
 
 export function listOperationStates(): Promise<UnknownRecord[]> {
   return scanOperationStates();
+}
+
+/** Whole bounded evidence read. Verify raw bytes before lossless UTF-8 decoding.
+ * This does not change the paged display semantics of readArtifact.
+ */
+export async function readExactUtf8Artifact(
+  descriptor: Readonly<Pick<ArtifactDescriptor, "path" | "bytes" | "sha256">>,
+): Promise<Readonly<{ path: string; bytes: number; sha256: string; text: string }>> {
+  const label = "Exact UTF-8 artifact";
+  const own = (key: string): unknown => {
+    const field = Object.getOwnPropertyDescriptor(descriptor, key);
+    if (field === undefined || !Object.hasOwn(field, "value")) {
+      throw new Error(`${label} requires own data descriptor fields.`);
+    }
+    return field.value as unknown;
+  };
+  if (!isRecord(descriptor)) { throw new Error(`${label} descriptor is missing.`); }
+  const path = own("path");
+  const expectedBytes = own("bytes"), expectedSha256 = own("sha256");
+  if (typeof path !== "string" || typeof expectedBytes !== "number" ||
+      !Number.isSafeInteger(expectedBytes) || expectedBytes < 0 || expectedBytes > 256 * 1024 ||
+      typeof expectedSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(expectedSha256)) {
+    throw new Error(`${label} descriptor or 256-KiB byte bound refused.`);
+  }
+  const absolute = assertManagedPath(path, label);
+  await controlRootCapability(false);
+  const opened = await openSafeManagedFile(absolute, label);
+  try {
+    if (opened.info.size !== expectedBytes) { throw new Error(`${label} expected byte length differs.`); }
+    const bytes = await readOpenManagedBytes(opened, label, expectedBytes);
+    const after = await opened.handle.stat();
+    assertFileStayedUnchanged(opened.info, after, label);
+    assertManagedFileAuthority(after, label);
+    const sha256 = createHash("sha256").update(bytes).digest("hex");
+    if (bytes.length !== expectedBytes || sha256 !== expectedSha256) {
+      throw new Error(`${label} raw bytes failed the expected SHA-256 or length.`);
+    }
+    // Preserve a literal BOM and genuine U+FFFD; malformed byte sequences refuse.
+    const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+    await assertManagedFilePathCurrent(opened.absolute, opened.directory, after, label);
+    const final = await opened.handle.stat();
+    assertFileStayedUnchanged(after, final, label);
+    assertManagedFileAuthority(final, label);
+    return Object.freeze({ path: opened.absolute, bytes: bytes.length, sha256, text });
+  } finally {
+    await closeManagedFile(opened);
+  }
 }
 
 export async function readArtifact(

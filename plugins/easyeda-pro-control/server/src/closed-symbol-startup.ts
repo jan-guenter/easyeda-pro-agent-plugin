@@ -63,7 +63,12 @@ export class ClosedSymbolStartupStage {
     requireValue(status.state === "owned" && status.launch?.jobId === generation.jobId && status.launch.helperInstance === generation.helperInstance &&
       status.launch.root.pid === generation.rootPid && status.launch.root.startIdentity === generation.rootStartIdentity, "Startup runtime launch differs.");
     const statusText = canonicalJson(status);
+    let settledReply: unknown, settledText: string | undefined;
+    const unchangedReply = (): void => {
+      requireValue(settledText === undefined || canonicalJson(settledReply) === settledText, "Startup settled reply changed after retention.");
+    };
     const current = (): void => {
+      unchangedReply();
       working(); unchanged();
       requireValue(this.admission.originalCapture(operationId, PHASES[phase]) === capture && canonicalJson(capture) === captureText, "Startup original capture changed.");
       requireValue(this.engine.executionAuthorityValidator === this.validator && this.validatorMethods.every((method) => typeof method === "function") &&
@@ -97,12 +102,14 @@ export class ClosedSymbolStartupStage {
       async (returned) => {
         // Retain the actual settled reply before any fallible check or write.
         this.retainedReturns.set(key, returned);
+        settledReply = returned; settledText = canonicalJson(returned);
         // Preserve the settled fixed program reply on the private working
         // Journal even when caller or current scope drifted during its await.
         working();
         await appendClosedSymbolEvent(journal, { step: phase, kind: "result", generation, requestSha256, data: { rawReturn: returned } });
+        unchangedReply();
       });
-    current();
+    current(); requireValue(raw === settledReply, "Startup settled reply changed after retention.");
     const result = validateStartupResult(extractToolPayload(raw), input);
     requireValue(result["ok"] === true, "Startup fixed observation refused; retained result requires review, never replay.");
     const observed = await this.engine.runtimeIdentity(binding); current();

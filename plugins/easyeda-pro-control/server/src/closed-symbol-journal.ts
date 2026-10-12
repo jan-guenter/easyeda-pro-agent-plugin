@@ -1,8 +1,8 @@
 /** Internal data recorder. No runtime, dispatch, restored brand or completion grant. */
 import { join } from "node:path";
-import { createOperation, loadOperation, operationPath, readArtifact, updateOperation, writePhaseArtifact } from "./artifacts.ts";
+import { createOperation, loadOperation, operationPath, readArtifact, readExactUtf8Artifact, updateOperation, writePhaseArtifact } from "./artifacts.ts";
 import type { ArtifactDescriptor } from "./artifacts.ts";
-import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, isErrnoException, isRecord, sha256Json, sha256Text } from "./core.ts";
+import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, isErrnoException, isRecord, sha256Json } from "./core.ts";
 import type { TrackedDispatchOperationJournal } from "./engine.ts";
 import { projectSymbolMetadataOperation } from "./project-symbol-metadata.ts";
 
@@ -195,6 +195,8 @@ function assertJournal(input: unknown): asserts input is ClosedJournal {
   requireValue(input["state"] === "closed-session-recording" || input["state"] === "closed-session-evidence-recorded", "Closed journal cannot declare completion.");
   requireValue(input["saved"] === false && input["reopened"] === false && typeof input["orphanedCallPossible"] === "boolean" && typeof input["hardStop"] === "boolean" && typeof input["mutationMayHaveOccurred"] === "boolean" && typeof input["mutationState"] === "string" && typeof input["nextSafeAction"] === "string" && typeof input["updatedAt"] === "string" && !Object.hasOwn(input, "context") && !Object.hasOwn(input, "preCheckpoint"), "Closed journal tracked state refused.");
   requireValue(Array.isArray(input["artifacts"]) && typeof input["sequence"] === "number" && Number.isSafeInteger(input["sequence"]) && input["sequence"] >= 0 && input["sequence"] <= STEPS.length * 2 && input["artifacts"].length === input["sequence"], "Closed journal artifact count differs.");
+  requireValue(input["sequence"] < STEPS.indexOf("edit-write") * 2 + 1 || input["mutationMayHaveOccurred"],
+    "Closed journal write intent lost its possible-mutation marker.");
   requireValue((input["state"] === "closed-session-evidence-recorded") === (input["sequence"] === STEPS.length * 2), "Closed journal final evidence state differs.");
 }
 async function readEvents(journal: ClosedJournal): Promise<PhaseEvent[]> {
@@ -203,8 +205,7 @@ async function readEvents(journal: ClosedJournal): Promise<PhaseEvent[]> {
     const position = expected(index + 1);
     const phase = `${position.step}-${position.kind}`;
     requireValue(descriptor.path === join(operationPath(journal.operationId).slice(0, -5), `${String(index + 1).padStart(2, "0")}-${phase}.json`) && Number.isSafeInteger(descriptor.bytes) && descriptor.bytes > 0 && descriptor.bytes <= MAX_EVENT_BYTES, "Closed journal artifact descriptor refused.");
-    const read = await readArtifact(descriptor.path, 0, MAX_EVENT_BYTES);
-    requireValue(read.eof && read.offset === 0 && read.bytesRead === descriptor.bytes && read.size === descriptor.bytes && sha256Text(read.text) === descriptor.sha256, "Closed journal artifact bytes differ.");
+    const read = await readExactUtf8Artifact(descriptor);
     const raw: unknown = JSON.parse(read.text); events.push(parseEvent(raw));
   }
   relate(journal, events, journal.artifacts); return events;
@@ -255,6 +256,9 @@ export async function appendClosedSymbolEvent(journal: ClosedJournal, input: App
     const artifact = await writePhaseArtifact(operationId, sequence, `${position.step}-${position.kind}`, event);
     unchangedCaller();
     const next = { ...predecessor, sequence, artifacts: [...predecessor.artifacts, artifact], updatedAt: new Date().toISOString(),
+      // Record conservative risk in the same successor as the write intent.
+      // Later evidence recording cannot clear it or claim that an edit occurred.
+      mutationMayHaveOccurred: predecessor.mutationMayHaveOccurred || (position.step === "edit-write" && position.kind === "intent"),
       state: sequence === STEPS.length * 2 ? "closed-session-evidence-recorded" : "closed-session-recording" };
     await updateOperation(next);
     unchangedCaller();

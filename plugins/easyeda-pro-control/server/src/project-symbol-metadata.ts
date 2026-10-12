@@ -12,6 +12,8 @@ import type { ExpectedContext } from "./engine.ts";
 // oxlint-disable-next-line import/max-dependencies -- Reuse the reviewed actor capture and validator instead of duplicating identity guards in this writer.
 import { SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE, validateActorProjection } from "./symbol-dual-actor.ts";
 import type { ActorProjection } from "./symbol-dual-actor.ts";
+import { SYMBOL_WORKER_FINAL_READ_SOURCE, SYMBOL_WORKER_GUARD_SOURCE, SYMBOL_WORKER_NATIVE_DIAGNOSTIC_CATCH, validateWorkerExpectation } from "./symbol-worker-guard.ts";
+import type { SymbolWorkerExpectation } from "./symbol-worker-guard.ts";
 
 /** Fixed project-local adapter. Connected and reopened validation are separate
  * from this compiler and its complete-project effect comparison.
@@ -123,7 +125,17 @@ export function buildActorBoundProjectSymbolMetadataExpression(input: ProjectSym
   return compileProjectSymbolMetadataExpression(input, context, validateActorProjection(expectedActor));
 }
 
-function compileProjectSymbolMetadataExpression(input: ProjectSymbolMetadataPlan, context: ExpectedContext, actor?: ActorProjection): string {
+/** Internal fixed variant. Caller-supplied expectations are data, not authority. */
+export function buildWorkerBoundProjectSymbolMetadataExpression(input: ProjectSymbolMetadataPlan, context: ExpectedContext, expectedActor: unknown, expectedWorker: unknown): string {
+  const actor = validateActorProjection(expectedActor);
+  const plan = planSchema.parse(input);
+  if (![plan.branchUuid, plan.ownerUuid, plan.targetUuid].every((value) => /^[a-f0-9]{32}$/u.test(value))) { throw new Error("SYMBOL_WORKER_INPUT"); }
+  const active = { uuid: context.document.uuid ?? context.document.documentUuid ?? "", documentType: context.document.documentType, tabId: context.document.tabId ?? "" };
+  const worker = validateWorkerExpectation(expectedWorker, plan.projectUuid, active, plan.targetUuid);
+  return compileProjectSymbolMetadataExpression(plan, context, actor, worker);
+}
+
+function compileProjectSymbolMetadataExpression(input: ProjectSymbolMetadataPlan, context: ExpectedContext, actor?: ActorProjection, worker?: SymbolWorkerExpectation): string {
   const plan = planSchema.parse(input);
   if ((context.project.uuid ?? context.project.projectUuid) !== plan.projectUuid ||
       (context.project.uuid !== undefined && context.project.projectUuid !== undefined && context.project.uuid !== context.project.projectUuid) ||
@@ -154,10 +166,14 @@ const actorGuard=()=>{
  if(actorRoot.top!==actorRoot||actorRoot.window!==actorRoot||own(actorRoot,'gVars')!==host||actorRoot.location!==actorLocation||actorLocation.href!==actorHref||actorLocation.origin!=='https://client'||actorRoot.document!==actorDocument||actorDocument.defaultView!==actorRoot||actorDocument.nodeType!==9||actorDocument.URL!==actorHref||own(actorRoot,'PRO_EDITOR_MODE')!==actorMode)bad();
  checkDualActor();
 };
-const actorAwait=async(call)=>{actorGuard();try{return await call();}finally{actorGuard();}};
+const actorAwait=async(call)=>{${worker === undefined ? "actorGuard()" : "workerGuard()"};try{return await call();}finally{${worker === undefined ? "actorGuard()" : "workerGuard()"};}};
 actorGuard();
 `;
   const actorCall = (call: string): string => actor === undefined ? call : `actorAwait(()=>${call})`;
+  const busCall = (topic: string, args: string): string => `${worker === undefined ? "bus.rpcCall" : "workerRpc"}('${topic}',${args})`;
+  let finalGuard = actor === undefined ? "" : "actorGuard();\n";
+  let diagnostic = actor === undefined ? METADATA_NATIVE_DIAGNOSTIC_CATCH : SYMBOL_ACTOR_NATIVE_DIAGNOSTIC_CATCH;
+  if (worker !== undefined) { finalGuard = "workerGuard();\n"; diagnostic = SYMBOL_WORKER_NATIVE_DIAGNOSTIC_CATCH; }
   return `(async()=>{let stage='host';try{
 const PLAN=${JSON.stringify(plan)},ACTIVE=${JSON.stringify(active)},OWNERSHIP=${JSON.stringify(ownership)};
 ${DEVICE_NATIVE_HOST_GUARD}
@@ -166,7 +182,7 @@ const localUI=globalThis.UI,outerUI=globalThis.top?.UI;
 if(localUI!=null&&outerUI!=null&&localUI!==outerUI)throw new Error('UI_AMBIGUOUS');
 const ui=localUI??outerUI,permission=ui?.concurrentDesign,tabs=ui?.tabBar;
 if(typeof tabs?.getFilterTabs!=='function'||typeof tabs.getActiveTab!=='function'||typeof tabs.hasTabUnSaved!=='function'||typeof tabs.isTabUnSaved!=='function')throw new Error('TAB_STATE_MISSING');
-const assertWritable=()=>{
+${worker === undefined ? "" : `const WORKER=${JSON.stringify(worker)};${SYMBOL_WORKER_GUARD_SOURCE}`}const assertWritable=()=>{
 if(PLAN.peerTitles.some(value=>value.toLocaleLowerCase()===PLAN.desiredTitle.toLocaleLowerCase()))throw new Error('LOCALE_DUPLICATE_TITLE');
 const localVersion=globalThis.PRO_EDITOR_VERSION,outerVersion=globalThis.top?.PRO_EDITOR_VERSION;
 if(localVersion!==undefined&&outerVersion!==undefined&&localVersion!==outerVersion)throw new Error('EDITOR_VERSION_AMBIGUOUS');
@@ -204,31 +220,31 @@ assertWritable();
 };
 await ${actorCall("assertContext()")};
 stage='permission';
-const permissionResult=(await ${actorCall("bus.rpcCall('canAddLib',[PLAN.projectUuid])")}).message;
+const permissionResult=(await ${actorCall(busCall("canAddLib", "[PLAN.projectUuid]"))}).message;
 await ${actorCall("assertContext()")};
 if(permissionResult?.hasPermission!==true)throw new Error('PROJECT_PERMISSION');
-const projectState=(await ${actorCall("bus.rpcCall('/PrjDB/project/getData',[PLAN.projectUuid])")}).message;
+const projectState=(await ${actorCall(busCall("/PrjDB/project/getData", "[PLAN.projectUuid]"))}).message;
 await ${actorCall("assertContext()")};
 if(projectState?.uuid!==PLAN.projectUuid||projectState.owner?.uuid!==PLAN.ownerUuid||projectState.currentBranch!==PLAN.branchUuid||projectState.isV2Format!==false||projectState.archive||projectState.store||projectState.cbb_project)throw new Error('PROJECT_METADATA');
 stage='before-read';
-const before=(await ${actorCall("bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])")}).message;
+const before=(await ${actorCall(busCall("/PrjDB/symbol/getData", "[PLAN.targetUuid,PLAN.projectUuid]"))}).message;
 await ${actorCall("assertContext()")};
 if(before?.uuid!==PLAN.targetUuid||before?.project_uuid!==PLAN.projectUuid||before?.owner?.uuid!==PLAN.ownerUuid||before?.docType!==2||before?.display_title!==PLAN.beforeTitle||before?.description!==PLAN.beforeDescription||before?.source!==PLAN.beforeSource||before?.custom_tags!==JSON.stringify(PLAN.beforeTags))throw new Error('SYMBOL_METADATA_DRIFT');
 stage='target-closed';
 await ${targetClosed};
 await ${actorCall("assertContext()")};
 assertWritable();
-stage='modify';
-const result=(await ${actorCall("bus.rpcCall('/PrjDB/symbol/updateData',[{uuid:PLAN.targetUuid,title:PLAN.desiredTitle,description:PLAN.desiredDescription},PLAN.projectUuid])")}).message;
+${worker === undefined ? "" : SYMBOL_WORKER_FINAL_READ_SOURCE}stage='modify';
+const result=(await ${actorCall(busCall("/PrjDB/symbol/updateData", "[{uuid:PLAN.targetUuid,title:PLAN.desiredTitle,description:PLAN.desiredDescription},PLAN.projectUuid]"))}).message;
 if(result?.uuid!==PLAN.targetUuid||result.project_uuid!==PLAN.projectUuid||result.owner?.uuid!==PLAN.ownerUuid||result.docType!==2||result.display_title!==PLAN.desiredTitle||result.description!==PLAN.desiredDescription||result.source!==PLAN.beforeSource||result.custom_tags!==JSON.stringify(PLAN.beforeTags))throw new Error('ACK_INVALID');
 stage='after-read';
 await ${actorCall("assertContext()")};
-const after=(await ${actorCall("bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])")}).message;
+const after=(await ${actorCall(busCall("/PrjDB/symbol/getData", "[PLAN.targetUuid,PLAN.projectUuid]"))}).message;
 await ${actorCall("assertContext()")};
 if(after?.uuid!==PLAN.targetUuid||after?.project_uuid!==PLAN.projectUuid||after?.owner?.uuid!==PLAN.ownerUuid||after?.docType!==2||after?.display_title!==PLAN.desiredTitle||after?.description!==PLAN.desiredDescription||after?.source!==PLAN.beforeSource||after?.custom_tags!==JSON.stringify(PLAN.beforeTags))throw new Error('SYMBOL_METADATA_DRIFT');
-${actor === undefined ? "" : "actorGuard();\n"}const payload={kind:'project-symbol-metadata',targetId:PLAN.targetUuid,createdId:null};
+${finalGuard}const payload={kind:'project-symbol-metadata',targetId:PLAN.targetUuid,createdId:null};
 const json=JSON.stringify(payload);return {schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};
-}catch(error){${actor === undefined ? METADATA_NATIVE_DIAGNOSTIC_CATCH : SYMBOL_ACTOR_NATIVE_DIAGNOSTIC_CATCH}throw new Error('Symbol metadata operation refused at '+stage+':'+code);}})()`;
+}catch(error){${diagnostic}throw new Error('Symbol metadata operation refused at '+stage+':'+code);}})()`;
 }
 
 function recordProjection(document: NativeDocumentSnapshot): unknown {

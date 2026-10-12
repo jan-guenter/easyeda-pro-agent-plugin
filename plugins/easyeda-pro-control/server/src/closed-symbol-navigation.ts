@@ -27,12 +27,18 @@ export class ClosedSymbolNavigationStage {
   private readonly engine: Engine;
   private readonly fingerprint: Value;
   private readonly io: typeof services;
+  private readonly retainedReturns = new Map<string, unknown>();
 
   public constructor(engine: Engine, expectedFingerprint: Value, overrides: Partial<typeof services> = {}) {
     this.engine = engine;
     this.fingerprint = structuredClone(expectedFingerprint);
     validatePrivateFingerprint(this.fingerprint);
     this.io = { ...services, ...overrides };
+  }
+
+  /** Inspection only. A retained reply never grants another navigation attempt. */
+  public originalReturn(operationId: string, phase: OpenPhase): unknown {
+    return this.retainedReturns.get(`${operationId}:${phase}`);
   }
 
   private async admission(journal: ClosedJournal): Promise<string> {
@@ -71,20 +77,22 @@ export class ClosedSymbolNavigationStage {
       generation.rootStartIdentity.endsWith(`:job:${generation.jobId}`), "Closed navigation retained process differs.");
   }
 
-  private async currentGeneration(journal: ClosedJournal, generation: Generation): Promise<void> {
+  private currentSession(journal: ClosedJournal, generation: Generation): void {
     const binding = journal.bridgeDispatchBeforeOrphan, expected = journal.bridgeSessionBeforeOrphan;
     requireValue(binding !== undefined && expected !== undefined, "Closed navigation lacks its dispatch binding.");
     const { gatewayInstanceId, ...activeSession } = expected;
-    const session = (): void => {
-      const current = this.engine.upstream.bridgeSessionLifecycle?.();
-      requireValue(isRecord(current) && current["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" &&
-        current["gatewayInstanceId"] === gatewayInstanceId && canonicalJson(current["activeSession"]) === canonicalJson(activeSession) &&
-        canonicalJson(this.engine.upstream.currentAuthenticatedBridgeDispatchBinding?.()) === canonicalJson(binding), "Closed navigation current session changed.");
-      ClosedSymbolNavigationStage.dispatchGeneration(journal, generation);
-    };
-    session();
+    const current = this.engine.upstream.bridgeSessionLifecycle?.();
+    requireValue(isRecord(current) && current["schema"] === "easyeda-pro-control.authenticated-bridge-lifecycle.v1" &&
+      current["gatewayInstanceId"] === gatewayInstanceId && canonicalJson(current["activeSession"]) === canonicalJson(activeSession) &&
+      canonicalJson(this.engine.upstream.currentAuthenticatedBridgeDispatchBinding?.()) === canonicalJson(binding), "Closed navigation current session changed.");
+    ClosedSymbolNavigationStage.dispatchGeneration(journal, generation);
+  }
+
+  private async currentGeneration(journal: ClosedJournal, generation: Generation): Promise<void> {
+    const binding = journal.bridgeDispatchBeforeOrphan;
+    this.currentSession(journal, generation);
     const runtime = await this.engine.runtimeIdentity(binding);
-    session();
+    this.currentSession(journal, generation);
     requireValue(sha256Json(runtime) === generation.runtimeSha256, "Closed navigation current runtime changed.");
   }
 
@@ -104,12 +112,18 @@ export class ClosedSymbolNavigationStage {
     // Failed stages retain its durable journal; callers must reload, never retry.
     const callerBinding = canonicalJson(journalInput), journal = structuredClone(journalInput);
     const planBinding = canonicalJson({ operationId: journal.operationId, plan: journal.plan, closedPlanSha256: journal.closedPlanSha256, markerSha256: journal.markerSha256 });
+    let rawReturnText: string | undefined;
+    const returnedUnchanged = (): void => {
+      requireValue(rawReturnText !== undefined && canonicalJson(this.retainedReturns.get(key)) === rawReturnText,
+        "Closed navigation settled reply changed; retained evidence requires review.");
+    };
     const unchangedWorkingPlan = (): void => {
       requireValue(canonicalJson({ operationId: journal.operationId, plan: journal.plan, closedPlanSha256: journal.closedPlanSha256, markerSha256: journal.markerSha256 }) === planBinding,
         "Closed navigation sealed operation changed.");
     };
     const unchangedPlan = (): void => {
       unchangedWorkingPlan();
+      if (rawReturnText !== undefined) { returnedUnchanged(); }
       requireValue(canonicalJson(journalInput) === callerBinding, "Closed navigation caller journal changed.");
     };
     const checkpoint = structuredClone(checkpointInput), generation = structuredClone(generationInput);
@@ -151,10 +165,15 @@ export class ClosedSymbolNavigationStage {
     }, async (returned) => {
       // Retain a settled return under its original identity even when a caller
       // Changed its own journal during the native await. Never copy that change.
+      this.retainedReturns.set(key, returned);
+      rawReturnText = canonicalJson(returned);
       unchangedWorkingPlan();
       await appendClosedSymbolEvent(journal, { step: phase, kind: "result", generation, requestSha256, data: { rawReturn: returned } });
+      returnedUnchanged();
     });
     unchangedPlan();
+    requireValue(this.retainedReturns.get(key) === raw, "Closed navigation dispatcher returned a different reply object.");
+    returnedUnchanged();
     const native = extractToolPayload(raw);
     requireValue(isRecord(native) && native["ok"] === true && native["schema"] === "easyeda-pro-control.recovery-navigation.v1" &&
       Reflect.ownKeys(native).length === 6 && typeof native["openedProject"] === "boolean" && typeof native["openedDocument"] === "boolean" &&
@@ -176,6 +195,10 @@ export class ClosedSymbolNavigationStage {
     unchangedPlan();
     await this.currentGeneration(journal, generation);
     unchangedPlan();
+    const final = await loadClosedSymbolJournal(journal.operationId);
+    unchangedPlan();
+    this.currentSession(journal, generation);
+    requireValue(canonicalJson(final.journal) === canonicalJson(journal), "Closed navigation durable journal changed.");
     Object.assign(journalInput, journal);
     return Object.freeze({ profile: "easyeda-pro-control.closed-symbol-companion-open.v1", operationId: journal.operationId, phase,
       context: active, native, checkpoint, navigationAcknowledged: true, currentCheckpointUnchanged: true,

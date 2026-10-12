@@ -3,6 +3,9 @@ import { createHash, randomBytes } from "node:crypto";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import { isIP } from "node:net";
 import path from "node:path";
+import process from "node:process";
+import { createClockedTransport } from "./windows-clock-transport.ts";
+import type { ClockAttachment } from "./windows-clock-transport.ts";
 
 import { canonicalJson, sha256Json } from "./core.ts";
 import type {
@@ -20,6 +23,40 @@ const POLICY_ID = "windows.easyeda-contained-local-api.v1";
 const MAXIMUM_RESPONSE_BYTES = 262_144;
 
 type JsonRecord = Record<string, unknown>;
+export interface IssuedWindowsClockObservation extends ClockAttachment {
+  readonly ownerBinding: Readonly<JsonRecord>;
+}
+type ClockPhase = ClockAttachment["phase"];
+interface QualifiedClockSource {
+  readonly originalAttachment: (raw: unknown) => ClockAttachment | undefined;
+  readonly revalidate: () => Promise<void>;
+  readonly assertTransport: () => void;
+}
+const qualifiedClockSources = new WeakMap<WindowsAuthorityTransport, QualifiedClockSource>();
+const originalClocks = new WeakMap<object, IssuedWindowsClockObservation>();
+const issuedClocks = new WeakMap<object, { readonly observation: IssuedWindowsClockObservation; readonly verify: () => Promise<void> }>();
+const REVIEWED_CLOCK_HELPER_SHA256 = "5a5095d463afcf8f595c3085ec7d5f377baa2e545b623bca81205137c602e608";
+function freezeClockData<T>(value: T): T {
+  if (value !== null && typeof value === "object") {
+    for (const child of Object.values(value)) { freezeClockData(child); }
+    Object.freeze(value);
+  }
+  return value;
+}
+/** Source-owned observation only, never a dispatch or persistence grant. */
+export async function assertIssuedWindowsClockObservation(value: unknown): Promise<IssuedWindowsClockObservation> {
+  const slot = value !== null && typeof value === "object" ? issuedClocks.get(value) : undefined;
+  if (slot === undefined) { throw new Error("Windows clock observation was not issued by the source-qualified retained helper."); }
+  await slot.verify();
+  return slot.observation;
+}
+/** Original supervisor result only; JSON copies and self-hashes are not tokens. */
+export async function windowsClockObservationForResult(value: unknown, phase: ClockPhase): Promise<IssuedWindowsClockObservation> {
+  const observation = value !== null && typeof value === "object" ? originalClocks.get(value) : undefined;
+  if (observation === undefined || observation.phase !== phase) { throw new Error("Original Windows result has no clock observation for this action."); }
+  const issued = await assertIssuedWindowsClockObservation(observation);
+  return issued;
+}
 
 /** Windows-observed outbound socket, already correlated to this gateway session.
  * A WSL forwarding tuple is not assumed to equal this tuple. The resolver must
@@ -331,6 +368,31 @@ export function createWindowsAuthoritySupervisor(
   let lifecycleEpoch = 0;
   let currentLaunch: WindowsAuthorityLaunch | undefined;
   let released = false;
+  const clockSource = qualifiedClockSources.get(transport);
+  const captureClockBases = new WeakMap<CaptureReceipt, unknown>();
+  function parsedCapture(raw: unknown, bindingSha256: string): CaptureReceipt {
+    const receipt = captureReceipt(raw, bindingSha256); captureClockBases.set(receipt, raw); return receipt;
+  }
+  function retainClock(result: object, raw: unknown, phase: ClockPhase, ownerBinding: JsonRecord): void {
+    if (clockSource === undefined || currentLaunch === undefined) { return; }
+    let attachment: ClockAttachment | undefined;
+    try { attachment = clockSource.originalAttachment(raw); } catch { return; }
+    if (attachment === undefined || attachment.phase !== phase ||
+        attachment.base["jobId"] !== currentLaunch.jobId || attachment.base["helperInstance"] !== currentLaunch.helperInstance) { return; }
+    const launchText = canonicalJson(currentLaunch), resultText = canonicalJson(result);
+    const observation: IssuedWindowsClockObservation = freezeClockData({ ...structuredClone(attachment), ownerBinding: structuredClone(ownerBinding) });
+    async function verify(): Promise<void> {
+      function current(): void {
+        requireOwned(); clockSource?.assertTransport();
+        if (canonicalJson(currentLaunch) !== launchText || canonicalJson(result) !== resultText ||
+            originalClocks.get(result) !== observation || qualifiedClockSources.get(transport) !== clockSource) {
+          throw new Error("Windows clock owner, result or launched generation changed.");
+        }
+      }
+      current(); await clockSource?.revalidate(); current();
+    }
+    originalClocks.set(result, observation); issuedClocks.set(observation, { observation, verify });
+  }
 
   function requireOwned(): void {
     if (released) {throw new Error("Windows supervisor authority was released; recapture is required.");}
@@ -376,13 +438,14 @@ export function createWindowsAuthoritySupervisor(
         throw error;
       }
       if (!await dispatched) {throw new Error("The authenticated renderer did not complete and close its native ownership probe.");}
-      return captureReceipt(result, input.bindingSha256);
+      return parsedCapture(result, input.bindingSha256);
     } finally {
       await closeProbe();
     }
   }
 
   async function capture(input: ExecutionAuthorityCaptureInput): Promise<ExecutionAuthorityEvidence> {
+    const clockInput = structuredClone(input);
     lifecycleEpoch += 1;
     requireOwned();
     if (currentLaunch === undefined) {throw new Error("Windows authority needs an explicitly supervised EasyEDA launch.");}
@@ -401,7 +464,7 @@ export function createWindowsAuthoritySupervisor(
     usedCaptureBindings.add(input.bindingSha256);
     const receipt = useNativeProbe
       ? await nativeProbeCapture(input)
-      : captureReceipt(await transport.request({
+      : parsedCapture(await transport.request({
         action: "capture", bindingSha256: input.bindingSha256, runtimePid, socket,
       }), input.bindingSha256);
     requireOwned();
@@ -429,6 +492,13 @@ export function createWindowsAuthoritySupervisor(
       operationId: input.operationId, orphanPhase: input.orphanPhase, challengeAttempt: input.challengeAttempt,
       bridgeSessionSha256: sha256Json(input.bridgeSession), runtimeIdentitySha256: sha256Json(input.runtimeIdentity),
     });
+    if (canonicalJson(input) === canonicalJson(clockInput)) {
+      retainClock(evidence, captureClockBases.get(receipt), "capture", {
+        operationId: clockInput.operationId, phase: clockInput.orphanPhase, challengeAttempt: clockInput.challengeAttempt,
+        bindingSha256: clockInput.bindingSha256, bridgeSessionSha256: sha256Json(clockInput.bridgeSession),
+        runtimeIdentitySha256: sha256Json(clockInput.runtimeIdentity), authoritySha256: evidence.authoritySha256,
+      });
+    }
     return evidence;
   }
 
@@ -630,6 +700,11 @@ export function createWindowsAuthoritySupervisor(
         queuedWritesPersisted: "not-proved" as const, persistentWorkReplayExcluded: "not-proved" as const,
       };
       slot.proof = { ...payload, proofSha256: sha256Json(payload) };
+      retainClock(slot.proof, receipt, "termination", {
+        operationId: bound.operationId, phase: bound.phase, challengeAttempt: bound.challengeAttempt,
+        authoritySha256: retained.evidence.authoritySha256, closeIntentSha256: slot.intent.closeIntentSha256,
+        captureBindingSha256: retained.receipt.bindingSha256,
+      });
       slot.proofLifecycleEpoch = lifecycleEpoch;
       return exportClosedProof(bound, slot);
     } finally { slot.proofInFlight = false; }
@@ -650,6 +725,8 @@ export function createWindowsAuthoritySupervisor(
       }
       return proof;
     }
+    const clockObservation = originalClocks.get(slot.proof);
+    if (clockObservation !== undefined) { originalClocks.set(proof, clockObservation); }
     closedProofOwners.set(proof, {
       verify,
       async verifyCopy() {
@@ -698,6 +775,8 @@ export function createWindowsAuthoritySupervisor(
       };
       if (launch.root.role !== "easyeda-main") {throw new Error("Supervised launch root role is invalid.");}
       currentLaunch = structuredClone(launch);
+      retainClock(launch, response, "launch", { executable, executableSha256: policy.expectedExecutableSha256,
+        launchSha256: sha256Json(launch) });
       return launch;
     },
     async requestNormalClose(input) {
@@ -812,6 +891,44 @@ export async function startWindowsAuthoritySupervisor(options: WindowsAuthorityS
         after.mtimeMs !== before.mtimeMs || after.ctimeMs !== before.ctimeMs || after.nlink !== 1 || after.isSymbolicLink()) {
       throw new Error("Closed-session helper source changed during verification.");
     }
+  }
+  // Only this actual child path can qualify clock observations. The public
+  // Transport factory and caller-provided hashes never populate this registry.
+  let expectedHelperWindowsPath: string | undefined;
+  const distribution = process.env["WSL_DISTRO_NAME"];
+  if (/^\/mnt\/[a-z]\//u.test(options.helperPath)) {
+    expectedHelperWindowsPath = `${options.helperPath[5]?.toUpperCase()}:\\${options.helperPath.slice(7).replaceAll("/", "\\")}`;
+  } else if (distribution !== undefined && /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/u.test(distribution)) {
+    expectedHelperWindowsPath = `\\\\wsl.localhost\\${distribution}${options.helperPath.replaceAll("/", "\\")}`;
+  }
+  const sourceBinding = canonicalJson({ helperPath: options.helperPath, helperWindowsPath: options.helperWindowsPath,
+    powershellExecutable: options.powershellExecutable, reviewedExecutionScopeSha256: options.reviewedExecutionScopeSha256,
+    expectedExecutable: options.expectedExecutable, expectedExecutableSha256: options.expectedExecutableSha256 });
+  if (helperSha256 === REVIEWED_CLOCK_HELPER_SHA256 && expectedHelperWindowsPath === options.helperWindowsPath &&
+      options.powershellExecutable === "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe") {
+    const clocked = createClockedTransport(transport, { helperSourceSha256: helperSha256, executionScopeSha256: options.reviewedExecutionScopeSha256 });
+    const clockTransport = clocked.transport;
+    const availabilityMethod = clockTransport.assertClosedSessionAvailable, releaseMethod = clockTransport.release, requestMethod = clockTransport.request;
+    const assertTransport = (): void => {
+      if (clockTransport.request !== requestMethod || clockTransport.release !== releaseMethod ||
+          clockTransport.assertClosedSessionAvailable !== availabilityMethod || availabilityMethod === undefined) {
+        throw new Error("Source-qualified clock transport changed.");
+      }
+      availabilityMethod.call(clockTransport);
+    };
+    const currentSource = (): void => {
+          if (canonicalJson({ helperPath: options.helperPath, helperWindowsPath: options.helperWindowsPath,
+            powershellExecutable: options.powershellExecutable, reviewedExecutionScopeSha256: options.reviewedExecutionScopeSha256,
+            expectedExecutable: options.expectedExecutable, expectedExecutableSha256: options.expectedExecutableSha256 }) !== sourceBinding) {
+            throw new Error("Source-qualified clock helper binding changed.");
+          }
+          assertTransport();
+    };
+    qualifiedClockSources.set(clockTransport, { originalAttachment: clocked.originalAttachment, assertTransport,
+      async revalidate() {
+        currentSource(); await revalidateClosedSessionHelper(); currentSource();
+      } });
+    return createWindowsAuthoritySupervisor(clockTransport, { ...options, helperSha256, revalidateClosedSessionHelper });
   }
   return createWindowsAuthoritySupervisor(transport, { ...options, helperSha256, revalidateClosedSessionHelper });
 }

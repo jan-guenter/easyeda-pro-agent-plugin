@@ -6,6 +6,56 @@ Last updated: 2026-10-12 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Worker-bound compiler, clock and integrity fixes, locally verified
+
+- The internal worker-bound metadata compiler now checks the retained actor,
+  project, client, maximum ticket and fixed clock deadline before its sole
+  update. All574new maintained cases pass, as do159actor and25metadata cases.
+  The retained144paired comparisons prove unchanged historical compiler output;
+  a new run against the integrated source would not repeat that old/new proof.
+- The recorder publishes possible-mutation risk with edit-write intent in the
+  same verified successor. Two genuine old-code failures precede the corrected
+  76-case suite. Later phases cannot clear that conservative marker.
+- Source-owned Windows clock observations are integrated with the actual child
+  transport and original launch/capture/termination receipts. Public transport
+  factories, copied receipts and caller hashes cannot issue those observations.
+  The216focused maintained tests pass without ambient WSL configuration. Both
+  typechecks and strict type-aware lint pass. The diagnostic64-entry ring does
+  not discard original observation identities or stop long-running sessions.
+- The exact helper5a5095 compiled once on Windows and passed its empty-Job
+  probe, resultfe100be1. No EasyEDA app, profile or project was opened, no
+  application process was launched and no execution policy changed. Never
+  replay that completed check. This is not native writer validation.
+- Root private witness/write/SQL-stage tests are separate from maintained
+  coverage. Independent review reproduced a supplied-verifier substitution
+  that dispatched an altered plan. A fixed module-owned preparation assertion
+  replaces that trust. Further regressions reproduced mutable settled replies
+  at publication/cleanup boundaries. Startup, navigation, witness and writer
+  now retain and recheck the original reply before using it. The maintained
+  startup suite passes66cases. The private writer passes20isolated actual-stage
+  cases and the private SQL stages pass105cases, without a native writer call. Witness
+  collection remains locked-head-only pending exact-literal qualification.
+- Exact whole-artifact reads now hash raw bytes before fatal UTF-8 decoding.
+  A scheduled second-open substitution reproduced a lossy-decoding gap after
+  generic artifact verification; ordinary preexisting corruption already
+  refused. All143focused artifact/journal cases pass, including34new cases.
+  Generic paged display reads keep their prior behavior. Navigation also now
+  reloads the durable journal and synchronously rechecks its session/lease
+  before returning. All59navigation cases pass, including7new regressions.
+- Final full verification passes6867facade tests/oneplatformskip/zero failures
+  and424bridge tests, fullverifybe4b50ab. Allfourtypes, strict type-aware lint,
+  package and seven official skill checks pass. Pinned npmci succeeds; all151
+  registry signatures/40attestations verify with zero audit vulnerabilities.
+  Offline doctorf0452aba passes. Source237filesab524715/runtime3files5c8ea982
+  retain externalpins69a0bb0b unchanged. Rebuild0028efca preserves bundle bytes
+  and modes; staged repository/privacy checksb32ad906 pass. One trailing blank
+  line was removed after the full run; its77-case suite and strict lint pass
+  again. The earlier6822-case run55763f53 predates the integrity fixes.
+  No route, gate, API coverage classification, publication or installation changed.
+  Installed030626 remains unchanged. Complete coordinator, saved native content
+  read and disposable lifecycle validation remain unfinished. Production and
+  its record stay excluded; no CAD or native cleanup is pending.
+
 ### Copy, relaunch and startup local integration
 
 - Internal copy25/checkpoint-cap13 and relaunch24 maintained tests pass, with

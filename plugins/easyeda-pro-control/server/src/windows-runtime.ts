@@ -14,12 +14,13 @@ import type {
   RuntimeExecutionAuthorityValidator,
 } from "./engine.ts";
 import type { UpstreamEasyedaClient } from "./upstream.ts";
-import { startWindowsAuthoritySupervisor } from "./windows-authority.ts";
+import { startWindowsAuthoritySupervisor, windowsClockObservationForResult } from "./windows-authority.ts";
 import type {
   ClosedSessionBinding,
   ClosedSessionCloseIntent,
   ClosedSessionCloseReceipt,
   ClosedSessionTerminationProof,
+  IssuedWindowsClockObservation,
   WindowsAuthorityLaunch,
   WindowsAuthorityStartOptions,
   WindowsAuthoritySupervisor,
@@ -212,6 +213,9 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
   private readonly paths: WindowsRuntimePaths;
   private supervisor: WindowsAuthoritySupervisor | undefined;
   private currentLaunch: WindowsAuthorityLaunch | null = null;
+  private readonly clockLaunches = new WeakMap<WindowsAuthorityLaunch, {
+    readonly original: WindowsAuthorityLaunch; readonly snapshot: string; readonly supervisor: WindowsAuthoritySupervisor;
+  }>();
   private state: WindowsControlRuntimeStatus["state"] = "not-launched";
   private executableSha256: string | null = null;
   private readonly closedSessionLaunches = new Map<string, {
@@ -247,8 +251,24 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
       const launch = await this.supervisor.launch({ confirmLaunch: true });
       this.currentLaunch = structuredClone(launch);
       this.state = "owned";
-      return structuredClone(launch);
+      const returned = structuredClone(launch);
+      this.clockLaunches.set(returned, { original: launch, snapshot: canonicalJson(returned), supervisor: this.supervisor });
+      return returned;
     } catch (error) { this.state = "launch-unknown"; throw error; }
+  }
+
+  /** Exact original runtime return only. This reads a clock fact, never launches. */
+  public async clockObservationForLaunch(launch: WindowsAuthorityLaunch): Promise<IssuedWindowsClockObservation> {
+    const slot = this.clockLaunches.get(launch);
+    const current = (): void => {
+      if (slot === undefined || this.requireSupervisor() !== slot.supervisor ||
+          canonicalJson(launch) !== slot.snapshot || canonicalJson(this.currentLaunch) !== slot.snapshot) {
+        throw new Error("Runtime clock lookup requires the unchanged original current launch.");
+      }
+    };
+    current();
+    if (slot === undefined) { throw new Error("Original runtime clock launch is missing."); }
+    const observation = await windowsClockObservationForResult(slot.original, "launch"); current(); return observation;
   }
 
   private requireSupervisor(): WindowsAuthoritySupervisor {

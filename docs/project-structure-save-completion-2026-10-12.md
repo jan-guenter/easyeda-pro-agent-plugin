@@ -5,10 +5,12 @@
 The affected execution routes remain blocked. Internal source now includes
 retained whole-session captures, stable closed-file copies, a bounded complete
 SQL reader, an ordinary-symbol SQL comparator, startup/worker observations,
-an actor-bound symbol compiler, a cross-generation storage marker, a durable
-phase recorder and same-journal navigation. Full local verification passes
-5,993 facade tests with one platform skip and 424 bridge tests. Strict types,
-type-aware lint and reproducible-build checks pass.
+actor/worker-bound symbol compilers, a cross-generation storage marker, a durable
+phase recorder and same-journal navigation. The last completed full local run
+passed 6,867 facade tests with one platform skip and 424 bridge tests. Strict types
+and type-aware lint pass. This includes the reply-integrity and artifact-read
+fixes described below. Rebuild bytes/modes, repository/privacy checks and all
+seven official skill validations pass.
 None of those modules alone grants execution or proves a completed transaction.
 
 First-launch, authenticated-admission, normal-close and historical-copy stages
@@ -19,6 +21,28 @@ artifacts only and cannot reconstruct process authority after a restart.
 A standalone Windows PowerShell5.1 check compiled the private clock collector
 and exercised its wrapper with a fake dispatcher. It did not launch EasyEDA or
 establish the application's clock behavior.
+
+The source-owned clock issuer and its exact native helper are now integrated.
+All216focused portable cases pass, including original-receipt ownership,
+missing clocks, source drift and long sessions. The full helper also compiled
+once on Windows and passed an empty-Job probe without launching an application.
+These checks do not qualify a live APP clock or a completed metadata write.
+
+The worker-bound compiler adds574passing cases and retains the prior actor and
+legacy output contracts. The recorder now marks possible mutation durably with
+write intent. The first complete verification of this integration passes.
+Private witness/write/comparison stages remain separate, including an
+independently reproduced and corrected supplied-verifier substitution. The
+saved native content reader and final coordinator are still unfinished.
+
+Additional regressions reproduced changes to a settled reply after its original
+contents were published. The affected stages now retain and recheck the original
+reply. A new whole-artifact reader also hashes raw bytes before lossless UTF-8
+decoding, closing a demonstrated second-open substitution gap. All143focused
+artifact/journal tests,66startup tests and59navigation tests pass. Navigation
+also reloads its durable journal and rechecks session/lease state before return.
+The private writer and SQL-stage suites pass20 and105cases respectively, without
+performing a native edit. Those private stages are not yet packaged.
 
 The marker passed an isolated two-process test in a copied custom Electron
 runtime. That test used a synthetic app and dedicated storage, not the real

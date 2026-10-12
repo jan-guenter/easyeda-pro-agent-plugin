@@ -1,6 +1,8 @@
 /* oxlint-disable import/max-dependencies -- This integration test composes the actual recorder, engine and retained-process fixture with existing navigation contracts. */
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import fsPromises, { readFile } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
+import { basename } from "node:path";
 import { test } from "node:test";
 import { ClosedSymbolNavigationStage } from "../src/closed-symbol-navigation.ts";
 import { FAMILY, STEPS, appendClosedSymbolEvent, createClosedSymbolJournal, loadClosedSymbolJournal } from "../src/closed-symbol-journal.ts";
@@ -44,13 +46,14 @@ type StageEngine = ConstructorParameters<typeof ClosedSymbolNavigationStage>[0];
 type StageIo = NonNullable<ConstructorParameters<typeof ClosedSymbolNavigationStage>[2]>;
 interface FixtureState { nativeCalls: number; contextCalls: number; checkpointCalls: number; checkpointFailAt: number; runtimeDrift: boolean;
   transportFailure: boolean; readinessFailure: boolean; invalidAck: boolean; contextMismatch: boolean; preparedMismatch: boolean;
-  sessionDrift: boolean; leaseDrift: boolean; ackOverride: Value | undefined; onBoundary: ((boundary: string) => void) | undefined }
+  sessionDrift: boolean; leaseDrift: boolean; ackOverride: Value | undefined; onBoundary: ((boundary: string) => void) | undefined;
+  returned: { content: { type: string; text: string }[] } | undefined }
 async function fixture(phase: "edit-open" | "verify-open" = "edit-open"): Promise<{ journal: ClosedJournal; stage: ClosedSymbolNavigationStage; state: FixtureState; generation: Generation;
   owner: ReturnType<typeof closedSessionFixture>; engine: StageEngine; dispose: () => Promise<void> }> {
   const owner = closedSessionFixture();
   const launch = await owner.supervisor.launch({ confirmLaunch: true });
   const state: FixtureState = { nativeCalls: 0, contextCalls: 0, checkpointCalls: 0, checkpointFailAt: 0, runtimeDrift: false, transportFailure: false, readinessFailure: false, invalidAck: false, contextMismatch: false, preparedMismatch: false,
-    sessionDrift: false, leaseDrift: false, ackOverride: undefined, onBoundary: undefined };
+    sessionDrift: false, leaseDrift: false, ackOverride: undefined, onBoundary: undefined, returned: undefined };
   const identity = fingerprint(), runtime = { kind: "runtime-identity", generation: "synthetic-closed-nav-generation-1", timeOrigin: 1000, processId: 101 };
   const pinned = loadReviewedCompatibilityManifest().installedBundles;
   const session = { gatewayInstanceId: "g".repeat(43), sessionId: "s".repeat(43), sequence: 1, authenticationReceiptSha256: "2".repeat(64), authenticatedAtEpochMs: 1000 };
@@ -68,8 +71,9 @@ async function fixture(phase: "edit-open" | "verify-open" = "edit-open"): Promis
       state.nativeCalls += 1;
       state.onBoundary?.("native-return");
       if (state.transportFailure) { return Promise.reject(new Error("Synthetic uncertain navigation")); }
-      return Promise.resolve({ content: [{ type: "text", text: JSON.stringify(state.ackOverride ?? { schema: "easyeda-pro-control.recovery-navigation.v1", ok: !state.invalidAck,
-        openedProject: true, openedDocument: true, project: active.project, document: { ...active.document, tabId: state.contextMismatch ? "wrong" : active.document.tabId } }) }] });
+      const result = { content: [{ type: "text", text: JSON.stringify(state.ackOverride ?? { schema: "easyeda-pro-control.recovery-navigation.v1", ok: !state.invalidAck,
+        openedProject: true, openedDocument: true, project: active.project, document: { ...active.document, tabId: state.contextMismatch ? "wrong" : active.document.tabId } }) }] };
+      state.returned = result; return Promise.resolve(result);
     },
   };
   const real = new EasyedaControlEngine(upstream, { executionAuthorityValidator: owner.supervisor }); await real.controlFingerprintPromise;
@@ -149,6 +153,65 @@ void test("verification open binds ordinal two and its complete retained predece
     await assert.rejects(value.stage.openCompanion(value.journal, "verify-open", value.generation, checkpoint), /consumed/u);
   } finally { await value.dispose(); }
 });
+for (const phase of ["edit-open", "verify-open"] as const) {
+  void test(`navigation ${phase} refuses a durable append during its final runtime await`, async (context) => {
+    const value = await fixture(phase);
+    const callerSequence = value.journal.sequence;
+    const original = value.engine.runtimeIdentity.bind(value.engine);
+    let advanced = false;
+    context.mock.method(value.engine, "runtimeIdentity", async (...args: Parameters<typeof original>): ReturnType<typeof original> => {
+      const result = await original(...args);
+      if (!advanced && value.state.contextCalls >= 2) {
+        const loaded = await loadClosedSymbolJournal(value.journal.operationId);
+        assert.equal(loaded.events.at(-1)?.step, phase); assert.equal(loaded.events.at(-1)?.kind, "result");
+        await appendClosedSymbolEvent(loaded.journal, { step: phase === "edit-open" ? "edit-witness" : "verify-content-read", kind: "intent",
+          generation: value.generation, requestSha256: "f".repeat(64), data: { syntheticConcurrentAppend: true } });
+        advanced = true;
+      }
+      return result;
+    });
+    try {
+      await assert.rejects(value.stage.openCompanion(value.journal, phase, value.generation, checkpoint), /durable journal/u);
+      assert.equal(advanced, true); assert.equal(value.journal.sequence, callerSequence);
+      const retained = await loadClosedSymbolJournal(value.journal.operationId);
+      assert.equal(retained.journal.sequence, callerSequence + 3); assert.equal(retained.events.at(-1)?.kind, "intent");
+      assert.equal(value.state.nativeCalls, 1); assert.strictEqual(value.stage.originalReturn(value.journal.operationId, phase), value.state.returned);
+      await assert.rejects(value.stage.openCompanion(value.journal, phase, value.generation, checkpoint), /already consumed/u);
+    } finally { await value.dispose(); }
+  });
+}
+for (const drift of ["session", "lease"] as const) {
+  void test(`navigation rejects ${drift} drift during its final journal read`, async (context) => {
+    const value = await fixture();
+    const originalRuntime = value.engine.runtimeIdentity.bind(value.engine);
+    const originalOpen = fsPromises.open;
+    let armed = false, changed = false;
+    context.mock.method(value.engine, "runtimeIdentity", async (...args: Parameters<typeof originalRuntime>): ReturnType<typeof originalRuntime> => {
+      const result = await originalRuntime(...args);
+      if (value.state.contextCalls >= 2) { armed = true; }
+      return result;
+    });
+    context.mock.method(fsPromises, "open", async (...args: Parameters<typeof originalOpen>) => {
+      const handle = await originalOpen(...args);
+      if (armed && !changed && basename(String(args[0])) === `${value.journal.operationId}.json`) {
+        if (drift === "session") { value.state.sessionDrift = true; }
+        else { value.state.leaseDrift = true; }
+        changed = true;
+      }
+      return handle;
+    });
+    syncBuiltinESMExports();
+    try {
+      await assert.rejects(value.stage.openCompanion(value.journal, "edit-open", value.generation, checkpoint), /session|scope|changed/u);
+      assert.equal(changed, true); assert.equal(value.state.nativeCalls, 1);
+      assert.strictEqual(value.stage.originalReturn(value.journal.operationId, "edit-open"), value.state.returned);
+      const retained = await loadClosedSymbolJournal(value.journal.operationId);
+      assert.equal(retained.events.at(-1)?.step, "edit-open"); assert.equal(retained.events.at(-1)?.kind, "result");
+      await assert.rejects(value.stage.openCompanion(value.journal, "edit-open", value.generation, checkpoint), /already consumed/u);
+      assert.equal(value.state.nativeCalls, 1);
+    } finally { context.mock.restoreAll(); syncBuiltinESMExports(); await value.dispose(); }
+  });
+}
 for (const setting of ["readinessFailure", "contextMismatch", "invalidAck"] as const) {
   void test(`settled ${setting} retains the original return and cannot repeat Open`, async () => {
     const value = await fixture(); value.state[setting] = true;
@@ -185,6 +248,32 @@ for (const setting of ["runtimeDrift", "preparedMismatch"] as const) {
 
 const validAck = { schema: "easyeda-pro-control.recovery-navigation.v1", ok: true, openedProject: true, openedDocument: true,
   project: active.project, document: active.document };
+for (const boundary of ["publication", "cleanup"] as const) {
+  void test(`settled navigation reply mutation at ${boundary} refuses without another Open`, async (context) => {
+    const value = await fixture(); value.state.invalidAck = boundary === "publication";
+    let changed = false;
+    const mutate = (): void => {
+      const first = value.state.returned?.content[0]; assert.ok(first !== undefined); assert.equal(changed, false);
+      first.text = JSON.stringify({ ...validAck, openedProject: boundary === "publication" }); changed = true;
+    };
+    const originalLink = fsPromises.link;
+    if (boundary === "publication") {
+      context.mock.method(fsPromises, "link", async (...args: Parameters<typeof originalLink>): Promise<void> => {
+        await originalLink(...args); if (basename(String(args[1])) === "18-edit-open-result.json") { mutate(); }
+      }); syncBuiltinESMExports();
+    } else { value.owner.behavior.afterRequest = (action): void => { if (action === "release-capture") { mutate(); } }; }
+    try {
+      await assert.rejects(value.stage.openCompanion(value.journal, "edit-open", value.generation, checkpoint), /reply|changed/u);
+      assert.equal(changed, true); assert.equal(value.state.nativeCalls, 1);
+      assert.strictEqual(value.stage.originalReturn(value.journal.operationId, "edit-open"), value.state.returned);
+      const retained = await loadClosedSymbolJournal(value.journal.operationId);
+      assert.equal(retained.events.at(-1)?.kind, "result");
+      assert.equal(retained.journal.orphanedCallPossible, boundary === "publication");
+      await assert.rejects(value.stage.openCompanion(value.journal, "edit-open", value.generation, checkpoint), /consumed/u);
+      assert.equal(value.state.nativeCalls, 1);
+    } finally { context.mock.restoreAll(); syncBuiltinESMExports(); await value.dispose(); }
+  });
+}
 const badAcks: readonly [string, Value][] = [
   ["foreign project UUID", { ...validAck, project: { ...active.project, uuid: "e".repeat(64) } }],
   ["foreign project path", { ...validAck, project: { ...active.project, path: "/synthetic/other.eprj2" } }],
@@ -256,9 +345,28 @@ void test("cleanup failure retains the settled return and never grants another O
     await assert.rejects(value.stage.openCompanion(value.journal, "edit-open", value.generation, checkpoint));
     const retained = await loadClosedSymbolJournal(value.journal.operationId);
     assert.equal(retained.events.at(-1)?.kind, "result"); assert.equal(retained.journal.orphanedCallPossible, false);
+    assert.strictEqual(value.stage.originalReturn(value.journal.operationId, "edit-open"), value.state.returned);
     await assert.rejects(value.stage.openCompanion(value.journal, "edit-open", value.generation, checkpoint), /consumed/u);
     assert.equal(value.state.nativeCalls, 1);
   } finally { await value.dispose(); }
+});
+void test("failed navigation result publication retains the original reply before quarantine", async (context) => {
+  const value = await fixture();
+  const originalLink = fsPromises.link;
+  let injected = false;
+  context.mock.method(fsPromises, "link", async (...args: Parameters<typeof originalLink>): Promise<void> => {
+    if (basename(String(args[1])) === "18-edit-open-result.json") { injected = true; throw new Error("Synthetic result publication failure"); }
+    await originalLink(...args);
+  }); syncBuiltinESMExports();
+  try {
+    await assert.rejects(value.stage.openCompanion(value.journal, "edit-open", value.generation, checkpoint), /publication failure/u);
+    assert.equal(injected, true); assert.equal(value.state.nativeCalls, 1);
+    assert.strictEqual(value.stage.originalReturn(value.journal.operationId, "edit-open"), value.state.returned);
+    const retained = await loadClosedSymbolJournal(value.journal.operationId);
+    assert.equal(retained.events.at(-1)?.kind, "intent"); assert.equal(retained.journal.orphanedCallPossible, true);
+    await assert.rejects(value.stage.openCompanion(value.journal, "edit-open", value.generation, checkpoint), /consumed/u);
+    assert.equal(value.state.nativeCalls, 1);
+  } finally { context.mock.restoreAll(); syncBuiltinESMExports(); await value.dispose(); }
 });
 for (const boundary of ["capture", "native-return"]) {
   void test(`existing peer substitution at ${boundary} cannot redirect any journal write`, async () => {

@@ -1,4 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This transaction coordinator imports the separately audited native profile and upload barrier; a dependency-count cap is not a safety boundary. */
+import { windowsClockObservationForResult } from "./windows-authority.ts";
+import type { IssuedWindowsClockObservation } from "./windows-authority.ts";
 import {
   OPERATION_SCHEMA,
   assertSubset,
@@ -2105,7 +2107,14 @@ export class EasyedaControlEngine {
   private readonly closedCaptureAttempts = new Set<string>();
   private readonly closedCaptures = new WeakMap<ClosedSessionAuthorityCapture, {
     readonly snapshot: ClosedSessionAuthorityCapture;
+    readonly originalExecutionAuthority: ExecutionAuthorityEvidence;
+    readonly validator: RuntimeExecutionAuthorityValidator;
     releasing: boolean;
+  }>();
+  private readonly trackedClockCaptures = new WeakMap<TrackedDispatchOperationJournal, {
+    readonly operationId: string; readonly phase: string; readonly original: ExecutionAuthorityEvidence;
+    readonly snapshot: string; readonly validator: RuntimeExecutionAuthorityValidator;
+    readonly runtimeSnapshot: string; readonly sessionSnapshot: string; readonly challengeAttempt: number;
   }>();
   public readonly upstream: UpstreamClient;
   public readonly privateComponentWriterValidated: boolean;
@@ -2204,7 +2213,7 @@ export class EasyedaControlEngine {
         throw new Error("Closed-session capture changed native runtime identity.");
       }
       const receipt = Object.freeze({ operationId, phase, challengeAttempt, bridgeSession, runtimeIdentity, executionAuthority });
-      this.closedCaptures.set(receipt, { snapshot: structuredClone(receipt), releasing: false });
+      this.closedCaptures.set(receipt, { snapshot: structuredClone(receipt), originalExecutionAuthority: result, validator, releasing: false });
       return receipt;
     } catch (error) {
       if (captured !== undefined) {
@@ -2213,6 +2222,38 @@ export class EasyedaControlEngine {
       }
       throw error;
     }
+  }
+
+  /** Read-only clock lookup through this engine's original capture token. */
+  public async clockObservationForClosedCapture(receipt: ClosedSessionAuthorityCapture): Promise<IssuedWindowsClockObservation> {
+    const slot = this.closedCaptures.get(receipt);
+    const current = (): void => {
+      if (slot === undefined || slot.releasing || this.closedCaptures.get(receipt) !== slot ||
+          this.executionAuthorityValidator !== slot.validator || canonicalJson(receipt) !== canonicalJson(slot.snapshot)) {
+        throw new Error("Clock lookup requires this engine's unchanged original closed capture.");
+      }
+    };
+    current();
+    if (slot === undefined) { throw new Error("Original closed clock capture is missing."); }
+    const observation = await windowsClockObservationForResult(slot.originalExecutionAuthority, "capture"); current(); return observation;
+  }
+
+  /** Original working journal only; a loaded copy does not recover clock authority. */
+  public async clockObservationForTrackedDispatch(operation: TrackedDispatchOperationJournal, phase: string): Promise<IssuedWindowsClockObservation> {
+    const slot = this.trackedClockCaptures.get(operation);
+    const current = (): void => {
+      if (slot === undefined || slot.operationId !== operation.operationId || slot.phase !== phase ||
+          this.trackedClockCaptures.get(operation) !== slot || this.executionAuthorityValidator !== slot.validator ||
+          canonicalJson(operation.executionAuthorityBeforeOrphan) !== slot.snapshot || operation.orphanedCallPhase !== phase ||
+          !operation.orphanedCallPossible || operation.runtimeRestartChallengeAttempt !== slot.challengeAttempt ||
+          canonicalJson(operation.runtimeIdentityBeforeOrphan) !== slot.runtimeSnapshot ||
+          canonicalJson(operation.bridgeSessionBeforeOrphan) !== slot.sessionSnapshot) {
+        throw new Error("Clock lookup requires this engine's original operation-bound dispatch capture.");
+      }
+    };
+    current();
+    if (slot === undefined) { throw new Error("Original tracked clock capture is missing."); }
+    const observation = await windowsClockObservationForResult(slot.original, "capture"); current(); return observation;
   }
 
   /** Release only this engine's original receipt, after all closed copies.
@@ -2286,17 +2327,13 @@ export class EasyedaControlEngine {
         bridgeDispatch,
         runtimeIdentity,
       });
-      const executionAuthority = executionAuthorityPayload(
-        await validator.capture({
-          bindingSha256,
-          bridgeSession,
-          challengeAttempt,
-          operationId: operation.operationId,
-          orphanPhase: phase,
-          runtimeIdentity,
-        }),
-        bindingSha256,
-      );
+      const originalExecutionAuthority = await validator.capture({
+        bindingSha256, bridgeSession, challengeAttempt, operationId: operation.operationId, orphanPhase: phase, runtimeIdentity,
+      });
+      const executionAuthority = executionAuthorityPayload(originalExecutionAuthority, bindingSha256);
+      this.trackedClockCaptures.set(operation, { operationId: operation.operationId, phase, original: originalExecutionAuthority,
+        snapshot: canonicalJson(executionAuthority), validator, challengeAttempt,
+        runtimeSnapshot: canonicalJson(runtimeIdentity), sessionSnapshot: canonicalJson(bridgeSession) });
       capturedAuthority = executionAuthority;
       operation.runtimeIdentityBeforeOrphan = runtimeIdentity;
       operation.bridgeSessionBeforeOrphan = bridgeSession;

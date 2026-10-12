@@ -54,6 +54,34 @@ void test("initial journal precedes the first launch and restores no authority",
   for (const name of ["executionAuthorized", "resumeAuthorized", "replayAllowed", "authorityRestored", "completionProved"]) { assert.equal(result[name], false); }
   assert.deepEqual(await bytes(journal), before);
 });
+void test("write intent durably retains possible mutation before dispatch and later phases never clear it", async () => {
+  const journal = await fixture(20);
+  assert.equal(journal.mutationMayHaveOccurred, false);
+  await appendClosedSymbolEvent(journal, input(journal));
+  assert.equal(journal.sequence, 21);
+  assert.equal(journal.mutationMayHaveOccurred, true);
+  const retained = await loadClosedSymbolJournal(journal.operationId);
+  assert.equal(retained.journal.mutationMayHaveOccurred, true);
+  while (journal.sequence < STEPS.length * 2) {
+    await appendClosedSymbolEvent(journal, input(journal));
+    assert.equal(journal.mutationMayHaveOccurred, true);
+  }
+  assert.equal(journal.saved, false); assert.equal(journal.reopened, false);
+});
+void test("a cleared possible-mutation marker after write intent refuses historical inspection", async () => {
+  const journal = await fixture(21);
+  journal.mutationMayHaveOccurred = false;
+  await updateOperation(journal);
+  await assert.rejects(loadClosedSymbolJournal(journal.operationId), /write intent lost its possible-mutation marker/u);
+});
+void test("conservative earlier mutation risk remains retained by the data recorder", async () => {
+  const journal = await fixture();
+  journal.mutationMayHaveOccurred = true;
+  await updateOperation(journal);
+  await appendClosedSymbolEvent(journal, input(journal));
+  const retained = await loadClosedSymbolJournal(journal.operationId);
+  assert.equal(retained.journal.mutationMayHaveOccurred, true);
+});
 void test("all forty-four fixed events remain historical data, not completed execution", async () => {
   const journal = await fixture(STEPS.length * 2); const before = await bytes(journal);
   assert.equal(journal.state, "closed-session-evidence-recorded"); assert.equal(journal.saved, false); assert.equal(journal.reopened, false);
