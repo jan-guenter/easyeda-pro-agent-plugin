@@ -1,8 +1,9 @@
 # Candidate 013324
 
 `0.3.0+codex.20261012013324` retains the final flat-connectivity observations
-that earlier executors verified but discarded. It is a source candidate;
-publication, installation and connected validation are not yet claimed.
+that earlier executors verified but discarded. It is published and installed
+from the Git marketplace after exact-payload CI and offline installation checks.
+Connected validation of this generation remains unclaimed.
 EasyEDA remains closed. No design, preference, Save or navigation call was made.
 
 ## Evidence retention
@@ -86,3 +87,42 @@ repository validation and exact bundle reproduction.
 
 New installed connected evidence will require a fresh host and a new disposable
 operation, never replay of completed historical transactions.
+
+## Publication and installation
+
+Payload `8a88b8030918310231986bdaea7b2a0eaa69f599` is published on
+`feature/api-execution-coverage`, package tree
+`de291d659a4d6554cabab0c563ca67aa1b7382e3`.
+[Required CI38193153478](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38193153478)
+passed 3,739 facade tests with four platform skips and zero failures, plus
+424 bridge tests. Local verification covers the three Windows-dependent cases
+unavailable on the runner. All CI build, audit and packaging steps passed.
+Final local verification log commitment is
+`8296b6729a9f4046d628e2e555dd09fb97d7251960951d66678af5e0639487d2`.
+
+The official named Git-marketplace upgrade under installer umask022 installed
+and enabled `0.3.0+codex.20261012013324` from
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`. It returned no
+errors or stderr; the marketplace checkout matches the exact payload commit.
+No cache or configuration was manually patched.
+
+The reviewed installed verifier passed once. All 636 files, 17,048,335 bytes
+and committed modes match, with no extras or changes during the probe.
+Inventory commitment is
+`5aaad5393cd8c9b268b25a652ef3f7396f24efa793ffbbf5b92e284566f6a26d`;
+complete private proof commitment is
+`8df41e3c74f0667c9549fa77da2419e0413ab5598fcd49be24f7caca45a861b4`.
+The installed source and evidence guide match their independently reviewed
+hashes. This is packaged-source evidence, not a created lifecycle observation.
+
+Actual configured offline startup hands ambient Node26.7.0 to pinned24.18.0.
+Across 843 process samples no upstream child or nonstdio socket was observed;
+the forbidden-upstream sentinel remained absent. Complete discovery verifies
+26 tools/seven skills, 749/806 SDK signatures, 108/68 operation schemas,
+774 methods and 182 readers including 21 native equivalents, with unchanged
+historical-case scope. No reader, writer, native UI, Save or navigation ran.
+
+The host-owned000206 process remains untouched. The extension-development
+release workflow requires a fresh Codex chat before connected work on013324.
+PR9 remains draft because the broader API implementation/validation task is
+unfinished. Production and its record remain excluded.

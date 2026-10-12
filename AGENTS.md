@@ -6,7 +6,26 @@ Last updated: 2026-10-12 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
-### Candidate013324 final flat observations, publication in progress
+### Candidate013324 published and installed; fresh host required
+
+- Payload8a88b8030918310231986bdaea7b2a0eaa69f599 passed required
+  [CI38193153478](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38193153478):
+  3739facade passes/fourplatformskips/zerofailures and424bridge passes. Local
+  final3742passes/oneskip cover the three extra Windows cases. All CI steps and
+  packaging passed; subtree de291d659a4d6554cabab0c563ca67aa1b7382e3.
+- Official named Git-marketplace upgrade under022 installed/enabled013324,
+  errors[]/emptystderr. Exact636files/17048335bytes/modes match; inventory5aaad539,
+  installedproof8df41e3c. ActualconfiguredNode26.7-to-24.18 startup passes
+  26tools/sevenskills/749+806signatures/108+68schemas/774methods/182readers/21native;
+  843samples show no upstreamchild/nonstdio socket and sentinelabsent. No
+  live calls, CAD, Save, navigation, cachepatch or ownertermination.
+- Loaded2569150 remains000206. Start freshCodex before013324livevalidation;
+  do not replay completed operations to fill historical raw-observation gaps.
+  PrivateNEXT-013324.md4aa5fac0 and updatedRESUME retain the next new disposable
+  case and broader coverage priorities. PR9 remains draft; this evidence fix
+  adds no methods or connected claims. Production and its record stay excluded.
+
+### Candidate013324 source acceptance before publication
 
 - Restarted host2569150/start196399339 loads installed000206. Independent
   process/disk auditcdc761db passes exact633files/17006218bytes/modes, stable
@@ -2022,7 +2041,8 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Git-marketplace `0.3.0+codex.20261012000206` is published and installed/enabled after exact-head CI38187143546. All633files/17006218bytes/modes match payloadac9f0a7, package subtree369d8572; offline proofc146a756 passes. Loaded facade2527645 remains independently admitted220050, not000206; use a fresh Codex host before connected work. The220050 font case and omitted-lock three-segment wire forward/reverse saved/reopened pair pass their scoped proofs. Both disposable fixtures are closed; final flat sourcec9e04b15/checkpoint621cb2f6/database471d6b9e/logicalea3da0fa are verified. Original source geometry is restored, not original SQLite history. Closed verifier11 and all-nine-root metadata41 pass. The earlier authorized UI action/private comparison9bf4428a established pcbCommandTab false to true in browser and one anonymous SQL residual without identifying the current user. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission. The installed historical-case index grants no live authority or current-generation validation.
+- Current Git-marketplace013324 is published and installed/enabled after exact-payload CI38193153478. All636files/17048335bytes/modes match8a88b803, with offline proof8df41e3c. Loaded2569150 remains000206; use a fresh Codex host before connected validation. Final raw flat-observation retention is implemented and source-tested, not live-validated on013324. No CAD/Save is pending; never replay completed historical operations. Broader API work and PR9 remain unfinished; production and its record stay excluded.
+- Historical000206 installation record, superseded by the current entry: Git-marketplace `0.3.0+codex.20261012000206` is published and installed/enabled after exact-head CI38187143546. All633files/17006218bytes/modes match payloadac9f0a7, package subtree369d8572; offline proofc146a756 passes. Loaded facade2527645 remains independently admitted220050, not000206; use a fresh Codex host before connected work. The220050 font case and omitted-lock three-segment wire forward/reverse saved/reopened pair pass their scoped proofs. Both disposable fixtures are closed; final flat sourcec9e04b15/checkpoint621cb2f6/database471d6b9e/logicalea3da0fa are verified. Original source geometry is restored, not original SQLite history. Closed verifier11 and all-nine-root metadata41 pass. The earlier authorized UI action/private comparison9bf4428a established pcbCommandTab false to true in browser and one anonymous SQL residual without identifying the current user. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission. The installed historical-case index grants no live authority or current-generation validation.
 - Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct. Installed164600 passed scoped PCB Text readers/create/delete and empty free-SCH creation;204104 passed system-library UUID, schematic Text/Wire readers with both mixed caller orders, and independently visible pointer-only hover. Installed220050 adds configured-font R09 and sealed-wire C04/C05 exact-case evidence. Unsaved wire rollback, failure recovery, broader wire shapes, literal-false connected input and later generations remain separate. The connected ledger records scope, not whole SDK contracts. Never access production or its project record. The user's continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation, not relaxed technical safety checks or unrelated changes.
 - The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
