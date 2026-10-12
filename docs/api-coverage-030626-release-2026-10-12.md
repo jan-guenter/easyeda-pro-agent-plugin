@@ -3,8 +3,8 @@
 `0.3.0+codex.20261012030626` includes the Unicode reader fixes and scoped wire
 validation record from [024750](api-coverage-024750-release-2026-10-12.md), plus
 a correction for native metadata and geometry-write lifecycles. Full local
-verification has passed. This candidate is not yet published or installed.
-Exact-head CI and official installation follow local acceptance. The original
+verification and exact-head CI passed; the official Git marketplace installed
+and enabled this version. Installed offline checks passed. The original
 eight-action restriction alone was not an exhaustive fix for native structure persistence.
 
 ## Why installation was held
@@ -129,10 +129,41 @@ Frozen identities:
 - Full verification log: `b676b49580fa8f5e3bf71e2eb8cc4e80e917f326ceda5eec2e47f83dc7b4d594`.
 - Hostile-fd log: `84e31f13e8d79e0d8568d0cbba9418b4174aa269b8cef9bd26127e9594e4332f`.
 
-External compatibility pins are unchanged. Exact-head CI and official
-marketplace installation remain to be recorded. The completed013324 wire
+External compatibility pins are unchanged. The completed013324 wire
 transactions retain their scoped historical evidence only. EasyEDA is closed;
 no CAD, Save or navigation call is pending. Production remains excluded.
+
+## Publication and installed verification
+
+Payload `6535cfadf9a67ef0a4beae495467ccf07f8f6c32` is published on
+`feature/api-execution-coverage` in draft [PR9](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/9).
+Required [CI38202074298](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38202074298)
+passed 4,025 facade tests with five platform skips and zero failures, plus 424
+bridge tests. All build, audit and package steps passed. Local verification
+also exercised the mounted-source and Windows cases absent on CI.
+Package subtree: `5f9bbb1b8379e1c4fd9c6b29a411cd270c2c810e`.
+
+The official named upgrade from
+[the Git marketplace](https://github.com/jan-guenter/easyeda-pro-agent-plugin.git)
+installed and enabled this version with no errors. All 652 files, 17,001,549
+bytes and committed permissions match the payload. The marketplace checkout
+matches the same commit. The installed probe used the configured entrypoint,
+including its ambient Node 26.7 to pinned Node 24.18 handoff.
+
+The probe verified 26 tools, seven skills, both SDK signature catalogs, all
+operation schemas and the complete coverage inventory. It checked all 108
+design descriptors, the eight metadata restrictions, rejected policy overrides
+and 20 actual fresh-handler refusals. No journal was created. Across 933
+process observations, no upstream child or non-stdio socket was observed, and
+the synthetic upstream sentinel stayed absent. Installed files stayed unchanged.
+These are offline checks, not connected runtime or native completion evidence.
+
+- Installed inventory: `2d1d67aa4793f0d3196b7ce115964fa8a77625b5e1cd42f1be5164d05042b594`.
+- Installed proof: `fc6c5e6a54e9954efc936ac300f1ffcbda58e2399d8a204b4796ba57deeaf563`.
+- CI log: `ca0cbd463e206e45c91e9e91ae514efa9a708be3c28bd6c482e7a2ce436f474b`.
+
+No live call followed installation. A fresh Codex host is required before
+connected work. No loaded cache or owner was modified or terminated.
 
 ## Work after containment
 
