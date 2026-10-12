@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "9d1981eb1c952a1b01950533c503b6fe13bd98eb79348c3ccd3c22dfa110f1fe";
+const __easyedaBundlePairId = "b3439e7e0475549e0708262ef28efabc4ca4f683195a421d3d19b9d4bba22c4f";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -32994,7 +32994,14 @@ var init_project_upload_barrier = __esm({
 });
 
 // server/src/metadata-native-diagnostics.ts
-var METADATA_NATIVE_GUARD_CODES, DOCUMENT_RENAME_NATIVE_GUARD_CODES, PCB_CREATE_NATIVE_GUARD_CODES, SCHEMATIC_CREATE_NATIVE_GUARD_CODES, METADATA_NATIVE_DIAGNOSTIC_CATCH;
+function diagnosticCatch(codes4) {
+  return `let code='EXCEPTION';try{
+const descriptor=error!==null&&(typeof error==='object'||typeof error==='function')?Object.getOwnPropertyDescriptor(error,'message'):undefined;
+const message=descriptor&&Object.hasOwn(descriptor,'value')?descriptor.value:undefined;
+if(typeof message==='string'&&${JSON.stringify(codes4)}.includes(message))code=message;
+}catch(_){};`;
+}
+var METADATA_NATIVE_GUARD_CODES, DOCUMENT_RENAME_NATIVE_GUARD_CODES, PCB_CREATE_NATIVE_GUARD_CODES, SCHEMATIC_CREATE_NATIVE_GUARD_CODES, SYMBOL_ACTOR_NATIVE_GUARD_CODES, METADATA_NATIVE_DIAGNOSTIC_CATCH, SYMBOL_ACTOR_NATIVE_DIAGNOSTIC_CATCH;
 var init_metadata_native_diagnostics = __esm({
   "server/src/metadata-native-diagnostics.ts"() {
     METADATA_NATIVE_GUARD_CODES = [
@@ -33041,11 +33048,9 @@ var init_metadata_native_diagnostics = __esm({
     DOCUMENT_RENAME_NATIVE_GUARD_CODES = [...METADATA_NATIVE_GUARD_CODES, "DOCUMENT_METADATA", "EDITOR_FRAME_STATE"];
     PCB_CREATE_NATIVE_GUARD_CODES = [...DOCUMENT_RENAME_NATIVE_GUARD_CODES, "PCB_MEMBERSHIP"];
     SCHEMATIC_CREATE_NATIVE_GUARD_CODES = [...DOCUMENT_RENAME_NATIVE_GUARD_CODES, "SCHEMATIC_MEMBERSHIP"];
-    METADATA_NATIVE_DIAGNOSTIC_CATCH = `let code='EXCEPTION';try{
-const descriptor=error!==null&&(typeof error==='object'||typeof error==='function')?Object.getOwnPropertyDescriptor(error,'message'):undefined;
-const message=descriptor&&Object.hasOwn(descriptor,'value')?descriptor.value:undefined;
-if(typeof message==='string'&&${JSON.stringify(METADATA_NATIVE_GUARD_CODES)}.includes(message))code=message;
-}catch(_){};`;
+    SYMBOL_ACTOR_NATIVE_GUARD_CODES = [...METADATA_NATIVE_GUARD_CODES, "ACTOR_DRIFT"];
+    METADATA_NATIVE_DIAGNOSTIC_CATCH = diagnosticCatch(METADATA_NATIVE_GUARD_CODES);
+    SYMBOL_ACTOR_NATIVE_DIAGNOSTIC_CATCH = diagnosticCatch(SYMBOL_ACTOR_NATIVE_GUARD_CODES);
   }
 });
 
@@ -34535,7 +34540,15 @@ var init_native_diagnostics = __esm({
       "PCB_COMMAND_TAB_WRITE_REQUIRED",
       "PCB_COMMAND_TAB_NOT_BOOLEAN"
     ].map((code) => [`Document activation refused: ${stage}:${code}`, `native-document-activation:${stage}:${code}`])));
-    metadataGuardCategories = new Map(operationStages.filter(({ category }) => category === "native-page-rename" || category === "native-symbol-metadata" || category === "native-document-rename").flatMap(({ prefix, category, stages: stages3 }) => stages3.flatMap((stage) => (category === "native-document-rename" ? DOCUMENT_RENAME_NATIVE_GUARD_CODES : METADATA_NATIVE_GUARD_CODES).map((code) => [`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`]))));
+    metadataGuardCategories = new Map(operationStages.filter(({ category }) => category === "native-page-rename" || category === "native-symbol-metadata" || category === "native-document-rename").flatMap(({ prefix, category, stages: stages3 }) => {
+      let guardCodes = METADATA_NATIVE_GUARD_CODES;
+      if (category === "native-document-rename") {
+        guardCodes = DOCUMENT_RENAME_NATIVE_GUARD_CODES;
+      } else if (category === "native-symbol-metadata") {
+        guardCodes = SYMBOL_ACTOR_NATIVE_GUARD_CODES;
+      }
+      return stages3.flatMap((stage) => guardCodes.map((code) => [`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`]));
+    }));
     for (const { prefix, category, stages: stages3 } of operationStages.filter((entry) => entry.category === "native-pcb-create")) {
       for (const stage of stages3) {
         for (const code of PCB_CREATE_NATIVE_GUARD_CODES) {
@@ -69692,6 +69705,12 @@ var init_library_persistence_proof = __esm({
 
 // server/src/editor-tabs.ts
 function buildEditorTargetAbsentExpression(input) {
+  return compileEditorTargetAbsentExpression(input, false);
+}
+function buildActorBoundEditorTargetAbsentExpression(input) {
+  return compileEditorTargetAbsentExpression(input, true);
+}
+function compileEditorTargetAbsentExpression(input, actorBound) {
   const identity21 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
   const active = external_exports.object({
     uuid: identity21,
@@ -69706,7 +69725,7 @@ function buildEditorTargetAbsentExpression(input) {
   return `(async()=>{
 const scope=${JSON.stringify(scope3)},editor=eda.dmt_EditorControl;
 if(typeof editor?.getSplitScreenTree!=='function')throw new Error('EDITOR_TABS_API_MISSING');
-const tree=await editor.getSplitScreenTree(),pending=[{value:tree,depth:0}],seen=new Set(),tabIds=new Set();let tabCount=0,activeCount=0;
+const tree=await ${actorBound ? "actorAwait(()=>editor.getSplitScreenTree())" : "editor.getSplitScreenTree()"},pending=[{value:tree,depth:0}],seen=new Set(),tabIds=new Set();let tabCount=0,activeCount=0;
 while(pending.length){const item=pending.pop(),node=item.value;
 if(!node||typeof node!=='object'||Array.isArray(node)||seen.has(node)||item.depth>16||seen.size>=128)throw new Error('EDITOR_TABS_TREE_BOUND');
 seen.add(node);
@@ -71392,6 +71411,33 @@ var init_device_create = __esm({
   }
 });
 
+// server/src/symbol-dual-actor.ts
+var ACTOR_NAME_MAX_CODE_UNITS, SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE;
+var init_symbol_dual_actor = __esm({
+  "server/src/symbol-dual-actor.ts"() {
+    ACTOR_NAME_MAX_CODE_UNITS = 1024;
+    SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE = `
+ const cookies=own(host,'globalVariableCookieData'),actor=own(cookies,'userInfo');
+ const startupActor=own(host,'loginedUserInfo');
+ const actorProject=value=>{
+  if(value===null||typeof value!=='object'||Array.isArray(value))bad();
+  const uuid=own(value,'uuid'),username=own(value,'username'),nickname=own(value,'nickname');
+  if(typeof uuid!=='string'||!/^[a-f0-9]{32}$/.test(uuid)||typeof username!=='string'||username.length===0||username.length>${ACTOR_NAME_MAX_CODE_UNITS}||typeof nickname!=='string'||nickname.length>${ACTOR_NAME_MAX_CODE_UNITS})bad();
+  return{uuid,username,nickname};
+ };
+ const startupActorProjection=actorProject(startupActor),cachedActorProjection=actorProject(actor);
+ const actorEqual=(left,right)=>left.uuid===right.uuid&&left.username===right.username&&left.nickname===right.nickname;
+ const normalizedStartup={...startupActorProjection,nickname:startupActorProjection.nickname||''};
+ if(!actorEqual(normalizedStartup,cachedActorProjection))bad();
+ const actorUuid=cachedActorProjection.uuid;
+ const checkDualActor=()=>{
+  if(own(host,'globalVariableCookieData')!==cookies||own(cookies,'userInfo')!==actor||own(host,'loginedUserInfo')!==startupActor)bad();
+  if(!actorEqual(actorProject(startupActor),startupActorProjection)||!actorEqual(actorProject(actor),cachedActorProjection))bad();
+ };
+`;
+  }
+});
+
 // server/src/project-symbol-metadata.ts
 function projectSymbolMetadataOperation(input) {
   const operation = libraryOperationSchema.parse(input);
@@ -71477,6 +71523,9 @@ function prepareProjectSymbolMetadata(input, history) {
   });
 }
 function buildProjectSymbolMetadataExpression(input, context2) {
+  return compileProjectSymbolMetadataExpression(input, context2);
+}
+function compileProjectSymbolMetadataExpression(input, context2, actor) {
   const plan = planSchema.parse(input);
   if ((context2.project.uuid ?? context2.project.projectUuid) !== plan.projectUuid || context2.project.uuid !== void 0 && context2.project.projectUuid !== void 0 && context2.project.uuid !== context2.project.projectUuid || context2.document.uuid !== void 0 && context2.document.documentUuid !== void 0 && context2.document.uuid !== context2.document.documentUuid) {
     throw new Error("Symbol closed-target context differs from its exact project/document identity.");
@@ -71486,11 +71535,32 @@ function buildProjectSymbolMetadataExpression(input, context2) {
   if (ownership.parentProjectUuid !== void 0 && ownership.parentProjectUuid !== plan.projectUuid || ownership.parentLibraryUuid !== void 0 && (![2, 4].includes(active.documentType) || ownership.parentLibraryUuid !== plan.ownerUuid)) {
     throw new Error("Symbol closed-target context has contradictory active-document ownership.");
   }
-  const targetClosed = buildEditorTargetAbsentExpression({ targetUuid: plan.targetUuid, projectUuid: plan.projectUuid, ownerUuid: plan.ownerUuid, active });
+  const targetClosed = (actor === void 0 ? buildEditorTargetAbsentExpression : buildActorBoundEditorTargetAbsentExpression)({ targetUuid: plan.targetUuid, projectUuid: plan.projectUuid, ownerUuid: plan.ownerUuid, active });
+  const actorSetup = actor === void 0 ? "" : `
+const expectedActor=${JSON.stringify(actor)},actorRoot=globalThis;
+const bad=()=>{throw new Error('ACTOR_DRIFT');};
+const own=(owner,key)=>{
+ if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();
+ const field=Object.getOwnPropertyDescriptor(owner,key);if(!field||!Object.hasOwn(field,'value'))bad();return field.value;
+};
+if(actorRoot.top!==actorRoot||actorRoot.window!==actorRoot||own(actorRoot,'gVars')!==host)bad();
+const actorLocation=actorRoot.location,actorHref=actorLocation?.href,actorDocument=actorRoot.document,actorMode=own(actorRoot,'PRO_EDITOR_MODE');
+if(typeof actorHref!=='string'||!new RegExp(${JSON.stringify(String.raw`^https://client/editor\?cll=(?:trace|debug|info|warn|error)#?$`)}).test(actorHref)||actorLocation.origin!=='https://client'||!actorDocument||actorDocument.defaultView!==actorRoot||actorDocument.nodeType!==9||actorDocument.URL!==actorHref)bad();
+if(actorMode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&actorMode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM')bad();
+${SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE}
+if(!actorEqual(startupActorProjection,expectedActor)||!actorEqual(cachedActorProjection,expectedActor))bad();
+const actorGuard=()=>{
+ if(actorRoot.top!==actorRoot||actorRoot.window!==actorRoot||own(actorRoot,'gVars')!==host||actorRoot.location!==actorLocation||actorLocation.href!==actorHref||actorLocation.origin!=='https://client'||actorRoot.document!==actorDocument||actorDocument.defaultView!==actorRoot||actorDocument.nodeType!==9||actorDocument.URL!==actorHref||own(actorRoot,'PRO_EDITOR_MODE')!==actorMode)bad();
+ checkDualActor();
+};
+const actorAwait=async(call)=>{actorGuard();try{return await call();}finally{actorGuard();}};
+actorGuard();
+`;
+  const actorCall = (call) => actor === void 0 ? call : `actorAwait(()=>${call})`;
   return `(async()=>{let stage='host';try{
 const PLAN=${JSON.stringify(plan)},ACTIVE=${JSON.stringify(active)},OWNERSHIP=${JSON.stringify(ownership)};
 ${DEVICE_NATIVE_HOST_GUARD}
-${NATIVE_PROJECT_PLACEHOLDER_PREDICATE}
+${NATIVE_PROJECT_PLACEHOLDER_PREDICATE}${actorSetup}
 const localUI=globalThis.UI,outerUI=globalThis.top?.UI;
 if(localUI!=null&&outerUI!=null&&localUI!==outerUI)throw new Error('UI_AMBIGUOUS');
 const ui=localUI??outerUI,permission=ui?.concurrentDesign,tabs=ui?.tabBar;
@@ -71524,40 +71594,40 @@ if(tab.tabId===ACTIVE.tabId){if(id!==ACTIVE.uuid||type!==ACTIVE.documentType)thr
 }if(all.length-placeholderCount>256)throw new Error('TAB_SCOPE');if(activeCount!==1)throw new Error('ACTIVE_TAB');
 };
 const assertContext=async()=>{
-const project=await eda.dmt_Project.getCurrentProjectInfo();
-const document=await eda.dmt_SelectControl.getCurrentDocumentInfo();
+const project=await ${actorCall("eda.dmt_Project.getCurrentProjectInfo()")};
+const document=await ${actorCall("eda.dmt_SelectControl.getCurrentDocumentInfo()")};
 if((project?.uuid??project?.projectUuid)!==PLAN.projectUuid||(project.uuid!==undefined&&project.projectUuid!==undefined&&project.uuid!==project.projectUuid)||host.currentProject?.projectId!==PLAN.projectUuid)throw new Error('PROJECT_DRIFT');
 if((document?.uuid??document?.documentUuid)!==ACTIVE.uuid||(document.uuid!==undefined&&document.documentUuid!==undefined&&document.uuid!==document.documentUuid)||document.documentType!==ACTIVE.documentType||document.tabId!==ACTIVE.tabId)throw new Error('ACTIVE_DOCUMENT_DRIFT');
 if((document.parentProjectUuid!==undefined&&document.parentProjectUuid!==PLAN.projectUuid)||(document.parentLibraryUuid!==undefined&&(![2,4].includes(ACTIVE.documentType)||document.parentLibraryUuid!==PLAN.ownerUuid))||(OWNERSHIP.parentProjectUuid!==undefined&&document.parentProjectUuid!==OWNERSHIP.parentProjectUuid)||(OWNERSHIP.parentLibraryUuid!==undefined&&document.parentLibraryUuid!==OWNERSHIP.parentLibraryUuid))throw new Error('ACTIVE_DOCUMENT_OWNER_DRIFT');
 assertWritable();
 };
-await assertContext();
+await ${actorCall("assertContext()")};
 stage='permission';
-const permissionResult=(await bus.rpcCall('canAddLib',[PLAN.projectUuid])).message;
-await assertContext();
+const permissionResult=(await ${actorCall("bus.rpcCall('canAddLib',[PLAN.projectUuid])")}).message;
+await ${actorCall("assertContext()")};
 if(permissionResult?.hasPermission!==true)throw new Error('PROJECT_PERMISSION');
-const projectState=(await bus.rpcCall('/PrjDB/project/getData',[PLAN.projectUuid])).message;
-await assertContext();
+const projectState=(await ${actorCall("bus.rpcCall('/PrjDB/project/getData',[PLAN.projectUuid])")}).message;
+await ${actorCall("assertContext()")};
 if(projectState?.uuid!==PLAN.projectUuid||projectState.owner?.uuid!==PLAN.ownerUuid||projectState.currentBranch!==PLAN.branchUuid||projectState.isV2Format!==false||projectState.archive||projectState.store||projectState.cbb_project)throw new Error('PROJECT_METADATA');
 stage='before-read';
-const before=(await bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])).message;
-await assertContext();
+const before=(await ${actorCall("bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])")}).message;
+await ${actorCall("assertContext()")};
 if(before?.uuid!==PLAN.targetUuid||before?.project_uuid!==PLAN.projectUuid||before?.owner?.uuid!==PLAN.ownerUuid||before?.docType!==2||before?.display_title!==PLAN.beforeTitle||before?.description!==PLAN.beforeDescription||before?.source!==PLAN.beforeSource||before?.custom_tags!==JSON.stringify(PLAN.beforeTags))throw new Error('SYMBOL_METADATA_DRIFT');
 stage='target-closed';
 await ${targetClosed};
-await assertContext();
+await ${actorCall("assertContext()")};
 assertWritable();
 stage='modify';
-const result=(await bus.rpcCall('/PrjDB/symbol/updateData',[{uuid:PLAN.targetUuid,title:PLAN.desiredTitle,description:PLAN.desiredDescription},PLAN.projectUuid])).message;
+const result=(await ${actorCall("bus.rpcCall('/PrjDB/symbol/updateData',[{uuid:PLAN.targetUuid,title:PLAN.desiredTitle,description:PLAN.desiredDescription},PLAN.projectUuid])")}).message;
 if(result?.uuid!==PLAN.targetUuid||result.project_uuid!==PLAN.projectUuid||result.owner?.uuid!==PLAN.ownerUuid||result.docType!==2||result.display_title!==PLAN.desiredTitle||result.description!==PLAN.desiredDescription||result.source!==PLAN.beforeSource||result.custom_tags!==JSON.stringify(PLAN.beforeTags))throw new Error('ACK_INVALID');
 stage='after-read';
-await assertContext();
-const after=(await bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])).message;
-await assertContext();
+await ${actorCall("assertContext()")};
+const after=(await ${actorCall("bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])")}).message;
+await ${actorCall("assertContext()")};
 if(after?.uuid!==PLAN.targetUuid||after?.project_uuid!==PLAN.projectUuid||after?.owner?.uuid!==PLAN.ownerUuid||after?.docType!==2||after?.display_title!==PLAN.desiredTitle||after?.description!==PLAN.desiredDescription||after?.source!==PLAN.beforeSource||after?.custom_tags!==JSON.stringify(PLAN.beforeTags))throw new Error('SYMBOL_METADATA_DRIFT');
-const payload={kind:'project-symbol-metadata',targetId:PLAN.targetUuid,createdId:null};
+${actor === void 0 ? "" : "actorGuard();\n"}const payload={kind:'project-symbol-metadata',targetId:PLAN.targetUuid,createdId:null};
 const json=JSON.stringify(payload);return {schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};
-}catch(error){${METADATA_NATIVE_DIAGNOSTIC_CATCH}throw new Error('Symbol metadata operation refused at '+stage+':'+code);}})()`;
+}catch(error){${actor === void 0 ? METADATA_NATIVE_DIAGNOSTIC_CATCH : SYMBOL_ACTOR_NATIVE_DIAGNOSTIC_CATCH}throw new Error('Symbol metadata operation refused at '+stage+':'+code);}})()`;
 }
 function recordProjection(document3) {
   return {
@@ -71636,6 +71706,7 @@ var init_project_symbol_metadata = __esm({
     init_editor_tabs();
     init_native_editor_tab_guards();
     init_metadata_native_diagnostics();
+    init_symbol_dual_actor();
     PROJECT_SYMBOL_METADATA_PROFILE = "easyeda-pro-control.project-symbol-metadata.v1";
     boundedId = external_exports.string().min(1).max(256);
     planSchema = external_exports.object({

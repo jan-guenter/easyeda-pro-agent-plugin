@@ -5,10 +5,13 @@ import { libraryProjectRecordsHash } from "./library-persistence-proof.ts";
 import { isNativeDocumentDeleted } from "./native-history.ts";
 import type { NativeDocumentSnapshot, NativeHistorySnapshot } from "./native-history.ts";
 import { DEVICE_NATIVE_HOST_GUARD } from "./device-runtime-guard.ts";
-import { buildEditorTargetAbsentExpression } from "./editor-tabs.ts";
+import { buildActorBoundEditorTargetAbsentExpression, buildEditorTargetAbsentExpression } from "./editor-tabs.ts";
 import { NATIVE_PROJECT_PLACEHOLDER_PREDICATE } from "./native-editor-tab-guards.ts";
-import { METADATA_NATIVE_DIAGNOSTIC_CATCH } from "./metadata-native-diagnostics.ts";
+import { METADATA_NATIVE_DIAGNOSTIC_CATCH, SYMBOL_ACTOR_NATIVE_DIAGNOSTIC_CATCH } from "./metadata-native-diagnostics.ts";
 import type { ExpectedContext } from "./engine.ts";
+// oxlint-disable-next-line import/max-dependencies -- Reuse the reviewed actor capture and validator instead of duplicating identity guards in this writer.
+import { SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE, validateActorProjection } from "./symbol-dual-actor.ts";
+import type { ActorProjection } from "./symbol-dual-actor.ts";
 
 /** Fixed project-local adapter. Connected and reopened validation are separate
  * from this compiler and its complete-project effect comparison.
@@ -110,6 +113,17 @@ export function prepareProjectSymbolMetadata(input: unknown, history: NativeHist
  * contexts; canAddLib alone permits import/paste/document/library capability.
  */
 export function buildProjectSymbolMetadataExpression(input: ProjectSymbolMetadataPlan, context: ExpectedContext): string {
+  return compileProjectSymbolMetadataExpression(input, context);
+}
+
+/** Internal fixed compiler only. Expected actor data does not establish its
+ * producer or grant dispatch; the closed-session coordinator must own both.
+ */
+export function buildActorBoundProjectSymbolMetadataExpression(input: ProjectSymbolMetadataPlan, context: ExpectedContext, expectedActor: unknown): string {
+  return compileProjectSymbolMetadataExpression(input, context, validateActorProjection(expectedActor));
+}
+
+function compileProjectSymbolMetadataExpression(input: ProjectSymbolMetadataPlan, context: ExpectedContext, actor?: ActorProjection): string {
   const plan = planSchema.parse(input);
   if ((context.project.uuid ?? context.project.projectUuid) !== plan.projectUuid ||
       (context.project.uuid !== undefined && context.project.projectUuid !== undefined && context.project.uuid !== context.project.projectUuid) ||
@@ -122,11 +136,32 @@ export function buildProjectSymbolMetadataExpression(input: ProjectSymbolMetadat
       (ownership.parentLibraryUuid !== undefined && (![2, 4].includes(active.documentType) || ownership.parentLibraryUuid !== plan.ownerUuid))) {
     throw new Error("Symbol closed-target context has contradictory active-document ownership.");
   }
-  const targetClosed = buildEditorTargetAbsentExpression({ targetUuid: plan.targetUuid, projectUuid: plan.projectUuid, ownerUuid: plan.ownerUuid, active });
+  const targetClosed = (actor === undefined ? buildEditorTargetAbsentExpression : buildActorBoundEditorTargetAbsentExpression)({ targetUuid: plan.targetUuid, projectUuid: plan.projectUuid, ownerUuid: plan.ownerUuid, active });
+  const actorSetup = actor === undefined ? "" : `
+const expectedActor=${JSON.stringify(actor)},actorRoot=globalThis;
+const bad=()=>{throw new Error('ACTOR_DRIFT');};
+const own=(owner,key)=>{
+ if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();
+ const field=Object.getOwnPropertyDescriptor(owner,key);if(!field||!Object.hasOwn(field,'value'))bad();return field.value;
+};
+if(actorRoot.top!==actorRoot||actorRoot.window!==actorRoot||own(actorRoot,'gVars')!==host)bad();
+const actorLocation=actorRoot.location,actorHref=actorLocation?.href,actorDocument=actorRoot.document,actorMode=own(actorRoot,'PRO_EDITOR_MODE');
+if(typeof actorHref!=='string'||!new RegExp(${JSON.stringify(String.raw`^https://client/editor\?cll=(?:trace|debug|info|warn|error)#?$`)}).test(actorHref)||actorLocation.origin!=='https://client'||!actorDocument||actorDocument.defaultView!==actorRoot||actorDocument.nodeType!==9||actorDocument.URL!==actorHref)bad();
+if(actorMode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&actorMode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM')bad();
+${SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE}
+if(!actorEqual(startupActorProjection,expectedActor)||!actorEqual(cachedActorProjection,expectedActor))bad();
+const actorGuard=()=>{
+ if(actorRoot.top!==actorRoot||actorRoot.window!==actorRoot||own(actorRoot,'gVars')!==host||actorRoot.location!==actorLocation||actorLocation.href!==actorHref||actorLocation.origin!=='https://client'||actorRoot.document!==actorDocument||actorDocument.defaultView!==actorRoot||actorDocument.nodeType!==9||actorDocument.URL!==actorHref||own(actorRoot,'PRO_EDITOR_MODE')!==actorMode)bad();
+ checkDualActor();
+};
+const actorAwait=async(call)=>{actorGuard();try{return await call();}finally{actorGuard();}};
+actorGuard();
+`;
+  const actorCall = (call: string): string => actor === undefined ? call : `actorAwait(()=>${call})`;
   return `(async()=>{let stage='host';try{
 const PLAN=${JSON.stringify(plan)},ACTIVE=${JSON.stringify(active)},OWNERSHIP=${JSON.stringify(ownership)};
 ${DEVICE_NATIVE_HOST_GUARD}
-${NATIVE_PROJECT_PLACEHOLDER_PREDICATE}
+${NATIVE_PROJECT_PLACEHOLDER_PREDICATE}${actorSetup}
 const localUI=globalThis.UI,outerUI=globalThis.top?.UI;
 if(localUI!=null&&outerUI!=null&&localUI!==outerUI)throw new Error('UI_AMBIGUOUS');
 const ui=localUI??outerUI,permission=ui?.concurrentDesign,tabs=ui?.tabBar;
@@ -160,40 +195,40 @@ if(tab.tabId===ACTIVE.tabId){if(id!==ACTIVE.uuid||type!==ACTIVE.documentType)thr
 }if(all.length-placeholderCount>256)throw new Error('TAB_SCOPE');if(activeCount!==1)throw new Error('ACTIVE_TAB');
 };
 const assertContext=async()=>{
-const project=await eda.dmt_Project.getCurrentProjectInfo();
-const document=await eda.dmt_SelectControl.getCurrentDocumentInfo();
+const project=await ${actorCall("eda.dmt_Project.getCurrentProjectInfo()")};
+const document=await ${actorCall("eda.dmt_SelectControl.getCurrentDocumentInfo()")};
 if((project?.uuid??project?.projectUuid)!==PLAN.projectUuid||(project.uuid!==undefined&&project.projectUuid!==undefined&&project.uuid!==project.projectUuid)||host.currentProject?.projectId!==PLAN.projectUuid)throw new Error('PROJECT_DRIFT');
 if((document?.uuid??document?.documentUuid)!==ACTIVE.uuid||(document.uuid!==undefined&&document.documentUuid!==undefined&&document.uuid!==document.documentUuid)||document.documentType!==ACTIVE.documentType||document.tabId!==ACTIVE.tabId)throw new Error('ACTIVE_DOCUMENT_DRIFT');
 if((document.parentProjectUuid!==undefined&&document.parentProjectUuid!==PLAN.projectUuid)||(document.parentLibraryUuid!==undefined&&(![2,4].includes(ACTIVE.documentType)||document.parentLibraryUuid!==PLAN.ownerUuid))||(OWNERSHIP.parentProjectUuid!==undefined&&document.parentProjectUuid!==OWNERSHIP.parentProjectUuid)||(OWNERSHIP.parentLibraryUuid!==undefined&&document.parentLibraryUuid!==OWNERSHIP.parentLibraryUuid))throw new Error('ACTIVE_DOCUMENT_OWNER_DRIFT');
 assertWritable();
 };
-await assertContext();
+await ${actorCall("assertContext()")};
 stage='permission';
-const permissionResult=(await bus.rpcCall('canAddLib',[PLAN.projectUuid])).message;
-await assertContext();
+const permissionResult=(await ${actorCall("bus.rpcCall('canAddLib',[PLAN.projectUuid])")}).message;
+await ${actorCall("assertContext()")};
 if(permissionResult?.hasPermission!==true)throw new Error('PROJECT_PERMISSION');
-const projectState=(await bus.rpcCall('/PrjDB/project/getData',[PLAN.projectUuid])).message;
-await assertContext();
+const projectState=(await ${actorCall("bus.rpcCall('/PrjDB/project/getData',[PLAN.projectUuid])")}).message;
+await ${actorCall("assertContext()")};
 if(projectState?.uuid!==PLAN.projectUuid||projectState.owner?.uuid!==PLAN.ownerUuid||projectState.currentBranch!==PLAN.branchUuid||projectState.isV2Format!==false||projectState.archive||projectState.store||projectState.cbb_project)throw new Error('PROJECT_METADATA');
 stage='before-read';
-const before=(await bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])).message;
-await assertContext();
+const before=(await ${actorCall("bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])")}).message;
+await ${actorCall("assertContext()")};
 if(before?.uuid!==PLAN.targetUuid||before?.project_uuid!==PLAN.projectUuid||before?.owner?.uuid!==PLAN.ownerUuid||before?.docType!==2||before?.display_title!==PLAN.beforeTitle||before?.description!==PLAN.beforeDescription||before?.source!==PLAN.beforeSource||before?.custom_tags!==JSON.stringify(PLAN.beforeTags))throw new Error('SYMBOL_METADATA_DRIFT');
 stage='target-closed';
 await ${targetClosed};
-await assertContext();
+await ${actorCall("assertContext()")};
 assertWritable();
 stage='modify';
-const result=(await bus.rpcCall('/PrjDB/symbol/updateData',[{uuid:PLAN.targetUuid,title:PLAN.desiredTitle,description:PLAN.desiredDescription},PLAN.projectUuid])).message;
+const result=(await ${actorCall("bus.rpcCall('/PrjDB/symbol/updateData',[{uuid:PLAN.targetUuid,title:PLAN.desiredTitle,description:PLAN.desiredDescription},PLAN.projectUuid])")}).message;
 if(result?.uuid!==PLAN.targetUuid||result.project_uuid!==PLAN.projectUuid||result.owner?.uuid!==PLAN.ownerUuid||result.docType!==2||result.display_title!==PLAN.desiredTitle||result.description!==PLAN.desiredDescription||result.source!==PLAN.beforeSource||result.custom_tags!==JSON.stringify(PLAN.beforeTags))throw new Error('ACK_INVALID');
 stage='after-read';
-await assertContext();
-const after=(await bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])).message;
-await assertContext();
+await ${actorCall("assertContext()")};
+const after=(await ${actorCall("bus.rpcCall('/PrjDB/symbol/getData',[PLAN.targetUuid,PLAN.projectUuid])")}).message;
+await ${actorCall("assertContext()")};
 if(after?.uuid!==PLAN.targetUuid||after?.project_uuid!==PLAN.projectUuid||after?.owner?.uuid!==PLAN.ownerUuid||after?.docType!==2||after?.display_title!==PLAN.desiredTitle||after?.description!==PLAN.desiredDescription||after?.source!==PLAN.beforeSource||after?.custom_tags!==JSON.stringify(PLAN.beforeTags))throw new Error('SYMBOL_METADATA_DRIFT');
-const payload={kind:'project-symbol-metadata',targetId:PLAN.targetUuid,createdId:null};
+${actor === undefined ? "" : "actorGuard();\n"}const payload={kind:'project-symbol-metadata',targetId:PLAN.targetUuid,createdId:null};
 const json=JSON.stringify(payload);return {schema:'easyeda-pro-control.exact-json.v1',utf8Bytes:new TextEncoder().encode(json).byteLength,json};
-}catch(error){${METADATA_NATIVE_DIAGNOSTIC_CATCH}throw new Error('Symbol metadata operation refused at '+stage+':'+code);}})()`;
+}catch(error){${actor === undefined ? METADATA_NATIVE_DIAGNOSTIC_CATCH : SYMBOL_ACTOR_NATIVE_DIAGNOSTIC_CATCH}throw new Error('Symbol metadata operation refused at '+stage+':'+code);}})()`;
 }
 
 function recordProjection(document: NativeDocumentSnapshot): unknown {

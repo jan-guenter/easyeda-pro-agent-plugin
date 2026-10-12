@@ -1,5 +1,26 @@
 # Project structure completion after Save
 
+## Current implementation status
+
+The affected execution routes remain blocked. Internal source now includes
+retained whole-session captures, stable closed-file copies, a bounded complete
+SQL reader, an ordinary-symbol SQL comparator, startup/worker observations,
+an actor-bound symbol compiler, a cross-generation storage marker, a durable
+phase recorder and same-journal navigation. Full local verification passes
+5,840 facade tests with one platform skip and 424 bridge tests. Strict types,
+type-aware lint and reproducible-build checks pass.
+None of those modules alone grants execution or proves a completed transaction.
+
+The marker passed an isolated two-process test in a copied custom Electron
+runtime. That test used a synthetic app and dedicated storage, not the real
+EasyEDA application or profile. It proves the tested marker behavior, not native
+project persistence or an OS storage-path identity.
+
+The complete coordinator, native clock qualification, durable phase integration
+and disposable native transaction still need implementation or validation.
+The source analysis and alternatives below explain the original containment
+decision; references to proposed infrastructure describe that earlier stage.
+
 ## Finding and scope
 
 The delayed `project_structures` write affects more than the eight reviewed

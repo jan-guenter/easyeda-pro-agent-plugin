@@ -3,18 +3,20 @@ import { test } from "node:test";
 import { runInNewContext } from "node:vm";
 import { SYMBOL_WITNESS_PROFILE, buildSymbolWitnessReadExpression, validateSymbolWitnessReadResult } from "../src/symbol-predispatch-witness.ts";
 
+import { ACTOR_NAME_MAX_CODE_UNITS, validateActorProjection } from "../src/symbol-dual-actor.ts";
+
 type Bag = Record<string, unknown>;
 const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), ownerUuid: "c".repeat(32), targetUuid: "f".repeat(32), activeUuid: "1".repeat(32), createdAtLiteral: "2026-10-12 01:00:00" };
 const actorUuid = "c".repeat(32), client = "d".repeat(16), time = 1_800_000_000_000;
 interface Call { args: unknown[]; receiver: unknown; kind: "project" | "clock" }
 interface Fixture {
-  host: Bag; project: Bag; actor: Bag; cookies: Bag; ui: Bag; tabs: Bag; tab: Bag; sandbox: Bag; calls: Call[];
+  host: Bag; project: Bag; actor: Bag; startup: Bag; cookies: Bag; ui: Bag; tabs: Bag; tab: Bag; sandbox: Bag; calls: Call[];
   clears: number; onCall?: (call: Call, index: number) => unknown; fireTimeout: () => void; run: () => Promise<unknown>;
 }
 function fixture(): Fixture {
   // oxlint-disable-next-line eslint/prefer-const -- RPC callbacks require the assembled circular fixture.
   let state: Fixture;
-  const actor: Bag = { uuid: actorUuid }, calls: Call[] = [], cookies: Bag = { userInfo: actor };
+  const actor: Bag = { uuid: actorUuid, username: "synthetic-user", nickname: "Synthetic Name" }, calls: Call[] = [], cookies: Bag = { userInfo: actor }, startup: Bag = { ...actor };
   const project: Bag = { projectId: target.projectUuid, branchUuid: target.branchUuid, isV2Format: false };
   const tab: Bag = { tabId: `${target.activeUuid}@${target.projectUuid}`, data: { doctype: 3, pid: target.projectUuid, owner: target.ownerUuid }, isUnSaved: false };
   const tabs: Bag = { isOpenProjectDoc: true, isOpenOtherDoc: true, getActiveTab(): string { return `${target.activeUuid}@${target.projectUuid}`; }, getFilterTabs(): Bag[] { return [tab]; }, hasTabUnSaved(): boolean { return false; }, isTabUnSaved(): boolean { return false; } };
@@ -31,7 +33,7 @@ function fixture(): Fixture {
       return Promise.resolve(state.onCall?.(call, calls.length) ?? fallback(call));
     } };
   }
-  const host: Bag = { currentProject: project, sessionStorageTabs: new Set(), globalVariableCookieData: cookies,
+  const host: Bag = { currentProject: project, loginedUserInfo: startup, sessionStorageTabs: new Set(), globalVariableCookieData: cookies,
     messageBus: bus("project"), concurrentBus: bus("clock"), urlCmd: null, isHistoryMode: false };
   const ui: Bag = { tabBar: tabs, gVars: host, concurrentDesign: { _isConcurrentStrictMode: false, getIframeDisableStatusPanelPcb(): Bag { return { disable: false }; } } };
   const sandbox: Bag = { UI: ui, gVars: host, Date, Object, Set, Reflect, Array,
@@ -41,7 +43,7 @@ function fixture(): Fixture {
     setTimeout(callback: () => void, delay: number): number { assert.equal(delay, 10_000); state.fireTimeout = callback; return 7; },
     clearTimeout(id: unknown): void { assert.equal(id, 7); state.clears += 1; },
   };
-  state = { host, project, actor, cookies, ui, tabs, tab, sandbox, calls, clears: 0,
+  state = { host, project, actor, startup, cookies, ui, tabs, tab, sandbox, calls, clears: 0,
     fireTimeout(): never { throw new Error("no timer"); },
     async run(): Promise<unknown> {
       const result: unknown = runInNewContext(`globalThis.top=globalThis;globalThis.window=globalThis;globalThis.document.defaultView=globalThis;${buildSymbolWitnessReadExpression(target)}`, sandbox, { timeout: 1000 });
@@ -214,7 +216,111 @@ void test("project owner response is bound independently of cached actor", async
   await assert.rejects(state.run(), /SYMBOL_WITNESS_READ_REFUSED:PROJECT/u); assert.equal(state.calls.length, 1);
 });
 void test("cached actor may differ from project owner without being mislabeled APP actor", async () => {
-  const state = fixture(); state.actor["uuid"] = "e".repeat(32);
+  const state = fixture(); state.actor["uuid"] = "e".repeat(32); state.startup["uuid"] = "e".repeat(32);
   const value = validateSymbolWitnessReadResult(plain(await state.run()), target);
   assert.equal(value["cachedActorUuid"], "e".repeat(32)); assert.equal(value["ownerUuid"], target.ownerUuid); assert.equal(value["appActorVerified"], false);
+});
+
+void test("dual projections expose only bounded actor fields and keep all authority flags false", async () => {
+  const state = fixture(); let gets = 0;
+  function unobservedPrivateField(): never { gets += 1; throw new Error("private field read"); }
+  for (const owner of [state.startup, state.actor]) {
+    for (const key of ["password", "preference", "cas_info", "customerCode", "avatar", "info"]) {
+      Object.defineProperty(owner, key, { get: unobservedPrivateField });
+    }
+  }
+  const value = validateSymbolWitnessReadResult(plain(await state.run()), target);
+  const expected = { uuid: actorUuid, username: "synthetic-user", nickname: "Synthetic Name" };
+  assert.deepEqual(value["startupActor"], expected); assert.deepEqual(value["cachedActor"], expected);
+  assert.equal(Object.isFrozen(value["startupActor"]), true); assert.equal(Object.isFrozen(value["cachedActor"]), true);
+  assert.equal(gets, 0); assert.equal(state.calls.length, 8);
+  for (const key of ["password", "preference", "cas_info", "customerCode", "avatar", "info"]) { assert.equal(JSON.stringify(value).includes(`"${key}"`), false); }
+});
+void test("empty native nickname is projected exactly without inventing an APP actor proof", async () => {
+  const state = fixture(); state.startup["nickname"] = ""; state.actor["nickname"] = "";
+  const value = validateSymbolWitnessReadResult(plain(await state.run()), target);
+  assert.deepEqual(value["startupActor"], { uuid: actorUuid, username: "synthetic-user", nickname: "" });
+  assert.equal(value["appActorVerified"], false);
+});
+void test("Unicode and embedded control characters are retained exactly within bounds", async () => {
+  const state = fixture(); const name = "Zoë 漢字\u0000\n";
+  for (const owner of [state.startup, state.actor]) { owner["username"] = name; owner["nickname"] = "e\u0301"; }
+  const value = validateSymbolWitnessReadResult(plain(await state.run()), target);
+  assert.equal(validateActorProjection(value["startupActor"]).username, name);
+  assert.equal(validateActorProjection(value["cachedActor"]).nickname, "e\u0301");
+});
+for (const ownerName of ["startup", "actor"] as const) {
+  for (const field of ["uuid", "username", "nickname"] as const) {
+    const values: unknown[] = field === "uuid" ? ["", "A".repeat(32), "a".repeat(64), null, 1] :
+      [null, false, 0, {}, "a".repeat(ACTOR_NAME_MAX_CODE_UNITS + 1), ...(field === "username" ? [""] : [])];
+    for (const [index, value] of values.entries()) {
+      void test(`initial actor refuses ${ownerName} ${field} malformed ${index} before RPC`, async () => {
+        const state = fixture(); state[ownerName][field] = value;
+        await assert.rejects(state.run(), /SYMBOL_WITNESS_READ_REFUSED:/u); assert.equal(state.calls.length, 0);
+      });
+    }
+    void test(`initial actor refuses ${ownerName} ${field} getter without executing it`, async () => {
+      const state = fixture(); let gets = 0;
+      Object.defineProperty(state[ownerName], field, { get(): never { gets += 1; throw new Error("secret"); } });
+      await assert.rejects(state.run(), /SYMBOL_WITNESS_READ_REFUSED:/u); assert.equal(state.calls.length, 0); assert.equal(gets, 0);
+    });
+    void test(`initial actor refuses inherited ${ownerName} ${field}`, async () => {
+      const state = fixture(); const value = state[ownerName][field]; Reflect.deleteProperty(state[ownerName], field);
+      Object.setPrototypeOf(state[ownerName], { [field]: value });
+      await assert.rejects(state.run(), /SYMBOL_WITNESS_READ_REFUSED:/u); assert.equal(state.calls.length, 0);
+    });
+    for (const at of [1, 4, 8]) {
+      void test(`retained ${ownerName} ${field} refuses drift after RPC ${at}`, async () => {
+        const state = fixture(); state.onCall = (_, index): void => { if (index === at) { state[ownerName][field] = field === "uuid" ? "e".repeat(32) : "changed"; } };
+        await assert.rejects(state.run(), /SYMBOL_WITNESS_READ_REFUSED:/u); assert.equal(state.calls.length, at);
+      });
+    }
+  }
+}
+for (const at of [1, 4, 8]) {
+  for (const kind of ["startup replacement", "cached replacement", "both matching values", "startup getter", "cached getter"] as const) {
+    void test(`dual actor refuses ${kind} at RPC ${at}`, async () => {
+      const state = fixture(); let gets = 0;
+      state.onCall = (_, index): void => {
+        if (index !== at) { return; }
+        if (kind === "startup replacement") { state.host["loginedUserInfo"] = { ...state.startup }; }
+        else if (kind === "cached replacement") { state.cookies["userInfo"] = { ...state.actor }; }
+        else if (kind === "both matching values") { state.startup["username"] = "changed"; state.actor["username"] = "changed"; }
+        else {
+          const owner = kind === "startup getter" ? state.host : state.cookies;
+          Object.defineProperty(owner, kind === "startup getter" ? "loginedUserInfo" : "userInfo", { get(): never { gets += 1; throw new Error("secret"); } });
+        }
+      };
+      await assert.rejects(state.run(), /SYMBOL_WITNESS_READ_REFUSED:/u); assert.equal(state.calls.length, at); assert.equal(gets, 0);
+    });
+  }
+}
+for (const value of [null, undefined, [], (): number => 0]) {
+  void test(`initial absent or malformed retained startup object refuses ${String(value)}`, async () => {
+    const state = fixture(); state.host["loginedUserInfo"] = value;
+    await assert.rejects(state.run(), /SYMBOL_WITNESS_READ_REFUSED:/u); assert.equal(state.calls.length, 0);
+  });
+}
+for (const field of ["uuid", "username", "nickname"] as const) {
+  void test(`initial same-shape actor disagreement refuses ${field}`, async () => {
+    const state = fixture(); state.startup[field] = field === "uuid" ? "e".repeat(32) : "other";
+    await assert.rejects(state.run(), /SYMBOL_WITNESS_READ_REFUSED:/u); assert.equal(state.calls.length, 0);
+  });
+}
+void test("result actor schema refuses extras, accessors, inherited fields and projected disagreements", async () => {
+  const state = fixture(), value = validateSymbolWitnessReadResult(plain(await state.run()), target);
+  const actor = validateActorProjection(value["startupActor"]);
+  assert.throws(() => validateActorProjection({ ...actor, password: "secret" }), /SYMBOL_ACTOR_RESULT/u);
+  let gets = 0; const getter = { ...actor };
+  Object.defineProperty(getter, "username", { get(): never { gets += 1; throw new Error("secret"); } });
+  assert.throws(() => validateActorProjection(getter), /SYMBOL_ACTOR_RESULT/u); assert.equal(gets, 0);
+  const inherited = Object.create(actor) as unknown; assert.throws(() => validateActorProjection(inherited), /SYMBOL_ACTOR_RESULT/u);
+  for (const field of ["uuid", "username", "nickname"]) {
+    assert.throws(() => validateSymbolWitnessReadResult({ ...value, cachedActor: { ...actor, [field]: field === "uuid" ? "e".repeat(32) : "other" } }, target), /SYMBOL_WITNESS_RESULT/u);
+  }
+  assert.throws(() => validateSymbolWitnessReadResult({ ...value, cachedActorUuid: "e".repeat(32) }, target), /SYMBOL_WITNESS_RESULT/u);
+});
+void test("fixed actor fragment cannot introduce an identity endpoint or profile read", () => {
+  const source = buildSymbolWitnessReadExpression(target);
+  for (const text of ["/api/user", "getUserInfoFromCache(", "setUserInfo(", "web.db", "license", "customerCode"]) { assert.equal(source.includes(text), false); }
 });

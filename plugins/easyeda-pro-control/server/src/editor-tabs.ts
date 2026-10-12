@@ -18,7 +18,20 @@ export type EditorTabsSnapshot = z.infer<typeof editorTabsSnapshotSchema>;
 /** Mutation precondition, stricter than the diagnostic projection below.
  * Enumerate every bounded tree node and tab before accepting target absence.
  */
-export function buildEditorTargetAbsentExpression(input: { targetUuid: string; projectUuid: string; ownerUuid: string; active: { uuid: string; documentType: number; tabId: string } }): string {
+interface TargetAbsentScope { targetUuid: string; projectUuid: string; ownerUuid: string; active: { uuid: string; documentType: number; tabId: string } }
+
+export function buildEditorTargetAbsentExpression(input: TargetAbsentScope): string {
+  return compileEditorTargetAbsentExpression(input, false);
+}
+
+/** Fixed lexical dependency on the actor-bound symbol compiler's actorAwait.
+ * Never a standalone dispatcher and never caller-supplied guard source.
+ */
+export function buildActorBoundEditorTargetAbsentExpression(input: TargetAbsentScope): string {
+  return compileEditorTargetAbsentExpression(input, true);
+}
+
+function compileEditorTargetAbsentExpression(input: TargetAbsentScope, actorBound: boolean): string {
   const identity = z.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
   const active = z.object({ uuid: identity, documentType: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
     // oxlint-disable-next-line eslint/no-control-regex -- Native tab identities must not contain control characters.
@@ -28,7 +41,7 @@ export function buildEditorTargetAbsentExpression(input: { targetUuid: string; p
   return `(async()=>{
 const scope=${JSON.stringify(scope)},editor=eda.dmt_EditorControl;
 if(typeof editor?.getSplitScreenTree!=='function')throw new Error('EDITOR_TABS_API_MISSING');
-const tree=await editor.getSplitScreenTree(),pending=[{value:tree,depth:0}],seen=new Set(),tabIds=new Set();let tabCount=0,activeCount=0;
+const tree=await ${actorBound ? "actorAwait(()=>editor.getSplitScreenTree())" : "editor.getSplitScreenTree()"},pending=[{value:tree,depth:0}],seen=new Set(),tabIds=new Set();let tabCount=0,activeCount=0;
 while(pending.length){const item=pending.pop(),node=item.value;
 if(!node||typeof node!=='object'||Array.isArray(node)||seen.has(node)||item.depth>16||seen.size>=128)throw new Error('EDITOR_TABS_TREE_BOUND');
 seen.add(node);

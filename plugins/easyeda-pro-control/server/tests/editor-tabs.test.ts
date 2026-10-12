@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { runInNewContext } from "node:vm";
-import { buildEditorTabsReadCode, buildEditorTargetAbsentExpression, parseEditorTabsRead } from "../src/editor-tabs.ts";
+import { buildActorBoundEditorTargetAbsentExpression, buildEditorTabsReadCode, buildEditorTargetAbsentExpression, parseEditorTabsRead } from "../src/editor-tabs.ts";
 
 const projectUuid = "a".repeat(64);
 async function execute(tree: unknown, drift = false): Promise<unknown> {
@@ -74,4 +74,11 @@ void test("closed-target precondition refuses malformed, cyclic, oversized and d
     { tabs: [{ tabId: "pcb", documentType: 3, parentProjectUuid: projectUuid }, { tabId: "pcb", documentType: 3, parentProjectUuid: projectUuid }] }]) {
     await assert.rejects(requireClosedTarget(tree), /TREE_BOUND|TREE_SHAPE|TAB_SHAPE/u);
   }
+});
+void test("actor tree helper cannot run without its fixed lexical parent guard", async () => {
+  let calls = 0;
+  const source = buildActorBoundEditorTargetAbsentExpression({ targetUuid: "symbol", projectUuid: "project", ownerUuid: "owner", active: { uuid: "peer", documentType: 3, tabId: "peer@project" } });
+  const result: unknown = runInNewContext(source, { eda: { dmt_EditorControl: { getSplitScreenTree(): unknown { calls += 1; return {}; } } } }, { timeout: 1000 });
+  await assert.rejects(Promise.resolve(result), /actorAwait is not defined/u);
+  assert.equal(calls, 0);
 });

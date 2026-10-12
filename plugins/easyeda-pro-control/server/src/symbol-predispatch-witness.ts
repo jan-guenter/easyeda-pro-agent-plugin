@@ -1,5 +1,7 @@
 /** Internal fixed read-only observation compiler. No executor, route or authority. */
-export const SYMBOL_WITNESS_PROFILE = "easyeda-pro-control.symbol-predispatch-observation.v1";
+import { SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE, validateActorProjection } from "./symbol-dual-actor.ts";
+
+export const SYMBOL_WITNESS_PROFILE = "easyeda-pro-control.symbol-predispatch-observation.v2";
 export const SYMBOL_WITNESS_TIMEOUT_MS = 10_000;
 export interface SymbolPredispatchWitnessScope {
   readonly projectUuid: string;
@@ -69,8 +71,7 @@ const run=async()=>{
  const ui=own(root,'UI'),host=own(root,'gVars'),tabs=own(ui,'tabBar');
  if(own(ui,'gVars')!==host)bad();
  const project=own(host,'currentProject'),pendingTabs=own(host,'sessionStorageTabs');
- const cookies=own(host,'globalVariableCookieData'),actor=own(cookies,'userInfo'),actorUuid=own(actor,'uuid');
- if(typeof actorUuid!=='string'||!/^[a-f0-9]{32}$/.test(actorUuid))bad();
+${SYMBOL_DUAL_ACTOR_CAPTURE_SOURCE}
  const bus=own(host,'messageBus'),concurrent=own(host,'concurrentBus');
  const busPrototype=Object.getPrototypeOf(bus),concurrentPrototype=Object.getPrototypeOf(concurrent);
  const rpc=method(bus,'rpcCall'),clockRpc=method(concurrent,'rpcCall');
@@ -96,7 +97,7 @@ const run=async()=>{
   if(root.top!==root||root.window!==root||root.location!==location||location.href!==href||location.origin!=='https://client'||root.document!==document||document.defaultView!==root||document.nodeType!==9||document.URL!==href||own(root,'PRO_EDITOR_MODE')!==mode)bad();
   if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(ui,'tabBar')!==tabs||own(host,'currentProject')!==project||own(host,'sessionStorageTabs')!==pendingTabs)bad();
   if(own(project,'projectId')!==target.projectUuid||own(project,'branchUuid')!==target.branchUuid||own(project,'isV2Format')!==false)bad();
-  if(own(host,'globalVariableCookieData')!==cookies||own(cookies,'userInfo')!==actor||own(actor,'uuid')!==actorUuid)bad();
+  checkDualActor();
   if(own(host,'messageBus')!==bus||own(host,'concurrentBus')!==concurrent||Object.getPrototypeOf(bus)!==busPrototype||Object.getPrototypeOf(concurrent)!==concurrentPrototype||method(bus,'rpcCall')!==rpc||method(concurrent,'rpcCall')!==clockRpc)bad();
   if(root.setTimeout!==deadlineSet||root.clearTimeout!==deadlineClear||own(root,'Date')!==nativeDate||own(nativeDate,'prototype')!==datePrototype||own(nativeDate,'now')!==now||own(datePrototype,'getTime')!==getTime||own(datePrototype,'getTimezoneOffset')!==getOffset||apply(getOffset,new nativeDate(),[])!==offset||apply(getTime,new nativeDate(target.createdAtLiteral),[])!==parsed)bad();
   if(own(host,'urlCmd')!==null||own(host,'isHistoryMode')!==false||own(tabs,'isOpenProjectDoc')!==true||own(tabs,'isOpenOtherDoc')!==true||apply(setSize,pendingTabs,[])!==0||Reflect.ownKeys(pendingTabs).length!==0)bad();
@@ -147,7 +148,7 @@ const run=async()=>{
  stage='RESULT';check();const rendererClockAfterMs=apply(now,nativeDate,[]);
  for(const value of [rendererClockBeforeMs,rendererClockAfterMs])if(!Number.isSafeInteger(value)||value<0)bad();
  if(workerTimeAfterMs<workerTimeBeforeMs||workerTimeAfterMs-workerTimeBeforeMs>${SYMBOL_WITNESS_TIMEOUT_MS}||rendererClockAfterMs<rendererClockBeforeMs||rendererClockAfterMs-rendererClockBeforeMs>${SYMBOL_WITNESS_TIMEOUT_MS})bad();
- return{profile:${JSON.stringify(SYMBOL_WITNESS_PROFILE)},...target,workerClient:client,workerMaxTicket:ticket,workerTimeBeforeMs,workerTimeAfterMs,cachedActorUuid:actorUuid,rendererParsedCreatedAtMs:parsed,rendererTimezoneOffsetMinutes:offset,rendererClockBeforeMs,rendererClockAfterMs,scope:'point-in-time-read-only-observation',appActorVerified:false,appClockVerified:false,workerFreshOfflineClockVerified:false,producerBindingVerified:false,executionAuthorized:false};
+ return{profile:${JSON.stringify(SYMBOL_WITNESS_PROFILE)},...target,workerClient:client,workerMaxTicket:ticket,workerTimeBeforeMs,workerTimeAfterMs,cachedActorUuid:actorUuid,startupActor:startupActorProjection,cachedActor:cachedActorProjection,rendererParsedCreatedAtMs:parsed,rendererTimezoneOffsetMinutes:offset,rendererClockBeforeMs,rendererClockAfterMs,scope:'point-in-time-read-only-observation',appActorVerified:false,appClockVerified:false,workerFreshOfflineClockVerified:false,producerBindingVerified:false,executionAuthorized:false};
 };
 try{
  const timeout=new Promise((resolve,reject)=>{timer=apply(deadlineSet,root,[()=>{expired=true;stage='TIMEOUT';reject(new Error('SYMBOL_WITNESS_READ_REFUSED:TIMEOUT'));},${SYMBOL_WITNESS_TIMEOUT_MS}]);});
@@ -161,7 +162,7 @@ finally{if(timer!==undefined)apply(deadlineClear,root,[timer]);}
 export function validateSymbolWitnessReadResult(input: unknown, expected: unknown): Readonly<Record<string, unknown>> {
   const target = scope(expected);
   const value = fields(input, ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "createdAtLiteral", "workerClient", "workerMaxTicket",
-    "workerTimeBeforeMs", "workerTimeAfterMs", "cachedActorUuid", "rendererParsedCreatedAtMs", "rendererTimezoneOffsetMinutes",
+    "workerTimeBeforeMs", "workerTimeAfterMs", "cachedActorUuid", "startupActor", "cachedActor", "rendererParsedCreatedAtMs", "rendererTimezoneOffsetMinutes",
     "rendererClockBeforeMs", "rendererClockAfterMs", "scope", "appActorVerified", "appClockVerified",
     "workerFreshOfflineClockVerified", "producerBindingVerified", "executionAuthorized"]);
   if (value["profile"] !== SYMBOL_WITNESS_PROFILE || value["scope"] !== "point-in-time-read-only-observation" ||
@@ -184,5 +185,8 @@ export function validateSymbolWitnessReadResult(input: unknown, expected: unknow
   for (const field of ["appActorVerified", "appClockVerified", "workerFreshOfflineClockVerified", "producerBindingVerified", "executionAuthorized"]) {
     if (value[field] !== false) { throw new Error("SYMBOL_WITNESS_RESULT"); }
   }
-  return Object.freeze(value);
+  const cachedActor = validateActorProjection(value["cachedActor"]), startupActor = validateActorProjection(value["startupActor"]);
+  if (startupActor.uuid !== value["cachedActorUuid"] || cachedActor.uuid !== startupActor.uuid || cachedActor.username !== startupActor.username ||
+      cachedActor.nickname !== (startupActor.nickname || "")) { throw new Error("SYMBOL_WITNESS_RESULT"); }
+  return Object.freeze({ ...value, startupActor, cachedActor });
 }

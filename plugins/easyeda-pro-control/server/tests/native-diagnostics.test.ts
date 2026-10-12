@@ -5,7 +5,7 @@ import { extractToolPayload } from "../src/core.ts";
 import { RECOVERY_NAVIGATION_FAILURE_STAGES, nativeFailureCategory } from "../src/native-diagnostics.ts";
 import { SCHEMATIC_NATIVE_ID_GUARD_CODES, SCHEMATIC_NATIVE_ID_METHODS } from "../src/schematic-native-ids.ts";
 import { SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES, SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "../src/schematic-component-properties.ts";
-import { DOCUMENT_RENAME_NATIVE_GUARD_CODES, METADATA_NATIVE_GUARD_CODES } from "../src/metadata-native-diagnostics.ts";
+import { DOCUMENT_RENAME_NATIVE_GUARD_CODES, METADATA_NATIVE_GUARD_CODES, SYMBOL_ACTOR_NATIVE_GUARD_CODES } from "../src/metadata-native-diagnostics.ts";
 import { SYMBOL_PIN_ENUMERATION_GUARD_CODES, SYMBOL_PIN_ENUMERATION_METHOD } from "../src/symbol-pin-enumeration.ts";
 import { SCHEMATIC_TEXT_GUARD_CODES, SCHEMATIC_TEXT_READ_METHODS } from "../src/schematic-text-read.ts";
 // oxlint-disable-next-line import/max-dependencies -- This diagnostic matrix covers every fixed native classifier using its production guard inventory.
@@ -232,7 +232,10 @@ void test("diagnostic stage inventory exactly matches the reviewed generated pro
 void test("metadata subguard categories admit only fixed stage/code combinations and redact private suffixes", () => {
   for (const { prefix, category, stages } of operationStages.filter((entry) => ["native-page-rename", "native-symbol-metadata", "native-document-rename"].includes(entry.category))) {
     for (const stage of stages) {
-      for (const code of category === "native-document-rename" ? DOCUMENT_RENAME_NATIVE_GUARD_CODES : METADATA_NATIVE_GUARD_CODES) {
+      let codes: readonly string[] = METADATA_NATIVE_GUARD_CODES;
+      if (category === "native-document-rename") { codes = DOCUMENT_RENAME_NATIVE_GUARD_CODES; }
+      else if (category === "native-symbol-metadata") { codes = SYMBOL_ACTOR_NATIVE_GUARD_CODES; }
+      for (const code of codes) {
         const expected = `${category}:${stage}:${code}`, message = `${prefix}${stage}:${code}`;
         assert.equal(nativeFailureCategory(message), expected);
         assert.throws(() => extractToolPayload({ structuredContent: { ok: false, error: message } }),
@@ -260,8 +263,8 @@ void test("new document rename diagnostics inventory includes each runtime and D
 });
 
 void test("every compiler-owned metadata guard has a reviewed diagnostic code", async () => {
-  const codes: ReadonlySet<string> = new Set(METADATA_NATIVE_GUARD_CODES);
   for (const source of ["document-page-rename.ts", "project-symbol-metadata.ts", "device-runtime-guard.ts", "editor-tabs.ts"]) {
+    const codes: ReadonlySet<string> = new Set(source === "project-symbol-metadata.ts" ? SYMBOL_ACTOR_NATIVE_GUARD_CODES : METADATA_NATIVE_GUARD_CODES);
     const text = await readFile(new URL(`../src/${source}`, import.meta.url), "utf8");
     let scoped = text;
     if (source === "device-runtime-guard.ts") { scoped = text.slice(0, text.indexOf("export const DEVICE_NATIVE_ASSET_GUARD")); }
@@ -269,6 +272,17 @@ void test("every compiler-owned metadata guard has a reviewed diagnostic code", 
     for (const match of scoped.matchAll(/throw new Error\('([A-Z_]+)'\)/gu)) {
       assert.ok(match[1] !== undefined && codes.has(match[1]), `${source}: ${String(match[1])}`);
     }
+  }
+});
+
+void test("actor drift diagnostics are restricted to symbol stages and redact every suffix", () => {
+  for (const stage of ["host", "permission", "before-read", "target-closed", "modify", "after-read"]) {
+    const message = `Symbol metadata operation refused at ${stage}:ACTOR_DRIFT`;
+    assert.equal(nativeFailureCategory(message), `native-symbol-metadata:${stage}:ACTOR_DRIFT`);
+    for (const suffix of [":private", "\n", " /private/path", "\0"]) { assert.equal(nativeFailureCategory(`${message}${suffix}`), null); }
+  }
+  for (const { prefix, stages } of operationStages.filter(({ category }) => category !== "native-symbol-metadata")) {
+    for (const stage of stages) { assert.equal(nativeFailureCategory(`${prefix}${stage}:ACTOR_DRIFT`), null); }
   }
 });
 

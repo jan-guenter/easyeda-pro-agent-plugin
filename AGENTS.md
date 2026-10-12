@@ -6,6 +6,58 @@ Last updated: 2026-10-12 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Actor-bound compiler and storage continuity, local integration
+
+- Internal dual-actor capture now retains the startup actor and cookie projection
+  with their original object identities across awaits. The predispatch observer
+  uses profile v2. Its257 focused tests pass. The new synchronous StartPage
+  observer checks pristine project state again after its final tab getter;
+  all100 tests pass, including26 cases that failed against the prior private
+  implementation. Every observation authority flag remains false.
+- A separately named actor-bound symbol compiler uses the existing shared
+  compiler body and fixed before/after-await guards. The guarded tree read uses
+  the same fixed lexical guard. All159 actor tests and the original metadata/
+  tree tests pass. Historical195-case byte comparison proves unchanged legacy
+  output against retained original sources, not a post-integration self-check.
+  The maintained focused290-case run passes; types and type-aware lint are clean.
+- Full-suite testing caught an unlisted actor diagnostic. A symbol-only
+  ACTOR_DRIFT inventory/catch now preserves the original common catch and legacy
+  compiler bytes, with exact stage and private-suffix tests. Independent177-case
+  review196a4319 and root208-case checks pass. No other adapter gains that code.
+- The internal durable recorder now separates acknowledged launch identity from
+  later authenticated admission. Its44-event chain retains actual native launch
+  returns without invented runtime hashes. All73 maintained tests pass. A
+  verified predecessor snapshot prevents caller mutation during publication from
+  redirecting a journal write or injecting saved state; independent review93138646
+  accepts the corrected phase model. Restart inspection never grants replay.
+- The internal same-journal navigation stage retains the settled Open result
+  before fallible cleanup. Complete native reply identities, current runtime/
+  session/lease checks and a private working journal prevent contradictory
+  replies, late generation drift and caller-driven peer-journal writes. Root52
+  private and52 maintained tests pass against the final recorder; independent
+  prior51 and the separate ordinal2 case are reviewed.
+- The internal storage-marker compiler and tests are integrated. All495 tests
+  pass. One completed two-generation scratch run used only copied custom
+  Electron runtime files and a synthetic app/session. Both owned Jobs exited
+  normally. The second generation read the original marker before querying
+  target queues; wrong key/body and a different Session refused without creating
+  replacement caches. Original entry bytes remained exact. Sequence7e88ad89,
+  independent review779b4d87, generated-expression parity30c13c68 are retained
+  privately. Never replay this completed scratch run. It did not run the real
+  EasyEDA application or access its profile or any project.
+- Full verification passes5840facade tests/oneplatformskip/zerofailures and
+  424bridge tests. Allfourtypes, strict type-aware lint, package/repository and
+  seven official skill checks pass. Rebuild bytes/modes match; offline doctor
+  passes. Fullverifyf1734b71, repository2691db8b and doctor7b97f4d9 are retained
+  privately. Source227files70eb9c09/runtime3filesd6f81b28 retain externalpins
+  69a0bb0b unchanged. The first full run's sole actor-diagnostic failure remains
+  recorded separately from the corrected passing run.
+- No route, execution gate, coverage classification, publication or installation
+  changed. The concrete coordinator, native clock qualification,
+  full phase orchestration and disposable native validation remain unfinished.
+  Installed030626 and remote6fc2a7dc remain unchanged. Production and its record
+  remain excluded; no live CAD, Save or recovery action is pending.
+
 ### Retained capture, worker witnesses and history indexing
 
 - The engine now retains a separate normal-completion process capture under an

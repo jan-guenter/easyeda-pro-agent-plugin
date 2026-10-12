@@ -2,7 +2,7 @@
 import { deviceFailureCategory } from "./device-runtime-guard.ts";
 import { libraryRuntimeFailureCategory } from "./library-runtime-guard.ts";
 import { projectUploadBarrierFailureCategory } from "./project-upload-barrier.ts";
-import { DOCUMENT_RENAME_NATIVE_GUARD_CODES, METADATA_NATIVE_GUARD_CODES, PCB_CREATE_NATIVE_GUARD_CODES, SCHEMATIC_CREATE_NATIVE_GUARD_CODES } from "./metadata-native-diagnostics.ts";
+import { DOCUMENT_RENAME_NATIVE_GUARD_CODES, METADATA_NATIVE_GUARD_CODES, PCB_CREATE_NATIVE_GUARD_CODES, SCHEMATIC_CREATE_NATIVE_GUARD_CODES, SYMBOL_ACTOR_NATIVE_GUARD_CODES } from "./metadata-native-diagnostics.ts";
 import { SCHEMATIC_NATIVE_ID_GUARD_CODES, SCHEMATIC_NATIVE_ID_METHODS } from "./schematic-native-ids.ts";
 import { SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES, SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
 import { SYMBOL_PIN_ENUMERATION_GUARD_CODES, SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
@@ -211,7 +211,12 @@ const activationPreferenceCategories = new Map<string, string>(["preferences", "
     "PCB_COMMAND_TAB_MISSING", "PCB_COMMAND_TAB_WRITE_REQUIRED", "PCB_COMMAND_TAB_NOT_BOOLEAN"]
     .map((code) => [`Document activation refused: ${stage}:${code}`, `native-document-activation:${stage}:${code}`] as const)));
 const metadataGuardCategories = new Map<string, string>(operationStages.filter(({ category }) => category === "native-page-rename" || category === "native-symbol-metadata" || category === "native-document-rename")
-  .flatMap(({ prefix, category, stages }) => stages.flatMap((stage) => (category === "native-document-rename" ? DOCUMENT_RENAME_NATIVE_GUARD_CODES : METADATA_NATIVE_GUARD_CODES).map((code) => [`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`] as const))));
+  .flatMap(({ prefix, category, stages }) => {
+    let guardCodes: readonly string[] = METADATA_NATIVE_GUARD_CODES;
+    if (category === "native-document-rename") { guardCodes = DOCUMENT_RENAME_NATIVE_GUARD_CODES; }
+    else if (category === "native-symbol-metadata") { guardCodes = SYMBOL_ACTOR_NATIVE_GUARD_CODES; }
+    return stages.flatMap((stage) => guardCodes.map((code) => [`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`] as const));
+  }));
 for (const { prefix, category, stages } of operationStages.filter((entry) => entry.category === "native-pcb-create")) {
   for (const stage of stages) { for (const code of PCB_CREATE_NATIVE_GUARD_CODES) { metadataGuardCategories.set(`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`); } }
 }
