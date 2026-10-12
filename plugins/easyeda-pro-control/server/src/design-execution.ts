@@ -66,6 +66,8 @@ import type { FlatWireBinding } from "./flat-wire-binding.ts";
 import { flatWireInverse, prepareFlatWireProfile } from "./flat-wire-profile.ts";
 import { observeSchematicFlatTopology } from "./schematic-flat-read.ts";
 import type { FlatDisplayObservationEvidence } from "./schematic-flat-read.ts";
+import { buildFlatLifecycleObservation } from "./flat-lifecycle-observation.ts";
+import type { FlatLifecyclePhase } from "./flat-lifecycle-observation.ts";
 import type { FlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
 import { verifyFlatDisplayMaterialization, verifyFlatDisplayRestoration } from "./flat-display-storage.ts";
 import { hasDesignInverseAttempt } from "./design-inverse-attempt.ts";
@@ -653,10 +655,22 @@ export class DesignExecutor {
   }
 
   private async transactionTopology(journal: DesignJournal, current: Awaited<ReturnType<DesignExecutor["snapshot"]>>,
-    phase: "before" | "after", lifecycle = false): Promise<DesignTopology> {
-    if (flatTransactionBinding(journal.plan) === undefined) { return readDesignTopology(this.engine, journal.context); }
+    phase: "before" | "after", lifecycle = false): Promise<{ topology: DesignTopology; flatEvidence?: FlatDisplayObservationEvidence }> {
+    if (flatTransactionBinding(journal.plan) === undefined) { return { topology: await readDesignTopology(this.engine, journal.context) }; }
     const evidence = await this.flatEvidence(journal, current, phase, lifecycle);
-    return evidence.proof.topology;
+    return { topology: evidence.proof.topology, flatEvidence: evidence };
+  }
+
+  private static async retainFlatLifecycleObservation(journal: DesignJournal, current: Awaited<ReturnType<DesignExecutor["snapshot"]>>,
+    phase: FlatLifecyclePhase, sourcePhase: "before" | "after", evidence: FlatDisplayObservationEvidence | undefined): Promise<ArtifactDescriptor | undefined> {
+    if (evidence === undefined) { return undefined; }
+    if (current.native === undefined) { throw new Error("Flat lifecycle observation requires its verified native snapshot."); }
+    const binding = assertFlatDisplayJournal(journal);
+    const artifact = buildFlatLifecycleObservation({ phase, sourcePhase, operationId: journal.operationId,
+      originalPlanHash: journal.planHash, flatBindingSha256: sha256Text(canonicalJson(binding)), context: journal.context,
+      sourceSha256: current.snapshot.sha256, nativeSha256: schematicNativeSnapshotHash(current.native) }, evidence);
+    const descriptor = await DesignExecutor.artifact(journal, `flat-${phase}-observation`, artifact);
+    return descriptor;
   }
 
   /** Native source import may already have persisted its exact effect. Both
@@ -1455,8 +1469,9 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       const compiled = compileDesignAction(journal.plan.operation);
       const savedEffect = await verifyDesignActionCooperatively(compiled, beforeState, state(journal.after, journal.afterNative), ids);
       const lifecycle = await verifyDesignActionCooperatively(compiled, beforeState, currentState, ids);
-      const topology = await this.transactionTopology(journal, current, "after", true);
+      const { topology, flatEvidence } = await this.transactionTopology(journal, current, "after", true);
       verifyDesignTopology(journal.beforeTopology, topology);
+      const flatLifecycleObservation = await DesignExecutor.retainFlatLifecycleObservation(journal, current, "retained-save", "after", flatEvidence);
       await this.engine.awaitProjectUploads(journal.context, journal, "layout-saved-reconcile-upload-barrier");
       const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path,
         outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-layout-retained-save-reconciled" });
@@ -1473,6 +1488,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       await DesignExecutor.artifact(journal, "layout-retained-save-reconciled", { ...final, checkpoint,
         persistence: flatPersistenceProof(journal, persistence), savedEffect: flatEffectProof(journal, savedEffect),
         lifecycle: flatEffectProof(journal, lifecycle), topology,
+        ...(flatLifecycleObservation === undefined ? {} : { flatLifecycleObservation }),
         ...(flatMaterialization === undefined ? {} : { flatMaterialization }),
         retainedSaveAcknowledgment: savedAck, retainedAfterArtifact: priorArtifacts[candidate.index],
         saveDispatchedByRecovery: false, navigationDispatchedByRecovery: false });
@@ -1502,6 +1518,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
     if (saveEvidence.attempted) { throw new Error("A design Save was already attempted; no maintained retained-Save proof applies to this state. Do not downgrade it to applied-unsaved or repeat Save."); }
     let durableNoMutation: RecordValue | undefined;
     let flatVerification: ArtifactDescriptor | undefined;
+    let flatLifecycleObservation: ArtifactDescriptor | undefined;
     let baselineLifecycle = lifecycleEquivalent(beforeState, currentState);
     if (baselineLifecycle === undefined && journal.context.document.documentType === 4) {
       const nativeDefault = expectedNativeEmptyNetDefault(journal.before);
@@ -1511,8 +1528,9 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
     }
     if (baselineLifecycle) {
       if (journal.beforeTopology !== undefined) {
-        const topology = await this.transactionTopology(journal, current, "before", true);
+        const { topology, flatEvidence } = await this.transactionTopology(journal, current, "before", true);
         verifyDesignTopology(journal.beforeTopology, topology);
+        flatLifecycleObservation = await DesignExecutor.retainFlatLifecycleObservation(journal, current, "baseline-reconcile", "before", flatEvidence);
       }
       const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path,
         outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-design-reconciled-before" });
@@ -1588,6 +1606,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       await DesignExecutor.artifact(journal, "reconciled-effect", proof);
     }
     await DesignExecutor.artifact(journal, "reconciled", { ...current, ...(durableNoMutation === undefined ? {} : { durableNoMutation }),
+      ...(flatLifecycleObservation === undefined ? {} : { flatLifecycleObservation }),
       ...(flatVerification === undefined ? {} : { flatVerification }) });
     return summary(journal);
   }
@@ -1682,9 +1701,10 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
     const savedEffect = await verifyDesignActionCooperatively(compiled, beforeState, state(journal.after, journal.afterNative), ids);
     const currentState = state(current.snapshot, current.native);
     const lifecycle = await verifyDesignActionCooperatively(compiled, beforeState, currentState, ids);
-    const topology = await this.transactionTopology(journal, current, "after", true);
+    const { topology, flatEvidence } = await this.transactionTopology(journal, current, "after", true);
     verifyDesignTopology(journal.beforeTopology, topology);
     verifyDesignTopology(journal.plan.expectedTopology, topology);
+    const flatLifecycleObservation = await DesignExecutor.retainFlatLifecycleObservation(journal, current, "retained-save", "after", flatEvidence);
     await this.engine.awaitProjectUploads(journal.context, journal, "wire-saved-reconcile-upload-barrier");
     const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path,
       outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-wire-retained-save-reconciled" });
@@ -1699,6 +1719,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
     if (!sameState(currentState, state(final.snapshot, final.native))) { throw new Error("Wire changed during retained Save verification."); }
     await DesignExecutor.artifact(journal, "wire-retained-save-reconciled", { ...final, checkpoint,
       persistence: flatPersistenceProof(journal, persistence), savedEffect: flatEffectProof(journal, savedEffect), lifecycle: flatEffectProof(journal, lifecycle), topology,
+      ...(flatLifecycleObservation === undefined ? {} : { flatLifecycleObservation }),
       ...(flatMaterialization === undefined ? {} : { flatMaterialization }),
       retainedSaveAcknowledgment: savedAck, retainedSaveArtifact: savedDescriptor, retainedAfterArtifact: candidate.descriptor,
       saveDispatchedByRecovery: false, navigationDispatchedByRecovery: false });
@@ -1766,9 +1787,11 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       else if (journal.plan.operation.action === "pcb.pour.rebuild") { lifecycle = verifyCopperLifecycleEquivalence(journal.after, reopened.snapshot); }
       else { lifecycle = lifecycleEquivalent(state(journal.after, journal.afterNative), state(reopened.snapshot, reopened.native)); }
       if (lifecycle === undefined) { throw new Error("Saved/reopened document does not match the verified edit."); }
+      let flatLifecycleObservation: ArtifactDescriptor | undefined;
       if (journal.plan.expectedTopology !== undefined) {
-        const topology = await this.transactionTopology(journal, reopened, "after", true);
+        const { topology, flatEvidence } = await this.transactionTopology(journal, reopened, "after", true);
         verifyDesignTopology(journal.plan.expectedTopology, topology);
+        flatLifecycleObservation = await DesignExecutor.retainFlatLifecycleObservation(journal, reopened, "commit", "after", flatEvidence);
       }
       await this.engine.awaitProjectUploads(context, journal, "commit-upload-barrier");
       const checkpoint = await this.engine.checkpoint({ source: context.project.path, outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-design-committed" });
@@ -1792,6 +1815,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       else { persistence = verifyDesignPersistence(persistenceInput); }
       await DesignExecutor.artifact(journal, "reopened", { ...reopened, checkpoint,
         persistence: flatPersistenceProof(journal, persistence), lifecycle: flatEffectProof(journal, lifecycle),
+        ...(flatLifecycleObservation === undefined ? {} : { flatLifecycleObservation }),
         ...(flatMaterialization === undefined ? {} : { flatMaterialization }) });
       journal.saved = true; journal.reopened = true; journal.state = "completed"; journal.hardStop = false;
       journal.nextSafeAction = "Saved and reopened document verified. Retain the checkpoint and journal.";
@@ -1919,9 +1943,11 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       const restored = await this.snapshot(journal.context);
       const lifecycle = lifecycleEquivalent(state(journal.before, journal.beforeNative), state(restored.snapshot, restored.native));
       if (lifecycle === undefined) { throw new Error("Inverse did not restore every native document record."); }
+      let flatLifecycleObservation: ArtifactDescriptor | undefined;
       if (journal.beforeTopology !== undefined) {
-        const topology = await this.transactionTopology(journal, restored, "before", true);
+        const { topology, flatEvidence } = await this.transactionTopology(journal, restored, "before", true);
         verifyDesignTopology(journal.beforeTopology, topology);
+        flatLifecycleObservation = await DesignExecutor.retainFlatLifecycleObservation(journal, restored, "inverse", "before", flatEvidence);
       }
       const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join(controlDataDirectory(), "checkpoints"), label: "typed-design-rolled-back" });
       if (!("receiptPath" in checkpoint)) { throw new Error("Rollback checkpoint receipt missing; durable restoration is unverified."); }
@@ -1936,7 +1962,8 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       journal.state = "rolled-back"; journal.mutationState = "before"; journal.hardStop = false;
       journal.mutationMayHaveOccurred = false;
       journal.nextSafeAction = "Live source and complete durable project restoration are verified; no save was issued. Retain the exact checkpoint and any explicitly reported native bookkeeping.";
-      await DesignExecutor.artifact(journal, "inverse-verified", { ...restored, lifecycle, checkpoint, persistence });
+      await DesignExecutor.artifact(journal, "inverse-verified", { ...restored, lifecycle, checkpoint, persistence,
+        ...(flatLifecycleObservation === undefined ? {} : { flatLifecycleObservation }) });
       return summary(journal);
     } catch (error) {
       journal.state = "inverse-needs-recovery"; journal.hardStop = true;

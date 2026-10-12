@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "9e08ef33b034c0881b5f49a5b62dcd852eb1b14ab109829e18c3aa1f4edb36ee";
+const __easyedaBundlePairId = "34a9895fa8aa425167b4398cac0c68ba822d8dbf396956305124ffb0c46985e0";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -65293,6 +65293,38 @@ var init_flat_transaction_profile = __esm({
   }
 });
 
+// server/src/flat-lifecycle-observation.ts
+function buildFlatLifecycleObservation(identity21, evidence) {
+  const artifact = {
+    schema: "easyeda-pro-control.flat-lifecycle-observation.v1",
+    phase: identity21.phase,
+    sourcePhase: identity21.sourcePhase,
+    operationId: identity21.operationId,
+    originalPlanHash: identity21.originalPlanHash,
+    flatBindingSha256: identity21.flatBindingSha256,
+    context: identity21.context,
+    sourceSha256: identity21.sourceSha256,
+    nativeSha256: identity21.nativeSha256,
+    observerCheckpoint: evidence.checkpoint,
+    projectBinding: evidence.projectBinding,
+    ...evidence.libraryHeaderEvidence === void 0 ? {} : { libraryHeaderEvidence: evidence.libraryHeaderEvidence },
+    observation: evidence.observation,
+    observationSha256: sha256Text(canonicalJson(evidence.observation)),
+    topologyProof: evidence.proof,
+    compiledTopology: false
+  };
+  if (Buffer.byteLength(`${JSON.stringify(artifact)}
+`) > 16 * 1024 * 1024) {
+    throw new Error("Flat lifecycle observation exceeds the 16 MiB artifact bound.");
+  }
+  return artifact;
+}
+var init_flat_lifecycle_observation = __esm({
+  "server/src/flat-lifecycle-observation.ts"() {
+    init_core3();
+  }
+});
+
 // server/src/design-inverse-attempt.ts
 import { basename as basename7 } from "node:path";
 function hasDesignInverseAttempt(journal) {
@@ -66296,6 +66328,7 @@ var init_design_execution = __esm({
     init_flat_wire_binding();
     init_flat_wire_profile();
     init_schematic_flat_read();
+    init_flat_lifecycle_observation();
     init_flat_display_storage();
     init_design_inverse_attempt();
     init_flat_inverse_checkpoint();
@@ -66472,10 +66505,31 @@ var init_design_execution = __esm({
       }
       async transactionTopology(journal, current2, phase2, lifecycle = false) {
         if (flatTransactionBinding(journal.plan) === void 0) {
-          return readDesignTopology(this.engine, journal.context);
+          return { topology: await readDesignTopology(this.engine, journal.context) };
         }
         const evidence = await this.flatEvidence(journal, current2, phase2, lifecycle);
-        return evidence.proof.topology;
+        return { topology: evidence.proof.topology, flatEvidence: evidence };
+      }
+      static async retainFlatLifecycleObservation(journal, current2, phase2, sourcePhase2, evidence) {
+        if (evidence === void 0) {
+          return void 0;
+        }
+        if (current2.native === void 0) {
+          throw new Error("Flat lifecycle observation requires its verified native snapshot.");
+        }
+        const binding2 = assertFlatDisplayJournal(journal);
+        const artifact = buildFlatLifecycleObservation({
+          phase: phase2,
+          sourcePhase: sourcePhase2,
+          operationId: journal.operationId,
+          originalPlanHash: journal.planHash,
+          flatBindingSha256: sha256Text(canonicalJson(binding2)),
+          context: journal.context,
+          sourceSha256: current2.snapshot.sha256,
+          nativeSha256: schematicNativeSnapshotHash(current2.native)
+        }, evidence);
+        const descriptor = await _DesignExecutor.artifact(journal, `flat-${phase2}-observation`, artifact);
+        return descriptor;
       }
       /** Native source import may already have persisted its exact effect. Both
        * admitted states are complete whole-project comparisons, never an exemption
@@ -67637,8 +67691,9 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           const compiled = compileDesignAction(journal.plan.operation);
           const savedEffect = await verifyDesignActionCooperatively(compiled, beforeState2, state(journal.after, journal.afterNative), ids2);
           const lifecycle = await verifyDesignActionCooperatively(compiled, beforeState2, currentState, ids2);
-          const topology = await this.transactionTopology(journal, current2, "after", true);
+          const { topology, flatEvidence } = await this.transactionTopology(journal, current2, "after", true);
           verifyDesignTopology(journal.beforeTopology, topology);
+          const flatLifecycleObservation2 = await _DesignExecutor.retainFlatLifecycleObservation(journal, current2, "retained-save", "after", flatEvidence);
           await this.engine.awaitProjectUploads(journal.context, journal, "layout-saved-reconcile-upload-barrier");
           const checkpoint = await this.engine.checkpoint({
             source: journal.context.project.path,
@@ -67674,6 +67729,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             savedEffect: flatEffectProof(journal, savedEffect),
             lifecycle: flatEffectProof(journal, lifecycle),
             topology,
+            ...flatLifecycleObservation2 === void 0 ? {} : { flatLifecycleObservation: flatLifecycleObservation2 },
             ...flatMaterialization === void 0 ? {} : { flatMaterialization },
             retainedSaveAcknowledgment: savedAck,
             retainedAfterArtifact: priorArtifacts[candidate.index],
@@ -67720,6 +67776,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         }
         let durableNoMutation;
         let flatVerification;
+        let flatLifecycleObservation;
         let baselineLifecycle = lifecycleEquivalent(beforeState2, currentState);
         if (baselineLifecycle === void 0 && journal.context.document.documentType === 4) {
           const nativeDefault = expectedNativeEmptyNetDefault(journal.before);
@@ -67729,8 +67786,9 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         }
         if (baselineLifecycle) {
           if (journal.beforeTopology !== void 0) {
-            const topology = await this.transactionTopology(journal, current2, "before", true);
+            const { topology, flatEvidence } = await this.transactionTopology(journal, current2, "before", true);
             verifyDesignTopology(journal.beforeTopology, topology);
+            flatLifecycleObservation = await _DesignExecutor.retainFlatLifecycleObservation(journal, current2, "baseline-reconcile", "before", flatEvidence);
           }
           const checkpoint = await this.engine.checkpoint({
             source: journal.context.project.path,
@@ -67859,6 +67917,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         await _DesignExecutor.artifact(journal, "reconciled", {
           ...current2,
           ...durableNoMutation === void 0 ? {} : { durableNoMutation },
+          ...flatLifecycleObservation === void 0 ? {} : { flatLifecycleObservation },
           ...flatVerification === void 0 ? {} : { flatVerification }
         });
         return summary(journal);
@@ -67979,9 +68038,10 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         const savedEffect = await verifyDesignActionCooperatively(compiled, beforeState2, state(journal.after, journal.afterNative), ids2);
         const currentState = state(current2.snapshot, current2.native);
         const lifecycle = await verifyDesignActionCooperatively(compiled, beforeState2, currentState, ids2);
-        const topology = await this.transactionTopology(journal, current2, "after", true);
+        const { topology, flatEvidence } = await this.transactionTopology(journal, current2, "after", true);
         verifyDesignTopology(journal.beforeTopology, topology);
         verifyDesignTopology(journal.plan.expectedTopology, topology);
+        const flatLifecycleObservation = await _DesignExecutor.retainFlatLifecycleObservation(journal, current2, "retained-save", "after", flatEvidence);
         await this.engine.awaitProjectUploads(journal.context, journal, "wire-saved-reconcile-upload-barrier");
         const checkpoint = await this.engine.checkpoint({
           source: journal.context.project.path,
@@ -68012,6 +68072,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           savedEffect: flatEffectProof(journal, savedEffect),
           lifecycle: flatEffectProof(journal, lifecycle),
           topology,
+          ...flatLifecycleObservation === void 0 ? {} : { flatLifecycleObservation },
           ...flatMaterialization === void 0 ? {} : { flatMaterialization },
           retainedSaveAcknowledgment: savedAck,
           retainedSaveArtifact: savedDescriptor,
@@ -68117,9 +68178,11 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           if (lifecycle === void 0) {
             throw new Error("Saved/reopened document does not match the verified edit.");
           }
+          let flatLifecycleObservation;
           if (journal.plan.expectedTopology !== void 0) {
-            const topology = await this.transactionTopology(journal, reopened, "after", true);
+            const { topology, flatEvidence } = await this.transactionTopology(journal, reopened, "after", true);
             verifyDesignTopology(journal.plan.expectedTopology, topology);
+            flatLifecycleObservation = await _DesignExecutor.retainFlatLifecycleObservation(journal, reopened, "commit", "after", flatEvidence);
           }
           await this.engine.awaitProjectUploads(context2, journal, "commit-upload-barrier");
           const checkpoint = await this.engine.checkpoint({ source: context2.project.path, outputDir: join17(controlDataDirectory(), "checkpoints"), label: "typed-design-committed" });
@@ -68163,6 +68226,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
             checkpoint,
             persistence: flatPersistenceProof(journal, persistence),
             lifecycle: flatEffectProof(journal, lifecycle),
+            ...flatLifecycleObservation === void 0 ? {} : { flatLifecycleObservation },
             ...flatMaterialization === void 0 ? {} : { flatMaterialization }
           });
           journal.saved = true;
@@ -68343,9 +68407,11 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           if (lifecycle === void 0) {
             throw new Error("Inverse did not restore every native document record.");
           }
+          let flatLifecycleObservation;
           if (journal.beforeTopology !== void 0) {
-            const topology = await this.transactionTopology(journal, restored, "before", true);
+            const { topology, flatEvidence } = await this.transactionTopology(journal, restored, "before", true);
             verifyDesignTopology(journal.beforeTopology, topology);
+            flatLifecycleObservation = await _DesignExecutor.retainFlatLifecycleObservation(journal, restored, "inverse", "before", flatEvidence);
           }
           const checkpoint = await this.engine.checkpoint({ source: journal.context.project.path, outputDir: join17(controlDataDirectory(), "checkpoints"), label: "typed-design-rolled-back" });
           if (!("receiptPath" in checkpoint)) {
@@ -68373,7 +68439,13 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
           journal.hardStop = false;
           journal.mutationMayHaveOccurred = false;
           journal.nextSafeAction = "Live source and complete durable project restoration are verified; no save was issued. Retain the exact checkpoint and any explicitly reported native bookkeeping.";
-          await _DesignExecutor.artifact(journal, "inverse-verified", { ...restored, lifecycle, checkpoint, persistence });
+          await _DesignExecutor.artifact(journal, "inverse-verified", {
+            ...restored,
+            lifecycle,
+            checkpoint,
+            persistence,
+            ...flatLifecycleObservation === void 0 ? {} : { flatLifecycleObservation }
+          });
           return summary(journal);
         } catch (error51) {
           journal.state = "inverse-needs-recovery";

@@ -6,6 +6,29 @@ Last updated: 2026-10-12 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Candidate013324 final flat observations, publication in progress
+
+- Restarted host2569150/start196399339 loads installed000206. Independent
+  process/disk auditcdc761db passes exact633files/17006218bytes/modes, stable
+  inventoryf38a69b4 and unchanged externalpins. Former2527645/2525696 absent.
+  No live calls or design/profile/journal reads. This is not bridge admission.
+- New source retains existing final flat observations at commit, retained-Save
+  wire/layout recovery, baseline reconciliation and inverse. Dedicated bounded
+  artifacts preserve raw observations and observer checkpoints separately from
+  terminal durability; no extra reads, Save authority or decoded history.
+  Independent source/guide review accepts. Clean full verification passes3742
+  facade tests/oneplatformskip/zerofailures and424bridge tests; allfourtypes,
+  strict type-aware lint0,151signatures/40attestations/zeroaudit, sevenofficial
+  skillvalidators, repository/privacy/licenses, doctor andactionlint pass.
+  A hostile-descriptor run passes identically; final context/Unicode tests and
+  another complete verify pass with the same totals and reproducible bundles.
+  Source20686a3ce59/runtime3cffcc2bb/manifest3215f9f0 are frozen, externalpins
+  unchanged. Concrete next work is in privateNEXT-013324.md; broadercoverage
+  remains unfinished. Publication and installation are next.
+  Candidate013324 is not published/installed or connected-tested. Actual000206
+  stays untouched. Both disposable projects remain closed; no CAD or Save is
+  pending or repeatable. Production and its record remain excluded.
+
 ### Candidate000206 published and installed; fresh host required
 
 - Payloadac9f0a74229f899436a27e5ca0a30e59b620104e passed required

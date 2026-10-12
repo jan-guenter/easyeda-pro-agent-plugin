@@ -26,6 +26,27 @@ For a saved symbol/footprint edit whose reopen failed, design reconciliation can
 
 ## Evidence artifacts
 
+Sealed flat display/wire transactions retain the raw observation already checked
+at commit, retained-Save reconciliation, baseline reconciliation and rollback.
+The terminal artifact's `flatLifecycleObservation` descriptor identifies a
+separate `flat-lifecycle-observation.v1` artifact, capped at 16 MiB. It binds the
+original operation/plan/profile, current context and source/native hashes, raw
+observation, topology proof and observer checkpoint. Imported-header evidence is
+included when present; decoded whole-project history is not duplicated.
+
+The observer checkpoint is not the later terminal checkpoint. An observation
+can survive a subsequent persistence failure without proving completion. Inspect
+the terminal state and complete durable proof separately. Page the descriptor
+through the managed artifact reader; transaction summaries do not inline raw
+observations. Its byte offsets can split UTF-8 characters: if a text page ends
+with a replacement character or its re-encoded byte count differs from
+`bytesRead`, reread with up to three fewer bytes before advancing. Verify the
+complete reconstructed hash. Matching byte counts alone cannot detect every
+four-byte character split; a failed hash is not acceptable evidence.
+Older journals may lack this artifact. Do not fabricate it or
+replay a completed transaction to fill the gap. This retention change adds no
+EasyEDA reads, Save calls, execution authority or new connected validation.
+
 Evidence result/receipt pairs and phase artifacts are created exclusively and never overwritten. Operation journals are different: each self-hashed journal is replaced atomically as its state advances. Reserve absolute, distinct evidence paths below the control data directory before dispatch. Bind each result to:
 
 - operation ID and plan hash;
@@ -105,11 +126,13 @@ recovery rereads the verified immutable checkpoint. Hash commitments do not
 authenticate an arbitrarily fabricated checkpoint. No public argument enables
 this parser option or supplies a v2 seal.
 
-This is source/offline-tested support, absent from installed
-`0.3.0+codex.20261011071500`. The retained import-only fixture proves preserved
-library history and an unchanged page, not placed parts, nonempty electrical
-topology or a connected save/reopen lifecycle. A new installed generation and
-separate disposable validation are still required.
+Installed `220050` subsequently passed one sealed three-segment wire
+forward/reverse pair with 12 documents, 11 peers and 66 imported-header
+occurrences preserved. This is not general library-editing or display-operation
+validation. Its final raw flat observations were checked but not retained; the
+new retention code does not retroactively strengthen those historical cases or
+validate a later generation. Keep the exact case boundaries in the
+[schematic guide](schematic.md#single-page-wire-rerouting).
 
 ## Restore boundary
 

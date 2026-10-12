@@ -15,21 +15,22 @@ import { context, rehash } from "./flat-display-fixture.ts";
 import { nativeFormatAfter, nativeFormatFixture, nativeFormatOperation as operation } from "./flat-display-native-fixture.ts";
 import { storedFlatFixture as storedFixture } from "./flat-display-sqlite-fixture.ts";
 import { installNavigationPreflight } from "./navigation-preflight-fixture.ts";
+import { assertFlatLifecycleObservation, regenerateObservationWitness, withInheritedObservationWitness } from "./flat-lifecycle-observation-fixture.ts";
 
 type Fixture = ReturnType<typeof nativeFormatFixture>;
 interface Snapshot { payload: Record<string, unknown>; snapshot: ReturnType<typeof parseDocumentSource>; native: Fixture["native"] }
 type Phase = "before" | "after";
 type Action = "commit" | "rollback" | "reconcile" | "saved-reconcile";
 
-async function coordinator(t: TestContext, action: Action, drift: "none" | "meta" | "peer"): Promise<void> {
+async function coordinator(t: TestContext, action: Action, drift: "none" | "meta" | "peer", legacyCompleted = false): Promise<void> {
   const root = controlDataDirectory();
   assert.ok(basename(root).startsWith("easyeda-test-control-"), "Coordinator fixtures require the isolated test preload.");
   const directory = await mkdtemp(join(root, "flat-lifecycle-"));
-  const before = await storedFixture(nativeFormatFixture(), directory, "before");
+  const before = await storedFixture(withInheritedObservationWitness(nativeFormatFixture()), directory, "before");
   const prepared = await prepareFlatDisplayProfile({ ...before, context, operation });
   const applied = await storedFixture(nativeFormatAfter(before, prepared.expectedSource, prepared.expectedNative), directory, "applied");
   const restored = nativeFormatAfter(before, parseDocumentSource(before.native.source), before.native);
-  const final = structuredClone(action === "commit" || action === "saved-reconcile" ? applied : restored);
+  const final = action === "commit" || action === "saved-reconcile" ? regenerateObservationWitness(applied) : structuredClone(restored);
   if (drift !== "none") {
     const documents = structuredClone(final.evidence.history.documents);
     const row = documents.find((document) => document.uuid === (drift === "meta" ? "page" : "peer5"))?.records.find((record) => record.id === "META");
@@ -37,6 +38,9 @@ async function coordinator(t: TestContext, action: Action, drift: "none" | "meta
     final.evidence = { ...final.evidence, history: rehash({ ...final.evidence.history, documents }) };
   }
   const persisted = await storedFixture(final, directory, "final");
+  const observed = await storedFixture(final, directory, "observer");
+  const reboundContext = { ...context, document: { ...context.document, documentUuid: context.document.uuid } };
+  let boundContext: typeof context = context;
   const operationId = newOperationId();
   const plan = { profile: "easyeda-pro-control.typed-design-transaction.v1", expectedContext: context, expectedFingerprint: {},
     operation: prepared.operation, flatDisplay: prepared.binding, expectedTopology: prepared.binding.topology };
@@ -74,7 +78,9 @@ async function coordinator(t: TestContext, action: Action, drift: "none" | "meta
   t.mock.method(engine, "awaitProjectUploads", (): Promise<Record<string, unknown>> => Promise.resolve({ scheduledWritesSettled: true }));
   t.mock.method(engine, "assertRecoveryOperationIsolated", (): Promise<true> => Promise.resolve(true));
   t.mock.method(engine, "checkpoint", (): Promise<unknown> => Promise.resolve(persisted.evidence.checkpoint));
-  t.mock.method(engine, "rebindAfterLifecycle", (): Promise<typeof context> => Promise.resolve(context));
+  t.mock.method(engine, "rebindAfterLifecycle", (): Promise<typeof context> => {
+    boundContext = reboundContext; return Promise.resolve(boundContext);
+  });
   const executor = new DesignExecutor(engine);
   await installNavigationPreflight(t, executor, context);
   // These tests own only coordinator/persistence wiring. Generated native
@@ -88,22 +94,40 @@ async function coordinator(t: TestContext, action: Action, drift: "none" | "meta
   const unpersisted = { ...applied, evidence: { ...before.evidence,
     observation: applied.evidence.observation, proof: applied.evidence.proof } };
   let current = applied;
-  if (action === "reconcile" || action === "saved-reconcile") { current = persisted; }
+  if (action === "reconcile" || action === "saved-reconcile") { current = observed; }
   else if (action === "rollback") { current = unpersisted; }
   const calls: string[] = [];
-  t.mock.method(seams, "assertRuntime", (): Promise<void> => Promise.resolve());
-  t.mock.method(seams, "snapshot", (): Promise<Snapshot> => Promise.resolve({ payload: { read_consistency: { snapshotSha256: "a".repeat(64) } },
-    snapshot: parseDocumentSource(current.native.source), native: current.native }));
+  const observationCalls: { phase: Phase; lifecycle: boolean }[] = [];
+  let runtimeCalls = 0, snapshotCalls = 0;
+  t.mock.method(seams, "assertRuntime", (): Promise<void> => { runtimeCalls += 1; return Promise.resolve(); });
+  t.mock.method(seams, "snapshot", (): Promise<Snapshot> => {
+    snapshotCalls += 1;
+    return Promise.resolve({ payload: { read_consistency: { snapshotSha256: "a".repeat(64) } },
+      snapshot: parseDocumentSource(current.native.source), native: current.native });
+  });
   t.mock.method(seams, "flatEvidence", (_journal: unknown, snapshot: Snapshot, phase: Phase, lifecycle = false): Promise<FlatDisplayObservationEvidence> => {
-    if (lifecycle) { verifyFlatDisplayMembershipTopology(prepared.binding, operation, context, current.evidence, snapshot.native); }
-    else { verifyFlatDisplayObservation(prepared.binding, operation, context, current.evidence, snapshot.native, phase); }
+    observationCalls.push({ phase, lifecycle });
+    if (lifecycle) { verifyFlatDisplayMembershipTopology(prepared.binding, operation, boundContext, current.evidence, snapshot.native); }
+    else { verifyFlatDisplayObservation(prepared.binding, operation, boundContext, current.evidence, snapshot.native, phase); }
     return Promise.resolve(current.evidence);
   });
   t.mock.method(seams, "call", (_journal: unknown, phase: string): Promise<unknown> => {
-    calls.push(phase); current = persisted;
+    calls.push(phase); current = observed;
     return Promise.resolve(phase === "inverse" ? { ok: true } : { flatDisplaySaveGuard: { profile: prepared.binding.profile,
       bindingSha256: sha256Json(prepared.binding), observationSha256: sha256Json(applied.evidence.observation), finalSynchronousCheck: true } });
   });
+  if (legacyCompleted) {
+    const legacy = await loadOperation(operationId);
+    legacy["state"] = "completed"; legacy["saved"] = true; legacy["reopened"] = true;
+    await updateOperation(legacy);
+    const result = await executor.reconcile(operationId);
+    assert.equal(result["state"], "completed");
+    assert.deepEqual(result["artifacts"], [], "Completed historical journals must not acquire invented final observations.");
+    assert.deepEqual(calls, []); assert.deepEqual(observationCalls, []);
+    assert.equal(snapshotCalls, 0); assert.equal(runtimeCalls, 0);
+    assert.deepEqual(await loadOperation(operationId), legacy);
+    return;
+  }
   const invoke = (): Promise<Record<string, unknown>> => executor[action === "saved-reconcile" ? "reconcile" : action](operationId);
   if (drift === "none") {
     const result = await invoke();
@@ -114,6 +138,26 @@ async function coordinator(t: TestContext, action: Action, drift: "none" | "meta
     const descriptor = retained.artifacts?.at(-1); assert.ok(descriptor);
     const read = await readArtifact(descriptor.path, 0, descriptor.bytes); assert.equal(read.eof, true);
     const artifact: unknown = JSON.parse(read.text); assert.ok(isRecord(artifact));
+    const phase = { commit: "commit", "saved-reconcile": "retained-save", reconcile: "baseline-reconcile", rollback: "inverse" } as const;
+    const terminalCheckpoint = action === "reconcile" && isRecord(artifact["durableNoMutation"]) ? artifact["durableNoMutation"]["checkpoint"] : artifact["checkpoint"];
+    await assertFlatLifecycleObservation({ terminal: { ...artifact, checkpoint: terminalCheckpoint }, journal: retained, binding: prepared.binding,
+      context: boundContext, current: observed, phase: phase[action] });
+    if (action === "commit") {
+      assert.deepEqual(boundContext, reboundContext);
+      assert.notDeepEqual(boundContext, context, "Rebinding adds a valid equal document UUID alias without changing the canonical tab.");
+      assert.deepEqual(retained["context"], reboundContext);
+      assert.deepEqual(retained.plan["expectedContext"], context, "The original plan context is not substituted for the rebound observation context.");
+    }
+    assert.deepEqual(observationCalls, {
+      commit: [{ phase: "after", lifecycle: false }, { phase: "after", lifecycle: true }],
+      rollback: [{ phase: "after", lifecycle: false }, { phase: "before", lifecycle: true }],
+      reconcile: [{ phase: "before", lifecycle: true }],
+      "saved-reconcile": [{ phase: "after", lifecycle: true }],
+    }[action]);
+    assert.equal(Object.hasOwn(result, "observation"), false);
+    if (action === "commit" || action === "saved-reconcile") {
+      assert.notEqual(sha256Json(observed.evidence.observation), sha256Json(applied.evidence.observation), "The final observation includes regenerated native-only IDs.");
+    }
     if (action === "commit" || action === "saved-reconcile") {
       assert.ok(isRecord(artifact["flatMaterialization"])); assert.equal(artifact["flatMaterialization"]["comparisonOnly"], true);
       const persistence = artifact["persistence"]; assert.ok(isRecord(persistence));
@@ -135,6 +179,10 @@ async function coordinator(t: TestContext, action: Action, drift: "none" | "meta
   }
   assert.deepEqual(calls, action === "reconcile" || action === "saved-reconcile" ? [] : [action === "commit" ? "save-reopen" : "inverse"]);
 }
+
+void test("display legacy completed journal remains unchanged without a fabricated final observation or new read", async (t) => {
+  await coordinator(t, "commit", "none", true);
+});
 
 for (const action of ["commit", "rollback", "reconcile", "saved-reconcile"] as const) {
   for (const drift of ["none", "meta", "peer"] as const) {

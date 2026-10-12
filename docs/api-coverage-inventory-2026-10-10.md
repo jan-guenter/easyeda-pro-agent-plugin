@@ -10,10 +10,13 @@ The inventory covers 774 distinct method paths. The reviewed installed SDK has
 697, the newer official reference has 773, and one older dialog method appears
 only in the reviewed SDK. These counts are method paths, not overload counts.
 The original 749 and 806 declaration signatures remain in the inventory.
-The current source inventory has 192 public subsets, 95 native equivalents,
-two lifecycle-only methods, eight blocked methods and 477 omissions. The fixed
-SDK-read catalog has 175 routes. These are implementation counts, not live-test
-counts.
+As of candidate013324 on October12, the source inventory has 193 public subsets,
+103 native equivalents, two lifecycle-only methods, seven blocked methods and
+469 omissions. The fixed SDK-read catalog has 182 routes, including 21 native
+equivalents. The 358 guarded, nine blocked and three partially blocked execution
+routes are counted separately from methods. These are implementation counts,
+not live-test counts. The [connected ledger](api-connected-validation-ledger.md)
+records subsequent generation-specific validation of the adapters discussed below.
 
 The October11 additions include three mappings to existing footprint-only
 String create/modify/delete actions and two closed ordinary PCB/schematic rename

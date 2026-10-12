@@ -20,8 +20,12 @@ two lifecycle-only methods, seven implemented-but-blocked methods and 469
 omissions. Their execution routes comprise 358 available with runtime guards,
 nine blocked and three partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
-See the [000206 release record](docs/api-coverage-000206-release-2026-10-12.md)
-for this candidate's checks. Offline discovery now includes nine indexed
+See the [013324 release record](docs/api-coverage-013324-release-2026-10-12.md)
+for this candidate's checks. Flat transactions now retain their final raw
+connectivity observation in a separate bounded artifact, without adding reads
+or changing Save/recovery authority. It does not replace durable proof or
+retroactively fill gaps in historical journals.
+Offline discovery includes nine indexed
 historical reader cases with exact generation, argument scope, evidence and
 exclusions. These records neither grant execution authority nor validate the
 whole method or current package generation.
