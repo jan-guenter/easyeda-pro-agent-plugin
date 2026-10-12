@@ -6,6 +6,41 @@ Last updated: 2026-10-12 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Complete symbol SQL comparison and isolated browser checks
+
+- The internal ordinary-symbol metadata comparator now derives and checks one
+  complete new-history-head effect across the source-derived 35-table schema.
+  It authenticates all selected history, binds the raw maximum ticket, derives
+  row IDs and sequence changes, and rejects every unrequested SQL delta.
+  Native generated UUIDs, keys and ciphertext have constrained postconditions;
+  their plaintext intent is derived before dispatch. Native start ancestry,
+  future-history selection, aged-head clocks and local 64-hex project IDs are
+  covered. Branch, actor and history UUID guards remain separate.
+- Root and independent source review accepted the implementation. All 91
+  focused synthetic tests pass, including independent post-plan random values,
+  malformed IDs and changed peer rows. Strict types and type-aware lint pass.
+  Final full verification passes 4,655 facade tests with one platform skip and
+  zero failures, plus 424 bridge tests. All four typechecks, strict lint with
+  zero warnings, package/repository/seven-skill checks and offline doctor pass.
+  Source220fc003565 and runtime3files30d033e0 retain external pins69a0bb0b;
+  fullverify96a82336 is preserved privately.
+  The comparator remains internal and explicitly nonauthorizing. No runtime
+  coordinator or writer gate changed. See the
+  [source contract](docs/symbol-metadata-closed-sql-source-2026-10-12.md).
+- One isolated synthetic browser test passed on the exact custom Electron
+  41.2.1-jlc-sa-win-x64.2 runtime. Real browser prototype checks and empty-cache/
+  service-worker reads pass; cache names remain empty before and after the
+  maintained observer expressions. The retained private Job exited normally,
+  with no forced cleanup. Result1626c5f7 and ownerd3a3247a were independently
+  reviewed. No EasyEDA application code, user profile or project was loaded.
+  The earlier run refused at BOOT on the vendor version suffix and is retained
+  separately; it is not successful browser validation.
+- Populated-storage browser tests, native actor/client/ticket/clock binding,
+  the durable coordinator and disposable native completion remain unfinished.
+  Installed030626 is unchanged. Nothing from this continuation is published or
+  installed. Production and its record remain excluded; no CAD, Save, close or
+  navigation is pending or repeatable.
+
 ### Closed SQL and upload observers in progress
 
 - Source now includes a bounded SQLite inventory child, reproducible builtin-only

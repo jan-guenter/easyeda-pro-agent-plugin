@@ -106,18 +106,42 @@ of the runtime or permission to replay work.
 
 ## Remaining execution requirements
 
+The internal symbol-metadata comparator now derives one exact new-history-head
+effect from the baseline. It checks the source-derived 35-table schema, every
+row and cell, raw authenticated history, branch/project bookkeeping, sequence
+allocation and the structure ticket. It refuses inactive branches and history
+rows that would become unexpectedly visible under the new head. Native random
+UUIDs, keys and ciphertext are checked against their generation and plaintext
+contracts; they need not be known before dispatch. See the
+[source contract](symbol-metadata-closed-sql-source-2026-10-12.md).
+
+All 91 synthetic comparator tests pass. The complete row comparison yields every
+128 cells and between tables, without sorting or serializing whole relations.
+This is an internal effect check. Its result explicitly leaves producer binding,
+process closure, upload replay exclusion, execution authority and reopen proof
+unproved. It does not clear any writer refusal.
+
 The coordinator must bind the original operation and exact project to retained
 whole-Job exit, a fresh owned main process, the same profile/default partition,
 native source pins and a clean launch with no project-open attempt. Current
 empty tabs do not prove that launch history. The two observers must be bound to
 the same admitted generation and the next single project-open attempt.
 
-Actual cache semantics still need testing in an isolated synthetic profile using
-this distribution's browser. Empty caches can also follow eviction or lost
-writes, so they cannot prove that the requested edit persisted. Complete expected
-SQL effects, saved design verification and a second closed-state comparison
-remain necessary. The structure-ticket-only test helper explicitly does not
-claim a complete metadata-rename effect.
+The first isolated browser test now passes on this distribution's exact
+Electron `41.2.1-jlc-sa-win-x64.2`, Chromium `146.0.7680.188` and Node `24.14.1`.
+The maintained observer expressions ran against real browser prototypes,
+CacheStorage and ServiceWorkerContainer. Both absence reads succeeded; cache
+names remained empty before and after the named matches. The scratch process
+exited normally, and its retained Windows Job was empty without forced cleanup.
+This used synthetic UI/project state, no EasyEDA application code or user
+profile. It does not validate native startup or producer ownership. Populated
+caches and registered-worker refusal cases remain a separate test stage.
+
+Empty caches can also follow eviction or lost writes, so they cannot prove that
+the requested edit persisted. Complete expected SQL effects, saved design
+verification and a second closed-state comparison remain necessary. The
+structure-ticket-only test helper explicitly does not claim a complete
+metadata-rename effect.
 
 The observer's source review binds APP `10a42746`, UI `12414b9d`, API `59236967`
 and project manager `23089ec5`, all SHA-256 prefixes for the installed reviewed
@@ -129,7 +153,9 @@ not connected runtime observations.
 The pinned service-worker loader `f8ad61fe` returns before registration for local
 CLIENT modes without ONLINE at UTF-16 offset94598. That source path explains
 why a clean offline launch does not register a worker, but says nothing about
-older registrations. A copied synthetic browser runtime is being prepared to
-test the actual WebIDL descriptors and storage behavior. Passing a script to
-the installed EasyEDA executable is not an isolation mechanism: it can still
-load EasyEDA and its configured profile.
+older registrations. The isolated test above confirms the actual WebIDL
+descriptors and initial empty-state behavior. Passing a script to the installed
+EasyEDA executable is not an isolation mechanism: it can still load EasyEDA and
+its configured profile. The scratch runtime instead contains only a fixed
+synthetic application, uses separate storage paths and admits its identity
+before constructing a renderer. Its evidence is not a native lifecycle receipt.

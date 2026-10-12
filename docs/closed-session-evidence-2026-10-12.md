@@ -96,7 +96,10 @@ rename. Before enabling it, the coordinator must bind the complete sequence:
    database state. Persist all intent and result evidence without granting a
    repeated edit, Save or close after a restart.
 
-The operation-specific effect model, clean-generation admission, durable
-coordinator and actual browser validation remain separate work. Synthetic tests
-of the modules above are not connected EasyEDA validation. No production project
-is needed for any of these tests.
+The ordinary-symbol new-head SQL effect comparator is now implemented and tested
+on synthetic data. Its actor, worker-client, ticket and native-clock witnesses
+still need operation-owned runtime binding. Clean-generation admission and the
+durable coordinator remain separate work. The first isolated custom-browser
+absence test passes; populated-storage and registered-worker cases remain.
+Synthetic tests of these modules are not connected EasyEDA validation. No
+production project is needed for any of these tests.
