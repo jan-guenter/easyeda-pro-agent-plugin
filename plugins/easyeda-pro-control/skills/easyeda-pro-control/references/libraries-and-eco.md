@@ -12,7 +12,43 @@ When reading native library document history, fold records by their ordering fie
 
 Query `easyeda_control_library` with `{request:{action:"capabilities"}}`. A catalog descriptor is not execution support. Metadata reads, DEVICE writes, geometry edits and exports have separate proof paths.
 
-For symbol or footprint geometry, open the exact project library member and use its supported `easyeda_control_design` operation. Commit saves and reopens that editor, then verifies the complete selected-branch project-record delta. The legacy `easyeda_control_save_reopen` endpoint remains disabled.
+## Structure-write completion restriction
+
+These eight operations are blocked before dispatch:
+
+- `library.symbol.create` and `library.symbol.modify`;
+- `document.page.create` and `document.page.rename`;
+- `document.pcb.create` and `document.pcb.rename`;
+- `document.schematic.create` and `document.schematic.rename`.
+
+Their native META writes also schedule a delayed `project_structures` update.
+The existing task1 upload wait and document-record comparisons do not prove that
+SQL effect or completion of its timer/task2 job. Repeated structure calls can
+insert duplicate equal-ticket rows. A quiet interval or matching checkpoint is
+not a substitute. The code retains strict schemas and pure effect verifiers,
+but these are not executable lifecycle support.
+
+Completed historical journals remain readable. Potentially dispatched affected
+journals cannot be marked complete by ordinary reconciliation, including its
+no-mutation mode. The existing exact undispatched-preparation invalidation
+remains separate; do not clear flags or replay a write to reach it. This is an
+unimplemented completion contract, not evidence that an earlier project was
+damaged. Footprint/DEVICE routes, readers and ordinary navigation are not part
+of this eight-action restriction and retain their own checks. Native Save also
+clears pending geometry flags, scheduling the same structure job for
+schematic-page, symbol and PCB editors. Their design transactions, including
+new apply, commit, inverse, repair and nonterminal reconciliation, are blocked
+too. Footprint geometry is outside this scheduler gate and retains its own
+proof requirements. Do not use an unsaved apply or native Save to bypass the
+unimplemented completion contract.
+
+The creation and container-rename sections below describe retained source
+contracts for inspection and future implementation. They do not authorize
+execution while this restriction is active. Query current capabilities first.
+
+## Geometry and navigation
+
+For supported footprint geometry, open the exact project library member and use its `easyeda_control_design` operation. Commit saves and reopens that editor, then verifies the selected-branch project-record delta. Symbol geometry is currently blocked by the structure-write restriction above. The legacy `easyeda_control_save_reopen` endpoint remains disabled.
 
 Choose `library.footprint.open` or `library.symbol.open` for library assets, with
 `libraryUuid` equal to the observed project UUID and `target.uuid` equal to the
@@ -60,9 +96,9 @@ cannot be the tab selector; foreign projects, empty leaves, duplicate documents
 and unsupported symbol types refuse. These are read-only observations, not
 navigation authority or current-generation live-validation claims.
 
-## Create one closed empty schematic page
+## Blocked: create one closed empty schematic page
 
-Use `document.page.create` only when the requested result is an empty page in an
+The retained `document.page.create` contract is for an empty page in an
 existing ordinary project schematic. Supply the parent identity, not a title,
 source string, drawing-frame choice or template:
 
@@ -92,9 +128,9 @@ plan and original native returned page ID. Even exactly one matching new page
 cannot substitute for that identity evidence. Missing return evidence remains
 unresolved; deleting the observed page is not an automatic rollback.
 
-## Create one closed empty ordinary symbol
+## Blocked: create one closed empty ordinary symbol
 
-`library.symbol.create` supports `symbolType:2`, the exact current-project UUID
+The retained `library.symbol.create` contract accepts `symbolType:2`, the exact current-project UUID
 as `libraryUuid`, a unique nonblank name, and an optional description. An ordinary
 clean PCB must be the only project editor. Classification, inherited source,
 hierarchical/CBB projects and other symbol types are refused.
@@ -111,7 +147,7 @@ complete unchanged-peer evidence. As with page creation, reconcile the original
 journal after uncertainty; never identify a result by name alone or repeat
 creation. There is no automatic deletion/inverse or connected-validation claim.
 
-## Create one closed empty free PCB
+## Blocked: create one closed empty free PCB
 
 `document.pcb.create` admits only an absent `boardName`. A supplied board name,
 even an empty string, is outside this execution profile. Keep one clean ordinary
@@ -134,7 +170,7 @@ unchanged-baseline proof does not infer or require a created identity.
 Never create again or infer identity from a matching name.
 There is no automatic delete, inverse, opening or canvas-initialization recovery.
 
-## Create one closed empty schematic container
+## Blocked: create one closed empty schematic container
 
 `document.schematic.create` with `boardName` absent creates a closed, unbound
 `SCH` container. It does not create a page. Keep one clean ordinary PCB active
@@ -182,7 +218,7 @@ observes whether the original target remains present and checks the complete
 unchanged baseline. It never repeats close, opens or activates a tab. This route
 has offline regression coverage, not a current-generation live-validation claim.
 
-## Rename one closed PCB or schematic container
+## Blocked: rename one closed PCB or schematic container
 
 `document.pcb.rename` and `document.schematic.rename` accept an exact existing
 `target.uuid` and a trimmed, unique `name`. Use the library executor, fresh full

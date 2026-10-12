@@ -40,6 +40,7 @@ import { buildProjectPcbCreateReadbackExpression, validateProjectPcbCreateReadba
 import { buildProjectSchematicCreateReadbackExpression, validateProjectSchematicCreateReadback } from "./project-schematic-create-runtime.ts";
 
 import { verifyProjectSchematicCreateNativeProfile } from "./project-schematic-create-native-profile.ts";
+import { assertLibraryExecutionLifecycle, libraryExecutionLifecycleAdvice } from "./library-execution-lifecycle.ts";
 
 type Value = Record<string, unknown>;
 export type LibraryRecoveryEngine = Pick<EasyedaControlEngine, "assertContext" | "assertRecoveryOperationIsolated" | "awaitProjectUploads" | "checkpoint" | "context" | "dispatchWithOrphanTracking" | "ensureRuntimeRestartChallenge" | "recoverDispatchAuthority" | "exactRead"> & {
@@ -54,7 +55,8 @@ export interface LibraryRecoveryServices extends Partial<typeof optionalServices
 function summary(journal: LibraryJournal): Value {
   return { operationId: journal.operationId, action: journal.plan.operation.action, state: journal.state, result: journal.result ?? null,
     saved: journal.saved, reopened: journal.reopened, hardStop: journal.hardStop, mutationMayHaveOccurred: journal.mutationMayHaveOccurred,
-    orphanedCallPossible: journal.orphanedCallPossible, nextSafeAction: journal.nextSafeAction, journalPath: journal.journalPath, artifacts: journal.artifacts };
+    orphanedCallPossible: journal.orphanedCallPossible, nextSafeAction: journal.nextSafeAction, journalPath: journal.journalPath, artifacts: journal.artifacts,
+    ...libraryExecutionLifecycleAdvice(journal.plan.operation.action, journal.nextSafeAction) };
 }
 function sourceKind(context: ExpectedContext): string {
   const kind = new Map([[1, "schematic-source"], [2, "symbol-source"], [3, "pcb-source"], [4, "footprint-source"]]).get(context.document.documentType);
@@ -230,6 +232,20 @@ export class LibraryRecoveryCoordinator {
       throw transactionError(error, journal);
     }
   }
+  /** Offline admission only. An undispatched prefix still needs the complete
+   * connected read-only proof below; it is never declared invalidated here.
+   */
+  public async preflightReconcile(operationId: string): Promise<Value | undefined> {
+    const journal = await this.load(operationId);
+    if (isTerminalOperation(journal)) { return summary(journal); }
+    if (hasMissingLibraryPreparation(journal)) {
+      assertUndispatchedLibraryPreparation(journal);
+      return undefined;
+    }
+    assertLibraryExecutionLifecycle(journal.plan.operation);
+    return undefined;
+  }
+
   public async reconcile(operationId: string, requireNoMutation = false): Promise<Value> {
     const journal = await this.load(operationId);
     if (isTerminalOperation(journal)) { return summary(journal); }
@@ -239,6 +255,11 @@ export class LibraryRecoveryCoordinator {
       try { return await this.invalidateUndispatchedPreparation(journal); }
       catch (error) { throw transactionError(error, journal); }
     }
+    // A currently unchanged checkpoint cannot exclude a future timer/task2
+    // Write from an earlier dispatch. Only the exact undispatched prefix above
+    // May complete without the missing operation-owned lifecycle proof.
+    try { assertLibraryExecutionLifecycle(journal.plan.operation); }
+    catch (error) { throw transactionError(error, journal); }
     await this.isolated(journal);
     await this.runtime(journal, journal.plan.operation.action !== "document.activate");
     try {

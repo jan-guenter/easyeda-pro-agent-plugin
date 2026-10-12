@@ -2,7 +2,16 @@
 
 `easyeda-pro-control` is a Codex skill and MCP facade for EasyEDA Pro inspection and typed API editing, with native controls for missing APIs and dialogs. It provides version-pinned readers, component and geometry transactions, operation-specific library/export workflows, SQLite checkpoints, hash-bound evidence and recovery journals.
 
-The package enables typed editing through `easyeda_control_design` and supported operations through `easyeda_control_library`. Their guards require the reviewed runtime, an authenticated session, a retained Windows process Job, journaled before-state and exact effect verification. Design commit saves and reopens the document, then compares the complete selected-branch project records. The legacy writer remains runtime-disabled: `plan`, `apply`, `verify`, `rollback`, and `save_reopen` are retained refusal endpoints, not the new transaction API. Unrestricted JavaScript has no environment opt-in. Coverage and live validation remain operation-specific.
+The current candidate limits `easyeda_control_design` execution to footprint
+editors under their existing guards. Schematic-page, symbol and PCB transactions,
+plus eight library metadata writers, are blocked pending native structure-job
+completion and complete SQL-effect proof. Their schemas and pure effect
+verifiers remain available. Other `easyeda_control_library` routes keep their
+operation-specific gates. Enabled writes require the reviewed runtime, an
+authenticated session, a retained Windows process Job, journaled before-state
+and exact effect verification. The legacy writer remains runtime-disabled.
+Unrestricted JavaScript has no environment opt-in. Coverage and live validation
+remain operation-specific.
 
 The October revamp consolidates the September repairs and adds an offline API
 reference, exact typed-operation schemas, argument validation, bounded editor
@@ -15,13 +24,18 @@ namespaces / 749 declared signatures and 99 latest official namespaces / 806
 signatures. Its `coverage` action inventories all 774 distinct mounted method
 paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
-Current source classifications are 193 public subsets, 103 native equivalents,
-two lifecycle-only methods, seven implemented-but-blocked methods and 469
-omissions. Their execution routes comprise 358 available with runtime guards,
-nine blocked and three partially blocked. Method and route counts differ;
+Current source classifications are 193 public subsets, 30 native equivalents,
+no lifecycle-only methods, 82 implemented-but-blocked methods and 469
+omissions. Their execution routes comprise 274 available with runtime guards,
+94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
-See the [024750 release record](docs/api-coverage-024750-release-2026-10-12.md)
-for this candidate's Unicode evidence-reader fixes and verification status.
+See the [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)
+for this candidate's verification status. It includes the Unicode evidence-reader
+fixes from024750 and blocks eight metadata-writing routes plus schematic-page,
+symbol and PCB design transactions whose delayed native structure-table effects
+lack a complete lifecycle proof. Footprint transactions retain their own guards.
+The earlier payload
+passed CI but was not installed after this gap was found.
 Two new disposable wire commits on installed013324 passed saved/reopened
 source, connectivity and full-project checks, recorded as
 [C06/C07](docs/api-connected-validation-ledger.md#2026-10-12-c06-final-wire-observation-retained-on-013324).
@@ -107,20 +121,27 @@ Latest declarations are not runtime admission. Exact operation schemas cover
 108 design actions and 68 library/lifecycle actions; schema availability does
 not guarantee execution support. The [coverage inventory](docs/api-coverage-inventory-2026-10-10.md)
 and [feasibility review](docs/api-execution-feasibility-2026-10-10.md) name the
-remaining work. Closed symbol/page metadata, empty-page and empty-symbol creation, existing-tab
-activation and inactive clean-tab close have tracked executor and recovery
+remaining work. Closed symbol/page metadata, empty-page and empty-symbol creation,
+and PCB/schematic-container creation/rename currently refuse execution pending
+operation-owned structure-job completion and exact SQL-effect proof. Their
+schemas and document-effect implementations remain available for offline review.
+Schematic-page, symbol and PCB geometry Save can schedule that same structure
+job, so those design transaction routes are blocked too. Historical tests retain
+their document and checkpoint scope, not proof of native job completion.
+Existing-tab activation and inactive clean-tab close retain separate tracked
 paths. Their scopes and remaining connected acceptance are explicit; a public
 acknowledgment alone never completes a lifecycle operation. A separate closed
-PCB/schematic-container rename adapter requires one other clean PCB, complete
+PCB/schematic-container rename implementation requires one other clean PCB, complete
 checkpoint invariants and independent DOM checks. It preserves the original
 acknowledgment through recovery and performs no Save. Installed120000 passed
 forward/reverse PCB and schematic-container rename and one free-PCB creation;
-those results do not admit a later generation. Creation and container rename preserve every raw per-document history
+those results do not prove the newly identified structure-table lifecycle or
+admit a later generation. Creation and container rename preserve every raw per-document history
 occurrence. Closed free-PCB creation requires an absent board name and creates
 only META, with no canvas initialization, open, Save or automatic inverse.
 A separate free-schematic route creates only a closed META container, with no
-page, template, canvas or Save. Standalone PCB text supports bounded modify,
-create and delete. Installed131000 passed forward/reverse modification, but its
+page, template, canvas or Save. Standalone PCB text retains bounded modify,
+create and delete contracts, currently blocked. Installed131000 passed forward/reverse modification, but its
 v1 creation exposed a cached null-to-black reload.
 New v2 creation fixes explicit black; creation-only retained-Save recovery proves
 the original storage and observed reload separately without another Save.
@@ -140,9 +161,10 @@ retains its historical status. The
 records blockers for layer selection, page ordering, pad-pair groups and broader
 PCB text cases. A separate checkpoint-bound flat-topology
 diagnostic avoids the mutating netlist exporter. A separate sealed single-page
-profile admits only existing stored attribute/text display patches, with exact
+profile describes only existing stored attribute/text display patches, with exact
 inverse, endpoint and whole-project persistence checks. It does not re-enable
-electrical edits or historical compiled transactions. Imported library atom provenance has a separate
+electrical edits or historical compiled transactions; the structure-job
+restriction now also blocks this sealed profile. Imported library atom provenance has a separate
 sealed v2 profile: unchanged SYMBOL/FOOTPRINT peers retain every header occurrence,
 raw encoding and tombstone across the lifecycle. Default parsing and legacy v1
 remain strict. See the [imported-library contract](docs/native-library-import-history-2026-10-11.md)
@@ -153,7 +175,7 @@ complete 12-document fixture proof retained imported headers and both pin nets.
 See the [scoped fixture evidence](docs/api-coverage-083400-fixture-validation-2026-10-11.md).
 The reverse restored the original source exactly. Unsaved rollback and the newer
 source generation remain separate validation.
-A separate [sealed wire profile](docs/flat-wire-reroute-2026-10-11.md) now supports
+A separate [sealed wire profile](docs/flat-wire-reroute-2026-10-11.md) retains a blocked source contract for
 endpoint-only rerouting with existing LINE identities, unchanged styles/names,
 full contact-incidence proof and an exact inverse only while the durable baseline
 is unchanged. Installed220050 passed one three-segment forward/reverse pair,
@@ -264,6 +286,10 @@ descriptor `10` with `execveat(2)`. Bubblewrap receives only descriptors `0`–`
 an arbitrary descriptor inherited by the facade's shell cannot reach it.
 
 ## Implemented capabilities
+
+Current type-1/2/3 transaction execution is blocked by the structure-job
+completion gap described above. Footprint and unrelated routes retain their
+own guards; the historical writer results below are not exceptions.
 
 The live evidence in this section is historical and operation-specific. The
 separately recorded 164600 cases above do not transfer these older results to

@@ -2,6 +2,17 @@
 
 An ambiguous operation must not be repeated or saved. Inspect its journal and preserve the checkpoint, created IDs, runtime proof and phase artifacts. A delayed call may have completed after the response deadline.
 
+Current restriction: schematic-page, symbol and PCB design journals cannot
+commit, roll back, repair or complete nonterminal reconciliation. Eight
+symbol/page/container metadata writers are likewise blocked; see
+[the exact library list](libraries-and-eco.md#structure-write-completion-restriction).
+Native structure-job completion and its full SQL effect remain unimplemented.
+Historical terminal inspection and pure evidence checks remain available, as
+does invalidation of an exactly undispatched library preparation. Summaries
+retain old advice separately; it is not current execution authority. The
+affected recovery profiles below describe historical contracts only. Footprint
+and unrelated library recovery retain their independent guards.
+
 ## Typed design and library recovery
 
 1. Use `easyeda_control_design` inspect with the operation ID, or the corresponding library inspect action. `easyeda_control_recover_incomplete` with no ID lists managed incomplete operations. Local artifact/evidence inspection remains available.
@@ -67,8 +78,9 @@ stored the forward effect, rollback refuses before dispatch. Do not relabel that
 effect as unsaved because the agent has not clicked Save.
 
 If an older inverse already restored live state but its durable proof failed,
-preserve the journal and both observations. The upload barrier drains queued
-writes; it does not initiate Save or guarantee that editor changes were queued.
+preserve the journal and both observations. The upload barrier waits for task1;
+it does not drain a pending structure timer or later task2 job, initiate Save,
+or guarantee that editor changes were queued.
 A later read-only checkpoint may show delayed native persistence. Only then can
 same-journal reconciliation verify the original live baseline, complete durable
 restoration and unchanged peers. Do not change autosave settings, repeat the

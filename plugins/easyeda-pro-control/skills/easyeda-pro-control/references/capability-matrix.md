@@ -9,18 +9,33 @@ missing proof; do not bypass it with UI export or a generic SDK call. Schematic
 netlist/BOM/document and PCB netlist/BOM/PDF exports are also refused because of
 hidden Save All. Simulation export requires an unsupported NGSPICE editor.
 Historical observations below do not override these current restrictions.
-Separate sealed single-page display and wire-reroute profiles avoid that compiler;
-their narrow boundaries and validation limits are listed separately below.
+Separate sealed single-page display and wire-reroute observers avoid that
+compiler, but their transactions are also blocked by the later structure-job
+finding below. Their retained contracts are not execution exceptions.
 PCB/footprint navigation also needs passive preference-side-effect admission.
 See [native navigation limits](native-ui.md#navigation-preference-side-effects);
 project-file invariance does not cover global preferences or backup pruning.
 
-The source inventory classifies 774 method paths as 193 public subsets, 103
-native equivalents, two lifecycle-only, seven implemented-but-blocked and 469
-omitted. It maps 358 runtime-guarded available routes, nine blocked routes and
-three partially blocked routes. The fixed SDK-read catalog has 182 entries,
+The source inventory classifies 774 method paths as 193 public subsets, 30
+native equivalents, no lifecycle-only, 82 implemented-but-blocked and 469
+omitted. It maps 274 runtime-guarded available routes, 94 blocked routes and
+two partially blocked routes. The fixed SDK-read catalog has 182 entries,
 including 21 native equivalents. These counts describe implementations, not
 whole-method live validation or admission of the installed host.
+
+Eight symbol/page/container metadata-writing routes are also blocked pending
+operation-owned structure-job completion and exact SQL-effect proof. Historical
+document-record tests below do not prove that later-discovered requirement.
+See [the exact restriction](libraries-and-eco.md#structure-write-completion-restriction).
+Pure schemas and historical evidence remain readable; a nonterminal affected
+journal cannot become complete through ordinary reconciliation.
+
+The same job is scheduled when native Save republishes pending geometry without
+its pending flag. Schematic-page, symbol and PCB design transactions are therefore
+blocked too, including the sealed display and wire profiles. New apply, Save,
+inverse, repair and nonterminal reconciliation refuse. Footprint transactions
+retain their separate guards. The design descriptions and historical results
+below describe retained source contracts, not execution support for types1/2/3.
 
 | Capability | Controlled path | Current boundary |
 |---|---|---|
@@ -47,7 +62,7 @@ whole-method live validation or admission of the installed host.
 | Polygon splitting | sdk_read, pcb_MathPolygon.splitPolygon | Bounded JSON complex-polygon groups, temporary SDK constructors and exact ordered source-array output with duplicates retained. No native handles or CAD mutation; shared aggregate limits apply. Offline-tested including pinned constructor bodies; connected validation pending |
 | Owned editor tab/split-screen lookup | sdk_read, getSplitScreenIdByTabId / getTabsBySplitScreenId | Exact existing selector, complete bounded owned tree and saved project membership; identity-only direct result checked against the tree before/after, two matching samples and unchanged checkpoint/context. No foreign projects, empty leaves, title/data export, navigation or current-generation live claim |
 | Single-page stored display changes | design sch.layout.batch, sealed flat-display profiles | Existing literal-ID attribute/text display patches only; complete inverse, unchanged endpoint topology, sole page of one ordinary schematic and full saved-project proof. V1 remains strict; v2 additionally seals unchanged imported-library header occurrences from immutable checkpoints at every lifecycle gate. No electrical edits, NO_CONNECT, creation/deletion, translation, non-display steps or historical repair/page loading. Installed083400 passed a nonempty Designator-coordinate forward/reverse Save/reopen; unsaved rollback and newer generation remain separate. See schematic.md |
-| Closed PCB/schematic rename | library document.pcb.rename / document.schematic.rename | Separate native title-only adapter, one other clean owned PCB, closed target/children, independent DOM-frame inventory, strict nonimported history and fixed META shape. Complete peer raw chains preserved; original acknowledgment required for changed-result recovery. Installed120000 passed both explicit forward/reverse title pairs. No public CBB counterpart behavior, Save, reopen or automatic inverse. See libraries-and-eco.md |
+| Closed PCB/schematic rename | library document.pcb.rename / document.schematic.rename, blocked | Retained title-only schema, frame/record proof and historical120000 cases do not prove the delayed structure-table effect or job completion. No new execution or potentially dispatched terminal reconciliation. See libraries-and-eco.md |
 | Historical presentation-only schematic batch | design sch.layout.batch, compiled profile | Currently blocked by the compiled reader. Historical translation, wire/label edits and flag clones passed selected saved/reopened checks, but that does not enable this route now |
 | Single-page wire rerouting | design sch.wire.modify, sealed flat-wire-reroute.v1 | Existing unlocked named WIRE endpoint changes only; every LINE ID/count/style, ATTR field and child order preserved. Complete flat topology and contact-incidence multiset, fixed pin/foreign contacts and generated-marker index proof. No shared-WIRE endpoints or pin-bearing junctions. Exact ID-to-segment inverse only while durable baseline remains unchanged; one-shot Save/reopen and full peer proof. Installed220050 passed one three-segment forward/reverse saved/reopened pair with omitted lock and complete 12-document proof. Not unsaved rollback or original-history restoration; other shapes and later generations remain separate. See schematic.md |
 | Historical compiled wire geometry | design sch.wire.modify, compiled profile | Currently blocked by compiled topology. Sept25 disposable lifecycle/retained-Save evidence belongs to that older profile and does not admit the new sealed wire route |
@@ -66,12 +81,10 @@ whole-method live validation or admission of the installed host.
 | Schematic component properties and supported geometry | design | Native hidden properties preserved; per-family source proof; declarations that are SDK stubs remain refused or use a specific maintained adapter |
 | Schematic net labels and no-connect | design, supported electrical adapters | Typed native paths for genuine SDK gaps, exact record and topology consequences; no generic private invoke |
 | Library metadata | library capabilities/execute | Double-sampled supported metadata operations |
-| Closed project symbol metadata | library, library.symbol.modify | Ordinary project-local symbol name/non-null description only; project-bound native write avoids public cloud-routing race; complete title/description/header and unchanged tags/geometry/peer proof; no editor-refresh, reopen or current-generation connected-writer claim |
-| Closed empty ordinary symbol creation | library, library.symbol.create | Ordinary clean PCB active; unique project-local title and optional description; original native ID and META-only addition with complete unchanged-peer proof. No PART/template/canvas initialization, classification, open, Save or inverse. Native permission denial may display a dialog. Installed194400 passed one disposable creation with all17existing documents unchanged; no general symbol-editor lifecycle claim |
-| Closed project page rename | library, document.page.rename | Checkpoint-member ordinary page with one clean active sibling; exact writable branch, owner and locale duplicate-name checks; one native metadata write, complete saved title/header and unchanged peer/source proof; no Save, reopen, UI-caption refresh or current-generation connected-writer claim |
-| Closed empty schematic-page creation | library, document.page.create | Existing ordinary local schematic parent only; one clean owned PCB or sibling page active; exact writable branch and native name/order defaults; one project-qualified native addition with original returned ID and complete unchanged peer/hierarchy proof. Not the public template/drawing-frame/open workflow; no Save, reopen, automatic inverse or current-generation live claim |
-| Closed empty free-PCB creation | library, document.pcb.create | Absent boardName only; one other clean direct-open PCB. Retained UUID, checkpoint-derived name, exact DOCHEAD/META addition and unchanged raw per-document peer chains. Installed120000 passed one disposable creation. No canvas initialization, board attachment, open, Save or inverse |
-| Closed empty schematic-container creation | library, document.schematic.create | Absent boardName; one clean direct-open PCB. Original returned UUID, exact DOCHEAD/META addition and unchanged peer raw chains. Ordinary local symbol references and absent/empty inline component attrs required. No page/template/canvas, board attachment, open, Save or inverse. Installed164600 passed one free-container addition with all 11 prior documents unchanged. Asynchronous native subscribers are not atomic against project switching; other domains and later source require separate evidence |
+| Closed symbol creation/metadata | library.symbol.create / library.symbol.modify, blocked | Schemas and pure META/header/peer proofs retained. Missing exact structure-table delta and operation-owned native completion; historical194400/182554 observations do not supply those witnesses |
+| Closed schematic-page creation/rename | document.page.create / document.page.rename, blocked | Parent-only creation and closed-sibling rename contracts retained for offline review. Both native META paths schedule an unproved structure job; no new execution or dispatched-result completion |
+| Closed free-PCB creation | document.pcb.create, blocked | Retained absent-boardName, META-only and raw-peer-chain contract. Historical120000 document proof does not cover the delayed structure SQL/job lifecycle |
+| Closed schematic-container creation | document.schematic.create, blocked | Retained free-container, local-symbol-reference and raw-peer-chain contract. Historical164600 document proof does not cover the delayed structure SQL/job lifecycle |
 | Already-open document activation | library, document.activate | Exact checkpoint-member current-project tab and complete tab ownership; PCB/footprint target requires existing pcbCommandTab=true to avoid a shared-preference write and possible backup pruning. One activation, two coherent target observations and unchanged saved database; no setting change, reopen or current-generation connected claim |
 | Inactive clean document close | library, document.close | Ordinary symbol (2), PCB (3) or footprint (4) target with a separate clean PCB/footprint active; exactly two owned project tabs, one unsplit container. Await terminal tab/frame cleanup and prove unchanged active source/context and complete logical database. No Save, reopen, exact inverse or current-generation live claim; post-dispatch failure remains quarantined until retained runtime termination |
 | Project footprint library create/modify | library | Scoped current-project record proof; save and reopen facts reported separately |
@@ -79,7 +92,7 @@ whole-method live validation or admission of the installed host.
 | Project DEVICE association editing | library, library.device.modify | Association-only patch; existing metadata preserved; inherited placed-instance binding changes refused; no PCB footprint rebuild or implicit ECO |
 | Existing external 3D model binding | library, supported DEVICE create/modify | Exact 32-hex model and collection identities; double-sampled metadata and pre-write recheck; changes binding/title only, not model file or transform |
 | Project DEVICE model transform | library, library.device.model-transform | One stored DEVICE META transform; exact acknowledged inheriting SCH/PCB instance list; preserves all stored placement records and model bindings; saved record proof is not reopened or mechanical proof |
-| Library recovery | library inspect/recover-authority/open-target/rebind-runtime/reconcile | Immutable original plan and returned IDs; unchanged baseline or exact original durable mutation; never redispatch or infer reopened geometry. Page-create recovery cannot infer an ID from an observed addition. Standalone close recovery only observes target presence; no close/open/activation retry |
+| Library recovery | library inspect/recover-authority/open-target/rebind-runtime/reconcile | Immutable plans/returned IDs; never redispatch or infer reopened geometry. The eight blocked metadata writers cannot complete potentially dispatched reconciliation. Terminal inspection and exact undispatched-preparation invalidation remain available. Standalone close recovery only observes target presence; no close/open/activation retry |
 | Project footprint geometry | design, footprint operations | Exact-owner native history handlers, no full-source decoder; actual created IDs; identity-preserving modifies and explicit shape delete/create; full source/save/reopen proof; PAD tool-default effects documented |
 | Project symbol geometry | design, type-2 schematic graphics | Existing single-part circle/rectangle/text/pin/attribute edits; explicit compiler save and exact library reopen; unsupported pin rotations refused |
 | Other library and project lifecycle operations | library capabilities | Asset import/copy/delete and metadata changes outside supported profiles remain refused; inspect the actual execution-enabled action |

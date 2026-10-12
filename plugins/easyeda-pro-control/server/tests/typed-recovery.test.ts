@@ -485,7 +485,7 @@ void describe("typed transaction retained-authority recovery", () => {
     assert.equal(calls.includes("release-capture-after-durable-clear"), false);
   });
 
-  void it("one failed Save dispatch stays consumed through reconcile and commit after reload and rebind", async (t) => {
+  void it("retained failed Save evidence stays consumed and unchanged beneath the new lifecycle refusal", async (t) => {
     const { engine, journal, calls } = await fixture(t);
     const { DESIGN_SAVE_ATTEMPT_PROFILE, createDesignSaveIntent } = await import("../src/design-save-attempt.ts");
     journal.orphanedCallPossible = false;
@@ -512,8 +512,14 @@ void describe("typed transaction retained-authority recovery", () => {
       journal.state = state;
       journal.orphanedCallPhase = "reconcile-upload-barrier";
       await artifacts.updateOperation(journal);
-      await assert.rejects(executor.reconcile(journal.operationId), /Save was already attempted/u);
-      await assert.rejects(executor.commit(journal.operationId), /Save was already attempted/u);
+      const retained = await fileSystem.readFile(artifacts.operationPath(journal.operationId));
+      const beforeCalls = [...calls];
+      await assert.rejects(executor.reconcile(journal.operationId), /operation-owned completion.*project_structures/u);
+      await assert.rejects(executor.commit(journal.operationId), /operation-owned completion.*project_structures/u);
+      assert.deepEqual(await fileSystem.readFile(artifacts.operationPath(journal.operationId)), retained);
+      assert.deepEqual(calls, beforeCalls);
+      const inspected = await executorModule.DesignExecutor.inspect(journal.operationId);
+      assert.equal(inspected["state"], state);
       assert.equal(calls.filter((call) => call === "native-save").length, 1);
     }
   });

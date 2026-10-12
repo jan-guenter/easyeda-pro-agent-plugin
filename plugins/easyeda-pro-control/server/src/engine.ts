@@ -33,6 +33,7 @@ import {
 } from "./artifacts.ts";
 import type { ArtifactDescriptor } from "./artifacts.ts";
 import { createCheckpoint, verifyCheckpoint } from "./checkpoint.ts";
+import { assertLegacyRecoveryJournalFamily } from "./legacy-recovery-family.ts";
 import type {
   CheckpointAccessPolicy,
   CheckpointCreateInput,
@@ -4967,8 +4968,10 @@ export class EasyedaControlEngine {
     if (operationId === undefined || operationId.length === 0) {
       return scanUnfinishedOperations();
     }
+    const retained = await loadOperation(operationId);
+    assertLegacyRecoveryJournalFamily(retained);
     await this.assertRecoveryOperationIsolated(operationId);
-    const operation = asOperationJournal(await loadOperation(operationId));
+    const operation = asOperationJournal(retained);
     if (isTerminalOperation(operation)) {
       return operationSummary(operation);
     }

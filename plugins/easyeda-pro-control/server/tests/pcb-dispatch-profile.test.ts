@@ -6,6 +6,7 @@ import vm from "node:vm";
 import { isRecord } from "../src/core.ts";
 import { decodeExactReadEnvelope } from "../src/exact-readers.ts";
 import { flatTransactionBinding } from "../src/flat-transaction-binding.ts";
+import { assertDesignExecutionLifecycle } from "../src/design-execution-lifecycle.ts";
 
 type Invoke = (journal: Record<string, unknown>, phase: string) => Promise<unknown>;
 async function harness(failure: "none" | "missing" | "before" | "after" | "dispatch" | "manager-after", enveloped = false): Promise<{
@@ -21,6 +22,7 @@ async function harness(failure: "none" | "missing" | "before" | "after" | "dispa
   // All authorities and artifact writes are synthetic; no live engine exists.
   const scope = {
     flatTransactionBinding,
+    assertDesignExecutionLifecycle,
     register: (value: Invoke): void => { invoke = value; },
     runtime: (): Promise<void> => { calls.push("runtime"); return Promise.resolve(); },
     engine: {
@@ -68,26 +70,27 @@ async function harness(failure: "none" | "missing" | "before" | "after" | "dispa
 }
 
 function journal(documentType = 3): Record<string, unknown> {
-  return { plan: { operation: { action: "pcb.text.modify" } }, context: { document: { documentType } }, state: "planned" };
+  return { plan: { operation: { action: documentType === 4 ? "footprint.text.modify" : "pcb.text.modify" },
+    expectedContext: { document: { documentType } } }, context: { document: { documentType } }, state: "planned" };
 }
 
-void test("PCB apply, inverse and lifecycle dispatches pin UI bytes and retain the original return before post-checks", async () => {
+void test("PCB apply, inverse and lifecycle dispatches refuse before runtime or UI profile acquisition", async () => {
   for (const phase of ["apply", "inverse", "save-reopen"]) {
     const current = await harness("none");
-    assert.deepEqual(await current.invoke(journal(), phase), { ok: true, id: "original-ack" });
-    const manager = phase === "save-reopen" ? ["manager-profile"] : [];
-    assert.deepEqual(current.calls, ["runtime", "installed", ...manager, "profile-1", "journal", "dispatch",
-      `artifact-${phase}`, ...manager, "profile-2"]);
-    assert.deepEqual(current.returns, [{ ok: true, id: "original-ack" }]);
+    const retained = journal();
+    const before = structuredClone(retained);
+    await assert.rejects(current.invoke(retained, phase), /operation-owned completion.*project_structures/u);
+    assert.deepEqual(current.calls, []); assert.deepEqual(current.returns, []); assert.deepEqual(retained, before);
   }
 });
 
-void test("every native lifecycle retains its original raw or decoded acknowledgment before the second manager profile check", async () => {
+void test("blocked PCB and symbol lifecycles refuse while footprint retains original raw or decoded acknowledgment before post-checks", async () => {
   for (const [phase, documentType] of [["save-reopen", 3], ["footprint-reopen", 4], ["symbol-reopen", 2],
     ["footprint-reopen-recovery", 4], ["symbol-reopen-recovery", 2]] as const) {
     for (const enveloped of [false, true]) {
       const current = await harness("manager-after", enveloped);
       const retained: Record<string, unknown> = { ...journal(documentType), operationId: "synthetic", planHash: "original", sequence: 0, after: { sha256: "original-source" } };
+      if (documentType === 4) {
       await assert.rejects(current.invoke(retained, phase), /manager profile drift/u);
       assert.equal(current.calls.filter((entry) => entry === "dispatch").length, 1);
       assert.equal(current.calls.filter((entry) => entry === "manager-profile").length, 2);
@@ -97,31 +100,35 @@ void test("every native lifecycle retains its original raw or decoded acknowledg
       assert.equal(retained["hardStop"], true);
       assert.equal(retained["state"], `${phase}-dispatching`);
       assert.equal(current.calls.at(-1), "manager-profile");
+      } else {
+        const before = structuredClone(retained);
+        await assert.rejects(current.invoke(retained, phase), /operation-owned completion.*project_structures/u);
+        assert.deepEqual(current.calls, []); assert.deepEqual(current.returns, []); assert.deepEqual(retained, before);
+      }
     }
   }
 });
 
-void test("missing or changed pre-dispatch UI profile cannot invoke any PCB writer or inverse", async () => {
+void test("missing or changed pre-dispatch UI profile cannot bypass the earlier PCB lifecycle refusal", async () => {
   for (const phase of ["apply", "inverse"]) {
     for (const failure of ["missing", "before"] as const) {
       const current = await harness(failure), retained = journal();
-      await assert.rejects(current.invoke(retained, phase), /implementation identity|profile drift/u);
-      assert.deepEqual(current.calls, ["runtime", "installed", ...(failure === "before" ? ["profile-1"] : [])]);
+      await assert.rejects(current.invoke(retained, phase), /operation-owned completion.*project_structures/u);
+      assert.deepEqual(current.calls, []);
       assert.deepEqual(current.returns, []); assert.equal(retained["state"], "planned");
     }
   }
 });
 
-void test("post-dispatch profile drift preserves original acknowledgment and never repeats a native call", async () => {
+void test("PCB failure simulations cannot reach dispatch or post-dispatch profile checks", async () => {
   for (const phase of ["apply", "inverse"]) {
     const current = await harness("after");
-    await assert.rejects(current.invoke(journal(), phase), /profile drift/u);
-    assert.deepEqual(current.calls, ["runtime", "installed", "profile-1", "journal", "dispatch", `artifact-${phase}`, "profile-2"]);
-    assert.deepEqual(current.returns, [{ ok: true, id: "original-ack" }]);
+    await assert.rejects(current.invoke(journal(), phase), /operation-owned completion.*project_structures/u);
+    assert.deepEqual(current.calls, []); assert.deepEqual(current.returns, []);
   }
   const failed = await harness("dispatch");
-  await assert.rejects(failed.invoke(journal(), "apply"), /dispatch failure/u);
-  assert.deepEqual(failed.calls, ["runtime", "installed", "profile-1", "journal", "dispatch"]);
+  await assert.rejects(failed.invoke(journal(), "apply"), /operation-owned completion.*project_structures/u);
+  assert.deepEqual(failed.calls, []);
   assert.deepEqual(failed.returns, []);
 });
 

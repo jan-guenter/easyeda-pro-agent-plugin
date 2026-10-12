@@ -10,6 +10,7 @@ import type { controlRootCapability, createOperation, listOperationStates, opera
 import type { DispatchOperationJournal, EasyedaControlEngine } from "../src/engine.ts";
 import type { DesignExecutor } from "../src/design-execution.ts";
 import type { SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL } from "../src/exact-readers.ts";
+import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL } from "../src/design-execution-lifecycle.ts";
 
 let artifacts: { controlRootCapability: typeof controlRootCapability; createOperation: typeof createOperation;
   listOperationStates: typeof listOperationStates; operationPath: typeof operationPath };
@@ -53,7 +54,7 @@ function journalFixture(documentType = 1): DispatchOperationJournal {
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), artifacts: [] };
 }
 
-function refusal(): { message: string } { return { message: readers.SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL }; }
+function refusal(): { message: string } { return { message: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL }; }
 
 void test("schematic creates, deletes and electrical wire changes refuse before runtime or journal creation", async (t) => {
   const calls: string[] = [];
@@ -78,7 +79,7 @@ void test("schematic creates, deletes and electrical wire changes refuse before 
   }
 });
 
-void test("flat wire candidates need retained runtime authority and cannot override derived topology", async (t) => {
+void test("flat wire candidates refuse before runtime authority or caller topology can grant execution", async (t) => {
   const calls: string[] = [];
   const engine = new engines.EasyedaControlEngine({ callTool: (): Promise<unknown> => {
     calls.push("upstream"); return Promise.reject(new Error("No upstream call allowed"));
@@ -90,11 +91,10 @@ void test("flat wire candidates need retained runtime authority and cannot overr
   const originalOperations = await artifacts.listOperationStates();
   const executor = new executors.DesignExecutor(engine);
   const input = { operation: OPERATION, expectedContext: CONTEXT, expectedFingerprint: {}, confirmWrite: true as const };
-  await assert.rejects(executor.apply(input), { message: "Launch EasyEDA through the retained runtime supervisor before design writes." });
+  await assert.rejects(executor.apply(input), refusal());
   assert.deepEqual(calls, []);
   assert.deepEqual(await artifacts.listOperationStates(), originalOperations);
-  await assert.rejects(executor.apply({ ...input, expectedTopology: [] }),
-    { message: "A sealed flat transaction derives complete unchanged topology; caller overrides are not authority." });
+  await assert.rejects(executor.apply({ ...input, expectedTopology: [] }), refusal());
   assert.deepEqual(calls, []);
   assert.deepEqual(await artifacts.listOperationStates(), originalOperations);
 });
@@ -116,11 +116,18 @@ void test("retained schematic journals refuse every mutation, Save, navigation a
     await artifacts.createOperation(journal);
     const bytes = await readFile(journal.journalPath), names = await readdir(dirname(journal.journalPath));
     const attempts: (() => Promise<Record<string, unknown>>)[] = [() => executor.commit(journal.operationId), () => executor.rollback(journal.operationId),
-      () => executor.openTarget(journal.operationId), () => executor.loadLayoutPages(journal.operationId, true),
       () => executor.repairLayoutNetLabels(journal.operationId, true), () => executor.repairLayoutLabelVisibility(journal.operationId, true),
       () => executor.repairLayoutWireGroups(journal.operationId, true), () => executor.reconcile(journal.operationId)];
     for (const attempt of attempts) {
       await assert.rejects(attempt(), refusal());
+      assert.deepEqual(await readFile(journal.journalPath), bytes);
+      assert.deepEqual(await readdir(dirname(journal.journalPath)), names);
+      assert.deepEqual(calls, []);
+    }
+    // Navigation remains independently constrained by the older topology gate.
+    const navigations: (() => Promise<Record<string, unknown>>)[] = [() => executor.openTarget(journal.operationId), () => executor.loadLayoutPages(journal.operationId, true)];
+    for (const attempt of navigations) {
+      await assert.rejects(attempt(), { message: readers.SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL });
       assert.deepEqual(await readFile(journal.journalPath), bytes);
       assert.deepEqual(await readdir(dirname(journal.journalPath)), names);
       assert.deepEqual(calls, []);

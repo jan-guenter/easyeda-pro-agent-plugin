@@ -7,7 +7,7 @@ import { test } from "node:test";
 import { OPERATION_SCHEMA, buildPlanHash, newOperationId, sha256Json } from "../src/core.ts";
 import type { EasyedaControlEngine } from "../src/engine.ts";
 
-void test("topology refusal precedes even constructor-witness resolution and every commit Save or navigation", async (t) => {
+void test("structure lifecycle refusal precedes constructor-witness resolution and every commit Save or navigation", async (t) => {
   const directory = await mkdtemp(join(tmpdir(), "easyeda-constructor-boundary-"));
   const previous = process.env["EASYEDA_CONTROL_DATA_DIR"];
   configureTestControlRoot(directory);
@@ -33,7 +33,7 @@ void test("topology refusal precedes even constructor-witness resolution and eve
     orphanedCallPossible: false, hardStop: false, mutationMayHaveOccurred: true, nextSafeAction: "Commit after proof.",
     context, before: snapshot, after: snapshot, preCheckpoint: {}, sequence: 0, artifacts: [] });
   const calls: string[] = [];
-  // The current topology refusal takes priority even over constructor proof.
+  // The structure lifecycle refusal takes priority even over constructor proof.
   // Dedicated resolver fixtures retain constructor validation coverage; no
   // Runtime, witness resolution, snapshot or Save may run through this entry.
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Test-only inert engine; every reachable engine boundary below is mocked to refuse.
@@ -48,7 +48,7 @@ void test("topology refusal precedes even constructor-witness resolution and eve
   });
   t.mock.method(instance, "snapshot", (): Promise<never> => { calls.push("commit-snapshot"); return Promise.reject(new Error("Unexpected commit snapshot.")); });
   t.mock.method(instance, "call", (): Promise<never> => { calls.push("save-or-navigation"); return Promise.reject(new Error("Unexpected dispatch.")); });
-  await assert.rejects(executor.commit(operationId), /can annotate Designator\/Unique ID and invoke Save All/u);
+  await assert.rejects(executor.commit(operationId), /native Save's debounced project_structures/u);
   assert.deepEqual(calls, []);
   const retained = await artifacts.loadOperation(operationId);
   assert.equal(retained["state"], "applied-unsaved");

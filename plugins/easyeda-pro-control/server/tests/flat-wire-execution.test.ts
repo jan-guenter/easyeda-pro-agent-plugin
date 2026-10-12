@@ -95,14 +95,15 @@ void test("flat wire profile cannot authorize page loading, repair families or u
   const executor = new executors.DesignExecutor(engine), journal = await journalFixture();
   await artifacts.createOperation(journal);
   const originalNames = await readdir(dirname(journal.journalPath));
-  for (const attempt of [(): Promise<unknown> => executor.loadLayoutPages(journal.operationId, true), (): Promise<unknown> => executor.repairLayoutNetLabels(journal.operationId, true),
+  await assert.rejects(executor.loadLayoutPages(journal.operationId, true), /topology execution is disabled/u);
+  for (const attempt of [(): Promise<unknown> => executor.repairLayoutNetLabels(journal.operationId, true),
     (): Promise<unknown> => executor.repairLayoutWireGroups(journal.operationId, true), (): Promise<unknown> => executor.repairLayoutLabelVisibility(journal.operationId, true)]) {
-    await assert.rejects(attempt(), /topology execution is disabled/u);
+    await assert.rejects(attempt(), /native Save's debounced project_structures/u);
   }
   const privateCall: unknown = Reflect.get(executor, "call"); assert.ok(typeof privateCall === "function");
   for (const phase of ["apply", "inverse", "save-reopen", "layout-page-load-1", "repair"]) {
     const result: unknown = Reflect.apply(privateCall, executor, [journal, phase, "throw new Error('unsealed')", true]);
-    assert.ok(result instanceof Promise); await assert.rejects(result, /prepared program|original preparation/u);
+    assert.ok(result instanceof Promise); await assert.rejects(result, /native Save's debounced project_structures/u);
   }
   assert.deepEqual(await readdir(dirname(journal.journalPath)), originalNames);
 });
@@ -120,9 +121,9 @@ void test("flat wire Save ambiguity cannot be downgraded by commit, inverse or r
   journal.artifacts.push(await artifacts.writePhaseArtifact(journal.operationId, journal.sequence, "design-save-intent", intent));
   journal.state = "commit-needs-recovery"; await artifacts.updateOperation(journal);
   const original = await readFile(journal.journalPath);
-  await assert.rejects(executor.commit(journal.operationId), /already attempted/u);
-  await assert.rejects(executor.rollback(journal.operationId), /already attempted/u);
-  await assert.rejects(executor.reconcile(journal.operationId), /without a retained success/u);
+  await assert.rejects(executor.commit(journal.operationId), /native Save's debounced project_structures/u);
+  await assert.rejects(executor.rollback(journal.operationId), /native Save's debounced project_structures/u);
+  await assert.rejects(executor.reconcile(journal.operationId), /native Save's debounced project_structures/u);
   assert.deepEqual(calls, []); assert.deepEqual(await readFile(journal.journalPath), original);
 });
 

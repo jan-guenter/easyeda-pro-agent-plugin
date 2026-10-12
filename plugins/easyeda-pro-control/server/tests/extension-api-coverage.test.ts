@@ -7,20 +7,46 @@ import { extensionApiCoverageQuerySchema, extensionApiCoverageSummary, inventory
 import { queryOperationCatalog, validateCatalogOperation } from "../src/operation-catalog.ts";
 import { queryPublicSdkReads } from "../src/public-sdk-catalog.ts";
 import { isRecord } from "../src/core.ts";
-import { buildLibraryExecutionExpression, libraryExecutionKind } from "../src/library-runtime.ts";
+import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL } from "../src/design-execution-lifecycle.ts";
 
-void test("symbol deletion remains nonexecutable until subscriber and delayed structure effects have a completion proof", () => {
-  const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.lib_Symbol.delete");
-  assert.ok(row);
-  assert.equal(row.status, "omitted"); assert.deepEqual(row.routes, []);
-  assert.ok(row.omission);
-  assert.equal(row.omission?.code, "symbol-delete-subscriber-and-structure-lifecycle");
-  assert.ok(row.omission.evidence.includes("docs/symbol-delete-native-effects-2026-10-12.md"));
-  assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
-  const operation = { id: "closed-symbol-delete", action: "library.symbol.delete", libraryUuid: "project", target: { uuid: "symbol" } };
-  assert.throws(() => libraryExecutionKind(operation), /no completed execution proof profile/u);
-  assert.throws(() => buildLibraryExecutionExpression(operation), /no completed execution proof profile/u);
+
+void test("all eight delayed project-structure writers report blocked coverage without removing argument discovery", () => {
+  const mappings = [
+    ["eda.lib_Symbol.create", "library.symbol.create"], ["eda.lib_Symbol.modify", "library.symbol.modify"],
+    ["eda.dmt_Schematic.createSchematicPage", "document.page.create"], ["eda.dmt_Schematic.modifySchematicPageName", "document.page.rename"],
+    ["eda.dmt_Pcb.createPcb", "document.pcb.create"], ["eda.dmt_Pcb.modifyPcbName", "document.pcb.rename"],
+    ["eda.dmt_Schematic.createSchematic", "document.schematic.create"], ["eda.dmt_Schematic.modifySchematicName", "document.schematic.rename"],
+  ] as const;
+  const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
+  for (const [path, action] of mappings) {
+    const row = rows.get(path); assert.ok(row);
+    assert.equal(row.status, "implemented-but-blocked"); assert.equal(row.omission, null);
+    assert.equal(row.routes.length, 1);
+    const route = row.routes[0]; assert.ok(route);
+    assert.equal(route.selector, action); assert.equal(route.tool, "easyeda_control_library");
+    assert.equal(route.executionState, "blocked");
+    assert.match(route.blockedReason ?? "", /operation-owned completion.*project_structures.*complete SQLite effect/u);
+    assert.match(route.blockedReason ?? "", /task1.*pending timer\/task2/u);
+    assert.ok(route.source.includes("library-execution-lifecycle.ts"));
+    const discovery = route.inputDiscovery?.arguments["request"]; assert.ok(isRecord(discovery));
+    const catalog = queryOperationCatalog(discovery["query"]);
+    assert.equal(catalog["offline"], true); assert.equal(catalog["executionAuthorized"], false);
+    const entries = catalog["entries"]; assert.ok(Array.isArray(entries)); assert.equal(entries.length, 1);
+    const entry: unknown = entries[0]; assert.ok(isRecord(entry));
+    assert.equal(entry["action"], action); assert.ok(isRecord(entry["inputSchema"]));
+    const compact = queryExtensionApiCoverage({ search: path, status: "implemented-but-blocked" });
+    assert.ok(JSON.stringify(compact).includes(route.blockedReason ?? "missing refusal"));
+  }
+  for (const path of ["eda.lib_Symbol.get", "eda.lib_Footprint.get", "eda.lib_Device.get", "eda.lib_3DModel.get",
+    "eda.lib_Footprint.create", "eda.lib_Footprint.modify", "eda.lib_Device.create", "eda.lib_Device.modify"]) {
+    const row = rows.get(path); assert.ok(row); assert.notEqual(row.status, "implemented-but-blocked");
+    for (const route of row.routes) {
+      assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.blockedReason, undefined);
+      assert.equal(route.source.includes("library-execution-lifecycle.ts"), false);
+    }
+  }
 });
+
 
 void test("coverage enumerates every distinct mounted method and retains every overload in both pinned snapshots", () => {
   const rows = inventoryExtensionApiCoverage();
@@ -50,17 +76,17 @@ void test("coverage enumerates every distinct mounted method and retains every o
 
 void test("coverage does not promote schema-only, native equivalent, stub, latest-only or historical evidence to public execution", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
-  assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.status, "implemented-native-equivalent");
+  assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.status, "implemented-but-blocked");
   assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.routes[0]?.implementation, "native-task-equivalent");
   assert.equal(rows.get("eda.sch_PrimitiveWire.modify")?.currentGenerationLiveValidation, "not-recorded");
-  assert.equal(rows.get("eda.lib_Symbol.create")?.status, "implemented-native-equivalent");
+  assert.equal(rows.get("eda.lib_Symbol.create")?.status, "implemented-but-blocked");
   const symbolCreate = rows.get("eda.lib_Symbol.create")?.routes[0];
   assert.ok(symbolCreate); assert.equal(symbolCreate.selector, "library.symbol.create");
   assert.deepEqual(symbolCreate.documentTypes, [3]);
-  assert.equal(symbolCreate.executionState, "available-with-runtime-guards");
+  assert.equal(symbolCreate.executionState, "blocked");
   assert.match(symbolCreate.scope, /Permission denial can display a native dialog/u);
   assert.equal(rows.get("eda.lib_Symbol.create")?.currentGenerationLiveValidation, "not-recorded");
-  assert.equal(rows.get("eda.lib_Symbol.modify")?.status, "implemented-native-equivalent");
+  assert.equal(rows.get("eda.lib_Symbol.modify")?.status, "implemented-but-blocked");
   assert.equal(rows.get("eda.lib_Symbol.modify")?.routes[0]?.selector, "library.symbol.modify");
   assert.equal(rows.get("eda.lib_Symbol.modify")?.currentGenerationLiveValidation, "not-recorded");
   assert.equal(rows.get("eda.dmt_EditorControl.activateDocument")?.status, "implemented-public-subset");
@@ -69,17 +95,17 @@ void test("coverage does not promote schema-only, native equivalent, stub, lates
   const close = rows.get("eda.dmt_EditorControl.closeDocument")?.routes.find((route) => route.selector === "document.close");
   assert.ok(close); assert.equal(close.implementation, "public-method"); assert.deepEqual(close.documentTypes, [3, 4]);
   assert.equal(close.executionState, "available-with-runtime-guards"); assert.equal(close.validation, "offline-regression;current-live-unclaimed");
-  assert.equal(rows.get("eda.dmt_Schematic.createSchematicPage")?.status, "implemented-native-equivalent");
+  assert.equal(rows.get("eda.dmt_Schematic.createSchematicPage")?.status, "implemented-but-blocked");
   const create = rows.get("eda.dmt_Schematic.createSchematicPage")?.routes[0];
   assert.ok(create); assert.equal(create.selector, "document.page.create"); assert.equal(create.implementation, "native-task-equivalent");
-  assert.deepEqual(create.documentTypes, [1, 3]); assert.equal(create.executionState, "available-with-runtime-guards");
+  assert.deepEqual(create.documentTypes, [1, 3]); assert.equal(create.executionState, "blocked");
   assert.equal(rows.get("eda.dmt_Schematic.createSchematicPage")?.currentGenerationLiveValidation, "not-recorded");
-  assert.equal(rows.get("eda.dmt_Schematic.modifySchematicPageName")?.status, "implemented-native-equivalent");
+  assert.equal(rows.get("eda.dmt_Schematic.modifySchematicPageName")?.status, "implemented-but-blocked");
   assert.equal(rows.get("eda.dmt_Schematic.modifySchematicPageName")?.routes[0]?.selector, "document.page.rename");
   assert.equal(rows.get("eda.dmt_Schematic.modifySchematicPageName")?.currentGenerationLiveValidation, "not-recorded");
   assert.equal(rows.get("eda.dmt_Project.createProject")?.status, "omitted");
   assert.equal(rows.get("eda.sch_PrimitiveBus.create")?.status, "omitted");
-  assert.equal(rows.get("eda.pcb_Document.save")?.status, "internal-lifecycle-only");
+  assert.equal(rows.get("eda.pcb_Document.save")?.status, "implemented-but-blocked");
   assert.equal(rows.get("eda.pcb_Layer.getCurrentLayer")?.status, "implemented-native-equivalent");
   assert.equal(rows.get("eda.sch_PrimitiveText.getAllPrimitiveId")?.status, "implemented-native-equivalent");
   assert.equal(rows.get("eda.sch_PrimitiveText.getAllPrimitiveId")?.routes[0]?.implementation, "native-task-equivalent");
@@ -88,12 +114,12 @@ void test("coverage does not promote schema-only, native equivalent, stub, lates
   assert.equal(rows.get("eda.sys_MessageBus.rpcCall")?.omission?.code, "unrestricted-transport-or-service");
 });
 
-void test("topology-dependent schematic routes are blocked without disabling independent symbol and PCB routes", () => {
+void test("topology restrictions remain documented beneath the broader schematic, symbol and PCB lifecycle refusal", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   for (const path of ["eda.sch_PrimitiveComponent.create", "eda.sch_PrimitiveComponent.modify", "eda.sch_PrimitiveComponent.delete",
     "eda.sch_PrimitiveWire.create", "eda.sch_PrimitiveWire.modify", "eda.sch_PrimitiveWire.delete", "eda.sch_PrimitiveAttribute.createNetLabel", "eda.sch_PrimitiveComponent.createNetFlag"]) {
     const row = rows.get(path); assert.ok(row);
-    assert.equal(row.status, path === "eda.sch_PrimitiveWire.modify" ? "implemented-native-equivalent" : "implemented-but-blocked");
+    assert.equal(row.status, "implemented-but-blocked");
     const genericRoutes = row.routes.filter((route) => !route.selector.includes("sealed-profile="));
     assert.ok(genericRoutes.length > 0);
     for (const route of genericRoutes) {
@@ -102,25 +128,25 @@ void test("topology-dependent schematic routes are blocked without disabling ind
     }
   }
   const pinRoutes = rows.get("eda.sch_PrimitivePin.modify")?.routes; assert.ok(pinRoutes);
-  assert.equal(pinRoutes.find((route) => route.selector.includes("documentType=2"))?.executionState, "available-with-runtime-guards");
+  assert.equal(pinRoutes.find((route) => route.selector.includes("documentType=2"))?.executionState, "blocked");
   assert.equal(pinRoutes.find((route) => route.selector === "sch.component-pin.no-connect")?.executionState, "blocked");
-  assert.equal(rows.get("eda.pcb_PrimitiveLine.create")?.routes[0]?.executionState, "available-with-runtime-guards");
+  assert.equal(rows.get("eda.pcb_PrimitiveLine.create")?.routes[0]?.executionState, "blocked");
   const genericSave = rows.get("eda.sch_Document.save")?.routes.find((route) => route.selector === "execute/commit");
-  assert.equal(genericSave?.executionState, "partially-blocked");
+  assert.equal(genericSave?.executionState, "blocked");
   assert.deepEqual(genericSave?.blockedDocumentTypes, [1]);
   const compact = queryExtensionApiCoverage({ search: "eda.sch_PrimitiveWire.modify" })["entries"];
   assert.ok(Array.isArray(compact) && isRecord(compact[0]));
   assert.ok(JSON.stringify(compact).includes("blockedReason"));
 });
 
-void test("sealed wire coverage admits only endpoint reroute and its internal no-repeat Save lifecycle", () => {
+void test("sealed wire coverage retains endpoint and no-repeat Save source contracts while execution is blocked", () => {
   const profile = "easyeda-pro-control.flat-wire-reroute.v1";
   const admitted = inventoryExtensionApiCoverage().flatMap((row) => row.routes
     .filter((route) => route.selector.includes(`sealed-profile=${profile}`)).map((route) => ({ row, route })));
   assert.deepEqual(admitted.map(({ row }) => row.path).toSorted(), ["eda.sch_Document.save", "eda.sch_PrimitiveWire.modify"]);
   for (const { row, route } of admitted) {
-    assert.deepEqual(route.documentTypes, [1]); assert.equal(route.executionState, "available-with-runtime-guards");
-    assert.equal(route.blockedReason, undefined); assert.equal(route.blockedDocumentTypes, undefined);
+    assert.deepEqual(route.documentTypes, [1]); assert.equal(route.executionState, "blocked");
+    assert.equal(route.blockedReason, DESIGN_STRUCTURE_LIFECYCLE_REFUSAL); assert.deepEqual(route.blockedDocumentTypes, [1]);
     assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
     assert.equal(route.validation, "offline-regression;current-live-unclaimed");
     assert.ok(route.source.includes("flat-wire-markers.ts")); assert.ok(route.tests.includes("flat-wire-lifecycle.test.ts"));
@@ -134,15 +160,15 @@ void test("sealed wire coverage admits only endpoint reroute and its internal no
   }
 });
 
-void test("sealed flat display coverage admits only existing attribute/text display and its internal Save lifecycle", () => {
+void test("sealed flat display coverage retains its source contracts without a lifecycle exception", () => {
   const rows = inventoryExtensionApiCoverage();
   for (const profile of ["easyeda-pro-control.flat-display-transaction.v1", "easyeda-pro-control.flat-display-transaction.v2"]) {
   const admitted = rows.flatMap((row) => row.routes.filter((route) => route.selector.includes(`sealed-profile=${profile}`)).map((route) => ({ path: row.path, row, route })));
   assert.deepEqual(admitted.map(({ path }) => path).toSorted(), ["eda.sch_Document.save", "eda.sch_PrimitiveAttribute.modify", "eda.sch_PrimitiveText.modify"]);
   for (const { path, row, route } of admitted) {
     assert.equal(route.tool, "easyeda_control_design"); assert.deepEqual(route.documentTypes, [1]);
-    assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.blockedReason, undefined);
-    assert.equal(route.blockedDocumentTypes, undefined); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+    assert.equal(route.executionState, "blocked"); assert.equal(route.blockedReason, DESIGN_STRUCTURE_LIFECYCLE_REFUSAL);
+    assert.deepEqual(route.blockedDocumentTypes, [1]); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
     assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
     assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
     assert.ok(route.source.includes("flat-display-profile.ts")); assert.ok(route.source.includes("flat-display-runtime.ts"));
@@ -169,7 +195,7 @@ void test("sealed flat display coverage admits only existing attribute/text disp
       assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.selector, `sch.layout.batch;sealed-profile=${profile};step=${step}`);
       assert.match(route.scope, /no text-content or attribute-value edits, pin\/net or NO_CONNECT changes, component translation, creation, deletion, mixed layout/u);
       assert.match(route.scope, /no caller-supplied profile or topology grants authority/u);
-      assert.equal(row.routes.find((entry) => entry.selector.includes("documentType=2"))?.executionState, "available-with-runtime-guards");
+      assert.equal(row.routes.find((entry) => entry.selector.includes("documentType=2"))?.executionState, "blocked");
     }
   }
   }
@@ -214,7 +240,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 193, "implemented-native-equivalent": 103, "internal-lifecycle-only": 2, "implemented-but-blocked": 7, omitted: 469,
+    "implemented-public-subset": 193, "implemented-native-equivalent": 30, "internal-lifecycle-only": 0, "implemented-but-blocked": 82, omitted: 469,
   });
 });
 
@@ -241,15 +267,15 @@ void test("five reviewed empty or constant-false methods remain omitted with con
   }
 });
 
-void test("closed free PCB creation exposes only its checkpoint-bound native subset", () => {
+void test("closed free PCB creation retains its native argument subset while execution is blocked", () => {
   const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.dmt_Pcb.createPcb");
   assert.ok(row);
-  assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
+  assert.equal(row.status, "implemented-but-blocked"); assert.equal(row.omission, null);
   assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
   assert.equal(row.runtimeAdmission, "not-granted-by-inventory"); assert.equal(row.routes.length, 1);
   const route = row.routes[0]; assert.ok(route);
   assert.equal(route.selector, "document.pcb.create"); assert.equal(route.implementation, "native-task-equivalent");
-  assert.deepEqual(route.documentTypes, [3]); assert.equal(route.executionState, "available-with-runtime-guards");
+  assert.deepEqual(route.documentTypes, [3]); assert.equal(route.executionState, "blocked");
   assert.equal(route.validation, "offline-regression;current-live-unclaimed");
   assert.match(route.scope, /boardName absent/u); assert.match(route.scope, /retained original UUID/u);
   assert.match(route.scope, /No board creation or attachment/u); assert.match(route.scope, /never recreates/u);
@@ -259,7 +285,7 @@ void test("closed free PCB creation exposes only its checkpoint-bound native sub
   const catalog = queryOperationCatalog({ family: "library", operationAction: "document.pcb.create", includeSchemas: true });
   const entries = catalog["entries"]; assert.ok(Array.isArray(entries)); assert.equal(entries.length, 1);
   const entry: unknown = entries[0]; assert.ok(isRecord(entry));
-  assert.match(JSON.stringify(entry), /implemented-closed-empty-free-pcb-create-proof/u);
+  assert.equal(entry["status"], "unavailable-native-project-structure-lifecycle");
   assert.match(JSON.stringify(entry), /boardNameMustBeAbsent/u);
   assert.equal(validateCatalogOperation({ family: "library", operation: { id: "create-free", action: "document.pcb.create" } })["valid"], true);
   assert.equal(validateCatalogOperation({ family: "library", operation: { id: "create-bound", action: "document.pcb.create", boardName: "Board" } })["valid"], true);
@@ -267,17 +293,17 @@ void test("closed free PCB creation exposes only its checkpoint-bound native sub
   // Branch execution-enabled; the runtime rejects every supplied boardName.
 });
 
-void test("closed free schematic creation reports empty-container support without public sheet parity", () => {
+void test("closed free schematic creation reports its blocked empty-container profile without public sheet parity", () => {
   const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.dmt_Schematic.createSchematic");
-  assert.ok(row); assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
+  assert.ok(row); assert.equal(row.status, "implemented-but-blocked"); assert.equal(row.omission, null);
   assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
   assert.equal(row.routes.length, 1); const route = row.routes[0]; assert.ok(route);
   assert.equal(route.selector, "document.schematic.create"); assert.deepEqual(route.documentTypes, [3]);
-  assert.equal(route.executionState, "available-with-runtime-guards");
+  assert.equal(route.executionState, "blocked");
   const catalog = queryOperationCatalog({ family: "library", operationAction: "document.schematic.create", includeSchemas: true });
   const entries = catalog["entries"]; assert.ok(Array.isArray(entries)); assert.equal(entries.length, 1);
   const entry: unknown = entries[0]; assert.ok(isRecord(entry));
-  assert.match(JSON.stringify(entry), /implemented-closed-empty-free-schematic-create-proof/u);
+  assert.equal(entry["status"], "unavailable-native-project-structure-lifecycle");
   const capabilities = entry["executionCapabilities"]; assert.ok(isRecord(capabilities));
   for (const key of ["pageCreated", "editorOpened", "saveInvoked", "reopened", "currentGenerationLiveValidated", "automaticInverse", "nonemptyInlineComponentAttributes", "nativeSubscriberAtomicProjectIsolation"]) { assert.equal(capabilities[key], false); }
   for (const key of ["boardNameMustBeAbsent", "emptySchematic", "recoveryRequiresOriginalNativeIdentity", "exactLocalOrdinarySymbolReferencesRequired"]) { assert.equal(capabilities[key], true); }
@@ -320,7 +346,7 @@ void test("PCB String modification discovers only its strict source-merge subset
   const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.pcb_PrimitiveString.modify"); assert.ok(row);
   const route = row.routes.find((entry) => entry.selector === "pcb.text.modify"); assert.ok(route);
   assert.deepEqual(route.documentTypes, [3]); assert.equal(route.tool, "easyeda_control_design");
-  assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.executionState, "available-with-runtime-guards");
+  assert.equal(route.implementation, "native-task-equivalent"); assert.equal(route.executionState, "blocked");
   assert.equal(route.validation, "offline-regression;current-live-unclaimed");
   assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.completeDeclaredContractSupported, false);
   assert.match(route.scope, /exact x\/y\/text changes/u); assert.match(route.scope, /does not invoke the public wrapper/u);
@@ -368,15 +394,15 @@ void test("PCB text create/delete discovery retains the separate type-3 identity
   }
 });
 
-void test("PCB and schematic rename coverage is an exact closed-target native task, not public wrapper or live execution proof", () => {
+void test("PCB and schematic rename discovery retains its closed-target profile with execution blocked", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   for (const [path, action] of [["eda.dmt_Pcb.modifyPcbName", "document.pcb.rename"], ["eda.dmt_Schematic.modifySchematicName", "document.schematic.rename"]] as const) {
-    const row = rows.get(path); assert.ok(row); assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.routes.length, 1);
+    const row = rows.get(path); assert.ok(row); assert.equal(row.status, "implemented-but-blocked"); assert.equal(row.routes.length, 1);
     assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
     assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
     const route = row.routes[0]; assert.ok(route); assert.equal(route.selector, action); assert.equal(route.tool, "easyeda_control_library");
     assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [3]);
-    assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+    assert.equal(route.executionState, "blocked"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
     assert.match(route.scope, /every schematic child closed/u); assert.match(route.scope, /independent DOM-frame proof/u);
     assert.match(route.scope, /nonimported checkpoint and full peer record clocks\/header lineage/u);
     assert.match(route.scope, /No public wrapper, Save\/reopen, automatic inverse or current-generation live-validation claim/u);

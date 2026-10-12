@@ -52,6 +52,7 @@ import { buildProjectPcbCreateExpression, buildProjectPcbCreateReadbackExpressio
 import { buildProjectSchematicCreateExpression, buildProjectSchematicCreateReadbackExpression, validateProjectSchematicCreateReadback } from "./project-schematic-create-runtime.ts";
 
 import { verifyProjectSchematicCreateNativeProfile } from "./project-schematic-create-native-profile.ts";
+import { assertLibraryExecutionLifecycle, libraryExecutionLifecycleAdvice, libraryExecutionLifecycleRefusal } from "./library-execution-lifecycle.ts";
 
 type Value = Record<string, unknown>;
 const libraryExecutionServices = { readNativeHistoryCheckpoint, verifyLibraryNativeProfile, verifyDeviceAssociationNativeProfile, verifySchematicNativeProfile, verifyDocumentContainerRenameNativeProfile, verifyProjectSchematicCreateNativeProfile };
@@ -109,7 +110,8 @@ function resolvedMetadataOwner(operation: LibraryOperation, metadata: Value, exp
 function summary(journal: LibraryJournal): Value {
   return { operationId: journal.operationId, action: journal.plan.operation.action, state: journal.state, result: journal.result ?? null,
     saved: journal.saved, reopened: journal.reopened, mutationMayHaveOccurred: journal.mutationMayHaveOccurred, orphanedCallPossible: journal.orphanedCallPossible,
-    nextSafeAction: journal.nextSafeAction, journalPath: journal.journalPath, artifacts: journal.artifacts };
+    nextSafeAction: journal.nextSafeAction, journalPath: journal.journalPath, artifacts: journal.artifacts,
+    ...libraryExecutionLifecycleAdvice(journal.plan.operation.action, journal.nextSafeAction) };
 }
 function isCheckpoint(value: unknown): value is CheckpointReceipt {
   if (!isRecord(value) || value["schema"] !== "easyeda-pro-control.checkpoint.v2") { return false; }
@@ -167,6 +169,7 @@ export class LibraryExecutor {
     await updateOperation(journal);
   }
   private async dispatch(input: LibraryExecuteInput, journal: LibraryJournal, operation: LibraryOperation, phase: string, association?: DeviceAssociationPlan | DeviceCreatePlan | DeviceTransformPlan | ProjectSymbolMetadataPlan | ProjectSymbolCreatePlan | DocumentPageRenamePlan | DocumentPageCreatePlan | DocumentContainerRenamePlan | ProjectPcbCreatePlan | ProjectSchematicCreatePlan, openScope?: LibraryOpenScope): Promise<unknown> {
+    assertLibraryExecutionLifecycle(operation);
     await this.runtime(input);
     const nativeSymbolMetadata = operation.action === "library.symbol.get" && operation.libraryUuid === projectId(input.expectedContext);
     const kind = libraryExecutionKind(operation);
@@ -273,6 +276,7 @@ export class LibraryExecutor {
   public async execute(request: LibraryExecuteInput): Promise<Value> {
     const input = structuredClone(request);
     const operation = libraryOperationSchema.parse(input.operation);
+    assertLibraryExecutionLifecycle(operation);
     const kind = libraryExecutionKind(operation);
     const compiled = compileLibraryOperation(operation);
     const mutation = kind === "project-footprint-write" || kind === "project-device-association" || kind === "project-device-create" || kind === "project-device-transform" || kind === "project-symbol-metadata" || kind === "project-symbol-create" || kind === "project-page-rename" || kind === "project-document-rename" || kind === "project-page-create" || kind === "project-pcb-create" || kind === "project-schematic-create";
@@ -533,6 +537,7 @@ export class LibraryExecutor {
     return this.recovery.recoverAuthority(operationId, runtimeRestartConfirmation);
   }
 
+  public preflightReconcile(operationId: string): Promise<Value | undefined> { return this.recovery.preflightReconcile(operationId); }
   public reconcileNoMutation(operationId: string): Promise<Value> {
     return this.recovery.reconcile(operationId, true);
   }
@@ -546,8 +551,10 @@ export function listLibraryExecutionCapabilities(): Value[] {
   for (const entry of listLibraryOperationCapabilities()) {
     const action = entry.action;
     let status: string = entry.status;
-    const executionRefusal = libraryExportRefusalReason(action);
-    if (executionRefusal !== undefined) { status = "unavailable-installed-export-side-effect-or-editor-contract"; }
+    const lifecycleRefusal = libraryExecutionLifecycleRefusal(action);
+    const executionRefusal = lifecycleRefusal ?? libraryExportRefusalReason(action);
+    if (lifecycleRefusal !== undefined) { status = "unavailable-native-project-structure-lifecycle"; }
+    else if (executionRefusal !== undefined) { status = "unavailable-installed-export-side-effect-or-editor-contract"; }
     else if (action.endsWith(".get") && action.startsWith("library.")) { status = "implemented-double-sampled-metadata"; }
     else if (action.startsWith("export.") && entry.status === "typed-descriptor-awaiting-executor-validation") { status = "implemented-bounded-file-export"; }
     else if (["library.footprint.create", "library.footprint.modify"].includes(action)) { status = "implemented-project-library-checkpoint-proof"; }

@@ -800,3 +800,23 @@ unchanged, commitment
 `678b58ee002e2afebf52da572b951c56c964d21175369e27591405caa8ba6744`.
 It did not read their entry contents or grant deletion authority. These are
 point-in-time observations, not continuing isolation guarantees.
+
+### 2026-10-12: scope correction for metadata-writing lifecycle evidence
+
+Source review identified a delayed `project_structures` write shared by symbol
+create/metadata modify, schematic-page create/rename, and PCB/schematic-container
+create/rename. Their existing document-history proofs do not model that table
+or prove operation-owned completion of the debounce/task2 job. A final matching
+checkpoint is a point-in-time comparison, not that completion witness.
+
+Earlier exact document, peer, raw-history and native observations remain in this
+ledger with their original generation and scope. They do not establish the newly
+identified SQL/job-completion requirement. This correction is not evidence of
+historical project damage. Candidate030626 blocks these eight execution routes
+and potentially dispatched nonterminal reconciliation until the missing contract
+is implemented. Subsequent source tracing shows native Save also clears pending
+geometry flags and schedules that job for schematic-page, symbol and PCB
+editors. Candidate030626 therefore also blocks their design transactions.
+Historical Save/reopen cases retain their actual document and point-in-time
+checkpoint observations, not a guarantee that no later structure job remained.
+See the [source trace](symbol-delete-native-effects-2026-10-12.md#existing-metadata-writers).

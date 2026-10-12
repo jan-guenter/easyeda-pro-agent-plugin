@@ -231,3 +231,50 @@ The remaining omission is the unimplemented operation-owned subscriber and
 structure lifecycle proof. The exact effects are substantially better defined;
 the completion requirement remains open. This document neither enables a route
 nor labels the method fundamentally infeasible.
+
+## Existing metadata writers
+
+Follow-up review found the same gap in eight already implemented routes, not
+only prospective symbol deletion. The native scheduler at WORKER2092275 admits
+BOARD, PCB, SCH, SCH_PAGE, SYMBOL and PANEL. Its consistency callback at2095198
+passes META/DELETE_DOC changes, and can also pass an event whose third flag is
+false. FOOTPRINT and DEVICE are outside that type gate.
+
+| Typed operations | Native worker source in the pinned WORKER file |
+| --- | --- |
+| Symbol create / metadata modify | `create`1926024 and `updateData`1929097, through `uploadLocal` |
+| Page create / rename | `buildString`1913065, `addData`1913953, `updateData`1915769 |
+| PCB create / rename | `buildString`1895180, `addData`1895824, `updateData`1897324 |
+| Schematic create / rename | `buildString`1904933, `addData`1905576, `updateData`1906965 |
+
+These paths emit META for a type inside the scheduler gate. The maintained
+[library executor](../plugins/easyeda-pro-control/server/src/library-execution.ts)
+waited task1, captured a new final checkpoint and called a document-history
+effect verifier. It then checked that the current database still equaled that
+new checkpoint. This catches writes during that final stability window. It does
+not check the intended `project_structures` delta already inside the checkpoint
+or prove that a later scheduled write cannot occur.
+
+[NativeHistorySnapshot](../plugins/easyeda-pro-control/server/src/native-history.ts)
+contains decoded selected-branch documents and identity/history commitments,
+not structure-table rows. The symbol, page and container effect verifiers
+consume that snapshot. Their peer-record and raw-history checks remain useful,
+but are not a complete SQL-effect or scheduler-completion contract.
+
+Candidate030626 therefore adds a separate execution-lifecycle refusal for these
+eight routes and protects nonterminal reconciliation from the same false
+completion. Strict schemas, pure verifiers and historical terminal evidence
+remain readable. The original observations are not rewritten or promoted into
+stronger evidence, and no historical damage is inferred. Re-enablement requires
+the exact SQL/job-completion proof described above, not merely removing the gate.
+
+## Follow-up: ordinary geometry Save also reaches this scheduler
+
+The eight metadata routes are not exhaustive. Further source tracing identifies
+the scheduler's third argument as the record's pending flag. Save of pending
+PCB, schematic-page or project-symbol geometry can clear that flag and schedule
+the same structure write for non-META records. See
+[project structure completion after Save](project-structure-save-completion-2026-10-12.md)
+for exact source offsets, document-type boundaries, completion candidates and
+the full SQL-effect plan. This extends the engineering scope; it does not infer
+damage from earlier transactions or strengthen their historical evidence.

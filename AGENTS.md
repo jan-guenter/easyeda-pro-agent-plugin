@@ -6,6 +6,63 @@ Last updated: 2026-10-12 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Candidate030626 structure-lifecycle containment locally verified
+
+- Further native source review proves the same scheduler
+  can run for non-META PCB/SCH_PAGE/SYMBOL geometry during Save: saveCanvas
+  compresses uniqueId data, clears pend and publishes argument8 undefined.
+  The eight metadata refusals below are valid but not an exhaustive fix.
+  Broader containment now covers types1/2/3 design execution and post-dispatch
+  recovery. Legacy recovery now requires its own positive plan-family shape
+  before connection, journal or navigation changes. Fresh and retained MCP
+  refusals precede bridge connection. Affected coordinator tests now assert
+  refusal and retained-evidence integrity; none were silently skipped.
+  Installed013324 remains unchanged; EasyEDA is closed. Publication follows
+  local acceptance below, then exact-head CI and official installation.
+- Payloadf1bf7e64726686e2eb6200ef24e2cd0de821a844 for024750 passed required
+  CI38197962968:3860facade passes/fiveplatformskips/zerofailures and424bridge
+  passes; allbuild/audit/package steps passed, packageac3296e62e63222709760e3e15946f99081aaa85.
+  It was NOT installed. Follow-up source review found an existing completion
+  gap, so root held installation. Installed/loaded actual013324 is unchanged.
+- Symbolcreate/metadata andpage/PCB/schematic-container create/rename all emit
+  META for native scheduler types. Their document-history effect proofs omit
+  project_structures SQL rows; final-checkpoint equality proves only current
+  stability, not the intended table delta or future timer/task2 completion.
+  Main and independent source review agree. No historical damage is claimed.
+- New candidate030626 separates execution-lifecycle refusal from classification.
+  It blocks fresh execute and dispatch for exactly8actions and prevents affected
+  potentiallydispatched nonterminal reconciliation from claiming completion,
+  including no-mutation mode. Terminalinspection, pureproofs and exact
+  undispatched-preparation invalidation remain available. No bypass or newlivecall.
+  This eight-action policy complements the broader design-type restriction;
+  neither is a completion implementation or a new live-validation claim.
+- Clean full verification and a separate hostile-fd142/145 run each pass
+  4065facade tests/oneplatformskip/zerofailures;424bridge tests pass. Allfour
+  typechecks, strict type-aware lint0,151dependency signatures/40attestations,
+  zeroaudit, sanitizer, generatedcoverage, sevenofficialskill validators,
+  repository/privacy/license, offline doctor andactionlint pass. Rebuild bytes
+  and modes are exact. Fullverify b676b495/hostile84e31f13 are retained privately.
+  A manifest-description validator failure was corrected without changing the
+  validator or runtime, then repository and package checks passed again.
+- Frozen source209files b94d4dbe/runtime3files68ce4209/manifestba9b639a;
+  externalpins unchanged69a0bb0b. Inventory774methods retains exact declarations,
+  omission membership and route selectors. Current classifications193public/
+  30native/0lifecycle/82blocked/469omitted; routes274available/94blocked/2partial.
+  All108design/68library schemas remain discoverable;89design schemas are blocked,
+  19footprint schemas keep existing gates. Current-generation livevalidation0.
+- Controlskill and catalog now distinguish retained source contracts from
+  enabledlifecycles. Footprint/DEVICE types are outside this schedulergate;
+  unrelatedroutes retain their own guards. Re-enablement needs actual complete
+  SQL/job proof and disposable tests, not removal of this containment.
+- A separately reviewed next-stage design can use a normally closed, contained
+  whole-app session and exact closed SQL proof as a completion boundary. Empty
+  process ownership alone does not prove the intended write. Persistent upload
+  replay, complete history/bookkeeping and second-generation reopen also need
+  proof. Private synthetic SQL work is not part of this candidate or enablement.
+- Bothdisposable fixtures remainclosed. Completed013324 C06/C07 and all earlier
+  seed/RunCommand/navigation/Save operations must never be replayed. Production
+  and its record stay excluded. PR9/broadercoverage remain unfinished.
+
 ### Candidate024750 local verification
 
 - Three retained-evidence readers now handle the equal-byte U+FFFD ambiguity
@@ -2100,10 +2157,10 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Current Git-marketplace013324 is published and installed/enabled after exact-payload CI38193153478. All636files/17048335bytes/modes match8a88b803, with offline proof8df41e3c. Fresh2611577 is independently admitted; C06/C07 validate final raw flat-observation retention on two new disposable wire commits only. Both completed saved/reopened and the editor is closed with final checkpoint verified. Four other retention paths remain unvalidated live. No CAD/Save is pending; never replay completed operations. Candidate024750 Unicode reader fixes passed full local verification but are not yet published/installed. Broader API work and PR9 remain unfinished; production and its record stay excluded.
+- Current Git-marketplace013324 is published and installed/enabled after exact-payload CI38193153478. All636files/17048335bytes/modes match8a88b803, with offline proof8df41e3c. Fresh2611577 is independently admitted; C06/C07 validate final raw flat-observation retention on two new disposable wire commits only. Both completed saved/reopened and the editor is closed with final checkpoint verified. Four other retention paths remain unvalidated live. No CAD/Save is pending; never replay completed operations. Candidate024750 passed local verification and CI38197962968 but installation was held after the structure-job gap was found. Candidate030626 blocks all type1/2/3 design lifecycles and eight metadata actions, including affected retained recovery, before bridge connection. It passes full local verification but is not yet published or installed. Broader API work and PR9 remain unfinished; production and its record stay excluded.
 - Historical000206 installation record, superseded by the current entry: Git-marketplace `0.3.0+codex.20261012000206` is published and installed/enabled after exact-head CI38187143546. All633files/17006218bytes/modes match payloadac9f0a7, package subtree369d8572; offline proofc146a756 passes. Loaded facade2527645 remains independently admitted220050, not000206; use a fresh Codex host before connected work. The220050 font case and omitted-lock three-segment wire forward/reverse saved/reopened pair pass their scoped proofs. Both disposable fixtures are closed; final flat sourcec9e04b15/checkpoint621cb2f6/database471d6b9e/logicalea3da0fa are verified. Original source geometry is restored, not original SQLite history. Closed verifier11 and all-nine-root metadata41 pass. The earlier authorized UI action/private comparison9bf4428a established pcbCommandTab false to true in browser and one anonymous SQL residual without identifying the current user. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission. The installed historical-case index grants no live authority or current-generation validation.
 - Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct. Installed164600 passed scoped PCB Text readers/create/delete and empty free-SCH creation;204104 passed system-library UUID, schematic Text/Wire readers with both mixed caller orders, and independently visible pointer-only hover. Installed220050 adds configured-font R09 and sealed-wire C04/C05 exact-case evidence. Unsaved wire rollback, failure recovery, broader wire shapes, literal-false connected input and later generations remain separate. The connected ledger records scope, not whole SDK contracts. Never access production or its project record. The user's continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation, not relaxed technical safety checks or unrelated changes.
-- The legacy experimental PCB component writer endpoints remain runtime-disabled. The separate typed design executor retains source/durable-effect and runtime gates; topology-dependent type-1 schematic transactions are now blocked because the former topology path can annotate and Save All internally. Other enabled paths retain their operation-specific restrictions. Unit tests alone do not establish live coverage for an adapter.
+- The legacy experimental PCB component writer endpoints remain runtime-disabled. Candidate030626 blocks all type1/2/3 design transactions for missing native structure-job completion and complete SQL-effect proof, including sealed display/wire profiles. The compiled-topology path also remains blocked for hidden annotation/Save All. Type4 and unrelated library/read routes retain their independent restrictions. Unit tests alone do not establish live coverage for an adapter.
 - Caller-supplied unrestricted JavaScript is structurally disabled and has no environment opt-in. The supervised private executor receives only facade-generated, reviewed programs.
 - The facade owns the sole upstream MCP child and bridge connection.
 - The facade enters Bubblewrap only through the reviewed native x86_64 descriptor sanitizer. Bubblewrap inherits the deliberate authority set on descriptors `0`–`9`; its exact reviewed executable is admitted on `10`, marked close-on-exec, and entered by descriptor after `close_range(11, UINT_MAX, 0)`. Never add an inherited descriptor without updating the complete mapping, native contract, compatibility fingerprint, and hostile-descriptor tests together.

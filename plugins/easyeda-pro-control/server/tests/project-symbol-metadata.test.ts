@@ -461,14 +461,14 @@ void test("symbol mutation recovery binds the immutable prepared plan and exact 
   assert.throws(() => verifyRecoveredLibraryMutation({ operation: OPERATION, before, after, nativeReturn, preparedSymbol, retainedReceipt: { ...retainedReceipt, nativeReturnSha256: "0".repeat(64) } }), /rebound/u);
 });
 
-void test("symbol transaction refuses active targets and missing write confirmation before any upstream access", async () => {
+void test("symbol lifecycle refusal precedes active-target and write-confirmation admission without upstream access", async () => {
   let calls = 0;
   const engine = new EasyedaControlEngine({ callTool: (): Promise<never> => { calls += 1; return Promise.reject(new Error("Unexpected upstream call")); } });
   const executor = new LibraryExecutor(engine);
   const request = { operation: OPERATION, expectedContext: { project: { uuid: "project", path: "/fixture/project.eprj2" }, document: { uuid: "symbol", documentType: 2, tabId: "symbol@project" } }, expectedFingerprint: {}, confirmWrite: true as const };
-  await assert.rejects(executor.execute(request), /inactive target/u);
+  await assert.rejects(executor.execute(request), /operation-owned completion.*project_structures/u);
   const { confirmWrite: _confirmWrite, ...unconfirmed } = request;
-  await assert.rejects(executor.execute(unconfirmed), /explicit confirmation/u);
+  await assert.rejects(executor.execute(unconfirmed), /operation-owned completion.*project_structures/u);
   assert.equal(calls, 0);
 });
 

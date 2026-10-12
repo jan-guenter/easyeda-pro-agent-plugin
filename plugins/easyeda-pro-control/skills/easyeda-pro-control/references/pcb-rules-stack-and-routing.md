@@ -1,5 +1,12 @@
 # PCB rules, stack, and routing
 
+PCB writes described below are currently blocked. Native Save's delayed
+project-structure write needs operation-owned completion and a complete SQL
+effect model before these retained source contracts can execute. This includes
+rules, stack, placement, routing and copper rebuild. Read-only inspection,
+checks and separately enabled exports retain their own admission gates. Do not
+substitute native UI or smaller edits after a transaction refusal.
+
 ## Inventory first
 
 Before changing rules or copper, record the current configuration name and complete inventories for:
@@ -25,7 +32,11 @@ match. Do not use earlier placeholder-bearing rules evidence as a complete basel
 
 The public configuration getter can fall back to a global JLC default. A returned configuration name is not by itself proof that a project-specific configuration persisted; corroborate it with the actual rule collections and saved/reopened state.
 
-Typed rule/group operations are available through `easyeda_control_design` for supported source records. They preserve unrelated rows and verify the intended source and durable delta. Keep total net coverage, uniqueness and pair physics as explicit engineering checks; a parsed rule collection is not a fabrication rule approval.
+Typed rule/group schemas remain discoverable through `easyeda_control_design`.
+Their pure effect checks preserve unrelated source records, but do not yet prove
+the complete queued SQL lifecycle. Keep total net coverage, uniqueness and pair
+physics as explicit engineering checks; a parsed rule collection is not a
+fabrication rule approval.
 
 After apply, verify:
 

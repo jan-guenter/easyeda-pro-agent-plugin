@@ -1,7 +1,7 @@
 import { configureTestControlRoot } from "./test-control-root.ts";
 /* oxlint-disable import/max-dependencies -- Exercise sealed journal storage, immutable native plans and recovery together with synthetic read-only runtime evidence. */
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { after, afterEach, before as beforeAll, test } from "node:test";
 import type { createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
@@ -164,6 +164,28 @@ async function fixture(action: Action = "document.page.create", prefix: Prefix =
   });
   return { journal, coordinator, fault, counts };
 }
+
+for (const prefix of ["before-failed", "before-retained", "preparation-failed"] as const) {
+  void test(`${prefix} offline preflight admits only a connected read-only proof and never invalidates the journal`, async () => {
+    const run = await fixture("document.page.create", prefix);
+    const original = await readFile(run.journal.journalPath);
+    run.fault.value = "runtime";
+    assert.equal(await run.coordinator.preflightReconcile(run.journal.operationId), undefined);
+    assert.deepEqual(await readFile(run.journal.journalPath), original);
+    assert.deepEqual(run.counts, { dispatch: 0, barrier: 0, record: 0 });
+    await assert.rejects(run.coordinator.reconcile(run.journal.operationId), /runtime drift/u);
+    assert.deepEqual(await readFile(run.journal.journalPath), original);
+  });
+}
+void test("offline preflight rejects missing preparation with any retained possible dispatch marker", async () => {
+  const run = await fixture("document.page.create", "before-retained");
+  run.journal.mutationMayHaveOccurred = true; await artifacts.updateOperation(run.journal);
+  const original = await readFile(run.journal.journalPath);
+  run.fault.value = "runtime";
+  await assert.rejects(run.coordinator.preflightReconcile(run.journal.operationId), /exact undispatched journal envelope/u);
+  assert.deepEqual(await readFile(run.journal.journalPath), original);
+  assert.deepEqual(run.counts, { dispatch: 0, barrier: 0, record: 0 });
+});
 
 for (const action of ["document.activate", "document.close", "document.page.create", "library.symbol.create", "document.pcb.rename", "document.schematic.rename", "document.pcb.create", "document.schematic.create"] as const) {
   for (const prefix of ["before-failed", "before-retained", "preparation-failed"] as const) {

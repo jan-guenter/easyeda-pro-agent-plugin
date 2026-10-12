@@ -11,13 +11,21 @@ This source package has typed design transactions, operation-specific library/ex
 
 Current restriction: compiled schematic topology and transactions depending on
 it are disabled because the installed netlist getter can annotate parts and
-Save All. Separate sealed profiles support stored attribute/text display changes
-and identity-preserving wire endpoint rerouting on one verified ordinary page;
-read [schematic.md](references/schematic.md#single-page-display-only-transactions)
+Save All. Separate sealed profiles retain contracts for stored attribute/text
+display changes and identity-preserving wire endpoint rerouting, but are also
+blocked by the structure-write restriction below. For their retained scope read
+[schematic.md](references/schematic.md#single-page-display-only-transactions)
 and its [wire limits](references/schematic.md#single-page-wire-rerouting).
 Source tests are not connected lifecycle validation. Several File exports
 remain refused for hidden Save All. Inspect the installed capabilities; do not
 bypass refusals or replay historical work.
+
+Schematic-page, symbol and PCB design transactions currently refuse because
+native Save can schedule an unproved structure-table write. Eight
+symbol/page/container metadata writers share that restriction. Typed schemas and historical records
+remain discoverable. Read the [current library restriction](references/libraries-and-eco.md#structure-write-completion-restriction)
+before editing, creating or renaming those assets; a document-only checkpoint proof
+does not cover EasyEDA's delayed structure-table writes.
 
 ## Connect and choose a path
 
@@ -35,11 +43,15 @@ bypass refusals or replay historical work.
 ## Edit through typed transactions
 
 Read [safety-state-machine.md](references/safety-state-machine.md) before a design change.
+The design sequence below currently applies only to footprint document type 4
+under its existing guards. Schematic-page, symbol and PCB schemas remain
+inspectable, but their apply, commit, rollback and nonterminal reconciliation
+are blocked. Historical sealed profiles are not exceptions.
 
 1. Inspect exact current state. Use `easyeda_control_exact_read` for supported fields and complete native document-source profiles; preserve user locks and all unrelated records. Keep the document/tab quiescent throughout.
 2. Submit `easyeda_control_design` with `request.action:"execute"`, a typed `operation`, current `expectedContext`, current `expectedFingerprint` and `confirmWrite:true` for apply, exact proof, save/reopen and durable verification in one request. Use `action:"apply"` instead when the requested workflow needs unsaved review or rollback before a separate commit. Confirmation records task authority; it does not broaden it.
 3. An `applied-unsaved` result has exact live-effect proof, not persistence. Commit the returned operation ID explicitly to save/reopen and verify the complete durable project-record delta. Rollback is available only when an exact inverse is supported and the current state still matches. For a failed library reopen, reconciliation can instead return `saved-awaiting-reopen`; commit then reuses the independently verified save and finishes the lifecycle without another Save.
-4. For many PCB edits, use one `pcb.batch` of 1–256 typed steps. Creation references resolve through journaled IDs. Initially locked objects and descendants remain unchanged; explicit unlocking is a separate authorized operation. Stack and copper rebuild stay separate.
+4. `pcb.batch` retains a 1–256-step source contract, but PCB execution is currently blocked. Do not split a refused batch into individual edits or substitute native UI.
 5. For libraries, existing-document open or managed exports, request `easyeda_control_library` capabilities first. Read [libraries-and-eco.md](references/libraries-and-eco.md) before editing symbol/footprint geometry, creating a DEVICE or changing a binding or inherited model transform. Use exact project collection IDs for project assets and exact external IDs for existing 3D models. Only execution-enabled entries may run. Saved, reopened, exported and ECO-applied are separate facts.
 
 For itemized ERC/DRC, use `easyeda_control_check` with `request.action:"run"`, `kind:"schematic-erc"` or `"pcb-drc"`, exact context and fingerprint. It journals the calculation scope and proves the full saved SQLite database unchanged without saving. `maxInlineItems` bounds the response; the complete itemized report and enabled-rule policy remain in the returned managed artifact. Both paths passed disposable-fixture checks. Read the relevant schematic/routing reference before interpreting a zero-violation result; current enabled rules are not an all-rules or fabrication approval.

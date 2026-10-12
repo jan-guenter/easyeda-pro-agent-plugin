@@ -115,28 +115,27 @@ void test("changed library recovery proves the original created ID and all docum
   assert.ok(run.calls.indexOf("upload-barrier") < run.calls.indexOf("checkpoint"));
 });
 
-void test("symbol recovery completes only the original retained exact effect without another native call", async () => {
+void test("symbol recovery refuses an apparently exact retained effect without changing its historical journal", async () => {
   const run = fixture(true);
-  const result = await run.coordinator.reconcile(run.journal.operationId);
-  assert.equal(result["state"], "completed"); assert.equal(result["saved"], true); assert.equal(result["reopened"], false);
-  assert.ok(isRecord(result["result"]));
-  assert.equal(result["result"]["kind"], "project-symbol-metadata");
-  assert.equal(result["result"]["actionRepeated"], false); assert.equal(result["result"]["saveInvoked"], false);
-  assert.equal(run.calls.includes("DISPATCH"), false);
+  const before = structuredClone(run.journal);
+  await assert.rejects(run.coordinator.reconcile(run.journal.operationId), /native debounced project_structures/u);
+  await assert.rejects(run.coordinator.reconcile(run.journal.operationId, true), /native debounced project_structures/u);
+  assert.deepEqual(run.journal, before);
+  assert.deepEqual(run.calls, []);
 });
 
-void test("symbol recovery retains uncertainty when return evidence is absent or original preparation differs", async () => {
+void test("symbol lifecycle refusal precedes missing return, preparation drift and collateral proof without rewriting evidence", async () => {
   const missing = fixture(true);
   missing.journal.artifacts = missing.journal.artifacts.filter((entry) => !entry.path.endsWith("native-return.json"));
-  await assert.rejects(missing.coordinator.reconcile(missing.journal.operationId), /exactly one retained native-return/u);
   const drift = fixture(true);
   assert.ok(drift.journal.symbolPlan); drift.journal.symbolPlan.desiredTitle = "Substituted";
-  await assert.rejects(drift.coordinator.reconcile(drift.journal.operationId), /original prepared symbol artifact disagree/u);
   const collateral = fixture(true);
   const peer = collateral.state.after.documents[0]; assert.ok(peer); peer.metadata["updateTime"] = 2;
-  await assert.rejects(collateral.coordinator.reconcile(collateral.journal.operationId), /unrelated/u);
   for (const run of [missing, drift, collateral]) {
-    assert.equal(run.calls.includes("DISPATCH"), false); assert.equal(run.journal.hardStop, true); assert.equal(run.journal.saved, false);
+    const before = structuredClone(run.journal);
+    await assert.rejects(run.coordinator.reconcile(run.journal.operationId), /native debounced project_structures/u);
+    assert.deepEqual(run.calls, []); assert.deepEqual(run.journal, before);
+    assert.equal(run.journal.hardStop, true); assert.equal(run.journal.saved, false);
   }
 });
 void test("reconciliation refuses substituted IDs, unrelated durable changes, source drift and unproved orphan calls", async () => {
@@ -177,7 +176,7 @@ void test("receipt and managed artifact checks reject guessed identity and tampe
   assert.equal(capabilities.every((entry) => entry["connectedValidation"] === "see-capability-matrix;catalog-not-live-proof"), true);
   assert.equal(capabilities.find((entry) => entry["action"] === "library.device.model-transform")?.["status"], "implemented-project-device-transform-checkpoint-proof");
   const symbol = capabilities.find((entry) => entry["action"] === "library.symbol.modify");
-  assert.equal(symbol?.["status"], "implemented-project-symbol-metadata-checkpoint-proof");
+  assert.equal(symbol?.["status"], "unavailable-native-project-structure-lifecycle");
   assert.equal(symbol["currentGenerationLiveValidated"], false);
 });
 

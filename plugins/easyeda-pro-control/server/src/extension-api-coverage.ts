@@ -3,6 +3,8 @@ import { extensionApiSnapshots } from "./extension-api-catalog-data.ts";
 import type { ApiDeclarationMethod, ApiDeclarationSnapshot } from "./extension-api-declarations.ts";
 import { maintainedApiCoverageRoutes } from "./extension-api-coverage-routes.ts";
 import type { ApiCoverageRoute } from "./extension-api-coverage-routes.ts";
+import { libraryExecutionLifecycleRefusal } from "./library-execution-lifecycle.ts";
+import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL, designExecutionLifecycleRefusal } from "./design-execution-lifecycle.ts";
 import { publicSdkReadDescriptors } from "./public-sdk-read.ts";
 
 export type ApiCoverageStatus = "implemented-public-subset" | "implemented-native-equivalent" | "internal-lifecycle-only" | "implemented-but-blocked" | "omitted";
@@ -186,6 +188,25 @@ function omissionFor(namespace: string, method: string, declarations: readonly A
 
 interface MethodGroup { namespace: string; method: string; declarations: ApiCoverageEntry["declarations"][number][]; methods: ApiDeclarationMethod[] }
 
+function designLifecycleRoute(route: ApiCoverageRoute, namespace: string): ApiCoverageRoute {
+  if (route.tool !== "easyeda_control_design") { return route; }
+  let documentTypes = route.documentTypes;
+  if (documentTypes === undefined) {
+    if (route.selector.startsWith("pcb.") || namespace === "pcb_Document") { documentTypes = [3]; }
+    else if (namespace === "sch_Document") { documentTypes = [1]; }
+    else if (namespace === "dmt_EditorControl" && route.selector === "commit/recovery lifecycle") { documentTypes = [1, 2, 3, 4]; }
+    else { throw new Error(`Design coverage route lacks exact editor scope: ${route.selector}`); }
+  }
+  const blockedDocumentTypes = documentTypes.filter((type) => designExecutionLifecycleRefusal(type) !== undefined);
+  if (blockedDocumentTypes.length === 0) { return route; }
+  return { ...route, documentTypes, blockedDocumentTypes,
+    executionState: blockedDocumentTypes.length === documentTypes.length ? "blocked" : "partially-blocked",
+    blockedReason: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL + (route.blockedReason === undefined ? "" : ` Additional retained restriction: ${route.blockedReason}`),
+    scope: `Retained source/proof contract, not a lifecycle completion or enablement claim. Types 1, 2 and 3 are blocked; any remaining type-4 scope retains its existing guards. ${route.scope}`,
+    source: [...route.source, "design-execution-lifecycle.ts"],
+  };
+}
+
 export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
   const methods = new Map<string, MethodGroup>();
   for (const snapshot of extensionApiSnapshots) {
@@ -217,7 +238,12 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
   }
   return [...methods].toSorted(([left], [right]) => left.localeCompare(right, "en")).map(([path, group]) => {
     const reviewed = group.declarations.some((entry) => entry.reference === "reviewed-installed");
-    const supported = routes.get(path) ?? [];
+    const supported: ApiCoverageRoute[] = [];
+    for (const original of routes.get(path) ?? []) {
+      const route = designLifecycleRoute(original, group.namespace);
+      const refusal = route.tool === "easyeda_control_library" ? libraryExecutionLifecycleRefusal(route.selector.split(";")[0] ?? "") : undefined;
+      supported.push(refusal === undefined ? route : { ...route, executionState: "blocked", blockedReason: refusal, source: [...route.source, "library-execution-lifecycle.ts"] });
+    }
     let status: ApiCoverageStatus = "omitted";
     if (supported.length > 0 && supported.every((entry) => entry.executionState === "blocked")) { status = "implemented-but-blocked"; }
     else if (supported.some((entry) => entry.executionState !== "blocked" && entry.implementation === "public-method")) { status = "implemented-public-subset"; }

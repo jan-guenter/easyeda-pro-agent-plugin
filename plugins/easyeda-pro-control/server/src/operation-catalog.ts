@@ -7,6 +7,7 @@ import { SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL } from "./exact-readers.ts";
 import { FLAT_DISPLAY_TRANSACTION_PROFILE } from "./flat-display-binding.ts";
 import { FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE } from "./flat-display-library-peers.ts";
 import { FLAT_WIRE_TRANSACTION_PROFILE } from "./flat-wire-binding.ts";
+import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL } from "./design-execution-lifecycle.ts";
 
 const familySchema = z.enum(["design", "library"]);
 export const operationCatalogQuerySchema = z.object({
@@ -64,18 +65,27 @@ export function queryOperationCatalog(input: unknown): Record<string, unknown> {
   const entries: Record<string, unknown>[] = [];
   for (const entry of matched.slice(query.offset, query.offset + query.limit)) {
     const schema = query.includeSchemas ? z.toJSONSchema(entry.parser, { io: "input", target: "draft-7" }) : undefined;
+    const designBlocked = query.family === "design" && !entry.action.startsWith("footprint.");
+    let status: unknown = "typed-operation-specific-native-preflight";
+    if (query.family === "library") { status = libraryStatuses.get(entry.action)?.["status"]; }
+    else if (designBlocked) { status = "unavailable-native-project-structure-lifecycle"; }
     const descriptor: Record<string, unknown> = {
       action: entry.action,
-      status: query.family === "library" ? libraryStatuses.get(entry.action)?.["status"] : "typed-operation-specific-native-preflight",
+      status,
+      ...(designBlocked ? { executionRefusal: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL,
+        executionRestrictions: (entry.action.startsWith("pcb.") ? [3] : [1, 2]).map((documentType) => ({ documentType, reason: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL })),
+      } : {}),
       ...(query.family === "library" ? { executionCapabilities: libraryStatuses.get(entry.action) } : {}),
       ...(query.family === "library" && libraryStatuses.get(entry.action)?.["executionRefusal"] !== undefined ? {
         executionRefusal: libraryStatuses.get(entry.action)?.["executionRefusal"],
       } : {}),
       liveValidation: "operation-specific;see-capability-matrix",
       ...(query.family === "design" && entry.action.startsWith("sch.") ? {
-        executionRestrictions: [{ documentType: 1, reason: SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL,
+        sourceProfileRestrictions: [{ documentType: 1, reason: SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL,
           ...(entry.action === "sch.layout.batch" ? { exception: {
             profile: FLAT_DISPLAY_TRANSACTION_PROFILE,
+            executionState: "blocked",
+            executionRefusal: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL,
             profiles: [FLAT_DISPLAY_TRANSACTION_PROFILE, FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE],
             profileSelection: "facade-only: v1 without imported firstTicket provenance; v2 only when unchanged imported SYMBOL/FOOTPRINT peers have complete checkpoint-bound occurrence proofs",
             allowedSteps: ["sch.attribute.display", "sch.text.display"],
@@ -97,13 +107,15 @@ export function queryOperationCatalog(input: unknown): Record<string, unknown> {
           } } : {}),
           ...(entry.action === "sch.wire.modify" ? { exception: {
             profile: FLAT_WIRE_TRANSACTION_PROFILE,
+            executionState: "blocked",
+            executionRefusal: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL,
             profileSelection: "facade-only plan.flatWire; mutually exclusive with display profiles; historical journals are not migrated",
             targets: "one existing unlocked named WIRE with literal primitiveId; preserve every LINE ID/count/style and every ATTR field",
             geometry: "integer endpoints of nonzero orthogonal LINE segments only; unchanged category-derived child order",
             requiredProof: "complete checkpoint-bound flat topology and contact-incidence multiset; fixed pin and foreign-wire contact coordinates; exact generated-marker indexes and complete durable peer proof",
             markerRestrictions: "no shared-WIRE endpoints or pin-bearing junctions",
             inverse: "original ID-to-segment association only while a fresh complete durable checkpoint remains the baseline",
-            lifecycle: "no-repeat Save/reopen or retained original successful Save acknowledgment; no compiler, annotation or Save All",
+            lifecycle: "retained no-repeat Save/reopen contract only; execution blocked; pinned sch_Document.save can enumerate other dirty tabs and does not prove target-only Save or debounced structure-job completion",
             electricalConnectivityChanges: false,
             executionAuthorized: false,
             liveValidation: "offline-regression;current-generation-live-unclaimed",

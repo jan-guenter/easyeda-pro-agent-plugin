@@ -5,6 +5,7 @@ import { modelTransformOperationSchema } from "./model-transform-action.ts";
 import { getOperationValidationRegistry } from "./validation-registry.ts";
 import { PCB_TEXT_LIMITATIONS } from "./pcb-text-action.ts";
 import { PCB_TEXT_LIFECYCLE_LIMITATIONS } from "./pcb-text-lifecycle.ts";
+import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL } from "./design-execution-lifecycle.ts";
 
 /** Schema availability is not a claim that every source shape passes its
  * operation-specific native preflight or has completed a live test.
@@ -19,10 +20,13 @@ export function listDesignActionCapabilities(): Record<string, unknown> {
   ].toSorted();
   return {
     actions,
-    execution: "typed-operation-specific-native-preflight",
+    execution: "footprint-only-with-existing-native-preflight;document-types-1-2-3-blocked",
+    executionRestrictions: [{ documentTypes: [1, 2, 3], reason: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL, exceptions: [] }],
+    enabledDocumentTypes: [4],
+    sourceProfiles: "The specialCases below describe retained compiler and proof contracts, not execution exceptions to the lifecycle refusal.",
     requiredRuntime: "retained-windows-job-and-authenticated-bridge",
     units: "pcb-native-mil;schematic-layout-native-10mil;explicit-mm-fields-are-mm",
-    persistence: "execute-or-explicit-commit-with-complete-project-record-delta",
+    persistence: "type-4-only:execute-or-explicit-commit-with-existing-complete-project-record-delta-guards;types-1-2-3-unavailable",
     inverse: "operation-dependent-no-automatic-database-restore",
     limits: { pcbBatchSteps: 256, schematicLayoutSteps: 256, exactSourceReadEscapedJsonBytes: 4_194_304, initiallyLockedBatchRecords: "preserved" },
     specialCases: {

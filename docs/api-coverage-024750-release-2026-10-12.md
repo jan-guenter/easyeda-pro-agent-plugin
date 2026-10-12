@@ -1,8 +1,12 @@
 # Candidate 024750
 
 `0.3.0+codex.20261012024750` corrects Unicode page reconstruction in three
-retained-evidence readers. The full local verification passed; publication and
-installation are pending. No additional SDK method is enabled by these fixes.
+retained-evidence readers. Payload `f1bf7e64726686e2eb6200ef24e2cd0de821a844`
+passed [CI38197962968](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38197962968),
+but was not installed. A follow-up review found a separate completion gap in
+eight existing metadata writers. Installation was held for the
+[030626 correction](api-coverage-030626-release-2026-10-12.md), which includes
+these reader fixes. No additional SDK method is enabled by this candidate.
 
 ## Evidence reader correction
 
@@ -89,6 +93,10 @@ subscribers, and a delayed structure-table update outside the ordinary upload
 barrier. A structural planner alone cannot establish completion of those effects.
 No dormant candidate or private proposal is advertised as an executable method.
 
-Exact-head CI, publication and official Git-marketplace installation will be
-recorded after each completes. PR9 remains
-draft while the broader API work is unfinished.
+The published payload's CI passes 3,860 facade tests with five platform skips
+and zero failures, plus 424 bridge tests. All build, audit, package and archive
+steps succeeded. The PR merge tree matches package subtree
+`ac3296e62e63222709760e3e15946f99081aaa85`. The additional local constructor
+matrix and three older Windows-dependent cases account for the count difference.
+No installed-package or connected admission is claimed for024750. PR9 remains
+draft while broader API work is unfinished.

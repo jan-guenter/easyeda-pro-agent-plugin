@@ -5,36 +5,112 @@ import { designActionSchema } from "../src/design-action.ts";
 import { libraryOperationSchema } from "../src/library-operations.ts";
 import { listLibraryExecutionCapabilities } from "../src/library-execution.ts";
 import { operationCatalogQuerySchema, queryOperationCatalog, validateCatalogOperation } from "../src/operation-catalog.ts";
-import { FLAT_DISPLAY_TRANSACTION_PROFILE } from "../src/flat-display-binding.ts";
-import { FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE } from "../src/flat-display-library-peers.ts";
-import { FLAT_WIRE_TRANSACTION_PROFILE } from "../src/flat-wire-binding.ts";
+import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL } from "../src/design-execution-lifecycle.ts";
+import { listDesignActionCapabilities } from "../src/design-capabilities.ts";
+
+const FLAT_DISPLAY_TRANSACTION_PROFILE = "easyeda-pro-control.flat-display-transaction.v1";
+const FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE = "easyeda-pro-control.flat-display-transaction.v2";
+const FLAT_WIRE_TRANSACTION_PROFILE = "easyeda-pro-control.flat-wire-reroute.v1";
+
+void test("every non-footprint design schema reports the Save structure lifecycle refusal without a caller override", () => {
+  let count = 0, offset = 0;
+  for (;;) {
+    const result = queryOperationCatalog({ family: "design", offset, limit: 100 });
+    for (const entry of z.array(z.record(z.string(), z.unknown())).parse(result["entries"])) {
+      count += 1;
+      const action = z.string().parse(entry["action"]);
+      if (action.startsWith("footprint.")) {
+        assert.equal(entry["status"], "typed-operation-specific-native-preflight");
+        assert.equal(entry["executionRefusal"], undefined);
+      } else {
+        assert.equal(entry["status"], "unavailable-native-project-structure-lifecycle");
+        assert.equal(entry["executionRefusal"], DESIGN_STRUCTURE_LIFECYCLE_REFUSAL);
+        const restrictions = z.array(z.object({ documentType: z.number(), reason: z.string() })).parse(entry["executionRestrictions"]);
+        assert.deepEqual(restrictions.map((item) => item.documentType), action.startsWith("pcb.") ? [3] : [1, 2]);
+        for (const item of restrictions) { assert.equal(item.reason, DESIGN_STRUCTURE_LIFECYCLE_REFUSAL); }
+      }
+    }
+    if (result["hasMore"] === false) { assert.equal(count, result["total"]); break; }
+    offset = z.number().parse(result["nextOffset"]);
+  }
+  assert.equal(count, 108);
+  const operation = { id: "text", action: "pcb.text.modify", target: { primitiveId: "a".repeat(16) }, patch: { x: 1 } };
+  assert.equal(validateCatalogOperation({ family: "design", operation })["valid"], true);
+  for (const extra of [{ lifecycleProved: true }, { projectStructureJobComplete: true }, { documentType: 4 }]) {
+    assert.equal(validateCatalogOperation({ family: "design", operation: { ...operation, ...extra } })["valid"], false);
+  }
+  const capabilities = listDesignActionCapabilities();
+  assert.deepEqual(capabilities["enabledDocumentTypes"], [4]);
+  assert.deepEqual(capabilities["executionRestrictions"], [{ documentTypes: [1, 2, 3], reason: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL, exceptions: [] }]);
+  assert.match(String(capabilities["sourceProfiles"]), /not execution exceptions/u);
+});
+
+void test("all eight structure-lifecycle refusals preserve strict offline argument schemas without overrides", () => {
+  const operations = [
+    { id: "symbol-create", action: "library.symbol.create", libraryUuid: "project", name: "Symbol", symbolType: 2 },
+    { id: "symbol-modify", action: "library.symbol.modify", libraryUuid: "project", target: { uuid: "symbol" }, patch: { name: "Symbol" } },
+    { id: "page-create", action: "document.page.create", schematic: { uuid: "schematic" } },
+    { id: "page-rename", action: "document.page.rename", target: { uuid: "page" }, name: "Page" },
+    { id: "pcb-create", action: "document.pcb.create" },
+    { id: "pcb-rename", action: "document.pcb.rename", target: { uuid: "pcb" }, name: "PCB" },
+    { id: "schematic-create", action: "document.schematic.create" },
+    { id: "schematic-rename", action: "document.schematic.rename", target: { uuid: "schematic" }, name: "Schematic" },
+  ];
+  for (const operation of operations) {
+    const result = queryOperationCatalog({ family: "library", operationAction: operation.action, includeSchemas: true });
+    const [entry] = z.array(z.record(z.string(), z.unknown())).parse(result["entries"]); assert.ok(entry);
+    assert.equal(entry["status"], "unavailable-native-project-structure-lifecycle");
+    assert.match(z.string().parse(entry["executionRefusal"]), /operation-owned completion.*project_structures.*complete SQLite effect/u);
+    assert.match(z.string().parse(entry["executionRefusal"]), /task1.*pending timer\/task2/u);
+    const capabilities = z.record(z.string(), z.unknown()).parse(entry["executionCapabilities"]);
+    assert.equal(capabilities["status"], entry["status"]); assert.equal(capabilities["executionRefusal"], entry["executionRefusal"]);
+    const schema = z.record(z.string(), z.unknown()).parse(entry["inputSchema"]);
+    assert.equal(schema["additionalProperties"], false);
+    assert.equal(result["offline"], true); assert.equal(result["executionAuthorized"], false);
+    const validated = validateCatalogOperation({ family: "library", operation });
+    assert.equal(validated["valid"], true); assert.equal(validated["executionAuthorized"], false);
+    assert.equal(validated["nativePreflightPerformed"], false);
+    for (const extra of [{ lifecycleProved: true }, { projectStructureJobComplete: true }, { executionState: "available-with-runtime-guards" }]) {
+      assert.equal(validateCatalogOperation({ family: "library", operation: { ...operation, ...extra } })["valid"], false);
+    }
+  }
+  for (const action of ["library.symbol.get", "library.footprint.get", "library.device.get", "library.model3d.get",
+    "library.footprint.create", "library.footprint.modify", "library.device.create", "library.device.modify"]) {
+    const result = queryOperationCatalog({ family: "library", operationAction: action });
+    const [entry] = z.array(z.record(z.string(), z.unknown())).parse(result["entries"]); assert.ok(entry);
+    assert.notEqual(entry["status"], "unavailable-native-project-structure-lifecycle");
+    assert.equal(Object.hasOwn(entry, "executionRefusal"), false);
+  }
+});
 
 void test("schematic operation discovery exposes the current type-1 topology execution restriction", () => {
   const restricted = queryOperationCatalog({ family: "design", operationAction: "sch.wire.modify" });
-  const restriction = z.object({ documentType: z.literal(1), reason: z.string() });
+  const restriction = z.object({ documentType: z.union([z.literal(1), z.literal(2)]), reason: z.string() });
   const descriptor = z.object({ executionRestrictions: z.array(restriction) });
   const entries = z.array(descriptor).parse(restricted["entries"]);
-  assert.match(entries[0]?.executionRestrictions[0]?.reason ?? "", /invoke Save All/u);
+  assert.equal(entries[0]?.executionRestrictions[0]?.reason, DESIGN_STRUCTURE_LIFECYCLE_REFUSAL);
   const pcb = queryOperationCatalog({ family: "design", operationAction: "pcb.via.modify" });
   const pcbEntries = z.array(z.record(z.string(), z.unknown())).parse(pcb["entries"]);
-  assert.equal(Object.hasOwn(pcbEntries[0] ?? {}, "executionRestrictions"), false);
+  assert.deepEqual(pcbEntries[0]?.["executionRestrictions"], [{ documentType: 3, reason: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL }]);
 });
 
 void test("layout discovery describes only the sealed display exception without admitting other schematic edits", () => {
   const restrictionSchema = z.object({
     documentType: z.literal(1), reason: z.string(), exception: z.record(z.string(), z.unknown()).optional(),
   });
-  const descriptorSchema = z.object({ executionRestrictions: z.array(restrictionSchema) });
+  const descriptorSchema = z.object({ sourceProfileRestrictions: z.array(restrictionSchema) });
   const entriesSchema = z.array(descriptorSchema);
   for (const action of ["sch.layout.batch", "sch.wire.create", "sch.component.create", "sch.text.modify"]) {
     const result = queryOperationCatalog({ family: "design", operationAction: action });
     const [entry] = entriesSchema.parse(result["entries"]);
     assert.ok(entry);
-    const [restriction] = entry.executionRestrictions;
+    const [restriction] = entry.sourceProfileRestrictions;
     assert.ok(restriction);
     assert.match(restriction.reason, /invoke Save All/u);
     if (action === "sch.layout.batch") {
       assert.equal(restriction.exception?.["profile"], FLAT_DISPLAY_TRANSACTION_PROFILE);
+      assert.equal(restriction.exception["executionState"], "blocked");
+      assert.equal(restriction.exception["executionRefusal"], DESIGN_STRUCTURE_LIFECYCLE_REFUSAL);
       assert.deepEqual(restriction.exception["profiles"], [FLAT_DISPLAY_TRANSACTION_PROFILE, FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE]);
       assert.match(String(restriction.exception["profileSelection"]), /facade-only.*v1.*v2.*unchanged imported SYMBOL\/FOOTPRINT/u);
       assert.deepEqual(restriction.exception["allowedSteps"], ["sch.attribute.display", "sch.text.display"]);
@@ -60,12 +136,14 @@ void test("wire discovery isolates the sealed endpoint-only exception from gener
   const restrictionSchema = z.object({
     documentType: z.literal(1), reason: z.string(), exception: z.record(z.string(), z.unknown()),
   });
-  const descriptorSchema = z.object({ executionRestrictions: z.array(restrictionSchema) });
+  const descriptorSchema = z.object({ sourceProfileRestrictions: z.array(restrictionSchema) });
   const [entry] = z.array(descriptorSchema).parse(result["entries"]);
-  const restriction = entry?.executionRestrictions[0]; assert.ok(restriction);
+  const restriction = entry?.sourceProfileRestrictions[0]; assert.ok(restriction);
   assert.match(restriction.reason, /invoke Save All/u);
   const exception = restriction.exception;
   assert.equal(exception["profile"], FLAT_WIRE_TRANSACTION_PROFILE);
+  assert.equal(exception["executionState"], "blocked");
+  assert.equal(exception["executionRefusal"], DESIGN_STRUCTURE_LIFECYCLE_REFUSAL);
   assert.equal(exception["executionAuthorized"], false);
   assert.equal(exception["electricalConnectivityChanges"], false);
   assert.equal(exception["liveValidation"], "offline-regression;current-generation-live-unclaimed");

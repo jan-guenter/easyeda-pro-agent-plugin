@@ -6,7 +6,18 @@ Use `easyeda_control_design` commit after an exact applied-unsaved result. It re
 
 A supported recovery that composes a prior journal's delayed inverse is separately reported as `isolatedTransaction:false`, with complete proofs for both transactions and original hashes. It is not an unchanged-collateral result; see [failure-recovery.md](failure-recovery.md).
 
-EasyEDA can acknowledge its cache write before a queued project-worker write reaches `.eprj2`. Typed transactions await the native project upload queue before their baseline checkpoints and after Save, before checkpointing or closing. The receipt proves only that already scheduled writes settled. It neither saves current editor changes nor proves the requested values persisted. Complete durable comparison remains mandatory. Rollback also drains scheduled writes and checks a fresh durable checkpoint before it can become terminal; an exact live inverse alone is insufficient.
+EasyEDA can acknowledge its cache write before a queued project-worker write reaches `.eprj2`. Typed transactions await the native project upload queue before their baseline checkpoints and after Save, before checkpointing or closing. The pinned wait covers task1 only. It does not drain future timers, task2 structure writes or every native subscriber. It neither saves current editor changes nor proves the requested values persisted. Complete durable comparison remains mandatory. Rollback uses the same limited upload wait and a fresh durable checkpoint; an exact live inverse alone is insufficient.
+
+Symbol/page/container META writes can schedule a debounced `project_structures`
+update outside that wait. A complete decoded document comparison does not compare
+those SQL rows, and equality with a newly captured checkpoint is only a
+point-in-time stability check. The affected eight library routes are currently
+blocked. Native Save also republishes pending schematic-page, symbol and PCB
+geometry without its pending flag and reaches the same scheduler. Those design
+transactions are blocked too; see [the exact scope](libraries-and-eco.md#structure-write-completion-restriction).
+Retain historical proofs with their original scope. Do not reinterpret
+`scheduledWritesSettled:true`, stable polls or repeated Save as a structure-job
+completion witness.
 
 The source export and durable storage need not encode unchanged defaults identically. Scoped baseline targets must match, every previously persisted unchanged record remains invariant, and each intended changed record/field must persist. The generic verifier additionally admits validated target-document client/updateTime/version bookkeeping. Document-specific adapters separately prove and report narrowly supported encoding conversions, including the symbol profile described in [libraries-and-eco.md](libraries-and-eco.md); they retain raw hashes and do not permit unrelated document changes. See [safety-state-machine.md](safety-state-machine.md) for the full proof boundary.
 

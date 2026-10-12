@@ -1,5 +1,13 @@
 # PCB geometry
 
+PCB design transactions currently refuse before dispatch because native Save's
+delayed project-structure write lacks operation-owned completion and complete
+SQL-effect proof. The PCB writer descriptions below are retained source
+contracts and historical evidence, not current execution instructions. Reads
+and footprint operations retain their separate guards; footprint support does
+not enable the corresponding PCB operation. Never substitute native UI for a
+refused transaction.
+
 ## Calibrate units and axes
 
 PCB and footprint public APIs commonly use mil. Prefer the installed unit conversion helper and keep the unit in every assertion. Before applying project coordinates, measure two known objects to determine the Y direction and rotation convention. Do not reuse another project's axis transform.
@@ -39,7 +47,7 @@ tests and retained-fixture replay are not connected validation of this candidate
 
 ### Standalone silkscreen text
 
-The source package supports `pcb.text.modify`, `pcb.text.create` and
+The source package retains schemas and pure effect verifiers for `pcb.text.modify`, `pcb.text.create` and
 `pcb.text.delete` for standalone top-silkscreen STRINGs. These are not component
 Designator edits or footprint operations. Query the installed schema first;
 older packages lack some or all of these actions.

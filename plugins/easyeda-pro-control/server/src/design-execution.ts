@@ -76,6 +76,7 @@ import { assertPcbTextCreateRetainedAuthority, assertPcbTextLifecycleAcknowledgm
 import { verifyPcbTextRetainedSaveAuthority, verifyPcbTextRetainedSaveEffect } from "./pcb-text-retained-save.ts";
 import { verifyNativeRuleReportProfile } from "./native-rule-profile.ts";
 import { PCB_NAVIGATION_PREFLIGHT_PROFILE, buildPcbNavigationPreferencePreflight } from "./pcb-navigation-preflight.ts";
+import { assertDesignExecutionLifecycle, designExecutionLifecycleRefusal } from "./design-execution-lifecycle.ts";
 
 type RecordValue = Record<string, unknown>;
 const PROFILE = "easyeda-pro-control.typed-design-transaction.v1";
@@ -139,6 +140,10 @@ function flatPersistenceProof(journal: DesignJournal, proof: RecordValue): Recor
 }
 
 function inverseAvailability(journal: DesignJournal): RecordValue {
+  if (designExecutionLifecycleRefusal(journal.context.document.documentType) !== undefined ||
+      designExecutionLifecycleRefusal(journal.plan.expectedContext.document.documentType) !== undefined) {
+    return { available: false, reason: "native-project-structure-lifecycle-unavailable" };
+  }
   if (hasDesignInverseAttempt(journal)) { return { available: false, reason: "inverse-already-attempted" }; }
   if (hasLegacyDesignSaveEvidence(journal)) { return { available: false, reason: "retained-save-evidence" }; }
   if (journal.state !== "applied-unsaved" || journal.inverse === undefined || journal.orphanedCallPossible || journal.hardStop) {
@@ -322,6 +327,8 @@ function sourceSnapshot(payload: RecordValue, context: ExpectedContext): NativeS
 }
 
 function summary(journal: DesignJournal): RecordValue {
+  const executionRefusal = designExecutionLifecycleRefusal(journal.context.document.documentType) ??
+    designExecutionLifecycleRefusal(journal.plan.expectedContext.document.documentType);
   const flatBinding = flatTransactionBinding(journal.plan);
   const operation = journal.plan.operation;
   const operations = operation.action === "pcb.batch" ? operation.operations : [operation];
@@ -336,6 +343,8 @@ function summary(journal: DesignJournal): RecordValue {
     action: journal.plan.operation.action, saved: journal.saved, reopened: journal.reopened,
     orphanedCallPossible: journal.orphanedCallPossible, hardStop: journal.hardStop,
     mutationMayHaveOccurred: journal.mutationMayHaveOccurred, nextSafeAction: journal.nextSafeAction,
+    ...(executionRefusal === undefined ? {} : { executionRefusal, retainedNextSafeAction: journal.nextSafeAction,
+      nextSafeAction: "Inspect retained evidence only. Native structure-job completion is unimplemented; do not replay, Save, inverse or repair this transaction. Historical journal advice is not current execution authority." }),
     createdId: journal.createdId ?? null, targetId: journal.targetId ?? null,
     createdIds: journal.createdIds ?? null, parameterEffects,
     inverse: inverseAvailability(journal),
@@ -551,9 +560,13 @@ export class DesignExecutor {
 
   /** Execute promises a later Save/reopen, unlike standalone unsaved apply. */
   public async preflightSaveNavigation(input: DesignApplyInput): Promise<void> {
+    assertDesignExecutionLifecycle(input.expectedContext.document.documentType);
     if (!input.confirmWrite) { throw new Error("Typed design writes need explicit confirmation."); }
     const plan: DesignPlan = { profile: PROFILE, operation: designActionSchema.parse(input.operation),
       expectedContext: structuredClone(input.expectedContext), expectedFingerprint: structuredClone(input.expectedFingerprint) };
+    const compiled = compileDesignAction(plan.operation);
+    if (plan.expectedContext.document.documentType !== compiled.documentType) { throw new Error("Wrong editor for design action."); }
+    assertDesignExecutionLifecycle(compiled.documentType);
     await this.engine.assertBridgeDispatchAllowed();
     await this.assertRuntime(plan);
     const context = await this.engine.assertContext(plan.expectedContext);
@@ -805,6 +818,7 @@ export class DesignExecutor {
   }
 
   private async call(journal: DesignJournal, phase: string, code: string, lifecycle = false): Promise<unknown> {
+    assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
     assertTransactionTopologyAvailable(journal.plan, journal.context);
     if (flatTransactionBinding(journal.plan) !== undefined) { await DesignExecutor.assertFlatDispatch(journal, phase, code); }
     await this.assertRuntime(journal.plan, journal.context, journal.runtimeFingerprint);
@@ -878,6 +892,7 @@ export class DesignExecutor {
   }
 
   public async apply(input: DesignApplyInput): Promise<RecordValue> {
+    assertDesignExecutionLifecycle(input.expectedContext.document.documentType);
     if (!input.confirmWrite) { throw new Error("Typed design writes need explicit confirmation."); }
     const wireCandidate = input.expectedContext.document.documentType === 1 && flatWireCandidate(input.operation);
     const flatCandidate = wireCandidate || (input.expectedContext.document.documentType === 1 && flatDisplayCandidate(input.operation));
@@ -1013,6 +1028,18 @@ export class DesignExecutor {
 
   public static async inspect(operationId: string): Promise<RecordValue> {
     return summary(journalPayload(await loadOperation(operationId)));
+  }
+
+  /** Offline MCP admission reuses the managed parser and summary. Undefined
+   * continues to the existing runtime guards; it grants no dispatch authority.
+   */
+  public static async preflightRetainedLifecycle(operationId: string,
+    action: "commit" | "rollback" | "reconcile" | "repair-layout-net-labels" | "repair-layout-wire-groups" | "repair-layout-label-visibility",
+  ): Promise<RecordValue | undefined> {
+    const journal = journalPayload(await loadOperation(operationId));
+    if (action === "reconcile" && isTerminalOperation(journal)) { return summary(journal); }
+    assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
+    return undefined;
   }
 
   /** Explicit facade-only upgrade binding. It neither classifies nor edits a
@@ -1175,6 +1202,7 @@ export class DesignExecutor {
   public async repairLayoutNetLabels(operationId: string, confirmWrite: true): Promise<RecordValue> {
     if (!confirmWrite) { throw new Error("Layout net-label repair needs explicit write confirmation."); }
     const journal = journalPayload(await loadOperation(operationId));
+    assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
     assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
     const saveEvidence = await inspectDesignSaveAttempts(journal);
     if (saveEvidence.attempted) { throw new Error("A design Save was already attempted; a layout repair cannot reclassify it as unsaved."); }
@@ -1246,6 +1274,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
   public async repairLayoutLabelVisibility(operationId: string, confirmWrite: true): Promise<RecordValue> {
     if (!confirmWrite) { throw new Error("Layout visibility repair needs explicit write confirmation."); }
     const journal = journalPayload(await loadOperation(operationId));
+    assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
     assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
     const saveEvidence = await inspectDesignSaveAttempts(journal);
     if (saveEvidence.attempted) { throw new Error("A design Save was already attempted; a layout repair cannot reclassify it as unsaved."); }
@@ -1321,6 +1350,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
   public async repairLayoutWireGroups(operationId: string, confirmWrite: true): Promise<RecordValue> {
     if (!confirmWrite) { throw new Error("Wire-group correction needs explicit write confirmation."); }
     const journal = journalPayload(await loadOperation(operationId));
+    assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
     assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
     const saveEvidence = await inspectDesignSaveAttempts(journal);
     if (saveEvidence.attempted) { throw new Error("A design Save was already attempted; a layout repair cannot reclassify it as unsaved."); }
@@ -1408,8 +1438,9 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
   /** Classify a returned-but-failed call without executing its action again. */
   public async reconcile(operationId: string): Promise<RecordValue> {
     const journal = journalPayload(await loadOperation(operationId));
-    assertTransactionTopologyAvailable(journal.plan, journal.context);
     if (isTerminalOperation(journal)) { return summary(journal); }
+    assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
+    assertTransactionTopologyAvailable(journal.plan, journal.context);
     if (journal.orphanedCallPossible) { throw new Error("Prior execution may still be running. Prove retained runtime termination before reconciliation."); }
     const saveEvidence = await inspectDesignSaveAttempts(journal);
     const retainedProfile = [2, 4].includes(journal.context.document.documentType) || ["sch.wire.modify", "pcb.pour.rebuild", "pcb.text.create"].includes(journal.plan.operation.action) ||
@@ -1735,6 +1766,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
 
   public async commit(operationId: string): Promise<RecordValue> {
     const journal = journalPayload(await loadOperation(operationId));
+    assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
     if (hasDesignInverseAttempt(journal)) { throw new Error("An inverse was already attempted; inspect its retained recovery evidence without Save."); }
     assertTransactionTopologyAvailable(journal.plan, journal.context);
     const saveEvidence = await inspectDesignSaveAttempts(journal);
@@ -1912,6 +1944,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
 
   public async rollback(operationId: string): Promise<RecordValue> {
     const journal = journalPayload(await loadOperation(operationId));
+    assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
     assertTransactionTopologyAvailable(journal.plan, journal.context);
     const saveEvidence = await inspectDesignSaveAttempts(journal);
     if (saveEvidence.attempted) { throw new Error("A design Save was already attempted; an unsaved inverse is not authorized."); }

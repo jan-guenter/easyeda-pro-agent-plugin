@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "7e03088f9dec4cae60eb0876858c6f5ab1fe41858176c89f57253be11f4001d9";
+const __easyedaBundlePairId = "69bcda910189734fe66438de91fc818ce5353c2022d172ea6739aa76668a58ae";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -38721,6 +38721,21 @@ var init_checkpoint = __esm({
   }
 });
 
+// server/src/legacy-recovery-family.ts
+function assertLegacyRecoveryJournalFamily(value) {
+  const plan = isRecord(value) ? value["plan"] : void 0;
+  if (!isRecord(plan) || Object.hasOwn(plan, "profile") || !isRecord(plan["expectedContext"]) || !isRecord(plan["expectedContext"]["project"]) || !isRecord(plan["expectedContext"]["document"]) || !isRecord(plan["expectedFingerprint"]) || !isRecord(plan["applyCall"]) || !isRecord(plan["checkpoint"]) || typeof plan["capabilityLevel"] !== "string" || ["targetPrimitiveIds", "targetChanges", "preflightCalls", "verifyCalls", "rollbackCalls", "reopenedVerifyCalls"].some((key) => !Array.isArray(plan[key]))) {
+    throw new Error(LEGACY_RECOVERY_FAMILY_REFUSAL);
+  }
+}
+var LEGACY_RECOVERY_FAMILY_REFUSAL;
+var init_legacy_recovery_family = __esm({
+  "server/src/legacy-recovery-family.ts"() {
+    init_core3();
+    LEGACY_RECOVERY_FAMILY_REFUSAL = "Legacy recovery requires its original legacy mutation-plan shape without a profile. Use the owning typed tool for other journal families; do not navigate, Save or rewrite them through the legacy endpoint.";
+  }
+});
+
 // server/src/cooperative-proof.ts
 import { setImmediate as setImmediate2 } from "node:timers/promises";
 async function yieldProofEventLoop() {
@@ -50637,6 +50652,7 @@ var init_engine = __esm({
     init_core3();
     init_artifacts();
     init_checkpoint();
+    init_legacy_recovery_family();
     init_runtime_scripts();
     init_exact_readers();
     init_public_sdk_read();
@@ -53273,8 +53289,10 @@ var init_engine = __esm({
         if (operationId === void 0 || operationId.length === 0) {
           return scanUnfinishedOperations();
         }
+        const retained = await loadOperation(operationId);
+        assertLegacyRecoveryJournalFamily(retained);
         await this.assertRecoveryOperationIsolated(operationId);
-        const operation = asOperationJournal(await loadOperation(operationId));
+        const operation = asOperationJournal(retained);
         if (isTerminalOperation(operation)) {
           return operationSummary2(operation);
         }
@@ -65909,6 +65927,25 @@ var init_pcb_navigation_preflight = __esm({
   }
 });
 
+// server/src/design-execution-lifecycle.ts
+function designExecutionLifecycleRefusal(documentType2) {
+  return [1, 2, 3].includes(documentType2) ? DESIGN_STRUCTURE_LIFECYCLE_REFUSAL : void 0;
+}
+function assertDesignExecutionLifecycle(...documentTypes) {
+  for (const documentType2 of documentTypes) {
+    const refusal = designExecutionLifecycleRefusal(documentType2);
+    if (refusal !== void 0) {
+      throw new Error(refusal);
+    }
+  }
+}
+var DESIGN_STRUCTURE_LIFECYCLE_REFUSAL;
+var init_design_execution_lifecycle = __esm({
+  "server/src/design-execution-lifecycle.ts"() {
+    DESIGN_STRUCTURE_LIFECYCLE_REFUSAL = "Design execution is unavailable for schematic-page, symbol and PCB editors until operation-owned completion of native Save's debounced project_structures write and its exact complete SQLite effect are proved. The task1 upload wait and a point-in-time checkpoint do not drain the pending timer/task2 job. Existing schemas, pure verifiers and historical observations do not establish that completion.";
+  }
+});
+
 // server/src/design-execution.ts
 import { basename as basename8, join as join17 } from "node:path";
 function externalRuntimeIdentity(value) {
@@ -65936,6 +65973,9 @@ function flatPersistenceProof(journal, proof) {
   return flatTransactionBinding(journal.plan) === void 0 || !isRecord(proof["effect"]) ? proof : { ...proof, effect: flatEffectProof(journal, proof["effect"]) };
 }
 function inverseAvailability(journal) {
+  if (designExecutionLifecycleRefusal(journal.context.document.documentType) !== void 0 || designExecutionLifecycleRefusal(journal.plan.expectedContext.document.documentType) !== void 0) {
+    return { available: false, reason: "native-project-structure-lifecycle-unavailable" };
+  }
   if (hasDesignInverseAttempt(journal)) {
     return { available: false, reason: "inverse-already-attempted" };
   }
@@ -66086,6 +66126,7 @@ function sourceSnapshot2(payload, context2) {
   return result;
 }
 function summary(journal) {
+  const executionRefusal = designExecutionLifecycleRefusal(journal.context.document.documentType) ?? designExecutionLifecycleRefusal(journal.plan.expectedContext.document.documentType);
   const flatBinding = flatTransactionBinding(journal.plan);
   const operation = journal.plan.operation;
   const operations = operation.action === "pcb.batch" ? operation.operations : [operation];
@@ -66107,6 +66148,11 @@ function summary(journal) {
     hardStop: journal.hardStop,
     mutationMayHaveOccurred: journal.mutationMayHaveOccurred,
     nextSafeAction: journal.nextSafeAction,
+    ...executionRefusal === void 0 ? {} : {
+      executionRefusal,
+      retainedNextSafeAction: journal.nextSafeAction,
+      nextSafeAction: "Inspect retained evidence only. Native structure-job completion is unimplemented; do not replay, Save, inverse or repair this transaction. Historical journal advice is not current execution authority."
+    },
     createdId: journal.createdId ?? null,
     targetId: journal.targetId ?? null,
     createdIds: journal.createdIds ?? null,
@@ -66336,6 +66382,7 @@ var init_design_execution = __esm({
     init_pcb_text_retained_save();
     init_native_rule_profile();
     init_pcb_navigation_preflight();
+    init_design_execution_lifecycle();
     PROFILE7 = "easyeda-pro-control.typed-design-transaction.v1";
     designTransactionActionSchema = external_exports.enum(["apply", "commit", "rollback", "inspect", "reconcile", "recover-authority", "rebind-runtime", "open-target", "load-layout-pages", "repair-layout-net-labels", "repair-layout-wire-groups", "repair-layout-label-visibility"]);
     DesignExecutor = class _DesignExecutor {
@@ -66381,6 +66428,7 @@ var init_design_execution = __esm({
       }
       /** Execute promises a later Save/reopen, unlike standalone unsaved apply. */
       async preflightSaveNavigation(input) {
+        assertDesignExecutionLifecycle(input.expectedContext.document.documentType);
         if (!input.confirmWrite) {
           throw new Error("Typed design writes need explicit confirmation.");
         }
@@ -66390,6 +66438,11 @@ var init_design_execution = __esm({
           expectedContext: structuredClone(input.expectedContext),
           expectedFingerprint: structuredClone(input.expectedFingerprint)
         };
+        const compiled = compileDesignAction(plan.operation);
+        if (plan.expectedContext.document.documentType !== compiled.documentType) {
+          throw new Error("Wrong editor for design action.");
+        }
+        assertDesignExecutionLifecycle(compiled.documentType);
         await this.engine.assertBridgeDispatchAllowed();
         await this.assertRuntime(plan);
         const context2 = await this.engine.assertContext(plan.expectedContext);
@@ -66693,6 +66746,7 @@ var init_design_execution = __esm({
         }
       }
       async call(journal, phase2, code, lifecycle = false) {
+        assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
         assertTransactionTopologyAvailable(journal.plan, journal.context);
         if (flatTransactionBinding(journal.plan) !== void 0) {
           await _DesignExecutor.assertFlatDispatch(journal, phase2, code);
@@ -66788,6 +66842,7 @@ var init_design_execution = __esm({
         return payload;
       }
       async apply(input) {
+        assertDesignExecutionLifecycle(input.expectedContext.document.documentType);
         if (!input.confirmWrite) {
           throw new Error("Typed design writes need explicit confirmation.");
         }
@@ -67021,6 +67076,17 @@ var init_design_execution = __esm({
       static async inspect(operationId) {
         return summary(journalPayload(await loadOperation(operationId)));
       }
+      /** Offline MCP admission reuses the managed parser and summary. Undefined
+       * continues to the existing runtime guards; it grants no dispatch authority.
+       */
+      static async preflightRetainedLifecycle(operationId, action) {
+        const journal = journalPayload(await loadOperation(operationId));
+        if (action === "reconcile" && isTerminalOperation(journal)) {
+          return summary(journal);
+        }
+        assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
+        return void 0;
+      }
       /** Explicit facade-only upgrade binding. It neither classifies nor edits a
        * design, changes the sealed original plan, nor clears orphan uncertainty.
        */
@@ -67213,6 +67279,7 @@ var init_design_execution = __esm({
           throw new Error("Layout net-label repair needs explicit write confirmation.");
         }
         const journal = journalPayload(await loadOperation(operationId));
+        assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
         assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
         const saveEvidence = await inspectDesignSaveAttempts(journal);
         if (saveEvidence.attempted) {
@@ -67330,6 +67397,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
           throw new Error("Layout visibility repair needs explicit write confirmation.");
         }
         const journal = journalPayload(await loadOperation(operationId));
+        assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
         assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
         const saveEvidence = await inspectDesignSaveAttempts(journal);
         if (saveEvidence.attempted) {
@@ -67469,6 +67537,7 @@ return {ok:true,profile:${JSON.stringify(correction.profile)},id:${JSON.stringif
           throw new Error("Wire-group correction needs explicit write confirmation.");
         }
         const journal = journalPayload(await loadOperation(operationId));
+        assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
         assertDesignTopologyExecutionAvailable(journal.context, journal.plan.expectedContext);
         const saveEvidence = await inspectDesignSaveAttempts(journal);
         if (saveEvidence.attempted) {
@@ -67615,10 +67684,11 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       /** Classify a returned-but-failed call without executing its action again. */
       async reconcile(operationId) {
         const journal = journalPayload(await loadOperation(operationId));
-        assertTransactionTopologyAvailable(journal.plan, journal.context);
         if (isTerminalOperation(journal)) {
           return summary(journal);
         }
+        assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
+        assertTransactionTopologyAvailable(journal.plan, journal.context);
         if (journal.orphanedCallPossible) {
           throw new Error("Prior execution may still be running. Prove retained runtime termination before reconciliation.");
         }
@@ -68091,6 +68161,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       }
       async commit(operationId) {
         const journal = journalPayload(await loadOperation(operationId));
+        assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
         if (hasDesignInverseAttempt(journal)) {
           throw new Error("An inverse was already attempted; inspect its retained recovery evidence without Save.");
         }
@@ -68353,6 +68424,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       }
       async rollback(operationId) {
         const journal = journalPayload(await loadOperation(operationId));
+        assertDesignExecutionLifecycle(journal.context.document.documentType, journal.plan.expectedContext.document.documentType);
         assertTransactionTopologyAvailable(journal.plan, journal.context);
         const saveEvidence = await inspectDesignSaveAttempts(journal);
         if (saveEvidence.attempted) {
@@ -70870,10 +70942,13 @@ function listDesignActionCapabilities() {
   ].toSorted();
   return {
     actions,
-    execution: "typed-operation-specific-native-preflight",
+    execution: "footprint-only-with-existing-native-preflight;document-types-1-2-3-blocked",
+    executionRestrictions: [{ documentTypes: [1, 2, 3], reason: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL, exceptions: [] }],
+    enabledDocumentTypes: [4],
+    sourceProfiles: "The specialCases below describe retained compiler and proof contracts, not execution exceptions to the lifecycle refusal.",
     requiredRuntime: "retained-windows-job-and-authenticated-bridge",
     units: "pcb-native-mil;schematic-layout-native-10mil;explicit-mm-fields-are-mm",
-    persistence: "execute-or-explicit-commit-with-complete-project-record-delta",
+    persistence: "type-4-only:execute-or-explicit-commit-with-existing-complete-project-record-delta-guards;types-1-2-3-unavailable",
     inverse: "operation-dependent-no-automatic-database-restore",
     limits: { pcbBatchSteps: 256, schematicLayoutSteps: 256, exactSourceReadEscapedJsonBytes: 4194304, initiallyLockedBatchRecords: "preserved" },
     specialCases: {
@@ -70902,6 +70977,7 @@ var init_design_capabilities = __esm({
     init_validation_registry();
     init_pcb_text_action();
     init_pcb_text_lifecycle();
+    init_design_execution_lifecycle();
   }
 });
 
@@ -74620,6 +74696,40 @@ var init_project_schematic_create_native_profile = __esm({
   }
 });
 
+// server/src/library-execution-lifecycle.ts
+function libraryExecutionLifecycleRefusal(action) {
+  return structureLifecycleActions.has(action) ? "Execution is unavailable until operation-owned completion of the native debounced project_structures write and its exact complete SQLite effect are proved. The task1 upload acknowledgment, stable polling and a point-in-time checkpoint do not drain the pending timer/task2 job." : void 0;
+}
+function assertLibraryExecutionLifecycle(operation) {
+  const refusal = libraryExecutionLifecycleRefusal(operation.action);
+  if (refusal !== void 0) {
+    throw new Error(`${operation.action}: ${refusal}`);
+  }
+}
+function libraryExecutionLifecycleAdvice(action, retainedNextSafeAction) {
+  const executionRefusal = libraryExecutionLifecycleRefusal(action);
+  return executionRefusal === void 0 ? {} : {
+    executionRefusal,
+    retainedNextSafeAction,
+    nextSafeAction: "Inspect retained evidence only. Native structure-job completion is unimplemented; do not replay or Save. Historical journal advice is not current execution authority."
+  };
+}
+var structureLifecycleActions;
+var init_library_execution_lifecycle = __esm({
+  "server/src/library-execution-lifecycle.ts"() {
+    structureLifecycleActions = /* @__PURE__ */ new Set([
+      "library.symbol.create",
+      "library.symbol.modify",
+      "document.page.create",
+      "document.page.rename",
+      "document.pcb.create",
+      "document.pcb.rename",
+      "document.schematic.create",
+      "document.schematic.rename"
+    ]);
+  }
+});
+
 // server/src/library-recovery.ts
 import { join as join22 } from "node:path";
 function summary4(journal) {
@@ -74635,7 +74745,8 @@ function summary4(journal) {
     orphanedCallPossible: journal.orphanedCallPossible,
     nextSafeAction: journal.nextSafeAction,
     journalPath: journal.journalPath,
-    artifacts: journal.artifacts
+    artifacts: journal.artifacts,
+    ...libraryExecutionLifecycleAdvice(journal.plan.operation.action, journal.nextSafeAction)
   };
 }
 function sourceKind(context2) {
@@ -74686,6 +74797,7 @@ var init_library_recovery = __esm({
     init_project_pcb_create_runtime();
     init_project_schematic_create_runtime();
     init_project_schematic_create_native_profile();
+    init_library_execution_lifecycle();
     optionalServices = { readArtifact, updateOperation, readNativeHistoryCheckpoint, prepareRecoveryNavigation, verifyLibraryNativeProfile, verifyDeviceAssociationNativeProfile, verifySchematicNativeProfile, verifyDocumentContainerRenameNativeProfile, verifyProjectSchematicCreateNativeProfile };
     hashSchema3 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     fileIdentitySchema = external_exports.object({ birthtimeNs: external_exports.string(), ctimeNs: external_exports.string(), dev: external_exports.string(), ino: external_exports.string() }).strict();
@@ -74906,6 +75018,21 @@ var init_library_recovery = __esm({
           throw transactionError(error51, journal);
         }
       }
+      /** Offline admission only. An undispatched prefix still needs the complete
+       * connected read-only proof below; it is never declared invalidated here.
+       */
+      async preflightReconcile(operationId) {
+        const journal = await this.load(operationId);
+        if (isTerminalOperation(journal)) {
+          return summary4(journal);
+        }
+        if (hasMissingLibraryPreparation(journal)) {
+          assertUndispatchedLibraryPreparation(journal);
+          return void 0;
+        }
+        assertLibraryExecutionLifecycle(journal.plan.operation);
+        return void 0;
+      }
       async reconcile(operationId, requireNoMutation = false) {
         const journal = await this.load(operationId);
         if (isTerminalOperation(journal)) {
@@ -74917,6 +75044,11 @@ var init_library_recovery = __esm({
           } catch (error51) {
             throw transactionError(error51, journal);
           }
+        }
+        try {
+          assertLibraryExecutionLifecycle(journal.plan.operation);
+        } catch (error51) {
+          throw transactionError(error51, journal);
         }
         await this.isolated(journal);
         await this.runtime(journal, journal.plan.operation.action !== "document.activate");
@@ -75361,7 +75493,8 @@ function summary5(journal) {
     orphanedCallPossible: journal.orphanedCallPossible,
     nextSafeAction: journal.nextSafeAction,
     journalPath: journal.journalPath,
-    artifacts: journal.artifacts
+    artifacts: journal.artifacts,
+    ...libraryExecutionLifecycleAdvice(journal.plan.operation.action, journal.nextSafeAction)
   };
 }
 function isCheckpoint(value) {
@@ -75386,8 +75519,11 @@ function listLibraryExecutionCapabilities() {
   for (const entry of listLibraryOperationCapabilities()) {
     const action = entry.action;
     let status2 = entry.status;
-    const executionRefusal = libraryExportRefusalReason(action);
-    if (executionRefusal !== void 0) {
+    const lifecycleRefusal = libraryExecutionLifecycleRefusal(action);
+    const executionRefusal = lifecycleRefusal ?? libraryExportRefusalReason(action);
+    if (lifecycleRefusal !== void 0) {
+      status2 = "unavailable-native-project-structure-lifecycle";
+    } else if (executionRefusal !== void 0) {
       status2 = "unavailable-installed-export-side-effect-or-editor-contract";
     } else if (action.endsWith(".get") && action.startsWith("library.")) {
       status2 = "implemented-double-sampled-metadata";
@@ -75575,6 +75711,7 @@ var init_library_execution = __esm({
     init_project_pcb_create_runtime();
     init_project_schematic_create_runtime();
     init_project_schematic_create_native_profile();
+    init_library_execution_lifecycle();
     libraryExecutionServices = { readNativeHistoryCheckpoint, verifyLibraryNativeProfile, verifyDeviceAssociationNativeProfile, verifySchematicNativeProfile, verifyDocumentContainerRenameNativeProfile, verifyProjectSchematicCreateNativeProfile };
     sourceKind2 = (context2) => {
       const kind = (/* @__PURE__ */ new Map([[1, "schematic-source"], [2, "symbol-source"], [3, "pcb-source"], [4, "footprint-source"]])).get(context2.document.documentType);
@@ -75637,6 +75774,7 @@ var init_library_execution = __esm({
         await updateOperation(journal);
       }
       async dispatch(input, journal, operation, phase2, association2, openScope) {
+        assertLibraryExecutionLifecycle(operation);
         await this.runtime(input);
         const nativeSymbolMetadata = operation.action === "library.symbol.get" && operation.libraryUuid === projectId(input.expectedContext);
         const kind = libraryExecutionKind(operation);
@@ -75761,6 +75899,7 @@ var init_library_execution = __esm({
       async execute(request) {
         const input = structuredClone(request);
         const operation = libraryOperationSchema.parse(input.operation);
+        assertLibraryExecutionLifecycle(operation);
         const kind = libraryExecutionKind(operation);
         const compiled = compileLibraryOperation(operation);
         const mutation = kind === "project-footprint-write" || kind === "project-device-association" || kind === "project-device-create" || kind === "project-device-transform" || kind === "project-symbol-metadata" || kind === "project-symbol-create" || kind === "project-page-rename" || kind === "project-document-rename" || kind === "project-page-create" || kind === "project-pcb-create" || kind === "project-schematic-create";
@@ -76156,6 +76295,9 @@ var init_library_execution = __esm({
       }
       recoverAuthority(operationId, runtimeRestartConfirmation) {
         return this.recovery.recoverAuthority(operationId, runtimeRestartConfirmation);
+      }
+      preflightReconcile(operationId) {
+        return this.recovery.preflightReconcile(operationId);
       }
       reconcileNoMutation(operationId) {
         return this.recovery.reconcile(operationId, true);
@@ -94574,7 +94716,7 @@ var init_extension_api_coverage_routes = __esm({
       tests: ["flat-wire-profile.test.ts", "flat-wire-runtime.test.ts", "flat-wire-apply.test.ts", "flat-wire-execution.test.ts", "flat-wire-lifecycle.test.ts"],
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "operations", query: { family: "design", operationAction: "sch.wire.modify", includeSchemas: true } } } }
     };
-    flatWireScope = "Facade-only sealed plan.flatWire on one ordinary complete project-owned page; no caller override or historical journal migration. One unlocked named WIRE changes only integer endpoints of nonzero orthogonal segments belonging to its existing LINE IDs. LINE count/style, literal net name, every ATTR field and category-derived child order remain exact. Complete checkpoint-bound flat topology plus contact-incidence multiset preserve pins, same-name islands and foreign contacts. Generated-marker proof refuses shared-WIRE endpoints and pin-bearing junctions. Exact ID-to-segment inverse requires a fresh unchanged durable baseline; auto-persisted forward effects refuse unsaved rollback. No creation/deletion, style/net changes, compilation, annotation, Save All or public-wrapper parity. Offline synthetic tests only; current-generation live validation remains unclaimed.";
+    flatWireScope = "Facade-only sealed plan.flatWire on one ordinary complete project-owned page; no caller override or historical journal migration. One unlocked named WIRE changes only integer endpoints of nonzero orthogonal segments belonging to its existing LINE IDs. LINE count/style, literal net name, every ATTR field and category-derived child order remain exact. Complete checkpoint-bound flat topology plus contact-incidence multiset preserve pins, same-name islands and foreign contacts. Generated-marker proof refuses shared-WIRE endpoints and pin-bearing junctions. Exact ID-to-segment inverse requires a fresh unchanged durable baseline; auto-persisted forward effects refuse unsaved rollback. The geometry adapter does not create/delete, change style/net, compile or annotate and does not claim public-wrapper parity. Its retained Save contract is blocked: the pinned sch_Document.save can enumerate other dirty tabs and does not provide target-only Save or debounced structure-job completion. Offline synthetic tests only; current-generation live validation remains unclaimed.";
     groups.push({ namespace: "sch_PrimitiveWire", methods: ["modify"], route: {
       ...flatWireRoute,
       selector: `sch.wire.modify;sealed-profile=${flatWireProfile}`,
@@ -94793,6 +94935,36 @@ function omissionFor(namespace, method, declarations, reviewed) {
   }
   return omitted("bounded-read-or-pure-adapter-needed", `${short} has no reviewed fixed read/pure adapter yet. Its declaration alone does not establish JSON-safe results, completed callbacks or absence of side effects.`, "Review the installed implementation, define exact bounded arguments/result projection and stability policy, then add source/contract and disposable connected tests. This is remaining implementation work, not a safety-based claim of infeasibility.");
 }
+function designLifecycleRoute(route, namespace) {
+  if (route.tool !== "easyeda_control_design") {
+    return route;
+  }
+  let documentTypes = route.documentTypes;
+  if (documentTypes === void 0) {
+    if (route.selector.startsWith("pcb.") || namespace === "pcb_Document") {
+      documentTypes = [3];
+    } else if (namespace === "sch_Document") {
+      documentTypes = [1];
+    } else if (namespace === "dmt_EditorControl" && route.selector === "commit/recovery lifecycle") {
+      documentTypes = [1, 2, 3, 4];
+    } else {
+      throw new Error(`Design coverage route lacks exact editor scope: ${route.selector}`);
+    }
+  }
+  const blockedDocumentTypes = documentTypes.filter((type2) => designExecutionLifecycleRefusal(type2) !== void 0);
+  if (blockedDocumentTypes.length === 0) {
+    return route;
+  }
+  return {
+    ...route,
+    documentTypes,
+    blockedDocumentTypes,
+    executionState: blockedDocumentTypes.length === documentTypes.length ? "blocked" : "partially-blocked",
+    blockedReason: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL + (route.blockedReason === void 0 ? "" : ` Additional retained restriction: ${route.blockedReason}`),
+    scope: `Retained source/proof contract, not a lifecycle completion or enablement claim. Types 1, 2 and 3 are blocked; any remaining type-4 scope retains its existing guards. ${route.scope}`,
+    source: [...route.source, "design-execution-lifecycle.ts"]
+  };
+}
 function inventoryExtensionApiCoverage() {
   const methods = /* @__PURE__ */ new Map();
   for (const snapshot6 of extensionApiSnapshots) {
@@ -94835,7 +95007,12 @@ function inventoryExtensionApiCoverage() {
   }
   return [...methods].toSorted(([left], [right]) => left.localeCompare(right, "en")).map(([path5, group]) => {
     const reviewed = group.declarations.some((entry) => entry.reference === "reviewed-installed");
-    const supported = routes.get(path5) ?? [];
+    const supported = [];
+    for (const original of routes.get(path5) ?? []) {
+      const route = designLifecycleRoute(original, group.namespace);
+      const refusal = route.tool === "easyeda_control_library" ? libraryExecutionLifecycleRefusal(route.selector.split(";")[0] ?? "") : void 0;
+      supported.push(refusal === void 0 ? route : { ...route, executionState: "blocked", blockedReason: refusal, source: [...route.source, "library-execution-lifecycle.ts"] });
+    }
     let status2 = "omitted";
     if (supported.length > 0 && supported.every((entry) => entry.executionState === "blocked")) {
       status2 = "implemented-but-blocked";
@@ -94937,6 +95114,8 @@ var init_extension_api_coverage = __esm({
     init_zod();
     init_extension_api_catalog_data();
     init_extension_api_coverage_routes();
+    init_library_execution_lifecycle();
+    init_design_execution_lifecycle();
     init_public_sdk_read();
     statusSchema = external_exports.enum(["implemented-public-subset", "implemented-native-equivalent", "internal-lifecycle-only", "implemented-but-blocked", "omitted"]);
     extensionApiCoverageInputSchema = external_exports.object({
@@ -96052,20 +96231,33 @@ function queryOperationCatalog(input) {
   const entries = [];
   for (const entry of matched.slice(query.offset, query.offset + query.limit)) {
     const schema2 = query.includeSchemas ? external_exports.toJSONSchema(entry.parser, { io: "input", target: "draft-7" }) : void 0;
+    const designBlocked = query.family === "design" && !entry.action.startsWith("footprint.");
+    let status2 = "typed-operation-specific-native-preflight";
+    if (query.family === "library") {
+      status2 = libraryStatuses.get(entry.action)?.["status"];
+    } else if (designBlocked) {
+      status2 = "unavailable-native-project-structure-lifecycle";
+    }
     const descriptor = {
       action: entry.action,
-      status: query.family === "library" ? libraryStatuses.get(entry.action)?.["status"] : "typed-operation-specific-native-preflight",
+      status: status2,
+      ...designBlocked ? {
+        executionRefusal: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL,
+        executionRestrictions: (entry.action.startsWith("pcb.") ? [3] : [1, 2]).map((documentType2) => ({ documentType: documentType2, reason: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL }))
+      } : {},
       ...query.family === "library" ? { executionCapabilities: libraryStatuses.get(entry.action) } : {},
       ...query.family === "library" && libraryStatuses.get(entry.action)?.["executionRefusal"] !== void 0 ? {
         executionRefusal: libraryStatuses.get(entry.action)?.["executionRefusal"]
       } : {},
       liveValidation: "operation-specific;see-capability-matrix",
       ...query.family === "design" && entry.action.startsWith("sch.") ? {
-        executionRestrictions: [{
+        sourceProfileRestrictions: [{
           documentType: 1,
           reason: SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL,
           ...entry.action === "sch.layout.batch" ? { exception: {
             profile: FLAT_DISPLAY_TRANSACTION_PROFILE,
+            executionState: "blocked",
+            executionRefusal: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL,
             profiles: [FLAT_DISPLAY_TRANSACTION_PROFILE, FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE],
             profileSelection: "facade-only: v1 without imported firstTicket provenance; v2 only when unchanged imported SYMBOL/FOOTPRINT peers have complete checkpoint-bound occurrence proofs",
             allowedSteps: ["sch.attribute.display", "sch.text.display"],
@@ -96088,13 +96280,15 @@ function queryOperationCatalog(input) {
           } } : {},
           ...entry.action === "sch.wire.modify" ? { exception: {
             profile: FLAT_WIRE_TRANSACTION_PROFILE,
+            executionState: "blocked",
+            executionRefusal: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL,
             profileSelection: "facade-only plan.flatWire; mutually exclusive with display profiles; historical journals are not migrated",
             targets: "one existing unlocked named WIRE with literal primitiveId; preserve every LINE ID/count/style and every ATTR field",
             geometry: "integer endpoints of nonzero orthogonal LINE segments only; unchanged category-derived child order",
             requiredProof: "complete checkpoint-bound flat topology and contact-incidence multiset; fixed pin and foreign-wire contact coordinates; exact generated-marker indexes and complete durable peer proof",
             markerRestrictions: "no shared-WIRE endpoints or pin-bearing junctions",
             inverse: "original ID-to-segment association only while a fresh complete durable checkpoint remains the baseline",
-            lifecycle: "no-repeat Save/reopen or retained original successful Save acknowledgment; no compiler, annotation or Save All",
+            lifecycle: "retained no-repeat Save/reopen contract only; execution blocked; pinned sch_Document.save can enumerate other dirty tabs and does not prove target-only Save or debounced structure-job completion",
             electricalConnectivityChanges: false,
             executionAuthorized: false,
             liveValidation: "offline-regression;current-generation-live-unclaimed"
@@ -96177,6 +96371,7 @@ var init_operation_catalog = __esm({
     init_flat_display_binding();
     init_flat_display_library_peers();
     init_flat_wire_binding();
+    init_design_execution_lifecycle();
     familySchema3 = external_exports.enum(["design", "library"]);
     operationCatalogQuerySchema = external_exports.object({
       family: familySchema3,
@@ -96900,6 +97095,8 @@ var init_src = __esm({
     init_core3();
     init_engine();
     init_design_execution();
+    init_design_action();
+    init_design_execution_lifecycle();
     init_design_execute();
     init_check_execution();
     init_project_open_execution();
@@ -96909,6 +97106,8 @@ var init_src = __esm({
     init_design_capabilities();
     init_design_topology();
     init_library_execution();
+    init_library_execution_lifecycle();
+    init_legacy_recovery_family();
     init_tool_operation_envelope();
     init_windows_runtime();
     init_windows_native_ui();
@@ -97648,7 +97847,7 @@ var init_src = __esm({
       "easyeda_control_design",
       {
         title: "Edit and verify a typed EasyEDA design transaction",
-        description: "Apply one typed design operation, independently verify native records, then explicitly commit with save/reopen or restore the exact unsaved baseline. Type-1 schematic edits admit sealed single-page stored attribute/text display batches and a separate existing named orthogonal wire reroute profile; generic compiled-topology edits remain blocked. Inspect exact coverage and pending live-validation limits. A retained contained runtime is required; arbitrary JavaScript is never accepted.",
+        description: "Discover typed design schemas and inspect retained transactions. Schematic-page, symbol and PCB execution is unavailable pending operation-owned completion and exact SQLite proof of native Save's delayed project-structure writes; sealed display/wire profiles are also blocked. Type-4 footprint operations retain their existing native-preflight, scope and save/reopen guards. Historical evidence and pure argument validation do not authorize execution. A retained contained runtime is required for enabled paths; arbitrary JavaScript is never accepted.",
         inputSchema: { request: designRequestSchema },
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
       },
@@ -97658,6 +97857,19 @@ var init_src = __esm({
         }
         if (request.action === "inspect") {
           return DesignExecutor.inspect(request.operationId);
+        }
+        if (request.action === "apply" || request.action === "execute") {
+          const compiled = compileDesignAction(request.operation);
+          if (request.expectedContext.document.documentType !== compiled.documentType) {
+            throw new Error("Wrong editor for design action.");
+          }
+          assertDesignExecutionLifecycle(compiled.documentType);
+        }
+        if (request.action === "commit" || request.action === "rollback" || request.action === "reconcile" || request.action === "repair-layout-net-labels" || request.action === "repair-layout-wire-groups" || request.action === "repair-layout-label-visibility") {
+          const offline = await DesignExecutor.preflightRetainedLifecycle(request.operationId, request.action);
+          if (offline !== void 0) {
+            return offline;
+          }
         }
         if (request.action !== "recover-authority") {
           await engine.assertBridgeDispatchAllowed();
@@ -97805,6 +98017,15 @@ var init_src = __esm({
         }
         if (request.action === "inspect") {
           return LibraryExecutor.inspect(request.operationId);
+        }
+        if (request.action === "execute") {
+          assertLibraryExecutionLifecycle(request.operation);
+        }
+        if (request.action === "reconcile" || request.action === "reconcile-no-mutation") {
+          const offline = await libraryExecutor.preflightReconcile(request.operationId);
+          if (offline !== void 0) {
+            return offline;
+          }
         }
         if (request.action !== "recover-authority") {
           await engine.assertBridgeDispatchAllowed();
@@ -98763,7 +98984,7 @@ var init_src = __esm({
         }
       },
       serializedGuarded(
-        (input) => {
+        async (input) => {
           if (input.operationId === void 0 || input.operationId.length === 0) {
             return engine.recover();
           }
@@ -98779,6 +99000,7 @@ var init_src = __esm({
               "confirmation must exactly equal operationId:resolution."
             );
           }
+          assertLegacyRecoveryJournalFamily(await loadOperation(operationId));
           return upstream.withAuthenticatedBridgeDispatchScope(
             () => engine.recover(operationId, resolution, {
               confirmDiscardAnyUnsavedState: input.confirmDiscardAnyUnsavedState,

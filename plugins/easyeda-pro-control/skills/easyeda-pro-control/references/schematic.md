@@ -1,9 +1,12 @@
 # Schematic work
 
-Current compiled-topology transactions are blocked because the installed
-netlist getter can annotate and Save All. Historical wire, component and repair
-workflows below remain documentation, not permission to execute those paths.
-The sealed display and wire profiles below are separate narrow exceptions.
+All schematic-page and symbol design transactions currently refuse. Native
+Save can enqueue a delayed project-structure write whose completion and complete
+SQL effect are not yet proved. This includes the sealed display and wire
+profiles below. Their source contracts and historical observations are retained
+for inspection, not execution. The compiled-topology path has an additional
+restriction: its netlist getter can annotate and Save All. Reads below keep their
+own admission checks. Do not use native UI to bypass a refused transaction.
 
 ## Mixed object inspection
 
@@ -29,7 +32,7 @@ transaction.
 
 ## Single-page display-only transactions
 
-Use `sch.layout.batch` containing only `sch.attribute.display` and
+The retained source profile accepts `sch.layout.batch` containing only `sch.attribute.display` and
 `sch.text.display`, with literal IDs of existing stored records. Each patch
 must have a nonempty exact effect and a complete stored-field inverse. This
 does not change text content, electrical values, no-connect state, geometry
@@ -47,7 +50,9 @@ The executor retains the profile, source/native hashes, complete saved membershi
 and endpoint topology inside the original plan. Apply, inverse, Save/reopen and
 reconciliation recheck that binding. The standalone flat diagnostic still reports
 `transactionTopology:false`; its output is not caller-supplied execution authority.
-Neither compilation nor Save All is used. Before Save, durable state must match
+Its flat observer does not compile. The SDK Save wrapper can enumerate dirty
+schematic tabs, so this profile does not establish absence of Save All effects.
+The retained proof requires that, before Save, durable state match
 the complete original baseline or the exact intended delta, including all peers.
 An attempted Save is never repeated. Page-loading and historical repair routes
 cannot recover this profile; inspect the original journal after a refusal.
@@ -129,8 +134,9 @@ remain separate connected cases.
 Admission proves the whole page's flat pin/net topology and a multiset of contact
 vertices keyed by incident LINE/pin IDs. Pin contacts and foreign-wire contacts
 retain their coordinates. Generated marker checks refuse shared-WIRE endpoints
-and pin-bearing junctions; do not guess their native parent order. No compiler,
-annotation or Save All is used. The sealed binding is not an operation argument,
+and pin-bearing junctions; do not guess their native parent order. The observer
+does not compile or annotate, but the SDK Save wrapper's dirty-tab enumeration
+is not confined by this proof. The sealed binding is not an operation argument,
 and historical wire journals are never migrated to it.
 
 An exact inverse preserves the original LINE ID-to-segment association. It is

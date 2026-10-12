@@ -126,6 +126,16 @@ auto-persistence between preflight and dispatch, live-only restoration, and
 read-only reconciliation after delayed persistence. Retain the fresh checkpoint,
 raw observer and complete proof, not only a success flag or their summary hashes.
 
+Trace each native queue separately. The pinned project-worker upload wait drains
+task1, but META changes for symbols, pages and PCB/schematic containers also
+schedule a debounced structure-table update. Its task2 promise does not exist
+until the timer starts. Neither repeated stable observations nor equality with a
+new final checkpoint proves that job finished or that its SQL effect was correct.
+Native Save clears the pending flag and republishes geometry, so the same gap
+affects schematic-page, symbol and PCB design transactions. Those routes and the
+eight metadata writers currently refuse execution. Restore them only after
+modeling the complete effect and obtaining operation-owned completion evidence.
+
 Test adapters against the maintained producer, not only a hand-written fixture.
 PCB component inventory is identity-only; it has no per-component state map.
 Inherited footprint drawing lines can appear in inventory without standalone

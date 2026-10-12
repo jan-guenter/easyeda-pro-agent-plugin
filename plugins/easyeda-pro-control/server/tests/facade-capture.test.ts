@@ -787,12 +787,12 @@ void describe("published facade contracts", { concurrency: false }, () => {
     assert.equal(limit["maximum"], 100);
   });
 
-  void test("published design and SDK descriptions retain narrow schematic profiles and observation limits", async () => {
+  void test("published design and SDK descriptions distinguish lifecycle refusal from retained read guards", async () => {
     const beforeCalls = await readFile(upstreamCallLogPath, "utf8"), listed = await client.listTools();
     const design = listed.tools.find((tool) => tool.name === "easyeda_control_design");
     const sdk = listed.tools.find((tool) => tool.name === "easyeda_control_sdk_read");
     assert.ok(design); assert.ok(sdk);
-    assert.equal(design.description, "Apply one typed design operation, independently verify native records, then explicitly commit with save/reopen or restore the exact unsaved baseline. Type-1 schematic edits admit sealed single-page stored attribute/text display batches and a separate existing named orthogonal wire reroute profile; generic compiled-topology edits remain blocked. Inspect exact coverage and pending live-validation limits. A retained contained runtime is required; arbitrary JavaScript is never accepted.");
+    assert.equal(design.description, "Discover typed design schemas and inspect retained transactions. Schematic-page, symbol and PCB execution is unavailable pending operation-owned completion and exact SQLite proof of native Save's delayed project-structure writes; sealed display/wire profiles are also blocked. Type-4 footprint operations retain their existing native-preflight, scope and save/reopen guards. Historical evidence and pure argument validation do not authorize execution. A retained contained runtime is required for enabled paths; arbitrary JavaScript is never accepted.");
     assert.equal(sdk.description, "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity, property-name, Pin-getter, Text, Wire/Bus, configured font titles, filtered PCB net-membership and PCB identity-type observations, plus native active-layer identity with public layer fields; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.");
     assert.equal(await readFile(upstreamCallLogPath, "utf8"), beforeCalls, "description discovery must not dispatch upstream");
   });
@@ -1322,7 +1322,21 @@ void describe("global orphan-risk quarantine", { concurrency: false }, () => {
     }
 
     const operationId = newOperationId();
-    const plan = { name: "facade-orphan-quarantine-fixture" };
+    const plan = {
+      name: "facade-orphan-quarantine-fixture",
+      intent: "Retain the original legacy family while testing recovery isolation.",
+      capabilityLevel: "private-version-pinned",
+      expectedContext: expectedContext(),
+      expectedFingerprint,
+      targetPrimitiveIds: [],
+      targetChanges: [],
+      preflightCalls: [],
+      applyCall: { toolName: "easyeda_control_exact_mutation", arguments: {} },
+      verifyCalls: [],
+      rollbackCalls: [],
+      reopenedVerifyCalls: [],
+      checkpoint: { source: projectPath, outputDir: fixtureRoot },
+    };
     const journalPath = await journalArtifacts.createOperation({
       schema: OPERATION_SCHEMA,
       operationId,

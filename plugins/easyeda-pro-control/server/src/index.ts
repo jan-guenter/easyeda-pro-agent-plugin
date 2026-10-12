@@ -25,6 +25,7 @@ import {
   controlRootCapability,
   ensureManagedDirectory,
   inspectManagedFile,
+  loadOperation,
   publishManagedAttachmentExclusive,
   readArtifact,
   recoverPublishedEvidence,
@@ -53,6 +54,8 @@ import {
 import { EasyedaControlEngine, SerializedGate } from "./engine.ts";
 import type { StatusAdmissionObservation } from "./engine.ts";
 import { DesignExecutor } from "./design-execution.ts";
+import { compileDesignAction } from "./design-action.ts";
+import { assertDesignExecutionLifecycle } from "./design-execution-lifecycle.ts";
 import { executeAndCommitDesign } from "./design-execute.ts";
 import { RuleCheckExecutor } from "./check-execution.ts";
 import { ProjectOpenExecutor, projectOpenTargetSchema } from "./project-open-execution.ts";
@@ -62,6 +65,8 @@ import { boundedTransactionErrorOutput, transactionErrorOutputSchema } from "./t
 import { listDesignActionCapabilities } from "./design-capabilities.ts";
 import { designTopologySchema } from "./design-topology.ts";
 import { LibraryExecutor, listLibraryExecutionCapabilities } from "./library-execution.ts";
+import { assertLibraryExecutionLifecycle } from "./library-execution-lifecycle.ts";
+import { assertLegacyRecoveryJournalFamily } from "./legacy-recovery-family.ts";
 import { designToolOperationSchema, libraryToolOperationSchema } from "./tool-operation-envelope.ts";
 import { WindowsControlRuntime } from "./windows-runtime.ts";
 import { WindowsNativeUiController, nativeUiRequestSchema } from "./windows-native-ui.ts";
@@ -1858,13 +1863,23 @@ registerFacadeTool(
   "easyeda_control_design",
   {
     title: "Edit and verify a typed EasyEDA design transaction",
-    description: "Apply one typed design operation, independently verify native records, then explicitly commit with save/reopen or restore the exact unsaved baseline. Type-1 schematic edits admit sealed single-page stored attribute/text display batches and a separate existing named orthogonal wire reroute profile; generic compiled-topology edits remain blocked. Inspect exact coverage and pending live-validation limits. A retained contained runtime is required; arbitrary JavaScript is never accepted.",
+    description: "Discover typed design schemas and inspect retained transactions. Schematic-page, symbol and PCB execution is unavailable pending operation-owned completion and exact SQLite proof of native Save's delayed project-structure writes; sealed display/wire profiles are also blocked. Type-4 footprint operations retain their existing native-preflight, scope and save/reopen guards. Historical evidence and pure argument validation do not authorize execution. A retained contained runtime is required for enabled paths; arbitrary JavaScript is never accepted.",
     inputSchema: { request: designRequestSchema },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   },
   serializedGuarded(async ({ request }) => {
     if (request.action === "capabilities") { return { capabilities: listDesignActionCapabilities() }; }
     if (request.action === "inspect") { return DesignExecutor.inspect(request.operationId); }
+    if (request.action === "apply" || request.action === "execute") {
+      const compiled = compileDesignAction(request.operation);
+      if (request.expectedContext.document.documentType !== compiled.documentType) { throw new Error("Wrong editor for design action."); }
+      assertDesignExecutionLifecycle(compiled.documentType);
+    }
+    if (request.action === "commit" || request.action === "rollback" || request.action === "reconcile" ||
+        request.action === "repair-layout-net-labels" || request.action === "repair-layout-wire-groups" || request.action === "repair-layout-label-visibility") {
+      const offline = await DesignExecutor.preflightRetainedLifecycle(request.operationId, request.action);
+      if (offline !== undefined) { return offline; }
+    }
     if (request.action !== "recover-authority") { await engine.assertBridgeDispatchAllowed(); }
     return upstream.withAuthenticatedBridgeDispatchScope(() => {
       switch (request.action) {
@@ -1961,6 +1976,11 @@ registerFacadeTool(
   serializedGuarded(async ({ request }) => {
     if (request.action === "capabilities") { return { capabilities: listLibraryExecutionCapabilities() }; }
     if (request.action === "inspect") { return LibraryExecutor.inspect(request.operationId); }
+    if (request.action === "execute") { assertLibraryExecutionLifecycle(request.operation); }
+    if (request.action === "reconcile" || request.action === "reconcile-no-mutation") {
+      const offline = await libraryExecutor.preflightReconcile(request.operationId);
+      if (offline !== undefined) { return offline; }
+    }
     if (request.action !== "recover-authority") { await engine.assertBridgeDispatchAllowed(); }
     return upstream.withAuthenticatedBridgeDispatchScope(() => {
       if (request.action === "execute") { return libraryExecutor.execute({ operation: request.operation, expectedContext: request.expectedContext, expectedFingerprint: request.expectedFingerprint, ...(request.confirmWrite === undefined ? {} : { confirmWrite: request.confirmWrite }) }); }
@@ -2986,7 +3006,7 @@ registerFacadeTool(
     },
   },
   serializedGuarded(
-    (input) => {
+    async (input) => {
       if (input.operationId === undefined || input.operationId.length === 0) {
         return engine.recover();
       }
@@ -3002,6 +3022,7 @@ registerFacadeTool(
           "confirmation must exactly equal operationId:resolution.",
         );
       }
+      assertLegacyRecoveryJournalFamily(await loadOperation(operationId));
       return upstream.withAuthenticatedBridgeDispatchScope(() =>
         engine.recover(operationId, resolution, {
           confirmDiscardAnyUnsavedState: input.confirmDiscardAnyUnsavedState,
