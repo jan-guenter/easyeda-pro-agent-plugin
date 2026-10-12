@@ -70,6 +70,7 @@ export interface CheckpointAccessPolicy {
   readonly artifactRoots: readonly string[];
   readonly controlRoot?: ControlRootCapability;
   readonly expectedSource: string;
+  readonly maximumSourceBytes?: number;
 }
 
 export interface CheckpointReceipt {
@@ -1023,6 +1024,15 @@ export async function createCheckpoint({
 }: Readonly<CheckpointCreateInput>, policy?: Readonly<CheckpointAccessPolicy>, beforeFinalPathValidation?: () => Promise<void>): Promise<
   CheckpointReceipt & { readonly receiptPath: string }
 > {
+  const maximumSourceBytes = policy?.maximumSourceBytes;
+  if (maximumSourceBytes !== undefined && (!Number.isSafeInteger(maximumSourceBytes) || maximumSourceBytes <= 0)) {
+    throw new Error("Checkpoint source byte limit must be a positive safe integer.");
+  }
+  const assertSourceByteLimit = (size: bigint): void => {
+    if (maximumSourceBytes !== undefined && size > BigInt(maximumSourceBytes)) {
+      throw new Error("Checkpoint source exceeds its byte limit.");
+    }
+  };
   const sourcePath = policyAbsolutePath(source, "Checkpoint source");
   const outputPath = policyAbsolutePath(outputDir, "Checkpoint output directory");
   assertPolicySource(sourcePath, policy);
@@ -1043,6 +1053,8 @@ export async function createCheckpoint({
     if (sourceFile.info.size === 0n) {
       throw new Error("Checkpoint source must be a non-empty file.");
     }
+    // Check the exact opened source before SQLite work, not a separate path stat.
+    assertSourceByteLimit(sourceFile.info.size);
     sourceDatabase = openReadOnlyDatabase(
       `/proc/self/fd/${sourceFile.handle.fd}`,
     );
@@ -1065,6 +1077,7 @@ export async function createCheckpoint({
       destination,
     );
     checkpointFile = snapshot.file;
+    assertSourceByteLimit(snapshot.stat.size);
     checkpointFile = await publishBoundFile(
       checkpointFile,
       checkpointName,

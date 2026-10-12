@@ -92,6 +92,47 @@ the newly acquired child on that failure. Regression tests fail against the
 previous implementation and pass with the fix. An aggregate error retains both
 failures when child cleanup fails too.
 
+## Managed copy, relaunch and startup stages
+
+The internal closed-copy stage now connects the original normal-close proof,
+an independently hashed checkpoint, byte-preserving copy and bounded SQL reader
+to the same journal. Its 25 synthetic tests use the actual SQLite and ownership
+leaves. A late journal-change regression requires the final durable comparison
+to follow the last asynchronous authority check. The optional checkpoint source
+size cap has 13 tests. It checks the opened source before SQLite and the final
+snapshot before publication; it is not a general WAL or SQLite workload limit.
+The normalized checkpoint is navigation evidence, not the full-SQL baseline.
+
+The internal relaunch stage retains the original issued copy and current close
+proof, verifies the checkpoint and source, and journals one launch attempt.
+The actual returned launch remains available if publication fails. Starting the
+next generation invalidates old copy authority by design. All 24 synthetic tests
+pass, including the distinct third generation. Its verification launch still
+requires the owning coordinator's original successful SQL comparison; a JSON
+phase label is not that proof.
+
+The fixed startup stage checks the main-frame actor, service workers, target
+queues and disjoint storage marker. Later generations must read the original
+marker before inspecting target queues. A failed marker write cannot trigger
+another create. The stage retains the actual settled reply before publication,
+including failures at artifact publication and either side of journal rename.
+All 62 portable tests pass. Three additional private source-provenance checks
+trace the installed extension loader and bridge reply normalization. Those
+machine-specific tests are not included in general CI.
+
+One completed isolated custom-runtime experiment also compares native main and
+renderer Date behavior with independent Windows clock samples and a preselected
+60-second interval. Its synthetic January date has a different historical offset
+from the current October offset, exercising the installed APP parser's use of
+the current offset. The owned scratch Job exited normally and completely.
+It loaded no EasyEDA application code or existing profile/project. This does
+not qualify arbitrary project date literals or supply APP actor, native writer,
+continuous clock-stability or saved-state evidence.
+
+These stages remain internal. None adds a public route or removes a writer
+restriction. The original source-owned clock/witness and full coordinator
+contracts remain required before disposable native execution.
+
 ## Completion work still required
 
 The internal SQL reader and inactive-target upload observer are now implemented.
@@ -121,7 +162,8 @@ on synthetic data. Its actor, worker-client, ticket and native-clock witnesses
 still need operation-owned runtime binding. Clean-generation admission and the
 durable coordinator remain separate work. The isolated custom-browser absence
 test and all seven populated-storage/registered-worker cases pass. They use
-synthetic app state in a separate profile, not native EasyEDA. Cross-generation
-storage continuity still needs its own proof.
+synthetic app state in a separate profile, not native EasyEDA. The separate
+two-generation marker experiment proves its scoped synthetic storage continuity;
+the corresponding owned native lifecycle remains to be validated.
 Synthetic tests of these modules are not connected EasyEDA validation. No
 production project is needed for any of these tests.

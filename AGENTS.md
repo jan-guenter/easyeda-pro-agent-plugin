@@ -6,6 +6,38 @@ Last updated: 2026-10-12 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Copy, relaunch and startup local integration
+
+- Internal copy25/checkpoint-cap13 and relaunch24 maintained tests pass, with
+  both typechecks and strict type-aware lint clean. The checkpoint cap is an
+  optional opened-source/final-snapshot bound, not a general SQLite/WAL budget.
+  Copy uses the original close proof and byte-preserving SQL evidence; relaunch
+  retains actual launch returns and rejects old copy authority after launch.
+- The fixed startup/marker stage passes62 portable maintained tests. Independent
+  source-provenance checks add3 private cases. Review reproduced three lost-reply
+  publication cases against the old code; the actual settled reply is now held
+  before any fallible publication. Quarantine and no-repeat behavior remain.
+- One completed custom-runtime clock experiment passed its fixed main/renderer
+  vectors and independent Windows endpoint relation, including historical/current
+  offset differences. Root result3dbdb29d, native owner8ab4c85b prove normal root
+  exit and empty retained Job without forced cleanup. No EasyEDA application,
+  existing profile or project was loaded. Never replay the completed scratch run.
+  It does not qualify arbitrary project literals or APP actor/writer ownership.
+- Full verification passes6117facade tests/oneplatformskip/zero failures and
+  424bridge tests. Allfourtypes, strict type-aware lint, package/repository,
+  seven official skill checks and offline doctor pass. Dependencies have151
+  verified registry signatures/40attestations and zero audit vulnerabilities.
+  Final fullverify4a671995, repositorye1385fc2 and doctora24832e9 are retained
+  privately. Source235files9ecff419/runtime3filesc62ebd40 keep externalpins
+  69a0bb0b unchanged. Pinned npmci and post-install types/lint pass; rebuild04
+  preserves exact bundle bytes and modes. Compatibility recheck passes.
+  Final verification includes whitespace-only cleanup of five new files.
+  Clock scratch independent reviewb05146af accepts only its scoped result.
+  No route, gate, coverage count, publication or installation changed.
+  Installed030626 remains unchanged. Clock issuer, witness, final write and
+  complete coordinator work remain unfinished. Production and its record stay
+  excluded; no CAD action or native cleanup is pending.
+
 ### Closed-session stages, local integration
 
 - Internal first-launch, authenticated-admission and normal-close stages now
