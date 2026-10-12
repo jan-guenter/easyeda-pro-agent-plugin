@@ -104,6 +104,27 @@ freezing behavior is assumed. Context drift, native rejection or timeout refuses
 without retry. Its ordinary frozen result is point-in-time data, not ownership
 of the runtime or permission to replay work.
 
+## Observe pre-edit worker identity and clocks
+
+The internal symbol witness collector uses eight fixed RPCs to read project
+identity, worker client, raw maximum ticket and worker time twice. It requires
+the exact clean companion PCB, with the target symbol closed in the enumerated
+tabs. The writer must still prove full frame absence. Optional native Start
+Page and hidden placeholder tabs do not count as design peers.
+
+The collector captures the UI host, project, tab controller, message buses,
+cached actor, permission receiver, Date functions and timeout functions. It
+rechecks them after each await and stops before another RPC on timeout or drift.
+The worker time getter returns a raw number; the other getters return a
+`message` envelope. Synthetic tests preserve these distinct native contracts.
+
+It also records the renderer's clock, timezone offset and parsing of the
+baseline timestamp. None of these fields alone proves the APP request actor,
+APP clock, fresh offline-worker clock provenance or exclusive producer. The
+strict result parser requires all five authority flags to remain false. A
+pre-edit clock interval cannot bound the time of a later edit; the coordinator
+needs an independent post-dispatch upper bound as well.
+
 ## Remaining execution requirements
 
 The internal symbol-metadata comparator now derives one exact new-history-head
@@ -134,8 +155,29 @@ CacheStorage and ServiceWorkerContainer. Both absence reads succeeded; cache
 names remained empty before and after the named matches. The scratch process
 exited normally, and its retained Windows Job was empty without forced cleanup.
 This used synthetic UI/project state, no EasyEDA application code or user
-profile. It does not validate native startup or producer ownership. Populated
-caches and registered-worker refusal cases remain a separate test stage.
+profile. It does not validate native startup or producer ownership.
+
+A second scratch suite passed all seven populated-storage cases on that same
+custom runtime. A real dedicated worker populated the caches before main-frame
+observation. Wrong-project, wrong-branch and local-save peers remained unchanged.
+The observer rejected a target upload with a query string and `Vary` header,
+then a local upload with a query string. Native matching controls independently
+showed why both fixed options are needed. Removing only the synthetic target
+entries restored a successful empty-target result with the four peers intact.
+
+A noncontrolling service worker at a different scope caused a registration-list
+refusal even with a null controller. A second worker claimed the main renderer;
+both observers then refused the controlled host. Separate stage receipts and
+the complete result were independently cross-checked. The application exited
+normally with an empty retained Job and no forced cleanup. Its two registrations
+and synthetic cache entries remain in its inactive scratch profile.
+
+These results cover browser behavior and peer preservation, not persistence
+across separate processes, native startup or producer ownership. A future
+operation-owned, disjoint cache marker may witness storage continuity across
+owned generations. Such a marker is an explicit bounded profile write and must
+have journal-before-dispatch and no-recreation recovery. It is not implemented
+or an alternative to complete SQL effects and whole-Job exit.
 
 Empty caches can also follow eviction or lost writes, so they cannot prove that
 the requested edit persisted. Complete expected SQL effects, saved design

@@ -6,6 +6,40 @@ Last updated: 2026-10-12 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Retained capture, worker witnesses and history indexing
+
+- The engine now retains a separate normal-completion process capture under an
+  existing authenticated scope. Fresh journal admission and two exact runtime
+  observations bind it; attempts and release are one-shot. Per-call orphan
+  cleanup cannot consume these handles. The tracked-call journal base no longer
+  requires a fabricated active context/checkpoint for pre-open work. Existing
+  operation families retain those fields. All23 new capture tests pass,
+  including an actual synthetic managed-journal dispatch and retained-Job close
+  proof. Root and independent reviewd46da74b accept this internal seam.
+- The internal predispatch collector reads eight fixed worker RPCs in an exact
+  clean companion-PCB context. All168 tests pass. It retains client/ticket/
+  clock/cache-actor observations with five authority flags false, not an APP
+  actor or producer grant. No runtime route invokes the collector yet.
+- History preparation now indexes chunk UUIDs once, yielding every128 rows or
+  64KiB accumulated UUID bytes. Exact UTF8, selected duplicate/missing refusal
+  and complete SQL comparison remain. All91 original plus24 new tests pass;
+  independent reviewc0b085f0 accepts the change. Counted8192-row/128-lookup
+  synthetic tests reduce UUID decoding from1048576 to8192; host-specific timing
+  is diagnostic only. A single admitted cell retains the existing2MiB bound.
+- Full verification passes4870facade tests/oneplatformskip/zerofailures plus
+  424bridge tests. Allfourtypes, strict type-aware lint, package and seven
+  official skill checks pass. Rebuild bytes/modes match; repository checks and
+  offline doctor pass. Fullverify7878b3b2, repository8a72a1fe and doctor9aca341d
+  are retained privately.
+  Source222files19d720e6/runtime3files31068ddb; externalpins69a0bb0b unchanged.
+  The complete coordinator, startup actor/clock qualification, cross-generation
+  marker and disposable native validation remain unfinished. Current private
+  marker work is not packaged. No writer gate or coverage classification changed.
+- Installed030626 and remote6fc2a7dc remain unchanged. No EasyEDA application,
+  actual profile or project was accessed. Production and its record remain
+  excluded. No CAD/Save/navigation/close is pending or repeatable. Do not replay
+  either completed synthetic browser run or historical disposable operations.
+
 ### Complete symbol SQL comparison and isolated browser checks
 
 - The internal ordinary-symbol metadata comparator now derives and checks one
@@ -35,7 +69,15 @@ Last updated: 2026-10-12 (Europe/Berlin)
   reviewed. No EasyEDA application code, user profile or project was loaded.
   The earlier run refused at BOOT on the vendor version suffix and is retained
   separately; it is not successful browser validation.
-- Populated-storage browser tests, native actor/client/ticket/clock binding,
+- All seven populated-storage custom-browser cases also pass. Native dedicated
+  worker writes are visible to the main observer; query-string/Vary entries
+  refuse, four unrelated entries remain exact, and both noncontrolling and
+  controlling service workers refuse. Resultf208a3a0, owner295e9536 and separate
+  stage receipts were independently accepted in review54839c2b. The scratch
+  root exited normally with an empty retained Job and no forced stop. Its
+  synthetic cache entries and registrations remain in the inactive scratch
+  profile. These tests never loaded EasyEDA code or the user's profile.
+- Native actor/client/ticket/clock binding, cross-generation storage continuity,
   the durable coordinator and disposable native completion remain unfinished.
   Installed030626 is unchanged. Nothing from this continuation is published or
   installed. Production and its record remain excluded; no CAD, Save, close or

@@ -8,6 +8,7 @@ import type { ProjectSymbolMetadataPlan } from "./project-symbol-metadata.ts";
 import { readerCompletion } from "./sqlite-inventory.ts";
 import type { SqlCell, SqlRow, SqlTable, readExactSqlInventory } from "./sqlite-inventory.ts";
 import { nativeProjectSymbolSqlSchema } from "./native-project-sql-schema.ts";
+import { indexHistoryChunkUuids } from "./symbol-history-chunk-index.ts";
 
 type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
 type Values = Readonly<Record<string, string | bigint | null>>;
@@ -140,12 +141,14 @@ async function selectedHistory(before: Inventory, witness: SymbolSqlWitness, pro
     need(current !== undefined && previous !== undefined && integer(field(histories, current, "id")) < integer(field(histories, previous, "id")),
       "Native ID order differs from the admitted linear chain.");
   }
+  const chunkIndex = await indexHistoryChunkUuids(data);
   const chunks: string[] = []; let bytes = 0; let maximumTicket = 0;
   for (const row of rows.toReversed()) {
     const historyUuid = text(field(histories, row, "uuid")); const keyHex = text(field(histories, row, "key"));
     const num = integer(field(histories, row, "num")); need(num >= 0n && num <= 1024n, "History chunk count refused.");
     for (let index = 0; index <= Number(num); index += 1) {
-      const chunk = unique(data, "uuid", index === 0 ? historyUuid : `${historyUuid}-${index}`);
+      const chunk = chunkIndex.get(index === 0 ? historyUuid : `${historyUuid}-${index}`);
+      need(chunk !== undefined && chunk !== null, "Required SQL identity is not unique.");
       need(text(field(data, chunk, "history_uuid")) === historyUuid, "History chunk parent mismatch.");
       const decoded = await decodeNativeHistoryChunk({ historyUuid, keyHex, dataBase64: text(field(data, chunk, "dataStr")) });
       bytes += Buffer.byteLength(decoded); need(bytes <= MAX_PLAINTEXT_BYTES && chunks.length < 4096, "Complete selected history exceeds its proof bound.");

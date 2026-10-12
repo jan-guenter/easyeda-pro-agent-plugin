@@ -13,6 +13,26 @@ and proving that the captured application Job and retained processes have exited
 The intended coordinator must publish the intent durably before dispatch.
 The authority module itself does not publish an operation journal.
 
+The engine now provides a separate retained capture for normal completion.
+It uses an existing authenticated dispatch scope, scans fresh journal admission,
+binds the exact session and runtime before and after capture, and reserves each
+operation/phase/attempt once. It does not create a false orphan marker to keep
+handles alive. Per-call cleanup and the end of the authenticated scope therefore
+do not consume this separate capture. Its owner releases it explicitly after
+all required copies. Cloned or changed receipts cannot release it, and an
+ambiguous release cannot be repeated.
+
+The common tracked-call journal type now describes the fields that orphan
+tracking actually uses. Existing design families still require their context
+and checkpoint. A new closed-session family can retain a real pre-open phase
+without fabricating those values. A synthetic managed-journal regression proves
+that settled per-call cleanup releases only its own capture, leaving the normal
+completion capture usable through the retained-Job close proof.
+
+This is an internal coordinator building block. It does not publish the required
+close intent, select a window, call close, or authorize project navigation.
+The actual retained Windows authority still checks every close/proof binding.
+
 The binding retains the operation, phase, attempt, authenticated bridge session,
 runtime generation, launch, helper, Job and window. Close consumes its reservation
 before awaiting native work. An error or missing acknowledgment does not allow a
@@ -99,7 +119,9 @@ rename. Before enabling it, the coordinator must bind the complete sequence:
 The ordinary-symbol new-head SQL effect comparator is now implemented and tested
 on synthetic data. Its actor, worker-client, ticket and native-clock witnesses
 still need operation-owned runtime binding. Clean-generation admission and the
-durable coordinator remain separate work. The first isolated custom-browser
-absence test passes; populated-storage and registered-worker cases remain.
+durable coordinator remain separate work. The isolated custom-browser absence
+test and all seven populated-storage/registered-worker cases pass. They use
+synthetic app state in a separate profile, not native EasyEDA. Cross-generation
+storage continuity still needs its own proof.
 Synthetic tests of these modules are not connected EasyEDA validation. No
 production project is needed for any of these tests.

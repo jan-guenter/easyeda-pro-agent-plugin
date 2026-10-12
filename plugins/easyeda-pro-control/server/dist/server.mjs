@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "d5c5e929e9f1af91ae809c853715fe202802cbcd0babd868e509397ec7459485";
+const __easyedaBundlePairId = "9d1981eb1c952a1b01950533c503b6fe13bd98eb79348c3ccd3c22dfa110f1fe";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -50754,6 +50754,8 @@ var init_engine = __esm({
       return bridgeBlocking || unfinished ? { bridgeBlocking, unfinished, summary: operationSummary2(operation) } : void 0;
     });
     EasyedaControlEngine = class {
+      closedCaptureAttempts = /* @__PURE__ */ new Set();
+      closedCaptures = /* @__PURE__ */ new WeakMap();
       upstream;
       privateComponentWriterValidated;
       semanticPersistenceValidator;
@@ -50781,6 +50783,94 @@ var init_engine = __esm({
           );
         }
         return bridgeLifecycleSession(lifecycle);
+      }
+      /** Keep normal-completion ownership separate from per-call orphan tracking.
+       * Only an existing authenticated scope may collect this capture. Ending that
+       * scope does not release these process handles. No journal/orphan is invented.
+       */
+      async captureClosedSessionAuthority(operationId, phase2, challengeAttempt) {
+        if (!/^[A-Za-z0-9._:-]{1,160}$/u.test(operationId) || !["closed-baseline", "closed-edit", "closed-verification"].includes(phase2) || !Number.isSafeInteger(challengeAttempt) || challengeAttempt < 1) {
+          throw new Error("Closed-session capture requires a strict operation, phase and attempt.");
+        }
+        const validator = this.executionAuthorityValidator;
+        if (validator?.releaseCapture === void 0) {
+          throw new Error("Closed-session capture needs retained process authority with explicit release.");
+        }
+        const attemptKey = JSON.stringify([operationId, phase2, challengeAttempt]);
+        if (this.closedCaptureAttempts.has(attemptKey)) {
+          throw new Error("Closed-session capture attempt was already consumed.");
+        }
+        this.closedCaptureAttempts.add(attemptKey);
+        await this.assertBridgeDispatchAllowed();
+        await this.assertRecoveryOperationIsolated(operationId);
+        const bridgeSession = structuredClone(this.authenticatedBridgeSession());
+        const bridgeDispatch = authenticatedBridgeDispatchPayload(
+          this.upstream.currentAuthenticatedBridgeDispatchBinding?.(),
+          bridgeSession
+        );
+        const recheck = () => {
+          if (canonicalJson(this.authenticatedBridgeSession()) !== canonicalJson(bridgeSession) || canonicalJson(authenticatedBridgeDispatchPayload(this.upstream.currentAuthenticatedBridgeDispatchBinding?.(), bridgeSession)) !== canonicalJson(bridgeDispatch)) {
+            throw new Error("Closed-session capture changed authenticated session or dispatch scope.");
+          }
+        };
+        let captured;
+        try {
+          const runtimeIdentity = structuredClone(await this.runtimeIdentity(bridgeDispatch));
+          recheck();
+          const bindingSha256 = sha256Json({
+            schema: "easyeda-pro-control.closed-session-authority-binding.v1",
+            operationId,
+            phase: phase2,
+            challengeAttempt,
+            bridgeSession,
+            bridgeDispatch,
+            runtimeIdentity
+          });
+          const result = await validator.capture({
+            bindingSha256,
+            operationId,
+            orphanPhase: phase2,
+            challengeAttempt,
+            bridgeSession: structuredClone(bridgeSession),
+            runtimeIdentity: structuredClone(runtimeIdentity)
+          });
+          captured = result;
+          const executionAuthority = executionAuthorityPayload(result, bindingSha256);
+          recheck();
+          const after = await this.runtimeIdentity(bridgeDispatch);
+          recheck();
+          if (canonicalJson(after) !== canonicalJson(runtimeIdentity)) {
+            throw new Error("Closed-session capture changed native runtime identity.");
+          }
+          const receipt2 = Object.freeze({ operationId, phase: phase2, challengeAttempt, bridgeSession, runtimeIdentity, executionAuthority });
+          this.closedCaptures.set(receipt2, { snapshot: structuredClone(receipt2), releasing: false });
+          return receipt2;
+        } catch (error51) {
+          if (captured !== void 0) {
+            try {
+              await validator.releaseCapture(captured);
+            } catch (cleanupError) {
+              throw new AggregateError([error51, cleanupError], "Closed-session capture failed and retained-handle cleanup did not complete.", { cause: cleanupError });
+            }
+          }
+          throw error51;
+        }
+      }
+      /** Release only this engine's original receipt, after all closed copies.
+       * Release consumes the handle even on ambiguous cleanup; never repeat it.
+       */
+      async releaseClosedSessionAuthority(receipt2) {
+        const slot = this.closedCaptures.get(receipt2);
+        if (slot === void 0 || slot.releasing || canonicalJson(receipt2) !== canonicalJson(slot.snapshot)) {
+          throw new Error("Closed-session capture release requires its unchanged original receipt.");
+        }
+        slot.releasing = true;
+        const release = this.executionAuthorityValidator?.releaseCapture;
+        if (release === void 0) {
+          throw new Error("Closed-session capture release is unavailable.");
+        }
+        await release.call(this.executionAuthorityValidator, slot.snapshot.executionAuthority);
+        this.closedCaptures.delete(receipt2);
       }
       async markOrphanedCallRisk(operation, phase2) {
         const validator = this.executionAuthorityValidator;

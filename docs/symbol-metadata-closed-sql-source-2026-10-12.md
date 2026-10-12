@@ -11,6 +11,14 @@ write or authorize execution. Existing writer restrictions remain in place.
 The reviewed evidence consists of installed program source and isolated
 synthetic databases, not a connected EasyEDA lifecycle.
 
+Selected-history preparation indexes `history_data.uuid` once instead of
+rescanning every row for each chunk. It keeps exact UTF-8 decoding, original row
+references and duplicate/missing-key refusal. Index construction yields every
+128 rows or 64 KiB of accumulated UUID bytes; an individual cell retains the
+reader's 2 MiB limit. Complete SQL comparison still checks all unrelated rows.
+The 91 original comparator cases and 24 index/integration cases pass. Counted
+scaling tests verify one decode per row, without making timing an admission rule.
+
 ## Primary sources
 
 Files are relative to the installed EasyEDA `resources/app` directory. Offsets

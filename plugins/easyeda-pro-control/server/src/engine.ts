@@ -398,7 +398,10 @@ export interface RuntimeGuardFailure extends UnknownRecord {
   error: SerializedError;
 }
 
-export interface DispatchOperationJournal extends UnknownRecord {
+/** Common tracked-call journal fields. Closed-session families can journal a
+ * real pre-open phase without inventing an active context or checkpoint.
+ */
+export interface TrackedDispatchOperationJournal extends UnknownRecord {
   schema: unknown;
   operationId: string;
   journalPath: string;
@@ -426,16 +429,19 @@ export interface DispatchOperationJournal extends UnknownRecord {
   hardStop: boolean;
   mutationMayHaveOccurred: boolean;
   nextSafeAction: string;
+  sequence: number;
+  createdAt?: string;
+  updatedAt: string;
+  artifacts: ArtifactDescriptor[];
+}
+
+export interface DispatchOperationJournal extends TrackedDispatchOperationJournal {
   context: ExpectedContext;
   runtimeStatus?: unknown;
   facadeImplementation?: unknown;
   preCheckpoint: CheckpointReceipt;
   candidateFinalCheckpoint?: CheckpointReceipt | undefined;
   finalCheckpoint?: CheckpointReceipt;
-  sequence: number;
-  createdAt?: string;
-  updatedAt: string;
-  artifacts: ArtifactDescriptor[];
   baselineReopened?: boolean;
   baselineHash?: string;
   baselineInvariants?: BaselineInvariants;
@@ -623,6 +629,19 @@ export interface ExecutionAuthorityCaptureInput {
   readonly operationId: string;
   readonly orphanPhase: string;
   readonly runtimeIdentity: RuntimeIdentity;
+}
+
+/** A separately retained capture for the future closed-session coordinator.
+ * This is neither a close intent nor a completion/dispatch grant. The caller
+ * must publish its binding before preparing a one-shot native close.
+ */
+export interface ClosedSessionAuthorityCapture {
+  readonly operationId: string;
+  readonly phase: "closed-baseline" | "closed-edit" | "closed-verification";
+  readonly challengeAttempt: number;
+  readonly bridgeSession: AuthenticatedBridgeSessionIdentity;
+  readonly runtimeIdentity: RuntimeIdentity;
+  readonly executionAuthority: ExecutionAuthorityEvidence;
 }
 
 export interface ExecutionAuthorityTerminationInput {
@@ -2083,6 +2102,11 @@ async function scanUnfinishedOperations(): Promise<OperationSummary[]> {
 }
 
 export class EasyedaControlEngine {
+  private readonly closedCaptureAttempts = new Set<string>();
+  private readonly closedCaptures = new WeakMap<ClosedSessionAuthorityCapture, {
+    readonly snapshot: ClosedSessionAuthorityCapture;
+    releasing: boolean;
+  }>();
   public readonly upstream: UpstreamClient;
   public readonly privateComponentWriterValidated: boolean;
   public readonly semanticPersistenceValidator:
@@ -2126,8 +2150,88 @@ export class EasyedaControlEngine {
     return bridgeLifecycleSession(lifecycle);
   }
 
+  /** Keep normal-completion ownership separate from per-call orphan tracking.
+   * Only an existing authenticated scope may collect this capture. Ending that
+   * scope does not release these process handles. No journal/orphan is invented.
+   */
+  public async captureClosedSessionAuthority(
+    operationId: string,
+    phase: ClosedSessionAuthorityCapture["phase"],
+    challengeAttempt: number,
+  ): Promise<ClosedSessionAuthorityCapture> {
+    if (!/^[A-Za-z0-9._:-]{1,160}$/u.test(operationId) ||
+        !["closed-baseline", "closed-edit", "closed-verification"].includes(phase) ||
+        !Number.isSafeInteger(challengeAttempt) || challengeAttempt < 1) {
+      throw new Error("Closed-session capture requires a strict operation, phase and attempt.");
+    }
+    const validator = this.executionAuthorityValidator;
+    if (validator?.releaseCapture === undefined) {
+      throw new Error("Closed-session capture needs retained process authority with explicit release.");
+    }
+    const attemptKey = JSON.stringify([operationId, phase, challengeAttempt]);
+    if (this.closedCaptureAttempts.has(attemptKey)) { throw new Error("Closed-session capture attempt was already consumed."); }
+    // Reserve synchronously, before the admission scan or any native await.
+    this.closedCaptureAttempts.add(attemptKey);
+    await this.assertBridgeDispatchAllowed();
+    await this.assertRecoveryOperationIsolated(operationId);
+    const bridgeSession = structuredClone(this.authenticatedBridgeSession());
+    const bridgeDispatch = authenticatedBridgeDispatchPayload(
+      this.upstream.currentAuthenticatedBridgeDispatchBinding?.(), bridgeSession,
+    );
+    const recheck = (): void => {
+      if (canonicalJson(this.authenticatedBridgeSession()) !== canonicalJson(bridgeSession) ||
+          canonicalJson(authenticatedBridgeDispatchPayload(this.upstream.currentAuthenticatedBridgeDispatchBinding?.(), bridgeSession)) !== canonicalJson(bridgeDispatch)) {
+        throw new Error("Closed-session capture changed authenticated session or dispatch scope.");
+      }
+    };
+    let captured: ExecutionAuthorityEvidence | undefined;
+    try {
+      const runtimeIdentity = structuredClone(await this.runtimeIdentity(bridgeDispatch));
+      recheck();
+      const bindingSha256 = sha256Json({
+        schema: "easyeda-pro-control.closed-session-authority-binding.v1",
+        operationId, phase, challengeAttempt, bridgeSession, bridgeDispatch, runtimeIdentity,
+      });
+      const result = await validator.capture({ bindingSha256, operationId, orphanPhase: phase,
+        challengeAttempt, bridgeSession: structuredClone(bridgeSession), runtimeIdentity: structuredClone(runtimeIdentity) });
+      // Retain the actual returned evidence for cleanup even if shape validation fails.
+      captured = result;
+      const executionAuthority = executionAuthorityPayload(result, bindingSha256);
+      recheck();
+      const after = await this.runtimeIdentity(bridgeDispatch);
+      recheck();
+      if (canonicalJson(after) !== canonicalJson(runtimeIdentity)) {
+        throw new Error("Closed-session capture changed native runtime identity.");
+      }
+      const receipt = Object.freeze({ operationId, phase, challengeAttempt, bridgeSession, runtimeIdentity, executionAuthority });
+      this.closedCaptures.set(receipt, { snapshot: structuredClone(receipt), releasing: false });
+      return receipt;
+    } catch (error) {
+      if (captured !== undefined) {
+        try { await validator.releaseCapture(captured); }
+        catch (cleanupError) { throw new AggregateError([error, cleanupError], "Closed-session capture failed and retained-handle cleanup did not complete.", { cause: cleanupError }); }
+      }
+      throw error;
+    }
+  }
+
+  /** Release only this engine's original receipt, after all closed copies.
+   * Release consumes the handle even on ambiguous cleanup; never repeat it.
+   */
+  public async releaseClosedSessionAuthority(receipt: ClosedSessionAuthorityCapture): Promise<void> {
+    const slot = this.closedCaptures.get(receipt);
+    if (slot === undefined || slot.releasing || canonicalJson(receipt) !== canonicalJson(slot.snapshot)) {
+      throw new Error("Closed-session capture release requires its unchanged original receipt.");
+    }
+    slot.releasing = true;
+    const release = this.executionAuthorityValidator?.releaseCapture;
+    if (release === undefined) { throw new Error("Closed-session capture release is unavailable."); }
+    await release.call(this.executionAuthorityValidator, slot.snapshot.executionAuthority);
+    this.closedCaptures.delete(receipt);
+  }
+
   public async markOrphanedCallRisk(
-    operation: DispatchOperationJournal,
+    operation: TrackedDispatchOperationJournal,
     phase: string,
   ): Promise<OperationBridgeDispatch> {
     const validator = this.executionAuthorityValidator;
@@ -2264,7 +2368,7 @@ export class EasyedaControlEngine {
   }
 
   public async clearOrphanedCallRisk(
-    operation: DispatchOperationJournal,
+    operation: TrackedDispatchOperationJournal,
     phase: string,
     dispatch: OperationBridgeDispatch,
   ): Promise<void> {
@@ -2293,7 +2397,7 @@ export class EasyedaControlEngine {
   }
 
   public async dispatchWithOrphanTracking(
-    operation: DispatchOperationJournal,
+    operation: TrackedDispatchOperationJournal,
     phase: string,
     name: string,
     args: UnknownRecord,
