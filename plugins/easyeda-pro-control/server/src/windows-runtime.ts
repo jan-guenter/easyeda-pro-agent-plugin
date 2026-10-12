@@ -16,6 +16,10 @@ import type {
 import type { UpstreamEasyedaClient } from "./upstream.ts";
 import { startWindowsAuthoritySupervisor } from "./windows-authority.ts";
 import type {
+  ClosedSessionBinding,
+  ClosedSessionCloseIntent,
+  ClosedSessionCloseReceipt,
+  ClosedSessionTerminationProof,
   WindowsAuthorityLaunch,
   WindowsAuthorityStartOptions,
   WindowsAuthoritySupervisor,
@@ -210,6 +214,10 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
   private currentLaunch: WindowsAuthorityLaunch | null = null;
   private state: WindowsControlRuntimeStatus["state"] = "not-launched";
   private executableSha256: string | null = null;
+  private readonly closedSessionLaunches = new Map<string, {
+    readonly intent: ClosedSessionCloseIntent;
+    readonly launch: WindowsAuthorityLaunch;
+  }>();
 
   public constructor(options: WindowsControlRuntimeOptions, dependencies: WindowsRuntimeDependencies = {}) {
     if (!HASH.test(options.reviewedExecutionScopeSha256)) { throw new Error("Reviewed Windows execution scope identity is missing."); }
@@ -252,6 +260,47 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
   public proveTerminated(input: ExecutionAuthorityTerminationInput): Promise<ExecutionAuthorityTerminationProof> { return this.requireSupervisor().proveTerminated(input); }
   public releaseCapture(evidence: ExecutionAuthorityEvidence): Promise<void> { return this.requireSupervisor().releaseCapture(evidence); }
 
+  /** Internal coordinator-only preparation; never starts a helper or application. */
+  public async prepareClosedSessionClose(input: Omit<ClosedSessionBinding, "launch"> & {
+    readonly windowHandle: string;
+  }): Promise<ClosedSessionCloseIntent> {
+    const bound = structuredClone(input);
+    const supervisor = this.requireSupervisor();
+    const launch = structuredClone(this.currentLaunch);
+    if (launch === null) { throw new Error("Closed-session launch identity is missing."); }
+    const intent = await supervisor.prepareClosedSessionClose({ ...bound, launch });
+    if (this.requireSupervisor() !== supervisor || canonicalJson(this.currentLaunch) !== canonicalJson(launch)) {
+      throw new Error("Windows runtime ownership changed during closed-session preparation.");
+    }
+    this.closedSessionLaunches.set(intent.closeIntentSha256, { intent: structuredClone(intent), launch });
+    return intent;
+  }
+
+  private closedSessionLaunch(intent: ClosedSessionCloseIntent): WindowsAuthorityLaunch {
+    this.requireSupervisor();
+    const retained = this.closedSessionLaunches.get(intent.closeIntentSha256);
+    if (retained === undefined || canonicalJson(retained.intent) !== canonicalJson(intent)) {
+      throw new Error("Closed-session intent was not prepared by this Windows runtime.");
+    }
+    return structuredClone(retained.launch);
+  }
+
+  public requestClosedSessionNormalClose(input: Omit<ClosedSessionBinding, "launch"> & {
+    readonly intent: ClosedSessionCloseIntent; readonly confirmNormalClose: true;
+  }): Promise<ClosedSessionCloseReceipt> {
+    const bound = structuredClone(input);
+    const launch = this.closedSessionLaunch(bound.intent);
+    return this.requireSupervisor().requestClosedSessionNormalClose({ ...bound, launch });
+  }
+
+  public proveClosedSession(input: Omit<ClosedSessionBinding, "launch"> & {
+    readonly intent: ClosedSessionCloseIntent; readonly closeReceipt: ClosedSessionCloseReceipt;
+  }): Promise<ClosedSessionTerminationProof> {
+    const bound = structuredClone(input);
+    const launch = this.closedSessionLaunch(bound.intent);
+    return this.requireSupervisor().proveClosedSession({ ...bound, launch });
+  }
+
   public async normalClose(windowHandle: string): Promise<void> {
     const supervisor = this.requireSupervisor();
     if (this.currentLaunch === null) { throw new Error("Windows application launch identity is missing."); }
@@ -262,6 +311,7 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
     if (this.state === "launching") { throw new Error("Cannot release Windows proof authority during launch."); }
     this.state = "released";
     this.currentLaunch = null;
+    this.closedSessionLaunches.clear();
     const supervisor = this.supervisor;
     this.supervisor = undefined;
     await supervisor?.release();

@@ -6,6 +6,31 @@ Last updated: 2026-10-12 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Closed-session completion foundations in progress
+
+- Source now includes internal one-shot normal-close/retained-Job-exit methods,
+  owned-runtime wrappers and byte-preserving closed-file copies. No MCP route,
+  writer enablement, native helper change or live operation was added. Existing
+  recovery's termination function is byte-identical. Copy admission rejects
+  later launch/capture/release activity and forged or serialized proof objects.
+- Independent review found and reproduced a directory-handle leak during failed
+  parent-to-child ownership transfer. Both control-root traversal paths are
+  fixed; two maintained tests fail on the prior code and pass after the fix.
+  Concurrent termination proof publication is also guarded and regression-tested.
+- The combined focused suites pass94tests with zero failures/skips. Full verify
+  passes4141facade tests/oneplatformskip/zerofailures and424bridge tests. Allfour
+  typechecks, strict type-aware lint, package/skill/repository validators and
+  offline doctor pass. Rebuilt bundle bytes/modes match. Source210filesb7a587c4,
+  runtime3files30d033e0; externalpins remain69a0bb0b. An earlier pre-build run
+  refused58manifest-bound tests against the prior source projection; retained
+  logs distinguish that run from the final passing verification. See
+  [the foundation contract](docs/closed-session-evidence-2026-10-12.md).
+- Complete SQL effects, fresh-session upload-queue exclusion, durable coordinator
+  integration and disposable validation are still required. SQL/cache drafts
+  remain private. No candidate version bump, publication or installation of
+  these changes has occurred; installed030626 is unchanged. Production and its
+  record remain excluded. No CAD, Save, navigation or close is pending.
+
 ### Candidate030626 published and installed; fresh host required
 
 - Payload6535cfadf9a67ef0a4beae495467ccf07f8f6c32 passed required

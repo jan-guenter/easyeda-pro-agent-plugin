@@ -42,11 +42,15 @@ export interface WindowsProcessProbe {
 
 export interface WindowsAuthorityTransport {
   readonly request: (request: JsonRecord) => Promise<unknown>;
+  /** Internal liveness of the retained helper/handle owner, not a PID lookup. */
+  readonly assertClosedSessionAvailable?: () => void;
   /** Drops proof authority without terminating or saving EasyEDA. */
   readonly release: () => Promise<void>;
 }
 
 export interface WindowsAuthorityPolicy {
+  /** Internal source-identity check; no caller-supplied runtime or bypass flag. */
+  readonly revalidateClosedSessionHelper?: () => Promise<void>;
   readonly helperSha256: string;
   readonly expectedExecutable: string;
   readonly expectedExecutableSha256: string;
@@ -73,7 +77,97 @@ export interface WindowsAuthorityLaunch {
   readonly root: ExecutionAuthorityProcessIdentity;
 }
 
+
+/** Internal completion foundation, with no MCP route. A coordinator must durably publish the
+ * returned intent before requesting close, then retain both receipts before
+ * closed-file SQL verification. These receipts do not prove queued work saved.
+ */
+export interface ClosedSessionBinding {
+  readonly operationId: string;
+  readonly phase: string;
+  readonly challengeAttempt: number;
+  readonly bridgeSession: AuthenticatedBridgeSessionIdentity;
+  readonly runtimeIdentity: ExecutionAuthorityCaptureInput["runtimeIdentity"];
+  readonly executionAuthority: ExecutionAuthorityEvidence;
+  readonly launch: WindowsAuthorityLaunch;
+}
+export interface ClosedSessionCloseIntent extends JsonRecord {
+  readonly schema: "easyeda-pro-control.closed-session-close-intent.v1";
+  readonly operationId: string;
+  readonly phase: string;
+  readonly authoritySha256: string;
+  readonly launchSha256: string;
+  readonly bridgeSessionSha256: string;
+  readonly runtimeIdentitySha256: string;
+  readonly helperInstance: string;
+  readonly jobId: string;
+  readonly windowHandle: string;
+  readonly policyId: string;
+  readonly policySha256: string;
+  readonly closeIntentSha256: string;
+}
+export interface ClosedSessionCloseReceipt extends JsonRecord {
+  readonly schema: "easyeda-pro-control.closed-session-close-dispatch.v1";
+  readonly closeIntentSha256: string;
+  readonly closeDispatched: true;
+  readonly saveOrDiscardSelected: false;
+  readonly terminationProved: false;
+  readonly closeReceiptSha256: string;
+}
+export interface ClosedSessionTerminationReceipt extends JsonRecord {
+  readonly schema: "easyeda-pro-control.closed-session-termination.v1";
+  readonly closedAt: string;
+  readonly closeIntentSha256: string;
+  readonly closeReceiptSha256: string;
+  readonly authoritySha256: string;
+  readonly launchSha256: string;
+  readonly jobEmpty: true;
+  readonly retainedProcessesExited: true;
+  readonly saveOrDiscardSelected: false;
+  readonly queuedWritesPersisted: "not-proved";
+  readonly persistentWorkReplayExcluded: "not-proved";
+  readonly proofSha256: string;
+}
+const CLOSED_SESSION_PROOF_BRAND: unique symbol = Symbol("closed-session-termination-proof");
+export interface ClosedSessionTerminationProof extends ClosedSessionTerminationReceipt {
+  readonly [CLOSED_SESSION_PROOF_BRAND]: true;
+}
+const closedProofOwners = new WeakMap<object, {
+  readonly verify: () => Promise<ClosedSessionTerminationProof>;
+  readonly verifyCopy: () => Promise<ClosedSessionTerminationProof>;
+}>();
+
+/** JSON, self-hashes and caller-provided verifier objects cannot mint authority.
+ * This proves only the original Job's termination, not absence of other writers.
+ */
+export async function assertClosedSessionTerminationProof(value: unknown): Promise<ClosedSessionTerminationProof> {
+  const owner = isRecord(value) ? closedProofOwners.get(value) : undefined;
+  if (owner === undefined) { throw new Error("Closed-session proof was not issued by a retained authority owner."); }
+  const proof = await owner.verify();
+  return proof;
+}
+/** Stricter copy admission, not an assertion that an unrelated writer is absent.
+ * Call before and after the bounded copy; any intervening lifecycle invalidates it.
+ */
+export async function assertClosedSessionCopyAuthority(value: unknown): Promise<ClosedSessionTerminationProof> {
+  const owner = isRecord(value) ? closedProofOwners.get(value) : undefined;
+  if (owner === undefined) { throw new Error("Closed-session copy proof was not issued by a retained authority owner."); }
+  const proof = await owner.verifyCopy();
+  return proof;
+}
+interface ClosedSessionSlot {
+  readonly intent: ClosedSessionCloseIntent;
+  dispatched: boolean;
+  proofInFlight: boolean;
+  receipt?: ClosedSessionCloseReceipt;
+  proof?: ClosedSessionTerminationReceipt;
+  proofLifecycleEpoch?: number;
+}
+
 export interface WindowsAuthoritySupervisor extends RuntimeExecutionAuthorityValidator {
+  readonly prepareClosedSessionClose: (input: ClosedSessionBinding & { readonly windowHandle: string }) => Promise<ClosedSessionCloseIntent>;
+  readonly requestClosedSessionNormalClose: (input: ClosedSessionBinding & { readonly intent: ClosedSessionCloseIntent; readonly confirmNormalClose: true }) => Promise<ClosedSessionCloseReceipt>;
+  readonly proveClosedSession: (input: ClosedSessionBinding & { readonly intent: ClosedSessionCloseIntent; readonly closeReceipt: ClosedSessionCloseReceipt }) => Promise<ClosedSessionTerminationProof>;
   readonly releaseCapture: (evidence: ExecutionAuthorityEvidence) => Promise<void>;
   /** Explicit lifecycle action. Refuses an existing unsupervised instance. */
   readonly launch: (confirmation: { readonly confirmLaunch: true }) => Promise<WindowsAuthorityLaunch>;
@@ -228,8 +322,13 @@ export function createWindowsAuthoritySupervisor(
     excluded: "outside-job-brokers-services-and-unreviewed-delegation",
   });
   const executable = windowsPath(policy.expectedExecutable, /^[A-Za-z]:\\[^"\r\n]+\.exe$/u);
+  const reviewedHelperCheck = policy.revalidateClosedSessionHelper;
+  const retainedTransportCheck = transport.assertClosedSessionAvailable;
+  const closedSessionSlots = new Map<string, ClosedSessionSlot>();
+  const normalCloseJobs = new Set<string>();
   const authorities = new Map<string, RetainedAuthority>();
   const usedCaptureBindings = new Set<string>();
+  let lifecycleEpoch = 0;
   let currentLaunch: WindowsAuthorityLaunch | undefined;
   let released = false;
 
@@ -284,6 +383,7 @@ export function createWindowsAuthoritySupervisor(
   }
 
   async function capture(input: ExecutionAuthorityCaptureInput): Promise<ExecutionAuthorityEvidence> {
+    lifecycleEpoch += 1;
     requireOwned();
     if (currentLaunch === undefined) {throw new Error("Windows authority needs an explicitly supervised EasyEDA launch.");}
     hash(input.bindingSha256);
@@ -368,9 +468,206 @@ export function createWindowsAuthoritySupervisor(
     };
   }
 
+
+  /** Revalidation is intentionally separate from recovery's existing contract. */
+  async function closedPolicy(): Promise<void> {
+    requireOwned();
+    if (retainedTransportCheck === undefined || transport.assertClosedSessionAvailable !== retainedTransportCheck) {
+      throw new Error("Closed-session retained helper availability is unproven.");
+    }
+    retainedTransportCheck();
+    const expected = sha256Json({
+      schema: HELPER_SCHEMA, policyId: POLICY_ID,
+      helperSha256: hash(policy.helperSha256),
+      expectedExecutableSha256: hash(policy.expectedExecutableSha256),
+      reviewedExecutionScopeSha256: hash(policy.reviewedExecutionScopeSha256),
+      containment: "atomic-launch-job-list:no-breakaway:no-kill-on-close:retained-handles",
+      excluded: "outside-job-brokers-services-and-unreviewed-delegation",
+    });
+    if (expected !== policySha256 || policy.expectedExecutable !== executable ||
+        reviewedHelperCheck === undefined || policy.revalidateClosedSessionHelper !== reviewedHelperCheck) {
+      throw new Error("Closed-session policy or reviewed helper proof is unavailable.");
+    }
+    await reviewedHelperCheck();
+    requireOwned();
+    retainedTransportCheck();
+    if (expected !== sha256Json({
+      schema: HELPER_SCHEMA, policyId: POLICY_ID,
+      helperSha256: hash(policy.helperSha256),
+      expectedExecutableSha256: hash(policy.expectedExecutableSha256),
+      reviewedExecutionScopeSha256: hash(policy.reviewedExecutionScopeSha256),
+      containment: "atomic-launch-job-list:no-breakaway:no-kill-on-close:retained-handles",
+      excluded: "outside-job-brokers-services-and-unreviewed-delegation",
+    }) || policy.expectedExecutable !== executable || policy.revalidateClosedSessionHelper !== reviewedHelperCheck ||
+        transport.assertClosedSessionAvailable !== retainedTransportCheck) {
+      throw new Error("Closed-session policy changed while revalidating its helper.");
+    }
+  }
+
+  function closedBinding(input: ClosedSessionBinding, current = true): RetainedAuthority {
+    requireOwned();
+    const retained = authorities.get(input.executionAuthority.authoritySha256);
+    if (retained === undefined || canonicalJson(input.executionAuthority) !== canonicalJson(retained.evidence) ||
+        retained.operationId !== input.operationId || retained.orphanPhase !== input.phase ||
+        retained.challengeAttempt !== input.challengeAttempt ||
+        retained.bridgeSessionSha256 !== sha256Json(input.bridgeSession) ||
+        retained.runtimeIdentitySha256 !== sha256Json(input.runtimeIdentity) ||
+        input.launch.jobId !== retained.receipt.jobId || input.launch.helperInstance !== retained.receipt.helperInstance ||
+        !retained.receipt.processes.some((entry) => entry.pid === input.launch.root.pid &&
+          entry.startIdentity === input.launch.root.startIdentity) ||
+        input.launch.root.role !== "easyeda-main" ||
+        current && canonicalJson(input.launch) !== canonicalJson(currentLaunch)) {
+      throw new Error("Closed-session proof lacks its retained operation, phase, session, runtime or launch.");
+    }
+    return retained;
+  }
+
+  function closedSlot(input: ClosedSessionBinding, intent: ClosedSessionCloseIntent): ClosedSessionSlot {
+    const slot = closedSessionSlots.get(input.launch.jobId);
+    if (slot === undefined || canonicalJson(slot.intent) !== canonicalJson(intent) ||
+        slot.intent.operationId !== input.operationId || slot.intent.phase !== input.phase ||
+        slot.intent.authoritySha256 !== input.executionAuthority.authoritySha256 ||
+        slot.intent.launchSha256 !== sha256Json(input.launch)) {
+      throw new Error("Closed-session intent does not match its retained one-shot reservation.");
+    }
+    return slot;
+  }
+
+  async function prepareClosedSessionClose(input: ClosedSessionBinding & { readonly windowHandle: string }): Promise<ClosedSessionCloseIntent> {
+    const bound = structuredClone(input);
+    await closedPolicy();
+    const retained = closedBinding(bound);
+    text(bound.operationId, /^[A-Za-z0-9._:-]{1,160}$/u);
+    text(bound.phase, /^[A-Za-z0-9._:-]{1,160}$/u);
+    if (!Number.isSafeInteger(bound.challengeAttempt) || bound.challengeAttempt < 1 ||
+        closedSessionSlots.has(bound.launch.jobId) || normalCloseJobs.has(bound.launch.jobId)) {
+      throw new Error("This Job already has a close attempt or closed-session reservation.");
+    }
+    const payload = {
+      schema: "easyeda-pro-control.closed-session-close-intent.v1" as const,
+      operationId: bound.operationId, phase: bound.phase, challengeAttempt: bound.challengeAttempt,
+      authoritySha256: retained.evidence.authoritySha256, captureBindingSha256: retained.receipt.bindingSha256,
+      launchSha256: sha256Json(bound.launch), bridgeSessionSha256: retained.bridgeSessionSha256,
+      runtimeIdentitySha256: retained.runtimeIdentitySha256, helperInstance: bound.launch.helperInstance,
+      jobId: bound.launch.jobId, windowHandle: text(bound.windowHandle, /^[1-9]\d{0,18}$/u),
+      preparedAt: new Date().toISOString(), policyId: POLICY_ID, policySha256,
+    };
+    const intent: ClosedSessionCloseIntent = { ...payload, closeIntentSha256: sha256Json(payload) };
+    closedSessionSlots.set(bound.launch.jobId, { intent: structuredClone(intent), dispatched: false, proofInFlight: false });
+    return intent;
+  }
+
+  async function requestClosedSessionNormalClose(input: ClosedSessionBinding & {
+    readonly intent: ClosedSessionCloseIntent; readonly confirmNormalClose: true;
+  }): Promise<ClosedSessionCloseReceipt> {
+    const bound = structuredClone(input);
+    closedBinding(bound);
+    const slot = closedSlot(bound, bound.intent);
+    // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- Preserve exact runtime confirmation even for untyped callers.
+    if (bound.confirmNormalClose !== true || slot.dispatched) { throw new Error("Closed-session normal close is not authorized or was already attempted."); }
+    // Consume before any await. Failure, missing acknowledgment and lost helper
+    // Never grant another close, even if no native dispatch can be established.
+    slot.dispatched = true;
+    normalCloseJobs.add(bound.launch.jobId);
+    await closedPolicy();
+    closedBinding(bound);
+    const response = record(await transport.request({
+      action: "normal-close", confirmNormalClose: true, jobId: bound.launch.jobId,
+      rootStartTicks: /^win32:(\d+):/u.exec(bound.launch.root.startIdentity)?.[1],
+      windowHandle: slot.intent.windowHandle,
+    }));
+    await closedPolicy();
+    closedBinding(bound);
+    if (response["closeDispatched"] !== true || response["jobId"] !== bound.launch.jobId ||
+        response["saveOrDiscardSelected"] !== false) {
+      throw new Error("Closed-session normal-close acknowledgment is missing; do not repeat close.");
+    }
+    const payload = {
+      schema: "easyeda-pro-control.closed-session-close-dispatch.v1" as const,
+      closeIntentSha256: slot.intent.closeIntentSha256, closeDispatched: true as const,
+      saveOrDiscardSelected: false as const, terminationProved: false as const,
+    };
+    slot.receipt = { ...payload, closeReceiptSha256: sha256Json(payload) };
+    return structuredClone(slot.receipt);
+  }
+
+  async function proveClosedSession(input: ClosedSessionBinding & {
+    readonly intent: ClosedSessionCloseIntent; readonly closeReceipt: ClosedSessionCloseReceipt;
+  }): Promise<ClosedSessionTerminationProof> {
+    const bound = structuredClone(input), slot = closedSlot(bound, bound.intent);
+    await closedPolicy();
+    const retained = closedBinding(bound, slot.proof === undefined);
+    if (!slot.dispatched || slot.receipt === undefined || canonicalJson(slot.receipt) !== canonicalJson(bound.closeReceipt)) {
+      throw new Error("Closed-session proof requires its original acknowledged one-shot normal close.");
+    }
+    // Export the same completed proof; never consume or release any capture.
+    if (slot.proof !== undefined) { return exportClosedProof(bound, slot); }
+    if (slot.proofInFlight) { throw new Error("Closed-session termination proof is already in progress."); }
+    slot.proofInFlight = true;
+    try {
+      const receipt = record(await transport.request({
+        action: "prove-terminated", captureBindingSha256: retained.receipt.bindingSha256,
+        helperInstance: retained.receipt.helperInstance, jobId: retained.receipt.jobId,
+      }));
+      await closedPolicy();
+      closedBinding(bound);
+      const checkedAt = date(receipt["checkedAt"]);
+      if (receipt["captureBindingSha256"] !== retained.receipt.bindingSha256 ||
+          receipt["helperInstance"] !== retained.receipt.helperInstance || receipt["jobId"] !== retained.receipt.jobId ||
+          receipt["jobEmpty"] !== true || receipt["retainedProcessesExited"] !== true ||
+          Date.parse(checkedAt) < Date.parse(retained.receipt.capturedAt)) {
+        throw new Error("Closed-session helper did not prove the entire retained Job and process generations terminated.");
+      }
+      const payload = {
+        schema: "easyeda-pro-control.closed-session-termination.v1" as const,
+        operationId: bound.operationId, phase: bound.phase, challengeAttempt: bound.challengeAttempt,
+        closeIntentSha256: slot.intent.closeIntentSha256, closeReceiptSha256: slot.receipt.closeReceiptSha256,
+        authoritySha256: retained.evidence.authoritySha256, launchSha256: slot.intent.launchSha256,
+        bridgeSessionSha256: retained.bridgeSessionSha256, runtimeIdentitySha256: retained.runtimeIdentitySha256,
+        helperInstance: retained.receipt.helperInstance, jobId: retained.receipt.jobId,
+        closedAt: checkedAt, jobEmpty: true as const, retainedProcessesExited: true as const,
+        saveOrDiscardSelected: false as const, policyId: POLICY_ID, policySha256,
+        queuedWritesPersisted: "not-proved" as const, persistentWorkReplayExcluded: "not-proved" as const,
+      };
+      slot.proof = { ...payload, proofSha256: sha256Json(payload) };
+      slot.proofLifecycleEpoch = lifecycleEpoch;
+      return exportClosedProof(bound, slot);
+    } finally { slot.proofInFlight = false; }
+  }
+
+  function exportClosedProof(binding: ClosedSessionBinding, slot: ClosedSessionSlot): ClosedSessionTerminationProof {
+    if (slot.proof === undefined) { throw new Error("Closed-session proof is not terminal."); }
+    const retainedBinding = structuredClone(binding);
+    const proof: ClosedSessionTerminationProof = Object.freeze({
+      ...structuredClone(slot.proof), [CLOSED_SESSION_PROOF_BRAND]: true as const,
+    });
+    async function verify(): Promise<ClosedSessionTerminationProof> {
+      await closedPolicy();
+      closedBinding(retainedBinding, false);
+      if (closedSessionSlots.get(retainedBinding.launch.jobId) !== slot ||
+          canonicalJson(slot.proof) !== canonicalJson(proof)) {
+        throw new Error("Closed-session proof no longer matches its retained terminal receipt.");
+      }
+      return proof;
+    }
+    closedProofOwners.set(proof, {
+      verify,
+      async verifyCopy() {
+        await verify();
+        closedBinding(retainedBinding);
+        if (slot.proofLifecycleEpoch !== lifecycleEpoch) {
+          throw new Error("Closed-session copy authority was invalidated by an intervening lifecycle action.");
+        }
+        return proof;
+      },
+    });
+    return proof;
+  }
+
   return {
-    capture, proveTerminated,
+    capture, proveTerminated, prepareClosedSessionClose, requestClosedSessionNormalClose, proveClosedSession,
     async releaseCapture(evidence) {
+      lifecycleEpoch += 1;
       requireOwned();
       const retained = authorities.get(evidence.authoritySha256);
       if (retained === undefined || canonicalJson(retained.evidence) !== canonicalJson(evidence)) {
@@ -387,6 +684,7 @@ export function createWindowsAuthoritySupervisor(
       }
     },
     async launch(confirmation) {
+      lifecycleEpoch += 1;
       requireOwned();
       if (!confirmation.confirmLaunch) {throw new Error("Supervised launch requires explicit authority.");}
       const response = record(await transport.request({
@@ -408,6 +706,8 @@ export function createWindowsAuthoritySupervisor(
           canonicalJson(input.launch) !== canonicalJson(currentLaunch)) {
         throw new Error("Normal close requires the exact supervised application generation.");
       }
+      if (closedSessionSlots.has(currentLaunch.jobId)) { throw new Error("This Job has a reserved closed-session close; generic close cannot bypass it."); }
+      normalCloseJobs.add(currentLaunch.jobId);
       const rootStartTicks = /^win32:(\d+):/u.exec(currentLaunch.root.startIdentity)?.[1];
       const response = record(await transport.request({
         action: "normal-close", confirmNormalClose: true, jobId: currentLaunch.jobId,
@@ -417,6 +717,7 @@ export function createWindowsAuthoritySupervisor(
           response["saveOrDiscardSelected"] !== false) {throw new Error("Normal close dispatch is unproven; do not retry blindly.");}
     },
     async release() {
+      lifecycleEpoch += 1;
       released = true;
       authorities.clear();
       await transport.release();
@@ -478,6 +779,11 @@ export async function startWindowsAuthoritySupervisor(options: WindowsAuthorityS
   child.on("close", () => { fail(); closed.resolve(null); });
   child.stdin.on("error", () => { fail(); });
   const transport: WindowsAuthorityTransport = {
+    assertClosedSessionAvailable() {
+      if (failed || child.exitCode !== null || child.signalCode !== null) {
+        throw new Error("Closed-session retained helper or process handles are unavailable.");
+      }
+    },
     async request(request) {
       if (failed || pending !== undefined) {throw new Error("Windows authority helper is unavailable or already executing a request.");}
       const id = randomBytes(16).toString("hex");
@@ -492,5 +798,20 @@ export async function startWindowsAuthoritySupervisor(options: WindowsAuthorityS
       await closed.promise;
     },
   };
-  return createWindowsAuthoritySupervisor(transport, { ...options, helperSha256 });
+  async function revalidateClosedSessionHelper(): Promise<void> {
+    const before = await lstat(options.helperPath);
+    if (!before.isFile() || before.isSymbolicLink() || before.nlink !== 1 ||
+        before.dev !== helperStat.dev || before.ino !== helperStat.ino ||
+        before.size !== helperStat.size || before.mtimeMs !== helperStat.mtimeMs ||
+        before.ctimeMs !== helperStat.ctimeMs || await realpath(options.helperPath) !== options.helperPath ||
+        createHash("sha256").update(await readFile(options.helperPath)).digest("hex") !== helperSha256) {
+      throw new Error("Closed-session reviewed helper source changed.");
+    }
+    const after = await lstat(options.helperPath);
+    if (after.dev !== before.dev || after.ino !== before.ino || after.size !== before.size ||
+        after.mtimeMs !== before.mtimeMs || after.ctimeMs !== before.ctimeMs || after.nlink !== 1 || after.isSymbolicLink()) {
+      throw new Error("Closed-session helper source changed during verification.");
+    }
+  }
+  return createWindowsAuthoritySupervisor(transport, { ...options, helperSha256, revalidateClosedSessionHelper });
 }
