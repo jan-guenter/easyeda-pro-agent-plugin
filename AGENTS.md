@@ -6,6 +6,37 @@ Last updated: 2026-10-12 (Europe/Berlin)
 
 ## 2026-10-10 API execution follow-through, in progress
 
+### Closed SQL and upload observers in progress
+
+- Source now includes a bounded SQLite inventory child, reproducible builtin-only
+  program constant, verified machine-runtime launch and issued-copy binding.
+  All database work runs in the owned read-only child; timeout settles only after
+  observed child closure. No caller code, public file reader or CAD route was
+  added. All57 maintained SQL/copy/program/protocol tests pass. Root and
+  independent review accept the nonauthorizing implementation. Full verification
+  passes4564facade tests/oneplatformskip/zerofailures and424bridge tests.
+- The fixed inactive-target upload observer is integrated with282passing
+  synthetic tests. Root and independent source checks agree on the native
+  12-field pristine project, exact mode strings and named log-level URL.
+  Earlier empty-object, token-mode and numeric-log-level fixtures were corrected
+  before integration. Root's source-only receipt matches1001bb3e. No cache was
+  accessed in EasyEDA; the result is point-in-time data, not replay authority.
+- The separate service-worker observer is integrated after root/independent
+  review and84passing synthetic tests. It reads one registration list, never
+  registration contents, and does not create or remove registrations. All423new
+  focused tests and strict types/type-aware lint pass with zero warnings.
+  The complete symbol-metadata SQL comparison and synthetic custom-browser
+  validation remain private work. The coordinator, live disposable validation
+  and writer re-enablement remain
+  unfinished. Installed030626 stays unchanged. No publication, installation,
+  CAD, profile or project access occurred in this source-only continuation.
+  Production and its record remain excluded; no native call is pending.
+- See [reader contracts](docs/closed-sql-and-upload-observers-2026-10-12.md).
+  Local24f59b4 retains the prior reviewed closure/copy foundation. Current
+  follow-up source218filesfa7d0cf8 is locally verified, not released. Existing
+  runtime3files30d033e0 and externalpins69a0bb0b are unchanged; the new readers
+  are not yet referenced by a runtime coordinator. Fullverifyfaeb2751 retained.
+
 ### Closed-session completion foundations in progress
 
 - Source now includes internal one-shot normal-close/retained-Job-exit methods,

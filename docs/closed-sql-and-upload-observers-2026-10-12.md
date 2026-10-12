@@ -1,0 +1,135 @@
+# Closed SQL and upload observations
+
+These internal readers provide evidence for the
+[closed-session completion workflow](closed-session-evidence-2026-10-12.md).
+They do not enable a CAD writer, grant navigation authority, or expose an MCP
+file reader. Existing execution refusals remain unchanged.
+
+## Read a complete supported SQLite state
+
+The SQL reader inventories schema definitions, ordinary table rows, multiplicity,
+row IDs, column metadata and persisted database properties. Integers retain their
+64-bit decimal representation. Finite real values retain IEEE-754 bytes. Text
+and blobs retain their storage class and hexadecimal bytes, including invalid
+UTF-8. Views and triggers are inventoried but never queried or fired.
+
+Virtual tables, generated columns, nonfinite real values and tables that shadow
+every row-ID alias refuse. This is a logical inventory for supported schemas,
+not an index-integrity or physical-page proof. The original file hash remains
+separate. A `VACUUM INTO` checkpoint can change the schema cookie and implicit
+row IDs, so it cannot replace the byte-preserving copy.
+
+`readClosedCopySqlInventory` requires the original issued copy receipt and
+rechecks the artifact's complete identity before and after scanning. A clone,
+same-byte replacement, metadata change or sidecar refuses. It reads only the
+private artifact, never the source project. A later application launch does not
+invalidate historical evidence, but the result does not authorize another copy
+or prove current project state.
+
+## Bound synchronous database work
+
+Node's SQLite statements are synchronous. The facade therefore runs all database
+construction, checks and scans in an owned child process, not its event loop.
+[Node 24.18 SQLite documentation](https://nodejs.org/download/release/v24.18.0/docs/api/sqlite.html).
+
+The child uses the installation's verified Node executable through a retained
+descriptor. It receives one read-only database descriptor and bounded JSON data.
+Its fixed, builtin-only program is a generated constant from three reviewed
+source files. Builds and tests reproduce it; connecting the coordinator will
+include it in the existing facade bundle. There is no caller code, alternate
+worker path, ambient `NODE_OPTIONS`, dependency loader or inherited `execArgv`.
+
+| Resource | Limit |
+| --- | ---: |
+| Source file | 256 MiB |
+| Rows across all tables | 100,000 |
+| Columns per table | 128 |
+| Cells including row IDs | 250,000 |
+| Individual raw value | 2 MiB |
+| Cumulative raw values | 64 MiB |
+| Encoded inventory | 16 MiB |
+| Schema entries | 256 |
+| Child input and stderr | 8 KiB and 16 KiB |
+| Child lifetime | 10 seconds |
+
+The reader also sets a 192 MiB V8 old-space limit and verifies a 64 MiB SQLite
+heap limit. These are not whole-process RSS limits. SQLite's heap pragma can
+lower the process limit, so this setting belongs in the separate reader process.
+[SQLite heap limit documentation](https://www.sqlite.org/pragma.html#pragma_hard_heap_limit).
+
+Timeout or pipe/output failure signals only the owned read-only child. The
+promise settles after observed child closure, not when the signal is sent.
+Success requires the exact two-line protocol, complete digests and descriptor
+identity checks. No EasyEDA process is terminated by this reader.
+
+## Observe the two target upload queues
+
+The fixed upload observer checks only `project_<project>_v6` and
+`localProject_<project>_v1`, matching `https://client/upload/<branch>`. It uses
+captured `CacheStorage.prototype.match` with fixed options. The named-cache match
+algorithm does not create a missing cache, unlike `open`.
+[CacheStorage match algorithm](https://w3c.github.io/ServiceWorker/#cache-storage-match).
+
+Three fixed project-membership RPCs bracket the two matches. Any cache response
+refuses without reading its body. There is no cache enumeration, creation,
+deletion, replay getter, network fallback, Save, navigation or retry. Browser
+storage bookkeeping may still occur; this is not a claim of profile-byte
+invariance.
+
+The observer retains the main global, Document, location, UI host, tab controller,
+message bus, cache receiver and methods across all awaits. It requires the native
+12-field pristine project object, empty startup-tab Set, Start Page and exact
+startup flags. Only the source-produced EasyEDA OFFLINE and HALF_OFFLINE mode
+strings pass. The URL accepts the five native named log levels, with no project
+fragment or extra query. The earlier numeric-log-level and empty-object fixtures
+were corrected before integration.
+
+The result says `point-in-time-inactive-target`. It is ordinary frozen data,
+not a completion proof. Its ten-second deadline prevents later reads after a
+timeout but cannot cancel a read already issued or drain a worker.
+
+## Check service-worker registrations separately
+
+The service-worker observer makes one native `getRegistrations()` read and
+requires an empty array plus a null controller. Unlike a URL-scoped lookup,
+the registration list covers the current renderer's storage key. A noncontrolling
+registration at another scope therefore refuses too.
+[Service Worker registration-list algorithm](https://w3c.github.io/ServiceWorker/#dom-serviceworkercontainer-getregistrations).
+
+The observer retains the Navigator and ServiceWorkerContainer prototype
+accessors and method, and rechecks them after the await. It does not read any
+registration object or script, call `ready`, register, unregister or update.
+Both frozen and mutable empty arrays pass; no particular browser's array
+freezing behavior is assumed. Context drift, native rejection or timeout refuses
+without retry. Its ordinary frozen result is point-in-time data, not ownership
+of the runtime or permission to replay work.
+
+## Remaining execution requirements
+
+The coordinator must bind the original operation and exact project to retained
+whole-Job exit, a fresh owned main process, the same profile/default partition,
+native source pins and a clean launch with no project-open attempt. Current
+empty tabs do not prove that launch history. The two observers must be bound to
+the same admitted generation and the next single project-open attempt.
+
+Actual cache semantics still need testing in an isolated synthetic profile using
+this distribution's browser. Empty caches can also follow eviction or lost
+writes, so they cannot prove that the requested edit persisted. Complete expected
+SQL effects, saved design verification and a second closed-state comparison
+remain necessary. The structure-ticket-only test helper explicitly does not
+claim a complete metadata-rename effect.
+
+The observer's source review binds APP `10a42746`, UI `12414b9d`, API `59236967`
+and project manager `23089ec5`, all SHA-256 prefixes for the installed reviewed
+tuple. Relevant UTF-16 offsets include UI8067212 for the pristine project,
+UI14959595 for startup tabs, MGR1779900 for worker membership, APP2579166 for
+mode generation and APP2651103 for the URL. These are program-source facts,
+not connected runtime observations.
+
+The pinned service-worker loader `f8ad61fe` returns before registration for local
+CLIENT modes without ONLINE at UTF-16 offset94598. That source path explains
+why a clean offline launch does not register a worker, but says nothing about
+older registrations. A copied synthetic browser runtime is being prepared to
+test the actual WebIDL descriptors and storage behavior. Passing a script to
+the installed EasyEDA executable is not an isolation mechanism: it can still
+load EasyEDA and its configured profile.

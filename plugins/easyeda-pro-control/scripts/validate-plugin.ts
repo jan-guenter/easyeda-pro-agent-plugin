@@ -419,7 +419,9 @@ check(
     packageScripts["sanitizer:check"] ===
       "node scripts/build-descriptor-sanitizer.ts --check" &&
     packageScripts["build"] ===
-      "npm run sanitizer:check && node scripts/build-server.ts" &&
+      "npm run sanitizer:check && npm run sql:reader:check && node scripts/build-server.ts" &&
+    packageScripts["sql:reader:check"] ===
+      "node scripts/generate-sqlite-inventory-program.ts --check" &&
     typeof packageScripts["verify"] === "string" &&
     packageScripts["verify"].includes("npm run build"),
 );

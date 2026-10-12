@@ -11,7 +11,7 @@
   "packageManager": "npm@11.16.0",
   "type": "module",
   "scripts": {
-    "build": "npm run sanitizer:check && node scripts/build-server.ts",
+    "build": "npm run sanitizer:check && npm run sql:reader:check && node scripts/build-server.ts",
     "bridge:build": "node scripts/build-authenticated-bridge.ts",
     "bridge:lint": "oxlint --config .oxlintrc.bridge.json --type-aware --deny-warnings easyeda-bridge-extension/src easyeda-bridge-extension/tests easyeda-bridge-extension/scripts easyeda-bridge-extension/vitest.config.ts",
     "bridge:provision": "node scripts/provision-bridge-token.ts",
@@ -22,6 +22,8 @@
     "lint:fix": "oxlint --type-aware . --fix",
     "sanitizer:build": "node scripts/build-descriptor-sanitizer.ts --write",
     "sanitizer:check": "node scripts/build-descriptor-sanitizer.ts --check",
+    "sql:reader:check": "node scripts/generate-sqlite-inventory-program.ts --check",
+    "sql:reader:update": "node scripts/generate-sqlite-inventory-program.ts --write",
     "test": "node --import ./scripts/test-isolation.ts --test server/tests/*.test.ts",
     "validate": "node scripts/validate-plugin.ts",
     "skills:validate": "node scripts/validate-skills.ts",

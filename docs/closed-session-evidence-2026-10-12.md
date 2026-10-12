@@ -74,6 +74,11 @@ failures when child cleanup fails too.
 
 ## Completion work still required
 
+The internal SQL reader and inactive-target upload observer are now implemented.
+Their contracts and limits are in
+[closed SQL and upload observations](closed-sql-and-upload-observers-2026-10-12.md).
+Neither is connected to a public execution route.
+
 The first proposed live case remains a disposable ordinary-symbol metadata
 rename. Before enabling it, the coordinator must bind the complete sequence:
 
@@ -91,7 +96,7 @@ rename. Before enabling it, the coordinator must bind the complete sequence:
    database state. Persist all intent and result evidence without granting a
    repeated edit, Save or close after a restart.
 
-The bounded SQL reader, clean-startup/cache observer, operation-specific effect
-model and durable coordinator are separate work. Synthetic tests of the modules
-above are not connected EasyEDA validation. No production project is needed for
-any of these tests.
+The operation-specific effect model, clean-generation admission, durable
+coordinator and actual browser validation remain separate work. Synthetic tests
+of the modules above are not connected EasyEDA validation. No production project
+is needed for any of these tests.
