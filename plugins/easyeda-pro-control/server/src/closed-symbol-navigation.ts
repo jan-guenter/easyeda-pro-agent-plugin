@@ -17,8 +17,22 @@ type Engine = Pick<EasyedaControlEngine, "assertContext" | "assertBridgeDispatch
 };
 const services = { verifyCheckpoint, verifyLibraryNativeProfile, prepareRecoveryNavigation };
 const attempts = new WeakMap<Engine, Set<string>>();
+const successfulOpens = new WeakMap<object, { readonly engine: Engine; readonly operationId: string; readonly phase: OpenPhase;
+  readonly seal: string; readonly assertOriginalReply: () => void }>();
 
 function requireValue(value: boolean, message: string): asserts value { if (!value) { throw new Error(message); } }
+
+/** A completed native Open and its later checks, not a raw reply or serialized
+ * event. This historical receipt does not prove that its session is still live.
+ */
+export function assertOriginalClosedSymbolNavigation(value: unknown, engine: Engine, operationId: string, phase: OpenPhase): void {
+  requireValue(isRecord(value), "Closed navigation requires its original successful result.");
+  const retained = successfulOpens.get(value);
+  requireValue(retained !== undefined && retained.engine === engine && retained.operationId === operationId && retained.phase === phase,
+    "Closed navigation successful result owner or phase differs.");
+  requireValue(canonicalJson(value) === retained.seal, "Closed navigation successful result changed.");
+  retained.assertOriginalReply();
+}
 
 /** The production constructor uses maintained checkpoint/source readers and the
  * actual engine. Test overrides replace those existing I/O boundaries only.
@@ -200,8 +214,11 @@ export class ClosedSymbolNavigationStage {
     this.currentSession(journal, generation);
     requireValue(canonicalJson(final.journal) === canonicalJson(journal), "Closed navigation durable journal changed.");
     Object.assign(journalInput, journal);
-    return Object.freeze({ profile: "easyeda-pro-control.closed-symbol-companion-open.v1", operationId: journal.operationId, phase,
+    const result = Object.freeze({ profile: "easyeda-pro-control.closed-symbol-companion-open.v1", operationId: journal.operationId, phase,
       context: active, native, checkpoint, navigationAcknowledged: true, currentCheckpointUnchanged: true,
       executionAuthorized: false, completionProved: false, saved: false, reopened: false });
+    successfulOpens.set(result, { engine: this.engine, operationId: journal.operationId, phase,
+      seal: canonicalJson(result), assertOriginalReply: returnedUnchanged });
+    return result;
   }
 }

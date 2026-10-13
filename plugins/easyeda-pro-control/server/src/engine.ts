@@ -1,4 +1,6 @@
 /* oxlint-disable import/max-dependencies -- This transaction coordinator imports the separately audited native profile and upload barrier; a dependency-count cap is not a safety boundary. */
+import { asOperationJournal, operationSummary } from "./engine-operation-summary.ts";
+import { scanQualifiedAdmissionOperations } from "./closed-symbol-terminal-admission.ts";
 import { windowsClockObservationForResult } from "./windows-authority.ts";
 import type { IssuedWindowsClockObservation } from "./windows-authority.ts";
 import {
@@ -19,7 +21,6 @@ import {
   reviewedCompatibilityManifestFingerprint,
   sha256Json,
   sha256Text,
-  operationSummary as untypedOperationSummary,
   validateExpectedFingerprint,
   validatePrivateFingerprint,
 } from "./core.ts";
@@ -27,7 +28,6 @@ import {
   controlDataDirectory,
   controlRootCapability,
   createOperation,
-  createOperationScanner,
   loadOperation,
   operationPath,
   updateOperation,
@@ -810,10 +810,6 @@ function isProjectProbePayload(value: unknown): value is ProjectProbePayload {
   return isUnknownRecord(value) && isUnknownRecord(value["project"]);
 }
 
-function isOperationJournalRecord(value: unknown): value is OperationJournal {
-  return isUnknownRecord(value);
-}
-
 function isMutationPlan(value: unknown): value is MutationPlan {
   if (!isUnknownRecord(value)) {
     return false;
@@ -827,70 +823,6 @@ function isMutationPlan(value: unknown): value is MutationPlan {
     isUnknownRecord(value["checkpoint"]) &&
     isUnknownRecord(value["expectedFingerprint"])
   );
-}
-
-function isCompleteOperationJournal(value: unknown): value is OperationJournal {
-  return (
-    isUnknownRecord(value) &&
-    typeof value["operationId"] === "string" &&
-    typeof value["planHash"] === "string" &&
-    typeof value["state"] === "string" &&
-    typeof value["mutationState"] === "string" &&
-    typeof value["saved"] === "boolean" &&
-    typeof value["reopened"] === "boolean" &&
-    typeof value["hardStop"] === "boolean" &&
-    typeof value["mutationMayHaveOccurred"] === "boolean" &&
-    typeof value["nextSafeAction"] === "string" &&
-    typeof value["journalPath"] === "string" &&
-    typeof value["updatedAt"] === "string"
-  );
-}
-
-function operationSummary(operation: OperationJournal): OperationSummary;
-function operationSummary(
-  operation: Readonly<UnknownRecord>,
-): ReturnType<typeof untypedOperationSummary>;
-function operationSummary(
-  operation: Readonly<UnknownRecord>,
-): OperationSummary | ReturnType<typeof untypedOperationSummary> {
-  const summary = untypedOperationSummary(operation);
-  if (!isCompleteOperationJournal(operation)) {
-    return summary;
-  }
-  return {
-    operationId: operation.operationId,
-    planHash: operation.planHash,
-    state: operation.state,
-    mutationState: operation.mutationState,
-    saved: operation.saved,
-    reopened: operation.reopened,
-    hardStop: operation.hardStop,
-    mutationMayHaveOccurred: operation.mutationMayHaveOccurred,
-    orphanedCallPossible: summary.orphanedCallPossible,
-    orphanedCallPhase:
-      typeof summary.orphanedCallPhase === "string"
-        ? summary.orphanedCallPhase
-        : undefined,
-    runtimeRestartChallenge:
-      typeof summary.runtimeRestartChallenge === "string"
-        ? summary.runtimeRestartChallenge
-        : undefined,
-    runtimeRestartChallengeIssuedAt:
-      typeof summary.runtimeRestartChallengeIssuedAt === "string"
-        ? summary.runtimeRestartChallengeIssuedAt
-        : undefined,
-    runtimeRestartBoundary: operation.runtimeRestartBoundary,
-    nextSafeAction: operation.nextSafeAction,
-    unknownPhase:
-      typeof summary.unknownPhase === "string"
-        ? summary.unknownPhase
-        : undefined,
-    lastError: summary.lastError,
-    journalPath: operation.journalPath,
-    checkpoints: summary.checkpoints,
-    artifacts: summary.artifacts,
-    updatedAt: operation.updatedAt,
-  };
 }
 
 function annotatedError(
@@ -1269,13 +1201,6 @@ function semanticPersistencePayload(
     observedDelta: value["observedDelta"],
     observedDeltaSha256: value["observedDeltaSha256"],
   };
-}
-
-function asOperationJournal(value: unknown): OperationJournal {
-  if (!isOperationJournalRecord(value)) {
-    throw new TypeError("Operation journal must be an object.");
-  }
-  return value;
 }
 
 function toolDocumentType(toolName: string): number | undefined {
@@ -2066,20 +1991,10 @@ export class SerializedGate {
   }
 }
 
-// These guards share one bounded pure projection, not one scan result. Every
-// Invocation still rechecks all current journal and artifact bytes and paths.
-// Sharing the projection avoids reparsing large unchanged journals separately
-// For bridge admission, isolated recovery and incomplete-operation reporting.
-const scanAdmissionOperations = createOperationScanner((value) => {
-  const operation = asOperationJournal(value);
-  const bridgeBlocking = operation.state === "journal-unreadable" || operationHasOrphanedCallRisk(operation);
-  const unfinished = !isTerminalOperation(operation);
-  return bridgeBlocking || unfinished
-    ? { bridgeBlocking, unfinished, summary: operationSummary(operation) } : undefined;
-});
-
+// Each guard rechecks managed evidence through the same fixed qualifier.
+// Historical completion does not grant current ownership or replay authority.
 async function scanBridgeBlockingOperations(): Promise<OperationSummary[]> {
-  const operations = await scanAdmissionOperations();
+  const operations = await scanQualifiedAdmissionOperations();
   return operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary);
 }
 
@@ -2087,19 +2002,19 @@ function assertNoBridgeBlockingOperations(blockingOperations: readonly Operation
   if (blockingOperations.length === 0) { return true; }
   const labels = blockingOperations.map((operation) => `${operation.operationId}:${operation.state}`).join(", ");
   const error = annotatedError(
-    `EasyEDA bridge dispatch is quarantined by an orphan-risk or unreadable operation journal (${labels}). Use easyeda_control_recover_incomplete without an operationId to inspect the local journals. Do not run live status, context, reads, captures, exports, checkpoints, or writes until the nonce-bound restart/recovery gate clears every orphan risk; an unreadable journal requires manual restoration or review.`,
+    `EasyEDA bridge dispatch is quarantined by an orphan-risk or unreadable operation journal, or unverified closed-session terminal evidence (${labels}). Use easyeda_control_recover_incomplete without an operationId to inspect the local journals. Do not run live status, context, reads, captures, exports, checkpoints, or writes until the nonce-bound restart/recovery gate clears every orphan risk; an unreadable journal or unverified terminal requires evidence review, not replay.`,
   );
   error.blockingOperations = blockingOperations;
   throw error;
 }
 
 async function scanRecoveryBlockingOperations(): Promise<OperationSummary[]> {
-  const operations = await scanAdmissionOperations();
+  const operations = await scanQualifiedAdmissionOperations();
   return operations.map((entry) => entry.summary);
 }
 
 async function scanUnfinishedOperations(): Promise<OperationSummary[]> {
-  const operations = await scanAdmissionOperations();
+  const operations = await scanQualifiedAdmissionOperations();
   return operations.filter((entry) => entry.unfinished).map((entry) => entry.summary);
 }
 
@@ -2803,7 +2718,7 @@ export class EasyedaControlEngine {
    * No other guard accepts this result, and every new invocation scans again.
    */
   public async observeStatusAdmission(): Promise<StatusAdmissionObservation> {
-    const operations = await scanAdmissionOperations();
+    const operations = await scanQualifiedAdmissionOperations();
     assertNoBridgeBlockingOperations(operations.filter((entry) => entry.bridgeBlocking).map((entry) => entry.summary));
     return {
       observedAt: now(),

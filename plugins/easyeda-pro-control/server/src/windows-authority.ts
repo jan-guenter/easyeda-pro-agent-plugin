@@ -27,10 +27,22 @@ export interface IssuedWindowsClockObservation extends ClockAttachment {
   readonly ownerBinding: Readonly<JsonRecord>;
 }
 type ClockPhase = ClockAttachment["phase"];
+interface NativeTerminationRefusal {
+  readonly requestId: string;
+  readonly requestSequence: number;
+  readonly action: unknown;
+  readonly captureBindingSha256: unknown;
+  readonly helperInstance: unknown;
+  readonly jobId: unknown;
+  readonly code: string;
+}
 interface QualifiedClockSource {
   readonly originalAttachment: (raw: unknown) => ClockAttachment | undefined;
   readonly revalidate: () => Promise<void>;
   readonly assertTransport: () => void;
+  readonly assertSource: () => void;
+  readonly nativeRefusal: (error: unknown) => NativeTerminationRefusal | undefined;
+  readonly requestSequence: () => number;
 }
 const qualifiedClockSources = new WeakMap<WindowsAuthorityTransport, QualifiedClockSource>();
 const originalClocks = new WeakMap<object, IssuedWindowsClockObservation>();
@@ -169,9 +181,31 @@ const CLOSED_SESSION_PROOF_BRAND: unique symbol = Symbol("closed-session-termina
 export interface ClosedSessionTerminationProof extends ClosedSessionTerminationReceipt {
   readonly [CLOSED_SESSION_PROOF_BRAND]: true;
 }
+/** Source-observed liveness only. This data does not carry a termination brand. */
+export interface ClosedSessionPendingObservation extends JsonRecord {
+  readonly schema: "easyeda-pro-control.closed-session-pending.v1";
+  readonly status: "pending";
+  readonly nativeCode: "authority-prior-job-not-empty" | "authority-retained-process-still-live";
+  readonly nativeRequestId: string;
+  readonly terminationProved: false;
+  readonly completionProved: false;
+  readonly executionAuthorized: false;
+}
+export type ClosedSessionTerminationObservation = ClosedSessionPendingObservation |
+  Readonly<{ status: "terminated"; proof: ClosedSessionTerminationProof }>;
+const terminationObservationOwners = new WeakMap<object, () => void>();
+/** Final no-await ownership check, never a replacement for source revalidation.
+ * Pending data or a JSON copy cannot authorize a later polling continuation.
+ */
+export function assertCurrentClosedSessionTerminationObservation(value: unknown): void {
+  const verify = isRecord(value) ? terminationObservationOwners.get(value) : undefined;
+  if (verify === undefined) { throw new Error("Closed-session observation was not issued by its original retained owner."); }
+  verify();
+}
 const closedProofOwners = new WeakMap<object, {
   readonly verify: () => Promise<ClosedSessionTerminationProof>;
   readonly verifyCopy: () => Promise<ClosedSessionTerminationProof>;
+  readonly verifyCopyCurrent: () => void;
 }>();
 
 /** JSON, self-hashes and caller-provided verifier objects cannot mint authority.
@@ -192,6 +226,15 @@ export async function assertClosedSessionCopyAuthority(value: unknown): Promise<
   const proof = await owner.verifyCopy();
   return proof;
 }
+/** Final no-await check of the original retained copy owner. Pair this with
+ * async helper/source revalidation; it does not replace that file verification.
+ * No caller verifier, serialized proof or runtime snapshot can mint this check.
+ */
+export function assertCurrentClosedSessionCopyAuthority(value: unknown): void {
+  const owner = isRecord(value) ? closedProofOwners.get(value) : undefined;
+  if (owner === undefined) { throw new Error("Closed-session copy proof was not issued by a retained authority owner."); }
+  owner.verifyCopyCurrent();
+}
 interface ClosedSessionSlot {
   readonly intent: ClosedSessionCloseIntent;
   dispatched: boolean;
@@ -205,6 +248,7 @@ export interface WindowsAuthoritySupervisor extends RuntimeExecutionAuthorityVal
   readonly prepareClosedSessionClose: (input: ClosedSessionBinding & { readonly windowHandle: string }) => Promise<ClosedSessionCloseIntent>;
   readonly requestClosedSessionNormalClose: (input: ClosedSessionBinding & { readonly intent: ClosedSessionCloseIntent; readonly confirmNormalClose: true }) => Promise<ClosedSessionCloseReceipt>;
   readonly proveClosedSession: (input: ClosedSessionBinding & { readonly intent: ClosedSessionCloseIntent; readonly closeReceipt: ClosedSessionCloseReceipt }) => Promise<ClosedSessionTerminationProof>;
+  readonly probeClosedSessionTermination: (input: ClosedSessionBinding & { readonly intent: ClosedSessionCloseIntent; readonly closeReceipt: ClosedSessionCloseReceipt }) => Promise<ClosedSessionTerminationObservation>;
   readonly releaseCapture: (evidence: ExecutionAuthorityEvidence) => Promise<void>;
   /** Explicit lifecycle action. Refuses an existing unsupervised instance. */
   readonly launch: (confirmation: { readonly confirmLaunch: true }) => Promise<WindowsAuthorityLaunch>;
@@ -727,8 +771,27 @@ export function createWindowsAuthoritySupervisor(
     }
     const clockObservation = originalClocks.get(slot.proof);
     if (clockObservation !== undefined) { originalClocks.set(proof, clockObservation); }
+    function verifyCopyCurrent(): void {
+      requireOwned();
+      if (typeof retainedTransportCheck !== "function" || transport.assertClosedSessionAvailable !== retainedTransportCheck ||
+          policy.revalidateClosedSessionHelper !== reviewedHelperCheck || policy.expectedExecutable !== executable ||
+          policySha256 !== sha256Json({ schema: HELPER_SCHEMA, policyId: POLICY_ID,
+            helperSha256: hash(policy.helperSha256), expectedExecutableSha256: hash(policy.expectedExecutableSha256),
+            reviewedExecutionScopeSha256: hash(policy.reviewedExecutionScopeSha256),
+            containment: "atomic-launch-job-list:no-breakaway:no-kill-on-close:retained-handles",
+            excluded: "outside-job-brokers-services-and-unreviewed-delegation" })) {
+        throw new Error("Closed-session copy owner or source policy changed.");
+      }
+      retainedTransportCheck();
+      closedBinding(retainedBinding);
+      if (closedSessionSlots.get(retainedBinding.launch.jobId) !== slot || canonicalJson(slot.proof) !== canonicalJson(proof) ||
+          slot.proofLifecycleEpoch !== lifecycleEpoch) {
+        throw new Error("Closed-session copy authority was invalidated by an intervening lifecycle action.");
+      }
+    }
     closedProofOwners.set(proof, {
       verify,
+      verifyCopyCurrent,
       async verifyCopy() {
         await verify();
         closedBinding(retainedBinding);
@@ -741,8 +804,78 @@ export function createWindowsAuthoritySupervisor(
     return proof;
   }
 
+  /** Repeat only this read-only probe while its exact native result says live.
+   * The existing proof path remains strict; matching Error text is not evidence.
+   */
+  async function probeClosedSessionTermination(input: ClosedSessionBinding & {
+    readonly intent: ClosedSessionCloseIntent; readonly closeReceipt: ClosedSessionCloseReceipt;
+  }): Promise<ClosedSessionTerminationObservation> {
+    const bound = structuredClone(input), callerText = canonicalJson(input);
+    const retained = closedBinding(bound), slot = closedSlot(bound, bound.intent);
+    const epoch = lifecycleEpoch, priorRequestSequence = clockSource?.requestSequence();
+    function current(): void {
+      requireOwned(); clockSource?.assertSource();
+      if (retainedTransportCheck === undefined || transport.assertClosedSessionAvailable !== retainedTransportCheck ||
+          reviewedHelperCheck === undefined || policy.revalidateClosedSessionHelper !== reviewedHelperCheck ||
+          policy.expectedExecutable !== executable || policySha256 !== sha256Json({
+            schema: HELPER_SCHEMA, policyId: POLICY_ID, helperSha256: hash(policy.helperSha256),
+            expectedExecutableSha256: hash(policy.expectedExecutableSha256), reviewedExecutionScopeSha256: hash(policy.reviewedExecutionScopeSha256),
+            containment: "atomic-launch-job-list:no-breakaway:no-kill-on-close:retained-handles",
+            excluded: "outside-job-brokers-services-and-unreviewed-delegation" })) {
+        throw new Error("Closed-session observation policy or retained helper changed.");
+      }
+      retainedTransportCheck();
+      if (canonicalJson(input) !== callerText || lifecycleEpoch !== epoch ||
+          closedSlot(bound, bound.intent) !== slot || closedBinding(bound) !== retained ||
+          !slot.dispatched || slot.receipt === undefined || canonicalJson(slot.receipt) !== canonicalJson(bound.closeReceipt)) {
+        throw new Error("Closed-session pending probe owner, input or acknowledged close changed.");
+      }
+    }
+    current();
+    try {
+      const proof = await proveClosedSession(bound);
+      current();
+      const observation = Object.freeze({ status: "terminated" as const, proof });
+      terminationObservationOwners.set(observation, (): void => { current(); assertCurrentClosedSessionCopyAuthority(proof); });
+      return observation;
+    } catch (error) {
+      const refusal = clockSource?.nativeRefusal(error);
+      if (clockSource === undefined || refusal === undefined || priorRequestSequence === undefined ||
+          refusal.requestSequence <= priorRequestSequence || refusal.requestSequence !== clockSource.requestSequence() ||
+          refusal.action !== "clocked-prove-terminated" || refusal.captureBindingSha256 !== retained.receipt.bindingSha256 ||
+          refusal.helperInstance !== retained.receipt.helperInstance || refusal.jobId !== retained.receipt.jobId ||
+          (refusal.code !== "authority-prior-job-not-empty" && refusal.code !== "authority-retained-process-still-live")) {
+        throw error;
+      }
+      const native = refusal, source = clockSource;
+      const originalFailure = (): void => {
+        current(); clockSource?.assertTransport();
+        if (qualifiedClockSources.get(transport) !== clockSource || slot.proof !== undefined || slot.proofInFlight ||
+            source.nativeRefusal(error) !== native || source.requestSequence() !== native.requestSequence) {
+          throw new Error("Closed-session pending probe no longer owns its original native refusal.", { cause: error });
+        }
+      };
+      originalFailure();
+      await closedPolicy(); originalFailure();
+      await clockSource.revalidate(); originalFailure();
+      const observation: ClosedSessionPendingObservation = Object.freeze({
+        schema: "easyeda-pro-control.closed-session-pending.v1", status: "pending",
+        operationId: bound.operationId, phase: bound.phase, challengeAttempt: bound.challengeAttempt,
+        closeIntentSha256: slot.intent.closeIntentSha256, closeReceiptSha256: bound.closeReceipt.closeReceiptSha256,
+        authoritySha256: retained.evidence.authoritySha256, launchSha256: slot.intent.launchSha256,
+        bridgeSessionSha256: retained.bridgeSessionSha256, runtimeIdentitySha256: retained.runtimeIdentitySha256,
+        helperInstance: retained.receipt.helperInstance, jobId: retained.receipt.jobId,
+        nativeCode: refusal.code, nativeRequestId: refusal.requestId,
+        terminationProved: false, completionProved: false, executionAuthorized: false,
+        saveOrDiscardSelected: false,
+      });
+      terminationObservationOwners.set(observation, originalFailure);
+      return observation;
+    }
+  }
+
   return {
-    capture, proveTerminated, prepareClosedSessionClose, requestClosedSessionNormalClose, proveClosedSession,
+    capture, proveTerminated, prepareClosedSessionClose, requestClosedSessionNormalClose, proveClosedSession, probeClosedSessionTermination,
     async releaseCapture(evidence) {
       lifecycleEpoch += 1;
       requireOwned();
@@ -818,7 +951,10 @@ export async function startWindowsAuthoritySupervisor(options: WindowsAuthorityS
   const child = spawn(options.powershellExecutable, [
     "-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", options.helperWindowsPath,
   ], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
-  let pending: { readonly id: string; readonly resolve: (value: unknown) => void; readonly reject: (error: Error) => void } | undefined;
+  let pending: { readonly id: string; readonly request: Omit<NativeTerminationRefusal, "code">;
+    readonly resolve: (value: unknown) => void; readonly reject: (error: Error) => void } | undefined;
+  const nativeRefusals = new WeakMap<Error, NativeTerminationRefusal>();
+  let requestSequence = 0;
   let buffer = "";
   let failed = false;
   const closed = Promise.withResolvers<null>();
@@ -845,6 +981,7 @@ export async function startWindowsAuthoritySupervisor(options: WindowsAuthorityS
         request.resolve(response["result"]);
       } else if (response["ok"] === false) {
         const error = new Error(text(response["error"], /^authority-[a-z-]{1,80}$/u));
+        nativeRefusals.set(error, Object.freeze({ ...request.request, code: error.message }));
         pending = undefined;
         request.reject(error);
       } else {
@@ -867,7 +1004,13 @@ export async function startWindowsAuthoritySupervisor(options: WindowsAuthorityS
       if (failed || pending !== undefined) {throw new Error("Windows authority helper is unavailable or already executing a request.");}
       const id = randomBytes(16).toString("hex");
       const response = Promise.withResolvers<unknown>();
-      pending = { id, resolve: response.resolve, reject: response.reject };
+      requestSequence += 1;
+      const requestIdentity = Object.freeze({ requestId: id, requestSequence,
+        action: Object.getOwnPropertyDescriptor(request, "action")?.value as unknown,
+        captureBindingSha256: Object.getOwnPropertyDescriptor(request, "captureBindingSha256")?.value as unknown,
+        helperInstance: Object.getOwnPropertyDescriptor(request, "helperInstance")?.value as unknown,
+        jobId: Object.getOwnPropertyDescriptor(request, "jobId")?.value as unknown });
+      pending = { id, request: requestIdentity, resolve: response.resolve, reject: response.reject };
       const deadline = setTimeout(fail, 15_000);
       child.stdin.write(`${JSON.stringify({ ...request, id })}\n`);
       try { return await response.promise; } finally { clearTimeout(deadline); }
@@ -924,7 +1067,9 @@ export async function startWindowsAuthoritySupervisor(options: WindowsAuthorityS
           }
           assertTransport();
     };
-    qualifiedClockSources.set(clockTransport, { originalAttachment: clocked.originalAttachment, assertTransport,
+    qualifiedClockSources.set(clockTransport, { originalAttachment: clocked.originalAttachment, assertTransport, assertSource: currentSource,
+      nativeRefusal: (error) => error instanceof Error ? nativeRefusals.get(error) : undefined,
+      requestSequence: () => requestSequence,
       async revalidate() {
         currentSource(); await revalidateClosedSessionHelper(); currentSource();
       } });

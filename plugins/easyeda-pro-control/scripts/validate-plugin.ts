@@ -24,6 +24,7 @@ import {
 } from "./private-temporary-directory.ts";
 import type { PrivateTemporaryDirectory } from "./private-temporary-directory.ts";
 import { validateReleaseVersionParity } from "./release-version.ts";
+import { MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/main-reference-helper-identity.ts";
 import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, MANIFEST_DEFAULT_PROMPTS, hasPortableMcpLaunch, portableMcpLaunchSchema } from "./plugin-contract.ts";
 
 interface CheckResult {
@@ -49,6 +50,7 @@ const OUTPUT_SCHEMA_ANCHORS = {
   easyeda_control_design: ["operationId", "state", "nextSafeAction"],
   easyeda_control_library: ["capabilities", "operationId", "state"],
   easyeda_control_runtime: ["action", "result"],
+  easyeda_control_validate_closed_symbol: ["result"],
   easyeda_control_native_ui: ["schema", "action", "result", "observations", "authority"],
   easyeda_control_check: ["operationId", "state", "report", "proof", "reportArtifact", "nextSafeAction"],
   easyeda_control_status: ["facade", "upstream"],
@@ -167,6 +169,17 @@ const required = [
   "scripts/native-ui.ps1",
   "scripts/native-ui-controller.ps1",
   "scripts/windows-authority.ps1",
+  "scripts/main-reference/owner-command.ps1",
+  "scripts/main-reference/stdin-decoder.ps1",
+  "scripts/main-reference/OwnedSyntheticJob.cs",
+  "scripts/main-reference/EasyedaClockObservation.cs",
+  "scripts/main-reference/owner-command-v3.ps1",
+  "scripts/main-reference/stdin-decoder-v3.ps1",
+  "scripts/main-reference/native/EasyedaMainReferenceSession.cs",
+  "scripts/build-main-reference-helper.py",
+  "scripts/main-reference-build.json",
+  "server/bin/Easyeda.MainReference.dll",
+  "server/bin/Easyeda.MainReference.build.json",
   "server/bin/easyeda-fd-sanitizer",
   "server/dist/server.mjs",
   "server/dist/upstream-supervisor.mjs",
@@ -207,6 +220,19 @@ check(
     descriptorSanitizerSha256 === DESCRIPTOR_SANITIZER_SHA256,
   `${(descriptorSanitizerInformation.mode % 4096).toString(8)}:${String(descriptorSanitizerInformation.nlink)}:${String(descriptorSanitizerInformation.size)}`,
 );
+
+const mainReferenceHelperPath = join(pluginRoot, "server/bin/Easyeda.MainReference.dll");
+const mainReferenceHelperInformation = await lstat(mainReferenceHelperPath);
+const mainReferenceHelperBytes = await readFile(mainReferenceHelperPath);
+const mainReferenceHelperSha256 = Buffer.from(
+  await globalThis.crypto.subtle.digest("SHA-256", mainReferenceHelperBytes),
+).toString("hex");
+check("main-reference-helper-reviewed-identity",
+  MAIN_REFERENCE_HELPER_IDENTITY !== null && mainReferenceHelperInformation.isFile() &&
+  !mainReferenceHelperInformation.isSymbolicLink() && mainReferenceHelperInformation.nlink === 1 &&
+  mainReferenceHelperInformation.mode % 4096 === 0o644 &&
+  mainReferenceHelperBytes.length === MAIN_REFERENCE_HELPER_IDENTITY.bytes &&
+  mainReferenceHelperSha256 === MAIN_REFERENCE_HELPER_IDENTITY.sha256);
 
 const manifestText = await readFile(manifestPath, "utf8");
 const manifest = pluginManifestSchema.parse(JSON.parse(manifestText));

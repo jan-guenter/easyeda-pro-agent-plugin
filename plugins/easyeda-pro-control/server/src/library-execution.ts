@@ -1,6 +1,7 @@
 /* oxlint-disable import/max-dependencies -- This executor composes existing runtime, journal, checkpoint, artifact and typed-proof modules instead of duplicating their security boundaries. */
 import { join } from "node:path";
-import { archiveExternalEvidence, controlDataDirectory, createOperation, ensureManagedDirectory, listOperationStates, loadOperation, operationPath, publishManagedAttachmentExclusive, reserveEvidencePaths, updateOperation, writePhaseArtifact } from "./artifacts.ts";
+import { archiveExternalEvidence, controlDataDirectory, createOperation, ensureManagedDirectory, loadOperation, operationPath, publishManagedAttachmentExclusive, reserveEvidencePaths, updateOperation, writePhaseArtifact } from "./artifacts.ts";
+import { listQualifiedOperationStates } from "./closed-symbol-terminal-admission.ts";
 import { OPERATION_SCHEMA, assertSubset, buildPlanHash, extractToolPayload, isRecord, isTerminalOperation, newOperationId, sha256Json, validatePrivateFingerprint } from "./core.ts";
 import { decodeExactReadEnvelope } from "./exact-readers.ts";
 import type { DispatchOperationJournal, EasyedaControlEngine, ExpectedContext } from "./engine.ts";
@@ -286,7 +287,7 @@ export class LibraryExecutor {
       throw new Error("Symbol metadata editing requires an inactive target; the active editor source must remain unchanged.");
     }
     if (this.engine.executionAuthorityValidator === undefined) { throw new Error("Retained runtime execution authority is required for tracked library calls."); }
-    const operations = await listOperationStates();
+    const operations = await listQualifiedOperationStates();
     if (operations.some((entry) => !isTerminalOperation(entry))) { throw new Error("Resolve the incomplete transaction before library execution."); }
     if (compiled.documentTypes !== null && !compiled.documentTypes.includes(input.expectedContext.document.documentType)) { throw new Error("Wrong active editor for library/export action."); }
     await this.runtime(input);

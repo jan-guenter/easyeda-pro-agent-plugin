@@ -1,13 +1,14 @@
+import { createSyntheticCompletedPeer, retireSyntheticJournal } from "./helpers/synthetic-journal-retirement.ts";
 /* oxlint-disable import/max-dependencies -- This integration test composes the actual recorder, engine and retained-process fixture with existing navigation contracts. */
 import assert from "node:assert/strict";
 import fsPromises, { readFile } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { basename } from "node:path";
 import { test } from "node:test";
-import { ClosedSymbolNavigationStage } from "../src/closed-symbol-navigation.ts";
+import { ClosedSymbolNavigationStage, assertOriginalClosedSymbolNavigation } from "../src/closed-symbol-navigation.ts";
 import { FAMILY, STEPS, appendClosedSymbolEvent, createClosedSymbolJournal, loadClosedSymbolJournal } from "../src/closed-symbol-journal.ts";
 import type { ClosedJournal, Generation, LaunchGeneration } from "../src/closed-symbol-journal.ts";
-import { listOperationStates, loadOperation, updateOperation } from "../src/artifacts.ts";
+import { listOperationStates } from "../src/artifacts.ts";
 import { loadReviewedCompatibilityManifest, newOperationId, reviewedCompatibilityManifestFingerprint, sha256Json } from "../src/core.ts";
 import { EasyedaControlEngine } from "../src/engine.ts";
 import type { AuthenticatedBridgeDispatchBinding, UpstreamClient } from "../src/engine.ts";
@@ -123,7 +124,7 @@ async function fixture(phase: "edit-open" | "verify-open" = "edit-open"): Promis
     async dispose(): Promise<void> {
       // Test-root cleanup only. No live journal exists. Avoid leaking synthetic
       // Quarantine into later tests sharing this process's isolated root.
-      const current = await loadOperation(originalOperationId); current["state"] = "completed"; current["orphanedCallPossible"] = false; await updateOperation(current);
+      await retireSyntheticJournal(originalOperationId);
     } };
 }
 
@@ -152,6 +153,56 @@ void test("verification open binds ordinal two and its complete retained predece
     assert.equal(retained.events.at(-1)?.step, "verify-open"); assert.equal(retained.events.at(-1)?.generation?.ordinal, 2);
     await assert.rejects(value.stage.openCompanion(value.journal, "verify-open", value.generation, checkpoint), /consumed/u);
   } finally { await value.dispose(); }
+});
+for (const phase of ["edit-open", "verify-open"] as const) {
+  void test(`successful ${phase} result has original engine and operation provenance`, async () => {
+    const value = await fixture(phase);
+    try {
+      const result = await value.stage.openCompanion(value.journal, phase, value.generation, checkpoint);
+      assertOriginalClosedSymbolNavigation(result, value.engine, value.journal.operationId, phase);
+      assert.throws(() => { assertOriginalClosedSymbolNavigation(structuredClone(result), value.engine, value.journal.operationId, phase); }, /owner|phase/u);
+      assert.throws(() => { assertOriginalClosedSymbolNavigation({ ...result }, value.engine, value.journal.operationId, phase); }, /owner|phase/u);
+      assert.throws(() => { assertOriginalClosedSymbolNavigation(result, { ...value.engine }, value.journal.operationId, phase); }, /owner|phase/u);
+      assert.throws(() => { assertOriginalClosedSymbolNavigation(result, value.engine, newOperationId(), phase); }, /owner|phase/u);
+      assert.throws(() => { assertOriginalClosedSymbolNavigation(result, value.engine, value.journal.operationId,
+        phase === "edit-open" ? "verify-open" : "edit-open"); }, /owner|phase/u);
+      assert.throws(() => { assertOriginalClosedSymbolNavigation(value.stage.originalReturn(value.journal.operationId, phase), value.engine, value.journal.operationId, phase); }, /owner|phase/u);
+      assert.equal(value.state.nativeCalls, 1); assert.equal(Object.isFrozen(result), true);
+    } finally { await value.dispose(); }
+  });
+  for (const changed of ["result", "reply"] as const) {
+    void test(`successful ${phase} provenance refuses later nested ${changed} mutation`, async () => {
+      const value = await fixture(phase);
+      try {
+        const result = await value.stage.openCompanion(value.journal, phase, value.generation, checkpoint);
+        assertOriginalClosedSymbolNavigation(result, value.engine, value.journal.operationId, phase);
+        if (changed === "result") { assert.ok(result["context"] !== null && typeof result["context"] === "object"); Reflect.set(result["context"], "extra", true); }
+        else { assert.ok(value.state.returned?.content[0] !== undefined); value.state.returned.content[0].text += " "; }
+        assert.throws(() => { assertOriginalClosedSymbolNavigation(result, value.engine, value.journal.operationId, phase); }, /changed/u);
+        assert.equal(value.state.nativeCalls, 1);
+      } finally { await value.dispose(); }
+    });
+  }
+  for (const setting of ["readinessFailure", "invalidAck"] as const) {
+    void test(`failed ${phase} ${setting} cannot issue successful navigation provenance`, async () => {
+      const value = await fixture(phase); value.state[setting] = true;
+      try {
+        await assert.rejects(value.stage.openCompanion(value.journal, phase, value.generation, checkpoint));
+        assert.throws(() => { assertOriginalClosedSymbolNavigation(value.stage.originalReturn(value.journal.operationId, phase), value.engine, value.journal.operationId, phase); }, /owner|phase/u);
+        const retained = await loadClosedSymbolJournal(value.journal.operationId);
+        assert.throws(() => { assertOriginalClosedSymbolNavigation(retained.events.at(-1)?.data, value.engine, value.journal.operationId, phase); }, /owner|phase/u);
+        assert.equal(value.state.nativeCalls, 1);
+      } finally { await value.dispose(); }
+    });
+  }
+}
+void test("successful navigation assertion refuses absent and non-object inputs", async () => {
+  const fixtureValue = await fixture();
+  try {
+    for (const value of [undefined, null, false, 0, "result", [], {}]) {
+      assert.throws(() => { assertOriginalClosedSymbolNavigation(value, fixtureValue.engine, "missing", "verify-open"); }, /original|owner|phase/u);
+    }
+  } finally { await fixtureValue.dispose(); }
 });
 for (const phase of ["edit-open", "verify-open"] as const) {
   void test(`navigation ${phase} refuses a durable append during its final runtime await`, async (context) => {
@@ -371,18 +422,16 @@ void test("failed navigation result publication retains the original reply befor
 for (const boundary of ["capture", "native-return"]) {
   void test(`existing peer substitution at ${boundary} cannot redirect any journal write`, async () => {
     const value = await fixture();
-    const peer = await fixture();
+    const peer = await createSyntheticCompletedPeer();
     const operationId = value.journal.operationId;
-    const before = await readFile(peer.journal.journalPath);
-    const mutate = (current: string): void => { if (current === boundary) { value.journal.operationId = peer.journal.operationId; } };
+    const peerBefore = await readFile(peer.journalPath);
+    const mutate = (current: string): void => { if (current === boundary) { value.journal.operationId = peer.operationId; } };
     value.state.onBoundary = mutate; value.owner.behavior.afterRequest = mutate;
-    // Both are synthetic unfinished records. Isolation admits only one while
-    // The second remains a byte-invariance target for the redirection test.
-    await peer.dispose();
-    const peerBefore = await readFile(peer.journal.journalPath); assert.notDeepEqual(peerBefore, before);
+    // The unrelated completed peer stays at its original path throughout the
+    // Redirection attempt. It makes no closed-session completion claim.
     try {
       await assert.rejects(value.stage.openCompanion(value.journal, "edit-open", value.generation, checkpoint), /caller journal changed/u);
-      assert.deepEqual(await readFile(peer.journal.journalPath), peerBefore);
+      assert.deepEqual(await readFile(peer.journalPath), peerBefore);
       const original = await loadClosedSymbolJournal(operationId);
       assert.equal(original.events.at(-1)?.kind, boundary === "capture" ? "intent" : "result");
       assert.equal(original.journal.operationId, operationId);

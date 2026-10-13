@@ -131,6 +131,7 @@ void test("runtime starts no helper until explicit launch and forwards normal cl
     prepareClosedSessionClose(): never { throw new Error("synthetic-close-preparation"); },
     requestClosedSessionNormalClose(): never { throw new Error("synthetic-owned-close"); },
     proveClosedSession(): never { throw new Error("synthetic-closed-proof"); },
+    probeClosedSessionTermination(): never { throw new Error("synthetic-closed-probe"); },
     launch(confirmation) { assert.equal(confirmation.confirmLaunch, true); calls.push("launch"); return Promise.resolve(launch); },
     requestNormalClose(input) { assert.deepEqual(input.launch, launch); assert.equal(input.windowHandle, "123"); calls.push("normal-close"); return Promise.resolve(); },
     release() { calls.push("release"); return Promise.resolve(); },

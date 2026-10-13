@@ -1,7 +1,8 @@
 /* oxlint-disable import/max-dependencies -- This coordinator composes the existing journal, runtime, checkpoint and native report proof boundaries. */
 import { join } from "node:path";
 import { z } from "zod";
-import { controlDataDirectory, createOperation, listOperationStates, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "./artifacts.ts";
+import { controlDataDirectory, createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "./artifacts.ts";
+import { listQualifiedOperationStates } from "./closed-symbol-terminal-admission.ts";
 import type { ArtifactDescriptor } from "./artifacts.ts";
 import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, extractToolPayload, isRecord, isTerminalOperation, newOperationId, sha256Json, validateExpectedFingerprint, validatePrivateFingerprint } from "./core.ts";
 import type { DispatchOperationJournal, EasyedaControlEngine, ExpectedContext } from "./engine.ts";
@@ -36,7 +37,7 @@ export type RuleCheckEngine = Pick<EasyedaControlEngine, "assertContext" | "chec
   readonly status: () => Promise<{ stableFingerprint: Value }>;
   readonly upstream: { readonly installedEasyedaBundles?: () => Promise<{ assetsRoot: string }> };
 };
-const dependencies = { createOperation, listOperations: listOperationStates, loadOperation, updateOperation, writePhaseArtifact, verifyProfile: verifyNativeRuleReportProfile };
+const dependencies = { createOperation, listOperations: listQualifiedOperationStates, loadOperation, updateOperation, writePhaseArtifact, verifyProfile: verifyNativeRuleReportProfile };
 export type RuleCheckDependencies = Partial<typeof dependencies>;
 
 function binding(context: ExpectedContext): NativeRuleCheckBinding {

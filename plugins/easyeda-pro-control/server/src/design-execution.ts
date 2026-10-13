@@ -1,7 +1,8 @@
 /* oxlint-disable import/max-dependencies -- This transaction coordinator composes distinct context, journal, source, native and durable-state proof boundaries. */
 import { basename, join } from "node:path";
 import { z } from "zod";
-import { controlDataDirectory, createOperation, listOperationStates, loadOperation, operationPath, readArtifact, scanOperations, updateOperation, writePhaseArtifact } from "./artifacts.ts";
+import { controlDataDirectory, createOperation, loadOperation, operationPath, readArtifact, scanOperations, updateOperation, writePhaseArtifact } from "./artifacts.ts";
+import { listQualifiedOperationStates } from "./closed-symbol-terminal-admission.ts";
 import type { ArtifactDescriptor } from "./artifacts.ts";
 import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, extractToolPayload, isRecord, isTerminalOperation, newOperationId, sha256Text, validateExpectedFingerprint, validatePrivateFingerprint } from "./core.ts";
 import type { DispatchOperationJournal, EasyedaControlEngine, ExpectedContext } from "./engine.ts";
@@ -904,7 +905,7 @@ export class DesignExecutor {
     const compiled = compileDesignAction(operation);
     if (input.expectedContext.document.documentType !== compiled.documentType) { throw new Error("Wrong editor for design action."); }
     if (this.engine.executionAuthorityValidator === undefined) { throw new Error("Launch EasyEDA through the retained runtime supervisor before design writes."); }
-    const operations = await listOperationStates();
+    const operations = await listQualifiedOperationStates();
     const unfinished = operations.filter((entry) => !isTerminalOperation(entry));
     if (unfinished.length > 0) { throw new Error("Resolve the existing incomplete transaction before another design write."); }
     const plan: DesignPlan = { profile: PROFILE, operation, expectedContext: structuredClone(input.expectedContext), expectedFingerprint: structuredClone(input.expectedFingerprint) };

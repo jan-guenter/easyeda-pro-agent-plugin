@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* oxlint-disable import/max-dependencies -- Repository validation checks both native binary identities alongside the existing package, CI and release contracts. */
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { lstat, readFile, readdir } from "node:fs/promises";
@@ -12,7 +13,9 @@ import {
   DESCRIPTOR_SANITIZER_SHA256,
 } from "../server/src/core.ts";
 import { validateReleaseVersionParity } from "./release-version.ts";
+import { MAIN_REFERENCE_HELPER_IDENTITY } from "../server/src/main-reference-helper-identity.ts";
 import { AGENT_DEFAULT_PROMPT, FACADE_TOOL_NAMES, hasPortableMcpLaunch } from "./plugin-contract.ts";
+import { validateCiWorkflow } from "./ci-contract.ts";
 
 import {
   bridgeExtensionManifestSchema,
@@ -49,6 +52,7 @@ const authenticatedBridgeDistPath =
 const authenticatedBridgeDistPrefix = `${authenticatedBridgeDistPath}/`;
 const descriptorSanitizerRelativePath =
   `plugins/easyeda-pro-control/server/bin/${DESCRIPTOR_SANITIZER_FILE_NAME}`;
+const mainReferenceHelperRelativePath = "plugins/easyeda-pro-control/server/bin/Easyeda.MainReference.dll";
 const REVIEWED_CONNECTED_BRIDGE_BUILD_ID = "ded07x99dcxb504";
 const checks: CheckResult[] = [];
 const MAX_REPOSITORY_FILE_BYTES = 8 * 1024 * 1024;
@@ -185,6 +189,17 @@ const required = [
   "scripts/native-ui.ps1",
   "scripts/native-ui-controller.ps1",
   "scripts/windows-authority.ps1",
+  "scripts/main-reference/owner-command.ps1",
+  "scripts/main-reference/stdin-decoder.ps1",
+  "scripts/main-reference/OwnedSyntheticJob.cs",
+  "scripts/main-reference/EasyedaClockObservation.cs",
+  "scripts/main-reference/owner-command-v3.ps1",
+  "scripts/main-reference/stdin-decoder-v3.ps1",
+  "scripts/main-reference/native/EasyedaMainReferenceSession.cs",
+  "scripts/build-main-reference-helper.py",
+  "scripts/main-reference-build.json",
+  "server/bin/Easyeda.MainReference.dll",
+  "server/bin/Easyeda.MainReference.build.json",
   "scripts/plugin-contract.ts",
   "scripts/configure-machine.ts",
   "scripts/launch-machine.ts",
@@ -446,6 +461,17 @@ check(
     .split(/\r?\n/u)
     .includes(`${descriptorSanitizerRelativePath} binary`),
 );
+const mainReferenceHelperPath = join(root, mainReferenceHelperRelativePath);
+const mainReferenceHelperInformation = await lstat(mainReferenceHelperPath);
+const mainReferenceHelperBytes = await readFile(mainReferenceHelperPath);
+check("main-reference-helper-reviewed-identity",
+  MAIN_REFERENCE_HELPER_IDENTITY !== null && mainReferenceHelperInformation.isFile() &&
+  !mainReferenceHelperInformation.isSymbolicLink() && mainReferenceHelperInformation.nlink === 1 &&
+  mainReferenceHelperInformation.mode % 4096 === 0o644 &&
+  mainReferenceHelperBytes.length === MAIN_REFERENCE_HELPER_IDENTITY.bytes &&
+  createHash("sha256").update(mainReferenceHelperBytes).digest("hex") === MAIN_REFERENCE_HELPER_IDENTITY.sha256);
+check("main-reference-helper-gitattributes",
+  gitAttributesSource.split(/\r?\n/u).includes(`${mainReferenceHelperRelativePath} binary`));
 check("plugin-license-self-contained", pluginLicenseSource === rootLicenseSource);
 check(
   "vendored-bridge-license-exact",
@@ -891,6 +917,8 @@ check(
     ciSource.includes('test "$(ulimit -c)" = "0"') &&
     !/uses:\s+[^\s#]+@(?![a-f0-9]{40}\b)/u.test(ciSource),
 );
+const ciContractErrors = validateCiWorkflow(ciSource);
+check("ci-all-shards-required", ciContractErrors.length === 0, ciContractErrors.join("; "));
 check(
   "exact-node-runtime-contract",
   pluginNvmVersion === "24.18.0" &&
@@ -1201,6 +1229,7 @@ for (const relativePath of repositoryPaths) {
 const allowedBinaryPaths = [
   "plugins/easyeda-pro-control/easyeda-bridge-extension/images/logo.png",
   descriptorSanitizerRelativePath,
+  mainReferenceHelperRelativePath,
 ].toSorted();
 check(
   "only-reviewed-release-binaries",

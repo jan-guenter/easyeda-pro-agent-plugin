@@ -16,7 +16,23 @@ adapter. Some are empty in the installed build. Others need a stateful adapter
 because they start dialogs, create additional assets or return before the full
 workflow ends. The last group is engineering work, not an inherent API limit.
 
-## Highest-priority remaining capability
+## Current restriction, October12
+
+Installed030626 and current source block all schematic-page, symbol and PCB
+design transactions, including previously narrow display and wire profiles.
+Eight symbol/page/container metadata operations are also blocked. Source review
+found a shared delayed `project_structures` write that their existing document
+comparisons do not fully model. Footprint routes retain their separate guards.
+The exact affected operations and implementation requirements are in the
+[030626 report](api-coverage-030626-release-2026-10-12.md) and
+[native completion investigation](project-structure-save-completion-2026-10-12.md).
+
+The new internal completion coordinators pass synthetic tests but have not
+restored these routes. The earlier feasibility analysis below explains the
+method-specific work; references to a display exception or admitted metadata
+writer describe its original implementation, not present execution support.
+
+## Earlier schematic-connectivity investigation
 
 Ordinary schematic design transactions are currently blocked by the absence of
 an admitted nonmutating transaction-connectivity proof. This is a functional limitation,
@@ -148,7 +164,7 @@ routes are accounted for separately.
 | `document.page.rename` | Implemented as a project-qualified native task equivalent. The public wrapper retains a mutable tree-row index across awaited work, which can select a different document. | Closed ordinary checkpoint-member page, one clean active sibling, writable local non-V2 branch only. Exact title/header effect and all peer/source invariants; no Save, reopen or UI-caption refresh claim. Disposable connected validation remains pending. |
 | `document.pcb.rename`, `document.schematic.rename` | Public wrappers can update paired CBB/container state. Their contract is broader than a title-only edit. | Implemented through a separate direct project-qualified worker adapter for one closed ordinary target, with every schematic child closed and one other clean PCB active. Strict META shape, duplicate-name checks, independent DOM inventory, complete peer records/clocks/provenance and original-acknowledgment recovery. No public paired rename, Save, reopen, automatic inverse or connected acceptance. See the October11 review. |
 | `document.pcb.delete`, `document.schematic.delete`, `document.page.delete` | Deletion changes hierarchy and board associations. The public page deleter marks a last page for schematic deletion and can add its paired PCB to the deletion set. `deletePcb` returns true after its RPC without checking the RPC result. | Feasible first subset: a closed empty non-last ordinary page, after reviewing awaited worker completion and manager cleanup. Broader support must authorize the entire deletion closure and prove its tombstones/parent changes. Retain a recoverable project backup; creating a new empty document is not an inverse. |
-| `document.pcb.save`, `document.schematic.save` | A standalone Save would bypass the design transaction's pre-dispatch intent and saved/reopened source proof. A second Save after an ambiguous first one is unsafe. Type-1 design commit is additionally blocked by missing safe transaction-topology integration. | Use the maintained original-journal commit for admitted non-type-1 designs. Supporting a general Save requires an original-journal-bound intent and exact pre-save source/durable expectations, not a Boolean endpoint; schematic commit also needs the topology blocker resolved. |
+| `document.pcb.save`, `document.schematic.save` | A standalone Save would bypass the design transaction's pre-dispatch intent and saved/reopened source proof. A second Save after an ambiguous first one is unsafe. Current schematic-page, symbol and PCB commits also lack complete native structure-job completion and SQL-effect proof; broader schematic transactions separately lack a safe nonmutating connectivity proof. | Keep these Save routes blocked. Restore only exact original-journal-bound transaction subsets after proving native completion, complete source/SQL effects and saved/reopened recovery. A Boolean Save endpoint or a prior successful lifecycle does not meet those requirements. Footprint transactions retain their separate restrictions. |
 | `project.rename`, `project.description.modify`, `project.copy`, `project.delete` | The corresponding pinned public implementations are empty or return false. | A dedicated native adapter or deliberate newer-runtime review is required. Merely exposing the method cannot make these pinned bodies work. |
 | `library.device.source.replace`, `library.model3d.source.replace` | The reviewed mounted classes contain no `updateDocumentSource` method. DEVICE metadata and model file storage are different contracts. | Use dedicated DEVICE association/property operations; add a model import/replacement transaction for model files if needed. Do not fabricate a source-replacement API. |
 | `eco.schematic-to-pcb` | Public `pcb_Document.importChanges` opens the ECO workflow. Applying the change set is not the same operation as opening the dialog. | Capture the exact comparison rows/options and UID/pin/pad/net consequences, then add a reviewed apply adapter or guarded native dialog sequence and complete saved/reopened proof. |

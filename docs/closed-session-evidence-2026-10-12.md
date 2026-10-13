@@ -135,6 +135,19 @@ contracts remain required before disposable native execution.
 
 ## Completion work still required
 
+The source-only sequence below is now implemented for locked and aged-unlocked
+ordinary-symbol heads, including saved-content verification, terminal
+publication and read-only historical admission. Automatic head selection now
+uses that attempt's original completed baseline; its private 47-case graph
+batch passed, and the maintained integration is in full regression testing.
+It remains internal. The agent-facing disposable entrypoint, native transport
+validation and complete disposable lifecycle proof are still outstanding.
+Existing writer restrictions remain unchanged.
+
+The paragraphs below retain the earlier implementation plan and its evidence
+limits. They must not be read as a claim that the implemented coordinator has
+already passed native EasyEDA validation.
+
 The internal SQL reader and inactive-target upload observer are now implemented.
 Their contracts and limits are in
 [closed SQL and upload observations](closed-sql-and-upload-observers-2026-10-12.md).

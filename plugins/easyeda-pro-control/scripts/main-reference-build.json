@@ -1,0 +1,73 @@
+{
+  "schema": "easyeda.main-reference-build-inputs.v1",
+  "output": "Easyeda.MainReference.dll",
+  "sdk": {
+    "version": "10.0.111",
+    "url": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.111/dotnet-sdk-10.0.111-linux-x64.tar.gz",
+    "bytes": 239732427,
+    "algorithm": "sha512",
+    "digest": "aae221be96a3b510d5b6fffefc69d8ad2fa595a1430299419316bb71c65f260a457ca9af24d044e1709b28a9118798caafec535ccfe58f7767c5acb735c00392"
+  },
+  "referencePackage": {
+    "name": "Microsoft.NETFramework.ReferenceAssemblies.net48",
+    "version": "1.0.3",
+    "url": "https://api.nuget.org/v3-flatcontainer/microsoft.netframework.referenceassemblies.net48/1.0.3/microsoft.netframework.referenceassemblies.net48.1.0.3.nupkg",
+    "bytes": 20997929,
+    "algorithm": "sha256",
+    "digest": "8a7e348538e7eb91351696911689f49e3d4f63f8bab517432bbe159b8b1104a2"
+  },
+  "references": {
+    "mscorlib.dll": { "bytes": 2731056, "sha256": "6b35530467b914b0b195146ca1d1485ddd219afaad6461103f16f54e952f75a9" },
+    "System.dll": { "bytes": 1477168, "sha256": "2fe343569f794f2ca92ee14a41875571a9f21bf92637b8f8ee86306534209cca" },
+    "System.Core.dll": { "bytes": 256560, "sha256": "94a1fc97eb0d36f13acd209bb7207da504c8be10caf7e5096b2c46e671dc6fe2" },
+    "System.Web.Extensions.dll": { "bytes": 1393712, "sha256": "7512218c4a6a83de0cdbb8a25240b8b5ee542f93ff9b31acfbf9f7399394450e" }
+  },
+  "declaredCompileAssemblyReferenceNames": ["mscorlib", "System", "System.Core", "System.Web.Extensions"],
+  "referencePackageProvenance": {
+    "authorCertificateSha256": "AA12DA22A49BCE7D5C1AE64CC1F3D892F150DA76140F210ABD2CBFFCA2C18A27",
+    "repositoryCertificateSha256": "5A2901D6ADA3D18260B9C6DFE2133C95D74B9EEF6AE0E5DC334C8454D1477DF4",
+    "licenseUrl": "https://raw.githubusercontent.com/microsoft/dotnet/7cdf34dec038c4da4d14735a34ab259704ec4a1e/LICENSE",
+    "licenseSha256": "d4610d405ef708b4af60529fcbe8e61ece6f8a3b9ed1988b6cd0274abd406f97"
+  },
+  "sources": [
+    "AssemblyInfo.cs",
+    "AncestryCalls.Native.cs",
+    "AncestryData.cs",
+    "AncestryDirectoryOpenFrame.cs",
+    "AncestryNative.cs",
+    "AncestryNativeData.cs",
+    "ChildEvidenceData.cs",
+    "EasyedaClockObservation.cs",
+    "EasyedaMainReferenceSession.cs",
+    "FixedChildEvidencePolicy.cs",
+    "FixedFileBackend.cs",
+    "FixedFileBackendPolicy.cs",
+    "FixedFileCreateRequest.cs",
+    "FixedFileData.cs",
+    "FixedFileIoStorage.cs",
+    "FixedFileNative.cs",
+    "FixedFileSession.cs",
+    "FixedLaunchPlatform.Native.cs",
+    "FixedLaunchRecord.cs",
+    "FixedLayoutBackend.Native.cs",
+    "FixedLayoutContext.cs",
+    "FixedLayoutNative.cs",
+    "FixedMainReferenceFiles.cs",
+    "FixedOwnerSecurity.cs",
+    "FixedReadOpenRequest.cs",
+    "FixedScratchLayout.cs",
+    "FixedSourceAncestry.cs",
+    "FixedSourceOpenRecord.cs",
+    "FullLayoutData.cs",
+    "MainReferenceEvidence.cs",
+    "NativeFileFrameCalls.Backend.cs",
+    "NativeFixedFileCreateFrame.cs",
+    "NativeFixedReadOpenFrame.cs",
+    "NativeFrameCalls.Layout.cs",
+    "NativeReadFrameCalls.Backend.cs",
+    "NativeRelativeCreateFrame.cs",
+    "OwnedSyntheticJob.cs",
+    "OwnerSecurityCalls.Native.cs",
+    "OwnerSecurityData.cs"
+  ]
+}

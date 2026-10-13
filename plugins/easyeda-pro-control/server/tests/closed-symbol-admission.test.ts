@@ -1,3 +1,4 @@
+import { createSyntheticCompletedPeer, retireSyntheticJournal } from "./helpers/synthetic-journal-retirement.ts";
 /* oxlint-disable import/max-dependencies -- Exercise the actual engine, runtime, managed recorder and native supervisor behind its synthetic transport. */
 import assert from "node:assert/strict";
 import fsPromises, { readFile } from "node:fs/promises";
@@ -8,7 +9,7 @@ import { ClosedSymbolAdmissionStage } from "../src/closed-symbol-admission.ts";
 import type { AdmissionPhase } from "../src/closed-symbol-admission.ts";
 import { FAMILY, STEPS, appendClosedSymbolEvent, createClosedSymbolJournal, inspectClosedSymbolRestart, loadClosedSymbolJournal } from "../src/closed-symbol-journal.ts";
 import type { ClosedJournal, Generation, LaunchGeneration } from "../src/closed-symbol-journal.ts";
-import { loadOperation, updateOperation } from "../src/artifacts.ts";
+import { updateOperation } from "../src/artifacts.ts";
 import { newOperationId, sha256Json } from "../src/core.ts";
 import { EasyedaControlEngine } from "../src/engine.ts";
 import type { AuthenticatedBridgeDispatchBinding, ClosedSessionAuthorityCapture } from "../src/engine.ts";
@@ -95,7 +96,7 @@ async function fixture(phase: AdmissionPhase = "baseline-admission"): Promise<Fi
   return { engine, journal, launch, operationId, ordinal, owner, phase, runtime, stage, state, upstream, beforeCount,
     captures: (): number => owner.requests.filter((request) => request["action"] === "capture").length,
     async dispose(): Promise<void> {
-      const retained = await loadOperation(operationId); retained["state"] = "completed"; retained["orphanedCallPossible"] = false; await updateOperation(retained);
+      await retireSyntheticJournal(operationId);
     } };
 }
 
@@ -177,8 +178,8 @@ for (const invalid of ["scope", "observer", "runtime", "validator", "stale", "qu
 for (const at of ["guard", "intent", "capture"] as const) {
   for (const mutation of ["operationId", "saved", "plan"] as const) {
     void test(`${mutation} caller mutation at ${at} never contaminates the working journal or existing peer`, async (context) => {
-      const peer = await fixture(), value = await fixture(); await peer.dispose();
-      const peerBytes = await readFile(peer.journal.journalPath);
+      const peer = await createSyntheticCompletedPeer(), value = await fixture();
+      const peerBytes = await readFile(peer.journalPath);
       const mutate = (): void => {
         if (mutation === "operationId") { value.journal.operationId = peer.operationId; }
         else if (mutation === "saved") { value.journal.saved = true; }
@@ -190,7 +191,7 @@ for (const at of ["guard", "intent", "capture"] as const) {
       if (at === "capture") { value.owner.behavior.afterRequest = (action): void => { if (action === "capture") { mutate(); } }; }
       try {
         await assert.rejects(value.stage.admit(value.journal, value.phase), /caller changed/u);
-        assert.deepEqual(await readFile(peer.journal.journalPath), peerBytes);
+        assert.deepEqual(await readFile(peer.journalPath), peerBytes);
         const retained = await loadClosedSymbolJournal(value.operationId);
         assert.equal(retained.journal.saved, false); assert.equal(retained.journal.plan.targetUuid, target);
         assert.equal(value.captures(), at === "capture" ? 1 : 0);

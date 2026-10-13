@@ -11,7 +11,7 @@ import type { ClosedJournal, Generation } from "./closed-symbol-journal.ts";
 import { canonicalJson, isRecord, sha256Json } from "./core.ts";
 import type { EasyedaControlEngine } from "./engine.ts";
 import type { MachineProfile } from "./machine-profile.ts";
-import { assertClosedSessionCopyAuthority } from "./windows-authority.ts";
+import { assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority } from "./windows-authority.ts";
 import type { ClosedSessionTerminationProof } from "./windows-authority.ts";
 
 type Engine = Pick<EasyedaControlEngine, "assertBridgeDispatchAllowed" | "assertRecoveryOperationIsolated" | "upstream">;
@@ -107,6 +107,7 @@ export class ClosedSymbolCopyStage {
       data: { copyReceipt: copy, sqlDigests: { checkpointSha256: inventory.checkpointSha256, schemaSha256: inventory.schemaSha256, logicalSha256: inventory.logicalSha256 } } });
     await current();
     const final = await loadClosedSymbolJournal(operationId);
+    assertCurrentClosedSessionCopyAuthority(proof);
     unchanged();
     requireValue(this.engine.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && scopeReader.call(this.engine.upstream) === undefined,
       "Closed symbol copy scope changed during final journal read.");

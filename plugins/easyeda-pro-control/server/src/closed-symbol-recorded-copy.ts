@@ -4,7 +4,7 @@ import { lstat } from "node:fs/promises";
 import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { controlRootCapability, operationPath } from "./artifacts.ts";
 import type { ClosedFileCopyReceipt } from "./closed-file-copy.ts";
-import { loadClosedSymbolJournal } from "./closed-symbol-journal.ts";
+import { loadClosedSymbolHistoricalPhaseJournal as loadClosedSymbolJournal } from "./closed-symbol-journal.ts";
 import { canonicalJson, isRecord, sha256Json } from "./core.ts";
 import type { MachineProfile } from "./machine-profile.ts";
 import { readExactSqlInventory, readerCompletion } from "./sqlite-inventory.ts";

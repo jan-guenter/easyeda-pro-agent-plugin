@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
+import { createSyntheticCompletedPeer } from "./helpers/synthetic-journal-retirement.ts";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { operationPath } from "../src/artifacts.ts";
 import { canonicalJson, sha256Json } from "../src/core.ts";
 import { appendClosedSymbolEvent, inspectClosedSymbolRestart, loadClosedSymbolJournal } from "../src/closed-symbol-journal.ts";
 import { ClosedSymbolStartupStage } from "../src/closed-symbol-startup.ts";
-import { fixture } from "./helpers/closed-symbol-startup-runtime-fixture.ts";
 import { prepared } from "./helpers/closed-symbol-startup-fixture.ts";
 
 for (const phase of ["baseline-marker-create", "edit-marker-read", "verify-marker-read"] as const) {
@@ -100,7 +100,7 @@ for (const timing of ["before-dispatch", "after-return"] as const) {
 for (const timing of ["capture", "return"] as const) {
   for (const change of ["operationId", "saved", "plan"] as const) {
     void test(`${timing} caller ${change} mutation cannot redirect private working journal or corrupt peer`, async () => {
-      const { value, stage, calls } = await prepared(), peer = await fixture(); await peer.dispose();
+      const { value, stage, calls } = await prepared(), peer = await createSyntheticCompletedPeer();
       try {
         const peerBefore = await readFile(operationPath(peer.operationId));
         const mutate = (): void => {
@@ -116,7 +116,7 @@ for (const timing of ["capture", "return"] as const) {
         assert.equal(retained.journal.saved, false); assert.equal(retained.journal.plan.ownerUuid, "e".repeat(32));
         assert.equal(retained.events.at(-1)?.kind, timing === "return" ? "result" : "intent");
         assert.equal(calls.count, Number(timing === "return"));
-      } finally { await value.dispose(); await peer.dispose(); }
+      } finally { await value.dispose(); }
     });
   }
 }

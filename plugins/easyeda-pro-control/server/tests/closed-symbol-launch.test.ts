@@ -1,3 +1,4 @@
+import { createSyntheticCompletedPeer, retireSyntheticJournal } from "./helpers/synthetic-journal-retirement.ts";
 /* oxlint-disable import/max-dependencies -- The integration test retains the actual engine, runtime, supervisor and artifact contracts. */
 import assert from "node:assert/strict";
 import fsPromises, { readFile } from "node:fs/promises";
@@ -13,7 +14,7 @@ import { EasyedaControlEngine } from "../src/engine.ts";
 import type { AuthenticatedBridgeDispatchBinding } from "../src/engine.ts";
 import { WindowsControlRuntime } from "../src/windows-runtime.ts";
 import type { WindowsControlRuntimeOptions } from "../src/windows-runtime.ts";
-import type { WindowsAuthoritySupervisor } from "../src/windows-authority.ts";
+import type { WindowsAuthorityLaunch, WindowsAuthoritySupervisor } from "../src/windows-authority.ts";
 import { closedSessionFixture } from "./helpers/windows-closed-session-fixture.ts";
 
 const hash = "a".repeat(64), project = "b".repeat(64), target = "c".repeat(32);
@@ -63,7 +64,7 @@ async function fixture(): Promise<Fixture> {
     async dispose(): Promise<void> {
       // Synthetic test-root records only. Do not leave unrelated unfinished
       // Fixtures blocking the next real engine admission check in this worker.
-      const retained = await loadOperation(operationId); retained["state"] = "completed"; retained["orphanedCallPossible"] = false; await updateOperation(retained);
+      await retireSyntheticJournal(operationId);
     } };
 }
 
@@ -164,8 +165,8 @@ for (const kind of ["owned", "released", "launch-unknown", "launching"] as const
 for (const boundary of ["guard", "intent", "launch"] as const) {
   for (const field of ["operationId", "saved", "plan"] as const) {
     void test(`caller ${field} mutation at ${boundary} cannot redirect or poison journal writes`, async (context) => {
-      const value = await fixture(); const peer = await fixture(); await peer.dispose();
-      const peerBefore = await readFile(peer.journal.journalPath); let changed = false;
+      const value = await fixture(); const peer = await createSyntheticCompletedPeer();
+      const peerBefore = await readFile(peer.journalPath); let changed = false;
       const mutate = (): void => {
         changed = true;
         if (field === "operationId") { value.journal.operationId = peer.operationId; }
@@ -181,7 +182,7 @@ for (const boundary of ["guard", "intent", "launch"] as const) {
       if (boundary === "launch") { value.owner.behavior.afterRequest = (action): void => { if (action === "launch") { mutate(); } }; }
       try {
         await assert.rejects(value.stage.launch(value.journal), /caller changed/u); assert.equal(changed, true);
-        assert.deepEqual(await readFile(peer.journal.journalPath), peerBefore);
+        assert.deepEqual(await readFile(peer.journalPath), peerBefore);
         const retained = await loadClosedSymbolJournal(value.operationId);
         assert.equal(retained.journal.operationId, value.operationId); assert.equal(retained.journal.saved, false); assert.equal(retained.journal.plan.operation.patch.name, "Synthetic");
         const expectedEvents = { guard: 0, intent: 1, launch: 2 }; assert.equal(retained.events.length, expectedEvents[boundary]);
@@ -264,6 +265,8 @@ void test("actual runtime uncertain transport leaves intent and launch-unknown w
 for (const failure of ["result-artifact", "result-journal-before", "result-journal-after"] as const) {
   void test(`failed ${failure} publication never makes an acknowledged launch repeatable`, async (context) => {
     const value = await fixture(); let replacements = 0; let injected = false;
+    const launch = value.runtime.launch.bind(value.runtime); let original: WindowsAuthorityLaunch | undefined;
+    context.mock.method(value.runtime, "launch", async (): Promise<WindowsAuthorityLaunch> => { original = await launch(); return original; });
     const link = fsPromises.link, rename = fsPromises.rename;
     context.mock.method(fsPromises, "link", async (...args: Parameters<typeof link>): Promise<void> => {
       if (failure === "result-artifact" && basename(String(args[1])) === "02-baseline-launch-result.json") { injected = true; throw new Error("Synthetic result publication failure"); }
@@ -279,12 +282,96 @@ for (const failure of ["result-artifact", "result-journal-before", "result-journ
     syncBuiltinESMExports();
     try {
       await assert.rejects(value.stage.launch(value.journal), /publication failure/u); assert.equal(injected, true); assert.equal(value.launches(), 1); assert.equal(value.runtime.status().state, "owned");
+      assert.ok(original !== undefined); assert.equal(value.stage.originalLaunch(value.operationId), original);
+      assert.equal(value.stage.originalLaunch("another-operation"), undefined);
       if (failure === "result-journal-before") { await assert.rejects(inspectClosedSymbolRestart(value.operationId), /Unreferenced/u); }
       else { const restart = await inspectClosedSymbolRestart(value.operationId); assert.equal(restart["classification"], failure === "result-artifact" ? "intent-without-result" : "after-result"); }
       await assert.rejects(value.stage.launch(value.journal), /consumed/u); assert.equal(value.launches(), 1);
       const replacement = await fixture(); await replacement.dispose();
       await assert.rejects(replacement.stage.launch(value.journal));
       assert.equal(replacement.launches(), 0); assert.equal(replacement.state.hashes, 0);
+    } finally { context.mock.restoreAll(); syncBuiltinESMExports(); await value.dispose(); }
+  });
+}
+
+void test("bootstrap returns the original runtime token rather than its serialized copy", async (context) => {
+  const value = await fixture(); const launch = value.runtime.launch.bind(value.runtime); let original: WindowsAuthorityLaunch | undefined;
+  context.mock.method(value.runtime, "launch", async (): Promise<WindowsAuthorityLaunch> => { original = await launch(); return original; });
+  try {
+    const result = await value.stage.launch(value.journal); assert.ok(original !== undefined);
+    assert.equal(result.launch, original); assert.equal(value.stage.originalLaunch(value.operationId), original);
+    assert.notEqual(value.runtime.status().launch, original); assert.equal(value.launches(), 1);
+  } finally { context.mock.restoreAll(); await value.dispose(); }
+});
+
+void test("bootstrap refuses an original launch changed during result publication", async (context) => {
+  const value = await fixture(); const launch = value.runtime.launch.bind(value.runtime), link = fsPromises.link;
+  let original: WindowsAuthorityLaunch | undefined;
+  context.mock.method(value.runtime, "launch", async (): Promise<WindowsAuthorityLaunch> => { original = await launch(); return original; });
+  context.mock.method(fsPromises, "link", async (...args: Parameters<typeof link>): Promise<void> => {
+    await link(...args);
+    if (basename(String(args[1])) === "02-baseline-launch-result.json") { assert.ok(original !== undefined); Reflect.set(original.root, "pid", 999); }
+  }); syncBuiltinESMExports();
+  try {
+    await assert.rejects(value.stage.launch(value.journal), /current owner/u);
+    assert.equal(value.stage.originalLaunch(value.operationId), original); assert.equal(value.launches(), 1);
+    const retained = await loadClosedSymbolJournal(value.operationId); assert.notEqual(retained.events[1]?.generation?.rootPid, 999);
+    await assert.rejects(value.stage.launch(value.journal), /consumed/u);
+  } finally { context.mock.restoreAll(); syncBuiltinESMExports(); await value.dispose(); }
+});
+
+void test("bootstrap refuses a durable journal changed after result publication", async (context) => {
+  const value = await fixture(); const open = fsPromises.open, rename = fsPromises.rename; let changed = false, replacements = 0;
+  context.mock.method(fsPromises, "rename", async (...args: Parameters<typeof rename>): Promise<void> => {
+    await rename(...args);
+    if (basename(String(args[1])) === `${value.operationId}.json`) { replacements += 1; }
+  });
+  context.mock.method(fsPromises, "open", async (...args: Parameters<typeof open>): ReturnType<typeof open> => {
+    const file = await open(...args);
+    const info = await file.stat();
+    if (basename(String(args[0])) === "operations" && info.isDirectory()) {
+      const close = file.close.bind(file);
+      context.mock.method(file, "close", async (): Promise<void> => {
+        await close();
+        // The publication path check has completed; mutate only during its
+        // Final directory-handle cleanup, not inside the protected rename.
+        if (replacements === 2 && !changed) {
+          changed = true; const held = await loadOperation(value.operationId); held["hardStop"] = true; await updateOperation(held);
+        }
+      });
+    }
+    return file;
+  }); syncBuiltinESMExports();
+  try {
+    await assert.rejects(value.stage.launch(value.journal), /journal changed/u); assert.equal(changed, true);
+    assert.equal(value.launches(), 1); assert.ok(value.stage.originalLaunch(value.operationId) !== undefined);
+    assert.equal(value.journal.sequence, 0);
+  } finally { context.mock.restoreAll(); syncBuiltinESMExports(); await value.dispose(); }
+});
+
+for (const mutation of ["caller", "scope", "owner", "original-launch"] as const) {
+  void test(`bootstrap ${mutation} drift during final journal read refuses stale admission`, async (context) => {
+    const value = await fixture(); const link = fsPromises.link, open = fsPromises.open, status = value.runtime.status.bind(value.runtime);
+    let armed = false, changed = false, published = false;
+    context.mock.method(fsPromises, "link", async (...args: Parameters<typeof link>): Promise<void> => {
+      await link(...args); if (basename(String(args[1])) === "02-baseline-launch-result.json") { published = true; }
+    });
+    context.mock.method(value.runtime, "status", (): ReturnType<typeof status> => { const actual = status(); if (published) { armed = true; } return actual; });
+    context.mock.method(fsPromises, "open", async (...args: Parameters<typeof open>): ReturnType<typeof open> => {
+      const file = await open(...args);
+      if (armed && !changed && basename(String(args[0])) === `${value.operationId}.json`) {
+        changed = true;
+        if (mutation === "caller") { value.journal.saved = true; }
+        if (mutation === "scope") { value.state.scope = true; }
+        if (mutation === "owner") { await value.runtime.release(); }
+        if (mutation === "original-launch") { const original = value.stage.originalLaunch(value.operationId); assert.ok(original !== undefined); Reflect.set(original.root, "pid", 999); }
+      }
+      return file;
+    }); syncBuiltinESMExports();
+    try {
+      await assert.rejects(value.stage.launch(value.journal), /caller changed|scope|current owner/u);
+      assert.equal(changed, true); assert.equal(value.launches(), 1);
+      assert.ok(value.stage.originalLaunch(value.operationId) !== undefined);
     } finally { context.mock.restoreAll(); syncBuiltinESMExports(); await value.dispose(); }
   });
 }

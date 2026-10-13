@@ -2,9 +2,775 @@
 
 This file is the durable engineering record and common ground for every human or agent working in this repository. Keep it current whenever a requirement, assumption, interface, compatibility tuple, safety boundary, or test result changes. Do not silently turn an open question into a requirement.
 
-Last updated: 2026-10-12 (Europe/Berlin)
+Last updated: 2026-10-13 (Europe/Berlin)
+
+## Current checkpoint
+
+User priority update, 2026-10-13: finish the main implementation, publication and
+installation. Do not expand private test harnesses or adversarial test matrices
+at the expense of integration. Defer additional coverage; retain build, types,
+zero-warning lint, existing release/CI checks and focused disposable end-to-end
+verification before enabling affected editing routes. Production remains out
+of scope. Existing completed operations must not be replayed.
+
+The installed release is still `0.3.0+codex.20261012030626`. Current implementation
+work is unpublished. All type1/2/3 design lifecycles and the eight affected
+metadata writers remain blocked pending native completion proof.
+
+The complete 39-unit native session is now maintained and builds reproducibly
+with the pinned public toolchain. The corrected DLL is 175,104 bytes, SHA256
+378f82d9e92fe74e1f61b13d90472d2f80a1b9959941da7133de08e53c45cd20.
+The v3 byte-loaded PowerShell transport and matching current/historical readers
+are integrated. Both typechecks, strict zero-warning lint and 153 existing
+affected tests and 64 legacy/parity tests pass. CI now checks two-root helper reproducibility, and package
+validation checks the exact DLL identity. No new test matrix was added.
+
+The first complete-helper smoke stopped at CreateProcess with native error 87,
+before a child PID was acknowledged. Its original transport closed with exit 0;
+the returned session correctly refused completion and retained filesystem
+dependencies after the unresolved launch. The failed nonce and residue must
+not be reused. The corrected launch uses DOS names derived from the original
+rechecked drive/GUID mapping while preserving GUID ownership names. A fresh
+standalone run passed in 28.370 seconds: original process exited zero, Job empty,
+109 file closes, 23 layout closes and 11 ancestry closes, no cleanup errors or
+retained dependencies. The actual v3 clock/result validator accepted its output.
+This is native helper qualification with a synthetic request, not a successful
+public disposable callback or editing authorization. No EasyEDA application,
+profile or project was opened by either standalone synthetic-program attempt.
+The real 18-file runtime-copy check had already passed separately.
+
+The preceding full facade suite passed 9,701 tests with one skip and zero failures.
+That result predates this v3 integration. The earlier offline bundle exposes
+27 tools/seven skills. Candidate `0.3.0+codex.20261013054207` is being prepared;
+final publication/install remain pending.
+
+Final short release checks pass on this frozen candidate: facade and bridge
+types, zero-warning strict lint, actionlint, package77, repository179, exhaustive
+coverage774 and all seven skill checks. Source297 projection is da96c5124b04;
+bundle projection is 59730dd11dc0. See
+`docs/api-coverage-054207-release-2026-10-13.md` for scope and remaining work.
+Git staging exposes eleven extra-blank-EOF notices in retained native/legacy
+source and fixtures. They are whitespace notices, not lint warnings; exact
+qualified bytes are retained. No safety or lint check was disabled.
+
+### Earlier qualification history
+
+Private Windows Console input tests and the fixed memory-only security-descriptor
+test now pass. The private descriptor-to-frame successor passes 148 model cases
+and eight source checks, with two genuine old-code failures and three zero-warning
+builds. The private Job accounting successor passes 35 added and 67 unchanged model
+cases, with three genuine old-code failures and four zero-warning builds. The
+paired PowerShell diagnostics pass 17 synthetic Boolean cases on actual PS5.1,
+without executing the native owner. The three-case relative-parent fixture also
+passes seven source checks and 39 model cases. Its x64 Framework-reference EXE
+builds without diagnostics. The first Windows run stopped at its base-path check
+before any case started; it reported one tracked handle closed without failure.
+The exact returned pathname was not captured in that failed run.
+Its parent separately passes 23 pure/source checks and exclusive artifact staging.
+A separate read-only pathname diagnostic passes 16 pure cases and a clean
+Framework-reference build. Its Windows observation now passes: the same retained
+NTFS handle reports a 53-code-unit path ending in lowercase `temp`, which the
+unchanged ordinal `Temp` check rejects. Handle close and pin release succeed;
+all 352 selected inputs remain unchanged. This new observation does not recover
+the failed run's missing pathname. The narrow correction now passes eight source
+checks, 64 parser/binding cases and 39 sequence cases, with three warning-free
+builds. The exact shared regression fails against the original parser and passes
+against the correction. One old invalid-name test changes because lowercase is
+now valid; the other 38 sequence cases are unchanged. All 405 selected inputs
+remain exact. The fresh-nonce native successor compiles without diagnostics;
+all 452 selected inputs remain exact. Its binding check and exclusive staging
+pass. The Windows run then stops during first-case setup at directory enumeration
+with error 5. Nine tracked handles close without failure; no case completes and
+the disposable filesystem residue remains. All 476 selected inputs and staged
+files remain unchanged. The one-bit directory-listing correction passes 33
+focused managed-frame cases and reproduces the old request-contract failure.
+Both builds have zero warnings/errors and all 510 inputs remain unchanged.
+A fresh-root native build passes with no diagnostics and all 68 explicitly
+selected inputs unchanged. Its binding test and exclusive staging pass, followed
+by all three Windows cases: ordinary creation stays at the anchor, creation
+after junction conversion refuses with status -1073741184 and neither destination
+contains the guard, and guard-first conversion refuses with error 145. All 25
+tracked handles close without failure. All 105 selected inputs and both staged
+files remain exact. This qualifies those fixed relative-create cases, not the
+complete scratch layout or executable pathname handoff. Residue is retained.
+The Job fixture passes eight source and 29 decoder checks, reproduces the original
+duplicate-key decoder defect, and builds its child and hash-bound driver EXEs
+without diagnostics. The driver-only build preserves all 88 selected inputs.
+Static child metadata and native declaration review found no concrete x64
+compatibility mismatch. The first Windows Job run passes natural exits zero and
+23, but the descendant case refuses a query with more than two Job members.
+That rejected sample's count and identities were not retained. The forced case
+does not run. Failure cleanup observes root exit, an empty Job and successful
+resource release; this does not make the descendant case pass. All 139 inputs
+and four staged files remain unchanged. The separate C/D-only correction now
+passes eight source and 55 decoder checks, with two genuine old-draft failures.
+It retains complete bounded membership samples without assigning unknown members
+a role. Both result predicates enforce the exact probe history. All 175 selected
+inputs remain unchanged. Its compiled decision model now passes all 33 cases
+with zero warnings/errors and all 194 inputs unchanged. The actual emitter's
+tested maximum shape is 16,915 bytes. Its native child now compiles without
+diagnostics and all 220 selected inputs remain unchanged. The driver bound to
+that exact child also compiles without diagnostics; all 240 inputs remain
+unchanged. Its eight source checks and exclusive four-file staging pass. The
+fresh C/D Windows run now passes both cases: root exit with remaining Job
+members correctly refuses terminality before natural completion, and forced
+termination observes exit 197, an empty Job and successful cleanup. All 263
+inputs and four staged files remain exact. These fixed synthetic cases do not
+qualify EasyEDA, filesystem ownership or the complete native owner. Integration
+and native filesystem qualification remain pending. The private current-TS
+compiler/native-result integration now passes 52 focused cases, strict types
+and type-aware lint with all 168 selected inputs unchanged. It preserves the
+entire invoked transport body and rejects old native results without inventing
+cleanup evidence. Its reviewed 18-file mapping is now maintained, with all
+1,037 unrelated original files and ten protected files unchanged. The fixed
+stdin decoder is packaged and the unconditional native refusal remains. The
+new source projection is e5bd5951 with 294 files, the three-file bundle
+projection is 8c4bbff2 and the manifest is b8280cbc. No external runtime pin,
+installed package or execution gate changed. The complete eleven-directory
+adapter now passes its private 43-case model and six source checks. Both builds
+have zero diagnostics and all 84 selected inputs remain unchanged. Its Windows
+EXE now passes the fixed Windows full11 test after 51 pure input/result checks
+and exclusive staging. It reports 22 completed frames, 23 successful handle
+closes, no cleanup errors or deferred ownership. The original process closed
+zero; all 127 inputs and both staged files remained exact. This qualifies the
+fixed synthetic preparation, not production ancestry or process handoff.
+A separate retained-directory context passes 58
+model cases with a zero-warning build and all 35 inputs unchanged. Its additional
+cross-owner handle-alias successor now passes all 62 cases with another clean
+build and all 35 selected inputs unchanged. Its
+source remains private. The separate fixed-file owner now passes 346 offline
+model cases, with a zero-warning build and all 42 selected inputs unchanged.
+Its model covers every one of 110 acquisition/close slots, uncertain outputs and native
+storage, cross-owner aliases and once-only diagnostic/hash cleanup. The native
+file backend, production ancestry and fixed session remain unfinished. Its
+separate regular-file create frame passes 158 model cases with a warning-free
+build and all 44 inputs unchanged; no real file I/O is covered by that model.
+The ancestry owner also passes 81 model cases and a clean build with all 45
+inputs unchanged. Its native discovery/open/duplicate backend remains refused.
+A fixed byte-loaded DLL is the selected packaging direction. Its complete
+file/session integration and reproducible artifact are still unimplemented.
+The exact public SDK archive checksum and reference-package signature/license
+checks pass. Public and installed distribution toolchains have different bytes;
+the earlier outputs are not public-toolchain builds.
+The public SDK is now deployed into two separate private build roots. All 5,802
+entries and three reference DLLs per root match their archive hashes and private
+modes. Fourteen name checks pass; the original deployment child exits zero and
+all 70 enrolled inputs remain unchanged. No acquired SDK code or compiler ran.
+The one-file adapter now passes 45 composed owner/backend model cases, including
+short I/O, readback, handle transfer and deferred parent cleanup. Its build has
+zero warnings/errors and all 64 selected inputs remain unchanged. The model
+replaces native calls; no Windows file I/O or Framework compatibility is proved.
+The ancestry native adapter also passes 78 owner/backend model cases, seven
+source checks and a warning-free build, with all 59 selected inputs unchanged.
+Those fakes do not qualify Windows discovery, native mappings or handle opens.
+The one-file native selection compiles against Framework 4.8 references without
+diagnostics. After 33 pure checks and exclusive staging, its 84,480-byte EXE
+passes the fixed Windows role-22 case: exact 52-byte write/readback/seal,
+three successful file-handle closes and 23 layout-handle closes. All 111 selected
+inputs and both staged files remain exact. The first pure attempt had a test
+regex parse error; its separate one-character correction did not change native
+code. The read-only ancestry probe also passes 53 pure checks, exclusive staging
+and its Windows run: 18 borrowed source roles, original lease recheck/close,
+11 successful handle closes and no cleanup error. All 88 inputs and both staged
+files remain exact. Neither case opens runtime files or launches EasyEDA.
+The production helper DLL and composed session remain unfinished. Review of the
+new existing-source reader found that clean native failures could lose their
+typed diagnostic record after cleanup. The corrected actual owner now passes
+174 model cases and two shared controls; those same controls compile against
+the old owner and fail on the exact missing-diagnostic assertions. All three
+builds have zero warnings/errors, all 63 inputs remain exact, and all 34 source
+identities are unchanged. This is model evidence, not a native source-open test.
+The full fixed-role writer now passes 102 model cases and a zero-warning build,
+with all 82 run inputs unchanged. These include all 29 created-role mappings,
+streaming hash/progress, alias and cleanup controls; source/child operations
+still refuse. The original ancestry-to-layout lease join is implemented
+privately. Its first model build is clean, but the run stops after158 passes on
+an incorrect test maximum: the literal longest suffix is136, not134. The4352
+capacity is unchanged and adequate; a separate comment/assertion-only successor
+now passes all173 cases with a zero-warning build and all80 inputs unchanged.
+The child inherited-ACL observer passes seven source checks and75
+model cases with a zero-warning build and all81 inputs unchanged. Its native
+Framework-reference EXE also compiles without diagnostics:66,048bytes,
+4db37f5c, all62 inputs unchanged. Its87 pure report/source controls and exclusive
+staging also pass. The sole Windows observation now exits zero in273ms: separate
+creator identity observations, bounded140-byte child descriptor, two successful
+child/token closes,23 layout closes and no unresolved storage. All93 selected
+inputs and both staged files remain exact. Child policy and the Electron producer
+are still unqualified. The separate joined-native probe builds cleanly, but its
+first model case exposes an entry bug: core success uses null, not the wrapper's
+"none" failure string. Its76 inputs and failed result are retained; native
+compilation was not reached. The separate one-comparison correction now passes
+all18 original models plus a non-null-core-failure control, then builds the
+79,872-byte Framework EXE without diagnostics. All96 inputs remain exact.
+The Windows parent's first pure run passes76/77: a test-only key extractor
+excludes digits in the win32 fields. Its separate correction passes77/77,
+exclusive staging, then the sole joined Windows run. That run acknowledges
+22 frames,23 layout closes and11 ancestry closes with no cleanup failure or
+deferred ownership; the original lease is counted in both ledgers. All133
+selected inputs and both staged files remain exact. No runtime file is read.
+The source-streaming backend also passes108
+models and one shared write-error control that fails against the old backend.
+Its three builds have zero warnings/errors and all100 inputs remain exact.
+The separate full-copy entry's first offline run builds cleanly and passes five
+cases, then fails a test helper that treats a definite failed close as uncertain
+native completion. Source review distinguishes a known retained handle from
+an uncertain call. The separate test-only correction passes all17 entry cases
+and the31-source Framework compilation without diagnostics. All124 inputs and
+both output artifacts retain full identities. Its133,632-byte EXE is not the
+production helper DLL; the final DLL size/budget still needs measurement.
+The failed106-input attempt remains preserved. The subsequent fixed Windows
+runtime-copy check now passes in3977ms: all18 pinned runtime files and22 prepared
+files,84 file acquisitions/closes,23 layout closes and11 ancestry closes,
+without errors or retained storage. All77 selected inputs and both staged files
+remain exact. No application is launched; this is preparation, not a complete
+helper lifecycle. The existing92 parent checks also pass.
+The separate child-evidence reader now passes seven source checks and139
+offline model cases with a zero-warning build and all96 selected inputs
+unchanged. It covers exact inherited-permission admission, bounded readiness
+polling, failure-file absence and retained cleanup. Prepared admission is
+explicitly modelled; the original-Job/launch-clock session gate still refuses.
+No Windows producer or complete-helper qualification follows from this result.
+The launch-record/lifetime-latch slice also passes its74 prepared offline cases
+with a zero-warning build and76 unchanged inputs. The complete-session join,
+reproducible helper build and v3 loader are now the implementation priority;
+no further isolated test framework is planned.
+None of these results is composed-helper
+qualification. The ACL fixture observes TokenOwner separately to explain its
+default-owner result; production admission can instead require the actual
+descriptor owner to equal the original session TokenUser, refusing alternatives
+without claiming child-token provenance or adding a token-reopen API.
+These tests did not access a
+production design or enable an editing route. Use the
+[remaining-work checklist](docs/project-structure-save-completion-2026-10-12.md#remaining-work)
+for the full release scope; the detailed entries below retain historical results
+and must not be treated as instructions to replay completed operations.
 
 ## 2026-10-10 API execution follow-through, in progress
+
+### Saved-content and portable-stage integration, in progress
+
+- The follow-up transport and retained-result integration is now maintained.
+  Fourteen reviewed files were mapped exactly, with three later test-only lint
+  adjustments. Both facade typechecks, full strict lint, build and compatibility
+  checks pass: source2928bae24fd and bundle3 10893517. External pins are unchanged.
+  Its first focused run passes304 of305 cases with all1031 inputs unchanged.
+  The only failure is an old source-parity test searching for a removed comment;
+  explicit checked section boundaries fix it, and all six parity cases pass.
+  The actual opaque-launch regression now passes, as do v2 historical replay
+  and resealed downgrade refusal. Native Job termination is not inferred.
+  The single-cache fixture correction also has a genuine old-code readback
+  failure and504 private passes. Its exact three-file test-only mapping is now
+  maintained; the complete package snapshot has1033 inputs. Final types/lint
+  pass. Both additional actual-stage uncertainty cases now pass, preserving all
+  thirteen fields and permanent refusal through late events. The unchanged eight
+  disposable handler cases also pass, including both full history paths, with
+  all1033 package inputs and eight private inputs unchanged. This is synthetic
+  orchestration, not connected native proof. The two stage cases are now mapped
+  as three test files. The resulting focused run passes811/811 tests with all1036
+  inputs unchanged; final types and full strict lint pass. The dormant handler's
+  seven-file mapping is now maintained and independently reviewed, preserving
+  all eight case bodies and all1036 prior files. Its only additional change is
+  an obsolete comment correction. Types/lint/build/compatibility checks pass;
+  all eight maintained cases pass in131.608seconds with all1043 inputs unchanged.
+  The new full eight-shard run passes9609 tests with one platform skip and zero
+  failures; all1043 inputs remain exact. The longest shard took1109.853seconds.
+  Bridge424/types/lint, coverage/package/repository, actionlint and all seven
+  official skill checks pass. Dependency audits verify151 registry signatures
+  and40 attestations, with zero vulnerabilities.
+  Source293bd180f65, manifest36f14c5e; external compatibility pins are unchanged.
+  Native scripts/refusal,
+  execution gates and installed030626 remain unchanged. No live/profile action,
+  publication or installation occurred. The earlier9460-pass full suite covers
+  the prior snapshot, not this follow-up delta.
+
+- Coverage prose now matches the generated030626/current inventory:774 methods,
+  193public subsets/30native equivalents/0lifecycle-only/82blocked/469omitted;
+  routes274guarded/94blocked/2partial. Historical display, wire and metadata
+  implementation descriptions explicitly do not override the current native
+  structure-completion restriction. No route or machine-readable count changed.
+  The private public-tool proposal has root and independent source acceptance;
+  private pure/actual-MCP refusal tests now pass67/67 with clean types and strict
+  lint. Its catalog-overflow control preserves the original64KiB client failure;
+  positive tests use1MiB, with no production transport change. Its exact ten-file
+  mapping is now maintained and independently reviewed; all70 callback/contract
+  tests pass with1048inputs unchanged. Types/fullstrictlint/build/compatibility,
+  coverage/package/repository/privacy checks pass. Source2944f259155/bundle3
+  3a18c278/manifest6188f3c6; all external pins remain unchanged. The catalog now
+  has27tools, with the validation-only tool approval-required. Native refusal
+  and ordinary gates remain unchanged. Concurrent setup/launch tests are recorded
+  below; successful native callback validation remains pending.
+  README and two entry comments were updated separately. The skill-creator
+  guided a narrow extension-validation reference addition about process ownership
+  and actual callbacks; all7 skill checks and the official changed-skill check pass.
+  Installed030626 still has26tools, with no publication/installation this batch.
+  The bundled-startup test's catalog assertions now expect27 and require the
+  validation tool. All3 standalone startup cases pass, followed by61 launcher,
+  shutdown and catalog regressions; each run retains all1048inputs unchanged.
+  Final types and full zero-warning lint pass after that test-only adjustment.
+  The private native Job ledger passes67 fake-core cases
+  and a genuine ignored-close negative control; production declarations compile
+  only. These results are not Windows/.NET Framework qualification.
+  The fixed scratch-layout model compiles with zero warnings/errors, but its
+  first run stops before completing any case: a fixed87-character root name
+  exceeds the draft86-character component bound. All42 inputs remain exact.
+  A separate derived-bound correction reproduces the original cap failure and
+  passes580model cases; all66inputs remain exact. Its refusal-only build stops
+  on12 never-assigned-field errors under warnings-as-errors. Explicit field
+  constructors correct those diagnostics without suppression. A separate run
+  passes580model cases and the unconditional-refusal case; both builds have
+  zero warnings/errors, all92inputs exact and all9children close normally.
+  This remains a Linux model, not a Windows filesystem/launch qualification.
+  The private stdin decoder has
+  97portable passes and zero PowerShell5.1 parse errors. One unsigned UNC script
+  execution was refused by existing RemoteSigned policy before its65 test cases
+  ran. No policy override, retry, evaluator or local-copy workaround was used.
+  Native ownership/cleanup and exclusive scratch-directory work remain private
+  and unqualified. No EasyEDA/design action, publication or installation.
+  Both private PowerShell test scripts now pass parser-only checks on the same
+  5.1 host, with all19inputs and fixed executable unchanged. A separate exact
+  OS-host reader admits its observed two links without changing private-file
+  checks. The subsequent copy-only step refuses at C:\Windows\Temp access,
+  before creation; all three acquired handles close. No script executes and
+  no permission/policy change occurs. Five public setup-race sources have root
+  and independent review; static checks are next, no application run yet.
+  A separate C:\Temp test-copy successor passes exact readback and all6 closes.
+  Its12 synthetic cleanup cases pass on PS5.1; decoder stops after9 at trailing-lf.
+  All37inputs/copies/host unchanged. Source review points to comma/addition
+  precedence in the fixture; decoder remains unchanged pending a separately
+  checked correction. These are language tests, not native ownership proof.
+  Race static successor passes both types and zero-warning strict lint with
+  all1065inputs exact. All five actual SDK race cases pass privately; their exact
+  three-file mapping is now maintained and independently reviewed. The maintained
+  five-case run also passes in5.800seconds with all1051inputs unchanged. It covers
+  both ordinary-launch/validation orderings, concurrent reservation, configuration
+  drift and shutdown, without runtime/native allocation. Both facade types and
+  full strict lint pass with zero warnings. A separate skill-creator correction
+  distinguishes requested capture bounds from verified painted content; all seven
+  packaged skill checks and the official changed-skill check pass. Compatibility
+  source294/bundle3 remains exact. The earlier9609-pass full suite predates this
+  public registration/race delta; a new complete run is being prepared.
+  The capture tool description and README now carry the same paint-completion
+  limitation. An actual discovery assertion fails against the old description;
+  the corrected full capture suite passes18/18 with1051inputs unchanged.
+  Both types and full strict lint pass. Rebuild/check yields source2943a346d4f,
+  bundle3e9b58419 and manifestd2f9b90e, with external pins exactly unchanged.
+  Package/repository/privacy checks pass. The final eight-shard regression now
+  passes9681tests with one platform skip and zero failures. All1051captured
+  package/workflow inputs and431test-file selections remain exact; all eight
+  owned children close0 without containment, in1054.924seconds overall.
+  Root independently checked the complete result and summed all eight logs.
+  This is synthetic isolation evidence, not native EasyEDA qualification.
+  Fresh dependency audits after this full run report zero vulnerabilities,
+  151 verified registry signatures and40 verified attestations.
+  All424bridge tests, bridge types/strictlint,774-method coverage, allseven
+  packaged/official skill checks and actionlint also pass after this rebuild.
+  The fixture-only decoder successor now passes65/65 on PS5.1 with the unchanged
+  decoder, all62inputs/copy/host exact and observed childclose0. It directly
+  confirms the old tuple construction error; twelve cleanup cases are not
+  replayed. Console binding and repeated non-EOF short reads remain unproved.
+  The private native request-frame fragment passes7source/74fake-model/33managed
+  declaration checks; both C#5 builds have zero warnings/errors, all10children
+  close normally and119inputs remain exact. Root review moved cleanup scratch
+  allocation before native resource acquisition. These are portable/declaration
+  checks, not Windows ABI, filesystem, security or pathname-handoff qualification.
+  The separate fixed-security proposal now passes8source/91fake-model/46managed
+  declaration checks. Both C#5 builds have0warnings/errors, all10children close0
+  and145inputs remain exact. Root checked result9895f532 and snapshot54ac0b5d.
+  No native import was invoked; actual Windows construction/cleanup is pending.
+  The separate security harness passes12Linux source/packaging checks, all163
+  inputs exact, originalrunner/childclose0/no failures/kill/stderr. Root checked
+  finala3fc19ab and snapshot53cd1920. Pure packaging measures70003bytes/ae770801;
+  no generated script was written/parsed/compiled/executed. Its exact parser
+  profile remains separate from the unchanged20000-byte Console input bound.
+  A separate compile-only run now builds the exact six C# units as a Linux
+  Library/C#5/net10/x64 assembly with0warnings/errors. All four children close0
+  and178inputs remain exact. Root checked final5ce8611d, snapshot85e32ad7 and
+  independentreview8bc06922. No assembly load/invocation, PowerShell or native
+  call occurred. Primary-source cleanup research finds no demonstrated method-
+  binding defect, so the PowerShell template stays unchanged. Ordinary disposal
+  can swallow file-deletion failures; exception/count observations do not prove
+  all compiler files removed. The cited research note records that limit.
+  The private Console-runner Linux batch reproduces the old mapping failure and
+  three lifetime failures, then passes172/173 candidate tests. All128inputs remain
+  exact. The remaining case expects missing-result despite supplying the wrong
+  child exit; root and independent review confirm exit mismatch takes precedence.
+  Its later no-data/no-write/no-timer assertions were not reached. A separate
+  test-only successor now passes173/173, including those assertions and original
+  error retention. All151inputs remain exact, original runner/childclose0 and no
+  old-control replay. Root read RESULT49113f6a/final4154c62f and checked snapshot
+  df03bddd. This is Linux inert-event evidence, with no Windows invocation.
+  The parser helper has separate unqualified lifetime gaps. Actual13Console
+  cases remain unrun; pure/event tests do not establish Windows pipe behavior.
+  Review of its private successor also caught a falsy-error sentinel join that
+  could mark a failed child or final reproof successful. Both reviewers agree;
+  a separate fixed-error-with-original-cause correction now passes53 actual-body
+  inert cases after eight genuine old-code failures. All187inputs remain exact,
+  originalrunnerd35dea exits0, childrenclose1/1/0 as expected with completeguards,
+  no transportfailure/cleanup/stderr. Root checked finalbdb66f90/snapshotd42b7466
+  and raw controls; independentreview9169bedb accepted source before dispatch.
+  The separate Windows parser run now passes both exact scripts with zero parse
+  errors on PS5.1; both children close0 and all214inputs remain exact. Copy-only
+  preparation then passes exact bytes and all six closes in a new synthetic
+  C:\Temp directory. Neither is execution or native ancestry/ACL proof.
+  The actual Console run stops on its first case before framing: setup failure,
+  case unselected. The bounded report does not identify which setup check failed.
+  Parent refuses the report, requests kill once and observes SIGTERM/nullcode;
+  this is not native family-termination proof. Zero cases are accepted and no
+  later case or retry runs. All214inputs/copies/host remain exact; root read
+  failuree0650972/final1f43cbe7. Source diagnosis continues separately.
+  A separate setup-only diagnostic now locates refusal at the first unchanged
+  args.Count assertion with the exact sole Case parameter and advanced binding
+  observed. Originalrunnerc6f8b7 exits0 after accepting this diagnostic-negative;
+  child3876402 closes2 normally with completeguards/stdin/no cleanup/stderr.
+  All235inputs/copy/host remain exact. No framing/decoder/native action occurred.
+  Root reviewed the full result. The one-line bound-parameter-check successor
+  now passes both parser checks, exclusive copy and all13 Windows Console cases.
+  Originalsession66309 exits0, finalaf21815f; all267 inputs/copies/host and prior
+  receipts remain exact. The cap+1 case closes with stdin still open and a
+  completed180001-byte write. The separate instrumented case proves four positive
+  non-EOF reads1/1/1/211, then zero after EOF. All original child exits match,
+  with complete guards and no failure/cleanup/stderr. Root checked all reports
+  and joined write/ACK events. This qualifies only the fixed Console test path,
+  not native Job/filesystem ownership or an EasyEDA operation. Do not replay.
+  The separate security runner's first Linux inert batch passes131/132 cases,
+  including all12 event cases. One source-test regex incorrectly matches a
+  read-only Get-ExecutionPolicy query. Original95713 exits1 with all214 inputs
+  unchanged. The separate focused test-only correction passes2/2 without
+  replaying the131 passing cases. Original900a2f exits0; all224 inputs remain
+  exact, rawTAPa808d2b6. The security producer and original failed evidence
+  remain unchanged. The separate Windows security stages now pass once each:
+  parserd25fd5, exclusivecopyc737bd and native-memory observationec034d all exit0.
+  Finald8736180 reports successful Framework compilation and descriptor readback,
+  three acquired/unique/released resources, zero failures/aliases/uncertainty.
+  Child3884702 closes0 in720ms with complete guards/stdin/no stderr. Root read the
+  full result and raw scope; all214 parent and233 external inputs remain exact.
+  Compiler-file removal and descendant termination are not proved. No applied
+  file ACL, native filesystem/Job, EasyEDA or design action occurred. The new
+  descriptor-to-frame integration remains a separate private source proposal.
+  A separate private artifacts regression reproduces two internal optional-
+  callback defects: undefined rejection falsely returns a reservation, or leaves
+  a failed attachment file. Current production callers omit those callbacks;
+  no public exploit is established. The narrow two-function candidate passes
+  all20cases, including opaque errors, replacement refusal and descriptor cleanup.
+  Originalrunner10397 exits0; bothchildren close at expected1/0, all307inputs
+  unchanged. Root checked RESULT258adce8/finalb21919e6/snapshot0fd4de63 and both
+  raw TAP files. The exact two-file mapping and narrow static corrections are
+  now maintained. Both facade types and full strict lint pass with zero warnings;
+  all1050 unrelated prior inputs remain exact. Source d5c720e5/test f969ad0b,
+  current1052input snapshot3c646220. Root reviewed all20cases and the full static
+  delta. The focused six-file run now passes103/103 without skips or failures;
+  original58065 exits0 after131.068seconds. All1052inputs/20815057bytes/modes
+  remain exact, independently rechecked by root. Resultb6e67c3a/raw68b34316.
+  Rebuild, facade-only compatibility refresh/check and package validation pass.
+  Root read build86355101 and the complete eight-scalar manifest delta, then
+  independently rehashed all1052inputs/20815375bytes/modes. Only two bundles and
+  the manifest changed; all1049others and external fields remain exact.
+  Source294ee6b41fd/bundle3 87b2859c/manifest062fb5b5. Native refusal unchanged.
+  Root's rebuilt-bundle offline smoke passes all3cases in3.325seconds, original
+  session93729 exits0. It proves27-tool discovery with no upstream/nonstdio socket;
+  all1052inputs remain exact. This is separate from installed/live admission.
+  The earlier maintained9681 result covers the prior snapshot. The October13
+  full maintained npm-test run now passes9701 with one skip and zero failures,
+  496.601seconds; original85601 exits0 in53744d. All1052inputs/20815375bytes/modes
+  remain exact before/after40324b28; rawlog800be1dd. This includes the artifact
+  fix and remains offline evidence, not native qualification or exact GitHub CI.
+  Maintained native assets/refusal, execution gates and installed030626 stay exact.
+  Follow-up capture research confirms that a general facade flush can repair
+  model zIndex and notify model/history listeners. CPU renderI also changes in
+  texture generation, so neither a blanket flush nor that counter establishes
+  a read-only paint witness. The capture research note records those limits;
+  no renderer adapter or live action was added.
+
+- The combined historical admission and locked-only cache are now maintained.
+  All33 files match their independently reviewed mappings, apart from two
+  equivalent test URL spellings corrected for strict lint. Type checks and
+  full type-aware lint pass with zero warnings;251 focused tests pass. A clean
+  npm ci passes. Source290 e4129d85, bundle3 cec88f68 and the refreshed manifest
+  pass compatibility checks. All external pins and unrelated files remain exact.
+  The full eight-shard run now passes9,388 facade tests, with one platform skip
+  and zero failures. All1,002 captured package/workflow files remain exact;
+  the longest shard took918.948seconds. Bridge424, all four type configurations,
+  zero-warning strict lint, coverage/package/repository/actionlint, all seven
+  packaged and official skill validations pass. Fresh dependency audits verify
+  151registry signatures/40attestations and report zero vulnerabilities.
+  Before mapping, three actual synthetic combined cases passed: locked scans
+  used SQL counts18/0 and36/0/0; aged scans stayed cold at18/18, and corrupted
+  evidence blocked admission. Those are isolated synthetic measurements, not
+  connected performance or native execution proof. No publication or installed
+  update is claimed. Current execution gates, installed030626, production
+  exclusions and the native transport's unconditional refusal are unchanged.
+  Follow-up source review found a nonblocking-open omission in both fixed
+  main-reference asset readers; a private FIFO regression/fix is being prepared.
+  Automatic same-attempt head selection is also being prototyped privately.
+  Neither follow-up has changed this verified maintained snapshot.
+  The private paired-reader regression now proves two genuine FIFO timeout
+  failures against the originals, two bounded refusal/close passes after the
+  one-flag fixes, and seven complete source/output parity passes. The exact
+  five-file portable mapping is now maintained: both one-flag fixes and three
+  regression files. All eight maintained FIFO/parity tests, both facade types
+  and owned strict lint pass. The1002-to1005 input comparison shows only those
+  five mapped files changed; manifest/bundle refresh is still pending. Native
+  bytes and command/validator parity remain exact. Automatic selection passes
+  55 parser cases and independent source review. Its47-case actual-stage
+  synthetic batch passes in332.772seconds with all461 inputs unchanged,
+  including both full head profiles, exclusive concurrent ownership and four
+  malformed SQL baselines refusing before reference/edit. Its exact18-file
+  maintained mapping is now integrated and independently reviewed. Together
+  with the FIFO change, all23 mapped outputs match; unrelated files and external
+  compatibility pins remain exact. Both facade types/full strict lint and63
+  pure/FIFO/parity tests pass. Rebuild/check passes with source29184716472,
+  bundle3 9872c484 and manifest a720e034. The full eight-shard suite passes
+  9,460 tests with one platform skip and zero failures; all1022 captured inputs
+  remain exact. The longest shard took1043.675seconds. All424 bridge tests,
+  bridge types/lint and coverage/skills/package/repository checks also pass.
+  The dormant disposable entrypoint's initial private synthetic batch has five
+  passes and three failures. All failures precede launch at the runtime scope
+  check: the inherited fixture uses a placeholder scope while the real index
+  constructs the runtime with the facade hash. A construction-time fixture
+  correction is now applied to four test helpers and passes types/lint and three
+  original-supervisor scope controls. The unchanged eight handler cases now
+  pass six, with two synthetic marker failures: the inherited cache fixture
+  recognizes a fixed namespace instead of the generated one. Its narrow fix is
+  under review; production comparison and nonce generation are unchanged. All
+  inputs stayed exact during both failed runs. Public registration remains
+  pending. The private transport correction passes57 cases after five genuine
+  old-code failures reproduce premature settlement and missing stream guards.
+  The private v2 diagnostic codec passes64 cases and refuses profile downgrade.
+  Both private sources pass types/lint and independent review; stage integration
+  and actual-stage tests remain pending. No native change occurred. Native
+  directory/cleanup findings are documented in
+  `docs/main-reference-native-hardening-2026-10-12.md`. No Windows/native/profile
+  action, publication, installation or execution-gate change occurred.
+
+- Complete locked-profile coordination, terminal publication and historical
+  semantic replay are now maintained internal modules. All 98 coordinator and
+  terminal cases pass, including the unchanged 35 baseline regressions. Exact
+  import-only source/test mapping is retained; both types and strict lint pass.
+  This is synthetic orchestration/SQL proof, not native writer validation.
+- Maintained historical capture/termination/witness tests pass 126 cases and
+  SQL reconstruction passes 49. The current-process SQL-runtime helper passes
+  43 cases, including seven unchanged legacy tests. Its returned executable
+  identity is observed data; every SQL child still revalidates its descriptor.
+  A synthetic fixture permission defect found under umask077 was corrected
+  with explicit modes on its three owned files, without changing runtime guards.
+- The maintained fresh-process restart test passes with its synthetic source
+  absent, both stored journal digests checked, retained files/native-call log
+  unchanged and serialized authority refused. Ordinary CI setup suffices.
+  Independent transparent composition passes all seven required validation
+  paths. Historical replay is current-manifest-only and grants no replay or
+  current owner/source authority. The fixed admission adapter is now maintained
+  and passes 49 cases. Actual synthetic one/two-terminal scans cost 16.142/33.133
+  seconds and spawn 18/36 SQL children. Repeated-guard performance remains under
+  review; no semantic-success cache is implemented. Five default caller guards
+  are integrated, with 118 caller/lifecycle tests passing and all five new cases
+  failing at the expected boundary under the old raw guards. Central engine
+  admission is also integrated with exact legacy-summary extraction and independent
+  review. Its final focused run passes 74 tests; six new reserved-claim tests fail
+  against the old engine. Final types and owned strict lint pass. An intermediate
+  test-root import-order failure was corrected in test setup only. No execution
+  gate is opened by these tests.
+- The final actual synthetic admission test passes through the central engine.
+  One terminal takes 16.384 seconds with 18 SQL children, two take 31.373 seconds
+  with 36. Maximum heartbeat gaps are 53.4/42.0 milliseconds. These are offline
+  fixture measurements, not connected latency or native execution proof.
+  All four typechecks and full strict facade/bridge lint pass without warnings.
+- The rebuilt bundle and compatibility check pass. Source has 270 files at
+  390ece19 and runtime has three at c35fc64d. External compatibility pins are
+  unchanged by exact deep comparison. The full eight-shard run finished with
+  all 911 plugin/workflow inputs unchanged: 8,408 tests, 7,998 passes, 409 failures
+  and one platform skip. It exposed synthetic cleanup that falsely marked old
+  closed-session journals completed, now correctly refused by admission, and
+  early module loading before test profile hooks. Root is correcting test
+  isolation with byte-preserving retirement and real unrelated completed peers.
+  A fixed lazy inspector import is independently reproduced and under review.
+  No runtime check is relaxed; the release remains unverified.
+- The fixture corrections and fixed lazy import are now maintained. Retirement
+  preserves synthetic journal bytes and inode outside the active scan. The five
+  peer-redirection suites use unrelated ordinary completed journals at their
+  original paths. Independent review found one missed launch peer; correcting
+  it clears all 42 launch/loading tests. The earlier seven-file run has 213
+  passes and 27 cascading launch-fixture failures, retained as intermediate
+  evidence. Final facade types and full test/admission strict lint pass.
+  Rebuild and compatibility check pass with source270 e1d6bcc5 and runtime3
+  2d70450d, external pins unchanged. The full eight-shard rerun is underway
+  against 914 frozen inputs. No publication, installation or live proof yet.
+- That rerun exposed a further test-only cleanup mismatch: a SQL fixture
+  temporarily changes TMPDIR, while retirement compares against its current
+  value. The single-case reproduction stops at that assertion before its
+  intended wrong-owner check. A private fix is under review; the frozen inputs
+  have not changed. Two completed shards pass 1,344 and 1,144 tests so far.
+- Private aged-history witness/clock/SQL replay passes all 140 scoped cases.
+  Its stricter native-capture reuse rejects a self-resealed impossible calendar;
+  the existing complete locked terminal already rejects that calendar. These
+  leaves do not yet establish an aged coordinator, terminal or native lifecycle.
+  A private evidence collector is also under review for repeated admission
+  cost. It grants no completion or runtime authority, and no success cache is
+  integrated. Neither private work changes public capability or execution gates.
+- The eight-shard rerun is complete: 8,412 tests, 8,409 passes, two cleanup
+  failures and one platform skip, with all 914 inputs unchanged. Both failures
+  reproduce the same TMPDIR mismatch. Retaining the preload root fixes both
+  original tests; the actual one/two-terminal scan again proves 18/36 SQL
+  children without restored authority. The six new cleanup regressions and
+  three original helper tests pass, both facade typechecks and strict owned
+  lint are clean. An intermediate import-path mistake in the newly mapped test
+  is corrected and retained separately. This is incremental verification, not
+  a final release pass. The reviewed historical aged modules are being mapped;
+  their full graph tests await the next source/bundle manifest refresh.
+- The reviewed 22 historical and 11 request/fingerprint/claim files are now
+  maintained with exact body mapping. Their focused checks pass 112 historical
+  pure cases and all 123 request/claim/fingerprint cases; both types and owned
+  strict lint pass. Rebuild and compatibility checks pass with source280
+  73e89150, unchanged runtime3 2d70450d and manifest a6348973. All 33 mapped
+  files remain exact and external compatibility pins match the original review.
+  All 323 historical cases pass, with all 33 mapped files and protected files
+  unchanged. Independent request/claim review repeats all 80 cases. A genuine
+  resealed executable-path contradiction is fixed by one exact path/hash check
+  against independently baseline-bound source; all 47 affected cases pass.
+  Rebuild now has source280 64278e2e and manifest 52413e18, unchanged runtime
+  and external pins. Private collector FIFO and cleanup-error precedence fixes
+  pass 156 tests and independent source review. Its second actual retained-graph
+  composition passes: cold replay15.558s/18SQL children, enrollment2.129s and
+  revalidation2.093s/zeroSQL children, each with four Node-version probes.
+  All64 roles/62files/18sidecar checks pass without changing journal bytes.
+  This is locked-v1 synthetic evidence collection, not a semantic-success cache.
+  Private aged coordination passes four actual-stage cases; strict v2 shape
+  passes130, and the exact-profile phase loader preserves the original locked
+  coordinator and terminal tests. Private aged terminal final8/8 and fresh-process
+  source-absent replay1/1 pass, without restoring authority or changing retained
+  bytes. All27 reviewed lifecycle files are now maintained with exact mappings,
+  including the package-relative pinned-v1 test and private-loader-free restart.
+  Pure148, both facade types and owned strict lint pass. Rebuild/checks pass with
+  source283 d85d60df, bundle3 85e5cef8 and manifestca57ec38; all27mapped/seven
+  protected files and external pins remain exact. Maintained aged coordinator4,
+  baseline/restart4 and terminal8 pass. Full facade/bridge types and strict lint,
+  coverage/package/repository/seven-skill checks and424 bridge tests pass.
+  All255 old locked coordinator/terminal regressions pass, with all27 mapped
+  and seven protected files unchanged afterward. The private cache wrapper
+  passes90 mocked-boundary tests after genuine red controls reproduced both
+  post-observation await ordering and masked contradiction errors. Root and
+  independent review accept those fixes. Exact dual-profile admission passes
+  150 scoped cases and source review. Its actual retained-v2 composition passes
+  once in89.813s: source-absent engine admission uses18 SQL children; corrupt
+  reference evidence blocks both adapter and engine. Retained bytes/call logs
+  and fixed input hashes remain unchanged. Actual private cache composition
+  also passes once in104.502s. Cold/warm/corrupt/restored-cold/warm SQL counts
+  are18/0/0/18/0; repeat checks take1.949/2.046s against16.700s cold enrollment.
+  All64roles/62files and native call logs pass their scoped comparisons. The
+  deliberate corruption is restored without claiming unchanged timestamps.
+  Combined admission is under review, with no measured connected speed claim.
+  No maintained cache or execution gate is enabled.
+- Fresh dependency audit passes for the installed locked tree:151 registry
+  signatures and40 attestations verify, with zero reported vulnerabilities.
+  PR9 remains draft at remote6fc2a7dc; its passing CI is for that older payload,
+  not these uncommitted changes. Publication and installation are still pending.
+- Bootstrap follow-up is independently accepted with 41 cases repeated. The
+  maintained native-profile reader also passes an independent 7-case run.
+- Navigation now issues an original successful-result token only after its
+  final checks. Raw replies, result copies, wrong owners/phases and mutated
+  evidence refuse. All 70 navigation tests pass; the 11 new cases pass independently.
+  Test-only type/lint corrections follow that full run; the focused 11-case
+  rerun and strict lint pass. No new navigation action or public route was added.
+- Source-qualified pending-close observations and a synchronous current-copy
+  owner check are integrated. All 136 focused cases pass, plus the 10 runtime mock
+  cases; strict owned-file lint and bridge-stub types pass. The pending loop
+  recognizes only original matched native liveness refusals and never repeats
+  Close. All four repository typechecks and strict facade/bridge lint pass for
+  this integrated batch, with zero warnings. This is not a full verification run.
+- The saved-content source issuer passes five original-stage cases. Its fixed
+  64-KiB observer and unchanged 8-MiB legacy compiler pass 148 cases. Native-parser
+  differential work reproduced and corrected an older-tombstone metadata-ticket
+  mismatch, with 247 private cases passing. Native extraction stays private;
+  portable tests do not read an installed vendor bundle.
+- Witness/write/SQL/source stages are integrated with one original-object
+  registry. Witness/endpoint 53 cases and writer 20 cases pass; the SQL/source batch
+  passes 554 cases including 58 actual-stage and 115 preexisting regressions. Two
+  reproduced final-await lifecycle races are fixed in copy and SQL comparison.
+- The saved-read orchestrator is integrated. All 20 maintained adversarial cases
+  pass, with both typechecks and strict lint clean. The original private 20-case
+  run also passes; its two test-only lint findings were corrected in the maintained
+  copy. Five isolated worker files preserve every original test body and avoid
+  repeatedly scanning earlier cases' retained journals. No production check or
+  evidence retention is weakened. The reader retains the complete bounded raw
+  reply separately from the phase journal and compares it with authenticated
+  raw SQL history. This does not prove execution in EasyEDA.
+- The private full coordinator passes 11 cases through the complete 44-event
+  flow and failure boundaries. Its native replies/effects are synthetic; this
+  does not prove native writer/parser execution. The aged-head extension passes
+  47 new cases and 53 unchanged locked-path cases, with independent source review.
+  Maintained aged/reference integration now passes 433 focused cases and 53
+  unchanged locked-path regressions. Both typechecks and strict lint pass.
+  Source and temporary packaged bundle produce identical compiler descriptors,
+  without invoking a native transport. All three native script assets retain
+  their exact bytes, including the unconditional refusal.
+- SQL comparison now retains the original process-exit clock observation in
+  phase 27, bound to its existing relation hash. Verification retains null.
+  The new historical replay case and 28 existing clock tests pass, with main
+  types and targeted strict lint clean. No original authority is reconstructed.
+  Independent review accepts the retained observation and package asset checks.
+- The strict terminal shape and recursion-free historical phase reader are
+  integrated. All 124 tests pass, including the unchanged 37 recorded-copy/root
+  regressions, fresh-process structural replay and late terminal replacement.
+  Both types and strict lint pass. The reader returns the actual stored journal
+  and explicitly leaves terminalOutcomeVerified false. The separately maintained
+  semantic verifier and original completion issuer are described above.
+- CI now has eight serial facade-test shards and an unconditional final
+  test-build gate requiring success of both the build checks and all shards.
+  Protected-main requirements are unchanged. The 35 contract/regression tests,
+  main types, strict lint and actionlint pass. Tests execute all 25 dependency
+  result combinations and a real eight-shard isolated fixture. Full-suite shard
+  timings are now retained; remote CI for this batch is not yet established.
+  All four repository typechecks and full strict facade/bridge lint also pass
+  after this integration, with zero warnings. This is not a full test/build run.
+- The complete facade source suite finished in eight local shards against a
+  frozen tree and the existing bundle. All 686 captured source/test/script files
+  remained exact. Results are 8,032 tests, 7,973 passes, 58 stale-manifest failures
+  and one platform skip. One core and 57 engine failures all report the old
+  reviewed-source manifest mismatch. The post-refresh core/engine run passes
+  105 tests with one platform skip and no failures, clearing all 58 refusals.
+  This is not a release pass. The longest local shard took 17.2 minutes.
+  CI shard jobs now allow 30 minutes including setup/build; child deadlines and
+  required gate are unchanged. All 24 updated CI contract tests, types, strict
+  lint and actionlint pass; independent review accepts the narrow budget change.
+- Private historical witness/SQL composition passes six cases with unchanged
+  managed journal bytes and native-call log. A separate fixed native capture
+  parser passes 66 cases, including a reproduced invalid-calendar refusal gap.
+  Whole-terminal semantic review is complete for the locked profile. The initial fresh-process
+  test stopped before terminal publication on an inconsistent synthetic facade
+  fingerprint; the fixture was corrected without changing production equality.
+  The subsequent fresh-process test passes with its synthetic source absent,
+  retained evidence unchanged and serialized authority rejected. This predates
+  final strict termination-parser integration and is not live validation.
+- The intermediate maintained build and compatibility check pass, with source
+  259 files at 59b0dc5d and runtime three files at f59d3faa. External pins remain
+  exactly 69a0bb0b. Package/repository/skill/coverage checks and all 424 bridge
+  tests pass. This intermediate build predates the later terminal semantic integration.
+- No full release verification, route, execution-gate or coverage change,
+  publication or installation is claimed for this dirty batch. Installed 030626
+  remains unchanged. Production and its record are excluded. No live action,
+  native cleanup, Save or project recovery is pending.
+
+### Bootstrap original-return follow-up, in progress
+
+- The first-launch stage now retains and returns the original runtime receipt,
+  including after result publication fails. It checks that original against the
+  recorded copy and current runtime, then reloads the durable journal before its
+  final synchronous caller/scope/owner checks. The one-launch-only guard stays
+  unchanged. All 41 focused tests, both facade typechecks and strict type-aware
+  lint pass. Source bfe1be8d, test ed803913, passing log 55220890.
+- The original-return and changed-reply regressions fail against the old source.
+  A corrected late-journal mutation also reproduces acceptance by the old source,
+  log 2e9af020. Two earlier injection timings hit existing path-identity guards;
+  those are not evidence of this defect. Private review notes retain that distinction.
+- This delta is independently reviewed but not yet bundled or fully verified.
+  The unchanged private six-file native-source verifier is also integrated, with
+  seven portable tests covering byte limits, immutable pins and wrong/missing/
+  aliased source refusals. Its types and strict lint pass. Those tests do not
+  claim synthetic bytes match installed vendor sources; local source qualification
+  remains separate evidence.
+  Exact-literal clock qualification, pending-close polling, saved-content replay
+  and the complete coordinator remain private work. No route, execution gate,
+  coverage classification, publication or installation changed. Installed 030626
+  is unchanged. Production and its record remain excluded; no CAD action is pending.
 
 ### Worker-bound compiler, clock and integrity fixes, locally verified
 

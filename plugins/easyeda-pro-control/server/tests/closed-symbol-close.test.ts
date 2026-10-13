@@ -1,3 +1,4 @@
+import { retireSyntheticJournal } from "./helpers/synthetic-journal-retirement.ts";
 /* oxlint-disable import/max-dependencies -- This integration suite exercises the actual managed store, engine, runtime and supervisor together. */
 import assert from "node:assert/strict";
 import fsPromises, { readFile } from "node:fs/promises";
@@ -7,7 +8,6 @@ import { test } from "node:test";
 import { ClosedSymbolCloseStage } from "../src/closed-symbol-close.ts";
 import { ClosedSymbolBootstrapLaunchStage } from "../src/closed-symbol-launch.ts";
 import { FAMILY, appendClosedSymbolEvent, createClosedSymbolJournal, loadClosedSymbolJournal } from "../src/closed-symbol-journal.ts";
-import { loadOperation, updateOperation } from "../src/artifacts.ts";
 import { newOperationId, sha256Json } from "../src/core.ts";
 import { EasyedaControlEngine } from "../src/engine.ts";
 import type { AuthenticatedBridgeDispatchBinding } from "../src/engine.ts";
@@ -70,7 +70,7 @@ async function fixture(): Promise<Fixture> {
   return { stage, journal, generation, capture, runtime, owner, upstream, state, engine, operationId,
     input: { journal, generation, capture, phase: "baseline-close" as const, windowHandle: "12345" },
     calls: (action: string): number => owner.requests.filter((request) => request["action"] === action).length,
-    async dispose(): Promise<void> { const loaded = await loadOperation(operationId); loaded["state"] = "completed"; loaded["orphanedCallPossible"] = false; await updateOperation(loaded); },
+    async dispose(): Promise<void> { await retireSyntheticJournal(operationId); },
   };
 }
 

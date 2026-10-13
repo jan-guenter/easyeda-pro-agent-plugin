@@ -9,6 +9,10 @@ import type { EasyedaControlEngine } from "../src/engine.ts";
 import type { controlRootCapability, createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
 import { runNativeUiWithOperationAdmission } from "../src/native-ui-admission.ts";
 
+// Keep these synthetic reserved claims literal. Importing the journal module
+// Here would bind artifacts before before() selects this test's private root.
+const FAMILY = "easyeda-pro-control.project-symbol-closed-session.v1";
+
 let previousRoot: string | undefined, root = "", sequence = 0;
 let artifacts: { controlRootCapability: typeof controlRootCapability; createOperation: typeof createOperation;
   loadOperation: typeof loadOperation; operationPath: typeof operationPath; updateOperation: typeof updateOperation; writePhaseArtifact: typeof writePhaseArtifact };
@@ -42,6 +46,34 @@ async function fixture(overrides: UnknownRecord = {}): Promise<{ engine: Easyeda
   const engine = new engines.EasyedaControlEngine({ callTool: (): Promise<never> => Promise.reject(new Error("No live call is allowed.")) });
   await engine.controlFingerprintPromise;
   return { engine, id, journal };
+}
+
+const terminalClaims = [
+  { state: "completed", profile: FAMILY },
+  { state: "rolled-back", profile: FAMILY },
+  { state: "reconciled-no-mutation", profile: FAMILY },
+  { state: "plan-invalidated", profile: FAMILY },
+  { state: "completed", profile: FAMILY.replace(".v1", ".v2") },
+  { state: "completed", profile: "synthetic.legacy", terminalArtifact: null },
+];
+async function checkTerminalClaim(claim: typeof terminalClaims[number]): Promise<void> {
+    const plan = { profile: claim.profile };
+    const { engine, id } = await fixture({ plan, planHash: buildPlanHash(plan), state: claim.state,
+      orphanedCallPossible: false, ...(Object.hasOwn(claim, "terminalArtifact") ? { terminalArtifact: claim.terminalArtifact } : {}) });
+    const original = await readFile(artifacts.operationPath(id));
+    await assert.rejects(engine.assertBridgeDispatchAllowed(), /dispatch is quarantined/u);
+    await assert.rejects(engine.observeStatusAdmission(), /dispatch is quarantined/u);
+    await assert.rejects(engine.assertNativeUiEditingAllowed(), /before native UI edits/u);
+    await assert.rejects(engine.assertRecoveryOperationIsolated("other"), /not isolated/u);
+    const reports = await engine.recover();
+    assert.equal(reports.length, 1);
+    assert.equal(reports[0]?.operationId, id);
+    assert.equal(reports[0]?.state, "terminal-evidence-invalid");
+    assert.equal(reports[0]?.hardStop, true);
+    assert.deepEqual(await readFile(artifacts.operationPath(id)), original);
+}
+for (const claim of terminalClaims) {
+  void test(`reserved terminal claim blocks every engine admission view: ${claim.profile}/${claim.state}/${String(claim.terminalArtifact)}`, () => checkTerminalClaim(claim));
 }
 
 void test("bridge, recovery and reporting share identical-byte projections without reparsing full journals", async () => {

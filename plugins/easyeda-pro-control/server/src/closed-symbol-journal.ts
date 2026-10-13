@@ -1,6 +1,8 @@
 /** Internal data recorder. No runtime, dispatch, restored brand or completion grant. */
 import { join } from "node:path";
-import { createOperation, loadOperation, operationPath, readArtifact, readExactUtf8Artifact, updateOperation, writePhaseArtifact } from "./artifacts.ts";
+import { TERMINAL_STATE, parseClosedSymbolTerminalArtifact } from "./closed-symbol-terminal-shape.ts";
+import { reconstructProfiledClosedSymbolTerminalPredecessor } from "./closed-symbol-terminal-profiles.ts";
+import { controlRootCapability, createOperation, loadOperation, operationPath, readArtifact, readExactUtf8Artifact, updateOperation, writePhaseArtifact } from "./artifacts.ts";
 import type { ArtifactDescriptor } from "./artifacts.ts";
 import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, isErrnoException, isRecord, sha256Json } from "./core.ts";
 import type { TrackedDispatchOperationJournal } from "./engine.ts";
@@ -192,6 +194,7 @@ function assertJournal(input: unknown): asserts input is ClosedJournal {
   requireValue(isRecord(input), "Closed journal missing.");
   const selected = plan(input["plan"]);
   requireValue(input["schema"] === OPERATION_SCHEMA && typeof input["operationId"] === "string" && input["journalPath"] === operationPath(input["operationId"]) && input["planHash"] === buildPlanHash(selected) && input["closedPlanSha256"] === sha256Json(selected) && input["markerSha256"] === sha256Json(selected.marker), "Closed journal plan binding differs.");
+  requireValue(!Object.hasOwn(input, "terminalArtifact"), "Nonterminal closed journal cannot carry a terminal artifact.");
   requireValue(input["state"] === "closed-session-recording" || input["state"] === "closed-session-evidence-recorded", "Closed journal cannot declare completion.");
   requireValue(input["saved"] === false && input["reopened"] === false && typeof input["orphanedCallPossible"] === "boolean" && typeof input["hardStop"] === "boolean" && typeof input["mutationMayHaveOccurred"] === "boolean" && typeof input["mutationState"] === "string" && typeof input["nextSafeAction"] === "string" && typeof input["updatedAt"] === "string" && !Object.hasOwn(input, "context") && !Object.hasOwn(input, "preCheckpoint"), "Closed journal tracked state refused.");
   requireValue(Array.isArray(input["artifacts"]) && typeof input["sequence"] === "number" && Number.isSafeInteger(input["sequence"]) && input["sequence"] >= 0 && input["sequence"] <= STEPS.length * 2 && input["artifacts"].length === input["sequence"], "Closed journal artifact count differs.");
@@ -217,8 +220,8 @@ export async function createClosedSymbolJournal(operationId: string, input: unkn
     nextSafeAction: "Inspect evidence only; this recorder grants no dispatch or completion authority.", sequence: 0, createdAt: timestamp, updatedAt: timestamp, artifacts: [] };
   await createOperation(journal); return journal;
 }
-export async function loadClosedSymbolJournal(operationId: string): Promise<{ journal: ClosedJournal; events: readonly PhaseEvent[] }> {
-  const journal = await loadOperation(operationId); assertJournal(journal);
+async function readClosedSymbolPhasePrefix(journal: unknown): Promise<{ journal: ClosedJournal; events: readonly PhaseEvent[] }> {
+  assertJournal(journal); const operationId = journal.operationId;
   const events = await readEvents(journal);
   if (journal.sequence < STEPS.length * 2) {
     const position = expected(journal.sequence + 1);
@@ -228,6 +231,35 @@ export async function loadClosedSymbolJournal(operationId: string): Promise<{ jo
     throw new Error("Unreferenced next phase artifact requires read-only investigation; never replay.");
   }
   return { journal, events };
+}
+export async function loadClosedSymbolJournal(operationId: string): Promise<{ journal: ClosedJournal; events: readonly PhaseEvent[] }> {
+  return readClosedSymbolPhasePrefix(await loadOperation(operationId));
+}
+/** Data-only terminal structure and phase validation; never call full terminal inspection here. */
+export async function loadClosedSymbolHistoricalPhaseJournal(operationId: string): Promise<{
+  journal: ClosedJournal; predecessor: ClosedJournal; events: readonly PhaseEvent[]; terminalOutcomeVerified: false;
+}> {
+  await controlRootCapability(false);
+  const stored = await loadOperation(operationId);
+  if (stored["state"] !== TERMINAL_STATE) {
+    const prefix = await readClosedSymbolPhasePrefix(stored);
+    return { ...prefix, predecessor: prefix.journal, terminalOutcomeVerified: false };
+  }
+  const terminalArtifact = parseClosedSymbolTerminalArtifact(stored["terminalArtifact"], operationId);
+  const raw = await readExactUtf8Artifact(terminalArtifact);
+  const value: unknown = JSON.parse(raw.text);
+  const predecessor = reconstructProfiledClosedSymbolTerminalPredecessor(stored, value);
+  assertJournal(predecessor);
+  const events = await readEvents(predecessor);
+  // Reconstruction preserves every other field. This assertion narrows the
+  // Actual stored record after the unchanged predecessor shape was checked.
+  assertTerminalStoredJournal(stored, predecessor);
+  return { journal: stored, predecessor, events, terminalOutcomeVerified: false };
+}
+function assertTerminalStoredJournal(value: unknown, predecessor: ClosedJournal): asserts value is ClosedJournal {
+  requireValue(isRecord(value) && value["state"] === TERMINAL_STATE && canonicalJson(value["plan"]) === canonicalJson(predecessor.plan) &&
+    value["closedPlanSha256"] === predecessor.closedPlanSha256 && value["markerSha256"] === predecessor.markerSha256 &&
+    value["operationId"] === predecessor.operationId, "Terminal stored journal type binding differs.");
 }
 /** Data recording only. Pass the same actual journal used by tracked dispatch. */
 export async function appendClosedSymbolEvent(journal: ClosedJournal, input: AppendInput): Promise<void> {

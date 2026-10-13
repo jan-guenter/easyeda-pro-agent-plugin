@@ -1,5 +1,6 @@
 /* oxlint-disable import/max-dependencies -- Integration deliberately exercises real storage, checkpoint, SQL and retained authority leaves. */
 import assert from "node:assert/strict";
+import { createSyntheticCompletedPeer } from "./helpers/synthetic-journal-retirement.ts";
 import { createHash } from "node:crypto";
 import fsPromises, { readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
@@ -8,9 +9,7 @@ import { test } from "node:test";
 import { ClosedSymbolCopyStage } from "../src/closed-symbol-copy.ts";
 import { copyFixture } from "./helpers/closed-symbol-copy-fixture.ts";
 import type { Fixture } from "./helpers/closed-symbol-copy-fixture.ts";
-import { appendClosedSymbolEvent, createClosedSymbolJournal, loadClosedSymbolJournal } from "../src/closed-symbol-journal.ts";
-import { updateOperation } from "../src/artifacts.ts";
-import { newOperationId } from "../src/core.ts";
+import { appendClosedSymbolEvent, loadClosedSymbolJournal } from "../src/closed-symbol-journal.ts";
 import { assertIssuedClosedFileCopy } from "../src/closed-file-copy.ts";
 import { readerCompletion } from "../src/sqlite-inventory.ts";
 import { syntheticSqlRuntime } from "./helpers/sqlite-inventory-fixture.ts";
@@ -127,8 +126,8 @@ for (const boundary of ["after-checkpoint", "after-copy"] as const) {
 
 for (const boundary of ["intent", "copy"] as const) {
   void test(`caller peer redirection at ${boundary} cannot overwrite the peer journal`, async (context) => {
-    const value = await copyFixture(); const peer = await createClosedSymbolJournal(newOperationId(), value.journal.plan);
-    peer.state = "completed"; await updateOperation(peer); const peerBytes = await readFile(peer.journalPath);
+    const value = await copyFixture(); const peer = await createSyntheticCompletedPeer();
+    const peerBytes = await readFile(peer.journalPath);
     const link = fsPromises.link; let changed = false;
     const mutate = (): void => { changed = true; value.journal.operationId = peer.operationId; value.journal.saved = true; };
     if (boundary === "intent") {

@@ -1,9 +1,9 @@
+import { retireSyntheticJournal } from "./synthetic-journal-retirement.ts";
 import assert from "node:assert/strict";
 import { ClosedSymbolAdmissionStage } from "../../src/closed-symbol-admission.ts";
 import type { AdmissionPhase } from "../../src/closed-symbol-admission.ts";
 import { FAMILY, STEPS, appendClosedSymbolEvent, createClosedSymbolJournal } from "../../src/closed-symbol-journal.ts";
 import type { ClosedJournal, Generation, LaunchGeneration } from "../../src/closed-symbol-journal.ts";
-import { loadOperation, updateOperation } from "../../src/artifacts.ts";
 import { newOperationId, sha256Json } from "../../src/core.ts";
 import { EasyedaControlEngine } from "../../src/engine.ts";
 import type { AuthenticatedBridgeDispatchBinding } from "../../src/engine.ts";
@@ -90,6 +90,6 @@ export async function fixture(phase: AdmissionPhase = "baseline-admission"): Pro
   return { engine, journal, launch, operationId, ordinal, owner, phase, runtime, stage, state, upstream, beforeCount,
     captures: (): number => owner.requests.filter((request) => request["action"] === "capture").length,
     async dispose(): Promise<void> {
-      const retained = await loadOperation(operationId); retained["state"] = "completed"; retained["orphanedCallPossible"] = false; await updateOperation(retained);
+      await retireSyntheticJournal(operationId);
     } };
 }

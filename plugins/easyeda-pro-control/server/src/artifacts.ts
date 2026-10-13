@@ -914,6 +914,7 @@ export async function publishManagedAttachmentExclusive(
   beforePathRevalidation?: () => Promise<void>,
 ): Promise<PublishedManagedAttachment> {
   const opened = await createManagedFileExclusive(path, label);
+  let failed = false;
   let failure: unknown;
   let published: PublishedManagedAttachment | undefined;
   try {
@@ -957,9 +958,10 @@ export async function publishManagedAttachmentExclusive(
     }
     published = { ...hashed, kind: kind.slice(0, 64) };
   } catch (error) {
+    failed = true;
     failure = error;
   }
-  if (failure !== undefined) {
+  if (failed) {
     try {
       await unlinkManagedFile(opened, `${label} failed publication`);
     } catch (cleanupError) {
@@ -974,16 +976,25 @@ export async function publishManagedAttachmentExclusive(
     await closeManagedFile(opened);
   } catch (closeError) {
     failure =
-      failure === undefined
-        ? closeError
-        : new AggregateError(
+      failed
+        ? new AggregateError(
             [failure, closeError],
             `${label} handle cleanup was incomplete.`,
             { cause: failure },
-          );
+          )
+        : closeError;
+    failed = true;
   }
-  if (failure !== undefined) {
-    throw toError(failure);
+  if (failed) {
+    let normalized: Error;
+    try {
+      normalized = toError(failure);
+    } catch {
+      normalized = new Error("Evidence attachment publication failed.", {
+        cause: failure,
+      });
+    }
+    throw normalized;
   }
   if (published === undefined) {
     throw new Error(`${label} publication produced no descriptor.`);
@@ -1014,6 +1025,7 @@ export async function reserveEvidencePaths(
   const createdAt = new Date().toISOString();
   let resultFile: OpenManagedFile | undefined;
   let receiptFile: OpenManagedFile | undefined;
+  let failed = false;
   let failure: unknown;
   try {
     resultFile = await createManagedFileExclusive(
@@ -1045,9 +1057,10 @@ export async function reserveEvidencePaths(
       "Evidence receipt reservation",
     );
   } catch (error) {
+    failed = true;
     failure = error;
   }
-  if (failure !== undefined) {
+  if (failed) {
     const cleanupErrors: unknown[] = [];
     for (const file of [receiptFile, resultFile]) {
       if (file) {
@@ -1063,7 +1076,7 @@ export async function reserveEvidencePaths(
         ? failure
         : new AggregateError(
             [failure, ...cleanupErrors],
-            `Evidence reservation failed and cleanup was incomplete: ${errorMessage(failure)}`,
+            "Evidence reservation failed and cleanup was incomplete.",
             { cause: failure },
           );
   }
@@ -1075,15 +1088,21 @@ export async function reserveEvidencePaths(
       });
     }
   }
-  if (failure !== undefined || closeErrors.length > 0) {
-    if (failure !== undefined && closeErrors.length === 0) {
-      throw toError(failure);
+  if (failed || closeErrors.length > 0) {
+    if (failed && closeErrors.length === 0) {
+      let normalized: Error;
+      try {
+        normalized = toError(failure);
+      } catch {
+        normalized = new Error("Evidence reservation failed.", { cause: failure });
+      }
+      throw normalized;
     }
     throw new AggregateError(
-      failure === undefined ? closeErrors : [failure, ...closeErrors],
-      failure === undefined
-        ? "Evidence reservation handle cleanup was incomplete."
-        : `Evidence reservation failed and handle cleanup was incomplete: ${errorMessage(failure)}`,
+      failed ? [failure, ...closeErrors] : closeErrors,
+      failed
+        ? "Evidence reservation failed and handle cleanup was incomplete."
+        : "Evidence reservation handle cleanup was incomplete.",
       { cause: failure },
     );
   }

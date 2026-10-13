@@ -787,13 +787,15 @@ void describe("published facade contracts", { concurrency: false }, () => {
     assert.equal(limit["maximum"], 100);
   });
 
-  void test("published design and SDK descriptions distinguish lifecycle refusal from retained read guards", async () => {
+  void test("published descriptions distinguish execution limits and unverified capture framing", async () => {
     const beforeCalls = await readFile(upstreamCallLogPath, "utf8"), listed = await client.listTools();
     const design = listed.tools.find((tool) => tool.name === "easyeda_control_design");
     const sdk = listed.tools.find((tool) => tool.name === "easyeda_control_sdk_read");
-    assert.ok(design); assert.ok(sdk);
+    const imageTool = listed.tools.find((tool) => tool.name === "easyeda_control_capture");
+    assert.ok(design); assert.ok(sdk); assert.ok(imageTool);
     assert.equal(design.description, "Discover typed design schemas and inspect retained transactions. Schematic-page, symbol and PCB execution is unavailable pending operation-owned completion and exact SQLite proof of native Save's delayed project-structure writes; sealed display/wire profiles are also blocked. Type-4 footprint operations retain their existing native-preflight, scope and save/reopen guards. Historical evidence and pure argument validation do not authorize execution. A retained contained runtime is required for enabled paths; arbitrary JavaScript is never accepted.");
     assert.equal(sdk.description, "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity, property-name, Pin-getter, Text, Wire/Bus, configured font titles, filtered PCB net-membership and PCB identity-type observations, plus native active-layer identity with public layer fields; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.");
+    assert.equal(imageTool.description, "Request a PNG of the visible canvas, a canvas region or schematic sheet bounds. Region and full-page modes change the visible viewport but not design data. Valid image bytes and requested geometry do not prove target paint completion or page completeness; inspect the actual image before visual review.");
     assert.equal(await readFile(upstreamCallLogPath, "utf8"), beforeCalls, "description discovery must not dispatch upstream");
   });
 

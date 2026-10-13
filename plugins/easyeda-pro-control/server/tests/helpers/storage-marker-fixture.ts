@@ -37,6 +37,8 @@ export function initialProject(): Bag {
     ownerData: { nickname: "", uuid: "" }, projectManagerName: "", settings: undefined, branchUuid: "", branchNum: undefined, isV2Format: undefined };
 }
 export function fixture(): Fixture {
+  // The single cache starts with the legacy seed name; only actual open binds a new one.
+  let openedCacheName = cacheName;
   // The callbacks run only after the circular fixture has been assembled.
   // oxlint-disable-next-line eslint/prefer-const
   let state: Fixture;
@@ -70,13 +72,18 @@ export function fixture(): Fixture {
     }
   }
   class SyntheticStorage {
-    public has(name: string): Promise<unknown> { assert.equal(this, state.storage); return emit("has", this, [name], state.exists); }
-    public open(name: string): Promise<unknown> { assert.equal(this, state.storage); state.exists = true; return emit("open", this, [name], state.cache); }
+    public has(name: string): Promise<unknown> { assert.equal(this, state.storage); return emit("has", this, [name], state.exists && name === openedCacheName); }
+    public open(name: string): Promise<unknown> {
+      assert.equal(this, state.storage);
+      assert.ok(!state.exists || name === openedCacheName, "SyntheticStorage supports only its one existing namespace");
+      openedCacheName = name; state.exists = true;
+      return emit("open", this, [name], state.cache);
+    }
     public match(key: string, options: unknown): Promise<unknown> {
       assert.equal(this, state.storage);
       assert.ok(options !== null && typeof options === "object");
       const requestedName: unknown = Reflect.get(options, "cacheName");
-      const entry = state.exists && requestedName === cacheName ? state.entries.get(key) : undefined;
+      const entry = state.exists && requestedName === openedCacheName ? state.entries.get(key) : undefined;
       let value: unknown;
       if (state.response !== undefined) { value = state.response(); }
       else if (entry !== undefined) { value = response(entry); }

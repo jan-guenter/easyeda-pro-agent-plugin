@@ -2,6 +2,264 @@
 
 ## Current implementation status
 
+October 13 delivery update: the complete native helper and v3 transport are now
+implemented. Two independent public-toolchain builds produced the same 175,104-byte
+DLL. Both TypeScript checks, strict lint and 153 existing integration tests pass.
+The first standalone native smoke stopped at process creation with Windows
+error 87, before a PID was acknowledged. It refused completion and retained the
+affected dependencies. DOS launch names derived from the original rechecked
+drive/GUID mapping corrected that compatibility issue without changing GUID
+ownership or retrying the failed attempt. A fresh standalone run completed in
+28.370 seconds with a zero exit, empty Job, complete cleanup and accepted native
+clock/result evidence. Its request was synthetic. Successful public disposable
+callback validation remains separate. Installed editing restrictions are unchanged.
+Additional test expansion is deferred at the user's request; implementation,
+focused disposable verification and release/install take priority.
+
+The paragraphs below preserve earlier implementation and verification history.
+
+The internal locked-head and aged-unlocked-head coordinators, saved-content
+reader, terminal publication and historical verification are now implemented.
+Historical admission selects the matching verifier. Its locked-head cache
+rechecks the complete retained evidence on each use; aged-head verification
+always performs a full scan. None of these historical results restores live
+ownership or permits an operation to be replayed.
+
+The preceding integration passed the full facade suite: 9,388 tests, one
+platform skip and no failures, with all 1,002 inputs unchanged. The subsequent
+automatic selector and paired FIFO-reader fixes are now maintained. They pass
+strict types, zero-warning type-aware lint, 63 focused tests, 424 bridge tests
+and package, coverage, repository and skill checks. Rebuild and compatibility
+checks pass. The new full suite passes 9,460 tests with one platform skip and
+zero failures; all 1,022 captured inputs remain unchanged.
+
+Automatic selection uses the completed original baseline within the same
+attempt; it neither retries the baseline nor falls back after refusal. Its
+private actual-stage batch passed all 47 cases before mapping. These tests use
+synthetic application effects and real local SQL readers, not native EasyEDA
+execution. All affected execution routes remain blocked.
+
+The disposable validation entrypoint was first maintained as an internal module
+before public wiring. Correcting its fixture's construction-time
+scope clears the three original prelaunch failures. Six of its eight cases then
+pass; the other two expose a fixed-name cache fixture that cannot model the
+entrypoint's generated namespace. That test-only correction is now maintained
+after one genuine old-code failure and 504 private passes. All eight unchanged
+handler cases now pass, including both history paths, with the complete 1,033-file
+package snapshot unchanged. No production comparison or nonce is weakened.
+Its seven-file portable mapping preserves all eight case bodies and passes
+independent review, types, strict lint, build and compatibility checks. All eight
+maintained cases pass in 131.608 seconds, with all 1,043 inputs unchanged. The
+full suite passes 9,609 tests with one platform skip and zero failures; all 1,043
+captured inputs remain exact. Bridge tests (424), types, strict lint, package,
+repository, coverage, actionlint and all seven official skill checks also pass.
+Dependency audits report zero vulnerabilities and verify 151 registry signatures
+and 40 attestations. That full-suite snapshot predates public registration.
+
+The private public-callback candidate now passes strict types, zero-warning
+type-aware lint and all 67 tests. Those tests include strict input/output
+handling and four actual SDK-client cases. A negative control reproduces a
+64 KiB test-client overflow on the 224,137-byte catalog; the positive tests use
+a bounded 1 MiB client. No production transport limit changed. These results
+cover refusal and reservation behavior, not successful native execution.
+The exact ten-file public integration is now maintained and independently
+reviewed. All 70 callback/contract tests pass with all 1,048 package/workflow
+inputs unchanged. Types, zero-warning strict lint, rebuild, compatibility,
+coverage, package and repository/privacy checks pass. External compatibility
+pins remain unchanged. The extension-development skill now includes the helper
+ownership and public-callback testing lessons; all seven skill checks pass.
+Five actual SDK setup/launch race cases now pass privately and from their
+independently reviewed maintained mapping. They cover both ordinary-launch and
+validation orderings, two concurrent validation calls, configuration drift and
+shutdown. The maintained run retains all 1,051 inputs unchanged. Both facade
+typechecks and full strict type-aware lint pass without warnings. These cases
+refuse before native allocation; successful native execution remains pending.
+The installed package is unchanged and still exposes the earlier 26-tool catalog.
+The updated standalone bundle passes all three startup cases, including exact
+27-tool discovery without source dependencies or live startup. A further 61
+launcher, shutdown and offline-catalog regressions pass. Both runs retain all
+1,048 package/workflow inputs unchanged. Final types and strict lint pass after
+the bundled-startup catalog assertion update.
+
+The earlier completed eight-shard run passes 9,681 tests with one platform
+skip and zero failures. All 1,051 captured package/workflow inputs, the 431-file
+test selection and runtime identities remain unchanged. All eight returned
+children close successfully without containment; the run takes 1,054.924
+seconds. This includes public registration, the five setup races and the
+capture-description correction. It remains synthetic validation, not a
+successful native callback or a completed EasyEDA transaction.
+
+A subsequent two-function artifact-cleanup fix is now maintained. It preserves
+opaque callback failures, including `undefined`, while attempting resource
+cleanup before error formatting. Its separate private regression reproduced two
+old failures and passed all 20 corrected cases. Both maintained facade typechecks
+and full strict lint pass. The six-file maintained runtime run passes all 103
+tests with no skips or failures; all 1,052 package/workflow inputs remain exact. The
+9,681-pass full suite covers the preceding snapshot, not this new source delta.
+Bundle regeneration, the facade-only compatibility refresh/check and package
+validation pass. Only two bundles and the manifest changed; external runtime
+pins and all 1,049 other captured inputs remain unchanged. No publication or
+installation occurred.
+All three rebuilt-bundle offline startup tests also pass, including 27-tool
+discovery without an upstream process or bridge socket. The complete 1,052-input
+snapshot remains unchanged afterward. This does not establish native execution.
+
+The October13 full maintained facade run includes that artifact fix and passes
+9,701 tests with one skip and zero failures, cancellations or todos. It finishes
+in 496.601 seconds. All 1,052 package/CI inputs remain byte- and mode-identical
+before and after. This supersedes the earlier full-suite count for that
+snapshot. It predates the native-v2 mapping and does not establish native
+execution or final GitHub CI.
+
+Transport uncertainty and its v2 retained diagnostic record are now maintained.
+Types, strict lint, rebuild and compatibility checks pass. A 305-case focused
+run passes 304, including actual-stage opaque launch failure and historical
+downgrade refusal. The sole failure is an obsolete comment delimiter in a source
+parity test; checked boundaries correct it and all six parity cases then pass.
+Two further actual-stage cases also pass for drain expiry and incomplete guards
+despite observed close. They preserve diagnostics and permanent refusal after
+late events. Their three-file portable mapping is maintained. The resulting
+focused run passes all 811 tests, with all 1,036 inputs unchanged; both type
+checks and full strict lint pass. The 9,609-pass full suite above includes this
+integration and the maintained disposable entrypoint. Native
+Job closure remains separate from child-process closure or a termination request.
+The aged-head native transport still has an unconditional refusal.
+Removing it requires a reviewed transport implementation and separate native
+validation. A successful narrow ordinary-symbol metadata case would not
+validate the other metadata operations or schematic/PCB geometry Save.
+
+### Remaining work
+
+The passing suite above covers the maintained internal implementation, not a
+finished native lifecycle. The remaining work is:
+
+1. Finish successful public disposable-validation callback testing. The maintained
+   70-test integration and five actual SDK concurrency/configuration/shutdown cases
+   pass. Complete the positive native callback path separately from the existing
+   internal-entry tests; refusal-only race passes do not establish that path.
+2. Finish the native helper and its end-to-end qualification. The fixed Windows
+   Console, memory-only security-descriptor, process/Job and three relative-create
+   cases have passed. The private compiler/result integration also passes 52
+   focused tests, strict types and lint. Earlier failures and exact test limits
+   remain in the [native hardening record](main-reference-native-hardening-2026-10-12.md).
+   The work still required is:
+
+   - Keep the maintained stdin, process cleanup and native-result integration
+     covered as the helper changes. Its 44-file regression group now passes
+     600 tests, including the 52 new cases, with no failures or skips. The 1,055
+     selected inputs remain exact against the during-test snapshot. Strict
+     types/lint, rebuild, package checks and offline startup also pass.
+   - Integrate retained ownership with the file/process session. The full
+     eleven-directory adapter passes six source checks, 43 offline model cases,
+     two clean builds and its fixed Windows test, with 22 frames and 23 successful
+     handle closes. The separate retained-context model and cross-owner alias
+     extension pass 62 cases with a clean build. Pending or uncertain calls
+     must retain every parent and memory resource they might still use.
+   - Implement the fixed file owner, retained write-to-read handoff and exact
+     scratch ancestry. The private file-owner state machine now passes 346
+     offline model cases and a zero-warning build, with all 42 inputs unchanged;
+     the file-create frame passes 158 cases and the ancestry owner passes 81.
+     The one-file backend/session composition also passes 45 model cases and a
+     clean build, with all 64 inputs unchanged. Its separate fixed Windows case
+     now passes exact write/readback/seal and all three file-handle closes,
+     after 33 pure checks. The ancestry backend passes 78 model cases and seven
+     source checks, then its separate Windows probe passes all 18 parent-role
+     borrows, lease settlement and 11 handle closes after 53 pure checks.
+     Neither probe copies runtime files or launches an application.
+     Prove the final Electron pathname
+     handoff while its parent
+     directories and file locks remain held through process/Job settlement.
+     The existing C:\Temp test premise does not qualify production scratch or
+     installed-source ancestry.
+     Finish the 18 existing runtime-file opens and bounded streaming copy/hash
+     backend, the child-receipt inherited-permission check, and fixed readiness
+     polling/final failure-file absence checks. The one-shot receipt reader is
+     not a polling API. These pieces must share the original retained ancestry,
+     layout, file and process owners through settlement. The source-open owner
+     diagnostic-retention correction now passes 174 model cases plus two shared
+     controls that fail with the old owner. Native source opening and the
+     original ancestry-to-layout lease join still need native validation; the
+     joined-owner model now passes173 cases after an exact test-bound correction.
+     Child-file admission must validate the actual descriptor against the
+     retained session identity. The diagnostic fixture observes TokenOwner
+     separately to explain its default-owner result; production admission need
+     not add a token-reopen API or claim that provenance.
+     The observer now passes75 model cases and seven source checks, with a clean
+     build and81 unchanged inputs. Its native Framework-reference compilation
+     also passes without diagnostics and with62 unchanged inputs. After87 pure
+     checks, the fixed Windows observation now passes with93 unchanged inputs,
+     two child/token closes and23 layout closes. Its bounded descriptor remains
+     observation-only; the child policy, receipt reader and actual Electron
+     producer qualification remain unfinished. The joined-native probe's first
+     model case exposed a null-versus-"none" entry contract bug. A separate
+     correction now passes19 entry models and a clean native compilation,
+     preserving the original failed result. The source-streaming backend passes
+     108 models and a genuine old-failing/new-passing write-error control with
+     three clean builds and100 unchanged inputs. Its successful real-source
+     preparation and child-reader integration remain pending.
+     The joined Windows parent's first pure run passes76 of77 checks; its
+     source-key test incorrectly excludes digits in `win32Error` fields.
+     A separate test-only successor preserves the failed result and all native
+     bytes, then passes77 checks, exclusive staging and the sole joined Windows
+     run. It reports22 frames,23 layout closes and11 ancestry closes with no
+     errors or deferred cleanup. The original lease is counted in both ledgers.
+     All133 selected inputs and both staged files remain unchanged; no runtime
+     file is opened and no application is launched.
+     The source-copy entry now passes17 offline cases and a clean Framework
+     build; real runtime copying is still pending. The separate child reader
+     passes seven source checks and139 offline models with96 unchanged inputs.
+     Those modelled prepared states do not qualify an Electron producer or
+     the still-refused complete-session Job/launch-clock join.
+   - Package a fixed byte-loaded DLL with a pinned, reproducible build and test
+     its bounded hash-checked loader. The
+     [build research](windows-native-helper-build-research-2026-10-13.md) supports
+     this direction. Public SDK checksum and reference-package signature/license
+     verification now pass. Two private SDK deployments also pass complete
+     archive/tree hash and mode checks, without running acquired code. The
+     artifact, loader and CI recipe remain unfinished.
+   - Qualify the composed helper, application clock and failure cleanup on the
+     actual Windows runtime before removing the native refusal. Passing isolated
+     native cases does not prove their composition or an EasyEDA lifecycle.
+3. Run the complete closed-symbol metadata case on a disposable project,
+   including original process termination, complete SQL/source comparisons,
+   reopen and retained failure recovery. A successful first case covers only
+   its exact operation and context.
+4. Extend completion and persistence proofs across all eight affected metadata
+   actions: `library.symbol.create`, `library.symbol.modify`,
+   `document.page.create`, `document.page.rename`, `document.pcb.create`,
+   `document.pcb.rename`, `document.schematic.create` and
+   `document.schematic.rename`. Then cover schematic-page, symbol and PCB design
+   lifecycles. Add exact
+   forward, inverse, ambiguous-return and recovery tests for each admitted
+   subset before restoring its execution route. Broader schematic connectivity
+   needs its own nonmutating proof; no compiled-netlist SaveAll fallback.
+5. Complete the method-specific work in the
+   [feasibility inventory](api-execution-feasibility-2026-10-10.md): asset
+   deletion/copy, initialized library assets, document hierarchy creation/copy/
+   deletion, source replacement, external model/library changes, ECO and
+   operation-specific exports. Implement feasible bounded subsets and retain a
+   concrete omission reason for the rest. Symbol deletion and capture/paint
+   completion remain separate investigations.
+6. Reconcile the exhaustive API inventory, capability claims, examples and all
+   task skills against actual implementation and connected evidence. Historical
+   successful cases must not be presented as current route availability.
+7. Freeze the final source, regenerate bundles and compatibility projections,
+   run full regression/lint/types/security/privacy/package/skill checks and
+   obtain GitHub CI for that exact payload.
+8. Publish and merge through the protected workflow, install from the GitHub
+   marketplace, verify packaged bytes and modes plus offline discovery, and
+   perform fresh-host connected admission where required. Do not patch a loaded
+   cache or terminate a host-owned gateway to force pickup.
+
+The production design and its project record remain outside this work. No
+EasyEDA action, Save or recovery is pending. The native tests described above
+use standalone synthetic helpers, not the application or a design.
+
+### Earlier implementation milestones
+
+The following milestones describe earlier snapshots, not the current list of
+unfinished internal modules.
+
 The affected execution routes remain blocked. Internal source now includes
 retained whole-session captures, stable closed-file copies, a bounded complete
 SQL reader, an ordinary-symbol SQL comparator, startup/worker observations,

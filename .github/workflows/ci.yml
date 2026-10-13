@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-build:
+  verify-build:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
 
@@ -115,6 +115,12 @@ jobs:
         working-directory: plugins/easyeda-pro-control
         run: npm run sanitizer:check
 
+      - name: Check reproducible Framework native helper
+        working-directory: plugins/easyeda-pro-control
+        shell: bash
+        run: |
+          python3 -I -B scripts/build-main-reference-helper.py --check
+
       - name: Type-check TypeScript
         working-directory: plugins/easyeda-pro-control
         run: npm run typecheck
@@ -164,21 +170,6 @@ jobs:
         working-directory: plugins/easyeda-pro-control
         run: npm run compatibility:check
 
-      - name: Run tests
-        working-directory: plugins/easyeda-pro-control
-        shell: bash
-        run: |
-          ulimit -c 0
-          test "$(ulimit -c)" = "0"
-          exec 142</etc/hosts
-          exec 145</etc/group
-          test "$(readlink /proc/self/fd/142)" = "/etc/hosts"
-          test "$(readlink /proc/self/fd/145)" = "/etc/group"
-          # Equivalent to npm test, with a CI-only native-startup concurrency bound.
-          # Put the option before paths; npm's appended arguments do not set it.
-          # Keep every test, the isolation preload and the original child deadlines.
-          node --import ./scripts/test-isolation.ts --test --test-concurrency=1 server/tests/*.test.ts
-
       - name: Run offline plugin checks
         working-directory: plugins/easyeda-pro-control
         shell: bash
@@ -220,6 +211,9 @@ jobs:
 
       - name: Require reproducible committed bundle
         run: |
+          git diff --exit-code -- plugins/easyeda-pro-control/server/bin/Easyeda.MainReference.dll plugins/easyeda-pro-control/server/bin/Easyeda.MainReference.build.json plugins/easyeda-pro-control/server/src/main-reference-helper-identity.ts
+          test -z "$(git status --porcelain --untracked-files=all -- plugins/easyeda-pro-control/server/bin/Easyeda.MainReference.dll plugins/easyeda-pro-control/server/bin/Easyeda.MainReference.build.json plugins/easyeda-pro-control/server/src/main-reference-helper-identity.ts)"
+          test "$(git ls-tree HEAD plugins/easyeda-pro-control/server/bin/Easyeda.MainReference.dll | awk '{print $1}')" = "100644"
           git diff --exit-code -- plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs
           test -z "$(git status --porcelain --untracked-files=all -- plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer plugins/easyeda-pro-control/server/dist/server.mjs plugins/easyeda-pro-control/server/dist/upstream-supervisor.mjs)"
           test "$(git ls-tree HEAD plugins/easyeda-pro-control/server/bin/easyeda-fd-sanitizer | awk '{print $1}')" = "100755"
@@ -255,3 +249,135 @@ jobs:
           path: easyeda-pro-control.tar.gz
           if-no-files-found: error
           retention-days: 14
+
+  facade-tests:
+    name: facade-tests (${{ matrix.shard }}/8)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+
+    steps:
+      - name: Disable core dumps for the entire CI job
+        shell: bash
+        run: |
+          ulimit -S -c 0
+          ulimit -H -c 0
+          sudo prlimit --pid "${PPID}" --core=0:0
+          test "$(ulimit -S -c)" = "0"
+          test "$(ulimit -H -c)" = "0"
+          read -r parent_core_soft parent_core_hard < <(
+            prlimit --pid "${PPID}" --core --noheadings --output SOFT,HARD
+          )
+          test "${parent_core_soft}" = "0"
+          test "${parent_core_hard}" = "0"
+
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.18.0
+          cache: npm
+          cache-dependency-path: plugins/easyeda-pro-control/package-lock.json
+
+      - name: Verify inherited core limit and exact Node/npm toolchain
+        working-directory: plugins/easyeda-pro-control
+        shell: bash
+        run: |
+          test "$(ulimit -S -c)" = "0"
+          test "$(ulimit -H -c)" = "0"
+          test "$(node --version)" = "v24.18.0"
+          test "$(npm --version)" = "11.16.0"
+          # Keep the JavaScript literal opaque to Bash.
+          # shellcheck disable=SC2016
+          node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            const row = readFileSync("/proc/self/limits", "utf8")
+              .split("\n")
+              .find((line) => line.startsWith("Max core file size"));
+            if (!row || !/^Max core file size\s+0\s+0\s+bytes\s*$/.test(row)) {
+              throw new Error(`Node did not inherit zero soft and hard core limits: ${String(row)}`);
+            }
+          '
+
+      - name: Install SQLite CLI and build reviewed Bubblewrap 0.11.2
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes binutils build-essential git libcap-dev libcap2-bin libselinux1-dev meson ninja-build pkg-config sqlite3
+          bwrap_commit="1b80120ef26a28e065e67f89bfef873f13bdd317"
+          bwrap_source="$(mktemp -d)"
+          git -C "${bwrap_source}" init --quiet
+          git -C "${bwrap_source}" remote add origin https://github.com/containers/bubblewrap.git
+          git -C "${bwrap_source}" fetch --depth=1 --no-tags origin "${bwrap_commit}"
+          git -C "${bwrap_source}" checkout --quiet --detach FETCH_HEAD
+          test "$(git -C "${bwrap_source}" rev-parse HEAD)" = "${bwrap_commit}"
+          meson setup "${bwrap_source}/_build" "${bwrap_source}" \
+            -Dsupport_setuid=false \
+            -Dtests=false \
+            -Dman=disabled \
+            -Dbash_completion=disabled \
+            -Dzsh_completion=disabled
+          meson compile -C "${bwrap_source}/_build"
+          sudo install -o root -g root -m 0755 "${bwrap_source}/_build/bwrap" /usr/sbin/bwrap
+          test ! -L /usr/sbin/bwrap
+          test "$(/usr/sbin/bwrap --version)" = "bubblewrap 0.11.2"
+          test "$(stat -c '%a:%u:%g' /usr/sbin/bwrap)" = "755:0:0"
+          test -z "$(getcap -n /usr/sbin/bwrap)"
+          bwrap_help="$(/usr/sbin/bwrap --help)"
+          for option in --bind-fd --ro-bind-data --ro-bind-fd --json-status-fd --block-fd --disable-userns; do
+            grep --fixed-strings -- "${option} " <<<"${bwrap_help}"
+          done
+          if sysctl -N kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+
+      - name: Install dependencies
+        working-directory: plugins/easyeda-pro-control
+        run: |
+          test "$(npm --version)" = "11.16.0"
+          test "$(npm config get ignore-scripts)" = "true"
+          npm ci --ignore-scripts
+
+      - name: Build MCP bundle
+        working-directory: plugins/easyeda-pro-control
+        run: npm run build
+
+      - name: Run every facade test in this shard
+        working-directory: plugins/easyeda-pro-control
+        shell: bash
+        env:
+          LC_ALL: C
+        run: |
+          ulimit -c 0
+          test "$(ulimit -c)" = "0"
+          exec 142</etc/hosts
+          exec 145</etc/group
+          test "$(readlink /proc/self/fd/142)" = "/etc/hosts"
+          test "$(readlink /proc/self/fd/145)" = "/etc/group"
+          # Equivalent to npm test, with a CI-only native-startup concurrency bound.
+          # Put the option before paths; npm's appended arguments do not set it.
+          # Keep every test, the isolation preload and the original child deadlines.
+          node --import ./scripts/test-isolation.ts --test --test-concurrency=1 --test-shard=${{ matrix.shard }}/8 server/tests/*.test.ts
+
+  test-build:
+    name: test-build
+    needs: [verify-build, facade-tests]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Require build checks and every facade shard
+        env:
+          BUILD_RESULT: ${{ needs.verify-build.result }}
+          FACADE_RESULT: ${{ needs.facade-tests.result }}
+        shell: bash
+        run: |
+          test "${BUILD_RESULT}" = "success"
+          test "${FACADE_RESULT}" = "success"

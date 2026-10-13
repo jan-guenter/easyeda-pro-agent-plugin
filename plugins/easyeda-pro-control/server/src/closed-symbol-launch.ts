@@ -18,8 +18,13 @@ function requireValue(value: boolean, message: string): asserts value { if (!val
 export class ClosedSymbolBootstrapLaunchStage {
   private readonly engine: Engine;
   private readonly runtime: Runtime;
+  private readonly launches = new Map<string, WindowsAuthorityLaunch>();
 
   public constructor(engine: Engine, runtime: Runtime) { this.engine = engine; this.runtime = runtime; }
+  /** Original runtime return, even if publication later failed. Disk data and
+   * status snapshots cannot reconstruct this launch's in-memory ownership.
+   */
+  public originalLaunch(operationId: string): WindowsAuthorityLaunch | undefined { return this.launches.get(operationId); }
 
   public async launch(journalInput: ClosedJournal): Promise<Readonly<{
     launch: WindowsAuthorityLaunch; generation: LaunchGeneration;
@@ -57,19 +62,25 @@ export class ClosedSymbolBootstrapLaunchStage {
     unchanged(); outsideSession();
     // The only native side effect in this stage. An uncertain rejection leaves
     // The published intent; it does not permit another launch or authentication.
-    const launchReceipt = structuredClone(await this.runtime.launch());
+    const original = await this.runtime.launch();
+    this.launches.set(operationId, original);
+    const launchReceipt = structuredClone(original);
     const generation: LaunchGeneration = { ordinal: 0, helperInstance: launchReceipt.helperInstance,
       jobId: launchReceipt.jobId, rootPid: launchReceipt.root.pid, rootStartIdentity: launchReceipt.root.startIdentity };
     // Retain the actual launch before any fallible authentication, clock or
     // Caller check. Those later steps cannot erase a successful native return.
     await appendClosedSymbolEvent(journal, { step: "baseline-launch", kind: "result", generation, requestSha256,
       data: { launchReceipt, launchReceiptSha256: sha256Json(launchReceipt) } });
-    unchanged();
-    outsideScope();
-    const status = this.runtime.status();
-    requireValue(status.state === "owned" && canonicalJson(status.launch) === canonicalJson(launchReceipt),
-      "Bootstrap launch current owner differs from its retained result.");
+    const current = (): void => {
+      unchanged(); outsideScope();
+      const status = this.runtime.status();
+      requireValue(status.state === "owned" && canonicalJson(status.launch) === canonicalJson(launchReceipt) &&
+        canonicalJson(original) === canonicalJson(launchReceipt), "Bootstrap launch current owner differs from its retained result.");
+    };
+    current();
+    const final = await loadClosedSymbolJournal(operationId); current();
+    requireValue(canonicalJson(final.journal) === canonicalJson(journal), "Bootstrap launch durable journal changed.");
     Object.assign(journalInput, journal);
-    return Object.freeze({ launch: launchReceipt, generation, executionAuthorized: false, admissionProved: false, completionProved: false });
+    return Object.freeze({ launch: original, generation, executionAuthorized: false, admissionProved: false, completionProved: false });
   }
 }

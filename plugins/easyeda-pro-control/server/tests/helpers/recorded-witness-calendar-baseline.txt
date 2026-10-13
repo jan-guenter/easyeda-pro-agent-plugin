@@ -1,0 +1,20 @@
+function capture(value: unknown, operationId: string, generation: Generation, attempt: number): Bag {
+  const v = exact(value, ['operationId', 'phase', 'challengeAttempt', 'bridgeSession', 'runtimeIdentity', 'executionAuthority']);
+  need(v['operationId'] === operationId && v['phase'] === 'closed-edit' && v['challengeAttempt'] === attempt &&
+    sha256Json(v['bridgeSession']) === generation.sessionSha256 && sha256Json(v['runtimeIdentity']) === generation.runtimeSha256);
+  const a = exact(v['executionAuthority'], ['schema', 'bindingSha256', 'policyId', 'policySha256', 'capturedAt', 'processes', 'processTreeSha256', 'authoritySha256']);
+  const { authoritySha256, ...body } = a; need(authoritySha256 === sha256Json(body) && a['schema'] === 'easyeda-pro-control.execution-authority.v1' &&
+    a['policyId'] === 'windows.easyeda-contained-local-api.v1' && a['processTreeSha256'] === sha256Json(a['processes']));
+  hash(a['bindingSha256']); hash(a['policySha256']);
+  need(typeof a['capturedAt'] === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,7}Z$/u.test(a['capturedAt']) && Number.isFinite(Date.parse(a['capturedAt'])));
+  const processes = a['processes']; need(Array.isArray(processes) && processes.length > 0 && processes.length <= 512);
+  let previous = 0, root = 0;
+  for (const process of processes) {
+    const p = exact(process, ['pid', 'role', 'startIdentity']); const pid = p['pid']; const identity = p['startIdentity'];
+    need(typeof pid === 'number' && Number.isSafeInteger(pid) && pid > previous && pid <= 2_147_483_647 && typeof identity === 'string' &&
+      new RegExp(`^win32:\\d{15,20}:job:${generation.jobId}$`, 'u').test(identity)); previous = pid;
+    need(['easyeda-main', 'easyeda-descendant', 'renderer', 'native-socket-owner'].includes(String(p['role'])));
+    if (p['role'] === 'easyeda-main') { root += 1; need(pid === generation.rootPid && identity === generation.rootStartIdentity); }
+  }
+  need(root === 1); return v;
+}

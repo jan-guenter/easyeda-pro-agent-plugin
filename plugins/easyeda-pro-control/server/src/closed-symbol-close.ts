@@ -2,12 +2,13 @@
 import { canonicalJson, sha256Json } from "./core.ts";
 import type { ClosedSessionAuthorityCapture, EasyedaControlEngine } from "./engine.ts";
 import type { WindowsControlRuntime } from "./windows-runtime.ts";
-import type { ClosedSessionCloseIntent, ClosedSessionCloseReceipt, ClosedSessionTerminationProof, WindowsAuthorityLaunch } from "./windows-authority.ts";
+import type { ClosedSessionCloseIntent, ClosedSessionCloseReceipt, ClosedSessionTerminationObservation, ClosedSessionTerminationProof, WindowsAuthorityLaunch } from "./windows-authority.ts";
+import { assertCurrentClosedSessionTerminationObservation } from "./windows-authority.ts";
 import { appendClosedSymbolEvent, loadClosedSymbolJournal } from "./closed-symbol-journal.ts";
 import type { ClosedJournal, Generation } from "./closed-symbol-journal.ts";
 
 type Engine = Pick<EasyedaControlEngine, "assertBridgeDispatchAllowed" | "assertRecoveryOperationIsolated" | "upstream">;
-type Runtime = Pick<WindowsControlRuntime, "status" | "prepareClosedSessionClose" | "requestClosedSessionNormalClose" | "proveClosedSession">;
+type Runtime = Pick<WindowsControlRuntime, "status" | "prepareClosedSessionClose" | "requestClosedSessionNormalClose" | "proveClosedSession" | "probeClosedSessionTermination">;
 type Phase = "baseline-close" | "edit-close" | "verify-close";
 const PHASES = {
   "baseline-close": { ordinal: 0, capture: "closed-baseline", admission: "baseline-admission" },
@@ -122,6 +123,18 @@ export class ClosedSymbolCloseStage {
    * Never by repeating close. A serialized result cannot restore this owner.
    */
   public async prove(result: ClosedSymbolCloseResult): Promise<ClosedSessionTerminationProof> {
+    const proof = await this.retainedProof(result, "prove");
+    return proof;
+  }
+
+  public async probe(result: ClosedSymbolCloseResult): Promise<ClosedSessionTerminationObservation> {
+    const observation = await this.retainedProof(result, "probe");
+    return observation;
+  }
+
+  private retainedProof(result: ClosedSymbolCloseResult, mode: "prove"): Promise<ClosedSessionTerminationProof>;
+  private retainedProof(result: ClosedSymbolCloseResult, mode: "probe"): Promise<ClosedSessionTerminationObservation>;
+  private async retainedProof(result: ClosedSymbolCloseResult, mode: "prove" | "probe"): Promise<ClosedSessionTerminationProof | ClosedSessionTerminationObservation> {
     const slot = this.slots.get(result);
     requireValue(slot !== undefined && slot.eventSha256 !== undefined && !slot.proving && canonicalJson(result) === slot.resultText,
       "Closed symbol proof needs its unchanged original durably recorded result.");
@@ -138,12 +151,14 @@ export class ClosedSymbolCloseStage {
       current();
       requireValue(loaded.journal.artifacts.at(-1)?.sha256 === slot.eventSha256,
         "Closed symbol proof journal advanced or changed.");
-      const proof = await this.runtime.proveClosedSession({ ...slot.binding, intent: result.intent, closeReceipt: result.closeReceipt });
+      const input = { ...slot.binding, intent: result.intent, closeReceipt: result.closeReceipt };
+      const proof = mode === "probe" ? await this.runtime.probeClosedSessionTermination(input) : await this.runtime.proveClosedSession(input);
       current();
       const final = await loadClosedSymbolJournal(slot.operationId);
       current();
       requireValue(canonicalJson(final.journal) === canonicalJson(loaded.journal),
         "Closed symbol proof journal advanced or changed.");
+      if (mode === "probe") { assertCurrentClosedSessionTerminationObservation(proof); }
       return proof;
     } finally { slot.proving = false; }
   }

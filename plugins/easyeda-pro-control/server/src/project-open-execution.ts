@@ -1,7 +1,8 @@
 /* oxlint-disable import/max-dependencies -- The coordinator reuses existing checkpoint, journal, runtime and native-navigation boundaries. */
 import { join } from "node:path";
 import { z } from "zod";
-import { controlDataDirectory, controlRootCapability, createOperation, listOperationStates, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "./artifacts.ts";
+import { controlDataDirectory, controlRootCapability, createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "./artifacts.ts";
+import { listQualifiedOperationStates } from "./closed-symbol-terminal-admission.ts";
 import { createCheckpoint, verifyCheckpoint } from "./checkpoint.ts";
 import type { CheckpointAccessPolicy, CheckpointReceipt } from "./checkpoint.ts";
 import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, extractToolPayload, isRecord, isTerminalOperation, newOperationId, normalizeEasyedaProjectPath, sha256Text, validateExpectedFingerprint, validatePrivateFingerprint } from "./core.ts";
@@ -68,7 +69,7 @@ async function checkpointPolicy(source: string): Promise<CheckpointAccessPolicy>
   return { expectedSource: source, artifactRoots: [join(controlDataDirectory(), "checkpoints")], controlRoot: await controlRootCapability() };
 }
 const dependencies = { checkpointPolicy, createCheckpoint, verifyCheckpoint, readNativeHistoryCheckpoint, prepareRecoveryNavigation, verifyLibraryNativeProfile,
-  createOperation, listOperations: listOperationStates, loadOperation, updateOperation, writePhaseArtifact };
+  createOperation, listOperations: listQualifiedOperationStates, loadOperation, updateOperation, writePhaseArtifact };
 export type ProjectOpenDependencies = Partial<typeof dependencies>;
 function targetContext(target: RecoveryNavigationTarget): ExpectedContext {
   return { project: { uuid: target.projectUuid, path: target.projectPath }, document: { uuid: target.documentUuid, documentType: target.documentType } };

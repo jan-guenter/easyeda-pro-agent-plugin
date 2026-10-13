@@ -29,7 +29,7 @@ export function syntheticClockSample(index = 0): Bag {
     qpcAfter: (10_000_000_000_001_000n + base).toString(), qpcFrequency: "1000000", highResolution: true,
     localOffsetMinutes: 120, zoneRulesSha256: "f".repeat(64) };
 }
-export async function clockSpawnFixture(context: TestContext): Promise<{
+export async function clockSpawnFixture(context: TestContext, reviewedExecutionScopeSha256 = "e".repeat(64)): Promise<{
   helperPath: string; requests: Bag[]; behavior: ClockSpawnBehavior; child: SyntheticChild;
   spawnCalls: () => number; closeCount: () => number;
   options: { helperPath: string; helperWindowsPath: string; powershellExecutable: string;
@@ -37,6 +37,7 @@ export async function clockSpawnFixture(context: TestContext): Promise<{
     performAuthenticatedProcessProbe: () => Promise<void> };
   restore: () => void;
 }> {
+  assert.match(reviewedExecutionScopeSha256, /^[a-f0-9]{64}$/u);
   assert.match(process.env["EASYEDA_CONTROL_DATA_DIR"] ?? "", /easyeda-test-control-/u);
   const originalDistribution = process.env["WSL_DISTRO_NAME"];
   process.env["WSL_DISTRO_NAME"] = "ClockIssuerSynthetic";
@@ -61,7 +62,7 @@ export async function clockSpawnFixture(context: TestContext): Promise<{
   const distribution = process.env["WSL_DISTRO_NAME"];
   assert.ok(distribution !== undefined && /^[A-Za-z0-9._-]+$/u.test(distribution));
   const options = { helperPath, helperWindowsPath: `\\\\wsl.localhost\\${distribution}${helperPath.replaceAll("/", "\\")}`, powershellExecutable: "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
-    expectedExecutable: "C:\\Synthetic\\easyeda-pro.exe", expectedExecutableSha256: "d".repeat(64), reviewedExecutionScopeSha256: "e".repeat(64),
+    expectedExecutable: "C:\\Synthetic\\easyeda-pro.exe", expectedExecutableSha256: "d".repeat(64), reviewedExecutionScopeSha256,
     performAuthenticatedProcessProbe(): Promise<void> { return Promise.resolve(); } };
   function processes(probe: boolean): Bag[] {
     return [{ pid: 100, role: "easyeda-main", startIdentity: `win32:63924748600000000${generation}:job:${jobId}` },

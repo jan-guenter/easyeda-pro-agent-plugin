@@ -4,6 +4,7 @@ import { syncBuiltinESMExports } from "node:module";
 import { basename } from "node:path";
 import { test } from "node:test";
 import { copyFixture } from "./helpers/closed-symbol-copy-fixture.ts";
+import { INPUT } from "./helpers/windows-closed-session-fixture.ts";
 import { appendClosedSymbolEvent, loadClosedSymbolJournal } from "../src/closed-symbol-journal.ts";
 
 void test("the final journal reload has no later asynchronous helper callback opportunity", async (context) => {
@@ -52,6 +53,32 @@ for (const mutation of ["caller", "generation", "scope", "scope-method"] as cons
       await assert.rejects(value.copyStage.copy(value.journal, "baseline-copy", value.generation, value.proof), /caller changed|scope changed/u);
       assert.equal(changed, true);
       assert.ok(value.copyStage.originalCopy(value.operationId, "baseline-copy") !== undefined);
+    } finally { context.mock.restoreAll(); syncBuiltinESMExports(); await value.dispose(); }
+  });
+}
+
+for (const drift of ["capture", "capture-release"] as const) {
+  void test(`copy final journal read rejects a changed ${drift} lifecycle epoch`, async (context) => {
+    const value = await copyFixture(); const link = fsPromises.link, open = fsPromises.open;
+    let armed = false, changed = false, published = false;
+    context.mock.method(fsPromises, "link", async (...args: Parameters<typeof link>): Promise<void> => {
+      await link(...args); if (basename(String(args[1])) === "10-baseline-copy-result.json") { published = true; }
+    });
+    context.mock.method(fsPromises, "open", async (...args: Parameters<typeof open>): ReturnType<typeof open> => {
+      const handle = await open(...args);
+      if (armed && !changed && basename(String(args[0])) === `${value.operationId}.json`) {
+        changed = true;
+        await (drift === "capture" ? value.owner.supervisor.capture({ ...INPUT, bindingSha256: "8".repeat(64), challengeAttempt: 2 }) :
+          value.owner.supervisor.releaseCapture(value.capture.executionAuthority));
+      }
+      return handle;
+    }); syncBuiltinESMExports();
+    value.owner.behavior.onHelperCheck = (): Promise<void> => { if (published) { armed = true; } return Promise.resolve(); };
+    try {
+      await assert.rejects(value.copyStage.copy(value.journal, "baseline-copy", value.generation, value.proof));
+      assert.equal(changed, true);
+      assert.ok(value.copyStage.originalCopy(value.operationId, "baseline-copy") !== undefined);
+      assert.equal(value.calls("normal-close"), 1);
     } finally { context.mock.restoreAll(); syncBuiltinESMExports(); await value.dispose(); }
   });
 }

@@ -1,0 +1,32 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { test } from "node:test";
+import { assertOriginalAgedClosedSymbolFullEvidence, assertOriginalClosedSymbolFullEvidence } from "../../src/closed-symbol-coordinator.ts";
+import { operationPath } from "../../src/artifacts.ts";
+import { loadClosedSymbolJournal } from "../../src/closed-symbol-journal.ts";
+import { assertOriginalMainReference } from "../../src/closed-symbol-main-reference.ts";
+import { agedCoordinatorFixture } from "./closed-symbol-aged-coordinator-fixture.ts";
+
+void test("actual aged coordinator records44 events with one original reference before edit launch", async (context) => {
+  const f = await agedCoordinatorFixture(context), result = await f.stage.recordAgedFullEvidence(f.plan);
+  assert.equal(result.sequence, 44); assert.equal(result.completionProved, false);
+  const original = assertOriginalAgedClosedSymbolFullEvidence(result, f.engine, result.operationId);
+  const reference = assertOriginalMainReference(original.mainReference, f.engine, result.operationId);
+  assert.equal(f.stage.retained()["mainReference"], reference);
+  assert.equal(reference.request.createdAtLiteral, "2026-01-15 12:34:56");
+  assert.equal(f.transport.calls, 1); assert.equal(f.transport.rendererCalls, 1);
+  assert.equal(f.state.writes, 1); assert.equal(f.state.opens, 2); assert.equal(f.state.reads, 1);
+  const launches = f.events.flatMap((event, index) => event === "launch" ? [index] : []), referenceIndex = f.events.indexOf("main-reference");
+  assert.equal(launches.length, 3); assert.ok(launches[0] !== undefined && launches[1] !== undefined);
+  assert.ok(launches[0] < referenceIndex && referenceIndex < launches[1]);
+  assert.equal(f.events.filter((event) => event === "normal-close").length, 3);
+  const loaded = await loadClosedSymbolJournal(result.operationId);
+  assert.equal(loaded.events.length, 44); assert.equal(loaded.journal.artifacts.length, 44);
+  assert.equal(loaded.events[18]?.step, "edit-witness"); assert.equal(loaded.events[20]?.step, "edit-write");
+  assert.throws(() => assertOriginalClosedSymbolFullEvidence(result, f.engine, result.operationId), /original successful coordinator|aged reference/u);
+  assert.throws(() => assertOriginalAgedClosedSymbolFullEvidence(structuredClone(result), f.engine, result.operationId), /original successful coordinator/u);
+  assert.throws(() => assertOriginalMainReference(structuredClone(reference), f.engine, result.operationId), /not issued/u);
+  const before = await readFile(operationPath(result.operationId));
+  await assert.rejects(f.stage.recordAgedFullEvidence(f.plan), /consumed/u); await assert.rejects(f.stage.recordFullEvidence(f.plan), /consumed/u);
+  assert.deepEqual(await readFile(operationPath(result.operationId)), before); assert.equal(f.transport.calls, 1);
+});

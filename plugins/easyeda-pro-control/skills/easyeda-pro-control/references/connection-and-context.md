@@ -192,13 +192,13 @@ Only facade-generated typed programs may enter the private executor. Caller raw 
 Use `easyeda_control_capture` for application images. It accepts only these upstream capture tools:
 
 - `easyeda_canvas_capture` for the current visible canvas;
-- `easyeda_canvas_capture_region` for a framed schematic or PCB area;
-- `easyeda_schematic_capture_full_page` for a deterministically framed active schematic sheet, or an approximate diagnostic image when inferred-A4 fallback is explicitly allowed.
+- `easyeda_canvas_capture_region` to request a schematic or PCB area;
+- `easyeda_schematic_capture_full_page` to request the active schematic's sheet bounds, or approximate A4 bounds when that fallback is explicitly allowed.
 
 Guard the exact context and runtime fingerprint, and pass `arguments.tabId` equal to the active proven tab. Fresh managed evidence paths are mandatory. The facade parses the complete non-interlaced PNG chunk stream, verifies chunk CRCs, inflates it to the exact IHDR-derived byte count, checks scanline filters, stores the image bytes, and records their hashes so the receipt identifies the exact files.
 
 Region and full-page capture change the user's visible viewport because EasyEDA has no offscreen renderer for those paths. They do not change design objects. Capture the intended tab or sheet, then recheck active context before a later mutation.
 
-When the full-page result says its geometry came from inferred A4, it is approximate viewport evidence only. It cannot prove page completeness, design coverage, or that every primitive was inside the frame. Use only a deterministic sheet source for a completeness claim.
+When the full-page result says its geometry came from inferred A4, the requested bounds are approximate. Exact sheet geometry establishes the requested bounds, not that the returned bitmap has painted them. Neither `deterministic_viewport:true` nor `captured:true` proves pixel coverage or page completeness. Inspect the actual image before using it for visual review; follow the [capture-framing guidance](native-ui.md) when the image is stale or incorrectly framed.
 
 Use images to inspect legibility, approximate placement, and obvious visual defects. Do not use a screenshot as proof of net membership, primitive identity, clearance, drill size, save state, or persistence. Pair it with structured readback.

@@ -1,5 +1,5 @@
 /** Internal nonauthorizing effect proof. No dispatch, file reader or lifecycle authority. */
-import { canonicalJson, isRecord, sha256Json } from "./core.ts";
+import { canonicalJson, isRecord, sha256Json, sha256Text } from "./core.ts";
 import { yieldProofEventLoop } from "./cooperative-proof.ts";
 import { decodeNativeHistoryChunk, materializeNativeHistoryCooperatively } from "./native-history.ts";
 import type { NativeHistorySnapshot } from "./native-history.ts";
@@ -51,8 +51,25 @@ interface Prepared {
   readonly structureRow: SqlRow;
   readonly sequenceRow: SqlRow;
 }
-const plans = new WeakMap<SymbolNewHeadSqlPlan, Prepared>();
+export interface DecodedSymbolSqlRawHistory {
+  readonly history: NativeHistorySnapshot; readonly maximumTicket: number;
+  readonly chunks: readonly string[];
+  readonly links: readonly Readonly<{ historyUuid: string; historyRowId: string; chunkUuid: string; chunkRowId: string;
+    ordinal: number; ciphertextBase64Sha256: string; plaintextSha256: string; plaintextBytes: number }>[];
+}
+const plans = new WeakMap<object, Prepared>();
 function need(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(message); } }
+/** Read only the metadata plan retained by this original SQL preparation.
+ * No decoding, caller-supplied metadata or restored authority is admitted.
+ */
+export function metadataPlanForOriginalSymbolSqlPlan(input: unknown): Readonly<ProjectSymbolMetadataPlan> {
+  need(input !== null && typeof input === "object", "SQL metadata requires its original prepared plan.");
+  const prepared = plans.get(input);
+  need(prepared !== undefined, "SQL metadata requires its original prepared plan.");
+  const result = structuredClone(prepared.symbol);
+  Object.freeze(result.beforeTags); Object.freeze(result.peerTitles);
+  return Object.freeze(result);
+}
 function text(value: SqlCell | undefined): string {
   need(value?.kind === "text", "Expected SQL TEXT.");
   const bytes = Buffer.from(value.hex, "hex"); const result = bytes.toString("utf8");
@@ -116,9 +133,7 @@ function ticketFromRaw(plaintext: string): number {
   }
   return maximum;
 }
-async function selectedHistory(before: Inventory, witness: SymbolSqlWitness, project: SqlRow, branch: SqlRow): Promise<Readonly<{
-  history: NativeHistorySnapshot; maximumTicket: number;
-}>> {
+async function selectedHistory(before: Inventory, witness: SymbolSqlWitness, project: SqlRow, branch: SqlRow): Promise<DecodedSymbolSqlRawHistory> {
   const histories = table(before, `project_history_${witness.branchUuid}`);
   const data = table(before, "history_data");
   const head = text(field(table(before, "branches"), branch, "history_uuid"));
@@ -142,7 +157,7 @@ async function selectedHistory(before: Inventory, witness: SymbolSqlWitness, pro
       "Native ID order differs from the admitted linear chain.");
   }
   const chunkIndex = await indexHistoryChunkUuids(data);
-  const chunks: string[] = []; let bytes = 0; let maximumTicket = 0;
+  const chunks: string[] = [], links: DecodedSymbolSqlRawHistory["links"][number][] = []; let bytes = 0; let maximumTicket = 0;
   for (const row of rows.toReversed()) {
     const historyUuid = text(field(histories, row, "uuid")); const keyHex = text(field(histories, row, "key"));
     const num = integer(field(histories, row, "num")); need(num >= 0n && num <= 1024n, "History chunk count refused.");
@@ -150,17 +165,34 @@ async function selectedHistory(before: Inventory, witness: SymbolSqlWitness, pro
       const chunk = chunkIndex.get(index === 0 ? historyUuid : `${historyUuid}-${index}`);
       need(chunk !== undefined && chunk !== null, "Required SQL identity is not unique.");
       need(text(field(data, chunk, "history_uuid")) === historyUuid, "History chunk parent mismatch.");
-      const decoded = await decodeNativeHistoryChunk({ historyUuid, keyHex, dataBase64: text(field(data, chunk, "dataStr")) });
+      const encoded = text(field(data, chunk, "dataStr"));
+      const decoded = await decodeNativeHistoryChunk({ historyUuid, keyHex, dataBase64: encoded });
       bytes += Buffer.byteLength(decoded); need(bytes <= MAX_PLAINTEXT_BYTES && chunks.length < 4096, "Complete selected history exceeds its proof bound.");
       maximumTicket = Math.max(maximumTicket, ticketFromRaw(decoded)); chunks.push(decoded);
+      const chunkRowId = integer(field(data, chunk, "id")).toString(), historyRowId = integer(field(histories, row, "id")).toString();
+      const chunkUuid = text(field(data, chunk, "uuid"));
+      links.push(Object.freeze({ historyUuid, historyRowId, chunkUuid, chunkRowId, ordinal: index,
+        ciphertextBase64Sha256: sha256Text(encoded), plaintextSha256: sha256Text(decoded), plaintextBytes: Buffer.byteLength(decoded) }));
     }
   }
   const documents = await materializeNativeHistoryCooperatively(chunks, before.checkpointSha256);
   const owner = text(field(table(before, "projects"), project, "owner_uuid"));
-  return { maximumTicket, history: { profile: "easyeda.native-history.linear-gcm-gzip.v1", projectUuid: witness.projectUuid, projectOwnerUuid: owner,
+  return { maximumTicket, chunks: Object.freeze(chunks), links: Object.freeze(links), history: { profile: "easyeda.native-history.linear-gcm-gzip.v1", projectUuid: witness.projectUuid, projectOwnerUuid: owner,
     branchUuid: witness.branchUuid, headHistoryUuid: head, checkpointSha256: before.checkpointSha256, historyRowCount: rows.length,
     chunkCount: chunks.length, plaintextBytes: bytes, documents,
     semanticSha256: sha256Json(documents.map((document) => ({ uuid: document.uuid, docType: document.docType, semanticSha256: document.semanticSha256 }))) } };
+}
+/** Pure decode only. The owning SQL stage separately binds this inventory to
+ * its original successful edit effect and historical issued copy. */
+export async function decodeRawHistoryForOriginalSymbolSqlPlan(input: unknown, after: Inventory): Promise<DecodedSymbolSqlRawHistory> {
+  need(input !== null && typeof input === "object", "Raw SQL history requires its original prepared plan.");
+  const prepared = plans.get(input); need(prepared !== undefined, "Raw SQL history requires its original prepared plan.");
+  need(readerCompletion(after).exitCode === 0, "Raw SQL history requires its original completed reader.");
+  const project = unique(table(after, "projects"), "uuid", prepared.witness.projectUuid);
+  const branch = unique(table(after, "branches"), "uuid", prepared.witness.branchUuid);
+  const decoded = await selectedHistory(after, prepared.witness, project, branch);
+  need(decoded.maximumTicket === prepared.witness.preDispatchMaxTicket + 1, "Raw SQL history maximum differs from the original expected edit.");
+  return decoded;
 }
 export async function prepareSymbolNewHeadSqlPlan(input: Readonly<{ before: Inventory; operation: unknown; witness: SymbolSqlWitness }>): Promise<SymbolNewHeadSqlPlan> {
   const before = input.before; const witness = structuredClone(input.witness); const operation = structuredClone(input.operation);

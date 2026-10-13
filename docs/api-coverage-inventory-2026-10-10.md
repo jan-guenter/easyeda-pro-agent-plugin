@@ -10,13 +10,24 @@ The inventory covers 774 distinct method paths. The reviewed installed SDK has
 697, the newer official reference has 773, and one older dialog method appears
 only in the reviewed SDK. These counts are method paths, not overload counts.
 The original 749 and 806 declaration signatures remain in the inventory.
-As of candidate013324 on October12, the source inventory has 193 public subsets,
-103 native equivalents, two lifecycle-only methods, seven blocked methods and
-469 omissions. The fixed SDK-read catalog has 182 routes, including 21 native
-equivalents. The 358 guarded, nine blocked and three partially blocked execution
-routes are counted separately from methods. These are implementation counts,
+As of installed030626 and the current October12 source inventory, there are 193
+public subsets, 30 native equivalents, no lifecycle-only methods, 82 blocked
+methods and 469 omissions. The fixed SDK-read catalog has 182 routes, including
+21 native equivalents. The 274 guarded, 94 blocked and two partially blocked
+execution routes are counted separately from methods. These are implementation counts,
 not live-test counts. The [connected ledger](api-connected-validation-ledger.md)
 records subsequent generation-specific validation of the adapters discussed below.
+
+The current restriction blocks design transactions for schematic-page, symbol
+and PCB document types, plus eight symbol/page/container metadata operations.
+Their native Save and metadata paths can queue a later `project_structures`
+write. Existing record comparisons alone do not prove its completion or exact
+effect. Footprint transactions retain their separate guards. The
+[030626 restriction](api-coverage-030626-release-2026-10-12.md) lists the exact
+operations, and the [completion work](project-structure-save-completion-2026-10-12.md)
+records implementation progress. Synthetic tests of the new internal coordinator
+have not restored any blocked route. Earlier adapter and fixture descriptions
+below retain their historical scope; they do not override this restriction.
 
 The October11 additions include three mappings to existing footprint-only
 String create/modify/delete actions and two closed ordinary PCB/schematic rename
@@ -125,18 +136,20 @@ writes require the complete topology reader in `design-execution.ts`; that reade
 is currently refused because the installed compiled-netlist path can annotate
 parts and invoke global SaveAll. Those writes are implemented but blocked, not
 advertised as callable. Independent type-2 symbol graphics and PCB routes do not
-inherit this topology dependency. Shared lifecycle routes explicitly retain the
-type-1 block. An available route still needs actual compatibility, ownership,
+inherit this topology dependency, but their design transactions are now blocked
+by the separate native structure-completion requirement. That requirement also
+blocks sealed flat-display and wire transactions. An available route still needs actual compatibility, ownership,
 context and operation admission; this inventory does not grant them.
 
-Three separate routes describe the sealed flat-display exception: attribute
+Three separate blocked routes describe the earlier sealed flat-display exception: attribute
 modify, text modify and internal journal-bound Save. Only existing stored
 display patches on the sole page of an ordinary single-page schematic are
-admitted. The profile retains full ownership, source/native endpoint, inverse
+within that implemented profile. The profile retains full ownership, source/native endpoint, inverse
 and durable-state proof. Batches may combine attribute and text display steps,
 but cannot contain electrical or other layout steps. These routes do not call
 the public modify wrappers or enable generic schematic transactions. Connected
-apply/Save/reopen validation remains pending for the new source.
+observations from earlier releases do not establish the missing native
+structure-completion proof or current execution authority.
 
 The standalone `document.close` subset targets an inactive clean ordinary symbol,
 PCB or footprint while a separate PCB/footprint remains active. It waits for

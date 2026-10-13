@@ -19,7 +19,14 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-The source catalog has 26 tools. `easyeda_control_api` exposes 93 reviewed
+The source catalog has 27 tools. The new
+`easyeda_control_validate_closed_symbol` is a one-attempt, approval-required
+disposable validation route, not a general editing endpoint. The compiled helper
+and v3 transport pass a standalone Windows smoke run, including process cleanup.
+The complete public disposable workflow still needs connected validation.
+Ordinary editing gates remain.
+The installed030626 catalog still has26 tools until a new release is installed.
+`easyeda_control_api` exposes 93 reviewed
 namespaces / 749 declared signatures and 99 latest official namespaces / 806
 signatures. Its `coverage` action inventories all 774 distinct mounted method
 paths, linking each to a direct public call, narrower native task equivalent,
@@ -29,13 +36,18 @@ no lifecycle-only methods, 82 implemented-but-blocked methods and 469
 omissions. Their execution routes comprise 274 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
-See the [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)
-for this candidate's verification status. It includes the Unicode evidence-reader
+The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)
+describes the installed payload, not the later unpublished source changes.
+The [completion report](docs/project-structure-save-completion-2026-10-12.md)
+tracks that work and its remaining tasks. The preceding source snapshot passed
+9,701 facade tests with one platform skip and 424 bridge tests. The v3 integration
+passes types, strict lint and its affected existing tests; native execution
+qualification remains unfinished.
+Installed030626 includes the Unicode evidence-reader
 fixes from024750 and blocks eight metadata-writing routes plus schematic-page,
 symbol and PCB design transactions whose delayed native structure-table effects
 lack a complete lifecycle proof. Footprint transactions retain their own guards.
-The earlier payload
-passed CI but was not installed after this gap was found.
+Candidate024750 passed CI but was not installed after this gap was found.
 Two new disposable wire commits on installed013324 passed saved/reopened
 source, connectivity and full-project checks, recorded as
 [C06/C07](docs/api-connected-validation-ledger.md#2026-10-12-c06-final-wire-observation-retained-on-013324).
@@ -324,7 +336,7 @@ as complete evidence.
 - Exact PCB component, direct-pad, primitive-inventory, net, rule, class, differential-pair, and equal-length-group reads.
 - Conservative generic reads with project, document, editor-type, and tab binding.
 - SQLite online checkpoints with `quick_check`, logical database comparison, and self-hashed receipts.
-- Full-page and viewport capture with PNG signature, chunk, CRC, zlib, scanline, geometry, and payload/image binding checks.
+- Full-page and viewport image requests with PNG signature, chunk, CRC, zlib, scanline, geometry, and payload/image binding checks. These do not prove target paint completion or page completeness; inspect the returned image.
 - Draft PCB DSN route-context export with descriptor-bound exclusive artifact creation, inode/hash-bound receipts, and hash-bound failure evidence.
 - Durable ambiguous-call recovery with one-use nonce challenges and a global bridge quarantine.
 - Typed PCB and schematic transactions with exact source effects, scoped durable baselines and explicit commit or verified inverse.

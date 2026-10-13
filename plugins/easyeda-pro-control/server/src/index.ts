@@ -69,6 +69,12 @@ import { assertLibraryExecutionLifecycle } from "./library-execution-lifecycle.t
 import { assertLegacyRecoveryJournalFamily } from "./legacy-recovery-family.ts";
 import { designToolOperationSchema, libraryToolOperationSchema } from "./tool-operation-envelope.ts";
 import { WindowsControlRuntime } from "./windows-runtime.ts";
+import type { ClosedSymbolDisposableEntry } from "./closed-symbol-disposable-entry.ts";
+import {
+  closedSymbolDisposableIndexRefusal, closedSymbolDisposableInputSchema, closedSymbolDisposableOutputSchema,
+  formatClosedSymbolDisposableResult, parseClosedSymbolDisposableInput,
+} from "./closed-symbol-disposable-tool.ts";
+import type { ClosedSymbolIndexPhase, ClosedSymbolIndexReason } from "./closed-symbol-disposable-tool.ts";
 import { WindowsNativeUiController, nativeUiRequestSchema } from "./windows-native-ui.ts";
 import { runNativeUiWithOperationAdmission } from "./native-ui-admission.ts";
 import { discardCloseConfirmation, nativeCloseRecoveryRequestSchema } from "./native-close-recovery.ts";
@@ -128,6 +134,7 @@ const upstream = new UpstreamEasyedaClient({
   onChildStarted: (pid): Promise<void> => facadeLease.bindChild(pid),
 });
 let windowsRuntime: WindowsControlRuntime | undefined;
+let scheduledShutdown: Promise<void> | undefined;
 function ownedWindowsRuntime(): WindowsControlRuntime {
   if (windowsRuntime === undefined) { throw new Error("Use easyeda_control_runtime launch-contained before guarded design editing."); }
   return windowsRuntime;
@@ -142,6 +149,187 @@ const libraryExecutor = new LibraryExecutor(engine);
 const ruleCheckExecutor = new RuleCheckExecutor(engine);
 const projectOpenExecutor = new ProjectOpenExecutor(engine);
 const bridgeGate = new SerializedGate();
+
+interface ClosedSymbolIndexReservation {
+  readonly engine: EasyedaControlEngine;
+  readonly upstream: UpstreamEasyedaClient;
+  readonly gate: SerializedGate;
+  readonly facadePromise: EasyedaControlEngine["controlFingerprintPromise"];
+  readonly executionAuthority: object;
+  readonly environment: typeof process.env;
+  readonly assetsRoot: string | undefined;
+  readonly wslDistribution: string | undefined;
+  readonly controlPath: string;
+  readonly pluginRoot: string;
+  readonly requestText: string;
+  readonly methods: readonly unknown[];
+  runtime: WindowsControlRuntime | undefined;
+  nativeUi: WindowsNativeUiController | undefined;
+  constructedMethods: readonly unknown[] | undefined;
+  entry: ClosedSymbolDisposableEntry | undefined;
+  entryRun: ClosedSymbolDisposableEntry["run"] | undefined;
+  facade: Awaited<EasyedaControlEngine["controlFingerprintPromise"]> | undefined;
+  facadeSha256: string | undefined;
+  entryInvocationAttempted: boolean;
+  entryReturnObserved: boolean;
+  originalReturn: unknown;
+  failureObserved: boolean;
+  originalFailure: unknown;
+}
+let closedSymbolIndexReservation: ClosedSymbolIndexReservation | undefined;
+const closedSymbolUnreservedFailure: { observed: boolean; original: unknown } = { observed: false, original: undefined };
+
+function disposableOwnData(owner: object, key: string): unknown {
+  const descriptor = Object.getOwnPropertyDescriptor(owner, key);
+  if (descriptor === undefined || !Object.hasOwn(descriptor, "value")) { throw new Error("Disposable index owner data changed."); }
+  return descriptor.value as unknown;
+}
+function disposableOwnerMethod(owner: object, key: string): unknown {
+  let candidate: object | null = owner;
+  for (let depth = 0; candidate !== null && depth < 8; depth += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(candidate, key);
+    if (descriptor !== undefined) {
+      if (!Object.hasOwn(descriptor, "value") || typeof descriptor.value !== "function") { throw new Error("Disposable index owner method changed."); }
+      return descriptor.value as unknown;
+    }
+    const parent: unknown = Object.getPrototypeOf(candidate);
+    if (parent !== null && typeof parent !== "object") { throw new Error("Disposable index owner prototype changed."); }
+    candidate = parent;
+  }
+  throw new Error("Disposable index owner method unavailable.");
+}
+function disposableIndexMethods(): readonly unknown[] {
+  const authority = disposableOwnData(engine, "executionAuthorityValidator");
+  if (authority === null || typeof authority !== "object") { throw new Error("Disposable index engine authority owner is unavailable."); }
+  return [
+    disposableOwnerMethod(bridgeGate, "run"), disposableOwnerMethod(engine, "assertBridgeDispatchAllowed"),
+    disposableOwnerMethod(engine, "assertNativeUiEditingAllowed"),
+    ...["capture", "proveTerminated", "releaseCapture"].map(key => disposableOwnerMethod(authority, key)),
+    ...["currentAuthenticatedBridgeDispatchBinding", "bridgeSessionLifecycle", "launcherFingerprint", "installedEasyedaBundles",
+      "connect", "withAuthenticatedBridgeDispatchScope"].map(key => disposableOwnerMethod(upstream, key)),
+    disposableOwnerMethod(WindowsNativeUiController.prototype, "run"),
+    ...["status", "launch", "capture", "proveTerminated", "releaseCapture", "prepareClosedSessionClose",
+      "requestClosedSessionNormalClose", "probeClosedSessionTermination", "clockObservationForLaunch"]
+      .map(key => disposableOwnerMethod(WindowsControlRuntime.prototype, key)),
+  ];
+}
+function disposableConstructedMethods(runtime: WindowsControlRuntime, nativeUi: WindowsNativeUiController): readonly unknown[] {
+  return [disposableOwnerMethod(nativeUi, "run"),
+    ...["status", "launch", "capture", "proveTerminated", "releaseCapture", "prepareClosedSessionClose",
+      "requestClosedSessionNormalClose", "probeClosedSessionTermination", "clockObservationForLaunch"]
+      .map(key => disposableOwnerMethod(runtime, key))];
+}
+function assertOrdinaryRuntimeAllocationAllowed(): void {
+  if (closedSymbolIndexReservation !== undefined) { throw new Error("The Windows runtime is reserved by a consumed disposable validation attempt."); }
+}
+
+/** No outer gate/authenticated scope. The exact retained entry owns its one gate admission. */
+async function runClosedSymbolDisposableTool(input: unknown): Promise<CallToolResult> {
+  let phase: ClosedSymbolIndexPhase = "request";
+  let reason: ClosedSymbolIndexReason = "invalid-request";
+  let activeReservation: ClosedSymbolIndexReservation | undefined;
+  try {
+    const parsed = parseClosedSymbolDisposableInput(input);
+    const requestText = canonicalJson(parsed.request);
+    phase = "reservation"; reason = "attempt-unavailable";
+    if (closedSymbolIndexReservation !== undefined || windowsRuntime !== undefined || scheduledShutdown !== undefined) {
+      throw new Error("Disposable index attempt is unavailable.");
+    }
+    if (disposableOwnData(engine, "upstream") !== upstream) { throw new Error("Disposable index engine owner differs."); }
+    disposableOwnData(engine, "controlFingerprintPromise");
+    const facadePromise = engine.controlFingerprintPromise;
+    if (disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise) { throw new Error("Disposable index facade promise differs."); }
+    const executionAuthority = disposableOwnData(engine, "executionAuthorityValidator");
+    if (executionAuthority === null || typeof executionAuthority !== "object") { throw new Error("Disposable index engine authority owner differs."); }
+    const environment = process.env;
+    const reservation: ClosedSymbolIndexReservation = {
+      engine, upstream, gate: bridgeGate, facadePromise, executionAuthority, environment, assetsRoot: environment["EASYEDA_ASSETS_ROOT"],
+      wslDistribution: environment["WSL_DISTRO_NAME"], controlPath: retainedControlRoot.path,
+      pluginRoot: resolve(import.meta.dirname, "../.."), requestText, methods: disposableIndexMethods(),
+      runtime: undefined, nativeUi: undefined, constructedMethods: undefined,
+      entry: undefined, entryRun: undefined, facade: undefined, facadeSha256: undefined,
+      entryInvocationAttempted: false, entryReturnObserved: false, originalReturn: undefined,
+      failureObserved: false, originalFailure: undefined,
+    };
+    // Permanent before the first await, including setup failure. Never reset or replace.
+    closedSymbolIndexReservation = reservation; activeReservation = reservation;
+    const current = (): void => {
+      if (closedSymbolIndexReservation !== reservation || reservation.engine !== engine || reservation.upstream !== upstream ||
+        reservation.gate !== bridgeGate || disposableOwnData(engine, "upstream") !== upstream ||
+        disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || reservation.facadePromise !== facadePromise ||
+        disposableOwnData(engine, "executionAuthorityValidator") !== reservation.executionAuthority ||
+        reservation.environment !== process.env || process.env["EASYEDA_ASSETS_ROOT"] !== reservation.assetsRoot ||
+        process.env["WSL_DISTRO_NAME"] !== reservation.wslDistribution || controlDataDirectory() !== reservation.controlPath ||
+        retainedControlRoot.path !== reservation.controlPath || resolve(import.meta.dirname, "../..") !== reservation.pluginRoot ||
+        scheduledShutdown !== undefined || canonicalJson(parseClosedSymbolDisposableInput(input).request) !== requestText) {
+        throw new Error("Disposable index reservation, request, configuration or shutdown state changed.");
+      }
+      const methods = disposableIndexMethods();
+      if (methods.length !== reservation.methods.length || methods.some((method, index) => method !== reservation.methods[index]) ||
+        windowsRuntime !== reservation.runtime) { throw new Error("Disposable index runtime or method ownership changed."); }
+      if (reservation.facade !== undefined && disposableOwnData(reservation.facade, "sha256") !== reservation.facadeSha256) {
+        throw new Error("Disposable index original facade hash changed.");
+      }
+      if (reservation.entry !== undefined && disposableOwnerMethod(reservation.entry, "run") !== reservation.entryRun) {
+        throw new Error("Disposable index entry method changed.");
+      }
+      if (reservation.runtime !== undefined && reservation.nativeUi !== undefined) {
+        const constructed = disposableConstructedMethods(reservation.runtime, reservation.nativeUi);
+        if (reservation.constructedMethods === undefined || constructed.length !== reservation.constructedMethods.length ||
+          constructed.some((method, index) => method !== reservation.constructedMethods?.[index])) {
+          throw new Error("Disposable index constructed owner methods changed.");
+        }
+      }
+    };
+    reason = "setup-refused"; current();
+    const assetsRoot = reservation.assetsRoot;
+    if (assetsRoot === undefined || assetsRoot.length === 0) { throw new Error("Disposable index requires installed assets configuration."); }
+    phase = "facade";
+    const facade = await facadePromise;
+    reservation.facade = facade;
+    const facadeSha256 = disposableOwnData(facade, "sha256");
+    if (typeof facadeSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(facadeSha256)) { throw new Error("Disposable index facade hash refused."); }
+    reservation.facadeSha256 = facadeSha256; current();
+    phase = "entry-import";
+    const entryModule = await import("./closed-symbol-disposable-entry.ts"); current();
+    phase = "construction";
+    const paths = { pluginRoot: reservation.pluginRoot, assetsRoot,
+      ...(reservation.wslDistribution === undefined ? {} : { wslDistribution: reservation.wslDistribution }) };
+    const runtime = new WindowsControlRuntime(Object.freeze({ ...paths, upstream, reviewedExecutionScopeSha256: facadeSha256 }));
+    reservation.runtime = runtime; windowsRuntime = runtime;
+    const nativeUi = new WindowsNativeUiController(Object.freeze({ ...paths, runtime }));
+    reservation.nativeUi = nativeUi;
+    reservation.constructedMethods = disposableConstructedMethods(runtime, nativeUi);
+    const entry = new entryModule.ClosedSymbolDisposableEntry(engine, upstream, runtime, nativeUi, bridgeGate);
+    reservation.entry = entry;
+    // oxlint-disable-next-line typescript/unbound-method -- Capture identity, then invoke with the retained exact receiver.
+    const entryRun = entry.run; reservation.entryRun = entryRun; current();
+    phase = "entry"; reason = "entry-boundary-refused";
+    reservation.entryInvocationAttempted = true;
+    const result = await entryRun.call(entry, parsed.originalRequest);
+    // Preserve the exact return before fallible owner reproof or projection.
+    reservation.originalReturn = result; reservation.entryReturnObserved = true;
+    current();
+    if (reservation.entry !== entry || reservation.runtime !== runtime || reservation.nativeUi !== nativeUi ||
+      reservation.entryRun !== entryRun || reservation.originalReturn !== result) { throw new Error("Disposable index retained originals changed."); }
+    phase = "projection"; reason = "result-refused";
+    return formatClosedSymbolDisposableResult(result);
+  } catch (error) {
+    if (activeReservation === undefined) {
+      if (!closedSymbolUnreservedFailure.observed) {
+        closedSymbolUnreservedFailure.observed = true; closedSymbolUnreservedFailure.original = error;
+      }
+    } else if (!activeReservation.failureObserved) {
+      activeReservation.failureObserved = true; activeReservation.originalFailure = error;
+    }
+    return closedSymbolDisposableIndexRefusal({
+      phase, reason, attemptReserved: closedSymbolIndexReservation !== undefined,
+      entryInvocationAttempted: activeReservation?.entryInvocationAttempted ?? false,
+      entryReturnObserved: activeReservation?.entryReturnObserved ?? false,
+      originalEntryResult: activeReservation?.originalReturn,
+    });
+  }
+}
 
 const recordSchema = z.record(z.string(), z.unknown());
 const evidenceSchema = z
@@ -1607,6 +1795,7 @@ const artifactReadSuccessOutputSchema = z
   })
   .strict();
 const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
+  easyeda_control_validate_closed_symbol: closedSymbolDisposableOutputSchema,
   easyeda_control_api: z.object({ offline: z.boolean().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_sdk_read: evidenceSuccessOutputSchema,
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1833,11 +2022,14 @@ registerFacadeTool(
   serializedGuarded(async ({ request }) => {
     if (request.action === "status") { return { action: request.action, result: windowsRuntime?.status() ?? { state: "not-launched" } }; }
     if (request.action === "launch-contained") {
+      assertOrdinaryRuntimeAllocationAllowed();
       const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"];
       if (assetsRoot === undefined) { throw new Error("Configure the machine's installed EasyEDA assets first."); }
       const implementation = await engine.controlFingerprintPromise;
+      assertOrdinaryRuntimeAllocationAllowed();
       windowsRuntime ??= new WindowsControlRuntime({ upstream, pluginRoot: resolve(import.meta.dirname, "../.."), assetsRoot,
         reviewedExecutionScopeSha256: implementation.sha256 });
+      assertOrdinaryRuntimeAllocationAllowed();
       return { action: request.action, result: await windowsRuntime.launch() };
     }
     if (request.action === "normal-close") {
@@ -1857,6 +2049,20 @@ registerFacadeTool(
       }
     });
   }, { allowDuringOrphanRisk: true }),
+);
+
+// This route needs the SDK's full-schema overload. The ordinary raw-shape
+// Helper would strip unknown outer fields before the fixed callback sees them.
+server.registerTool(
+  "easyeda_control_validate_closed_symbol",
+  {
+    title: "Validate one disposable closed-symbol metadata lifecycle",
+    description: "Validation only: launch owned application generations for one explicitly identified disposable project, modify one closed symbol's name/description once, and verify complete closed/reopened SQLite and saved-content evidence. Requires a fresh facade with no allocated Windows runtime or authenticated editor, exact compatibility, and all native prerequisites. Consumes a permanent target claim; a stopped result is not retry permission. This does not enable ordinary library/design writers or authorize another project. Uses a fixed hash-pinned native main-reference helper; a successful helper report alone is not lifecycle completion.",
+    inputSchema: closedSymbolDisposableInputSchema,
+    outputSchema: closedSymbolDisposableOutputSchema,
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  },
+  runClosedSymbolDisposableTool,
 );
 
 registerFacadeTool(
@@ -2349,7 +2555,7 @@ registerFacadeTool(
   {
     title: "Capture the guarded EasyEDA canvas",
     description:
-      "Capture the visible canvas, a framed canvas region, or a complete schematic page while preserving the PNG image content. Region and full-page modes change the visible viewport but not design data.",
+      "Request a PNG of the visible canvas, a canvas region or schematic sheet bounds. Region and full-page modes change the visible viewport but not design data. Valid image bytes and requested geometry do not prove target paint completion or page completeness; inspect the actual image before visual review.",
     inputSchema: {
       request: captureRequestSchema,
       expectedContext: contextSchema,
@@ -3122,7 +3328,6 @@ const shutdownAndExit = async (): Promise<void> => {
     process.exit(1);
   }
 };
-let scheduledShutdown: Promise<void> | undefined;
 const scheduleShutdown = (): void => {
   scheduledShutdown ??= shutdownAndExit();
   void scheduledShutdown;

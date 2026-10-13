@@ -14,11 +14,12 @@ import type {
   RuntimeExecutionAuthorityValidator,
 } from "./engine.ts";
 import type { UpstreamEasyedaClient } from "./upstream.ts";
-import { startWindowsAuthoritySupervisor, windowsClockObservationForResult } from "./windows-authority.ts";
+import { assertCurrentClosedSessionTerminationObservation, startWindowsAuthoritySupervisor, windowsClockObservationForResult } from "./windows-authority.ts";
 import type {
   ClosedSessionBinding,
   ClosedSessionCloseIntent,
   ClosedSessionCloseReceipt,
+  ClosedSessionTerminationObservation,
   ClosedSessionTerminationProof,
   IssuedWindowsClockObservation,
   WindowsAuthorityLaunch,
@@ -319,6 +320,21 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
     const bound = structuredClone(input);
     const launch = this.closedSessionLaunch(bound.intent);
     return this.requireSupervisor().proveClosedSession({ ...bound, launch });
+  }
+
+  public async probeClosedSessionTermination(input: Omit<ClosedSessionBinding, "launch"> & {
+    readonly intent: ClosedSessionCloseIntent; readonly closeReceipt: ClosedSessionCloseReceipt;
+  }): Promise<ClosedSessionTerminationObservation> {
+    const bound = structuredClone(input), callerText = canonicalJson(input);
+    const launch = this.closedSessionLaunch(bound.intent), supervisor = this.requireSupervisor();
+    const observation = await supervisor.probeClosedSessionTermination({ ...bound, launch });
+    if (this.requireSupervisor() !== supervisor || canonicalJson(input) !== callerText ||
+        canonicalJson(this.currentLaunch) !== canonicalJson(launch) ||
+        canonicalJson(this.closedSessionLaunch(bound.intent)) !== canonicalJson(launch)) {
+      throw new Error("Windows runtime ownership changed during the closed-session probe.");
+    }
+    assertCurrentClosedSessionTerminationObservation(observation);
+    return observation;
   }
 
   public async normalClose(windowHandle: string): Promise<void> {

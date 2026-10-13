@@ -93,6 +93,35 @@ reviewed wrappers. This is a bounded finding, not a claim that no such signal
 exists elsewhere. Waiting only for the target model ticker would still omit
 the separate bitmap-paint stage.
 
+### An explicit renderer flush can change model state
+
+The facade's model-view renderer is not an unconditional read-only operation.
+At `sch.js:4578133`, its `render()` drains model updates and, when
+`hasZIndexChange` is set, sorts root and descendant containers. The recursive
+traversal at `:4500788` also calls `trySortChildrenByZIndex()` for each container.
+That sorter at `:1929853` can repair invalid ordering by assigning model
+`zIndex` values, rather than merely sorting an independent view list.
+
+The setter at `:1922659` changes `_zIndex` and calls the modification monitor.
+When watched, that monitor at `:1886853` notifies bounding-box, attribute and
+history listeners. Some assignments request exclusion from history, but that
+does not make the model assignment itself a viewport-only change. This is a
+source finding, not evidence that a capture changed a design.
+
+A candidate adapter must therefore prove an appropriate clean state before
+calling any such flush, or use a separately reviewed narrower route. Checking
+only `hasZIndexChange` is not sufficient: pending model, table, part and removal
+work, deferred camera updates and camera change listeners need their own review.
+No clean-state predicate is implemented or admitted yet.
+
+The CPU scene's `render()` returns `true` after its synchronous paint, but
+returns without a value when rendering is unnecessary or the camera is not
+orthographic. A clean `needRender` flag alone remains insufficient. Nor is an
+exact increment of `renderI` a reliable paint witness: texture generation at
+`:3084250` increments that counter too. A candidate must bind the actual paint
+call and its result to the exact scene, camera and bitmap, without forcing a
+dirty flag to make the call succeed.
+
 ## Implementation direction
 
 Use a separately reviewed, sealed schematic adapter. It should bind the exact
@@ -103,13 +132,14 @@ must not establish readiness. Recheck identity and viewport after every awaited
 boundary, including the asynchronous blob callback.
 
 The narrowest candidate is CPU-only support: allow pending reactive updates to
-reach the target, flush the reviewed facade renderer, verify that deferred
-camera updates are drained and camera mapping matches the request, then bind
-capture to completion of the exact underlying CPU paint. Before implementing
-an explicit flush, review its side effects and the case where `needRender` is
-already false; a clean flag is not a painted-frame witness. Do not force that
-flag, resume an interrupted ticker, change engine settings or patch prototypes
-to manufacture a successful observation.
+reach the target, establish a clean-state contract for any explicit model/camera
+flush, verify that camera mapping matches the request, then bind capture to
+completion of the exact underlying CPU paint. The side effects above mean that
+calling the general facade renderer without that contract is not acceptable.
+The case where `needRender` is already false also needs a separate witness or
+an explicit refusal. Do not force that flag, resume an interrupted ticker,
+change engine settings or patch prototypes to manufacture a successful
+observation.
 
 Alternatively, use an engine-specific completion observer for a successful
 paint of that exact scene and viewport. The source establishes frame ownership
