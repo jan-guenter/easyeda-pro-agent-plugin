@@ -13,7 +13,55 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Candidate161000: clipping implementation and observed-version correction
+### Candidate170000: system methods and restarted161000 math proof
+
+User startup instruction: the agent should start EasyEDA itself in future.
+Restore a supported current-version launcher as the next compatibility priority;
+do not repeatedly delegate routine startup to the user. The current restricted
+catalog lacks a launcher. Do not use that gap to bypass legacy admission.
+
+PR12 merged normally as main2b280b0bc177a44a03a63be749a78d9921eade17, installed/
+enabled161000. Exact1,125files/21,895,703bytes/modes and inventory1ef1e96c match.
+Actual restarted facade68498 loads runtime3654c595; old51072 is absent. First
+status disconnected, then user-started EasyEDA authenticated existingbridge
+ded07x99dcxb504 on3.2.206/API0.3.50. M02 area returned50; M03 subtract returned
+one complete square outer/hole. Both passed two samples and runtime checks.
+See docs/api-connected-validation-ledger.md. No more live math checks needed
+for this slice. These cases do not validate later source or the new system tool.
+
+Candidate170000 adds18 fixed system methods, separate tool/runtime profile and
+offline schemas. Six unit conversions plus12 environment methods share exact
+identity validation, never old context/design admission. Five tools in the
+restricted mode,30 on the legacy tuple; seven skills. Inventory774 now has211
+public subsets/30 native equivalents/82 blocked/451 omitted; routes308 guarded,
+94 blocked/two partial. docs/system-release-2026-10-13.md and source research
+record limits, tests, delivery and backlog. Publication/install are pending at
+this snapshot; consult the release PR receipt before repeating delivery.
+
+Local84 focused/integration cases and424 bridge tests pass. Fulltypes/strict
+type-aware lint are clean;179 repository/privacychecks, package and all seven
+custom/officialskillvalidators pass.151 registry signatures/40attestations
+verify; audit reports0vulnerabilities. Independent source review has no blocker.
+Source315 projection673f00939cfb9adb8f011065209f4b9885afba588e52dd9057ba636ecd98b0f8,
+runtime3 projection8b202a1c840d1067cc5eaa37cd82c5d1c7827f270455684ac9962f3f6f08386f.
+All external compatibilitymanifest fields remain equal to prior main.
+
+Initial PR13 CI38434735082 failed two test-only checks: one remaining legacy
+catalog assertion expected29 instead of30; the unchanged managed PowerShell
+double reached its15s process deadline with no output. Corrected count and
+synthetic-only45s allowance pass the original five affected local cases.
+Real Windows probe15s, production helper10s, assertions and output bounds stay
+unchanged; no retry/skip added. Retain the failed run; final CI belongs in PR13.
+
+PR12 required CI passed, but post-merge mainCI38431407972 found a randomized
+negative-test no-op in closed-sql-bindings. The fixture now guarantees a different
+ID; original29cases pass, production guard unchanged. Retain that failed run.
+The loaded161000 owner is unchanged. No project/context read, navigation, CAD,
+Save, settings change, bridge import or C10 recovery occurred. Production and
+its record stay excluded. Profiled935c7a4 and originalC10journal81a9dcd2 remain
+unchanged. Fresh host needed after any new official installation.
+
+### Historical candidate161000: clipping implementation and observed-version correction
 
 Candidate161000 adds bounded public subsets for the remaining five sys_Math
 methods. All16 are now implemented, with clipping restricted to small orthogonal

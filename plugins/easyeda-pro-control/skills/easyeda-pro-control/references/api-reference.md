@@ -35,9 +35,9 @@ omission with the evidence and work required to support it. A native equivalent
 does not prove the public wrapper works. An internal Save call is not a new
 standalone Save capability. Follow the returned route and its exact scope.
 
-The current source inventory contains 774 distinct paths: 204 public subsets,
+The current source inventory contains 774 distinct paths: 211 public subsets,
 30 native equivalents, no lifecycle-only methods, 82 implemented-but-blocked
-methods and 458 omissions. Its routes include 285 available with runtime guards,
+methods and 451 omissions. Its routes include 308 available with runtime guards,
 94 blocked and two partially blocked. These are implementation classifications,
 not connected validation counts; one method can have several routes.
 
@@ -126,10 +126,47 @@ rings, 192 total points including closing repeats, and the existing 32 KiB
 response bound. Oversized or malformed output refuses without truncation. A
 returned group is not automatically a valid input to another calculation.
 
-No connected math validation is recorded. Installed135500 authenticated to the
-editor but its area request refused before SDK dispatch because the old profile
-expected the package-version string. The source correction needs a new installed
-host; that refusal is neither a successful calculation nor clipping validation.
+Installed161000 returned area 50 for the triangle (0,0),(10,0),(0,10), and one
+outer square with a complete square hole for subtraction of [2,6] squared from
+[0,8] squared. Both calls passed their double samples and before/after runtime
+checks. These two cases do not validate other methods, boundary inputs or newer
+source generations. Installed135500's earlier version refusal remains historical.
+
+## Local environment and unit methods
+
+Query `system` with `includeSchemas:true`, then use `system-validate` before
+calling `easyeda_control_system`. The request contains a fixed `method` and
+strict `arguments`, for example:
+
+```json
+{"method":"eda.sys_Unit.inchToMm","arguments":{"inch":1,"numberOfDecimals":3}}
+```
+
+Six conversions cover both directions among mil, mm and inch. Input magnitude
+is at most 1e9; decimal precision is an integer from 0 to 12, default 4. Results
+include explicit input/output units and precision. This uses the SDK's rounded
+floating-point result, not exact decimal arithmetic. Numeric results carry
+`negativeZero`; `value:0, negativeZero:true` represents SDK -0. Do not discard
+the flag when exact scalar identity matters. No canvas unit or origin changes.
+
+The twelve environment methods cover eight mode/edition booleans, editor version,
+compiled date and two version comparisons. Booleans are captured at API loading,
+not a fresh network probe or account authorization. The compiled-date getter may
+fill an API-local cache, but does not persist settings. Date text remains raw;
+no timezone is inferred. Version comes from editor metadata, not installer identity.
+
+Despite their English names, the comparators test SUPPLIED >= CURRENT or
+SUPPLIED <= CURRENT. Supply canonical major.minor.patch only, each component
+0 through 999999. No prefixes, leading zeros, prerelease or build suffixes.
+The SDK semver dependency may emit console diagnostics if semver debugging was
+enabled when the API loaded; the adapter does not patch console or settings.
+
+Each method returns two matching synchronous scalar observations, bounded to
+8192 bytes with metadata strings at most 128 printable ASCII characters. Runtime
+admission and authentication match the separately reviewed new tuple. No active
+document, project, selection, private account, file, network, navigation or Save
+is accessed. `getFrontendDataUnit` is excluded because it dispatches to UI state.
+New system methods are source-tested, not connected-validated.
 
 ## Fixed SDK reads and calculations on the older tuple
 

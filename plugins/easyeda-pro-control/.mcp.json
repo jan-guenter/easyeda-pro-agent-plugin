@@ -12,6 +12,7 @@
         "easyeda_control_api": { "approval_mode": "approve" },
         "easyeda_control_sdk_read": { "approval_mode": "prompt" },
         "easyeda_control_calculate": { "approval_mode": "prompt" },
+        "easyeda_control_system": { "approval_mode": "prompt" },
         "easyeda_control_status": { "approval_mode": "approve" },
         "easyeda_control_discover": { "approval_mode": "approve" },
         "easyeda_control_context": { "approval_mode": "approve" },

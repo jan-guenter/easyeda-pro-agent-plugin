@@ -108,6 +108,8 @@ import { PCB_ACTIVE_LAYER_METHOD, readPcbActiveLayer } from "./pcb-active-layer-
 import { CALCULATION_ONLY_TOOLS, configuredFacadeMode, facadeToolRegistered } from "./facade-mode.ts";
 import { sdkMathRequestSchema } from "./sdk-math.ts";
 import { calculateSdkMath } from "./sdk-math-runtime.ts";
+import { sdkSystemRequestSchema } from "./sdk-system.ts";
+import { readSdkSystem } from "./sdk-system-runtime.ts";
 
 const facadeMode = configuredFacadeMode(process.env);
 
@@ -1824,6 +1826,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_api: z.object({ offline: z.boolean().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_sdk_read: evidenceSuccessOutputSchema,
   easyeda_control_calculate: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_system: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_runtime: z.object({ action: z.string().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1856,7 +1859,7 @@ const server = new McpServer(
     capabilities: { tools: {} },
     instructions:
       facadeMode === "calculation-only"
-        ? "Calculation-only compatibility mode. Only status, local reference/discovery and separately version-pinned SDK calculations are registered. No project readers, native controls, navigation, design changes, Save or recovery tools are available. Calculation admission does not admit any other method. Use offline API calculation schemas and validation first. The mode stays fixed until restart."
+        ? "Local-utility compatibility mode. Only status, local reference/discovery, separately version-pinned SDK calculations and bounded system observations are registered. No project readers, native controls, navigation, design changes, Save or recovery tools are available. Utility admission does not admit legacy methods. Use offline API schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
         : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal.",
   },
 );
@@ -1900,17 +1903,18 @@ registerFacadeTool(
       typedDesign: { enabled: facadeMode === "legacy-reviewed", tool: "easyeda_control_design", supervisorRequired: true, persistence: "native-source-plus-complete-project-record-delta", arbitraryCode: false },
       libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
       ...(facadeMode === "calculation-only" ? { availableTools: CALCULATION_ONLY_TOOLS,
-        capabilityScope: "Sixteen separately reviewed SDK calculation subsets only; no project access or legacy-route admission." } : {}),
+        capabilityScope: "Sixteen SDK calculation and eighteen local system-method subsets; separate runtime admission, no project access or legacy-route admission." } : {}),
     },
     upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
       ...await engine.status(), capabilities: { sdkCalculations: { tool: "easyeda_control_calculate", runtimeAdmissionRequired: true },
+        sdkSystem: { tool: "easyeda_control_system", runtimeAdmissionRequired: true },
         designAccess: { enabled: false }, navigation: { enabled: false } },
     },
     bridgeConnection: upstream.bridgeConnectionDiagnostics(),
     upstreamProcess: upstream.processDiagnostics(),
     incompleteOperations: admission.incompleteOperations,
     incompleteOperationsObservedAt: admission.observedAt,
-    safetyModel: facadeMode === "legacy-reviewed" ? "plan-apply-verify-save-reopen-checkpoint" : "fixed-calculations-with-separate-runtime-admission",
+    safetyModel: facadeMode === "legacy-reviewed" ? "plan-apply-verify-save-reopen-checkpoint" : "fixed-local-utilities-with-separate-runtime-admission",
   })),
 );
 
@@ -1941,7 +1945,7 @@ registerFacadeTool(
   },
   guarded(async (input) => {
     if (facadeMode === "calculation-only" && input.source === "live") {
-      throw new Error("Live upstream discovery is unavailable in calculation-only mode; use the local API calculation catalog.");
+      throw new Error("Live upstream discovery is unavailable in local-utility mode; use the offline API catalogs.");
     }
     const entries = await discoverReviewedOrLiveTools(
       () => engine.assertBridgeDispatchAllowed(),
@@ -2238,6 +2242,17 @@ registerFacadeTool(
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   serializedLiveGuarded(async (input) => ({ result: await calculateSdkMath(engine, input.request, input.expectedFingerprint) })),
+);
+
+registerFacadeTool(
+  "easyeda_control_system",
+  {
+    title: "Read local EasyEDA environment or convert units",
+    description: "Run one of eighteen fixed sys_Environment/sys_Unit subsets on separately reviewed EasyEDA 3.2.206/API 0.3.50. Uses the actual authenticated status fingerprint, without active project/context, navigation, Save, network or files. Units accept bounded scalars and precision; environment values describe API initialization metadata, not live account permissions. The compiled-date getter may populate an extension-local cache. Version comparators compare the supplied version against the current version. Inspect offline API system and system-validate first. No arbitrary method, code, callback or legacy-route admission; no connected validation is implied.",
+    inputSchema: { request: z.unknown().pipe(sdkSystemRequestSchema), expectedFingerprint: privateFingerprintSchema },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  serializedLiveGuarded(async (input) => ({ result: await readSdkSystem(engine, input.request, input.expectedFingerprint) })),
 );
 
 registerFacadeTool(

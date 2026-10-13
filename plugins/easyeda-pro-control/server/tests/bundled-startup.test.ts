@@ -133,7 +133,7 @@ void describe("self-contained packaged machine startup", () => {
     const pid = transport.pid; assert.ok(pid !== null);
     const listed = await client.listTools();
     assert.deepEqual(listed.tools.map((tool) => tool.name).toSorted(), [
-      "easyeda_control_api", "easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_status",
+      "easyeda_control_api", "easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_status", "easyeda_control_system",
     ]);
     const catalog = await api(client, { action: "calculations", query: { includeSchemas: true } });
     assert.equal(catalog["total"], 16); assert.equal(catalog["invocationEnabledByDiscovery"], false);
@@ -148,6 +148,12 @@ void describe("self-contained packaged machine startup", () => {
       },
     } } });
     assert.equal(clipping["valid"], true); assert.equal(clipping["executionAuthorized"], false);
+    const system = await api(client, { action: "system", query: { includeSchemas: true } });
+    assert.equal(system["total"], 18); assert.equal(system["invocationEnabledByDiscovery"], false);
+    const unit = await api(client, { action: "system-validate", query: { request: {
+      method: "eda.sys_Unit.inchToMm", arguments: { inch: 1, numberOfDecimals: 3 },
+    } } });
+    assert.equal(unit["valid"], true); assert.equal(unit["executionAuthorized"], false);
     const discovery = await client.callTool({ name: "easyeda_control_discover", arguments: { query: "pcb", mode: "all" } });
     assert.notEqual(discovery.isError, true);
     const entries = record(discovery.structuredContent)["value"];
@@ -239,7 +245,7 @@ void describe("self-contained packaged machine startup", () => {
         [options.pinnedNode, options.bundle]);
       assert.equal(await readlink(`/proc/${pid}/cwd`), options.pluginRoot);
       const tools = await client.listTools();
-      assert.equal(tools.tools.length, 29);
+      assert.equal(tools.tools.length, 30);
       assert.equal(new Set(tools.tools.map((tool) => tool.name)).size, tools.tools.length);
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_api"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_sdk_read"));

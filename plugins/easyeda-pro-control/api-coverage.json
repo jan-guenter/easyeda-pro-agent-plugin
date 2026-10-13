@@ -6,14 +6,14 @@
     "reviewedDistinctMethods": 697,
     "latestDistinctMethods": 773,
     "statuses": {
-      "implemented-public-subset": 209,
+      "implemented-public-subset": 211,
       "implemented-native-equivalent": 30,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 82,
-      "omitted": 453
+      "omitted": 451
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 290,
+      "available-with-runtime-guards": 308,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -37,7 +37,7 @@
       "multi-object-electrical-effect": 7,
       "navigation-or-viewport-adapter-needed": 14,
       "non-json-result-or-callback": 6,
-      "not-in-reviewed-runtime": 60,
+      "not-in-reviewed-runtime": 58,
       "pad-pair-group-replacement-effects": 1,
       "page-order-partial-write-lifecycle": 1,
       "panel-context-not-admitted": 1,
@@ -29166,6 +29166,37 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Environment.getEditorCompliedDate",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads editorMainDate metadata and may initialize T.editorCompliedDate in the API's local runtime cache. This is not a strictly pure function; it does not change a shared preference or persist data. The bounded returned date text is not parsed or relabeled as a timezone.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Environment.getEditorCompliedDate",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Environment.getEditorCompliedDate",
           "implementation": "public-method",
@@ -29226,6 +29257,37 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Environment.getEditorCurrentVersion",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads editorMainVersion metadata, not the installed package's suffixed version. onlySemantic optionally limits it to three components and pads a two-component value. It does not admit a runtime or update compatibility pins.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Environment.getEditorCurrentVersion",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Environment.getEditorCurrentVersion",
@@ -29321,6 +29383,37 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Environment.isClient",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Environment.isClient",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Environment.isClient",
           "implementation": "public-method",
@@ -29382,6 +29475,37 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Environment.isEasyEDAProEdition",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Environment.isEasyEDAProEdition",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Environment.isEasyEDAProEdition",
           "implementation": "public-method",
@@ -29433,17 +29557,41 @@
         }
       ],
       "reviewedRuntimeDeclaration": false,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Environment.isEditorCurrentVersionGreaterThanOrEqual is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
-        "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Environment.isEditorCurrentVersionGreaterThanOrEqual",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Compares SUPPLIED version >= CURRENT editor semantic version, despite the method's ambiguous English name. Canonical major.minor.patch only, each component 0-999999; no dev, leading zeros, prerelease, build suffix, partial version or implicit coercion. Bundled semver can emit console diagnostics if its initialization enabled semver NODE_DEBUG.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Environment.isEditorCurrentVersionGreaterThanOrEqual",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -29462,17 +29610,41 @@
         }
       ],
       "reviewedRuntimeDeclaration": false,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Environment.isEditorCurrentVersionLessThanOrEqual is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
-        "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Environment.isEditorCurrentVersionLessThanOrEqual",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Compares SUPPLIED version <= CURRENT editor semantic version, despite the method's ambiguous English name. Canonical major.minor.patch only, each component 0-999999; no dev, leading zeros, prerelease, build suffix, partial version or implicit coercion. Bundled semver can emit console diagnostics if its initialization enabled semver NODE_DEBUG.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Environment.isEditorCurrentVersionLessThanOrEqual",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -29500,6 +29672,37 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Environment.isHalfOfflineMode",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Environment.isHalfOfflineMode",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Environment.isHalfOfflineMode",
@@ -29562,6 +29765,37 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Environment.isJLCEDAProEdition",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Environment.isJLCEDAProEdition",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Environment.isJLCEDAProEdition",
           "implementation": "public-method",
@@ -29622,6 +29856,37 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Environment.isOfflineMode",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Environment.isOfflineMode",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Environment.isOfflineMode",
@@ -29684,6 +29949,37 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Environment.isOnlineMode",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Environment.isOnlineMode",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Environment.isOnlineMode",
           "implementation": "public-method",
@@ -29745,6 +30041,37 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Environment.isProPrivateEdition",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Environment.isProPrivateEdition",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Environment.isProPrivateEdition",
           "implementation": "public-method",
@@ -29805,6 +30132,37 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Environment.isWeb",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Environment.isWeb",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Environment.isWeb",
@@ -32484,6 +32842,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -32538,6 +32897,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -32592,6 +32952,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -32646,6 +33007,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -32700,6 +33062,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -32754,6 +33117,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -32808,6 +33172,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -32862,6 +33227,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -32916,6 +33282,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -32970,6 +33337,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -33024,6 +33392,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -33078,6 +33447,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -33132,6 +33502,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -33186,6 +33557,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -33240,6 +33612,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -33294,6 +33667,7 @@
             "sdk-math.ts",
             "sdk-math-clipping.ts",
             "sdk-math-runtime.ts",
+            "sdk-local-runtime.ts",
             "facade-mode.ts"
           ],
           "tests": [
@@ -35447,6 +35821,37 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Unit.inchToMil",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Unit.inchToMil",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Unit.inchToMil",
           "implementation": "public-method",
@@ -35507,6 +35912,37 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Unit.inchToMm",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Unit.inchToMm",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Unit.inchToMm",
@@ -35569,6 +36005,37 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Unit.milToInch",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Unit.milToInch",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Unit.milToInch",
           "implementation": "public-method",
@@ -35629,6 +36096,37 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Unit.milToMm",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Unit.milToMm",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Unit.milToMm",
@@ -35691,6 +36189,37 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Unit.mmToInch",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Unit.mmToInch",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Unit.mmToInch",
           "implementation": "public-method",
@@ -35751,6 +36280,37 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_system",
+          "selector": "eda.sys_Unit.mmToMil",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation. Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access. Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry. Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion.",
+          "source": [
+            "sdk-system.ts",
+            "sdk-system-runtime.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-system.test.ts",
+            "sdk-system-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "system",
+                "query": {
+                  "method": "eda.sys_Unit.mmToMil",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_Unit.mmToMil",
