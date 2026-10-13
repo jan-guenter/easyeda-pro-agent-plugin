@@ -13,7 +13,66 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Current backlog slice: capability-scoped calculations
+### Candidate161000: clipping implementation and observed-version correction
+
+Candidate161000 adds bounded public subsets for the remaining five sys_Math
+methods. All16 are now implemented, with clipping restricted to small orthogonal
+integer rings and complete bounded group/hole output. General touching/aligned
+boundaries, nonorthogonal/fractional clipping and group inputs remain outside
+this subset. Source research, exact argument refinements and documentation are
+in docs/sys-math-clipping-research-2026-10-13.md. The runtime correction below
+pins the actual editor-reported3.2.206, not its suffixed installed package value.
+
+Local56 focused/integration tests and424 bridge tests pass; facade/bridge types,
+strict zero-warning lint, dependency signatures/audit, package/privacy checks
+and seven-skill validation are clean. Independent source review has no blockers.
+Source312 projection54a886272cff526166f57b5d824198710313705336a42a3db33ca90502b2fe32,
+runtime3 projection3654c59582f1653094773e316f4268558a850786c84aa223810f2471f1745641.
+External manifest pins remain byte-equivalent. Inventory774 now has209 public
+subsets/30 native equivalents/82 blocked/453 omitted methods; routes290 guarded,
+94 blocked/two partial. These are not live validation counts.
+
+Publication, required CI and official installation are pending at this snapshot;
+see docs/clipping-release-2026-10-13.md and the feature/sdk-clipping-bounded PR
+delivery receipt before repeating them. Installed/loaded135500 remains unchanged.
+No successful live math execution has occurred. Next connected check must use
+the corrected installed snapshot in a fresh host; do not hotpatch the current
+owner, fabricate a version string or repeat the known admission refusal.
+No new CAD, project, settings or journal work is authorized by this release.
+
+### Restarted135500: observed connection and calculation admission refusal
+
+PR11 is merged as main dd8cdb93eea311cbb05cfaf110976cb4fb6a0f8e. Final PR
+CI38411536078 and main CI38413180674 both passed. Official Git-marketplace
+135500 is installed/enabled; all1,123 files/21,842,492 bytes/modes matched the
+committed package. The supported same-root profile migration has already run,
+retaining its exact private backup. Do not repeat delivery or migration.
+See the PR11 delivery receipt for hashes and installation details.
+
+This restarted host exposes the four calculation-only tools. Its first actual
+status succeeded: facade51072, installed runtime projection fe016e31, matching
+API0.3.50/PCB3.2.193, no upstream implementation drift, sandbox started. The
+bridge is disconnected with zero observed upgrades; no live calculation has
+run. Status structured-content digest c99c45e7ddac6b1352ed9a0de3ce201f0bc30b156d84f026680af4564b814cd9
+identifies that observation, not authenticated execution admission. Offline
+schema lookup and exact validation passed for area of (0,0),(10,0),(0,10).
+The user was asked to open Start Page and connect the existing authenticated
+bridge; do not poll unchanged disconnection or launch a competing owner.
+
+Source-only clipping research continues on feature/sdk-clipping-bounded.
+After the user opened EasyEDA, status authenticated the existing bridge and
+loader ded07x99dcxb504 (digest67cd6abf9692028958c3d5fc581cb647044ffab497fb4f313ad46ef785c8351b).
+One area request refused before SDK execution: expected package version
+3.2.206.715d940d, actual editor-reported version3.2.206. The source correction
+names and pins that observed editor version; installed-package and bundle hash
+checks remain unchanged. Installed135500 is not hotpatched; live calculation
+validation needs the corrected release and a fresh host. Do not retry this
+known refusal or substitute a fabricated fingerprint.
+No CAD/UI/Save, project access, settings change or journal recovery occurred.
+The consumed C10 data-only record is unchanged and must not be replayed.
+Production designs and their records remain excluded.
+
+### Historical pre-delivery snapshot: capability-scoped calculations
 
 PR10 is merged as main90f150622713499c114bd752325dca9d316278c7 and installed/
 enabled124500. Both PR and main CI passed. Do not repeat that delivery. The

@@ -25,7 +25,9 @@ import {
  */
 export const SDK_MATH_RUNTIME_PROFILE = {
   schema: "easyeda-pro-control.sdk-math-runtime.v1",
-  easyedaVersion: "3.2.206.715d940d",
+  // The authenticated handshake forwards getEditorCurrentVersion(), which
+  // Reports editorMainVersion, not the suffixed installed package version.
+  editorReportedVersion: "3.2.206",
   installedBundles: {
     pcbEditor: {
       version: "3.2.193.682ed44e",
@@ -89,7 +91,7 @@ export function validateSdkMathFingerprint(fingerprint: unknown): true {
   assertSubset(actual, {
     facadeImplementation: manifest.facadeImplementation[implementation.mode],
     upstream: manifest.upstream,
-    connectedRuntime: { ...manifest.connectedRuntime, easyedaVersion: SDK_MATH_RUNTIME_PROFILE.easyedaVersion },
+    connectedRuntime: { ...manifest.connectedRuntime, easyedaVersion: SDK_MATH_RUNTIME_PROFILE.editorReportedVersion },
     installedBundles: SDK_MATH_RUNTIME_PROFILE.installedBundles,
   }, "SDK math reviewed runtime scope");
   return true;

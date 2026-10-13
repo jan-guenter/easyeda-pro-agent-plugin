@@ -18,7 +18,9 @@ function fingerprint(): ExpectedFingerprint {
     upstreamServer: { version: manifest.upstream.serverVersion }, upstreamLauncher: manifest.upstream.launcher, upstreamImplementationDrift: false,
     reviewedCompatibilityManifest: reviewedCompatibilityManifestFingerprint(), toolCount: manifest.upstream.toolCatalog.count, toolCatalogSha256: manifest.upstream.toolCatalog.sha256,
     health: { payload: { version: pinned.healthVersion, node_version: `v${pinned.nodeVersion}`, bridge_connected: true,
-      easyeda_version: SDK_MATH_RUNTIME_PROFILE.easyedaVersion, extension_version: pinned.extensionVersion, extension_version_mismatch: false, registry_mismatch: false } },
+      // Literal captured from the authenticated 135500 handshake. Deriving it
+      // From the profile hid the package-version/editor-version mismatch.
+      easyeda_version: "3.2.206", extension_version: pinned.extensionVersion, extension_version_mismatch: false, registry_mismatch: false } },
     bridge: { payload: { connected: true, bridge_version: pinned.bridgeVersion,
       ...(pinned.bridgeEasyedaVersion === null ? {} : { easyeda_version: pinned.bridgeEasyedaVersion }), diagnostics: { method_registry_hash: pinned.methodRegistryHash } } },
     bridgeDispatcher: { payload: { source: pinned.dispatcher.source, dispatcher_build_id: pinned.dispatcher.buildId, total: pinned.dispatcher.total } },
@@ -60,6 +62,8 @@ void test("new math admission preserves legacy rejection and exact common trust 
   assert.equal(validateSdkMathFingerprint(fingerprint()), true);
   assert.throws(() => validatePrivateFingerprint(fingerprint()), /compatibility tuple/u);
   const defects: ((value: ExpectedFingerprint) => void)[] = [
+    (value) => { value.health.payload.easyeda_version = "3.2.206.715d940d"; },
+    (value) => { value.health.payload.easyeda_version = "3.2.207"; },
     (value) => { value.health.payload.easyeda_version = loadReviewedCompatibilityManifest().connectedRuntime.easyedaVersion; },
     (value) => { value.installedBundles.publicApi.adapterSha256 = "0".repeat(64); },
     (value) => { value.upstreamLauncher.moduleGraph.sha256 = "0".repeat(64); },

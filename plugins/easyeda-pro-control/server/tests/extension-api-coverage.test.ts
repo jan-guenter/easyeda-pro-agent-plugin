@@ -240,7 +240,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 204, "implemented-native-equivalent": 30, "internal-lifecycle-only": 0, "implemented-but-blocked": 82, omitted: 458,
+    "implemented-public-subset": 209, "implemented-native-equivalent": 30, "internal-lifecycle-only": 0, "implemented-but-blocked": 82, omitted: 453,
   });
 });
 
@@ -611,19 +611,16 @@ void test("every coverage input-discovery request resolves to an actual strict a
   }
 });
 
-void test("eleven new-version calculations have scoped routes while clipping retains concrete omissions", () => {
+void test("all sixteen new-version calculations have scoped routes without broader runtime admission", () => {
   const entries = inventoryExtensionApiCoverage().filter((entry) => entry.namespace === "sys_Math");
   assert.equal(entries.length, 16);
-  assert.equal(entries.filter((entry) => entry.status === "implemented-public-subset").length, 11);
+  assert.equal(entries.filter((entry) => entry.status === "implemented-public-subset").length, 16);
   for (const entry of entries) {
     assert.equal(entry.reviewedRuntimeDeclaration, false);
     assert.equal(entry.currentGenerationLiveValidation, "not-recorded");
-    if (entry.status === "omitted") {
-      assert.equal(entry.omission?.code, "math-clipping-state-and-completion");
-    } else {
-      assert.equal(entry.routes[0]?.tool, "easyeda_control_calculate");
-      assert.match(entry.routes[0]?.scope ?? "", /calculation-only runtime, not legacy-tuple admission/u);
-    }
+    assert.equal(entry.omission, null);
+    assert.equal(entry.routes[0]?.tool, "easyeda_control_calculate");
+    assert.match(entry.routes[0]?.scope ?? "", /calculation-only runtime, not legacy-tuple admission/u);
   }
 });
 

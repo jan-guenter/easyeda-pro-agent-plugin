@@ -970,3 +970,34 @@ The scoped113000 release corrects the expectation, adds bounded failure
 diagnostics and supports historical abandonment of this successful-marker
 pre-navigation boundary. That recovery has not run. Ordinary symbol execution
 and the other affected writers stay disabled; no lifecycle success is claimed.
+
+## 2026-10-13: M01, authenticated calculation admission refusal
+
+Installed `0.3.0+codex.20261013135500` loaded its four calculation-only tools in
+a fresh host. Payload `546a75cac7f5d8c92c0b421a0a630e0d01398069`, package tree
+`365b5f57274f5840b47c14e64b09500e1a6a138a`, source projection
+`a230862cb3e50933b95ec8813c3db51659b73047fb65895bc1f0b1ac1740b1aa`, runtime
+projection `fe016e31deb774dde190cd6598b5c2e9aecf207543b9bd59c4f35989b07d3ffa`.
+The [PR11 delivery receipt](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/11)
+records exact installation and profile migration. The new API/PCB tuple and
+installed package hashes are in the
+[capability-specific review](easyeda-3.2.206-compatibility-review-2026-10-13.md).
+
+Initial status was disconnected. After the user opened EasyEDA, a new status
+authenticated the existing bridge: one established session, `loader_status`,
+dispatcher `ded07x99dcxb504`, unchanged upstream closure and the exact installed
+API0.3.50/PCB3.2.193 hashes. Its structured-content transcript commitment is
+`67cd6abf9692028958c3d5fc581cb647044ffab497fb4f313ad46ef785c8351b` (23,846 bytes).
+This is status evidence, not a managed design result/receipt pair.
+
+Offline schema lookup and exact validation accepted
+`eda.sys_Math.calculateArea` for `[(0,0),(10,0),(0,10)]`. One actual calculate
+call then refused at `/connectedRuntime/easyedaVersion`: expected
+`3.2.206.715d940d`, observed `3.2.206`. Source review places that comparison
+before the generated SDK execute. No area value was returned; no successful
+calculation, clipping, CAD or persistence validation is claimed.
+
+The next candidate corrects this package-version/editor-reported-version
+confusion without changing bundle hashes or old design pins. The installed
+owner is not patched and the known refusal is not retried. No project/context
+reader, navigation, Save, settings change or C10 recovery was invoked.

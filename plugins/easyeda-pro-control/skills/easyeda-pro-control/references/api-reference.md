@@ -77,15 +77,17 @@ specific refusal to identify unsupported input; do not substitute cached nets.
 {"request":{"action":"calculate-validate","query":{"request":{"method":"eda.sys_Math.calculateArea","arguments":{"polygon":[{"x":0,"y":0},{"x":10,"y":0},{"x":0,"y":10}]}}}}}
 ```
 
-These offline actions expose eleven fixed methods without granting execution
+These offline actions expose sixteen fixed methods without granting execution
 authority. Pass the validated inner `request` and the fresh authenticated status
 `expectedFingerprint` to `easyeda_control_calculate`. No design context is
 required: the result describes only supplied geometry. Runtime admission pins
-EasyEDA 3.2.206.715d940d and API 0.3.50.ab46409c independently from the old design
-profile, with exact source hashes before and after the two synchronous samples.
+editor-reported EasyEDA 3.2.206 and API 0.3.50.ab46409c independently from the old
+design profile, with exact source hashes before and after the two synchronous
+samples. The installed package version is separately 3.2.206.715d940d; it is not
+the version string returned by the authenticated editor.
 An unknown tuple may list the tool but cannot pass its execution checks.
 
-Supported methods are `bboxIntersects`, `calculateArea`, `calculatePerimeter`,
+The eleven non-clipping methods are `bboxIntersects`, `calculateArea`, `calculatePerimeter`,
 `contains`, `containsPoint`, `distanceToPoint`, `getBBox`, `getCentroid`,
 `translate`, `rotate` and `scale`. Polygon inputs are one simple nonzero-area
 ring of 3–128 vertices with optional repeated closing point. Coordinates and
@@ -99,9 +101,35 @@ coordinates or neither; omitted centers use the SDK centroid. Transformations
 return points and never move CAD objects. Point containment is inconsistent on
 boundaries, and zero distance can mean an interior point, not just a boundary.
 These floating-point calculations are not electrical clearance or connectivity
-proofs. `intersects`, `union`, `subtract`, `intersection` and `xor` remain omitted
-pending bounded clipping, closure and geometry-log handling. No connected math
-validation is recorded for this release.
+proofs.
+
+The five clipping methods are `intersects`, `union`, `subtract`, `intersection`
+and `xor`. Each accepts `polygon1` and `polygon2`, with a narrower contract:
+
+- One simple nonzero-area outer ring per operand, at most 16 distinct vertices,
+  integer coordinates within ±32,768 and alternating horizontal/vertical edges.
+  A repeated closing point is optional; the adapter explicitly closes its copy.
+- No input groups, holes, curves, native objects, redundant collinear corners,
+  self-contact or self-intersection. Across operands, all endpoint-on-edge or
+  shared-vertex contacts refuse. Collinear supporting edge lines also refuse,
+  even when those edges are disjoint.
+- At most two proper crossings per edge. Exact preflight also checks the SDK's
+  floating-point intersection arithmetic for all possible split fragments;
+  failure refuses before dispatch, without snapping or an epsilon.
+
+`intersects` returns a boolean for this admitted domain only. Boundary-only
+contact is excluded; do not rely on this adapter for touching-edge clearance.
+The four set operations return the complete array of `{outer, holes}` groups,
+including disconnected components, all holes and empty `[]`. Components may
+share output vertices, as in XOR. Results allow at most 32 groups and 32 total
+rings, 192 total points including closing repeats, and the existing 32 KiB
+response bound. Oversized or malformed output refuses without truncation. A
+returned group is not automatically a valid input to another calculation.
+
+No connected math validation is recorded. Installed135500 authenticated to the
+editor but its area request refused before SDK dispatch because the old profile
+expected the package-version string. The source correction needs a new installed
+host; that refusal is neither a successful calculation nor clipping validation.
 
 ## Fixed SDK reads and calculations on the older tuple
 
