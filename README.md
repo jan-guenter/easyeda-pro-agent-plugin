@@ -19,8 +19,17 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261013124500` retains 28 normal-mode tools and
-seven skills. When a trusted machine profile selects missing or invalid external
+Update `0.3.0+codex.20261013135500` adds eleven bounded geometry calculations
+through `easyeda_control_calculate`. They use supplied coordinates, not CAD
+objects. The older reviewed tuple exposes 29 tools; a configured newer or unknown
+tuple exposes only API reference, local discovery, status and calculations.
+Calculation execution separately requires the exact reviewed EasyEDA 3.2.206 /
+API 0.3.50 hashes and an authenticated session. This does not enable design
+readers, navigation or writers on the new version. Seven skills remain included.
+See the [calculation-scope release](docs/calculation-scope-release-2026-10-13.md)
+for bounds, verification and remaining work.
+
+When a trusted machine profile selects missing or invalid external
 installation files, startup instead exposes three offline-only tools: API
 reference, local discovery and bounded startup status. Live execution and
 recovery are unavailable in that process, even if the files are later repaired.
@@ -56,9 +65,9 @@ namespaces / 749 declared signatures and 99 latest official namespaces / 806
 signatures. Its `coverage` action inventories all 774 distinct mounted method
 paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
-Current source classifications are 193 public subsets, 30 native equivalents,
-no lifecycle-only methods, 82 implemented-but-blocked methods and 469
-omissions. Their execution routes comprise 274 available with runtime guards,
+Current source classifications are 204 public subsets, 30 native equivalents,
+no lifecycle-only methods, 82 implemented-but-blocked methods and 458
+omissions. Their execution routes comprise 285 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)

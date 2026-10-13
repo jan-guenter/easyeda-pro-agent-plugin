@@ -36,6 +36,7 @@ Distinguish these failure layers before changing anything:
 |---|---|---|
 | Tool is absent or host rejects dispatch as unavailable | No facade handler result | Check the plugin's enabled state. For authorized EasyEDA work, the checkout-only foreground MCP client below can use the same facade when no other owner is active. Never start a second owner or use a new data root to evade the lease. |
 | Status reports `mode:"offline-only"` and `installation.ready:false`; only three tools are listed | Trusted profile/Node admission passed, but a selected external installation check failed | Use its fixed `machine-installation-*` code and read-only installation inspection. API reference and local discovery remain usable. Live and recovery tools do not exist in this process. Review the changed installation before updating any pins, then restart the MCP session. |
+| Status reports `facade.mode:"calculation-only"`; four tools are listed | Configured bundle selectors are not the older reviewed design tuple | Only API reference, local discovery, status and supplied-coordinate calculations are registered. Status is not calculation admission; each calculation checks its own exact runtime profile. No design, navigation, native UI or recovery tool is available. |
 | Structured status error during upstream startup | Facade handler ran, but startup failed | Run `npm run doctor` offline from the trusted checkout. Use reported stage/exit details and failed checks; private stderr remains withheld. Do not infer the cause from its hash or length. |
 | Status succeeds but has no authenticated session | Upstream responded; extension connection is unproven | Verify the selected receipt/import and bridge connection. Do not call context or design readers yet. |
 | Authenticated session with `validation-required` tuple | Connection succeeded; compatibility remains unadmitted | Collect bounded status/context/public-read evidence for review. Exact/private calls remain blocked. |
@@ -51,6 +52,18 @@ profile or unverified Node still prevents startup entirely; configuration reuse
 and the offline doctor remain strict.
 
 Passing the offline doctor does not prove startup under the model host's process environment and does not clear a failed live status. Older installed snapshots may report only the private stderr length/hash; do not invent missing stage or exit evidence.
+
+For the specifically reviewed 3.2.206 upgrade, the trusted checkout provides
+`node scripts/upgrade-calculation-profile.ts`, optionally with
+`--profile /absolute/control/machine-profile.json`. Run only when updating this
+configuration is within the user's task. It verifies the installed app package
+and four bundle hashes, retains an exact private backup and atomically changes
+only the PCB/API version selectors. It preserves the control root, Node,
+upstream, credentials and journals. A matching already-upgraded profile is a
+verified no-op; other generations refuse. It does not update the old global
+compatibility manifest or launch a bridge. Use a fresh Codex chat afterward.
+Never start a competing owner to test the new selection. Broader editor support
+requires separate review; this helper enables only the four-tool catalog.
 
 When present, status `bridgeConnection` reports bounded fixed-code counters and timestamps. `observedUpgradeCount: 0` means this gateway observed no valid WebSocket upgrade, not that no TCP traffic arrived. `origin-rejected`, `authentication-failed`, `authenticated-build-mismatch`, and `credential-epoch-mismatch` separate Origin policy, authentication/protocol, archive and epoch failures. `authentication-failed` alone does not establish a key mismatch or justify rotation. `lastFailure` is historical and may remain after a later `session-established`; require the current authenticated session, not a counter, for live work. These diagnostics are not part of the stable authority fingerprint. Do not repeatedly poll an unchanged disconnected state.
 

@@ -84,6 +84,13 @@ review changed signatures/source paths and test against a disposable project.
 Use fixed bounded validation calls until the new tuple is admitted; no raw-code
 fallback. Never update a checksum solely because an admission check refused it.
 
+Compatibility can be capability-specific. The supplied-coordinate math profile
+admits its reviewed API 0.3.50 closure without changing the older design tuple.
+New or unknown configured generations register only reference, discovery, status
+and calculation tools. Each calculation still requires its exact hashes and
+authenticated session. Keep this registration boundary separate from runtime
+admission; adding a method to discovery must not expose unrelated old adapters.
+
 When publishing, preserve the immutable private bridge identity/key epoch and
 reproduce all bundle/license inputs. A changed reviewed bridge source closure
 can invalidate build receipts even when runtime output happens to match. Derive

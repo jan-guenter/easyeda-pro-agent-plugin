@@ -35,9 +35,9 @@ omission with the evidence and work required to support it. A native equivalent
 does not prove the public wrapper works. An internal Save call is not a new
 standalone Save capability. Follow the returned route and its exact scope.
 
-The current source inventory contains 774 distinct paths: 193 public subsets,
+The current source inventory contains 774 distinct paths: 204 public subsets,
 30 native equivalents, no lifecycle-only methods, 82 implemented-but-blocked
-methods and 469 omissions. Its routes include 274 available with runtime guards,
+methods and 458 omissions. Its routes include 285 available with runtime guards,
 94 blocked and two partially blocked. These are implementation classifications,
 not connected validation counts; one method can have several routes.
 
@@ -67,7 +67,43 @@ It never opens pages, compiles a netlist or saves. The result explicitly reports
 `transactionTopology:false` and does not claim connected validation. Use its
 specific refusal to identify unsupported input; do not substitute cached nets.
 
-## Fixed SDK reads and calculations
+## Supplied-coordinate calculations on the new tuple
+
+```json
+{"request":{"action":"calculations","query":{"method":"eda.sys_Math.calculateArea","includeSchemas":true}}}
+```
+
+```json
+{"request":{"action":"calculate-validate","query":{"request":{"method":"eda.sys_Math.calculateArea","arguments":{"polygon":[{"x":0,"y":0},{"x":10,"y":0},{"x":0,"y":10}]}}}}}
+```
+
+These offline actions expose eleven fixed methods without granting execution
+authority. Pass the validated inner `request` and the fresh authenticated status
+`expectedFingerprint` to `easyeda_control_calculate`. No design context is
+required: the result describes only supplied geometry. Runtime admission pins
+EasyEDA 3.2.206.715d940d and API 0.3.50.ab46409c independently from the old design
+profile, with exact source hashes before and after the two synchronous samples.
+An unknown tuple may list the tool but cannot pass its execution checks.
+
+Supported methods are `bboxIntersects`, `calculateArea`, `calculatePerimeter`,
+`contains`, `containsPoint`, `distanceToPoint`, `getBBox`, `getCentroid`,
+`translate`, `rotate` and `scale`. Polygon inputs are one simple nonzero-area
+ring of 3–128 vertices with optional repeated closing point. Coordinates and
+offsets are bounded to ±1,000,000. Holes, groups, curves and native object
+references refuse. `contains` additionally requires a strictly convex outer
+ring. Use the exact validator; JSON Schema does not express every refinement.
+
+Units are supplied-coordinate units, or their square for area. Rotation is in
+degrees, positive counterclockwise. Rotation and scale centers must supply both
+coordinates or neither; omitted centers use the SDK centroid. Transformations
+return points and never move CAD objects. Point containment is inconsistent on
+boundaries, and zero distance can mean an interior point, not just a boundary.
+These floating-point calculations are not electrical clearance or connectivity
+proofs. `intersects`, `union`, `subtract`, `intersection` and `xor` remain omitted
+pending bounded clipping, closure and geometry-log handling. No connected math
+validation is recorded for this release.
+
+## Fixed SDK reads and calculations on the older tuple
 
 ```json
 {"request":{"action":"sdk-reads","query":{"method":"eda.pcb_PrimitivePad.get","includeSchemas":true}}}

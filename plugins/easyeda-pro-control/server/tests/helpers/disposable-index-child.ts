@@ -64,6 +64,8 @@ syncBuiltinESMExports();
 process.env["EASYEDA_UPSTREAM_COMMAND"] = join(root, "must-not-execute");
 process.env["EASYEDA_UPSTREAM_ARGS_JSON"] = "[]";
 process.env["EASYEDA_UPSTREAM_CWD"] = root;
+process.env["EASYEDA_PCB_BUNDLE_VERSION"] = "3.2.149.5378b690";
+process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] = "0.2.53.aee2f57a";
 process.env["WSL_DISTRO_NAME"] = "DisposableIndexSynthetic";
 if (scenario === "missing-assets") { delete process.env["EASYEDA_ASSETS_ROOT"]; }
 else {

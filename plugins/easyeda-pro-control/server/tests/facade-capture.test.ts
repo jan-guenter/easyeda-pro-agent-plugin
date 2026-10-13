@@ -268,10 +268,10 @@ before(async () => {
   await mkdir(upstreamDataRoot, { mode: 0o700 });
   await writeFile(upstreamCallLogPath, "", "utf8");
   await mkdir(join(fixtureRoot, "node_modules"));
-  await mkdir(join(assetsRoot, "pro-pcb", "3.2.149.fixture", "js"), {
+  await mkdir(join(assetsRoot, "pro-pcb", "3.2.149.5378b690", "js"), {
     recursive: true,
   });
-  await mkdir(join(assetsRoot, "pro-api", "0.2.53.fixture"), {
+  await mkdir(join(assetsRoot, "pro-api", "0.2.53.aee2f57a"), {
     recursive: true,
   });
   await writeFile(projectPath, "fixture project identity", "utf8");
@@ -343,22 +343,22 @@ before(async () => {
     "utf8",
   );
   await writeFile(
-    join(assetsRoot, "pro-pcb", "3.2.149.fixture", "js", "pcb.js"),
+    join(assetsRoot, "pro-pcb", "3.2.149.5378b690", "js", "pcb.js"),
     "pcb fixture",
     "utf8",
   );
   await writeFile(
-    join(assetsRoot, "pro-api", "0.2.53.fixture", "api.js"),
+    join(assetsRoot, "pro-api", "0.2.53.aee2f57a", "api.js"),
     "api fixture",
     "utf8",
   );
   await writeFile(
-    join(assetsRoot, "pro-api", "0.2.53.fixture", "api-types.js"),
+    join(assetsRoot, "pro-api", "0.2.53.aee2f57a", "api-types.js"),
     "api adapter fixture",
     "utf8",
   );
   await writeFile(
-    join(assetsRoot, "pro-api", "0.2.53.fixture", "api-types.d.ts"),
+    join(assetsRoot, "pro-api", "0.2.53.aee2f57a", "api-types.d.ts"),
     "api declarations fixture",
     "utf8",
   );
@@ -703,8 +703,8 @@ before(async () => {
       EASYEDA_BRIDGE_TOKEN_FILE: bridgeTokenPath,
       EASYEDA_BRIDGE_MAX_PAYLOAD_SIZE: "1048576",
       EASYEDA_ASSETS_ROOT: assetsRoot,
-      EASYEDA_PCB_BUNDLE_VERSION: "3.2.149.fixture",
-      EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.2.53.fixture",
+      EASYEDA_PCB_BUNDLE_VERSION: "3.2.149.5378b690",
+      EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.2.53.aee2f57a",
     },
     stderr: "pipe",
   });

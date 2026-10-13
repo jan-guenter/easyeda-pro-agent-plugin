@@ -6,6 +6,7 @@ import type { ApiCoverageRoute } from "./extension-api-coverage-routes.ts";
 import { libraryExecutionLifecycleRefusal } from "./library-execution-lifecycle.ts";
 import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL, designExecutionLifecycleRefusal } from "./design-execution-lifecycle.ts";
 import { publicSdkReadDescriptors } from "./public-sdk-read.ts";
+import { sdkMathDescriptors } from "./sdk-math.ts";
 
 export type ApiCoverageStatus = "implemented-public-subset" | "implemented-native-equivalent" | "internal-lifecycle-only" | "implemented-but-blocked" | "omitted";
 export interface ApiCoverageOmission {
@@ -139,6 +140,11 @@ const concreteOmissions: Readonly<Record<string, ApiCoverageOmission>> = {
  */
 function omissionFor(namespace: string, method: string, declarations: readonly ApiDeclarationMethod[], reviewed: boolean): ApiCoverageOmission {
   const short = `${namespace}.${method}`;
+  if (namespace === "sys_Math" && ["intersects", "intersection", "union", "subtract", "xor"].includes(method)) {
+    return omitted("math-clipping-state-and-completion", `${short} in installed API 0.3.50 delegates to clipping with shared mutable state and geometry-bearing console warnings. Its point-array normalization leaves open rings unclosed. No bounded adapter is implemented for this branch.`,
+      "Define closed-ring and topology semantics, clipping complexity/output bounds and scoped failure reporting without global logger replacement. Review the full clipping closure and add focused exact-SDK cases before exposing it; the eleven simple calculations do not admit this branch.",
+      ["docs/sys-math-implementation-review-2026-10-13.md", "sdk-math.ts"]);
+  }
   if (!reviewed) { return omitted("not-in-reviewed-runtime", `${short} is declared only by the newer official reference and is absent from the pinned installed declaration.`, "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.", ["reviewed-compatibility.json", "extension-api-catalog-data.ts"]); }
   const concrete = concreteOmissions[short];
   if (concrete !== undefined) { return structuredClone(concrete); }
@@ -222,6 +228,14 @@ export function inventoryExtensionApiCoverage(): ApiCoverageEntry[] {
     }
   }
   const routes = new Map(maintainedApiCoverageRoutes());
+  for (const descriptor of sdkMathDescriptors()) {
+    routes.set(descriptor.path, [{ tool: "easyeda_control_calculate", selector: descriptor.path, implementation: "public-method",
+      scope: `Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. ${descriptor.limitations.join(" ")}`,
+      source: ["sdk-math.ts", "sdk-math-runtime.ts", "facade-mode.ts"], tests: ["sdk-math.test.ts", "sdk-math-runtime.test.ts", "facade-mode.test.ts"],
+      validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+      inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "calculations", query: { method: descriptor.path, includeSchemas: true } } } },
+    }]);
+  }
   for (const descriptor of publicSdkReadDescriptors()) {
     const existing = routes.get(descriptor.path) ?? [];
     routes.set(descriptor.path, [...existing, {

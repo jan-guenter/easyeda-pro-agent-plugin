@@ -105,6 +105,11 @@ import { isPcbSourceObjectsMethod } from "./pcb-source-objects.ts";
 import { readPcbSourceObjects } from "./pcb-source-objects-read.ts";
 import { PcbSelectedReadTimings } from "./pcb-selected-read-timings.ts";
 import { PCB_ACTIVE_LAYER_METHOD, readPcbActiveLayer } from "./pcb-active-layer-read.ts";
+import { CALCULATION_ONLY_TOOLS, configuredFacadeMode, facadeToolRegistered } from "./facade-mode.ts";
+import { sdkMathRequestSchema } from "./sdk-math.ts";
+import { calculateSdkMath } from "./sdk-math-runtime.ts";
+
+const facadeMode = configuredFacadeMode(process.env);
 
 const MAX_INLINE_RESULT_BYTES = 256 * 1024;
 const MAX_CAPTURE_PNG_BYTES = 16 * 1024 * 1024;
@@ -1818,6 +1823,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_symbol_metadata: closedSymbolOperationOutputSchema,
   easyeda_control_api: z.object({ offline: z.boolean().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_sdk_read: evidenceSuccessOutputSchema,
+  easyeda_control_calculate: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_runtime: z.object({ action: z.string().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1849,7 +1855,9 @@ const server = new McpServer(
   {
     capabilities: { tools: {} },
     instructions:
-      "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal.",
+      facadeMode === "calculation-only"
+        ? "Calculation-only compatibility mode. Only status, local reference/discovery and separately version-pinned SDK calculations are registered. No project readers, native controls, navigation, design changes, Save or recovery tools are available. Calculation admission does not admit any other method. Use offline API calculation schemas and validation first. The mode stays fixed until restart."
+        : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal.",
   },
 );
 
@@ -1858,6 +1866,7 @@ function registerFacadeTool<InputArgs extends z.ZodRawShape>(
   config: FacadeToolConfig<InputArgs>,
   handler: ToolCallback<InputArgs>,
 ): void {
+  if (!facadeToolRegistered(facadeMode, name)) { return; }
   const outputSchema = toolOutputSchemas[name];
   if (outputSchema === undefined) {
     throw new Error(`No reviewed output schema is registered for ${name}.`);
@@ -1885,17 +1894,23 @@ registerFacadeTool(
   serializedStatusGuarded(async (_input, admission) => ({
     facade: {
       version: CONTROL_VERSION,
+      mode: facadeMode,
       dataDirectory: controlDataDirectory(),
       processLease: { path: facadeLease.path, pid: facadeLease.pid },
-      typedDesign: { enabled: true, tool: "easyeda_control_design", supervisorRequired: true, persistence: "native-source-plus-complete-project-record-delta", arbitraryCode: false },
-      libraryExecution: { tool: "easyeda_control_library", capabilities: listLibraryExecutionCapabilities() },
+      typedDesign: { enabled: facadeMode === "legacy-reviewed", tool: "easyeda_control_design", supervisorRequired: true, persistence: "native-source-plus-complete-project-record-delta", arbitraryCode: false },
+      libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
+      ...(facadeMode === "calculation-only" ? { availableTools: CALCULATION_ONLY_TOOLS,
+        capabilityScope: "Eleven separately reviewed SDK calculations only; no project access or legacy-route admission." } : {}),
     },
-    upstream: await engine.status(),
+    upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
+      ...await engine.status(), capabilities: { sdkCalculations: { tool: "easyeda_control_calculate", runtimeAdmissionRequired: true },
+        designAccess: { enabled: false }, navigation: { enabled: false } },
+    },
     bridgeConnection: upstream.bridgeConnectionDiagnostics(),
     upstreamProcess: upstream.processDiagnostics(),
     incompleteOperations: admission.incompleteOperations,
     incompleteOperationsObservedAt: admission.observedAt,
-    safetyModel: "plan-apply-verify-save-reopen-checkpoint",
+    safetyModel: facadeMode === "legacy-reviewed" ? "plan-apply-verify-save-reopen-checkpoint" : "fixed-calculations-with-separate-runtime-admission",
   })),
 );
 
@@ -1924,8 +1939,11 @@ registerFacadeTool(
       idempotentHint: true,
     },
   },
-  guarded((input) =>
-    discoverReviewedOrLiveTools(
+  guarded(async (input) => {
+    if (facadeMode === "calculation-only" && input.source === "live") {
+      throw new Error("Live upstream discovery is unavailable in calculation-only mode; use the local API calculation catalog.");
+    }
+    const entries = await discoverReviewedOrLiveTools(
       () => engine.assertBridgeDispatchAllowed(),
       () =>
         bridgeGate.run(async () => {
@@ -1933,8 +1951,9 @@ registerFacadeTool(
           return upstream.listTools();
         }),
       input,
-    ),
-  ),
+    );
+    return facadeMode === "legacy-reviewed" ? entries : entries.map((entry) => Object.assign(entry, { facadeTool: null, availability: "unavailable" }));
+  }),
 );
 
 registerFacadeTool(
@@ -2048,6 +2067,7 @@ registerFacadeTool(
 
 // This route needs the SDK's full-schema overload. The ordinary raw-shape
 // Helper would strip unknown outer fields before the fixed callback sees them.
+if (facadeToolRegistered(facadeMode, "easyeda_control_validate_closed_symbol")) {
 server.registerTool(
   "easyeda_control_validate_closed_symbol",
   {
@@ -2059,7 +2079,9 @@ server.registerTool(
   },
   runClosedSymbolDisposableTool,
 );
+}
 
+if (facadeToolRegistered(facadeMode, "easyeda_control_symbol_metadata")) {
 server.registerTool(
   "easyeda_control_symbol_metadata",
   {
@@ -2071,6 +2093,7 @@ server.registerTool(
   },
   runClosedSymbolOperationTool,
 );
+}
 
 registerFacadeTool(
   "easyeda_control_design",
@@ -2204,6 +2227,17 @@ registerFacadeTool(
       return libraryExecutor.reconcileNoMutation(request.operationId);
     });
   }, { allowDuringOrphanRisk: true }),
+);
+
+registerFacadeTool(
+  "easyeda_control_calculate",
+  {
+    title: "Calculate with reviewed EasyEDA geometry methods",
+    description: "Run one of eleven fixed sys_Math calculations on caller-supplied bounded geometry using separately reviewed EasyEDA 3.2.206/API 0.3.50. Requires the actual authenticated status fingerprint; it does not admit legacy design tools. No project access, context selection, navigation, files, Save, callbacks or arbitrary code. Inspect easyeda_control_api calculations and calculate-validate first. Holes/groups and clipping operations are unsupported. Results retain the documented SDK limitations, including boundary behavior; no live validation is implied by registration.",
+    inputSchema: { request: z.unknown().pipe(sdkMathRequestSchema), expectedFingerprint: privateFingerprintSchema },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  serializedLiveGuarded(async (input) => ({ result: await calculateSdkMath(engine, input.request, input.expectedFingerprint) })),
 );
 
 registerFacadeTool(
