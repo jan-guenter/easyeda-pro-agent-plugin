@@ -54,6 +54,22 @@ export const machineProfileSchema = z.strictObject({
 });
 export type MachineProfile = z.infer<typeof machineProfileSchema>;
 
+export const machineInstallationFailureCodeSchema = z.enum([
+  "machine-installation-upstream-root-unavailable",
+  "machine-installation-upstream-package-unavailable",
+  "machine-installation-upstream-version-mismatch",
+  "machine-installation-upstream-entrypoint-unavailable",
+  "machine-installation-assets-root-unavailable",
+  "machine-installation-pcb-bundle-unavailable",
+  "machine-installation-api-implementation-unavailable",
+  "machine-installation-api-adapter-unavailable",
+  "machine-installation-api-declarations-unavailable",
+]);
+export type MachineInstallationFailureCode = z.infer<typeof machineInstallationFailureCodeSchema>;
+export type MachineInstallationReadiness =
+  | { readonly ready: true }
+  | { readonly ready: false; readonly code: MachineInstallationFailureCode };
+
 export class MachineProfileError extends Error {
   public readonly code: string;
   public constructor(code: string) {
@@ -335,20 +351,34 @@ async function validateControlDirectory(path: string, allowMissing: boolean): Pr
   }
 }
 
-async function validateInstallation(profile: MachineProfile, allowMissingControl: boolean): Promise<void> {
-  await canonicalDirectory(profile.upstream.root);
-  const packageValue = await readJson(join(profile.upstream.root, "package.json"), METADATA_MAX_BYTES);
-  const packageInfo = z.looseObject({ name: z.literal("easyeda-mcp-pro"), version: versionSchema }).parse(packageValue);
-  if (packageInfo.version !== profile.upstream.serverVersion) {
-    throw new MachineProfileError("machine-upstream-version-mismatch");
+async function installationCheck<T>(code: MachineInstallationFailureCode, check: () => Promise<T>): Promise<T> {
+  try {
+    return await check();
+  } catch {
+    // Only a fixed stage is public. Paths, metadata and native exceptions stay private.
+    throw new MachineProfileError(code);
   }
-  await regularFile(profile.upstream.entrypoint, METADATA_MAX_BYTES);
-  await canonicalDirectory(profile.easyeda.assetsRoot);
+}
+
+async function validateInstallation(profile: MachineProfile, allowMissingControl: boolean): Promise<void> {
+  await installationCheck("machine-installation-upstream-root-unavailable", () => canonicalDirectory(profile.upstream.root));
+  const packageInfo = await installationCheck("machine-installation-upstream-package-unavailable", async () =>
+    z.looseObject({ name: z.literal("easyeda-mcp-pro"), version: versionSchema }).parse(
+      await readJson(join(profile.upstream.root, "package.json"), METADATA_MAX_BYTES),
+    ));
+  if (packageInfo.version !== profile.upstream.serverVersion) {
+    throw new MachineProfileError("machine-installation-upstream-version-mismatch");
+  }
+  await installationCheck("machine-installation-upstream-entrypoint-unavailable", () => regularFile(profile.upstream.entrypoint, METADATA_MAX_BYTES));
+  await installationCheck("machine-installation-assets-root-unavailable", () => canonicalDirectory(profile.easyeda.assetsRoot));
   const apiRoot = join(profile.easyeda.assetsRoot, "pro-api", profile.easyeda.publicApiBundleVersion);
-  for (const path of [
-    join(profile.easyeda.assetsRoot, "pro-pcb", profile.easyeda.pcbBundleVersion, "js", "pcb.js"),
-    join(apiRoot, "api.js"), join(apiRoot, "api-types.js"), join(apiRoot, "api-types.d.ts"),
-  ]) { await regularFile(path, NODE_MAX_BYTES); }
+  const files = [
+    ["machine-installation-pcb-bundle-unavailable", join(profile.easyeda.assetsRoot, "pro-pcb", profile.easyeda.pcbBundleVersion, "js", "pcb.js")],
+    ["machine-installation-api-implementation-unavailable", join(apiRoot, "api.js")],
+    ["machine-installation-api-adapter-unavailable", join(apiRoot, "api-types.js")],
+    ["machine-installation-api-declarations-unavailable", join(apiRoot, "api-types.d.ts")],
+  ] as const;
+  for (const [code, path] of files) { await installationCheck(code, () => regularFile(path, NODE_MAX_BYTES)); }
   await validateControlDirectory(profile.controlDirectory, allowMissingControl);
 }
 
@@ -391,13 +421,18 @@ export async function createMachineProfile(options: MachineProfileOptions): Prom
   return profile;
 }
 
-export async function readMachineProfile(path: string): Promise<MachineProfile> {
+async function readMachineLaunchConfiguration(path: string): Promise<MachineProfile> {
   assertSupportedHost();
   await validateControlDirectory(dirname(path), false);
   const profile = machineProfileSchema.parse(await readJson(path, PROFILE_MAX_BYTES, true));
   if (dirname(path) !== profile.controlDirectory) { throw new MachineProfileError("machine-profile-outside-control-directory"); }
   const node = await openVerifiedMachineNode(profile.runtime);
   await node.close();
+  return profile;
+}
+
+export async function readMachineProfile(path: string): Promise<MachineProfile> {
+  const profile = await readMachineLaunchConfiguration(path);
   await validateInstallation(profile, false);
   return profile;
 }
@@ -450,6 +485,26 @@ export async function loadRuntimeMachineProfile(options: { readonly profilePath?
   const profilePath = options.profilePath ?? process.env[MACHINE_PROFILE_ENVIRONMENT_VARIABLE] ?? defaultMachineProfilePath();
   const profile = await readMachineProfile(profilePath);
   return { profilePath, profile, environment: machineProfileEnvironment(profile) };
+}
+
+/** Missing external software reduces the process to offline discovery, never live admission. */
+export async function loadMachineLaunchProfile(options: { readonly profilePath?: string } = {}): Promise<{
+  profilePath: string; profile: MachineProfile; environment: Record<string, string>;
+  installation: MachineInstallationReadiness;
+}> {
+  const profilePath = options.profilePath ?? process.env[MACHINE_PROFILE_ENVIRONMENT_VARIABLE] ?? defaultMachineProfilePath();
+  // Trust failures remain fatal and are deliberately outside the readiness catch.
+  const profile = await readMachineLaunchConfiguration(profilePath);
+  let installation: MachineInstallationReadiness;
+  try {
+    await validateInstallation(profile, false);
+    installation = { ready: true };
+  } catch (error) {
+    const parsed = machineInstallationFailureCodeSchema.safeParse(error instanceof MachineProfileError ? error.code : undefined);
+    if (!parsed.success) { throw error; }
+    installation = { ready: false, code: parsed.data };
+  }
+  return { profilePath, profile, environment: machineProfileEnvironment(profile), installation };
 }
 
 export function machineProfileLaunchConfiguration(profile: MachineProfile, pluginRoot: string): {

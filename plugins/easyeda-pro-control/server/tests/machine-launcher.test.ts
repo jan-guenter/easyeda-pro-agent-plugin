@@ -11,6 +11,7 @@ import { createMachineProfile, writeMachineProfile } from "../src/machine-profil
 
 interface LauncherFixture {
   readonly pluginRoot: string;
+  readonly assetsRoot: string;
   readonly profilePath: string;
   readonly nodeExecutable: string;
   readonly entrypoint: string;
@@ -64,6 +65,11 @@ async function fixture(context: TestContext): Promise<LauncherFixture> {
     writeFileSync(${JSON.stringify(indexMarker)}, "fixture-index-initialized");
     process.stdout.write("fixture-index");
   `);
+  await writeFile(join(pluginRoot, "server", "src", "offline-control.ts"), `
+    export function startOfflineControlServer(code) {
+      process.stdout.write(JSON.stringify({ offline: true, code }));
+    }
+  `);
   const entrypoint = join(pluginRoot, "server", "dist", "server.mjs");
   await writeFile(entrypoint, `
     import { readFileSync, statSync } from "node:fs";
@@ -83,7 +89,7 @@ async function fixture(context: TestContext): Promise<LauncherFixture> {
   const replacement = join(root, "replacement-node");
   await writeFile(replacement, `#!/bin/sh\nprintf executed > '${marker}'\nprintf 'v24.18.0\\n'\n`, { mode: 0o755 });
   const original = await lstat(nodeExecutable);
-  return { pluginRoot, profilePath, nodeExecutable, entrypoint, launcher, main, indexMarker, controlDirectory, marker, replacement,
+  return { pluginRoot, assetsRoot, profilePath, nodeExecutable, entrypoint, launcher, main, indexMarker, controlDirectory, marker, replacement,
     originalDevice: original.dev, originalInode: original.ino };
 }
 
@@ -151,6 +157,38 @@ void describe("descriptor-bound machine launcher", () => {
     const replacement = await lstat(options.nodeExecutable);
     assert.notEqual(replacement.ino, options.originalInode);
     await assert.rejects(lstat(options.marker), { code: "ENOENT" });
+  });
+
+  void test("missing pinned bundles select the isolated offline entrypoint through the same descriptor handoff", async (context) => {
+    const options = await fixture(context);
+    await rm(join(options.assetsRoot, "pro-pcb", "3.2.fixture", "js", "pcb.js"));
+    const result = runLauncher(options, "");
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 17, String(result.stderr));
+    const output: unknown = JSON.parse(String(result.stdout));
+    assert.ok(output !== null && typeof output === "object" && "args" in output && "pid" in output && "ino" in output);
+    assert.deepEqual(output.args, [options.entrypoint, "--offline-only", "machine-installation-pcb-bundle-unavailable"]);
+    assert.equal(output.pid, result.pid);
+    assert.equal(output.ino, options.originalInode);
+    await assert.rejects(lstat(options.indexMarker), { code: "ENOENT" });
+  });
+
+  void test("offline selector accepts only a bounded failure code and never imports normal index", async (context) => {
+    const options = await fixture(context);
+    const accepted = runMain(options, ["--offline-only", "machine-installation-pcb-bundle-unavailable"]);
+    assert.equal(accepted.error, undefined);
+    assert.equal(accepted.status, 0, String(accepted.stderr));
+    assert.deepEqual(JSON.parse(String(accepted.stdout)), { offline: true, code: "machine-installation-pcb-bundle-unavailable" });
+    for (const args of [["--offline-only"], ["--offline-only", "private-error-message"],
+      ["--offline-only", "machine-installation-pcb-bundle-unavailable", "extra"]]) {
+      const result = runMain(options, args);
+      assert.equal(result.error, undefined);
+      assert.equal(result.status, 1, String(result.stderr));
+      assert.equal(result.stdout, "");
+      assert.deepEqual(JSON.parse(String(result.stderr)), { ok: false, error: "machine-launcher-arguments-invalid" });
+    }
+    await assert.rejects(lstat(options.indexMarker), { code: "ENOENT" });
+    assert.deepEqual(await readdir(options.controlDirectory), ["machine-profile.json"]);
   });
 
   void test("closes the retained executable descriptor when kernel handoff is refused", async (context) => {

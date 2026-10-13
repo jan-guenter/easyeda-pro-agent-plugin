@@ -38,6 +38,45 @@ interface DeclarationClass {
   methods: ApiDeclarationMethod[];
 }
 
+/** Bracket depth, not indentation, distinguishes a method's terminal semicolon
+ * from a field inside its parameter or result type. This is deliberately not a
+ * TypeScript parser: unsupported lexical forms refuse instead of being guessed.
+ */
+function completeMethodSignature(signature: string): boolean {
+  if (signature.length > 32_768) { throw new Error("Oversized API method signature."); }
+  const closing: string[] = [];
+  let quote: "'" | '"' | undefined;
+  let escaped = false;
+  let comment = false;
+  let complete = false;
+  for (let index = 0; index < signature.length; index += 1) {
+    const character = signature[index];
+    const next = signature[index + 1];
+    if (comment) {
+      if (character === "*" && next === "/") { comment = false; index += 1; }
+    } else if (quote !== undefined) {
+      if (escaped) { escaped = false; }
+      else if (character === "\\") { escaped = true; }
+      else if (character === quote) { quote = undefined; }
+    } else if (character === "/" && next === "*") {
+      comment = true; index += 1;
+    } else if ((character === "/" && next === "/") || character === "`") {
+      throw new Error("Unsupported API method signature syntax.");
+    } else if (character !== undefined && !/\s/u.test(character)) {
+      if (complete) { throw new Error("Unexpected text after API method signature."); }
+      if (character === "'" || character === '"') { quote = character; }
+      else if (character === "(") { closing.push(")"); }
+      else if (character === "[") { closing.push("]"); }
+      else if (character === "{") { closing.push("}"); }
+      else if (character === ")" || character === "]" || character === "}") {
+        if (closing.pop() !== character) { throw new Error("Unbalanced API method signature."); }
+      } else if (character === ";" && closing.length === 0) { complete = true; }
+    }
+  }
+  if (quote !== undefined) { throw new Error("Unterminated API method signature string."); }
+  return complete && !comment;
+}
+
 /** Parse only the line-oriented class grammar present in the pinned official
  * snapshots. Unsupported member formatting refuses regeneration.
  * This does not interpret types, execute code, or claim a JSON input schema.
@@ -49,15 +88,14 @@ export function inventoryApiDeclarations(source: string): Pick<ApiDeclarationSna
   let current: DeclarationClass | undefined;
   let tags: string[] = [];
   let inComment = false;
-  let pending: { indentation: string; method: ApiDeclarationMethod } | undefined;
+  let pending: ApiDeclarationMethod | undefined;
   const lines = source.split("\n");
   for (const [index, line] of lines.entries()) {
     if (pending) {
-      if (!current || line === `${current.indentation}}` || pending.method.signature.length > 32_768) { throw new Error("Incomplete or oversized API method signature."); }
-      pending.method.signature += ` ${line.trim()}`;
-      const tail = line.slice(pending.indentation.length);
-      if (line.startsWith(pending.indentation) && !/^\s/u.test(tail) && line.trimEnd().endsWith(";")) {
-        current.methods.push(pending.method);
+      if (!current || line === `${current.indentation}}`) { throw new Error("Incomplete API method signature."); }
+      pending.signature += ` ${line.trim()}`;
+      if (completeMethodSignature(pending.signature)) {
+        current.methods.push(pending);
         pending = undefined;
       }
       // oxlint-disable-next-line eslint/no-continue -- A signature continuation is never parsed as an independent declaration.
@@ -69,16 +107,18 @@ export function inventoryApiDeclarations(source: string): Pick<ApiDeclarationSna
       if (kind !== "class" && kind !== "interface" && kind !== "enum" && kind !== "type") { throw new Error("Unsupported declaration kind."); }
       types.push({ name: typeMatch[2], kind, sourceLine: index + 1 });
     }
-    if (line.includes("/**")) { inComment = true; tags = []; }
+    if (!inComment && line.trimStart().startsWith("/*")) { inComment = true; tags = []; }
     if (inComment) {
       for (const match of line.matchAll(/@(public|beta|alpha|internal|deprecated|since)\b([^@]*?)(?:\*\/|$)/gu)) {
         if (match[1] !== undefined) { tags.push(`${match[1]}${match[2] === undefined || match[2].trim() === "" ? "" : ` ${match[2].trim()}`}`); }
       }
-      if (line.includes("*/")) { inComment = false; }
-      if (!line.includes("*/") || line.trimEnd().endsWith("*/")) {
-        // oxlint-disable-next-line eslint/no-continue -- Documentation is deliberately excluded from declaration syntax parsing.
-        continue;
+      const commentEnd = line.indexOf("*/");
+      if (commentEnd !== -1) {
+        if (current && line.slice(commentEnd + 2).trim() !== "") { throw new Error("Unsupported text after API declaration comment."); }
+        inComment = false;
       }
+      // oxlint-disable-next-line eslint/no-continue -- Documentation is deliberately excluded from declaration syntax parsing.
+      continue;
     }
     const classMatch = /^(\s*)(?:declare )?class ([A-Za-z_]\w*)(?:\s[^{}]*)?\s*\{\s*$/u.exec(line);
     if (classMatch?.[2] !== undefined) {
@@ -99,8 +139,8 @@ export function inventoryApiDeclarations(source: string): Pick<ApiDeclarationSna
       const method = /^\s+(?:public )?([A-Za-z_]\w*)(?:<[^;]*>)?\(/u.exec(line);
       if (method?.[1] !== undefined && method[1] !== "constructor") {
         const entry = { name: method[1], className: current.name, signature: line.trim().replace(/^public /u, ""), sourceLine: index + 1, tags: [...tags] };
-        if (line.trimEnd().endsWith(";")) { current.methods.push(entry); }
-        else { pending = { indentation: /^\s*/u.exec(line)?.[0] ?? "", method: entry }; }
+        if (completeMethodSignature(entry.signature)) { current.methods.push(entry); }
+        else { pending = entry; }
         tags = [];
       }
     }

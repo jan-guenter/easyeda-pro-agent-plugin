@@ -8,8 +8,10 @@ import {
   parseSessionConfiguration,
   parseSessionRequest,
   runSessionRequests,
+  sessionMachineLaunchConfiguration,
   sessionTransportEnvironment,
 } from "../../scripts/control-session.ts";
+import { machineProfileSchema } from "../src/machine-profile.ts";
 
 async function* values<T>(items: readonly T[]): AsyncGenerator<T> {
   yield* await Promise.resolve(items);
@@ -36,6 +38,22 @@ void test("session preserves only the WSL share identity in addition to its conf
   assert.deepEqual(sessionTransportEnvironment(definition, { WSL_DISTRO_NAME: "ReviewDistro", SECRET_TOKEN: "withheld", PATH: "/unreviewed" }), { ...definition, WSL_DISTRO_NAME: "ReviewDistro" });
   assert.deepEqual(sessionTransportEnvironment(definition, {}), definition);
   assert.deepEqual(definition, { EASYEDA_CONTROL_DATA_DIR: "/private/control" });
+});
+
+void test("foreground sessions enter the common launcher without carrying direct live configuration", () => {
+  const profile = machineProfileSchema.parse({
+    schema: "easyeda-pro-control.machine-profile.v1", platform: "linux-x64",
+    runtime: { nodeExecutable: "/fixture/node", nodeVersion: "24.18.0", nodeSha256: "a".repeat(64) },
+    upstream: { root: "/fixture/upstream", entrypoint: "/fixture/upstream/dist/index.js", serverVersion: "1.0.0" },
+    easyeda: { assetsRoot: "/fixture/assets", pcbBundleVersion: "3.2.fixture", publicApiBundleVersion: "0.2.fixture" },
+    controlDirectory: "/fixture/control",
+  });
+  assert.deepEqual(sessionMachineLaunchConfiguration("/fixture/control/machine-profile.json", profile, "/fixture/plugin"), {
+    command: "/fixture/node",
+    args: ["/fixture/plugin/server/dist/server.mjs", "--machine-launch"],
+    cwd: "/fixture/plugin",
+    env: { EASYEDA_MACHINE_PROFILE: "/fixture/control/machine-profile.json" },
+  });
 });
 
 void test("session admits only strict facade requests", () => {

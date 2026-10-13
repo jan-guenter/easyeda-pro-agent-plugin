@@ -15,6 +15,33 @@ of scope. Existing completed operations must not be replayed.
 
 ### Scoped-release handoff
 
+Superseded for current work by the user's new request, "continue with the
+backlog." The scoped release below was merged through PR9 as main600ea457 and
+installed as113000. Do not repeat its release or disposable validation.
+
+### Backlog continuation, upgrade-aware offline startup
+
+The restarted session has no EasyEDA MCP tools. Read-only diagnosis proves the
+assets root still exists, but the profile-selected old PCB/API generations are
+absent. Installed app3.2.206 uses API0.3.50, PCB3.2.193, SCH3.2.192 and UI3.2.196.
+The external tuple is not admitted. See
+`docs/easyeda-3.2.206-upgrade-inventory-2026-10-13.md` for exact hashes and limits.
+Do not edit the private profile or external pins merely to regain live tools.
+
+Candidate124500 adds isolated offline-only startup after trusted profile/Node
+admission when external installation checks fail. It exposes only local API,
+local discovery and bounded status, retains the sole-owner lease, and never
+promotes itself to live mode. Configuration and doctor stay strict. The same
+API schema/handler serves both entrypoints. Declaration parsing now retains
+inline object-type signatures instead of silently truncating them. Retained
+749/806 signatures are unchanged. No new live adapter or writer is enabled.
+Release progress belongs in `docs/offline-startup-release-2026-10-13.md`.
+No CAD, Save, fixture setup, C10 abandonment, profile or installed-cache change
+has occurred in this continuation. The stopped C10 request remains consumed.
+Production designs and their records must remain untouched.
+
+### Previous scoped-release handoff
+
 The user explicitly chose: "Ship the scoped release; document the backlog."
 [PR9](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/9) tracks the
 final CI, protected merge and official Git-marketplace installation receipts.
