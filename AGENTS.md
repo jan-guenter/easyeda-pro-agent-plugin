@@ -13,7 +13,61 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Candidate201500: current-version identity context
+### Restarted201500 and shortcut-reader continuation
+
+PR16 is delivered as main4f255cb68b02c76a5d032c7e03f11721826a0489,
+identical to tested e32aab2f505a120c4101a688a93b4764dfb868b8. Required PR
+CI38464706255 and postmerge main CI38466186411 passed all10jobs;9810 facade
+passes/five platform skips/424 bridge passes. Official Git-marketplace201500
+is installed/enabled. One official installer retry was needed after the first
+reported success without an installed cache. No manual cache edit occurred.
+Delivery receipt: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/16#issuecomment-6155015420.
+
+Fresh restart verification matches1144files/22253134bytes/42dirs/seven skills,
+exact modes and inventory1fda72a92293b03df139f4dcd18ae864c5a601c7b90c86d387773a33997628f3.
+Source32205df454a6f221d7154dd9933ad61c544e688c2e1839322c126b0d440823dc5a5
+and runtime3c7d00a16c5e896d545825c90cab99055a8901ce3fe1c045426b989e1a1d59b24
+match. Sole facade164162 now runs existing201500 script/cwd; old153970 is gone.
+Actual nine-tool catalog includes launch/shell/context. Offline context schemas
+and shortcut-key coverage queries pass. The fresh host admitted historical C09
+evidence without repair and authenticated the bridge after ordinary startup.
+Do not repeat delivery or historical operations.
+
+Ordinary launch ordinary-startup-20261013-201500 completed once, state launched,
+attemptConsumed true. Original root23512/Job83cccd560d9743619e2807dba68e5f56
+are retained by facade164162. Launch reply16340e7ba0c407951090799acb57e1e20108fde462fa56f11b76476b9c43b91d.
+Do not relaunch, kill, adopt or replay it. Lost retained handles after restart
+still require implemented reconciliation; a new facade is not launch authority.
+Authenticated fingerprintd8696beb242430f8fb0c35d66f55cb35521dcae43b703959d120535d5840da97
+has no implementation drift. Shell observation found one container/tab and
+Start Page present/active; replyc00242a36d07dd88424fbf51f2dcda85e94ffbede029d15a2c81bc4c48aab44e.
+Context observation returned active start-page/project undefined/branch empty;
+replybad904f7c3700c48674c1ac6f8b8356ce939171e6bbfe5507b7cc54e022b69dd.
+These are installed201500 Start Page cases only, not visibility, restoration,
+closure, saved-state or new-source acceptance. No project was opened, no Save
+or design change was dispatched. C10 remains data-only/nonblocking, unreplayed.
+
+Next source work is a separately pinned current-version shortcut-key metadata
+reader. Existing older-tuple enumeration is already implemented; the missing
+piece is execution support without design context on the current tuple. No
+key press, callback registration, navigation or write authority is implied.
+Candidate214500 implements that fixed query, strict offline discovery and
+raw-token preservation. Ten restricted tools/35legacy/seven skills;309guarded
+routes with unchanged774distinct/211public/30native/82blocked/451omitted.
+The shared fixed UI-file verifier now gives every current observer nonblocking
+descriptor-bound reads, including the extension observer's former FIFO gap.
+Local63focused/integration and424bridge tests pass, with clean fulltypes and
+zero-warning strict type-aware lint. Build/compatibility,77packagechecks,
+179repository/privacy checks and seven custom/officialskillvalidators pass.
+All151registry signatures/40attestations verify; audit0vulnerabilities.
+Independent source reviews accept the adapter and shared verifier.
+Source32550ba35ce4dd041ae353f650a77e70cb05344dbd2ec5d64ef242654d375969426;
+runtime3a59fab6b05da4a6ab73f6971cd1a9daf365b1fd2c777212acf847ca596f25aff.
+External compatibility pins are unchanged. RequiredCI/publication/installation
+are pending at this source checkpoint; consult the new release PR receipt
+before repeating delivery. New shortcut execution is not live-validated.
+
+### Historical candidate201500: current-version identity context
 
 PR15 is delivered: main90b96777e32c909ac46285f9ba43f8147f80f93d,
 required PR CI38457338169 and postmerge main CI38459136285 passed all10jobs.

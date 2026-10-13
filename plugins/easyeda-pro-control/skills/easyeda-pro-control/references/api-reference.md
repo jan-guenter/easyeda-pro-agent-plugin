@@ -37,7 +37,7 @@ standalone Save capability. Follow the returned route and its exact scope.
 
 The current source inventory contains 774 distinct paths: 211 public subsets,
 30 native equivalents, no lifecycle-only methods, 82 implemented-but-blocked
-methods and 451 omissions. Its routes include 308 available with runtime guards,
+methods and 451 omissions. Its routes include 309 available with runtime guards,
 94 blocked and two partially blocked. These are implementation classifications,
 not connected validation counts; one method can have several routes.
 
@@ -181,6 +181,44 @@ admission and authentication match the separately reviewed new tuple. No active
 document, project, selection, private account, file, network, navigation or Save
 is accessed. `getFrontendDataUnit` is excluded because it dispatches to UI state.
 New system methods are source-tested, not connected-validated.
+
+## Configured shortcut listing on the current tuple
+
+Query `shortcuts` with `includeSchemas:true`, then use `shortcuts-validate`
+with `query:{"request":...}` before `easyeda_control_shortcuts`:
+
+```json
+{"method":"eda.sys_ShortcutKey.getShortcutKeys","arguments":{"includeSystem":true}}
+```
+
+Pass the inner request and the fresh authenticated `expectedFingerprint`.
+Omitted `includeSystem` becomes `false`, which lists vendor `isCustomize`
+entries only. `true` includes system entries in the same initialized registry,
+not the separate menu registry or every local shortcut. No active design or
+legacy `expectedContext` is required.
+
+Each returned shortcut contains raw `shortcutKey` strings, localized `title`,
+`documentType` scopes and `scene` scopes. Preserve case, order, duplicates and
+empty strings. The installed mapper returns tokens such as `Ctrl`, `Delete`
+and `Page Down` despite its uppercase declaration union. `[]` differs from
+`[""]`; do not normalize either into a keypress instruction.
+
+Shortcut `documentType` is 0 blank, 1 Home, 2 schematic page, 3 symbol, 4 PCB,
+5 footprint, 6 panel, 7 PCB 3D, 8 PCB 2D, 9 panel 3D and 10 panel library.
+It is not the ordinary document enum. Scenes are 1 editor, 2 selected canvas,
+3 unselected canvas, 4 drawing, 5 placement and 6 local.
+
+The reader permits 1024 records, eight key tokens per record, 32 characters
+per token, 1024 title characters, 32 entries per scope array and 262144 UTF-8
+bytes. It rejects malformed, changed or oversized results without truncation.
+Two complete copied samples retain public method, frame, RPC and locale owners;
+the current API and UI hashes are checked separately. Vendor enumeration runs
+before these bounds, and the 10-second deadline does not cancel that work.
+No registration, callback, input, navigation, settings or design action is
+dispatched. It does not prove focus, executable keys or complete shortcut
+inventory. This route is source-tested only; connected validation is pending.
+It adds a current-version route for an existing method, not a new distinct
+method in the coverage inventory.
 
 ## Initialized extension-index observation
 

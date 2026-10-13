@@ -497,6 +497,19 @@ void test("existing capture workflows have truthful public-subset coverage witho
   }
 });
 
+void test("shortcut coverage keeps legacy and current-version routes distinct without design-context admission", () => {
+  const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.sys_ShortcutKey.getShortcutKeys");
+  assert.ok(row); assert.equal(row.status, "implemented-public-subset"); assert.equal(row.routes.length, 2);
+  assert.equal(row.routes.some((route) => route.tool === "easyeda_control_sdk_read"), true);
+  const route = row.routes.find((entry) => entry.tool === "easyeda_control_shortcuts"); assert.ok(route);
+  assert.equal(route.documentTypes, undefined); assert.equal(route.implementation, "public-method");
+  assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+  const discovery = route.inputDiscovery?.arguments["request"]; assert.ok(isRecord(discovery));
+  const result = queryOfflineApi(apiRequestSchema.parse(discovery)).result; assert.ok(isRecord(result));
+  assert.equal(result["total"], 1); assert.equal(result["invocationEnabledByDiscovery"], false);
+  assert.match(JSON.stringify(result), /inputSchema/u);
+});
+
 void test("omitted heterogeneous geometric getters retain proven projection defects", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   for (const path of ["eda.pcb_Document.getPrimitiveAtPoint", "eda.pcb_Document.getPrimitivesInRegion"]) {

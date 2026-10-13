@@ -92,9 +92,14 @@ authorize continuation of an old operation.
 
 ## Remaining work
 
-1. Load the installed release in an actually fresh chat-owned host, then perform
-   the focused ordinary-startup/authentication/shell check. Keep production closed.
-2. One disposable connected identity-reader check. Do not expand the test matrix.
+The fresh-host ordinary-startup/authentication/shell check and one Start Page
+identity-reader check subsequently passed. No project was opened or edited.
+The [shortcut release note](shortcut-reader-release-2026-10-13.md#connected-predecessor-check)
+records exact scope and reply hashes; it is not ordinary-document validation.
+
+1. Fresh-host pickup of the next release; never replay the consumed launch.
+2. Ordinary-document identity cases only when needed for the next implementation;
+   do not expand the test matrix for this scoped release.
 3. Current-version navigation and richer readers with their actual preference,
    backup, manager and document-owner effects reviewed.
 4. Ordinary-launch reconciliation after facade restart loses retained handles.

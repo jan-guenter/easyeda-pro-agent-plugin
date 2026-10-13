@@ -71,6 +71,21 @@ or selection are requested or returned; unsupported raw tab IDs stay private.
 Never turn this observation into legacy `expectedContext`
 or permission for a subsequent operation.
 
+Installed `0.3.0+codex.20261013201500` completed ordinary launch, then separately
+established authentication and observed the registered Start Page. Its context
+observer returned `active.state:"start-page"`, `project.state:"undefined"`
+and `branch.state:"empty"` with stable before/after runtime checks. This does
+not prove visibility, focus, restoration completion, closure or persistence.
+No project was deliberately opened. It does not validate later source changes.
+
+`easyeda_control_shortcuts` uses the same current tuple's authenticated owner
+for a fixed shortcut-registry query. Use offline `shortcuts` and
+`shortcuts-validate` first; the [API reference](api-reference.md#configured-shortcut-listing-on-the-current-tuple)
+describes its raw tokens and bounds. No active project is needed, and neither
+this metadata nor the identity observer grants keyboard or legacy CAD authority.
+The new shortcut route and shared UI-verifier refactor are not live-validated
+by the installed201500 startup/context observations above.
+
 After updating the marketplace, verify the actual tool catalog and loaded
 facade generation. Reopening the desktop app or seeing new skills is not by
 itself evidence that an existing chat's MCP process changed. If it still runs
@@ -97,7 +112,7 @@ Distinguish these failure layers before changing anything:
 |---|---|---|
 | Tool is absent or host rejects dispatch as unavailable | No facade handler result | Check the plugin's enabled state. For authorized EasyEDA work, the checkout-only foreground MCP client below can use the same facade when no other owner is active. Never start a second owner or use a new data root to evade the lease. |
 | Status reports `mode:"offline-only"` and `installation.ready:false`; only three tools are listed | Trusted profile/Node admission passed, but a selected external installation check failed | Use its fixed `machine-installation-*` code and read-only installation inspection. API reference and local discovery remain usable. Live and recovery tools do not exist in this process. Review the changed installation before updating any pins, then restart the MCP session. |
-| Status reports `facade.mode:"calculation-only"`; nine tools are listed | Configured bundle selectors are not the older reviewed design tuple | API reference, local discovery, status, calculations, system/extension/editor-shell/identity-context observations and ordinary launch are registered. The internal mode name is retained. Each capability has separate exact admission. No project-content reader, navigation, generic native UI, design writer or design recovery tool is available. |
+| Status reports `facade.mode:"calculation-only"`; ten tools are listed | Configured bundle selectors are not the older reviewed design tuple | API reference, local discovery, status, calculations, system/shortcut/extension/editor-shell/identity-context observations and ordinary launch are registered. The internal mode name is retained. Each capability has separate exact admission. No project-content reader, navigation, generic native UI, design writer or design recovery tool is available. |
 | Structured status error during upstream startup | Facade handler ran, but startup failed | Run `npm run doctor` offline from the trusted checkout. Use reported stage/exit details and failed checks; private stderr remains withheld. Do not infer the cause from its hash or length. |
 | Status succeeds but has no authenticated session | Upstream responded; extension connection is unproven | Verify the selected receipt/import and bridge connection. Do not call context or design readers yet. |
 | Authenticated session with `validation-required` tuple | Connection succeeded; compatibility remains unadmitted | Collect bounded status/context/public-read evidence for review. Exact/private calls remain blocked. |

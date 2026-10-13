@@ -13,7 +13,7 @@
       "omitted": 451
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 308,
+      "available-with-runtime-guards": 309,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -35112,6 +35112,37 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_shortcuts",
+          "selector": "eda.sys_ShortcutKey.getShortcutKeys",
+          "implementation": "public-method",
+          "scope": "Separately pinned current API 0.3.50/UI 3.2.196 public shortcut-registry read, without design context or legacy-route admission. Optional includeSystem defaults false. Two owner-stable bounded copies preserve raw key strings, order, duplicates and empty tokens. Shortcut scope enums are not document types. No key execution, registration, navigation, settings or Save; the separate menu registry is excluded and vendor enumeration is not cancelled by the observer deadline.",
+          "source": [
+            "shortcut-keys.ts",
+            "shortcut-keys-runtime.ts",
+            "current-ui-implementation.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "shortcut-keys.test.ts",
+            "shortcut-keys-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "shortcuts",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.sys_ShortcutKey.getShortcutKeys",

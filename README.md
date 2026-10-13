@@ -19,7 +19,13 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261013201500` adds `easyeda_control_editor_context` for
+Update `0.3.0+codex.20261013214500` adds `easyeda_control_shortcuts` for the
+current-version configured-shortcut registry. It preserves actual key spellings
+and scope metadata; it cannot send keys, register callbacks or change settings.
+Offline `shortcuts` and `shortcuts-validate` expose its strict request schema.
+See the [shortcut reader release](docs/shortcut-reader-release-2026-10-13.md).
+
+Previous update `0.3.0+codex.20261013201500` added `easyeda_control_editor_context` for
 identity-only active-document and current-project/branch observations. It reads
 bounded native UI metadata, not project contents or the public detailed-project
 getter. Missing fields and unsupported tabs remain explicit. It does not enable
@@ -49,9 +55,9 @@ remain under `easyeda_control_calculate`. Installed161000 passed one triangle
 area and one nested-square subtraction with a complete hole; these cases do not
 validate all methods or this newer source generation.
 
-The older reviewed tuple exposes 34 tools. A configured newer or unknown tuple
-exposes nine: API reference, local discovery, status, calculations, local
-system methods, extension-index/editor-shell/identity-context observers and ordinary launch.
+The older reviewed tuple exposes 35 tools. A configured newer or unknown tuple
+exposes ten: API reference, local discovery, status, calculations, local
+system methods, extension-index/editor-shell/identity-context/shortcut observers and ordinary launch.
 The internal mode name remains `calculation-only`. Bridge execution separately
 requires exact reviewed EasyEDA 3.2.206 / API 0.3.50 hashes and authentication;
 launch instead verifies its installed executable/app/helper identities.
@@ -97,7 +103,7 @@ paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
 Current source classifications are 211 public subsets, 30 native equivalents,
 no lifecycle-only methods, 82 implemented-but-blocked methods and 451
-omissions. Their execution routes comprise 308 available with runtime guards,
+omissions. Their execution routes comprise 309 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)
