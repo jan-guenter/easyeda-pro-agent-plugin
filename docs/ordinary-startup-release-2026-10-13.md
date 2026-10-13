@@ -60,10 +60,26 @@ checks and seven custom/official skill validators passed. Dependency verificatio
 accepted151 registry signatures and40 attestations; audit found0 vulnerabilities.
 Independent reviews found no remaining blocker in this scoped implementation.
 
+Initial [PR15 CI38455030813](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38455030813)
+passed build verification but failed historical-data tests. The current helper
+produced correctly pinned receipts that the old-only reader rejected. The fix
+explicitly recognizes both reviewed helper generations, retains the old pin and
+fixtures, derives each policy from its original helper, and rejects mixed helper
+generations. This remains data-only decoding and cannot restore authority. The
+helper comparison proved all legacy code unchanged except retaining the same
+launch result. The new branches are fixed read-only observers.
+
+The same CI run exceeded a15-second timeout in a managed-double PowerShell hover
+test, with no output or assertion failure. That synthetic-only allowance is now
+45seconds. Live operation deadlines and the complete assertions are unchanged.
+All196 focused regression cases pass, including actual-producer replay and both
+hover leaves. Final types, strict zero-warning lint and rebuilt compatibility
+projections pass. Historical fixtures remain unchanged.
+
 Source320 projection is
-`9e71a630c6241d33527a91322305769ef38fdc894aa3cfd5ddd733e77348550b`;
+`c67de23779b8e137fbc778d5418580dd8c3e1085bd15ee484b676b6abc13241d`;
 runtime3 projection is
-`002d61cc1362c5dafc60cac6db0327109b86902eaefb089156a89df3fd78c715`.
+`d62f7f13b13b665a6d7fe36ee96d54117559a18c53b0124cd666111f183bc4fd`.
 Only facade projections and review timestamp changed in the compatibility
 manifest. External runtime/bridge pins remain unchanged. The native helper's
 deliberate new source pin is recorded separately in its launch/clock profiles.

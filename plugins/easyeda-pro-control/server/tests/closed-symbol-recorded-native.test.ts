@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { FAMILY } from '../src/closed-symbol-journal.ts';
 import type { ClosedSymbolPlan } from '../src/closed-symbol-journal.ts';
 import { isRecord, loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json } from '../src/core.ts';
@@ -22,11 +23,12 @@ function fingerprint(): Bag {
       publicApi: { ...m.installedBundles.publicApi, implementationPath: '/synthetic/api.js', adapterPath: '/synthetic/adapter.js', declarationsPath: '/synthetic/api.d.ts' } } };
 }
 const helper = '5a5095d463afcf8f595c3085ec7d5f377baa2e545b623bca81205137c602e608';
+const currentHelper = '6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca';
 function sample(time: number): ReturnType<typeof validateClockSample> { return { schema: 'easyeda-pro-control.windows-clock-sample.v1', utcBeforeTicks: String(621_355_968_000_000_000n + BigInt(time) * 10_000n),
   utcAfterTicks: String(621_355_968_000_000_000n + BigInt(time + 1) * 10_000n), qpcBefore: String(time), qpcAfter: String(time + 1), qpcFrequency: '1000',
   highResolution: true, localOffsetMinutes: 120, zoneRulesSha256: 'a'.repeat(64) }; }
 // oxlint-disable-next-line typescript/explicit-function-return-type -- Preserve the exact writable synthetic fixture shape for adversarial mutations.
-function fixture(phase: 'closed-baseline' | 'closed-edit' | 'closed-verification' = 'closed-edit', attempt = 2, runtimePid: number | null = 101) {
+function fixture(phase: 'closed-baseline' | 'closed-edit' | 'closed-verification' = 'closed-edit', attempt = 2, runtimePid: number | null = 101, selectedHelper: string = helper) {
   const identity = fingerprint(); const helperInstance = 'c'.repeat(32), jobId = 'b'.repeat(32), operationId = 'easyeda-20261012t000000z-12345678';
   const journal = { operationId, plan: { profile: FAMILY, projectUuid: IDS.project, branchUuid: IDS.branch, ownerUuid: IDS.actor, targetUuid: IDS.target,
     activeUuid: IDS.peer, projectPath: '/synthetic/project.eprj2', operation: OPERATION, marker: { namespaceNonce: '1'.repeat(64), keyNonce: '2'.repeat(64), bodyNonce: '3'.repeat(64) },
@@ -35,7 +37,7 @@ function fixture(phase: 'closed-baseline' | 'closed-edit' | 'closed-verification
     rootStartIdentity: `win32:134362560000000000:job:${jobId}`, sessionSha256: '', runtimeSha256: '', captureSha256: '' };
   const launch = { jobId, helperInstance, root: { pid: 100, role: 'easyeda-main', startIdentity: generation.rootStartIdentity } };
   const clockValues = { status: 'observed', tzAbsentBefore: true, tzAbsentAfter: true, before: sample(1000), after: sample(1010) };
-  const common = { schema: 'easyeda-pro-control.owned-clock-attachment.v1', baseSha256: 'f'.repeat(64), helperSourceSha256: helper, executionScopeSha256: 'e'.repeat(64),
+  const common = { schema: 'easyeda-pro-control.owned-clock-attachment.v1', baseSha256: 'f'.repeat(64), helperSourceSha256: selectedHelper, executionScopeSha256: 'e'.repeat(64),
     producerBindingVerified: false, executionAuthorized: false, clock: clockValues };
   const launchClock = { ...structuredClone(common), phase: 'launch', base: launch,
     ownerBinding: { executable: 'C:\\Synthetic\\easyeda-pro.exe', executableSha256: 'd'.repeat(64), launchSha256: sha256Json(launch) } };
@@ -128,9 +130,30 @@ void test('strict known native source pins and bootstrap continuity refuse chang
 });
 void test('helper literal and actual native runtime producer shape remain source-backed', async () => {
   const authority = await readFile(new URL('../src/windows-authority.ts', import.meta.url), 'utf8');
-  assert.ok(authority.includes(`const REVIEWED_CLOCK_HELPER_SHA256 = "${helper}";`));
+  assert.ok(authority.includes(`const REVIEWED_CLOCK_HELPER_SHA256 = "${currentHelper}";`));
+  const helperBytes = await readFile(new URL('../../scripts/windows-authority.ps1', import.meta.url));
+  assert.equal(createHash('sha256').update(helperBytes).digest('hex'), currentHelper);
+  const decoder = await readFile(new URL('../src/closed-symbol-recorded-native.ts', import.meta.url), 'utf8');
+  assert.ok(decoder.includes(`const HELPER = '${helper}';`) && decoder.includes(`const CURRENT_HELPER = '${currentHelper}';`));
   const runtime = await readFile(new URL('../src/runtime-scripts.ts', import.meta.url), 'utf8');
   assert.ok(runtime.includes('ok: true,\n    kind: "runtime-identity",\n    generation,\n    timeOrigin,\n    processId:'));
+});
+void test('current reviewed helper remains data only and has its own bound policy', () => {
+  const current = fixture('closed-edit', 2, 101, currentHelper), historical = fixture();
+  const result = validateRecordedCaptureEvidence(current.input);
+  assert.equal(current.input.source.helperSourceSha256, currentHelper);
+  assert.notEqual(current.input.source.policySha256, historical.input.source.policySha256);
+  assert.equal(result.authorityRestored, false); assert.equal(result.executionAuthorized, false);
+  assert.ok(Object.isFrozen(result.capture));
+});
+void test('known helper generations cannot be mixed between launch, policy and capture', () => {
+  for (const selected of [helper, currentHelper]) {
+    const f = fixture('closed-edit', 2, 101, selected), other = selected === helper ? currentHelper : helper;
+    f.clock['helperSourceSha256'] = other;
+    assert.throws(() => validateRecordedCaptureEvidence(f.input), /Recorded native capture refused/u);
+    f.clock['helperSourceSha256'] = selected;
+    assert.throws(() => validateRecordedCaptureEvidence({ ...f.input, source: { ...f.input.source, helperSourceSha256: other } }), /Recorded native capture refused/u);
+  }
 });
 void test('complete process bound is512, not the draft lifecycle256', () => {
   const f = fixture();

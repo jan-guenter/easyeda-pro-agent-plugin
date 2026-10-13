@@ -103,10 +103,12 @@ ConvertTo-Json -InputObject @{cases=$cases;bounds=$bad} -Depth 8 -Compress;exit 
   // Double. No real process/window discovery, cursor input or UI state is read.
   // Each invocation stays below Windows' command-line limit.
   // Both use the same native doubles, deadlines and complete assertions.
+  // Cold PowerShell/Add-Type startup exceeded 15s on a CI runner. This 45s
+  // Allowance applies only to managed doubles, never the live UI deadline.
   const actual: unknown[] = [];
   for (const program of programs) {
     const { stdout, stderr }: { stdout: string; stderr: string } = await execute(powershell, ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand",
-      Buffer.from(program, "utf16le").toString("base64")], { timeout: 15_000, maxBuffer: 32_768 });
+      Buffer.from(program, "utf16le").toString("base64")], { timeout: 45_000, maxBuffer: 32_768 });
     assert.equal(stderr, "");
     actual.push(JSON.parse(stdout.trim()) as unknown);
   }

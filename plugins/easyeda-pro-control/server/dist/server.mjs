@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "b56bef84ed4281d2aee99f5c7191bb99c8452f6ad6dba8a7208e6d3bf6eb6353";
+const __easyedaBundlePairId = "5a12ad8c06da5191500c24438fea753fec05eb51d19345170f692caafc23a556";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -68717,6 +68717,9 @@ var init_closed_sql_clock = __esm({
 });
 
 // server/src/closed-symbol-recorded-native.ts
+function knownHelper(value) {
+  return value === HELPER || value === CURRENT_HELPER;
+}
 function need7(value) {
   if (!value) {
     throw new Error("Recorded native capture refused.");
@@ -68786,7 +68789,7 @@ function processes(value, generation5) {
 }
 function clock4(value, phase4) {
   const v = exact6(value, ["schema", "phase", "baseSha256", "helperSourceSha256", "executionScopeSha256", "base", "clock", "producerBindingVerified", "executionAuthorized", "ownerBinding"]);
-  need7(v["schema"] === "easyeda-pro-control.owned-clock-attachment.v1" && v["phase"] === phase4 && v["helperSourceSha256"] === HELPER && v["producerBindingVerified"] === false && v["executionAuthorized"] === false);
+  need7(v["schema"] === "easyeda-pro-control.owned-clock-attachment.v1" && v["phase"] === phase4 && knownHelper(v["helperSourceSha256"]) && v["producerBindingVerified"] === false && v["executionAuthorized"] === false);
   text15(v["baseSha256"], HASH8);
   text15(v["executionScopeSha256"], HASH8);
   const c = exact6(v["clock"], ["status", "tzAbsentBefore", "tzAbsentAfter", "before", "after"]);
@@ -68809,7 +68812,7 @@ function policy(helper, executable, scope5) {
 }
 function sourceFields2(value) {
   exact6(value, ["helperSourceSha256", "executionScopeSha256", "executable", "executableSha256", "policySha256", "rawBasePropertyOrderReconstructed", "authorityRestored"]);
-  need7(value.helperSourceSha256 === HELPER && value.rawBasePropertyOrderReconstructed === false && value.authorityRestored === false);
+  need7(knownHelper(value.helperSourceSha256) && value.rawBasePropertyOrderReconstructed === false && value.authorityRestored === false);
   text15(value.executionScopeSha256, HASH8);
   text15(value.executableSha256, HASH8);
   text15(value.executable, /^[A-Za-z]:\\[^"\r\n]+\.exe$/u);
@@ -68817,7 +68820,7 @@ function sourceFields2(value) {
     const code = character.codePointAt(0);
     need7(code !== void 0 && code >= 32 && code !== 127);
   }
-  need7(value.policySha256 === policy(HELPER, value.executableSha256, value.executionScopeSha256));
+  need7(value.policySha256 === policy(value.helperSourceSha256, value.executableSha256, value.executionScopeSha256));
 }
 function validateRecordedNativeSource(input) {
   validatePrivateFingerprint(input.fingerprint);
@@ -68835,12 +68838,13 @@ function validateRecordedNativeSource(input) {
   const scope5 = text15(data2["executionScopeSha256"], HASH8);
   need7(status2["reviewedExecutionScopeSha256"] === scope5);
   const executable = text15(owner["executable"], /^[A-Za-z]:\\[^"\r\n]+\.exe$/u), executableSha256 = text15(owner["executableSha256"], HASH8);
+  const helperSourceSha256 = text15(data2["helperSourceSha256"], HASH8);
   const result = {
-    helperSourceSha256: HELPER,
+    helperSourceSha256,
     executionScopeSha256: scope5,
     executable,
     executableSha256,
-    policySha256: policy(HELPER, executableSha256, scope5),
+    policySha256: policy(helperSourceSha256, executableSha256, scope5),
     rawBasePropertyOrderReconstructed: false,
     authorityRestored: false
   };
@@ -68898,7 +68902,7 @@ function validateRecordedCaptureEvidence(input) {
   if (input.clock !== void 0) {
     parsed2 = clock4(input.clock, "capture");
     const data2 = parsed2.attachment;
-    need7(data2["executionScopeSha256"] === source4.executionScopeSha256);
+    need7(data2["executionScopeSha256"] === source4.executionScopeSha256 && data2["helperSourceSha256"] === source4.helperSourceSha256);
     const base3 = exact6(data2["base"], ["jobId", "helperInstance", "bindingSha256", "capturedAt", "processes", "runtimePid", "socketOwnerPid"]);
     need7(base3["jobId"] === generation5.jobId && base3["helperInstance"] === generation5.helperInstance && base3["bindingSha256"] === a["bindingSha256"] && base3["capturedAt"] === capturedAt && base3["runtimePid"] === runtimePid);
     same22(base3["processes"], rows2);
@@ -68923,13 +68927,14 @@ function validateRecordedCaptureEvidence(input) {
   }
   return freeze(structuredClone({ capture: c, clock: parsed2, authorityRestored: false, executionAuthorized: false }));
 }
-var HELPER, HASH8, ID, TOKEN, EPOCH;
+var HELPER, CURRENT_HELPER, HASH8, ID, TOKEN, EPOCH;
 var init_closed_symbol_recorded_native = __esm({
   "server/src/closed-symbol-recorded-native.ts"() {
     init_core3();
     init_closed_symbol_native_profile();
     init_windows_clock_transport();
     HELPER = "5a5095d463afcf8f595c3085ec7d5f377baa2e545b623bca81205137c602e608";
+    CURRENT_HELPER = "6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca";
     HASH8 = /^[a-f0-9]{64}$/u;
     ID = /^[a-f0-9]{32}$/u;
     TOKEN = /^[A-Za-z0-9_-]{43}$/u;

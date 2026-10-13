@@ -43,7 +43,10 @@ lost handles and ambiguous dispatch remain blocked across restart. The ordinary
 launch journal is separate from consumed C10 and does not authorize recovery.
 The helper's new fixed process/termination observers do not close, kill, adopt
 or publish a clock/persistence proof. Current helper SHA6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca,
-29979bytes; historical recorded-native helper pins are unchanged.
+29979bytes. The data-only recorded-native reader preserves the historical5a5095d4
+pin and explicitly recognizes6997c1ae, deriving the policy from the selected
+helper and rejecting mixed-generation capture receipts. Live qualification
+admits only6997c1ae; historical decoding never restores execution authority.
 
 easyeda_control_editor_shell adds bounded current UI/API tab/container counts
 and registered Start Page flags, with two owner-stable samples and no private
@@ -57,10 +60,18 @@ research links for implementation, remaining limits and delivery evidence.
 Local148focused/integration and424bridge tests pass; fulltypes/strict type-aware
 lint are clean. All179repository/privacy and77package checks and seven custom/officialskillvalidators
 pass;151registry signatures/40attestations verify and auditfound0vulnerabilities.
-Source320 projection9e71a630c6241d33527a91322305769ef38fdc894aa3cfd5ddd733e77348550b;
-runtime3 projection002d61cc1362c5dafc60cac6db0327109b86902eaefb089156a89df3fd78c715.
+Source320 projectionc67de23779b8e137fbc778d5418580dd8c3e1085bd15ee484b676b6abc13241d;
+runtime3 projectiond62f7f13b13b665a6d7fe36ee96d54117559a18c53b0124cd666111f183bc4fd.
 Independent reviews accept the scoped reader, helper, coordinator and integration.
 External compatibilitymanifest fields remain unchanged.
+Initial PR15 CI38455030813 passed the build but exposed the old-only historical
+reader assumption through actual-producer fixtures. The explicit two-generation
+data-only fix preserves old receipts and guards. One unrelated managed-double
+hover test timed out at15s with SIGTERM and empty output; its synthetic-only
+allowance is now45s, with all assertions and live UI deadlines unchanged.
+The196 focused regression cases pass, including actual-producer replay and both
+hover leaves. Finaltypes/zero-warninglint/build/compatibility pass. No historical
+fixture was rewritten and no existing check was skipped.
 RequiredCI/publication/install are pending at this source snapshot. Consult
 the release PR receipt before repeating completed delivery. The loaded182500
 host remains intact. New installed methods need a fresh host; no competing

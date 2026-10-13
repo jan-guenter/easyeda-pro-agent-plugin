@@ -8,6 +8,11 @@ type Bag = Readonly<Record<string, unknown>>;
 type JournalBinding = Pick<ClosedJournal, 'operationId' | 'plan'>;
 type CapturePhase = 'closed-baseline' | 'closed-edit' | 'closed-verification';
 const HELPER = '5a5095d463afcf8f595c3085ec7d5f377baa2e545b623bca81205137c602e608';
+// The ordinary-launch revision adds fixed observers and retains the launch record.
+// Clock/capture/policy/termination production is unchanged. Both reviewed
+// Generations decode as data only, never as restored execution authority.
+const CURRENT_HELPER = '6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca';
+function knownHelper(value: unknown): boolean { return value === HELPER || value === CURRENT_HELPER; }
 const HASH = /^[a-f0-9]{64}$/u, ID = /^[a-f0-9]{32}$/u, TOKEN = /^[A-Za-z0-9_-]{43}$/u;
 const EPOCH = 621_355_968_000_000_000n;
 function need(value: boolean): asserts value { if (!value) { throw new Error('Recorded native capture refused.'); } }
@@ -42,7 +47,7 @@ function processes(value: unknown, generation: Generation): readonly Bag[] {
 }
 function clock(value: unknown, phase: 'launch' | 'capture'): Readonly<{ attachment: Bag; before: ReturnType<typeof validateClockSample>; after: ReturnType<typeof validateClockSample> }> {
   const v = exact(value, ['schema', 'phase', 'baseSha256', 'helperSourceSha256', 'executionScopeSha256', 'base', 'clock', 'producerBindingVerified', 'executionAuthorized', 'ownerBinding']);
-  need(v['schema'] === 'easyeda-pro-control.owned-clock-attachment.v1' && v['phase'] === phase && v['helperSourceSha256'] === HELPER && v['producerBindingVerified'] === false && v['executionAuthorized'] === false);
+  need(v['schema'] === 'easyeda-pro-control.owned-clock-attachment.v1' && v['phase'] === phase && knownHelper(v['helperSourceSha256']) && v['producerBindingVerified'] === false && v['executionAuthorized'] === false);
   text(v['baseSha256'], HASH); text(v['executionScopeSha256'], HASH);
   const c = exact(v['clock'], ['status', 'tzAbsentBefore', 'tzAbsentAfter', 'before', 'after']);
   need(c['status'] === 'observed' && c['tzAbsentBefore'] === true && c['tzAbsentAfter'] === true);
@@ -62,11 +67,11 @@ function policy(helper: string, executable: string, scope: string): string {
 function sourceFields(value: RecordedNativeSource): void {
   exact(value, ['helperSourceSha256', 'executionScopeSha256', 'executable', 'executableSha256', 'policySha256', 'rawBasePropertyOrderReconstructed', 'authorityRestored']);
   // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- Data-only callers may pass malformed untyped historical fields.
-  need(value.helperSourceSha256 === HELPER && value.rawBasePropertyOrderReconstructed === false && value.authorityRestored === false);
+  need(knownHelper(value.helperSourceSha256) && value.rawBasePropertyOrderReconstructed === false && value.authorityRestored === false);
   text(value.executionScopeSha256, HASH); text(value.executableSha256, HASH);
   text(value.executable, /^[A-Za-z]:\\[^"\r\n]+\.exe$/u);
   for (const character of value.executable) { const code = character.codePointAt(0); need(code !== undefined && code >= 32 && code !== 127); }
-  need(value.policySha256 === policy(HELPER, value.executableSha256, value.executionScopeSha256));
+  need(value.policySha256 === policy(value.helperSourceSha256, value.executableSha256, value.executionScopeSha256));
 }
 /** Fingerprint is the retained expected contract, not a new native observation.
  * The scope is the actual retained runtime option. It is not assumed to be the
@@ -84,8 +89,9 @@ export function validateRecordedNativeSource(input: Readonly<{ journal: JournalB
   const owner = exact(data['ownerBinding'], ['executable', 'executableSha256', 'launchSha256']); need(owner['launchSha256'] === sha256Json(base));
   const scope = text(data['executionScopeSha256'], HASH); need(status['reviewedExecutionScopeSha256'] === scope);
   const executable = text(owner['executable'], /^[A-Za-z]:\\[^"\r\n]+\.exe$/u), executableSha256 = text(owner['executableSha256'], HASH);
-  const result: RecordedNativeSource = { helperSourceSha256: HELPER, executionScopeSha256: scope, executable, executableSha256,
-    policySha256: policy(HELPER, executableSha256, scope), rawBasePropertyOrderReconstructed: false, authorityRestored: false };
+  const helperSourceSha256 = text(data['helperSourceSha256'], HASH);
+  const result: RecordedNativeSource = { helperSourceSha256, executionScopeSha256: scope, executable, executableSha256,
+    policySha256: policy(helperSourceSha256, executableSha256, scope), rawBasePropertyOrderReconstructed: false, authorityRestored: false };
   sourceFields(result); return Object.freeze(result);
 }
 export function validateRecordedCaptureEvidence(input: Readonly<{
@@ -118,7 +124,7 @@ export function validateRecordedCaptureEvidence(input: Readonly<{
   let parsed: ReturnType<typeof clock> | null = null;
   if (input.clock !== undefined) {
     parsed = clock(input.clock, 'capture'); const data = parsed.attachment;
-    need(data['executionScopeSha256'] === source.executionScopeSha256);
+    need(data['executionScopeSha256'] === source.executionScopeSha256 && data['helperSourceSha256'] === source.helperSourceSha256);
     const base = exact(data['base'], ['jobId', 'helperInstance', 'bindingSha256', 'capturedAt', 'processes', 'runtimePid', 'socketOwnerPid']);
     need(base['jobId'] === generation.jobId && base['helperInstance'] === generation.helperInstance && base['bindingSha256'] === a['bindingSha256'] && base['capturedAt'] === capturedAt && base['runtimePid'] === runtimePid);
     same(base['processes'], rows);
