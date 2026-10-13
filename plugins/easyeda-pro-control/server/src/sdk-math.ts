@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
+import { SDK_CLIPPING_GROUP_PROJECTION, SDK_CLIPPING_LIMITATION, closeSdkClippingArguments, isSdkClippingMethod, sdkClippingArgumentsSchema, validateSdkClippingResult } from "./sdk-math-clipping.ts";
 
 export const SDK_MATH_API_VERSION = "0.3.50.ab46409c";
 export const SDK_MATH_API_SHA256 = "021d155baafbcdc7b558da12f0834a8ee473aa37e276c6ea679936f952080c76";
@@ -103,10 +104,15 @@ export const sdkMathRequestSchema = z.discriminatedUnion("method", [
   z.object({ method: z.literal("eda.sys_Math.translate"), arguments: z.object({ polygon: ringSchema, dx: coordinate, dy: coordinate }).strict() }).strict(),
   z.object({ method: z.literal("eda.sys_Math.rotate"), arguments: rotateArguments }).strict(),
   z.object({ method: z.literal("eda.sys_Math.scale"), arguments: scaleArguments }).strict(),
+  z.object({ method: z.literal("eda.sys_Math.intersects"), arguments: sdkClippingArgumentsSchema }).strict(),
+  z.object({ method: z.literal("eda.sys_Math.union"), arguments: sdkClippingArgumentsSchema }).strict(),
+  z.object({ method: z.literal("eda.sys_Math.subtract"), arguments: sdkClippingArgumentsSchema }).strict(),
+  z.object({ method: z.literal("eda.sys_Math.intersection"), arguments: sdkClippingArgumentsSchema }).strict(),
+  z.object({ method: z.literal("eda.sys_Math.xor"), arguments: sdkClippingArgumentsSchema }).strict(),
 ]);
 export type SdkMathRequest = z.infer<typeof sdkMathRequestSchema>;
 type MathMethod = SdkMathRequest["method"];
-type ResultKind = "boolean" | "number" | "point" | "bbox" | "points";
+type ResultKind = "boolean" | "number" | "point" | "bbox" | "points" | "groups";
 
 const definitions: Record<MathMethod, { parameters: string[]; result: ResultKind; limitation: string }> = {
   "eda.sys_Math.bboxIntersects": { parameters: ["bbox1", "bbox2"], result: "boolean", limitation: "Touching bbox edges count as intersecting; this is not polygon intersection." },
@@ -120,11 +126,16 @@ const definitions: Record<MathMethod, { parameters: string[]; result: ResultKind
   "eda.sys_Math.translate": { parameters: ["polygon", "dx", "dy"], result: "points", limitation: "Returns a new point array, preserving supplied point order and closure representation; does not move CAD objects." },
   "eda.sys_Math.rotate": { parameters: ["polygon", "angle", "centerX", "centerY"], result: "points", limitation: "Degrees, positive counterclockwise. Supply both center coordinates or neither; neither uses the SDK centroid." },
   "eda.sys_Math.scale": { parameters: ["polygon", "scaleX", "scaleY", "centerX", "centerY"], result: "points", limitation: "Omitted scaleY uses scaleX. Zero/negative factors are allowed and may collapse/reflect output. Both center coordinates or neither are required." },
+  "eda.sys_Math.intersects": { parameters: ["polygon1", "polygon2"], result: "boolean", limitation: `${SDK_CLIPPING_LIMITATION} Boundary-only contacts are refused before execution, not classified as area overlap.` },
+  "eda.sys_Math.union": { parameters: ["polygon1", "polygon2"], result: "groups", limitation: `${SDK_CLIPPING_LIMITATION} Returns the complete SDK union group.` },
+  "eda.sys_Math.subtract": { parameters: ["polygon1", "polygon2"], result: "groups", limitation: `${SDK_CLIPPING_LIMITATION} Directional first-minus-second difference; a nested second ring can produce a hole.` },
+  "eda.sys_Math.intersection": { parameters: ["polygon1", "polygon2"], result: "groups", limitation: `${SDK_CLIPPING_LIMITATION} Empty intersection returns an empty group array.` },
+  "eda.sys_Math.xor": { parameters: ["polygon1", "polygon2"], result: "groups", limitation: `${SDK_CLIPPING_LIMITATION} Symmetric difference; disconnected components may share crossing vertices.` },
 };
 
 const commonLimitations = [
   "API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation.",
-  "Strict finite JSON point arrays only, coordinates within +/-1e6, 3-128 distinct ring vertices, optional final closing duplicate. No holes, groups, curves, native handles, callbacks or arbitrary SDK paths.",
+  "Strict finite JSON inputs only. Simple methods accept +/-1e6 coordinates and 3-128 ring vertices; clipping has its separately documented narrower bounds. No input holes, groups, curves, native handles, callbacks or arbitrary SDK paths.",
   "Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved.",
   "JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees.",
 ] as const;
@@ -175,20 +186,23 @@ export function buildSdkMathProgram(input: unknown): string {
   const definition = definitions[request.method];
   const method = request.method.slice("eda.sys_Math.".length);
   const argumentsCode = definition.parameters.map((parameter) => `args.${parameter}`).join(",");
+  const callArguments = isSdkClippingMethod(request.method) ? closeSdkClippingArguments(request.arguments) : request.arguments;
   return `try {
 const fail=()=>{throw new Error('SDK_MATH_INVALID_RESULT');};
-const args=${JSON.stringify(request.arguments)};
+const args=${JSON.stringify(callArguments)};
 const freeze=value=>{if(value&&typeof value==='object'){for(const child of Object.values(value))freeze(child);Object.freeze(value);}};freeze(args);
 const owner=eda.sys_Math,method=owner?.${method};if(!owner||typeof method!=='function')fail();
 const scalar=value=>{if(typeof value!=='number'||!Number.isFinite(value)||Math.abs(value)>1e15)fail();return value;};
 const object=(value,keys)=>{if(!value||typeof value!=='object'||Array.isArray(value)||Reflect.ownKeys(value).length!==keys.length)fail();const out={};for(const key of keys){const item=Object.getOwnPropertyDescriptor(value,key);if(!item||!Object.hasOwn(item,'value')||!item.enumerable)fail();out[key]=scalar(item.value);}return out;};
 const point=value=>{const result=object(value,['x','y']);if(Math.abs(result.x)>1e12||Math.abs(result.y)>1e12)fail();return result;};
+${definition.result === "groups" ? SDK_CLIPPING_GROUP_PROJECTION : ""}
 const project=value=>{
  const kind=${JSON.stringify(definition.result)};
  if(kind==='boolean'){if(typeof value!=='boolean')fail();return value;}
  if(kind==='number'){const result=scalar(value);if(result<0)fail();return result;}
  if(kind==='point')return point(value);
  if(kind==='bbox'){const result=object(value,['minX','minY','maxX','maxY']);if(result.minX>result.maxX||result.minY>result.maxY)fail();return result;}
+ ${definition.result === "groups" ? "if(kind==='groups')return clipGroups(value);" : ""}
  if(!Array.isArray(value)||value.length!==args.polygon.length||Reflect.ownKeys(value).length!==value.length+1)fail();
  return Array.from({length:value.length},(_,index)=>{const item=Object.getOwnPropertyDescriptor(value,String(index));if(!item||!Object.hasOwn(item,'value')||!item.enumerable)fail();return point(item.value);});
 };
@@ -216,7 +230,7 @@ export function validateSdkMathResult(input: unknown, raw: unknown): Record<stri
   if (payload.method !== request.method) { throw new Error("SDK math result belongs to a different method."); }
   let value: unknown;
   switch (definition.result) {
-    case "boolean": { value = z.boolean().parse(payload.value); break; }
+    case "boolean": { value = isSdkClippingMethod(request.method) ? validateSdkClippingResult(request.arguments, request.method, payload.value) : z.boolean().parse(payload.value); break; }
     case "number": { value = z.number().min(0).max(1_000_000_000_000_000).parse(payload.value); break; }
     case "point": { value = resultPoint.parse(payload.value); break; }
     case "bbox": { value = resultBbox.parse(payload.value); break; }
@@ -224,6 +238,10 @@ export function validateSdkMathResult(input: unknown, raw: unknown): Record<stri
       const points = z.array(resultPoint).max(SDK_MATH_MAX_VERTICES + 1).parse(payload.value);
       if (!("polygon" in request.arguments) || points.length !== request.arguments.polygon.length) { throw new Error("SDK math transform changed the point count."); }
       value = points; break;
+    }
+    case "groups": {
+      if (!isSdkClippingMethod(request.method)) { throw new Error("Unexpected clipping result method."); }
+      value = validateSdkClippingResult(request.arguments, request.method, payload.value); break;
     }
     default: { throw new Error("Unsupported SDK math result."); }
   }

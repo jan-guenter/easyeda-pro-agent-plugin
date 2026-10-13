@@ -60,8 +60,8 @@ void test("all eleven math adapters bind the exact receiver and positional argum
 
 void test("math discovery and exact validation remain offline and separate from execution authority", () => {
   const entries = sdkMathDescriptors();
-  assert.equal(entries.length, 11);
-  assert.equal(new Set(entries.map((entry) => entry.path)).size, 11);
+  assert.equal(entries.length, 16);
+  assert.equal(new Set(entries.map((entry) => entry.path)).size, 16);
   for (const entry of entries) {
     assert.equal(entry.path, entry.method);
     assert.equal(entry.invocationEnabledByDiscovery, false);
@@ -69,11 +69,11 @@ void test("math discovery and exact validation remain offline and separate from 
     assert.equal(entry.provenance.version, SDK_MATH_API_VERSION);
   }
   assert.equal(querySdkMathCalculations({ method: "eda.sys_Math.getBBox", includeSchemas: true })["total"], 1);
-  assert.equal(querySdkMathCalculations()["total"], 11);
+  assert.equal(querySdkMathCalculations()["total"], 16);
   assert.equal(JSON.stringify(querySdkMathCalculations()).includes("inputSchema"), false);
   assert.equal(validateSdkMathArguments({ method: "eda.sys_Math.getBBox", arguments: { polygon } })["valid"], true);
   assert.equal(validateSdkMathArguments({ method: "eda.sys_Math.union", arguments: {} })["valid"], false);
-  assert.throws(() => querySdkMathCalculations({ method: "eda.sys_Math.union" }));
+  assert.throws(() => querySdkMathCalculations({ method: "eda.sys_Math.unknown" }));
 });
 
 void test("math argument admission refuses unsupported shapes, unsafe selectors and invalid geometry", () => {

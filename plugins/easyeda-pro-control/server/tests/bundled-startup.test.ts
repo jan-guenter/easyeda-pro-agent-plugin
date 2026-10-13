@@ -136,11 +136,18 @@ void describe("self-contained packaged machine startup", () => {
       "easyeda_control_api", "easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_status",
     ]);
     const catalog = await api(client, { action: "calculations", query: { includeSchemas: true } });
-    assert.equal(catalog["total"], 11); assert.equal(catalog["invocationEnabledByDiscovery"], false);
+    assert.equal(catalog["total"], 16); assert.equal(catalog["invocationEnabledByDiscovery"], false);
     const valid = await api(client, { action: "calculate-validate", query: { request: {
       method: "eda.sys_Math.calculateArea", arguments: { polygon: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 0, y: 10 }] },
     } } });
     assert.equal(valid["valid"], true); assert.equal(valid["executionAuthorized"], false);
+    const clipping = await api(client, { action: "calculate-validate", query: { request: {
+      method: "eda.sys_Math.subtract", arguments: {
+        polygon1: [{ x: 0, y: 0 }, { x: 8, y: 0 }, { x: 8, y: 8 }, { x: 0, y: 8 }],
+        polygon2: [{ x: 2, y: 2 }, { x: 6, y: 2 }, { x: 6, y: 6 }, { x: 2, y: 6 }],
+      },
+    } } });
+    assert.equal(clipping["valid"], true); assert.equal(clipping["executionAuthorized"], false);
     const discovery = await client.callTool({ name: "easyeda_control_discover", arguments: { query: "pcb", mode: "all" } });
     assert.notEqual(discovery.isError, true);
     const entries = record(discovery.structuredContent)["value"];

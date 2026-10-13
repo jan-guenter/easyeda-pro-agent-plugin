@@ -6,6 +6,16 @@ credential, project or installed plugin cache was changed during this review.
 
 ## Decision
 
+Restart follow-up: the actual authenticated 135500 handshake reports
+`3.2.206` through `getEditorCurrentVersion()`, not the installed package's
+`3.2.206.715d940d`. The first area request refused before SDK dispatch because
+the initial profile confused these identities. The correction compares the
+literal editor-reported version while preserving all API/PCB hashes and the
+separate installed-package verification. It does not trim an arbitrary runtime
+value, accept a version prefix or alter the old design manifest. A regression
+fixture now uses the observed literal instead of copying the expected profile.
+This connection evidence is not a successful live calculation.
+
 Admit only the eleven fixed, input-only `sys_Math` adapters described in
 [the math implementation review](sys-math-implementation-review-2026-10-13.md).
 Do not admit the new application tuple to the legacy private compatibility

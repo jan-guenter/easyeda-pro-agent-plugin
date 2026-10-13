@@ -1,10 +1,12 @@
 # Bounded public SDK math adapters
 
-Eleven of the sixteen `eda.sys_Math` methods now have typed, bounded adapters.
+All sixteen `eda.sys_Math` methods now have typed, bounded adapters.
 They calculate from caller-supplied coordinates; they do not inspect or modify a
-design. Five clipping-dependent methods remain omitted for the concrete reasons
-below. This is source review and offline adapter verification, not connected
-execution acceptance or admission of the new editor tuple.
+design. The original eleven methods accept simple rings; five clipping methods
+have a narrower orthogonal-integer contract described below. This is source
+review and offline adapter evidence, not connected execution acceptance or
+general admission of the new editor tuple. Historical omission and test records
+remain below, explicitly separated from the clipping addition.
 
 ## Evidence and scope
 
@@ -16,15 +18,24 @@ Reviewed installed source:
 - The adjacent `api-types.d.ts` — 1,733,380 bytes, SHA-256
   `d5fe990034c55001302ea6c3f704c2d4b88cdf23253cc5293b3bad62a32b9def`.
 
-The app installation is 3.2.206.715d940d. Its complete external tuple remains
-unadmitted; the old reviewed API 0.2.53 does not acquire these methods merely
-because their schemas are discoverable. No private profile, external pin,
-installed cache, CAD project, journal or shared setting was changed for this
-review. The installed bundle was read as text, not imported or executed.
+The app installation is 3.2.206.715d940d; its authenticated editor reports
+3.2.206. Its complete external tuple remains unadmitted; the old reviewed API
+0.2.53 does not acquire these methods merely because their schemas are
+discoverable. During the original source review, no private profile, external
+pin, installed cache, CAD project, journal or shared setting changed. The installed
+bundle was read as text, not imported or executed. Later scoped installation and
+connection evidence belongs to its separate release records.
+
+On restarted135500, the bridge authenticated, but one area request refused before
+SDK dispatch because the profile expected the suffixed package version. The
+source correction pins the observed editor-reported 3.2.206 separately from the
+installed bundle identities. That refusal is not a successful math call. No live
+clipping validation is recorded.
 
 Source locations below are zero-based UTF-16 string offsets in the exact bundle,
 not byte offsets. The full helper closure was reviewed, including clipping and
-source-array normalization that the supported subset deliberately avoids.
+source-array normalization. The original eleven-method subset avoids both;
+the additional five methods use the clipping closure under the narrower guards.
 
 | Implementation | Start offset | Relevant behavior |
 | --- | ---: | --- |
@@ -42,7 +53,7 @@ JavaScript calculations. Their reachable helpers use arrays and numeric
 arithmetic, not editor RPC, UI, files, network, project state or settings. This
 statement does not cover the broader declared native-object input union.
 
-## Implemented contract
+## Common adapter contract
 
 The adapters live in `plugins/easyeda-pro-control/server/src/sdk-math.ts`.
 Offline descriptors expose the exact method name, input schema, parameter order,
@@ -51,7 +62,8 @@ validation explicitly grant no execution authority. JSON Schema cannot express
 all geometric or paired-center refinements; use the exact validator before
 requesting execution.
 
-Inputs are strict finite JSON objects. Polygon inputs contain one simple,
+Inputs are strict finite JSON objects. For the original eleven methods, polygon
+inputs contain one simple,
 nonzero-area ring with 3–128 distinct vertices, with an optional final duplicate
 of the first point. Coordinates, offsets and centers are bounded to ±1,000,000.
 Duplicate interior vertices, self-touching/crossing edges and adjacent
@@ -123,11 +135,60 @@ must not be used as proof: the implementation and
 [distance documentation](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_math.distancetopoint.html)
 also return zero for interior points.
 
-## Five omitted methods and next implementation work
+## Added clipping contract
 
-The omitted methods are `intersects`, `union`, `subtract`, `intersection` and
-`xor`. They are not native impossibilities and have not been dismissed as merely
-untested. Their shared clipping dependency needs a separate bounded contract:
+The five additional methods are `intersects`, `union`, `subtract`, `intersection`
+and `xor`. Their input admission follows the separate
+[official-contract and installed-source review](sys-math-clipping-research-2026-10-13.md).
+It qualifies a subset for calls to the actual fixed public SDK methods, not a
+replacement clipping algorithm or execution of an extracted app bundle.
+
+Each operand is one simple nonzero-area orthogonal ring with at most 16 distinct
+vertices. Coordinates must be integers within ±32,768. Horizontal and vertical
+edges alternate; redundant collinear corners, self-contact, self-intersection,
+duplicate interior vertices and zero-length edges refuse. The caller may repeat
+the first point at the end or omit that repeat. The adapter creates an explicitly
+closed copy without changing other vertices or winding.
+
+Across operands, endpoint-on-edge and shared-vertex contacts refuse. Collinear
+supporting edge lines refuse even when the segments themselves are disjoint.
+At most two proper perpendicular crossings are allowed per original edge.
+This excludes many ordinary aligned rectangle cases deliberately; it is not a
+general orthogonal clipping contract.
+
+Before dispatch, the guard derives the exact integer crossing set, enumerates
+possible split fragments and checks the installed intersection formula in both
+source argument orders. A formula result must equal the exact crossing or
+no-intersection outcome. No floating epsilon, snapping, output repair or global
+logger replacement is used. This guard addresses the collapsed-segment warning
+path identified in the historical review below. The source argument and its
+limits are recorded in the separate clipping review.
+
+Input bounds allow at most 32 proper crossings, 96 final nonzero segments and
+192 event endpoints. These are finite work bounds, not measured speed or an
+interruptible wall-clock deadline for synchronous renderer JavaScript.
+
+`intersects` returns the SDK boolean. The admitted domain excludes boundary-only
+contact, so this route does not establish the official touching-edge behavior.
+The four set operations preserve the complete group output, including holes,
+multiple outer rings and empty `[]`. Different result components may share
+vertices, as in XOR; that alone does not invalidate a complete result. Caps are
+32 groups, 32 total rings, 192 total points including closing repeats and the
+common 32 KiB response bound. Output is validated rather than truncated.
+
+No input groups or holes are admitted. General angled edges, fractional
+coordinates, aligned or touching operands and cases failing exact fragment
+arithmetic remain unsupported inputs, not omitted methods. A clipping result
+must not be implicitly flattened or passed to a different calculation whose
+input schema rejects groups or empty input. No connected clipping validation
+is claimed.
+
+## Historical omission rationale before clipping implementation
+
+The first eleven-method release omitted `intersects`, `union`, `subtract`,
+`intersection` and `xor`. These were implementation gaps, not native
+impossibilities or methods dismissed as merely untested. The original source
+findings below motivated the narrower contract now implemented:
 
 - The sweep-line helper consumes edges only through `length - 2`. Point-array
   normalization does not explicitly close an unclosed ring, so the implicit
@@ -155,7 +216,7 @@ equals execution support. Official contracts are available for
 [intersection](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_math.intersection.html)
 and [xor](https://prodocs.easyeda.com/en/api/reference/pro-api.sys_math.xor.html).
 
-## Verification recorded
+## Historical eleven-method verification
 
 Six focused offline tests cover all eleven literal call mappings, receiver and
 argument binding, immutable inputs, exact envelopes, result validation,
@@ -165,3 +226,8 @@ installed EasyEDA bundle. All six pass on pinned Node 24.18.0; targeted strict
 type-aware lint reports zero warnings. Integration types, release checks and
 connected acceptance belong to their separate receipts. No connected SDK math
 call or CAD operation was performed for this evidence.
+
+That six-test record predates clipping and must not be counted as its validation.
+Current clipping test and release results belong to their separate receipts.
+Neither synthetic SDK stubs nor the authenticated pre-dispatch refusal on135500
+establish live execution of these five methods.
