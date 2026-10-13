@@ -51,8 +51,9 @@ one supplied-coordinate smoke test. No project is needed for that test.
 
 Focused synthetic adapter/coordinator tests, strict types and zero-warning lint,
 the existing CI suite, reproducible bundles, package/privacy checks and all seven
-skill validators remain release gates. Final counts and the protected merge/
-official Git-marketplace installation receipt will be linked here before handoff.
+skill validators remain release gates. Final CI counts, protected merge and
+official Git-marketplace installation results are recorded in the
+[PR12 delivery receipt](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/12).
 Local verification passes 56 focused/integration tests and all 424 existing
 bridge tests, full facade/bridge types and strict zero-warning lint, package/
 repository/privacy checks and all seven skill validators. Dependency audit found

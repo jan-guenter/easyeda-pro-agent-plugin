@@ -33,7 +33,7 @@ subsets/30 native equivalents/82 blocked/453 omitted methods; routes290 guarded,
 94 blocked/two partial. These are not live validation counts.
 
 Publication, required CI and official installation are pending at this snapshot;
-see docs/clipping-release-2026-10-13.md and the feature/sdk-clipping-bounded PR
+see docs/clipping-release-2026-10-13.md and [PR12](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/12)
 delivery receipt before repeating them. Installed/loaded135500 remains unchanged.
 No successful live math execution has occurred. Next connected check must use
 the corrected installed snapshot in a fresh host; do not hotpatch the current
