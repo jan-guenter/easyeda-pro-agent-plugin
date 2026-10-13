@@ -13,11 +13,13 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Current delivery: scoped release approved
+### Scoped-release handoff
 
 The user explicitly chose: "Ship the scoped release; document the backlog."
-Finish protected publication and official Git-marketplace installation; do not
-continue broad API implementation or add more live fixtures in this delivery.
+[PR9](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/9) tracks the
+final CI, protected merge and official Git-marketplace installation receipts.
+Read that delivery receipt before repeating any release action. Do not continue
+broad API implementation or add more live fixtures in this delivery.
 Candidate `0.3.0+codex.20261013113000` keeps the ordinary symbol writer disabled.
 Its release report is `docs/scoped-release-2026-10-13.md`. Missing adapters remain
 implementation backlog, not merely missing tests or native impossibilities.
@@ -44,9 +46,13 @@ focused tests pass; fingerprint43 and diagnostic/entry73 tests pass. Both types,
 full zero-warning lint, build, compatibility, coverage, package/repository/privacy
 and seven official skill validations pass. Dependency audits are clean. Source305
 projection809593eb/runtime3 projection5799fa8d; external pins unchanged. Existing
-full CI, protected publication and install remain pending. Actual4147270 remains
-on101000; updated public abandonment needs a fresh official host. No CAD call
-or Save is pending. Production and its record remain untouched.
+full CI on initial payload67b47bf passed build/reproducibility but found two
+composed-entry failures: the shared synthetic health fixture retained bare Node
+version spelling. Its one-line correction matches upstream; runtime checks,
+assertions, deadlines and built code are unchanged. At this pre-delivery snapshot,
+actual4147270 remains on101000; updated public abandonment needs a fresh official
+host. Consult the linked delivery receipt for final CI and installation results.
+No CAD call or Save is pending. Production and its record remain untouched.
 
 ### Historical restart admission and fixture setup
 

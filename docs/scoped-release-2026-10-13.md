@@ -82,6 +82,15 @@ Runtime projection:three files,
 `5799fa8d57d87cbfcca7a87e733549e3dbf44a4fd3add6e5dc841c3283e6d073`.
 Reviewed external dependencies and native helper identities are unchanged.
 
-GitHub CI, protected main merge and official Git-marketplace installation are
-pending. Their results will be recorded after they occur. No production design
-or its project record was accessed.
+Initial payload `67b47bf` passed CI build/reproducibility checks but failed two
+existing composed-entry tests. Their shared synthetic health fixture still used
+the unprefixed Node version. The fixture now matches upstream's `process.version`;
+runtime checks, assertions, deadlines and the built package code are unchanged.
+
+This report is the pre-delivery snapshot. The
+[PR9 delivery receipt](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/9)
+tracks final CI counts, the protected main merge and exact installed-package/startup
+verification.
+Installation does not replace an already-running plugin host. Start a fresh
+Codex host before using the update or attempting the retained C10 abandonment.
+No production design or its project record was accessed.

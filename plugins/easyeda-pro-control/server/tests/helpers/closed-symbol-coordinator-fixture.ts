@@ -75,7 +75,7 @@ function fullFingerprint(): Record<string, unknown> & { installedBundles: Bundle
   }) },
     upstreamServer: { version: manifest.upstream.serverVersion }, upstreamLauncher: manifest.upstream.launcher, upstreamImplementationDrift: false,
     reviewedCompatibilityManifest: reviewedCompatibilityManifestFingerprint(), toolCount: manifest.upstream.toolCatalog.count, toolCatalogSha256: manifest.upstream.toolCatalog.sha256,
-    health: { payload: { version: runtime.healthVersion, node_version: runtime.nodeVersion, bridge_connected: true, easyeda_version: runtime.easyedaVersion,
+    health: { payload: { version: runtime.healthVersion, node_version: `v${runtime.nodeVersion}`, bridge_connected: true, easyeda_version: runtime.easyedaVersion,
       extension_version: runtime.extensionVersion, extension_version_mismatch: false, registry_mismatch: false } },
     bridge: { payload: { connected: true, bridge_version: runtime.bridgeVersion, ...(runtime.bridgeEasyedaVersion === null ? {} : { easyeda_version: runtime.bridgeEasyedaVersion }), diagnostics: { method_registry_hash: runtime.methodRegistryHash } } },
     bridgeDispatcher: { payload: { source: runtime.dispatcher.source, dispatcher_build_id: runtime.dispatcher.buildId, total: runtime.dispatcher.total } },
