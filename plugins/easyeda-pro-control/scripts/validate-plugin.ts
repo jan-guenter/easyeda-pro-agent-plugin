@@ -51,6 +51,7 @@ const OUTPUT_SCHEMA_ANCHORS = {
   easyeda_control_library: ["capabilities", "operationId", "state"],
   easyeda_control_runtime: ["action", "result"],
   easyeda_control_validate_closed_symbol: ["result"],
+  easyeda_control_symbol_metadata: ["result"],
   easyeda_control_native_ui: ["schema", "action", "result", "observations", "authority"],
   easyeda_control_check: ["operationId", "state", "report", "proof", "reportArtifact", "nextSafeAction"],
   easyeda_control_status: ["facade", "upstream"],

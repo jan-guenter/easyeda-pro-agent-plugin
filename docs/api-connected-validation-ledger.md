@@ -860,3 +860,57 @@ their programs, effect models and execution guards remain unchanged. Existing
 fixtures now enforce the actual upstream requirement. The original request must
 not be replayed. No successful public closed-symbol lifecycle or ordinary writer
 support is established by this stopped case.
+
+### C08 recovery on restarted084617
+
+The public `abandoned-before-navigation` resolution completed once on the
+independently admitted084617 host. Original journal, all16 phase artifacts,
+permanent target claim and fixture remained unchanged. The exclusive sidecar
+SHA-256 is `99210312fc39bcf31bcd7b2c85a0875c61bc3305ce9b22ef3feed8d6a06117fc`;
+body seal is `1850d1b44a0d7891ba08b2d339bb77c96090742232f402dd8f0aeb9d196c2b8f`.
+Public unfinished-operation listing then returned empty. This is historical
+abandonment, not completion, replay permission or retained Job termination proof.
+
+## 2026-10-13: C09, closed-symbol validation stopped after startup marker
+
+Installed `0.3.0+codex.20261013084617`, tested payload
+`c2412d6244a1727c226edaba74022ef555edf473`, tree
+`091958adfbd841393c692e7161e779d5f0a186db`, was independently admitted with
+source projection `264de3df415805d60666c4d986dd7525dba722d645dd5073b3e8b2ca5f508a7f`
+and runtime projection `70725d78d67a28c70a27b6bc7e045b0c8009f69b9cc0dac0c3e0376c763cf4f6`.
+All1,104 installed files and modes matched the tested payload. External pins
+were unchanged.
+
+Native UI created a new disposable project with one shortcut resistor, one
+explicit schematic Save and an initialized blank companion PCB. Normal closure
+preceded read-only complete SQL/schema/history inspection:12 documents, an
+ordinary two-pin PART, three linear history rows, four chunks and no snapshots.
+The public validation used its new project/symbol identities and ran once.
+
+Baseline contained launch, admission and startup marker creation completed.
+The six-event journal stops before baseline close or any project navigation.
+The next native window observation showed an empty-title71x32 tooltip and the
+titled1384x736 application window, both root-owned Chrome windows. Windows
+reported the tooltip as MainWindowHandle. Source review confirms this pair
+fails the coordinator's one-window/equal-main-handle assumption; no owned-window
+artifact was published. The public result reports only the coordinator failure,
+so the window diagnosis is correlated source/observation evidence, not a retained
+exception report.
+
+Root captured Start Page, requested normal closure once without choosing any
+prompt response, and observed empty native discovery. The fixture remains
+434,176 bytes and byte-identical to its pre-call baseline. The journal has no
+hard stop, orphan or possible-mutation flag. No symbol edit, Save, project open,
+closed SQL baseline, terminal completion or original Job termination proof is
+claimed. Marker and permanent target claim remain; do not repeat the request.
+
+Retained commitments:
+
+- Original journal: `d49b2ffe4301086ace20e5bf0799903dd0b944d59cd23b8408ced508901d5e3a`.
+- Marker result: `95e709d18f9b01287c99d2bb976dc2bf9bc7f8df7e170cd145a65560798cb5dd`.
+- Permanent claim: `3ba91d08631343523d54e6b8bf54b10ad0e1a7c0b633f72f7fa6a572f3ca5774`.
+- Unchanged fixture: `9bb7dbd71256f102942daa11908165fec4d8eca5bfd580c20ddf8ab3e71c1a1d`.
+- Start Page capture: `4326df65cd3808cc9c1871e4d8835917f6ed5dfbded3d66bc5528ed62ddf41c8`.
+
+The seq16 C08 abandonment route does not admit this seq6 case. Ordinary symbol
+execution remains disabled. This failure is not successful lifecycle validation.

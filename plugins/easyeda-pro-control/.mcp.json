@@ -18,6 +18,7 @@
         "easyeda_control_library": { "approval_mode": "prompt" },
         "easyeda_control_runtime": { "approval_mode": "prompt" },
         "easyeda_control_validate_closed_symbol": { "approval_mode": "prompt" },
+        "easyeda_control_symbol_metadata": { "approval_mode": "prompt" },
         "easyeda_control_native_ui": { "approval_mode": "prompt" },
         "easyeda_control_check": { "approval_mode": "prompt" },
         "easyeda_control_exact_read": { "approval_mode": "prompt" },

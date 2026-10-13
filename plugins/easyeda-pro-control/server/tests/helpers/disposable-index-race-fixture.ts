@@ -32,7 +32,7 @@ export interface RaceFixture {
 }
 const plugin = resolve(import.meta.dirname, "../../..");
 const tool = "easyeda_control_validate_closed_symbol";
-const reservedMessage = "The Windows runtime is reserved by a consumed disposable validation attempt.";
+const reservedMessage = "The Windows runtime is reserved by a consumed closed-symbol attempt.";
 async function bounded<T>(promise: Promise<T>, milliseconds: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {

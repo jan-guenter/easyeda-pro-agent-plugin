@@ -1,4 +1,4 @@
-/* oxlint-disable import/max-dependencies -- Five focused cases reuse real managed journals/checkpoints/SQL and the existing synthetic closure fixture, without a new injection harness. */
+/* oxlint-disable import/max-dependencies -- Focused cases reuse real managed journals/checkpoints/SQL and existing closure/startup fixtures, without a new injection harness. */
 import assert from "node:assert/strict";
 import { chmod, mkdir, mkdtemp, readFile, rename, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -9,6 +9,7 @@ import { createCheckpoint } from "../src/checkpoint.ts";
 import { copyClosedProjectBytes } from "../src/closed-file-copy.ts";
 import { readClosedCopySqlInventory } from "../src/closed-file-sql.ts";
 import { abandonClosedSymbolBeforeNavigation, inspectClosedSymbolAbandonment } from "../src/closed-symbol-abandonment.ts";
+import { abandonClosedSymbolBaselineBeforeNavigation, inspectClosedSymbolBaselineAbandonment } from "../src/closed-symbol-baseline-abandonment.ts";
 import { FAMILY, STEPS, appendClosedSymbolEvent, createClosedSymbolJournal } from "../src/closed-symbol-journal.ts";
 import type { AppendInput, ClosedJournal, ClosedSymbolPlan, Generation, LaunchGeneration } from "../src/closed-symbol-journal.ts";
 import { WITNESS_NATIVE_PINS_SHA256 } from "../src/closed-symbol-native-profile.ts";
@@ -17,6 +18,7 @@ import { VALIDATION_ACTION_ID, claimClosedSymbolValidationTarget } from "../src/
 import { newOperationId, sha256Json, sha256Text } from "../src/core.ts";
 import { syntheticSqlRoot, syntheticSqlRuntime } from "./helpers/sqlite-inventory-fixture.ts";
 import { mintSyntheticClosedSessionProof } from "./helpers/windows-closed-session-fixture.ts";
+import { startupFixture } from "./helpers/closed-symbol-startup-browser-fixture.ts";
 
 const digest = "a".repeat(64);
 const message = 'Tool "easyeda_execute" can mutate design state and requires confirmWrite=true.';
@@ -40,7 +42,7 @@ function phaseInput(journal: ClosedJournal): AppendInput {
     data: step.endsWith("-launch") && kind === "result" ? { launchReceipt, launchReceiptSha256: sha256Json(launchReceipt) } : { syntheticOnly: true } };
 }
 
-async function fixture(rawReturn: unknown = rejection): Promise<{ journal: ClosedJournal; source: string; claimPath: string }> {
+async function fixture(rawReturn: unknown = rejection, baseline = false): Promise<{ journal: ClosedJournal; source: string; claimPath: string }> {
   const directory = await mkdtemp(join(syntheticSqlRoot(), "abandonment-")), source = join(directory, "synthetic.eprj2");
   const database = new DatabaseSync(source);
   try { database.exec("CREATE TABLE t(value TEXT); INSERT INTO t(rowid,value) VALUES(55,'synthetic baseline')"); }
@@ -48,14 +50,24 @@ async function fixture(rawReturn: unknown = rejection): Promise<{ journal: Close
   await chmod(source, 0o600);
   const operationId = newOperationId(), project = "b".repeat(64), target = sha256Text(operationId).slice(0, 16);
   const metadata = { name: "Synthetic symbol", description: "No native CAD call" };
+  const startup = baseline ? startupFixture() : undefined;
   const plan: ClosedSymbolPlan = { profile: FAMILY, projectUuid: project, branchUuid: "d".repeat(32), ownerUuid: "e".repeat(32), targetUuid: target,
     activeUuid: "f".repeat(16), projectPath: source, operation: { id: VALIDATION_ACTION_ID, action: "library.symbol.modify", libraryUuid: project,
-      target: { uuid: target }, patch: metadata }, marker: { namespaceNonce: "1".repeat(64), keyNonce: "2".repeat(64), bodyNonce: "3".repeat(64) },
+      target: { uuid: target }, patch: metadata }, marker: startup?.input.marker ?? { namespaceNonce: "1".repeat(64), keyNonce: "2".repeat(64), bodyNonce: "3".repeat(64) },
     nativePinsSha256: WITNESS_NATIVE_PINS_SHA256, facadeSha256: digest, expectedFingerprintSha256: digest };
   const journal = await createClosedSymbolJournal(operationId, plan);
   const request = { action: "run-disposable-once", target: { projectPath: source, projectUuid: project, branchUuid: plan.branchUuid,
     ownerUuid: plan.ownerUuid, symbolUuid: target, companionPcbUuid: plan.activeUuid }, metadata, confirmDisposableMetadataEdit: true };
   const claim = await claimClosedSymbolValidationTarget(request, plan);
+  if (startup !== undefined) {
+    while (journal.sequence < 4) { await appendClosedSymbolEvent(journal, phaseInput(journal)); }
+    const startupRequest = { profile: "easyeda-pro-control.closed-symbol-startup-request.v1", input: startup.input,
+      codeSha256: sha256Text(buildStartupProgram(startup.input)), directMainFrameOnly: true };
+    await appendClosedSymbolEvent(journal, { ...phaseInput(journal), requestSha256: sha256Json(startupRequest), data: startupRequest });
+    const returned: unknown = rawReturn === rejection ? { structuredContent: { ok: true, result: await startup.run() }, content: [] } : rawReturn;
+    await appendClosedSymbolEvent(journal, { ...phaseInput(journal), requestSha256: sha256Json(startupRequest), data: { rawReturn: returned } });
+    return { journal, source, claimPath: claim.artifact.path };
+  }
   while (journal.sequence < 8) { await appendClosedSymbolEvent(journal, phaseInput(journal)); }
   const checkpointDirectory = join(controlDataDirectory(), "checkpoints");
   await mkdir(checkpointDirectory, { recursive: true, mode: 0o700 });
@@ -127,4 +139,50 @@ void test("changed current SQL refuses publication, and changed retained phase r
   const phase = value.journal.artifacts[15]; assert.ok(phase);
   await writeFile(phase.path, "changed retained phase\n");
   await assert.rejects(inspectClosedSymbolAbandonment(value.journal.operationId));
+});
+
+void test("six-event baseline abandonment preserves evidence and grants no closure, source or replay proof", async () => {
+  const value = await fixture(undefined, true);
+  const before = await retainedBytes(value);
+  await assert.rejects(abandonClosedSymbolBeforeNavigation(value.journal.operationId), /exact unquarantined validation prefix/u);
+  const result = await abandonClosedSymbolBaselineBeforeNavigation(value.journal.operationId);
+  assert.equal(result.boundary, "baseline-startup-observed");
+  assert.equal(result.classification, "historical-abandonment-verified");
+  for (const key of ["processClosureProved", "sourceInvarianceProved", "completionProved", "executionAuthorized", "authorityRestored", "replayAllowed", "saved", "reopened"] as const) {
+    assert.equal(result[key], false);
+  }
+  assert.deepEqual(await retainedBytes(value), before);
+  await rename(value.source, `${value.source}.retained`);
+  assert.deepEqual(await inspectClosedSymbolBaselineAbandonment(value.journal.operationId), result);
+  assert.deepEqual(await abandonClosedSymbolBaselineBeforeNavigation(value.journal.operationId), result);
+  assert.deepEqual(await retainedBytes(value), before);
+  const phase = value.journal.artifacts[5]; assert.ok(phase);
+  await writeFile(phase.path, "changed retained startup\n");
+  await assert.rejects(inspectClosedSymbolBaselineAbandonment(value.journal.operationId));
+});
+
+void test("baseline abandonment rejects a mere success flag and any later close intent", async () => {
+  const malformed = await fixture({ structuredContent: { ok: true }, content: [] }, true);
+  await assert.rejects(abandonClosedSymbolBaselineBeforeNavigation(malformed.journal.operationId));
+  assert.equal(await inspectClosedSymbolBaselineAbandonment(malformed.journal.operationId), undefined);
+  const later = await fixture(undefined, true);
+  const before = await retainedBytes(later);
+  await writePhaseArtifact(later.journal.operationId, 7, "baseline-close-intent", { syntheticUnacknowledgedIntent: true });
+  await assert.rejects(abandonClosedSymbolBaselineBeforeNavigation(later.journal.operationId), /Unreferenced next phase/u);
+  assert.equal(await inspectClosedSymbolBaselineAbandonment(later.journal.operationId), undefined);
+  assert.deepEqual(await retainedBytes(later), before);
+  const diagnostic = await fixture(undefined, true), generation = phaseInput(diagnostic.journal).generation;
+  assert.ok(generation !== null);
+  const window = await writePhaseArtifact(diagnostic.journal.operationId, 0, "baseline-owned-window", {
+    profile: "private.closed-symbol-owned-window.v1", generation, observed: {
+      schema: "easyeda-pro-control.windows-native-ui.v1", action: "windows", authority: "retained-job",
+      binding: { rootPid: generation.rootPid, rootStartTicks: generation.rootStartIdentity.split(":")[1],
+        executable: "C:\\Synthetic\\EasyEDA.exe", executableSha256: digest }, result: { mainWindowHandle: "1", windows: [] },
+    },
+  });
+  const windowBytes = await readFile(window.path);
+  await abandonClosedSymbolBaselineBeforeNavigation(diagnostic.journal.operationId);
+  assert.deepEqual(await readFile(window.path), windowBytes);
+  await writeFile(window.path, "changed diagnostic\n");
+  await assert.rejects(inspectClosedSymbolBaselineAbandonment(diagnostic.journal.operationId));
 });

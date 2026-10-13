@@ -114,7 +114,11 @@ async function qualifyAbandonment(candidate: ScanCandidate): Promise<QualifiedAd
   if (expected === null) { return observation(candidate, "incomplete"); }
   try {
     const { inspectClosedSymbolAbandonment } = await import("./closed-symbol-abandonment.ts");
-    const inspected: unknown = await inspectClosedSymbolAbandonment(expected.operationId);
+    const { inspectClosedSymbolBaselineAbandonment } = await import("./closed-symbol-baseline-abandonment.ts");
+    const original = await inspectClosedSymbolAbandonment(expected.operationId);
+    const baseline = await inspectClosedSymbolBaselineAbandonment(expected.operationId);
+    if (original !== undefined && baseline !== undefined) { return observation(candidate, "abandonment-evidence-invalid"); }
+    const inspected: unknown = original ?? baseline;
     if (inspected === undefined) { return observation(candidate, "incomplete"); }
     if (!isRecord(inspected) || inspected["profile"] !== "easyeda-pro-control.closed-symbol-abandonment-inspection.v1" ||
       inspected["classification"] !== "historical-abandonment-verified" || inspected["operationId"] !== expected.operationId ||

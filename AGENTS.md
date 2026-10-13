@@ -13,7 +13,46 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Current continuation: pre-navigation transport refusal
+### Current continuation: ordinary entry and pre-navigation window correction
+
+The restarted official084617 host is admitted: its complete1,104-file installed
+tree and modes match tested payloadc2412d6. Public pre-navigation abandonment
+completed once for the retained validation failure. The original journal,
+16 phases, permanent target claim and disposable file remain unchanged. The
+exclusive sidecar records historical abandonment only; it grants no completion,
+replay or old-process authority. Public incomplete-operation listing is empty.
+
+A genuinely new disposable project was created through maintained native UI.
+It contains one shortcut resistor, saved once with File > Save, and an initialized
+blank companion PCB. Setup closed normally; complete read-only SQL/history
+inspection passed. One new public validation stopped at sequence6 after successful
+baseline launch, admission and marker creation. No project navigation, edit or
+Save followed. Native observation showed an ownerless empty-title tooltip being
+reported as MainWindowHandle alongside the actual application window. That pair
+fails the coordinator's current unique-window assumption. Root observed Start
+Page, closed normally once without any prompt choice, then observed empty
+discovery. The new fixture remains byte-identical. C09 retains the exact result;
+no terminal completion or original Job termination is claimed.
+Computer Use failed before executing any action because its runtime rejected
+the workspace URI; no custom UI helper was substituted. Ordinary writer source
+integration is implemented but remains disabled pending successful validation.
+It has a distinct caller-ID intent, shared one-shot runtime reservation and the
+same coordinator/terminal lifecycle. Its78 focused tests, types and targeted
+strict lint pass. Tooltip-aware coordinator/terminal selection and a separate
+strict six-event pre-navigation abandonment profile are complete and reviewed.
+The existing16-event recovery contract remains unchanged. Recovery regressions
+pass126 cases; window/lifecycle checks pass64 affected cases and29 overlapping
+focused cases after final diagnostic ordering. Final packaged startup/contract
+checks pass six cases. Full facade/bridge types, strict zero-warning lint, build,
+compatibility, API coverage, package, repository/privacy and all seven skill
+checks pass. Candidate101000 has304 source files at8c602d0c and three runtime
+files atf3b5e01b; external pins and native DLL remain unchanged. GitHub CI,
+publication and installation are pending. No broad test matrix is being added.
+Current source catalog is28 tools; installed084617 remains27.
+Production designs and their records remain untouched. No native call or Save
+is pending, and no completed setup or recovery action may be repeated.
+
+### Previous continuation: pre-navigation transport refusal
 
 The restarted official host loads074635; its complete installed tree matches
 CI-tested payload940c320. The public disposable workflow ran once and stopped
@@ -3356,7 +3395,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Current Git-marketplace074635 is published and installed/enabled after exact-payload CI38366377819. All1102files/21488412bytes/modes match940c3208, with offline proofb20f65fc and27tools/sevenskills. Native document IDs and eligible duplicate structure-row handling are corrected. The public disposable workflow remains unvalidated; all type1/2/3 design and eight metadata restrictions remain. The loaded host is054207, so use a fresh host before the callback. No CAD/Save is pending; production and its record remain excluded.
+- Current Git-marketplace084617 is published and installed/enabled after exact-payload CI38373488073. All1,104files/21,542,797bytes/modes matchc2412d6, with offline proof1b9eae06 and27tools/sevenskills. The fresh host is admitted and C08 public pre-navigation abandonment completed without replay. C09 stopped after its startup marker, before navigation; fixture unchanged and app closed. Ordinary writer source is integrated but disabled. Successful disposable lifecycle and the other native-effect implementations remain unfinished; all type1/2/3 design and eight metadata restrictions remain. Production and its record remain excluded.
 - Historical Git-marketplace030626 was published and installed/enabled after exact-payload CI38202074298. All652files/17001549bytes/modes matched6535cfad, with offline prooffc6c5e6a. It introduced the blocks on all type1/2/3 design lifecycles and eight metadata actions, including affected retained recovery, before bridge connection. Fresh connected admission and native structure completion were not claimed. Historical013324 C06/C07 retain their scoped wire observations, not later-job exclusion. Both disposable fixtures remain closed; completed operations must never be replayed. Candidate024750 was not installed. Broader API work and PR9 remain unfinished.
 - Historical000206 installation record, superseded by the current entry: Git-marketplace `0.3.0+codex.20261012000206` is published and installed/enabled after exact-head CI38187143546. All633files/17006218bytes/modes match payloadac9f0a7, package subtree369d8572; offline proofc146a756 passes. Loaded facade2527645 remains independently admitted220050, not000206; use a fresh Codex host before connected work. The220050 font case and omitted-lock three-segment wire forward/reverse saved/reopened pair pass their scoped proofs. Both disposable fixtures are closed; final flat sourcec9e04b15/checkpoint621cb2f6/database471d6b9e/logicalea3da0fa are verified. Original source geometry is restored, not original SQLite history. Closed verifier11 and all-nine-root metadata41 pass. The earlier authorized UI action/private comparison9bf4428a established pcbCommandTab false to true in browser and one anonymous SQL residual without identifying the current user. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission. The installed historical-case index grants no live authority or current-generation validation.
 - Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct. Installed164600 passed scoped PCB Text readers/create/delete and empty free-SCH creation;204104 passed system-library UUID, schematic Text/Wire readers with both mixed caller orders, and independently visible pointer-only hover. Installed220050 adds configured-font R09 and sealed-wire C04/C05 exact-case evidence. Unsaved wire rollback, failure recovery, broader wire shapes, literal-false connected input and later generations remain separate. The connected ledger records scope, not whole SDK contracts. Never access production or its project record. The user's continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation, not relaxed technical safety checks or unrelated changes.

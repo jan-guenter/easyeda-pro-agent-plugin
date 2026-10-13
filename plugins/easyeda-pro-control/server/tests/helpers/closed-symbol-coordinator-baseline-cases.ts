@@ -162,14 +162,16 @@ for (const phase of ["02-baseline-launch-result.json", "06-baseline-marker-creat
   });
 }
 
+const applicationWindow = { handle: "12345", pid: 100, owner: "0", className: "Chrome_WidgetWin_1", minimized: false, title: "Synthetic", bounds: [0, 0, 1384, 736] };
 for (const rows of [
-  [{ handle: "12345", pid: 100, owner: "0", className: "Chrome_WidgetWin_1" }, { handle: "54321", pid: 100, owner: "0", className: "Chrome_WidgetWin_1" }],
-  [{ handle: "54321", pid: 100, owner: "0", className: "Chrome_WidgetWin_1" }],
-  [{ handle: "12345", pid: 101, owner: "0", className: "Chrome_WidgetWin_1" }],
+  [applicationWindow, { ...applicationWindow, handle: "54321" }],
+  [{ ...applicationWindow, handle: "0" }],
+  [{ ...applicationWindow, pid: 101 }],
 ]) {
   void test(`owned-window selection refuses candidate rows ${JSON.stringify(rows)}`, async (context) => {
     const value = await fixture(context); value.state.windows = rows;
     await assert.rejects(value.stage.recordBaseline(value.plan), /window is ambiguous/u);
+    assert.ok(value.stage.retained()["windowArtifact"] !== undefined);
     assert.equal(value.events.includes("normal-close"), false);
   });
 }

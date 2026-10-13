@@ -10,7 +10,8 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { isRecord, sha256Text } from "../src/core.ts";
 import { closedSymbolDisposableOutputSchema } from "../src/closed-symbol-disposable-tool.ts";
-// eslint-disable-next-line import/max-dependencies -- Actual SDK child, original evidence and the local output validator are all required by this integration boundary.
+// eslint-disable-next-line import/max-dependencies -- Reuse the exact ordinary result parser in the existing SDK boundary test.
+import { closedSymbolOperationOutputSchema } from "../src/closed-symbol-operation-tool.ts";
 import { requestData } from "./helpers/disposable-tool-data.ts";
 
 const tool = "easyeda_control_validate_closed_symbol";
@@ -199,7 +200,7 @@ void test("actual SDK strict envelope does not consume the sole offline validati
   const catalog = f.catalogObservation();
   assert.ok(catalog.largestLineBytes > 65_536 && catalog.largestLineBytes <= 1_048_576);
   const entry = listed.tools.find(item => item.name === tool); assert.ok(entry !== undefined);
-  assert.equal(listed.tools.length, 27); assert.equal(entry.inputSchema["additionalProperties"], false);
+  assert.equal(listed.tools.length, 28); assert.equal(entry.inputSchema["additionalProperties"], false);
   assert.equal(entry.annotations?.readOnlyHint, false); assert.equal(entry.annotations?.destructiveHint, true);
   assert.equal(entry.annotations?.idempotentHint, false);
   assert.ok(entry.outputSchema !== undefined); assert.equal(entry.outputSchema.type, "object");
@@ -218,6 +219,14 @@ void test("actual SDK strict envelope does not consume the sole offline validati
     assert.equal(response.phase, "request"); assert.equal(response.reason, "invalid-request");
     await f.unchangedAndOffline(); assert.deepEqual(await f.runtimeStatus(), { state: "not-launched" });
   }
+  const ordinaryScope = requestData().request;
+  const ordinary = await f.call("easyeda_control_symbol_metadata", { request: { action: "execute-closed-symbol", target: ordinaryScope.target,
+    operation: { id: "ordinary-symbol-metadata", action: "library.symbol.modify", libraryUuid: ordinaryScope.target.projectUuid,
+      target: { uuid: ordinaryScope.target.symbolUuid }, patch: ordinaryScope.metadata }, confirmWrite: true } });
+  assert.equal(ordinary.isError, true);
+  const blocked = closedSymbolOperationOutputSchema.parse(ordinary.structuredContent).result;
+  assert.ok(blocked.outcome === "stopped"); assert.equal(blocked.phase, "validation"); assert.equal(blocked.attemptReserved, false);
+  await f.unchangedAndOffline(); assert.deepEqual(await f.runtimeStatus(), { state: "not-launched" });
   const stopped = strictResponse(await f.call(tool, requestData()));
   assert.equal(stopped.profile, "easyeda-pro-control.closed-symbol-disposable-result.v1");
   assert.ok(stopped.outcome === "stopped" && "claimState" in stopped);

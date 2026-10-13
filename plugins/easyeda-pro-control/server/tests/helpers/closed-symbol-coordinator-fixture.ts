@@ -210,7 +210,7 @@ export async function fixture(context: TestContext, reviewedExecutionScopeSha256
       assert.equal(request["action"], "windows"); assert.equal(state.scope, false); events.push("windows"); await state.onUi?.();
       return { schema: "easyeda-pro-control.windows-native-ui.v1", action: "windows",
         binding: { rootPid: request["rootPid"], rootStartTicks: request["rootStartTicks"], executable: request["executable"], executableSha256: request["executableSha256"] },
-        result: { windows: state.windows ?? [{ handle: "12345", pid: 100, owner: "0", className: "Chrome_WidgetWin_1", minimized: false, title: "Synthetic" }], mainWindowHandle: "12345" } };
+        result: { windows: state.windows ?? [{ handle: "12345", pid: 100, owner: "0", className: "Chrome_WidgetWin_1", minimized: false, title: "Synthetic", bounds: [0, 0, 1384, 736] }], mainWindowHandle: "12345" } };
     },
   });
   const identity = fullFingerprint(), machine = await syntheticSqlRuntime();

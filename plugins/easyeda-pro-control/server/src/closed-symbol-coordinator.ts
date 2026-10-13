@@ -25,6 +25,7 @@ import { assertOriginalSavedSymbolSource, prepareOriginalSavedSymbolSource } fro
 import { ClosedSymbolSavedReadStage, assertOriginalClosedSymbolSavedRead } from "./closed-symbol-saved-read.ts";
 import { ClosedSymbolStartupStage } from "./closed-symbol-startup.ts";
 import { canonicalJson, isRecord, newOperationId, sha256Json, validatePrivateFingerprint } from "./core.ts";
+import { selectClosedSymbolApplicationWindow } from "./closed-symbol-window.ts";
 import type { EasyedaControlEngine } from "./engine.ts";
 import { machineProfileSchema } from "./machine-profile.ts";
 import type { MachineProfile } from "./machine-profile.ts";
@@ -330,10 +331,6 @@ export class ClosedSymbolCoordinator {
     need(observed["schema"] === "easyeda-pro-control.windows-native-ui.v1" && observed["action"] === "windows" && observed["authority"] === "retained-job" &&
       isRecord(binding) && binding["rootPid"] === generation.rootPid && binding["executableSha256"] === status.executableSha256 &&
       generation.rootStartIdentity === `win32:${String(binding["rootStartTicks"])}:job:${generation.jobId}` && isRecord(result), "Coordinator owned-window envelope differs.");
-    const handle = result["mainWindowHandle"], rows = result["windows"];
-    need(Array.isArray(rows) && rows.length > 0 && rows.length <= 64 && typeof handle === "string" && /^[1-9]\d{0,18}$/u.test(handle), "Coordinator owned windows unavailable.");
-    const candidates = rows.filter((row: unknown) => isRecord(row) && row["pid"] === generation.rootPid && row["owner"] === "0" && row["className"] === "Chrome_WidgetWin_1");
-    need(candidates.length === 1 && isRecord(candidates[0]) && candidates[0]["handle"] === handle, "Coordinator main window is ambiguous or differs.");
     const observedText = canonicalJson(observed);
     const artifactValue = {
       profile: "private.closed-symbol-owned-window.v1", generation, observed,
@@ -342,7 +339,9 @@ export class ClosedSymbolCoordinator {
     this.windowArtifact = await writePhaseArtifact(journal.operationId, 0, `${phase}-owned-window`, artifactValue);
     this.windowArtifacts.set(phase, this.windowArtifact);
     this.outside(); need(canonicalJson(observed) === observedText && canonicalJson(this.runtime.status()) === statusText, "Coordinator window observation changed during retention.");
-    return handle;
+    // Retain bounded diagnostics even if semantic selection refuses. The
+    // Historical consumer applies the same selector before accepting close evidence.
+    return selectClosedSymbolApplicationWindow(result, generation.rootPid);
   }
 
   private async waitForAuthentication(gatewayInstanceId: string, current: () => void, priorSession?: Readonly<{ sessionId: string; sequence: number }>): Promise<string> {

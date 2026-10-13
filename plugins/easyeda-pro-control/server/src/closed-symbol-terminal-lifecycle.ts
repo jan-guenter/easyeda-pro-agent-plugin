@@ -10,6 +10,8 @@ import { readExactSqlInventory, readerCompletion } from "./sqlite-inventory.ts";
 import type { TerminalDescriptor, TerminalGenerationEvidence } from "./closed-symbol-terminal-shape.ts";
 import { validateRecordedCaptureEvidence, validateRecordedNativeSource } from "./closed-symbol-recorded-native.ts";
 import type { RecordedNativeSource } from "./closed-symbol-recorded-native.ts";
+// oxlint-disable-next-line import/max-dependencies -- Historical replay must use the exact maintained producer window selection.
+import { selectClosedSymbolApplicationWindow } from "./closed-symbol-window.ts";
 
 type Bag = Readonly<Record<string, unknown>>;
 type Inventory = Awaited<ReturnType<typeof readExactSqlInventory>>;
@@ -221,12 +223,9 @@ export async function replayRecordedLifecycle(input: Readonly<{
     need(window["profile"] === "private.closed-symbol-owned-window.v1" && observed["schema"] === "easyeda-pro-control.windows-native-ui.v1" &&
       observed["action"] === "windows" && observed["authority"] === "retained-job" && binding["rootPid"] === generation.rootPid &&
       binding["executable"] === source.executable && binding["executableSha256"] === source.executableSha256 &&
-      generation.rootStartIdentity === `win32:${String(binding["rootStartTicks"])}:job:${generation.jobId}` && windows["mainWindowHandle"] === closeIntent["windowHandle"],
+      generation.rootStartIdentity === `win32:${String(binding["rootStartTicks"])}:job:${generation.jobId}`,
       "Terminal owned-window and close binding differ.");
-    const rows = windows["windows"];
-    need(Array.isArray(rows) && rows.length > 0 && rows.length <= 64, "Terminal owned-window list invalid.");
-    const candidates = rows.filter((entry: unknown) => isRecord(entry) && entry["pid"] === generation.rootPid && entry["owner"] === "0" && entry["className"] === "Chrome_WidgetWin_1");
-    need(candidates.length === 1 && isRecord(candidates[0]) && candidates[0]["handle"] === closeIntent["windowHandle"], "Terminal window selection is ambiguous.");
+    need(selectClosedSymbolApplicationWindow(windows, generation.rootPid) === closeIntent["windowHandle"], "Terminal window selection and close binding differ.");
     startup(journal, events, ordinal);
     await checkpointArtifact(checkpoint, copy, journal.plan.projectPath, input.runtime); current();
     const artifact = text(copy["artifact"]), bytes = copy["bytes"];

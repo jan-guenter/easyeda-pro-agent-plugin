@@ -25,6 +25,16 @@ the unchanged complete saved database before publishing an abandonment record.
 It makes no application call and leaves the original journal, startup marker and
 permanent target claim intact.
 
+A separate profile accepts exactly six successful baseline events ending in
+`baseline-marker-create`, with no later phase evidence. Use the same public
+resolution and original operation-bound confirmation. It validates the fixed
+startup program, complete original result, marker/claim binding and preserved
+artifacts. An optional retained window diagnostic is evidence only. The recovery
+callback shares the coordinator's gate and cannot abandon an active invocation;
+a same-host retained attempt must have returned stopped for this operation.
+This profile makes no current project read and proves neither file invariance
+nor process closure. It is not the sixteen-event transport-refusal profile.
+
 Abandonment is not completion, rollback, process-termination proof or permission
 to repeat the validation request. Its historical evidence only removes that
 specific unfinished-operation blocker; every new operation retains its normal

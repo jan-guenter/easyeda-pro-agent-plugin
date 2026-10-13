@@ -14,6 +14,16 @@ Query `easyeda_control_library` with `{request:{action:"capabilities"}}`. A cata
 
 ## Structure-write completion restriction
 
+The separate `easyeda_control_symbol_metadata` source entry implements one
+ordinary closed-symbol name/description operation, but currently refuses before
+runtime allocation pending successful disposable lifecycle validation. Its
+presence does not enable `library.symbol.modify` through the old library executor.
+It requires a fresh facade, exact project/branch/owner/symbol and companion-PCB
+identities, both name and non-null description, `confirmWrite:true`, and a unique
+caller operation ID. A permanent operation-ID reservation prevents replay;
+validation target claims are not reused. Unsupported edits and failure recovery
+remain unavailable. Do not submit it as an alternative to a refused operation.
+
 These eight operations are blocked before dispatch:
 
 - `library.symbol.create` and `library.symbol.modify`;

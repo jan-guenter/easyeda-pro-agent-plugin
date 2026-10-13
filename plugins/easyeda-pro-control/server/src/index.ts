@@ -70,6 +70,10 @@ import { assertLegacyRecoveryJournalFamily } from "./legacy-recovery-family.ts";
 import { designToolOperationSchema, libraryToolOperationSchema } from "./tool-operation-envelope.ts";
 import { WindowsControlRuntime } from "./windows-runtime.ts";
 import type { ClosedSymbolDisposableEntry } from "./closed-symbol-disposable-entry.ts";
+import type { ClosedSymbolOperationEntry } from "./closed-symbol-operation-entry.ts";
+import { assertClosedSymbolOperationValidated } from "./closed-symbol-operation-request.ts";
+import { closedSymbolOperationInputSchema, closedSymbolOperationOutputSchema, closedSymbolOperationStopped,
+  formatClosedSymbolOperationResult, parseClosedSymbolOperationInput } from "./closed-symbol-operation-tool.ts";
 import {
   closedSymbolDisposableIndexRefusal, closedSymbolDisposableInputSchema, closedSymbolDisposableOutputSchema,
   formatClosedSymbolDisposableResult, parseClosedSymbolDisposableInput,
@@ -166,8 +170,8 @@ interface ClosedSymbolIndexReservation {
   runtime: WindowsControlRuntime | undefined;
   nativeUi: WindowsNativeUiController | undefined;
   constructedMethods: readonly unknown[] | undefined;
-  entry: ClosedSymbolDisposableEntry | undefined;
-  entryRun: ClosedSymbolDisposableEntry["run"] | undefined;
+  entry: ClosedSymbolDisposableEntry | ClosedSymbolOperationEntry | undefined;
+  entryRun: ((rawRequest: unknown) => Promise<unknown>) | undefined;
   facade: Awaited<EasyedaControlEngine["controlFingerprintPromise"]> | undefined;
   facadeSha256: string | undefined;
   entryInvocationAttempted: boolean;
@@ -220,16 +224,21 @@ function disposableConstructedMethods(runtime: WindowsControlRuntime, nativeUi: 
       .map(key => disposableOwnerMethod(runtime, key))];
 }
 function assertOrdinaryRuntimeAllocationAllowed(): void {
-  if (closedSymbolIndexReservation !== undefined) { throw new Error("The Windows runtime is reserved by a consumed disposable validation attempt."); }
+  if (closedSymbolIndexReservation !== undefined) { throw new Error("The Windows runtime is reserved by a consumed closed-symbol attempt."); }
 }
 
 /** No outer gate/authenticated scope. The exact retained entry owns its one gate admission. */
-async function runClosedSymbolDisposableTool(input: unknown): Promise<CallToolResult> {
+async function runClosedSymbolTool(input: unknown, mode: "validation" | "ordinary"): Promise<CallToolResult> {
   let phase: ClosedSymbolIndexPhase = "request";
   let reason: ClosedSymbolIndexReason = "invalid-request";
   let activeReservation: ClosedSymbolIndexReservation | undefined;
   try {
-    const parsed = parseClosedSymbolDisposableInput(input);
+    const parsed = mode === "validation" ? parseClosedSymbolDisposableInput(input) : parseClosedSymbolOperationInput(input);
+    // Refuse before reservation, imports, runtime allocation or bridge admission.
+    if (mode === "ordinary") {
+      try { assertClosedSymbolOperationValidated(); }
+      catch { return formatClosedSymbolOperationResult(closedSymbolOperationStopped({ phase: "validation", attemptReserved: false })); }
+    }
     const requestText = canonicalJson(parsed.request);
     phase = "reservation"; reason = "attempt-unavailable";
     if (closedSymbolIndexReservation !== undefined || windowsRuntime !== undefined || scheduledShutdown !== undefined) {
@@ -261,7 +270,7 @@ async function runClosedSymbolDisposableTool(input: unknown): Promise<CallToolRe
         reservation.environment !== process.env || process.env["EASYEDA_ASSETS_ROOT"] !== reservation.assetsRoot ||
         process.env["WSL_DISTRO_NAME"] !== reservation.wslDistribution || controlDataDirectory() !== reservation.controlPath ||
         retainedControlRoot.path !== reservation.controlPath || resolve(import.meta.dirname, "../..") !== reservation.pluginRoot ||
-        scheduledShutdown !== undefined || canonicalJson(parseClosedSymbolDisposableInput(input).request) !== requestText) {
+        scheduledShutdown !== undefined || canonicalJson((mode === "validation" ? parseClosedSymbolDisposableInput(input) : parseClosedSymbolOperationInput(input)).request) !== requestText) {
         throw new Error("Disposable index reservation, request, configuration or shutdown state changed.");
       }
       const methods = disposableIndexMethods();
@@ -291,7 +300,10 @@ async function runClosedSymbolDisposableTool(input: unknown): Promise<CallToolRe
     if (typeof facadeSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(facadeSha256)) { throw new Error("Disposable index facade hash refused."); }
     reservation.facadeSha256 = facadeSha256; current();
     phase = "entry-import";
-    const entryModule = await import("./closed-symbol-disposable-entry.ts"); current();
+    let Entry: typeof ClosedSymbolDisposableEntry | typeof ClosedSymbolOperationEntry;
+    if (mode === "validation") { const entryModule = await import("./closed-symbol-disposable-entry.ts"); Entry = entryModule.ClosedSymbolDisposableEntry; }
+    else { const entryModule = await import("./closed-symbol-operation-entry.ts"); Entry = entryModule.ClosedSymbolOperationEntry; }
+    current();
     phase = "construction";
     const paths = { pluginRoot: reservation.pluginRoot, assetsRoot,
       ...(reservation.wslDistribution === undefined ? {} : { wslDistribution: reservation.wslDistribution }) };
@@ -300,10 +312,10 @@ async function runClosedSymbolDisposableTool(input: unknown): Promise<CallToolRe
     const nativeUi = new WindowsNativeUiController(Object.freeze({ ...paths, runtime }));
     reservation.nativeUi = nativeUi;
     reservation.constructedMethods = disposableConstructedMethods(runtime, nativeUi);
-    const entry = new entryModule.ClosedSymbolDisposableEntry(engine, upstream, runtime, nativeUi, bridgeGate);
+    const entry = new Entry(engine, upstream, runtime, nativeUi, bridgeGate);
     reservation.entry = entry;
-    // oxlint-disable-next-line typescript/unbound-method -- Capture identity, then invoke with the retained exact receiver.
-    const entryRun = entry.run; reservation.entryRun = entryRun; current();
+    const entryRun: (rawRequest: unknown) => Promise<unknown> = entry.run;
+    reservation.entryRun = entryRun; current();
     phase = "entry"; reason = "entry-boundary-refused";
     reservation.entryInvocationAttempted = true;
     const result = await entryRun.call(entry, parsed.originalRequest);
@@ -313,7 +325,7 @@ async function runClosedSymbolDisposableTool(input: unknown): Promise<CallToolRe
     if (reservation.entry !== entry || reservation.runtime !== runtime || reservation.nativeUi !== nativeUi ||
       reservation.entryRun !== entryRun || reservation.originalReturn !== result) { throw new Error("Disposable index retained originals changed."); }
     phase = "projection"; reason = "result-refused";
-    return formatClosedSymbolDisposableResult(result);
+    return mode === "validation" ? formatClosedSymbolDisposableResult(result) : formatClosedSymbolOperationResult(result);
   } catch (error) {
     if (activeReservation === undefined) {
       if (!closedSymbolUnreservedFailure.observed) {
@@ -321,6 +333,10 @@ async function runClosedSymbolDisposableTool(input: unknown): Promise<CallToolRe
       }
     } else if (!activeReservation.failureObserved) {
       activeReservation.failureObserved = true; activeReservation.originalFailure = error;
+    }
+    if (mode === "ordinary") {
+      return formatClosedSymbolOperationResult(closedSymbolOperationStopped({ phase,
+        attemptReserved: activeReservation !== undefined }));
     }
     return closedSymbolDisposableIndexRefusal({
       phase, reason, attemptReserved: closedSymbolIndexReservation !== undefined,
@@ -330,6 +346,9 @@ async function runClosedSymbolDisposableTool(input: unknown): Promise<CallToolRe
     });
   }
 }
+
+function runClosedSymbolDisposableTool(input: unknown): Promise<CallToolResult> { return runClosedSymbolTool(input, "validation"); }
+function runClosedSymbolOperationTool(input: unknown): Promise<CallToolResult> { return runClosedSymbolTool(input, "ordinary"); }
 
 const recordSchema = z.record(z.string(), z.unknown());
 const evidenceSchema = z
@@ -1796,6 +1815,7 @@ const artifactReadSuccessOutputSchema = z
   .strict();
 const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_validate_closed_symbol: closedSymbolDisposableOutputSchema,
+  easyeda_control_symbol_metadata: closedSymbolOperationOutputSchema,
   easyeda_control_api: z.object({ offline: z.boolean().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_sdk_read: evidenceSuccessOutputSchema,
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -2063,6 +2083,18 @@ server.registerTool(
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   },
   runClosedSymbolDisposableTool,
+);
+
+server.registerTool(
+  "easyeda_control_symbol_metadata",
+  {
+    title: "Closed-symbol metadata operation (validation pending)",
+    description: "Currently blocked before runtime allocation pending successful disposable full-lifecycle validation. Source implements one operation-owned closed-session name/description change for an exact ordinary project symbol and clean companion PCB. Requires a fresh facade, explicit write confirmation and a unique caller operation ID. No arbitrary code, validation-claim reuse, automatic retry, Save or target-editor opening. Existing ordinary library.execute remains blocked.",
+    inputSchema: closedSymbolOperationInputSchema,
+    outputSchema: closedSymbolOperationOutputSchema,
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  },
+  runClosedSymbolOperationTool,
 );
 
 registerFacadeTool(
@@ -3185,7 +3217,7 @@ registerFacadeTool(
   {
     title: "Inspect incomplete journals or resolve a supported retained refusal",
     description:
-      "Without an operation ID, list unresolved managed journals. Resolution abandoned-before-navigation records only the exact closed-symbol validation marker-read transport refusal before any navigation or edit; it preserves the original journal and permanent claim, performs no application call, and never authorizes replay. Other ID-based resolutions are the retained legacy component workflow, not typed design, library, check or runtime-open recovery; use the originating tool for those journals. Legacy orphan resolution requires a fresh human-supplied operation-bound runtimeRestartConfirmation after an authorized restart and reconnect. Never synthesize that attestation, choose Save after an unknown write, or discard or force-quit without applicable authority.",
+      "Without an operation ID, list unresolved managed journals. Resolution abandoned-before-navigation accepts only the exact closed-symbol validation marker-read transport refusal or successful six-event baseline startup stopped before navigation; it preserves the original journal, marker and permanent claim, performs no application call, and never authorizes replay. Baseline abandonment proves neither process closure nor source invariance. Other ID-based resolutions are the retained legacy component workflow, not typed design, library, check or runtime-open recovery; use the originating tool for those journals. Legacy orphan resolution requires a fresh human-supplied operation-bound runtimeRestartConfirmation after an authorized restart and reconnect. Never synthesize that attestation, choose Save after an unknown write, or discard or force-quit without applicable authority.",
     inputSchema: {
       operationId: operationIdSchema.optional(),
       resolution: z
@@ -3234,6 +3266,18 @@ registerFacadeTool(
           throw new Error("Pre-navigation abandonment accepts no restart, discard or repeat authority.");
         }
         // Historical evidence publication only: never enter an authenticated scope or allocate a runtime.
+        const retained = await loadOperation(operationId);
+        if (retained["sequence"] === 6) {
+          // This callback owns the same gate as the entire coordinator. If this
+          // Facade retained an attempt, also require its actual stopped return.
+          const reservation = closedSymbolIndexReservation, returned = reservation?.originalReturn;
+          if (reservation !== undefined && (!reservation.entryReturnObserved || !isRecord(returned) ||
+            returned["outcome"] !== "stopped" || returned["operationId"] !== operationId || returned["completionProved"] !== false)) {
+            throw new Error("Baseline abandonment requires the original stopped entry return or a fresh facade.");
+          }
+          const { abandonClosedSymbolBaselineBeforeNavigation } = await import("./closed-symbol-baseline-abandonment.ts");
+          return abandonClosedSymbolBaselineBeforeNavigation(operationId);
+        }
         const { abandonClosedSymbolBeforeNavigation } = await import("./closed-symbol-abandonment.ts");
         return abandonClosedSymbolBeforeNavigation(operationId);
       }

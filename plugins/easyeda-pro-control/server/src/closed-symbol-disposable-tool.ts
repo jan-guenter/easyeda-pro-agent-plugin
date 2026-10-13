@@ -90,7 +90,7 @@ const disposableResult = z.union([entryResult, indexRefusal]);
 export const closedSymbolDisposableOutputSchema = z.object({ result: disposableResult }).strict();
 
 /** Bound and inspect own data before schema parsing or JSON serialization. */
-function boundedOwnData(input: unknown): unknown {
+export function boundedOwnData(input: unknown): unknown {
   let nodes = 0, textBytes = 0;
   const visited = new Set<object>();
   function text(value: string): void {

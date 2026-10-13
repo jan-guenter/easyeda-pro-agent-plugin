@@ -71,11 +71,13 @@ Configured offline startup hands ambientNode26 to pinnedNode24, lists27 tools
 and seven skills, and closes its original child. No upstream child or non-stdio
 socket was observed; no tool, native helper, gateway or live call was invoked.
 
-The currently loaded host still uses074635. Start a fresh host before the public
-abandonment action. No real abandonment has occurred. Do not use source changes
-to bypass that host or rewrite its retained journal. Final root-only release
-documentation does not change the tested plugin tree and skips duplicate CI;
-it does not represent skipped checks as passed.
+The subsequent restarted host was independently admitted on084617. Public
+abandonment completed once, preserving the original journal, all16 phases,
+permanent target claim and unchanged disposable database. The public unfinished
+operation listing is now empty. This is recovery of the pre-navigation refusal,
+not successful editing, old-process termination proof or permission to retry.
+The original root-only release recording left the tested plugin tree unchanged;
+its skipped duplicate CI was not reported as another passed run.
 
 ## Remaining scope
 
@@ -90,7 +92,14 @@ Read-only inspection found no other eligible ordinary symbol in the three
 existing disposable fixtures under this workflow's current strict source
 profile. Do not weaken that profile, reuse the consumed target claim or treat
 frame/ground symbols as ordinary symbols. A new suitable disposable fixture
-is needed before another validation intent.
+was needed before another validation intent. A new native-created disposable
+project now contains an ordinary two-pin resistor and blank companion PCB.
+Native setup closed normally; read-only saved SQL/history inspection passes.
+Its distinct one-shot public validation stopped after successful startup marker
+creation and before project navigation, at the coordinator's ambiguous window
+selection. Root observed normal closure and byte-identical fixture afterward.
+See [C09](api-connected-validation-ledger.md#2026-10-13-c09-closed-symbol-validation-stopped-after-startup-marker).
+No successful editing outcome is claimed; the new request must not be repeated.
 
 PR9 remains a draft feature-branch release. Promotion to main remains pending;
 this correction does not claim the original complete-API implementation task

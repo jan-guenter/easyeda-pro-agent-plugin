@@ -19,7 +19,15 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-The source catalog has 27 tools. The new
+The source catalog has 28 tools; installed084617 has27. The new ordinary
+`easyeda_control_symbol_metadata` entry is implemented but refuses before runtime
+allocation until disposable full-lifecycle validation succeeds. It accepts one
+explicit name/description operation with a unique caller ID and exact closed
+symbol/project identity. Its operation-intent reservation is separate from the
+validation-only permanent target claim. It does not enable the old library
+executor or other metadata/geometry writers.
+
+The
 `easyeda_control_validate_closed_symbol` is a one-attempt, approval-required
 disposable validation route, not a general editing endpoint. The compiled helper
 and v3 transport pass a standalone Windows smoke run, including process cleanup.
@@ -29,6 +37,12 @@ now corrects that flag and the two other affected fixed probes. Full connected
 completion remains unproved; the attempt is never retried.
 Ordinary editing gates remain. Installed084617 also adds evidence-preserving
 abandonment for this exact pre-navigation refusal; it does not authorize retry.
+That public recovery has completed on the restarted084617 host with original
+evidence preserved. The next native-created disposable case stopped after its
+startup marker because the window selector treated a tooltip as an application
+window. No project navigation or edit occurred; the closed fixture is unchanged.
+The source correction keeps ordinary execution disabled pending successful
+lifecycle validation. See [C09](docs/api-connected-validation-ledger.md#2026-10-13-c09-closed-symbol-validation-stopped-after-startup-marker).
 See the [transport correction and remaining scope](docs/api-coverage-084617-release-2026-10-13.md).
 The installed084617 catalog has27 tools. It retains074635's native16-hex document
 identity handling and exact duplicate structure-row verification. These changes
