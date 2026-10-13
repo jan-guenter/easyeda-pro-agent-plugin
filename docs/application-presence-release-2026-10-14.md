@@ -53,19 +53,23 @@ also documents refresh of configured plugin files during marketplace updates.
 
 All 14 focused coordinator/bundled-startup tests pass, including restart presence and absence,
 unchanged journal bytes, continued relaunch refusal, and presence/install/
-quarantine/journal drift. The bundled public-callback test includes offline
+quarantine/journal drift. PR review caught a journal check before the last
+awaited admission gate. The journal comparison now comes last; the adjusted
+existing regression fails on the prior order and passes on the correction.
+The bundled public-callback test includes offline
 validation and rejection of a caller-selected PID without live startup.
 Full types and strict type-aware lint pass with zero warnings. Build,
 compatibility, exhaustive 774-method inventory, package/repository privacy checks
 and all seven custom/official skill validators pass. Main and independent
 reviews accept the observer. Source projection SHA-256:
-`3e3b701e365cd3da2b7e8f76bb28eba593a2eb61c9eaec5665b3c4af7960caef`;
+`ff8c655a3ce3f26a5ee957ddc892a8f92495d3af6a1624d2192d75b3ac1883e4`;
 runtime projection SHA-256:
-`225ce2148c3ce53a9928f4341206e1bcb3c346814c2bac8f02533e77d6d54ec4`.
+`da4cbc61ab47f96649f5fce82dd68799abdfc9e8683063aed4f56a0cfb45b47c`.
 External compatibility pins and the native helper are unchanged.
 
 Required CI and official installation are pending at this source checkpoint.
-Consult this release's PR delivery receipt for final counts,
+Consult the [PR18 delivery receipt](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/18)
+for final counts,
 commits and installed inventory before repeating delivery.
 The new action has not been live-validated.
 

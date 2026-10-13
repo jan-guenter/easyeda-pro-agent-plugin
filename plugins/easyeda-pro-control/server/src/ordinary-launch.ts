@@ -326,8 +326,8 @@ export class OrdinaryLaunchCoordinator {
     await this.options.assertAllowed();
     requireValue(first.running === second.running, "Ordinary application presence changed between samples.");
     requireValue(await this.verify(this.options) === facadeSha256, "Ordinary application observation installation changed.");
-    requireValue(canonicalJson(await inventory()) === canonicalJson(operations), "Ordinary application observation journal changed.");
     await this.options.assertAllowed();
+    requireValue(canonicalJson(await inventory()) === canonicalJson(operations), "Ordinary application observation journal changed.");
     requireValue(this.runtime === runtime, "Ordinary application observation runtime changed.");
     return { action: "observe-application", operationId, historical: describe(operationId, operation),
       application: { sameNameProcessPresent: second.running, samples: 2, originalLaunchIdentityVerified: false,

@@ -49,12 +49,16 @@ Candidate002000 is source-frozen. Main and independent review accept the narrow
 observer;14focused coordinator/bundled-startup tests pass. Full types,
 zero-warning strict type-aware lint, build/compatibility, exhaustive774method
 inventory and seven custom/officialskillvalidators pass. Package/repository
-privacy checks pass. Source3253e3b701e365cd3da2b7e8f76bb28eba593a2eb61c9eaec5665b3c4af7960caef;
-runtime3225ce2148c3ce53a9928f4341206e1bcb3c346814c2bac8f02533e77d6d54ec4.
+privacy checks pass. PR18 review moved final admission before the last journal
+comparison; the adjusted existing regression fails on the prior ordering and
+passes on the correction. All14focused tests, fulltypes/lint/build pass again.
+Source325ff8c655a3ce3f26a5ee957ddc892a8f92495d3af6a1624d2192d75b3ac1883e4;
+runtime3da4cbc61ab47f96649f5fce82dd68799abdfc9e8683063aed4f56a0cfb45b47c.
 Only facade projections and review timestamp changed in compatibility metadata;
 external pins and helper remain unchanged. No live observer validation yet.
 CI/publication/officialinstallation pending. Use the release PR delivery receipt
 for final installed evidence before repeating delivery; old owner181673 stays.
+PR18: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/18.
 
 ### Historical restarted201500 and shortcut-reader continuation
 

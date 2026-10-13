@@ -26,7 +26,7 @@ function cleanup(context: TestContext, ...ids: string[]): void {
   context.after(async () => { for (const id of ids) { await rm(journal(id), { recursive: true, force: true }); } });
 }
 function fixture(operationId: string, behavior: { failure?: boolean; wrongTermination?: boolean; existing?: boolean;
-  presenceChanged?: boolean; onPresence?: (sample: number) => Promise<void> } = {}): {
+  presenceChanged?: boolean; onAllowed?: (presenceSamples: number) => Promise<void> } = {}): {
   readonly options: OrdinaryLaunchOptions;
   readonly calls: string[];
   readonly coordinator: OrdinaryLaunchCoordinator;
@@ -39,10 +39,9 @@ function fixture(operationId: string, behavior: { failure?: boolean; wrongTermin
   let presenceSamples = 0;
   let launch: WindowsAuthorityLaunch;
   const runtime: OrdinaryLaunchRuntime = {
-    observeExistingApplication: async () => {
+    observeExistingApplication: () => {
       calls.push("existing"); presenceSamples += 1;
-      await behavior.onPresence?.(presenceSamples);
-      return { running: behavior.presenceChanged === true && presenceSamples === 2 ? !existing : existing };
+      return Promise.resolve({ running: behavior.presenceChanged === true && presenceSamples === 2 ? !existing : existing });
     },
     launch: async () => {
       calls.push("launch");
@@ -68,7 +67,7 @@ function fixture(operationId: string, behavior: { failure?: boolean; wrongTermin
   };
   const options: OrdinaryLaunchOptions = {
     assetsRoot: "/opt/synthetic/assets", pluginRoot: "/opt/synthetic/plugin",
-    assertAllowed: () => { calls.push("guard"); return Promise.resolve(); },
+    assertAllowed: async () => { calls.push("guard"); await behavior.onAllowed?.(presenceSamples); },
     allocateRuntime: (input) => {
       calls.push("allocate");
       assert.equal(input.expectedExecutableSha256, ORDINARY_LAUNCH_PROFILE.installedFiles[0].sha256);
@@ -234,21 +233,24 @@ void test("ordinary application observation refuses changed presence, installati
   assert.equal(await state(guarded.coordinator, id), "launched");
 });
 
-void test("ordinary application observation refuses journal changes between process samples without creating receipts", async (context) => {
+void test("ordinary application observation refuses journal changes in the final admission gate without creating receipts", async (context) => {
   const id = "ordinary-test-presence-journal";
   cleanup(context, id);
   await fixture(id).coordinator.run(request(id));
   const names = await readdir(journal(id));
   const launchedPath = join(journal(id), "launched.json");
   const launched = await readFile(launchedPath, "utf8");
-  const restarted = fixture(id, { onPresence: async (sample) => {
-    if (sample === 2) {
+  let gatesAfterBothSamples = 0;
+  const restarted = fixture(id, { onAllowed: async (presenceSamples) => {
+    if (presenceSamples === 2) { gatesAfterBothSamples += 1; }
+    if (gatesAfterBothSamples === 2) {
       const changed = launched.replace('"pid":456', '"pid":457');
       assert.notEqual(changed, launched);
       await writeFile(launchedPath, changed);
     }
   } });
   await assert.rejects(restarted.coordinator.run({ action: "observe-application", operationId: id }), /journal changed/u);
+  assert.equal(gatesAfterBothSamples, 2);
   assert.equal(restarted.calls.filter((call) => call === "existing").length, 2);
   assert.equal(restarted.calls.includes("launch"), false);
   assert.equal(restarted.calls.includes("observe"), false);
