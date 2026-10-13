@@ -2279,8 +2279,8 @@ registerFacadeTool(
 registerFacadeTool(
   "easyeda_control_launch",
   {
-    title: "Launch the reviewed EasyEDA application",
-    description: "Launch the exact reviewed EasyEDA executable with no arguments in its existing profile. Requires explicit launch/profile-effect confirmations and a unique operation ID. Ordinary startup can load extensions/project lists, use the network and write preferences/cache; it is not an isolated or project-free session. Journals before dispatch, retains Windows root/Job handles, and never retries an uncertain attempt. Inspect retained state or observe termination without closing, killing, opening a design, saving or discarding. Lost handles leave unresolved attempts blocked across restart. Use offline launch/launch-validate first. Successful launch is not bridge authentication or Start Page observation.",
+    title: "Launch or observe the reviewed EasyEDA application",
+    description: "Launch the exact reviewed EasyEDA executable with no arguments in its existing profile. Requires explicit launch/profile-effect confirmations and a unique operation ID. Ordinary startup can load extensions/project lists, use the network and write preferences/cache; it is not an isolated or project-free session. Journals before dispatch, retains Windows root/Job handles, and never retries an uncertain attempt. Inspect history, observe original retained termination, or use observe-application with an existing operation ID for two same-name process-presence samples. Presence observation starts only the pinned diagnostic helper; it does not bind the original root/Job, alter history or authorize relaunch. Lost handles leave unresolved attempts blocked across restart. No close, kill, design open, Save or discard. Use offline launch/launch-validate first. Successful launch is not bridge authentication or Start Page observation.",
     inputSchema: { request: z.unknown().pipe(ordinaryLaunchRequestSchema) },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
   },

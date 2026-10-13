@@ -2,7 +2,7 @@
 
 This file is the durable engineering record and common ground for every human or agent working in this repository. Keep it current whenever a requirement, assumption, interface, compatibility tuple, safety boundary, or test result changes. Do not silently turn an open question into a requirement.
 
-Last updated: 2026-10-13 (Europe/Berlin)
+Last updated: 2026-10-14 (Europe/Berlin)
 
 ## Current checkpoint
 
@@ -13,7 +13,54 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Restarted201500 and shortcut-reader continuation
+### Restarted214500 and application-presence continuation
+
+PR17 is delivered as main4217c253e17c028a206179779df2dea12d2ecb16,
+full-tree identical to tested13b1ad6b83aa98ec774ace86b473ee9ee4e0a088.
+RequiredCI38472990143 passed all10jobs:9820facade passes/five platform skips/
+424bridge passes. MainCI38474446988 also passed all10jobs.
+Official Git marketplace214500 is installed/enabled. Upgrade succeeded; a
+following redundant add reported cache-backup EACCES, but the complete installed
+payload matched, so no retry/cache repair was needed. Inspect installed state
+after marketplace upgrade before issuing another add. Delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/17#issuecomment-6156127355.
+
+Fresh owner181673/parent179742 runs existing214500script/cwd and pinnedNode24.18.0;
+old164162 is absent. Exact1149files/22313880bytes/42dirs/seven skills and modes
+match main, with no extras/symlinks/mismatches. Inventory51801d001dedb67757ccedd3381b8a0ae352978e100a24c2a83284105b97d1cf,
+source32550ba35ce4dd041ae353f650a77e70cb05344dbd2ec5d64ef242654d375969426,
+runtime3a59fab6b05da4a6ab73f6971cd1a9daf365b1fd2c777212acf847ca596f25aff.
+Actual ten-tool catalog includes shortcuts; offline schema/true-filter validation
+passed. First live status completed, disconnected with no gateway connection
+attempts and no implementation drift. One bounded follow-up after185seconds
+again reports no connection/attempts, reply546928887961b99f7b2ed3e9ee8987011c7ddc99ea092b9a81591bb816673472.
+No additional polling or shortcut execution; missing original handles prevent
+relaunch. Candidate002000 implements the presence diagnostic, not recovery.
+No launch or design action dispatched.
+
+Next implementation is read-only same-name process presence through the existing
+pinned helper. It must preserve the named historical journal, grant no original
+root/Job identity or termination/relaunch authority, and create no receipt.
+Do not replay ordinary-startup-20261013-201500 or any historical operation.
+Retained handles from the former owner are not restored by a new facade.
+The production design and its project record remain out of scope.
+
+Candidate002000 is source-frozen. Main and independent review accept the narrow
+observer;14focused coordinator/bundled-startup tests pass. Full types,
+zero-warning strict type-aware lint, build/compatibility, exhaustive774method
+inventory and seven custom/officialskillvalidators pass. Package/repository
+privacy checks pass. PR18 review moved final admission before the last journal
+comparison; the adjusted existing regression fails on the prior ordering and
+passes on the correction. All14focused tests, fulltypes/lint/build pass again.
+Source325ff8c655a3ce3f26a5ee957ddc892a8f92495d3af6a1624d2192d75b3ac1883e4;
+runtime3da4cbc61ab47f96649f5fce82dd68799abdfc9e8683063aed4f56a0cfb45b47c.
+Only facade projections and review timestamp changed in compatibility metadata;
+external pins and helper remain unchanged. No live observer validation yet.
+CI/publication/officialinstallation pending. Use the release PR delivery receipt
+for final installed evidence before repeating delivery; old owner181673 stays.
+PR18: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/18.
+
+### Historical restarted201500 and shortcut-reader continuation
 
 PR16 is delivered as main4f255cb68b02c76a5d032c7e03f11721826a0489,
 identical to tested e32aab2f505a120c4101a688a93b4764dfb868b8. Required PR

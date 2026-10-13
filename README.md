@@ -19,7 +19,13 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261013214500` adds `easyeda_control_shortcuts` for the
+Update `0.3.0+codex.20261014002000` adds `observe-application` to the ordinary
+launcher. After a facade restart it can report same-name process presence for
+an existing launch journal, without launching EasyEDA or changing the journal.
+It does not recover lost process handles or authorize another launch. See the
+[application-presence release](docs/application-presence-release-2026-10-14.md).
+
+Previous update `0.3.0+codex.20261013214500` added `easyeda_control_shortcuts` for the
 current-version configured-shortcut registry. It preserves actual key spellings
 and scope metadata; it cannot send keys, register callbacks or change settings.
 Offline `shortcuts` and `shortcuts-validate` expose its strict request schema.

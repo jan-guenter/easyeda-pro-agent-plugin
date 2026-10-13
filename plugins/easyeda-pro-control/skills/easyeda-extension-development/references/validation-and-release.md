@@ -61,6 +61,12 @@ resource, retain the primary error and report required cleanup failures. Keep
 the original process and Job handles until their exit observations are captured.
 An empty Job observation alone does not substitute for the original root's exit.
 
+The ordinary launcher's `observe-application` action is a separate diagnostic
+for a named historical operation after restart. Its two matching same-name
+presence samples cannot restore original handles or prove termination. Keep
+historical state separate from observed presence; neither result may create a
+receipt, clear an unresolved attempt or grant relaunch authority.
+
 ## Public callback tests
 
 Exercise the actual registered MCP callback as well as internal coordinators.
@@ -121,6 +127,11 @@ file inventory, metadata and offline catalog. Start a fresh Codex chat to load
 the installed catalog. Do not kill the host-owned gateway, patch a loaded cache
 or force a connected runtime onto a new source tree. Report any outstanding
 live admission/import requirement explicitly.
+
+After a marketplace upgrade, inspect the installed version and files before
+issuing another plugin add. The upgrade may already have refreshed an enabled
+plugin. A later redundant add error does not undo verified installed bytes;
+retain the error and verify actual state before any retry or repair.
 
 Research baseline: [official SDK repository](https://github.com/easyeda/pro-api-sdk),
 [official type-package guide](https://prodocs.easyeda.com/en/api/guide/ancillary-projects/pro-api-types.html),

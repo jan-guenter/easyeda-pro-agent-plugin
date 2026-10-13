@@ -74,7 +74,11 @@ Ordinary startup and editor-shell observation also have offline schemas. Query
 the corresponding `launch-validate`, `editor-shell-validate` or
 `editor-context-validate` with `query:{"request":...}`.
 Validation does not launch or authorize anything. The launcher accepts only
-fixed launch/inspect/observe-termination requests. The observer accepts only
+fixed launch/inspect/observe-application/observe-termination requests. For
+read-only presence after restart, validate
+`{"action":"observe-application","operationId":"<original-operation-id>"}`.
+It requires an existing journal and accepts no PID, executable or replacement
+identity. This is not termination reconciliation. The editor observer accepts only
 `{"action":"observe-editor-shell"}` or, for identity metadata,
 `{"action":"observe-editor-context"}`. Their lifecycle and interpretation limits
 are in [connection and context](connection-and-context.md#ordinary-application-startup-on-the-current-tuple).
