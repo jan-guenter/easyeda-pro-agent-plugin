@@ -203,7 +203,8 @@ export class ClosedSymbolWitnessStage {
         operationSha256: sha256Json(journal.plan.operation), launchClock: launchClock.observation, beforeCapture, beforeClock: before.observation };
       const requestSha256 = sha256Json(request);
       await appendClosedSymbolEvent(journal, { step: "edit-witness", kind: "intent", generation, requestSha256, data: request }); current();
-      const raw = await this.engine.dispatchWithOrphanTracking(journal, "edit-witness", "easyeda_execute", { code, timeoutMs: 15_000, confirmWrite: false }, 25_000,
+      // Upstream requires transport confirmation; the fixed witness program remains read-only.
+      const raw = await this.engine.dispatchWithOrphanTracking(journal, "edit-witness", "easyeda_execute", { code, timeoutMs: 15_000, confirmWrite: true }, 25_000,
         async () => {
           current(); await this.engine.assertRecoveryOperationIsolated(operationId); current(); await native();
           const roots = journal.executionAuthorityBeforeOrphan?.processes.filter((entry) => entry.role === "easyeda-main");

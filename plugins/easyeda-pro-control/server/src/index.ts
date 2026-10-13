@@ -3183,13 +3183,14 @@ registerFacadeTool(
 registerFacadeTool(
   "easyeda_control_recover_incomplete",
   {
-    title: "List incomplete journals or recover a legacy operation",
+    title: "Inspect incomplete journals or resolve a supported retained refusal",
     description:
-      "Without an operation ID, list all managed nonterminal journals. ID-based recovery here is the retained legacy component workflow, not the typed design, library, check or runtime-open recovery API; use the originating tool's recovery actions for those journals. Legacy orphan resolution requires a fresh human-supplied operation-bound runtimeRestartConfirmation after an authorized EasyEDA restart and bridge reconnect. Never synthesize or replay that attestation. This legacy path does not prove process generation; typed recovery separately uses retained execution authority. Never choose Save after an unknown write, and never discard or force-quit without explicit applicable authority.",
+      "Without an operation ID, list unresolved managed journals. Resolution abandoned-before-navigation records only the exact closed-symbol validation marker-read transport refusal before any navigation or edit; it preserves the original journal and permanent claim, performs no application call, and never authorizes replay. Other ID-based resolutions are the retained legacy component workflow, not typed design, library, check or runtime-open recovery; use the originating tool for those journals. Legacy orphan resolution requires a fresh human-supplied operation-bound runtimeRestartConfirmation after an authorized restart and reconnect. Never synthesize that attestation, choose Save after an unknown write, or discard or force-quit without applicable authority.",
     inputSchema: {
       operationId: operationIdSchema.optional(),
       resolution: z
         .enum([
+          "abandoned-before-navigation",
           "reconciled-no-mutation",
           "reconciled-applied-unsaved",
           "reconciled-saved-reopened",
@@ -3227,6 +3228,14 @@ registerFacadeTool(
         throw new Error(
           "confirmation must exactly equal operationId:resolution.",
         );
+      }
+      if (resolution === "abandoned-before-navigation") {
+        if (input.runtimeRestartConfirmation !== undefined || input.confirmDiscardAnyUnsavedState || input.confirmRepeatAfterUnknownRecovery) {
+          throw new Error("Pre-navigation abandonment accepts no restart, discard or repeat authority.");
+        }
+        // Historical evidence publication only: never enter an authenticated scope or allocate a runtime.
+        const { abandonClosedSymbolBeforeNavigation } = await import("./closed-symbol-abandonment.ts");
+        return abandonClosedSymbolBeforeNavigation(operationId);
       }
       assertLegacyRecoveryJournalFamily(await loadOperation(operationId));
       return upstream.withAuthenticatedBridgeDispatchScope(() =>

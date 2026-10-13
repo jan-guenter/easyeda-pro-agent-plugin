@@ -8,6 +8,7 @@ import type { MachineProfile } from "../../src/machine-profile.ts";
 export { MachineProfileError } from "../../src/machine-profile.ts";
 export const unitState = {
   runtimeCalls: 0, runtimeFailure: undefined as Error | undefined, inspected: [] as string[], agedInspected: [] as string[],
+  abandoned: new Set<string>(), abandonmentInspected: [] as string[],
   overrides: new Map<string, Record<string, unknown>>(), failures: new Map<string, unknown>(),
   before: new Map<string, () => Promise<void>>(),
   lockedInputs: [] as Readonly<{ candidate: unknown; runtime: unknown }>[],
@@ -49,5 +50,17 @@ export async function inspectLockedTerminalForAdmission(candidate: unknown, runt
 }
 export function inspectClosedSymbolAgedTerminal(operationId: string, runtime: MachineProfile["runtime"]): Promise<Readonly<Record<string, unknown>>> {
   return inspect(operationId, runtime, true);
+}
+export async function inspectClosedSymbolAbandonment(operationId: string): Promise<Readonly<Record<string, unknown>> | undefined> {
+  unitState.abandonmentInspected.push(operationId);
+  if (!unitState.abandoned.has(operationId)) { return undefined; }
+  await unitState.before.get(operationId)?.();
+  if (unitState.failures.has(operationId)) { throw unitState.failures.get(operationId); }
+  const journal = await loadOperation(operationId);
+  return { profile: "easyeda-pro-control.closed-symbol-abandonment-inspection.v1", operationId,
+    classification: "historical-abandonment-verified", originalJournalSha256: sha256Json(journal),
+    originalStoredJournalSha256: journal["journalSha256"], artifact: { path: "/synthetic/abandonment.json", bytes: 1, sha256: "a".repeat(64) },
+    bodySha256: "b".repeat(64), completionProved: false, authorityRestored: false, executionAuthorized: false,
+    replayAllowed: false, saved: false, reopened: false, ...unitState.overrides.get(operationId) };
 }
 

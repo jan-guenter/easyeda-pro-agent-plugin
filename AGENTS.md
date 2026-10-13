@@ -13,6 +13,34 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
+### Current continuation: pre-navigation transport refusal
+
+The restarted official host loads074635; its complete installed tree matches
+CI-tested payload940c320. The public disposable workflow ran once and stopped
+at the edit-generation marker read: upstream rejected `easyeda_execute` with
+`ERR_CONFIRM_WRITE_REQUIRED` before executing it. Baseline launch, marker,
+normal-close, complete copy and aged native main-reference qualification passed;
+the second launch and admission passed. No project navigation, symbol edit or
+Save followed. The retained journal has16 phases, no hard stop, orphan or possible
+mutation flag; it is not completed. Native normal-close subsequently exited the
+Start Page session, with no Save/Discard choice. The disposable file remains
+byte-identical. Production and its record were not accessed.
+
+Source fixes set the required transport confirmation on three fixed probes;
+their generated programs and effect scope are unchanged. All106 affected existing
+tests pass after correcting fixture assumptions; types and targeted lint pass.
+A narrow pre-navigation abandonment sidecar, scanner and public recovery route
+are implemented. They preserve the original journal, phases, startup marker
+and permanent target claim; no success, replay or process-authority claim.
+Five focused recovery tests,75 existing admission tests and50 existing recovery
+tests pass. Candidate084617 passes both types, full strict zero-warning lint,
+build, compatibility, coverage, skill, package and repository/privacy checks.
+Source298 projection264de3df/bundle70725d78; external pins/native DLL unchanged.
+No real abandonment, publication or installation has occurred yet; CI is pending.
+Do not retry the consumed validation request or delete its claim.
+
+### Previous release checkpoint: 074635
+
 Restart admission confirmed the official host loads054207 and the former host
 has exited. No live callback, native action or CAD mutation was attempted.
 Read-only disposable-fixture inspection found two implementation mismatches:

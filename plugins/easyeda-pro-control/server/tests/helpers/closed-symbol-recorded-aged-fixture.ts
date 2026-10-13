@@ -63,7 +63,7 @@ export async function agedWitnessFixture(context: TestContext, recent = false): 
   const state: AgedState = { calls: 0 };
   context.mock.method(upstream, "callTool", async (...args: Parameters<typeof original>): Promise<Awaited<ReturnType<typeof original>>> => {
     if (!String(args[1]?.["code"]).includes(AGED_WITNESS_PROFILE)) { return original.call(upstream, ...args); }
-    assert.equal(args[0], "easyeda_execute"); assert.equal(args[1]?.["confirmWrite"], false); assert.ok(args[3] !== undefined);
+    assert.equal(args[0], "easyeda_execute"); assert.equal(args[1]?.["confirmWrite"], true); assert.ok(args[3] !== undefined);
     state.calls += 1; f.state.witnessCalls += 1; await state.before?.();
     const time = f.state.clockMs + 100;
     function controls(offset: number): ClockControls {

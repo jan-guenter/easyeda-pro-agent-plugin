@@ -180,7 +180,8 @@ export class ClosedSymbolSavedReadStage {
         need(sha256Json(journal.runtimeIdentityBeforeOrphan) === generation.runtimeSha256 && sha256Json(journal.bridgeSessionBeforeOrphan) === generation.sessionSha256 &&
           roots?.length === 1 && roots[0]?.pid === generation.rootPid && roots[0].startIdentity === generation.rootStartIdentity, "Saved read dispatch generation differs.");
       };
-      const raw = await this.engine.dispatchWithOrphanTracking(journal, "verify-content-read", "easyeda_execute", { code, timeoutMs: 15_000, confirmWrite: false }, 25_000,
+      // Upstream requires transport confirmation; the fixed saved-content program remains read-only.
+      const raw = await this.engine.dispatchWithOrphanTracking(journal, "verify-content-read", "easyeda_execute", { code, timeoutMs: 15_000, confirmWrite: true }, 25_000,
         async () => {
           current(); dispatchGeneration(); await this.engine.assertRecoveryOperationIsolated(operationId); current(); dispatchGeneration();
           // The engine has marked this dispatch in flight. Historical SQL

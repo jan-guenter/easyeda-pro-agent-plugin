@@ -55,7 +55,7 @@ export async function savedReadFixture(context: TestContext): Promise<SavedReadF
   f.engine.upstream.callTool = async (name, args, timeout, binding): ReturnType<typeof original> => {
     const program = String(args?.["code"]);
     if (program.includes("private.saved-symbol-content-observation.v1")) {
-      assert.equal(name, "easyeda_execute"); assert.ok(binding !== undefined); assert.equal(args?.["confirmWrite"], false);
+      assert.equal(name, "easyeda_execute"); assert.ok(binding !== undefined); assert.equal(args?.["confirmWrite"], true);
       const current = await loadClosedSymbolJournal(f.journal.operationId);
       assert.equal(current.events.at(-1)?.step, "verify-content-read"); assert.equal(current.events.at(-1)?.kind, "intent");
       assert.equal(current.journal.orphanedCallPossible, true); readState.calls += 1; await readState.before?.();

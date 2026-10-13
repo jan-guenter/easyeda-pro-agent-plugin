@@ -16,21 +16,39 @@ adapter. Some are empty in the installed build. Others need a stateful adapter
 because they start dialogs, create additional assets or return before the full
 workflow ends. The last group is engineering work, not an inherent API limit.
 
-## Current restriction, October12
+The exhaustive method list is [api-coverage.json](../plugins/easyeda-pro-control/api-coverage.json),
+with status definitions in the [inventory guide](api-coverage-inventory-2026-10-10.md).
+It classifies all 774 mounted method paths, including 82 implemented-but-blocked
+methods and 469 omissions. This report discusses selected methods and families;
+it is not an individual feasibility investigation of every omitted method.
+Some omissions have method-specific implementation evidence. Others identify
+missing adapters or category-level requirements whose exact workflow still
+needs investigation. In particular, 106 omissions use the shared
+`scoped-effect-adapter-needed` reason, and 345 have no evidence references.
+These are remaining implementation or investigation tasks, not proof that the
+native API cannot perform them. This release does not complete every feasible
+SDK method.
 
-Installed030626 and current source block all schematic-page, symbol and PCB
-design transactions, including previously narrow display and wire profiles.
+## Current restriction, October 13, installed 074635
+
+Installed `0.3.0+codex.20261013074635` and current source block all
+schematic-page, symbol and PCB design transactions, including previously
+narrow display and wire profiles.
 Eight symbol/page/container metadata operations are also blocked. Source review
 found a shared delayed `project_structures` write that their existing document
 comparisons do not fully model. Footprint routes retain their separate guards.
 The exact affected operations and implementation requirements are in the
 [030626 report](api-coverage-030626-release-2026-10-12.md) and
-[native completion investigation](project-structure-save-completion-2026-10-12.md).
+[native completion investigation](project-structure-save-completion-2026-10-12.md);
+the [074635 release report](api-coverage-074635-release-2026-10-13.md) records the
+current package's document-ID and duplicate structure-row corrections.
 
-The new internal completion coordinators pass synthetic tests but have not
-restored these routes. The earlier feasibility analysis below explains the
-method-specific work; references to a display exception or admitted metadata
-writer describe its original implementation, not present execution support.
+Internal completion code and the separate disposable-validation tool have not
+restored these editing routes. Each route still needs operation-owned integration
+and its own complete effect proof. The earlier feasibility analysis below
+explains the method-specific work; references to a display exception or admitted
+metadata writer describe its original implementation, not present execution
+support. Historical test results do not override the current execution guards.
 
 ## Earlier schematic-connectivity investigation
 
@@ -128,22 +146,25 @@ Local executor findings refer to
 and
 [library-persistence-proof.ts](../plugins/easyeda-pro-control/server/src/library-persistence-proof.ts).
 
-## Existing typed library and lifecycle actions
+## Historical typed library and lifecycle implementation
 
 At the start of this work, 32 of the 68 strict library/lifecycle operation
 schemas had no executor profile. Eight additional named gaps were outside
 those schemas. The table retains all 40 original entries and identifies the
-subsets implemented since then. A follow-up source audit of
-`listLibraryExecutionCapabilities()` now has 37 implemented subsets among 76
+subsets implemented during that earlier investigation. Its implementation
+descriptions and the counts in this paragraph are historical source findings,
+not a list of currently executable actions. A follow-up source audit of
+`listLibraryExecutionCapabilities()` found 37 implemented subsets among 76
 named actions after empty ordinary symbol creation and closed PCB/schematic
-rename: 24 typed actions still
-without an executor, seven explicitly refused exports, and the eight named
-native/dialog gaps remain. Thus 39 actions
-are not standalone executable library operations; `project.open` and the Save
-actions have separate restricted lifecycle routes. These counts describe the
-audited source, not an installed package or connected validation. Method-level
-counts belong in the generated API inventory, where overloads and alternate
-routes are accounted for separately.
+rename. At that review, 24 typed actions lacked an executor, seven exports were
+explicitly refused, and eight named native/dialog gaps remained. Thus 39 actions
+were not standalone executable library operations; `project.open` and the Save
+actions had separate restricted lifecycle routes. These counts described the
+audited source, not installed or connected validation. The current restriction
+above also blocks eight metadata actions whose implementations appear below.
+Use the [generated API inventory](../plugins/easyeda-pro-control/api-coverage.json)
+for current method and execution-route status; overloads and alternate routes
+are counted separately.
 
 | Action or exact action group | Concrete reason it cannot use the existing executor unchanged | Implementation needed |
 |---|---|---|
@@ -465,9 +486,10 @@ pre-dispatch proof; it is not implied by this recovery path.
 
 ## Other SDK groups
 
-The method-level catalog is the appropriate place for the complete mounted
-method inventory. The following requirements explain why the rest cannot all
-be exposed as method names plus JSON arguments.
+The [method-level inventory](../plugins/easyeda-pro-control/api-coverage.json)
+contains every mounted method. The following category-level requirements guide
+adapter work; they do not establish that each method has been investigated
+individually or cannot be implemented. Missing adapters remain unfinished work.
 
 | Group | Required adapter boundary |
 |---|---|

@@ -23,8 +23,13 @@ The source catalog has 27 tools. The new
 `easyeda_control_validate_closed_symbol` is a one-attempt, approval-required
 disposable validation route, not a general editing endpoint. The compiled helper
 and v3 transport pass a standalone Windows smoke run, including process cleanup.
-The complete public disposable workflow still needs connected validation.
-Ordinary editing gates remain.
+The first public disposable run stopped before project navigation or editing:
+upstream rejected a marker read whose transport confirmation was missing. Source
+now corrects that flag and the two other affected fixed probes. Full connected
+completion remains unproved; the attempt is never retried.
+Ordinary editing gates remain. Candidate084617 also adds evidence-preserving
+abandonment for this exact pre-navigation refusal; it does not authorize retry.
+See the [transport correction and remaining scope](docs/api-coverage-084617-release-2026-10-13.md).
 The installed074635 catalog has27 tools. This release fixes native16-hex document identity
 handling throughout the closed-symbol workflow and exact duplicate structure-row
 verification. It does not enable the blocked writers. See the

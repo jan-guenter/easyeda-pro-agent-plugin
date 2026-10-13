@@ -69,8 +69,19 @@ occurred during this correction.
 
 ## Remaining implementation
 
-1. Run the public closed-symbol disposable workflow once from a fresh host and
-   inspect its retained result. Do not repeat a stopped request.
+October 13 follow-up: the restarted074635 host was admitted, and the public
+workflow ran once. It stopped at the second-generation marker read because the
+transport passed `confirmWrite:false`; upstream rejected it before execution.
+Baseline close/copy and native main-reference qualification passed. There was
+no companion navigation, symbol edit or Save. Normal application close and an
+unchanged disposable-file hash were observed afterward. This result is retained,
+not a retry authorization. The source correction and narrow abandonment support
+are in progress; successful end-to-end validation and ordinary writer integration
+remain unfinished.
+
+1. Resolve the retained pre-navigation refusal without replay, then qualify a
+   separate disposable target after the corrected package is installed. Do not
+   repeat the consumed request or delete its permanent claim.
 2. Integrate a distinct operation-owned closed-session symbol metadata writer.
    Its validation-only permanent target claim is not general editing authority.
 3. Implement separate effects for symbol/page/PCB/schematic creation and rename,

@@ -62,5 +62,16 @@ void test("actual legacy MCP endpoint refuses typed journal families offline wit
         }
       });
     }
+    await suite.test("pre-navigation abandonment refuses a different family without connecting or rewriting evidence", async () => {
+      const journal = journals[0]; assert.ok(journal !== undefined);
+      const resolution = "abandoned-before-navigation";
+      const result = await client.callTool({ name: "easyeda_control_recover_incomplete", arguments: {
+        operationId: journal.operationId, resolution, confirmation: `${journal.operationId}:${resolution}`,
+      } }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
+      assert.equal(result.isError, true);
+      assert.deepEqual(await readFile(operationPath(journal.operationId)), journal.bytes);
+      assert.deepEqual(await readdir(join(root, "operations")), entries);
+      await assertOffline(pid, sentinel);
+    });
   } finally { await client.close().catch(() => null); await transport.close().catch(() => null); }
 });

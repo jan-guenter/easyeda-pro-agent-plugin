@@ -820,3 +820,43 @@ editors. Candidate030626 therefore also blocks their design transactions.
 Historical Save/reopen cases retain their actual document and point-in-time
 checkpoint observations, not a guarantee that no later structure job remained.
 See the [source trace](symbol-delete-native-effects-2026-10-12.md#existing-metadata-writers).
+
+## 2026-10-13: C08, closed-symbol validation stopped before navigation
+
+Installed `0.3.0+codex.20261013074635`, payload
+`940c32082ead2753ac5bb90bf2cd4097df37b7e8`, package tree
+`97dc810eece6fbe0da7a7a3e3c228315b8e979af`, was independently admitted in the
+restarted official host. Source projection was
+`6241777a0c68d86207613360700f49c42766090c7e7fbfd3ade169b6fb0e6757`, runtime
+projection `b0d5c05f09155d3453a3dc138b18d7b635e93279bdd055bf198291e5e1f4ee20`.
+External EasyEDA/upstream/native-helper pins were unchanged from its release.
+
+The public disposable callback ran once for an existing ordinary project-local
+symbol and companion PCB. The intended change preserved the symbol name and
+changed only its description. Baseline launch/admission, startup marker creation,
+normal close, closed database copy and the aged-head native main-reference stage
+completed. The second application launch and admission completed. Its marker
+read was rejected by upstream with `ERR_CONFIRM_WRITE_REQUIRED` before execution:
+the fixed adapter had supplied `confirmWrite:false` to `easyeda_execute`.
+
+The retained16-phase journal has no navigation or writer intent, no orphan risk,
+hard stop or possible-mutation flag. No symbol edit, explicit Save or target
+editor opening occurred. Root observed Start Page, requested normal application
+close once without a prompt choice, then observed empty native discovery. The
+disposable database remained byte-identical; independent checkpoint verification
+also found matching complete logical dumps. Those closure observations are not
+the coordinator's retained Job termination proof. The startup marker and permanent
+claim remain; this is not a claim that no application state changed.
+
+Retained commitments:
+
+- Original journal: `5bb7d12375dfa7bee6cf70b8729c9f8c937377821665400e0f49121da830d604`.
+- Refused marker-read result: `7fdb23ab8b23623b6476b9c27314fa130179cb5b6a14601ca446e01ea982340b`.
+- Native main-reference result: `f38eb993c7a0c38ceaa6fc3395c2f49b2fa8cfec128dd1acb7e7dff4ad2fb78b`.
+- Unchanged disposable database: `970d21b3903e727cc3fb97b843c43e188f38254d85f361e5439fc1a5d382f199`.
+
+Source corrections change only the three fixed probes' transport confirmation;
+their programs, effect models and execution guards remain unchanged. Existing
+fixtures now enforce the actual upstream requirement. The original request must
+not be replayed. No successful public closed-symbol lifecycle or ordinary writer
+support is established by this stopped case.

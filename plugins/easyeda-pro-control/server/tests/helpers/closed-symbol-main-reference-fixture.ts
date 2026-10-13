@@ -90,7 +90,7 @@ export async function mainReferenceFixture(context: TestContext, recent = false)
       if (code.includes("runtime-identity")) {
         state.runtimeReads += 1; value = { kind: "runtime-identity", generation: state.generation, timeOrigin: 1000, processId: 101 }; await state.afterRuntime?.();
       } else if (code.includes("symbol-predispatch-observation.v2")) {
-        state.witnessCalls += 1; assert.equal(args?.["confirmWrite"], false); await state.beforeWitness?.();
+        state.witnessCalls += 1; assert.equal(args?.["confirmWrite"], true); await state.beforeWitness?.();
         if (state.failWitness) { throw new Error("synthetic uncertain witness transport"); }
         const time = state.clockMs + 100;
         const observation: Bag = { profile: "easyeda-pro-control.symbol-predispatch-observation.v2", projectUuid: IDS.project, branchUuid: IDS.branch, ownerUuid: IDS.actor,

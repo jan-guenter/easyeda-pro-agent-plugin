@@ -131,11 +131,11 @@ export async function fixture(context: TestContext, reviewedExecutionScopeSha256
   });
   context.mock.method(upstream, "findTool", (): Promise<{ name: string }> => Promise.resolve({ name: "easyeda_execute" }));
   context.mock.method(upstream, "callTool", async (name: string, args?: Record<string, unknown>, _timeout?: number, lease?: AuthenticatedBridgeDispatchBinding): Promise<unknown> => {
-    assert.equal(name, "easyeda_execute"); assert.equal(state.scope, true); assert.ok(lease !== undefined);
+    assert.equal(name, "easyeda_execute"); assert.equal(args?.["confirmWrite"], true); assert.equal(state.scope, true); assert.ok(lease !== undefined);
     const code = String(args?.["code"]);
     let kind: SyntheticReplyKind, result: unknown;
     if (code.includes("runtime-identity")) { kind = "runtime"; result = { ok: true, kind: "runtime-identity", generation: `synthetic-coordinator-runtime-000${state.sessionSequence}`, timeOrigin: 1000 * state.sessionSequence, processId: 101 }; }
-    else if (code.includes("WORKER_TICKET_DRIFT") && args?.["confirmWrite"] === true) {
+    else if (code.includes("kind:'project-symbol-metadata'")) {
       kind = "write";
       assert.equal(args?.["confirmWrite"], true); state.writes += 1; events.push("write");
       const time = state.clockMs + 100;
@@ -144,7 +144,7 @@ export async function fixture(context: TestContext, reviewedExecutionScopeSha256
       result = encodeExactReadEnvelope({ kind: "project-symbol-metadata", targetId: IDS.target, createdId: null });
     } else if (code.includes("symbol-predispatch-observation.v2")) {
       kind = "witness";
-      assert.equal(args?.["confirmWrite"], false); events.push("witness"); const time = state.clockMs + 100;
+      events.push("witness"); const time = state.clockMs + 100;
       result = { profile: "easyeda-pro-control.symbol-predispatch-observation.v2", projectUuid: IDS.project, branchUuid: IDS.branch, ownerUuid: IDS.actor,
         targetUuid: IDS.target, activeUuid: IDS.peer, createdAtLiteral: "2020-01-01 00:00:00", workerClient: "a".repeat(16), workerMaxTicket: 100,
         workerTimeBeforeMs: time, workerTimeAfterMs: time + 1, cachedActorUuid: IDS.actor, startupActor: { ...browser.actor }, cachedActor: { ...browser.actor },
@@ -152,7 +152,7 @@ export async function fixture(context: TestContext, reviewedExecutionScopeSha256
         scope: "point-in-time-read-only-observation", appActorVerified: false, appClockVerified: false, workerFreshOfflineClockVerified: false, producerBindingVerified: false, executionAuthorized: false };
     } else if (code.includes("saved-symbol-content-observation.v1")) {
       kind = "saved-read";
-      assert.equal(args?.["confirmWrite"], false); state.reads += 1; events.push("saved-read");
+      state.reads += 1; events.push("saved-read");
       const projection = await prepareSavedSymbolProjection({ chunks: state.chunks, targetUuid: IDS.target, maximumTicket: 101, currentEditVersion: "3.0" });
       result = { profile: "private.saved-symbol-content-observation.v1", projectUuid: IDS.project, targetUuid: IDS.target, maximumTicket: 101,
         workerClient: "c".repeat(16), content: expectedSavedSymbolContent(projection, "c".repeat(16)), executionAuthorized: false, producerBindingVerified: false, completionProved: false };

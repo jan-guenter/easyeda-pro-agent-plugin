@@ -18,7 +18,7 @@ export async function prepared(phase: StartupPhase = "baseline-marker-create"): 
   value.upstream.callTool = async (name, args, timeout, binding): ReturnType<typeof original> => {
     if (String(args?.["code"]).includes("runtime-identity")) { return original(name, args, timeout, binding); }
     assert.equal(name, "easyeda_execute"); assert.equal(args?.["code"], buildStartupProgram(browser.input));
-    assert.equal(args["timeoutMs"], 60_000); assert.equal(args["confirmWrite"], phase === "baseline-marker-create");
+    assert.equal(args["timeoutMs"], 60_000); assert.equal(args["confirmWrite"], true);
     assert.equal(timeout, 70_000); assert.ok(binding !== undefined); calls.count += 1;
     const before = await loadClosedSymbolJournal(value.operationId);
     assert.equal(before.events.at(-1)?.step, phase); assert.equal(before.events.at(-1)?.kind, "intent"); assert.equal(before.journal.orphanedCallPossible, true);

@@ -130,7 +130,7 @@ export async function agedCoordinatorFixture(context: TestContext, recent = fals
   const original = f.upstream.callTool.bind(f.upstream);
   context.mock.method(f.upstream, "callTool", (...args: Parameters<typeof original>): ReturnType<typeof original> => {
     if (!String(args[1]?.["code"]).includes(AGED_WITNESS_PROFILE)) { return original(...args); }
-    assert.equal(args[0], "easyeda_execute"); assert.equal(args[1]?.["confirmWrite"], false); assert.ok(args[3] !== undefined);
+    assert.equal(args[0], "easyeda_execute"); assert.equal(args[1]?.["confirmWrite"], true); assert.ok(args[3] !== undefined);
     assert.equal(f.state.scope, true); f.transport.rendererCalls += 1; f.events.push("aged-witness");
     const raw = rendererReply(f); return Promise.resolve({ content: [{ type: "text", text: JSON.stringify(raw) }] });
   });

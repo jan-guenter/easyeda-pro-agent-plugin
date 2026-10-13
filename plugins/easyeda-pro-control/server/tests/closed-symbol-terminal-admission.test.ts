@@ -1,7 +1,7 @@
 /* oxlint-disable import/max-dependencies -- Exercise the actual managed scanner with fixed runtime/inspector test interception and concrete schema/reader error classes. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { registerHooks } from "node:module";
 import { dirname } from "node:path";
 import { after, before, test } from "node:test";
@@ -22,12 +22,13 @@ let unregister: () => void;
 before(async () => {
   const inspectorUrl = new URL("../src/closed-symbol-terminal-admission-cache.ts", import.meta.url);
   const agedUrl = new URL("../src/closed-symbol-aged-terminal.ts", import.meta.url);
+  const abandonmentUrl = new URL("../src/closed-symbol-abandonment.ts", import.meta.url);
   const runtimeUrl = new URL("../src/machine-profile.ts", import.meta.url);
   const syntheticUrl = new URL("helpers/closed-symbol-terminal-admission-unit-fixture.ts", import.meta.url);
   const adapterUrl = new URL("../src/closed-symbol-terminal-admission.ts", import.meta.url);
   const hooks = registerHooks({ resolve(specifier, context, nextResolve) {
     const resolved = nextResolve(specifier, context);
-    if (context.parentURL === adapterUrl.href && (resolved.url === inspectorUrl.href || resolved.url === agedUrl.href || resolved.url === runtimeUrl.href)) {
+    if (context.parentURL === adapterUrl.href && (resolved.url === inspectorUrl.href || resolved.url === agedUrl.href || resolved.url === runtimeUrl.href || resolved.url === abandonmentUrl.href)) {
       return { url: syntheticUrl.href, shortCircuit: true };
     }
     return resolved;
@@ -92,6 +93,34 @@ for (const state of ["closed-session-recording", "closed-session-evidence-record
     const result = await selected(operationId); assert.ok(result);
     assert.equal(result.qualification, "incomplete"); assert.equal(result.unfinished, true); assert.equal(result.bridgeBlocking, false);
     assert.equal(unitState.runtimeCalls, 0);
+    if (state === "closed-session-recording") {
+      const original = await readFile(operationPath(operationId));
+      unitState.abandoned.add(operationId);
+      const inspectionsBefore = unitState.abandonmentInspected.filter((value) => value === operationId).length;
+      assert.equal(await selected(operationId), undefined);
+      const qualifiedStates = await states();
+      assert.equal(qualifiedStates.some((value) => value["operationId"] === operationId), false);
+      assert.equal(unitState.abandonmentInspected.filter((value) => value === operationId).length, inspectionsBefore + 2);
+      assert.equal(isTerminalOperation(await loadOperation(operationId)), false);
+      assert.deepEqual(await readFile(operationPath(operationId)), original);
+      unitState.overrides.set(operationId, { originalJournalSha256: "0".repeat(64) });
+      await failed(operationId, "abandonment-evidence-invalid");
+      unitState.overrides.set(operationId, { originalStoredJournalSha256: "0".repeat(64) });
+      await failed(operationId, "abandonment-evidence-invalid");
+      unitState.overrides.set(operationId, { completionProved: true });
+      await failed(operationId, "abandonment-evidence-invalid");
+      unitState.overrides.delete(operationId);
+      unitState.failures.set(operationId, Object.assign(new Error("SECRET unreadable abandonment sidecar"), { code: "EACCES" }));
+      await failed(operationId, "abandonment-evidence-unavailable");
+      assert.equal(JSON.stringify(await selected(operationId)).includes("SECRET"), false);
+      unitState.failures.delete(operationId);
+      assert.equal(await selected(operationId), undefined);
+      unitState.abandoned.delete(operationId);
+      const absentAgain = await selected(operationId);
+      assert.equal(absentAgain?.qualification, "incomplete");
+      assert.deepEqual(await readFile(operationPath(operationId)), original);
+      assert.equal(unitState.runtimeCalls, 0);
+    }
   });
 }
 for (const state of ["completed", "rolled-back", "reconciled-no-mutation", "plan-invalidated", "closed-session-forged"]) {

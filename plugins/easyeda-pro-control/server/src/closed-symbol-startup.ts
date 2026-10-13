@@ -92,7 +92,8 @@ export class ClosedSymbolStartupStage {
     const requestSha256 = sha256Json(request);
     await appendClosedSymbolEvent(journal, { step: phase, kind: "intent", generation, requestSha256, data: request });
     current();
-    const raw = await this.engine.dispatchWithOrphanTracking(journal, phase, "easyeda_execute", { code, timeoutMs: 60_000, confirmWrite: phase === "baseline-marker-create" }, 70_000,
+    // Upstream requires transport confirmation even for the unchanged fixed marker reads.
+    const raw = await this.engine.dispatchWithOrphanTracking(journal, phase, "easyeda_execute", { code, timeoutMs: 60_000, confirmWrite: true }, 70_000,
       async () => {
         current(); dispatchGeneration();
         await this.engine.assertRecoveryOperationIsolated(operationId); current(); dispatchGeneration();

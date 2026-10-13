@@ -13,6 +13,25 @@ retain old advice separately; it is not current execution authority. The
 affected recovery profiles below describe historical contracts only. Footprint
 and unrelated library recovery retain their independent guards.
 
+## Closed-symbol validation rejected before navigation
+
+For the exact closed-symbol validation failure at `edit-marker-read` with
+`ERR_CONFIRM_WRITE_REQUIRED`, use `easyeda_control_recover_incomplete` with the
+original `operationId`, `resolution:"abandoned-before-navigation"` and
+`confirmation:"<operationId>:abandoned-before-navigation"`. Do not supply restart,
+discard or repeat flags. This route checks the complete retained prefix, the
+fixed request's pre-handler rejection, absence of navigation/edit evidence and
+the unchanged complete saved database before publishing an abandonment record.
+It makes no application call and leaves the original journal, startup marker and
+permanent target claim intact.
+
+Abandonment is not completion, rollback, process-termination proof or permission
+to repeat the validation request. Its historical evidence only removes that
+specific unfinished-operation blocker; every new operation retains its normal
+admission checks. Other failure phases and ambiguous calls remain unsupported.
+An existing valid abandonment record can be inspected again without publishing
+another record or rechecking the now-current design as historical evidence.
+
 ## Typed design and library recovery
 
 1. Use `easyeda_control_design` inspect with the operation ID, or the corresponding library inspect action. `easyeda_control_recover_incomplete` with no ID lists managed incomplete operations. Local artifact/evidence inspection remains available.
