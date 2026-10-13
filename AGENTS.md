@@ -13,8 +13,8 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-The installed release is still `0.3.0+codex.20261012030626`. Current implementation
-work is unpublished. All type1/2/3 design lifecycles and the eight affected
+The installed release is still `0.3.0+codex.20261012030626`. Candidate implementation
+is published, with a fixture-only CI correction pending. All type1/2/3 design lifecycles and the eight affected
 metadata writers remain blocked pending native completion proof.
 
 The complete 39-unit native session is now maintained and builds reproducibly
@@ -41,8 +41,16 @@ The real 18-file runtime-copy check had already passed separately.
 
 The preceding full facade suite passed 9,701 tests with one skip and zero failures.
 That result predates this v3 integration. The earlier offline bundle exposes
-27 tools/seven skills. Candidate `0.3.0+codex.20261013054207` is being prepared;
-final publication/install remain pending.
+27 tools/seven skills. Candidate `0.3.0+codex.20261013054207` is published;
+corrected CI and installation remain pending.
+
+Candidate payload41384ed5 is now published on the feature branch. Its first
+GitHub run38353691646 passed verify-build, including deterministic native helper
+reproduction, but exposed a stale v2 shared fixture in the aged integration
+tests. The three fixture-only corrections use the current v3 frame, command
+marker and native response. Production source, qualified DLL, bundle and
+legacy v2 evidence handling are unchanged. All15 affected existing cases, types
+and strict lint pass. Installation waits for corrected CI.
 
 Final short release checks pass on this frozen candidate: facade and bridge
 types, zero-warning strict lint, actionlint, package77, repository179, exhaustive

@@ -13,6 +13,7 @@ import { HISTORY_TABLE, IDS, mutate } from "./symbol-sql-fixture.ts";
 import { fixture as clockFixture } from "./symbol-clock-fixture.ts";
 import { syntheticClockSample } from "./windows-clock-spawn-fixture.ts";
 import { isRecord, sha256Text } from "../../src/core.ts";
+import { MAIN_REFERENCE_HELPER_IDENTITY } from "../../src/main-reference-helper-identity.ts";
 import { windowsClockObservationForResult } from "../../src/windows-authority.ts";
 import type { validateClockSample } from "../../src/windows-clock-transport.ts";
 import { assertOriginalMainReference } from "../../src/closed-symbol-main-reference.ts";
@@ -58,19 +59,22 @@ function childTransport(context: TestContext, f: Fixture): void {
     if (!args.includes("-Command")) { return Reflect.apply(original, childProcess, [executable, args, options]) as ChildProcess; }
     assert.equal(executable, "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe");
     assert.deepEqual(args.slice(0, 4), ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command"]); assert.equal(args.length, 5);
-    const command = args[4]; assert.ok(command !== undefined); assert.match(command, /UNREVIEWED MAIN REFERENCE TRANSPORT/u); assert.ok(command.length <= 30_000);
+    const command = args[4]; assert.ok(command !== undefined); assert.match(command, /private\.main-reference-stdin\.v3/u); assert.ok(command.length <= 30_000);
     f.transport.calls += 1; f.events.push("main-reference"); assert.equal(f.state.scope, false);
     assert.equal(f.events.filter((event) => event === "launch").length, 1);
     const child = new ChildProcess(), input = new PassThrough(), output = new PassThrough(), stderr = new PassThrough();
     Object.defineProperties(child, { stdin: { value: input }, stdout: { value: output }, stderr: { value: stderr } });
     context.mock.method(child, "kill", (): boolean => true);
     let text = "";
-    input.setEncoding("utf8"); input.on("data", (chunk: string) => { text += chunk; assert.ok(text.length <= 180_000); });
+    input.setEncoding("utf8"); input.on("data", (chunk: string) => { text += chunk; assert.ok(text.length <= 524_288); });
     async function respond(): Promise<void> {
       const originals = f.stage.retained()["originals"]; assert.ok(isRecord(originals));
       const clock = await windowsClockObservationForResult(originals["proof"], "termination"); assert.equal(clock.clock.status, "observed");
       assert.ok(clock.clock.status === "observed"); const sample = clock.clock.after;
       const data: unknown = JSON.parse(text); assert.ok(isRecord(data) && typeof data["requestBase64"] === "string" && typeof data["mainBase64"] === "string");
+      assert.ok(MAIN_REFERENCE_HELPER_IDENTITY !== null && typeof data["helperBase64"] === "string");
+      assert.deepEqual(Object.keys(data), ["profile", "helperBase64", "mainBase64", "requestBase64"]); assert.equal(data["profile"], "private.main-reference-stdin.v3");
+      assert.equal(Buffer.from(data["helperBase64"], "base64").length, MAIN_REFERENCE_HELPER_IDENTITY.bytes);
       const main = Buffer.from(data["mainBase64"], "base64").toString("utf8"), requestText = Buffer.from(data["requestBase64"], "base64").toString("utf8");
       const request: unknown = JSON.parse(requestText); assert.ok(isRecord(request)); f.transport.request = request;
       assert.equal(typeof request["createdAtLiteral"], "string"); assert.equal(typeof request["referenceUtcMs"], "number");
@@ -80,17 +84,24 @@ function childTransport(context: TestContext, f: Fixture): void {
       const nonce = String(request["nonce"]), requestSha256 = sha256Text(requestText);
       const result = { profile: "private.main-reference-result.v1", nonce, requestSha256, mainReference, mainDateIdentityRetained: true,
         rendererCreated: false, appClockDirectlyObserved: false, executionAuthorized: false };
-      const response = { profile: "private.main-reference-transport-result.v2", requestSha256, root: String.raw`C:\Synthetic\Temp\easyeda-main-reference-${nonce}`,
-        owner: { profile: "private.main-reference-owner-final.v2", nonce, requestSha256, preparedSha256: "b".repeat(64), accepted: true, stage: "COMPLETE",
-          rootPid: 123, rootStartFileTime: "134362596002239703", forced: false, emptyRetainedJob: true, rootExitCode: 0, executionAuthorized: false,
-          rootSignaled: true, terminationObserved: true, killOnCloseAttempted: false, nativeCleanupComplete: true, nativeCleanupSucceeded: true,
-          managedCleanupSucceeded: true, settlementReceiptPublished: true, primaryCategory: 0, nativePrimaryCode: 0, nativePrimaryError: 0,
-          cleanupCodes: [], cleanupSlots: [], cleanupNativeErrors: [], managedCleanupFailureCount: 0, managedCleanupOverflow: false,
-          launchAttempted: true, launchCallEntered: true, launchAcknowledged: true, nativeCleanupOverflow: false, ownerRecordingFailed: false,
-          nativeAcquisitionUncertain: false, nativeResourceAliasDetected: false, ownershipUnresolved: false, managedCleanupSlots: [] },
-        nativeBefore: makeSample(sample, 100), nativeAfter: makeSample(sample, 300), result,
-        ownerSourceSha256: "e426dbcb9dd1ad646d63ad88b665381c08ee940c7c3159df19d71a2e24eaa727", clockSourceSha256: "97449e83f75b1c724717708c5a630669577f60cf7af142db66022cc73b4e656c",
-        mainSha256: sha256Text(main), executionAuthorized: false };
+      const response = { profile: "private.main-reference-transport-result.v3", helperSha256: MAIN_REFERENCE_HELPER_IDENTITY.sha256,
+        session: { profile: "private.main-reference-native-session.v1", nonce, requestSha256, mainSha256: sha256Text(main),
+          root: String.raw`\\?\Volume{12345678-1234-1234-1234-123456789abc}\Synthetic\Temp\easyeda-main-reference-${nonce}`,
+          nativeCollectionComplete: true, referenceValidated: false, executionAuthorized: false, clockCleanupKnown: true, failure: "none", cleanupErrors: 0,
+          owner: { preparedSha256: "b".repeat(64), settlementReceiptWritten: true, jobDependencyRetained: false,
+            job: { launchAttempted: true, launchCallEntered: true, launchAcknowledged: true, pid: 123, startFileTime: "134362596002239703",
+              rootSignaled: true, emptyJob: true, terminalObserved: true, exitCodeObserved: true, exitCode: 0,
+              forced: false, stopAccepted: false, killOnCloseAttempted: false, settlementFinished: true, cleanupFinished: true,
+              cleanupSucceeded: true, nativeSuccess: true, primaryCode: 0, primaryNativeError: 0,
+              errorCodes: [], errorSlots: [], nativeErrors: [], errorOverflow: false, acquisitionUncertain: false, resourceAliasDetected: false },
+            files: { prepared: true, unresolved: false, allHandlesClosed: true, acquiredHandles: 109, closeAttempts: 109,
+              failedCloseSlots: [], retainedSlots: [], retainedCalls: 0, managedDigestCleanupUnresolved: false, storageReleased: true, failureNone: true },
+            layout: { prepared: true, cleanupDeferred: false, allResourcesReleased: true, usedFrames: 22, cleanupErrors: 0,
+              failureNone: true, coreFailureNone: true, layoutObserved: true, returnedHandles: 23, uniqueHandles: 23, closeAttempts: 23,
+              allHandlesClosed: true, failedCloseSlots: [], aliasSlots: [] },
+            ancestry: { prepared: true, cleanupDeferred: false, allResourcesReleased: true, unresolved: false, leaseOutstanding: false,
+              storageReleased: true, ownedHandles: 12, closeAttempts: 12, closeFailures: 0, cleanupErrors: 0, failureNone: true } },
+          nativeBefore: makeSample(sample, 100), nativeAfter: makeSample(sample, 300), result } };
       output.end(JSON.stringify(response)); stderr.end(); child.emit("close", 0, null);
     }
     async function settle(): Promise<void> {

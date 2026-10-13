@@ -28,7 +28,7 @@ async function setup(context: TestContext, unlock = false): Promise<Omit<Awaited
     if (!args.includes("-Command")) { return Reflect.apply(original, childProcess, [executable, args, options]) as ChildProcess; }
     assert.equal(executable, "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe");
     assert.deepEqual(args.slice(0, 4), ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command"]);
-    assert.match(String(args[4]), /UNREVIEWED MAIN REFERENCE TRANSPORT/u);
+    assert.match(String(args[4]), /private\.main-reference-stdin\.v3/u);
     referenceCalls.count += 1;
     const child = new ChildProcess(), error = new PassThrough(), input = new PassThrough(), output = new PassThrough();
     Object.defineProperties(child, { stdin: { value: input }, stdout: { value: output }, stderr: { value: error } });

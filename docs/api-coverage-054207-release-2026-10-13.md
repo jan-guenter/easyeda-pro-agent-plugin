@@ -34,6 +34,13 @@ legacy/parity tests. No additional test matrix was added for this release.
 The earlier 9,701-pass full facade result predates the v3 integration and is
 not presented as this candidate's complete regression result.
 
+The first published payload, `41384ed5ab93b73268bf04c6f984405b7afc53c5`,
+passed GitHub's build checks in run38353691646. Its integration jobs found a
+shared synthetic fixture still using the v2 command marker, input limit and
+response shape. Three fixture-only corrections align it with v3. Production
+code and the native DLL are unchanged. All 15 affected existing cases, types
+and strict lint pass locally; the corrected CI result is still pending.
+
 Frozen implementation identities:
 
 - Native DLL: 175,104 bytes, SHA256 `378f82d9e92fe74e1f61b13d90472d2f80a1b9959941da7133de08e53c45cd20`.

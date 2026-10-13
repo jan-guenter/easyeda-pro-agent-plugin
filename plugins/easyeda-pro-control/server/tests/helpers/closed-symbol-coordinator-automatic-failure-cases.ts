@@ -18,7 +18,7 @@ function failReferenceTransport(context: TestContext, f: Awaited<ReturnType<type
     if (!args.includes("-Command")) { return Reflect.apply(original, childProcess, [executable, args, options]) as ChildProcess; }
     assert.equal(executable, "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe");
     assert.deepEqual(args.slice(0, 4), ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command"]); assert.equal(args.length, 5);
-    assert.match(String(args[4]), /UNREVIEWED MAIN REFERENCE TRANSPORT/u);
+    assert.match(String(args[4]), /private\.main-reference-stdin\.v3/u);
     f.transport.calls += 1; f.events.push("main-reference"); assert.equal(f.state.scope, false);
     const child = new ChildProcess(), input = new PassThrough(), output = new PassThrough(), stderr = new PassThrough();
     Object.defineProperties(child, { stdin: { value: input }, stdout: { value: output }, stderr: { value: stderr } });

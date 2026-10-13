@@ -37,7 +37,8 @@ omissions. Their execution routes comprise 274 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)
-describes the installed payload, not the later unpublished source changes.
+describes the installed payload. The [054207 candidate](docs/api-coverage-054207-release-2026-10-13.md)
+packages the later native-helper and disposable-workflow implementation.
 The [completion report](docs/project-structure-save-completion-2026-10-12.md)
 tracks that work and its remaining tasks. The preceding source snapshot passed
 9,701 facade tests with one platform skip and 424 bridge tests. The v3 integration
