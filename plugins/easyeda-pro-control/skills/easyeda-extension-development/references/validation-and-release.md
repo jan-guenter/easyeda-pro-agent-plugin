@@ -67,6 +67,13 @@ presence samples cannot restore original handles or prove termination. Keep
 historical state separate from observed presence; neither result may create a
 receipt, clear an unresolved attempt or grant relaunch authority.
 
+Explicit `abandon-supervision` is a different ordinary-startup policy. Require a
+successful historical launch and its exact digest, no current retained owner,
+explicit acceptance of unknown descendants, unchanged installation/journal,
+clear quarantine and two absent samples. Preserve originals and append a
+distinct abandonment receipt. Keep ambiguous launches blocked and the old ID
+consumed; do not admit this receipt to any design or termination-proof consumer.
+
 ## Public callback tests
 
 Exercise the actual registered MCP callback as well as internal coordinators.

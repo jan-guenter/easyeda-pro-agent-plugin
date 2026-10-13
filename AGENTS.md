@@ -13,7 +13,68 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Restarted214500 and application-presence continuation
+### Restarted002000 and explicit supervision recovery
+
+PR18 delivered002000 as main d165e4075975f4c484c3417244e8630c7af32a08,
+full-tree identical to tested77abfa5baec8bf1e98dee49d90df6ba813572a70.
+RequiredCI38477211501 and postmergeCI38478593497 passed all10jobs:
+9823facade passes/five platform skips/424bridge passes. Official Git marketplace
+installed/enabled002000; delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/18#issuecomment-6156678359.
+
+Fresh owner196297/parent194507 uses existing002000script/cwd and Node24.18.0;
+old181673 is absent. Independent admission verifies1149files/22327901bytes/
+42dirs/seven skills and exact modes, no extras/symlinks/mismatches. Inventory
+ee33d8a7dd15658df6299d2038c2007323e148ad924500b5d7af3252b35a2004;
+source325ff8c655a3ce3f26a5ee957ddc892a8f92495d3af6a1624d2192d75b3ac1883e4;
+runtime3da4cbc61ab47f96649f5fce82dd68799abdfc9e8683063aed4f56a0cfb45b47c.
+Actual offline launch discovery and correctly wrapped launch-validate pass.
+One installed observe-application for ordinary-startup-20261013-201500 completed:
+two same-name samples absent, historical launched/attemptConsumed true,
+original identity/termination/relaunch claims false, no new receipt.
+Replyba1a94ae42a3af7a30033c57cf25a5b0fa4d5d718d2a06bfdaabeb0e89a78f72.
+No launch, adoption, close, Save, project open or design change occurred.
+
+Candidate011500 implements an explicit ordinary-startup policy change, not a
+claim that absent processes prove termination. abandon-supervision requires a
+successful historical launched receipt and inspected digest, explicit acceptance
+of unknown descendants, no current retained launch, exact installation, clear
+global quarantine and two absent samples. It exclusively appends abandonment.json,
+preserves originals and keeps the old ID consumed. A new separately confirmed
+ordinary launch can follow; native existing-process checks remain. Ambiguous
+launch-unknown/current uncertain attempts stay blocked. No design/closed-file
+or termination consumer accepts this receipt. Research and rationale:
+docs/ordinary-launch-owner-research-2026-10-14.md.
+
+Candidate LCSC lookup was removed before release. Installed server fallback can
+reach library database initialization/migration during concurrent refresh when
+networking is disabled. This is source-derived reachability, not an observed
+mutation; no lookup was dispatched. Coverage records the concrete omission and
+required remote-only or library-effects redesign. Research:
+docs/system-device-backend-effects-2026-10-14.md. Counts remain774distinct/
+211public/30native/82blocked/451omitted,309guarded/94blocked/2partial,
+ten current tools/35legacy/seven skills. No new device adapter is shipped.
+
+Local verification passes focused ordinary-launch, bundled-startup, facade-mode
+and API-coverage tests, full types, zero-warning strict type-aware lint, build,
+compatibility and exhaustive inventory checks. Package/repository privacy checks
+and all seven custom/official skill validators pass. Dependency audit reports
+zero vulnerabilities;151 registry signatures/40 attestations verify. Independent
+source review accepts the abandonment coordinator and its distinct nontermination
+claims. Source3258d8e12b2ebb4b2c1ae0b50155305fddefe51dcbb4e57eea998cc086e8e016365;
+runtime3b3dd534668b45d41e124f131ff7dcab52ff1922a66f6aab9ce3623601f8ede0e.
+Only facade projections/review timestamp changed in compatibility metadata;
+external pins, helper, bridge and dependencies are unchanged. New-source live
+abandonment and startup remain unvalidated. Required CI is pending.
+
+Current ordinary-startup-20261013-201500 has NOT been abandoned. Original handles
+remain unavailable. Loaded002000 cannot execute candidate011500. Do not mutate
+journals, hotpatch a loaded cache, run a competing facade or replay any operation.
+The production design and its project record remain out of scope. Publication,
+official installation and fresh-host recovery are pending at this checkpoint;
+consult the release PR delivery receipt before repeating delivery.
+
+### Historical restarted214500 and application-presence continuation
 
 PR17 is delivered as main4217c253e17c028a206179779df2dea12d2ecb16,
 full-tree identical to tested13b1ad6b83aa98ec774ace86b473ee9ee4e0a088.

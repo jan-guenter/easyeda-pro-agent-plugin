@@ -19,7 +19,17 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261014002000` adds `observe-application` to the ordinary
+Update `0.3.0+codex.20261014011500` adds explicit `abandon-supervision` recovery
+for a successful ordinary launch whose original process handles were lost.
+It preserves history and requires the inspected launch digest, explicit risk
+acceptance and two absent process samples. It does not prove termination or
+unlock design operations. A separately confirmed, new-ID startup remains subject
+to all current launch checks. LCSC lookup remains omitted because its installed
+server fallback can open and modify a library database during concurrent refresh.
+See the
+[supervision-recovery release](docs/supervision-recovery-release-2026-10-14.md).
+
+Previous update `0.3.0+codex.20261014002000` added `observe-application` to the ordinary
 launcher. After a facade restart it can report same-name process presence for
 an existing launch journal, without launching EasyEDA or changing the journal.
 It does not recover lost process handles or authorize another launch. See the

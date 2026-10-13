@@ -42,8 +42,8 @@ reply, use `inspect` with the original ID, not another launch. `observe-terminat
 can record completion only when the retained helper proves both original root
 exit and an empty Job. It does not request close or choose a prompt. A recorded
 termination permits another uniquely identified launch. An unresolved attempt
-after facade restart stays blocked because the original handles are gone; do not
-delete its records or switch control roots.
+after facade restart stays blocked until the separately authorized supervision
+policy below applies; do not delete its records or switch control roots.
 
 For a named historical launch, `observe-application` is a read-only diagnostic
 available even after the original facade exits. It starts only the pinned
@@ -53,9 +53,34 @@ The result separates `historical` launch state from
 `application.sameNameProcessPresent`. Another installation can account for
 presence, and absence is not proof that the original root and Job terminated.
 All original-identity, retained-authority, termination and relaunch claims remain
-false. It writes no receipt and does not resolve the historical attempt. If the
-bridge remains disconnected and original handles are lost, retain that blocker;
-do not turn an absent process into permission to launch under a new ID.
+false. It writes no receipt and does not resolve the historical attempt. Absence
+alone is never permission to launch under a new ID.
+
+When ordinary startup/recovery is within the user's task, an acknowledged
+historical launch can use the separate `abandon-supervision` action. First inspect
+the original ID and retain its returned `launchedSha256`. Validate this exact
+request with offline `launch-validate` (`query:{"request":...}`):
+
+```json
+{"action":"abandon-supervision","operationId":"<original-operation-id>","expectedLaunchedSha256":"<inspected-launchedSha256>","confirmAbandonSupervision":true,"acceptUnobservedDescendants":true}
+```
+
+This deliberately accepts that differently named descendants or external work
+may remain. It is not termination recovery. The action requires the exact
+successful historical launch receipt, no current retained launch, unchanged
+reviewed installation and journal, clear global quarantine, and two current
+same-name absence samples. It appends `abandonment.json` without replacing any
+original receipt. State becomes `supervision-abandoned`, with termination and
+design-authority claims false. A repeated abandonment is refused; inspect its
+original ID after a lost reply. An intent-only `launch-unknown`, unreadable record,
+current uncertain launch or current retained owner cannot use this route.
+
+Abandonment changes only the ordinary-startup prerequisite. A separate new-ID
+launch still needs both startup confirmations and checks for an existing app
+again immediately before native creation. Never reuse the old ID or use this
+receipt as closed-file, Save, discard, design-recovery or original-Job proof.
+If the user's task needs guaranteed old-process termination or isolation, this
+policy is unsuitable; retain the blocker and seek an appropriate environment.
 
 A launch reply does not establish bridge authentication. Check actual status
 separately. The existing native bridge can take roughly 45–60 seconds to detect
@@ -97,6 +122,11 @@ describes its raw tokens and bounds. No active project is needed, and neither
 this metadata nor the identity observer grants keyboard or legacy CAD authority.
 The new shortcut route and shared UI-verifier refactor are not live-validated
 by the installed201500 startup/context observations above.
+
+Installed `0.3.0+codex.20261014002000` independently loaded after restart and
+completed `observe-application`: both samples were absent, historical state
+remained `launched`, and no receipt or relaunch permission was created. This
+validates that diagnostic case only, not the later abandonment implementation.
 
 After updating the marketplace, verify the actual tool catalog and loaded
 facade generation. Reopening the desktop app or seeing new skills is not by

@@ -74,16 +74,33 @@ Ordinary startup and editor-shell observation also have offline schemas. Query
 the corresponding `launch-validate`, `editor-shell-validate` or
 `editor-context-validate` with `query:{"request":...}`.
 Validation does not launch or authorize anything. The launcher accepts only
-fixed launch/inspect/observe-application/observe-termination requests. For
+fixed launch/inspect/observe-application/observe-termination/abandon-supervision requests. For
 read-only presence after restart, validate
 `{"action":"observe-application","operationId":"<original-operation-id>"}`.
 It requires an existing journal and accepts no PID, executable or replacement
-identity. This is not termination reconciliation. The editor observer accepts only
+identity. This is not termination reconciliation. Explicit `abandon-supervision`
+additionally requires the inspected `expectedLaunchedSha256`,
+`confirmAbandonSupervision:true` and `acceptUnobservedDescendants:true`.
+It appends a separate relinquishment receipt; it never proves original process
+termination or grants design authority. Read the connection workflow before use.
+The editor observer accepts only
 `{"action":"observe-editor-shell"}` or, for identity metadata,
 `{"action":"observe-editor-context"}`. Their lifecycle and interpretation limits
 are in [connection and context](connection-and-context.md#ordinary-application-startup-on-the-current-tuple).
 These are not newly covered public SDK methods, so the distinct-method inventory
 above does not increase.
+
+## Omitted system-library component lookup
+
+`eda.lib_Device.getByLcscIds` remains discovery-only. On the reviewed current
+desktop implementation, a network-disabled request can fall through to the local
+device-update router. During concurrent library refresh, even the fixed system
+library can temporarily resolve to a physical database and trigger initialization
+or migration. A renderer mode/network check cannot atomically prevent this path.
+Do not expose it as a read-only catalogue query. Supporting it needs a reviewed
+remote-only route or a separately scoped library-effects contract. Its vendor
+handler also maps failed service responses to empty arrays, so missing results
+cannot prove that a part does not exist.
 
 ## Supplied-coordinate calculations on the new tuple
 
