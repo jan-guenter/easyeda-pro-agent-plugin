@@ -20,7 +20,8 @@ tree and modes match tested payloadc2412d6. Public pre-navigation abandonment
 completed once for the retained validation failure. The original journal,
 16 phases, permanent target claim and disposable file remain unchanged. The
 exclusive sidecar records historical abandonment only; it grants no completion,
-replay or old-process authority. Public incomplete-operation listing is empty.
+replay or old-process authority. Public incomplete-operation listing was empty
+after that recovery, before the next disposable attempt described below.
 
 A genuinely new disposable project was created through maintained native UI.
 It contains one shortcut resistor, saved once with File > Save, and an initialized
@@ -46,9 +47,22 @@ focused cases after final diagnostic ordering. Final packaged startup/contract
 checks pass six cases. Full facade/bridge types, strict zero-warning lint, build,
 compatibility, API coverage, package, repository/privacy and all seven skill
 checks pass. Candidate101000 has304 source files at8c602d0c and three runtime
-files atf3b5e01b; external pins and native DLL remain unchanged. GitHub CI,
-publication and installation are pending. No broad test matrix is being added.
-Current source catalog is28 tools; installed084617 remains27.
+files atf3b5e01b; external pins and native DLL remain unchanged. Payload306871c5
+is published with package tree24a5bfc9589e4a9b7cfcc8dcb041e6b2885158a2.
+CI38382522749 passes on attempt1:9,726 facade passes/five skips/zero failures,
+424 bridge passes, all ten jobs green. Official Git-marketplace101000 is now
+installed and enabled from the feature ref. Refresh succeeded; add reported a
+cache-backup permission error, retained without manual cache repair or reinstall.
+Independent installed verification passes all1,112 files/21,663,074 bytes and
+committed modes before and after configured offline startup. Inventory7855650d,
+proof412a7b95;28 tools/seven skills, ambientNode26 to pinned24, original child
+closed, no observed upstream/socket and no tool/live calls. No broad test matrix
+is being added. The actual4122421 host still loads084617. A fresh official host
+is required before C09 public abandonment or another disposable lifecycle.
+No C09 recovery has run; never replay its consumed validation request or delete
+its permanent claim. PR9 remains draft; the broader API request is unfinished.
+Final root-only release documentation leaves the tested plugin tree unchanged
+and skips duplicate CI without claiming skipped checks passed.
 Production designs and their records remain untouched. No native call or Save
 is pending, and no completed setup or recovery action may be repeated.
 
@@ -3395,7 +3409,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Current Git-marketplace084617 is published and installed/enabled after exact-payload CI38373488073. All1,104files/21,542,797bytes/modes matchc2412d6, with offline proof1b9eae06 and27tools/sevenskills. The fresh host is admitted and C08 public pre-navigation abandonment completed without replay. C09 stopped after its startup marker, before navigation; fixture unchanged and app closed. Ordinary writer source is integrated but disabled. Successful disposable lifecycle and the other native-effect implementations remain unfinished; all type1/2/3 design and eight metadata restrictions remain. Production and its record remain excluded.
+- Current Git-marketplace101000 is published and installed/enabled after exact-payload CI38382522749. All1,112files/21,663,074bytes/modes match306871c5, with offline proof412a7b95 and28tools/sevenskills. The installer cache-backup error is retained; independent cache/startup verification passed without manual cache changes or reinstall. Actual4122421 still loads084617, so fresh-host admission remains required. C08 public pre-navigation abandonment completed without replay. C09 stopped after its startup marker, before navigation; fixture unchanged and app closed. Its new six-event abandonment has not run. Ordinary writer source is integrated but disabled. Successful disposable lifecycle and the other native-effect implementations remain unfinished; all type1/2/3 design and eight metadata restrictions remain. Production and its record remain excluded.
 - Historical Git-marketplace030626 was published and installed/enabled after exact-payload CI38202074298. All652files/17001549bytes/modes matched6535cfad, with offline prooffc6c5e6a. It introduced the blocks on all type1/2/3 design lifecycles and eight metadata actions, including affected retained recovery, before bridge connection. Fresh connected admission and native structure completion were not claimed. Historical013324 C06/C07 retain their scoped wire observations, not later-job exclusion. Both disposable fixtures remain closed; completed operations must never be replayed. Candidate024750 was not installed. Broader API work and PR9 remain unfinished.
 - Historical000206 installation record, superseded by the current entry: Git-marketplace `0.3.0+codex.20261012000206` is published and installed/enabled after exact-head CI38187143546. All633files/17006218bytes/modes match payloadac9f0a7, package subtree369d8572; offline proofc146a756 passes. Loaded facade2527645 remains independently admitted220050, not000206; use a fresh Codex host before connected work. The220050 font case and omitted-lock three-segment wire forward/reverse saved/reopened pair pass their scoped proofs. Both disposable fixtures are closed; final flat sourcec9e04b15/checkpoint621cb2f6/database471d6b9e/logicalea3da0fa are verified. Original source geometry is restored, not original SQLite history. Closed verifier11 and all-nine-root metadata41 pass. The earlier authorized UI action/private comparison9bf4428a established pcbCommandTab false to true in browser and one anonymous SQL residual without identifying the current user. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission. The installed historical-case index grants no live authority or current-generation validation.
 - Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct. Installed164600 passed scoped PCB Text readers/create/delete and empty free-SCH creation;204104 passed system-library UUID, schematic Text/Wire readers with both mixed caller orders, and independently visible pointer-only hover. Installed220050 adds configured-font R09 and sealed-wire C04/C05 exact-case evidence. Unsaved wire rollback, failure recovery, broader wire shapes, literal-false connected input and later generations remain separate. The connected ledger records scope, not whole SDK contracts. Never access production or its project record. The user's continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation, not relaxed technical safety checks or unrelated changes.

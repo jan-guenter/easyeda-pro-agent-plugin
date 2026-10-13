@@ -19,7 +19,9 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-The source catalog has 28 tools; installed084617 has27. The new ordinary
+Installed version `0.3.0+codex.20261013101000` has 28 tools and seven skills.
+Its [release report](docs/api-coverage-101000-release-2026-10-13.md) records
+passing CI and exact installed-package verification. The new ordinary
 `easyeda_control_symbol_metadata` entry is implemented but refuses before runtime
 allocation until disposable full-lifecycle validation succeeds. It accepts one
 explicit name/description operation with a unique caller ID and exact closed
@@ -39,12 +41,13 @@ Ordinary editing gates remain. Installed084617 also adds evidence-preserving
 abandonment for this exact pre-navigation refusal; it does not authorize retry.
 That public recovery has completed on the restarted084617 host with original
 evidence preserved. The next native-created disposable case stopped after its
-startup marker because the window selector treated a tooltip as an application
-window. No project navigation or edit occurred; the closed fixture is unchanged.
-The source correction keeps ordinary execution disabled pending successful
+startup marker. Native observation showed a tooltip and the application window,
+a pair that the old selector would reject. No project navigation or edit occurred;
+the closed fixture is unchanged. The installed correction keeps ordinary
+execution disabled pending successful
 lifecycle validation. See [C09](docs/api-connected-validation-ledger.md#2026-10-13-c09-closed-symbol-validation-stopped-after-startup-marker).
 See the [transport correction and remaining scope](docs/api-coverage-084617-release-2026-10-13.md).
-The installed084617 catalog has27 tools. It retains074635's native16-hex document
+The installed101000 catalog retains074635's native16-hex document
 identity handling and exact duplicate structure-row verification. These changes
 do not enable the blocked writers. See the
 [preceding integration corrections](docs/api-coverage-074635-release-2026-10-13.md).

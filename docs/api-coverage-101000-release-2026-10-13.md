@@ -37,7 +37,10 @@ phases, permanent target claim or disposable file.
 [C09](api-connected-validation-ledger.md#2026-10-13-c09-closed-symbol-validation-stopped-after-startup-marker)
 used a genuinely new native-created project and ordinary resistor symbol. Its
 baseline launch, admission and marker creation succeeded; the workflow stopped
-before project navigation when a tooltip made window selection ambiguous.
+before project navigation. Native observation showed a tooltip and the application
+window, a pair that source inspection confirms the old selector would reject.
+The public result did not expose the original exception, so this diagnosis is
+correlated observation and source evidence rather than a retained exception.
 The application subsequently closed normally and the fixture stayed byte-identical.
 No symbol edit or Save occurred in that validation call. No successful lifecycle
 or retained Job termination is claimed.
@@ -69,8 +72,35 @@ The frozen implementation projection covers304 source files at
 three runtime files at
 `f3b5e01bc6138887a33865fab76394cf6f3dd4e1c42aff0c6527018aaebff815`.
 External compatibility pins and the native helper DLL are unchanged.
-GitHub CI, publication and installed verification are pending. No new broad
-test matrix or private harness is added.
+Payload `306871c5ee5867b94976e996d6633f7fc18641ae` is published on
+`feature/api-execution-coverage`. Its package tree is
+`24a5bfc9589e4a9b7cfcc8dcb041e6b2885158a2`, with1,112 tracked files.
+[CI38382522749](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38382522749)
+passed on attempt1:9,726 facade tests passed, five skipped and zero failed;
+424 bridge tests passed. All ten jobs are green, including the final combined
+gate, dependency audits, strict lint, reproducible builds and packaging.
+Official marketplace refresh succeeds and resolves the exact published payload.
+The add command reports a cache-backup permission error; subsequent CLI discovery
+reports101000 installed and enabled. Independent cache/startup verification passes
+once despite that error: all1,112 files/21,663,074 bytes and committed modes match
+the tested tree before and after startup, without extra files or identity changes.
+No manual cache edits, owner termination or reinstall were needed.
+
+Configured ambient Node26.7.0 hands off to pinned Node24.18.0. The offline catalog
+contains28 tools and seven skills; the original child closes without cleanup
+errors. Process snapshots and the synthetic upstream sentinel show no upstream
+child or non-stdio socket. No tool, native helper, gateway or live call ran.
+This is package/startup verification, not continuous syscall tracing or live
+admission. Inventory SHA256 is
+`7855650d3f07efa7b007d8354cf36b858b95415ade71871f603ad7c211049fc9`;
+installed proof SHA256 is
+`412a7b959098ccd0f6ee5d2d5af338135ac1823cc5f37a88d55a1febe17848bc`.
+The existing official host still loads084617; use a fresh host before C09 public
+abandonment or another disposable workflow. No C09 recovery has run.
+
+Final root-only documentation leaves the tested package tree unchanged and skips
+duplicate CI. That does not turn a skipped check into a passing check.
+No new broad test matrix or private harness is added.
 
 ## Remaining scope
 
