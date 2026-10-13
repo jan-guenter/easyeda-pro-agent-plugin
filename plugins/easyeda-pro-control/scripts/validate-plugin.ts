@@ -47,6 +47,7 @@ const AUTO_APPROVED_TOOLS = new Set([
 const OUTPUT_SCHEMA_ANCHORS = {
   easyeda_control_api: ["offline", "result"],
   easyeda_control_sdk_read: ["summary", "evidence"],
+  easyeda_control_calculate: ["result"],
   easyeda_control_design: ["operationId", "state", "nextSafeAction"],
   easyeda_control_library: ["capabilities", "operationId", "state"],
   easyeda_control_runtime: ["action", "result"],
@@ -597,6 +598,8 @@ try {
       EASYEDA_UPSTREAM_ARGS_JSON: "[]",
       EASYEDA_UPSTREAM_COMMAND: join(dataDirectory.path, "must-not-execute"),
       EASYEDA_UPSTREAM_CWD: dataDirectory.path,
+      EASYEDA_PCB_BUNDLE_VERSION: "3.2.149.5378b690",
+      EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.2.53.aee2f57a",
     },
     stderr: "pipe",
   });

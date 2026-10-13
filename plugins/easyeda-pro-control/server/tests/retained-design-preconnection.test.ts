@@ -37,6 +37,7 @@ void test("retained design MCP actions refuse or return terminal evidence before
   await writeFile(syntheticUpstream, `import { writeFileSync } from "node:fs"; writeFileSync(${JSON.stringify(sentinel)}, "unexpected execution");\n`);
   const transport = new StdioClientTransport({ command: process.execPath, args: [join(pluginRoot, "server", "src", "index.ts")], cwd: pluginRoot,
     env: { EASYEDA_CONTROL_DATA_DIR: root, EASYEDA_BRIDGE_TOKEN_FILE: join(root, "missing-key.json"), EASYEDA_UPSTREAM_DATA_DIR: join(root, "upstream-data"),
+      EASYEDA_PCB_BUNDLE_VERSION: "3.2.149.5378b690", EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.2.53.aee2f57a",
       EASYEDA_ASSETS_ROOT: join(root, "assets"), EASYEDA_UPSTREAM_COMMAND: process.execPath,
       EASYEDA_UPSTREAM_ARGS_JSON: JSON.stringify([syntheticUpstream]), EASYEDA_UPSTREAM_CWD: root }, stderr: "pipe" });
   const client = new Client({ name: "retained-design-preconnection-test", version: "1.0.0" }, { capabilities: {} });

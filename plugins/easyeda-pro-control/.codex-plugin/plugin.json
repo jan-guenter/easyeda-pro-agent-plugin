@@ -1,6 +1,6 @@
 {
   "name": "easyeda-pro-control",
-  "version": "0.3.0+codex.20261013124500",
+  "version": "0.3.0+codex.20261013135500",
   "description": "Safety-gated EasyEDA API coverage, fixed typed SDK reads, design operations and seven engineering skills.",
   "author": {
     "name": "Jan G\u00fcnter",
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "EasyEDA Pro Control",
     "shortDescription": "Inspect and control EasyEDA Pro",
-    "longDescription": "Seven skills cover control, schematics, PCB layout, libraries, manufacturing, design review and extensions. The facade provides a complete per-method coverage inventory, fixed typed reads with explicit public/native labels, guarded footprint typed API operations, existing-tab activation, inactive clean-tab close, native controls, checkpoints and recovery. Schematic-page, symbol and PCB design transactions plus eight symbol/page/container metadata writers are blocked pending native structure-job completion and full SQL-effect proof; their schemas and historical evidence remain inspectable. Native schematic Text/Wire/Bus ID equivalents avoid public callback/compiler paths. A checkpoint-bound flat topology diagnostic remains separate from the blocked display-only and wire-reroute transaction profiles. Generic compiled topology remains blocked for hidden annotation and Save All; affected exports are refused. PCB navigation rejects known unsafe preference state without changing settings. Bounded observations do not replace complete source, connectivity or saved-project proof. The historical reviewed external tuple is connected-read-admitted; future mismatches fail closed. Historical live evidence remains generation-specific; new adapters need disposable validation. Runtime identity and operation-specific evidence remain mandatory. Arbitrary JavaScript, blind retry and unrestricted Save are refused; the legacy writer is runtime-disabled.",
+    "longDescription": "Seven skills cover control, schematics, PCB layout, libraries, manufacturing, design review and extensions. Per-method inventory distinguishes fixed public calls, native equivalents, blocked implementations and omissions. Eleven bounded supplied-coordinate calculations have a separate exact EasyEDA 3.2.206/API 0.3.50 runtime profile, with connected validation still outstanding. New or unknown configured tuples expose only reference, discovery, status and calculations; missing installation files select offline-only startup. The older reviewed tuple retains guarded readers, footprint typed API operations, native controls, checkpoints and recovery. Schematic-page, symbol and PCB design transactions plus eight metadata writers remain blocked pending native structure-job completion and full SQL-effect proof. Compiled topology and affected exports remain refused for hidden annotation or Save All. PCB navigation rejects unsafe preferences without changing settings. Historical evidence is generation-specific; discovery and matching samples do not prove complete source or saved state. Arbitrary JavaScript, blind retry and unrestricted Save are refused; the legacy writer is runtime-disabled. The historical reviewed tuple is connected-read-admitted; future mismatches fail closed within each capability profile.",
     "developerName": "JanGuenter",
     "category": "Developer Tools",
     "capabilities": [

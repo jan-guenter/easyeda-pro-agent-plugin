@@ -30,6 +30,7 @@ does not cover EasyEDA's delayed structure-table writes.
 ## Connect and choose a path
 
 - Look up methods and exact operation arguments with offline `easyeda_control_api`; read [api-reference.md](references/api-reference.md). Its latest SDK snapshot is documentation, not execution authority. Validate assembled operations offline before a live preflight.
+- For supplied-coordinate geometry, query `calculations` and validate with `calculate-validate`. The separate `easyeda_control_calculate` accepts eleven bounded methods on its reviewed new-version tuple. It needs an authenticated fingerprint but no active design. Calculation-only mode has no design, navigation, native UI or recovery tools; see the connection reference before setup.
 - Use its `coverage` action to distinguish direct SDK calls, narrower native task equivalents, lifecycle-only calls and omissions. `easyeda_control_sdk_read` exposes fixed typed local getters and calculations. Matching samples are public SDK observations, not complete native design or persistence proof.
 - For setup, missing tools or connection trouble, read [connection-and-context.md](references/connection-and-context.md). The bundled portable launcher loads a private machine profile. The checkout-only foreground client uses the same facade when no other owner is running.
 - For API edits, inspect `easyeda_control_runtime`. Editing requires EasyEDA launched by `launch-contained`, with retained Windows Job and authenticated process proof. An ordinary PID or a newly connected renderer is not that proof.

@@ -79,6 +79,8 @@ syncBuiltinESMExports();
 process.env["EASYEDA_UPSTREAM_COMMAND"] = join(root, "must-not-execute");
 process.env["EASYEDA_UPSTREAM_ARGS_JSON"] = "[]";
 process.env["EASYEDA_UPSTREAM_CWD"] = root;
+process.env["EASYEDA_PCB_BUNDLE_VERSION"] = "3.2.149.5378b690";
+process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] = "0.2.53.aee2f57a";
 process.env["WSL_DISTRO_NAME"] = "DisposableIndexSynthetic";
 process.env["EASYEDA_ASSETS_ROOT"] = "/mnt/c/__easyeda_synthetic_never_access__/resources/app/assets";
 const artifacts = await import("../../src/artifacts.ts");

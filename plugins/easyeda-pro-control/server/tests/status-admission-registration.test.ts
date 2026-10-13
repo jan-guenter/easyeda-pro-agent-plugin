@@ -24,6 +24,7 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
   let invoke: Handler | undefined;
   const scope = {
     CONTROL_VERSION: "synthetic",
+    facadeMode: "legacy-reviewed",
     UpstreamStartupError: class extends Error {},
     boundedTransactionErrorOutput: (): object => ({}),
     isRecord: (value: unknown): boolean => typeof value === "object" && value !== null,

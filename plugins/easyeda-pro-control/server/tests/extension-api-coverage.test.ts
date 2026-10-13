@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { extensionApiSnapshots } from "../src/extension-api-catalog-data.ts";
 import { extensionApiCoverageQuerySchema, extensionApiCoverageSummary, inventoryExtensionApiCoverage, queryExtensionApiCoverage } from "../src/extension-api-coverage.ts";
 import { queryOperationCatalog, validateCatalogOperation } from "../src/operation-catalog.ts";
-import { queryPublicSdkReads } from "../src/public-sdk-catalog.ts";
+import { apiRequestSchema, queryOfflineApi } from "../src/offline-api.ts";
 import { isRecord } from "../src/core.ts";
 import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL } from "../src/design-execution-lifecycle.ts";
 
@@ -240,7 +240,7 @@ void test("NetGroup and filtered PCB membership reads expose narrow native route
   assert.match(route.scope, /not public primitive instances/u); assert.match(route.scope, /explicit nonempty unique filters/u);
   assert.match(route.scope, /source\/inventory\/source/u);
   assert.deepEqual(extensionApiCoverageSummary()["statuses"], {
-    "implemented-public-subset": 193, "implemented-native-equivalent": 30, "internal-lifecycle-only": 0, "implemented-but-blocked": 82, omitted: 469,
+    "implemented-public-subset": 204, "implemented-native-equivalent": 30, "internal-lifecycle-only": 0, "implemented-but-blocked": 82, omitted: 458,
   });
 });
 
@@ -521,7 +521,9 @@ void test("selected PCB objects expose source DTOs without promoting the lossy p
   assert.match(route.scope, /Native-source DTO equivalent/u); assert.match(route.scope, /entire result/u);
   assert.match(route.scope, /Generated poured-state correlation must be exactly empty/u);
   assert.match(route.scope, /no atomic snapshot or persistence claim/u);
-  assert.equal(queryPublicSdkReads({ method: path })["authority"], "native-selected-source-objects-not-public-instance-or-persistence-proof");
+  const publicRead = queryOfflineApi(apiRequestSchema.parse({ action: "sdk-reads", query: { method: path } })).result;
+  assert.ok(isRecord(publicRead));
+  assert.equal(publicRead["authority"], "native-selected-source-objects-not-public-instance-or-persistence-proof");
   const raw = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.pcb_SelectControl.getSelectedPrimitives");
   assert.equal(raw?.status, "omitted"); assert.equal(raw?.omission?.code, "lossy-selected-object-projection");
 });
@@ -599,12 +601,29 @@ void test("every coverage input-discovery request resolves to an actual strict a
   assert.ok(requests.size > 100);
   for (const request of requests.values()) {
     assert.ok(isRecord(request));
-    const result = request["action"] === "operations" ? queryOperationCatalog(request["query"]) : queryPublicSdkReads(request["query"]);
+    const result = queryOfflineApi(apiRequestSchema.parse(request)).result;
+    assert.ok(isRecord(result));
     const entries = result["entries"];
     assert.ok(Array.isArray(entries));
     assert.ok(entries.length > 0);
     const first: unknown = entries[0];
     assert.ok(isRecord(first) && isRecord(first["inputSchema"]));
+  }
+});
+
+void test("eleven new-version calculations have scoped routes while clipping retains concrete omissions", () => {
+  const entries = inventoryExtensionApiCoverage().filter((entry) => entry.namespace === "sys_Math");
+  assert.equal(entries.length, 16);
+  assert.equal(entries.filter((entry) => entry.status === "implemented-public-subset").length, 11);
+  for (const entry of entries) {
+    assert.equal(entry.reviewedRuntimeDeclaration, false);
+    assert.equal(entry.currentGenerationLiveValidation, "not-recorded");
+    if (entry.status === "omitted") {
+      assert.equal(entry.omission?.code, "math-clipping-state-and-completion");
+    } else {
+      assert.equal(entry.routes[0]?.tool, "easyeda_control_calculate");
+      assert.match(entry.routes[0]?.scope ?? "", /calculation-only runtime, not legacy-tuple admission/u);
+    }
   }
 });
 

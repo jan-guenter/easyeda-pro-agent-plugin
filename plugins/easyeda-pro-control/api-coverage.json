@@ -6,14 +6,14 @@
     "reviewedDistinctMethods": 697,
     "latestDistinctMethods": 773,
     "statuses": {
-      "implemented-public-subset": 193,
+      "implemented-public-subset": 204,
       "implemented-native-equivalent": 30,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 82,
-      "omitted": 469
+      "omitted": 458
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 274,
+      "available-with-runtime-guards": 285,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -34,10 +34,11 @@
       "lossy-logging-selection-reader": 1,
       "lossy-selected-object-projection": 1,
       "managed-file-contract-needed": 39,
+      "math-clipping-state-and-completion": 5,
       "multi-object-electrical-effect": 7,
       "navigation-or-viewport-adapter-needed": 14,
       "non-json-result-or-callback": 6,
-      "not-in-reviewed-runtime": 76,
+      "not-in-reviewed-runtime": 60,
       "pad-pair-group-replacement-effects": 1,
       "page-order-partial-write-lifecycle": 1,
       "panel-context-not-admitted": 1,
@@ -32473,17 +32474,40 @@
         }
       ],
       "reviewedRuntimeDeclaration": false,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.bboxIntersects is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
-        "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_calculate",
+          "selector": "eda.sys_Math.bboxIntersects",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON point arrays only, coordinates within +/-1e6, 3-128 distinct ring vertices, optional final closing duplicate. No holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Touching bbox edges count as intersecting; this is not polygon intersection.",
+          "source": [
+            "sdk-math.ts",
+            "sdk-math-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-math.test.ts",
+            "sdk-math-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "calculations",
+                "query": {
+                  "method": "eda.sys_Math.bboxIntersects",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -32502,17 +32526,40 @@
         }
       ],
       "reviewedRuntimeDeclaration": false,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.calculateArea is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
-        "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_calculate",
+          "selector": "eda.sys_Math.calculateArea",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON point arrays only, coordinates within +/-1e6, 3-128 distinct ring vertices, optional final closing duplicate. No holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Absolute SDK shoelace area for one simple ring, in squared input-coordinate units.",
+          "source": [
+            "sdk-math.ts",
+            "sdk-math-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-math.test.ts",
+            "sdk-math-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "calculations",
+                "query": {
+                  "method": "eda.sys_Math.calculateArea",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -32531,17 +32578,40 @@
         }
       ],
       "reviewedRuntimeDeclaration": false,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.calculatePerimeter is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
-        "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_calculate",
+          "selector": "eda.sys_Math.calculatePerimeter",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON point arrays only, coordinates within +/-1e6, 3-128 distinct ring vertices, optional final closing duplicate. No holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. SDK perimeter includes the last-to-first edge even for an open point array.",
+          "source": [
+            "sdk-math.ts",
+            "sdk-math-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-math.test.ts",
+            "sdk-math-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "calculations",
+                "query": {
+                  "method": "eda.sys_Math.calculatePerimeter",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -32560,17 +32630,40 @@
         }
       ],
       "reviewedRuntimeDeclaration": false,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.contains is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
-        "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_calculate",
+          "selector": "eda.sys_Math.contains",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON point arrays only, coordinates within +/-1e6, 3-128 distinct ring vertices, optional final closing duplicate. No holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. SDK tests only inner vertices. The outer ring must be strictly convex; boundary classification remains the SDK ray-casting result, not a tolerance-aware guarantee.",
+          "source": [
+            "sdk-math.ts",
+            "sdk-math-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-math.test.ts",
+            "sdk-math-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "calculations",
+                "query": {
+                  "method": "eda.sys_Math.contains",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -32589,17 +32682,40 @@
         }
       ],
       "reviewedRuntimeDeclaration": false,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.containsPoint is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
-        "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_calculate",
+          "selector": "eda.sys_Math.containsPoint",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON point arrays only, coordinates within +/-1e6, 3-128 distinct ring vertices, optional final closing duplicate. No holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. SDK ray casting classifies boundary points inconsistently; do not use this result as electrical connectivity or manufacturing clearance proof.",
+          "source": [
+            "sdk-math.ts",
+            "sdk-math-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-math.test.ts",
+            "sdk-math-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "calculations",
+                "query": {
+                  "method": "eda.sys_Math.containsPoint",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -32618,17 +32734,40 @@
         }
       ],
       "reviewedRuntimeDeclaration": false,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.distanceToPoint is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
-        "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_calculate",
+          "selector": "eda.sys_Math.distanceToPoint",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON point arrays only, coordinates within +/-1e6, 3-128 distinct ring vertices, optional final closing duplicate. No holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Returns zero for both interior and boundary points. Zero is not proof of boundary membership.",
+          "source": [
+            "sdk-math.ts",
+            "sdk-math-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-math.test.ts",
+            "sdk-math-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "calculations",
+                "query": {
+                  "method": "eda.sys_Math.distanceToPoint",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -32647,17 +32786,40 @@
         }
       ],
       "reviewedRuntimeDeclaration": false,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.getBBox is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
-        "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_calculate",
+          "selector": "eda.sys_Math.getBBox",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON point arrays only, coordinates within +/-1e6, 3-128 distinct ring vertices, optional final closing duplicate. No holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Extrema of the supplied point array only; no native primitive or curve bounds are read.",
+          "source": [
+            "sdk-math.ts",
+            "sdk-math-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-math.test.ts",
+            "sdk-math-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "calculations",
+                "query": {
+                  "method": "eda.sys_Math.getBBox",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -32676,17 +32838,40 @@
         }
       ],
       "reviewedRuntimeDeclaration": false,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.getCentroid is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
-        "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_calculate",
+          "selector": "eda.sys_Math.getCentroid",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON point arrays only, coordinates within +/-1e6, 3-128 distinct ring vertices, optional final closing duplicate. No holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. SDK signed-area centroid for one ring; nonfinite or out-of-bounds results refuse instead of becoming JSON null.",
+          "source": [
+            "sdk-math.ts",
+            "sdk-math-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-math.test.ts",
+            "sdk-math-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "calculations",
+                "query": {
+                  "method": "eda.sys_Math.getCentroid",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -32708,12 +32893,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.intersection is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
+        "code": "math-clipping-state-and-completion",
+        "reason": "sys_Math.intersection in installed API 0.3.50 delegates to clipping with shared mutable state and geometry-bearing console warnings. Its point-array normalization leaves open rings unclosed. No bounded adapter is implemented for this branch.",
+        "nextRequirement": "Define closed-ring and topology semantics, clipping complexity/output bounds and scoped failure reporting without global logger replacement. Review the full clipping closure and add focused exact-SDK cases before exposing it; the eleven simple calculations do not admit this branch.",
         "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
+          "docs/sys-math-implementation-review-2026-10-13.md",
+          "sdk-math.ts"
         ]
       },
       "completeDeclaredContractSupported": false,
@@ -32737,12 +32922,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.intersects is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
+        "code": "math-clipping-state-and-completion",
+        "reason": "sys_Math.intersects in installed API 0.3.50 delegates to clipping with shared mutable state and geometry-bearing console warnings. Its point-array normalization leaves open rings unclosed. No bounded adapter is implemented for this branch.",
+        "nextRequirement": "Define closed-ring and topology semantics, clipping complexity/output bounds and scoped failure reporting without global logger replacement. Review the full clipping closure and add focused exact-SDK cases before exposing it; the eleven simple calculations do not admit this branch.",
         "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
+          "docs/sys-math-implementation-review-2026-10-13.md",
+          "sdk-math.ts"
         ]
       },
       "completeDeclaredContractSupported": false,
@@ -32763,17 +32948,40 @@
         }
       ],
       "reviewedRuntimeDeclaration": false,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.rotate is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
-        "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_calculate",
+          "selector": "eda.sys_Math.rotate",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON point arrays only, coordinates within +/-1e6, 3-128 distinct ring vertices, optional final closing duplicate. No holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Degrees, positive counterclockwise. Supply both center coordinates or neither; neither uses the SDK centroid.",
+          "source": [
+            "sdk-math.ts",
+            "sdk-math-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-math.test.ts",
+            "sdk-math-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "calculations",
+                "query": {
+                  "method": "eda.sys_Math.rotate",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -32792,17 +33000,40 @@
         }
       ],
       "reviewedRuntimeDeclaration": false,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.scale is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
-        "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_calculate",
+          "selector": "eda.sys_Math.scale",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON point arrays only, coordinates within +/-1e6, 3-128 distinct ring vertices, optional final closing duplicate. No holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Omitted scaleY uses scaleX. Zero/negative factors are allowed and may collapse/reflect output. Both center coordinates or neither are required.",
+          "source": [
+            "sdk-math.ts",
+            "sdk-math-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-math.test.ts",
+            "sdk-math-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "calculations",
+                "query": {
+                  "method": "eda.sys_Math.scale",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -32824,12 +33055,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.subtract is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
+        "code": "math-clipping-state-and-completion",
+        "reason": "sys_Math.subtract in installed API 0.3.50 delegates to clipping with shared mutable state and geometry-bearing console warnings. Its point-array normalization leaves open rings unclosed. No bounded adapter is implemented for this branch.",
+        "nextRequirement": "Define closed-ring and topology semantics, clipping complexity/output bounds and scoped failure reporting without global logger replacement. Review the full clipping closure and add focused exact-SDK cases before exposing it; the eleven simple calculations do not admit this branch.",
         "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
+          "docs/sys-math-implementation-review-2026-10-13.md",
+          "sdk-math.ts"
         ]
       },
       "completeDeclaredContractSupported": false,
@@ -32850,17 +33081,40 @@
         }
       ],
       "reviewedRuntimeDeclaration": false,
-      "status": "omitted",
-      "routes": [],
-      "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.translate is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
-        "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
-        ]
-      },
+      "status": "implemented-public-subset",
+      "routes": [
+        {
+          "tool": "easyeda_control_calculate",
+          "selector": "eda.sys_Math.translate",
+          "implementation": "public-method",
+          "scope": "Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. API 0.3.50 implementation only, separately hash-admitted; absent from the old reviewed 0.2.53 runtime. Source implementation and offline tests are not connected validation. Strict finite JSON point arrays only, coordinates within +/-1e6, 3-128 distinct ring vertices, optional final closing duplicate. No holes, groups, curves, native handles, callbacks or arbitrary SDK paths. Calculations use supplied coordinate units without unit conversion. No document, project, viewport, selection, shared setting, file, network, Save or CAD mutation is involved. JSON Schema omits geometric and paired-center refinements; use the exact argument validator. SDK floating-point results are observations, not exact geometric, electrical or manufacturing guarantees. Returns a new point array, preserving supplied point order and closure representation; does not move CAD objects.",
+          "source": [
+            "sdk-math.ts",
+            "sdk-math-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "sdk-math.test.ts",
+            "sdk-math-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "calculations",
+                "query": {
+                  "method": "eda.sys_Math.translate",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        }
+      ],
+      "omission": null,
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",
       "runtimeAdmission": "not-granted-by-inventory"
@@ -32882,12 +33136,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.union is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
+        "code": "math-clipping-state-and-completion",
+        "reason": "sys_Math.union in installed API 0.3.50 delegates to clipping with shared mutable state and geometry-bearing console warnings. Its point-array normalization leaves open rings unclosed. No bounded adapter is implemented for this branch.",
+        "nextRequirement": "Define closed-ring and topology semantics, clipping complexity/output bounds and scoped failure reporting without global logger replacement. Review the full clipping closure and add focused exact-SDK cases before exposing it; the eleven simple calculations do not admit this branch.",
         "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
+          "docs/sys-math-implementation-review-2026-10-13.md",
+          "sdk-math.ts"
         ]
       },
       "completeDeclaredContractSupported": false,
@@ -32911,12 +33165,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "not-in-reviewed-runtime",
-        "reason": "sys_Math.xor is declared only by the newer official reference and is absent from the pinned installed declaration.",
-        "nextRequirement": "Review and admit a newer installed implementation, then implement and test a scoped adapter; changing a declaration checksum does not admit a runtime.",
+        "code": "math-clipping-state-and-completion",
+        "reason": "sys_Math.xor in installed API 0.3.50 delegates to clipping with shared mutable state and geometry-bearing console warnings. Its point-array normalization leaves open rings unclosed. No bounded adapter is implemented for this branch.",
+        "nextRequirement": "Define closed-ring and topology semantics, clipping complexity/output bounds and scoped failure reporting without global logger replacement. Review the full clipping closure and add focused exact-SDK cases before exposing it; the eleven simple calculations do not admit this branch.",
         "evidence": [
-          "reviewed-compatibility.json",
-          "extension-api-catalog-data.ts"
+          "docs/sys-math-implementation-review-2026-10-13.md",
+          "sdk-math.ts"
         ]
       },
       "completeDeclaredContractSupported": false,

@@ -46,7 +46,7 @@ async function assertNoModuleAncestor(path: string): Promise<void> {
   }
 }
 
-async function fixture(context: TestContext): Promise<BundledFixture> {
+async function fixture(context: TestContext, calculationOnly = false): Promise<BundledFixture> {
   // Use a filesystem outside the checkout, independent of an ambient TMPDIR.
   const root = await mkdtemp("/tmp/easyeda-bundled-startup-");
   context.after(async () => { await rm(root, { recursive: true, force: true }); });
@@ -56,8 +56,10 @@ async function fixture(context: TestContext): Promise<BundledFixture> {
   const upstreamRoot = join(root, "metadata", "upstream");
   const assetsRoot = join(root, "metadata", "assets");
   const controlDirectory = join(root, "control");
+  const pcbVersion = calculationOnly ? "3.2.193.682ed44e" : "3.2.149.5378b690";
+  const apiVersion = calculationOnly ? "0.3.50.ab46409c" : "0.2.53.aee2f57a";
   for (const path of [distRoot, binRoot, join(upstreamRoot, "dist"),
-    join(assetsRoot, "pro-pcb", "3.2.fixture", "js"), join(assetsRoot, "pro-api", "0.2.fixture"),
+    join(assetsRoot, "pro-pcb", pcbVersion, "js"), join(assetsRoot, "pro-api", apiVersion),
   ]) { await mkdir(path, { recursive: true, mode: 0o700 }); }
   const bundle = join(distRoot, "server.mjs");
   await Promise.all([
@@ -69,9 +71,9 @@ async function fixture(context: TestContext): Promise<BundledFixture> {
   const upstreamMarker = join(root, "upstream-must-not-execute");
   await writeFile(join(upstreamRoot, "dist", "index.js"),
     `import { writeFileSync } from "node:fs"; writeFileSync(${JSON.stringify(upstreamMarker)}, "unexpected execution"); throw new Error("Synthetic upstream must never execute.");\n`);
-  const pcbBundle = join(assetsRoot, "pro-pcb", "3.2.fixture", "js", "pcb.js");
+  const pcbBundle = join(assetsRoot, "pro-pcb", pcbVersion, "js", "pcb.js");
   for (const path of [pcbBundle,
-    ...["api.js", "api-types.js", "api-types.d.ts"].map((name) => join(assetsRoot, "pro-api", "0.2.fixture", name)),
+    ...["api.js", "api-types.js", "api-types.d.ts"].map((name) => join(assetsRoot, "pro-api", apiVersion, name)),
   ]) { await writeFile(path, "synthetic installation metadata; never executed\n"); }
   const pinnedNode = await realpath(process.execPath);
   const bootstrapNode = join(root, "portable-bootstrap-node");
@@ -121,6 +123,43 @@ async function assertNoLiveStartup(options: BundledFixture, pid: number): Promis
 }
 
 void describe("self-contained packaged machine startup", () => {
+  void test("new configured generation exposes only calculation-mode tools without starting upstream", async (context) => {
+    const options = await fixture(context, true);
+    const transport = new StdioClientTransport({ command: options.bootstrapNode,
+      args: [options.bundle, "--machine-launch"], cwd: options.root, env: options.environment, stderr: "pipe" });
+    const client = new Client({ name: "calculation-mode-startup-test", version: "1.0.0" }, { capabilities: {} });
+    context.after(async () => { await client.close(); });
+    await client.connect(transport, { timeout: 15_000, maxTotalTimeout: 15_000 });
+    const pid = transport.pid; assert.ok(pid !== null);
+    const listed = await client.listTools();
+    assert.deepEqual(listed.tools.map((tool) => tool.name).toSorted(), [
+      "easyeda_control_api", "easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_status",
+    ]);
+    const catalog = await api(client, { action: "calculations", query: { includeSchemas: true } });
+    assert.equal(catalog["total"], 11); assert.equal(catalog["invocationEnabledByDiscovery"], false);
+    const valid = await api(client, { action: "calculate-validate", query: { request: {
+      method: "eda.sys_Math.calculateArea", arguments: { polygon: [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 0, y: 10 }] },
+    } } });
+    assert.equal(valid["valid"], true); assert.equal(valid["executionAuthorized"], false);
+    const discovery = await client.callTool({ name: "easyeda_control_discover", arguments: { query: "pcb", mode: "all" } });
+    assert.notEqual(discovery.isError, true);
+    const entries = record(discovery.structuredContent)["value"];
+    assert.ok(Array.isArray(entries) && entries.length > 0);
+    for (const entry of entries) { assert.equal(record(entry)["availability"], "unavailable"); assert.equal(record(entry)["facadeTool"], null); }
+    for (const name of ["easyeda_control_design", "easyeda_control_read", "easyeda_control_runtime", "easyeda_control_native_ui"]) {
+      const refused = await client.callTool({ name, arguments: {} }); assert.equal(refused.isError, true);
+    }
+    const invalid = await client.callTool({ name: "easyeda_control_calculate", arguments: {
+      request: { method: "eda.sys_Math.calculateArea", arguments: { polygon: [] } }, expectedFingerprint: {},
+    } });
+    assert.equal(invalid.isError, true);
+    const live = await client.callTool({ name: "easyeda_control_discover", arguments: { source: "live" } });
+    assert.equal(live.isError, true);
+    await assertNoLiveStartup(options, pid);
+    await client.close();
+    assert.deepEqual(await readdir(options.controlDirectory), ["machine-profile.json"]);
+  });
+
   void test("missing pinned installation keeps only offline tools available until a new process starts", async (context) => {
     const options = await fixture(context);
     const pcbBytes = await readFile(options.pcbBundle);
@@ -193,7 +232,7 @@ void describe("self-contained packaged machine startup", () => {
         [options.pinnedNode, options.bundle]);
       assert.equal(await readlink(`/proc/${pid}/cwd`), options.pluginRoot);
       const tools = await client.listTools();
-      assert.equal(tools.tools.length, 28);
+      assert.equal(tools.tools.length, 29);
       assert.equal(new Set(tools.tools.map((tool) => tool.name)).size, tools.tools.length);
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_api"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_sdk_read"));

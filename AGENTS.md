@@ -13,7 +13,38 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Scoped-release handoff
+### Current backlog slice: capability-scoped calculations
+
+PR10 is merged as main90f150622713499c114bd752325dca9d316278c7 and installed/
+enabled124500. Both PR and main CI passed. Do not repeat that delivery. The
+restarted actual MCP exposes the three offline-only tools because selected old
+assets are missing, not because the plugin is absent. The prior paragraph below
+about absent MCP tools is historical.
+
+Candidate135500 adds eleven fixed supplied-coordinate `sys_Math` calculations.
+It uses a separate app3.2.206/API0.3.50 compatibility profile and restricts new or
+unknown configured tuples to four tools. The old global external pins and every
+native design subprofile remain unchanged. Five clipping methods have concrete
+implementation backlog in `docs/sys-math-implementation-review-2026-10-13.md`.
+The explicit profile-upgrade helper preserves an exact backup and changes only
+the PCB/API selectors in the same control root after exact installed hash checks.
+Do not hand-edit the profile or start another facade to bypass the offline owner.
+
+Release progress and final delivery receipt are tracked by
+`docs/calculation-scope-release-2026-10-13.md` and
+[PR11](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/11).
+Local checks pass231 focused tests and424 bridge tests. The earlier235 count
+included five suite containers; the later one-case addition verifies a corrected
+legacy fixture after CI caught its missing version selection. Runtime assertions
+and source/bundle projections are unchanged by that test-only correction.
+Source tests and packaged offline
+checks do not establish connected math execution. At this pre-delivery snapshot,
+no profile migration, CAD/UI/Save call, journal recovery, bridge import or live
+calculation occurred. Production designs and their records remain untouched.
+The existing C10 request remains consumed. Fresh installed ownership is required
+after migration; never terminate the host-owned facade or reuse a new data root.
+
+### Historical scoped-release handoff
 
 Superseded for current work by the user's new request, "continue with the
 backlog." The scoped release below was merged through PR9 as main600ea457 and
