@@ -45,6 +45,18 @@ termination permits another uniquely identified launch. An unresolved attempt
 after facade restart stays blocked because the original handles are gone; do not
 delete its records or switch control roots.
 
+For a named historical launch, `observe-application` is a read-only diagnostic
+available even after the original facade exits. It starts only the pinned
+diagnostic helper, takes two matching same-name process-presence samples, and
+rechecks the installation, journal and dispatch gate. No bridge is required.
+The result separates `historical` launch state from
+`application.sameNameProcessPresent`. Another installation can account for
+presence, and absence is not proof that the original root and Job terminated.
+All original-identity, retained-authority, termination and relaunch claims remain
+false. It writes no receipt and does not resolve the historical attempt. If the
+bridge remains disconnected and original handles are lost, retain that blocker;
+do not turn an absent process into permission to launch under a new ID.
+
 A launch reply does not establish bridge authentication. Check actual status
 separately. The existing native bridge can take roughly 45–60 seconds to detect
 a lost gateway, since its socket API has no close callback. One follow-up status

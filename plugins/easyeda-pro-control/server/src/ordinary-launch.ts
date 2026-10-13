@@ -29,6 +29,7 @@ const tokenSchema = z.string().regex(/^[a-f0-9]{32}$/u);
 export const ordinaryLaunchRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("launch"), operationId: operationIdSchema, confirmLaunch: z.literal(true), acceptExistingProfileEffects: z.literal(true) }).strict(),
   z.object({ action: z.literal("inspect"), operationId: operationIdSchema }).strict(),
+  z.object({ action: z.literal("observe-application"), operationId: operationIdSchema }).strict(),
   z.object({ action: z.literal("observe-termination"), operationId: operationIdSchema }).strict(),
 ]);
 export type OrdinaryLaunchRequest = z.infer<typeof ordinaryLaunchRequestSchema>;
@@ -39,13 +40,14 @@ const limitations = [
   "Ordinary startup may read project-list metadata, write preferences/cache/logs, contact services and run or update enabled extensions. Extension actions and persisted startup configuration are not prevented or qualified.",
   "A retained process launch is not bridge authentication, a verified Start Page, design admission or proof that no project file was accessed. No navigation, Save or forced termination is dispatched by this tool.",
   "One exclusive operation intent precedes dispatch. Unresolved attempts block further launches across restarts. Only a durable termination observation from the original retained Job permits another operation; lost ownership requires separate recovery, never PID-only adoption.",
+  "Application observation starts only the pinned diagnostic helper and samples same-name process presence twice. Presence may refer to another installation; absence does not prove original root or Job termination. It leaves historical launch state unchanged and grants no adoption or relaunch authority.",
 ] as const;
 const claims = { bridgeAuthentication: "not-observed", startPage: "not-observed", profileIsolated: false,
   startupQualified: false, projectArgumentsSupplied: false, designExecutionAuthorized: false } as const;
 
 export function queryOrdinaryLaunch(input: unknown = {}): Record<string, unknown> {
   const parsed = z.object({ includeSchemas: z.boolean().optional() }).strict().parse(input);
-  return { tool: "easyeda_control_launch", actions: ["launch", "inspect", "observe-termination"],
+  return { tool: "easyeda_control_launch", actions: ["launch", "inspect", "observe-application", "observe-termination"],
     effect: "ordinary-existing-profile-application-startup", profile: ORDINARY_LAUNCH_PROFILE,
     limitations, ...(parsed.includeSchemas === true ? { requestSchema: z.toJSONSchema(ordinaryLaunchRequestSchema) } : {}) };
 }
@@ -262,6 +264,7 @@ export class OrdinaryLaunchCoordinator {
       if (request.action === "inspect") { return describe(request.operationId, operation); }
       await this.options.assertAllowed();
       requireValue(!this.uncertain, "Ordinary launch ownership or publication is uncertain; do not retry.");
+      if (request.action === "observe-application") { return await this.observeApplication(request.operationId, operation, operations); }
       if (request.action === "observe-termination") { return await this.observe(request.operationId, operation); }
       requireValue(operation === undefined && operations.length < MAX_OPERATIONS, "Ordinary launch operation ID is consumed or inventory full.");
       requireValue(operations.every((candidate) => complete(candidate)), "An unresolved ordinary launch blocks another launch.");
@@ -307,6 +310,28 @@ export class OrdinaryLaunchCoordinator {
       }
       throw error;
     } finally { this.busy = false; }
+  }
+
+  private async observeApplication(operationId: string, operation: Operation | undefined, operations: Operation[]): Promise<Record<string, unknown>> {
+    requireValue(operation !== undefined, "Ordinary launch operation was not found.");
+    const facadeSha256 = digestSchema.parse(await this.verify(this.options));
+    await this.options.assertAllowed();
+    this.runtime ??= this.options.allocateRuntime({ expectedExecutableSha256: ORDINARY_LAUNCH_PROFILE.installedFiles[0].sha256,
+      expectedHelperSha256: ORDINARY_LAUNCH_PROFILE.helper.sha256, reviewedExecutionScopeSha256: facadeSha256 });
+    const runtime = this.runtime;
+    const presenceSchema = z.object({ running: z.boolean() }).strict();
+    const first = presenceSchema.parse(await runtime.observeExistingApplication());
+    await this.options.assertAllowed();
+    const second = presenceSchema.parse(await runtime.observeExistingApplication());
+    await this.options.assertAllowed();
+    requireValue(first.running === second.running, "Ordinary application presence changed between samples.");
+    requireValue(await this.verify(this.options) === facadeSha256, "Ordinary application observation installation changed.");
+    requireValue(canonicalJson(await inventory()) === canonicalJson(operations), "Ordinary application observation journal changed.");
+    await this.options.assertAllowed();
+    requireValue(this.runtime === runtime, "Ordinary application observation runtime changed.");
+    return { action: "observe-application", operationId, historical: describe(operationId, operation),
+      application: { sameNameProcessPresent: second.running, samples: 2, originalLaunchIdentityVerified: false,
+        retainedLaunchAuthority: false, terminationProved: false, relaunchAuthorized: false }, ...claims, limitations };
   }
 
   private async observe(operationId: string, operation: Operation | undefined): Promise<Record<string, unknown>> {

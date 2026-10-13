@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "55840a03815c56806faf6e9c3b97d4b6fd2da99299c87b5d2746aa152eccb554";
+const __easyedaBundlePairId = "fb84eb68baf8bdf801f908da81900c8c0e5bb80fa1417587a360fdb8b0d7e98a";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -91382,7 +91382,7 @@ function queryOrdinaryLaunch(input = {}) {
   const parsed2 = external_exports.object({ includeSchemas: external_exports.boolean().optional() }).strict().parse(input);
   return {
     tool: "easyeda_control_launch",
-    actions: ["launch", "inspect", "observe-termination"],
+    actions: ["launch", "inspect", "observe-application", "observe-termination"],
     effect: "ordinary-existing-profile-application-startup",
     profile: ORDINARY_LAUNCH_PROFILE,
     limitations: limitations5,
@@ -91604,13 +91604,15 @@ var init_ordinary_launch = __esm({
     ordinaryLaunchRequestSchema = external_exports.discriminatedUnion("action", [
       external_exports.object({ action: external_exports.literal("launch"), operationId: operationIdSchema, confirmLaunch: external_exports.literal(true), acceptExistingProfileEffects: external_exports.literal(true) }).strict(),
       external_exports.object({ action: external_exports.literal("inspect"), operationId: operationIdSchema }).strict(),
+      external_exports.object({ action: external_exports.literal("observe-application"), operationId: operationIdSchema }).strict(),
       external_exports.object({ action: external_exports.literal("observe-termination"), operationId: operationIdSchema }).strict()
     ]);
     limitations5 = [
       "Starts the existing EasyEDA profile with no project arguments, flags or caller-selected code. This is not an isolated or startup-qualified profile.",
       "Ordinary startup may read project-list metadata, write preferences/cache/logs, contact services and run or update enabled extensions. Extension actions and persisted startup configuration are not prevented or qualified.",
       "A retained process launch is not bridge authentication, a verified Start Page, design admission or proof that no project file was accessed. No navigation, Save or forced termination is dispatched by this tool.",
-      "One exclusive operation intent precedes dispatch. Unresolved attempts block further launches across restarts. Only a durable termination observation from the original retained Job permits another operation; lost ownership requires separate recovery, never PID-only adoption."
+      "One exclusive operation intent precedes dispatch. Unresolved attempts block further launches across restarts. Only a durable termination observation from the original retained Job permits another operation; lost ownership requires separate recovery, never PID-only adoption.",
+      "Application observation starts only the pinned diagnostic helper and samples same-name process presence twice. Presence may refer to another installation; absence does not prove original root or Job termination. It leaves historical launch state unchanged and grants no adoption or relaunch authority."
     ];
     claims = {
       bridgeAuthentication: "not-observed",
@@ -91680,6 +91682,9 @@ var init_ordinary_launch = __esm({
           }
           await this.options.assertAllowed();
           requireValue14(!this.uncertain, "Ordinary launch ownership or publication is uncertain; do not retry.");
+          if (request2.action === "observe-application") {
+            return await this.observeApplication(request2.operationId, operation, operations);
+          }
           if (request2.action === "observe-termination") {
             return await this.observe(request2.operationId, operation);
           }
@@ -91744,6 +91749,42 @@ var init_ordinary_launch = __esm({
         } finally {
           this.busy = false;
         }
+      }
+      async observeApplication(operationId2, operation, operations) {
+        requireValue14(operation !== void 0, "Ordinary launch operation was not found.");
+        const facadeSha256 = digestSchema.parse(await this.verify(this.options));
+        await this.options.assertAllowed();
+        this.runtime ??= this.options.allocateRuntime({
+          expectedExecutableSha256: ORDINARY_LAUNCH_PROFILE.installedFiles[0].sha256,
+          expectedHelperSha256: ORDINARY_LAUNCH_PROFILE.helper.sha256,
+          reviewedExecutionScopeSha256: facadeSha256
+        });
+        const runtime = this.runtime;
+        const presenceSchema = external_exports.object({ running: external_exports.boolean() }).strict();
+        const first = presenceSchema.parse(await runtime.observeExistingApplication());
+        await this.options.assertAllowed();
+        const second = presenceSchema.parse(await runtime.observeExistingApplication());
+        await this.options.assertAllowed();
+        requireValue14(first.running === second.running, "Ordinary application presence changed between samples.");
+        requireValue14(await this.verify(this.options) === facadeSha256, "Ordinary application observation installation changed.");
+        requireValue14(canonicalJson(await inventory()) === canonicalJson(operations), "Ordinary application observation journal changed.");
+        await this.options.assertAllowed();
+        requireValue14(this.runtime === runtime, "Ordinary application observation runtime changed.");
+        return {
+          action: "observe-application",
+          operationId: operationId2,
+          historical: describe3(operationId2, operation),
+          application: {
+            sameNameProcessPresent: second.running,
+            samples: 2,
+            originalLaunchIdentityVerified: false,
+            retainedLaunchAuthority: false,
+            terminationProved: false,
+            relaunchAuthorized: false
+          },
+          ...claims,
+          limitations: limitations5
+        };
       }
       async observe(operationId2, operation) {
         requireValue14(operation !== void 0, "Ordinary launch operation was not found.");
@@ -118893,8 +118934,8 @@ var init_src = __esm({
     registerFacadeTool(
       "easyeda_control_launch",
       {
-        title: "Launch the reviewed EasyEDA application",
-        description: "Launch the exact reviewed EasyEDA executable with no arguments in its existing profile. Requires explicit launch/profile-effect confirmations and a unique operation ID. Ordinary startup can load extensions/project lists, use the network and write preferences/cache; it is not an isolated or project-free session. Journals before dispatch, retains Windows root/Job handles, and never retries an uncertain attempt. Inspect retained state or observe termination without closing, killing, opening a design, saving or discarding. Lost handles leave unresolved attempts blocked across restart. Use offline launch/launch-validate first. Successful launch is not bridge authentication or Start Page observation.",
+        title: "Launch or observe the reviewed EasyEDA application",
+        description: "Launch the exact reviewed EasyEDA executable with no arguments in its existing profile. Requires explicit launch/profile-effect confirmations and a unique operation ID. Ordinary startup can load extensions/project lists, use the network and write preferences/cache; it is not an isolated or project-free session. Journals before dispatch, retains Windows root/Job handles, and never retries an uncertain attempt. Inspect history, observe original retained termination, or use observe-application with an existing operation ID for two same-name process-presence samples. Presence observation starts only the pinned diagnostic helper; it does not bind the original root/Job, alter history or authorize relaunch. Lost handles leave unresolved attempts blocked across restart. No close, kill, design open, Save or discard. Use offline launch/launch-validate first. Successful launch is not bridge authentication or Start Page observation.",
         inputSchema: { request: external_exports.unknown().pipe(ordinaryLaunchRequestSchema) },
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
       },
