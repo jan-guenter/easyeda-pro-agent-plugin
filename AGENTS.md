@@ -36,7 +36,25 @@ Five focused recovery tests,75 existing admission tests and50 existing recovery
 tests pass. Candidate084617 passes both types, full strict zero-warning lint,
 build, compatibility, coverage, skill, package and repository/privacy checks.
 Source298 projection264de3df/bundle70725d78; external pins/native DLL unchanged.
-No real abandonment, publication or installation has occurred yet; CI is pending.
+Payloadc2412d6244a1727c226edaba74022ef555edf473 is published. CI38373488073
+attempt2 passes all10 jobs:9,719 facade passes/five skips/zero failures and424
+bridge passes. Initial shard7 hit the unchanged synthetic hover test's15s timeout;
+it passed locally and on the one failed-only CI rerun without any source, timeout
+or assertion changes. Official Git-marketplace084617 is installed/enabled from
+the feature ref. The installer returned a cache-backup permission error, but
+subsequent CLI discovery and complete installed verification pass. No manual
+cache repair, reinstall or owner termination was needed; old074635 remains.
+All1,104files/21,542,797bytes and committed modes match tested tree
+091958adfbd841393c692e7161e779d5f0a186db before/after offline startup.
+Inventory4b21754f5ae658ba447592ca03af520604bf3cf8218e880d2e46bfd9e00bc061,
+proof1b9eae063d793a7183b373a587098365bdb97a27316c42c5c841d6f7c176e5c2.
+Configured ambientNode26 hands off to pinned24;27tools/sevenskills, original
+offline child closure, no observed upstream/socket and no tool/live calls.
+Actual4098283 still loads074635. Start a fresh host before the public abandonment
+action. No real abandonment has occurred; ordinary writer integration and the
+other blocked lifecycles remain unfinished. PR9 is draft, not main-ready.
+Final root-documentation recording leaves the tested plugin tree unchanged and
+skips duplicate CI; it does not claim any skipped check passed.
 Do not retry the consumed validation request or delete its claim.
 
 ### Previous release checkpoint: 074635

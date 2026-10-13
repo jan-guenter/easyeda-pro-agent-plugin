@@ -27,13 +27,13 @@ The first public disposable run stopped before project navigation or editing:
 upstream rejected a marker read whose transport confirmation was missing. Source
 now corrects that flag and the two other affected fixed probes. Full connected
 completion remains unproved; the attempt is never retried.
-Ordinary editing gates remain. Candidate084617 also adds evidence-preserving
+Ordinary editing gates remain. Installed084617 also adds evidence-preserving
 abandonment for this exact pre-navigation refusal; it does not authorize retry.
 See the [transport correction and remaining scope](docs/api-coverage-084617-release-2026-10-13.md).
-The installed074635 catalog has27 tools. This release fixes native16-hex document identity
-handling throughout the closed-symbol workflow and exact duplicate structure-row
-verification. It does not enable the blocked writers. See the
-[focused release and remaining tasks](docs/api-coverage-074635-release-2026-10-13.md).
+The installed084617 catalog has27 tools. It retains074635's native16-hex document
+identity handling and exact duplicate structure-row verification. These changes
+do not enable the blocked writers. See the
+[preceding integration corrections](docs/api-coverage-074635-release-2026-10-13.md).
 Start a fresh Codex host after updating.
 `easyeda_control_api` exposes 93 reviewed
 namespaces / 749 declared signatures and 99 latest official namespaces / 806

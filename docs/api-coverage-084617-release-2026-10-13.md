@@ -45,9 +45,37 @@ bundle projection is
 `70725d78d67a28c70a27b6bc7e045b0c8009f69b9cc0dac0c3e0376c763cf4f6`.
 External pins and the native DLL are unchanged.
 
-CI, publication and installation are pending. The currently loaded host still
-uses074635. No real abandonment has occurred. Do not use source changes to bypass
-that host or rewrite its retained journal.
+Payload `c2412d6244a1727c226edaba74022ef555edf473` is published on the feature
+branch. CI38373488073 passes verify-build, including strict lint, audits and
+reproducibility. Its first attempt's shard7 hit the existing15-second deadline
+in the unchanged managed-double PowerShell hover test, with no stdout/stderr
+or assertion failure. The two hover tests pass locally unchanged in5.25 seconds.
+No timeout, assertion or production guard was relaxed. Attempt2 reran only the
+failed shard and aggregate gate: the hover test passed in2.04 seconds and all10
+jobs are green. The final suite totals9,719 facade passes/five skips/zero failures
+and424 bridge passes. See [CI38373488073](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38373488073).
+The official CLI refreshed the Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git` on the feature ref.
+Its install command returned a cache-backup permission error. Subsequent CLI
+discovery reports084617 installed and enabled, and complete installed verification
+passes. No manual cache editing, reinstall or owner termination occurred; the old
+074635 cache remains. The installer error is retained, not reported as success.
+
+All1,104 files,21,542,797 bytes and committed modes match tested plugin tree
+`091958adfbd841393c692e7161e779d5f0a186db`, with no extras or probe-time changes.
+Inventory SHA256 is
+`4b21754f5ae658ba447592ca03af520604bf3cf8218e880d2e46bfd9e00bc061`;
+installation proof SHA256 is
+`1b9eae063d793a7183b373a587098365bdb97a27316c42c5c841d6f7c176e5c2`.
+Configured offline startup hands ambientNode26 to pinnedNode24, lists27 tools
+and seven skills, and closes its original child. No upstream child or non-stdio
+socket was observed; no tool, native helper, gateway or live call was invoked.
+
+The currently loaded host still uses074635. Start a fresh host before the public
+abandonment action. No real abandonment has occurred. Do not use source changes
+to bypass that host or rewrite its retained journal. Final root-only release
+documentation does not change the tested plugin tree and skips duplicate CI;
+it does not represent skipped checks as passed.
 
 ## Remaining scope
 

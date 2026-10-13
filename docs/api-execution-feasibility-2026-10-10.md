@@ -29,9 +29,9 @@ These are remaining implementation or investigation tasks, not proof that the
 native API cannot perform them. This release does not complete every feasible
 SDK method.
 
-## Current restriction, October 13, installed 074635
+## Current restriction, October 13, installed 084617
 
-Installed `0.3.0+codex.20261013074635` and current source block all
+Installed `0.3.0+codex.20261013084617` and current source block all
 schematic-page, symbol and PCB design transactions, including previously
 narrow display and wire profiles.
 Eight symbol/page/container metadata operations are also blocked. Source review
@@ -41,7 +41,9 @@ The exact affected operations and implementation requirements are in the
 [030626 report](api-coverage-030626-release-2026-10-12.md) and
 [native completion investigation](project-structure-save-completion-2026-10-12.md);
 the [074635 release report](api-coverage-074635-release-2026-10-13.md) records the
-current package's document-ID and duplicate structure-row corrections.
+retained document-ID and duplicate structure-row corrections. The
+[084617 release report](api-coverage-084617-release-2026-10-13.md) records fixed
+probe transport and exact pre-navigation abandonment; it enables no new writer.
 
 Internal completion code and the separate disposable-validation tool have not
 restored these editing routes. Each route still needs operation-owned integration
