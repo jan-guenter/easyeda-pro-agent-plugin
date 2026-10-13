@@ -36,8 +36,11 @@ API schema/handler serves both entrypoints. Declaration parsing now retains
 inline object-type signatures instead of silently truncating them. Retained
 749/806 signatures are unchanged. No new live adapter or writer is enabled.
 Release progress belongs in `docs/offline-startup-release-2026-10-13.md`.
-No CAD, Save, fixture setup, C10 abandonment, profile or installed-cache change
-has occurred in this continuation. The stopped C10 request remains consumed.
+The [PR10 delivery receipt](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/10)
+records final CI, merge and installation results. Consult it before repeating a
+release action. At this pre-delivery snapshot, no CAD, Save, fixture setup, C10
+abandonment, profile or installed-cache change has occurred in this continuation.
+The stopped C10 request remains consumed.
 Production designs and their records must remain untouched.
 
 ### Previous scoped-release handoff

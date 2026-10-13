@@ -1,6 +1,6 @@
 # Upgrade-resilient offline startup
 
-Candidate: `0.3.0+codex.20261013124500`.
+Version: `0.3.0+codex.20261013124500`.
 
 The backlog continuation found an application upgrade before any live work.
 The configured old PCB and API files are absent. EasyEDA's assets root itself
@@ -57,9 +57,11 @@ A second build reproduces both committed JavaScript bundles byte-for-byte.
 Dependency audit reports zero vulnerabilities, 151 verified registry signatures
 and 40 verified attestations.
 
-Publication and installation are pending. The delivery receipt will record
-exact-payload CI and installation results. Existing full regression suites
-remain in GitHub CI; this work does not add a broad test matrix.
+This is the pre-delivery snapshot. The
+[PR10 delivery receipt](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/10)
+records exact-payload CI, protected merge and installation results. Consult it
+before repeating those actions. Existing full regression suites remain in
+GitHub CI; this work does not add a broad test matrix.
 
 ## Remaining backlog
 

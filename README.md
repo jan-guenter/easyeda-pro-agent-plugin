@@ -19,7 +19,7 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Release candidate `0.3.0+codex.20261013124500` retains 28 normal-mode tools and
+Update `0.3.0+codex.20261013124500` retains 28 normal-mode tools and
 seven skills. When a trusted machine profile selects missing or invalid external
 installation files, startup instead exposes three offline-only tools: API
 reference, local discovery and bounded startup status. Live execution and
