@@ -32,7 +32,7 @@ the separately reviewed connection/calculation closure and migration.
 Focused adapter and runtime tests use synthetic SDKs and fingerprints. The
 packaged-startup check proves the four-tool registration, offline discovery,
 argument refusal and absence of upstream startup. It does not connect to EasyEDA.
-Local verification passes 230 focused tests and all 424 bridge tests, full
+Local verification passes 231 focused tests and all 424 bridge tests, full
 facade/bridge types and strict zero-warning lint, package/repository/privacy
 checks, all seven skill validators and dependency audits. Source projection311
 is `a230862cb3e50933b95ec8813c3db51659b73047fb65895bc1f0b1ac1740b1aa`;
@@ -43,6 +43,11 @@ GitHub CI remain release gates. Final CI counts, commit, protected merge and off
 Git-marketplace installation results will be recorded in the
 [PR11 delivery receipt](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/11)
 before handoff.
+
+The first completed CI shard failure was an older direct-index test fixture
+without explicit legacy version selection. Its two environment fields now name
+the older tuple; assertions and runtime guards are unchanged. The focused case
+passes. This test-only correction does not change either source/runtime projection.
 
 No CAD/UI/Save, project access, shared-preference edit, bridge import or journal
 recovery is part of this release. No connected calculation has been validated.

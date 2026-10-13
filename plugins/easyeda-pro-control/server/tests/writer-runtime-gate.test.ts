@@ -35,6 +35,8 @@ void test("local discovery and the disabled writer gate work before upstream con
     cwd: pluginRoot,
     env: {
       ...process.env,
+      EASYEDA_PCB_BUNDLE_VERSION: "3.2.149.5378b690",
+      EASYEDA_PUBLIC_API_BUNDLE_VERSION: "0.2.53.aee2f57a",
       EASYEDA_CONTROL_DATA_DIR: join(fixtureRoot, "control"),
       EASYEDA_UPSTREAM_ARGS_JSON: "[]",
       EASYEDA_UPSTREAM_COMMAND: join(fixtureRoot, "must-not-execute"),

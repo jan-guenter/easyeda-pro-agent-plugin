@@ -33,8 +33,11 @@ Do not hand-edit the profile or start another facade to bypass the offline owner
 Release progress and final delivery receipt are tracked by
 `docs/calculation-scope-release-2026-10-13.md` and
 [PR11](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/11).
-Local checks pass230 focused tests and424 bridge tests; the earlier235 count
-included five suite containers. Source tests and packaged offline
+Local checks pass231 focused tests and424 bridge tests. The earlier235 count
+included five suite containers; the later one-case addition verifies a corrected
+legacy fixture after CI caught its missing version selection. Runtime assertions
+and source/bundle projections are unchanged by that test-only correction.
+Source tests and packaged offline
 checks do not establish connected math execution. At this pre-delivery snapshot,
 no profile migration, CAD/UI/Save call, journal recovery, bridge import or live
 calculation occurred. Production designs and their records remain untouched.
