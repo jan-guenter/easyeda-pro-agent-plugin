@@ -4,8 +4,10 @@ const DIAGNOSTIC_PREFIX = "Project upload barrier refused: ";
 const diagnosticStages = new Set(["HOST", "INITIAL_PROJECT", "UPLOAD", "ACKNOWLEDGMENT", "FINAL_PROJECT"]);
 const diagnosticCodes = new Set(["EXCEPTION", "DEVICE_NATIVE_HOST_AMBIGUOUS", "DEVICE_NATIVE_BUS_MISSING", "PROJECT_UPLOAD_SCOPE_DRIFT", "PROJECT_UPLOAD_BARRIER_REFUSED"]);
 
-/** Read-only wait for native project-worker writes already queued by a prior
- * save. It neither saves current editor changes nor forces an upload.
+/** Read-only wait for the native project worker's task1 upload set. It neither
+ * Saves editor changes nor forces an upload. It does not drain the structure
+ * Timer, later task2 work or task3 sync. Its legacy receipt field is not a
+ * Complete project-write settlement witness.
  * pro-mgr.js 2045084 -> 1757499; project-worker.js 2019560 -> 2117636.
  * The diagnostic wrapper preserves every await and guard. It emits only a
  * fixed stage/code pair, never native exception text or project identifiers.
@@ -51,6 +53,7 @@ export function projectUploadBarrierFailureCategory(message: unknown): string | 
 export interface ProjectUploadBarrierReceipt extends Record<string, unknown> {
   profile: "easyeda-pro-control.project-upload-barrier.v1";
   projectUuid: string;
+  /** Legacy v1 name: only the native task1 wait was acknowledged. */
   scheduledWritesSettled: true;
   savedEditorChanges: false;
 }

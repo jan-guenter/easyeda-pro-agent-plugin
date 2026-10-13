@@ -1,0 +1,37 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { fixture } from "./closed-symbol-coordinator-fixture.ts";
+import { ClosedSymbolTerminalStage, assertOriginalClosedSymbolCompletion, inspectClosedSymbolTerminal } from "../../src/closed-symbol-terminal.ts";
+import { loadClosedSymbolHistoricalPhaseJournal } from "../../src/closed-symbol-journal.ts";
+import { readFile } from "node:fs/promises";
+import { operationPath } from "../../src/artifacts.ts";
+import { sha256Json } from "../../src/core.ts";
+
+void test("original full locked flow terminalizes once and historical replay grants no live authority", async (context) => {
+  const f = await fixture(context), full = await f.stage.recordFullEvidence(f.plan);
+  const stage = new ClosedSymbolTerminalStage(f.engine, f.machine);
+  const initial = await inspectClosedSymbolTerminal(full.operationId, f.machine);
+  assert.equal(initial.classification, "evidence-only");
+  await assert.rejects(stage.complete(structuredClone(full)), /original/iu);
+  const before = [...f.events];
+  const result = await stage.complete(full);
+  assertOriginalClosedSymbolCompletion(result, f.engine, full.operationId);
+  assert.equal(result.completionProved, true); assert.equal(result.saved, false); assert.equal(result.reopened, false);
+  assert.deepEqual(f.events, before);
+  assert.throws(() => { assertOriginalClosedSymbolCompletion(structuredClone(result), f.engine, full.operationId); }, /original/iu);
+  await assert.rejects(stage.complete(full), /cannot repeat/u);
+  const loaded = await loadClosedSymbolHistoricalPhaseJournal(full.operationId);
+  assert.equal(loaded.journal.state, "closed-session-completed"); assert.equal(loaded.terminalOutcomeVerified, false);
+  const bytes = await readFile(operationPath(full.operationId));
+  const inspectionStarted = performance.now();
+  const historical = await inspectClosedSymbolTerminal(full.operationId, f.machine);
+  context.diagnostic(`Synthetic retained-graph historical inspection: ${(performance.now() - inspectionStarted).toFixed(1)} ms; no native runtime calls.`);
+  assert.equal(historical.classification, "historical-completion-verified");
+  assert.equal(historical.historicalCompletionRecorded, true); assert.equal(historical.terminalOutcomeVerified, true);
+  assert.equal(historical.liveOriginalCompletionProved, false); assert.equal(historical.currentSourceChecked, false);
+  assert.equal(historical.currentOwnershipChecked, false); assert.equal(historical.authorityRestored, false);
+  assert.equal(historical.executionAuthorized, false); assert.equal(historical.replayAllowed, false);
+  assert.equal(historical.storedJournalSha256, loaded.journal["journalSha256"]);
+  assert.equal(historical.entireStoredJournalSha256, sha256Json(loaded.journal));
+  assert.deepEqual(await readFile(operationPath(full.operationId)), bytes); assert.deepEqual(f.events, before);
+});

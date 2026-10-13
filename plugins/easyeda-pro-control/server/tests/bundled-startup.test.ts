@@ -138,23 +138,41 @@ void describe("self-contained packaged machine startup", () => {
         [options.pinnedNode, options.bundle]);
       assert.equal(await readlink(`/proc/${pid}/cwd`), options.pluginRoot);
       const tools = await client.listTools();
-      assert.equal(tools.tools.length, 25);
-      assert.equal(new Set(tools.tools.map((tool) => tool.name)).size, 25);
+      assert.equal(tools.tools.length, 28);
+      assert.equal(new Set(tools.tools.map((tool) => tool.name)).size, tools.tools.length);
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_api"));
+      assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_sdk_read"));
+      assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_validate_closed_symbol"));
+      assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_symbol_metadata"));
       for (const [reference, methods] of [["reviewed-installed", 749], ["official-latest", 806]] as const) {
         const sdk = await api(client, { action: "sdk", query: { reference, namespace: "sys_WebSocket", limit: 1, detail: true } });
         assert.equal(sdk["invocationEnabled"], false);
         assert.equal(record(sdk["totals"])["methods"], methods);
       }
-      for (const [family, total] of [["design", 105], ["library", 68]] as const) {
+      for (const [family, total] of [["design", 108], ["library", 68]] as const) {
         const operations = await api(client, { action: "operations", query: { family, limit: 1, includeSchemas: true } });
         assert.equal(operations["total"], total);
         assert.equal(operations["executionAuthorized"], false);
       }
+      const coverage = await api(client, { action: "coverage", query: { search: "pcb_PrimitivePad.get", detail: true } });
+      assert.equal(record(coverage["summary"])["totalDistinctMethods"], 774);
+      assert.equal(coverage["invocationEnabled"], false);
+      const sdkReads = await api(client, { action: "sdk-reads", query: { method: "eda.pcb_PrimitivePad.get", includeSchemas: true } });
+      assert.equal(sdkReads["matched"], 1);
+      assert.equal(sdkReads["executionAuthorized"], false);
+      const sdkValidated = await api(client, { action: "sdk-validate", query: { request: {
+        method: "eda.sys_Environment.getEditorCurrentVersion", arguments: {},
+      } } });
+      assert.equal(sdkValidated["valid"], true);
+      assert.equal(sdkValidated["nativePreflightPerformed"], false);
       const validated = await api(client, { action: "validate", query: { family: "design",
         operation: { id: "pose", action: "pcb.component.modify", target: { primitiveId: "part" }, patch: { x: 10 } } } });
       assert.equal(validated["valid"], true);
       assert.equal(validated["executionAuthorized"], false);
+      const invalidSdkRead = await client.callTool({ name: "easyeda_control_sdk_read", arguments: {
+        request: { method: "sys_FileSystem.writeFile", code: "caller supplied code" },
+      } }, undefined, { timeout: 10_000, maxTotalTimeout: 10_000 });
+      assert.equal(invalidSdkRead.isError, true);
       await assertNoLiveStartup(options, pid);
       assert.equal(diagnostics.includes("ERR_MODULE_NOT_FOUND"), false);
       await client.close();

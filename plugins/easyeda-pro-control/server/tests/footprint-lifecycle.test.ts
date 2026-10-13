@@ -10,8 +10,9 @@ const expected = { ...base, sha256: sha256Json(base) };
 const scope = { libraryUuid: "collection", metadataOwnerUuid: "owner", footprintUuid: "footprint", footprintName: "Test" };
 const nativeSource = `${JSON.stringify({ type: "DOCHEAD" })}||${JSON.stringify({ ...body, client: "a".repeat(16), updateTime: 1, version: "1" })}|\n${JSON.stringify({ type: "ATTR", id: "name", ticket: 2 })}||${JSON.stringify(base.objects[0]?.body)}|\n`;
 
-async function execute(code: string, options: { source?: string; owner?: string; saved?: boolean; activation?: boolean | null; driftAfterActivation?: boolean } = {}): Promise<{ result: unknown; calls: string[] }> {
-  const calls: string[] = [];
+async function execute(code: string, options: { source?: string; owner?: string; saved?: boolean; activation?: boolean | null; driftAfterActivation?: boolean; preferences?: string; latePreferences?: string; calls?: string[] } = {}): Promise<{ result: unknown; calls: string[] }> {
+  const calls: string[] = options.calls ?? [];
+  let preferences = options.preferences ?? '{"pcbCommandTab":true}';
   const tabId = "footprint@collection";
   const listeners = new Map<string, (value: unknown) => void>();
   let open = true;
@@ -41,10 +42,11 @@ async function execute(code: string, options: { source?: string; owner?: string;
     },
   };
   const window = { top: { frames: [], document: { getElementById: (): unknown => frame },
+    localStorage: { getItem: (): string => preferences },
     setTimeout: (callback: () => void, delay: number): NodeJS.Timeout => setTimeout(callback, delay === 15_000 ? 100 : 1), clearTimeout,
     MSG_BUS_PCB: { messageBus: { rpcCall: (method: string, value: unknown): Promise<unknown> => {
     if (method === "getTabIdAndDocType") { return Promise.resolve({ message: { tabId: "footprint@collection", docType: 4 } }); }
-    if (method === "FileSource") { return Promise.resolve({ message: options.source ?? nativeSource }); }
+    if (method === "FileSource") { preferences = options.latePreferences ?? preferences; return Promise.resolve({ message: options.source ?? nativeSource }); }
     assert.equal(method, "pcb/saveCompiler"); assert.equal(value, ""); calls.push("compiler-save"); return Promise.resolve({ message: { success: options.saved ?? true } });
   } } } } };
   const result: unknown = await runInNewContext(`(async () => { ${code} })()`, { eda, window, gVars });
@@ -72,4 +74,15 @@ void test("separate post-checkpoint footprint reopen uses exact collection and o
   await execute(buildFootprintReopenCode(expected, scope), { activation: false });
   await assert.rejects(execute(buildFootprintReopenCode(expected, scope), { activation: false, driftAfterActivation: true }), /NATIVE_LIFECYCLE_OPEN_TIMEOUT/u);
   await assert.rejects(execute(buildFootprintReopenCode(expected, scope), { activation: null }), /NATIVE_LIFECYCLE_ACTIVATE_CONTEXT/u);
+});
+
+void test("footprint preferences refuse before Save or close and are rechecked after the last source await", async () => {
+  for (const code of [buildFootprintSaveCode(expected, scope), buildFootprintReopenCode(expected, scope)]) {
+    const calls: string[] = [];
+    await assert.rejects(execute(code, { preferences: '{"pcbCommandTab":false}', calls }), /PCB_NAVIGATION_PREFERENCES_UNSAFE/u);
+    assert.deepEqual(calls, []);
+  }
+  const calls: string[] = [];
+  await assert.rejects(execute(buildFootprintSaveCode(expected, scope), { latePreferences: '{}', calls }), /PCB_NAVIGATION_PREFERENCES_UNSAFE/u);
+  assert.deepEqual(calls, []);
 });

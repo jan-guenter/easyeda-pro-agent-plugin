@@ -32,6 +32,7 @@ import {
   prepareBoundUpstreamEnvironment,
 } from "./upstream-environment.ts";
 import {
+  LocalIntegrityTimings,
   assertPathSealsCurrent,
   captureLauncherAdmission,
   captureLauncherFingerprint,
@@ -41,7 +42,7 @@ import {
   openReviewedNodeExecutable,
   openReviewedSandboxExecutable,
 } from "./upstream-trust.ts";
-import type { LauncherAdmission } from "./upstream-trust.ts";
+import type { LauncherAdmission, LocalIntegrityDiagnostics } from "./upstream-trust.ts";
 import { encodeBridgeBootstrapSecret } from "./upstream-bootstrap.ts";
 import { serializeCapturedUpstreamModuleGraph } from "./upstream-module-execution.ts";
 import { stagePrivateRuntimePayload } from "./private-runtime-payload.ts";
@@ -59,9 +60,10 @@ export type UpstreamToolResult = CallToolResult;
 
 export interface UpstreamProcessDiagnostics {
   readonly schema: "easyeda-pro-control.upstream-process-diagnostics.v1";
-  readonly sandbox: SandboxRuntimeDiagnostics;
+  readonly sandbox: SandboxRuntimeDiagnostics | null;
   readonly stderrBytes: number;
   readonly stderrSha256: string;
+  readonly localIntegrity: LocalIntegrityDiagnostics;
 }
 
 interface AuthenticatedBridgeDispatchScopeState {
@@ -266,6 +268,7 @@ async function prepareAuthenticatedBridgeGateway(
 
 export class UpstreamEasyedaClient {
   private readonly options: UpstreamEasyedaClientOptions;
+  private readonly localIntegrityTimings = new LocalIntegrityTimings();
   private readonly authenticatedBridgeDispatchScope =
     new AsyncLocalStorage<AuthenticatedBridgeDispatchScopeState>();
   private client: Client | null = null;
@@ -327,21 +330,21 @@ export class UpstreamEasyedaClient {
         "A retained control-root capability is required to start the upstream sandbox.",
       );
     }
-    const launcherAdmission = await captureLauncherAdmission(
+    const launcherAdmission = await this.localIntegrityTimings.measure("launcher-admission", () => captureLauncherAdmission(
       this.options.trustedLauncher,
-    );
+    ));
     const startupLauncherFingerprint = launcherAdmission.fingerprint;
-    const launcherCapture = await captureRuntimeLauncherExecution(
+    const launcherCapture = await this.localIntegrityTimings.measure("runtime-module-graph", () => captureRuntimeLauncherExecution(
       startupLauncherFingerprint,
       startupLauncherFingerprint.command,
       startupLauncherFingerprint.cwd,
       startupLauncherFingerprint.entrypoint,
-    );
-    const bridge = await prepareAuthenticatedBridgeGateway(
+    ));
+    const bridge = await this.localIntegrityTimings.measure("bridge-preparation", () => prepareAuthenticatedBridgeGateway(
       this.options.bridgePublicPortForTesting,
       controlRoot,
-    );
-    const preparedEnvironment = await prepareBoundUpstreamEnvironment(
+    ));
+    const preparedEnvironment = await this.localIntegrityTimings.measure("environment-preparation", () => prepareBoundUpstreamEnvironment(
       startupLauncherFingerprint.command,
       {
         host: "127.0.0.1",
@@ -349,7 +352,7 @@ export class UpstreamEasyedaClient {
         sessionToken: bridge.backendSessionToken,
       },
       controlRoot,
-    );
+    ));
     const configuredBootstrapToken =
       preparedEnvironment.environment["BRIDGE_TOKEN"];
     if (configuredBootstrapToken === undefined) {
@@ -474,7 +477,7 @@ export class UpstreamEasyedaClient {
       },
     };
     const assertSandboxInputsCurrent = async (): Promise<void> => {
-      await Promise.all([
+      await this.localIntegrityTimings.measure("sandbox-input-validation", () => Promise.all([
         controlRoot.assertCurrent(),
         preparedEnvironment.assertCurrent(),
         assertPathSealsCurrent(
@@ -487,7 +490,7 @@ export class UpstreamEasyedaClient {
         sandboxExecution.assertCurrent(),
         seccompPayload.assertCurrent(),
         nodeExecution.assertCurrent(),
-      ]);
+      ]));
     };
     const transport = new SandboxedStdioClientTransport({
       afterPreSpawnValidationForTesting:
@@ -561,7 +564,7 @@ export class UpstreamEasyedaClient {
       { capabilities: {} },
     );
     try {
-      await client.connect(transport);
+      await this.localIntegrityTimings.measure("sandbox-startup", () => client.connect(transport));
     } catch (error) {
       const startupError = startupFailureWithStderr(
         error,
@@ -802,7 +805,7 @@ export class UpstreamEasyedaClient {
   }
 
   public async launcherFingerprint(): Promise<UpstreamLauncherFingerprint> {
-    const capture = await captureLauncherFingerprint();
+    const capture = await this.localIntegrityTimings.measure("launcher-fingerprint", () => captureLauncherFingerprint(this.localIntegrityTimings));
     return capture.fingerprint;
   }
 
@@ -881,12 +884,12 @@ export class UpstreamEasyedaClient {
       apiImplementationSha256,
       apiAdapterSha256,
       apiDeclarationsSha256,
-    ] = await Promise.all([
+    ] = await this.localIntegrityTimings.measure("installed-bundle-hashing", () => Promise.all([
       sha256File(pcbImplementation),
       sha256File(apiImplementation),
       sha256File(apiAdapter),
       sha256File(apiDeclarations),
-    ]);
+    ]));
     return {
       available: true,
       assetsRoot,
@@ -991,14 +994,19 @@ export class UpstreamEasyedaClient {
   }
 
   public processDiagnostics(): UpstreamProcessDiagnostics | undefined {
-    if (this.transport === null) {
+    if (this.transport === null && this.retainedProcessDiagnostics !== undefined) {
       return this.retainedProcessDiagnostics;
     }
+    const localIntegrity = this.localIntegrityTimings.snapshot();
+    if (this.transport === null && localIntegrity.stages.length === 0) { return undefined; }
     return Object.freeze({
       schema: "easyeda-pro-control.upstream-process-diagnostics.v1",
-      sandbox: this.transport.runtimeDiagnostics(),
+      // Timing may precede admission or survive a fully cleaned startup failure.
+      // A null sandbox makes no assertion that a child was started or admitted.
+      sandbox: this.transport?.runtimeDiagnostics() ?? null,
       stderrBytes: this.stderrBytes,
       stderrSha256: this.stderrDigest.copy().digest("hex"),
+      localIntegrity,
     });
   }
 

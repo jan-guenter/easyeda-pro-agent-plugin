@@ -1,5 +1,11 @@
 # Connection and context
 
+Before opening a project or document, review the pinned
+[navigation preference side effects](native-ui.md#navigation-preference-side-effects).
+Project opening may restore PCB tabs, and public or native tab navigation may
+write global preferences and prune backups. A safe target type alone is not
+sufficient. Do not change settings or use a UI fallback to pass admission.
+
 ## Open an existing saved project from Start Page
 
 After contained launch and authenticated status, `easyeda_control_runtime` accepts `request.action:"open-existing"` with `projectUuid`, `projectPath`, `documentUuid`, `documentType:1|3`, the current `expectedFingerprint`, and `confirmOpen:true`. The target must already exist in the saved `.eprj2` checkpoint and the native project-path registry. This path does not require a fabricated active-editor context.
@@ -40,6 +46,16 @@ Passing the offline doctor does not prove startup under the model host's process
 When present, status `bridgeConnection` reports bounded fixed-code counters and timestamps. `observedUpgradeCount: 0` means this gateway observed no valid WebSocket upgrade, not that no TCP traffic arrived. `origin-rejected`, `authentication-failed`, `authenticated-build-mismatch`, and `credential-epoch-mismatch` separate Origin policy, authentication/protocol, archive and epoch failures. `authentication-failed` alone does not establish a key mismatch or justify rotation. `lastFailure` is historical and may remain after a later `session-established`; require the current authenticated session, not a counter, for live work. These diagnostics are not part of the stable authority fingerprint. Do not repeatedly poll an unchanged disconnected state.
 
 `upstreamProcess` retains fixed protocol-failure codes, process exit status, and private stderr byte count/hash, including after close. Its `stage` is the last startup stage, not a claim that a connected process is still initializing. Raw log contents remain withheld. The reviewed logger transform sends warnings/errors synchronously to stderr; stdout is exclusively JSON-RPC.
+
+Newer candidates also report `upstreamProcess.localIntegrity`: bounded fixed-label
+timings for selected launcher, module-graph, bundle-hashing and sandbox stages.
+Failed status can retain this snapshot under `error.upstreamProcess`.
+`sandbox:null` means no transport diagnostic is available, not that a sandbox
+started. These are passive snapshots, not a progress endpoint or a timeout policy.
+Nested durations overlap and must not be summed; unmeasured work remains outside
+the report. A slow integrity scan does not establish an orphaned bridge call.
+Do not retry status concurrently, disable hashing or terminate its host because a
+selected stage is slow. Older installed generations do not expose these fields.
 
 Exact-reader failures can identify their reader kind, stage, API, method and
 expected field type. These are allowlisted diagnostic values, not native error
@@ -110,6 +126,14 @@ Every live design facade acquires an authenticated dispatch lease for the exact 
 
 Call `easyeda_control_context` immediately before a scoped read or write. Compare exact values supplied by the current project, not names copied from an old script. Require a nonempty project UUID and `.eprj2` path, a nonempty document UUID, an observed document type, and the active tab when a tool targets a tab.
 
+Build `expectedContext` from the returned `project` and `document` objects,
+preserving their path, UUID, type, tab and owner fields. Add the observed
+`schematic` or `schematicPage` identity when the operation requires it. Do not
+copy the entire response: `runtimeIdentity` from `includeRuntimeIdentity:true`
+is a separate diagnostic, not a field returned by the ordinary context guard.
+Keep the full `upstream.stableFingerprint` from authenticated status in
+`expectedFingerprint`; do not substitute the diagnostic for that fingerprint.
+
 The current connected-read-admitted tuple and source-specific version/path rules are in [compatibility.md](compatibility.md#current-read-admission-2026-09-11). The facade resolves the missing public project path using an exact native registry record with original-path hash proof and post-read context equality. It checks the active schematic page separately from its parent container.
 
 The fixed context implementation uses these public calls. They explain its
@@ -168,13 +192,13 @@ Only facade-generated typed programs may enter the private executor. Caller raw 
 Use `easyeda_control_capture` for application images. It accepts only these upstream capture tools:
 
 - `easyeda_canvas_capture` for the current visible canvas;
-- `easyeda_canvas_capture_region` for a framed schematic or PCB area;
-- `easyeda_schematic_capture_full_page` for a deterministically framed active schematic sheet, or an approximate diagnostic image when inferred-A4 fallback is explicitly allowed.
+- `easyeda_canvas_capture_region` to request a schematic or PCB area;
+- `easyeda_schematic_capture_full_page` to request the active schematic's sheet bounds, or approximate A4 bounds when that fallback is explicitly allowed.
 
 Guard the exact context and runtime fingerprint, and pass `arguments.tabId` equal to the active proven tab. Fresh managed evidence paths are mandatory. The facade parses the complete non-interlaced PNG chunk stream, verifies chunk CRCs, inflates it to the exact IHDR-derived byte count, checks scanline filters, stores the image bytes, and records their hashes so the receipt identifies the exact files.
 
 Region and full-page capture change the user's visible viewport because EasyEDA has no offscreen renderer for those paths. They do not change design objects. Capture the intended tab or sheet, then recheck active context before a later mutation.
 
-When the full-page result says its geometry came from inferred A4, it is approximate viewport evidence only. It cannot prove page completeness, design coverage, or that every primitive was inside the frame. Use only a deterministic sheet source for a completeness claim.
+When the full-page result says its geometry came from inferred A4, the requested bounds are approximate. Exact sheet geometry establishes the requested bounds, not that the returned bitmap has painted them. Neither `deterministic_viewport:true` nor `captured:true` proves pixel coverage or page completeness. Inspect the actual image before using it for visual review; follow the [capture-framing guidance](native-ui.md) when the image is stale or incorrectly framed.
 
 Use images to inspect legibility, approximate placement, and obvious visual defects. Do not use a screenshot as proof of net membership, primitive identity, clearance, drill size, save state, or persistence. Pair it with structured readback.

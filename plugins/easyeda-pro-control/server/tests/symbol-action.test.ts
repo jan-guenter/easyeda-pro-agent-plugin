@@ -18,7 +18,7 @@ const circle = { id: "circle", documentType: 2, action: "sch.circle.create", pro
 function source(value: NativeSourceSnapshot): string {
   return `{"type":"DOCHEAD"}||${JSON.stringify({ ...value.document, client: "a".repeat(16), updateTime: 1, version: "1" })}|\n${value.objects.map((entry) => `${JSON.stringify({ id: entry.id, type: entry.type })}||${JSON.stringify(entry.body)}|\n`).join("")}`;
 }
-async function execute(code: string, options: { owner?: string; raw?: string; save?: boolean; metadata?: Record<string, unknown>; calls?: string[] } = {}): Promise<{ result: unknown; calls: string[]; written: string | undefined }> {
+async function execute(code: string, options: { owner?: string; raw?: string; save?: boolean; metadata?: Record<string, unknown>; calls?: string[]; preferences?: string } = {}): Promise<{ result: unknown; calls: string[]; written: string | undefined }> {
   const calls: string[] = options.calls ?? [];
   let written: string | undefined;
   const tab = "symbol@collection";
@@ -70,6 +70,7 @@ async function execute(code: string, options: { owner?: string; raw?: string; sa
     return { cancel: (): void => { listeners.delete(topic); } };
   } } };
   const ui = { document: { getElementById: (id: string): unknown => { assert.equal(id, `frame_${tab}`); return frame; } },
+    localStorage: { getItem: (): string => options.preferences ?? '{"pcbCommandTab":true}' },
     setTimeout: (callback: () => void, delay: number): number => {
       assert.ok(delay === 15_000 || delay === 50); timerId += 1; const id = timerId; timers.set(id, callback);
       // oxlint-disable-next-line promise/prefer-await-to-callbacks, node/callback-return -- Model the native timer callback after cancellation checks; its return value is unused.
@@ -99,6 +100,14 @@ void test("symbol native geometry keeps exact scope, one history action, complet
   await assert.rejects(execute(adapter.code, { owner: "collection" }), /CONTEXT_DRIFT/u);
   await assert.rejects(execute(adapter.code, { raw: source(before).replace('"nested":[0,false]', '"nested":[]') }), /SOURCE_CHANGED/u);
   assert.throws(() => buildSymbolNativeAdapter(circle, before, { ...scope, partId: "other" }), /scope differ/u);
+});
+
+void test("symbol Save and close refuse unsafe preferences when a complete SCH-only tab registry is unavailable", async () => {
+  for (const code of [buildSymbolSaveCode(before, scope), buildSymbolReopenCode(before, scope)]) {
+    const calls: string[] = [];
+    await assert.rejects(execute(code, { preferences: '{"pcbCommandTab":false}', calls }), /PCB_NAVIGATION_PREFERENCES_UNSAFE/u);
+    assert.deepEqual(calls, []);
+  }
 });
 
 void test("symbol guard preserves raw display title and rejects native asset identity drift before mutation", async () => {

@@ -25,7 +25,7 @@ import {
   controlRootCapability,
   ensureManagedDirectory,
   inspectManagedFile,
-  listOperationStates,
+  loadOperation,
   publishManagedAttachmentExclusive,
   readArtifact,
   recoverPublishedEvidence,
@@ -42,17 +42,20 @@ import {
   assertReviewedLocalGenericReadArguments,
   assertSelfSoftCoreLimitZero,
   assertSubset,
+  canonicalJson,
   extractToolPayload,
   filterTools,
   isRecord,
   isReviewedLocalGenericRead,
-  isTerminalOperation,
   sha256Text,
   validateExpectedFingerprint,
   validatePrivateFingerprint,
 } from "./core.ts";
 import { EasyedaControlEngine, SerializedGate } from "./engine.ts";
+import type { StatusAdmissionObservation } from "./engine.ts";
 import { DesignExecutor } from "./design-execution.ts";
+import { compileDesignAction } from "./design-action.ts";
+import { assertDesignExecutionLifecycle } from "./design-execution-lifecycle.ts";
 import { executeAndCommitDesign } from "./design-execute.ts";
 import { RuleCheckExecutor } from "./check-execution.ts";
 import { ProjectOpenExecutor, projectOpenTargetSchema } from "./project-open-execution.ts";
@@ -62,9 +65,23 @@ import { boundedTransactionErrorOutput, transactionErrorOutputSchema } from "./t
 import { listDesignActionCapabilities } from "./design-capabilities.ts";
 import { designTopologySchema } from "./design-topology.ts";
 import { LibraryExecutor, listLibraryExecutionCapabilities } from "./library-execution.ts";
+import { assertLibraryExecutionLifecycle } from "./library-execution-lifecycle.ts";
+import { assertLegacyRecoveryJournalFamily } from "./legacy-recovery-family.ts";
 import { designToolOperationSchema, libraryToolOperationSchema } from "./tool-operation-envelope.ts";
 import { WindowsControlRuntime } from "./windows-runtime.ts";
+import type { ClosedSymbolDisposableEntry } from "./closed-symbol-disposable-entry.ts";
+import type { ClosedSymbolOperationEntry } from "./closed-symbol-operation-entry.ts";
+import { assertClosedSymbolOperationValidated } from "./closed-symbol-operation-request.ts";
+import { closedSymbolEntryFailureDiagnostic, closedSymbolFailureDiagnostic } from "./closed-symbol-failure-diagnostic.ts";
+import { closedSymbolOperationInputSchema, closedSymbolOperationOutputSchema, closedSymbolOperationStopped,
+  formatClosedSymbolOperationResult, parseClosedSymbolOperationInput } from "./closed-symbol-operation-tool.ts";
+import {
+  closedSymbolDisposableIndexRefusal, closedSymbolDisposableInputSchema, closedSymbolDisposableOutputSchema,
+  formatClosedSymbolDisposableResult, parseClosedSymbolDisposableInput,
+} from "./closed-symbol-disposable-tool.ts";
+import type { ClosedSymbolIndexPhase, ClosedSymbolIndexReason } from "./closed-symbol-disposable-tool.ts";
 import { WindowsNativeUiController, nativeUiRequestSchema } from "./windows-native-ui.ts";
+import { runNativeUiWithOperationAdmission } from "./native-ui-admission.ts";
 import { discardCloseConfirmation, nativeCloseRecoveryRequestSchema } from "./native-close-recovery.ts";
 import { exactReadRequestSchema } from "./exact-readers.ts";
 import { acquireFacadeLease } from "./lease.ts";
@@ -73,6 +90,23 @@ import { buildDsnExportCode, wrapWithContextGuard } from "./runtime-scripts.ts";
 import { UpstreamEasyedaClient, UpstreamStartupError } from "./upstream.ts";
 import { createSerializedShutdown } from "./shutdown.ts";
 import { extensionApiCatalogInputSchema, queryExtensionApiCatalog } from "./extension-api-catalog.ts";
+import { extensionApiCoverageInputSchema, queryExtensionApiCoverage } from "./extension-api-coverage.ts";
+import { publicSdkReadImplementationKind, publicSdkReadRequestSchema } from "./public-sdk-read.ts";
+import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
+import { SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
+import { SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
+import { isSchematicTextReadMethod } from "./schematic-text-read.ts";
+import { isSchematicNetGroupReadMethod } from "./schematic-netgroup-read.ts";
+import { PCB_NET_MEMBERSHIP_METHOD } from "./pcb-net-membership.ts";
+import { readPcbNetMembership } from "./pcb-net-membership-read.ts";
+import { PCB_PRIMITIVE_TYPE_METHOD, readPcbPrimitiveType } from "./pcb-primitive-type-read.ts";
+import { PCB_SELECTED_OBJECTS_METHOD } from "./pcb-selected-objects.ts";
+import { readPcbSelectedObjects } from "./pcb-selected-objects-read.ts";
+import { isPcbSourceObjectsMethod } from "./pcb-source-objects.ts";
+import { readPcbSourceObjects } from "./pcb-source-objects-read.ts";
+import { PcbSelectedReadTimings } from "./pcb-selected-read-timings.ts";
+import { PCB_ACTIVE_LAYER_METHOD, readPcbActiveLayer } from "./pcb-active-layer-read.ts";
+import { publicSdkCatalogQuerySchema, publicSdkValidationQuerySchema, queryPublicSdkReads, validatePublicSdkArguments } from "./public-sdk-catalog.ts";
 import { operationCatalogQuerySchema, operationValidationRequestSchema, queryOperationCatalog, validateCatalogOperation } from "./operation-catalog.ts";
 
 const MAX_INLINE_RESULT_BYTES = 256 * 1024;
@@ -105,6 +139,7 @@ const upstream = new UpstreamEasyedaClient({
   onChildStarted: (pid): Promise<void> => facadeLease.bindChild(pid),
 });
 let windowsRuntime: WindowsControlRuntime | undefined;
+let scheduledShutdown: Promise<void> | undefined;
 function ownedWindowsRuntime(): WindowsControlRuntime {
   if (windowsRuntime === undefined) { throw new Error("Use easyeda_control_runtime launch-contained before guarded design editing."); }
   return windowsRuntime;
@@ -119,6 +154,204 @@ const libraryExecutor = new LibraryExecutor(engine);
 const ruleCheckExecutor = new RuleCheckExecutor(engine);
 const projectOpenExecutor = new ProjectOpenExecutor(engine);
 const bridgeGate = new SerializedGate();
+
+interface ClosedSymbolIndexReservation {
+  readonly engine: EasyedaControlEngine;
+  readonly upstream: UpstreamEasyedaClient;
+  readonly gate: SerializedGate;
+  readonly facadePromise: EasyedaControlEngine["controlFingerprintPromise"];
+  readonly executionAuthority: object;
+  readonly environment: typeof process.env;
+  readonly assetsRoot: string | undefined;
+  readonly wslDistribution: string | undefined;
+  readonly controlPath: string;
+  readonly pluginRoot: string;
+  readonly requestText: string;
+  readonly methods: readonly unknown[];
+  runtime: WindowsControlRuntime | undefined;
+  nativeUi: WindowsNativeUiController | undefined;
+  constructedMethods: readonly unknown[] | undefined;
+  entry: ClosedSymbolDisposableEntry | ClosedSymbolOperationEntry | undefined;
+  entryRun: ((rawRequest: unknown) => Promise<unknown>) | undefined;
+  facade: Awaited<EasyedaControlEngine["controlFingerprintPromise"]> | undefined;
+  facadeSha256: string | undefined;
+  entryInvocationAttempted: boolean;
+  entryReturnObserved: boolean;
+  originalReturn: unknown;
+  failureObserved: boolean;
+  originalFailure: unknown;
+}
+let closedSymbolIndexReservation: ClosedSymbolIndexReservation | undefined;
+const closedSymbolUnreservedFailure: { observed: boolean; original: unknown } = { observed: false, original: undefined };
+
+function disposableOwnData(owner: object, key: string): unknown {
+  const descriptor = Object.getOwnPropertyDescriptor(owner, key);
+  if (descriptor === undefined || !Object.hasOwn(descriptor, "value")) { throw new Error("Disposable index owner data changed."); }
+  return descriptor.value as unknown;
+}
+function disposableOwnerMethod(owner: object, key: string): unknown {
+  let candidate: object | null = owner;
+  for (let depth = 0; candidate !== null && depth < 8; depth += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(candidate, key);
+    if (descriptor !== undefined) {
+      if (!Object.hasOwn(descriptor, "value") || typeof descriptor.value !== "function") { throw new Error("Disposable index owner method changed."); }
+      return descriptor.value as unknown;
+    }
+    const parent: unknown = Object.getPrototypeOf(candidate);
+    if (parent !== null && typeof parent !== "object") { throw new Error("Disposable index owner prototype changed."); }
+    candidate = parent;
+  }
+  throw new Error("Disposable index owner method unavailable.");
+}
+function disposableIndexMethods(): readonly unknown[] {
+  const authority = disposableOwnData(engine, "executionAuthorityValidator");
+  if (authority === null || typeof authority !== "object") { throw new Error("Disposable index engine authority owner is unavailable."); }
+  return [
+    disposableOwnerMethod(bridgeGate, "run"), disposableOwnerMethod(engine, "assertBridgeDispatchAllowed"),
+    disposableOwnerMethod(engine, "assertNativeUiEditingAllowed"),
+    ...["capture", "proveTerminated", "releaseCapture"].map(key => disposableOwnerMethod(authority, key)),
+    ...["currentAuthenticatedBridgeDispatchBinding", "bridgeSessionLifecycle", "launcherFingerprint", "installedEasyedaBundles",
+      "connect", "withAuthenticatedBridgeDispatchScope"].map(key => disposableOwnerMethod(upstream, key)),
+    disposableOwnerMethod(WindowsNativeUiController.prototype, "run"),
+    ...["status", "launch", "capture", "proveTerminated", "releaseCapture", "prepareClosedSessionClose",
+      "requestClosedSessionNormalClose", "probeClosedSessionTermination", "clockObservationForLaunch"]
+      .map(key => disposableOwnerMethod(WindowsControlRuntime.prototype, key)),
+  ];
+}
+function disposableConstructedMethods(runtime: WindowsControlRuntime, nativeUi: WindowsNativeUiController): readonly unknown[] {
+  return [disposableOwnerMethod(nativeUi, "run"),
+    ...["status", "launch", "capture", "proveTerminated", "releaseCapture", "prepareClosedSessionClose",
+      "requestClosedSessionNormalClose", "probeClosedSessionTermination", "clockObservationForLaunch"]
+      .map(key => disposableOwnerMethod(runtime, key))];
+}
+function assertOrdinaryRuntimeAllocationAllowed(): void {
+  if (closedSymbolIndexReservation !== undefined) { throw new Error("The Windows runtime is reserved by a consumed closed-symbol attempt."); }
+}
+
+/** No outer gate/authenticated scope. The exact retained entry owns its one gate admission. */
+async function runClosedSymbolTool(input: unknown, mode: "validation" | "ordinary"): Promise<CallToolResult> {
+  let phase: ClosedSymbolIndexPhase = "request";
+  let reason: ClosedSymbolIndexReason = "invalid-request";
+  let activeReservation: ClosedSymbolIndexReservation | undefined;
+  try {
+    const parsed = mode === "validation" ? parseClosedSymbolDisposableInput(input) : parseClosedSymbolOperationInput(input);
+    // Refuse before reservation, imports, runtime allocation or bridge admission.
+    if (mode === "ordinary") {
+      try { assertClosedSymbolOperationValidated(); }
+      catch (error) { return formatClosedSymbolOperationResult(closedSymbolOperationStopped({ phase: "validation", attemptReserved: false }),
+        closedSymbolFailureDiagnostic(error, "validation")); }
+    }
+    const requestText = canonicalJson(parsed.request);
+    phase = "reservation"; reason = "attempt-unavailable";
+    if (closedSymbolIndexReservation !== undefined || windowsRuntime !== undefined || scheduledShutdown !== undefined) {
+      throw new Error("Disposable index attempt is unavailable.");
+    }
+    if (disposableOwnData(engine, "upstream") !== upstream) { throw new Error("Disposable index engine owner differs."); }
+    disposableOwnData(engine, "controlFingerprintPromise");
+    const facadePromise = engine.controlFingerprintPromise;
+    if (disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise) { throw new Error("Disposable index facade promise differs."); }
+    const executionAuthority = disposableOwnData(engine, "executionAuthorityValidator");
+    if (executionAuthority === null || typeof executionAuthority !== "object") { throw new Error("Disposable index engine authority owner differs."); }
+    const environment = process.env;
+    const reservation: ClosedSymbolIndexReservation = {
+      engine, upstream, gate: bridgeGate, facadePromise, executionAuthority, environment, assetsRoot: environment["EASYEDA_ASSETS_ROOT"],
+      wslDistribution: environment["WSL_DISTRO_NAME"], controlPath: retainedControlRoot.path,
+      pluginRoot: resolve(import.meta.dirname, "../.."), requestText, methods: disposableIndexMethods(),
+      runtime: undefined, nativeUi: undefined, constructedMethods: undefined,
+      entry: undefined, entryRun: undefined, facade: undefined, facadeSha256: undefined,
+      entryInvocationAttempted: false, entryReturnObserved: false, originalReturn: undefined,
+      failureObserved: false, originalFailure: undefined,
+    };
+    // Permanent before the first await, including setup failure. Never reset or replace.
+    closedSymbolIndexReservation = reservation; activeReservation = reservation;
+    const current = (): void => {
+      if (closedSymbolIndexReservation !== reservation || reservation.engine !== engine || reservation.upstream !== upstream ||
+        reservation.gate !== bridgeGate || disposableOwnData(engine, "upstream") !== upstream ||
+        disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || reservation.facadePromise !== facadePromise ||
+        disposableOwnData(engine, "executionAuthorityValidator") !== reservation.executionAuthority ||
+        reservation.environment !== process.env || process.env["EASYEDA_ASSETS_ROOT"] !== reservation.assetsRoot ||
+        process.env["WSL_DISTRO_NAME"] !== reservation.wslDistribution || controlDataDirectory() !== reservation.controlPath ||
+        retainedControlRoot.path !== reservation.controlPath || resolve(import.meta.dirname, "../..") !== reservation.pluginRoot ||
+        scheduledShutdown !== undefined || canonicalJson((mode === "validation" ? parseClosedSymbolDisposableInput(input) : parseClosedSymbolOperationInput(input)).request) !== requestText) {
+        throw new Error("Disposable index reservation, request, configuration or shutdown state changed.");
+      }
+      const methods = disposableIndexMethods();
+      if (methods.length !== reservation.methods.length || methods.some((method, index) => method !== reservation.methods[index]) ||
+        windowsRuntime !== reservation.runtime) { throw new Error("Disposable index runtime or method ownership changed."); }
+      if (reservation.facade !== undefined && disposableOwnData(reservation.facade, "sha256") !== reservation.facadeSha256) {
+        throw new Error("Disposable index original facade hash changed.");
+      }
+      if (reservation.entry !== undefined && disposableOwnerMethod(reservation.entry, "run") !== reservation.entryRun) {
+        throw new Error("Disposable index entry method changed.");
+      }
+      if (reservation.runtime !== undefined && reservation.nativeUi !== undefined) {
+        const constructed = disposableConstructedMethods(reservation.runtime, reservation.nativeUi);
+        if (reservation.constructedMethods === undefined || constructed.length !== reservation.constructedMethods.length ||
+          constructed.some((method, index) => method !== reservation.constructedMethods?.[index])) {
+          throw new Error("Disposable index constructed owner methods changed.");
+        }
+      }
+    };
+    reason = "setup-refused"; current();
+    const assetsRoot = reservation.assetsRoot;
+    if (assetsRoot === undefined || assetsRoot.length === 0) { throw new Error("Disposable index requires installed assets configuration."); }
+    phase = "facade";
+    const facade = await facadePromise;
+    reservation.facade = facade;
+    const facadeSha256 = disposableOwnData(facade, "sha256");
+    if (typeof facadeSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(facadeSha256)) { throw new Error("Disposable index facade hash refused."); }
+    reservation.facadeSha256 = facadeSha256; current();
+    phase = "entry-import";
+    let Entry: typeof ClosedSymbolDisposableEntry | typeof ClosedSymbolOperationEntry;
+    if (mode === "validation") { const entryModule = await import("./closed-symbol-disposable-entry.ts"); Entry = entryModule.ClosedSymbolDisposableEntry; }
+    else { const entryModule = await import("./closed-symbol-operation-entry.ts"); Entry = entryModule.ClosedSymbolOperationEntry; }
+    current();
+    phase = "construction";
+    const paths = { pluginRoot: reservation.pluginRoot, assetsRoot,
+      ...(reservation.wslDistribution === undefined ? {} : { wslDistribution: reservation.wslDistribution }) };
+    const runtime = new WindowsControlRuntime(Object.freeze({ ...paths, upstream, reviewedExecutionScopeSha256: facadeSha256 }));
+    reservation.runtime = runtime; windowsRuntime = runtime;
+    const nativeUi = new WindowsNativeUiController(Object.freeze({ ...paths, runtime }));
+    reservation.nativeUi = nativeUi;
+    reservation.constructedMethods = disposableConstructedMethods(runtime, nativeUi);
+    const entry = new Entry(engine, upstream, runtime, nativeUi, bridgeGate);
+    reservation.entry = entry;
+    const entryRun: (rawRequest: unknown) => Promise<unknown> = entry.run;
+    reservation.entryRun = entryRun; current();
+    phase = "entry"; reason = "entry-boundary-refused";
+    reservation.entryInvocationAttempted = true;
+    const result = await entryRun.call(entry, parsed.originalRequest);
+    // Preserve the exact return before fallible owner reproof or projection.
+    reservation.originalReturn = result; reservation.entryReturnObserved = true;
+    current();
+    if (reservation.entry !== entry || reservation.runtime !== runtime || reservation.nativeUi !== nativeUi ||
+      reservation.entryRun !== entryRun || reservation.originalReturn !== result) { throw new Error("Disposable index retained originals changed."); }
+    phase = "projection"; reason = "result-refused";
+    const diagnostic = closedSymbolEntryFailureDiagnostic(entry);
+    return mode === "validation" ? formatClosedSymbolDisposableResult(result, diagnostic) : formatClosedSymbolOperationResult(result, diagnostic);
+  } catch (error) {
+    if (activeReservation === undefined) {
+      if (!closedSymbolUnreservedFailure.observed) {
+        closedSymbolUnreservedFailure.observed = true; closedSymbolUnreservedFailure.original = error;
+      }
+    } else if (!activeReservation.failureObserved) {
+      activeReservation.failureObserved = true; activeReservation.originalFailure = error;
+    }
+    if (mode === "ordinary") {
+      return formatClosedSymbolOperationResult(closedSymbolOperationStopped({ phase,
+        attemptReserved: activeReservation !== undefined }), closedSymbolFailureDiagnostic(error, phase));
+    }
+    return closedSymbolDisposableIndexRefusal({
+      phase, reason, attemptReserved: closedSymbolIndexReservation !== undefined,
+      entryInvocationAttempted: activeReservation?.entryInvocationAttempted ?? false,
+      entryReturnObserved: activeReservation?.entryReturnObserved ?? false,
+      originalEntryResult: activeReservation?.originalReturn,
+    }, closedSymbolFailureDiagnostic(error, phase));
+  }
+}
+
+function runClosedSymbolDisposableTool(input: unknown): Promise<CallToolResult> { return runClosedSymbolTool(input, "validation"); }
+function runClosedSymbolOperationTool(input: unknown): Promise<CallToolResult> { return runClosedSymbolTool(input, "ordinary"); }
 
 const recordSchema = z.record(z.string(), z.unknown());
 const evidenceSchema = z
@@ -688,7 +921,7 @@ function success(value: unknown): CallToolResult {
   };
 }
 
-function failure(error: unknown): CallToolResult {
+function failure(error: unknown, upstreamProcess?: ReturnType<UpstreamEasyedaClient["processDiagnostics"]>): CallToolResult {
   const errorRecord = isRecord(error) ? error : {};
   const details = {
     ok: false,
@@ -698,6 +931,7 @@ function failure(error: unknown): CallToolResult {
       mismatches: errorRecord["mismatches"],
       assertionResults: errorRecord["assertionResults"],
       blockingOperations: errorRecord["blockingOperations"],
+      ...(upstreamProcess === undefined ? {} : { upstreamProcess }),
       ...boundedTransactionErrorOutput(error),
       ...(typeof errorRecord["dispatched"] === "boolean" ? { dispatched: errorRecord["dispatched"] } : {}),
       ...(error instanceof UpstreamStartupError
@@ -714,12 +948,18 @@ function failure(error: unknown): CallToolResult {
 
 function guarded<Input>(
   handler: FacadeHandler<Input>,
+  failureDiagnostics?: () => ReturnType<UpstreamEasyedaClient["processDiagnostics"]>,
 ): (input: Input) => Promise<CallToolResult> {
   return async (input: Input): Promise<CallToolResult> => {
     try {
       return success(await handler(input));
     } catch (error) {
-      return failure(error);
+      let diagnostics: ReturnType<UpstreamEasyedaClient["processDiagnostics"]>;
+      try { diagnostics = failureDiagnostics?.(); }
+      catch {
+        // A diagnostic failure must not replace the original refusal.
+      }
+      return failure(error, diagnostics);
     }
   };
 }
@@ -782,24 +1022,25 @@ function serializedLiveResult<Input>(
 }
 
 function serializedStatusGuarded<Input>(
-  handler: FacadeHandler<Input>,
+  handler: (input: Input, admission: StatusAdmissionObservation) => unknown,
 ): (input: Input) => Promise<CallToolResult> {
   return guarded((input) =>
     bridgeGate.run(async () => {
-      await engine.assertBridgeDispatchAllowed();
+      const admission = await engine.observeStatusAdmission();
       await upstream.listTools();
       const lifecycle = upstream.bridgeSessionLifecycle();
       if (lifecycle?.activeSession === null) {
-        const disconnectedObservation = await handler(input);
+        const disconnectedObservation = await handler(input, admission);
         if (upstream.bridgeSessionLifecycle()?.activeSession === null) { return disconnectedObservation; }
         // A renderer may authenticate while the first read-only startup probe
         // Waits. Resample under a new exact lease instead of issuing unbound calls.
-        return upstream.withAuthenticatedBridgeDispatchScope(() => handler(input));
+        return upstream.withAuthenticatedBridgeDispatchScope(() => handler(input, admission));
       }
       return upstream.withAuthenticatedBridgeDispatchScope(() =>
-        handler(input),
+        handler(input, admission),
       );
     }),
+    () => upstream.processDiagnostics(),
   );
 }
 
@@ -1480,6 +1721,7 @@ const statusSuccessOutputSchema = z
     bridgeConnection: recordSchema.optional(),
     upstreamProcess: recordSchema.optional(),
     incompleteOperations: z.array(recordSchema).optional(),
+    incompleteOperationsObservedAt: nonEmptyStringSchema.optional(),
     safetyModel: nonEmptyStringSchema.optional(),
     ...optionalFailureOutputShape,
   })
@@ -1575,7 +1817,10 @@ const artifactReadSuccessOutputSchema = z
   })
   .strict();
 const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
+  easyeda_control_validate_closed_symbol: closedSymbolDisposableOutputSchema,
+  easyeda_control_symbol_metadata: closedSymbolOperationOutputSchema,
   easyeda_control_api: z.object({ offline: z.boolean().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_sdk_read: evidenceSuccessOutputSchema,
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_runtime: z.object({ action: z.string().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1640,7 +1885,7 @@ registerFacadeTool(
       idempotentHint: true,
     },
   },
-  serializedStatusGuarded(async () => ({
+  serializedStatusGuarded(async (_input, admission) => ({
     facade: {
       version: CONTROL_VERSION,
       dataDirectory: controlDataDirectory(),
@@ -1651,13 +1896,17 @@ registerFacadeTool(
     upstream: await engine.status(),
     bridgeConnection: upstream.bridgeConnectionDiagnostics(),
     upstreamProcess: upstream.processDiagnostics(),
-    incompleteOperations: await engine.recover(),
+    incompleteOperations: admission.incompleteOperations,
+    incompleteOperationsObservedAt: admission.observedAt,
     safetyModel: "plan-apply-verify-save-reopen-checkpoint",
   })),
 );
 
 const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("sdk"), query: extensionApiCatalogInputSchema.optional() }).strict(),
+  z.object({ action: z.literal("coverage"), query: extensionApiCoverageInputSchema.optional() }).strict(),
+  z.object({ action: z.literal("sdk-reads"), query: publicSdkCatalogQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("sdk-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("operations"), query: operationCatalogQuerySchema }).strict(),
   z.object({ action: z.literal("validate"), query: operationValidationRequestSchema }).strict(),
 ]);
@@ -1665,7 +1914,7 @@ registerFacadeTool(
   "easyeda_control_api",
   {
     title: "EasyEDA offline API reference and argument validation",
-    description: "Query hash-pinned reviewed or latest official SDK declarations; retrieve the exact typed design/library operation schemas; validate arguments including custom refinements. Entirely offline: no bridge calls, design changes, journal writes or execution authority. SDK declarations do not imply an admitted or live-validated route.",
+    description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library or SDK-read schemas; validate arguments including refinements. Entirely offline: no bridge calls, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
     inputSchema: { request: apiRequestSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
   },
@@ -1673,6 +1922,9 @@ registerFacadeTool(
     let result: unknown;
     switch (request.action) {
       case "sdk": { result = queryExtensionApiCatalog(request.query ?? {}); break; }
+      case "coverage": { result = queryExtensionApiCoverage(request.query ?? {}); break; }
+      case "sdk-reads": { result = queryPublicSdkReads(request.query ?? {}); break; }
+      case "sdk-validate": { result = validatePublicSdkArguments(request.query); break; }
       case "operations": { result = queryOperationCatalog(request.query); break; }
       case "validate": { result = validateCatalogOperation(request.query); break; }
       default: { throw new Error("Unknown offline API reference action."); }
@@ -1754,7 +2006,7 @@ registerFacadeTool(
     inputSchema: { request: z.union([nativeUiRequestSchema, nativeCloseRecoveryRequestSchema]) },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   },
-  serializedGuarded(async ({ request }) => {
+  serializedGuarded(({ request }) => {
     const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"];
     if (assetsRoot === undefined) { throw new Error("Configure the machine's installed EasyEDA assets first."); }
     const controller = new WindowsNativeUiController({
@@ -1762,11 +2014,7 @@ registerFacadeTool(
       pluginRoot: resolve(import.meta.dirname, "../.."), assetsRoot,
     });
     if (request.action === "discard-close-confirmation" || request.action === "discard-save-warning") { return discardCloseConfirmation(request, controller); }
-    const operations = await listOperationStates();
-    if ("confirmUIWrite" in request && !["focus", "normal-close"].includes(request.action) && operations.some((entry) => !isTerminalOperation(entry))) {
-      throw new Error("Resolve the incomplete API transaction before native UI edits. Inspection, focus and normal close remain available for recovery.");
-    }
-    return controller.run(request);
+    return runNativeUiWithOperationAdmission(request, (admitted) => controller.run(admitted), () => engine.assertNativeUiEditingAllowed());
   }, { allowDuringOrphanRisk: true }),
 );
 const designRequestSchema = z.discriminatedUnion("action", [
@@ -1797,11 +2045,14 @@ registerFacadeTool(
   serializedGuarded(async ({ request }) => {
     if (request.action === "status") { return { action: request.action, result: windowsRuntime?.status() ?? { state: "not-launched" } }; }
     if (request.action === "launch-contained") {
+      assertOrdinaryRuntimeAllocationAllowed();
       const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"];
       if (assetsRoot === undefined) { throw new Error("Configure the machine's installed EasyEDA assets first."); }
       const implementation = await engine.controlFingerprintPromise;
+      assertOrdinaryRuntimeAllocationAllowed();
       windowsRuntime ??= new WindowsControlRuntime({ upstream, pluginRoot: resolve(import.meta.dirname, "../.."), assetsRoot,
         reviewedExecutionScopeSha256: implementation.sha256 });
+      assertOrdinaryRuntimeAllocationAllowed();
       return { action: request.action, result: await windowsRuntime.launch() };
     }
     if (request.action === "normal-close") {
@@ -1823,17 +2074,53 @@ registerFacadeTool(
   }, { allowDuringOrphanRisk: true }),
 );
 
+// This route needs the SDK's full-schema overload. The ordinary raw-shape
+// Helper would strip unknown outer fields before the fixed callback sees them.
+server.registerTool(
+  "easyeda_control_validate_closed_symbol",
+  {
+    title: "Validate one disposable closed-symbol metadata lifecycle",
+    description: "Validation only: launch owned application generations for one explicitly identified disposable project, modify one closed symbol's name/description once, and verify complete closed/reopened SQLite and saved-content evidence. Requires a fresh facade with no allocated Windows runtime or authenticated editor, exact compatibility, and all native prerequisites. Consumes a permanent target claim; a stopped result is not retry permission. This does not enable ordinary library/design writers or authorize another project. Uses a fixed hash-pinned native main-reference helper; a successful helper report alone is not lifecycle completion.",
+    inputSchema: closedSymbolDisposableInputSchema,
+    outputSchema: closedSymbolDisposableOutputSchema,
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  },
+  runClosedSymbolDisposableTool,
+);
+
+server.registerTool(
+  "easyeda_control_symbol_metadata",
+  {
+    title: "Closed-symbol metadata operation (validation pending)",
+    description: "Currently blocked before runtime allocation pending successful disposable full-lifecycle validation. Source implements one operation-owned closed-session name/description change for an exact ordinary project symbol and clean companion PCB. Requires a fresh facade, explicit write confirmation and a unique caller operation ID. No arbitrary code, validation-claim reuse, automatic retry, Save or target-editor opening. Existing ordinary library.execute remains blocked.",
+    inputSchema: closedSymbolOperationInputSchema,
+    outputSchema: closedSymbolOperationOutputSchema,
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  },
+  runClosedSymbolOperationTool,
+);
+
 registerFacadeTool(
   "easyeda_control_design",
   {
     title: "Edit and verify a typed EasyEDA design transaction",
-    description: "Apply one typed design operation, independently verify native records, then explicitly commit with save/reopen or restore the exact unsaved baseline. A retained contained runtime is required; arbitrary JavaScript is never accepted.",
+    description: "Discover typed design schemas and inspect retained transactions. Schematic-page, symbol and PCB execution is unavailable pending operation-owned completion and exact SQLite proof of native Save's delayed project-structure writes; sealed display/wire profiles are also blocked. Type-4 footprint operations retain their existing native-preflight, scope and save/reopen guards. Historical evidence and pure argument validation do not authorize execution. A retained contained runtime is required for enabled paths; arbitrary JavaScript is never accepted.",
     inputSchema: { request: designRequestSchema },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
   },
   serializedGuarded(async ({ request }) => {
     if (request.action === "capabilities") { return { capabilities: listDesignActionCapabilities() }; }
     if (request.action === "inspect") { return DesignExecutor.inspect(request.operationId); }
+    if (request.action === "apply" || request.action === "execute") {
+      const compiled = compileDesignAction(request.operation);
+      if (request.expectedContext.document.documentType !== compiled.documentType) { throw new Error("Wrong editor for design action."); }
+      assertDesignExecutionLifecycle(compiled.documentType);
+    }
+    if (request.action === "commit" || request.action === "rollback" || request.action === "reconcile" ||
+        request.action === "repair-layout-net-labels" || request.action === "repair-layout-wire-groups" || request.action === "repair-layout-label-visibility") {
+      const offline = await DesignExecutor.preflightRetainedLifecycle(request.operationId, request.action);
+      if (offline !== undefined) { return offline; }
+    }
     if (request.action !== "recover-authority") { await engine.assertBridgeDispatchAllowed(); }
     return upstream.withAuthenticatedBridgeDispatchScope(() => {
       switch (request.action) {
@@ -1930,6 +2217,11 @@ registerFacadeTool(
   serializedGuarded(async ({ request }) => {
     if (request.action === "capabilities") { return { capabilities: listLibraryExecutionCapabilities() }; }
     if (request.action === "inspect") { return LibraryExecutor.inspect(request.operationId); }
+    if (request.action === "execute") { assertLibraryExecutionLifecycle(request.operation); }
+    if (request.action === "reconcile" || request.action === "reconcile-no-mutation") {
+      const offline = await libraryExecutor.preflightReconcile(request.operationId);
+      if (offline !== undefined) { return offline; }
+    }
     if (request.action !== "recover-authority") { await engine.assertBridgeDispatchAllowed(); }
     return upstream.withAuthenticatedBridgeDispatchScope(() => {
       if (request.action === "execute") { return libraryExecutor.execute({ operation: request.operation, expectedContext: request.expectedContext, expectedFingerprint: request.expectedFingerprint, ...(request.confirmWrite === undefined ? {} : { confirmWrite: request.confirmWrite }) }); }
@@ -1943,11 +2235,89 @@ registerFacadeTool(
 );
 
 registerFacadeTool(
+  "easyeda_control_sdk_read",
+  {
+    title: "Read reviewed EasyEDA SDK methods",
+    description: "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity, property-name, Pin-getter, Text, Wire/Bus, configured font titles, filtered PCB net-membership and PCB identity-type observations, plus native active-layer identity with public layer fields; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.",
+    inputSchema: {
+      request: z.unknown().pipe(publicSdkReadRequestSchema),
+      expectedContext: contextSchema,
+      expectedFingerprint: privateFingerprintSchema,
+      evidence: evidenceSchema.optional(),
+      returnMode: z.enum(["full", "summary", "receipt-only"]).default("full"),
+      maxInlineBytes: z.number().int().min(1024).max(MAX_INLINE_RESULT_BYTES).default(65_536),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+  },
+  serializedLiveGuarded(async (input) => {
+    if (input.returnMode !== "full" && input.evidence === undefined) {
+      throw new Error("summary and receipt-only SDK reads require evidence paths.");
+    }
+    const reservation = input.evidence === undefined ? undefined : await reserveEvidencePaths(input.evidence);
+    let dispatched = false;
+    const request = { reader: input.request, expectedContext: input.expectedContext, expectedFingerprint: input.expectedFingerprint };
+    const native = publicSdkReadImplementationKind(input.request.method) === "native-task-equivalent";
+    let reader = native ? "fixed-native-task-observation" : "fixed-public-sdk-observation";
+    let effect = native ? "fixed-native-task-read" : "fixed-public-sdk-read";
+    if (isSchematicNativeIdMethod(input.request.method)) { reader = "fixed-native-id-observation"; effect = "fixed-native-id-read"; }
+    if (input.request.method === SCHEMATIC_COMPONENT_PROPERTY_METHOD) { reader = "fixed-native-property-name-observation"; effect = "fixed-native-property-name-read"; }
+    if (input.request.method === SYMBOL_PIN_ENUMERATION_METHOD) { reader = "fixed-native-pin-getter-observation"; effect = "fixed-native-pin-getter-read"; }
+    if (isSchematicTextReadMethod(input.request.method)) { reader = "fixed-native-text-state-observation"; effect = "fixed-native-text-state-read"; }
+    if (isSchematicNetGroupReadMethod(input.request.method)) { reader = "fixed-native-netgroup-state-observation"; effect = "fixed-native-netgroup-state-read"; }
+    if (input.request.method === PCB_NET_MEMBERSHIP_METHOD) { reader = "fixed-native-net-membership-observation"; effect = "fixed-native-net-membership-read"; }
+    if (input.request.method === PCB_PRIMITIVE_TYPE_METHOD) { reader = "fixed-native-pcb-type-observation"; effect = "fixed-native-pcb-type-read"; }
+    if (input.request.method === PCB_SELECTED_OBJECTS_METHOD) { reader = "fixed-native-selected-source-observation"; effect = "fixed-native-selected-source-read"; }
+    if (isPcbSourceObjectsMethod(input.request.method)) { reader = "fixed-native-explicit-source-observation"; effect = "fixed-native-explicit-source-read"; }
+    if (input.request.method === PCB_ACTIVE_LAYER_METHOD) { reader = "fixed-native-active-layer-observation"; effect = "fixed-native-active-layer-read"; }
+    const selectedTimings = input.request.method === PCB_SELECTED_OBJECTS_METHOD ? new PcbSelectedReadTimings() : undefined;
+    try {
+      validatePrivateFingerprint(input.expectedFingerprint);
+      // These coordinators own fresh initial and final runtime admission. Do
+      // Not repeat their initial full launcher scan at this same entry boundary.
+      // Ordinary SDK readers still need the registration-owned admission.
+      const coordinated = input.request.method === PCB_NET_MEMBERSHIP_METHOD ||
+        input.request.method === PCB_PRIMITIVE_TYPE_METHOD || input.request.method === PCB_ACTIVE_LAYER_METHOD || input.request.method === PCB_SELECTED_OBJECTS_METHOD || isPcbSourceObjectsMethod(input.request.method);
+      if (!coordinated) {
+        const status = await engine.status();
+        assertSubset(status.stableFingerprint, input.expectedFingerprint, "EasyEDA SDK read runtime fingerprint");
+      }
+      // A coordinator can dispatch its own status probe before refusing. Retain
+      // Conservative failure evidence from its entry, including local refusals.
+      dispatched = true;
+      let result: Record<string, unknown>;
+      if (input.request.method === PCB_NET_MEMBERSHIP_METHOD) {
+        result = await readPcbNetMembership(engine, input.request, input.expectedContext, input.expectedFingerprint);
+      } else if (input.request.method === PCB_PRIMITIVE_TYPE_METHOD) {
+        result = await readPcbPrimitiveType(engine, input.request, input.expectedContext, input.expectedFingerprint);
+      } else if (input.request.method === PCB_SELECTED_OBJECTS_METHOD) {
+        result = await readPcbSelectedObjects(engine, input.request, input.expectedContext, input.expectedFingerprint, selectedTimings);
+      } else if (isPcbSourceObjectsMethod(input.request.method)) {
+        result = await readPcbSourceObjects(engine, input.request, input.expectedContext, input.expectedFingerprint);
+      } else if (input.request.method === PCB_ACTIVE_LAYER_METHOD) {
+        result = await readPcbActiveLayer(engine, input.request, input.expectedContext, input.expectedFingerprint);
+      } else { result = await engine.publicSdkRead(input.request, input.expectedContext); }
+      const diagnostics = selectedTimings === undefined ? undefined : { selectedReaderTimings: selectedTimings.snapshot() };
+      const response = await withEvidence(request, result, input.evidence,
+        { facadeVersion: CONTROL_VERSION, reader, ...diagnostics },
+        { reservation, returnMode: input.returnMode, maxInlineBytes: input.maxInlineBytes });
+      if (diagnostics === undefined) { return response; }
+      if (!isRecord(response)) { throw new Error("Selected PCB read evidence response is not an object."); }
+      return { ...response, diagnostics };
+    } catch (error) {
+      if (reservation && !dispatched) { await releaseEvidenceReservation(reservation); }
+      else if (reservation) { await finalizeDispatchedFailure(reservation, request, error, { effect,
+        ...(selectedTimings === undefined ? {} : { selectedReaderTimings: selectedTimings.snapshot() }) }); }
+      throw error;
+    }
+  }),
+);
+
+registerFacadeTool(
   "easyeda_control_exact_read",
   {
     title: "Read exact EasyEDA design state",
     description:
-      "Run a facade-owned, fail-closed field reader twice and return data only when both observations are byte-for-byte stable. Exact context is checked at entry and after each run, but the active tab must remain unchanged while awaited calls execute. Nested component-pad drill geometry is excluded because the pinned wrapper has a scale defect.",
+      "Run a facade-owned field reader twice and return data only when both observations are stable. The schematic-topology kind is disabled because its installed netlist path can annotate and Save All. Separate schematic-flat-topology diagnostics require checkpoint-bound fully loaded pages, ordinary single-part symbols and literal named orthogonal wires; they do not authorize schematic transactions or claim live validation. Exact context is checked at entry and after each run, but the active tab must remain unchanged during awaited calls. Nested component-pad drill geometry is excluded because the pinned wrapper has a scale defect.",
     inputSchema: {
       request: exactReadRequestSchema,
       expectedContext: contextSchema,
@@ -2220,7 +2590,7 @@ registerFacadeTool(
   {
     title: "Capture the guarded EasyEDA canvas",
     description:
-      "Capture the visible canvas, a framed canvas region, or a complete schematic page while preserving the PNG image content. Region and full-page modes change the visible viewport but not design data.",
+      "Request a PNG of the visible canvas, a canvas region or schematic sheet bounds. Region and full-page modes change the visible viewport but not design data. Valid image bytes and requested geometry do not prove target paint completion or page completeness; inspect the actual image before visual review.",
     inputSchema: {
       request: captureRequestSchema,
       expectedContext: contextSchema,
@@ -2398,6 +2768,10 @@ registerFacadeTool(
         });
         const capturePayload = { ...payload };
         delete capturePayload.image_base64;
+        const finalStatus = await engine.status();
+        if (canonicalJson(finalStatus.stableFingerprint) !== canonicalJson(status.stableFingerprint)) {
+          throw new Error("EasyEDA runtime fingerprint changed during canvas capture; image evidence was not accepted.");
+        }
         await engine.assertContext(input.expectedContext);
         const evidence = await archiveCaptureEvidence({
           reservation,
@@ -2844,13 +3218,14 @@ registerFacadeTool(
 registerFacadeTool(
   "easyeda_control_recover_incomplete",
   {
-    title: "List incomplete journals or recover a legacy operation",
+    title: "Inspect incomplete journals or resolve a supported retained refusal",
     description:
-      "Without an operation ID, list all managed nonterminal journals. ID-based recovery here is the retained legacy component workflow, not the typed design, library, check or runtime-open recovery API; use the originating tool's recovery actions for those journals. Legacy orphan resolution requires a fresh human-supplied operation-bound runtimeRestartConfirmation after an authorized EasyEDA restart and bridge reconnect. Never synthesize or replay that attestation. This legacy path does not prove process generation; typed recovery separately uses retained execution authority. Never choose Save after an unknown write, and never discard or force-quit without explicit applicable authority.",
+      "Without an operation ID, list unresolved managed journals. Resolution abandoned-before-navigation accepts only the exact closed-symbol validation sixteen-event marker-read transport refusal or successful fixed marker-read boundary, or successful six-event baseline startup stopped before navigation; it preserves the original journal, marker and permanent claim, performs no application call, and never authorizes replay. Baseline abandonment proves neither process closure nor source invariance. Other ID-based resolutions are the retained legacy component workflow, not typed design, library, check or runtime-open recovery; use the originating tool for those journals. Legacy orphan resolution requires a fresh human-supplied operation-bound runtimeRestartConfirmation after an authorized restart and reconnect. Never synthesize that attestation, choose Save after an unknown write, or discard or force-quit without applicable authority.",
     inputSchema: {
       operationId: operationIdSchema.optional(),
       resolution: z
         .enum([
+          "abandoned-before-navigation",
           "reconciled-no-mutation",
           "reconciled-applied-unsaved",
           "reconciled-saved-reopened",
@@ -2873,7 +3248,7 @@ registerFacadeTool(
     },
   },
   serializedGuarded(
-    (input) => {
+    async (input) => {
       if (input.operationId === undefined || input.operationId.length === 0) {
         return engine.recover();
       }
@@ -2889,6 +3264,27 @@ registerFacadeTool(
           "confirmation must exactly equal operationId:resolution.",
         );
       }
+      if (resolution === "abandoned-before-navigation") {
+        if (input.runtimeRestartConfirmation !== undefined || input.confirmDiscardAnyUnsavedState || input.confirmRepeatAfterUnknownRecovery) {
+          throw new Error("Pre-navigation abandonment accepts no restart, discard or repeat authority.");
+        }
+        // Historical evidence publication only: never enter an authenticated scope or allocate a runtime.
+        const retained = await loadOperation(operationId);
+        if (retained["sequence"] === 6) {
+          // This callback owns the same gate as the entire coordinator. If this
+          // Facade retained an attempt, also require its actual stopped return.
+          const reservation = closedSymbolIndexReservation, returned = reservation?.originalReturn;
+          if (reservation !== undefined && (!reservation.entryReturnObserved || !isRecord(returned) ||
+            returned["outcome"] !== "stopped" || returned["operationId"] !== operationId || returned["completionProved"] !== false)) {
+            throw new Error("Baseline abandonment requires the original stopped entry return or a fresh facade.");
+          }
+          const { abandonClosedSymbolBaselineBeforeNavigation } = await import("./closed-symbol-baseline-abandonment.ts");
+          return abandonClosedSymbolBaselineBeforeNavigation(operationId);
+        }
+        const { abandonClosedSymbolBeforeNavigation } = await import("./closed-symbol-abandonment.ts");
+        return abandonClosedSymbolBeforeNavigation(operationId);
+      }
+      assertLegacyRecoveryJournalFamily(await loadOperation(operationId));
       return upstream.withAuthenticatedBridgeDispatchScope(() =>
         engine.recover(operationId, resolution, {
           confirmDiscardAnyUnsavedState: input.confirmDiscardAnyUnsavedState,
@@ -2988,7 +3384,6 @@ const shutdownAndExit = async (): Promise<void> => {
     process.exit(1);
   }
 };
-let scheduledShutdown: Promise<void> | undefined;
 const scheduleShutdown = (): void => {
   scheduledShutdown ??= shutdownAndExit();
   void scheduledShutdown;

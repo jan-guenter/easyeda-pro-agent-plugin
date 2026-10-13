@@ -1,5 +1,13 @@
 # PCB geometry
 
+PCB design transactions currently refuse before dispatch because native Save's
+delayed project-structure write lacks operation-owned completion and complete
+SQL-effect proof. The PCB writer descriptions below are retained source
+contracts and historical evidence, not current execution instructions. Reads
+and footprint operations retain their separate guards; footprint support does
+not enable the corresponding PCB operation. Never substitute native UI for a
+refused transaction.
+
 ## Calibrate units and axes
 
 PCB and footprint public APIs commonly use mil. Prefer the installed unit conversion helper and keep the unit in every assertion. Before applying project coordinates, measure two known objects to determine the Y direction and rotation convention. Do not reuse another project's axis transform.
@@ -16,7 +24,88 @@ The exact component reader can return live bounding boxes for selected component
 
 Serializer grids and adapter scaling need a controlled test in the current editor. Do not apply a global correction from one observed footprint. Create a disposable test primitive, save and reopen it, measure the result, and document any version-specific compensation.
 
+### Inherited footprint lines
+
+A PCB Line enumerator can include footprint graphics that have no standalone
+PCB `LINE` record. An ID prefix alone does not prove their owner. The candidate
+net-membership and primitive-type readers resolve each explicit component
+`Footprint` association against a fresh managed checkpoint, then match template
+IDs and exact transformed geometry to the complete live inventory. Inherited
+provenance is labelled `FOOTPRINT_LINE` with its footprint document UUID; it is
+not mislabelled as a PCB record or included in a nonempty-net result.
+
+This profile admits only unlocked top-side components at zero rotation, ordinary
+zero-origin local footprints and empty-net top-silkscreen lines. Rotated/bottom
+instances, custom chains, layer replacements, partitions, ambiguous owners and
+incomplete inventories refuse. Explicit footprint associations require proof
+even if the inventory reports no inherited lines. The initial detection sample
+does not count toward the two accepted source/inventory/source cycles; complete
+checkpoint invariance is rechecked around every accepted observation. Offline
+tests and retained-fixture replay are not connected validation of this candidate.
+
 ## Live bounds and placement
+
+### Standalone silkscreen text
+
+The source package retains schemas and pure effect verifiers for `pcb.text.modify`, `pcb.text.create` and
+`pcb.text.delete` for standalone top-silkscreen STRINGs. These are not component
+Designator edits or footprint operations. Query the installed schema first;
+older packages lack some or all of these actions.
+All stored STRINGs must fit the default-font, LEFT_BOTTOM, zero-angle,
+nonmirrored/nonreverse profile. Coordinates use exact four-decimal native mil;
+supported text contains letters, digits, spaces, dot, underscore and hyphen.
+Custom fonts, formula text, pours, generated copper, groups, partitions and
+unmodeled record families refuse. Existing text admits exactly `null` or
+`"#000000"` specialColor and preserves that scalar. They are different native
+states, not interchangeable colors. No layer/style change or unlock is included.
+These are current implementation limits, not permanent SDK limits.
+
+Modification changes only x/y/text. Creation takes explicit x/y/text/fontSize/
+strokeWidth and fixes layer 3, default font, LEFT_BOTTOM, zero angle, unlocked,
+zIndex -1 and explicit black specialColor in creation profile v2. The facade reserves its ID once and journals it
+with the generated program before dispatch. Recovery must reuse that original
+identity for proof, never generate or dispatch another creation. The creation
+inverse deletes that exact ID. Deletion takes one existing ID and has no
+automatic inverse; creating replacement text would not restore its identity or
+history.
+
+The adapter preserves component ATTR ownership and all peer records and binds
+one captured PCB frame across awaited reads. Its synthetic tests are not connected
+Save/reopen evidence. Installed131000 passed one forward modification and an
+explicit reverse modification with complete saved/reopened project proof.
+Its v1 creation retained one successful Save/close/reopen, then refused the new
+STRING's null-to-black export after reload. Installed150000 subsequently completed
+that journal's narrow retained-Save recovery without repeating creation, Save or
+navigation. Stored null and exported black remain distinct. This recovery does
+not validate the v2 explicit-black writer or deletion.
+
+Installed164600 separately completed one v2 creation with synthetic text at
+native-mil x195/y900, fontSize120 and strokeWidth8, with explicit black retained
+through Save/reopen. A new transaction then deleted exactly that journal-owned
+identity. Each consumed one Save intent and retained one successful
+Save/close/reopen acknowledgment. Independent complete checkpoints proved all
+ten peer histories and 131 original target records unchanged across each
+transaction. Creation appended exactly DOCHEAD/STRING; deletion appended
+DOCHEAD and the created STRING's tombstone. The original seed remained exact,
+and deletion restored the full pre-create source, not history or database bytes.
+This validates those two default-profile cases, not unsaved rollback, replacement
+IDs, arbitrary text/color combinations or a later source generation. Never
+replay either completed edit or Save; legacy retained recovery still grants no
+future writer authority.
+
+See [creation recovery](failure-recovery.md#retained-pcb-text-creation-save) before
+handling an already consumed Save. A native disposable text fixture exposed two unused-layer
+color differences between saved records and reopened FileSource on the pinned
+build. Keep both observations. The maintained baseline checks intended target
+fields; it does not require every unchanged exported body to equal storage.
+Source apply computes a live-record diff, and complete durable proof must keep
+each untouched saved layer's type and body exact. Do not add a blanket equality
+test, normalize colors, change global palettes or repeat Save as a workaround.
+Other queued native effects still require the normal proof gates. Text position approval
+still requires visual inspection and silkscreen-clearance review; an exact
+source delta alone cannot establish either.
+
+### Component placement
 
 Use live placed primitive bounding boxes for clearance decisions. Offline envelopes may omit graphics or body extents. For typed placement:
 

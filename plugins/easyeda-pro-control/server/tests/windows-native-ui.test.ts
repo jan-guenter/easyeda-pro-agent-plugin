@@ -53,7 +53,7 @@ void test("UI works on owned Start Page without bridge calls and keeps 64-bit St
 
 void test("every UI mutation requires confirmation and caller script/path/process authority is rejected", async () => {
   const { controller, calls } = fixture();
-  for (const action of ["focus", "invoke", "setvalue", "filename", "click", "doubleclick", "keys", "normal-close"]) {
+  for (const action of ["focus", "invoke", "setvalue", "filename", "click", "doubleclick", "rightclick", "hover", "keys", "normal-close"]) {
     await assert.rejects(controller.run({ action, windowHandle: "123", name: "Save", text: "x", x: 1, y: 1 }));
   }
   for (const input of [{ action: "windows", code: "caller-code" }, { action: "capture", windowHandle: "123", outputPath: "D:\\outside.png" },
@@ -89,9 +89,9 @@ void test("rightclick uses the confirmed bound pointer path with no caller-selec
   const script = await readFile(path.join(PLUGIN_ROOT, "scripts/native-ui-controller.ps1"), "utf8");
   for (const fragment of [
     "$windowPid -eq $request.rootPid -and $action -notin @('focused','rightclick')",
-    "$action -in @('focus','invoke','setvalue','filename','click','doubleclick','rightclick','keys','normal-close')",
-    "$action -in @('focused','capture','click','doubleclick','rightclick','keys')",
-    "$action -in @('click','doubleclick','rightclick','keys')",
+    "$action -in @('focus','invoke','setvalue','filename','click','doubleclick','rightclick','hover','keys','normal-close')",
+    "$action -in @('focused','capture','click','doubleclick','rightclick','hover','keys')",
+    "$action -in @('click','doubleclick','rightclick','hover','keys')",
     "$action -in @('click','doubleclick','rightclick')",
     "throw 'point-outside-owned-window'", "throw 'input-target-is-not-foreground'",
     "if ($action -eq 'rightclick') { $down = 8; $up = 16 }",
@@ -107,6 +107,46 @@ void test("rightclick uses the confirmed bound pointer path with no caller-selec
   assert.equal(excluded.includes(request.action), true);
   for (const action of ["click", "doubleclick", "keys"]) { assert.equal(excluded.includes(action), false); }
   assert.ok(script.indexOf(delegation[0]) < script.indexOf("} elseif ($action -in @('click','doubleclick','rightclick'))"));
+});
+
+void test("hover is one confirmed bound pointer move with exact position evidence, never a click or arbitrary code", async () => {
+  const { controller, calls, state } = fixture();
+  const request = { action: "hover", windowHandle: "123", x: -14, y: 260, confirmUIWrite: true };
+  for (const invalid of [{ ...request, confirmUIWrite: false }, { ...request, confirmUIWrite: undefined },
+    { ...request, x: -32_769 }, { ...request, y: Number.NaN }, { ...request, x: 0.5 },
+    { ...request, dwellMs: 1000 }, { ...request, button: "none" }, { ...request, count: 0 },
+    { ...request, code: "caller-code" }, { ...request, rootPid: 666 }, { ...request, recoveryCloseConfirmation: {} }]) {
+    await assert.rejects(controller.run(invalid));
+  }
+  assert.equal(calls.length, 0);
+  const position = { pointerMovedTo: [request.x, request.y], buttonInputSent: false, hoverEffectProven: false };
+  state.result = { schema: SCHEMA, action: "hover", binding: BINDING, result: position };
+  const result = await controller.run(request);
+  assert.equal(result["authority"], "retained-job");
+  assert.deepEqual(result["result"], position);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0]?.request["action"], "hover");
+  assert.equal(calls[0]?.request["rootStartTicks"], TICKS);
+  assert.equal(calls[0]?.request["executableSha256"], HASH);
+  for (const invalid of [{ ...position, pointerMovedTo: [0, 260] }, { ...position, buttonInputSent: true },
+    { ...position, hoverEffectProven: true }, { ...position, clicked: [request.x, request.y] }, {}]) {
+    state.result = { schema: SCHEMA, action: "hover", binding: BINDING, result: invalid };
+    await assert.rejects(controller.run(request), { message: "native-ui-hover-position-not-proven", dispatched: true });
+  }
+  state.result = { schema: SCHEMA, error: "native-ui-refused", dispatched: false };
+  await assert.rejects(controller.run(request), { message: "native-ui-refused", dispatched: false });
+  state.result = { schema: SCHEMA, error: "native-ui-action-failed", dispatched: true };
+  await assert.rejects(controller.run(request), { message: "native-ui-action-failed", dispatched: true });
+  state.result = { schema: SCHEMA, error: "native-ui-action-failed", dispatched: false };
+  await assert.rejects(controller.run(request), { message: "native-ui-hover-response-invalid", dispatched: true });
+  for (const invalid of [null, false, [], { schema: SCHEMA, action: "hover", binding: BINDING, result: [] },
+    { schema: SCHEMA, binding: BINDING, result: position }, { schema: SCHEMA, action: "hover", result: position },
+    { schema: SCHEMA, action: "hover", binding: { ...BINDING, rootStartTicks: Number(TICKS) }, result: position },
+    { schema: SCHEMA, action: "hover", binding: BINDING, result: position, extra: true },
+    { schema: SCHEMA, error: "native-ui-refused" }]) {
+    state.run = (): Promise<unknown> => Promise.resolve(invalid);
+    await assert.rejects(controller.run(request), { message: "native-ui-hover-response-invalid", dispatched: true });
+  }
 });
 
 void test("discovery and observed-unowned normal close never imply retained Job authority", async () => {

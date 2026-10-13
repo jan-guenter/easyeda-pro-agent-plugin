@@ -1,3 +1,4 @@
+import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
 import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -20,7 +21,7 @@ const previousDirectory = process.env["EASYEDA_CONTROL_DATA_DIR"];
 
 before(async () => {
   directory = await mkdtemp(join(tmpdir(), "easyeda-operation-scan-test-"));
-  process.env["EASYEDA_CONTROL_DATA_DIR"] = directory;
+  configureTestControlRoot(directory);
   artifacts = await import("../src/artifacts.ts");
   engineModule = await import("../src/engine.ts");
   await artifacts.ensureOperationStorage();
@@ -34,8 +35,8 @@ afterEach(async () => {
 after(async () => {
   const capability = await artifacts.controlRootCapability();
   await capability.close();
-  if (previousDirectory === undefined) { delete process.env["EASYEDA_CONTROL_DATA_DIR"]; }
-  else { process.env["EASYEDA_CONTROL_DATA_DIR"] = previousDirectory; }
+  if (previousDirectory === undefined) { configureTestControlRoot(); }
+  else { configureTestControlRoot(previousDirectory); }
   await rm(directory, { recursive: true, force: true });
 });
 

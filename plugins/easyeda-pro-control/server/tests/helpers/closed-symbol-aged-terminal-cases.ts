@@ -1,0 +1,65 @@
+/* oxlint-disable import/max-dependencies -- Exercise both fixed profile issuers and their actual shared lifecycle, not injected verifiers. */
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { test } from "node:test";
+import { agedCoordinatorFixture } from "./closed-symbol-aged-coordinator-fixture.ts";
+import { fixture as lockedCoordinatorFixture } from "./closed-symbol-coordinator-fixture.ts";
+import { assertOriginalAgedClosedSymbolFullEvidence } from "../../src/closed-symbol-coordinator.ts";
+import { ClosedSymbolAgedTerminalStage, assertOriginalAgedClosedSymbolCompletion, inspectClosedSymbolAgedTerminal } from "../../src/closed-symbol-aged-terminal.ts";
+import { ClosedSymbolTerminalStage, assertOriginalClosedSymbolCompletion, inspectClosedSymbolTerminal } from "../../src/closed-symbol-terminal.ts";
+import { loadClosedSymbolHistoricalPhaseJournal } from "../../src/closed-symbol-journal.ts";
+import { operationPath, readExactUtf8Artifact } from "../../src/artifacts.ts";
+import { sha256Json } from "../../src/core.ts";
+import { parseClosedSymbolTerminalEnvelope } from "../../src/closed-symbol-terminal-shape.ts";
+import { parseClosedSymbolAgedTerminalEnvelope } from "../../src/closed-symbol-aged-terminal-shape.ts";
+
+void test("original aged full flow has distinct v2 completion and read-only historical evidence", async (context) => {
+  const f = await agedCoordinatorFixture(context), full = await f.stage.recordAgedFullEvidence(f.plan);
+  const original = assertOriginalAgedClosedSymbolFullEvidence(full, f.engine, full.operationId);
+  const stage = new ClosedSymbolAgedTerminalStage(f.engine, f.machine);
+  const initial = await inspectClosedSymbolAgedTerminal(full.operationId, f.machine);
+  assert.equal(initial.classification, "evidence-only");
+  await assert.rejects(stage.complete(structuredClone(full)), /original/iu);
+  await assert.rejects(new ClosedSymbolTerminalStage(f.engine, f.machine).complete(full), /original/iu);
+  const before = [...f.events], references = f.transport.calls, rendererCalls = f.transport.rendererCalls;
+  const result = await stage.complete(full);
+  assertOriginalAgedClosedSymbolCompletion(result, f.engine, full.operationId);
+  assert.equal(result.completionProved, true); assert.equal(result.saved, false); assert.equal(result.reopened, false);
+  assert.throws(() => { assertOriginalClosedSymbolCompletion(result, f.engine, full.operationId); }, /original/iu);
+  assert.throws(() => { assertOriginalAgedClosedSymbolCompletion(structuredClone(result), f.engine, full.operationId); }, /original/iu);
+  await assert.rejects(stage.complete(full), /cannot repeat/u);
+  const envelopeText = await readExactUtf8Artifact(result.terminalArtifact);
+  const envelopeValue: unknown = JSON.parse(envelopeText.text);
+  const envelope = parseClosedSymbolAgedTerminalEnvelope(envelopeValue);
+  assert.throws(() => { parseClosedSymbolTerminalEnvelope(envelopeValue); });
+  assert.equal(envelope.body.headEligibility, "aged-unlocked");
+  assert.equal(Object.keys(envelope.body.evidence).length, 10);
+  assert.deepEqual(envelope.body.evidence.mainReferenceIntent, original.mainReference.intentArtifact);
+  assert.deepEqual(envelope.body.evidence.mainReferenceResult, original.mainReference.resultArtifact);
+  assert.equal(envelope.body.results.mainReferenceResultSha256, sha256Json(original.mainReference));
+  await assert.rejects(inspectClosedSymbolTerminal(full.operationId, f.machine));
+  const loaded = await loadClosedSymbolHistoricalPhaseJournal(full.operationId);
+  const bytes = await readFile(operationPath(full.operationId));
+  assert.equal(loaded.journal.state, "closed-session-completed"); assert.equal(loaded.terminalOutcomeVerified, false);
+  const historical = await inspectClosedSymbolAgedTerminal(full.operationId, f.machine);
+  assert.equal(historical.classification, "historical-completion-verified");
+  assert.equal(historical.historicalCompletionRecorded, true); assert.equal(historical.terminalOutcomeVerified, true);
+  assert.equal(historical.liveOriginalCompletionProved, false); assert.equal(historical.currentSourceChecked, false);
+  assert.equal(historical.currentOwnershipChecked, false); assert.equal(historical.authorityRestored, false);
+  assert.equal(historical.executionAuthorized, false); assert.equal(historical.replayAllowed, false);
+  assert.equal(historical.storedJournalSha256, loaded.journal["journalSha256"]);
+  assert.equal(historical.entireStoredJournalSha256, sha256Json(loaded.journal));
+  assert.deepEqual(await readFile(operationPath(full.operationId)), bytes); assert.deepEqual(f.events, before);
+  assert.equal(f.transport.calls, references); assert.equal(f.transport.rendererCalls, rendererCalls);
+});
+
+void test("v2 terminal refuses an original successful locked full-flow token before publication", async (context) => {
+  const f = await lockedCoordinatorFixture(context), full = await f.stage.recordFullEvidence(f.plan);
+  const before = [...f.events], stage = new ClosedSymbolAgedTerminalStage(f.engine, f.machine);
+  assert.throws(() => { assertOriginalAgedClosedSymbolFullEvidence(full, f.engine, full.operationId); }, /original/iu);
+  await assert.rejects(stage.complete(full), /original/iu);
+  assert.equal(stage.originalArtifact(full.operationId), undefined);
+  const historical = await inspectClosedSymbolAgedTerminal(full.operationId, f.machine);
+  assert.equal(historical.classification, "evidence-only"); assert.equal(historical.terminalOutcomeVerified, false);
+  assert.deepEqual(f.events, before);
+});

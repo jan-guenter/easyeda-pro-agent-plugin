@@ -1,3 +1,4 @@
+import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
 import {
   chmod,
@@ -93,9 +94,9 @@ async function loadFixtureIdentity(
 
 afterEach(async () => {
   if (priorControlDirectory === undefined) {
-    Reflect.deleteProperty(process.env, "EASYEDA_CONTROL_DATA_DIR");
+    configureTestControlRoot();
   } else {
-    process.env["EASYEDA_CONTROL_DATA_DIR"] = priorControlDirectory;
+    configureTestControlRoot(priorControlDirectory);
   }
   await Promise.all(
     temporaryRoots.splice(0).map((path) => rm(path, { force: true, recursive: true })),
@@ -108,7 +109,7 @@ void describe(
   () => {
     void test("binds the expected build ID to a private matching archive and receipt", async () => {
       const fixture = await createFixture();
-      process.env["EASYEDA_CONTROL_DATA_DIR"] = fixture.controlRoot;
+      configureTestControlRoot(fixture.controlRoot);
 
       const identity = await loadFixtureIdentity(fixture.controlRoot);
 
@@ -120,7 +121,7 @@ void describe(
 
     void test("rejects a mismatched archive or a permissive credential-bearing file", async () => {
       const fixture = await createFixture();
-      process.env["EASYEDA_CONTROL_DATA_DIR"] = fixture.controlRoot;
+      configureTestControlRoot(fixture.controlRoot);
       await writeFile(fixture.archivePath, "replaced archive\n", { mode: 0o600 });
       await assert.rejects(
         loadFixtureIdentity(fixture.controlRoot),
@@ -144,7 +145,7 @@ void describe(
         recursive: true,
       });
       await symlink(externalBuild, join(fixture.controlRoot, "bridge-build"));
-      process.env["EASYEDA_CONTROL_DATA_DIR"] = fixture.controlRoot;
+      configureTestControlRoot(fixture.controlRoot);
 
       await assert.rejects(
         loadFixtureIdentity(fixture.controlRoot),
@@ -156,7 +157,7 @@ void describe(
       const fixture = await createFixture();
       const displacedControlRoot = `${fixture.controlRoot}.displaced`;
       const replacementMarker = join(fixture.controlRoot, "must-survive.txt");
-      process.env["EASYEDA_CONTROL_DATA_DIR"] = fixture.controlRoot;
+      configureTestControlRoot(fixture.controlRoot);
       const capability = await openControlRootCapability(fixture.controlRoot);
       try {
         await rename(fixture.controlRoot, displacedControlRoot);

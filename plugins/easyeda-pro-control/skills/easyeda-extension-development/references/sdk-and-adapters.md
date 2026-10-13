@@ -44,6 +44,22 @@ the protocol boundary without swallowing native failures or printing private
 source/credentials. Main-thread computations must yield cooperatively while
 retaining exact context/source checks; never relax the checks for speed.
 
+An awaited current-document getter and a later current-document setter can
+select different PCB frames. Capture the exact ordinary iframe and its native
+receiver first; after each await, synchronously recheck the sealed project,
+branch, tab, frame and writable state before using that captured receiver.
+Pin both the UI frame registry and native PCB implementation. Check stack
+changes before their first physical-layer mutation, not only inside a later
+source merge. Receiver binding is not an atomic source compare-and-swap;
+independent post-effect and durable proofs remain necessary.
+
+Large journal directories can defeat a cache that evicts the oldest entry for
+every new scan result. Test more entries than the cache cap. Preserve useful
+resident entries when declining a new admission, but still rehash current journal
+and artifact bytes on every use. File size, timestamps and an open descriptor do
+not prove that file contents stayed unchanged. Synthetic cache improvements
+must not be reported as measured connected latency improvements.
+
 ## Narrow execution contract
 
 Use literal action discriminators, bounded strings/arrays/numbers, strict nested
@@ -59,8 +75,82 @@ compare native source, connected endpoints and the complete durable selected
 branch. Creation IDs belong to the original journal. Existing descendants,
 library templates and inherited instances need explicit scope.
 
+Trace navigation through native event subscribers, not only its public wrapper.
+The pinned PCB/footprint tab-click handler may persist global preferences and
+prune local backups. Project opening can restore tabs; closing an active symbol
+or schematic can activate a PCB peer. Refuse known unsafe state before Save,
+close or open, and recheck immediately after awaited work. A passive check is
+not an atomic guarantee across native awaits. Do not implement a bypass by
+toggling preferences, suppressing persistence or updating only part of the
+private active-frame state. A lower-level route must prove the entire lifecycle.
+
 Public API stubs or lossy mappers can justify a reviewed, version-pinned native
 adapter—not arbitrary private invocation. Preserve unknown fields, parent/child
 order, hidden attributes and locks. Geometric contact is not native connectivity.
 Define unsupported shapes up front. If a general inverse cannot preserve exact
 identity, say it is unavailable; do not advertise automatic rollback.
+
+Review full-load and incremental decode separately. The pinned PCB text decoder
+is instantiated per record during source merge but reused by record type during
+reopen. Its clear method leaves specialColor intact, and a null input does not
+assign that field. A null STRING following a black STRING therefore reloads as
+black despite correct stored null. A single-record constructor test misses this
+bug. Test mixed ordered records through both lifecycles, preserve the raw order,
+and never turn one observed conversion into global null/color equivalence.
+
+Test stored and exported representations independently. Native page exports omit
+the stored META record and can include an unstored origin CANVAS or initialized
+drawing-frame order. A synthetic fixture that copies saved records verbatim into
+source can hide a universal admission failure. Preserve raw evidence and prove
+each allowed encoding difference; a comparison projection is not a saved
+checkpoint. Apply the same boundary through preflight, rollback and reconciliation.
+
+Keep native membership separate from SDK getter projection. A schematic page's
+root-family set excludes inherited drawing-frame descendants that remain in its
+full ID index. A symbol editor instead owns Pins beneath its PART. Prove the
+reciprocal tree, family set, index and source membership for the actual scene;
+do not reuse a page-root fixture for symbol enumeration. Inspect getters for
+side effects: the pinned symbol `parts` getter sorts its backing array.
+
+Do not compose a public enumeration that turns exceptions into `[]` with a
+getter that drops custom attributes and call the result complete. A native
+equivalent may prove bounded membership and each retained field, while refusing
+unrepresentable attributes. Label it as that narrower equivalent. Preserve
+signed zero during in-memory scalar reproof, and distinguish SDK coordinate/
+rotation conventions from stored records even when field names match.
+
+Separate live mutation, queued uploads and durable state in coordinator tests.
+EasyEDA may persist a forward effect or inverse later without an agent Save.
+An upload barrier is not a flush command. Test inverse intent consumption,
+auto-persistence between preflight and dispatch, live-only restoration, and
+read-only reconciliation after delayed persistence. Retain the fresh checkpoint,
+raw observer and complete proof, not only a success flag or their summary hashes.
+
+Trace each native queue separately. The pinned project-worker upload wait drains
+task1, but META changes for symbols, pages and PCB/schematic containers also
+schedule a debounced structure-table update. Its task2 promise does not exist
+until the timer starts. Neither repeated stable observations nor equality with a
+new final checkpoint proves that job finished or that its SQL effect was correct.
+Native Save clears the pending flag and republishes geometry, so the same gap
+affects schematic-page, symbol and PCB design transactions. Those routes and the
+eight metadata writers currently refuse execution. Restore them only after
+modeling the complete effect and obtaining operation-owned completion evidence.
+
+Test adapters against the maintained producer, not only a hand-written fixture.
+PCB component inventory is identity-only; it has no per-component state map.
+Inherited footprint drawing lines can appear in inventory without standalone
+LINE source records. An ID prefix does not prove parent ownership. A disabled
+PANELIZE record is safe to admit only when its full canonical shape is checked
+and the pinned native path returns before generating panel geometry.
+
+Preserve public layer color strings as bounded raw data. The pinned fractional
+RGB formatter can emit malformed strings on disabled custom layers. Do not
+silently repair them or label them valid CSS. Active-layer selection needs both
+the canonical source identity and matching public layer state, not just an ID.
+
+Check deprecated getters for silent failure. On the pinned tuple, the old
+schematic selected-ID getter turns a missing obsolete iframe-command response
+into an empty list. Its declared replacement uses the modern selection manager
+and promotes selected wire segments to parent groups. An explicit replacement
+adapter must identify that route, retain the returned group semantics and refuse
+missing results. Never call a swallowed error proof of an empty selection.

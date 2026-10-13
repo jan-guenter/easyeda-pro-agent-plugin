@@ -1,3 +1,4 @@
+import { configureTestControlRoot } from "./test-control-root.ts";
 // oxlint-disable import/max-dependencies -- This end-to-end sandbox fixture composes filesystem, WebSocket, bridge-auth, launcher, and lifecycle boundaries in one process.
 import assert from "node:assert/strict";
 import { once } from "node:events";
@@ -508,6 +509,7 @@ before(async () => {
     "EASYEDA_UPSTREAM_COMMAND",
     "EASYEDA_UPSTREAM_ARGS_JSON",
     "EASYEDA_UPSTREAM_CWD",
+    "EASYEDA_UPSTREAM_DATA_DIR",
     "EASYEDA_CONTROL_DATA_DIR",
     "EASYEDA_ASSETS_ROOT",
     "EASYEDA_PCB_BUNDLE_VERSION",
@@ -520,7 +522,7 @@ before(async () => {
   process.env["EASYEDA_UPSTREAM_COMMAND"] = process.execPath;
   process.env["EASYEDA_UPSTREAM_ARGS_JSON"] = JSON.stringify([entrypoint]);
   process.env["EASYEDA_UPSTREAM_CWD"] = fixtureRoot;
-  process.env["EASYEDA_CONTROL_DATA_DIR"] = join(fixtureRoot, "control-data");
+  configureTestControlRoot(join(fixtureRoot, "control-data"));
   process.env["EASYEDA_ASSETS_ROOT"] = assetsRoot;
   process.env["EASYEDA_PCB_BUNDLE_VERSION"] = "3.2.149.fixture";
   process.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"] = "0.2.53.fixture";
@@ -603,9 +605,16 @@ void describe(
         try {
           assert.equal(upstream.processDiagnostics(), undefined);
           await upstream.connect();
+          await upstream.installedEasyedaBundles();
           const connected = upstream.processDiagnostics();
-          assert.equal(connected?.sandbox.closed, false);
-          assert.equal(connected?.sandbox.protocolFailureCode, null);
+          assert.equal(connected?.sandbox?.closed, false);
+          assert.equal(connected?.sandbox?.protocolFailureCode, null);
+          assert.equal(connected?.localIntegrity.schema, "easyeda-pro-control.local-integrity-timings.v1");
+          const startupStages = connected?.localIntegrity.stages;
+          assert.equal(startupStages?.find((stage) => stage.stage === "runtime-module-graph")?.completedCount, 1);
+          assert.equal(startupStages?.find((stage) => stage.stage === "sandbox-startup")?.completedCount, 1);
+          assert.equal(startupStages?.find((stage) => stage.stage === "sandbox-input-validation")?.completedCount, 3);
+          assert.equal(startupStages?.find((stage) => stage.stage === "installed-bundle-hashing")?.completedCount, 1);
           await assert.rejects(
             upstream.callTool(tool, {}),
             /Connection closed/u,
@@ -613,6 +622,7 @@ void describe(
           await upstream.close();
           const exited = upstream.processDiagnostics();
           assert.ok(exited);
+          assert.ok(exited.sandbox !== null);
           assert.equal(exited.sandbox.closed, true);
           assert.equal(
             exited.sandbox.protocolFailureCode,
@@ -635,7 +645,7 @@ void describe(
           assert.equal(Object.isFrozen(exited), true);
           assert.equal(Object.isFrozen(exited.sandbox), true);
           assert.deepEqual(upstream.processDiagnostics(), exited);
-          assert.equal(connected?.sandbox.closed, false);
+          assert.equal(connected?.sandbox?.closed, false);
         } finally {
           await upstream.close();
           await controlRoot.close();
@@ -770,6 +780,9 @@ void describe(
         assert.deepEqual(initial.startup, initial.current);
         assert.equal(initial.startupSha256, initial.currentSha256);
         assert.equal(initial.drift, false);
+        const initialTimings = upstream.processDiagnostics()?.localIntegrity;
+        assert.equal(initialTimings?.stages.find((stage) => stage.stage === "execution-closure")?.completedCount, 1);
+        assert.equal(initialTimings?.stages.find((stage) => stage.stage === "status-module-graph")?.completedCount, 1);
         assert.equal(initial.startup.entrypoint, entrypoint);
         assert.equal(
           initial.startup.implementationTree.root,
@@ -811,6 +824,10 @@ void describe(
         );
         assert.notEqual(drifted.startupSha256, drifted.currentSha256);
         assert.equal(drifted.drift, true);
+        const driftedTimings = upstream.processDiagnostics()?.localIntegrity;
+        assert.equal(driftedTimings?.stages.find((stage) => stage.stage === "execution-closure")?.completedCount, 2);
+        assert.equal(driftedTimings?.stages.find((stage) => stage.stage === "status-module-graph")?.completedCount, 2);
+        assert.equal(initialTimings?.stages.find((stage) => stage.stage === "execution-closure")?.completedCount, 1);
       } finally {
         extension?.terminate();
         await upstream.close();
@@ -859,6 +876,10 @@ void describe(
             ),
         );
         assert.equal(childAuthorityPersisted, false);
+        const failedDiagnostics = upstream.processDiagnostics();
+        assert.equal(failedDiagnostics?.sandbox, null);
+        assert.equal(failedDiagnostics?.localIntegrity.stages.find((stage) => stage.stage === "sandbox-startup")?.failedCount, 1);
+        assert.doesNotMatch(JSON.stringify(failedDiagnostics), /post-ready-race-bwrap/u);
         await assert.rejects(access(spawnMarker), { code: "ENOENT" });
       } finally {
         await upstream?.close();
@@ -891,6 +912,10 @@ void describe(
           upstream.listTools(),
           /runtime module graph differs from the reviewed graph fingerprint/u,
         );
+        const failedDiagnostics = upstream.processDiagnostics();
+        assert.equal(failedDiagnostics?.sandbox, null);
+        assert.equal(failedDiagnostics?.localIntegrity.stages.find((stage) => stage.stage === "runtime-module-graph")?.failedCount, 1);
+        assert.doesNotMatch(JSON.stringify(failedDiagnostics), /unreviewed reachable module drift|dotenv/u);
         await assert.rejects(
           access(spawnMarker),
           (error: unknown) =>
@@ -1214,7 +1239,7 @@ void describe(
       const rootTokenPath = join(root, "bridge-token");
       await mkdir(root, { mode: 0o700 });
       await writeFile(rootTokenPath, `${bridgeToken}\n`, { mode: 0o600 });
-      process.env["EASYEDA_CONTROL_DATA_DIR"] = root;
+      configureTestControlRoot(root);
       process.env["EASYEDA_UPSTREAM_DATA_DIR"] = dataDirectory;
       process.env["EASYEDA_BRIDGE_TOKEN_FILE"] = rootTokenPath;
       const controlRoot = await openConfiguredControlRootCapability();
@@ -1274,9 +1299,9 @@ void describe(
         await prepared?.dataDirectory.handle.close();
         await controlRoot.close();
         if (configuredRoot === undefined) {
-          Reflect.deleteProperty(process.env, "EASYEDA_CONTROL_DATA_DIR");
+          configureTestControlRoot();
         } else {
-          process.env["EASYEDA_CONTROL_DATA_DIR"] = configuredRoot;
+          configureTestControlRoot(configuredRoot);
         }
         if (configuredDataDirectory === undefined) {
           Reflect.deleteProperty(process.env, "EASYEDA_UPSTREAM_DATA_DIR");

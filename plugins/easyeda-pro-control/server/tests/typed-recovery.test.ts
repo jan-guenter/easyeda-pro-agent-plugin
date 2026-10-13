@@ -1,5 +1,8 @@
+/* oxlint-disable import/max-dependencies -- The builtin-only fixture helper isolates credential and upstream paths alongside these coordinator test dependencies. */
+import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import fileSystem, { mkdtemp, rm } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, describe, it } from "node:test";
@@ -23,7 +26,7 @@ const NEXT_RUNTIME: RuntimeIdentity = { kind: "runtime-identity", generation: "n
 
 before(async () => {
   directory = await mkdtemp(join(tmpdir(), "easyeda-typed-recovery-test-"));
-  process.env["EASYEDA_CONTROL_DATA_DIR"] = directory;
+  configureTestControlRoot(directory);
   engineModule = await import("../src/engine.ts");
   artifacts = await import("../src/artifacts.ts");
   executorModule = await import("../src/design-execution.ts");
@@ -31,8 +34,8 @@ before(async () => {
 after(async () => {
   const capability = await artifacts.controlRootCapability();
   await capability.close();
-  if (priorControlDirectory === undefined) { delete process.env["EASYEDA_CONTROL_DATA_DIR"]; }
-  else { process.env["EASYEDA_CONTROL_DATA_DIR"] = priorControlDirectory; }
+  if (priorControlDirectory === undefined) { configureTestControlRoot(); }
+  else { configureTestControlRoot(priorControlDirectory); }
   await rm(directory, { recursive: true, force: true });
 });
 
@@ -107,6 +110,12 @@ async function fixture(t: TestContext): Promise<{
   await engine.controlFingerprintPromise;
   t.mock.method(engine, "runtimeIdentity", () => { calls.push("runtime-identity"); return Promise.resolve(behavior.runtime); });
   return { engine, journal, behavior, calls };
+}
+
+async function retainNativeResult(journal: DispatchOperationJournal, result: unknown): Promise<void> {
+  journal.sequence += 1;
+  journal.artifacts.push(await artifacts.writePhaseArtifact(journal.operationId, journal.sequence, "native-return", result));
+  await artifacts.updateOperation(journal);
 }
 
 void describe("typed transaction retained-authority recovery", () => {
@@ -298,6 +307,152 @@ void describe("typed transaction retained-authority recovery", () => {
     assert.equal(retained["orphanedCallPossible"], false);
   });
 
+  void it("settled-result retention is awaited exactly once before lease clear and capture release", async (t) => {
+    const { engine, journal, calls } = await fixture(t);
+    const result = { structuredContent: { createdId: "c".repeat(16) } };
+    const entered = Promise.withResolvers<true>(), release = Promise.withResolvers<true>();
+    t.mock.method(engine.upstream, "callTool", () => { calls.push("native-create"); return Promise.resolve(result); });
+    let callbacks = 0;
+    const pending = engine.dispatchWithOrphanTracking(journal, "execute", "easyeda_execute", {}, 1000, undefined, async (returned) => {
+      callbacks += 1; assert.equal(returned, result);
+      assert.equal(journal.orphanedCallPossible, true);
+      await retainNativeResult(journal, returned);
+      calls.push("native-result-retained"); entered.resolve(true);
+      await release.promise;
+    });
+    await entered.promise;
+    assert.equal(calls.includes("end-dispatch"), false);
+    assert.equal(calls.includes("release-capture-after-durable-clear"), false);
+    const quarantined = await artifacts.loadOperation(journal.operationId);
+    assert.equal(quarantined["orphanedCallPossible"], true);
+    assert.equal(quarantined.artifacts?.length, 1);
+    release.resolve(true);
+    assert.equal(await pending, result);
+    assert.equal(callbacks, 1);
+    assert.equal(calls.filter((call) => call === "native-create").length, 1);
+    assert.ok(calls.indexOf("native-result-retained") < calls.indexOf("end-dispatch"));
+    assert.equal(calls.at(-1), "release-capture-after-durable-clear");
+    assert.equal(journal.orphanedCallPossible, false);
+  });
+
+  for (const ownedByScope of [false, true]) {
+    // oxlint-disable-next-line eslint/no-loop-func -- Shared artifact module is initialized once by before; each const case owns its runtime fixture.
+    void it(`failed immutable result publication preserves quarantine and authority, scoped=${String(ownedByScope)}`, async (t) => {
+      const { engine, journal, calls, behavior } = await fixture(t);
+      if (ownedByScope) {
+        const binding = engine.upstream.beginAuthenticatedBridgeDispatch?.(behavior.session.gatewayInstanceId, behavior.session.sessionId);
+        assert.ok(binding); engine.upstream.currentAuthenticatedBridgeDispatchBinding = (): AuthenticatedBridgeDispatchBinding => binding;
+      }
+      await artifacts.writePhaseArtifact(journal.operationId, 1, "native-return", { unrelated: "exclusive collision" });
+      t.mock.method(engine.upstream, "callTool", () => { calls.push("native-create"); return Promise.resolve({ structuredContent: { createdId: "c".repeat(16) } }); });
+      let callbacks = 0;
+      await assert.rejects(engine.dispatchWithOrphanTracking(journal, "execute", "easyeda_execute", {}, 1000, undefined, (result) => {
+        callbacks += 1; return retainNativeResult(journal, result);
+      }));
+      const retained = await artifacts.loadOperation(journal.operationId);
+      assert.equal(callbacks, 1); assert.equal(calls.filter((call) => call === "native-create").length, 1);
+      assert.equal(journal.orphanedCallPossible, true); assert.equal(retained["orphanedCallPossible"], true);
+      assert.equal(retained.artifacts?.length, 0); assert.equal(journal.artifacts.length, 0);
+      assert.equal(calls.includes("end-dispatch"), false);
+      assert.equal(calls.includes("release-capture-after-durable-clear"), false);
+      assert.equal(calls.includes("abort-dispatch"), !ownedByScope);
+    });
+  }
+
+  for (const failure of ["lease-end", "clear-write", "capture-release"] as const) {
+    // oxlint-disable-next-line eslint/no-loop-func -- Shared artifact module is initialized once by before; each const case owns its runtime fixture.
+    void it(`native identity remains published across ${failure} failure without another dispatch`, async (t) => {
+      const { engine, journal, calls } = await fixture(t);
+      const error = new Error(`Synthetic ${failure} failure`), result = { structuredContent: { createdId: "c".repeat(16) } };
+      let callbacks = 0, restoreRename: (() => void) | undefined;
+      t.mock.method(engine.upstream, "callTool", () => { calls.push("native-create"); return Promise.resolve(result); });
+      if (failure === "lease-end") { engine.upstream.endAuthenticatedBridgeDispatch = (): never => { throw error; }; }
+      if (failure === "capture-release") {
+        assert.ok(engine.executionAuthorityValidator);
+        Object.assign(engine.executionAuthorityValidator, { releaseCapture: async (): Promise<never> => {
+          const retained = await artifacts.loadOperation(journal.operationId);
+          assert.equal(retained["orphanedCallPossible"], false); assert.equal(retained.artifacts?.length, 1);
+          calls.push("release-failed"); throw error;
+        } });
+      }
+      try {
+        await assert.rejects(engine.dispatchWithOrphanTracking(journal, "execute", "easyeda_execute", {}, 1000, undefined, async (returned) => {
+          callbacks += 1; await retainNativeResult(journal, returned);
+          if (failure === "clear-write") {
+            const intercepted = t.mock.method(fileSystem, "rename", (): Promise<never> => Promise.reject(error));
+            restoreRename = (): void => { intercepted.mock.restore(); syncBuiltinESMExports(); };
+            syncBuiltinESMExports();
+          }
+        }), (actual: unknown) => { assert.equal(actual, error); return true; });
+      } finally { restoreRename?.(); }
+      const retained = await artifacts.loadOperation(journal.operationId);
+      const descriptor = retained.artifacts?.[0];
+      assert.ok(descriptor); assert.equal(retained.artifacts?.length, 1);
+      assert.equal(await fileSystem.readFile(descriptor.path, "utf8"), `${JSON.stringify(result)}\n`);
+      assert.equal(callbacks, 1); assert.equal(calls.filter((call) => call === "native-create").length, 1);
+      const unresolved = failure !== "capture-release";
+      assert.equal(journal.orphanedCallPossible, unresolved); assert.equal(retained["orphanedCallPossible"], unresolved);
+      assert.equal(typeof journal.runtimeRestartChallenge === "string", unresolved);
+      assert.equal(calls.includes("abort-dispatch"), unresolved);
+      assert.equal(calls.includes("release-capture-after-durable-clear"), false);
+      // A caller's ordinary failure publication must not erase quarantine
+      // After the durable clear write failed.
+      journal.state = "library-needs-review";
+      await artifacts.updateOperation(journal);
+      const afterFailure = await artifacts.loadOperation(journal.operationId);
+      assert.equal(afterFailure["orphanedCallPossible"], unresolved);
+    });
+  }
+
+  void it("result artifact publication without its journal descriptor is not successful retention", async (t) => {
+    const { engine, journal, calls } = await fixture(t);
+    const failure = new Error("Synthetic retained-result journal publication failure");
+    let callbacks = 0, completed = false, restoreRename: (() => void) | undefined;
+    t.mock.method(engine.upstream, "callTool", () => { calls.push("native-create"); return Promise.resolve({ structuredContent: { createdId: "c".repeat(16) } }); });
+    try {
+      await assert.rejects(engine.dispatchWithOrphanTracking(journal, "execute", "easyeda_execute", {}, 1000, undefined, async (result) => {
+        callbacks += 1;
+        journal.sequence += 1;
+        journal.artifacts.push(await artifacts.writePhaseArtifact(journal.operationId, journal.sequence, "native-return", result));
+        const intercepted = t.mock.method(fileSystem, "rename", (): Promise<never> => Promise.reject(failure));
+        restoreRename = (): void => { intercepted.mock.restore(); syncBuiltinESMExports(); };
+        syncBuiltinESMExports();
+        await artifacts.updateOperation(journal);
+        completed = true;
+      }), (error: unknown) => { assert.equal(error, failure); return true; });
+    } finally { restoreRename?.(); }
+    const retained = await artifacts.loadOperation(journal.operationId);
+    assert.equal(callbacks, 1); assert.equal(completed, false);
+    assert.equal(calls.filter((call) => call === "native-create").length, 1);
+    assert.equal(journal.orphanedCallPossible, true); assert.equal(retained["orphanedCallPossible"], true);
+    assert.equal(journal.artifacts.length, 1); assert.equal(retained.artifacts?.length, 0);
+    assert.equal(calls.includes("end-dispatch"), false); assert.equal(calls.includes("release-capture-after-durable-clear"), false);
+    assert.equal(calls.includes("abort-dispatch"), true);
+  });
+
+  for (const outcome of ["transport-error", "bridge-timeout", "native-unsettled"] as const) {
+    // oxlint-disable-next-line eslint/no-loop-func -- Shared artifact module is initialized once by before; each const case owns its runtime fixture.
+    void it(`result retention is not called for ${outcome}`, async (t) => {
+      const { engine, journal, calls } = await fixture(t);
+      let callbacks = 0;
+      t.mock.method(engine.upstream, "callTool", (): Promise<unknown> => {
+        calls.push("native-create");
+        if (outcome === "transport-error") { return Promise.reject(new Error("Synthetic transport failure")); }
+        if (outcome === "bridge-timeout") { return Promise.resolve({ structuredContent: { ok: false, error: 'Bridge method "api.execute" timed out after 60000ms' } }); }
+        return Promise.resolve({ content: [{ type: "text", text: JSON.stringify({ success: false,
+          result: { error: { code: "EASYEDA_API_ERROR", message: "NATIVE_LIFECYCLE_CLOSE_UNSETTLED" } } }) }] });
+      });
+      await assert.rejects(engine.dispatchWithOrphanTracking(journal, "execute", "easyeda_execute", {}, 1000, undefined, () => {
+        callbacks += 1; return Promise.resolve();
+      }));
+      assert.equal(callbacks, 0); assert.equal(calls.filter((call) => call === "native-create").length, 1);
+      assert.equal(journal.orphanedCallPossible, true);
+      const retained = await artifacts.loadOperation(journal.operationId);
+      assert.equal(retained["orphanedCallPossible"], true);
+      assert.equal(calls.includes("end-dispatch"), false); assert.equal(calls.includes("release-capture-after-durable-clear"), false);
+    });
+  }
+
   void it("a pre-dispatch authority refusal never reaches the callback or design API", async (t) => {
     const { engine, journal, calls } = await fixture(t);
     journal.orphanedCallPossible = false; await artifacts.updateOperation(journal);
@@ -330,7 +485,7 @@ void describe("typed transaction retained-authority recovery", () => {
     assert.equal(calls.includes("release-capture-after-durable-clear"), false);
   });
 
-  void it("one failed Save dispatch stays consumed through reconcile and commit after reload and rebind", async (t) => {
+  void it("retained failed Save evidence stays consumed and unchanged beneath the new lifecycle refusal", async (t) => {
     const { engine, journal, calls } = await fixture(t);
     const { DESIGN_SAVE_ATTEMPT_PROFILE, createDesignSaveIntent } = await import("../src/design-save-attempt.ts");
     journal.orphanedCallPossible = false;
@@ -357,8 +512,14 @@ void describe("typed transaction retained-authority recovery", () => {
       journal.state = state;
       journal.orphanedCallPhase = "reconcile-upload-barrier";
       await artifacts.updateOperation(journal);
-      await assert.rejects(executor.reconcile(journal.operationId), /Save was already attempted/u);
-      await assert.rejects(executor.commit(journal.operationId), /Save was already attempted/u);
+      const retained = await fileSystem.readFile(artifacts.operationPath(journal.operationId));
+      const beforeCalls = [...calls];
+      await assert.rejects(executor.reconcile(journal.operationId), /operation-owned completion.*project_structures/u);
+      await assert.rejects(executor.commit(journal.operationId), /operation-owned completion.*project_structures/u);
+      assert.deepEqual(await fileSystem.readFile(artifacts.operationPath(journal.operationId)), retained);
+      assert.deepEqual(calls, beforeCalls);
+      const inspected = await executorModule.DesignExecutor.inspect(journal.operationId);
+      assert.equal(inspected["state"], state);
       assert.equal(calls.filter((call) => call === "native-save").length, 1);
     }
   });
@@ -387,5 +548,34 @@ void describe("typed transaction retained-authority recovery", () => {
     assert.equal(calls.includes("release-capture-after-durable-clear"), false);
     assert.equal(calls.includes("end-dispatch"), false);
     assert.equal(calls.includes("abort-dispatch"), true);
+  });
+
+  void it("an early-returning close failure retains real engine authority even when native teardown finishes later", async (t) => {
+    const { engine, journal, calls } = await fixture(t);
+    journal.orphanedCallPossible = false;
+    await artifacts.updateOperation(journal);
+    let nativeClosed = false;
+    const finishNativeTeardown = (): void => { nativeClosed = true; };
+    t.mock.method(engine.upstream, "callTool", () => Promise.resolve({ content: [{ type: "text", text: JSON.stringify({
+      success: false, result: { error: { code: "EASYEDA_API_ERROR", message: "NATIVE_LIFECYCLE_CLOSE_UNSETTLED" } },
+    }) }] }));
+    await assert.rejects(engine.dispatchWithOrphanTracking(journal, "execute", "easyeda_execute", {}, 1000), /native-lifecycle-unsettled;execution-unsettled/u);
+    assert.equal(nativeClosed, false);
+    assert.equal(journal.orphanedCallPossible, true);
+    assert.ok(journal.executionAuthorityBeforeOrphan);
+    const retained = await artifacts.loadOperation(journal.operationId);
+    assert.equal(retained["orphanedCallPossible"], true);
+    assert.equal(calls.includes("release-capture-after-durable-clear"), false);
+    assert.equal(calls.includes("end-dispatch"), false);
+    assert.equal(calls.includes("abort-dispatch"), true);
+    // A late event is not retained process-termination proof and cannot clear
+    // The original journal or allow another close against the same runtime.
+    finishNativeTeardown();
+    assert.equal(nativeClosed, true);
+    const afterLateCompletion = await artifacts.loadOperation(journal.operationId);
+    assert.equal(afterLateCompletion["orphanedCallPossible"], true);
+    await assert.rejects(engine.recoverDispatchAuthority(journal, undefined, () => Promise.resolve()));
+    assert.equal(journal.orphanedCallPossible, true);
+    assert.equal(calls.includes("release-capture-after-durable-clear"), false);
   });
 });

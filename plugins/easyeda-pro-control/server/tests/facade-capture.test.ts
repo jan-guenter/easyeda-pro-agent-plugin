@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- The builtin-only fixture helper isolates credential and upstream paths alongside these coordinator test dependencies. */
+import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -70,6 +72,7 @@ let coldApiCallLog: string;
 let client: Client;
 let transport: StdioClientTransport;
 let expectedFingerprint: Record<string, unknown>;
+let fixtureBridgeEndpoint: Record<string, unknown>;
 let evidenceSequence = 0;
 let facadeEntrypoint: string;
 
@@ -163,6 +166,7 @@ async function capture(
   config: FixtureConfig,
   label: string,
   requestOverrides: Record<string, unknown> = {},
+  upstreamTool: "easyeda_canvas_capture" | "easyeda_canvas_capture_region" | "easyeda_schematic_capture_full_page" = "easyeda_schematic_capture_full_page",
 ): Promise<ToolCallResult> {
   await writeConfig(config);
   const documentType = config.documentType ?? 1;
@@ -171,12 +175,13 @@ async function capture(
       name: "easyeda_control_capture",
       arguments: {
         request: {
-          upstreamTool: "easyeda_schematic_capture_full_page",
+          upstreamTool,
           arguments: {
-            projectId: "project-1",
+            ...(upstreamTool === "easyeda_schematic_capture_full_page" ? {
+              projectId: "project-1", padding: 0, allowInferredA4: false,
+            } : {}),
+            ...(upstreamTool === "easyeda_canvas_capture_region" ? { left: 0, right: 100, top: 80, bottom: 0 } : {}),
             tabId: "tab-1",
-            padding: 0,
-            allowInferredA4: false,
             ...requestOverrides,
           },
         },
@@ -321,9 +326,9 @@ before(async () => {
         commit: "964c05082f1c7c9e8b98f56e967e36bfc3f26128",
         upstreamTreeSha1: "cc8893215e736f9efca78e4216033469008ea8e9",
         closureSha256:
-          "c5cb4d9ed0d5a93bca655f4f846f4f2e9337633941b2df3482aa3b91d7e43ee5",
+          "3281712da24240fa4962fd47855795df71878bb651d820e0c73960875bc701f2",
         fileCount: 70,
-        totalBytes: 853_680,
+        totalBytes: 856_665,
         derivative: REVIEWED_BRIDGE_SOURCE.derivative,
         builtFromPrivateSnapshot: true,
         privateSnapshotSealed: true,
@@ -384,6 +389,8 @@ before(async () => {
           'easyeda_schematic_capture_full_page',
           { readOnlyHint: true, idempotentHint: true },
         ),
+        tool('easyeda_canvas_capture', { readOnlyHint: true, idempotentHint: false }),
+        tool('easyeda_canvas_capture_region', { readOnlyHint: true, idempotentHint: false }),
         tool('easyeda_schematic_components', { readOnlyHint: true, idempotentHint: true }),
         tool('easyeda_pcb_components', { readOnlyHint: true, idempotentHint: true }),
         tool('easyeda_pcb_constraint_check', { readOnlyHint: true, idempotentHint: true }),
@@ -461,12 +468,16 @@ before(async () => {
           throw new Error('Fixture upstream and editor context are unavailable.');
         }
         if (request.params.name === 'easyeda_health_check') {
+          if (config.captureReturned === true && config.captureFingerprintDrift === 'unavailable') {
+            throw new Error('Fixture health probe disappeared after capture.');
+          }
           return result({
             version: '1.0.0-rc.1',
             node_version: '24.18.0',
             bridge_connected: true,
             easyeda_version: '3.2.149.88089769',
-            extension_version: '1.0.0-rc.1',
+            extension_version: config.captureReturned === true && config.captureFingerprintDrift === 'version'
+              ? 'fixture-changed-after-capture' : '1.0.0-rc.1',
             extension_version_mismatch: false,
             registry_mismatch: false,
           });
@@ -513,7 +524,7 @@ before(async () => {
               : {},
           });
         }
-        if (request.params.name === 'easyeda_schematic_capture_full_page') {
+        if (['easyeda_canvas_capture', 'easyeda_canvas_capture_region', 'easyeda_schematic_capture_full_page'].includes(request.params.name)) {
           const width = config.pngWidth ?? 2;
           const height = config.pngHeight ?? 3;
           const png = makePng(
@@ -554,6 +565,9 @@ before(async () => {
             mimeType: config.imageMimeType ?? 'image/png',
           };
           const images = Array.from({ length: config.imageCount ?? 1 }, () => image);
+          if (config.captureFingerprintDrift) {
+            await writeFile('/data/capture-config.json', JSON.stringify({ ...config, captureReturned: true }), 'utf8');
+          }
           return result(payload, images);
         }
         if (
@@ -658,12 +672,19 @@ before(async () => {
   );
   const engineMarker = "const engine = new EasyedaControlEngine(upstream,";
   assert.ok(absolutePackages.includes(engineMarker), "fixture must inject its inert bridge scope at the actual engine constructor");
+  const bridgeDiagnosticsMarker = "bridgeConnection: upstream.bridgeConnectionDiagnostics(),";
+  assert.ok(absolutePackages.includes(bridgeDiagnosticsMarker), "fixture must observe the actual isolated listener through status diagnostics");
   const transformedFacade = absolutePackages.replace(
     upstreamMarker,
-    `${upstreamMarker}\n  trustedLauncher: ${JSON.stringify(trustedLauncher)},`,
+    // The synthetic facade must not compete with a user's live bridge.
+    // This private constructor override belongs only in fixture code.
+    `${upstreamMarker}\n  bridgePublicPortForTesting: 0,\n  trustedLauncher: ${JSON.stringify(trustedLauncher)},`,
   ).replace(
     engineMarker,
     `upstream.withAuthenticatedBridgeDispatchScope = async (callback) => await callback(Object.freeze({}));\n${engineMarker}`,
+  ).replace(
+    bridgeDiagnosticsMarker,
+    "bridgeConnection: { ...upstream.bridgeConnectionDiagnostics(), fixturePublicEndpoint: upstream.bridgeSessionLifecycle()?.publicEndpoint },",
   );
   facadeEntrypoint = join(fixtureRoot, "facade-index.ts");
   await writeFile(facadeEntrypoint, transformedFacade, "utf8");
@@ -706,6 +727,10 @@ before(async () => {
     JSON.stringify(status.structuredContent),
   );
   const statusPayload = structured(status);
+  fixtureBridgeEndpoint = requireRecord(
+    requireRecord(statusPayload["bridgeConnection"], "status.bridgeConnection")["fixturePublicEndpoint"],
+    "status.bridgeConnection.fixturePublicEndpoint",
+  );
   const upstreamStatus = requireRecord(
     statusPayload["upstream"],
     "status.upstream",
@@ -725,6 +750,14 @@ after(async () => {
 });
 
 void describe("published facade contracts", { concurrency: false }, () => {
+  void test("synthetic facade uses an ephemeral loopback listener isolated from the production bridge port", async () => {
+    assert.equal(fixtureBridgeEndpoint["host"], "127.0.0.1");
+    const port = fixtureBridgeEndpoint["port"];
+    assert.ok(typeof port === "number" && Number.isSafeInteger(port) && port > 0 && port <= 65_535);
+    assert.notEqual(port, 49_621, "the fixture must never occupy the production bridge port");
+    assert.match(await readFile(facadeEntrypoint, "utf8"), /bridgePublicPortForTesting: 0/u);
+  });
+
   void test("publishes complete nested API selectors and works before upstream startup", async () => {
     assert.equal(coldApiCallLog, "");
     assert.equal(coldApiResult["offline"], true);
@@ -754,12 +787,32 @@ void describe("published facade contracts", { concurrency: false }, () => {
     assert.equal(limit["maximum"], 100);
   });
 
+  void test("published descriptions distinguish execution limits and unverified capture framing", async () => {
+    const beforeCalls = await readFile(upstreamCallLogPath, "utf8"), listed = await client.listTools();
+    const design = listed.tools.find((tool) => tool.name === "easyeda_control_design");
+    const sdk = listed.tools.find((tool) => tool.name === "easyeda_control_sdk_read");
+    const imageTool = listed.tools.find((tool) => tool.name === "easyeda_control_capture");
+    assert.ok(design); assert.ok(sdk); assert.ok(imageTool);
+    assert.equal(design.description, "Discover typed design schemas and inspect retained transactions. Schematic-page, symbol and PCB execution is unavailable pending operation-owned completion and exact SQLite proof of native Save's delayed project-structure writes; sealed display/wire profiles are also blocked. Type-4 footprint operations retain their existing native-preflight, scope and save/reopen guards. Historical evidence and pure argument validation do not authorize execution. A retained contained runtime is required for enabled paths; arbitrary JavaScript is never accepted.");
+    assert.equal(sdk.description, "Run a fixed typed local SDK getter, pure calculation or explicitly classified native task equivalent with exact runtime/context and authenticated-session guards. Two matching observations are required. Results distinguish public SDK data from native identity, property-name, Pin-getter, Text, Wire/Bus, configured font titles, filtered PCB net-membership and PCB identity-type observations, plus native active-layer identity with public layer fields; none is complete native-source, connectivity or persistence proof. No arbitrary method paths, caller code, callbacks, files, navigation or writes. Inspect offline API coverage and SDK-read schemas before calling.");
+    assert.equal(imageTool.description, "Request a PNG of the visible canvas, a canvas region or schematic sheet bounds. Region and full-page modes change the visible viewport but not design data. Valid image bytes and requested geometry do not prove target paint completion or page completeness; inspect the actual image before visual review.");
+    assert.equal(await readFile(upstreamCallLogPath, "utf8"), beforeCalls, "description discovery must not dispatch upstream");
+  });
+
   void test("API schemas and refinement validation remain offline when upstream and editor context fail", async () => {
     try {
       await writeConfig({ unavailable: true });
       const unavailable = await client.callTool({ name: "easyeda_control_context", arguments: {} });
       assert.equal(unavailable.isError, true, "mock editor context must genuinely be unavailable");
       const beforeCalls = await readFile(upstreamCallLogPath, "utf8");
+      const readerHistory = await apiReference({ action: "sdk-reads", query: { method: "eda.sys_FontManager.getFontsList", includeSchemas: true } });
+      assert.equal(readerHistory["offline"], true); assert.equal(readerHistory["executionAuthorized"], false);
+      const readerEntry = requireRecord(requireArray(readerHistory["entries"], "font reader entries")[0], "font reader");
+      assert.equal(readerEntry["liveValidation"], "current-generation-unclaimed;historical-cases-separate");
+      const history = requireRecord(readerEntry["historicalValidation"], "historical font evidence");
+      assert.equal(history["executionAuthorized"], false); assert.equal(history["currentGenerationLiveValidation"], "not-asserted-by-this-index");
+      const historicalCase = requireRecord(requireArray(history["cases"], "historical font cases")[0], "R09");
+      assert.equal(historicalCase["id"], "R09"); assert.equal(historicalCase["generationId"], "G20261011-220050");
       const sdk = await apiReference({ action: "sdk", query: { reference: "official-latest", namespace: "sys_Help", detail: true, limit: 1 } });
       assert.equal(requireRecord(sdk["provenance"], "SDK provenance")["version"], "0.4.26");
       const method = requireRecord(requireArray(sdk["entries"], "SDK entries")[0], "SDK method");
@@ -952,6 +1005,7 @@ void describe("generic read context binding", { concurrency: false }, () => {
       [3, "easyeda_component_probe", /diagnostic-only/u],
       [3, "easyeda_live_smoke_report", /diagnostic-only/u],
       [1, "easyeda_wire_probe", /diagnostic-only/u],
+      [1, "easyeda_canvas_locate", /not on the reviewed local-only generic-read allowlist|excluded from generic reads/u],
       [
         1,
         "easyeda_bom_validate",
@@ -1019,6 +1073,36 @@ void describe(
   "full-page schematic capture facade",
   { concurrency: false },
   () => {
+    void test("existing visible and region capture modes retain viewport-only managed image evidence", async () => {
+      for (const mode of ["easyeda_canvas_capture", "easyeda_canvas_capture_region"] as const) {
+        const accepted = await capture({}, `existing-${mode}`, {}, mode);
+        assert.notEqual(accepted.isError, true, JSON.stringify(accepted.content));
+        assert.equal(requireArray(accepted.content, "capture content").filter((item) => isRecord(item) && item["type"] === "image").length, 1);
+        const evidence = requireRecord(structured(accepted)["evidence"], "capture evidence");
+        const archived: unknown = JSON.parse(await readFile(String(evidence["resultPath"]), "utf8"));
+        assert.equal(requireRecord(requireRecord(archived, "archived evidence")["request"], "archived request")["upstreamTool"], mode);
+        assert.equal(requireRecord(requireRecord(archived, "archived evidence")["metadata"], "capture metadata")["effect"], "viewport-read");
+      }
+    });
+
+    void test("runtime drift or failed health reproof after any capture mode refuses the image without replay", async () => {
+      for (const mode of ["easyeda_canvas_capture", "easyeda_canvas_capture_region", "easyeda_schematic_capture_full_page"] as const) {
+        for (const drift of ["version", "unavailable"]) {
+          const previousLog = await readFile(upstreamCallLogPath, "utf8");
+          const rejected = await capture({ captureFingerprintDrift: drift }, `runtime-drift-${mode}-${drift}`, {}, mode);
+          assert.match(failureMessage(rejected), /runtime fingerprint changed during canvas capture/u);
+          assert.equal(requireArray(rejected.content, "refused capture content").some((item) => isRecord(item) && item["type"] === "image"), false);
+          const currentLog = await readFile(upstreamCallLogPath, "utf8");
+          const appended = currentLog.slice(previousLog.length).trim().split("\n").map((line) => {
+            const entry: unknown = JSON.parse(line); return requireRecord(entry, "upstream call")["tool"];
+          });
+          assert.equal(appended.filter((tool) => tool === mode).length, 1, "a refused image must not repeat capture or zoom");
+          const capturedAt = appended.indexOf(mode);
+          assert.ok(capturedAt !== -1 && appended.lastIndexOf("easyeda_health_check") > capturedAt, "runtime identity must be reproved after image generation");
+        }
+      }
+    });
+
     void test("requires a schematic document and binds the returned project identity", async () => {
       const wrongEditor = await capture({ documentType: 3 }, "wrong-editor");
       assert.match(
@@ -1224,7 +1308,7 @@ void describe(
 void describe("global orphan-risk quarantine", { concurrency: false }, () => {
   void test("blocks every live bridge path while local discovery and recovery listing remain available", async () => {
     const previousControlRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
-    process.env["EASYEDA_CONTROL_DATA_DIR"] = controlRoot;
+    configureTestControlRoot(controlRoot);
     const loadedArtifacts: unknown = await import(
       `../src/artifacts.ts?facade-orphan=${encodeURIComponent(fixtureRoot)}`
     );
@@ -1234,13 +1318,27 @@ void describe("global orphan-risk quarantine", { concurrency: false }, () => {
     );
     const journalArtifacts = loadedArtifacts;
     if (previousControlRoot === undefined) {
-      delete process.env["EASYEDA_CONTROL_DATA_DIR"];
+      configureTestControlRoot();
     } else {
-      process.env["EASYEDA_CONTROL_DATA_DIR"] = previousControlRoot;
+      configureTestControlRoot(previousControlRoot);
     }
 
     const operationId = newOperationId();
-    const plan = { name: "facade-orphan-quarantine-fixture" };
+    const plan = {
+      name: "facade-orphan-quarantine-fixture",
+      intent: "Retain the original legacy family while testing recovery isolation.",
+      capabilityLevel: "private-version-pinned",
+      expectedContext: expectedContext(),
+      expectedFingerprint,
+      targetPrimitiveIds: [],
+      targetChanges: [],
+      preflightCalls: [],
+      applyCall: { toolName: "easyeda_control_exact_mutation", arguments: {} },
+      verifyCalls: [],
+      rollbackCalls: [],
+      reopenedVerifyCalls: [],
+      checkpoint: { source: projectPath, outputDir: fixtureRoot },
+    };
     const journalPath = await journalArtifacts.createOperation({
       schema: OPERATION_SCHEMA,
       operationId,

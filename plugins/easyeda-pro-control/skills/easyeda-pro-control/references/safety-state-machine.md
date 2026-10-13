@@ -2,6 +2,13 @@
 
 This is the workflow for `easyeda_control_design`, not the disabled legacy one-component endpoints. One transaction can be an individual typed operation or a PCB batch. No caller source or JavaScript is accepted.
 
+Current execution is limited to footprint document type 4 under its existing
+guards. Types 1, 2 and 3, including PCB batches and sealed schematic profiles,
+are blocked: native Save can enqueue a project-structure write outside the
+current completion and SQL-effect proof. Their state transitions below are
+retained contracts only. Inspection does not authorize old recovery advice;
+affected nonterminal commit, rollback, repair and reconciliation refuse.
+
 ## Apply, commit and inverse
 
 | Phase | Required evidence | Result |
@@ -10,7 +17,7 @@ This is the workflow for `easyeda_control_design`, not the disabled legacy one-c
 | Applied unsaved | Complete intended source effect; no verified save/reopen lifecycle yet | Explicit commit or supported exact inverse |
 | Commit | Fresh intended live state, intact pre-checkpoint and context | Save, close, reopen, verify source again, then decode and compare complete selected-branch durable project records |
 | Completed | Intended changed values persisted; all unrelated documents/library records unchanged | Saved/reopened proof and final checkpoint |
-| Rollback | Exact intended state still present, unchanged durable baseline and supported inverse | Apply and verify the live inverse, drain scheduled project writes, and prove a fresh durable baseline before terminal; no automatic Save |
+| Rollback | Exact intended state still present, unchanged durable baseline and supported inverse | Apply and verify the live inverse, await the supported upload barrier and prove a fresh durable baseline before terminal; no automatic Save or claim to drain unobserved queues |
 | Unknown/review | Timeout, context drift, source mismatch, persistence failure or unavailable inverse | Inspect; recover authority if necessary; reconcile before further writes |
 
 An applied-unsaved result is not completion. Never infer save from a returned boolean, toolbar marker or file timestamp.

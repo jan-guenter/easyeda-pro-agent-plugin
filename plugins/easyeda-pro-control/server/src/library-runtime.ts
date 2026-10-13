@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- Catalog routing reuses each narrow adapter's operation validator instead of duplicating its admission contract. */
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { compileLibraryOperation, libraryOperationSchema } from "./library-operations.ts";
@@ -7,16 +8,44 @@ import { deviceAssociationOperation } from "./device-association.ts";
 import { deviceCreateOperation } from "./device-create.ts";
 import { DEVICE_NATIVE_HOST_GUARD } from "./device-runtime-guard.ts";
 import { libraryRuntimeCatchCode } from "./library-runtime-guard.ts";
+import { projectSymbolMetadataOperation } from "./project-symbol-metadata.ts";
+import { documentPageRenameOperation } from "./document-page-rename.ts";
+import { documentPageCreateOperation } from "./document-page-create.ts";
+import { projectSymbolCreateOperation } from "./project-symbol-create.ts";
+import { documentContainerRenameOperation } from "./document-container-rename.ts";
+import { projectPcbCreateOperation } from "./project-pcb-create.ts";
+import { projectSchematicCreateOperation } from "./project-schematic-create.ts";
+import { PCB_NAVIGATION_PREFERENCE_GUARD } from "./pcb-navigation-preferences.ts";
 
 /** Single-dispatch files stay below the existing escaped JSON transport limit. */
 export const LIBRARY_FILE_EXECUTION_MAX_BYTES = 2 * 1024 * 1024;
 export const LIBRARY_EXECUTION_PROFILE = "easyeda-pro-control.library-execution.v1";
-export type LibraryExecutionKind = "metadata-read" | "file-export" | "project-footprint-write" | "project-device-association" | "project-device-create" | "project-device-transform" | "document-open";
+export type LibraryExecutionKind = "metadata-read" | "file-export" | "project-footprint-write" | "project-device-association" | "project-device-create" | "project-device-transform" | "project-symbol-metadata" | "project-symbol-create" | "project-page-rename" | "project-document-rename" | "project-page-create" | "project-pcb-create" | "project-schematic-create" | "document-open" | "document-activate" | "document-close";
 const openScopeSchema = z.object({ projectUuid: z.string().min(1).max(256), uuid: z.string().min(1).max(256), documentType: z.number().int().min(1).max(4), metadataOwnerUuid: z.string().min(1).max(256).optional() }).strict();
 export type LibraryOpenScope = z.infer<typeof openScopeSchema>;
 
+// Returning a File does not make an export read-only. These installed paths
+// Save unrelated dirty tabs (and schematic netlists can annotate parts first).
+// A post-export comparison is too late to authorize or undo that hidden Save.
+// Exact source chains and hashes: docs/api-coverage-review-2026-10-10.md.
+const unsafeExportReasons = new Map<string, string>([
+  ["export.schematic.netlist", "The installed schematic netlist exporter can annotate designators/Unique IDs and invoke SaveAll; no read-only or no-repeat Save lifecycle is implemented."],
+  ["export.schematic.bom", "The installed schematic BOM exporter invokes SaveAll before generating the file; a project-scoped file export cannot authorize saving unrelated dirty tabs."],
+  ["export.pcb.bom", "The installed PCB BOM exporter invokes SaveAll before generating the file; a project-scoped file export cannot authorize saving unrelated dirty tabs."],
+  ["export.schematic.document", "The installed schematic document exporter invokes SaveAll before rendering; no explicit all-tab Save lifecycle is implemented."],
+  ["export.pcb.pdf", "The installed PCB PDF exporter invokes SaveAll before rendering; no explicit all-tab Save lifecycle is implemented."],
+  ["export.pcb.netlist", "The installed PCB netlist exporter invokes SaveAll whenever any editor tab is dirty; no atomic all-tab clean-state guard or Save lifecycle is implemented."],
+  ["export.schematic.simulation", "The installed simulation-netlist exporter requires an NGSPICE document, outside the admitted schematic/symbol/PCB/footprint document types 1–4."],
+]);
+
+export function libraryExportRefusalReason(action: string): string | undefined {
+  return unsafeExportReasons.get(action);
+}
+
 export function libraryExecutionKind(input: unknown): LibraryExecutionKind {
   const operation = libraryOperationSchema.parse(input);
+  const exportRefusal = libraryExportRefusalReason(operation.action);
+  if (exportRefusal !== undefined) { throw new Error(exportRefusal); }
   const compiled = compileLibraryOperation(operation);
   if (compiled.scope === "library" && compiled.effect.identity === "read") { return "metadata-read"; }
   if (compiled.scope === "export" && "maxBytes" in operation) {
@@ -35,7 +64,16 @@ export function libraryExecutionKind(input: unknown): LibraryExecutionKind {
   if (operation.action === "library.device.modify") { deviceAssociationOperation(operation); return "project-device-association"; }
   if (operation.action === "library.device.create") { deviceCreateOperation(operation); return "project-device-create"; }
   if (operation.action === "library.device.model-transform") { return "project-device-transform"; }
+  if (operation.action === "library.symbol.modify") { projectSymbolMetadataOperation(operation); return "project-symbol-metadata"; }
+  if (operation.action === "library.symbol.create") { projectSymbolCreateOperation(operation); return "project-symbol-create"; }
+  if (operation.action === "document.page.rename") { documentPageRenameOperation(operation); return "project-page-rename"; }
+  if (operation.action === "document.pcb.rename" || operation.action === "document.schematic.rename") { documentContainerRenameOperation(operation); return "project-document-rename"; }
+  if (operation.action === "document.page.create") { documentPageCreateOperation(operation); return "project-page-create"; }
+  if (operation.action === "document.pcb.create") { projectPcbCreateOperation(operation); return "project-pcb-create"; }
+  if (operation.action === "document.schematic.create") { projectSchematicCreateOperation(operation); return "project-schematic-create"; }
   if (operation.action === "document.open" || operation.action === "library.footprint.open" || operation.action === "library.symbol.open") { return "document-open"; }
+  if (operation.action === "document.activate") { return "document-activate"; }
+  if (operation.action === "document.close") { return "document-close"; }
   throw new Error("Typed catalog entry has no completed execution proof profile.");
 }
 
@@ -53,6 +91,15 @@ export function buildLibraryExecutionExpression(input: unknown, projectSymbolMet
   const openScope = kind === "document-open" ? openScopeSchema.parse(openScopeInput) : undefined;
   if (openScope !== undefined && (!("target" in operation) || !("uuid" in operation.target) || operation.target.uuid !== openScope.uuid || ("libraryUuid" in operation && operation.libraryUuid !== openScope.projectUuid) || (operation.action === "library.symbol.open" && openScope.documentType !== 2) || (operation.action === "library.footprint.open" && openScope.documentType !== 4) || ([2, 4].includes(openScope.documentType) && openScope.metadataOwnerUuid === undefined))) { throw new Error("Library open scope contradicts its checkpoint-bound operation."); }
   if (kind === "project-device-association" || kind === "project-device-create" || kind === "project-device-transform") { throw new Error("Device mutation requires a checkpoint-bound native plan."); }
+  if (kind === "project-symbol-metadata") { throw new Error("Symbol metadata mutation requires a checkpoint-bound native plan."); }
+  if (kind === "project-symbol-create") { throw new Error("Empty symbol creation requires a checkpoint-bound local-origin plan."); }
+  if (kind === "project-page-rename") { throw new Error("Page rename requires a checkpoint-bound closed-target plan."); }
+  if (kind === "project-document-rename") { throw new Error("Document rename requires a checkpoint-bound closed-target and frame plan."); }
+  if (kind === "project-page-create") { throw new Error("Empty page creation requires a checkpoint-bound parent-only plan."); }
+  if (kind === "project-pcb-create") { throw new Error("Empty free PCB creation requires a checkpoint-bound closed-target and frame plan."); }
+  if (kind === "project-schematic-create") { throw new Error("Empty free schematic creation requires a checkpoint-bound closed-target and frame plan."); }
+  if (kind === "document-activate") { throw new Error("Document activation requires a checkpoint-bound ownership plan."); }
+  if (kind === "document-close") { throw new Error("Document close requires a checkpoint-bound inactive-clean-tab plan."); }
   const compiled = compileLibraryOperation(operation);
   const call = compiled.call;
   const args = call.args.map((argument) => argumentCode(argument)).join(",");
@@ -69,6 +116,7 @@ try {
 const api = eda[${JSON.stringify(call.api)}];
 const method = api?.[${JSON.stringify(call.method)}];
 if (typeof method !== "function") throw new Error("LIBRARY_NATIVE_METHOD_MISSING");
+${kind === "document-open" ? `${PCB_NAVIGATION_PREFERENCE_GUARD}\nconst pcbOpenPreferences=()=>{if([3,4].includes(${JSON.stringify(openScope?.documentType ?? null)}))assertPcbNavigationPreferences();};\npcbOpenPreferences();` : ""}
 stage = 'api-call';
 const result = await method.call(api,${args});
 stage = 'result-check';
@@ -98,6 +146,7 @@ if (${JSON.stringify(kind)} === "file-export") {
   const editor = eda.dmt_EditorControl;
   stage = 'activate';
   if (typeof editor?.activateDocument !== "function") throw new Error("LIBRARY_OPEN_ACTIVATION_FAILED");
+  pcbOpenPreferences();
   const activated = await editor.activateDocument(result);
   if (typeof activated !== 'boolean') throw new Error("LIBRARY_OPEN_ACTIVATION_FAILED");
   const scope = ${JSON.stringify(openScope ?? null)};

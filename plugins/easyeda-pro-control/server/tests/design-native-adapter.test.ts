@@ -5,6 +5,7 @@ import { sha256Json } from "../src/core.ts";
 import { buildDesignNativeAdapter, buildReviewedNativeSourceMerge } from "../src/design-native-adapter.ts";
 import { parseDocumentSource } from "../src/document-source.ts";
 import type { NativeSourceSnapshot } from "../src/document-source.ts";
+import { pcbExactFrameFixture } from "./pcb-exact-frame-fixture.ts";
 
 const BASE = {
   schema: "easyeda-pro-control.document-source.v1" as const,
@@ -23,16 +24,10 @@ function source(snapshot: NativeSourceSnapshot): string {
 }
 
 async function execute(code: string, text: string, tabId = "fixture-tab"): Promise<{ calls: string[]; result: unknown }> {
-  const calls: string[] = [];
-  const result: unknown = runInNewContext(`(async () => {
-    const EXPECTED_DOCUMENT_UUID='fixture', EXPECTED_TAB_ID='fixture-tab', EXPECTED_DOCUMENT_TYPE=3;
-    ${code}
-  })()`, { eda: {
-    dmt_SelectControl: { getCurrentDocumentInfo: () => Promise.resolve({ uuid: "fixture", documentType: 3, tabId }) },
-    sys_FileManager: { getDocumentSource: () => Promise.resolve(text), setDocumentSource: (next: string) => { calls.push(next); return Promise.resolve(true); } },
-  } });
-  try {return { calls, result: await result };}
-  catch (error) {assert.equal(calls.length, 0, "A failed precondition must never reach the native setter."); throw error;}
+  const fixture = pcbExactFrameFixture("fixture", text);
+  if (tabId !== "fixture-tab") { fixture.state.identityTab = tabId; }
+  try {return { calls: fixture.state.writes, result: await fixture.run(code) };}
+  catch (error) {assert.equal(fixture.state.writes.length, 0, "A failed precondition must never reach the native setter."); throw error;}
 }
 
 void test("source repair derives only typed fields and invokes one native history setter with intact opaque rows", async () => {
@@ -56,6 +51,74 @@ void test("source baseline/context drift and native-unrepresentable fields stop 
   assert.throws(() => buildDesignNativeAdapter({ ...OPERATION, patch: { ruleType: [3] } }, BEFORE), /NO_VIAS/u);
   assert.throws(() => buildDesignNativeAdapter({ id: "bad-mode", action: "pcb.fill.create", properties: { layer: 1, complexPolygon: ["R", 0, 0, 10, 10, 0, 0], net: "", fillMode: 1, lineWidth: 0, primitiveLock: false } }, BEFORE), /grid POUR/u);
   assert.throws(() => buildDesignNativeAdapter({ ...OPERATION, source: "caller source" }, BEFORE));
+});
+
+void test("late exact-frame identity and source replies cannot reselect a foreign PCB receiver", async () => {
+  const adapter = buildDesignNativeAdapter(OPERATION, BEFORE);
+  assert.ok(adapter);
+  assert.doesNotMatch(adapter.code, /getDocumentSource|setDocumentSource/u);
+  type Fixture = ReturnType<typeof pcbExactFrameFixture>;
+  const changes: ((fixture: Fixture) => void)[] = [
+    (fixture) => { fixture.state.activeTab = "another-tab"; },
+    (fixture) => { fixture.host.currentProject.branchUuid = "c".repeat(32); },
+    (fixture) => { fixture.host.currentProject.projectId = "c".repeat(64); },
+    (fixture) => { fixture.host.currentProject = { ...fixture.host.currentProject }; },
+    (fixture) => { fixture.host.currentProject.isV2Format = true; },
+    (fixture) => { fixture.host.isHistoryMode = true; },
+    (fixture) => { fixture.frame.isConnected = false; },
+    (fixture) => { fixture.frame.contentWindow = { ...fixture.frame.contentWindow }; },
+    (fixture) => { fixture.frame.contentWindow.MSG_BUS_PCB = { ...fixture.frame.contentWindow.MSG_BUS_PCB }; },
+    (fixture) => { fixture.frame.contentWindow.MSG_BUS_PCB.messageBus = { ...fixture.channel }; },
+    (fixture) => { fixture.channel.rpcCall = (): never => assert.fail("Never dispatch through a substituted receiver"); },
+    (fixture) => { fixture.frames.push(fixture.frame); },
+    (fixture) => { fixture.attributes.set("c_dbid", "other"); },
+    (fixture) => { fixture.attributes.set("c_doctype", "4"); },
+    (fixture) => { fixture.attributes.set("src", "editor?entry=footprint"); },
+    ...["blankIframe", "fromFile", "jsonCacheReady"].map((attribute) => (fixture: Fixture): void => { fixture.attributes.set(attribute, "true"); }),
+    (fixture) => { fixture.permission.isConcurrentStrictMode = true; },
+    (fixture) => { fixture.permission.getIframeDisableStatusPanelPcb = (): unknown => ({ disable: true }); },
+    (fixture) => { fixture.tabs.getTabIframeSync = (): typeof fixture.frame => ({ ...fixture.frame }); },
+    (fixture) => { fixture.tabs.getTabById = (): unknown => ({ tabId: fixture.tabId, data: { doctype: 4, pid: fixture.runtime.EXPECTED_PROJECT_UUID } }); },
+  ];
+  for (const boundary of ["onIdentityReply", "onSourceReply"] as const) {
+    for (const change of changes) {
+      const fixture = pcbExactFrameFixture("fixture", source(BEFORE));
+      fixture.state[boundary] = (): void => { change(fixture); };
+      await assert.rejects(fixture.run(adapter.code), /CONTEXT|PROJECT|ACTIVE_TAB|FRAME|RECEIVER|PERMISSION/u);
+      assert.equal(fixture.state.writes.length, 0);
+    }
+  }
+});
+
+void test("native merge requires sealed branch/project scope before reads and keeps acknowledgment and create result contracts", async () => {
+  const adapter = buildDesignNativeAdapter(OPERATION, BEFORE);
+  assert.ok(adapter);
+  for (const projectUuid of ["a".repeat(32), "a".repeat(64)]) {
+    const fixture = pcbExactFrameFixture("fixture", source(BEFORE), projectUuid);
+    assert.equal(await fixture.run(adapter.code), true);
+    assert.equal(fixture.state.writes.length, 1);
+  }
+  for (const key of ["EXPECTED_PCB_PROJECT_UUID", "EXPECTED_PCB_BRANCH_UUID"] as const) {
+    const fixture = pcbExactFrameFixture("fixture", source(BEFORE));
+    fixture.state.onIdentityReply = (): never => assert.fail("Missing sealed scope must refuse before native reads");
+    for (const value of [undefined, null, "c".repeat(32)]) {
+      await assert.rejects(fixture.run(adapter.code, { ...fixture.runtime, [key]: value }), /CONTEXT|PROJECT/u);
+      assert.equal(fixture.state.writes.length, 0);
+    }
+  }
+  for (const acknowledgment of [false, null, "true", undefined]) {
+    const fixture = pcbExactFrameFixture("fixture", source(BEFORE));
+    fixture.state.acknowledgment = acknowledgment;
+    await assert.rejects(fixture.run(adapter.code), /did not confirm/u);
+    assert.equal(fixture.state.writes.length, 1, "Never retry an uncertain native write");
+  }
+  const value = { ...BASE, objects: [{ id: "created", type: "OPAQUE", body: { exactly: "new" } }, ...BASE.objects.slice(1)] };
+  const expected = { ...value, sha256: sha256Json(value) };
+  const created = buildReviewedNativeSourceMerge(BEFORE, expected, "created");
+  const fixture = pcbExactFrameFixture("fixture", source(BEFORE));
+  assert.deepEqual(structuredClone(await fixture.run(created.code)), { primitiveId: "created" });
+  assert.equal(parseDocumentSource(fixture.state.source).sha256, expected.sha256);
+  assert.equal(fixture.state.writes.length, 1);
 });
 
 void test("footprint source merge selects one exact native frame and never uses the public dialog setter", async () => {

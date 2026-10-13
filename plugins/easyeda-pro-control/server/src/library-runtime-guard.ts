@@ -1,6 +1,6 @@
 const kinds = ["metadata-read", "file-export", "project-footprint-write", "document-open"] as const;
 const stages = ["api-lookup", "api-call", "result-check", "file-read", "file-hash", "activate", "encode"] as const;
-const codes = ["LIBRARY_NATIVE_METHOD_MISSING", "LIBRARY_EXPORT_FILE_INVALID", "LIBRARY_EXPORT_FILE_CHANGED", "LIBRARY_METADATA_MISSING", "LIBRARY_OPEN_TAB_MISSING", "LIBRARY_OPEN_ACTIVATION_FAILED", "LIBRARY_WRITE_ACK_INVALID", "LIBRARY_OUTPUT_TOO_LARGE", "NATIVE_REJECTED"] as const;
+const codes = ["LIBRARY_NATIVE_METHOD_MISSING", "LIBRARY_EXPORT_FILE_INVALID", "LIBRARY_EXPORT_FILE_CHANGED", "LIBRARY_METADATA_MISSING", "LIBRARY_OPEN_TAB_MISSING", "LIBRARY_OPEN_ACTIVATION_FAILED", "LIBRARY_WRITE_ACK_INVALID", "LIBRARY_OUTPUT_TOO_LARGE", "PCB_NAVIGATION_PREFERENCES_UNSAFE", "NATIVE_REJECTED"] as const;
 
 /** Exact fixed marker only; arbitrary native exception details never escape. */
 export function libraryRuntimeFailureCategory(message: unknown): string | null {

@@ -2,6 +2,10 @@ import { buildExactReadExpression } from "./exact-readers.ts";
 import { buildProjectUploadBarrierExpression } from "./project-upload-barrier.ts";
 import { buildNativeDocumentCloseFunction, buildNativeDocumentOpenFunction } from "./native-document-lifecycle.ts";
 import type { NativeDocumentLifecycleScope } from "./native-document-lifecycle.ts";
+import { buildFlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
+import type { FlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
+import { sha256Json } from "./core.ts";
+import { PCB_NAVIGATION_PREFERENCE_GUARD } from "./pcb-navigation-preferences.ts";
 
 export interface ExpectedContext {
   project?:
@@ -616,6 +620,7 @@ return await (async () => {
 export function buildSaveReopenCode(
   expectedContext: ExpectedContext,
   exactGuards: readonly ExactSaveGuard[],
+  flatGuard?: FlatDisplayRuntimeGuard,
 ): string {
   const expectedUuid =
     expectedContext?.document?.uuid ?? expectedContext?.document?.documentUuid;
@@ -642,6 +647,10 @@ export function buildSaveReopenCode(
   if (typeof expectedProjectUuid !== "string" || expectedProjectUuid.length === 0) { throw new Error("save/reopen requires an exact project UUID for the durable upload barrier."); }
   const uploadBarrier = buildProjectUploadBarrierExpression(expectedProjectUuid);
   const lifecycle: NativeDocumentLifecycleScope = { projectUuid: expectedProjectUuid, documentUuid: expectedUuid, documentType: expectedType };
+  if (flatGuard !== undefined && (expectedType !== 1 || flatGuard.phase !== "after" ||
+      flatGuard.binding.pageUuid !== expectedUuid || flatGuard.binding.tabId !== expectedTabId || flatGuard.binding.project.projectUuid !== expectedProjectUuid)) {
+    throw new Error("Flat display Save guard requires its exact after-phase page and project.");
+  }
   if (exactGuards.length === 0 || exactGuards.length > 8) {
     throw new Error("save/reopen requires between one and eight exact guards.");
   }
@@ -662,6 +671,7 @@ return await (async () => {
   const EXPECTED_UUID = ${jsString(expectedUuid)};
   const EXPECTED_TYPE = ${expectedType};
   const EXPECTED_TAB_ID = ${jsString(expectedTabId)};
+  ${PCB_NAVIGATION_PREFERENCE_GUARD}
   const readDocument = async () => {
     const api = eda.dmt_SelectControl;
     if (!api?.getCurrentDocumentInfo) throw new Error("DMT_SelectControl.getCurrentDocumentInfo unavailable");
@@ -692,7 +702,7 @@ return await (async () => {
   const EXPECTED_GUARD_HASHES = ${JSON.stringify(expectedGuardHashes)};
   const EXACT_GUARD_LABELS = ${JSON.stringify(guardLabels)};
   const observedGuardHashes = [];
-  for (let pass = 0; pass < 2; pass += 1) {
+${flatGuard === undefined ? "" : `  const flatDisplayGuard=await ${buildFlatDisplayRuntimeGuard(flatGuard)};await flatDisplayGuard.read();\n`}  for (let pass = 0; pass < 2; pass += 1) {
     const passHashes = [];
     for (let index = 0; index < EXACT_GUARD_READERS.length; index += 1) {
       const payload = await EXACT_GUARD_READERS[index]();
@@ -730,6 +740,7 @@ return await (async () => {
   // Invoke save synchronously in this continuation after the second complete
   // exact-guard pass and final context check. The public API exposes no CAS or
   // editor lock, so the runtime-disabled writer still requires connected proof.
+${flatGuard === undefined ? "" : "  flatDisplayGuard.check();\n"}  assertPcbLifecyclePreferences(${JSON.stringify(lifecycle)},EXPECTED_TAB_ID);
   const savePending = saveDocument();
   const saved = await savePending;
   if (saved !== true) throw new Error("document save did not return exactly true");
@@ -750,7 +761,7 @@ return await (async () => {
     projectUploadBarrier,
     closeProof,
     openProof,
-    exactSaveGuard: {
+${flatGuard === undefined ? "" : `    flatDisplaySaveGuard: ${JSON.stringify({ profile: flatGuard.binding.profile, bindingSha256: sha256Json(flatGuard.binding), observationSha256: sha256Json(flatGuard.observation), finalSynchronousCheck: true })},\n`}    exactSaveGuard: {
       passes: 2,
       labels: EXACT_GUARD_LABELS,
       snapshotSha256: observedGuardHashes[1],
@@ -788,6 +799,7 @@ export function buildActivateRecoveryTargetCode(
   }
   return `
 return await (async () => {
+  ${PCB_NAVIGATION_PREFERENCE_GUARD}
   const EXPECTED_PROJECT_UUID = ${jsString(expectedProjectUuid)};
   const EXPECTED_UUID = ${jsString(expectedUuid)};
   const EXPECTED_TYPE = ${expectedType};
@@ -807,8 +819,10 @@ return await (async () => {
   let document = await documentApi.getCurrentDocumentInfo();
   let openedOrActivated = false;
   if (uuidOf(document) !== EXPECTED_UUID || typeOf(document) !== EXPECTED_TYPE) {
+    if([3,4].includes(EXPECTED_TYPE))assertPcbNavigationPreferences();
     const targetTab = await editor.openDocument(EXPECTED_UUID);
     if (!targetTab) throw new Error("openDocument could not locate the recovery target");
+    if([3,4].includes(EXPECTED_TYPE))assertPcbNavigationPreferences();
     const activated = await editor.activateDocument(targetTab);
     if (activated !== true) throw new Error("activateDocument could not select the recovery target");
     openedOrActivated = true;
@@ -857,6 +871,7 @@ export function buildReopenOnlyCode(
     ...(metadataOwnerUuid === undefined ? {} : { metadataOwnerUuid }) };
   return `
 return await (async () => {
+  ${PCB_NAVIGATION_PREFERENCE_GUARD}
   const EXPECTED_PROJECT_UUID = ${jsString(expectedProjectUuid)};
   const EXPECTED_UUID = ${jsString(expectedUuid)};
   const EXPECTED_TYPE = ${expectedType};
@@ -881,8 +896,10 @@ return await (async () => {
     throw new Error("active document or tab changed before reopen-only lifecycle call");
   }
   if (uuidOf(before) !== EXPECTED_UUID || typeOf(before) !== EXPECTED_TYPE) {
+    if([3,4].includes(EXPECTED_TYPE))assertPcbNavigationPreferences();
     const targetTab = await editor.openDocument(EXPECTED_UUID);
     if (!targetTab) throw new Error("openDocument could not locate the recovery target");
+    if([3,4].includes(EXPECTED_TYPE))assertPcbNavigationPreferences();
     const activatedTarget = await editor.activateDocument(targetTab);
     if (activatedTarget !== true) throw new Error("activateDocument could not select the recovery target");
     before = await documentApi.getCurrentDocumentInfo();

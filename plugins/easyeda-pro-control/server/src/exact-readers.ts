@@ -389,6 +389,7 @@ export const exactReadRequestSchema = z.discriminatedUnion("kind", [
     })
     .strict(),
   z.object({ kind: z.literal("schematic-topology") }).strict(),
+  z.object({ kind: z.literal("schematic-flat-topology") }).strict(),
   z.object({ kind: z.literal("pcb-inventory") }).strict(),
   z.object({ kind: z.literal("pcb-rules") }).strict(),
   z.object({ kind: z.literal("schematic-source") }).strict(),
@@ -401,8 +402,18 @@ export const exactReadRequestSchema = z.discriminatedUnion("kind", [
 export type ExactReadRequest = z.infer<typeof exactReadRequestSchema>;
 export type ExactReadKind = ExactReadRequest["kind"];
 
+export const SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL =
+  "Schematic topology execution is disabled: the pinned getNetlistFile route can annotate Designator/Unique ID and invoke Save All. A non-mutating compiled-connectivity adapter with disposable-project validation is required.";
+
+function assertExactReadExecutionSupported(request: ExactReadRequest): void {
+  // Preserve the request/payload schema for immutable historical receipts.
+  // Never compile or dispatch the former supposedly read-only netlist exporter.
+  // See docs/api-coverage-review-2026-10-10.md for the hash-pinned call chain.
+  if (request.kind === "schematic-topology") { throw new Error(SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL); }
+}
+
 export function exactReadDocumentType(kind: unknown): 1 | 2 | 3 | 4 {
-  if (kind === "schematic-components" || kind === "schematic-topology" || kind === "schematic-source" || kind === "schematic-native") {
+  if (kind === "schematic-components" || kind === "schematic-topology" || kind === "schematic-flat-topology" || kind === "schematic-source" || kind === "schematic-native") {
     return 1;
   }
   if (kind === "symbol-source") { return 2; }
@@ -422,6 +433,7 @@ export function validateExactReadRequest(
   expectedContext: ExpectedContext,
 ): ExactReadRequest {
   const parsed = exactReadRequestSchema.parse(request);
+  assertExactReadExecutionSupported(parsed);
   const requiredType = exactReadDocumentType(parsed.kind);
   if (expectedContext?.document?.documentType !== requiredType) {
     throw new Error(
@@ -1978,6 +1990,8 @@ export function exactTargetAssertionPointer(primitiveId: string): string {
 
 export function buildExactReadExpression(request: unknown): string {
   const parsed = exactReadRequestSchema.parse(request);
+  assertExactReadExecutionSupported(parsed);
+  if (parsed.kind === "schematic-flat-topology") { throw new Error("Flat topology requires the checkpoint-bound native coordinator."); }
   const serialized = JSON.stringify(parsed);
   return `
 (async () => {
@@ -2304,297 +2318,6 @@ export function buildExactReadExpression(request: unknown): string {
     };
   }
 
-  if (REQUEST.kind === "schematic-topology") {
-    const netlistApi = requiredApi("sch_ManufactureData", "SCH_ManufactureData", ["getNetlistFile"]);
-    const componentApi = requiredApi("sch_PrimitiveComponent", "SCH_PrimitiveComponent", ["getAll", "getAllPrimitiveId"]);
-    // Pinned sch.js 6064174 resolves get(id) in the active sheet only;
-    // getAll(part,true) at 6064311 enumerates only loaded docMap entries.
-    // Require all declared pages already loaded, then read each owning
-    // Native model's pins. Never initialize documents or change tabs here.
-    const nativeManager = globalThis.SCH?.docMemoryManager;
-    const schematicApi = eda.dmt_Schematic;
-    DIAGNOSTIC.stage = "setup";
-    DIAGNOSTIC.api = "none";
-    DIAGNOSTIC.method = "none";
-    DIAGNOSTIC.expectation = "association";
-    if (!nativeManager || typeof nativeManager.getActiveDoc !== "function" ||
-        typeof nativeManager.getSchDocs !== "function" ||
-        !schematicApi || typeof schematicApi.getCurrentSchematicInfo !== "function") {
-      throw new Error("complete schematic topology scope API is unavailable");
-    }
-    const activeNativePage = nativeManager.getActiveDoc();
-    const declaredScope = (value) => {
-      const info = requiredObject(value, "current schematic information");
-      const schematicUuid = nonemptyString(info.uuid, "current schematic UUID");
-      const projectUuid = nonemptyString(info.parentProjectUuid, "current schematic project UUID");
-      const pageIds = uniqueStrings(requiredArray(info.page, "declared schematic pages").map((page) => {
-        const item = requiredObject(page, "declared schematic page");
-        if (item.parentSchematicUuid !== schematicUuid) throw new Error("declared schematic page has a foreign parent");
-        return nonemptyString(item.uuid, "declared schematic page UUID");
-      }), "declared schematic page UUIDs");
-      if (pageIds.length === 0) throw new Error("current schematic declares no pages");
-      return { schematicUuid, projectUuid, pageIds };
-    };
-    const topologyScope = declaredScope(await schematicApi.getCurrentSchematicInfo.call(schematicApi));
-    const collectNativePinIdentities = () => {
-      DIAGNOSTIC.stage = "setup";
-      DIAGNOSTIC.api = "none";
-      DIAGNOSTIC.method = "none";
-      DIAGNOSTIC.expectation = "association";
-      const active = nativeManager.getActiveDoc();
-      if (!active || active !== activeNativePage || active.project_uuid !== topologyScope.projectUuid ||
-          active.schematicUuid !== topologyScope.schematicUuid || !topologyScope.pageIds.includes(active.uuid)) {
-        throw new Error("native schematic topology active page changed or has a foreign owner");
-      }
-      const pages = requiredArray(nativeManager.getSchDocs(), "loaded schematic pages").filter((page) =>
-        page && page.project_uuid === topologyScope.projectUuid && page.schematicUuid === topologyScope.schematicUuid);
-      const loadedPageIds = uniqueStrings(pages.map((page) => {
-        if (typeof page.isSchSheetDoc !== "function" || page.isSchSheetDoc() !== true) throw new Error("loaded schematic document is not a sheet");
-        return nonemptyString(page.uuid, "loaded schematic page UUID");
-      }), "loaded schematic page UUIDs");
-      DIAGNOSTIC.expectation = "unique-identities";
-      if (JSON.stringify(loadedPageIds) !== JSON.stringify(topologyScope.pageIds)) {
-        throw new Error("declared schematic pages are not all loaded; explicit page loading is required");
-      }
-      const identities = [];
-      for (const page of pages) {
-        if (!page.shapeManager || typeof page.shapeManager.getModels !== "function") throw new Error("native schematic page model manager is unavailable");
-        const models = requiredArray(page.shapeManager.getModels("Symbol"), "native schematic symbols");
-        for (const model of models) {
-          if (model.cmdKey !== "part") continue;
-          if (typeof model.getAttr !== "function") throw new Error("native schematic component attributes are unavailable");
-          const pinNumbers = uniqueStrings(requiredArray(model.pins, "native schematic component pins").map((pin) => {
-            if (!pin || typeof pin.getAttr !== "function") throw new Error("native schematic pin attribute is unavailable");
-            return nonemptyString(pin.getAttr("Pin Number")?.value, "native schematic pin number");
-          }), "native schematic component pin numbers");
-          identities.push({
-            primitiveId: nonemptyString(model.id, "native schematic component ID"),
-            uniqueId: nonemptyString(model.getAttr("Unique ID")?.value, "native schematic component unique ID"),
-            designator: nullableString(model.getAttr("Designator")?.value, "native schematic component designator"),
-            pinNumbers,
-          });
-        }
-      }
-      identities.sort((left, right) => left.primitiveId.localeCompare(right.primitiveId));
-      uniqueStrings(identities.map((item) => item.primitiveId), "native all-page component IDs");
-      return identities;
-    };
-    const nativePinIdentities = collectNativePinIdentities();
-    const nativePinsById = new Map(nativePinIdentities.map((item) => [item.primitiveId, item]));
-    // The pinned public adapters for sch_Net.getAllNets/getAllNetsName are
-    // unconditional [] stubs, while sch_PrimitiveWire enumeration converts
-    // RPC failures to []. Neither can establish complete topology. Use the
-    // compiled JLCEDA netlist and make the missing wire-geometry authority
-    // explicit instead of reporting a stable false-empty inventory.
-    const componentObjects = requiredArray(
-      await componentApi.getAll("part", true),
-      "all-page schematic part components",
-    );
-    const declaredPrimitiveIds = uniqueStrings(
-      await componentApi.getAllPrimitiveId("part", true),
-      "all-page schematic part component IDs",
-    );
-    const componentIdentities = [];
-    for (const component of componentObjects) {
-      const primitiveId = nonemptyString(
-        await state(component, "getState_PrimitiveId"),
-        "all-page schematic component primitive ID",
-      );
-      const uniqueIdValue = await state(component, "getState_UniqueId", false);
-      if (typeof uniqueIdValue !== "string" || uniqueIdValue.length === 0) {
-        throw new Error("all-page schematic part component " + primitiveId + " has no unique ID");
-      }
-      const designatorValue = await state(component, "getState_Designator", false);
-      const nativeIdentity = nativePinsById.get(primitiveId);
-      if (!nativeIdentity || nativeIdentity.uniqueId !== uniqueIdValue ||
-          nativeIdentity.designator !== (designatorValue ?? null)) {
-        throw new Error("public schematic component identity disagrees with its owning native page");
-      }
-      const pinNumbers = nativeIdentity.pinNumbers;
-      componentIdentities.push({
-        primitiveId,
-        uniqueId: uniqueIdValue,
-        designator: nullableString(
-          designatorValue,
-          "all-page schematic component designator",
-        ),
-        pinNumbers,
-      });
-    }
-    componentIdentities.sort((left, right) => left.primitiveId.localeCompare(right.primitiveId));
-    const objectPrimitiveIds = uniqueStrings(
-      componentIdentities.map((item) => item.primitiveId),
-      "all-page schematic part object IDs",
-    );
-    if (JSON.stringify(declaredPrimitiveIds) !== JSON.stringify(objectPrimitiveIds)) {
-      throw new Error("all-page schematic part ID and object enumerations disagree");
-    }
-    if (JSON.stringify(nativePinIdentities.map((item) => item.primitiveId)) !== JSON.stringify(objectPrimitiveIds)) {
-      throw new Error("public all-page component inventory disagrees with complete declared native pages");
-    }
-    if (new Set(componentIdentities.map((item) => item.uniqueId)).size !== componentIdentities.length) {
-      throw new Error("all-page schematic part components contain duplicate unique IDs");
-    }
-
-    // The in-memory file route avoids the deprecated getter's per-footprint
-    // Display-title lookups. An explicit neutral name also skips BOM naming.
-    // No saveFile, download, dialog, or fallback getter is invoked here.
-    const maximumNetlistBytes = 16 * 1024 * 1024;
-    const netlistFile = await netlistApi.getNetlistFile("easyeda-control-topology", "JLCEDA");
-    if (!netlistFile || typeof netlistFile !== "object" ||
-      netlistFile.name !== "easyeda-control-topology.enet" ||
-      netlistFile.type !== "text/plain" || typeof netlistFile.text !== "function" ||
-      !Number.isSafeInteger(netlistFile.size) || netlistFile.size <= 0 ||
-      netlistFile.size > maximumNetlistBytes) {
-      throw new Error("schematic netlist file is missing, malformed, or exceeds 16 MiB");
-    }
-    const netlistSize = netlistFile.size;
-    const netlist = await netlistFile.text();
-    if (typeof netlist !== "string" || netlist.trim().length === 0 ||
-      netlist.length > maximumNetlistBytes ||
-      new TextEncoder().encode(netlist).byteLength !== netlistSize ||
-      netlistFile.size !== netlistSize || netlistFile.type !== "text/plain" ||
-      netlistFile.name !== "easyeda-control-topology.enet") {
-      throw new Error("schematic netlist file text is invalid or contradicts its metadata");
-    }
-    const splitJsonDocuments = (source) => {
-      try {
-        const parsed = JSON.parse(source);
-        return Array.isArray(parsed) ? parsed : [parsed];
-      } catch (_) {}
-      const documents = [];
-      let start = -1;
-      let depth = 0;
-      let inString = false;
-      let escaped = false;
-      for (let index = 0; index < source.length; index += 1) {
-        const character = source[index];
-        if (inString) {
-          if (escaped) escaped = false;
-          else if (character.charCodeAt(0) === 92) escaped = true;
-          else if (character === '"') inString = false;
-          continue;
-        }
-        if (character === '"') inString = true;
-        else if (character === "{" || character === "[") {
-          if (depth === 0) start = index;
-          depth += 1;
-        } else if (character === "}" || character === "]") {
-          depth -= 1;
-          if (depth < 0) throw new Error("schematic netlist JSON sequence is malformed");
-          if (depth === 0 && start >= 0) {
-            const parsed = JSON.parse(source.slice(start, index + 1));
-            documents.push(...(Array.isArray(parsed) ? parsed : [parsed]));
-            start = -1;
-          }
-        }
-      }
-      if (depth !== 0 || inString || start !== -1 || documents.length === 0) {
-        throw new Error("schematic netlist JSON sequence could not be parsed");
-      }
-      return documents;
-    };
-    const compiledConnectivity = [];
-    for (const [documentIndex, rawDocument] of splitJsonDocuments(netlist).entries()) {
-      const document = requiredObject(rawDocument, "schematic netlist document[" + documentIndex + "]");
-      const components = document.components === undefined
-        ? document
-        : requiredObject(document.components, "schematic netlist document components");
-      for (const fallbackUniqueId of Object.keys(components).sort()) {
-        const item = requiredObject(components[fallbackUniqueId], "schematic netlist component");
-        const props = requiredObject(item.props, "schematic netlist component props");
-        const uniqueId = nonemptyString(
-          props["Unique ID"] ?? props.UniqueId ?? fallbackUniqueId,
-          "schematic netlist component unique ID",
-        );
-        const designatorValue = props.Designator ?? props.designator;
-        const designator = designatorValue === undefined || designatorValue === null
-          ? null
-          : requiredString(designatorValue, "schematic netlist component designator");
-        const pinInfoMap = item.pinInfoMap === undefined
-          ? {}
-          : requiredObject(item.pinInfoMap, "schematic netlist component pin map");
-        const pins = [];
-        for (const fallbackNumber of Object.keys(pinInfoMap).sort()) {
-          const info = requiredObject(pinInfoMap[fallbackNumber], "schematic netlist pin");
-          const pinNumber = nonemptyString(
-            info.number ?? fallbackNumber,
-            "schematic netlist pin number",
-          );
-          pins.push({
-            pinNumber,
-            net: nullableString(info.net, "schematic netlist pin net"),
-          });
-        }
-        pins.sort((left, right) => left.pinNumber.localeCompare(right.pinNumber));
-        if (new Set(pins.map((pin) => pin.pinNumber)).size !== pins.length) {
-          throw new Error("schematic netlist component contains duplicate pin numbers");
-        }
-        compiledConnectivity.push({ uniqueId, designator, pins });
-      }
-    }
-    compiledConnectivity.sort((left, right) =>
-      left.uniqueId.localeCompare(right.uniqueId) ||
-        (left.designator ?? "").localeCompare(right.designator ?? ""),
-    );
-    if (new Set(compiledConnectivity.map((item) => item.uniqueId)).size !== compiledConnectivity.length) {
-      throw new Error("schematic netlist contains duplicate component unique IDs");
-    }
-    const identityByUniqueId = new Map(componentIdentities.map((item) => [item.uniqueId, item]));
-    if (compiledConnectivity.length !== componentIdentities.length) {
-      DIAGNOSTIC.expectation = "unique-identities";
-      throw new Error("compiled schematic netlist count does not match all-page part components");
-    }
-    for (const compiled of compiledConnectivity) {
-      const identity = identityByUniqueId.get(compiled.uniqueId);
-      const compiledPinNumbers = compiled.pins.map((pin) => pin.pinNumber).sort();
-      if (
-        !identity ||
-        identity.designator !== compiled.designator ||
-        JSON.stringify(identity.pinNumbers) !== JSON.stringify(compiledPinNumbers)
-      ) {
-        DIAGNOSTIC.expectation = "association";
-        throw new Error("compiled schematic netlist identity does not match all-page part components");
-      }
-    }
-    if (JSON.stringify(declaredScope(await schematicApi.getCurrentSchematicInfo.call(schematicApi))) !== JSON.stringify(topologyScope) ||
-        JSON.stringify(collectNativePinIdentities()) !== JSON.stringify(nativePinIdentities)) {
-      throw new Error("declared schematic scope or native component pin identities changed during compilation");
-    }
-    const correlationByUniqueId = {};
-    for (const identity of componentIdentities) {
-      correlationByUniqueId[identity.uniqueId] = {
-        primitiveId: identity.primitiveId,
-        designator: identity.designator,
-        pinNumbers: identity.pinNumbers,
-      };
-    }
-    return {
-      ok: true,
-      kind: REQUEST.kind,
-      documentType: 1,
-      authority: {
-        connectivity: "sch_ManufactureData.getNetlistFile(JLCEDA)",
-        wireGeometry: "unavailable",
-      },
-      componentCorrelation: {
-        status: "exact-match",
-        source: "sch_PrimitiveComponent.getAll(part,true)+complete-declared-page-native-pins",
-        componentCount: componentIdentities.length,
-        pinCount: componentIdentities.reduce((total, item) => total + item.pinNumbers.length, 0),
-        primitiveIds: componentIdentities.map((item) => item.primitiveId),
-        uniqueIds: componentIdentities.map((item) => item.uniqueId).sort(),
-        byUniqueId: correlationByUniqueId,
-      },
-      limitations: [
-        "The pinned sch_Net net-tree/name adapters are hard stubs and are not read.",
-        "The pinned sch_PrimitiveWire enumerators swallow RPC failures, so wire geometry is not claimed complete.",
-        "Footprint Name enrichment is omitted; the in-memory compiled netlist file already contains component and pin connectivity.",
-        "All declared pages must already be loaded; pin identities come from each owning native page because the public by-ID getter is active-page-only.",
-      ],
-      compiledConnectivity,
-    };
-  }
 
   if (REQUEST.kind === "pcb-components") {
     const componentApi = requiredApi("pcb_PrimitiveComponent", "PCB_PrimitiveComponent", ["getAll", "getAllPrimitiveId", "getAllPinsByPrimitiveId"]);

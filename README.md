@@ -2,7 +2,16 @@
 
 `easyeda-pro-control` is a Codex skill and MCP facade for EasyEDA Pro inspection and typed API editing, with native controls for missing APIs and dialogs. It provides version-pinned readers, component and geometry transactions, operation-specific library/export workflows, SQLite checkpoints, hash-bound evidence and recovery journals.
 
-The package enables typed editing through `easyeda_control_design` and supported operations through `easyeda_control_library`. Their guards require the reviewed runtime, an authenticated session, a retained Windows process Job, journaled before-state and exact effect verification. Design commit saves and reopens the document, then compares the complete selected-branch project records. The legacy writer remains runtime-disabled: `plan`, `apply`, `verify`, `rollback`, and `save_reopen` are retained refusal endpoints, not the new transaction API. Unrestricted JavaScript has no environment opt-in. Coverage and live validation remain operation-specific.
+The scoped release limits `easyeda_control_design` execution to footprint
+editors under their existing guards. Schematic-page, symbol and PCB transactions,
+plus eight library metadata writers, are blocked pending native structure-job
+completion and complete SQL-effect proof. Their schemas and pure effect
+verifiers remain available. Other `easyeda_control_library` routes keep their
+operation-specific gates. Enabled writes require the reviewed runtime, an
+authenticated session, a retained Windows process Job, journaled before-state
+and exact effect verification. The legacy writer remains runtime-disabled.
+Unrestricted JavaScript has no environment opt-in. Coverage and live validation
+remain operation-specific.
 
 The October revamp consolidates the September repairs and adds an offline API
 reference, exact typed-operation schemas, argument validation, bounded editor
@@ -10,13 +19,224 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-The source catalog has 25 tools. `easyeda_control_api` exposes 93 reviewed
+Release `0.3.0+codex.20261013113000` has 28 tools and seven skills.
+See the [scoped release report](docs/scoped-release-2026-10-13.md) for verification,
+publication, installation and the implementation backlog. The ordinary
+`easyeda_control_symbol_metadata` entry is implemented but refuses before runtime
+allocation until disposable full-lifecycle validation succeeds. It accepts one
+explicit name/description operation with a unique caller ID and exact closed
+symbol/project identity. Its operation-intent reservation is separate from the
+validation-only permanent target claim. It does not enable the old library
+executor or other metadata/geometry writers.
+
+`easyeda_control_validate_closed_symbol` is a one-attempt, approval-required
+disposable validation route, not a general editing endpoint. The compiled helper
+and v3 transport pass a standalone Windows smoke run, including process cleanup.
+The latest disposable run passed baseline closure and native reference checks,
+then stopped after a successful startup-marker read, before navigation or editing.
+Its closed fixture is unchanged. This release corrects the expected Node version
+format (`v24.18.0`, matching the upstream health response), adds bounded failure
+diagnostics and admits evidence-preserving abandonment of that exact pre-navigation
+boundary. It does not retry the operation or enable the writer. Earlier fixes
+cover native 16-hex document IDs, duplicate structure rows, transport confirmation
+and tooltip-aware application-window selection. The
+[connected ledger](docs/api-connected-validation-ledger.md) records the evidence
+and limitations of each case. Full closed-symbol lifecycle validation remains
+unfinished.
+Start a fresh Codex host after updating.
+`easyeda_control_api` exposes 93 reviewed
 namespaces / 749 declared signatures and 99 latest official namespaces / 806
-signatures. It does not invoke SDK methods. Latest declarations are not runtime
-admission; callable actions remain limited by the existing typed executors and
-operation-specific proof. Exact schemas and offline argument validation cover
-105 design actions and 68 library/lifecycle actions; schema availability does
-not guarantee execution support. See the [API research](docs/easyeda-extension-interface-research-2026-10-10.md)
+signatures. Its `coverage` action inventories all 774 distinct mounted method
+paths, linking each to a direct public call, narrower native task equivalent,
+internal lifecycle use, or a concrete omission reason and required work.
+Current source classifications are 193 public subsets, 30 native equivalents,
+no lifecycle-only methods, 82 implemented-but-blocked methods and 469
+omissions. Their execution routes comprise 274 available with runtime guards,
+94 blocked and two partially blocked. Method and route counts differ;
+neither is a live-validated-method count.
+The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)
+describes the earlier containment changes. The [preceding054207 candidate](docs/api-coverage-054207-release-2026-10-13.md)
+packages the native-helper and disposable-workflow implementation.
+The [completion report](docs/project-structure-save-completion-2026-10-12.md)
+tracks native lifecycle work. Remaining adapters are an implementation backlog,
+not merely missing tests and not a claim that the native APIs are impossible.
+The scoped release does not complete every feasible SDK method.
+The030626 release introduced the Unicode evidence-reader
+fixes from024750 and blocks eight metadata-writing routes plus schematic-page,
+symbol and PCB design transactions whose delayed native structure-table effects
+lack a complete lifecycle proof. Footprint transactions retain their own guards.
+Candidate024750 passed CI but was not installed after this gap was found.
+Two new disposable wire commits on installed013324 passed saved/reopened
+source, connectivity and full-project checks, recorded as
+[C06/C07](docs/api-connected-validation-ledger.md#2026-10-12-c06-final-wire-observation-retained-on-013324).
+Those results do not validate the newer parser build. Flat transactions retain their final raw
+connectivity observation in a separate bounded artifact, without adding reads
+or changing Save/recovery authority. It does not replace durable proof or
+retroactively fill gaps in historical journals.
+Offline discovery includes nine indexed
+historical reader cases with exact generation, argument scope, evidence and
+exclusions. These records neither grant execution authority nor validate the
+whole method or current package generation.
+`sdk-reads` and `sdk-validate` expose the exact schemas and offline argument
+checks for the fixed `easyeda_control_sdk_read` allowlist. That separate live
+tool performs local getters, fixed primitive-state projections and bounded pure
+calculations with authenticated context checks and two matching samples. Three
+explicitly classified native equivalents read standalone Text IDs and Wire/Bus group IDs
+without the public callbacks or compiler; only the active ordinary page and
+empty arguments are supported. A separate native equivalent collects all direct
+component attribute names, including inherited attributes, drawing frames and
+flags, with complete bounded model membership checks. An ordinary project-symbol
+Pin equivalent independently proves membership and matches all twelve explicit
+getter fields; custom attributes and multipart symbols refuse. Native Text
+`get/getAll` return bounded root-Text state with native coordinates and nullable
+styles, not public-getter parity. Wire/Bus `get/getAll` preserve every line's native
+geometry/style and all literal names instead of flattening them to one style/net.
+Two mixed schematic ID readers return these same Text/Wire/Bus DTOs from one
+complete page-bound capture. Singular lookup returns one DTO; plural lookup
+preserves caller order. Missing, unsupported or wrong-owner IDs refuse the whole
+call. They do not return SDK instances or every primitive family. Installed204104
+passed both selectors for one root Text and one populated Wire, including both
+orders of a two-item selection, with unchanged native and saved-checkpoint
+evidence. Bus, invalid selectors and later generations remain separate cases.
+Complete-family bounds apply before selection.
+Filtered PCB net membership derives identity records from complete requested-family
+source/inventory agreement, with explicit standalone/component pad roles.
+Native PCB type lookup classifies an existing ID only after complete all-five-family
+source/inventory agreement, including unassigned objects. Missing or unsupported
+IDs refuse rather than reporting false absence. The native active-layer reader
+matches the native document source's selected layer to the complete public layer list.
+It preserves raw color strings, including malformed values returned by EasyEDA.
+The selected PCB object equivalent preserves exact selection order and returns
+complete native-source records for supported root objects. It refuses unsupported
+or generated selections instead of returning a partial array; public primitive
+instances and persistence are not claimed. Two explicit-ID equivalents use the
+same source DTOs without reading or changing selection. Missing or unsupported
+IDs refuse the whole call. Installed150000 passed empty selection and one
+original standalone STRING. Installed164600 subsequently passed singular and
+one-element plural explicit-ID reads of one standalone STRING with no direct
+attributes, matching the complete baseline and independently verified receipts.
+Other families, multi-ID ordering and later source changes remain separate.
+The fixed read catalog has 182 routes, including 21 native equivalents and
+bounded polygon splitting that preserves input source arrays and their order. It
+accepts no arbitrary method path, caller code, callbacks, navigation or writes.
+The new `lib_LibrariesList.getSystemLibraryUuid` route returns only a nonmissing
+32-character lowercase-hex identity, with no account/library enumeration.
+Installed204104 passed one exact disposable read. The native
+`sys_FontManager.getFontsList` equivalent reads only bounded configured titles,
+preserving order and duplicates while refusing missing or malformed settings.
+It never invokes the public wrapper's false-empty fallback or changes preferences.
+It does not establish current-account identity, OS font installation or rendering.
+Installed220050 passed one ordinary schematic case with unchanged complete
+native/source/checkpoint evidence; other document types and later generations
+remain separate cases.
+None of these observations replaces complete design or persistence proof.
+
+The deprecated schematic selection getter now has an explicit replacement
+adapter. It uses the documented modern getter under ordinary-page checks and
+never calls the obsolete iframe path that can silently report no selection.
+Returned wire-segment selections retain the replacement's parent-group IDs.
+
+Installed `071500` passed scoped disposable checks for active Top Layer,
+ComponentPad/Via net membership and one selected ordinary component, preserving
+complete native and saved-project state. These cases do not validate other
+primitive families or admit a later facade build.
+
+The inventory also maps the existing visible-canvas image and region-zoom
+workflows. Capture rechecks the complete runtime fingerprint before accepting
+managed PNG evidence. This is viewport evidence, not design-state or visual
+acceptance. Project-open failures now retain fixed diagnostic categories through
+recovery without storing raw private error messages or repeating navigation.
+
+Latest declarations are not runtime admission. Exact operation schemas cover
+108 design actions and 68 library/lifecycle actions; schema availability does
+not guarantee execution support. The [coverage inventory](docs/api-coverage-inventory-2026-10-10.md)
+and [feasibility review](docs/api-execution-feasibility-2026-10-10.md) name the
+remaining work. Closed symbol/page metadata, empty-page and empty-symbol creation,
+and PCB/schematic-container creation/rename currently refuse execution pending
+operation-owned structure-job completion and exact SQL-effect proof. Their
+schemas and document-effect implementations remain available for offline review.
+Schematic-page, symbol and PCB geometry Save can schedule that same structure
+job, so those design transaction routes are blocked too. Historical tests retain
+their document and checkpoint scope, not proof of native job completion.
+Existing-tab activation and inactive clean-tab close retain separate tracked
+paths. Their scopes and remaining connected acceptance are explicit; a public
+acknowledgment alone never completes a lifecycle operation. A separate closed
+PCB/schematic-container rename implementation requires one other clean PCB, complete
+checkpoint invariants and independent DOM checks. It preserves the original
+acknowledgment through recovery and performs no Save. Installed120000 passed
+forward/reverse PCB and schematic-container rename and one free-PCB creation;
+those results do not prove the newly identified structure-table lifecycle or
+admit a later generation. Creation and container rename preserve every raw per-document history
+occurrence. Closed free-PCB creation requires an absent board name and creates
+only META, with no canvas initialization, open, Save or automatic inverse.
+A separate free-schematic route creates only a closed META container, with no
+page, template, canvas or Save. Standalone PCB text retains bounded modify,
+create and delete contracts, currently blocked. Installed131000 passed forward/reverse modification, but its
+v1 creation exposed a cached null-to-black reload.
+New v2 creation fixes explicit black; creation-only retained-Save recovery proves
+the original storage and observed reload separately without another Save.
+Installed150000 completed that retained-Save recovery with full unchanged peer
+history and exact original storage/reload proof, without another Save or edit.
+Installed164600 then passed separate explicit-black v2 creation and deletion,
+each with exactly one acknowledged Save/close/reopen and complete 11-document
+proof. Deletion restored the original source, not history or database bytes.
+One closed free-schematic creation also passed: 11 existing documents remained
+exact and the only addition was DOCHEAD/META, with no page, template, editor open
+or Save. These are fixed disposable cases, not whole-method or later-generation
+admission. Exact generation bindings, argument domains and evidence commitments
+are in the append-only [connected validation ledger](docs/api-connected-validation-ledger.md).
+The earlier [candidate150000 report](docs/api-coverage-150000-release-2026-10-11.md)
+retains its historical status. The
+[remaining-effects review](docs/api-remaining-method-effects-2026-10-11.md)
+records blockers for layer selection, page ordering, pad-pair groups and broader
+PCB text cases. A separate checkpoint-bound flat-topology
+diagnostic avoids the mutating netlist exporter. A separate sealed single-page
+profile describes only existing stored attribute/text display patches, with exact
+inverse, endpoint and whole-project persistence checks. It does not re-enable
+electrical edits or historical compiled transactions; the structure-job
+restriction now also blocks this sealed profile. Imported library atom provenance has a separate
+sealed v2 profile: unchanged SYMBOL/FOOTPRINT peers retain every header occurrence,
+raw encoding and tombstone across the lifecycle. Default parsing and legacy v1
+remain strict. See the [imported-library contract](docs/native-library-import-history-2026-10-11.md)
+and [release evidence](docs/imported-library-peers-release-2026-10-11.md).
+Installed `083400` passed imported-project opening, nonempty native flat topology
+and forward/reverse stored Designator-coordinate transactions through Save and reopen. The
+complete 12-document fixture proof retained imported headers and both pin nets.
+See the [scoped fixture evidence](docs/api-coverage-083400-fixture-validation-2026-10-11.md).
+The reverse restored the original source exactly. Unsaved rollback and the newer
+source generation remain separate validation.
+A separate [sealed wire profile](docs/flat-wire-reroute-2026-10-11.md) retains a blocked source contract for
+endpoint-only rerouting with existing LINE identities, unchanged styles/names,
+full contact-incidence proof and an exact inverse only while the durable baseline
+is unchanged. Installed220050 passed one three-segment forward/reverse pair,
+each through Save/reopen with complete 12-document collateral proof. Original
+source geometry was restored, not original database history. Unsaved rollback,
+other shapes and later generations remain separate; the generic compiled route
+stays blocked. See the [connected case report](docs/api-coverage-220050-fixture-validation-2026-10-12.md).
+
+Source review found that PCB/footprint opening, activation and some active-tab
+closes can write shared local preferences and prune backups under EasyEDA's
+retention setting. Project opening may restore PCB tabs even for a schematic
+target. No past pruning or remote upload is established. Passive admission must
+precede navigation and Save/reopen; native UI is not a bypass, and this plugin
+does not change preferences to pass. See the skill's
+[navigation limits](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/native-ui.md#navigation-preference-side-effects).
+The `202803` disposable text edit reached the intended
+state but stopped before Save on a raw source-format comparison defect. Installed
+`210100` recovered that journal after one inverse and delayed native persistence,
+with complete nine-document restoration proof and no Save. This does not validate
+an immediate inverse. A separate `210100` single-text transaction passed Save,
+close, reopen and complete saved-project verification. Installed `223200` also
+passed both native Text-state readers and one stored frame-attribute display
+edit with complete nine-document saved proof and one Save/close/reopen. These
+older fixtures contain no electrical parts. The new source still needs its own
+connected admission and new read-route checks.
+Native discovery handles minimized windows, and
+bounded recovery-history caches preserve fresh content verification.
+Offline tests do not establish connected validation for this release.
+The [lifecycle continuation](docs/api-coverage-lifecycle-continuation-2026-10-10.md)
+records disposable refusal recovery and the latest guarded adapters.
+See the [API research](docs/easyeda-extension-interface-research-2026-10-10.md)
 and [reliability review](docs/revamp-reliability-review-2026-10-10.md).
 The [independent review follow-up](docs/revamp-final-review-2026-10-10.md)
 also covers descriptor-bound Node launch, timeout-envelope classification and
@@ -97,8 +317,21 @@ an arbitrary descriptor inherited by the facade's shell cannot reach it.
 
 ## Implemented capabilities
 
-The live evidence in this section is historical and operation-specific. It is
-not a connected test of the October facade generation.
+Current type-1/2/3 transaction execution is blocked by the structure-job
+completion gap described above. Footprint and unrelated routes retain their
+own guards; the historical writer results below are not exceptions.
+
+The live evidence in this section is historical and operation-specific. The
+separately recorded 164600 cases above do not transfer these older results to
+that generation or admit later source changes.
+
+The October API audit found hidden annotation and Save All in the previously
+used schematic netlist path. Current code refuses `schematic-topology` and
+dependent schematic transactions before dispatch. It also refuses schematic
+netlist/BOM/document and PCB netlist/BOM/PDF exports that can save dirty tabs,
+plus simulation export outside its required NGSPICE editor. Historical matching
+outputs did not establish read-only execution. See the
+[source-backed safety review](docs/api-coverage-review-2026-10-10.md).
 
 The current tuple is connected-read-admitted following authenticated status,
 PCB and schematic public-read smoke tests against an independently decoded,
@@ -106,7 +339,7 @@ saved disposable project, plus installed-source review. Exact reads require
 that complete pinned tuple on every call; later mismatches remain fail-closed.
 Admission does not claim every reader variant or typed writer has passed a live test.
 
-Live validation now includes schematic components and compiled topology. The
+Historical live validation included schematic components and compiled topology. The
 in-memory `getNetlistFile` topology route returned the four expected fixture
 endpoints in two identical samples. Revised PCB component and inventory readers
 also passed with two components, four direct pads and one outline; all four
@@ -117,11 +350,11 @@ bounded, shallow JSON envelope so the bridge cannot replace nested rule data
 with depth-limit markers; earlier placeholder-bearing rule results are invalid
 as complete evidence.
 
-- Exact double-sampled schematic component and compiled connectivity reads, with explicit adapter limitations.
+- Exact double-sampled schematic component reads. Compiled topology is currently disabled for the hidden-Save reason above.
 - Exact PCB component, direct-pad, primitive-inventory, net, rule, class, differential-pair, and equal-length-group reads.
 - Conservative generic reads with project, document, editor-type, and tab binding.
 - SQLite online checkpoints with `quick_check`, logical database comparison, and self-hashed receipts.
-- Full-page and viewport capture with PNG signature, chunk, CRC, zlib, scanline, geometry, and payload/image binding checks.
+- Full-page and viewport image requests with PNG signature, chunk, CRC, zlib, scanline, geometry, and payload/image binding checks. These do not prove target paint completion or page completeness; inspect the returned image.
 - Draft PCB DSN route-context export with descriptor-bound exclusive artifact creation, inode/hash-bound receipts, and hash-bound failure evidence.
 - Durable ambiguous-call recovery with one-use nonce challenges and a global bridge quarantine.
 - Typed PCB and schematic transactions with exact source effects, scoped durable baselines and explicit commit or verified inverse.

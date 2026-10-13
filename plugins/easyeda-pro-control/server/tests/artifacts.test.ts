@@ -1,3 +1,4 @@
+import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
 import {
   link,
@@ -10,6 +11,7 @@ import {
   rm,
   symlink,
   unlink,
+  utimes,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -29,6 +31,7 @@ import type {
   archiveExternalEvidence,
   controlRootCapability,
   createOperation,
+  createOperationScanner,
   ensureOperationStorage,
   listOperations,
   loadOperation,
@@ -51,6 +54,7 @@ interface ArtifactsModule {
   archiveExternalEvidence: typeof archiveExternalEvidence;
   controlRootCapability: typeof controlRootCapability;
   createOperation: typeof createOperation;
+  createOperationScanner: typeof createOperationScanner;
   ensureOperationStorage: typeof ensureOperationStorage;
   listOperations: typeof listOperations;
   loadOperation: typeof loadOperation;
@@ -72,6 +76,7 @@ const requiredArtifactFunctions = [
   "archiveExternalEvidence",
   "controlRootCapability",
   "createOperation",
+  "createOperationScanner",
   "ensureOperationStorage",
   "listOperations",
   "loadOperation",
@@ -143,7 +148,7 @@ function fixturePlan(name = "Artifact test plan"): UnknownRecord {
 
 before(async () => {
   dataDir = await mkdtemp(join("/tmp", "easyeda-control-artifacts-"));
-  process.env["EASYEDA_CONTROL_DATA_DIR"] = dataDir;
+  configureTestControlRoot(dataDir);
   const loaded: unknown = await import(
     `../src/artifacts.ts?test-dir=${encodeURIComponent(dataDir)}`
   );
@@ -155,7 +160,7 @@ before(async () => {
 });
 
 after(async () => {
-  delete process.env["EASYEDA_CONTROL_DATA_DIR"];
+  configureTestControlRoot();
   if (dataDir) {
     const controlRoot = await artifacts.controlRootCapability();
     await controlRoot.close();
@@ -950,6 +955,174 @@ void describe("operation journals and phase artifacts", () => {
   });
 });
 
+void describe("fresh-byte operation scan projections", () => {
+  void test("reuses only a fixed projection of identical bytes and returns independent clones", async () => {
+    const id = "easyeda-scan-projection-clones";
+    const operation = fixtureOperation(id);
+    await artifacts.createOperation(operation);
+    let calls = 0;
+    const scan = artifacts.createOperationScanner((value): { state: unknown; nested: { unchanged: boolean } } | undefined => {
+      if (value["operationId"] !== id) { return undefined; }
+      calls += 1;
+      return { state: value["state"], nested: { unchanged: true } };
+    });
+    const first = await scan();
+    assert.equal(calls, 1);
+    assert.ok(first[0] !== undefined);
+    first[0].nested.unchanged = false;
+    const second = await scan();
+    assert.equal(calls, 1);
+    assert.equal(second[0]?.nested.unchanged, true);
+    await artifacts.updateOperation({ ...operation, state: "completed" });
+    const updated = await scan();
+    assert.equal(updated[0]?.state, "completed");
+    assert.equal(calls, 2);
+  });
+
+  void test("freshly hashes same-size artifacts after warming the projection", async () => {
+    const id = "easyeda-scan-fresh-artifact";
+    const descriptor = await artifacts.writePhaseArtifact(id, 0, "before", { state: "before" });
+    await artifacts.createOperation(fixtureOperation(id, { artifacts: [descriptor] }));
+    const scan = artifacts.createOperationScanner((value) => value["operationId"] === id ? value["state"] : undefined);
+    assert.notDeepEqual(await scan(), ["journal-unreadable"]);
+    const loaded = await artifacts.loadOperation(id);
+    const mutableDescriptor = loaded.artifacts?.[0];
+    assert.ok(mutableDescriptor !== undefined);
+    mutableDescriptor.path = `${descriptor.path}.missing`;
+    mutableDescriptor.sha256 = "0".repeat(64);
+    assert.notDeepEqual(await scan(), ["journal-unreadable"]);
+    const originalInfo = await lstat(descriptor.path);
+    const original = await readFile(descriptor.path);
+    const changed = Buffer.from(original);
+    changed[10] = changed[10] === 97 ? 98 : 97;
+    await writeFile(descriptor.path, changed);
+    await utimes(descriptor.path, originalInfo.atime, originalInfo.mtime);
+    assert.deepEqual(await scan(), ["journal-unreadable"]);
+    await writeFile(descriptor.path, original);
+    assert.notDeepEqual(await scan(), ["journal-unreadable"]);
+  });
+
+  void test("freshly hashes same-size journals and refuses forged integrity after warming", async () => {
+    const id = "easyeda-scan-fresh-journal";
+    await artifacts.createOperation(fixtureOperation(id));
+    const scan = artifacts.createOperationScanner((value) => value["operationId"] === id ? value["state"] : undefined);
+    const originalState = await scan();
+    const path = artifacts.operationPath(id);
+    const originalInfo = await lstat(path);
+    const original = await readFile(path, "utf8");
+    const changed = original.replace("Provide a stable plan", "Provide a forged plan");
+    assert.notEqual(changed, original);
+    assert.equal(Buffer.byteLength(changed), Buffer.byteLength(original));
+    await writeFile(path, changed);
+    await utimes(path, originalInfo.atime, originalInfo.mtime);
+    assert.deepEqual(await scan(), ["journal-unreadable"]);
+    const forged = parseJsonRecord(changed);
+    delete forged["journalSha256"];
+    forged["journalSha256"] = sha256Text(canonicalJson(forged));
+    await writeFile(path, JSON.stringify(forged));
+    assert.deepEqual(await scan(), ["journal-unreadable"]);
+    await writeFile(path, original);
+    assert.deepEqual(await scan(), originalState);
+  });
+
+  void test("revalidates journal and artifact paths after cached success", async () => {
+    const id = "easyeda-scan-path-replacement";
+    const descriptor = await artifacts.writePhaseArtifact(id, 0, "before", { state: "before" });
+    await artifacts.createOperation(fixtureOperation(id, { artifacts: [descriptor] }));
+    const scan = artifacts.createOperationScanner((value) => value["operationId"] === id ? value["state"] : undefined);
+    const expected = await scan();
+    const journalPath = artifacts.operationPath(id);
+    await rename(journalPath, `${journalPath}.retained`);
+    await symlink(`${journalPath}.retained`, journalPath);
+    assert.deepEqual(await scan(), ["journal-unreadable"]);
+    await unlink(journalPath);
+    await rename(`${journalPath}.retained`, journalPath);
+    assert.deepEqual(await scan(), expected);
+    await link(descriptor.path, `${descriptor.path}.alias`);
+    assert.deepEqual(await scan(), ["journal-unreadable"]);
+    await unlink(`${descriptor.path}.alias`);
+    assert.deepEqual(await scan(), expected);
+  });
+
+  void test("keeps different projections isolated and skips oversized cached values", async () => {
+    const id = "easyeda-scan-projection-bounds";
+    await artifacts.createOperation(fixtureOperation(id));
+    let largeCalls = 0;
+    const small = artifacts.createOperationScanner((value) => value["operationId"] === id ? "small" : undefined);
+    const large = artifacts.createOperationScanner((value): string | undefined => {
+      if (value["operationId"] !== id) { return undefined; }
+      largeCalls += 1;
+      return "large".repeat(10_000);
+    });
+    assert.deepEqual(await small(), ["small"]);
+    assert.deepEqual(await large(), ["large".repeat(10_000)]);
+    assert.deepEqual(await small(), ["small"]);
+    assert.deepEqual(await large(), ["large".repeat(10_000)]);
+    assert.equal(largeCalls, 2);
+  });
+
+  void test("bounds aggregate projection memory and preserves selector errors", async () => {
+    const prefix = "easyeda-scan-cache-capacity-";
+    for (let index = 0; index < 40; index += 1) {
+      await artifacts.createOperation(fixtureOperation(`${prefix}${String(index).padStart(3, "0")}`));
+    }
+    let calls = 0;
+    const scan = artifacts.createOperationScanner((value): string | undefined => {
+      if (!String(value["operationId"]).startsWith(prefix)) { return undefined; }
+      calls += 1;
+      return "x".repeat(30_000);
+    });
+    const first = await scan();
+    assert.equal(first.length, 40);
+    assert.equal(calls, 40);
+    const second = await scan();
+    assert.equal(second.length, 40);
+    // The bounded cache keeps its resident projections instead of evicting
+    // Every upcoming hit during the second sorted scan.
+    assert.ok(calls > 40 && calls < 80);
+    const uncachedCalls = calls - 40;
+    const third = await scan();
+    assert.equal(third.length, 40);
+    assert.equal(calls, 40 + 2 * uncachedCalls);
+    const fails = artifacts.createOperationScanner(() => { throw new Error("projection failed"); });
+    await assert.rejects(fails(), /projection failed/u);
+  });
+
+  void test("does not undercount exotic or undefined-key projection payloads", async () => {
+    const id = "easyeda-scan-exotic-projection";
+    await artifacts.createOperation(fixtureOperation(id));
+    let mapCalls = 0;
+    const maps = artifacts.createOperationScanner((value): Map<string, string> | undefined => {
+      if (value["operationId"] !== id) { return undefined; }
+      mapCalls += 1;
+      return new Map([["payload", "x".repeat(100_000)]]);
+    });
+    await maps();
+    await maps();
+    assert.equal(mapCalls, 2);
+    let undefinedCalls = 0;
+    const undefinedKeys = artifacts.createOperationScanner((value): Record<string, undefined> | undefined => {
+      if (value["operationId"] !== id) { return undefined; }
+      undefinedCalls += 1;
+      return Object.fromEntries(Array.from({ length: 3000 }, (_unused, index) => [`retained-property-${String(index)}`, undefined]));
+    });
+    await undefinedKeys();
+    await undefinedKeys();
+    assert.equal(undefinedCalls, 2);
+    let arrayCalls = 0;
+    const arrays = artifacts.createOperationScanner((value): unknown[] | undefined => {
+      if (value["operationId"] !== id) { return undefined; }
+      arrayCalls += 1;
+      const result: unknown[] = [];
+      Reflect.set(result, "unserializedPayload", "x".repeat(30_000));
+      return result;
+    });
+    await arrays();
+    await arrays();
+    assert.equal(arrayCalls, 2);
+  });
+});
+
 void describe("bounded artifact reads", () => {
   void test("supports offsets and caps a single read at 256 KiB", async () => {
     const path = join(dataDir, "large-artifact.txt");
@@ -1084,7 +1257,7 @@ void describe("control-root lifetime binding", { concurrency: false }, () => {
     const movedRoot = join(parent, "control-moved");
     const previousRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
     await mkdir(root, { mode: 0o700 });
-    process.env["EASYEDA_CONTROL_DATA_DIR"] = root;
+    configureTestControlRoot(root);
     let swappedArtifacts: ArtifactsModule | undefined;
     try {
       const loaded: unknown = await import(
@@ -1111,9 +1284,9 @@ void describe("control-root lifetime binding", { concurrency: false }, () => {
         await controlRoot.close();
       }
       if (previousRoot === undefined) {
-        delete process.env["EASYEDA_CONTROL_DATA_DIR"];
+        configureTestControlRoot();
       } else {
-        process.env["EASYEDA_CONTROL_DATA_DIR"] = previousRoot;
+        configureTestControlRoot(previousRoot);
       }
       await rm(parent, { recursive: true, force: true });
     }

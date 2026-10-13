@@ -3,6 +3,84 @@ $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 $schema = 'easyeda-pro-control.windows-native-ui.v1'
 $dispatched = $false
+function Get-FiniteWindowBounds([double[]]$values) {
+  if ($values.Count -ne 4 -or $values[2] -le 0 -or $values[3] -le 0) { return $null }
+  foreach ($value in $values) {
+    if ([double]::IsNaN($value) -or [double]::IsInfinity($value)) { return $null }
+  }
+  return ,$values
+}
+function Move-HoverPointer([IntPtr]$handle, [double[]]$bounds, [int]$x, [int]$y, [uint32]$expectedWindowPid, [uint32]$rootPid) {
+  # Pinned UI12414b9d top-menu More opens on mouse-enter but closes on click
+  # (UTF-16 166313xx). Pointer movement must never synthesize a button event.
+  if ($bounds.Count -ne 4 -or $bounds[2] -le 0 -or $bounds[3] -le 0 -or $bounds[2] -gt 16384 -or $bounds[3] -gt 16384) { throw 'hover-bounds' }
+  foreach ($value in $bounds) { if ([double]::IsNaN($value) -or [double]::IsInfinity($value)) { throw 'hover-bounds' } }
+  if ($x -lt -32768 -or $x -gt 32767 -or $y -lt -32768 -or $y -gt 32767 -or $x -lt $bounds[0] -or $x -ge $bounds[0]+$bounds[2] -or $y -lt $bounds[1] -or $y -ge $bounds[1]+$bounds[3]) { throw 'hover-outside-window' }
+  if ([EasyedaUiController]::IsIconic($handle) -or [EasyedaUiController]::GetForegroundWindow() -ne $handle) { throw 'hover-target-not-foreground' }
+  # Refuse an observed held mouse button. GetAsyncKeyState returning zero is
+  # not a proof against concurrent input or desktop/API failure.
+  foreach ($key in @(1,2,4,5,6)) { if ([EasyedaUiController]::GetAsyncKeyState($key) -lt 0) { throw 'hover-button-held' } }
+  # Window bounds and foreground alone do not exclude a non-activating overlay.
+  # These passive samples do not lock out concurrent input or window changes.
+  $requestedPoint = New-Object EasyedaUiController+Point
+  $requestedPoint.X = $x; $requestedPoint.Y = $y
+  $hit = [EasyedaUiController]::WindowFromPoint($requestedPoint)
+  if ($hit -eq [IntPtr]::Zero -or [EasyedaUiController]::GetAncestor($hit,2) -ne $handle) { throw 'hover-point-not-owned' }
+  $targetOwner = [uint32]0; $hitOwner = [uint32]0
+  $targetThread = [EasyedaUiController]::GetWindowThreadProcessId($handle,[ref]$targetOwner)
+  $hitThread = [EasyedaUiController]::GetWindowThreadProcessId($hit,[ref]$hitOwner)
+  if ($expectedWindowPid -eq 0 -or $rootPid -eq 0 -or $targetThread -eq 0 -or $hitThread -eq 0 -or $targetOwner -ne $expectedWindowPid -or $hitOwner -ne $targetOwner) { throw 'hover-point-owner-unverified' }
+  foreach ($thread in @($targetThread,$hitThread)) {
+    $gui = New-Object EasyedaUiController+GuiThreadInfo
+    $gui.Size = [Runtime.InteropServices.Marshal]::SizeOf($gui)
+    if (-not [EasyedaUiController]::GetGUIThreadInfo($thread,[ref]$gui) -or $gui.Capture -ne [IntPtr]::Zero -or ($thread -eq $targetThread -and $gui.Active -ne $handle)) { throw 'hover-capture-state-unverified' }
+  }
+  if ([EasyedaUiController]::GetForegroundWindow() -ne $handle -or [EasyedaUiController]::WindowFromPoint($requestedPoint) -ne $hit) { throw 'hover-recipient-changed' }
+  $finalTargetOwner = [uint32]0; $finalHitOwner = [uint32]0
+  if ([EasyedaUiController]::GetAncestor($hit,2) -ne $handle -or
+      [EasyedaUiController]::GetWindowThreadProcessId($handle,[ref]$finalTargetOwner) -ne $targetThread -or
+      [EasyedaUiController]::GetWindowThreadProcessId($hit,[ref]$finalHitOwner) -ne $hitThread -or
+      $finalTargetOwner -ne $expectedWindowPid -or $finalHitOwner -ne $expectedWindowPid) { throw 'hover-recipient-owner-changed' }
+  # Owned dialogs may belong to another process. Retain their exact admitted
+  # PID and require their bounded current owner chain to reach this root PID.
+  $ownerHandle = $handle; $seenOwners = @{}; $owned = $false
+  for ($depth = 0; $depth -lt 8 -and $ownerHandle -ne [IntPtr]::Zero; $depth++) {
+    $ownerKey = $ownerHandle.ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture)
+    if ($seenOwners.ContainsKey($ownerKey)) { break }; $seenOwners[$ownerKey] = $true
+    $ownerPid = [uint32]0
+    if ([EasyedaUiController]::GetWindowThreadProcessId($ownerHandle,[ref]$ownerPid) -eq 0 -or $ownerPid -eq 0) { break }
+    if ($depth -eq 0 -and $ownerPid -ne $expectedWindowPid) { break }
+    if ($ownerPid -eq $rootPid) { $owned = $true; break }
+    $ownerHandle = [EasyedaUiController]::GetWindow($ownerHandle,4)
+  }
+  if (-not $owned) { throw 'hover-owner-chain-changed' }
+  $script:dispatched = $true
+  if (-not [EasyedaUiController]::SetCursorPos($x,$y)) { throw 'hover-move-failed' }
+  $point = New-Object EasyedaUiController+Point
+  if (-not [EasyedaUiController]::GetCursorPos([ref]$point) -or $point.X -ne $x -or $point.Y -ne $y) { throw 'hover-position-unverified' }
+  if ([EasyedaUiController]::GetForegroundWindow() -ne $handle) { throw 'hover-foreground-changed' }
+  return @{pointerMovedTo=@($x,$y);buttonInputSent=$false;hoverEffectProven=$false}
+}
+function Get-DesktopStatus([int]$targetSessionId, [IntPtr]$targetHandle) {
+  # Advisory only. Unavailable observations never authorize input or change the
+  # independent foreground, ownership, generation or confirmation guards.
+  $status = @{probeSessionId=$null;targetSessionId=$null;foreground='unavailable';probeDesktopInput='unavailable';targetDesktopInput='unavailable';inputDesktopInput='unavailable';targetSession=@{connectState='unavailable';lockState='unavailable'}}
+  try { $status.probeSessionId = [Diagnostics.Process]::GetCurrentProcess().SessionId } catch {}
+  if ($targetSessionId -ge 0) { $status.targetSessionId = $targetSessionId }
+  try {
+    $foreground = [EasyedaUiController]::GetForegroundWindow()
+    if ($foreground -eq [IntPtr]::Zero) { $status.foreground = 'none' }
+    elseif (Owned-Window $foreground) { $status.foreground = 'owned' }
+    else { $status.foreground = 'foreign' }
+  } catch {}
+  try { $status.probeDesktopInput = [EasyedaDesktopDiagnostic]::ProbeDesktopInput() } catch {}
+  try { $status.targetDesktopInput = [EasyedaDesktopDiagnostic]::TargetDesktopInput($targetHandle,[uint32]$request.rootPid) } catch {}
+  try { $status.inputDesktopInput = [EasyedaDesktopDiagnostic]::InputDesktopInput() } catch {}
+  if ($targetSessionId -ge 0) {
+    try { $status.targetSession = [EasyedaDesktopDiagnostic]::Session($targetSessionId) } catch {}
+  }
+  return $status
+}
 try {
   $line = [Console]::ReadLine()
   if (-not $line -or $line.Length -gt 32768) { throw 'request-bound' }
@@ -40,6 +118,15 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 public static class EasyedaUiController {
+  [StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left, Top, Right, Bottom; }
+  [StructLayout(LayoutKind.Sequential)] public struct Point { public int X, Y; }
+  [StructLayout(LayoutKind.Sequential)] public struct GuiThreadInfo {
+    public uint Size, Flags;
+    public IntPtr Active, Focus, Capture, MenuOwner, MoveSize, Caret;
+    public Rect CaretRect;
+  }
+  [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(Point point);
+  [DllImport("user32.dll")] public static extern bool GetGUIThreadInfo(uint thread, ref GuiThreadInfo info);
   public delegate bool EnumCallback(IntPtr handle, IntPtr value);
   [DllImport("user32.dll")] static extern bool EnumWindows(EnumCallback callback, IntPtr value);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr handle);
@@ -53,10 +140,75 @@ public static class EasyedaUiController {
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr handle);
   [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr handle, int command);
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr handle);
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr handle, out Rect rect);
   [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
   [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+  [DllImport("user32.dll")] public static extern bool GetCursorPos(out Point point);
+  [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int key);
   [DllImport("user32.dll")] public static extern void mouse_event(uint flags, uint x, uint y, uint data, UIntPtr extra);
   public static IntPtr[] Windows() { var result = new List<IntPtr>(); EnumWindows((handle, value) => { if(IsWindowVisible(handle)) result.Add(handle); return true; }, IntPtr.Zero); return result.ToArray(); }
+}
+public static class EasyedaDesktopDiagnostic {
+  // This prefix follows the documented x64 WTSINFOEX level-1 union alignment.
+  // Do not marshal or disclose the trailing account, client or station strings.
+  [StructLayout(LayoutKind.Explicit, Size=20)] public struct SessionPrefix {
+    [FieldOffset(0)] public uint Level;
+    [FieldOffset(8)] public uint SessionId;
+    [FieldOffset(12)] public int State;
+    [FieldOffset(16)] public int Flags;
+  }
+  [DllImport("kernel32.dll")] static extern uint GetCurrentThreadId();
+  [DllImport("user32.dll")] static extern IntPtr GetThreadDesktop(uint thread);
+  [DllImport("user32.dll")] static extern IntPtr OpenInputDesktop(uint flags, bool inherit, uint access);
+  [DllImport("user32.dll")] static extern bool CloseDesktop(IntPtr handle);
+  [DllImport("user32.dll", EntryPoint="GetUserObjectInformationW")] static extern bool GetUserObjectInformation(IntPtr handle, int index, out int value, uint length, out uint needed);
+  [DllImport("wtsapi32.dll", EntryPoint="WTSQuerySessionInformationW")] static extern bool WTSQuerySessionInformation(IntPtr server, int session, int info, out IntPtr data, out int bytes);
+  [DllImport("wtsapi32.dll")] static extern void WTSFreeMemory(IntPtr data);
+  static string DesktopInput(IntPtr handle) {
+    int value; uint needed;
+    if(handle == IntPtr.Zero || !GetUserObjectInformation(handle,6,out value,4,out needed) || needed != 4) return "unavailable";
+    return value == 0 ? "no" : "yes";
+  }
+  public static string ProbeDesktopInput() {
+    try { return DesktopInput(GetThreadDesktop(GetCurrentThreadId())); } catch { return "unavailable"; }
+  }
+  public static string TargetDesktopInput(IntPtr handle, uint rootPid) {
+    try {
+      if(handle == IntPtr.Zero || rootPid == 0) return "unavailable";
+      uint owner; uint thread = EasyedaUiController.GetWindowThreadProcessId(handle,out owner);
+      if(thread == 0 || owner != rootPid) return "unavailable";
+      // GetThreadDesktop returns a borrowed handle. Never close it.
+      return DesktopInput(GetThreadDesktop(thread));
+    } catch { return "unavailable"; }
+  }
+  public static string InputDesktopInput() {
+    IntPtr handle = IntPtr.Zero;
+    try {
+      handle = OpenInputDesktop(0,false,1); // DESKTOP_READOBJECTS only.
+      return DesktopInput(handle);
+    } catch { return "unavailable"; }
+    finally { if(handle != IntPtr.Zero) CloseDesktop(handle); }
+  }
+  public static Dictionary<string,string> Session(int sessionId) {
+    var result = new Dictionary<string,string>{{"connectState","unavailable"},{"lockState","unavailable"}};
+    if(sessionId < 0 || IntPtr.Size != 8) return result;
+    IntPtr data = IntPtr.Zero;
+    try {
+      int bytes;
+      if(!WTSQuerySessionInformation(IntPtr.Zero,sessionId,25,out data,out bytes) || data == IntPtr.Zero || bytes < 232 || bytes > 4096) return result;
+      // Check the level before interpreting its union, and bind the returned ID.
+      if(Marshal.ReadInt32(data) != 1) return result;
+      var prefix = (SessionPrefix)Marshal.PtrToStructure(data,typeof(SessionPrefix));
+      if(prefix.SessionId != (uint)sessionId) return result;
+      string[] states = {"active","connected","connect-query","shadow","disconnected","idle","listen","reset","down","initializing"};
+      result["connectState"] = prefix.State >= 0 && prefix.State < states.Length ? states[prefix.State] : "unknown";
+      // Windows 7/Server 2008 R2 invert these flags. Do not guess on old hosts.
+      var version = Environment.OSVersion.Version;
+      result["lockState"] = version.Major < 6 || (version.Major == 6 && version.Minor < 2) ? "unknown" : prefix.Flags == 0 ? "locked" : prefix.Flags == 1 ? "unlocked" : "unknown";
+    } catch { return result; }
+    finally { if(data != IntPtr.Zero) WTSFreeMemory(data); }
+    return result;
+  }
 }
 '@
   [void][EasyedaUiController]::SetProcessDPIAware()
@@ -79,11 +231,25 @@ public static class EasyedaUiController {
   function Window-Row([IntPtr]$handle) {
     $element = [System.Windows.Automation.AutomationElement]::FromHandle($handle)
     $rect = $element.Current.BoundingRectangle
-    return @{ handle=$handle.ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture); pid=(Window-Pid $handle); title=$element.Current.Name; className=$element.Current.ClassName; bounds=@($rect.X,$rect.Y,$rect.Width,$rect.Height); owner=[EasyedaUiController]::GetWindow($handle,4).ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture) }
+    $bounds = Get-FiniteWindowBounds @($rect.X,$rect.Y,$rect.Width,$rect.Height)
+    $boundsSource = 'uia'
+    if ($null -eq $bounds) {
+      # Minimized UIA windows can return Rect.Empty (infinite coordinates).
+      # Windows PowerShell emits those as invalid JSON. Native bounds are an
+      # independent observation; if unavailable, keep identity with no bounds.
+      $bounds = $null
+      $boundsSource = $null
+      $nativeRect = New-Object EasyedaUiController+Rect
+      if ([EasyedaUiController]::GetWindowRect($handle,[ref]$nativeRect) -and $nativeRect.Right -gt $nativeRect.Left -and $nativeRect.Bottom -gt $nativeRect.Top) {
+        $bounds = @([double]$nativeRect.Left,[double]$nativeRect.Top,([double]$nativeRect.Right-$nativeRect.Left),([double]$nativeRect.Bottom-$nativeRect.Top))
+        $boundsSource = 'win32'
+      }
+    }
+    return @{ handle=$handle.ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture); pid=(Window-Pid $handle); title=$element.Current.Name; className=$element.Current.ClassName; bounds=$bounds; boundsSource=$boundsSource; minimized=[EasyedaUiController]::IsIconic($handle); owner=[EasyedaUiController]::GetWindow($handle,4).ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture) }
   }
   $action = [string]$request.action
-  if ($action -notin @('windows','inspect','focused','capture','focus','invoke','setvalue','filename','click','doubleclick','rightclick','keys','normal-close')) { throw 'action-not-admitted' }
-  $writes = $action -in @('focus','invoke','setvalue','filename','click','doubleclick','rightclick','keys','normal-close')
+  if ($action -notin @('windows','inspect','focused','capture','focus','invoke','setvalue','filename','click','doubleclick','rightclick','hover','keys','normal-close')) { throw 'action-not-admitted' }
+  $writes = $action -in @('focus','invoke','setvalue','filename','click','doubleclick','rightclick','hover','keys','normal-close')
   if ($writes -and $request.confirmUIWrite -isnot [bool]) { throw 'confirmation-missing' }
   if ($writes -and $request.confirmUIWrite -ne $true) { throw 'confirmation-false' }
   $binding = @{rootPid=[int]$request.rootPid;rootStartTicks=[string]$request.rootStartTicks;executable=[string]$request.executable;executableSha256=[string]$request.executableSha256}
@@ -96,7 +262,11 @@ public static class EasyedaUiController {
       }
     }
     $target.Refresh()
-    $result = @{windows=$rows;mainWindowHandle=$target.MainWindowHandle.ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture)}
+    $diagnosticHandle = [IntPtr]::Zero
+    foreach ($row in $rows) { if ($row.pid -eq $request.rootPid) { $diagnosticHandle = [IntPtr][long]$row.handle; break } }
+    $targetSessionId = -1
+    try { $targetSessionId = $target.SessionId } catch {}
+    $result = @{windows=$rows;mainWindowHandle=$target.MainWindowHandle.ToInt64().ToString([Globalization.CultureInfo]::InvariantCulture);desktopStatus=(Get-DesktopStatus $targetSessionId $diagnosticHandle)}
   } else {
     if ($request.windowHandle -isnot [string] -or $request.windowHandle -cnotmatch '^[1-9][0-9]{0,18}$') { throw 'window-format' }
     $windowHandle = [IntPtr][long]$request.windowHandle
@@ -107,8 +277,8 @@ public static class EasyedaUiController {
     Assert-Root
     # Pointer and keyboard operations may not reach another application, even if
     # an unrelated process steals focus while a dialog is being inspected.
-    if ($action -in @('focused','capture','click','doubleclick','rightclick','keys') -and -not (Owned-Window ([EasyedaUiController]::GetForegroundWindow()))) { throw 'foreign-foreground' }
-    if ($action -in @('click','doubleclick','rightclick','keys') -and [EasyedaUiController]::GetForegroundWindow() -ne $windowHandle) { throw 'input-target-is-not-foreground' }
+    if ($action -in @('focused','capture','click','doubleclick','rightclick','hover','keys') -and -not (Owned-Window ([EasyedaUiController]::GetForegroundWindow()))) { throw 'foreign-foreground' }
+    if ($action -in @('click','doubleclick','rightclick','hover','keys') -and [EasyedaUiController]::GetForegroundWindow() -ne $windowHandle) { throw 'input-target-is-not-foreground' }
     if ($request.PSObject.Properties.Name -contains 'recoveryCloseConfirmation') {
       # The dedicated journal coordinator supplies this, never ordinary UI input.
       # No click occurs if any pixels, bounds, foreground or process changed.
@@ -161,6 +331,14 @@ public static class EasyedaUiController {
         if ($stream.Length -gt 16777216) { throw 'capture-byte-bound' }
         $result = @{pngBase64=[Convert]::ToBase64String($stream.ToArray());bounds=@($rect.X,$rect.Y,$rect.Width,$rect.Height)}
       } finally { $stream.Dispose(); $graphics.Dispose(); $bitmap.Dispose() }
+    } elseif ($action -eq 'hover') {
+      # Same fixed path for application and owned-dialog HWNDs; never delegate
+      # to a click implementation or report the resulting application UI effect.
+      Assert-Root
+      $hoverWindowPid = Window-Pid $windowHandle
+      if ($hoverWindowPid -eq 0 -or -not (Owned-Window $windowHandle) -or -not [EasyedaUiController]::IsWindowVisible($windowHandle) -or (Window-Pid $windowHandle) -ne $hoverWindowPid) { throw 'hover-window-changed' }
+      $rect = $window.Current.BoundingRectangle
+      $result = Move-HoverPointer $windowHandle @($rect.X,$rect.Y,$rect.Width,$rect.Height) ([int]$request.x) ([int]$request.y) $hoverWindowPid ([uint32]$request.rootPid)
     } elseif ($windowPid -eq $request.rootPid -and $action -notin @('focused','rightclick')) {
       # Reuse the packaged, fixed helper for the ordinary application and same-
       # process dialogs. Right-click uses the guarded pointer branch below;

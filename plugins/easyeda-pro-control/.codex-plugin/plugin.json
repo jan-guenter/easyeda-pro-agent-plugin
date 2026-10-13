@@ -1,7 +1,7 @@
 {
   "name": "easyeda-pro-control",
-  "version": "0.3.0+codex.20261010125449",
-  "description": "Safety-gated EasyEDA engineering skills, offline SDK reference, typed API editing, native control and verified recovery.",
+  "version": "0.3.0+codex.20261013113000",
+  "description": "Safety-gated EasyEDA API coverage, fixed typed SDK reads, design operations and seven engineering skills.",
   "author": {
     "name": "Jan G\u00fcnter",
     "url": "https://github.com/jan-guenter"
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "EasyEDA Pro Control",
     "shortDescription": "Inspect and control EasyEDA Pro",
-    "longDescription": "Seven EasyEDA engineering skills cover live control, schematic design, PCB layout, component libraries, manufacturing release, design review and extension development. The authenticated facade exposes offline reviewed/latest SDK declarations, exact operation schemas and argument validation alongside typed API edits, exact readers, native dialogs, checkpoints and recovery. The reviewed external tuple is connected-read-admitted; future mismatches fail closed. Writes require exact authority, source/connectivity and complete durable proof. Save and uncertain calls are never blindly retried. SDK declarations are documentation, not execution permission; coverage and live validation remain operation-specific, and historical tests do not validate this facade generation. Raw JavaScript is refused and the legacy writer is runtime-disabled.",
+    "longDescription": "Seven skills cover control, schematics, PCB layout, libraries, manufacturing, design review and extensions. The facade provides a complete per-method coverage inventory, fixed typed reads with explicit public/native labels, guarded footprint typed API operations, existing-tab activation, inactive clean-tab close, native controls, checkpoints and recovery. Schematic-page, symbol and PCB design transactions plus eight symbol/page/container metadata writers are blocked pending native structure-job completion and full SQL-effect proof; their schemas and historical evidence remain inspectable. Native schematic Text/Wire/Bus ID equivalents avoid public callback/compiler paths. A checkpoint-bound flat topology diagnostic remains separate from the blocked display-only and wire-reroute transaction profiles. Generic compiled topology remains blocked for hidden annotation and Save All; affected exports are refused. PCB navigation rejects known unsafe preference state without changing settings. Bounded observations do not replace complete source, connectivity or saved-project proof. The historical reviewed external tuple is connected-read-admitted; future mismatches fail closed. Historical live evidence remains generation-specific; new adapters need disposable validation. Runtime identity and operation-specific evidence remain mandatory. Arbitrary JavaScript, blind retry and unrestricted Save are refused; the legacy writer is runtime-disabled.",
     "developerName": "JanGuenter",
     "category": "Developer Tools",
     "capabilities": [

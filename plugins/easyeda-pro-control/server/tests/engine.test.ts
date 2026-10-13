@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- The builtin-only fixture helper isolates credential and upstream paths alongside these coordinator test dependencies. */
+import { configureTestControlRoot } from "./test-control-root.ts";
 import { basename, dirname, join, resolve } from "node:path";
 import { registerHooks } from "node:module";
 import { after, before, beforeEach, describe, test } from "node:test";
@@ -236,7 +238,7 @@ before(async () => {
   source = join(testDir, "mock-project.eprj2");
   outputDir = join(testDir, "backups");
   nativeAssetsRoot = join(testDir, "native-assets");
-  process.env["EASYEDA_CONTROL_DATA_DIR"] = join(testDir, "control-data");
+  configureTestControlRoot(join(testDir, "control-data"));
   const engineUrl = new URL(`../src/engine.ts?engine-test=${encodeURIComponent(testDir)}`, import.meta.url).href;
   const profiles = await fixtureNativeProfiles(engineUrl);
   let engineModule: unknown;
@@ -471,7 +473,7 @@ before(async () => {
 beforeEach(resetFixture);
 
 after(async () => {
-  delete process.env["EASYEDA_CONTROL_DATA_DIR"];
+  configureTestControlRoot();
   const controlRoot = await artifacts.controlRootCapability();
   await controlRoot.close();
   if (testDir.length > 0) {

@@ -3,6 +3,11 @@ import { z } from "zod";
 import { designActionSchema } from "./design-action.ts";
 import { libraryOperationSchema } from "./library-operations.ts";
 import { listLibraryExecutionCapabilities } from "./library-execution.ts";
+import { SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL } from "./exact-readers.ts";
+import { FLAT_DISPLAY_TRANSACTION_PROFILE } from "./flat-display-binding.ts";
+import { FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE } from "./flat-display-library-peers.ts";
+import { FLAT_WIRE_TRANSACTION_PROFILE } from "./flat-wire-binding.ts";
+import { DESIGN_STRUCTURE_LIFECYCLE_REFUSAL } from "./design-execution-lifecycle.ts";
 
 const familySchema = z.enum(["design", "library"]);
 export const operationCatalogQuerySchema = z.object({
@@ -56,14 +61,67 @@ export function queryOperationCatalog(input: unknown): Record<string, unknown> {
   const matched = all.filter((entry) =>
     (query.operationAction === undefined || entry.action === query.operationAction) &&
     (query.prefix === undefined || entry.action.startsWith(query.prefix)));
-  const libraryStatuses = new Map(listLibraryExecutionCapabilities().map((entry) => [entry["action"], entry["status"]]));
+  const libraryStatuses = new Map(listLibraryExecutionCapabilities().map((entry) => [entry["action"], entry]));
   const entries: Record<string, unknown>[] = [];
   for (const entry of matched.slice(query.offset, query.offset + query.limit)) {
     const schema = query.includeSchemas ? z.toJSONSchema(entry.parser, { io: "input", target: "draft-7" }) : undefined;
+    const designBlocked = query.family === "design" && !entry.action.startsWith("footprint.");
+    let status: unknown = "typed-operation-specific-native-preflight";
+    if (query.family === "library") { status = libraryStatuses.get(entry.action)?.["status"]; }
+    else if (designBlocked) { status = "unavailable-native-project-structure-lifecycle"; }
     const descriptor: Record<string, unknown> = {
       action: entry.action,
-      status: query.family === "library" ? libraryStatuses.get(entry.action) : "typed-operation-specific-native-preflight",
+      status,
+      ...(designBlocked ? { executionRefusal: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL,
+        executionRestrictions: (entry.action.startsWith("pcb.") ? [3] : [1, 2]).map((documentType) => ({ documentType, reason: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL })),
+      } : {}),
+      ...(query.family === "library" ? { executionCapabilities: libraryStatuses.get(entry.action) } : {}),
+      ...(query.family === "library" && libraryStatuses.get(entry.action)?.["executionRefusal"] !== undefined ? {
+        executionRefusal: libraryStatuses.get(entry.action)?.["executionRefusal"],
+      } : {}),
       liveValidation: "operation-specific;see-capability-matrix",
+      ...(query.family === "design" && entry.action.startsWith("sch.") ? {
+        sourceProfileRestrictions: [{ documentType: 1, reason: SCHEMATIC_TOPOLOGY_EXECUTION_REFUSAL,
+          ...(entry.action === "sch.layout.batch" ? { exception: {
+            profile: FLAT_DISPLAY_TRANSACTION_PROFILE,
+            executionState: "blocked",
+            executionRefusal: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL,
+            profiles: [FLAT_DISPLAY_TRANSACTION_PROFILE, FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE],
+            profileSelection: "facade-only: v1 without imported firstTicket provenance; v2 only when unchanged imported SYMBOL/FOOTPRINT peers have complete checkpoint-bound occurrence proofs",
+            allowedSteps: ["sch.attribute.display", "sch.text.display"],
+            targets: "existing stored records with literal primitiveId selectors",
+            scope: "one ordinary fully represented page; complete checkpoint-bound project membership and flat topology",
+            requiredProof: "exact nonempty display effect and inverse, unchanged peers, one-shot Save/reopen and complete durable delta",
+            importedLibraryPeers: {
+              profile: FLAT_DISPLAY_IMPORTED_TRANSACTION_PROFILE,
+              documentTypes: ["SYMBOL", "FOOTPRINT"],
+              proof: "reread the sealed original immutable checkpoint at every lifecycle boundary; preserve all atom/header/body encodings, clocks, client presence, tombstones, occurrence order and peer semantic bodies",
+              libraryEdits: false, historyCompaction: false,
+              sources: ["native-history.ts", "native-atom-header-history.ts", "native-library-header-evidence.ts", "flat-display-library-peers.ts", "flat-display-storage.ts", "design-execution.ts"],
+              tests: ["native-history-first-ticket.test.ts", "native-history-first-ticket-adversarial.test.ts", "flat-display-imported-peer-adversarial.test.ts", "flat-display-imported-lifecycle.test.ts", "flat-display-runtime.test.ts"],
+              validation: "offline-synthetic-regression;current-generation-live-unclaimed",
+            },
+            electricalEdits: false,
+            executionAuthorized: false,
+            liveValidation: "generation-and-operation-specific;see-capability-matrix",
+          } } : {}),
+          ...(entry.action === "sch.wire.modify" ? { exception: {
+            profile: FLAT_WIRE_TRANSACTION_PROFILE,
+            executionState: "blocked",
+            executionRefusal: DESIGN_STRUCTURE_LIFECYCLE_REFUSAL,
+            profileSelection: "facade-only plan.flatWire; mutually exclusive with display profiles; historical journals are not migrated",
+            targets: "one existing unlocked named WIRE with literal primitiveId; preserve every LINE ID/count/style and every ATTR field",
+            geometry: "integer endpoints of nonzero orthogonal LINE segments only; unchanged category-derived child order",
+            requiredProof: "complete checkpoint-bound flat topology and contact-incidence multiset; fixed pin and foreign-wire contact coordinates; exact generated-marker indexes and complete durable peer proof",
+            markerRestrictions: "no shared-WIRE endpoints or pin-bearing junctions",
+            inverse: "original ID-to-segment association only while a fresh complete durable checkpoint remains the baseline",
+            lifecycle: "retained no-repeat Save/reopen contract only; execution blocked; pinned sch_Document.save can enumerate other dirty tabs and does not prove target-only Save or debounced structure-job completion",
+            electricalConnectivityChanges: false,
+            executionAuthorized: false,
+            liveValidation: "offline-regression;current-generation-live-unclaimed",
+          } } : {}),
+        }],
+      } : {}),
       ...(schema === undefined ? {} : { inputSchema: schema,
         inputSchemaSha256: createHash("sha256").update(JSON.stringify(schema)).digest("hex") }),
     };

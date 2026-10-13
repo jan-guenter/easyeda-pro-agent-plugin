@@ -1,0 +1,254 @@
+/** Reviewed links from public SDK methods to actual maintained execution paths.
+ * A native task equivalent does not claim to invoke the public wrapper, support
+ * every overload, or validate that wrapper's implementation.
+ */
+export interface ApiCoverageRoute {
+  readonly tool: string;
+  readonly selector: string;
+  readonly implementation: "public-method" | "native-task-equivalent" | "internal-lifecycle-only";
+  readonly scope: string;
+  readonly source: readonly string[];
+  readonly tests: readonly string[];
+  readonly validation: "offline-regression;current-live-unclaimed";
+  readonly executionState: "available-with-runtime-guards" | "blocked" | "partially-blocked";
+  readonly blockedReason?: string;
+  readonly blockedDocumentTypes?: readonly number[];
+  readonly inputDiscovery?: { readonly tool: "easyeda_control_api"; readonly arguments: Readonly<Record<string, unknown>> };
+  readonly documentTypes?: readonly number[];
+}
+
+interface RouteGroup {
+  readonly namespace: string;
+  readonly methods: readonly string[];
+  readonly route: ApiCoverageRoute;
+}
+const groups: RouteGroup[] = [];
+const topologyBlock = "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.";
+
+function add(namespace: string, methods: readonly string[], tool: string, selector: string,
+  implementation: ApiCoverageRoute["implementation"], scope: string, source: readonly string[], tests: readonly string[], admittedDocumentTypes?: readonly number[]): void {
+  let inputDiscovery: ApiCoverageRoute["inputDiscovery"];
+  const action = selector.split(";")[0] ?? "";
+  const family = tool === "easyeda_control_library" ? "library" : "design";
+  if (tool === "easyeda_control_library" || (tool === "easyeda_control_design" && /^(?:pcb|sch|footprint)\./u.test(action))) {
+    const selectorQuery = action.endsWith(".*") ? { prefix: action.slice(0, -1) } : { operationAction: action };
+    inputDiscovery = { tool: "easyeda_control_api", arguments: { request: { action: "operations", query: { family, ...selectorQuery, includeSchemas: true } } } };
+  }
+  const schematicWrite = tool === "easyeda_control_design" && action.startsWith("sch.") && !selector.includes("documentType=2");
+  const sharedLifecycle = implementation === "internal-lifecycle-only" && namespace !== "pcb_Document";
+  let executionState: ApiCoverageRoute["executionState"] = "available-with-runtime-guards";
+  if (schematicWrite) { executionState = "blocked"; }
+  else if (sharedLifecycle) { executionState = "partially-blocked"; }
+  let documentTypes: readonly number[] | undefined = admittedDocumentTypes;
+  if (selector.includes("documentType=2")) { documentTypes = [2]; }
+  else if (schematicWrite) { documentTypes = [1]; }
+  const blocked = schematicWrite || sharedLifecycle;
+  groups.push({ namespace, methods, route: { tool, selector, implementation, scope, source: blocked ? [...source, "design-execution.ts", "design-topology.ts", "exact-readers.ts"] : source,
+    tests, validation: "offline-regression;current-live-unclaimed", executionState,
+    ...(blocked ? { blockedReason: topologyBlock, blockedDocumentTypes: [1] } : {}),
+    ...(documentTypes === undefined ? {} : { documentTypes }),
+    ...(inputDiscovery === undefined ? {} : { inputDiscovery }) } });
+}
+
+add("sys_FileManager", ["getDocumentSource"], "easyeda_control_exact_read", "*-source", "public-method",
+  "Complete active schematic, symbol, PCB or footprint source, bounded and normalized only for volatile DOCHEAD export fields.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
+add("dmt_EditorControl", ["getCurrentRenderedAreaImage"], "easyeda_control_capture", "easyeda_canvas_capture", "public-method",
+  "Existing visible-canvas capture only, with an explicit tab equal to the proven active tab, unchanged before/after runtime fingerprint and post-capture context. The bridge calls the public image method and converts its Blob; the facade validates one complete bounded PNG and archives managed image evidence. Viewport-image observation only, not complete source, connectivity, persistence or visual acceptance. No omitted-tab default, foreign-tab access, native canvas-receiver identity or full declared-contract claim.",
+  ["index.ts", "../../easyeda-bridge-extension/src/canvas-operations.ts", "../../easyeda-bridge-extension/src/binary-result-policy.ts"],
+  ["facade-capture.test.ts", "../../easyeda-bridge-extension/tests/canvas-operations.test.ts"]);
+add("dmt_EditorControl", ["zoomToRegion"], "easyeda_control_capture", "easyeda_canvas_capture_region", "public-method",
+  "Only the existing capture-region workflow on the explicit proven active tab: finite nonzero bounds are normalized by the bridge, public zoomToRegion must not return false, and a bounded repaint wait precedes PNG capture. Runtime fingerprint and context are rechecked before managed evidence publication. This changes the visible viewport; there is no standalone zoom operation, native receiver binding, exact viewport-restoration promise, design-state proof or visual acceptance.",
+  ["index.ts", "../../easyeda-bridge-extension/src/canvas-operations.ts"],
+  ["facade-capture.test.ts", "../../easyeda-bridge-extension/tests/canvas-operations.test.ts"]);
+for (const family of ["sch", "pcb"]) {
+  add(`${family}_PrimitiveComponent`, ["getAll", "getAllPrimitiveId", "getAllPinsByPrimitiveId"], "easyeda_control_exact_read", `${family === "sch" ? "schematic" : "pcb"}-components`, "public-method",
+    "Double-sampled complete component identities and selected state fields; mapper omissions remain reported.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
+  add(`${family}_Primitive`, ["getPrimitivesBBox"], "easyeda_control_exact_read", `${family === "sch" ? "schematic" : "pcb"}-components;includeBounds`, "public-method",
+    "Bounds for selected components only; not a generic arbitrary primitive invocation.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
+}
+for (const family of ["Arc", "Attribute", "Component", "Dimension", "Fill", "Image", "Line", "Object", "Pad", "Polyline", "Pour", "Poured", "Region", "String", "Via"]) {
+  add(`pcb_Primitive${family}`, ["getAll", "getAllPrimitiveId"], "easyeda_control_exact_read", "pcb-inventory", "public-method",
+    "Cross-checked ID enumeration; only monitored families have full typed state serialization. Enumeration does not prove unmonitored property completeness.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
+}
+add("pcb_Drc", ["getCurrentRuleConfigurationName", "getCurrentRuleConfiguration", "getNetRules", "getNetByNetRules", "getRegionRules", "getAllNetClasses", "getAllDifferentialPairs", "getAllEqualLengthNetGroups", "getAllPadPairGroups", "getPadPairGroupMinWireLength"], "easyeda_control_exact_read", "pcb-rules", "public-method",
+  "Complete bounded double-sampled supported PCB rule collections, retaining documented normalized/default behavior.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
+add("pcb_Net", ["getAllNetsName"], "easyeda_control_exact_read", "pcb-rules", "public-method", "Net-name inventory as part of exact rule reads.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
+
+for (const family of ["line", "arc", "via", "pad", "polyline", "region", "pour", "fill", "component"]) {
+  const className = `${family[0]?.toUpperCase() ?? ""}${family.slice(1)}`;
+  for (const method of ["create", "modify", "delete"]) {
+    add(`pcb_Primitive${className}`, [method], "easyeda_control_design", `pcb.${family}.${method}`, "native-task-equivalent",
+      "Operation-specific public/native transaction for representable reviewed PCB records; exact source delta, lock ancestry and persistence guards. Does not expose arbitrary public class instances or every declared property.",
+      ["design-action.ts", "design-native-adapter.ts", "design-source-proof.ts"], ["design-native-adapter.test.ts", "design-source-proof.test.ts"]);
+  }
+}
+for (const method of ["create", "modify", "delete"]) {
+  add("pcb_PrimitiveString", [method], "easyeda_control_design", `footprint.text.${method}`, "native-task-equivalent",
+    "Existing exact-owner project footprint only, document type 4: one standalone built-in-default-font STRING per operation through receiver-bound native history dispatch, exact source/peer preservation and library Save/close/reopen proof. Native mil geometry, explicit creation fields and named origin; no public-wrapper defaults. Modify preserves identity/layer and refuses reverse-state changes; delete has no automatic inverse. No type-3 PCB text, external fonts, placed-instance propagation, public pcb_PrimitiveString wrapper execution/parity, class-instance or bulk-delete arguments, or full declared-contract claim. Current-generation live validation remains unclaimed.",
+    ["footprint-action.ts", "footprint-public-geometry.ts", "footprint-lifecycle.ts", "design-action.ts", "design-execution.ts"],
+    ["footprint-action.test.ts", "footprint-public-geometry.test.ts", "footprint-lifecycle.test.ts"], [4]);
+}
+add("pcb_PrimitiveString", ["modify"], "easyeda_control_design", "pcb.text.modify", "native-task-equivalent",
+  "One existing unlocked project-owned type-3 standalone STRING: exact x/y/text changes through the reviewed native source merge, complete native-source effect, explicit inverse and saved-project peer proof. All STRINGs require the bounded default-font/top-silkscreen/LEFT_BOTTOM/zero-angle/nonreverse profile. No creation, deletion, component ATTR, inherited text, custom fonts, groups, partitions, pours or generated copper. This does not invoke the public wrapper or its partial-assignment failure branch; no public-method parity, full declared-contract or current-generation connected lifecycle claim.",
+  ["pcb-text-action.ts", "pcb-text-runtime.ts", "pcb-exact-frame.ts", "design-action.ts", "design-native-adapter.ts", "design-execution.ts"],
+  ["pcb-text-action.test.ts", "design-native-adapter.test.ts", "pcb-dispatch-profile.test.ts", "design-persistence.test.ts"], [3]);
+for (const method of ["create", "delete"]) {
+  add("pcb_PrimitiveString", [method], "easyeda_control_design", `pcb.text.${method}`, "native-task-equivalent",
+    `One project-owned type-3 standalone top-silkscreen default-font STRING addition or unlocked exact-ID removal. Creation has explicit x/y/text/fontSize/strokeWidth and a facade-reserved identity sealed with the prepared program before dispatch; no caller ID or native public-wrapper generation claim. Creation profile v2 fixes specialColor to explicit native-UI-default #000000; existing null/black values remain distinct and unchanged. Exact source/peer proof, captured frame, original acknowledgment and saved-project proof remain mandatory. Creation inverse deletes only its retained original identity; deletion has no inverse. No regeneration or redispatch during recovery, component ATTR, inherited text, fonts/styles/layers outside the conservative profile, pours or generated copper. Not public-wrapper parity or connected lifecycle validation. ${
+      method === "create" ? "Creation-only retained-Save reconciliation requires the original six sealed phases and one successful Save/close/reopen acknowledgment. Exact v2 source, or the narrowly proven legacy v1 two-STRING cached-decoder case, may finish by read-only full-project proof. Legacy storage stays null, observed export stays black, and no Save, navigation or creation is repeated. Missing evidence or other deltas refuse." : "Consumed-Save deletion has no retained-Save recovery route."}`,
+    ["pcb-text-lifecycle.ts", "pcb-text-lifecycle-runtime.ts", "pcb-text-action.ts", "pcb-exact-frame.ts", "design-action.ts", "design-execution.ts",
+      ...(method === "create" ? ["pcb-text-retained-save.ts", "pcb-text-reload-history.ts", "native-history.ts"] : [])],
+    ["pcb-text-lifecycle.test.ts", "pcb-text-action.test.ts", "design-persistence.test.ts",
+      ...(method === "create" ? ["pcb-text-retained-save.test.ts", "pcb-text-retained-save-coordinator.test.ts", "pcb-text-reload-history.test.ts"] : [])], [3]);
+}
+add("pcb_PrimitivePour", ["rebuildCopperRegions"], "easyeda_control_design", "pcb.pour.rebuild", "native-task-equivalent",
+  "Selected-parent derived copper rebuild with complete scoped effect proof; no global uncontrolled rebuild.", ["design-copper-adapter.ts", "copper-persistence.ts"], ["design-copper-adapter.test.ts", "design-persistence.test.ts"]);
+const ruleMethods: Readonly<Record<string, string>> = {
+  createNetClass: "netclass.create", deleteNetClass: "netclass.delete", modifyNetClassName: "netclass.rename", addNetToNetClass: "netclass.add-nets", removeNetFromNetClass: "netclass.remove-nets",
+  createEqualLengthNetGroup: "equal-length.create", deleteEqualLengthNetGroup: "equal-length.delete", modifyEqualLengthNetGroupName: "equal-length.rename", addNetToEqualLengthNetGroup: "equal-length.add-nets", removeNetFromEqualLengthNetGroup: "equal-length.remove-nets",
+  createDifferentialPair: "differential-pair.create", deleteDifferentialPair: "differential-pair.delete", modifyDifferentialPairName: "differential-pair.rename", modifyDifferentialPairPositiveNet: "differential-pair.set-positive", modifyDifferentialPairNegativeNet: "differential-pair.set-negative",
+  overwriteCurrentRuleConfiguration: "rules.configuration.replace", overwriteNetRules: "rules.net.replace", overwriteNetByNetRules: "rules.net-to-net.replace", overwriteRegionRules: "rules.region.replace",
+};
+for (const [method, action] of Object.entries(ruleMethods)) {
+  add("pcb_Drc", [method], "easyeda_control_design", `pcb.${action}`, "native-task-equivalent",
+    "Typed source-bound rule effect; refuses member override resets, unpreserved pair selectors, derived copper or blind-via collateral. Global preset behavior is not exposed.", ["design-rule-public-adapter.ts", "design-rule-collections.ts"], ["design-rule-public-adapter.test.ts", "design-source-proof.test.ts"]);
+}
+add("pcb_Layer", ["overwriteCurrentPhysicalStackingConfiguration", "setTheNumberOfCopperLayers"], "easyeda_control_design", "pcb.stack.replace", "native-task-equivalent",
+  "Atomic complete typed physical stack and enabled copper IDs; individual public setters are not exposed as independent writes.", ["design-stack-adapter.ts", "stack-persistence.ts"], ["design-stack-adapter.test.ts", "stack-native-persistence.test.ts"]);
+for (const family of ["circle", "rectangle", "text", "pin", "attribute"]) {
+  const className = `${family[0]?.toUpperCase() ?? ""}${family.slice(1)}`;
+  add(`sch_Primitive${className}`, ["create", "modify", "delete"], "easyeda_control_design", `sch.${family}.*;documentType=2`, "native-task-equivalent",
+    "Existing single-part project SYMBOL only, with exact child/source/persistence proof. This does not admit the same geometry operations on schematic pages.", ["symbol-action.ts", "symbol-persistence.ts"], ["symbol-action.test.ts", "symbol-persistence.test.ts"]);
+}
+for (const method of ["create", "modify", "delete"]) {
+  add("sch_PrimitiveComponent", [method], "easyeda_control_design", `sch.component.${method}`, "native-task-equivalent",
+    "Type-1 ordinary parts only; creation uses existing project single-part assets, modification preserves hidden/inherited properties and refuses unsupported rotations or new attributes.", ["schematic-component-create.ts", "schematic-native-adapter.ts", "schematic-electrical-adapter.ts", "schematic-source-proof.ts"], ["schematic-component-create.test.ts", "schematic-electrical-adapter.test.ts", "schematic-source-proof.test.ts"]);
+  add("sch_PrimitiveWire", [method], "easyeda_control_design", `sch.wire.${method}`, method === "modify" ? "native-task-equivalent" : "public-method",
+    method === "modify" ? "Existing unlocked cardinal wire with explicit style and omitted net; awaited native completion and full topology/persistence proof. Historical wire-v2 disposable lifecycle does not validate this facade generation." : "Source-supported cardinal wire transaction only; new named-net defaults are refused. No claim of public wrapper correctness for every declared shape.",
+    ["schematic-source-proof.ts", "schematic-native-wire.ts"], ["schematic-source-proof.test.ts", "schematic-native-wire.test.ts"]);
+}
+add("sch_PrimitiveAttribute", ["createNetLabel"], "easyeda_control_design", "sch.net-label.create", "native-task-equivalent", "Exact standalone native label and topology effect; public stub is not dispatched.", ["schematic-electrical-adapter.ts"], ["schematic-electrical-adapter.test.ts"]);
+add("sch_PrimitivePin", ["modify"], "easyeda_control_design", "sch.component-pin.no-connect", "native-task-equivalent", "Exact ordinary component pin no-connect marker only; arbitrary placed-pin property changes remain unavailable.", ["schematic-electrical-adapter.ts"], ["schematic-electrical-adapter.test.ts"]);
+add("sch_PrimitiveComponent", ["createNetFlag"], "easyeda_control_design", "sch.layout.batch;checkpoint-bound-netflag-clone", "native-task-equivalent", "Clone of an existing loaded checkpoint-bound flag template only; not general new library flag creation.", ["schematic-layout-netflag.ts", "schematic-layout-batch.ts"], ["schematic-layout-netflag.test.ts", "schematic-layout-batch.test.ts"]);
+
+// These explicit inventory entries describe the facade-owned sealed exception.
+// Keep add()'s generic schematic and shared-lifecycle blocking rules unchanged.
+const flatDisplayProfiles = ["easyeda-pro-control.flat-display-transaction.v1", "easyeda-pro-control.flat-display-transaction.v2"] as const;
+const flatDisplayRoute: Omit<ApiCoverageRoute, "selector" | "implementation" | "scope"> = {
+  tool: "easyeda_control_design", documentTypes: [1], executionState: "available-with-runtime-guards",
+  validation: "offline-regression;current-live-unclaimed",
+  source: ["flat-display-binding.ts", "flat-display-profile.ts", "flat-display-runtime.ts", "schematic-flat-read.ts", "schematic-flat-topology.ts", "schematic-layout-batch.ts", "design-action.ts", "design-execution.ts"],
+  tests: ["flat-display-profile.test.ts", "flat-display-runtime.test.ts", "flat-display-execution.test.ts", "schematic-flat-read.test.ts", "schematic-flat-topology.test.ts", "design-topology-refusal.test.ts"],
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "operations", query: { family: "design", operationAction: "sch.layout.batch", includeSchemas: true } } } },
+};
+for (const flatDisplayProfile of flatDisplayProfiles) {
+  const imported = flatDisplayProfile.endsWith(".v2");
+  const route = { ...flatDisplayRoute,
+    source: [...flatDisplayRoute.source, "flat-display-storage.ts", ...(imported ? ["native-history.ts", "native-atom-header-history.ts", "native-library-header-evidence.ts", "flat-display-library-peers.ts", "recovery-navigation.ts"] : [])],
+    tests: [...flatDisplayRoute.tests, "flat-display-lifecycle.test.ts", "flat-display-apply-encoding.test.ts", ...(imported ? ["native-history-first-ticket.test.ts", "native-history-first-ticket-adversarial.test.ts", "flat-display-imported-peer-adversarial.test.ts", "flat-display-imported-lifecycle.test.ts", "recovery-navigation-capture.test.ts"] : [])],
+  };
+  const peerScope = imported ? " V2 admits only unchanged imported SYMBOL/FOOTPRINT peers: every lifecycle path rereads the sealed original immutable checkpoint and retains complete atom/header/body encoding, clock, client-presence, tombstone and occurrence-order commitments plus unchanged semantic peer bodies. No library write, history compaction or missing/replayed/changed occurrence is admitted." : " V1 continues to refuse imported firstTicket provenance; its existing seals and strict reader behavior are unchanged.";
+  for (const [namespace, step] of [["sch_PrimitiveAttribute", "sch.attribute.display"], ["sch_PrimitiveText", "sch.text.display"]] as const) {
+    groups.push({ namespace, methods: ["modify"], route: { ...route,
+      selector: `sch.layout.batch;sealed-profile=${flatDisplayProfile};step=${step}`, implementation: "native-task-equivalent",
+      scope: `Only ${step} inside a batch composed entirely of existing stored attribute/text display steps on exactly one ordinary project-owned schematic page. Facade-created ${flatDisplayProfile} binds the complete checkpoint, owner/branch, source/native endpoint topology and exact stored-field inverse; no caller-supplied profile or topology grants authority. Native source import runs once inside its own receiver-bound action, with final synchronous guards and complete baseline-or-intended durable classification. Only supported position/style/visibility fields are changed; no text-content or attribute-value edits, pin/net or NO_CONNECT changes, component translation, creation, deletion, mixed layout, hierarchy, variant, multipart or bus support.${peerScope} Not the public modify wrapper or its full declared contract. Offline synthetic coordinator and runtime regression evidence only; current-generation live validation remains unclaimed.`,
+    } });
+  }
+  groups.push({ namespace: "sch_Document", methods: ["save"], route: { ...route,
+    selector: `execute/commit;sealed-profile=${flatDisplayProfile}`, implementation: "internal-lifecycle-only",
+    scope: `Only the original sealed ${flatDisplayProfile} display-only transaction's commit lifecycle on its one exact ordinary schematic page. Complete baseline-or-intended durable proof, same-execution source/native endpoint guard after final crypto/context awaits, retained no-repeat Save intent, terminal close/ready reopen and full project persistence are required. Recovery checks the sealed original preparation and retained Save acknowledgment; it never repeats an uncertain Save.${peerScope} No standalone Save, generic schematic commit, caller-provided topology grant or broad activation of other type-1 transactions. Offline synthetic coordinator and runtime regression evidence only; current-generation live validation remains unclaimed.`,
+    source: [...route.source, "runtime-scripts.ts", "design-save-attempt.ts", "native-document-lifecycle.ts"],
+    tests: [...route.tests, "runtime-scripts.test.ts", "design-save-attempt.test.ts"],
+  } });
+}
+
+const flatWireProfile = "easyeda-pro-control.flat-wire-reroute.v1";
+const flatWireRoute: Omit<ApiCoverageRoute, "selector" | "implementation" | "scope"> = {
+  tool: "easyeda_control_design", documentTypes: [1], executionState: "available-with-runtime-guards",
+  validation: "offline-regression;current-live-unclaimed",
+  source: ["flat-wire-binding.ts", "flat-wire-profile.ts", "flat-wire-markers.ts", "flat-transaction-binding.ts", "flat-transaction-profile.ts", "flat-display-runtime.ts", "flat-display-storage.ts", "schematic-flat-read.ts", "schematic-flat-topology.ts", "schematic-native-wire.ts", "design-action.ts", "design-execution.ts"],
+  tests: ["flat-wire-profile.test.ts", "flat-wire-runtime.test.ts", "flat-wire-apply.test.ts", "flat-wire-execution.test.ts", "flat-wire-lifecycle.test.ts"],
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "operations", query: { family: "design", operationAction: "sch.wire.modify", includeSchemas: true } } } },
+};
+const flatWireScope = "Facade-only sealed plan.flatWire on one ordinary complete project-owned page; no caller override or historical journal migration. One unlocked named WIRE changes only integer endpoints of nonzero orthogonal segments belonging to its existing LINE IDs. LINE count/style, literal net name, every ATTR field and category-derived child order remain exact. Complete checkpoint-bound flat topology plus contact-incidence multiset preserve pins, same-name islands and foreign contacts. Generated-marker proof refuses shared-WIRE endpoints and pin-bearing junctions. Exact ID-to-segment inverse requires a fresh unchanged durable baseline; auto-persisted forward effects refuse unsaved rollback. The geometry adapter does not create/delete, change style/net, compile or annotate and does not claim public-wrapper parity. Its retained Save contract is blocked: the pinned sch_Document.save can enumerate other dirty tabs and does not provide target-only Save or debounced structure-job completion. Offline synthetic tests only; current-generation live validation remains unclaimed.";
+groups.push({ namespace: "sch_PrimitiveWire", methods: ["modify"], route: { ...flatWireRoute,
+  selector: `sch.wire.modify;sealed-profile=${flatWireProfile}`, implementation: "native-task-equivalent", scope: flatWireScope,
+} }, { namespace: "sch_Document", methods: ["save"], route: { ...flatWireRoute,
+  selector: `execute/commit;sealed-profile=${flatWireProfile}`, implementation: "internal-lifecycle-only",
+  scope: `Original sealed wire transaction only: final source/topology/marker reproof, complete durable peer comparison and one-shot Save/close/reopen. Retained-Save recovery requires its original successful synchronous-guard acknowledgment; no repeat Save, inverse or navigation. No standalone Save or generic type-1 admission. ${flatWireScope}`,
+  source: [...flatWireRoute.source, "runtime-scripts.ts", "design-save-attempt.ts", "native-document-lifecycle.ts"],
+  tests: [...flatWireRoute.tests, "design-save-attempt.test.ts"],
+} });
+
+for (const [family, api] of [["symbol", "lib_Symbol"], ["footprint", "lib_Footprint"], ["device", "lib_Device"], ["model3d", "lib_3DModel"]] as const) {
+  add(api, ["get"], "easyeda_control_library", `library.${family}.get`, "public-method", "Exact identity/owner metadata, bounded double-sampled result; not complete library inventory or asset geometry.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
+}
+for (const method of ["create", "modify"]) {
+  add("lib_Footprint", [method], "easyeda_control_library", `library.footprint.${method}`, "public-method", "Current-project footprint metadata only; classifications and lossy null-description cases refused; complete selected-branch persistence proof.", ["library-runtime.ts", "library-persistence-proof.ts"], ["library-execution.test.ts"]);
+  add("lib_Device", [method], "easyeda_control_library", `library.device.${method}`, "native-task-equivalent", "Project-local device addition or association patch to existing assets; no asset import/copy or implicit ECO.", ["device-create.ts", "device-association.ts"], ["device-create.test.ts", "device-association.test.ts"]);
+}
+add("lib_Symbol", ["openInEditor"], "easyeda_control_library", "library.symbol.open", "public-method", "Existing exact current-project symbol; waits for coherent library editor context and proves unchanged selected branch.", ["library-runtime.ts"], ["library-execution.test.ts"]);
+add("lib_Symbol", ["modify"], "easyeda_control_library", "library.symbol.modify", "native-task-equivalent",
+  "Project-local ordinary symbol metadata: name and non-null description only; target must be absent from every editor tab. Project-qualified native write avoids the public wrapper's awaited mutable-current-project cloud-routing race and classification reprojection. Complete selected-branch effect and retained-receipt recovery; connected and reopened validation remain separate.",
+  ["project-symbol-metadata.ts", "library-execution.ts", "library-recovery-state.ts", "editor-tabs.ts"], ["project-symbol-metadata.test.ts", "project-symbol-transaction.test.ts", "library-recovery.test.ts"]);
+add("lib_Symbol", ["create"], "easyeda_control_library", "library.symbol.create", "native-task-equivalent",
+  "One closed empty ordinary current-project symbol with an ordinary clean PCB active. Exact project-qualified creation and original returned ID, META-only addition and complete unchanged-peer proof; no classifications, inherited source, template/PART/canvas initialization, editor opening, Save or automatic inverse. Permission denial can display a native dialog. Changed recovery requires the retained original return and never recreates. Current-generation live validation is unclaimed.",
+  ["project-symbol-create.ts", "library-execution.ts", "library-recovery-state.ts", "library-recovery.ts", "engine.ts"], ["project-symbol-create.test.ts", "project-symbol-create-transaction.test.ts", "typed-recovery.test.ts"], [3]);
+add("lib_Footprint", ["openInEditor"], "easyeda_control_library", "library.footprint.open", "native-task-equivalent", "Uses maintained dmt_EditorControl.openLibraryDocument path for an existing exact current-project footprint.", ["library-runtime.ts", "library-operations.ts"], ["library-execution.test.ts"]);
+add("dmt_EditorControl", ["openDocument"], "easyeda_control_library", "document.open", "public-method", "Checkpoint-member current-project document only, with one-shot navigation and complete unchanged saved-state proof.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
+add("dmt_EditorControl", ["activateDocument"], "easyeda_control_library", "document.activate", "public-method",
+  "One already-open checkpoint-member current-project tab only, with complete tab ownership, retained preparation and one activation. Two coherent target observations and unchanged complete durable project; recovery never activates, opens, closes or saves. Current-generation live validation is unclaimed.",
+  ["document-activation.ts", "library-execution.ts", "library-recovery.ts"], ["document-activation.test.ts", "document-activation-transaction.test.ts"]);
+add("dmt_EditorControl", ["closeDocument"], "easyeda_control_library", "document.close", "public-method",
+  "One inactive clean checkpoint-member ordinary symbol (2), PCB (3) or footprint (4), with a separate clean PCB/footprint active and exactly two owned project tabs in one unsplit container. Await terminal removal and prove unchanged active source/context and complete logical database. No Save, reopen or exact inverse. Every post-dispatch failure retains execution quarantine until captured-runtime termination; reconciliation observes only and never repeats close. Current-generation live validation is unclaimed.",
+  ["document-close.ts", "library-execution.ts", "library-recovery.ts", "core.ts"], ["document-close.test.ts", "document-close-transaction.test.ts", "typed-recovery.test.ts"], [3, 4]);
+add("dmt_Schematic", ["modifySchematicPageName"], "easyeda_control_library", "document.page.rename", "native-task-equivalent",
+  "Closed ordinary checkpoint-member page only, with one clean owned sibling active, exact writable local branch, immutable preparation and one project-qualified native metadata write. Complete saved title/header effect and unchanged peers/source; no Save, reopen or UI-caption refresh claim. Current-generation live validation is unclaimed.",
+  ["document-page-rename.ts", "library-execution.ts", "library-recovery-state.ts", "library-recovery.ts"], ["document-page-rename.test.ts", "document-page-rename-transaction.test.ts"]);
+for (const [namespace, method, family] of [["dmt_Pcb", "modifyPcbName", "pcb"], ["dmt_Schematic", "modifySchematicName", "schematic"]] as const) {
+  add(namespace, [method], "easyeda_control_library", `document.${family}.rename`, "native-task-equivalent",
+    "Closed ordinary target only, every schematic child closed, one other clean direct-open PCB and independent DOM-frame proof. Exact nonimported checkpoint and full peer record clocks/header lineage; checkpoint-bound per-document raw occurrence chains preserve every peer and require exactly one DOCHEAD/META suffix on the renamed target. EDIT_HEAD, chunk boundaries and interdocument ordering are outside that per-document commitment. Refuses hierarchy, CBB, inheritance, non-null target zIndex, pooled panel/export frames. No public wrapper, Save/reopen, automatic inverse or current-generation live-validation claim.",
+    ["document-container-rename.ts", "document-container-rename-runtime.ts", "document-container-rename-dom.ts", "document-container-rename-native-profile.ts", "native-history.ts", "native-document-record-history.ts", "library-execution.ts", "library-recovery-state.ts", "library-recovery.ts", "library-undispatched-recovery.ts"],
+    ["document-container-rename.test.ts", "document-container-rename-runtime.test.ts", "document-container-rename-transaction.test.ts", "native-history.test.ts", "native-document-record-history.test.ts", "library-undispatched-recovery.test.ts"], [3]);
+}
+add("dmt_Schematic", ["createSchematicPage"], "easyeda_control_library", "document.page.create", "native-task-equivalent",
+  "Parent-only creation of one closed empty page in an existing ordinary local schematic, with one clean owned PCB or sibling page active and a writable exact branch. Pinned native name/order defaults, original returned ID and full unchanged peer/hierarchy proof; public template/drawing-frame initialization and editor opening are not invoked. No Save or automatic inverse. Changed recovery requires the original native return and immutable preparation, never infers identity from an observed addition or repeats creation. Current-generation live validation is unclaimed.",
+  ["document-page-create.ts", "library-execution.ts", "library-recovery-state.ts", "library-recovery.ts"], ["document-page-create.test.ts", "document-page-create-transaction.test.ts"], [1, 3]);
+add("dmt_Pcb", ["createPcb"], "easyeda_control_library", "document.pcb.create", "native-task-equivalent",
+  "Creates one closed META-only free PCB with boardName absent and one other clean direct-open ordinary PCB active. Exact project-qualified worker, public-path name derivation, retained original UUID and complete peer record clocks/header lineage. Checkpoint-bound per-document raw occurrence chains preserve every peer and require exactly one DOCHEAD/META pair in the new PCB. EDIT_HEAD, chunk boundaries and interdocument ordering are outside that per-document commitment. No board creation or attachment, canvas initialization, editor opening, Save/reopen or automatic inverse. Refuses imported atom histories, hierarchy, CBB, inheritance and hidden/pooled/export frames. Changed recovery requires the original native return and never recreates. Current-generation live validation is unclaimed.",
+  ["project-pcb-create.ts", "project-pcb-create-runtime.ts", "document-container-rename-dom.ts", "document-container-rename-native-profile.ts", "native-history.ts", "native-document-record-history.ts", "library-execution.ts", "library-recovery-state.ts", "library-recovery.ts", "library-undispatched-recovery.ts"],
+  ["project-pcb-create.test.ts", "project-pcb-create-runtime.test.ts", "project-pcb-create-transaction.test.ts", "native-history.test.ts", "native-document-record-history.test.ts", "library-undispatched-recovery.test.ts"], [3]);
+add("dmt_Schematic", ["createSchematic"], "easyeda_control_library", "document.schematic.create", "native-task-equivalent",
+  "Creates one closed META-only free schematic with boardName absent and one clean direct-open ordinary PCB active. Exact project-qualified worker, checkpoint-derived name and retained original UUID. Complete peer record clocks/header lineage and per-document raw occurrence chains; exactly one new DOCHEAD/META pair. Requires local ordinary symbol references and absent or empty inline component attrs. No board attachment, page/template/canvas initialization, editor opening, Save/reopen or automatic inverse. Refuses hierarchy, CBB, inheritance, imported atom histories and hidden/pooled/export frames. Changed recovery requires the original native return and never recreates. Native subscribers are not atomic against concurrent project changes; context/readback detect observed drift. Not public sheet-producing workflow parity or connected validation.",
+  ["project-schematic-create.ts", "project-schematic-create-runtime.ts", "project-schematic-create-native-profile.ts", "document-container-rename-dom.ts", "native-history.ts", "native-document-record-history.ts", "library-execution.ts", "library-recovery-state.ts", "library-recovery.ts", "library-undispatched-recovery.ts"],
+  ["project-schematic-create.test.ts", "project-schematic-create-runtime.test.ts", "project-schematic-create-transaction.test.ts", "native-history.test.ts", "native-document-record-history.test.ts", "library-undispatched-recovery.test.ts"], [3]);
+add("dmt_EditorControl", ["openLibraryDocument"], "easyeda_control_library", "library.footprint.open", "public-method", "Existing checkpoint-member current-project footprint only, with one-shot navigation and complete unchanged saved-state proof.", ["library-runtime.ts", "library-execution.ts"], ["library-execution.test.ts"]);
+
+const exports: Readonly<Record<string, string>> = {
+  getDxfFile: "dxf", getFlyingProbeTestFile: "flying-probe", getIpcD356AFile: "ipcd356a", getOpenDatabaseDoublePlusFile: "odb", getDsnFile: "dsn", getAutoRouteJsonFile: "autoroute-json", getAutoRouteJsonFileForJRouter: "autoroute-jrouter", getAutoLayoutJsonFile: "autolayout-json", getAltiumDesignerFile: "altium", getPadsFile: "pads", getPcbInfoFile: "info", getIdxFile: "idx", getGerberFile: "gerber", get3DFile: "model3d", getPickAndPlaceFile: "pick-and-place", getTestPointFile: "test-points", getIpc2581CFile: "ipc2581c",
+};
+for (const [method, selector] of Object.entries(exports)) {
+  add("pcb_ManufactureData", [method], "easyeda_control_library", `export.pcb.${selector}`, "public-method", "Bounded actual File result up to 2 MiB, exclusive managed artifact, unchanged source/context; no model generation, arbitrary path, order or fabrication approval.", ["library-operations.ts", "library-runtime.ts"], ["library-operations.test.ts", "library-execution.test.ts"]);
+}
+for (const family of ["pcb", "sch"]) {
+  add(`${family}_Drc`, ["check"], "easyeda_control_check", "run", "native-task-equivalent", "Fixed reviewed native calculation/report, scoped complete state and saved SQLite invariance; SDK boolean alone is not accepted.", ["native-rule-report.ts", "check-execution.ts"], ["native-rule-report.test.ts", "check-execution.test.ts"]);
+  add(`${family}_Document`, ["save"], "easyeda_control_design", "execute/commit", "internal-lifecycle-only", "Save is available only inside an original journal's verified no-repeat commit lifecycle; never an unrestricted standalone Save.", ["runtime-scripts.ts", "design-save-attempt.ts", "design-execution.ts"], ["design-save-attempt.test.ts", "design-execute.test.ts"]);
+}
+add("dmt_EditorControl", ["activateDocument", "closeDocument"], "easyeda_control_design", "commit/recovery lifecycle", "internal-lifecycle-only", "Exact target-bound design commit/recovery lifecycle only. Separately listed library document.activate and document.close routes have their own narrower admission; no unrestricted close/discard or activation.", ["runtime-scripts.ts", "native-document-lifecycle.ts"], ["runtime-scripts.test.ts", "native-document-lifecycle.test.ts"]);
+add("dmt_Project", ["getCurrentProjectInfo"], "easyeda_control_context", "context", "public-method", "Exact active project identity used before and after guarded operations.", ["runtime-scripts.ts"], ["runtime-scripts.test.ts"]);
+add("dmt_SelectControl", ["getCurrentDocumentInfo"], "easyeda_control_context", "context", "public-method", "Exact active document/type/tab identity used before and after guarded operations.", ["runtime-scripts.ts"], ["runtime-scripts.test.ts"]);
+add("dmt_EditorControl", ["getSplitScreenTree"], "easyeda_control_context", "context/editor ownership", "public-method", "Bounded editor tab ownership and exclusivity checks, not navigation authority.", ["editor-tabs.ts", "runtime-scripts.ts"], ["editor-tabs.test.ts", "runtime-scripts.test.ts"]);
+add("dmt_Project", ["openProject"], "easyeda_control_runtime", "open-existing", "native-task-equivalent", "Existing saved checkpoint-member project only in empty editor; no repeated navigation or implicit Save/discard.", ["project-open-execution.ts"], ["project-open-execution.test.ts"]);
+
+export function maintainedApiCoverageRoutes(): ReadonlyMap<string, readonly ApiCoverageRoute[]> {
+  const result = new Map<string, ApiCoverageRoute[]>();
+  for (const group of groups) {
+    for (const method of group.methods) {
+      const path = `eda.${group.namespace}.${method}`;
+      const routes = result.get(path) ?? [];
+      routes.push(structuredClone(group.route));
+      result.set(path, routes);
+    }
+  }
+  return result;
+}

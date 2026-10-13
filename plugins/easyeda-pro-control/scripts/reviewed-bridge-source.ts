@@ -20,9 +20,9 @@ export const REVIEWED_BRIDGE_SOURCE = {
   commit: "964c05082f1c7c9e8b98f56e967e36bfc3f26128",
   upstreamTreeSha1: "cc8893215e736f9efca78e4216033469008ea8e9",
   closureSha256:
-    "c5cb4d9ed0d5a93bca655f4f846f4f2e9337633941b2df3482aa3b91d7e43ee5",
+    "3281712da24240fa4962fd47855795df71878bb651d820e0c73960875bc701f2",
   fileCount: 70,
-  totalBytes: 853_680,
+  totalBytes: 856_665,
   derivative: {
     addedFiles: [
       "LICENSE",

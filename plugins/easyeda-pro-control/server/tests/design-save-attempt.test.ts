@@ -1,3 +1,5 @@
+/* oxlint-disable import/max-dependencies -- The builtin-only fixture helper isolates credential and upstream paths alongside these coordinator test dependencies. */
+import { configureTestControlRoot } from "./test-control-root.ts";
 import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -22,7 +24,7 @@ const CONTEXT = { project: { uuid: "b".repeat(64), path: "/fixture/project.eprj2
 
 before(async () => {
   directory = await mkdtemp(join(tmpdir(), "easyeda-save-attempt-test-"));
-  process.env["EASYEDA_CONTROL_DATA_DIR"] = directory;
+  configureTestControlRoot(directory);
   attempts = await import("../src/design-save-attempt.ts");
   artifacts = await import("../src/artifacts.ts");
   engines = await import("../src/engine.ts");
@@ -31,8 +33,8 @@ before(async () => {
 after(async () => {
   const capability = await artifacts.controlRootCapability();
   await capability.close();
-  if (priorDirectory === undefined) { delete process.env["EASYEDA_CONTROL_DATA_DIR"]; }
-  else { process.env["EASYEDA_CONTROL_DATA_DIR"] = priorDirectory; }
+  if (priorDirectory === undefined) { configureTestControlRoot(); }
+  else { configureTestControlRoot(priorDirectory); }
   await rm(directory, { recursive: true, force: true });
 });
 
@@ -116,8 +118,10 @@ void test("legacy successful returns, durable intents and dispatch phases remain
   assert.throws(() => attempts.hasLegacyDesignSaveEvidence({ ...current, saveAttemptProtocol: "unknown" }));
 });
 
-void test("ordinary PCB geometry, rules and stack failed Saves cannot reconcile to commit-ready or dispatch a second Save", async () => {
+void test("blocked PCB geometry, text, rules and stack preserve consumed Save evidence without runtime or another Save", async () => {
   const operations = [{ id: "line", action: "pcb.line.modify", target: { primitiveId: "line" }, patch: { lineWidth: 8 } },
+    { id: "text-create", action: "pcb.text.create", properties: { x: 0, y: 0, text: "Fixture1", fontSize: 120, strokeWidth: 8 } },
+    { id: "text-delete", action: "pcb.text.delete", target: { primitiveId: "a".repeat(16) } },
     { id: "rules", action: "pcb.rules.net.replace", value: [] },
     { id: "stack", action: "pcb.stack.replace", enabledCopperLayers: [1, 2], layers: [1, 361, 2].map((id, index) =>
       ({ layerId: id, material: id === 361 ? "FR4" : null, thicknessMm: id === 361 ? 1.5 : 0.035, permittivity: null, lossTangent: null, isKeepIsland: true, zIndex: index })) }];
@@ -138,18 +142,30 @@ void test("ordinary PCB geometry, rules and stack failed Saves cannot reconcile 
     const engine = new engines.EasyedaControlEngine({ callTool: (): Promise<unknown> => { calls.push("unexpected-dispatch"); return Promise.reject(new Error("No native calls allowed")); } });
     await engine.controlFingerprintPromise;
     const executor = new executors.DesignExecutor(engine);
+    let runtimeChecks = 0;
+    if (operation.action === "pcb.text.create") {
+      // Even an available runtime cannot grant structure-job completion.
+      // This seam must remain uncalled after the earlier policy refusal.
+      Object.defineProperty(executor, "assertRuntime", { value: (): Promise<void> => {
+        runtimeChecks += 1; return Promise.resolve();
+      } });
+    }
     for (const state of ["commit-needs-recovery", "runtime-rebound-needs-reconciliation", "applied-unsaved"]) {
       journal.state = state; await artifacts.updateOperation(journal);
-      await assert.rejects(executor.reconcile(operationId), /Save was already attempted/u);
-      await assert.rejects(executor.commit(operationId), /Save was already attempted/u);
-      await assert.rejects(executor.rollback(operationId), /Save was already attempted/u);
-      await assert.rejects(executor.repairLayoutNetLabels(operationId, true), /Save was already attempted/u);
-      await assert.rejects(executor.repairLayoutLabelVisibility(operationId, true), /Save was already attempted/u);
-      await assert.rejects(executor.repairLayoutWireGroups(operationId, true), /Save was already attempted/u);
+      await assert.rejects(executor.reconcile(operationId), /native Save's debounced project_structures/u);
+      await assert.rejects(executor.commit(operationId), /native Save's debounced project_structures/u);
+      await assert.rejects(executor.rollback(operationId), /native Save's debounced project_structures/u);
+      await assert.rejects(executor.repairLayoutNetLabels(operationId, true), /native Save's debounced project_structures/u);
+      await assert.rejects(executor.repairLayoutLabelVisibility(operationId, true), /native Save's debounced project_structures/u);
+      await assert.rejects(executor.repairLayoutWireGroups(operationId, true), /native Save's debounced project_structures/u);
       const retained = await artifacts.loadOperation(operationId);
       assert.equal(retained.planHash, journal.planHash); assert.equal(retained["state"], state);
+      assert.equal(retained["saved"], false); assert.equal(retained["reopened"], false);
+      assert.deepEqual(await attempts.inspectDesignSaveAttempts({ ...journal, after: source }),
+        { attempted: true, intentCount: 1, provenNotDispatchedCount: 0 });
       assert.deepEqual(calls, []);
     }
+    assert.equal(runtimeChecks, 0);
     journal.state = "completed"; await artifacts.updateOperation(journal);
   }
 });
@@ -176,16 +192,16 @@ void test("legacy commit uncertainty with a lost return and overwritten phase re
   t.mock.method(engine, "recoverDispatchAuthority", () => Promise.resolve());
   t.mock.method(engine, "assertContext", () => Promise.resolve({ ...CONTEXT, document: { ...CONTEXT.document, tabId: "rebound-tab" } }));
   const executor = new executors.DesignExecutor(engine);
-  await assert.rejects(executor.reconcile(operationId), /Save was already attempted/u);
-  await assert.rejects(executor.commit(operationId), /Save was already attempted/u);
+  await assert.rejects(executor.reconcile(operationId), /native Save's debounced project_structures/u);
+  await assert.rejects(executor.commit(operationId), /native Save's debounced project_structures/u);
   await executor.recoverAuthority(operationId);
   const rebound = await artifacts.loadOperation(operationId);
   assert.equal(rebound["designSaveAttempted"], true);
   assert.equal(rebound["saveAttemptProtocol"], undefined);
   assert.equal(rebound["state"], "authority-recovered-needs-reconciliation");
   assert.equal(rebound.planHash, journal.planHash);
-  await assert.rejects(executor.reconcile(operationId), /Save was already attempted/u);
-  await assert.rejects(executor.commit(operationId), /Save was already attempted/u);
+  await assert.rejects(executor.reconcile(operationId), /native Save's debounced project_structures/u);
+  await assert.rejects(executor.commit(operationId), /native Save's debounced project_structures/u);
   assert.equal(nativeCalls, 0);
   rebound["state"] = "completed"; await artifacts.updateOperation(rebound);
 });

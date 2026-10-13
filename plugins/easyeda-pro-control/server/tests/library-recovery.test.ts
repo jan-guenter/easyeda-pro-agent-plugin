@@ -10,7 +10,9 @@ import type { LibraryJournal } from "../src/library-execution.ts";
 import { listLibraryExecutionCapabilities } from "../src/library-execution.ts";
 import { libraryMutationReceipt, readLibraryRecoveryArtifact, uniqueLibraryRecoveryArtifact, verifyRecoveredLibraryMutation } from "../src/library-recovery-state.ts";
 import { prepareDeviceCreate } from "../src/device-create.ts";
+import { prepareProjectSymbolMetadata } from "../src/project-symbol-metadata.ts";
 import { LIBRARY_NATIVE_IMPLEMENTATION } from "../src/library-native-profile.ts";
+import { SCHEMATIC_NATIVE_IMPLEMENTATION } from "../src/native-profiles.ts";
 import { LIBRARY_EXECUTION_PROFILE } from "../src/library-runtime.ts";
 import { libraryOperationSchema } from "../src/library-operations.ts";
 import { libraryToolOperationSchema } from "../src/tool-operation-envelope.ts";
@@ -54,19 +56,25 @@ function artifact(path: string, value: unknown): { descriptor: ArtifactDescripto
   const text = JSON.stringify(value);
   return { descriptor: { path, bytes: Buffer.byteLength(text), sha256: sha256Text(text) }, bytes: Buffer.from(text) };
 }
-function fixture(): { coordinator: LibraryRecoveryCoordinator; journal: LibraryJournal; calls: string[]; identity: Value;
+function fixture(symbolMetadata = false): { coordinator: LibraryRecoveryCoordinator; journal: LibraryJournal; calls: string[]; identity: Value;
   state: { source: string; after: NativeHistorySnapshot; returned: unknown } } {
   const calls: string[] = [], identity = fingerprint();
-  const plan: LibraryJournal["plan"] = { profile: LIBRARY_EXECUTION_PROFILE, operation: OPERATION, expectedFingerprint: structuredClone(identity), expectedContext: structuredClone(CONTEXT) };
-  const native = artifact("/fixture/2-native-return.json", RETURNED), prepared = artifact("/fixture/1-device-prepared.json", PREPARED);
-  const state = { source: "unchanged complete source", after: structuredClone(AFTER), returned: structuredClone(RETURNED) as unknown };
+  const operation = symbolMetadata ? libraryOperationSchema.parse({ id: "modify-symbol", action: "library.symbol.modify", libraryUuid: "project", target: { uuid: "symbol" }, patch: { description: "changed" } }) : OPERATION;
+  const before = symbolMetadata ? { ...BEFORE, documents: [document("board", "PCB", {}), document("symbol", "SYMBOL", { title: "MixedCase", description: "before", docType: 2, source: "", tags: ["Primary", "Secondary"] })] } : BEFORE;
+  const symbolPlan = symbolMetadata ? prepareProjectSymbolMetadata(operation, before) : undefined;
+  const after = symbolMetadata ? { ...before, documents: [document("board", "PCB", {}), document("symbol", "SYMBOL", { title: "MixedCase", description: "changed", docType: 2, source: "", tags: ["Primary", "Secondary"] })] } : AFTER;
+  const returned = symbolMetadata ? { kind: "project-symbol-metadata", createdId: null, targetId: "symbol" } : RETURNED;
+  const plan: LibraryJournal["plan"] = { profile: LIBRARY_EXECUTION_PROFILE, operation, expectedFingerprint: structuredClone(identity), expectedContext: structuredClone(CONTEXT) };
+  const native = artifact("/fixture/2-native-return.json", returned), prepared = artifact(symbolMetadata ? "/fixture/1-symbol-prepared.json" : "/fixture/1-device-prepared.json", symbolPlan ?? PREPARED);
+  const state = { source: "unchanged complete source", after: structuredClone(after), returned: structuredClone(returned) as unknown };
   const journal: LibraryJournal = { schema: OPERATION_SCHEMA, operationId: "fixture-operation", journalPath: "/fixture/operation.json", planHash: buildPlanHash(plan), plan,
     state: "library-needs-review", mutationState: "unknown", saved: false, reopened: false, orphanedCallPossible: false, hardStop: true, mutationMayHaveOccurred: true,
     nextSafeAction: "Reconcile", context: structuredClone(CONTEXT), preCheckpoint: RECEIPT, beforeSourceSha256: sha256Json(state.source), sequence: 2,
-    updatedAt: "2026-01-01", artifacts: [prepared.descriptor, native.descriptor], devicePlan: PREPARED, mutationReceipt: libraryMutationReceipt(OPERATION, RETURNED) };
+    updatedAt: "2026-01-01", artifacts: [prepared.descriptor, native.descriptor], ...(symbolPlan === undefined ? { devicePlan: PREPARED } : { symbolPlan }), mutationReceipt: libraryMutationReceipt(operation, returned) };
   const afterReceipt = { ...RECEIPT, checkpoint: "/fixture/after.sqlite", receiptPath: "/fixture/after.json", checkpointDumpSha256: "b".repeat(64) };
   const engine: LibraryRecoveryEngine = {
     status: (): Promise<{ stableFingerprint: Value }> => Promise.resolve({ stableFingerprint: identity }),
+    context: (): Promise<typeof CONTEXT> => Promise.resolve(structuredClone(CONTEXT)),
     upstream: { installedEasyedaBundles: (): Promise<{ assetsRoot: string }> => Promise.resolve({ assetsRoot: "/opt/assets" }) },
     assertContext: (): Promise<typeof CONTEXT> => Promise.resolve(structuredClone(CONTEXT)),
     assertRecoveryOperationIsolated: (): Promise<true> => Promise.resolve(true),
@@ -83,7 +91,8 @@ function fixture(): { coordinator: LibraryRecoveryCoordinator; journal: LibraryJ
   const services: LibraryRecoveryServices = { load: (): Promise<LibraryJournal> => Promise.resolve(journal), record: (_journal, phase): Promise<void> => { calls.push(phase); return Promise.resolve(); },
     verifyLibraryNativeProfile: (): Promise<typeof LIBRARY_NATIVE_IMPLEMENTATION> => Promise.resolve(LIBRARY_NATIVE_IMPLEMENTATION),
     verifyDeviceAssociationNativeProfile: (): Promise<void> => Promise.resolve(),
-    readNativeHistoryCheckpoint: (request): Promise<NativeHistorySnapshot> => Promise.resolve(request.checkpointPath === RECEIPT.checkpoint ? BEFORE : state.after),
+    verifySchematicNativeProfile: (): Promise<typeof SCHEMATIC_NATIVE_IMPLEMENTATION> => Promise.resolve(SCHEMATIC_NATIVE_IMPLEMENTATION),
+    readNativeHistoryCheckpoint: (request): Promise<NativeHistorySnapshot> => Promise.resolve(request.checkpointPath === RECEIPT.checkpoint ? before : state.after),
     readArtifact: (path, offset, length): ReturnType<NonNullable<LibraryRecoveryServices["readArtifact"]>> => {
       const at = Number(offset), count = Number(length);
       assert.equal(Number.isSafeInteger(at) && Number.isSafeInteger(count), true);
@@ -104,6 +113,30 @@ void test("changed library recovery proves the original created ID and all docum
   assert.equal(run.calls.includes("DISPATCH"), false); assert.equal(run.journal.hardStop, false);
   assert.equal(run.calls[0], "upload-barrier");
   assert.ok(run.calls.indexOf("upload-barrier") < run.calls.indexOf("checkpoint"));
+});
+
+void test("symbol recovery refuses an apparently exact retained effect without changing its historical journal", async () => {
+  const run = fixture(true);
+  const before = structuredClone(run.journal);
+  await assert.rejects(run.coordinator.reconcile(run.journal.operationId), /native debounced project_structures/u);
+  await assert.rejects(run.coordinator.reconcile(run.journal.operationId, true), /native debounced project_structures/u);
+  assert.deepEqual(run.journal, before);
+  assert.deepEqual(run.calls, []);
+});
+
+void test("symbol lifecycle refusal precedes missing return, preparation drift and collateral proof without rewriting evidence", async () => {
+  const missing = fixture(true);
+  missing.journal.artifacts = missing.journal.artifacts.filter((entry) => !entry.path.endsWith("native-return.json"));
+  const drift = fixture(true);
+  assert.ok(drift.journal.symbolPlan); drift.journal.symbolPlan.desiredTitle = "Substituted";
+  const collateral = fixture(true);
+  const peer = collateral.state.after.documents[0]; assert.ok(peer); peer.metadata["updateTime"] = 2;
+  for (const run of [missing, drift, collateral]) {
+    const before = structuredClone(run.journal);
+    await assert.rejects(run.coordinator.reconcile(run.journal.operationId), /native debounced project_structures/u);
+    assert.deepEqual(run.calls, []); assert.deepEqual(run.journal, before);
+    assert.equal(run.journal.hardStop, true); assert.equal(run.journal.saved, false);
+  }
 });
 void test("reconciliation refuses substituted IDs, unrelated durable changes, source drift and unproved orphan calls", async () => {
   const drift = fixture(); const unrelated = drift.state.after.documents[0]; assert.ok(unrelated); unrelated.metadata["updateTime"] = 2;
@@ -142,6 +175,9 @@ void test("receipt and managed artifact checks reject guessed identity and tampe
   const capabilities = listLibraryExecutionCapabilities();
   assert.equal(capabilities.every((entry) => entry["connectedValidation"] === "see-capability-matrix;catalog-not-live-proof"), true);
   assert.equal(capabilities.find((entry) => entry["action"] === "library.device.model-transform")?.["status"], "implemented-project-device-transform-checkpoint-proof");
+  const symbol = capabilities.find((entry) => entry["action"] === "library.symbol.modify");
+  assert.equal(symbol?.["status"], "unavailable-native-project-structure-lifecycle");
+  assert.equal(symbol["currentGenerationLiveValidated"], false);
 });
 
 void test("public library request schema exposes confirmed recovery without starting a facade", async () => {

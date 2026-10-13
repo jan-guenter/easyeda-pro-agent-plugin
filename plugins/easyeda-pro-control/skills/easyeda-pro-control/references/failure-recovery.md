@@ -2,6 +2,46 @@
 
 An ambiguous operation must not be repeated or saved. Inspect its journal and preserve the checkpoint, created IDs, runtime proof and phase artifacts. A delayed call may have completed after the response deadline.
 
+Current restriction: schematic-page, symbol and PCB design journals cannot
+commit, roll back, repair or complete nonterminal reconciliation. Eight
+symbol/page/container metadata writers are likewise blocked; see
+[the exact library list](libraries-and-eco.md#structure-write-completion-restriction).
+Native structure-job completion and its full SQL effect remain unimplemented.
+Historical terminal inspection and pure evidence checks remain available, as
+does invalidation of an exactly undispatched library preparation. Summaries
+retain old advice separately; it is not current execution authority. The
+affected recovery profiles below describe historical contracts only. Footprint
+and unrelated library recovery retain their independent guards.
+
+## Closed-symbol validation rejected before navigation
+
+For the exact closed-symbol validation failure at `edit-marker-read` with
+`ERR_CONFIRM_WRITE_REQUIRED`, use `easyeda_control_recover_incomplete` with the
+original `operationId`, `resolution:"abandoned-before-navigation"` and
+`confirmation:"<operationId>:abandoned-before-navigation"`. Do not supply restart,
+discard or repeat flags. This route checks the complete retained prefix, the
+fixed request's pre-handler rejection, absence of navigation/edit evidence and
+the unchanged complete saved database before publishing an abandonment record.
+It makes no application call and leaves the original journal, startup marker and
+permanent target claim intact.
+
+A separate profile accepts exactly six successful baseline events ending in
+`baseline-marker-create`, with no later phase evidence. Use the same public
+resolution and original operation-bound confirmation. It validates the fixed
+startup program, complete original result, marker/claim binding and preserved
+artifacts. An optional retained window diagnostic is evidence only. The recovery
+callback shares the coordinator's gate and cannot abandon an active invocation;
+a same-host retained attempt must have returned stopped for this operation.
+This profile makes no current project read and proves neither file invariance
+nor process closure. It is not the sixteen-event transport-refusal profile.
+
+Abandonment is not completion, rollback, process-termination proof or permission
+to repeat the validation request. Its historical evidence only removes that
+specific unfinished-operation blocker; every new operation retains its normal
+admission checks. Other failure phases and ambiguous calls remain unsupported.
+An existing valid abandonment record can be inspected again without publishing
+another record or rechecking the now-current design as historical evidence.
+
 ## Typed design and library recovery
 
 1. Use `easyeda_control_design` inspect with the operation ID, or the corresponding library inspect action. `easyeda_control_recover_incomplete` with no ID lists managed incomplete operations. Local artifact/evidence inspection remains available.
@@ -25,6 +65,14 @@ If full schematic topology is unavailable after reopening, `load-layout-pages` w
 
 An unfinished runtime `open-existing` operation uses `inspect-open`, `recover-open-authority`, `rebind-open-runtime` and `reconcile-open`, not the design/library recovery actions. Reconciliation inspects the current exclusive tab and unchanged database without repeating navigation. See [connection-and-context.md](connection-and-context.md#open-an-existing-saved-project-from-start-page).
 
+New project-open failures retain a fixed category and coordinator phase in an
+immutable failure artifact. It survives later inspection and reconciliation;
+raw error messages and private payloads are not retained there. Recognized
+`RECOVERY_EDITOR_READINESS_*` categories identify the failed readiness check,
+not permission to retry navigation. Older journals may lack this artifact. A
+later observed open tab does not reconstruct a missing initial acknowledgment
+or establish the initial failure's exact cause.
+
 Rule checks have their own inspect, recover-authority, open-target, rebind-runtime and reconcile-no-mutation actions under `easyeda_control_check`. A failed or timed-out check is never rerun by recovery. Reconciliation compares the retained full calculation scope and complete saved SQLite baseline; it does not manufacture a report from an unknown check outcome. Other incomplete operations block a new check.
 
 ## Saved library edit awaiting reopen
@@ -46,6 +94,28 @@ Retained-proof recovery remains operation-specific. Do not generalize wire,
 layout, copper or library recovery to another action. If no maintained path can
 prove the already attempted lifecycle, preserve evidence and request review.
 
+## Inverse and delayed persistence
+
+An inverse is also one-shot. Its retained intent, preparation or acknowledgment
+survives reconciliation and runtime rebinding; none authorizes another inverse
+or a subsequent Save. The summary's `inverse.available` is conditional admission information,
+not permission to dispatch from a stale summary.
+
+For flat display edits, an unsaved inverse requires fresh proof that durable
+state still matches the original baseline. If native auto-persistence already
+stored the forward effect, rollback refuses before dispatch. Do not relabel that
+effect as unsaved because the agent has not clicked Save.
+
+If an older inverse already restored live state but its durable proof failed,
+preserve the journal and both observations. The upload barrier waits for task1;
+it does not drain a pending structure timer or later task2 job, initiate Save,
+or guarantee that editor changes were queued.
+A later read-only checkpoint may show delayed native persistence. Only then can
+same-journal reconciliation verify the original live baseline, complete durable
+restoration and unchanged peers. Do not change autosave settings, repeat the
+inverse, click Save or close the editor to force this outcome. A continuing
+live/saved mismatch remains unresolved.
+
 ### Retained wire Save
 
 After standalone `sch.wire.modify` reaches Save, never commit it again. The
@@ -62,6 +132,28 @@ do not edit the journal or substitute a new operation. After a package/runtime
 change use the ordinary rebind and target recovery first. The retained fixture
 recovery and fresh 16-document wire lifecycle completed Sept25. This is a
 narrow source/lifecycle profile, not blanket permission for wire changes.
+
+### Retained PCB text creation Save
+
+For `pcb.text.create`, reconciliation can reuse the original six sealed phases
+and exactly one successful Save/close/reopen acknowledgment. It checks fresh
+source, complete durable records, peer raw histories, checkpoint stability and
+the pinned native decoder implementation. It does not create text, regenerate
+an ID, navigate or Save. Missing or conflicting evidence stays a review stop.
+Consumed-Save text modification and deletion are not covered by this path.
+
+Creation profile v2 requires exact explicit-black source and storage. The legacy
+v1 exception accepts only one original black STRING followed by the reserved
+null STRING, with its full raw creation suffix and historical decode order
+proved. Components/templates, mixed global FONT/BLOB families and every other
+source or durable change refuse. The journal's original null intent stays
+unchanged; the observed black export is separate evidence, never normalization.
+
+This is read-only completion, not permission for a later inverse or text edit.
+Use a fresh clean disposable target for v2 lifecycle validation unless a separate
+strict preflight proves that a later write will preserve the legacy stored null.
+Do not delete the recovered text, repeat Save or repair its color automatically.
+Source/offline tests do not yet establish connected recovery success.
 
 ## Native UI failures
 

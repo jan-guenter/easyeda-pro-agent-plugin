@@ -50,6 +50,19 @@ void test("only bounded bridge and exact lifecycle deadlines imply unsettled nat
   ]) { assert.doesNotThrow(() => { assertUpstreamReplySettled(result); }); }
 });
 
+void test("exact ambiguous-close failures retain native execution uncertainty without leaking arbitrary error text", () => {
+  for (const envelope of [{ ok: false, error: "NATIVE_LIFECYCLE_CLOSE_UNSETTLED" },
+    { success: false, result: { error: { code: "EASYEDA_API_ERROR", message: "NATIVE_LIFECYCLE_CLOSE_UNSETTLED" } } }]) {
+    for (const response of [{ structuredContent: envelope }, { content: [{ type: "text", text: JSON.stringify(envelope) }] }]) {
+      assert.throws(() => { assertUpstreamReplySettled(response); }, /native-lifecycle-unsettled;execution-unsettled/u);
+    }
+  }
+  for (const error of ["NATIVE_LIFECYCLE_CLOSE_UNSETTLED PRIVATE", "Error: NATIVE_LIFECYCLE_CLOSE_UNSETTLED", "NATIVE_LIFECYCLE_CLOSE_UNSETTLED\n"]) {
+    assert.doesNotThrow(() => { assertUpstreamReplySettled({ structuredContent: { ok: false, error } }); });
+  }
+  assert.doesNotThrow(() => { assertUpstreamReplySettled({ structuredContent: { ok: true, result: { error: "NATIVE_LIFECYCLE_CLOSE_UNSETTLED" } } }); });
+});
+
 void test("explicit successful wrappers settle timeout-shaped result data without changing its payload", () => {
   for (const data of [
     { error: { code: "TIMEOUT", message: "PRIVATE" } },
@@ -114,7 +127,7 @@ void test("failure and uncertain status override nested successful wrappers for 
 });
 
 void test("ordinary MCP timeout reply quarantines the authenticated dispatch scope without a second call", async () => {
-  for (const error of ['Bridge method "api.execute" timed out after 60000ms', "NATIVE_LIFECYCLE_CLOSE_TIMEOUT", "NATIVE_LIFECYCLE_OPEN_TIMEOUT", undefined]) {
+  for (const error of ['Bridge method "api.execute" timed out after 60000ms', "NATIVE_LIFECYCLE_CLOSE_TIMEOUT", "NATIVE_LIFECYCLE_OPEN_TIMEOUT", "NATIVE_LIFECYCLE_CLOSE_UNSETTLED", undefined]) {
     const timedOut = error !== undefined;
     const result = { content: [], structuredContent: timedOut ? { ok: false, error } : { ok: true, result: 1 } };
     const { events, upstream } = inMemoryUpstream(result);

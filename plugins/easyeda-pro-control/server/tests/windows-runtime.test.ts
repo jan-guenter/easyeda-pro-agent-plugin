@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { runInNewContext } from "node:vm";
 import { sha256Json } from "../src/core.ts";
-import type { AuthenticatedBridgeSessionIdentity } from "../src/engine.ts";
-import type { WindowsAuthorityLaunch, WindowsAuthorityStartOptions, WindowsAuthoritySupervisor } from "../src/windows-authority.ts";
+import type { AuthenticatedBridgeSessionIdentity, ExecutionAuthorityCaptureInput } from "../src/engine.ts";
+import { assertClosedSessionCopyAuthority, assertClosedSessionTerminationProof } from "../src/windows-authority.ts";
+import type { ClosedSessionBinding, WindowsAuthorityLaunch, WindowsAuthorityStartOptions, WindowsAuthoritySupervisor } from "../src/windows-authority.ts";
 import {
   WindowsControlRuntime,
   buildWindowsProcessProbeCode,
@@ -11,6 +12,7 @@ import {
   performWindowsAuthenticatedProcessProbe,
 } from "../src/windows-runtime.ts";
 import type { WindowsControlRuntimeOptions } from "../src/windows-runtime.ts";
+import { INPUT, closedSessionFixture } from "./helpers/windows-closed-session-fixture.ts";
 
 const SESSION: AuthenticatedBridgeSessionIdentity = { authenticatedAtEpochMs: 1000, authenticationReceiptSha256: "a".repeat(64), gatewayInstanceId: "gateway", sequence: 1, sessionId: "session" };
 const PROBE = { schema: "easyeda-pro-control.windows-process-probe.v1" as const, bindingSha256: "b".repeat(64), nonce: "c".repeat(64), port: 49_199 };
@@ -126,6 +128,10 @@ void test("runtime starts no helper until explicit launch and forwards normal cl
   const launch: WindowsAuthorityLaunch = { jobId: "d".repeat(32), helperInstance: "e".repeat(32), root: { pid: 100, role: "easyeda-main", startIdentity: `win32:13333333333333333:job:${"d".repeat(32)}` } };
   let startOptions: WindowsAuthorityStartOptions | undefined;
   const supervisor: WindowsAuthoritySupervisor = {
+    prepareClosedSessionClose(): never { throw new Error("synthetic-close-preparation"); },
+    requestClosedSessionNormalClose(): never { throw new Error("synthetic-owned-close"); },
+    proveClosedSession(): never { throw new Error("synthetic-closed-proof"); },
+    probeClosedSessionTermination(): never { throw new Error("synthetic-closed-probe"); },
     launch(confirmation) { assert.equal(confirmation.confirmLaunch, true); calls.push("launch"); return Promise.resolve(launch); },
     requestNormalClose(input) { assert.deepEqual(input.launch, launch); assert.equal(input.windowHandle, "123"); calls.push("normal-close"); return Promise.resolve(); },
     release() { calls.push("release"); return Promise.resolve(); },
@@ -189,4 +195,97 @@ void test("a session switch during the authenticated probe invalidates the resul
   };
   await assert.rejects(performWindowsAuthenticatedProcessProbe(upstream, SESSION, PROBE), /exact current authenticated/u);
   assert.equal(fixture.calls.length, 1);
+});
+
+function closureRuntimeFixture(): {
+  runtime: WindowsControlRuntime;
+  authority: ReturnType<typeof closedSessionFixture>;
+  bridge: ReturnType<typeof upstreamFixture>;
+} {
+  const authority = closedSessionFixture(), bridge = upstreamFixture();
+  const runtime = new WindowsControlRuntime({ upstream: bridge.upstream, pluginRoot: "/opt/control",
+    assetsRoot: "/mnt/d/Apps/EasyEDA/resources/app/assets", wslDistribution: "ReviewDistro",
+    reviewedExecutionScopeSha256: "e".repeat(64) }, {
+    hashExecutable: (): Promise<string> => Promise.resolve("d".repeat(64)),
+    startSupervisor: (): Promise<WindowsAuthoritySupervisor> => Promise.resolve(authority.supervisor),
+  });
+  return { runtime, authority, bridge };
+}
+
+async function runtimeClosedBinding(runtime: WindowsControlRuntime,
+  input: ExecutionAuthorityCaptureInput = INPUT): Promise<Omit<ClosedSessionBinding, "launch">> {
+  const executionAuthority = await runtime.capture(input);
+  return { operationId: input.operationId, phase: input.orphanPhase, challengeAttempt: input.challengeAttempt,
+    bridgeSession: input.bridgeSession, runtimeIdentity: input.runtimeIdentity, executionAuthority };
+}
+
+void test("closed-session runtime wrappers bind owned launch and never reconnect a terminated session", async () => {
+  const { runtime, authority, bridge } = closureRuntimeFixture();
+  await runtime.launch();
+  const binding = await runtimeClosedBinding(runtime);
+  const intent = await runtime.prepareClosedSessionClose({ ...binding, windowHandle: "12345" });
+  assert.throws(() => runtime.requestClosedSessionNormalClose({ ...binding,
+    intent: { ...intent, windowHandle: "54321" }, confirmNormalClose: true }), /not prepared/u);
+  const closeReceipt = await runtime.requestClosedSessionNormalClose({ ...binding, intent, confirmNormalClose: true });
+  bridge.behavior.active = false;
+  bridge.behavior.lease = false;
+  const proof = await runtime.proveClosedSession({ ...binding, intent, closeReceipt });
+  assert.equal(await assertClosedSessionCopyAuthority(proof), proof);
+  await runtime.launch();
+  const cached = await runtime.proveClosedSession({ ...binding, intent, closeReceipt });
+  assert.equal(cached.proofSha256, proof.proofSha256);
+  assert.equal(await assertClosedSessionTerminationProof(proof), proof);
+  await assert.rejects(assertClosedSessionCopyAuthority(proof), /retained|intervening/u);
+  assert.equal(authority.requests.filter((entry) => entry["action"] === "normal-close").length, 1);
+  assert.equal(authority.requests.filter((entry) => entry["action"] === "prove-terminated").length, 1);
+  assert.deepEqual(bridge.calls, []);
+});
+
+void test("runtime refuses an intent from another runtime and refuses all closure methods after release", async () => {
+  const first = closureRuntimeFixture(), second = closureRuntimeFixture();
+  await first.runtime.launch();
+  const binding = await runtimeClosedBinding(first.runtime);
+  const intent = await first.runtime.prepareClosedSessionClose({ ...binding, windowHandle: "12345" });
+  await assert.rejects(second.runtime.prepareClosedSessionClose({ ...binding, windowHandle: "12345" }), /explicitly launched/u);
+  assert.deepEqual(second.authority.requests, []);
+  await second.runtime.launch();
+  assert.throws(() => second.runtime.requestClosedSessionNormalClose({ ...binding, intent, confirmNormalClose: true }), /not prepared/u);
+  const closeReceipt = await first.runtime.requestClosedSessionNormalClose({ ...binding, intent, confirmNormalClose: true });
+  await first.runtime.release();
+  await assert.rejects(first.runtime.prepareClosedSessionClose({ ...binding, windowHandle: "12345" }), /explicitly launched/u);
+  assert.throws(() => first.runtime.requestClosedSessionNormalClose({ ...binding, intent, confirmNormalClose: true }), /explicitly launched/u);
+  assert.throws(() => first.runtime.proveClosedSession({ ...binding, intent, closeReceipt }), /explicitly launched/u);
+  assert.equal(second.authority.requests.length, 1);
+  assert.deepEqual(first.bridge.calls, []);
+  assert.deepEqual(second.bridge.calls, []);
+});
+
+void test("runtime refuses ownership drift after awaited intent preparation", async () => {
+  const authority = closedSessionFixture(), bridge = upstreamFixture();
+  let preparedIntent: Awaited<ReturnType<WindowsAuthoritySupervisor["prepareClosedSessionClose"]>> | undefined;
+  const runtimeOwner: { value: WindowsControlRuntime | undefined } = { value: undefined };
+  const supervisor: WindowsAuthoritySupervisor = { ...authority.supervisor,
+    async prepareClosedSessionClose(input) {
+      preparedIntent = await authority.supervisor.prepareClosedSessionClose(input);
+      const owner = runtimeOwner.value;
+      assert.ok(owner);
+      await owner.launch();
+      return preparedIntent;
+    },
+  };
+  const runtime = new WindowsControlRuntime({ upstream: bridge.upstream, pluginRoot: "/opt/control",
+    assetsRoot: "/mnt/d/Apps/EasyEDA/resources/app/assets", wslDistribution: "ReviewDistro",
+    reviewedExecutionScopeSha256: "e".repeat(64) }, {
+    hashExecutable: (): Promise<string> => Promise.resolve("d".repeat(64)),
+    startSupervisor: (): Promise<WindowsAuthoritySupervisor> => Promise.resolve(supervisor),
+  });
+  runtimeOwner.value = runtime;
+  await runtime.launch();
+  const binding = await runtimeClosedBinding(runtime);
+  await assert.rejects(runtime.prepareClosedSessionClose({ ...binding, windowHandle: "12345" }), /ownership changed/u);
+  assert.ok(preparedIntent);
+  const intent = preparedIntent;
+  assert.throws(() => runtime.requestClosedSessionNormalClose({ ...binding, intent, confirmNormalClose: true }), /not prepared/u);
+  assert.equal(authority.requests.filter((entry) => entry["action"] === "normal-close").length, 0);
+  assert.deepEqual(bridge.calls, []);
 });

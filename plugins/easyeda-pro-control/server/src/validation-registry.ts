@@ -2,6 +2,8 @@
  * validation. These file commitments are deliberately maintained by review;
  * do not generate or refresh them when an adapter changes, even in a comment.
  * Offline tests bind the record to source bytes without runtime filesystem I/O.
+ * Source revisions retain the original historical commitments separately; a
+ * reviewed revision never transfers live validation to an added adapter branch.
  */
 export interface OperationValidationRecord {
   readonly id: string;
@@ -25,6 +27,14 @@ export interface OperationValidationRecord {
   readonly adapterBindings: readonly {
     readonly path: string;
     readonly sha256: string;
+  }[];
+  readonly sourceRevisionReviews?: readonly {
+    readonly path: string;
+    readonly historicalSha256: string;
+    readonly reviewedSha256: string;
+    readonly reviewedAt: string;
+    readonly scope: "historical-explicit-false-profile-only;omitted-lock-and-sealed-wire-live-unvalidated";
+    readonly reference: string;
   }[];
   readonly fixture: {
     readonly category: "disposable-schematic-validation";
@@ -70,6 +80,14 @@ const records: readonly OperationValidationRecord[] = [{
     { path: "schematic-wire-order.ts", sha256: "7bb6624c95a58d97f01ce4fbb631f5859850bd483b0bd275196b941293ae51d6" },
     { path: "schematic-wire-persistence.ts", sha256: "fc97eac7cb16c4db3b284a356bcce1afecc7877168442758b462478cf8be047b" },
   ],
+  sourceRevisionReviews: [{
+    path: "schematic-native-wire.ts",
+    historicalSha256: "13db7218226c6636c51136ea9b96fc99a4bb784ad21ba10731d81ecd25e3a837",
+    reviewedSha256: "a4336c2fae96b142a50cdfbba722e35f3456ef290847c937d23292db8f298ec9",
+    reviewedAt: "2026-10-12",
+    scope: "historical-explicit-false-profile-only;omitted-lock-and-sealed-wire-live-unvalidated",
+    reference: "docs/api-coverage-220050-release-2026-10-12.md#historical-wire-source-review",
+  }],
   fixture: {
     category: "disposable-schematic-validation",
     case: "existing-named-wire-cardinal-split-with-junction",
@@ -86,6 +104,8 @@ const records: readonly OperationValidationRecord[] = [{
     "no-sibling-operation-validation",
     "no-blanket-native-shape-or-style-coverage",
     "no-runtime-admission-or-mutation-authority",
+    "no-flat-wire-reroute-v1-live-validation",
+    "no-omitted-lock-live-validation",
   ],
 }];
 

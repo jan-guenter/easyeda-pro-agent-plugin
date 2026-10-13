@@ -95,6 +95,7 @@ async function duplicateDirectoryHandle(
  */
 export async function openControlRootCapability(
   input: string,
+  createRoot = true,
 ): Promise<ControlRootCapability> {
   if (process.platform !== "linux") {
     throw new Error(
@@ -125,6 +126,9 @@ export async function openControlRootCapability(
         before = await lstat(childPath, { bigint: true });
       } catch (error) {
         if (errorCode(error) !== "ENOENT") {
+          throw error;
+        }
+        if (!createRoot) {
           throw error;
         }
         if (index !== segments.length - 1) {
@@ -164,7 +168,15 @@ export async function openControlRootCapability(
         await childHandle.close();
         throw error;
       }
-      await currentHandle.close();
+      try {
+        await currentHandle.close();
+      } catch (error) {
+        // Ownership has not transferred yet. The outer catch still owns the
+        // Parent, so this scope must close the newly acquired child itself.
+        try { await childHandle.close(); }
+        catch (cleanupError) { throw new AggregateError([error, cleanupError], "Control-root traversal cleanup failed.", { cause: cleanupError }); }
+        throw error;
+      }
       currentHandle = childHandle;
       currentPath = join(currentPath, segment);
     }
@@ -292,7 +304,15 @@ export async function openControlRootCapability(
             await childHandle.close();
             throw error;
           }
-          await directoryHandle.close();
+          try {
+            await directoryHandle.close();
+          } catch (error) {
+            // Keep both descriptors accounted for if the parent close fails
+            // Before this loop can transfer ownership to its child.
+            try { await childHandle.close(); }
+            catch (cleanupError) { throw new AggregateError([error, cleanupError], "Managed-directory traversal cleanup failed.", { cause: cleanupError }); }
+            throw error;
+          }
           directoryHandle = childHandle;
           directoryPath = join(directoryPath, segment);
         }

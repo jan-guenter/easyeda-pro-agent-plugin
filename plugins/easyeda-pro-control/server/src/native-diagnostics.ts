@@ -1,11 +1,24 @@
+/* oxlint-disable import/max-dependencies -- The fixed classifier composes independently maintained literal guard inventories instead of copying reader contracts. */
 import { deviceFailureCategory } from "./device-runtime-guard.ts";
 import { libraryRuntimeFailureCategory } from "./library-runtime-guard.ts";
 import { projectUploadBarrierFailureCategory } from "./project-upload-barrier.ts";
+import { DOCUMENT_RENAME_NATIVE_GUARD_CODES, METADATA_NATIVE_GUARD_CODES, PCB_CREATE_NATIVE_GUARD_CODES, SCHEMATIC_CREATE_NATIVE_GUARD_CODES, SYMBOL_ACTOR_NATIVE_GUARD_CODES } from "./metadata-native-diagnostics.ts";
+import { SCHEMATIC_NATIVE_ID_GUARD_CODES, SCHEMATIC_NATIVE_ID_METHODS } from "./schematic-native-ids.ts";
+import { SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES, SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
+import { SYMBOL_PIN_ENUMERATION_GUARD_CODES, SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
+import { SCHEMATIC_TEXT_GUARD_CODES, SCHEMATIC_TEXT_READ_METHODS } from "./schematic-text-read.ts";
+import { SCHEMATIC_NETGROUP_GUARD_CODES, SCHEMATIC_NETGROUP_READ_METHODS } from "./schematic-netgroup-read.ts";
+import { SCHEMATIC_PRIMITIVE_GUARD_CODES, SCHEMATIC_PRIMITIVE_READ_METHODS } from "./schematic-primitive-read.ts";
+import { SCHEMATIC_SELECTION_GUARD_CODES, SCHEMATIC_SELECTION_METHOD } from "./schematic-selection-read.ts";
+import { SCHEMATIC_FLAT_READ_GUARD_CODES, SCHEMATIC_FLAT_TOPOLOGY_GUARD_CODES } from "./schematic-read-diagnostics.ts";
+import { CONFIGURED_FONT_GUARD_CODES, CONFIGURED_FONT_METHOD } from "./configured-font-read.ts";
 
 /** Fixed literal errors emitted by reviewed code builders. Never echo unknown
  * native exception text, dynamic suffixes, stack traces or caller values.
  */
 const codes = new Set([
+  ...SCHEMATIC_FLAT_READ_GUARD_CODES,
+  ...SCHEMATIC_FLAT_TOPOLOGY_GUARD_CODES.map((code) => `SCH_FLAT_TOPOLOGY_${code}`),
   "NATIVE_LIFECYCLE_OBSERVER_UNAVAILABLE",
   "NATIVE_LIFECYCLE_PROJECT_DRIFT",
   "NATIVE_LIFECYCLE_CLOSE_CONTEXT",
@@ -20,6 +33,8 @@ const codes = new Set([
   "NATIVE_LIFECYCLE_OPEN_ACK",
   "NATIVE_LIFECYCLE_NEW_FRAME",
   "NATIVE_LIFECYCLE_ACTIVATE_CONTEXT",
+  "PCB_NAVIGATION_PREFERENCES_UNSAFE",
+  "PCB_NAVIGATION_PREFLIGHT_CONTEXT",
   "DESIGN_POLYGON_INVALID",
   "FOOTPRINT_LINE_OBJECT_INVALID",
   "FOOTPRINT_LINE_BASELINE_DRIFT",
@@ -110,6 +125,7 @@ const codes = new Set([
   "SCH_NATIVE_PIN_INVALID",
   "SCH_NATIVE_PIN_NET_INVALID",
   "SCH_NATIVE_PIN_NET_MISSING",
+  "SCH_NATIVE_PIN_NET_EXCEPTION",
   "SCH_NATIVE_RUNNER_MISSING",
   "SCH_NATIVE_SCALAR_INVALID",
   "SCH_NATIVE_SOURCE_CONTEXT_MISMATCH",
@@ -137,7 +153,7 @@ const codes = new Set([
   "SYMBOL_SOURCE_RECORD",
   "SYMBOL_SOURCE_REJECTED",
 ]);
-const recoveryStages = new Set([
+export const RECOVERY_NAVIGATION_FAILURE_STAGES = [
   "api-unavailable", "identity-shape", "identity-alias", "identity-missing",
   "registry-path", "registry-response", "registry-chunk", "registry-bound",
   "registry-json", "registry-membership", "registry-target-mismatch",
@@ -147,7 +163,13 @@ const recoveryStages = new Set([
   "activate-readback", "target-readback",
   "library-api-unavailable", "library-identity-drift", "library-context-owner",
   "tab-tree-api", "tab-tree-shape", "tab-tree-branch", "tab-tree-leaf", "tab-record", "tab-data", "tab-type-alias", "unrelated-editor-tab",
-]);
+  "editor-readiness-api", "editor-readiness-project", "editor-readiness-document", "editor-readiness-owner",
+  "editor-readiness-pcb", "editor-readiness-page", "editor-readiness-container",
+  "native-project-info", "native-document-info", "native-tab-tree", "native-registry-request", "native-registry-read",
+  "native-library-info", "native-open-project", "native-open-document", "native-open-library", "native-activate-document",
+  "native-schematic-info", "native-schematic-page-info", "native-pcb-info", "native-unexpected",
+] as const;
+const recoveryStages: ReadonlySet<string> = new Set(RECOVERY_NAVIGATION_FAILURE_STAGES);
 const tabCodes = new Set(["EDITOR_TABS_API_MISSING", "EDITOR_TABS_FIELD_BOUND", "EDITOR_TABS_PROJECT_DRIFT", "EDITOR_TABS_TREE_BOUND", "EDITOR_TABS_CONTEXT_DRIFT", "EDITOR_TABS_OUTPUT_BOUND"]);
 const padCodes = new Map([
   ["Pad frame bound exceeded", "PAD_FRAME_BOUND"], ["Pad frame scope unavailable", "PAD_FRAME_SCOPE"], ["Duplicate pad frame", "PAD_FRAME_DUPLICATE"],
@@ -169,9 +191,100 @@ const footprintLifecycleCodes = new Map([
   ["Footprint reopen identity failed", "FOOTPRINT_LIFECYCLE_REOPEN"],
   ["Footprint activation acknowledgment malformed", "FOOTPRINT_LIFECYCLE_ACTIVATION"],
 ]);
+// Each builder discards its caught native exception and emits only these fixed
+// Stages. Exact whole-message matching must not admit suffixes, paths or stacks.
+const operationStages = [
+  { prefix: "Owned editor lookup refused at ", category: "native-editor-tab-lookup", stages: ["api", "before-context", "before-tree", "lookup", "after-tree"] },
+  { prefix: "Closed empty page creation refused at ", category: "native-page-create", stages: ["host", "before-read", "permission", "create"] },
+  { prefix: "Closed empty symbol creation refused at ", category: "native-symbol-create", stages: ["host", "before-read", "permission", "create"] },
+  { prefix: "Clean document close refused at ", category: "native-document-close", stages: ["host", "before-state", "dispatch-state", "close", "terminal-removal", "after-state", "reconciliation"] },
+  { prefix: "Document activation refused: ", category: "native-document-activation", stages: ["api", "before-context", "before-tabs", "loaded-frames", "preferences", "dispatch-context", "activate", "target-readiness"] },
+  { prefix: "Closed page rename refused at ", category: "native-page-rename", stages: ["host", "before-read", "closed-target", "rename", "after-read"] },
+  { prefix: "Closed document rename refused at ", category: "native-document-rename", stages: ["host", "before-read", "closed-target", "rename", "after-read"] },
+  { prefix: "Closed free PCB creation refused at ", category: "native-pcb-create", stages: ["host", "before-read", "permission", "closed-target", "create", "after-read"] },
+  { prefix: "Closed free schematic creation refused at ", category: "native-schematic-create", stages: ["host", "before-read", "permission", "closed-target", "create", "after-read"] },
+  { prefix: "Symbol metadata operation refused at ", category: "native-symbol-metadata", stages: ["host", "permission", "before-read", "target-closed", "modify", "after-read"] },
+];
+const operationStageCategories = new Map(operationStages.flatMap(({ prefix, category, stages }) => stages.map((stage) => [`${prefix}${stage}`, `${category}:${stage}`] as const)));
+const activationPreferenceCategories = new Map<string, string>(["preferences", "dispatch-context", "target-readiness"].flatMap((stage) =>
+  ["PREFERENCES_READ_ERROR", "PREFERENCES_API_MISSING", "PREFERENCES_MISSING", "PREFERENCES_BOUND", "PREFERENCES_JSON_INVALID", "PREFERENCES_SHAPE",
+    "PCB_COMMAND_TAB_MISSING", "PCB_COMMAND_TAB_WRITE_REQUIRED", "PCB_COMMAND_TAB_NOT_BOOLEAN"]
+    .map((code) => [`Document activation refused: ${stage}:${code}`, `native-document-activation:${stage}:${code}`] as const)));
+const metadataGuardCategories = new Map<string, string>(operationStages.filter(({ category }) => category === "native-page-rename" || category === "native-symbol-metadata" || category === "native-document-rename")
+  .flatMap(({ prefix, category, stages }) => {
+    let guardCodes: readonly string[] = METADATA_NATIVE_GUARD_CODES;
+    if (category === "native-document-rename") { guardCodes = DOCUMENT_RENAME_NATIVE_GUARD_CODES; }
+    else if (category === "native-symbol-metadata") { guardCodes = SYMBOL_ACTOR_NATIVE_GUARD_CODES; }
+    return stages.flatMap((stage) => guardCodes.map((code) => [`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`] as const));
+  }));
+for (const { prefix, category, stages } of operationStages.filter((entry) => entry.category === "native-pcb-create")) {
+  for (const stage of stages) { for (const code of PCB_CREATE_NATIVE_GUARD_CODES) { metadataGuardCategories.set(`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`); } }
+}
+for (const { prefix, category, stages } of operationStages.filter((entry) => entry.category === "native-schematic-create")) {
+  for (const stage of stages) { for (const code of SCHEMATIC_CREATE_NATIVE_GUARD_CODES) { metadataGuardCategories.set(`${prefix}${stage}:${code}`, `${category}:${stage}:${code}`); } }
+}
+const schematicIdCategories = new Map<string, string>(SCHEMATIC_NATIVE_ID_METHODS.flatMap((method) =>
+  [...SCHEMATIC_NATIVE_ID_GUARD_CODES.map((code) => [`SCH_NATIVE_IDS_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
+      `native-schematic-ids:${method}:${label}`] as const)));
+const componentPropertyCategories = new Map<string, string>(
+  [...SCHEMATIC_COMPONENT_PROPERTY_GUARD_CODES.map((code) => [`SCH_COMPONENT_PROPERTIES_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${SCHEMATIC_COMPONENT_PROPERTY_METHOD}|stage=call|code=${code}|getter=none`,
+      `native-component-properties:${SCHEMATIC_COMPONENT_PROPERTY_METHOD}:${label}`] as const));
+const symbolPinCategories = new Map<string, string>(
+  [...SYMBOL_PIN_ENUMERATION_GUARD_CODES.map((code) => [`SYMBOL_PIN_ENUM_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${SYMBOL_PIN_ENUMERATION_METHOD}|stage=call|code=${code}|getter=none`,
+      `native-symbol-pins:${SYMBOL_PIN_ENUMERATION_METHOD}:${label}`] as const));
+
+const schematicTextCategories = new Map<string, string>(SCHEMATIC_TEXT_READ_METHODS.flatMap((method) =>
+  [...SCHEMATIC_TEXT_GUARD_CODES.map((code) => [`SCH_TEXT_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
+      `native-schematic-text:${method}:${label}`] as const)));
+
+const schematicNetGroupCategories = new Map<string, string>(SCHEMATIC_NETGROUP_READ_METHODS.flatMap((method) =>
+  [...SCHEMATIC_NETGROUP_GUARD_CODES.map((code) => [`SCH_NETGROUP_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
+      `native-schematic-netgroup:${method}:${label}`] as const)));
+
+const schematicSelectionCategories = new Map<string, string>(
+  [...SCHEMATIC_SELECTION_GUARD_CODES.map((code) => [`SCH_SELECTION_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${SCHEMATIC_SELECTION_METHOD}|stage=call|code=${code}|getter=none`,
+      `native-selection-replacement:${SCHEMATIC_SELECTION_METHOD}:${label}`] as const));
+
+const schematicPrimitiveCategories = new Map<string, string>(SCHEMATIC_PRIMITIVE_READ_METHODS.flatMap((method) =>
+  [...SCHEMATIC_PRIMITIVE_GUARD_CODES.map((code) => [`SCH_PRIMITIVE_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${method}|stage=call|code=${code}|getter=none`,
+      `native-schematic-primitive:${method}:${label}`] as const)));
+
+const configuredFontCategories = new Map<string, string>(
+  [...CONFIGURED_FONT_GUARD_CODES.map((code) => [`CONFIGURED_FONTS_${code}`, code] as const), ["native-error", "EXCEPTION"] as const]
+    .map(([code, label]) => [`Public SDK read could not produce a complete bounded observation; method=${CONFIGURED_FONT_METHOD}|stage=call|code=${code}|getter=none`,
+      `native-configured-fonts:${CONFIGURED_FONT_METHOD}:${label}`] as const));
 
 export function nativeFailureCategory(message: unknown): string | null {
   if (typeof message !== "string") { return null; }
+  const configuredFontCategory = message.length <= 288 ? configuredFontCategories.get(message) : undefined;
+  if (configuredFontCategory !== undefined) { return configuredFontCategory; }
+  const schematicPrimitiveCategory = message.length <= 288 ? schematicPrimitiveCategories.get(message) : undefined;
+  if (schematicPrimitiveCategory !== undefined) { return schematicPrimitiveCategory; }
+  const schematicSelectionCategory = message.length <= 288 ? schematicSelectionCategories.get(message) : undefined;
+  if (schematicSelectionCategory !== undefined) { return schematicSelectionCategory; }
+  const schematicNetGroupCategory = message.length <= 288 ? schematicNetGroupCategories.get(message) : undefined;
+  if (schematicNetGroupCategory !== undefined) { return schematicNetGroupCategory; }
+  const schematicTextCategory = message.length <= 288 ? schematicTextCategories.get(message) : undefined;
+  if (schematicTextCategory !== undefined) { return schematicTextCategory; }
+  const symbolPinCategory = message.length <= 288 ? symbolPinCategories.get(message) : undefined;
+  if (symbolPinCategory !== undefined) { return symbolPinCategory; }
+  const componentPropertyCategory = message.length <= 288 ? componentPropertyCategories.get(message) : undefined;
+  if (componentPropertyCategory !== undefined) { return componentPropertyCategory; }
+  const schematicIdCategory = message.length <= 256 ? schematicIdCategories.get(message) : undefined;
+  if (schematicIdCategory !== undefined) { return schematicIdCategory; }
+  const operationStageCategory = message.length <= 128 ? operationStageCategories.get(message) : undefined;
+  if (operationStageCategory !== undefined) { return operationStageCategory; }
+  const activationPreferenceCategory = message.length <= 128 ? activationPreferenceCategories.get(message) : undefined;
+  if (activationPreferenceCategory !== undefined) { return activationPreferenceCategory; }
+  const metadataGuardCategory = message.length <= 160 ? metadataGuardCategories.get(message) : undefined;
+  if (metadataGuardCategory !== undefined) { return metadataGuardCategory; }
   const uploadBarrierCategory = projectUploadBarrierFailureCategory(message);
   if (uploadBarrierCategory !== null) { return uploadBarrierCategory; }
   if (tabCodes.has(message)) { return `native-preflight:${message}`; }

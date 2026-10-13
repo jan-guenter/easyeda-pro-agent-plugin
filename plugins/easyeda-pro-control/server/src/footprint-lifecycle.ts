@@ -3,6 +3,7 @@ import type { NativeSourceSnapshot } from "./document-source.ts";
 import { footprintScopeSchema } from "./footprint-action.ts";
 import type { FootprintScope } from "./footprint-action.ts";
 import { buildNativeDocumentCloseFunction, buildNativeDocumentOpenFunction } from "./native-document-lifecycle.ts";
+import { PCB_NAVIGATION_PREFERENCE_GUARD } from "./pcb-navigation-preferences.ts";
 
 export function buildFootprintSourceGuard(expected: NativeSourceSnapshot, scopeInput: FootprintScope): string {
   const scope = footprintScopeSchema.parse(scopeInput);
@@ -50,7 +51,9 @@ await contextMatches();
  * discard the save result. The executor still checkpoints before close.
  */
 export function buildFootprintSaveCode(expected: NativeSourceSnapshot, scope: FootprintScope): string {
-  return `${buildFootprintSourceGuard(expected, scope)}
+  return `${PCB_NAVIGATION_PREFERENCE_GUARD}
+assertPcbNavigationPreferences();
+${buildFootprintSourceGuard(expected, scope)}
 const frames=[globalThis.window?.top],buses=[],seen=new Set();
 for(let index=0;index<frames.length;index++){
   if(frames.length>64)throw new Error('Footprint save frame bound exceeded');
@@ -65,6 +68,7 @@ if(!selected)throw new Error('Exact footprint save frame not found');
 await contextMatches();
 const finalSource=(await selected.messageBus.rpcCall('FileSource',{}))?.message;
 if(stable(parseFootprintSource(finalSource))!==stable(EXPECTED_SOURCE))throw new Error('Footprint changed before compiler save');
+assertPcbNavigationPreferences();
 const saved=(await selected.messageBus.rpcCall('pcb/saveCompiler',''))?.message;
 if(saved?.success!==true)throw new Error('Footprint compiler save was not acknowledged');
 await contextMatches();
@@ -74,7 +78,9 @@ return {ok:true,kind:'footprint-save-requested',saved:false,compilerAcknowledgme
 /** Called only after independent complete-project durable proof succeeds. */
 export function buildFootprintReopenCode(expected: NativeSourceSnapshot, scope: FootprintScope): string {
   const lifecycle = { projectUuid: scope.libraryUuid, documentUuid: scope.footprintUuid, documentType: 4 as const, metadataOwnerUuid: scope.metadataOwnerUuid };
-  return `${buildFootprintSourceGuard(expected, scope)}
+  return `${PCB_NAVIGATION_PREFERENCE_GUARD}
+assertPcbNavigationPreferences();
+${buildFootprintSourceGuard(expected, scope)}
 const editor=eda.dmt_EditorControl;
 if (typeof editor?.closeDocument !== 'function' || typeof editor?.openLibraryDocument !== 'function' || typeof editor?.activateDocument !== 'function') throw new Error('Footprint lifecycle editor API unavailable');
 const tabId=SCOPE.footprintUuid+'@'+SCOPE.libraryUuid;

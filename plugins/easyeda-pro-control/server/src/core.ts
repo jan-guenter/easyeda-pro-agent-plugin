@@ -505,6 +505,9 @@ function upstreamFailureAtLevel(value: UnknownRecord): string | null {
   if (message === "NATIVE_LIFECYCLE_CLOSE_TIMEOUT" || message === "NATIVE_LIFECYCLE_OPEN_TIMEOUT") {
     return "native-lifecycle-timeout";
   }
+  // The public close starts asynchronous teardown and returns early. A failed
+  // Acknowledgment, observer or cleanup after dispatch cannot prove it stopped.
+  if (message === "NATIVE_LIFECYCLE_CLOSE_UNSETTLED") { return "native-lifecycle-unsettled"; }
   const exactReaderCategory = exactReaderFailureCategory(message);
   if (exactReaderCategory !== null) { return exactReaderCategory; }
   const nativeCategory = nativeFailureCategory(message);
@@ -569,6 +572,9 @@ export function assertUpstreamReplySettled(result: unknown): void {
   }
   if (category === "native-lifecycle-timeout") {
     throw new Error("The native lifecycle deadline expired without proving execution ended [native-lifecycle-timeout;execution-unsettled].");
+  }
+  if (category === "native-lifecycle-unsettled") {
+    throw new Error("Native document close was dispatched without proving teardown completed [native-lifecycle-unsettled;execution-unsettled].");
   }
 }
 

@@ -38,8 +38,14 @@ void describe("typed library, lifecycle and export operation catalog", () => {
     assert.ok(source.requiredProofs.includes("active-library-document-matches-target"));
     assert.ok(source.beforeReads.some((read) => read.method === "getDocumentSource" && read.args.length === 0));
     const page = compileLibraryOperation({ id: "page", action: "document.page.create", schematic: { uuid: "schematic" } });
-    assert.deepEqual(page.call, { api: "dmt_Schematic", method: "createSchematicPage", args: [{ kind: "identity", target: { uuid: "schematic" } }] });
+    assert.deepEqual(page.call, { api: "native-project-message-bus", method: "/PrjDB/sheet/addData", args: [] });
     assert.ok(page.beforeReads.some((read) => read.method === "getAllSchematicPagesInfo"));
+    assert.deepEqual(page.documentTypes, [1, 3]); assert.equal(page.contextTransition, "preserve");
+    assert.deepEqual(page.inverse, { kind: "none", api: null });
+    assert.ok(page.requiredProofs.includes("original-native-created-identity"));
+    assert.ok(page.requiredProofs.includes("one-empty-page-addition-and-unchanged-complete-peer-hierarchy"));
+    assert.ok(!page.requiredProofs.includes("save-close-reopen-persistence"));
+    assert.ok(page.limitations.some((limit) => limit.includes("template/drawing-frame initialization and editor-open workflow are not invoked")));
     const save = compileLibraryOperation({ id: "save", action: "document.schematic.save", target: { uuid: "page" } });
     assert.deepEqual(save.call, { api: "sch_Document", method: "save", args: [] });
     assert.deepEqual(save.target, { identity: { uuid: "page" }, libraryUuid: null });

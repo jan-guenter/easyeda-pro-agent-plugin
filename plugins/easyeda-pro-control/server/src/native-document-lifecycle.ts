@@ -1,4 +1,5 @@
 import { DEVICE_NATIVE_HOST_GUARD } from "./device-runtime-guard.ts";
+import { PCB_NAVIGATION_PREFERENCE_GUARD } from "./pcb-navigation-preferences.ts";
 
 export interface NativeDocumentLifecycleScope {
   readonly projectUuid: string;
@@ -14,6 +15,7 @@ function scopeCode(scope: NativeDocumentLifecycleScope): string {
     throw new Error("Native lifecycle requires an exact document and project scope.");
   }
   return `${DEVICE_NATIVE_HOST_GUARD}
+${PCB_NAVIGATION_PREFERENCE_GUARD}
 const LIFE_SCOPE=${JSON.stringify(scope)},ui=globalThis.window?.top;
 if(!ui||typeof ui.setTimeout!=='function'||typeof ui.clearTimeout!=='function'||typeof bus.subscribe!=='function'||typeof ui.document?.getElementById!=='function')throw new Error('NATIVE_LIFECYCLE_OBSERVER_UNAVAILABLE');
 const projectMatches=async()=>{const project=await eda.dmt_Project.getCurrentProjectInfo();if(project?.uuid!==LIFE_SCOPE.projectUuid||host.currentProject?.projectId!==LIFE_SCOPE.projectUuid)throw new Error('NATIVE_LIFECYCLE_PROJECT_DRIFT');};
@@ -29,6 +31,7 @@ export function buildNativeDocumentCloseFunction(scope: NativeDocumentLifecycleS
   return `(async(tab)=>{
 ${scopeCode(scope)}
 if(typeof tab!=='string'||!tab||tab.length>512||!await contextMatches(tab))throw new Error('NATIVE_LIFECYCLE_CLOSE_CONTEXT');
+assertPcbLifecyclePreferences(LIFE_SCOPE,tab);
 const modelTab=(LIFE_SCOPE.documentType===1||LIFE_SCOPE.documentType===2)?(await bus.rpcCall('getModelTabId',tab))?.message:tab;
 if(modelTab!==tab)throw new Error('NATIVE_LIFECYCLE_SHARED_MODEL');
 const oldElement=ui.document.getElementById('frame_'+modelTab),tag=LIFE_SCOPE.documentType<=2?'DIV':'IFRAME';
@@ -40,6 +43,7 @@ try{
   if(typeof subscription?.cancel!=='function')throw new Error('NATIVE_LIFECYCLE_SUBSCRIPTION');
   deadline=ui.setTimeout(()=>rejectClose(new Error('NATIVE_LIFECYCLE_CLOSE_TIMEOUT')),15000);
   if(!await contextMatches(tab))throw new Error('NATIVE_LIFECYCLE_CLOSE_CONTEXT');
+  assertPcbLifecyclePreferences(LIFE_SCOPE,tab);
   dispatched=true;
   if(await eda.dmt_EditorControl.closeDocument(tab)!==true)throw new Error('NATIVE_LIFECYCLE_CLOSE_ACK');
   await completion;
@@ -61,6 +65,7 @@ export function buildNativeDocumentOpenFunction(scope: NativeDocumentLifecycleSc
 ${scopeCode(scope)}
 if(typeof tab!=='string'||!tab||tab.length>512||(await bus.rpcCall('isOpenTab',[tab]))?.message!==false)throw new Error('NATIVE_LIFECYCLE_OPEN_TARGET_PRESENT');
 await projectMatches();
+if([3,4].includes(LIFE_SCOPE.documentType))assertPcbNavigationPreferences();
 let rejectDeadline,deadline,pollTimer,readinessSamples=0;
 const expired=new Promise((resolve,reject)=>{rejectDeadline=reject;});expired.catch(()=>{});
 const bounded=promise=>Promise.race([promise,expired]);
@@ -68,17 +73,19 @@ const pause=()=>new Promise(resolve=>{pollTimer=ui.setTimeout(()=>{pollTimer=und
 const frameReady=()=>{const frame=ui.document.getElementById('frame_'+tab);return Boolean(frame&&frame.isConnected===true&&frame.tagName===(LIFE_SCOPE.documentType<=2?'DIV':'IFRAME')&&frame.getAttribute('c_dbid')===tab&&frame.getAttribute('c_doctype')===String(LIFE_SCOPE.documentType));};
 try{
   deadline=ui.setTimeout(()=>rejectDeadline(new Error('NATIVE_LIFECYCLE_OPEN_TIMEOUT')),15000);
+  if([3,4].includes(LIFE_SCOPE.documentType))assertPcbNavigationPreferences();
   const opened=await bounded(LIFE_SCOPE.documentType===2?eda.lib_Symbol.openInEditor(LIFE_SCOPE.documentUuid,LIFE_SCOPE.projectUuid):
     LIFE_SCOPE.documentType===4?eda.dmt_EditorControl.openLibraryDocument(LIFE_SCOPE.projectUuid,'4',LIFE_SCOPE.documentUuid):
     eda.dmt_EditorControl.openDocument(LIFE_SCOPE.documentUuid));
   if(opened!==tab)throw new Error('NATIVE_LIFECYCLE_OPEN_ACK');
+  if([3,4].includes(LIFE_SCOPE.documentType))assertPcbNavigationPreferences();
   let activated;
   for(let attempt=0;attempt<300;attempt++){
     await bounded(projectMatches());
     const isOpen=(await bounded(bus.rpcCall('isOpenTab',[tab])))?.message;
     if(isOpen!==true&&isOpen!==false)throw new Error('NATIVE_LIFECYCLE_NEW_FRAME');
     if(isOpen===true&&frameReady()){
-      if(activated===undefined){activated=await bounded(eda.dmt_EditorControl.activateDocument(tab));if(typeof activated!=='boolean')throw new Error('NATIVE_LIFECYCLE_ACTIVATE_CONTEXT');}
+      if(activated===undefined){if([3,4].includes(LIFE_SCOPE.documentType))assertPcbNavigationPreferences();activated=await bounded(eda.dmt_EditorControl.activateDocument(tab));if(typeof activated!=='boolean')throw new Error('NATIVE_LIFECYCLE_ACTIVATE_CONTEXT');}
       if(await bounded(contextMatches(tab))){
         readinessSamples++;
         if(readinessSamples===2)return {profile:'easyeda-pro-control.native-document-open.v1',tabId:tab,newFrameReady:true,exactContext:true,readinessSamples,activated};

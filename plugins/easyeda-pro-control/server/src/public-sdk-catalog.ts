@@ -1,0 +1,89 @@
+import { createHash } from "node:crypto";
+import { z } from "zod";
+import { publicSdkReadDescriptors, publicSdkReadRequestSchema } from "./public-sdk-read.ts";
+import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
+import { SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
+import { SYMBOL_PIN_ENUMERATION_METHOD } from "./symbol-pin-enumeration.ts";
+import { isSchematicTextReadMethod } from "./schematic-text-read.ts";
+import { isSchematicNetGroupReadMethod } from "./schematic-netgroup-read.ts";
+import { PCB_NET_MEMBERSHIP_METHOD } from "./pcb-net-membership.ts";
+import { PCB_PRIMITIVE_TYPE_METHOD } from "./pcb-primitive-type-read.ts";
+// oxlint-disable-next-line import/max-dependencies -- Each fixed native reader supplies its own authority classification.
+import { PCB_ACTIVE_LAYER_METHOD } from "./pcb-active-layer-read.ts";
+import { SCHEMATIC_SELECTION_METHOD } from "./schematic-selection-read.ts";
+import { PCB_SELECTED_OBJECTS_METHOD } from "./pcb-selected-objects.ts";
+import { isPcbSourceObjectsMethod } from "./pcb-source-objects.ts";
+import { getSdkReadValidationHistory } from "./sdk-read-validation-history.ts";
+
+export const publicSdkCatalogQuerySchema = z.object({
+  method: z.string().min(1).max(160).optional(),
+  search: z.string().min(1).max(100).optional(),
+  includeSchemas: z.boolean().default(false),
+  offset: z.number().int().min(0).max(10_000).default(0),
+  limit: z.number().int().min(1).max(100).default(25),
+}).strict();
+export const publicSdkValidationQuerySchema = z.object({ request: z.unknown() }).strict();
+const MAX_ENTRIES_BYTES = 196_608;
+
+/** This uses the execution module's descriptors and parser, not a second schema. */
+export function queryPublicSdkReads(input: unknown = {}): Record<string, unknown> {
+  const query = publicSdkCatalogQuerySchema.parse(input);
+  const all = publicSdkReadDescriptors();
+  const search = query.search?.toLowerCase();
+  const matched = all.filter((entry) => (query.method === undefined || entry.path === query.method) &&
+    (search === undefined || entry.path.toLowerCase().includes(search)));
+  const entries: Record<string, unknown>[] = [];
+  for (const entry of matched.slice(query.offset, query.offset + query.limit)) {
+    const { inputSchema, ...descriptor } = entry;
+    const result = { ...descriptor, liveValidation: "current-generation-unclaimed;historical-cases-separate",
+      historicalValidation: getSdkReadValidationHistory(entry.path), ...(query.includeSchemas ? { inputSchema,
+      inputSchemaSha256: createHash("sha256").update(JSON.stringify(inputSchema)).digest("hex") } : {}) };
+    if (Buffer.byteLength(JSON.stringify([...entries, result]), "utf8") > MAX_ENTRIES_BYTES) {
+      if (entries.length === 0) { throw new Error("Individual SDK-read schema exceeds the inline catalog budget."); }
+      break;
+    }
+    entries.push(result);
+  }
+  const nextOffset = query.offset + entries.length;
+  let authority = "public-sdk-observation-not-complete-design-proof";
+  if (matched.some((entry) => entry.implementation.kind === "native-task-equivalent")) {
+    authority = matched.every((entry) => entry.implementation.kind === "native-task-equivalent")
+      ? "native-task-observation-not-complete-source-connectivity-or-persistence-proof"
+      : "mixed-sdk-observations-not-complete-source-connectivity-or-persistence-proof";
+    if (matched.every((entry) => isSchematicNativeIdMethod(entry.path))) { authority = "native-id-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    if (matched.every((entry) => entry.path === SCHEMATIC_COMPONENT_PROPERTY_METHOD)) { authority = "native-property-name-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    if (matched.every((entry) => entry.path === SYMBOL_PIN_ENUMERATION_METHOD)) { authority = "native-pin-getter-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    if (matched.every((entry) => isSchematicTextReadMethod(entry.path))) { authority = "native-text-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    if (matched.every((entry) => isSchematicNetGroupReadMethod(entry.path))) { authority = "native-netgroup-state-observation-not-complete-source-connectivity-or-persistence-proof"; }
+    if (matched.every((entry) => entry.path === PCB_NET_MEMBERSHIP_METHOD)) { authority = "native-filtered-net-membership-not-connectivity-or-persistence-proof"; }
+    if (matched.every((entry) => entry.path === PCB_PRIMITIVE_TYPE_METHOD)) { authority = "native-pcb-identity-type-not-public-method-parity"; }
+    if (matched.every((entry) => entry.path === PCB_SELECTED_OBJECTS_METHOD)) { authority = "native-selected-source-objects-not-public-instance-or-persistence-proof"; }
+    if (matched.every((entry) => isPcbSourceObjectsMethod(entry.path))) { authority = "native-explicit-source-objects-not-public-instance-or-persistence-proof"; }
+    if (matched.every((entry) => entry.path === PCB_ACTIVE_LAYER_METHOD)) { authority = "native-active-layer-with-public-fields-not-public-method-parity"; }
+    if (matched.every((entry) => entry.path === SCHEMATIC_SELECTION_METHOD)) { authority = "public-replacement-selection-observation-not-complete-ownership-source-or-persistence-proof"; }
+  }
+  return { schema: "easyeda-pro-control.public-sdk-read-catalog.v1", offline: true, executionAuthorized: false,
+    tool: "easyeda_control_sdk_read", total: all.length, matched: matched.length, entries,
+    offset: query.offset, returned: entries.length, nextOffset: nextOffset < matched.length ? nextOffset : null,
+    limits: { maxEntriesBytes: MAX_ENTRIES_BYTES },
+    authority,
+    liveValidation: "Per-method evidence is separate; offline tests do not establish connected validation.",
+  };
+}
+
+export function validatePublicSdkArguments(input: unknown): Record<string, unknown> {
+  const { request } = publicSdkValidationQuerySchema.parse(input);
+  const result = publicSdkReadRequestSchema.safeParse(request);
+  if (result.success) {
+    const encoded = JSON.stringify(result.data);
+    const bytes = Buffer.byteLength(encoded, "utf8");
+    return { valid: true, offline: true, executionAuthorized: false, nativePreflightPerformed: false,
+      normalizedRequestBytes: bytes, normalizedRequestSha256: createHash("sha256").update(encoded).digest("hex"),
+      ...(bytes <= MAX_ENTRIES_BYTES ? { normalizedRequest: result.data } : { normalizedRequestOmitted: true }) };
+  }
+  return { valid: false, offline: true, executionAuthorized: false, nativePreflightPerformed: false,
+    issueCount: result.error.issues.length,
+    issues: result.error.issues.slice(0, 32).map((issue) => ({ code: issue.code,
+      path: issue.path.slice(0, 16).map((part) => String(part).slice(0, 256)),
+      message: issue.message.slice(0, 1024) })) };
+}

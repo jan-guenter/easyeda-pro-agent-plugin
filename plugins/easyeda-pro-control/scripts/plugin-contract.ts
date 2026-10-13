@@ -2,8 +2,11 @@ import { z } from "zod";
 
 export const FACADE_TOOL_NAMES = [
   "easyeda_control_api",
+  "easyeda_control_sdk_read",
   "easyeda_control_status", "easyeda_control_discover", "easyeda_control_context",
   "easyeda_control_design", "easyeda_control_library", "easyeda_control_runtime", "easyeda_control_native_ui", "easyeda_control_check",
+  "easyeda_control_validate_closed_symbol",
+  "easyeda_control_symbol_metadata",
   "easyeda_control_exact_read", "easyeda_control_read", "easyeda_control_read_batch", "easyeda_control_execute",
   "easyeda_control_capture", "easyeda_control_export", "easyeda_control_plan", "easyeda_control_apply",
   "easyeda_control_verify", "easyeda_control_rollback", "easyeda_control_save_reopen", "easyeda_control_checkpoint",

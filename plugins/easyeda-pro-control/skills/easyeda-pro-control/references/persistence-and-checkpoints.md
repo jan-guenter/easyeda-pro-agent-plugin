@@ -6,7 +6,18 @@ Use `easyeda_control_design` commit after an exact applied-unsaved result. It re
 
 A supported recovery that composes a prior journal's delayed inverse is separately reported as `isolatedTransaction:false`, with complete proofs for both transactions and original hashes. It is not an unchanged-collateral result; see [failure-recovery.md](failure-recovery.md).
 
-EasyEDA can acknowledge its cache write before a queued project-worker write reaches `.eprj2`. Typed transactions await the native project upload queue before their baseline checkpoints and after Save, before checkpointing or closing. The receipt proves only that already scheduled writes settled. It neither saves current editor changes nor proves the requested values persisted. Complete durable comparison remains mandatory. Rollback also drains scheduled writes and checks a fresh durable checkpoint before it can become terminal; an exact live inverse alone is insufficient.
+EasyEDA can acknowledge its cache write before a queued project-worker write reaches `.eprj2`. Typed transactions await the native project upload queue before their baseline checkpoints and after Save, before checkpointing or closing. The pinned wait covers task1 only. It does not drain future timers, task2 structure writes or every native subscriber. It neither saves current editor changes nor proves the requested values persisted. Complete durable comparison remains mandatory. Rollback uses the same limited upload wait and a fresh durable checkpoint; an exact live inverse alone is insufficient.
+
+Symbol/page/container META writes can schedule a debounced `project_structures`
+update outside that wait. A complete decoded document comparison does not compare
+those SQL rows, and equality with a newly captured checkpoint is only a
+point-in-time stability check. The affected eight library routes are currently
+blocked. Native Save also republishes pending schematic-page, symbol and PCB
+geometry without its pending flag and reaches the same scheduler. Those design
+transactions are blocked too; see [the exact scope](libraries-and-eco.md#structure-write-completion-restriction).
+Retain historical proofs with their original scope. Do not reinterpret
+`scheduledWritesSettled:true`, stable polls or repeated Save as a structure-job
+completion witness.
 
 The source export and durable storage need not encode unchanged defaults identically. Scoped baseline targets must match, every previously persisted unchanged record remains invariant, and each intended changed record/field must persist. The generic verifier additionally admits validated target-document client/updateTime/version bookkeeping. Document-specific adapters separately prove and report narrowly supported encoding conversions, including the symbol profile described in [libraries-and-eco.md](libraries-and-eco.md); they retain raw hashes and do not permit unrelated document changes. See [safety-state-machine.md](safety-state-machine.md) for the full proof boundary.
 
@@ -25,6 +36,30 @@ Native Close can acknowledge before its asynchronous cleanup ends. The lifecycle
 For a saved symbol/footprint edit whose reopen failed, design reconciliation can establish `saved-awaiting-reopen` from hash-verified phase artifacts and recomputed complete durable proofs. A subsequent commit reuses the original Save evidence and performs only the missing navigation and final verification. A retained successful reopen acknowledgment is reused too. Neither the `saved` flag nor the old persistence result substitutes for decoding and rechecking the checkpoints. See [failure-recovery.md](failure-recovery.md#saved-library-edit-awaiting-reopen).
 
 ## Evidence artifacts
+
+Sealed flat display/wire transactions retain the raw observation already checked
+at commit, retained-Save reconciliation, baseline reconciliation and rollback.
+The terminal artifact's `flatLifecycleObservation` descriptor identifies a
+separate `flat-lifecycle-observation.v1` artifact, capped at 16 MiB. It binds the
+original operation/plan/profile, current context and source/native hashes, raw
+observation, topology proof and observer checkpoint. Imported-header evidence is
+included when present; decoded whole-project history is not duplicated.
+
+The observer checkpoint is not the later terminal checkpoint. An observation
+can survive a subsequent persistence failure without proving completion. Inspect
+the terminal state and complete durable proof separately. Page the descriptor
+through the managed artifact reader; transaction summaries do not inline raw
+observations. Its byte offsets can split UTF-8 characters. If the initial page
+ends with U+FFFD or its re-encoded byte count differs from `bytesRead`, reduce
+the requested length by one and reread. Continue reducing only while the byte
+counts differ, with at most three reductions total. Stop at the first byte-exact
+retry even if it ends with U+FFFD: that can be a genuine complete character just
+before the split. Advance by the accepted `bytesRead`, then verify the complete
+reconstructed hash. Matching byte counts on the initial read cannot detect every
+four-byte character split; a failed hash is not acceptable evidence.
+Older journals may lack this artifact. Do not fabricate it or
+replay a completed transaction to fill the gap. This retention change adds no
+EasyEDA reads, Save calls, execution authority or new connected validation.
 
 Evidence result/receipt pairs and phase artifacts are created exclusively and never overwritten. Operation journals are different: each self-hashed journal is replaced atomically as its state advances. Reserve absolute, distinct evidence paths below the control data directory before dispatch. Bind each result to:
 
@@ -48,11 +83,70 @@ Draft export bytes are published through a file-descriptor-bound managed parent,
 
 `easyeda_control_checkpoint` can create or verify a checkpoint only for the exact active `.eprj2` project database. Creation uses the descriptor-bound Node SQLite backup API, then runs `quick_check`, creates a deterministic logical dump, and hashes both database and dump. A `checkpoint.v2` receipt binds the source and checkpoint device, inode, creation time, change time, path and hashes. Path replacement or a later hard-link event invalidates that identity even when bytes and the logical dump still match. Older `checkpoint.v1` receipts fail closed. Checkpoint output is confined to either the active project's sibling `backups/` directory or the facade-managed `checkpoints/` directory. Arbitrary source and output paths are rejected.
 
+After normal application exit, that MCP tool cannot verify a closed project:
+its active-context guard still applies. For an already authorized exact project
+and retained receipt, the maintained offline `scripts/checkpoint.ts verify
+RECEIPT_PATH` command checks the same file identities, hashes and logical dumps
+without opening EasyEDA. Run it from the reviewed repository checkout with its
+locked dependencies installed, using the pinned Node runtime. Marketplace
+packages bundle the MCP runtime but do not include the dependencies needed to
+run these standalone TypeScript helpers. Do not patch the installed cache or
+remove the MCP context guard to work around a missing dependency. This grants no
+restoration, new project access or transaction-recovery authority.
+
 Checkpoint receipts have a 1 MiB whole-file read limit. After receipt publication or verification hashing, the facade rechecks the source pathname, file metadata and SQLite `data_version`. This catches both ordinary database writes and WAL-only commits that occurred after the source snapshot. Verification also rechecks the checkpoint file after hashing. A checkpoint is still a point-in-time snapshot: no check locks the editor against a later commit. Any operation that depends on current baseline equality must reverify immediately before its dispatch boundary.
 
 Typed apply creates and verifies its pre-checkpoint before dispatch. It checks scoped live target fields against persisted records without discarding the document or claiming every unchanged exported default proves a clean editor. Reverify durable baseline before saving. Commit compares whole durable deltas, so unrelated unsaved work cannot be accepted as intended collateral merely because it was already present in live source.
 
 A checkpoint is evidence and a recovery source. It is not proof that the active document contains the intended edit. The reopened audit supplies that proof.
+
+The MCP checkpoint route, including `verify`, currently needs the authenticated
+bridge and active-project context to authorize its source path. After normal
+application close it can refuse before touching files. Do not reopen a project
+or remove that guard just to hide the refusal. The maintained standalone
+`scripts/checkpoint.ts verify RECEIPT_PATH` can verify closed files without the
+bridge, but has no MCP active-project policy: first review the exact previously
+authorized receipt, source path and scope. An arbitrary receipt is not source
+authority. Retain the refusal and separate offline result. Offline success does
+not establish a Save, live recovery or absence of unsaved editor state.
+
+## Imported library provenance
+
+Imported SYMBOL/FOOTPRINT atom headers may contain `firstTicket`. It is distinct
+from the physical ticket/client used to choose the latest record body, and
+explicit zero is not a missing field. Never remove it, infer an original client
+or reinterpret it as schematic display order to make a decoder pass.
+
+The source candidate preserves every atom occurrence in an affected library
+document under a checkpoint-bound proof, including tombstones, raw header/body
+encoding hashes and field presence. Existing-project navigation and the flat
+diagnostic still require complete SQLite invariance. Default history/source
+readers and legacy flat v1 remain strict; the parser change does not authorize
+library edits, DEVICE changes, placement, wiring or a generic transaction.
+
+The sealed flat display-only v2 workflow compares the original immutable
+checkpoint with fresh checkpoint evidence at each lifecycle boundary. It keeps
+the complete peer membership and semantic records unchanged and separately
+compares ordered imported-header commitments. Different backup file bytes can
+be bound independently, but altered raw encodings, reordered/compacted history,
+removed tombstones or extra duplicate occurrences are peer changes and refuse.
+Stop and inspect the original journal; do not normalize the proof or replace its
+baseline to admit them. Save and inverse attempts remain one-shot.
+
+Compact summaries are retained evidence, not authority. They must match fresh
+maintained proofs in full, including their checkpoint binding and digests.
+Cloning or deserializing a proof cannot supply its internal fresh-reader brand;
+recovery rereads the verified immutable checkpoint. Hash commitments do not
+authenticate an arbitrarily fabricated checkpoint. No public argument enables
+this parser option or supplies a v2 seal.
+
+Installed `220050` subsequently passed one sealed three-segment wire
+forward/reverse pair with 12 documents, 11 peers and 66 imported-header
+occurrences preserved. This is not general library-editing or display-operation
+validation. Its final raw flat observations were checked but not retained; the
+new retention code does not retroactively strengthen those historical cases or
+validate a later generation. Keep the exact case boundaries in the
+[schematic guide](schematic.md#single-page-wire-rerouting).
 
 ## Restore boundary
 

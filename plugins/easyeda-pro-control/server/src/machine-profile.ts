@@ -152,12 +152,34 @@ export interface VerifiedMachineNode {
   readonly close: () => Promise<void>;
 }
 
-async function retainNodeIdentity(nodeExecutable: string, expectedHash?: string): Promise<VerifiedMachineNode> {
+interface KernelNodeIdentity {
+  readonly file: FileHandle;
+  readonly information: Stats;
+  readonly nodeSha256: string;
+  readonly nodeExecutable: string;
+}
+
+async function assertKernelNodeCurrent(kernel: KernelNodeIdentity): Promise<void> {
+  if (await realpath("/proc/self/exe") !== kernel.nodeExecutable ||
+      await nodeDescriptorHash(kernel.file, kernel.information) !== kernel.nodeSha256) {
+    throw new MachineProfileError("machine-current-node-kernel-changed");
+  }
+}
+
+async function retainNodeIdentity(
+  nodeExecutable: string,
+  expectedHash?: string,
+  kernel?: KernelNodeIdentity,
+): Promise<VerifiedMachineNode> {
   const before = await regularFile(nodeExecutable, NODE_MAX_BYTES, true);
   // oxlint-disable-next-line eslint/no-bitwise -- Retain the checked executable without following a replaced leaf symlink.
   const file = await open(nodeExecutable, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
   const descriptorPath = `/proc/${process.pid}/fd/${file.fd}`;
   try {
+    if (kernel !== undefined && (!sameNodeFile(kernel.information, before) ||
+        !sameNodeFile(kernel.information, await file.stat()))) {
+      throw new MachineProfileError("machine-current-node-kernel-identity-mismatch");
+    }
     const nodeSha256 = await nodeDescriptorHash(file, before);
     if (expectedHash !== undefined && nodeSha256 !== expectedHash) {
       // An unadmitted replacement must never execute, even for the version probe.
@@ -169,6 +191,7 @@ async function retainNodeIdentity(nodeExecutable: string, expectedHash?: string)
         throw new MachineProfileError("machine-node-changed");
       }
       await assertSelfSoftCoreLimitZero();
+      if (kernel !== undefined) { await assertKernelNodeCurrent(kernel); }
       // Probe and final launch both resolve this same still-open executable descriptor.
       const result = await execFileAsync(descriptorPath, ["--version"], {
         env: { LANG: "C", LC_ALL: "C" }, timeout: 5000, maxBuffer: 1024,
@@ -178,6 +201,7 @@ async function retainNodeIdentity(nodeExecutable: string, expectedHash?: string)
           !sameNodeFile(before, await regularFile(nodeExecutable, NODE_MAX_BYTES, true))) {
         throw new MachineProfileError("machine-node-version-or-identity-mismatch");
       }
+      if (kernel !== undefined) { await assertKernelNodeCurrent(kernel); }
     };
     const assertCurrent = async (): Promise<void> => {
       if (await nodeDescriptorHash(file, before) !== nodeSha256) {
@@ -206,6 +230,54 @@ export function openVerifiedMachineNode(runtimeInput: MachineProfile["runtime"])
   const runtime = machineProfileSchema.shape.runtime.parse(runtimeInput);
   assertSupportedHost();
   return retainNodeIdentity(runtime.nodeExecutable, runtime.nodeSha256);
+}
+
+async function closeCurrentProcessNode(file: FileHandle, node: VerifiedMachineNode | undefined): Promise<void> {
+  // Attempt both owned closes even if the first fails; a cleanup failure refuses.
+  const closed = await Promise.allSettled([
+    ...(node === undefined ? [] : [node.close()]),
+    file.close(),
+  ]);
+  const failures: unknown[] = [];
+  for (const result of closed) { if (result.status === "rejected") { failures.push(result.reason); } }
+  if (failures.length > 0) { throw new AggregateError(failures, "machine-current-node-close-failed"); }
+}
+
+/**
+ * Derive a SQL runtime from the executable already running this Linux process.
+ * Only fixed procfs records and that executable are read; no machine profile,
+ * application installation, environment variable or project is consulted.
+ * The identity is observed before cleanup, not guaranteed current after it.
+ * This returns data, not a retained capability: each SQL child must use the
+ * existing descriptor/hash revalidation. Future hostile inode writes remain
+ * outside this observational guarantee.
+ */
+export async function currentProcessSqlRuntime(): Promise<Readonly<MachineProfile["runtime"]>> {
+  assertSupportedHost();
+  if (process.versions.node !== MACHINE_NODE_VERSION) {
+    throw new MachineProfileError("machine-current-node-version-mismatch");
+  }
+  const nodeExecutable = pathSchema.parse(process.execPath);
+  // Follow this fixed kernel-provided procfs link, never a caller-selected path.
+  const file = await open("/proc/self/exe", fsConstants.O_RDONLY);
+  let node: VerifiedMachineNode | undefined;
+  try {
+    const information = await file.stat();
+    if (!information.isFile() || information.size === 0 || information.size > NODE_MAX_BYTES ||
+        information.mode % 512 !== 0o755 || Math.floor(information.mode / 512) % 8 !== 0 ||
+        (information.uid !== 0 && information.uid !== process.getuid?.()) ||
+        await realpath("/proc/self/exe") !== nodeExecutable) {
+      throw new MachineProfileError("machine-current-node-kernel-invalid");
+    }
+    const kernel: KernelNodeIdentity = Object.freeze({
+      file, information, nodeExecutable, nodeSha256: await nodeDescriptorHash(file, information),
+    });
+    node = await retainNodeIdentity(nodeExecutable, kernel.nodeSha256, kernel);
+    await node.assertCurrent();
+    return node.runtime;
+  } finally {
+    await closeCurrentProcessNode(file, node);
+  }
 }
 
 async function nodeIdentity(nodeExecutable: string): Promise<MachineProfile["runtime"]> {

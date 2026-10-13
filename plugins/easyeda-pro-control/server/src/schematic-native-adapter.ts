@@ -112,7 +112,12 @@ const schCaptureComponent = (model) => {
     if (pins.length >= 4096 || typeof item.id !== "string") throw new Error("SCH_NATIVE_PIN_INVALID");
     const helper = schDoc.shapeManager.modelHelpers.pin;
     if (!helper || typeof helper.getSchPinNet !== "function") throw new Error("SCH_NATIVE_PIN_NET_MISSING");
-    const net = helper.getSchPinNet(item);
+    // The pinned getter dereferences the compiled symbol/pin entry. A placement
+    // preview can be missing there. Retain a fixed failure stage, never invoke
+    // compilation, filter the preview or substitute an empty net on failure.
+    let net;
+    try { net = helper.getSchPinNet(item); }
+    catch { throw new Error("SCH_NATIVE_PIN_NET_EXCEPTION"); }
     if (typeof net !== "string") throw new Error("SCH_NATIVE_PIN_NET_INVALID");
     const noConnect = item.noConnect;
     pins.push({ id: item.id, body: schBody(item), attributes: schAttributes(item), net, noConnect: noConnect ? { id: noConnect.id, value: schScalar(noConnect.value), body: schBody(noConnect) } : null });

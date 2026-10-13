@@ -1,7 +1,8 @@
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { controlDataDirectory, controlRootCapability, listOperationStates, loadOperation, readArtifact, updateOperation, verifyEvidenceReceipt, writePhaseArtifact } from "./artifacts.ts";
+import { controlDataDirectory, controlRootCapability, loadOperation, readArtifact, updateOperation, verifyEvidenceReceipt, writePhaseArtifact } from "./artifacts.ts";
+import { listQualifiedOperationStates } from "./closed-symbol-terminal-admission.ts";
 import type { OperationJournal } from "./artifacts.ts";
 import { createCheckpoint, verifyCheckpoint } from "./checkpoint.ts";
 import { canonicalJson, isRecord, isTerminalOperation, normalizeEasyedaProjectPath, sha256Json } from "./core.ts";
@@ -35,7 +36,7 @@ export type NativeCloseRecoveryRequest = z.infer<typeof nativeCloseRecoveryReque
 interface CaptureProof { readonly bounds: [number, number, number, number]; readonly imageSha256: string; readonly receiptSha256: string; readonly createdAt: string }
 interface SavedEvidence { readonly beforeReceipt: unknown; readonly currentCheckpoint: unknown; readonly durableChanged: boolean }
 export interface NativeCloseRecoveryDependencies {
-  readonly list?: typeof listOperationStates; readonly load?: typeof loadOperation; readonly update?: typeof updateOperation; readonly write?: typeof writePhaseArtifact;
+  readonly list?: typeof listQualifiedOperationStates; readonly load?: typeof loadOperation; readonly update?: typeof updateOperation; readonly write?: typeof writePhaseArtifact;
   readonly capture?: (request: NativeCloseRecoveryRequest) => Promise<CaptureProof>;
   readonly checkpoint?: (journal: OperationJournal) => Promise<SavedEvidence>;
 }
@@ -89,7 +90,7 @@ async function preserveSavedEvidence(journal: OperationJournal): Promise<SavedEv
  */
 export async function discardCloseConfirmation(input: unknown, controller: Pick<WindowsNativeUiController, "runRecoveryCloseClick">, dependencies: NativeCloseRecoveryDependencies = {}): Promise<Record<string, unknown>> {
   const request = nativeCloseRecoveryRequestSchema.parse(input);
-  const operations = await (dependencies.list ?? listOperationStates)();
+  const operations = await (dependencies.list ?? listQualifiedOperationStates)();
   const pending = operations.filter((entry) => !isTerminalOperation(entry));
   if (pending.length !== 1 || pending[0]?.["operationId"] !== request.operationId) { throw new Error("Discard-close recovery requires exactly its one pending operation."); }
   const journal = await (dependencies.load ?? loadOperation)(request.operationId);

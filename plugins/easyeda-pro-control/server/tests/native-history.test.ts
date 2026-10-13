@@ -88,6 +88,17 @@ void test("authenticates and decodes native GCM plus gzip", async () => {
   assert.equal(await decodeNativeHistoryChunk({ historyUuid: HISTORY, keyHex: KEY, dataBase64: encrypt(source) }), source);
 });
 
+void test("closed-container raw occurrence evidence comes only from an authenticated immutable checkpoint opt-in", async (t) => {
+  const input = await fixture(t), plain = await readNativeHistoryCheckpoint(input);
+  const observed = await readNativeHistoryCheckpoint({ ...input, documentRecordHistory: "preserve" });
+  assert.ok(plain.documents.every((document) => document.documentRecordHistory === undefined));
+  assert.equal(observed.semanticSha256, plain.semanticSha256);
+  const value = observed.documents[0]?.documentRecordHistory; assert.ok(value);
+  assert.equal(value.checkpointSha256, input.expectedSha256); assert.equal(value.documentUuid, DOCUMENT);
+  assert.equal(value.recordCount, 4); assert.equal(value.maximumTicket, 2);
+  await assert.rejects(readNativeHistoryCheckpoint({ ...input, expectedSha256: "0".repeat(64), documentRecordHistory: "preserve" }), /checkpoint-hash/u);
+});
+
 void test("rejects wrong UUID, key, tag and noncanonical base64 without exposing input", async () => {
   const data = encrypt(head());
   const tampered = Buffer.from(data, "base64");

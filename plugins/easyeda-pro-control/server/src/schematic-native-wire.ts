@@ -1,3 +1,4 @@
+/* oxlint-disable import/max-dependencies -- The existing fixed wire writer additionally composes its independently sealed flat graph and generated-marker guards. */
 import { canonicalJson, sha256Json } from "./core.ts";
 import type { NativeSourceDelta, NativeSourceObject, NativeSourceSnapshot } from "./document-source.ts";
 import { compareDocumentSources, parseDocumentSource } from "./document-source.ts";
@@ -9,6 +10,10 @@ import { correlateSchematicNativeSource, prepareSchematicSourceOperation, verify
 import { schematicNewWireOrders } from "./schematic-wire-order.ts";
 import { alignSchematicLifecyclePair } from "./schematic-lifecycle.ts";
 import type { SchematicLifecycleChange } from "./schematic-lifecycle.ts";
+import { assertFlatDisplayRuntimeAction, buildFlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
+import type { FlatDisplayRuntimeGuard } from "./flat-display-runtime.ts";
+import { isFlatWireBinding } from "./flat-transaction-binding.ts";
+import { buildFlatWireMarkerGuard, flatWireMarkerSpecification } from "./flat-wire-markers.ts";
 
 export const SCHEMATIC_NATIVE_WIRE_PROFILE = "easyeda-pro-control.schematic-native-wire.v2";
 // Allocation is immutable across proof revisions.
@@ -88,7 +93,11 @@ function nativeWireAttributeOrders(before: NativeSourceSnapshot, geometry: Nativ
  * reproduce this exact expected source and descriptor during reconciliation.
  * This descriptor is reproducible data, never an execution or recovery token.
  */
-export function buildSchematicNativeWireAdapter(input: unknown, sourceInput: NativeSourceSnapshot, nativeInput: unknown): SchematicNativeWireAdapter {
+export function buildSchematicNativeWireAdapter(input: unknown, sourceInput: NativeSourceSnapshot, nativeInput: unknown, flatGuard?: FlatDisplayRuntimeGuard): SchematicNativeWireAdapter {
+  if (flatGuard !== undefined) {
+    if (!isFlatWireBinding(flatGuard.binding)) { throw new Error("Native wire requires its own sealed flat reroute profile."); }
+    assertFlatDisplayRuntimeAction(flatGuard, input);
+  }
   const operation = schematicOperationSchema.parse(input);
   if (operation.action !== "sch.wire.modify" || operation.documentType !== 1 || !("primitiveId" in operation.target) ||
       !same(Object.keys(operation.patch).toSorted(), ["color", "line", "lineType", "lineWidth"])) {
@@ -100,7 +109,8 @@ export function buildSchematicNativeWireAdapter(input: unknown, sourceInput: Nat
   const wireId = operation.target.primitiveId;
   const subtree = before.objects.filter((row) => row.id === wireId || row.body["lineGroup"] === wireId || row.body["parentId"] === wireId);
   const group = subtree.find((row) => row.id === wireId);
-  if (group?.type !== "WIRE" || group.body["locked"] !== false ||
+  // Pinned native BaseModel retains undefined locks; JSON omits them. Keep omission distinct from explicit false.
+  if (group?.type !== "WIRE" || (Object.hasOwn(group.body, "locked") && group.body["locked"] !== false) ||
       (group.body["groupId"] !== undefined && group.body["groupId"] !== "") ||
       !Object.keys(group.body).every((key) => ["groupId", "locked", "zIndex"].includes(key)) || !Number.isFinite(group.body["zIndex"])) {
     throw new Error("Native wire requires an exact unlocked root WIRE profile.");
@@ -171,6 +181,7 @@ export function buildSchematicNativeWireAdapter(input: unknown, sourceInput: Nat
     beforeSourceSha256: before.sha256, beforeNativeSha256: sha256Json(native), wireId,
     lineIds: nextLines.map((row) => row.id), allocatedLineIds, removedLineIds: oldLines.slice(nextLines.length).map((row) => row.id),
     preservedAttributeIds: attrs.map((row) => row.id), attributeOrders, expectedSourceSha256: expected.sha256 };
+  const markerGuard = flatGuard === undefined ? undefined : buildFlatWireMarkerGuard(flatWireMarkerSpecification(expected, native, wireId), wireId);
   const expression = `(async () => {
 const binding=${JSON.stringify(native.document)};
 ${SCHEMATIC_NATIVE_READER_CODE}
@@ -191,8 +202,11 @@ const sourceRows=snapshot=>{
 const manager=schDoc.shapeManager;
 if(typeof manager.idManager?.get!=='function'||typeof manager.actionRunner?.run!=='function'||typeof manager.bboxMonitor?.update!=='function')throw new Error('SCH_WIRE_API_MISSING');
 const wire=manager.idManager.get(wireId);
+${markerGuard === undefined ? "" : `const wireAfterMarkers=${markerGuard}(schDoc,manager);\n`}
+${flatGuard === undefined ? "" : "const setLinesMethod=wire?.setLines;\n"}
 const bindSubtree=(rows,attributesExpected,projectOrder=false)=>{
- if(manager.idManager.get(wireId)!==wire||!wire||wire.id!==wireId||wire.tagName!=='NetGroup'||wire.type!=='wire'||wire.parent?.id!=='$$root'||wire.isConnected!==true||wire.locked!==false||typeof wire.setLines!=='function'||typeof wire.getAttr!=='function'||canonical(schBody(wire))!==canonical(groupRow.body))throw new Error('SCH_WIRE_TARGET_CHANGED');
+ ${flatGuard === undefined ? "" : "if(wire?.setLines!==setLinesMethod)throw new Error('FLAT_WIRE_METHOD_DRIFT');"}
+ if(manager.idManager.get(wireId)!==wire||!wire||wire.id!==wireId||wire.tagName!=='NetGroup'||wire.type!=='wire'||wire.parent?.id!=='$$root'||wire.isConnected!==true||wire.locked!==groupRow.body.locked||typeof wire.setLines!=='function'||typeof wire.getAttr!=='function'||canonical(schBody(wire))!==canonical(groupRow.body))throw new Error('SCH_WIRE_TARGET_CHANGED');
  if(!Array.isArray(wire.lines)||!Array.isArray(wire.children))throw new Error('SCH_WIRE_CHILDREN_INVALID');
  const attributes=wire.getAttr();if(!Array.isArray(attributes)||attributes.length!==attrRows.length||new Set(attributes.map(attr=>attr.id)).size!==attributes.length)throw new Error('SCH_WIRE_ATTR_CHANGED');
  if(canonical(wire.lines.map(line=>line.id).sort())!==canonical(rows.map(row=>row.id).sort()))throw new Error('SCH_WIRE_LINES_CHANGED');
@@ -208,6 +222,7 @@ const bindSubtree=(rows,attributesExpected,projectOrder=false)=>{
 };
 const beforeGuard=()=>{schCheck();if(canonical(schCapture())!==baseline)throw new Error('SCH_WIRE_BASELINE_CHANGED');bindSubtree(oldRows,attrRows);
  for(const id of allocated)if(manager.idManager.get(id)!=null)throw new Error('SCH_WIRE_ID_COLLISION');};
+${flatGuard === undefined ? "" : `const flatDisplayGuard=await ${buildFlatDisplayRuntimeGuard(flatGuard, "source-action")};flatDisplayGuard.assertWriter(schNative,schManager,schDoc);await flatDisplayGuard.read();flatDisplayGuard.check();\n`}
 beforeGuard();
 const seed=wire.lines[0].points;
 const clonePoint=(point,x,y)=>{if(!point||typeof point.scale!=='function'||!Number.isFinite(point.x)||!Number.isFinite(point.y))throw new Error('SCH_WIRE_POINT_INVALID');
@@ -216,8 +231,9 @@ const changes=nextRows.map(row=>({id:row.id,...nativeStyle,points:[clonePoint(se
 const afterModelGuard=()=>{schCheck();bindSubtree(nextRows,nextAttrRows);for(const id of removed)if(manager.idManager.get(id)!=null)throw new Error('SCH_WIRE_REMOVE_FAILED');
  const models=manager.getModels('Symbol');if(!Array.isArray(models)||models.length>20000)throw new Error('SCH_WIRE_COMPONENTS_INVALID');
  const components=models.map(model=>schCaptureComponent(model)).sort((a,b)=>a.id.localeCompare(b.id));
- if(canonical(components)!==canonical(original.components))throw new Error('SCH_WIRE_COMPONENTS_CHANGED');};
-const applied=await manager.actionRunner.run(()=>{
+ if(canonical(components)!==canonical(original.components))throw new Error('SCH_WIRE_COMPONENTS_CHANGED');${markerGuard === undefined ? "" : "wireAfterMarkers();"}};
+const applied=await ${flatGuard === undefined ? "manager.actionRunner" : "flatDisplayGuard"}.run(()=>{
+ ${flatGuard === undefined ? "" : "flatDisplayGuard.assertWriter(schNative,schManager,schDoc);flatDisplayGuard.check();"}
  beforeGuard();wire.setLines(changes);
  // Refresh normal geometry/junction watchers while the native action is active.
  // Use the source-derived category indices, not obsolete original indices.

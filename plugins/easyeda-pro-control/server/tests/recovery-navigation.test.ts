@@ -43,7 +43,7 @@ void test("library recovery opens only a checkpoint-owned asset and rejects meta
       } }) } });
     } } };
     const run = (): Promise<unknown> => {
-      const result: unknown = runInNewContext(`(async () => {${buildRecoveryNavigationCode(target)}})()`, { eda, TextDecoder, Uint8Array });
+      const result: unknown = runInNewContext(`(async () => {${buildRecoveryNavigationCode(target)}})()`, { eda, TextDecoder, Uint8Array, window: { top: { localStorage: { getItem: (): string => '{"pcbCommandTab":true}' } } } });
       return Promise.resolve(result);
     };
     if (metadataOwner === "owner") { await run(); assert.deepEqual(calls, ["project", [target.projectUuid, "4", target.documentUuid], "activate"]); }
@@ -78,40 +78,48 @@ void test("symbol recovery proves native display title and avoids the hanging li
 });
 
 function fixture(options: { project?: RecordValue; document?: RecordValue; registryPath?: string; openProjectResult?: boolean;
-  openDocumentResult?: string | null; activateResult?: boolean | null; wrongReadback?: boolean; delayedReadback?: boolean; projectRace?: boolean; registryBytes?: Uint8Array; tree?: unknown; navigation?: RecoveryNavigationOptions } = {}): {
+  openDocumentResult?: string | null; activateResult?: boolean | null; wrongReadback?: boolean; delayedReadback?: boolean; projectRace?: boolean; registryBytes?: Uint8Array; tree?: unknown; navigation?: RecoveryNavigationOptions;
+  nativeException?: { stage: string; error: unknown }; preferences?: string } = {}): {
     calls: string[]; execute: () => Promise<unknown>;
   } {
   const calls: string[] = [];
+  const failAt = (stage: string): void => { if (options.nativeException?.stage === stage) { throw options.nativeException.error; } };
   let currentDocument = options.document, currentProject = options.project;
   const eda = {
     dmt_Project: {
-      getCurrentProjectInfo: (): Promise<RecordValue | undefined> => Promise.resolve(currentProject),
-      openProject: (uuid: string): Promise<boolean> => { calls.push(`project:${uuid}`); currentProject = PROJECT; return Promise.resolve(options.openProjectResult ?? true); },
+      getCurrentProjectInfo: (): Promise<RecordValue | undefined> => { failAt("project-info"); return Promise.resolve(currentProject); },
+      openProject: (uuid: string): Promise<boolean> => { calls.push(`project:${uuid}`); failAt("open-project"); currentProject = PROJECT; return Promise.resolve(options.openProjectResult ?? true); },
     },
-    dmt_SelectControl: { getCurrentDocumentInfo: (): Promise<RecordValue | undefined> => Promise.resolve(currentDocument) },
+    dmt_SelectControl: { getCurrentDocumentInfo: (): Promise<RecordValue | undefined> => { failAt("document-info"); return Promise.resolve(currentDocument); } },
     dmt_EditorControl: {
-      getSplitScreenTree: (): Promise<unknown> => Promise.resolve(options.tree ?? { id: "root", tabs: [{ tabId: "tab_page1", data: { doctype: -1 }, isAbleDelete: false }] }),
-      openDocument: (uuid: string): Promise<string | undefined> => { calls.push(`document:${uuid}`); currentDocument = DOCUMENT;
+      getSplitScreenTree: (): Promise<unknown> => { failAt("tab-tree"); return Promise.resolve(options.tree ?? { id: "root", tabs: [{ tabId: "tab_page1", data: { doctype: -1 }, isAbleDelete: false }] }); },
+      openDocument: (uuid: string): Promise<string | undefined> => { calls.push(`document:${uuid}`); failAt("open-document"); currentDocument = DOCUMENT;
         return Promise.resolve(options.openDocumentResult === null ? undefined : (options.openDocumentResult ?? DOCUMENT.tabId)); },
       activateDocument: (tabId: string): Promise<boolean | null> => { calls.push(`activate:${tabId}`);
+        failAt("activate-document");
         if (options.wrongReadback === true) { currentDocument = { ...DOCUMENT, uuid: "other-document" }; }
         if (options.delayedReadback === true) { currentDocument = undefined; setImmediate(() => { currentDocument = DOCUMENT; }); }
         return Promise.resolve(options.activateResult === undefined ? true : options.activateResult); },
     },
     sys_ClientUrl: { request: (url: string, method: string): Promise<MockResponse> => {
       assert.equal(url, "https://client/api/client/projectPaths"); assert.equal(method, "GET");
+      failAt("registry-request");
       if (options.projectRace === true) { currentProject = { uuid: "other-project" }; }
       let done = false;
       const value = options.registryBytes ?? new TextEncoder().encode(JSON.stringify({ success: true, result: {
         [TARGET.projectUuid]: { path: options.registryPath ?? String.raw`C:\Fixture\project.eprj2` },
       } }));
       return Promise.resolve({ ok: true, url, body: { getReader: (): MockReader => ({ read: (): Promise<{ done: boolean; value?: Uint8Array }> => {
+        failAt("registry-read");
         const result = done ? { done: true } : { done: false, value }; done = true; return Promise.resolve(result);
       }, releaseLock: (): void => { calls.push("registry-release"); }, cancel: (): Promise<void> => { calls.push("registry-cancel"); return Promise.resolve(); } }) } });
     } },
   };
+  if (options.nativeException?.stage === "unexpected") {
+    Object.defineProperty(eda, "dmt_Project", { get: (): never => { throw options.nativeException?.error; } });
+  }
   return { calls, execute: async () => {
-    const result: unknown = runInNewContext(`(async () => {${buildRecoveryNavigationCode(TARGET, options.navigation)}})()`, { eda, TextDecoder, Uint8Array, window: { top: { setTimeout, clearTimeout } } });
+    const result: unknown = runInNewContext(`(async () => {${buildRecoveryNavigationCode(TARGET, options.navigation)}})()`, { eda, TextDecoder, Uint8Array, window: { top: { setTimeout, clearTimeout, localStorage: { getItem: (): string => options.preferences ?? '{"pcbCommandTab":true}' } } } });
     return await result;
   } };
 }
@@ -124,6 +132,19 @@ void test("empty Start Page opens only the checkpoint-proven project/document an
   assert.deepEqual(run.calls.filter((call) => !call.startsWith("registry-")), [
     `project:${TARGET.projectUuid}`, `document:${TARGET.documentUuid}`, "activate:reopened-tab",
   ]);
+});
+
+void test("project restoration always needs safe preferences even with a SCH target; inspect-only is passive", async () => {
+  const unsafe = fixture({ preferences: '{"pcbCommandTab":false}' });
+  await assert.rejects(unsafe.execute(), /PCB_NAVIGATION_PREFERENCES_UNSAFE/u);
+  assert.equal(unsafe.calls.every((call) => call.startsWith("registry-")), true);
+  const inspected = fixture({ preferences: '{}', navigation: { navigate: false } });
+  await inspected.execute();
+  assert.equal(inspected.calls.every((call) => call.startsWith("registry-")), true);
+  // The project is already loaded and direct SCH open does not restore PCB tabs.
+  const loaded = fixture({ preferences: '{}', project: PROJECT });
+  await loaded.execute();
+  assert.equal(loaded.calls.some((call) => call.startsWith("project:")), false);
 });
 
 void test("exclusive Start Page navigation rejects hidden foreign editors and malformed tab trees before opening", async () => {
@@ -246,6 +267,31 @@ void test("false activation acknowledgment is accepted only with independently e
   assert.equal(value.calls.filter((call) => call.startsWith("activate:")).length, 1);
 });
 
+void test("native exception boundaries discard private text without invoking error accessors or coercion", async () => {
+  let accessorReads = 0;
+  const accessor = Object.defineProperty({}, "message", { get: (): never => { accessorReads += 1; throw new Error("PRIVATE_ACCESSOR"); } });
+  const coercible = { toString: (): never => { accessorReads += 1; throw new Error("PRIVATE_COERCION"); } };
+  const proxy = new Proxy({}, { getOwnPropertyDescriptor: (): never => { throw new Error("PRIVATE_PROXY"); } });
+  const errors = [new TypeError("PRIVATE_PATH /private/project.eprj2"), new Error("PRIVATE_OVERSIZED".repeat(1000)), "PRIVATE_STRING", null,
+    accessor, coercible, proxy, new Error("Recovery navigation refused: editor-readiness-page PRIVATE_SUFFIX"),
+    new Error("NATIVE_LIFECYCLE_OPEN_TIMEOUT\nPRIVATE_SUFFIX")];
+  for (const stage of ["project-info", "document-info", "tab-tree", "registry-request", "registry-read", "open-project", "open-document", "activate-document", "unexpected"]) {
+    for (const error of errors) {
+      const run = fixture({ navigation: { requireExclusiveTabs: true }, nativeException: { stage, error } });
+      await assert.rejects(run.execute(), { message: `Recovery navigation refused: native-${stage}` });
+      for (const prefix of ["project:", "document:", "activate:"]) { assert.ok(run.calls.filter((call) => call.startsWith(prefix)).length <= 1); }
+    }
+  }
+  assert.equal(accessorReads, 0);
+});
+
+void test("native exception wrapping preserves exact refusal and unsettled timeout messages", async () => {
+  for (const message of ["Recovery navigation refused: editor-readiness-page", "NATIVE_LIFECYCLE_OPEN_TIMEOUT", "NATIVE_LIFECYCLE_CLOSE_TIMEOUT",
+    "DEVICE_NATIVE_HOST_AMBIGUOUS", "DEVICE_NATIVE_BUS_MISSING"]) {
+    await assert.rejects(fixture({ nativeException: { stage: "project-info", error: new Error(message) } }).execute(), { message });
+  }
+});
+
 void test("an absent post-activation document settles to the exact target without repeating navigation", async () => {
   const value = fixture({ delayedReadback: true });
   const result = await value.execute();
@@ -256,7 +302,7 @@ void test("an absent post-activation document settles to the exact target withou
   ]);
 });
 
-type ReadinessMode = "delayed" | "owner-drift" | "auxiliary-drift" | "container-drift" | "page-drift" | "tab-drift" | "identity-alias" | "late-owner-drift" | "timeout" | "getter-hangs" | "getter-throws";
+type ReadinessMode = "delayed" | "owner-drift" | "auxiliary-drift" | "container-drift" | "page-drift" | "tab-drift" | "identity-alias" | "late-owner-drift" | "timeout" | "getter-hangs" | "getter-throws" | "page-getter-throws" | "preferences-before-open" | "preferences-after-open";
 async function readinessFixture(documentType: 1 | 3, mode: ReadinessMode): Promise<{ result?: unknown; error?: unknown; calls: string[]; polls: number }> {
   const calls: string[] = [], target = { ...TARGET, documentType };
   const tabId = `${target.documentUuid}@${target.projectUuid}`;
@@ -279,6 +325,7 @@ async function readinessFixture(documentType: 1 | 3, mode: ReadinessMode): Promi
       ...(mode === "identity-alias" ? { documentUuid: "foreign-alias" } : {}) });
   };
   const environment = { TextDecoder, Uint8Array, window: { top: {
+    localStorage: { getItem: (): string => JSON.stringify({ pcbCommandTab: mode !== "preferences-before-open" && !(mode === "preferences-after-open" && calls.includes("open")) }) },
     setTimeout: (callback: () => void, delay: number): number => {
       timerId += 1; const id = timerId; timers.set(id, callback);
       if (delay === 15_000) { timeout = callback; }
@@ -311,7 +358,7 @@ async function readinessFixture(documentType: 1 | 3, mode: ReadinessMode): Promi
       activateDocument: (): Promise<boolean> => { calls.push("activate"); return Promise.resolve(true); },
     },
     dmt_Pcb: { getCurrentPcbInfo: info },
-    dmt_Schematic: { getCurrentSchematicInfo: info, getCurrentSchematicPageInfo: (): Promise<unknown> => Promise.resolve(auxiliaryReady ?
+    dmt_Schematic: { getCurrentSchematicInfo: info, getCurrentSchematicPageInfo: (): Promise<unknown> => mode === "page-getter-throws" ? Promise.reject(new TypeError("PRIVATE_PAGE_REPLY")) : Promise.resolve(auxiliaryReady ?
       { uuid: mode === "page-drift" ? "foreign-page" : target.documentUuid, tabId: mode === "tab-drift" ? "foreign-tab" : tabId, parentSchematicUuid: "schematic" } : undefined) },
     sys_ClientUrl: { request: (url: string): Promise<unknown> => Promise.resolve({ ok: true, url,
       body: Response.json({ success: true, result: { [target.projectUuid]: { path: String.raw`C:\Fixture\project.eprj2` } } }).body }) },
@@ -332,16 +379,28 @@ void test("project opening observes delayed parent ownership and auxiliary readi
   }
 });
 
+void test("recovery navigation checks PCB preference immediately before open and after its acknowledgment", async () => {
+  for (const mode of ["preferences-before-open", "preferences-after-open"] as const) {
+    const result = await readinessFixture(3, mode);
+    assert.match(String(result.error), /PCB_NAVIGATION_PREFERENCES_UNSAFE/u);
+    assert.deepEqual(result.calls, mode === "preferences-before-open" ? [] : ["open"]);
+  }
+});
+
 void test("readiness ownership drift, foreign PCB identity and getter failure cannot turn into a successful project open", async () => {
   for (const type of [1, 3] as const) {
     const owner = await readinessFixture(type, "owner-drift");
     assert.match(String(owner.error), /editor-readiness-owner/u); assert.equal(owner.polls, 0);
     assert.deepEqual(owner.calls, ["open", "activate"]);
     const thrown = await readinessFixture(type, "getter-throws");
-    assert.match(String(thrown.error), /fixture-readiness-getter/u); assert.equal(thrown.polls, 0);
+    assert.equal(String(thrown.error), `Error: Recovery navigation refused: native-${type === 1 ? "schematic" : "pcb"}-info`); assert.equal(thrown.polls, 0);
+    assert.deepEqual(thrown.calls, ["open", "activate"]);
   }
   const pcb = await readinessFixture(3, "auxiliary-drift");
   assert.match(String(pcb.error), /editor-readiness-pcb/u); assert.equal(pcb.polls, 0);
+  const page = await readinessFixture(1, "page-getter-throws");
+  assert.equal(String(page.error), "Error: Recovery navigation refused: native-schematic-page-info");
+  assert.equal(page.polls, 0); assert.deepEqual(page.calls, ["open", "activate"]);
 });
 
 void test("schematic container/page conflicts, aliased identities and drift across an awaited getter refuse without retries", async () => {

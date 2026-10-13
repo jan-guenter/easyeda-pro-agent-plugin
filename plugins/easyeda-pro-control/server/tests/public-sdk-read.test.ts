@@ -1,0 +1,503 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { runInNewContext, runInThisContext } from "node:vm";
+
+import { extensionApiSnapshots } from "../src/extension-api-catalog-data.ts";
+import { decodeExactReadEnvelope, encodeExactReadEnvelope } from "../src/exact-readers.ts";
+import { PUBLIC_SDK_READ_MAX_BYTES, buildPublicSdkReadCode, publicSdkReadDescriptors, publicSdkReadRequestSchema, validatePublicSdkReadPayload, validatePublicSdkReadRequest } from "../src/public-sdk-read.ts";
+import type { PublicSdkReadDescriptor, PublicSdkReadRequest } from "../src/public-sdk-read.ts";
+import { SCHEMATIC_NETGROUP_READ_METHODS } from "../src/schematic-netgroup-read.ts";
+import { PCB_NET_MEMBERSHIP_METHOD } from "../src/pcb-net-membership.ts";
+import { PCB_PRIMITIVE_TYPE_METHOD } from "../src/pcb-primitive-type-read.ts";
+import { PCB_ACTIVE_LAYER_METHOD } from "../src/pcb-active-layer-read.ts";
+// oxlint-disable-next-line import/max-dependencies -- Exercise the real context wrapper and every registered reader guard, not test-local replacements.
+import { EasyedaControlEngine } from "../src/engine.ts";
+import type { ContextProbePayload, ExpectedContext } from "../src/engine.ts";
+import { wrapWithContextGuard } from "../src/runtime-scripts.ts";
+
+const descriptors = publicSdkReadDescriptors();
+// oxlint-disable-next-line eslint/no-template-curly-in-string -- This is the SDK's literal translation placeholder, not JavaScript interpolation.
+const TRANSLATION_TAG = "Net ${1}";
+const netGroupContext: ExpectedContext = { project: { uuid: "fixture-project", path: "/tmp/fixture.eprj2" },
+  document: { uuid: "fixture-page", documentType: 1, tabId: "fixture-page@fixture-project" } };
+const forbidden = (): never => assert.fail("Public NetGroup wrapper, compiler, serializer or display accessor was invoked.");
+
+function netGroupFixture(): { scope: Record<string, unknown>; lines: Record<string, unknown>[] } {
+  const groups: Record<string, unknown>[] = [], index = new Map<string, Record<string, unknown>>(), lines: Record<string, unknown>[] = [], sources = new Map<string, number>();
+  const handler = { getSourceCodeIdMap: (): Map<string, number> => new Map(sources) }, ids = { idMap: index };
+  const shapes: Record<string, unknown> = { idManager: ids, actionRunner: { running: false }, getModels: (): Record<string, unknown>[] => [...groups] };
+  const root = { id: "$$root", modelType: "Root", shapeManager: shapes, isConnected: true, children: groups };
+  shapes["root"] = root;
+  const page = { uuid: "fixture-page", project_uuid: "fixture-project", tabId: "fixture-page@fixture-project", projectMgr: { uuid: "fixture-project" },
+    isSchSheetDoc: (): boolean => true, isBlockSymbolInstancePage: false, shapeManager: shapes, idManager: ids, getSourceCode: forbidden,
+    consistencyImpl: { state: "initialized", decodeAndRealTimeSyncHandler: handler, handler } };
+  shapes["docManager"] = page; Reflect.set(ids, "docManager", page);
+  Reflect.set(page.consistencyImpl, "docManager", page); Reflect.set(handler, "docManager", page); Reflect.set(handler, "consistencyImpl", page.consistencyImpl);
+  for (const kind of ["wire", "bus"]) {
+    const group: Record<string, unknown> = { id: kind, modelType: "NetGroup", tagName: "NetGroup", cmdKey: "netGroup", type: kind,
+      parent: root, shapeManager: shapes, isConnected: true, netNames: [] };
+    const line = { id: `${kind}-line`, modelType: kind === "wire" ? "Wire" : "Bus", tagName: "NetGroupLine", cmdKey: kind, type: kind,
+      parent: group, shapeManager: shapes, isConnected: true, points: [{ x: -0, y: -30 }, { x: 20, y: -30 }],
+      strokeColor: null, strokeWidth: null, strokeStyle: null, getApiShapeData: forbidden, getConsistencyData: forbidden };
+    for (const field of ["displayStrokeColor", "displayStrokeWidth", "displayStrokeStyle"]) { Object.defineProperty(line, field, { get: forbidden }); }
+    group["lines"] = [line]; group["children"] = [line]; groups.push(group); lines.push(line);
+    index.set(kind, group); index.set(line.id, line); sources.set(kind, 1); sources.set(line.id, 1);
+  }
+  shapes["modelMap"] = new Map([["NetGroup", new Set(groups)]]);
+  const eda = { dmt_Project: { getCurrentProjectInfo: (): Promise<unknown> => Promise.resolve(netGroupContext.project) },
+    dmt_SelectControl: { getCurrentDocumentInfo: (): Promise<unknown> => Promise.resolve(netGroupContext.document) } };
+  for (const namespace of ["sch_PrimitiveWire", "sch_PrimitiveBus", "sch_Netlist"]) { Object.defineProperty(eda, namespace, { get: forbidden }); }
+  return { lines, scope: { Map, Set, TextEncoder, eda, SCH: { docMemoryManager: { getActiveDoc: (): unknown => page } },
+    UI: { tabBar: { getActiveTab: (): string => "fixture-page@fixture-project" } } } };
+}
+
+void test("registered NetGroup readers execute their native DTO wrapper without any public family lookup", async () => {
+  for (const method of SCHEMATIC_NETGROUP_READ_METHODS) {
+    const kind = method.includes("PrimitiveWire") ? "wire" : "bus";
+    const request = { method, arguments: method.endsWith(".get") ? { primitiveIds: kind } : {} };
+    const descriptor = descriptors.find((entry) => entry.path === method); assert.ok(descriptor);
+    assert.equal(descriptor.implementation.kind, "native-task-equivalent"); assert.deepEqual(descriptor.documentTypes, [1]);
+    assert.equal(descriptor.implementation.source, "server/src/schematic-netgroup-read.ts"); assert.equal(descriptor.implementation.test, "server/tests/schematic-netgroup-read.test.ts");
+    assert.equal(descriptor.parameterSupport, "narrowed"); assert.equal(descriptor.liveValidation, "not-yet-validated");
+    assert.deepEqual(validatePublicSdkReadRequest(request, 1), request);
+    for (const documentType of [2, 3, 4, 15]) { assert.throws(() => validatePublicSdkReadRequest(request, documentType)); }
+    const code = wrapWithContextGuard(buildPublicSdkReadCode(request), netGroupContext);
+    const envelope: unknown = await runInNewContext(`(async()=>{${code}})()`, netGroupFixture().scope);
+    const result = validatePublicSdkReadPayload(decodeExactReadEnvelope(envelope), request);
+    assert.equal(result["implementationKind"], "native-task-equivalent");
+    assert.equal(result["assurance"], "bounded-native-netgroup-state-observation-not-complete-source-connectivity-or-persistence-proof");
+    assert.deepEqual(result["value"], [{ primitiveId: kind, modelType: "NetGroup", kind,
+      lines: [{ primitiveId: `${kind}-line`, points: [[0, -30], [20, -30]], color: null, width: null, strokeStyle: null }], names: [], customAttributeIds: [] }]);
+  }
+});
+
+void test("registered NetGroup host validation rejects wrong family, selector, structure and undefined fields", () => {
+  for (const method of SCHEMATIC_NETGROUP_READ_METHODS) {
+    const kind = method.includes("PrimitiveWire") ? "wire" : "bus";
+    const request = { method, arguments: method.endsWith(".get") ? { primitiveIds: "group" } : {} };
+    const line = { primitiveId: "line", points: [[0, -10]], color: null, width: null, strokeStyle: null };
+    const row = { primitiveId: "group", modelType: "NetGroup", kind, lines: [line], names: [{ primitiveId: "name", value: "GND" }], customAttributeIds: ["attr"] };
+    const payload = { ok: true, kind: "public-sdk-read", method, present: true, value: [row], undefinedPaths: [] };
+    assert.deepEqual(validatePublicSdkReadPayload(payload, request)["value"], [row]);
+    for (const value of [[{ ...row, kind: kind === "wire" ? "bus" : "wire" }], [{ ...row, modelType: "Wire" }], [row, row], [{ ...row, lines: [] }],
+      [{ ...row, lines: [{ ...line, strokeStyle: 0 }] }], [{ ...row, names: [{ primitiveId: "line", value: "alias" }] }], [{ ...row, customAttributeIds: ["attr", "attr"] }],
+      [{ ...row, publicNet: "GND" }], [{ ...row, lines: [{ ...line, color: undefined }] }]]) {
+      assert.throws(() => validatePublicSdkReadPayload({ ...payload, value }, request));
+    }
+    for (const undefinedPaths of [["/value"], ["/value/0/lines/0/color"], ["/value/0/names/0/value"], ["/private"]]) {
+      assert.throws(() => validatePublicSdkReadPayload({ ...payload, undefinedPaths }, request));
+    }
+    assert.throws(() => validatePublicSdkReadPayload({ ...payload, present: false }, request));
+    if (method.endsWith(".get")) {
+      for (const value of [[], [{ ...row, primitiveId: "wrong" }]]) { assert.throws(() => validatePublicSdkReadPayload({ ...payload, value }, request)); }
+      for (const primitiveIds of [[], ["same", "same"], ["bad\n"], Array.from({ length: 257 }, (_, index) => String(index)), null]) {
+        assert.equal(publicSdkReadRequestSchema.safeParse({ method, arguments: { primitiveIds } }).success, false);
+      }
+    } else {
+      assert.deepEqual(validatePublicSdkReadPayload({ ...payload, value: [] }, request)["value"], []);
+      assert.equal(publicSdkReadRequestSchema.safeParse({ method, arguments: { primitiveIds: "group" } }).success, false);
+    }
+  }
+});
+
+void test("the NetGroup wrapper retains fixed guard codes without inspecting native exception text", async () => {
+  const request = { method: SCHEMATIC_NETGROUP_READ_METHODS[1], arguments: {} };
+  for (const failure of ["guard", "exception"]) {
+    const current = netGroupFixture(), line = current.lines[0]; assert.ok(line);
+    if (failure === "guard") { line["strokeWidth"] = Number.NaN; }
+    else {
+      Object.defineProperty(line, "strokeWidth", { get: (): never => {
+        throw Object.defineProperty(new Error("private native error"), "message", { get: (): never => assert.fail("Native exception content was inspected.") });
+      } });
+    }
+    const code = wrapWithContextGuard(buildPublicSdkReadCode(request), netGroupContext);
+    const invoke = async (): Promise<unknown> => await runInNewContext(`(async()=>{${code}})()`, current.scope) as unknown;
+    await assert.rejects(invoke, { message: `Public SDK read could not produce a complete bounded observation; method=${request.method}|stage=call|code=${failure === "guard" ? "SCH_NETGROUP_STATE" : "native-error"}|getter=none` });
+  }
+});
+
+void test("PCB net membership cannot execute or validate through the generic SDK adapter", async () => {
+  const request = { method: PCB_NET_MEMBERSHIP_METHOD, arguments: { net: "GND", primitiveTypes: ["Line", "ComponentPad"] } };
+  assert.deepEqual(validatePublicSdkReadRequest(request, 3), request);
+  for (const documentType of [1, 2, 4]) { assert.throws(() => validatePublicSdkReadRequest(request, documentType)); }
+  assert.throws(() => buildPublicSdkReadCode(request), /source\/inventory\/source specialized reader/u);
+  const payload = { ok: true, kind: "public-sdk-read", method: request.method, present: true, value: [], undefinedPaths: [] };
+  assert.throws(() => validatePublicSdkReadPayload(payload, request), /specialized verifier/u);
+  let calls = 0;
+  const engine = new EasyedaControlEngine({ callTool: (): Promise<unknown> => {
+    calls += 1; return Promise.reject(new Error("Generic PCB membership dispatch must never run."));
+  } });
+  engine.assertBridgeDispatchAllowed = (): Promise<true> => { calls += 1; return Promise.reject(new Error("Generic PCB membership admission must never run.")); };
+  const context = { ...netGroupContext, document: { ...netGroupContext.document, documentType: 3 } };
+  await assert.rejects(engine.publicSdkRead(request, context), /source\/inventory coordinator/u);
+  assert.equal(calls, 0);
+});
+
+void test("PCB type lookup cannot fall through to the installed empty-body public method", async () => {
+  const request = { method: PCB_PRIMITIVE_TYPE_METHOD, arguments: { id: "physical-pad" } };
+  assert.deepEqual(validatePublicSdkReadRequest(request, 3), request);
+  for (const documentType of [1, 2, 4, 15]) { assert.throws(() => validatePublicSdkReadRequest(request, documentType)); }
+  assert.throws(() => buildPublicSdkReadCode(request), /source\/inventory\/source specialized reader/u);
+  for (const payload of [{ ok: true, kind: "public-sdk-read", method: request.method, present: true, value: "ComponentPad", undefinedPaths: [] },
+    { ok: true, kind: "public-sdk-read", method: request.method, present: false, value: null, undefinedPaths: ["/value"] }]) {
+    assert.throws(() => validatePublicSdkReadPayload(payload, request), /specialized verifier/u);
+  }
+  let calls = 0;
+  const engine = new EasyedaControlEngine({ callTool: (): Promise<unknown> => { calls += 1; return Promise.reject(new Error("Public type lookup must not dispatch.")); } });
+  engine.assertBridgeDispatchAllowed = (): Promise<true> => { calls += 1; return Promise.reject(new Error("Generic type admission must not run.")); };
+  const context = { ...netGroupContext, document: { ...netGroupContext.document, documentType: 3 } };
+  await assert.rejects(engine.publicSdkRead(request, context), /source\/inventory coordinator/u); assert.equal(calls, 0);
+});
+
+void test("active layer cannot fall through to its empty-body public method or accept an absence result", async () => {
+  const request = { method: PCB_ACTIVE_LAYER_METHOD, arguments: {} };
+  assert.deepEqual(validatePublicSdkReadRequest(request, 3), request);
+  for (const documentType of [1, 2, 4, 15]) { assert.throws(() => validatePublicSdkReadRequest(request, documentType)); }
+  assert.throws(() => buildPublicSdkReadCode(request), /source\/layers\/source specialized reader/u);
+  assert.throws(() => validatePublicSdkReadPayload({ ok: true, kind: "public-sdk-read", method: request.method, present: false, value: null, undefinedPaths: ["/value"] }, request), /specialized verifier/u);
+  let calls = 0;
+  const engine = new EasyedaControlEngine({ callTool: (): Promise<unknown> => { calls += 1; return Promise.reject(new Error("Public active layer stub must not dispatch.")); } });
+  engine.assertBridgeDispatchAllowed = (): Promise<true> => { calls += 1; return Promise.reject(new Error("Generic active layer admission must not run.")); };
+  const activeContext = { ...netGroupContext, document: { ...netGroupContext.document, documentType: 3 } };
+  await assert.rejects(engine.publicSdkRead(request, activeContext), /source\/layers coordinator/u); assert.equal(calls, 0);
+});
+
+void test("real NetGroup coordinator distinguishes native authority and refuses second-sample context, profile, quarantine and state drift", async () => {
+  for (const failure of ["none", "context", "profile", "quarantine", "state"]) {
+    const current = netGroupFixture(); let calls = 0, contexts = 0, gates = 0, profiles = 0;
+    const request = { method: SCHEMATIC_NETGROUP_READ_METHODS[1], arguments: {} };
+    class FixtureEngine extends EasyedaControlEngine {
+      // oxlint-disable-next-line eslint/class-methods-use-this -- Instance override intercepts the production implementation-admission seam.
+      protected override assertPublicSdkImplementation(): Promise<void> {
+        profiles += 1; return failure === "profile" && profiles === 2 ? Promise.reject(new Error("fixture profile drift")) : Promise.resolve();
+      }
+    }
+    const engine = new FixtureEngine({ async callTool(name, args): Promise<unknown> {
+      assert.equal(name, "easyeda_execute"); assert.ok(typeof args?.["code"] === "string"); calls += 1;
+      if (failure === "state" && calls === 2) { const line = current.lines[0]; assert.ok(line); line["strokeWidth"] = 2; }
+      const result: unknown = await runInNewContext(`(async()=>{${args["code"]}})()`, current.scope); return { structuredContent: { ok: true, result } };
+    } });
+    engine.assertBridgeDispatchAllowed = (): Promise<true> => { gates += 1; return failure === "quarantine" && gates === 3 ? Promise.reject(new Error("fixture quarantine")) : Promise.resolve(true); };
+    engine.assertContext = (expected): Promise<ContextProbePayload> => {
+      contexts += 1; return failure === "context" && contexts === 3 ? Promise.reject(new Error("fixture context drift")) : Promise.resolve({ ...structuredClone(expected), document: { ...structuredClone(expected.document), tabId: "fixture-page@fixture-project" } });
+    };
+    if (failure === "none") {
+      const result = await engine.publicSdkRead(request, netGroupContext);
+      assert.equal(result["authority"], "native-netgroup-state-observation-not-complete-source-connectivity-or-persistence-proof"); assert.equal(calls, 2);
+    } else {
+      await assert.rejects(engine.publicSdkRead(request, netGroupContext), /fixture|changed between consecutive samples/u);
+      assert.equal(calls, ["profile", "state"].includes(failure) ? 2 : 1);
+    }
+  }
+});
+
+function argumentsFor(descriptor: PublicSdkReadDescriptor): Record<string, unknown> {
+  const parts = descriptor.path.split(".");
+  const method = parts[2];
+  if (method === "getSplitScreenIdByTabId") { return { tabId: "pcb-1@project-1" }; }
+  if (method === "getTabsBySplitScreenId") { return { splitScreenId: "editor-1" }; }
+  if (method === "get") { return { primitiveIds: "primitive-1" }; }
+  if (method === "getAllPinsByPrimitiveId") { return { primitiveId: "component-1" }; }
+  if (method === "getPrimitiveTypeByPrimitiveId") { return { id: "primitive-1" }; }
+  if (method === "getPrimitivesBBox") { return { primitiveIds: ["primitive-1"] }; }
+  if (method === "getBoardInfo") { return { boardName: "Board 1" }; }
+  if (method === "getPcbInfo") { return { pcbUuid: "pcb-1" }; }
+  if (method === "getPanelInfo") { return { panelUuid: "panel-1" }; }
+  if (method === "getSchematicInfo") { return { schematicUuid: "schematic-1" }; }
+  if (method === "getSchematicPageInfo") { return { schematicPageUuid: "sheet-1" }; }
+  if (method === "text") { return { tag: TRANSLATION_TAG, args: ["GND", 1, false] }; }
+  if (method === "convertCanvasOriginToDataOrigin" || method === "convertDataOriginToCanvasOrigin") { return { x: 10, y: 20 }; }
+  if (method === "splitPolygon") { return { complexPolygons: [[0, 0, "L", 10, 0, 10, 10]] }; }
+  if (parts[1] === "pcb_MathPolygon") { return method === "createPolygon" ? { polygon: [0, 0, "L", 10, 0, 10, 10] } : { complexPolygon: [0, 0, "L", 10, 0, 10, 10] }; }
+  if (method === "getRuleConfiguration") { return { configurationName: "Default" }; }
+  if (method === "getPadPairGroupMinWireLength") { return { padPairGroupName: "Pair 1" }; }
+  if (method === "isLanguageSupported") { return { language: "en" }; }
+  if (method === "splitLines") { return { lines: [0, 0, 10, 10] }; }
+  if (method?.startsWith("milTo") === true) { return { mil: 1000, numberOfDecimals: 4 }; }
+  if (method?.startsWith("mmTo") === true) { return { mm: 25.4, numberOfDecimals: 4 }; }
+  if (method?.startsWith("inchTo") === true) { return { inch: 1, numberOfDecimals: 4 }; }
+  if (parts[1] === "pcb_Net" && ["getNet", "getNetColor", "getNetLength"].includes(method ?? "")) { return { net: "GND" }; }
+  return {};
+}
+
+function primitiveFixture(descriptor: PublicSdkReadDescriptor, primitiveId = "primitive-1"): Record<string, unknown> {
+  const primitive: Record<string, unknown> = { privateStateMustNotEscape: "private" };
+  const polygon = { getSource: (): unknown[] => [0, 0, "L", 10, 0, 10, 10] };
+  const special: Record<string, unknown> = {
+    PrimitiveId: primitiveId, PrimitiveType: descriptor.result.primitiveType, ComponentType: "part", Component: { uuid: "device-1", libraryUuid: "project-1" },
+    Footprint: { uuid: "footprint-1", libraryUuid: "project-1" }, Symbol: { uuid: "symbol-1", libraryUuid: "project-1" }, Model3D: undefined,
+    Net: "GND", Text: "R1", Content: "embedded", Key: "Name", Value: "10k", Name: "Resistor", Designator: "R1", UniqueId: "component-1", ParentPrimitiveId: "component-1", ParentComponentPrimitiveId: "component-1",
+    PinNumber: "1", PinName: "IN", PinColor: null, PinShape: 0, pinType: 0, PadNumber: "1", Color: null, FillColor: null,
+    FontName: null, FontFamily: "Arial", RegionName: undefined, PourName: "Ground", PourPrimitiveId: primitiveId, PourFillMethod: "solid",
+    Polygon: polygon, ComplexPolygon: polygon, RuleType: [9], CoordinateSet: [0, 0, 10, 0], Line: [0, 0, 10, 0], Unit: "mil", Pad: ["ELLIPSE", 10, 10], Hole: null, SpecialPad: undefined,
+    SolderMaskAndPasteMaskExpansion: null, SolderMaskExpansion: null, HeatWelding: null, DesignRuleBlindViaName: null,
+    OtherProperty: { observed: true }, Pads: [], PourFills: [{ path: polygon, id: "fill-1", fill: true, lineWidth: 0 }],
+    FileName: "image.svg", BinaryData: "00", Manufacturer: undefined, ManufacturerId: undefined, Supplier: undefined, SupplierId: undefined, SubPartName: undefined,
+  };
+  const booleanFields = new Set(["PrimitiveLock", "AddIntoBom", "AddIntoPcb", "Mirror", "HorizonMirror", "Metallization", "Reverse", "PreserveSilos", "KeyVisible", "ValueVisible", "Bold", "Italic", "UnderLine", "NoConnected"]);
+  for (const field of descriptor.result.getterFields) {
+    let value: unknown = booleanFields.has(field) ? false : 0;
+    if (Object.hasOwn(special, field)) { value = special[field]; }
+    primitive[`getState_${field}`] = function readState(this: unknown): unknown { assert.equal(this, primitive); return value; };
+  }
+  return primitive;
+}
+
+function resultFor(descriptor: PublicSdkReadDescriptor): unknown {
+  if (descriptor.path === "eda.lib_LibrariesList.getSystemLibraryUuid") { return "0819f05c4eef4c71ace90d822a990e87"; }
+  if (descriptor.membership !== null) { return { uuid: argumentsFor(descriptor)[descriptor.membership.argument] }; }
+  if (descriptor.path === "eda.pcb_Document.getCalculatingRatlineStatus") { return "active"; }
+  if (descriptor.path === "eda.sys_Window.getCurrentTheme") { return "light"; }
+  if (descriptor.path === "eda.sys_Unit.getFrontendDataUnit") { return "mil"; }
+  if (descriptor.path === "eda.pcb_Drc.getAllDifferentialPairs") { return [{ name: "pair", positiveNet: "D+", negativeNet: "D-" }]; }
+  if (descriptor.path === "eda.sch_Utils.splitLines") { return [[0, 0, 10, 10]]; }
+  switch (descriptor.result.kind) {
+    case "string": { return "observed"; }
+    case "number": { return 1; }
+    case "boolean": { return true; }
+    case "strings": { return ["GND"]; }
+    case "ids": { return ["primitive-1"]; }
+    case "records": { return [{ observed: true }]; }
+    case "record": { return { observed: true }; }
+    case "bbox": { return { minX: 0, minY: 0, maxX: 10, maxY: 10 }; }
+    case "point": { return { x: 0, y: 0 }; }
+    case "origin": { return { offsetX: 0, offsetY: 0 }; }
+    case "json": { return null; }
+    case "primitive": { return [primitiveFixture(descriptor)]; }
+    case "polygon": { return { getSource: (): unknown[] => [0, 0, "L", 10, 0, 10, 10] }; }
+    case "polygons": { return [{ getSource: (): unknown[] => [0, 0, "L", 10, 0, 10, 10] }]; }
+    default: { throw new Error("Unexpected test result contract."); }
+  }
+}
+
+async function run(request: PublicSdkReadRequest, native: unknown, captured?: unknown[][], membershipRows?: unknown): Promise<unknown> {
+  const [_root, namespace, method] = request.method.split(".");
+  assert.ok(namespace !== undefined && namespace !== "");
+  assert.ok(method !== undefined && method !== "");
+  const receiver: Record<string, unknown> = {};
+  receiver[method] = function readFixture(this: unknown, ...args: unknown[]): Promise<unknown> {
+    assert.equal(this, receiver);
+    captured?.push(args);
+    return Promise.resolve(native);
+  };
+  const descriptor = descriptors.find((entry) => entry.path === request.method);
+  const membership = descriptor?.membership;
+  if (membership !== null && membership !== undefined) {
+    const membershipMethod = membership.method.split(".")[2];
+    assert.ok(membershipMethod !== undefined);
+    receiver[membershipMethod] = (): Promise<unknown> => Promise.resolve(membershipRows ?? [{ uuid: request.arguments[membership.argument] }]);
+  }
+  const code = buildPublicSdkReadCode(request);
+  // The maintained code generator, never caller code, is evaluated in the same
+  // Realm so plain-object checks exercise actual native DTO semantics.
+  const execute: unknown = runInThisContext(`(async (eda) => { ${code} })`, { timeout: 1000 });
+  assert.equal(typeof execute, "function");
+  if (typeof execute !== "function") { throw new TypeError("Generated adapter is not callable."); }
+  const pending: unknown = Reflect.apply(execute, undefined, [{ [namespace]: receiver }]);
+  const envelope = await pending;
+  return decodeExactReadEnvelope(envelope);
+}
+
+void test("all fixed SDK readers are declared in the pinned runtime and expose isolated schemas", () => {
+  const reviewed = extensionApiSnapshots.find((entry) => entry.reference === "reviewed-installed");
+  assert.ok(reviewed);
+  const declared = new Set(reviewed.namespaces.flatMap((namespace) => namespace.methods.map((method) => `eda.${namespace.name}.${method.name}`)));
+  assert.ok(descriptors.length >= 147);
+  assert.equal(new Set(descriptors.map((entry) => entry.path)).size, descriptors.length);
+  for (const descriptor of descriptors) {
+    assert.ok(declared.has(descriptor.path), descriptor.path);
+    assert.equal(descriptor.liveValidation, "not-yet-validated");
+    assert.ok(descriptor.documentTypes.every((type) => [1, 2, 3, 4].includes(type)));
+    assert.ok(JSON.stringify(descriptor.inputSchema).length < 10_000);
+    const [_root, namespace, method] = descriptor.path.split(".");
+    const signature: string | undefined = reviewed.namespaces.find((entry) => entry.name === namespace)?.methods.find((entry) => entry.name === method)?.signature;
+    assert.ok(signature !== undefined);
+    const parameterList = signature.slice(signature.indexOf("(") + 1, signature.indexOf("):"));
+    const parameters = [...parameterList.matchAll(/(?:^|, )(?:\.\.\.)?([A-Za-z]\w*)\??:/gu)].map((match) => match[1]);
+    assert.deepEqual(descriptor.parameters, parameters, descriptor.path);
+  }
+  const altered = publicSdkReadDescriptors();
+  altered[0]?.documentTypes.push(999);
+  assert.notDeepEqual(altered, publicSdkReadDescriptors());
+  const componentPads = descriptors.find((entry) => entry.path === "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId");
+  assert.ok(componentPads);
+  assert.ok(componentPads.limitations.some((limitation) => limitation.includes("known 0.1 drill-scale defect") && limitation.includes("exact component-pad reader intentionally excludes")));
+});
+
+// Polygon splitting has a multi-call synchronous constructor contract, covered
+// Separately with source parity and coordinator fault tests.
+for (const descriptor of descriptors.filter((entry) => entry.implementation.source === "server/src/public-sdk-read.ts" && entry.path !== "eda.pcb_MathPolygon.splitPolygon")) {
+  void test(`fixed public SDK call preserves receiver, awaits result and projects bounded data: ${descriptor.path}`, async () => {
+    const documentType = descriptor.documentTypes[0];
+    assert.ok(documentType !== undefined);
+    const request = validatePublicSdkReadRequest({ method: descriptor.path, arguments: argumentsFor(descriptor) }, documentType);
+    const calls: unknown[][] = [];
+    const payload = await run(request, resultFor(descriptor), calls);
+    assert.equal(calls.length, 1);
+    const expectedArguments = descriptor.parameters.flatMap((parameter) => parameter === descriptor.restParameter ? request.arguments[parameter] : [request.arguments[parameter]]);
+    assert.deepEqual(calls[0], expectedArguments);
+    const result = validatePublicSdkReadPayload(payload, request);
+    assert.equal(result["method"], descriptor.path);
+    assert.equal(result["assurance"], "bounded-public-sdk-observation-not-native-or-persistence-proof");
+    assert.equal(Object.hasOwn(result, "implementationKind"), false);
+    assert.ok(!JSON.stringify(result).includes("privateStateMustNotEscape"));
+  });
+}
+
+void test("strict SDK schemas reject caller paths, code, arguments, type coercion and native context mismatch", () => {
+  const good = { method: "eda.sys_Environment.getEditorCurrentVersion", arguments: {} };
+  for (const input of [null, { ...good, code: "evil()" }, { method: "eda.sys_FileSystem.deleteFileInFileSystem", arguments: {} },
+    { method: "eda.sys_Unit.mmToMil", arguments: { mm: "1" } }, { method: "eda.sys_Unit.mmToMil", arguments: { mm: 1, numberOfDecimals: 100 } },
+    { method: "eda.pcb_PrimitivePad.get", arguments: { primitiveIds: ["one", "one"] } },
+    { method: "eda.sch_PrimitiveComponent.getAll", arguments: { allSchematicPages: true } },
+    { method: "eda.pcb_PrimitiveDimension.getAll", arguments: { layer: 1 } },
+    { method: "eda.pcb_PrimitiveLine.getAll", arguments: { layer: 999 } },
+    { method: "eda.sch_Utils.splitLines", arguments: { lines: [0, 0, 2, 2, 3] } },
+    { ...good, arguments: { code: "return 1" } }, JSON.parse('{"method":"eda.sys_Environment.getEditorCurrentVersion","arguments":{"__proto__":{}}}') as unknown]) {
+    assert.equal(publicSdkReadRequestSchema.safeParse(input).success, false);
+  }
+  assert.throws(() => validatePublicSdkReadRequest({ method: "eda.pcb_Layer.getAllLayers", arguments: {} }, 1), /document type/u);
+  assert.throws(() => validatePublicSdkReadRequest(good, 17), /document type/u);
+});
+
+void test("plain-input gate refuses getters, sparse arrays, prototype instances and aggregate resource abuse without invoking accessors", () => {
+  let getterCalls = 0;
+  const accessor = Object.defineProperty({}, "method", { enumerable: true, get: () => { getterCalls += 1; return "eda.sys_Environment.isClient"; } });
+  assert.equal(publicSdkReadRequestSchema.safeParse(accessor).success, false);
+  assert.equal(getterCalls, 0);
+  const sparse: unknown[] = [];
+  sparse[2] = "primitive-1";
+  for (const argumentData of [{ primitiveIds: sparse }, new Date(), { extra: "x".repeat(131_073) },
+    { extra: Array.from({ length: 100 }, () => Array.from({ length: 200 }, () => 0)) }]) {
+    assert.equal(publicSdkReadRequestSchema.safeParse({ method: "eda.pcb_PrimitivePad.get", arguments: argumentData }).success, false);
+  }
+});
+
+void test("literal argument generation retains nullish slots and cannot inject bridge code", async () => {
+  const calls: unknown[][] = [];
+  const request = { method: "eda.pcb_PrimitiveLine.getAllPrimitiveId", arguments: { net: "GND'); throw new Error('injected", primitiveLock: false } };
+  validatePublicSdkReadPayload(await run(request, [], calls), request);
+  assert.deepEqual(calls, [[request.arguments.net, undefined, false]]);
+  const unitCalls: unknown[][] = [];
+  const units = { method: "eda.sys_Unit.mmToMil", arguments: { mm: 25.4, numberOfDecimals: 0 } };
+  validatePublicSdkReadPayload(await run(units, 1000, unitCalls), units);
+  assert.deepEqual(unitCalls, [[25.4, 0]]);
+});
+
+void test("transport retains every undefined location separately from null, including UTF-8 keys", async () => {
+  const request = { method: "eda.pcb_Document.getCurrentFilterConfiguration", arguments: {} };
+  const payload = await run(request, { clear: null, missing: undefined, nested: [{ "ä/~": undefined }] });
+  const result = validatePublicSdkReadPayload(payload, request);
+  assert.deepEqual(result["undefinedPaths"], ["/value/missing", "/value/nested/0/ä~1~0"]);
+  assert.deepEqual(result["value"], { clear: null, missing: null, nested: [{ "ä/~": null }] });
+  const missing: unknown = undefined;
+  const absent = validatePublicSdkReadPayload(await run(request, missing), request);
+  assert.equal(absent["present"], false);
+  assert.deepEqual(absent["undefinedPaths"], ["/value"]);
+});
+
+void test("transport refuses live handles, callbacks, placeholders, cycles, sparse arrays and oversized values", async () => {
+  const request = { method: "eda.pcb_Drc.getAllDifferentialPairs", arguments: {} };
+  const circular: Record<string, unknown> = {};
+  circular["self"] = circular;
+  const sparse: unknown[] = [];
+  sparse[1] = 1;
+  const getter = Object.defineProperty({}, "value", { enumerable: true, get: () => { throw new Error("Getter must not run"); } });
+  for (const native of [new Date(), (): number => 1, "[Truncated]", Number.NaN, Number.POSITIVE_INFINITY, circular, sparse, getter,
+    "ä".repeat(PUBLIC_SDK_READ_MAX_BYTES), Array.from({ length: 20_001 }, () => 0), { ["x".repeat(4097)]: 1 }]) {
+    await assert.rejects(() => run(request, native), /complete bounded observation/u);
+  }
+});
+
+void test("primitive projections reject missing getters, wrong families, duplicate IDs, unexpected IDs and partial get results", async () => {
+  const descriptor = descriptors.find((entry) => entry.path === "eda.pcb_PrimitiveLine.get");
+  assert.ok(descriptor);
+  const request = { method: descriptor.path, arguments: { primitiveIds: ["primitive-1", "primitive-2"] } };
+  const wrongFamily = primitiveFixture(descriptor);
+  wrongFamily["getState_PrimitiveType"] = (): string => "Pad";
+  for (const native of [[{}], [wrongFamily], [primitiveFixture(descriptor), primitiveFixture(descriptor)],
+    [primitiveFixture(descriptor, "foreign")], [primitiveFixture(descriptor)], []]) {
+    await assert.rejects(() => run(request, native), /complete bounded observation/u);
+  }
+  const valid = await run(request, [primitiveFixture(descriptor), primitiveFixture(descriptor, "primitive-2")]);
+  assert.doesNotThrow(() => validatePublicSdkReadPayload(valid, request));
+});
+
+void test("result validator rejects malformed or fabricated envelopes and contradictory undefined proof", () => {
+  const request = { method: "eda.pcb_Net.getNetLength", arguments: { net: "GND" } };
+  const good = { ok: true, kind: "public-sdk-read", method: request.method, present: true, value: 12, undefinedPaths: [] };
+  for (const payload of [{ ...good, method: "eda.sys_Environment.isClient" }, { ...good, value: "12" },
+    { ...good, extra: true }, { ...good, present: false }, { ...good, undefinedPaths: ["/value"] },
+    { ...good, undefinedPaths: ["/missing"] }, { ...good, undefinedPaths: ["/value/a"] },
+    { ...good, value: Number.NaN }]) { assert.throws(() => validatePublicSdkReadPayload(payload, request)); }
+  const roundTrip = decodeExactReadEnvelope(encodeExactReadEnvelope(good));
+  assert.equal(validatePublicSdkReadPayload(roundTrip, request)["value"], 12);
+});
+
+void test("component-pad parent identity matches the exact request in both native projection and host validation", async () => {
+  const descriptor = descriptors.find((entry) => entry.path === "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId");
+  assert.ok(descriptor);
+  const request = { method: descriptor.path, arguments: { primitiveId: "component-1" } };
+  const native = primitiveFixture(descriptor);
+  const payload = await run(request, [native]);
+  assert.doesNotThrow(() => validatePublicSdkReadPayload(payload, request));
+  assert.throws(() => validatePublicSdkReadPayload(payload, { ...request, arguments: { primitiveId: "component-2" } }), /different parent/u);
+  native["getState_ParentComponentPrimitiveId"] = (): string => "component-2";
+  await assert.rejects(() => run(request, [native]), /code=sdk-wrong-parent/u);
+});
+
+void test("getter diagnostics identify reviewed field and stage without leaking native errors or substituting values", async () => {
+  const descriptor = descriptors.find((entry) => entry.path === "eda.pcb_PrimitivePour.get");
+  assert.ok(descriptor);
+  const request = { method: descriptor.path, arguments: { primitiveIds: "primitive-1" } };
+  const native = primitiveFixture(descriptor);
+  native["getState_PourPriority"] = (): never => { throw new Error("secret project path and credential"); };
+  await assert.rejects(() => run(request, native), (error: unknown) => {
+    assert.ok(error instanceof Error);
+    assert.match(error.message, /stage=getter\|code=native-error\|getter=PourPriority/u);
+    assert.ok(!error.message.includes("secret"));
+    return true;
+  });
+  delete native["getState_PourPriority"];
+  await assert.rejects(() => run(request, native), /stage=getter\|code=sdk-missing-getter\|getter=PourPriority/u);
+});
+
+void test("invalid argument diagnostics retain bounded parameter paths without native or caller content", () => {
+  const result = publicSdkReadRequestSchema.safeParse({ method: "eda.sys_Unit.mmToMil", arguments: { mm: "secret" } });
+  assert.equal(result.success, false);
+  if (result.success) { throw new Error("Malformed input unexpectedly accepted."); }
+  assert.deepEqual(result.error.issues[0]?.path, ["arguments", "mm"]);
+  assert.ok(!JSON.stringify(result.error.issues).includes("secret"));
+});
+
+void test("primitive scalar types refuse coercion and required-undefined values after transport", async () => {
+  const descriptor = descriptors.find((entry) => entry.path === "eda.pcb_PrimitiveLine.get");
+  assert.ok(descriptor);
+  const request = { method: descriptor.path, arguments: { primitiveIds: "primitive-1" } };
+  for (const [field, wrong] of [["StartX", "0"], ["PrimitiveLock", 0], ["Net", 0], ["EndX", undefined]]) {
+    const native = primitiveFixture(descriptor);
+    native[`getState_${String(field)}`] = (): unknown => wrong;
+    const payload = await run(request, native);
+    assert.throws(() => validatePublicSdkReadPayload(payload, request), /getter/u);
+  }
+});
+
+void test("schematic UUID metadata lookups prove active-project membership before dispatch and returned identity afterward", async () => {
+  const request = { method: "eda.dmt_Schematic.getSchematicPageInfo", arguments: { schematicPageUuid: "sheet-1" } };
+  for (const members of [[], [{ uuid: "foreign-sheet" }], [{ uuid: 42 }], "invalid"]) {
+    const calls: unknown[][] = [];
+    await assert.rejects(() => run(request, { uuid: "sheet-1" }, calls, members), /stage=membership/u);
+    assert.equal(calls.length, 0);
+  }
+  await assert.rejects(() => run(request, { uuid: "foreign-sheet" }), /code=sdk-wrong-document/u);
+});
+
+void test("translation adapter admits only the official namespace and scalar interpolation values", async () => {
+  const request = publicSdkReadRequestSchema.parse({ method: "eda.sys_I18n.text", arguments: { tag: TRANSLATION_TAG, args: ["GND", 1, false, null] } });
+  const calls: unknown[][] = [];
+  validatePublicSdkReadPayload(await run(request, "Net GND", calls), request);
+  assert.deepEqual(calls, [[TRANSLATION_TAG, "eda", undefined, "GND", 1, false, null]]);
+  for (const argumentsData of [{ tag: "x", namespace: "private-extension" }, { tag: "x", args: [{}] }]) {
+    assert.equal(publicSdkReadRequestSchema.safeParse({ method: request.method, arguments: argumentsData }).success, false);
+  }
+});

@@ -2,14 +2,17 @@ import type { NativeSourceSnapshot } from "./document-source.ts";
 import { buildSymbolSourceGuard } from "./symbol-action.ts";
 import type { SymbolScope } from "./symbol-action.ts";
 import { buildNativeDocumentCloseFunction, buildNativeDocumentOpenFunction } from "./native-document-lifecycle.ts";
+import { PCB_NAVIGATION_PREFERENCE_GUARD } from "./pcb-navigation-preferences.ts";
 
 /** Native symbol source updates only enqueue history. This is the compiler
  * save used by installed symbol-generation flows; still checkpoint before close.
  */
 export function buildSymbolSaveCode(expected: NativeSourceSnapshot, scope: SymbolScope): string {
-  return `${buildSymbolSourceGuard(expected, scope)}
+  return `${PCB_NAVIGATION_PREFERENCE_GUARD}
+${buildSymbolSourceGuard(expected, scope)}
 const compiler=doc.consistencyImpl.manager;
 if(typeof compiler?.save!=='function')throw new Error('SYMBOL_COMPILER_SAVE_MISSING');
+assertPcbLifecyclePreferences(${JSON.stringify({ projectUuid: scope.libraryUuid, documentUuid: scope.symbolUuid, documentType: 2, metadataOwnerUuid: scope.metadataOwnerUuid })},SCOPE.symbolUuid+'@'+SCOPE.libraryUuid);
 const result=await compiler.save();
 if(result?.success!==true)throw new Error('SYMBOL_COMPILER_SAVE_FAILED');
 await assertContext();
