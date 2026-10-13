@@ -12,6 +12,7 @@ export const FAMILY = "easyeda-pro-control.project-symbol-closed-session.v1";
 const EVENT = "easyeda-pro-control.project-symbol-closed-session-event.v1";
 const MAX_EVENT_BYTES = 60_000;
 const HASH = /^[a-f0-9]{64}$/u, UUID = /^[a-f0-9]{32}$/u;
+const DOCUMENT_UUID = /^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u;
 export const STEPS = ["baseline-launch", "baseline-admission", "baseline-marker-create", "baseline-close", "baseline-copy", "edit-launch", "edit-admission", "edit-marker-read", "edit-open", "edit-witness", "edit-write", "edit-close", "edit-copy", "edit-sql-compare", "verify-launch", "verify-admission", "verify-marker-read", "verify-open", "verify-content-read", "verify-close", "verify-copy", "verify-sql-compare"] as const;
 type Step = typeof STEPS[number];
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
@@ -137,8 +138,8 @@ function plan(input: unknown): ClosedSymbolPlan {
   const value = exact(input, ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "projectPath", "operation", "marker", "nativePinsSha256", "facadeSha256", "expectedFingerprintSha256"]);
   requireValue(value["profile"] === FAMILY, "Wrong closed journal family.");
   const projectUuid = text(value["projectUuid"], /^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u);
-  const targetUuid = text(value["targetUuid"], UUID);
-  const activeUuid = text(value["activeUuid"], UUID);
+  const targetUuid = text(value["targetUuid"], DOCUMENT_UUID);
+  const activeUuid = text(value["activeUuid"], DOCUMENT_UUID);
   requireValue(activeUuid !== targetUuid, "Closed journal target/peer collision.");
   const operation = projectSymbolMetadataOperation(value["operation"]);
   requireValue("uuid" in operation.target && operation.target.uuid === targetUuid && operation.libraryUuid === projectUuid, "Closed journal operation identity differs.");

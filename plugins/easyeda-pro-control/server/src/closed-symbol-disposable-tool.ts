@@ -8,11 +8,12 @@ import type { ClosedSymbolValidationRequest } from "./closed-symbol-validation-r
 const NEXT = "Inspect retained evidence. Do not repeat this request or any native phase.";
 const MAX_RESPONSE_BYTES = 16_384;
 const uuid = z.string().regex(/^[a-f0-9]{32}$/u);
+const documentUuid = z.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
 const projectUuid = z.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u);
 
 const targetInput = z.object({
   projectPath: z.string().min(1).max(2058).regex(/^(?:\/|[A-Za-z]:[\\/])[^\0\r\n]{1,2048}\.eprj2$/u),
-  projectUuid, branchUuid: uuid, ownerUuid: uuid, symbolUuid: uuid, companionPcbUuid: uuid,
+  projectUuid, branchUuid: uuid, ownerUuid: uuid, symbolUuid: documentUuid, companionPcbUuid: documentUuid,
 }).strict();
 const metadataInput = z.object({ name: z.string().min(1).max(512), description: z.string().max(65_536) }).strict();
 const requestInput = z.object({

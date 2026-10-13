@@ -48,7 +48,7 @@ interface Prepared {
   readonly nickname: string;
   readonly branchRow: SqlRow;
   readonly projectRow: SqlRow;
-  readonly structureRow: SqlRow;
+  readonly structureRows: readonly SqlRow[];
   readonly sequenceRow: SqlRow;
 }
 export interface DecodedSymbolSqlRawHistory {
@@ -241,9 +241,19 @@ export async function prepareSymbolNewHeadSqlPlan(input: Readonly<{ before: Inve
   const sequenceRow = unique(sequence, "name", "history_data"); const sequenceId = integer(field(sequence, sequenceRow, "seq"));
   const minimumChunkId = nextRowid(historyData);
   need(sequenceId >= minimumChunkId - 1n && sequenceId < BigInt(Number.MAX_SAFE_INTEGER), "History-data AUTOINCREMENT baseline refused.");
-  const structure = table(before, "project_structures"); const structureRow = unique(structure, "branch_uuid", witness.branchUuid);
-  need(text(field(structure, structureRow, "project_uuid")) === witness.projectUuid && integer(field(structure, structureRow, "ticket")) <= BigInt(witness.preDispatchMaxTicket),
-    "Structure project or prior ticket refused.");
+  const structure = table(before, "project_structures");
+  const structureRows = structure.rows.filter((row) => text(field(structure, row, "branch_uuid")) === witness.branchUuid);
+  const firstStructure = structureRows[0]; need(firstStructure !== undefined, "Structure branch rows are missing.");
+  const structureText = text(field(structure, firstStructure, "structure"));
+  // Pinned APP2608636 selects one branch row to choose UPDATE versus INSERT.
+  // APP2609198 then updates every matching branch row, without a ticket filter.
+  // Equal native requests can leave duplicates. Admit only an unambiguous lower
+  // Ticket choice and identical tree bytes; preserve every row and its identity.
+  for (const row of structureRows) {
+    need(text(field(structure, row, "project_uuid")) === witness.projectUuid && integer(field(structure, row, "ticket")) <= BigInt(witness.preDispatchMaxTicket),
+      "Structure project or prior ticket refused.");
+    need(text(field(structure, row, "structure")) === structureText, "Structure branch rows contain different tree bytes.");
+  }
   const baseline = await selectedHistory(before, witness, projectRow, branchRow);
   need(baseline.maximumTicket === witness.preDispatchMaxTicket, "Native ticket witness differs from complete selected raw history.");
   const symbol = prepareProjectSymbolMetadata(operation, baseline.history);
@@ -254,7 +264,7 @@ export async function prepareSymbolNewHeadSqlPlan(input: Readonly<{ before: Inve
   const plan: SymbolNewHeadSqlPlan = Object.freeze({ profile: "easyeda-pro-control.symbol-new-head-sql-plan.v1", beforeSqlSha256: before.logicalSha256,
     targetUuid: symbol.targetUuid, expectedTicket: witness.preDispatchMaxTicket + 1, executionAuthorized: false, headEligibility: locked === 1n ? "locked" : "aged-unlocked" });
   plans.set(plan, { before, witness, symbol, historyTable, historyData, oldHead, nextHistoryId: nextRowid(historyTable), nextChunkId: sequenceId + 1n,
-    username, nickname, branchRow, projectRow, structureRow, sequenceRow });
+    username, nickname, branchRow, projectRow, structureRows, sequenceRow });
   return plan;
 }
 function newRow(owner: SqlTable, expectedId: bigint): SqlRow {
@@ -348,7 +358,7 @@ export async function verifySymbolNewHeadSqlEffect(plan: SymbolNewHeadSqlPlan, a
       history_uuid: headUuid, dataStr: encoded, created_at: chunkTime, updated_at: chunkTime })]],
     ["projects", [patch(projects, prepared.projectRow, { updated_at: projectTime, modifier_uuid: witness.actorUuid })]],
     ["branches", branches.rows.map((row) => row === prepared.branchRow ? patch(branches, row, { history_uuid: headUuid }) : row)],
-    ["project_structures", structures.rows.map((row) => row === prepared.structureRow ? patch(structures, row, { ticket: BigInt(plan.expectedTicket) }) : row)],
+    ["project_structures", structures.rows.map((row) => prepared.structureRows.includes(row) ? patch(structures, row, { ticket: BigInt(plan.expectedTicket) }) : row)],
     ["sqlite_sequence", sequence.rows.map((row) => row === prepared.sequenceRow ? patch(sequence, row, { seq: prepared.nextChunkId }) : row)]]);
   need(before.tables.length === after.tables.length, "SQL table inventory changed.");
   for (const prior of before.tables) {

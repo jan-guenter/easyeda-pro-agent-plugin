@@ -6,7 +6,7 @@ import { SYMBOL_WITNESS_PROFILE, buildSymbolWitnessReadExpression, validateSymbo
 import { ACTOR_NAME_MAX_CODE_UNITS, validateActorProjection } from "../src/symbol-dual-actor.ts";
 
 type Bag = Record<string, unknown>;
-const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), ownerUuid: "c".repeat(32), targetUuid: "f".repeat(32), activeUuid: "1".repeat(32), createdAtLiteral: "2026-10-12 01:00:00" };
+const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), ownerUuid: "c".repeat(32), targetUuid: "f".repeat(16), activeUuid: "1".repeat(16), createdAtLiteral: "2026-10-12 01:00:00" };
 const actorUuid = "c".repeat(32), client = "d".repeat(16), time = 1_800_000_000_000;
 interface Call { args: unknown[]; receiver: unknown; kind: "project" | "clock" }
 interface Fixture {

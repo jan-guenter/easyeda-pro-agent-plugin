@@ -33,8 +33,8 @@ function scope(input: unknown): SymbolPredispatchWitnessScope {
   if (typeof projectUuid !== "string" || !/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.test(projectUuid) ||
       typeof branchUuid !== "string" || !/^[a-f0-9]{32}$/u.test(branchUuid) ||
       typeof ownerUuid !== "string" || !/^[a-f0-9]{32}$/u.test(ownerUuid) ||
-      typeof targetUuid !== "string" || !/^[a-f0-9]{32}$/u.test(targetUuid) ||
-      typeof activeUuid !== "string" || !/^[a-f0-9]{32}$/u.test(activeUuid) || activeUuid === targetUuid ||
+      typeof targetUuid !== "string" || !/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(targetUuid) ||
+      typeof activeUuid !== "string" || !/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(activeUuid) || activeUuid === targetUuid ||
       typeof createdAtLiteral !== "string" || !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u.test(createdAtLiteral)) {
     throw new Error("SYMBOL_WITNESS_INPUT");
   }

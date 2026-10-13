@@ -32,13 +32,18 @@ function uuid(input: unknown, project = false): string {
   requireValue((project ? /^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u : /^[a-f0-9]{32}$/u).test(value), "Validation UUID must be canonical lowercase hexadecimal.");
   return value;
 }
+function documentUuid(input: unknown): string {
+  const value = boundedText(input, 32, 16);
+  requireValue(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(value), "Validation document UUID must be 16 or 32 lowercase hexadecimal characters.");
+  return value;
+}
 export function parseClosedSymbolValidationRequest(input: unknown): ClosedSymbolValidationRequest {
   const value = exactData(input, ["action", "target", "metadata", "confirmDisposableMetadataEdit"]);
   requireValue(value["action"] === "run-disposable-once" && value["confirmDisposableMetadataEdit"] === true, "Validation requires the fixed disposable metadata scope attestation.");
   const target = exactData(value["target"], ["projectPath", "projectUuid", "branchUuid", "ownerUuid", "symbolUuid", "companionPcbUuid"]);
   const projectPath = boundedText(target["projectPath"], 2058, 1);
   requireValue(/^(?:\/|[A-Za-z]:[\\/])[^\0\r\n]{1,2048}\.eprj2$/u.test(projectPath), "Validation requires a bounded absolute project path.");
-  const companionPcbUuid = uuid(target["companionPcbUuid"]), symbolUuid = uuid(target["symbolUuid"]);
+  const companionPcbUuid = documentUuid(target["companionPcbUuid"]), symbolUuid = documentUuid(target["symbolUuid"]);
   requireValue(symbolUuid !== companionPcbUuid, "Validation symbol and companion PCB must differ.");
   const metadata = exactData(value["metadata"], ["name", "description"]);
   const result: ClosedSymbolValidationRequest = Object.freeze({ action: "run-disposable-once",

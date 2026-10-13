@@ -4,14 +4,19 @@ import { setImmediate } from "node:timers";
 import { prepareSymbolNewHeadSqlPlan, verifySymbolNewHeadSqlEffect } from "../src/symbol-sql-comparator.ts";
 import { HISTORY_TABLE, IDS, OPERATION, TIMES, WITNESS, applyEffect, encrypted, expectedRaw, fixture, inventory, mutate } from "./helpers/symbol-sql-fixture.ts";
 
-void test("exact native-source SQL projection accepts one locked-head rename without authorizing execution", async () => {
-  const input = await fixture(); const plan = await prepareSymbolNewHeadSqlPlan({ before: input.before, operation: OPERATION, witness: WITNESS });
+void test("exact native-source SQL projection updates all duplicate branch structures without authorizing execution", async () => {
+  const input = await fixture();
+  mutate(input.path, `INSERT INTO project_structures(ticket,project_uuid,branch_uuid,structure) SELECT ticket,project_uuid,branch_uuid,structure FROM project_structures;
+    INSERT INTO project_structures(ticket,project_uuid,branch_uuid,structure) VALUES(99,'${IDS.project}','${IDS.start}','{"untouched":true}')`);
+  const plan = await prepareSymbolNewHeadSqlPlan({ before: await inventory(input.path), operation: OPERATION, witness: WITNESS });
   applyEffect(input.path); const after = await inventory(input.path); const proof = await verifySymbolNewHeadSqlEffect(plan, after);
   assert.equal(proof["exactLogicalSqlEffect"], true); assert.equal(proof["headEligibility"], "locked");
   assert.equal(proof["newHistoryId"], "6"); assert.equal(proof["newChunkId"], "12"); assert.equal(proof["expectedTicket"], 101);
   for (const key of ["executionAuthorized", "producerBindingVerified", "generationClosureVerified", "persistentUploadReplayExcluded", "reopened"]) { assert.equal(proof[key], false); }
   await assert.rejects(verifySymbolNewHeadSqlEffect(structuredClone(plan), after), /original prepared/u);
   await assert.rejects(verifySymbolNewHeadSqlEffect(plan, structuredClone(after)), /original inventory/u);
+  mutate(input.path, "UPDATE project_structures SET ticket=100 WHERE id=2");
+  await assert.rejects(verifySymbolNewHeadSqlEffect(plan, await inventory(input.path)), /project_structures/u);
 });
 
 void test("native local 64-hex project ID is admitted without widening branch or actor identities", async () => {
@@ -156,7 +161,7 @@ for (const [name, sql, failure] of [
   ["reverse-ordered parent", `INSERT INTO "${HISTORY_TABLE}"(id,uuid,key) VALUES(6,'${IDS.peer}','${IDS.oldKey}'); UPDATE "${HISTORY_TABLE}" SET parent='${IDS.peer}' WHERE id=5`, /Future|ID-range|ID order/u],
   ["baseline trigger", "CREATE TRIGGER extra_trigger AFTER UPDATE ON projects BEGIN SELECT 1; END", /schema/u],
   ["non-text actor display name", "UPDATE users SET username=X'00'", /SQL TEXT/u],
-  ["duplicate structure", "INSERT INTO project_structures(ticket,project_uuid,branch_uuid,structure) SELECT ticket,project_uuid,branch_uuid,structure FROM project_structures", /not unique/u],
+  ["different duplicate structure", "INSERT INTO project_structures(ticket,project_uuid,branch_uuid,structure) SELECT ticket,project_uuid,branch_uuid,'{}' FROM project_structures", /different tree bytes/u],
   ["second project", `INSERT INTO projects(uuid,archive,name,content,thumb,ticket) VALUES('${IDS.peer}',0,'synthetic','','',0)`, /exactly one/u],
 ] as const) {
   void test(`preparation refuses source-inadmissible ${name}`, async () => {

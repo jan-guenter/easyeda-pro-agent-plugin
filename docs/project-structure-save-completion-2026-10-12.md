@@ -2,6 +2,14 @@
 
 ## Current implementation status
 
+October13 integration correction: read-only fixture inspection found native16-hex
+document IDs and duplicate selected-branch structure rows. Candidate074635 admits
+the native document-ID formats throughout the closed-symbol path and models the
+exact branch-wide update for eligible duplicate rows. The public callback has
+not yet run; ordinary editing restrictions remain. See the
+[focused release](api-coverage-074635-release-2026-10-13.md) for current status and
+the remaining implementation list.
+
 October 13 delivery update: the complete native helper and v3 transport are now
 implemented. Two independent public-toolchain builds produced the same 175,104-byte
 DLL. Both TypeScript checks, strict lint and 153 existing integration tests pass.

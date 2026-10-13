@@ -20,6 +20,9 @@ function check(input: unknown, ok: boolean): z.infer<typeof closedSymbolDisposab
 for (const projectLength of [32, 64]) {
   void test(`strict parser keeps the original request and freezes its separate ${String(projectLength)}-hex projection`, () => {
     const raw = requestData(); raw.request.target.projectUuid = "a".repeat(projectLength);
+    if (projectLength === 64) {
+      raw.request.target.symbolUuid = "b".repeat(16); raw.request.target.companionPcbUuid = "c".repeat(16);
+    }
     const before = JSON.stringify(raw), parsed = parseClosedSymbolDisposableInput(raw);
     assert.equal(parsed.originalRequest, raw.request); assert.notEqual(parsed.request, raw.request);
     assert.ok(Object.isFrozen(parsed.request) && Object.isFrozen(parsed.request.target) && Object.isFrozen(parsed.request.metadata));

@@ -135,6 +135,13 @@ derive the new ticket and full structure text, retain row/project/branch
 identity, and preserve other rows. Native history changes require their own
 complete proof. Missing or duplicate structure rows need a separate contract.
 
+October13 correction: the symbol-metadata comparator now admits a nonempty
+set of existing branch rows when every row has the intended project, a ticket
+below the expected new ticket, and identical structure bytes. It models the
+native branch-wide update while preserving row identities, multiplicity and
+all non-ticket cells. Divergent trees, missing rows and partial updates refuse.
+This is an exact effect-model extension, not live completion or writer enablement.
+
 ## The task1, task2 and timer gap
 
 WORKER 2117630 `awaitUploadEnd` waits only for `task1`. The worker RPC at

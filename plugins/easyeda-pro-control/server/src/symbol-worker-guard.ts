@@ -23,7 +23,7 @@ export function validateWorkerExpectation(input: unknown, projectUuid: string, a
       typeof maxTicket !== "number" || !Number.isSafeInteger(maxTicket) || maxTicket < 0 || maxTicket >= Number.MAX_SAFE_INTEGER ||
       typeof notBeforeMs !== "number" || !Number.isSafeInteger(notBeforeMs) || notBeforeMs < 0 ||
       typeof notAfterMs !== "number" || !Number.isSafeInteger(notAfterMs) || notAfterMs < notBeforeMs || notAfterMs - notBeforeMs > 60_000 ||
-      active.documentType !== 3 || !/^[a-f0-9]{32}$/u.test(active.uuid) || active.uuid === targetUuid || active.tabId !== `${active.uuid}@${projectUuid}`) {
+      active.documentType !== 3 || !/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(active.uuid) || active.uuid === targetUuid || active.tabId !== `${active.uuid}@${projectUuid}`) {
     fail();
   }
   return Object.freeze({ projectUuid, client, maxTicket, notBeforeMs, notAfterMs });

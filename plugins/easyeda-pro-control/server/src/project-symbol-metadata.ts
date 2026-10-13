@@ -129,7 +129,8 @@ export function buildActorBoundProjectSymbolMetadataExpression(input: ProjectSym
 export function buildWorkerBoundProjectSymbolMetadataExpression(input: ProjectSymbolMetadataPlan, context: ExpectedContext, expectedActor: unknown, expectedWorker: unknown): string {
   const actor = validateActorProjection(expectedActor);
   const plan = planSchema.parse(input);
-  if (![plan.branchUuid, plan.ownerUuid, plan.targetUuid].every((value) => /^[a-f0-9]{32}$/u.test(value))) { throw new Error("SYMBOL_WORKER_INPUT"); }
+  if (![plan.branchUuid, plan.ownerUuid].every((value) => /^[a-f0-9]{32}$/u.test(value)) ||
+      !/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(plan.targetUuid)) { throw new Error("SYMBOL_WORKER_INPUT"); }
   const active = { uuid: context.document.uuid ?? context.document.documentUuid ?? "", documentType: context.document.documentType, tabId: context.document.tabId ?? "" };
   const worker = validateWorkerExpectation(expectedWorker, plan.projectUuid, active, plan.targetUuid);
   return compileProjectSymbolMetadataExpression(plan, context, actor, worker);

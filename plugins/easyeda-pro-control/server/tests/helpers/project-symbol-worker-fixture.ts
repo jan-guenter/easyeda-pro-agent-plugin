@@ -5,10 +5,10 @@ import type { ProjectSymbolMetadataPlan } from "../../src/project-symbol-metadat
 
 export type Bag = Record<string, unknown>;
 export const expectedActor = { uuid: "a".repeat(32), username: "synthetic", nickname: "Synthetic" };
-export const plan: ProjectSymbolMetadataPlan = { profile: "easyeda-pro-control.project-symbol-metadata.v1", projectUuid: "1".repeat(64), branchUuid: "2".repeat(32), ownerUuid: "3".repeat(32), targetUuid: "4".repeat(32),
+export const plan: ProjectSymbolMetadataPlan = { profile: "easyeda-pro-control.project-symbol-metadata.v1", projectUuid: "1".repeat(64), branchUuid: "2".repeat(32), ownerUuid: "3".repeat(32), targetUuid: "4".repeat(16),
   beforeProjectSha256: "a".repeat(64), beforeTitle: "Original", beforeDescription: "", beforeTags: [], beforeSource: "", peerTitles: [],
   desiredTitle: "Renamed", desiredDescription: "New description", headerEditVersion: "3.0" };
-export const context = { project: { uuid: plan.projectUuid, path: "/synthetic/project.eprj2" }, document: { uuid: "5".repeat(32), documentType: 3, tabId: `${"5".repeat(32)}@${plan.projectUuid}` } };
+export const context = { project: { uuid: plan.projectUuid, path: "/synthetic/project.eprj2" }, document: { uuid: "5".repeat(16), documentType: 3, tabId: `${"5".repeat(16)}@${plan.projectUuid}` } };
 export const expectedWorker = { projectUuid: plan.projectUuid, client: "b".repeat(16), maxTicket: 100, notBeforeMs: 1_800_000_000_000, notAfterMs: 1_800_000_060_000 };
 interface Call { name: string; receiver: unknown; args: unknown[] }
 export interface Fixture { host: Bag; startup: Bag; cached: Bag; cookies: Bag; sandbox: Bag; eda: Bag; tabs: Bag; metadata: Bag; calls: Call[]; updates: number; clockMs: number; client: string; ticket: number;

@@ -97,7 +97,10 @@ void test("generated outer ticket and fresh client do not rewrite the saved canv
   for (const value of heads) { assert.ok(value.includes(`"client":"${FRESH}"`)); assert.ok(value.endsWith(`"user":${JSON.stringify(USER)}}`)); }
 });
 void test("metadata-only target has no spurious second header", async () => {
-  const result = expectedSavedSymbolContent(await projection(chunks()), FRESH); assert.equal(result.split("|\n").length, 2);
+  const targetUuid = "a".repeat(16);
+  const raw = chunks().map(chunk => chunk.replaceAll(TARGET, targetUuid));
+  const prepared = await prepareSavedSymbolProjection({ chunks: raw, targetUuid, maximumTicket: 100, currentEditVersion: "3.0" });
+  const result = expectedSavedSymbolContent(prepared, FRESH); assert.equal(result.split("|\n").length, 2);
 });
 void test("native header chooses updateTime, not largest record ticket", async () => {
   const raw = chunks(); raw[0] = raw[0]?.replace('"updateTime":1,"version":"1"', '"updateTime":200,"version":"200"') ?? "";

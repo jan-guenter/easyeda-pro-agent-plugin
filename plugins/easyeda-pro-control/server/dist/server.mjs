@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "645c68c1a2a8750d7e10c171f6bc8357817333c21ee0438db527ab81d47c6b25";
+const __easyedaBundlePairId = "6c5aaff22b3d253947bca943db7728fedf3769daffe561738273bfd1eeaa893a";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -39880,9 +39880,9 @@ var init_native_atom_header_history = __esm({
 
 // server/src/native-document-record-history.ts
 import { createHash as createHash5 } from "node:crypto";
-function emptyNativeDocumentRecordChain(documentUuid) {
-  identifier.parse(documentUuid);
-  return { recordCount: 0, maximumTicket: 0, chainSha256: sha256Json({ profile: NATIVE_DOCUMENT_RECORD_HISTORY_PROFILE, documentUuid }) };
+function emptyNativeDocumentRecordChain(documentUuid3) {
+  identifier.parse(documentUuid3);
+  return { recordCount: 0, maximumTicket: 0, chainSha256: sha256Json({ profile: NATIVE_DOCUMENT_RECORD_HISTORY_PROFILE, documentUuid: documentUuid3 }) };
 }
 function appendNativeDocumentRecordChain(chain2, recordEncodingSha256, recordTicket) {
   const previous = chainSchema.parse(chain2);
@@ -39893,8 +39893,8 @@ function appendNativeDocumentRecordChain(chain2, recordEncodingSha256, recordTic
   }
   return { recordCount: previous.recordCount + 1, maximumTicket: Math.max(previous.maximumTicket, recordTicket), chainSha256: sha256Json({ previous: previous.chainSha256, recordEncodingSha256 }) };
 }
-function sealNativeDocumentRecordHistory(chain2, checkpointSha256, documentUuid) {
-  const body4 = { profile: NATIVE_DOCUMENT_RECORD_HISTORY_PROFILE, checkpointSha256, documentUuid, ...chainSchema.parse(chain2) };
+function sealNativeDocumentRecordHistory(chain2, checkpointSha256, documentUuid3) {
+  const body4 = { profile: NATIVE_DOCUMENT_RECORD_HISTORY_PROFILE, checkpointSha256, documentUuid: documentUuid3, ...chainSchema.parse(chain2) };
   return historySchema2.parse({ ...body4, sha256: sha256Json(body4) });
 }
 function validateNativeDocumentRecordHistory(document3, checkpointSha256) {
@@ -39983,11 +39983,11 @@ function retainPcbTextReloadRecord(history, entry, inheritedClient, before) {
     }
   }
 }
-function sealPcbTextReloadHistory(history, checkpointSha256, documentUuid) {
+function sealPcbTextReloadHistory(history, checkpointSha256, documentUuid3) {
   const body4 = {
     profile: PROFILE2,
     checkpointSha256,
-    documentUuid,
+    documentUuid: documentUuid3,
     strings: history.strings,
     nonStringIds: [...history.nonStringIds].toSorted(),
     tail: history.tail
@@ -40458,31 +40458,31 @@ function* materializeNativeHistorySteps(plaintextChunks, checkpointSha256, optio
         }
       } else if (type2 === "DOCHEAD") {
         const body4 = record2(entry.body);
-        const documentUuid = text3(body4["uuid"], 128);
+        const documentUuid3 = text3(body4["uuid"], 128);
         const docType = text3(body4["docType"], 64);
         if (!DOCUMENT_TYPES.has(docType)) {
           fail2("document-type");
         }
         currentClient = body4["client"] === void 0 ? void 0 : text3(body4["client"], 128);
         const ticket2 = integer2(entry.header["ticket"]);
-        current2 = documents.get(documentUuid);
+        current2 = documents.get(documentUuid3);
         if (current2 && current2.docType !== docType) {
           fail2();
         }
         if (!current2) {
           current2 = {
-            uuid: documentUuid,
+            uuid: documentUuid3,
             docType,
             metadata: body4,
             metadataTicket: ticket2,
             objects: /* @__PURE__ */ new Map(),
             firstClocks: /* @__PURE__ */ new Map(),
             metadataHeaders: docType === "SCH_PAGE" ? [{ ticket: ticket2, metadata: body4 }] : null,
-            ...options.documentRecordHistory === "preserve" ? { documentRecordChain: emptyNativeDocumentRecordChain(documentUuid) } : {},
+            ...options.documentRecordHistory === "preserve" ? { documentRecordChain: emptyNativeDocumentRecordChain(documentUuid3) } : {},
             ...options.pcbTextReloadOrder === "preserve" && docType === "PCB" ? { pcbTextReloadHistory: { strings: [], nonStringIds: /* @__PURE__ */ new Set(), tail: [] } } : {},
             ...options.libraryAtomHeaders === "preserve" && (docType === "SYMBOL" || docType === "FOOTPRINT") ? { libraryAtoms: { occurrences: [], clocks: /* @__PURE__ */ new Map(), hasFirstTicket: false } } : {}
           };
-          documents.set(documentUuid, current2);
+          documents.set(documentUuid3, current2);
         } else if (ticket2 === current2.metadataTicket && canonicalJson(current2.metadata) !== canonicalJson(body4)) {
           fail2("document-ticket-conflict");
         } else if (ticket2 > current2.metadataTicket) {
@@ -40702,7 +40702,7 @@ async function readNativeHistoryCheckpoint(input) {
       chunkCount: plaintext.length,
       plaintextBytes,
       documents,
-      semanticSha256: sha256Json(documents.map(({ uuid: documentUuid, docType, semanticSha256 }) => ({ uuid: documentUuid, docType, semanticSha256 })))
+      semanticSha256: sha256Json(documents.map(({ uuid: documentUuid3, docType, semanticSha256 }) => ({ uuid: documentUuid3, docType, semanticSha256 })))
     };
   } catch (error51) {
     if (error51 instanceof NativeHistoryError) {
@@ -46054,7 +46054,7 @@ function validateWorkerExpectation(input, projectUuid2, active2, targetUuid) {
     values2[key] = descriptor5.value;
   }
   const client = values2["client"], maxTicket = values2["maxTicket"], notAfterMs = values2["notAfterMs"], notBeforeMs = values2["notBeforeMs"];
-  if (values2["projectUuid"] !== projectUuid2 || !/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.test(projectUuid2) || typeof client !== "string" || !/^[a-f0-9]{16}$/u.test(client) || typeof maxTicket !== "number" || !Number.isSafeInteger(maxTicket) || maxTicket < 0 || maxTicket >= Number.MAX_SAFE_INTEGER || typeof notBeforeMs !== "number" || !Number.isSafeInteger(notBeforeMs) || notBeforeMs < 0 || typeof notAfterMs !== "number" || !Number.isSafeInteger(notAfterMs) || notAfterMs < notBeforeMs || notAfterMs - notBeforeMs > 6e4 || active2.documentType !== 3 || !/^[a-f0-9]{32}$/u.test(active2.uuid) || active2.uuid === targetUuid || active2.tabId !== `${active2.uuid}@${projectUuid2}`) {
+  if (values2["projectUuid"] !== projectUuid2 || !/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.test(projectUuid2) || typeof client !== "string" || !/^[a-f0-9]{16}$/u.test(client) || typeof maxTicket !== "number" || !Number.isSafeInteger(maxTicket) || maxTicket < 0 || maxTicket >= Number.MAX_SAFE_INTEGER || typeof notBeforeMs !== "number" || !Number.isSafeInteger(notBeforeMs) || notBeforeMs < 0 || typeof notAfterMs !== "number" || !Number.isSafeInteger(notAfterMs) || notAfterMs < notBeforeMs || notAfterMs - notBeforeMs > 6e4 || active2.documentType !== 3 || !/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(active2.uuid) || active2.uuid === targetUuid || active2.tabId !== `${active2.uuid}@${projectUuid2}`) {
     fail3();
   }
   return Object.freeze({ projectUuid: projectUuid2, client, maxTicket, notBeforeMs, notAfterMs });
@@ -46255,7 +46255,7 @@ function buildProjectSymbolMetadataExpression(input, context3) {
 function buildWorkerBoundProjectSymbolMetadataExpression(input, context3, expectedActor, expectedWorker) {
   const actor = validateActorProjection(expectedActor);
   const plan2 = planSchema.parse(input);
-  if (![plan2.branchUuid, plan2.ownerUuid, plan2.targetUuid].every((value) => /^[a-f0-9]{32}$/u.test(value))) {
+  if (![plan2.branchUuid, plan2.ownerUuid].every((value) => /^[a-f0-9]{32}$/u.test(value)) || !/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(plan2.targetUuid)) {
     throw new Error("SYMBOL_WORKER_INPUT");
   }
   const active2 = { uuid: context3.document.uuid ?? context3.document.documentUuid ?? "", documentType: context3.document.documentType, tabId: context3.document.tabId ?? "" };
@@ -46604,8 +46604,8 @@ function plan(input) {
   const value = exact3(input, ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "projectPath", "operation", "marker", "nativePinsSha256", "facadeSha256", "expectedFingerprintSha256"]);
   requireValue(value["profile"] === FAMILY, "Wrong closed journal family.");
   const projectUuid2 = text5(value["projectUuid"], /^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u);
-  const targetUuid = text5(value["targetUuid"], UUID2);
-  const activeUuid = text5(value["activeUuid"], UUID2);
+  const targetUuid = text5(value["targetUuid"], DOCUMENT_UUID);
+  const activeUuid = text5(value["activeUuid"], DOCUMENT_UUID);
   requireValue(activeUuid !== targetUuid, "Closed journal target/peer collision.");
   const operation = projectSymbolMetadataOperation(value["operation"]);
   requireValue("uuid" in operation.target && operation.target.uuid === targetUuid && operation.libraryUuid === projectUuid2, "Closed journal operation identity differs.");
@@ -46862,7 +46862,7 @@ async function inspectClosedSymbolRestart(operationId2) {
     nextSafeAction: "Read retained evidence only. Never replay an intent; serialized receipts restore no runtime or proof authority."
   });
 }
-var FAMILY, EVENT, MAX_EVENT_BYTES, HASH3, UUID2, STEPS, busy;
+var FAMILY, EVENT, MAX_EVENT_BYTES, HASH3, UUID2, DOCUMENT_UUID, STEPS, busy;
 var init_closed_symbol_journal = __esm({
   "server/src/closed-symbol-journal.ts"() {
     init_closed_symbol_terminal_shape();
@@ -46875,6 +46875,7 @@ var init_closed_symbol_journal = __esm({
     MAX_EVENT_BYTES = 6e4;
     HASH3 = /^[a-f0-9]{64}$/u;
     UUID2 = /^[a-f0-9]{32}$/u;
+    DOCUMENT_UUID = /^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u;
     STEPS = ["baseline-launch", "baseline-admission", "baseline-marker-create", "baseline-close", "baseline-copy", "edit-launch", "edit-admission", "edit-marker-read", "edit-open", "edit-witness", "edit-write", "edit-close", "edit-copy", "edit-sql-compare", "verify-launch", "verify-admission", "verify-marker-read", "verify-open", "verify-content-read", "verify-close", "verify-copy", "verify-sql-compare"];
     busy = /* @__PURE__ */ new Set();
   }
@@ -51740,7 +51741,7 @@ function scope2(input) {
   const value = fields5(input, ["projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "createdAtLiteral"]);
   const activeUuid = value["activeUuid"], ownerUuid = value["ownerUuid"], targetUuid = value["targetUuid"];
   const branchUuid = value["branchUuid"], createdAtLiteral = value["createdAtLiteral"], projectUuid2 = value["projectUuid"];
-  if (typeof projectUuid2 !== "string" || !/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.test(projectUuid2) || typeof branchUuid !== "string" || !/^[a-f0-9]{32}$/u.test(branchUuid) || typeof ownerUuid !== "string" || !/^[a-f0-9]{32}$/u.test(ownerUuid) || typeof targetUuid !== "string" || !/^[a-f0-9]{32}$/u.test(targetUuid) || typeof activeUuid !== "string" || !/^[a-f0-9]{32}$/u.test(activeUuid) || activeUuid === targetUuid || typeof createdAtLiteral !== "string" || !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u.test(createdAtLiteral)) {
+  if (typeof projectUuid2 !== "string" || !/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.test(projectUuid2) || typeof branchUuid !== "string" || !/^[a-f0-9]{32}$/u.test(branchUuid) || typeof ownerUuid !== "string" || !/^[a-f0-9]{32}$/u.test(ownerUuid) || typeof targetUuid !== "string" || !/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(targetUuid) || typeof activeUuid !== "string" || !/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(activeUuid) || activeUuid === targetUuid || typeof createdAtLiteral !== "string" || !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/u.test(createdAtLiteral)) {
     throw new Error("SYMBOL_WITNESS_INPUT");
   }
   return { projectUuid: projectUuid2, branchUuid, ownerUuid, targetUuid, activeUuid, createdAtLiteral };
@@ -53083,11 +53084,17 @@ async function prepareSymbolNewHeadSqlPlan(input) {
   const minimumChunkId = nextRowid(historyData);
   need11(sequenceId >= minimumChunkId - 1n && sequenceId < BigInt(Number.MAX_SAFE_INTEGER), "History-data AUTOINCREMENT baseline refused.");
   const structure = table2(before, "project_structures");
-  const structureRow = unique(structure, "branch_uuid", witness.branchUuid);
-  need11(
-    text12(field2(structure, structureRow, "project_uuid")) === witness.projectUuid && integer4(field2(structure, structureRow, "ticket")) <= BigInt(witness.preDispatchMaxTicket),
-    "Structure project or prior ticket refused."
-  );
+  const structureRows = structure.rows.filter((row6) => text12(field2(structure, row6, "branch_uuid")) === witness.branchUuid);
+  const firstStructure = structureRows[0];
+  need11(firstStructure !== void 0, "Structure branch rows are missing.");
+  const structureText = text12(field2(structure, firstStructure, "structure"));
+  for (const row6 of structureRows) {
+    need11(
+      text12(field2(structure, row6, "project_uuid")) === witness.projectUuid && integer4(field2(structure, row6, "ticket")) <= BigInt(witness.preDispatchMaxTicket),
+      "Structure project or prior ticket refused."
+    );
+    need11(text12(field2(structure, row6, "structure")) === structureText, "Structure branch rows contain different tree bytes.");
+  }
   const baseline = await selectedHistory(before, witness, projectRow, branchRow);
   need11(baseline.maximumTicket === witness.preDispatchMaxTicket, "Native ticket witness differs from complete selected raw history.");
   const symbol4 = prepareProjectSymbolMetadata(operation, baseline.history);
@@ -53117,7 +53124,7 @@ async function prepareSymbolNewHeadSqlPlan(input) {
     nickname,
     branchRow,
     projectRow,
-    structureRow,
+    structureRows,
     sequenceRow
   });
   return plan2;
@@ -53271,7 +53278,7 @@ ${JSON.stringify({ type: "META", ticket: plan2.expectedTicket, id: "META" })}||$
     })]],
     ["projects", [patch(projects, prepared.projectRow, { updated_at: projectTime, modifier_uuid: witness.actorUuid })]],
     ["branches", branches.rows.map((row6) => row6 === prepared.branchRow ? patch(branches, row6, { history_uuid: headUuid }) : row6)],
-    ["project_structures", structures.rows.map((row6) => row6 === prepared.structureRow ? patch(structures, row6, { ticket: BigInt(plan2.expectedTicket) }) : row6)],
+    ["project_structures", structures.rows.map((row6) => prepared.structureRows.includes(row6) ? patch(structures, row6, { ticket: BigInt(plan2.expectedTicket) }) : row6)],
     ["sqlite_sequence", sequence.rows.map((row6) => row6 === prepared.sequenceRow ? patch(sequence, row6, { seq: prepared.nextChunkId }) : row6)]
   ]);
   need11(before.tables.length === after.tables.length, "SQL table inventory changed.");
@@ -53406,7 +53413,7 @@ function applyAtom(atoms, atom) {
 async function prepareSavedSymbolProjection(input) {
   const { targetUuid, maximumTicket, currentEditVersion } = input;
   need12(
-    /^[a-f0-9]{32}$/u.test(targetUuid) && Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && maximumTicket < Number.MAX_SAFE_INTEGER,
+    /^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(targetUuid) && Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && maximumTicket < Number.MAX_SAFE_INTEGER,
     "target/ticket input refused"
   );
   need12(currentEditVersion === null || typeof currentEditVersion === "string" && currentEditVersion.length > 0 && currentEditVersion.length <= 128, "editor version refused");
@@ -54642,7 +54649,7 @@ async function nativeLibraryHeaderEvidence(history, expected3) {
     }
   }
   documents.sort((left, right) => left.documentUuid.localeCompare(right.documentUuid));
-  const contentSha256 = sha256Json(documents.map(({ documentUuid, docType, occurrenceCount, occurrencesSha256 }) => ({ documentUuid, docType, occurrenceCount, occurrencesSha256 })));
+  const contentSha256 = sha256Json(documents.map(({ documentUuid: documentUuid3, docType, occurrenceCount, occurrencesSha256 }) => ({ documentUuid: documentUuid3, docType, occurrenceCount, occurrencesSha256 })));
   const evidence = {
     profile: "easyeda.native-history.library-header-evidence.v1",
     checkpointSha256,
@@ -54719,14 +54726,14 @@ const assertPcbLifecyclePreferences=(scope,activeTab)=>{if(!pcbLifecycleHasOnlyS
 // server/src/recovery-navigation.ts
 import { dirname as dirname13, join as join16 } from "node:path";
 function deriveRecoveryNavigationTarget(expectedContext, checkpoint) {
-  const documentUuid = expectedContext.document.uuid ?? expectedContext.document.documentUuid;
+  const documentUuid3 = expectedContext.document.uuid ?? expectedContext.document.documentUuid;
   const library2 = [2, 4].includes(expectedContext.document.documentType);
-  const asset = checkpoint.documents.find((document3) => document3.uuid === documentUuid && !isNativeDocumentDeleted(document3));
+  const asset = checkpoint.documents.find((document3) => document3.uuid === documentUuid3 && !isNativeDocumentDeleted(document3));
   const meta3 = asset?.records.find((record7) => record7.id === "META" && record7.type === "META");
   const target5 = targetSchema2.parse({
     projectUuid: expectedContext.project.uuid ?? expectedContext.project.projectUuid,
     projectPath: normalizeEasyedaProjectPath(expectedContext.project.path),
-    documentUuid,
+    documentUuid: documentUuid3,
     documentType: expectedContext.document.documentType,
     ...library2 ? { libraryOwnerUuid: checkpoint.projectOwnerUuid, libraryName: meta3?.body["title"] } : {}
   });
@@ -58085,7 +58092,7 @@ function snapshot3(input) {
   const branchUuid = values2["branchUuid"], ownerUuid = values2["ownerUuid"], projectUuid2 = values2["projectUuid"], targetUuid = values2["targetUuid"];
   const headerEditVersion = values2["headerEditVersion"], maximumTicket = values2["maximumTicket"], notAfterMs = values2["notAfterMs"], notBeforeMs = values2["notBeforeMs"];
   need28(typeof projectUuid2 === "string" && /^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.test(projectUuid2));
-  need28(typeof branchUuid === "string" && /^[a-f0-9]{32}$/u.test(branchUuid) && typeof ownerUuid === "string" && /^[a-f0-9]{32}$/u.test(ownerUuid) && typeof targetUuid === "string" && /^[a-f0-9]{32}$/u.test(targetUuid));
+  need28(typeof branchUuid === "string" && /^[a-f0-9]{32}$/u.test(branchUuid) && typeof ownerUuid === "string" && /^[a-f0-9]{32}$/u.test(ownerUuid) && typeof targetUuid === "string" && /^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(targetUuid));
   need28(headerEditVersion === null || typeof headerEditVersion === "string" && headerEditVersion.length > 0 && headerEditVersion.length <= 128);
   need28(typeof maximumTicket === "number" && Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && maximumTicket < Number.MAX_SAFE_INTEGER);
   need28(typeof notBeforeMs === "number" && Number.isSafeInteger(notBeforeMs) && notBeforeMs >= 0 && typeof notAfterMs === "number" && Number.isSafeInteger(notAfterMs) && notAfterMs >= notBeforeMs && notAfterMs - notBeforeMs <= 6e4);
@@ -58097,7 +58104,7 @@ function buildClosedSymbolSavedContentExpression(input, context3, actorInput) {
 function compileSavedSymbolContentExpression(input, context3, actorInput, maximumBytes) {
   const expectedActor = validateActorProjection(actorInput), plan2 = snapshot3(input);
   const active2 = { uuid: context3.document.uuid ?? context3.document.documentUuid ?? "", documentType: context3.document.documentType, tabId: context3.document.tabId ?? "" };
-  need28((context3.project.uuid ?? context3.project.projectUuid) === plan2.projectUuid && active2.documentType === 3 && /^[a-f0-9]{32}$/u.test(active2.uuid) && active2.uuid !== plan2.targetUuid && active2.tabId === `${active2.uuid}@${plan2.projectUuid}`);
+  need28((context3.project.uuid ?? context3.project.projectUuid) === plan2.projectUuid && active2.documentType === 3 && /^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(active2.uuid) && active2.uuid !== plan2.targetUuid && active2.tabId === `${active2.uuid}@${plan2.projectUuid}`);
   need28((context3.project.uuid === void 0 || context3.project.projectUuid === void 0 || context3.project.uuid === context3.project.projectUuid) && (context3.document.uuid === void 0 || context3.document.documentUuid === void 0 || context3.document.uuid === context3.document.documentUuid) && (context3.document["parentProjectUuid"] === void 0 || context3.document["parentProjectUuid"] === plan2.projectUuid) && context3.document["parentLibraryUuid"] === void 0);
   const targetClosed = buildActorBoundEditorTargetAbsentExpression({ projectUuid: plan2.projectUuid, ownerUuid: plan2.ownerUuid, targetUuid: plan2.targetUuid, active: active2 });
   return `(async()=>{let stage='scope';try{
@@ -66646,7 +66653,7 @@ function derivePcbInheritedLines(source4, inventory, history) {
     projectUuid: history.projectUuid,
     branchUuid: history.branchUuid,
     pcbDocumentUuid: pcbUuid,
-    footprints: Object.freeze([...usedFootprints].toSorted(([left], [right]) => left.localeCompare(right)).map(([documentUuid, semanticSha256]) => Object.freeze({ documentUuid, semanticSha256 }))),
+    footprints: Object.freeze([...usedFootprints].toSorted(([left], [right]) => left.localeCompare(right)).map(([documentUuid3, semanticSha256]) => Object.freeze({ documentUuid: documentUuid3, semanticSha256 }))),
     instances: Object.freeze(members)
   });
   const evidence = Object.freeze({ sourceSha256: source4.sha256, inventorySha256: sha256Json(inventory), members: proof.instances, proof });
@@ -66661,8 +66668,8 @@ function assertPcbInheritedLineEvidence(evidence, source4, inventory) {
 async function capturePcbInheritedLineScope(engine2, expectedContext, overrides = {}) {
   const context3 = structuredClone(expectedContext), dependencies3 = { ...services3, ...overrides };
   const projectUuid2 = identity16.parse(context3.project.uuid ?? context3.project.projectUuid);
-  const documentUuid = identity16.parse(context3.document.uuid ?? context3.document.documentUuid);
-  if (context3.document.documentType !== 3 || context3.document["parentProjectUuid"] !== projectUuid2 || context3.document["parentLibraryUuid"] !== void 0 || context3.document.tabId !== documentUuid && context3.document.tabId !== `${documentUuid}@${projectUuid2}` || typeof context3.project.path !== "string" || context3.project.path.length === 0) {
+  const documentUuid3 = identity16.parse(context3.document.uuid ?? context3.document.documentUuid);
+  if (context3.document.documentType !== 3 || context3.document["parentProjectUuid"] !== projectUuid2 || context3.document["parentLibraryUuid"] !== void 0 || context3.document.tabId !== documentUuid3 && context3.document.tabId !== `${documentUuid3}@${projectUuid2}` || typeof context3.project.path !== "string" || context3.project.path.length === 0) {
     throw new Error("PCB inherited Line requires a project-owned active PCB and an explicit checkpoint source path.");
   }
   const unchangedContext = async () => {
@@ -66815,9 +66822,9 @@ function family(input) {
   }
   return parsed2;
 }
-function assertPcbMembershipSource(source4, documentUuid) {
-  identity17.parse(documentUuid);
-  if (source4.objects.length > PCB_NET_MEMBERSHIP_MAX_ITEMS || Buffer.byteLength(JSON.stringify(source4)) > 16777216 || source4.schema !== "easyeda-pro-control.document-source.v1" || source4.document["docType"] !== "PCB" || source4.document["uuid"] !== documentUuid || source4.document["editVersion"] !== PCB_NET_MEMBERSHIP_SOURCE_EDIT_VERSION || source4.sha256 !== sha256Json({ schema: source4.schema, document: source4.document, objects: source4.objects }) || new Set(source4.objects.map((row6) => row6.id)).size !== source4.objects.length) {
+function assertPcbMembershipSource(source4, documentUuid3) {
+  identity17.parse(documentUuid3);
+  if (source4.objects.length > PCB_NET_MEMBERSHIP_MAX_ITEMS || Buffer.byteLength(JSON.stringify(source4)) > 16777216 || source4.schema !== "easyeda-pro-control.document-source.v1" || source4.document["docType"] !== "PCB" || source4.document["uuid"] !== documentUuid3 || source4.document["editVersion"] !== PCB_NET_MEMBERSHIP_SOURCE_EDIT_VERSION || source4.sha256 !== sha256Json({ schema: source4.schema, document: source4.document, objects: source4.objects }) || new Set(source4.objects.map((row6) => row6.id)).size !== source4.objects.length) {
     throw new Error("PCB net membership source identity, bound or commitment is invalid.");
   }
   const panels = source4.objects.filter((row6) => row6.type === "PANELIZE" || row6.id === "PANELIZE");
@@ -66906,8 +66913,8 @@ function verifyPadLinks(expected3, componentIds, input) {
     }
   }
 }
-function derivePcbPhysicalMembers(source4, inventoryInput, documentUuid, primitiveTypes3, inherited) {
-  assertPcbMembershipSource(source4, documentUuid);
+function derivePcbPhysicalMembers(source4, inventoryInput, documentUuid3, primitiveTypes3, inherited) {
+  assertPcbMembershipSource(source4, documentUuid3);
   const inventory = inventorySchema.parse(inventoryInput);
   const selected2 = new Set(external_exports.array(primitiveType).min(1).max(5).parse(primitiveTypes3));
   if (selected2.size !== primitiveTypes3.length) {
@@ -66953,10 +66960,10 @@ function derivePcbPhysicalMembers(source4, inventoryInput, documentUuid, primiti
   }
   return members;
 }
-function derivePcbNetMembership(source4, inventoryInput, requestInput2, documentUuid, inherited) {
+function derivePcbNetMembership(source4, inventoryInput, requestInput2, documentUuid3, inherited) {
   const request = pcbNetMembershipRequestSchema.parse(requestInput2);
   const selected2 = new Set(request.arguments.primitiveTypes);
-  const members = derivePcbPhysicalMembers(source4, inventoryInput, documentUuid, request.arguments.primitiveTypes, inherited);
+  const members = derivePcbPhysicalMembers(source4, inventoryInput, documentUuid3, request.arguments.primitiveTypes, inherited);
   const netKey = net2.min(1).parse(request.arguments.net.toUpperCase());
   const result = pcbNetMembershipItemsSchema.parse(members.filter((row6) => row6.sourceType !== "FOOTPRINT_LINE" && selected2.has(row6.primitiveType) && row6.net !== "" && row6.net.toUpperCase() === netKey).map(({ padNumber: _padNumber, ...row6 }) => row6).toSorted((left, right) => left.primitiveId < right.primitiveId ? -1 : 1));
   if (Buffer.byteLength(JSON.stringify(result)) > PCB_NET_MEMBERSHIP_MAX_BYTES) {
@@ -67107,9 +67114,9 @@ var init_pcb_net_membership = __esm({
 });
 
 // server/src/pcb-primitive-type-read.ts
-function derivePcbPrimitiveType(source4, inventory, requestInput2, documentUuid, inherited) {
+function derivePcbPrimitiveType(source4, inventory, requestInput2, documentUuid3, inherited) {
   const request = pcbPrimitiveTypeRequestSchema.parse(requestInput2);
-  const members = derivePcbPhysicalMembers(source4, inventory, documentUuid, PCB_NET_MEMBERSHIP_TYPES, inherited);
+  const members = derivePcbPhysicalMembers(source4, inventory, documentUuid3, PCB_NET_MEMBERSHIP_TYPES, inherited);
   const sourceIds = new Set(source4.objects.map((row6) => row6.id));
   if (members.some((row6) => row6.sourceRecordId !== row6.primitiveId && sourceIds.has(row6.primitiveId))) {
     throw new Error("PCB primitive type inherited identity collides with another source record.");
@@ -67138,7 +67145,7 @@ function checkedPayload(input, kind) {
 async function readPcbPrimitiveType(engine2, requestInput2, expectedContext, expectedFingerprint) {
   const request = pcbPrimitiveTypeRequestSchema.parse(requestInput2);
   const expected3 = structuredClone(expectedContext);
-  const documentUuid = ownedContext(expected3);
+  const documentUuid3 = ownedContext(expected3);
   const expectedRuntime = structuredClone(expectedFingerprint);
   validatePrivateFingerprint(expectedRuntime);
   assertSubset(expectedRuntime, { installedBundles: {
@@ -67152,7 +67159,7 @@ async function readPcbPrimitiveType(engine2, requestInput2, expectedContext, exp
   assertSubset(fingerprint, expectedRuntime, "PCB primitive type runtime");
   const context3 = structuredClone(await engine2.assertContext(expected3));
   assertSubset(context3, expected3, "PCB primitive type active context");
-  if (ownedContext(context3) !== documentUuid) {
+  if (ownedContext(context3) !== documentUuid3) {
     throw new Error("PCB primitive type active identity changed.");
   }
   let inheritedScope;
@@ -67197,7 +67204,7 @@ async function readPcbPrimitiveType(engine2, requestInput2, expectedContext, exp
     const { source: source4, inventory, ...proof } = observed2, inherited = inheritedScope?.derive(source4, inventory);
     return {
       ...proof,
-      value: derivePcbPrimitiveType(source4, inventory, request, documentUuid, inherited),
+      value: derivePcbPrimitiveType(source4, inventory, request, documentUuid3, inherited),
       ...inherited === void 0 ? {} : { inheritedLines: inherited.proof }
     };
   };
@@ -67298,10 +67305,10 @@ function rootRecord(row6) {
     throw new Error("Selected PCB source objects do not admit inherited or grouped records.");
   }
 }
-function derivePcbSelectedObjects(source4, inventoryInput, selectedInput, requestInput2, documentUuid, inherited) {
+function derivePcbSelectedObjects(source4, inventoryInput, selectedInput, requestInput2, documentUuid3, inherited) {
   pcbSelectedObjectsRequestSchema.parse(requestInput2);
   const selected2 = pcbSelectedObjectIdsSchema.parse(selectedInput);
-  assertPcbMembershipSource(source4, documentUuid);
+  assertPcbMembershipSource(source4, documentUuid3);
   const inventory = inventorySchema2.parse(inventoryInput);
   sameSet2(Object.keys(inventory.families), familyNames);
   const nativeOwners = /* @__PURE__ */ new Map();
@@ -67335,7 +67342,7 @@ function derivePcbSelectedObjects(source4, inventoryInput, selectedInput, reques
   }
   const physicalTypes = familyDefinitions.filter((definition) => requestedTypes.has(definition.sourceType)).map((definition) => definition.type).filter((type2) => type2 !== "String" && type2 !== "Component");
   if (physicalTypes.length > 0) {
-    const members = derivePcbPhysicalMembers(source4, inventoryInput, documentUuid, physicalTypes, inherited);
+    const members = derivePcbPhysicalMembers(source4, inventoryInput, documentUuid3, physicalTypes, inherited);
     if (members.some((member4) => member4.sourceRecordId !== member4.primitiveId && rows2.has(member4.primitiveId))) {
       throw new Error("Selected PCB inherited identity collides with a source record.");
     }
@@ -67456,13 +67463,13 @@ function pcbSourceObjectIds(input) {
   const request = pcbSourceObjectsRequestSchema.parse(input);
   return request.method === PCB_SOURCE_OBJECT_METHOD ? [request.arguments.id] : request.arguments.ids;
 }
-function derivePcbSourceObjects(source4, inventory, requestInput2, documentUuid, inherited) {
+function derivePcbSourceObjects(source4, inventory, requestInput2, documentUuid3, inherited) {
   return derivePcbSelectedObjects(
     source4,
     inventory,
     pcbSourceObjectIds(requestInput2),
     { method: PCB_SELECTED_OBJECTS_METHOD, arguments: {} },
-    documentUuid,
+    documentUuid3,
     inherited
   );
 }
@@ -67528,9 +67535,9 @@ function publicLayerType(nativeType) {
     }
   }
 }
-function derivePcbActiveLayer(source4, layersInput, documentUuid) {
+function derivePcbActiveLayer(source4, layersInput, documentUuid3) {
   const { sha256, ...contents } = source4;
-  if (sha256Json(contents) !== sha256 || source4.schema !== "easyeda-pro-control.document-source.v1" || source4.objects.length > 2e4 || source4.document["uuid"] !== documentUuid || source4.document["docType"] !== "PCB" || source4.document["editVersion"] !== PCB_ACTIVE_LAYER_SOURCE_EDIT_VERSION || new Set(source4.objects.map((row6) => row6.id)).size !== source4.objects.length) {
+  if (sha256Json(contents) !== sha256 || source4.schema !== "easyeda-pro-control.document-source.v1" || source4.objects.length > 2e4 || source4.document["uuid"] !== documentUuid3 || source4.document["docType"] !== "PCB" || source4.document["editVersion"] !== PCB_ACTIVE_LAYER_SOURCE_EDIT_VERSION || new Set(source4.objects.map((row6) => row6.id)).size !== source4.objects.length) {
     throw new Error("PCB active layer source identity, integrity or bounds are unsupported.");
   }
   const active2 = source4.objects.filter((row6) => row6.type === "ACTIVE_LAYER" || row6.id === "ACTIVE_LAYER");
@@ -67595,7 +67602,7 @@ function checkedLayers(input) {
 async function readPcbActiveLayer(engine2, requestInput2, expectedContext, expectedFingerprint) {
   const request = pcbActiveLayerRequestSchema.parse(requestInput2);
   const expected3 = structuredClone(expectedContext);
-  const documentUuid = ownedContext2(expected3);
+  const documentUuid3 = ownedContext2(expected3);
   const expectedRuntime = structuredClone(expectedFingerprint);
   validatePrivateFingerprint(expectedRuntime);
   assertSubset(expectedRuntime, { installedBundles: {
@@ -67609,7 +67616,7 @@ async function readPcbActiveLayer(engine2, requestInput2, expectedContext, expec
   assertSubset(fingerprint, expectedRuntime, "PCB active layer runtime");
   const context3 = structuredClone(await engine2.assertContext(expected3));
   assertSubset(context3, expected3, "PCB active layer context");
-  if (ownedContext2(context3) !== documentUuid) {
+  if (ownedContext2(context3) !== documentUuid3) {
     throw new Error("PCB active layer active identity changed.");
   }
   const stableContext = async () => {
@@ -67637,7 +67644,7 @@ async function readPcbActiveLayer(engine2, requestInput2, expectedContext, expec
       throw new Error("PCB active layer full native source changed around enumeration.");
     }
     return {
-      value: derivePcbActiveLayer(before, layers.value, documentUuid),
+      value: derivePcbActiveLayer(before, layers.value, documentUuid3),
       sourceSha256: before.sha256,
       sourceBeforeSnapshotSha256: beforePayload.read_consistency.snapshotSha256,
       sourceAfterSnapshotSha256: afterPayload.read_consistency.snapshotSha256,
@@ -69903,8 +69910,8 @@ function ensurePlanShape(value) {
   }
   const plan2 = value;
   const projectUuid2 = plan2.expectedContext.project.uuid ?? plan2.expectedContext.project.projectUuid;
-  const documentUuid = plan2.expectedContext.document.uuid ?? plan2.expectedContext.document.documentUuid;
-  if (typeof projectUuid2 !== "string" || projectUuid2.length === 0 || typeof documentUuid !== "string" || documentUuid.length === 0 || !Number.isInteger(plan2.expectedContext.document.documentType)) {
+  const documentUuid3 = plan2.expectedContext.document.uuid ?? plan2.expectedContext.document.documentUuid;
+  if (typeof projectUuid2 !== "string" || projectUuid2.length === 0 || typeof documentUuid3 !== "string" || documentUuid3.length === 0 || !Number.isInteger(plan2.expectedContext.document.documentType)) {
     throw new Error(
       "Plan context requires project UUID, document UUID, and integer documentType."
     );
@@ -70952,10 +70959,10 @@ var init_engine = __esm({
         const payload = contextPayload(extractToolPayload(result));
         const projectUuid2 = payload?.project?.uuid ?? payload?.project?.projectUuid;
         const projectPath = payload?.project?.path;
-        const documentUuid = payload?.document?.uuid ?? payload?.document?.documentUuid;
+        const documentUuid3 = payload?.document?.uuid ?? payload?.document?.documentUuid;
         const documentType2 = payload?.document?.documentType;
         const tabId = payload?.document?.tabId;
-        if (typeof projectUuid2 !== "string" || projectUuid2.length === 0 || typeof projectPath !== "string" || projectPath.length === 0 || typeof documentUuid !== "string" || documentUuid.length === 0 || typeof tabId !== "string" || tabId.length === 0 || !Number.isInteger(documentType2) || ![1, 2, 3, 4, 15].includes(documentType2)) {
+        if (typeof projectUuid2 !== "string" || projectUuid2.length === 0 || typeof projectPath !== "string" || projectPath.length === 0 || typeof documentUuid3 !== "string" || documentUuid3.length === 0 || typeof tabId !== "string" || tabId.length === 0 || !Number.isInteger(documentType2) || ![1, 2, 3, 4, 15].includes(documentType2)) {
           throw new Error(
             `EasyEDA context probe did not prove a nonempty project UUID/path, document UUID, active tab, and supported document type. ${JSON.stringify(contextFailureDiagnostics(payload))}`
           );
@@ -70966,7 +70973,7 @@ var init_engine = __esm({
           const schematicUuid = payload?.schematic?.uuid ?? payload?.schematic?.documentUuid;
           const pageUuid = payload.schematicPage?.uuid ?? payload.schematicPage?.documentUuid;
           const parentUuid = payload.schematicPage?.["parentSchematicUuid"];
-          if (pageUuid !== documentUuid || typeof schematicUuid !== "string" || schematicUuid.length === 0 || parentUuid !== schematicUuid) {
+          if (pageUuid !== documentUuid3 || typeof schematicUuid !== "string" || schematicUuid.length === 0 || parentUuid !== schematicUuid) {
             throw new Error(
               `Schematic page and container identities do not agree with the active document. ${JSON.stringify(contextFailureDiagnostics(payload))}`
             );
@@ -70979,7 +70986,7 @@ var init_engine = __esm({
         }
         if (documentType2 === 3) {
           const pcbUuid = payload?.pcb?.uuid ?? payload?.pcb?.documentUuid;
-          if (pcbUuid !== documentUuid) {
+          if (pcbUuid !== documentUuid3) {
             throw new Error(
               "PCB context UUID does not agree with the active document UUID."
             );
@@ -82225,16 +82232,16 @@ function legacyExpected(expected3, createdId) {
 function assertContext(journal) {
   const { context: context3 } = journal;
   const projectUuid2 = external_exports.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u).parse(context3.project.uuid ?? context3.project.projectUuid);
-  const documentUuid = nativeId4.parse(context3.document.uuid ?? context3.document.documentUuid), tabId = `${documentUuid}@${projectUuid2}`;
+  const documentUuid3 = nativeId4.parse(context3.document.uuid ?? context3.document.documentUuid), tabId = `${documentUuid3}@${projectUuid2}`;
   for (const value of [context3, journal.plan.expectedContext]) {
-    if ((value.project.uuid ?? value.project.projectUuid) !== projectUuid2 || value.project.uuid !== void 0 && value.project.projectUuid !== void 0 && value.project.uuid !== value.project.projectUuid || (value.document.uuid ?? value.document.documentUuid) !== documentUuid || value.document.uuid !== void 0 && value.document.documentUuid !== void 0 && value.document.uuid !== value.document.documentUuid || value.project.path !== context3.project.path || value.document.documentType !== 3 || value.document.tabId !== tabId || value.document["parentProjectUuid"] !== projectUuid2 || value.document["parentLibraryUuid"] !== void 0) {
+    if ((value.project.uuid ?? value.project.projectUuid) !== projectUuid2 || value.project.uuid !== void 0 && value.project.projectUuid !== void 0 && value.project.uuid !== value.project.projectUuid || (value.document.uuid ?? value.document.documentUuid) !== documentUuid3 || value.document.uuid !== void 0 && value.document.documentUuid !== void 0 && value.document.uuid !== value.document.documentUuid || value.project.path !== context3.project.path || value.document.documentType !== 3 || value.document.tabId !== tabId || value.document["parentProjectUuid"] !== projectUuid2 || value.document["parentLibraryUuid"] !== void 0) {
       throw new Error("Retained PCB text Save context is not the original standalone PCB.");
     }
   }
-  if (journal.before.document["uuid"] !== documentUuid || journal.after?.document["uuid"] !== documentUuid || journal.targetId !== void 0 || journal.createdIds !== void 0 || journal.beforeNative !== void 0 || journal.afterNative !== void 0) {
+  if (journal.before.document["uuid"] !== documentUuid3 || journal.after?.document["uuid"] !== documentUuid3 || journal.targetId !== void 0 || journal.createdIds !== void 0 || journal.beforeNative !== void 0 || journal.afterNative !== void 0) {
     throw new Error("Retained PCB text creation lacks exact standalone source and identity authority.");
   }
-  return { projectUuid: projectUuid2, documentUuid, tabId };
+  return { projectUuid: projectUuid2, documentUuid: documentUuid3, tabId };
 }
 function verifyPcbTextRetainedSaveAuthority(journal, phases) {
   const operation = pcbTextLifecycleOperationSchema.parse(journal.plan.operation), prepared = preparation.parse(phases.prepared);
@@ -83257,16 +83264,16 @@ var init_design_execution = __esm({
           throw new Error("Installed schematic template implementation identity is unavailable.");
         }
         await verifySchematicNativeProfile(bundles.assetsRoot);
-        const documentUuid = context3.document.uuid ?? context3.document.documentUuid;
+        const documentUuid3 = context3.document.uuid ?? context3.document.documentUuid;
         const projectUuid2 = context3.project.uuid ?? context3.project.projectUuid;
-        if (typeof documentUuid !== "string" || typeof context3.document.tabId !== "string" || typeof projectUuid2 !== "string") {
+        if (typeof documentUuid3 !== "string" || typeof context3.document.tabId !== "string" || typeof projectUuid2 !== "string") {
           throw new TypeError("Layout template read requires the exact active page and project.");
         }
         const templates = {};
         for (const sheetUuid of sheetIds) {
           await this.engine.assertContext(context3);
           const expression3 = buildLoadedNetFlagTemplateReadExpression({
-            active: { documentUuid, tabId: context3.document.tabId },
+            active: { documentUuid: documentUuid3, tabId: context3.document.tabId },
             template: { documentUuid: sheetUuid, tabId: `${sheetUuid}@${projectUuid2}` },
             projectUuid: projectUuid2
           });
@@ -85109,9 +85116,9 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
       }
       async verifySavedLibrary(journal, current2) {
         const documentType2 = journal.context.document.documentType;
-        const documentUuid = journal.context.document.uuid;
+        const documentUuid3 = journal.context.document.uuid;
         const tabId = journal.context.document.tabId;
-        if (journal.after === void 0 || documentType2 !== 2 && documentType2 !== 4 || typeof documentUuid !== "string" || typeof tabId !== "string") {
+        if (journal.after === void 0 || documentType2 !== 2 && documentType2 !== 4 || typeof documentUuid3 !== "string" || typeof tabId !== "string") {
           throw new Error("Saved library recovery requires the retained intended source and exact target context.");
         }
         const installed = await this.engine.upstream.installedEasyedaBundles?.();
@@ -85150,7 +85157,7 @@ return {ok:true,profile:${JSON.stringify(profile)},id:${JSON.stringify(journal.p
         const noDispatch = await _DesignExecutor.phase(journal, "library-reopen-recovery-not-dispatched", true);
         const outstandingDispatch = intent !== void 0 && (!isRecord(noDispatch) || noDispatch["dispatched"] !== false || noDispatch["intentSha256"] !== sha256Text(canonicalJson(intent)));
         const navigation = selectSavedLibraryReopen({
-          documentUuid,
+          documentUuid: documentUuid3,
           documentType: documentType2,
           tabId,
           receipts: [await _DesignExecutor.phase(journal, `${lifecycle.family}-reopen`), await _DesignExecutor.phase(journal, `${lifecycle.family}-reopen-recovery`)],
@@ -92371,13 +92378,18 @@ function uuid8(input, project3 = false) {
   requireValue13((project3 ? /^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u : /^[a-f0-9]{32}$/u).test(value), "Validation UUID must be canonical lowercase hexadecimal.");
   return value;
 }
+function documentUuid(input) {
+  const value = boundedText2(input, 32, 16);
+  requireValue13(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(value), "Validation document UUID must be 16 or 32 lowercase hexadecimal characters.");
+  return value;
+}
 function parseClosedSymbolValidationRequest(input) {
   const value = exactData(input, ["action", "target", "metadata", "confirmDisposableMetadataEdit"]);
   requireValue13(value["action"] === "run-disposable-once" && value["confirmDisposableMetadataEdit"] === true, "Validation requires the fixed disposable metadata scope attestation.");
   const target5 = exactData(value["target"], ["projectPath", "projectUuid", "branchUuid", "ownerUuid", "symbolUuid", "companionPcbUuid"]);
   const projectPath = boundedText2(target5["projectPath"], 2058, 1);
   requireValue13(/^(?:\/|[A-Za-z]:[\\/])[^\0\r\n]{1,2048}\.eprj2$/u.test(projectPath), "Validation requires a bounded absolute project path.");
-  const companionPcbUuid = uuid8(target5["companionPcbUuid"]), symbolUuid = uuid8(target5["symbolUuid"]);
+  const companionPcbUuid = documentUuid(target5["companionPcbUuid"]), symbolUuid = documentUuid(target5["symbolUuid"]);
   requireValue13(symbolUuid !== companionPcbUuid, "Validation symbol and companion PCB must differ.");
   const metadata8 = exactData(value["metadata"], ["name", "description"]);
   const result = Object.freeze({
@@ -92512,7 +92524,7 @@ function closedSymbolDisposableIndexRefusal(input) {
     return formatClosedSymbolDisposableResult({ ...result, entryObservation: null });
   }
 }
-var NEXT, MAX_RESPONSE_BYTES, uuid9, projectUuid, targetInput, metadataInput, requestInput, closedSymbolDisposableInputSchema, artifact, operationId, common, stopped, completed, entryResult, entryObservation, indexRefusal, disposableResult, closedSymbolDisposableOutputSchema;
+var NEXT, MAX_RESPONSE_BYTES, uuid9, documentUuid2, projectUuid, targetInput, metadataInput, requestInput, closedSymbolDisposableInputSchema, artifact, operationId, common, stopped, completed, entryResult, entryObservation, indexRefusal, disposableResult, closedSymbolDisposableOutputSchema;
 var init_closed_symbol_disposable_tool = __esm({
   "server/src/closed-symbol-disposable-tool.ts"() {
     init_zod();
@@ -92521,14 +92533,15 @@ var init_closed_symbol_disposable_tool = __esm({
     NEXT = "Inspect retained evidence. Do not repeat this request or any native phase.";
     MAX_RESPONSE_BYTES = 16384;
     uuid9 = external_exports.string().regex(/^[a-f0-9]{32}$/u);
+    documentUuid2 = external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
     projectUuid = external_exports.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u);
     targetInput = external_exports.object({
       projectPath: external_exports.string().min(1).max(2058).regex(/^(?:\/|[A-Za-z]:[\\/])[^\0\r\n]{1,2048}\.eprj2$/u),
       projectUuid,
       branchUuid: uuid9,
       ownerUuid: uuid9,
-      symbolUuid: uuid9,
-      companionPcbUuid: uuid9
+      symbolUuid: documentUuid2,
+      companionPcbUuid: documentUuid2
     }).strict();
     metadataInput = external_exports.object({ name: external_exports.string().min(1).max(512), description: external_exports.string().max(65536) }).strict();
     requestInput = external_exports.object({
@@ -110862,7 +110875,7 @@ function checkedPayload2(input, kind) {
 async function readPcbNetMembership(engine2, requestInput2, expectedContext, expectedFingerprint) {
   const request = pcbNetMembershipRequestSchema.parse(requestInput2);
   const expected3 = structuredClone(expectedContext);
-  const documentUuid = ownedContext3(expected3);
+  const documentUuid3 = ownedContext3(expected3);
   const expectedRuntime = structuredClone(expectedFingerprint);
   validatePrivateFingerprint(expectedRuntime);
   assertSubset(expectedRuntime, { installedBundles: {
@@ -110876,7 +110889,7 @@ async function readPcbNetMembership(engine2, requestInput2, expectedContext, exp
   assertSubset(fingerprint, expectedRuntime, "PCB net membership runtime");
   const context3 = structuredClone(await engine2.assertContext(expected3));
   assertSubset(context3, expected3, "PCB net membership active context");
-  if (ownedContext3(context3) !== documentUuid) {
+  if (ownedContext3(context3) !== documentUuid3) {
     throw new Error("PCB net membership active identity changed.");
   }
   let inheritedScope;
@@ -110921,7 +110934,7 @@ async function readPcbNetMembership(engine2, requestInput2, expectedContext, exp
     const { source: source4, inventory, ...proof } = observed2, inherited = inheritedScope?.derive(source4, inventory);
     return {
       ...proof,
-      value: derivePcbNetMembership(source4, inventory, request, documentUuid, inherited),
+      value: derivePcbNetMembership(source4, inventory, request, documentUuid3, inherited),
       ...inherited === void 0 ? {} : { inheritedLines: inherited.proof }
     };
   };
@@ -111085,7 +111098,7 @@ function checkedIds(input) {
 async function readPcbSelectedObjects(engine2, requestInput2, expectedContext, expectedFingerprint, timings = new PcbSelectedReadTimings()) {
   const request = pcbSelectedObjectsRequestSchema.parse(requestInput2);
   const expected3 = structuredClone(expectedContext);
-  const documentUuid = ownedContext4(expected3);
+  const documentUuid3 = ownedContext4(expected3);
   const expectedRuntime = structuredClone(expectedFingerprint);
   validatePrivateFingerprint(expectedRuntime);
   assertSubset(expectedRuntime, { installedBundles: {
@@ -111099,7 +111112,7 @@ async function readPcbSelectedObjects(engine2, requestInput2, expectedContext, e
   assertSubset(fingerprint, expectedRuntime, "Selected PCB runtime");
   const context3 = structuredClone(await timings.measure("context", () => engine2.assertContext(expected3)));
   assertSubset(context3, expected3, "Selected PCB active context");
-  if (ownedContext4(context3) !== documentUuid) {
+  if (ownedContext4(context3) !== documentUuid3) {
     throw new Error("Selected PCB active identity changed.");
   }
   let inheritedScope;
@@ -111158,7 +111171,7 @@ async function readPcbSelectedObjects(engine2, requestInput2, expectedContext, e
     const { source: source4, inventory, ids: ids2, ...proof2 } = observed2, inherited = inheritedScope?.derive(source4, inventory);
     return {
       ...proof2,
-      value: derivePcbSelectedObjects(source4, inventory, ids2, request, documentUuid, inherited),
+      value: derivePcbSelectedObjects(source4, inventory, ids2, request, documentUuid3, inherited),
       selectedPrimitiveIds: ids2,
       ...inherited === void 0 ? {} : { inheritedLines: inherited.proof }
     };
@@ -111260,7 +111273,7 @@ function checkedExact2(input, kind) {
 async function readPcbSourceObjects(engine2, requestInput2, expectedContext, expectedFingerprint) {
   const request = pcbSourceObjectsRequestSchema.parse(requestInput2), requestedIds = pcbSourceObjectIds(request);
   const expected3 = structuredClone(expectedContext);
-  const documentUuid = ownedContext5(expected3);
+  const documentUuid3 = ownedContext5(expected3);
   const expectedRuntime = structuredClone(expectedFingerprint);
   validatePrivateFingerprint(expectedRuntime);
   assertSubset(expectedRuntime, { installedBundles: {
@@ -111274,7 +111287,7 @@ async function readPcbSourceObjects(engine2, requestInput2, expectedContext, exp
   assertSubset(fingerprint, expectedRuntime, "Explicit PCB runtime");
   const context3 = structuredClone(await engine2.assertContext(expected3));
   assertSubset(context3, expected3, "Explicit PCB active context");
-  if (ownedContext5(context3) !== documentUuid) {
+  if (ownedContext5(context3) !== documentUuid3) {
     throw new Error("Explicit PCB active identity changed.");
   }
   let inheritedScope;
@@ -111321,7 +111334,7 @@ async function readPcbSourceObjects(engine2, requestInput2, expectedContext, exp
     const { source: source4, inventory, ...proof2 } = observed2, inherited = inheritedScope?.derive(source4, inventory);
     return {
       ...proof2,
-      value: derivePcbSourceObjects(source4, inventory, request, documentUuid, inherited),
+      value: derivePcbSourceObjects(source4, inventory, request, documentUuid3, inherited),
       ...inherited === void 0 ? {} : { inheritedLines: inherited.proof }
     };
   };

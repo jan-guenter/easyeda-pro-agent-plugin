@@ -18,7 +18,7 @@ function snapshot(input: SavedSymbolReadPlan): SavedSymbolReadPlan {
   const branchUuid = values["branchUuid"], ownerUuid = values["ownerUuid"], projectUuid = values["projectUuid"], targetUuid = values["targetUuid"];
   const headerEditVersion = values["headerEditVersion"], maximumTicket = values["maximumTicket"], notAfterMs = values["notAfterMs"], notBeforeMs = values["notBeforeMs"];
   need(typeof projectUuid === "string" && /^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.test(projectUuid));
-  need(typeof branchUuid === "string" && /^[a-f0-9]{32}$/u.test(branchUuid) && typeof ownerUuid === "string" && /^[a-f0-9]{32}$/u.test(ownerUuid) && typeof targetUuid === "string" && /^[a-f0-9]{32}$/u.test(targetUuid));
+  need(typeof branchUuid === "string" && /^[a-f0-9]{32}$/u.test(branchUuid) && typeof ownerUuid === "string" && /^[a-f0-9]{32}$/u.test(ownerUuid) && typeof targetUuid === "string" && /^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(targetUuid));
   need(headerEditVersion === null || (typeof headerEditVersion === "string" && headerEditVersion.length > 0 && headerEditVersion.length <= 128));
   need(typeof maximumTicket === "number" && Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && maximumTicket < Number.MAX_SAFE_INTEGER);
   need(typeof notBeforeMs === "number" && Number.isSafeInteger(notBeforeMs) && notBeforeMs >= 0 && typeof notAfterMs === "number" && Number.isSafeInteger(notAfterMs) && notAfterMs >= notBeforeMs && notAfterMs - notBeforeMs <= 60_000);
@@ -34,7 +34,7 @@ export function buildClosedSymbolSavedContentExpression(input: SavedSymbolReadPl
 function compileSavedSymbolContentExpression(input: SavedSymbolReadPlan, context: ExpectedContext, actorInput: unknown, maximumBytes: 8_388_608 | 65_536): string {
   const expectedActor = validateActorProjection(actorInput), plan = snapshot(input);
   const active = { uuid: context.document.uuid ?? context.document.documentUuid ?? "", documentType: context.document.documentType, tabId: context.document.tabId ?? "" };
-  need((context.project.uuid ?? context.project.projectUuid) === plan.projectUuid && active.documentType === 3 && /^[a-f0-9]{32}$/u.test(active.uuid) && active.uuid !== plan.targetUuid && active.tabId === `${active.uuid}@${plan.projectUuid}`);
+  need((context.project.uuid ?? context.project.projectUuid) === plan.projectUuid && active.documentType === 3 && /^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(active.uuid) && active.uuid !== plan.targetUuid && active.tabId === `${active.uuid}@${plan.projectUuid}`);
   need((context.project.uuid === undefined || context.project.projectUuid === undefined || context.project.uuid === context.project.projectUuid) &&
     (context.document.uuid === undefined || context.document.documentUuid === undefined || context.document.uuid === context.document.documentUuid) &&
     (context.document["parentProjectUuid"] === undefined || context.document["parentProjectUuid"] === plan.projectUuid) && context.document["parentLibraryUuid"] === undefined);

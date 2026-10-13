@@ -47,7 +47,9 @@ async function fixture(count = 0): Promise<ClosedJournal> {
 function bytes(journal: ClosedJournal): Promise<Buffer[]> { return Promise.all([journal.journalPath, ...journal.artifacts.map((entry) => entry.path)].map((path) => readFile(path))); }
 
 void test("initial journal precedes the first launch and restores no authority", async () => {
-  const journal = await fixture(); const before = await bytes(journal);
+  const activeUuid = "f".repeat(16), preparedPlan = plan(), targetUuid = "c".repeat(16);
+  const journal = await createClosedSymbolJournal(newOperationId(), { ...preparedPlan, targetUuid, activeUuid,
+    operation: { ...preparedPlan.operation, target: { uuid: targetUuid } } }); const before = await bytes(journal);
   assert.equal(Object.hasOwn(journal.plan, "initialGeneration"), false); assert.equal(Object.hasOwn(journal, "context"), false); assert.equal(Object.hasOwn(journal, "preCheckpoint"), false);
   const result = await inspectClosedSymbolRestart(journal.operationId);
   assert.equal(result["classification"], "planned"); assert.deepEqual(result["nextEvidencePhase"], { step: "baseline-launch", kind: "intent" });

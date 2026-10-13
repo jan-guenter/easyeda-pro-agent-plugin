@@ -13,6 +13,27 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
+Restart admission confirmed the official host loads054207 and the former host
+has exited. No live callback, native action or CAD mutation was attempted.
+Read-only disposable-fixture inspection found two implementation mismatches:
+native document IDs can be16hex, and a branch can already have duplicate
+structure rows. Candidate `0.3.0+codex.20261013074635` corrects those cases.
+Branch/owner/history identities remain32hex; complete row multiplicity and
+non-ticket SQL fields remain strict. Do not alter fixtures to satisfy synthetic
+assumptions. Nine source files and six existing test/fixture files changed;
+1,221 affected tests pass with no failures/skips. Final facade types, full strict
+lint, build, compatibility, package/repository/privacy, coverage and seven skill
+checks pass. Source6241777a/bundleb0d5c05f; external pins and native DLL unchanged.
+GitHub CI, publication and installation of074635 are pending.
+
+The public closed-symbol workflow and ordinary writer integration remain
+unfinished. Further test-matrix expansion is deferred. Finish this focused
+release, then use a fresh host for the one disposable workflow. No general
+writer becomes enabled by these parser/comparator fixes. Production and its
+engineering record remain out of scope.
+
+### Previous release: 054207
+
 The installed and enabled release is `0.3.0+codex.20261013054207`, from the Git
 marketplace feature branch at payload2e2440f1fab83d825dd7c9616f880eb820d14f28.
 All type1/2/3 design lifecycles and the eight affected
@@ -29,8 +50,8 @@ proof6b38ac155c74a8dacf92d1bdb15eb3b73a733788f4b1364da30f1ea726cc8593.
 The first installer return did not leave a usable cache at verification; that
 ENOENT is preserved. Supported reinstall, complete verification and final CLI
 discovery now pass. No manual cache edits or host termination occurred.
-The existing official host still loads030626; a fresh chat/host is required
-before the new public disposable callback. No CAD operation or Save is pending.
+At that installation the official host still loaded030626. The subsequent
+restart is admitted above; no CAD operation or Save is pending.
 
 The complete 39-unit native session is now maintained and builds reproducibly
 with the pinned public toolchain. The corrected DLL is 175,104 bytes, SHA256

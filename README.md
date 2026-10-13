@@ -25,7 +25,11 @@ disposable validation route, not a general editing endpoint. The compiled helper
 and v3 transport pass a standalone Windows smoke run, including process cleanup.
 The complete public disposable workflow still needs connected validation.
 Ordinary editing gates remain.
-The installed054207 catalog has27 tools. Start a fresh Codex host after updating.
+The catalog has27 tools. Candidate074635 fixes native16-hex document identity
+handling throughout the closed-symbol workflow and exact duplicate structure-row
+verification. It does not enable the blocked writers. See the
+[focused release and remaining tasks](docs/api-coverage-074635-release-2026-10-13.md).
+Start a fresh Codex host after updating.
 `easyeda_control_api` exposes 93 reviewed
 namespaces / 749 declared signatures and 99 latest official namespaces / 806
 signatures. Its `coverage` action inventories all 774 distinct mounted method

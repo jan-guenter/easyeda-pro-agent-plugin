@@ -74,7 +74,7 @@ export async function prepareSavedSymbolProjection(input: Readonly<{
   chunks: readonly string[]; targetUuid: string; maximumTicket: number; currentEditVersion: string | null;
 }>): Promise<SavedSymbolProjection> {
   const { targetUuid, maximumTicket, currentEditVersion } = input;
-  need(/^[a-f0-9]{32}$/u.test(targetUuid) && Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && maximumTicket < Number.MAX_SAFE_INTEGER,
+  need(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u.test(targetUuid) && Number.isSafeInteger(maximumTicket) && maximumTicket >= 0 && maximumTicket < Number.MAX_SAFE_INTEGER,
     "target/ticket input refused");
   need(currentEditVersion === null || (typeof currentEditVersion === "string" && currentEditVersion.length > 0 && currentEditVersion.length <= 128), "editor version refused");
   need(Array.isArray(input.chunks) && input.chunks.length > 0 && input.chunks.length <= 4096, "chunk count refused");
