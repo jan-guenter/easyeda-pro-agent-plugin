@@ -25,7 +25,7 @@ disposable validation route, not a general editing endpoint. The compiled helper
 and v3 transport pass a standalone Windows smoke run, including process cleanup.
 The complete public disposable workflow still needs connected validation.
 Ordinary editing gates remain.
-The installed030626 catalog still has26 tools until a new release is installed.
+The installed054207 catalog has27 tools. Start a fresh Codex host after updating.
 `easyeda_control_api` exposes 93 reviewed
 namespaces / 749 declared signatures and 99 latest official namespaces / 806
 signatures. Its `coverage` action inventories all 774 distinct mounted method
@@ -37,14 +37,15 @@ omissions. Their execution routes comprise 274 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)
-describes the installed payload. The [054207 candidate](docs/api-coverage-054207-release-2026-10-13.md)
-packages the later native-helper and disposable-workflow implementation.
+describes the earlier containment changes. The [installed054207 candidate](docs/api-coverage-054207-release-2026-10-13.md)
+packages the native-helper and disposable-workflow implementation.
 The [completion report](docs/project-structure-save-completion-2026-10-12.md)
 tracks that work and its remaining tasks. The preceding source snapshot passed
 9,701 facade tests with one platform skip and 424 bridge tests. The v3 integration
-passes types, strict lint and its affected existing tests; native execution
-qualification remains unfinished.
-Installed030626 includes the Unicode evidence-reader
+passes types, strict lint and its affected existing tests. Exact-payload CI passes
+9,713 facade tests with five skips and 424 bridge tests. Successful public
+disposable workflow validation remains pending.
+The030626 release introduced the Unicode evidence-reader
 fixes from024750 and blocks eight metadata-writing routes plus schematic-page,
 symbol and PCB design transactions whose delayed native structure-table effects
 lack a complete lifecycle proof. Footprint transactions retain their own guards.
