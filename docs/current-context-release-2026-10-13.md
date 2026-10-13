@@ -46,6 +46,14 @@ External runtime/bridge pins are unchanged. Required CI, publication and
 installation are pending at this source snapshot; consult the release PR's
 delivery receipt before repeating them. No live validation is claimed.
 
+Initial PR16 CI38462036703 passed build verification but caught a test-helper
+contract that still required the SQL child's old inherited-cwd options. The
+synthetic launcher now explicitly requires the same fixed `/` cwd as the real
+reader, retaining exact executable, descriptor, source, args, environment and
+stdio checks. Independent review found no other stale option expectation.
+The79 focused witness/recorded-native/protocol cases pass after this correction;
+full types and strict lint remain clean. No runtime guard or test was removed.
+
 The preceding193500 release is already published and installed through
 [PR15](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/15),
 main90b96777e32c909ac46285f9ba43f8147f80f93d. Required PR CI38457338169 and

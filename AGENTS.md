@@ -48,6 +48,10 @@ runtime3 projectionc7d00a16c5e896d545825c90cab99055a8901ce3fe1c045426b989e1a1d59
 External runtime/bridge pins are unchanged. Independent source reviews accept
 the scoped implementation. Required CI/publication/install are pending at this
 source checkpoint; consult the release PR receipt before repeating delivery.
+Initial PR16 CI38462036703 exposed the synthetic SQL-spawn helper's old exact
+options. It now requires fixed cwd/ too, retaining all executable/descriptor/
+argument/environment/stdio checks.79 focused cases, fulltypes and strictlint
+pass. Runtime source/bundle projections are unchanged by this test-only fix.
 The production project and its project record remain untouched.
 
 ### Historical candidate193500: ordinary launch and editor-shell observation
