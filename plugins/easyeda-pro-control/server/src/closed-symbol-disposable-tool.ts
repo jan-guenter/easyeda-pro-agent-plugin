@@ -2,6 +2,8 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { sha256Text } from "./core.ts";
+import { closedSymbolFailureDiagnosticText } from "./closed-symbol-failure-diagnostic.ts";
+import type { ClosedSymbolFailureDiagnostic } from "./closed-symbol-failure-diagnostic.ts";
 import { exactData, parseClosedSymbolValidationRequest } from "./closed-symbol-validation-request.ts";
 import type { ClosedSymbolValidationRequest } from "./closed-symbol-validation-request.ts";
 
@@ -124,7 +126,7 @@ export function boundedOwnData(input: unknown): unknown {
 }
 
 /** Current SDK skips its output schema for isError:true; enforce both branches here. */
-export function formatClosedSymbolDisposableResult(input: unknown): CallToolResult {
+export function formatClosedSymbolDisposableResult(input: unknown, diagnostic?: ClosedSymbolFailureDiagnostic): CallToolResult {
   const result = disposableResult.parse(boundedOwnData(input));
   const structuredContent = closedSymbolDisposableOutputSchema.parse({ result });
   const encoded = JSON.stringify(structuredContent), jsonBytes = Buffer.byteLength(encoded);
@@ -132,7 +134,8 @@ export function formatClosedSymbolDisposableResult(input: unknown): CallToolResu
   const ok = result.outcome === "completed";
   return {
     isError: !ok,
-    content: [{ type: "text", text: JSON.stringify({ ok, structuredContent: true, jsonBytes, sha256: sha256Text(encoded) }) }],
+    content: [{ type: "text", text: JSON.stringify({ ok, structuredContent: true, jsonBytes, sha256: sha256Text(encoded) }) },
+      ...ok ? [] : closedSymbolFailureDiagnosticText(diagnostic)],
     structuredContent,
   };
 }
@@ -141,7 +144,7 @@ export function formatClosedSymbolDisposableResult(input: unknown): CallToolResu
 export function closedSymbolDisposableIndexRefusal(input: Readonly<{
   phase: ClosedSymbolIndexPhase; reason: ClosedSymbolIndexReason;
   attemptReserved: boolean; entryInvocationAttempted: boolean; entryReturnObserved: boolean; originalEntryResult?: unknown;
-}>): CallToolResult {
+}>, diagnostic?: ClosedSymbolFailureDiagnostic): CallToolResult {
   let observation: z.infer<typeof entryObservation> | null = null;
   if (input.entryReturnObserved) {
     try {
@@ -166,10 +169,10 @@ export function closedSymbolDisposableIndexRefusal(input: Readonly<{
     entryObservation: observation, replayAllowed: false,
     executionAuthorized: false, completionProved: false, historicalCompletionRecorded: "not-checked", nextSafeAction: NEXT,
   };
-  try { return formatClosedSymbolDisposableResult(result); }
+  try { return formatClosedSymbolDisposableResult(result, diagnostic); }
   catch {
     // The wrapper overhead can exceed the bound even when the entry value fits.
     // Preserve the original privately; do not truncate descriptors or expand limits.
-    return formatClosedSymbolDisposableResult({ ...result, entryObservation: null });
+    return formatClosedSymbolDisposableResult({ ...result, entryObservation: null }, diagnostic);
   }
 }

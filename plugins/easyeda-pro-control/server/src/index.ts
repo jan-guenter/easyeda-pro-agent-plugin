@@ -72,6 +72,7 @@ import { WindowsControlRuntime } from "./windows-runtime.ts";
 import type { ClosedSymbolDisposableEntry } from "./closed-symbol-disposable-entry.ts";
 import type { ClosedSymbolOperationEntry } from "./closed-symbol-operation-entry.ts";
 import { assertClosedSymbolOperationValidated } from "./closed-symbol-operation-request.ts";
+import { closedSymbolEntryFailureDiagnostic, closedSymbolFailureDiagnostic } from "./closed-symbol-failure-diagnostic.ts";
 import { closedSymbolOperationInputSchema, closedSymbolOperationOutputSchema, closedSymbolOperationStopped,
   formatClosedSymbolOperationResult, parseClosedSymbolOperationInput } from "./closed-symbol-operation-tool.ts";
 import {
@@ -237,7 +238,8 @@ async function runClosedSymbolTool(input: unknown, mode: "validation" | "ordinar
     // Refuse before reservation, imports, runtime allocation or bridge admission.
     if (mode === "ordinary") {
       try { assertClosedSymbolOperationValidated(); }
-      catch { return formatClosedSymbolOperationResult(closedSymbolOperationStopped({ phase: "validation", attemptReserved: false })); }
+      catch (error) { return formatClosedSymbolOperationResult(closedSymbolOperationStopped({ phase: "validation", attemptReserved: false }),
+        closedSymbolFailureDiagnostic(error, "validation")); }
     }
     const requestText = canonicalJson(parsed.request);
     phase = "reservation"; reason = "attempt-unavailable";
@@ -325,7 +327,8 @@ async function runClosedSymbolTool(input: unknown, mode: "validation" | "ordinar
     if (reservation.entry !== entry || reservation.runtime !== runtime || reservation.nativeUi !== nativeUi ||
       reservation.entryRun !== entryRun || reservation.originalReturn !== result) { throw new Error("Disposable index retained originals changed."); }
     phase = "projection"; reason = "result-refused";
-    return mode === "validation" ? formatClosedSymbolDisposableResult(result) : formatClosedSymbolOperationResult(result);
+    const diagnostic = closedSymbolEntryFailureDiagnostic(entry);
+    return mode === "validation" ? formatClosedSymbolDisposableResult(result, diagnostic) : formatClosedSymbolOperationResult(result, diagnostic);
   } catch (error) {
     if (activeReservation === undefined) {
       if (!closedSymbolUnreservedFailure.observed) {
@@ -336,14 +339,14 @@ async function runClosedSymbolTool(input: unknown, mode: "validation" | "ordinar
     }
     if (mode === "ordinary") {
       return formatClosedSymbolOperationResult(closedSymbolOperationStopped({ phase,
-        attemptReserved: activeReservation !== undefined }));
+        attemptReserved: activeReservation !== undefined }), closedSymbolFailureDiagnostic(error, phase));
     }
     return closedSymbolDisposableIndexRefusal({
       phase, reason, attemptReserved: closedSymbolIndexReservation !== undefined,
       entryInvocationAttempted: activeReservation?.entryInvocationAttempted ?? false,
       entryReturnObserved: activeReservation?.entryReturnObserved ?? false,
       originalEntryResult: activeReservation?.originalReturn,
-    });
+    }, closedSymbolFailureDiagnostic(error, phase));
   }
 }
 
@@ -3217,7 +3220,7 @@ registerFacadeTool(
   {
     title: "Inspect incomplete journals or resolve a supported retained refusal",
     description:
-      "Without an operation ID, list unresolved managed journals. Resolution abandoned-before-navigation accepts only the exact closed-symbol validation marker-read transport refusal or successful six-event baseline startup stopped before navigation; it preserves the original journal, marker and permanent claim, performs no application call, and never authorizes replay. Baseline abandonment proves neither process closure nor source invariance. Other ID-based resolutions are the retained legacy component workflow, not typed design, library, check or runtime-open recovery; use the originating tool for those journals. Legacy orphan resolution requires a fresh human-supplied operation-bound runtimeRestartConfirmation after an authorized restart and reconnect. Never synthesize that attestation, choose Save after an unknown write, or discard or force-quit without applicable authority.",
+      "Without an operation ID, list unresolved managed journals. Resolution abandoned-before-navigation accepts only the exact closed-symbol validation sixteen-event marker-read transport refusal or successful fixed marker-read boundary, or successful six-event baseline startup stopped before navigation; it preserves the original journal, marker and permanent claim, performs no application call, and never authorizes replay. Baseline abandonment proves neither process closure nor source invariance. Other ID-based resolutions are the retained legacy component workflow, not typed design, library, check or runtime-open recovery; use the originating tool for those journals. Legacy orphan resolution requires a fresh human-supplied operation-bound runtimeRestartConfirmation after an authorized restart and reconnect. Never synthesize that attestation, choose Save after an unknown write, or discard or force-quit without applicable authority.",
     inputSchema: {
       operationId: operationIdSchema.optional(),
       resolution: z

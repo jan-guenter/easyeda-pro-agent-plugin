@@ -914,3 +914,59 @@ Retained commitments:
 
 The seq16 C08 abandonment route does not admit this seq6 case. Ordinary symbol
 execution remains disabled. This failure is not successful lifecycle validation.
+
+### C09 recovery on restarted101000
+
+The public `abandoned-before-navigation` resolution completed once on the
+independently admitted101000 host, using its separate six-event profile.
+All1,112 installed files and modes matched tested payload306871c5. The original
+journal, marker-result artifact and permanent claim retain the hashes above;
+the recovery leaves every original phase intact and makes no application call.
+The exclusive sidecar SHA256 is
+`78ec1b3520746e8d8c682161d4d588b5da09a3e31736465d83ba5f96086b4a39`, with body
+seal `e9b231450d220cb22cd9052b0edf0f6c436c8dc866f322a06f28b291c1b7b4f2`.
+This profile proves neither current source invariance nor process closure. It
+grants no completion, restored execution authority or permission to retry.
+
+## 2026-10-13: C10, successful marker read followed by pre-navigation stop
+
+The admitted101000 host ran one new disposable closed-symbol validation,
+`easyeda-20261013t111537z-e7df16d2`. The fixture had one ordinary resistor symbol
+and a META-only PCB companion. The request kept the name unchanged and proposed
+only a new description. Read-only preparation had verified the complete saved
+schema and native history before dispatch.
+
+Baseline launch, startup marker creation, normal close, retained termination,
+closed copying and aged-head native main-reference qualification passed. Edit
+launch and admission passed. The fixed marker-read result is successful, with
+all six observations. The journal stops at sequence16, without navigation intent,
+hard stop, orphan flag or possible design mutation. No writer, Save or target
+editor opening was dispatched.
+
+Root observed Start Page with an update offer, requested normal application
+close once without a prompt choice and then observed empty native discovery.
+The disposable file remains434176bytes and byte-identical to its baseline. This
+does not establish the coordinator's original edit-Job termination or completion.
+Marker, permanent claim and original journal remain. Do not replay the request.
+
+Maintained offline readers accept the startup result, generated-code hash,
+all navigation checkpoint predicates and exact navigation preparation. A fresh
+public status after application closure reports Node `v24.18.0`; the retained
+expected fingerprint requires `24.18.0`. Every non-disconnection fingerprint
+field otherwise matches. Upstream source returns `process.version`; core
+manifest validation intentionally stores the unprefixed semantic version.
+The expectation defect would reject navigation admission. The original exception
+was swallowed, so this is not a claim to have observed its exact throw site.
+
+Retained commitments:
+
+- Original journal: `81a9dcd23780f74acccc9a4306ba0ed40b37cb500d64a2ec093226f7e7d969ad`.
+- Marker result: `139cff12b35cf44fdb8c9bf64cade04fd0185d946c39bd1379dc08eff5e96bb1`.
+- Permanent claim: `e7c9d34f97ab3b15e261ec5fae2c86f97b1415d7026ff2c1a0a75302433d3b4b`.
+- Unchanged fixture: `4ad992b9fd1448e07aa3395053397e970e3eb8007c4f35bb0d3be21ca5d0e0f7`.
+- Start Page capture: `9eb38c13f1cf70f411be546de3d17631b5f775832fc0e8d40a46eb180b052f46`.
+
+The scoped113000 release corrects the expectation, adds bounded failure
+diagnostics and supports historical abandonment of this successful-marker
+pre-navigation boundary. That recovery has not run. Ordinary symbol execution
+and the other affected writers stay disabled; no lifecycle success is claimed.

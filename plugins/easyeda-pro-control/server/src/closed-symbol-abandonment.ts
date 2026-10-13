@@ -1,4 +1,4 @@
-/** Historical abandonment of one rejected pre-navigation prefix. No dispatch,
+/** Historical abandonment of one stopped pre-navigation prefix. No dispatch,
  * journal update, process proof, completion or renewed attempt authority. */
 /* oxlint-disable import/max-dependencies -- Reuse the maintained managed-file, journal, checkpoint and complete-SQL readers; no caller-provided verifier or native executor. */
 import { opendir } from "node:fs/promises";
@@ -8,9 +8,9 @@ import { controlDataDirectory, controlRootCapability, operationPath, publishMana
 import { verifyCheckpoint } from "./checkpoint.ts";
 import { loadClosedSymbolJournal } from "./closed-symbol-journal.ts";
 import { inspectRecordedClosedCopy } from "./closed-symbol-recorded-copy.ts";
-import { buildStartupProgram } from "./closed-symbol-startup-program.ts";
+import { buildStartupProgram, validateStartupResult } from "./closed-symbol-startup-program.ts";
 import { VALIDATION_ACTION_ID } from "./closed-symbol-target-claim.ts";
-import { canonicalJson, isErrnoException, isRecord, sha256Json, sha256Text } from "./core.ts";
+import { canonicalJson, extractToolPayload, isErrnoException, isRecord, sha256Json, sha256Text } from "./core.ts";
 import { currentProcessSqlRuntime } from "./machine-profile.ts";
 import { readExactSqlInventory, readerCompletion } from "./sqlite-inventory.ts";
 
@@ -84,7 +84,17 @@ async function prefix(operationId: string): Promise<Prefix> {
     codeSha256: sha256Text(buildStartupProgram(input)), directMainFrameOnly: true };
   same(events[14]?.data, request, "fixed marker-read intent");
   need(events[14]?.requestSha256 === sha256Json(request), "Closed-symbol abandonment request hash differs.");
-  same(events[15]?.data, { rawReturn: REJECTION }, "pre-handler rejection");
+  const returned = events[15]?.data;
+  if (canonicalJson(returned) !== canonicalJson({ rawReturn: REJECTION })) {
+    // A completed fixed marker read can be followed by an admission refusal
+    // Before navigation. This is still abandonment, never lifecycle success.
+    const data = bag(returned), raw = bag(data["rawReturn"]);
+    need(Object.keys(data).length === 1 && raw["isError"] !== true,
+      "Closed-symbol abandonment pre-handler rejection differs.");
+    const startup = validateStartupResult(extractToolPayload(raw), input);
+    need(startup["ok"] === true && startup["markerCreateAttempted"] === false,
+      "Closed-symbol abandonment requires a complete successful fixed marker read.");
+  }
   await noLaterEvidence(operationId);
   return loaded;
 }

@@ -100,7 +100,7 @@ for (const mode of ["source-tree", "bundle"] as const) {
         startupSha256: core.sha256Json(f.launcher), currentSha256: core.sha256Json(f.launcher), drift: false }));
       t.mock.method(f.upstream, "callTool", (name: string) => {
         const values: Record<string, unknown> = {
-          easyeda_health_check: { version: p.healthVersion, node_version: p.nodeVersion, bridge_connected: true,
+          easyeda_health_check: { version: p.healthVersion, node_version: `v${p.nodeVersion}`, bridge_connected: true,
             easyeda_version: p.easyedaVersion, extension_version: p.extensionVersion, extension_version_mismatch: false, registry_mismatch: false },
           easyeda_bridge_status: { connected: true, bridge_version: p.bridgeVersion,
             ...(p.bridgeEasyedaVersion === null ? {} : { easyeda_version: p.bridgeEasyedaVersion }), diagnostics: { method_registry_hash: p.methodRegistryHash } },
@@ -117,12 +117,12 @@ for (const mode of ["source-tree", "bundle"] as const) {
   }
 }
 
-void test("expectation cannot establish the unobserved raw Node wire spelling", async (t) => {
+void test("expectation preserves upstream process.version spelling without relaxing the raw comparison", async (t) => {
   const f = await fixture(t), value = await build(f.engine, f.upstream);
-  assert.equal(value.fingerprint.health.payload.node_version, f.manifest.connectedRuntime.nodeVersion);
-  const prefixed = structuredClone(value.fingerprint); prefixed.health.payload.node_version = `v${f.manifest.connectedRuntime.nodeVersion}`;
-  assert.equal(core.validatePrivateFingerprint(prefixed), true);
-  assert.notDeepEqual(core.compareSubset(prefixed, value.fingerprint), []);
+  assert.equal(value.fingerprint.health.payload.node_version, `v${f.manifest.connectedRuntime.nodeVersion}`);
+  const unprefixed = structuredClone(value.fingerprint); unprefixed.health.payload.node_version = f.manifest.connectedRuntime.nodeVersion;
+  assert.equal(core.validatePrivateFingerprint(unprefixed), true);
+  assert.notDeepEqual(core.compareSubset(unprefixed, value.fingerprint), []);
   offline(f.calls);
 });
 void test("unrelated engine/upstream pair refuses before local reads", async (t) => {

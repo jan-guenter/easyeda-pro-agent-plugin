@@ -226,8 +226,17 @@ void test("actual SDK strict envelope does not consume the sole offline validati
   assert.equal(ordinary.isError, true);
   const blocked = closedSymbolOperationOutputSchema.parse(ordinary.structuredContent).result;
   assert.ok(blocked.outcome === "stopped"); assert.equal(blocked.phase, "validation"); assert.equal(blocked.attemptReserved, false);
+  assert.ok(Array.isArray(ordinary.content));
+  const ordinaryDiagnostic: unknown = ordinary.content[1];
+  assert.ok(isRecord(ordinaryDiagnostic) && typeof ordinaryDiagnostic["text"] === "string");
+  assert.match(ordinaryDiagnostic["text"], /"errorCode":"VALIDATION_REQUIRED"/u);
   await f.unchangedAndOffline(); assert.deepEqual(await f.runtimeStatus(), { state: "not-launched" });
-  const stopped = strictResponse(await f.call(tool, requestData()));
+  const stoppedReply = await f.call(tool, requestData());
+  const stopped = strictResponse(stoppedReply);
+  assert.ok(Array.isArray(stoppedReply.content));
+  const stoppedDiagnostic: unknown = stoppedReply.content[1];
+  assert.ok(isRecord(stoppedDiagnostic) && typeof stoppedDiagnostic["text"] === "string");
+  assert.match(stoppedDiagnostic["text"], /"stage":"admission"/u);
   assert.equal(stopped.profile, "easyeda-pro-control.closed-symbol-disposable-result.v1");
   assert.ok(stopped.outcome === "stopped" && "claimState" in stopped);
   assert.equal(stopped.phase, "admission"); assert.equal(stopped.claimState, "not-attempted");

@@ -6,8 +6,10 @@ import type { ClosedSymbolPlan } from "../src/closed-symbol-journal.ts";
 import { WITNESS_NATIVE_PINS_SHA256 } from "../src/closed-symbol-native-profile.ts";
 import { claimClosedSymbolOperationIntent } from "../src/closed-symbol-operation-intent.ts";
 import { assertClosedSymbolOperationValidated } from "../src/closed-symbol-operation-request.ts";
+import { closedSymbolFailureDiagnostic } from "../src/closed-symbol-failure-diagnostic.ts";
 import { closedSymbolOperationInputSchema, closedSymbolOperationStopped, formatClosedSymbolOperationResult,
   parseClosedSymbolOperationInput } from "../src/closed-symbol-operation-tool.ts";
+// oxlint-disable-next-line import/max-dependencies -- Reuse the existing request fixture and exact projector in this ordinary formatter/intent test.
 import { requestData } from "./helpers/disposable-tool-data.ts";
 
 function input(): unknown {
@@ -37,6 +39,10 @@ void test("ordinary validation gate stays closed and bounded refusal never grant
   const reply = formatClosedSymbolOperationResult(value);
   assert.equal(reply.isError, true);
   assert.deepEqual(reply.structuredContent, { result: value });
+  const diagnostic = closedSymbolFailureDiagnostic(new Error("Ordinary closed-symbol metadata execution awaits successful disposable full-lifecycle validation."), "validation");
+  const diagnosed = formatClosedSymbolOperationResult(value, diagnostic);
+  assert.deepEqual(diagnosed.structuredContent, reply.structuredContent); assert.deepEqual(diagnosed.content[0], reply.content[0]);
+  assert.equal(diagnosed.content.length, 2); assert.equal(diagnostic?.errorCode, "VALIDATION_REQUIRED");
   assert.throws(() => formatClosedSymbolOperationResult({ ...value, completionProved: true }));
   let reads = 0;
   assert.throws(() => formatClosedSymbolOperationResult({ get outcome(): never { reads += 1; throw new Error("must not read"); } }));

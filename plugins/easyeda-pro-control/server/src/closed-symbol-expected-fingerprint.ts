@@ -115,7 +115,8 @@ export async function buildClosedSymbolExpectedFingerprint(engine: EasyedaContro
     upstreamServer: { version: manifest.upstream.serverVersion }, upstreamLauncher,
     upstreamImplementationDrift: false, installedBundles,
     toolCount: manifest.upstream.toolCatalog.count, toolCatalogSha256: manifest.upstream.toolCatalog.sha256,
-    health: { payload: { version: pinned.healthVersion, node_version: pinned.nodeVersion,
+    // Upstream health reports process.version; the manifest stores its unprefixed semantic version.
+    health: { payload: { version: pinned.healthVersion, node_version: `v${pinned.nodeVersion}`,
       bridge_connected: true, easyeda_version: pinned.easyedaVersion, extension_version: pinned.extensionVersion,
       extension_version_mismatch: false, registry_mismatch: false } },
     bridge: { payload: { connected: true, bridge_version: pinned.bridgeVersion,

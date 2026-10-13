@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "11bf1fae9cf756e8305f08a8d9d17d3336210fd1ae5301146b87cbdd567c4245";
+const __easyedaBundlePairId = "75672fe3720555ce6ef2eddcddd5e0b1364e67e06e1b7e8d4fa08f2af66c4ebf";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -11001,10 +11001,10 @@ function _property(property, schema2, params) {
   });
 }
 // @__NO_SIDE_EFFECTS__
-function _mime(types2, params) {
+function _mime(types3, params) {
   return new $ZodCheckMimeType({
     check: "mime_type",
-    mime: types2,
+    mime: types3,
     ...normalizeParams(params)
   });
 }
@@ -14185,7 +14185,7 @@ var init_schemas2 = __esm({
       inst._zod.processJSONSchema = (ctx, json3, params) => fileProcessor(inst, ctx, json3, params);
       inst.min = (size2, params) => inst.check(_minSize(size2, params));
       inst.max = (size2, params) => inst.check(_maxSize(size2, params));
-      inst.mime = (types2, params) => inst.check(_mime(Array.isArray(types2) ? types2 : [types2], params));
+      inst.mime = (types3, params) => inst.check(_mime(Array.isArray(types3) ? types3 : [types3], params));
     });
     ZodTransform = /* @__PURE__ */ $constructor("ZodTransform", (inst, def) => {
       $ZodTransform.init(inst, def);
@@ -18566,9 +18566,9 @@ var init_types = __esm({
         return this._def.options;
       }
     };
-    ZodUnion2.create = (types2, params) => {
+    ZodUnion2.create = (types3, params) => {
       return new ZodUnion2({
-        options: types2,
+        options: types3,
         typeName: ZodFirstPartyTypeKind2.ZodUnion,
         ...processCreateParams(params)
       });
@@ -22458,15 +22458,15 @@ function parseUnionDef(def, refs) {
     return asAnyOf(def, refs);
   const options = def.options instanceof Map ? Array.from(def.options.values()) : def.options;
   if (options.every((x) => x._def.typeName in primitiveMappings && (!x._def.checks || !x._def.checks.length))) {
-    const types2 = options.reduce((types3, x) => {
+    const types3 = options.reduce((types4, x) => {
       const type2 = primitiveMappings[x._def.typeName];
-      return type2 && !types3.includes(type2) ? [...types3, type2] : types3;
+      return type2 && !types4.includes(type2) ? [...types4, type2] : types4;
     }, []);
     return {
-      type: types2.length > 1 ? types2 : types2[0]
+      type: types3.length > 1 ? types3 : types3[0]
     };
   } else if (options.every((x) => x._def.typeName === "ZodLiteral" && !x.description)) {
-    const types2 = options.reduce((acc, x) => {
+    const types3 = options.reduce((acc, x) => {
       const type2 = typeof x._def.value;
       switch (type2) {
         case "string":
@@ -22485,8 +22485,8 @@ function parseUnionDef(def, refs) {
           return acc;
       }
     }, []);
-    if (types2.length === options.length) {
-      const uniqueTypes = types2.filter((x, i2, a) => a.indexOf(x) === i2);
+    if (types3.length === options.length) {
+      const uniqueTypes = types3.filter((x, i2, a) => a.indexOf(x) === i2);
       return {
         type: uniqueTypes.length > 1 ? uniqueTypes : uniqueTypes[0],
         enum: options.reduce((acc, x) => {
@@ -25649,37 +25649,37 @@ var require_dataType = __commonJS({
       DataType2[DataType2["Wrong"] = 1] = "Wrong";
     })(DataType || (exports2.DataType = DataType = {}));
     function getSchemaTypes(schema2) {
-      const types2 = getJSONTypes(schema2.type);
-      const hasNull = types2.includes("null");
+      const types3 = getJSONTypes(schema2.type);
+      const hasNull = types3.includes("null");
       if (hasNull) {
         if (schema2.nullable === false)
           throw new Error("type: null contradicts nullable: false");
       } else {
-        if (!types2.length && schema2.nullable !== void 0) {
+        if (!types3.length && schema2.nullable !== void 0) {
           throw new Error('"nullable" cannot be used without "type"');
         }
         if (schema2.nullable === true)
-          types2.push("null");
+          types3.push("null");
       }
-      return types2;
+      return types3;
     }
     exports2.getSchemaTypes = getSchemaTypes;
     function getJSONTypes(ts) {
-      const types2 = Array.isArray(ts) ? ts : ts ? [ts] : [];
-      if (types2.every(rules_1.isJSONType))
-        return types2;
-      throw new Error("type must be JSONType or JSONType[]: " + types2.join(","));
+      const types3 = Array.isArray(ts) ? ts : ts ? [ts] : [];
+      if (types3.every(rules_1.isJSONType))
+        return types3;
+      throw new Error("type must be JSONType or JSONType[]: " + types3.join(","));
     }
     exports2.getJSONTypes = getJSONTypes;
-    function coerceAndCheckDataType(it, types2) {
+    function coerceAndCheckDataType(it, types3) {
       const { gen, data: data2, opts } = it;
-      const coerceTo = coerceToTypes(types2, opts.coerceTypes);
-      const checkTypes = types2.length > 0 && !(coerceTo.length === 0 && types2.length === 1 && (0, applicability_1.schemaHasRulesForType)(it, types2[0]));
+      const coerceTo = coerceToTypes(types3, opts.coerceTypes);
+      const checkTypes = types3.length > 0 && !(coerceTo.length === 0 && types3.length === 1 && (0, applicability_1.schemaHasRulesForType)(it, types3[0]));
       if (checkTypes) {
-        const wrongType = checkDataTypes(types2, data2, opts.strictNumbers, DataType.Wrong);
+        const wrongType = checkDataTypes(types3, data2, opts.strictNumbers, DataType.Wrong);
         gen.if(wrongType, () => {
           if (coerceTo.length)
-            coerceData(it, types2, coerceTo);
+            coerceData(it, types3, coerceTo);
           else
             reportTypeError(it);
         });
@@ -25688,15 +25688,15 @@ var require_dataType = __commonJS({
     }
     exports2.coerceAndCheckDataType = coerceAndCheckDataType;
     var COERCIBLE = /* @__PURE__ */ new Set(["string", "number", "integer", "boolean", "null"]);
-    function coerceToTypes(types2, coerceTypes) {
-      return coerceTypes ? types2.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
+    function coerceToTypes(types3, coerceTypes) {
+      return coerceTypes ? types3.filter((t) => COERCIBLE.has(t) || coerceTypes === "array" && t === "array") : [];
     }
-    function coerceData(it, types2, coerceTo) {
+    function coerceData(it, types3, coerceTo) {
       const { gen, data: data2, opts } = it;
       const dataType = gen.let("dataType", (0, codegen_1._)`typeof ${data2}`);
       const coerced = gen.let("coerced", (0, codegen_1._)`undefined`);
       if (opts.coerceTypes === "array") {
-        gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data2}) && ${data2}.length == 1`, () => gen.assign(data2, (0, codegen_1._)`${data2}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data2}`).if(checkDataTypes(types2, data2, opts.strictNumbers), () => gen.assign(coerced, data2)));
+        gen.if((0, codegen_1._)`${dataType} == 'object' && Array.isArray(${data2}) && ${data2}.length == 1`, () => gen.assign(data2, (0, codegen_1._)`${data2}[0]`).assign(dataType, (0, codegen_1._)`typeof ${data2}`).if(checkDataTypes(types3, data2, opts.strictNumbers), () => gen.assign(coerced, data2)));
       }
       gen.if((0, codegen_1._)`${coerced} !== undefined`);
       for (const t of coerceTo) {
@@ -25772,19 +25772,19 @@ var require_dataType = __commonJS({
         return checkDataType(dataTypes[0], data2, strictNums, correct);
       }
       let cond;
-      const types2 = (0, util_1.toHash)(dataTypes);
-      if (types2.array && types2.object) {
+      const types3 = (0, util_1.toHash)(dataTypes);
+      if (types3.array && types3.object) {
         const notObj = (0, codegen_1._)`typeof ${data2} != "object"`;
-        cond = types2.null ? notObj : (0, codegen_1._)`!${data2} || ${notObj}`;
-        delete types2.null;
-        delete types2.array;
-        delete types2.object;
+        cond = types3.null ? notObj : (0, codegen_1._)`!${data2} || ${notObj}`;
+        delete types3.null;
+        delete types3.array;
+        delete types3.object;
       } else {
         cond = codegen_1.nil;
       }
-      if (types2.number)
-        delete types2.integer;
-      for (const t in types2)
+      if (types3.number)
+        delete types3.integer;
+      for (const t in types3)
         cond = (0, codegen_1.and)(cond, checkDataType(t, data2, strictNums, correct));
       return cond;
     }
@@ -26589,9 +26589,9 @@ var require_validate = __commonJS({
     function typeAndKeywords(it, errsCount) {
       if (it.opts.jtd)
         return schemaKeywords(it, [], false, errsCount);
-      const types2 = (0, dataType_1.getSchemaTypes)(it.schema);
-      const checkedTypes = (0, dataType_1.coerceAndCheckDataType)(it, types2);
-      schemaKeywords(it, types2, !checkedTypes, errsCount);
+      const types3 = (0, dataType_1.getSchemaTypes)(it.schema);
+      const checkedTypes = (0, dataType_1.coerceAndCheckDataType)(it, types3);
+      schemaKeywords(it, types3, !checkedTypes, errsCount);
     }
     function checkRefsAndKeywords(it) {
       const { schema: schema2, errSchemaPath, opts, self } = it;
@@ -26641,7 +26641,7 @@ var require_validate = __commonJS({
       if (items instanceof codegen_1.Name)
         gen.assign((0, codegen_1._)`${evaluated}.items`, items);
     }
-    function schemaKeywords(it, types2, typeErrors, errsCount) {
+    function schemaKeywords(it, types3, typeErrors, errsCount) {
       const { gen, schema: schema2, data: data2, allErrors, opts, self } = it;
       const { RULES } = self;
       if (schema2.$ref && (opts.ignoreKeywordsWithRef || !(0, util_1.schemaHasRulesButRef)(schema2, RULES))) {
@@ -26649,7 +26649,7 @@ var require_validate = __commonJS({
         return;
       }
       if (!opts.jtd)
-        checkStrictTypes(it, types2);
+        checkStrictTypes(it, types3);
       gen.block(() => {
         for (const group of RULES.rules)
           groupKeywords(group);
@@ -26661,7 +26661,7 @@ var require_validate = __commonJS({
         if (group.type) {
           gen.if((0, dataType_2.checkDataType)(group.type, data2, opts.strictNumbers));
           iterateKeywords(it, group);
-          if (types2.length === 1 && types2[0] === group.type && typeErrors) {
+          if (types3.length === 1 && types3[0] === group.type && typeErrors) {
             gen.else();
             (0, dataType_2.reportTypeError)(it);
           }
@@ -26685,27 +26685,27 @@ var require_validate = __commonJS({
         }
       });
     }
-    function checkStrictTypes(it, types2) {
+    function checkStrictTypes(it, types3) {
       if (it.schemaEnv.meta || !it.opts.strictTypes)
         return;
-      checkContextTypes(it, types2);
+      checkContextTypes(it, types3);
       if (!it.opts.allowUnionTypes)
-        checkMultipleTypes(it, types2);
+        checkMultipleTypes(it, types3);
       checkKeywordTypes(it, it.dataTypes);
     }
-    function checkContextTypes(it, types2) {
-      if (!types2.length)
+    function checkContextTypes(it, types3) {
+      if (!types3.length)
         return;
       if (!it.dataTypes.length) {
-        it.dataTypes = types2;
+        it.dataTypes = types3;
         return;
       }
-      types2.forEach((t) => {
+      types3.forEach((t) => {
         if (!includesType(it.dataTypes, t)) {
           strictTypesError(it, `type "${t}" not allowed by context "${it.dataTypes.join(",")}"`);
         }
       });
-      narrowSchemaTypes(it, types2);
+      narrowSchemaTypes(it, types3);
     }
     function checkMultipleTypes(it, ts) {
       if (ts.length > 1 && !(ts.length === 2 && ts.includes("null"))) {
@@ -37983,7 +37983,7 @@ async function scanOperationProjections(select, cache) {
 }
 async function readExactUtf8Artifact(descriptor9) {
   const label = "Exact UTF-8 artifact";
-  const own = (key) => {
+  const own2 = (key) => {
     const field3 = Object.getOwnPropertyDescriptor(descriptor9, key);
     if (field3 === void 0 || !Object.hasOwn(field3, "value")) {
       throw new Error(`${label} requires own data descriptor fields.`);
@@ -37993,8 +37993,8 @@ async function readExactUtf8Artifact(descriptor9) {
   if (!isRecord(descriptor9)) {
     throw new Error(`${label} descriptor is missing.`);
   }
-  const path5 = own("path");
-  const expectedBytes = own("bytes"), expectedSha256 = own("sha256");
+  const path5 = own2("path");
+  const expectedBytes = own2("bytes"), expectedSha256 = own2("sha256");
   if (typeof path5 !== "string" || typeof expectedBytes !== "number" || !Number.isSafeInteger(expectedBytes) || expectedBytes < 0 || expectedBytes > 256 * 1024 || typeof expectedSha256 !== "string" || !/^[a-f0-9]{64}$/u.test(expectedSha256)) {
     throw new Error(`${label} descriptor or 256-KiB byte bound refused.`);
   }
@@ -49408,7 +49408,19 @@ async function prefix(operationId2) {
   };
   same3(events[14]?.data, request2, "fixed marker-read intent");
   need4(events[14]?.requestSha256 === sha256Json(request2), "Closed-symbol abandonment request hash differs.");
-  same3(events[15]?.data, { rawReturn: REJECTION }, "pre-handler rejection");
+  const returned = events[15]?.data;
+  if (canonicalJson(returned) !== canonicalJson({ rawReturn: REJECTION })) {
+    const data2 = bag(returned), raw = bag(data2["rawReturn"]);
+    need4(
+      Object.keys(data2).length === 1 && raw["isError"] !== true,
+      "Closed-symbol abandonment pre-handler rejection differs."
+    );
+    const startup2 = validateStartupResult(extractToolPayload(raw), input);
+    need4(
+      startup2["ok"] === true && startup2["markerCreateAttempted"] === false,
+      "Closed-symbol abandonment requires a complete successful fixed marker read."
+    );
+  }
   await noLaterEvidence(operationId2);
   return loaded;
 }
@@ -93264,6 +93276,168 @@ var init_closed_symbol_operation_request = __esm({
   }
 });
 
+// server/src/closed-symbol-failure-diagnostic.ts
+import { createHash as createHash27 } from "node:crypto";
+import { types } from "node:util";
+function own(value, key) {
+  if (value === null || typeof value !== "object" || types.isProxy(value)) {
+    return void 0;
+  }
+  const property = Object.getOwnPropertyDescriptor(value, key);
+  return property !== void 0 && Object.hasOwn(property, "value") ? property.value : void 0;
+}
+function selectedPaths(error51) {
+  const values2 = own(error51, "mismatches");
+  const count2 = own(values2, "length");
+  if (types.isProxy(values2) || !Array.isArray(values2) || typeof count2 !== "number" || !Number.isSafeInteger(count2) || count2 < 0 || count2 > 64) {
+    return [];
+  }
+  const paths = /* @__PURE__ */ new Set();
+  for (let index = 0; index < count2; index += 1) {
+    const pointer = own(own(values2, String(index)), "pointer");
+    if (typeof pointer === "string" && PATHS.has(pointer)) {
+      paths.add(pointer);
+    }
+  }
+  return [...paths].toSorted().slice(0, 8);
+}
+function closedSymbolFailureDiagnostic(error51, stage, lastSuccessfulStage) {
+  if (typeof stage !== "string" || !STAGES.has(stage)) {
+    return void 0;
+  }
+  const raw = Error.isError(error51) && !types.isProxy(error51) ? own(error51, "message") : void 0;
+  const message = typeof raw === "string" && raw.length <= 8192 && raw.isWellFormed() && Buffer.byteLength(raw) <= 8192 ? raw : void 0;
+  const errorCode6 = message === void 0 ? "ERROR_MESSAGE_UNAVAILABLE" : CODES2.get(message) ?? "UNCLASSIFIED_FAILURE";
+  return Object.freeze({
+    profile: PROFILE14,
+    stage,
+    lastSuccessfulStage: typeof lastSuccessfulStage === "string" && SUCCESSFUL.has(lastSuccessfulStage) ? lastSuccessfulStage : null,
+    errorCode: errorCode6,
+    messageSha256: message === void 0 ? null : createHash27("sha256").update(message).digest("hex"),
+    mismatchPaths: Object.freeze(errorCode6 === "RUNTIME_FINGERPRINT_MISMATCH" ? selectedPaths(error51) : [])
+  });
+}
+function closedSymbolEntryFailureDiagnostic(entry) {
+  const failure2 = own(entry, "failure");
+  if (failure2 === void 0) {
+    return void 0;
+  }
+  return closedSymbolFailureDiagnostic(failure2, own(entry, "phase"), own(own(entry, "coordinator"), "lastSuccessfulStage"));
+}
+function closedSymbolFailureDiagnosticText(value) {
+  const errorCode6 = own(value, "errorCode"), lastSuccessfulStage = own(value, "lastSuccessfulStage"), messageSha256 = own(value, "messageSha256"), paths = own(value, "mismatchPaths"), stage = own(value, "stage");
+  const count2 = own(paths, "length");
+  if (own(value, "profile") !== PROFILE14 || typeof stage !== "string" || !STAGES.has(stage) || !(lastSuccessfulStage === null || typeof lastSuccessfulStage === "string" && SUCCESSFUL.has(lastSuccessfulStage)) || typeof errorCode6 !== "string" || !SAFE_CODES.has(errorCode6) || !(messageSha256 === null || typeof messageSha256 === "string" && /^[a-f0-9]{64}$/u.test(messageSha256)) || types.isProxy(paths) || !Array.isArray(paths) || typeof count2 !== "number" || !Number.isSafeInteger(count2) || count2 < 0 || count2 > 8) {
+    return [];
+  }
+  const mismatchPaths = [];
+  for (let index = 0; index < count2; index += 1) {
+    const path5 = own(paths, String(index));
+    if (typeof path5 !== "string" || !PATHS.has(path5)) {
+      return [];
+    }
+    mismatchPaths.push(path5);
+  }
+  const text24 = JSON.stringify({ profile: PROFILE14, stage, lastSuccessfulStage, errorCode: errorCode6, messageSha256, mismatchPaths });
+  return Buffer.byteLength(text24) <= 2048 ? [{ type: "text", text: text24 }] : [];
+}
+var PROFILE14, STAGES, SUCCESSFUL, CODES2, SAFE_CODES, PATHS;
+var init_closed_symbol_failure_diagnostic = __esm({
+  "server/src/closed-symbol-failure-diagnostic.ts"() {
+    PROFILE14 = "easyeda-pro-control.closed-symbol-failure-diagnostic.v1";
+    STAGES = /* @__PURE__ */ new Set([
+      "request",
+      "validation",
+      "reservation",
+      "facade",
+      "entry-import",
+      "construction",
+      "entry",
+      "projection",
+      "queue",
+      "admission",
+      "sql-runtime",
+      "expectation",
+      "intent",
+      "claim",
+      "coordinator",
+      "terminal"
+    ]);
+    SUCCESSFUL = /* @__PURE__ */ new Set([
+      "none",
+      "planned",
+      "baseline-launch",
+      "baseline-admission",
+      "baseline-marker-create",
+      "baseline-close",
+      "baseline-termination",
+      "baseline-copy",
+      "baseline-main-reference",
+      "edit-launch",
+      "edit-admission",
+      "edit-marker-read",
+      "edit-open",
+      "edit-witness",
+      "edit-preparation",
+      "edit-write",
+      "edit-close",
+      "edit-termination",
+      "edit-copy",
+      "edit-sql-compare",
+      "verify-source",
+      "verify-launch",
+      "verify-admission",
+      "verify-marker-read",
+      "verify-open",
+      "verify-saved-content",
+      "verify-close",
+      "verify-termination",
+      "verify-copy",
+      "verify-sql-compare"
+    ]);
+    CODES2 = /* @__PURE__ */ new Map([
+      ["Ordinary closed-symbol metadata execution awaits successful disposable full-lifecycle validation.", "VALIDATION_REQUIRED"],
+      ["Disposable index attempt is unavailable.", "ATTEMPT_UNAVAILABLE"],
+      ["Closed navigation runtime does not match the expected subset.", "RUNTIME_FINGERPRINT_MISMATCH"],
+      ["Closed navigation lost its exact unchanged checkpoint.", "CHECKPOINT_CHANGED"],
+      ["Closed navigation supplied journal is stale.", "NAVIGATION_JOURNAL_STALE"],
+      ["Closed navigation needs retained process authority.", "PROCESS_AUTHORITY_REQUIRED"],
+      ["Closed navigation requires its outer authenticated scope.", "AUTHENTICATED_SCOPE_REQUIRED"],
+      ["Startup fixed observation refused; retained result requires review, never replay.", "STARTUP_OBSERVATION_REFUSED"]
+    ]);
+    SAFE_CODES = /* @__PURE__ */ new Set([...CODES2.values(), "UNCLASSIFIED_FAILURE", "ERROR_MESSAGE_UNAVAILABLE"]);
+    PATHS = /* @__PURE__ */ new Set([
+      "/toolCount",
+      "/toolCatalogSha256",
+      "/upstreamImplementationDrift",
+      "/upstreamServer/version",
+      "/facadeImplementation/sha256",
+      "/facadeImplementation/mode",
+      "/facadeImplementation/version",
+      "/health/payload/version",
+      "/health/payload/node_version",
+      "/health/payload/bridge_connected",
+      "/health/payload/easyeda_version",
+      "/health/payload/extension_version",
+      "/health/payload/extension_version_mismatch",
+      "/health/payload/registry_mismatch",
+      "/bridge/payload/connected",
+      "/bridge/payload/bridge_version",
+      "/bridge/payload/easyeda_version",
+      "/bridge/payload/diagnostics/method_registry_hash",
+      "/bridgeDispatcher/payload/source",
+      "/bridgeDispatcher/payload/dispatcher_build_id",
+      "/bridgeDispatcher/payload/total",
+      "/installedBundles/pcbEditor/version",
+      "/installedBundles/pcbEditor/implementationSha256",
+      "/installedBundles/publicApi/version",
+      "/installedBundles/publicApi/implementationSha256",
+      "/installedBundles/publicApi/adapterSha256",
+      "/installedBundles/publicApi/declarationsSha256"
+    ]);
+  }
+});
+
 // server/src/closed-symbol-disposable-tool.ts
 function parseClosedSymbolDisposableInput(input) {
   const outer = exactData(input, ["request"]);
@@ -93321,7 +93495,7 @@ function boundedOwnData(input) {
   visit(input, 0);
   return input;
 }
-function formatClosedSymbolDisposableResult(input) {
+function formatClosedSymbolDisposableResult(input, diagnostic) {
   const result = disposableResult.parse(boundedOwnData(input));
   const structuredContent = closedSymbolDisposableOutputSchema.parse({ result });
   const encoded = JSON.stringify(structuredContent), jsonBytes = Buffer.byteLength(encoded);
@@ -93331,11 +93505,14 @@ function formatClosedSymbolDisposableResult(input) {
   const ok = result.outcome === "completed";
   return {
     isError: !ok,
-    content: [{ type: "text", text: JSON.stringify({ ok, structuredContent: true, jsonBytes, sha256: sha256Text(encoded) }) }],
+    content: [
+      { type: "text", text: JSON.stringify({ ok, structuredContent: true, jsonBytes, sha256: sha256Text(encoded) }) },
+      ...ok ? [] : closedSymbolFailureDiagnosticText(diagnostic)
+    ],
     structuredContent
   };
 }
-function closedSymbolDisposableIndexRefusal(input) {
+function closedSymbolDisposableIndexRefusal(input, diagnostic) {
   let observation2 = null;
   if (input.entryReturnObserved) {
     try {
@@ -93377,9 +93554,9 @@ function closedSymbolDisposableIndexRefusal(input) {
     nextSafeAction: NEXT
   };
   try {
-    return formatClosedSymbolDisposableResult(result);
+    return formatClosedSymbolDisposableResult(result, diagnostic);
   } catch {
-    return formatClosedSymbolDisposableResult({ ...result, entryObservation: null });
+    return formatClosedSymbolDisposableResult({ ...result, entryObservation: null }, diagnostic);
   }
 }
 var NEXT, MAX_RESPONSE_BYTES, uuid9, documentUuid2, projectUuid, targetInput, metadataInput, requestInput, closedSymbolDisposableInputSchema, artifact, operationId, common, stopped, completed, entryResult, entryObservation, indexRefusal, disposableResult, closedSymbolDisposableOutputSchema;
@@ -93387,6 +93564,7 @@ var init_closed_symbol_disposable_tool = __esm({
   "server/src/closed-symbol-disposable-tool.ts"() {
     init_zod();
     init_core3();
+    init_closed_symbol_failure_diagnostic();
     init_closed_symbol_validation_request();
     NEXT = "Inspect retained evidence. Do not repeat this request or any native phase.";
     MAX_RESPONSE_BYTES = 16384;
@@ -93514,14 +93692,17 @@ function closedSymbolOperationStopped(input) {
     ...input
   });
 }
-function formatClosedSymbolOperationResult(input) {
+function formatClosedSymbolOperationResult(input, diagnostic) {
   const structuredContent = closedSymbolOperationOutputSchema.parse({ result: boundedOwnData(input) });
   const encoded = JSON.stringify(structuredContent), jsonBytes = Buffer.byteLength(encoded);
   if (jsonBytes > 16384) {
     throw new Error("Closed-symbol operation result exceeds 16 KiB.");
   }
   const ok = structuredContent.result.outcome === "completed";
-  return { isError: !ok, structuredContent, content: [{ type: "text", text: JSON.stringify({ ok, structuredContent: true, jsonBytes, sha256: sha256Text(encoded) }) }] };
+  return { isError: !ok, structuredContent, content: [
+    { type: "text", text: JSON.stringify({ ok, structuredContent: true, jsonBytes, sha256: sha256Text(encoded) }) },
+    ...ok ? [] : closedSymbolFailureDiagnosticText(diagnostic)
+  ] };
 }
 var projectUuid2, uuid10, documentUuid3, patchInput, targetInput2, request, closedSymbolOperationInputSchema, descriptor6, common2, completed2, stopped2, closedSymbolOperationOutputSchema, CLOSED_SYMBOL_OPERATION_COMMON;
 var init_closed_symbol_operation_tool = __esm({
@@ -93529,6 +93710,7 @@ var init_closed_symbol_operation_tool = __esm({
     init_zod();
     init_core3();
     init_closed_symbol_disposable_tool();
+    init_closed_symbol_failure_diagnostic();
     init_closed_symbol_validation_request();
     init_closed_symbol_operation_request();
     projectUuid2 = external_exports.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u);
@@ -93608,7 +93790,7 @@ var init_closed_symbol_operation_tool = __esm({
 
 // server/src/windows-native-ui.ts
 import { spawn as spawn5 } from "node:child_process";
-import { createHash as createHash27, randomUUID as randomUUID6 } from "node:crypto";
+import { createHash as createHash28, randomUUID as randomUUID6 } from "node:crypto";
 import { constants as constants17 } from "node:fs";
 import { lstat as lstat24, open as open21, readFile as readFile4, realpath as realpath16 } from "node:fs/promises";
 import path3 from "node:path";
@@ -93631,7 +93813,7 @@ async function hashExecutable(executablePath) {
     if (!before.isFile() || before.nlink !== 1 || before.size === 0 || before.size > 1073741824) {
       throw nativeUiFailure("native-ui-installed-executable-invalid", false);
     }
-    const hash35 = createHash27("sha256");
+    const hash35 = createHash28("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw nativeUiFailure("native-ui-installed-read-invalid", false);
@@ -93805,7 +93987,7 @@ var init_windows_native_ui = __esm({
         const legacyHelperPath = path3.join(this.options.pluginRoot, "scripts/native-ui.ps1");
         await (this.dependencies.verifyHelper ?? verifyHelper)(helperPath);
         await (this.dependencies.verifyHelper ?? verifyHelper)(legacyHelperPath);
-        const legacySha256 = createHash27("sha256").update(await readFile4(legacyHelperPath)).digest("hex");
+        const legacySha256 = createHash28("sha256").update(await readFile4(legacyHelperPath)).digest("hex");
         const executableSha256 = runtime.state === "owned" ? runtime.executableSha256 : await (this.dependencies.hashExecutable ?? hashExecutable)(paths.executablePath);
         if (executableSha256 === null || !/^[a-f0-9]{64}$/u.test(executableSha256)) {
           throw nativeUiFailure("native-ui-installed-executable-invalid", false);
@@ -98050,7 +98232,7 @@ var require_websocket = __commonJS({
     var http = __require("http");
     var net3 = __require("net");
     var tls = __require("tls");
-    var { randomBytes: randomBytes14, createHash: createHash38 } = __require("crypto");
+    var { randomBytes: randomBytes14, createHash: createHash39 } = __require("crypto");
     var { Duplex, Readable: Readable2 } = __require("stream");
     var { URL: URL2 } = __require("url");
     var PerMessageDeflate2 = require_permessage_deflate();
@@ -98718,7 +98900,7 @@ var require_websocket = __commonJS({
           abortHandshake(websocket, socket, "Invalid Upgrade header");
           return;
         }
-        const digest5 = createHash38("sha1").update(key + GUID).digest("base64");
+        const digest5 = createHash39("sha1").update(key + GUID).digest("base64");
         if (res.headers["sec-websocket-accept"] !== digest5) {
           abortHandshake(websocket, socket, "Invalid Sec-WebSocket-Accept header");
           return;
@@ -99087,7 +99269,7 @@ var require_websocket_server = __commonJS({
     var EventEmitter = __require("events");
     var http = __require("http");
     var { Duplex } = __require("stream");
-    var { createHash: createHash38 } = __require("crypto");
+    var { createHash: createHash39 } = __require("crypto");
     var extension2 = require_extension();
     var PerMessageDeflate2 = require_permessage_deflate();
     var subprotocol2 = require_subprotocol();
@@ -99394,7 +99576,7 @@ var require_websocket_server = __commonJS({
           );
         }
         if (this._state > RUNNING) return abortHandshake(socket, 503);
-        const digest5 = createHash38("sha1").update(key + GUID).digest("base64");
+        const digest5 = createHash39("sha1").update(key + GUID).digest("base64");
         const headers = [
           "HTTP/1.1 101 Switching Protocols",
           "Upgrade: websocket",
@@ -99765,7 +99947,7 @@ var init_backend_listener_authority = __esm({
 
 // server/src/authenticated-bridge-gateway.ts
 import {
-  createHash as createHash28,
+  createHash as createHash29,
   createHmac,
   randomBytes as randomBytes10,
   timingSafeEqual
@@ -100112,7 +100294,7 @@ var init_authenticated_bridge_gateway = __esm({
         if (!/^i[A-Za-z0-9_-]{43}$/u.test(options.expectedAuthenticatedIndexBuildId)) {
           throw new Error("The expected authenticated bridge build ID is invalid.");
         }
-        if (!/^[0-9a-f]{64}$/u.test(options.expectedAuthenticationKeySha256) || createHash28("sha256").update(options.authenticationKey, "utf8").digest("hex") !== options.expectedAuthenticationKeySha256) {
+        if (!/^[0-9a-f]{64}$/u.test(options.expectedAuthenticationKeySha256) || createHash29("sha256").update(options.authenticationKey, "utf8").digest("hex") !== options.expectedAuthenticationKeySha256) {
           throw new Error(
             "The expected authenticated bridge credential epoch does not match the configured key."
           );
@@ -100522,7 +100704,7 @@ var init_authenticated_bridge_gateway = __esm({
         );
         context3.session = {
           authenticatedAtEpochMs: this.#now(),
-          authenticationReceiptSha256: createHash28("sha256").update(serverReceipt, "utf8").digest("hex"),
+          authenticationReceiptSha256: createHash29("sha256").update(serverReceipt, "utf8").digest("hex"),
           sequence: this.#sessionSequence,
           sessionId
         };
@@ -100771,7 +100953,7 @@ var init_authenticated_bridge_gateway = __esm({
 });
 
 // server/src/authenticated-bridge-build-identity.ts
-import { createHash as createHash29 } from "node:crypto";
+import { createHash as createHash30 } from "node:crypto";
 import { constants as fsConstants6 } from "node:fs";
 import { lstat as lstat26, open as open23 } from "node:fs/promises";
 import { basename as basename20, dirname as dirname18, join as join48 } from "node:path";
@@ -100848,7 +101030,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
       MAXIMUM_RECEIPT_BYTES,
       "Authenticated bridge build receipt"
     );
-    const authenticationKeySha256 = createHash29("sha256").update(authenticationKey, "utf8").digest("hex");
+    const authenticationKeySha256 = createHash30("sha256").update(authenticationKey, "utf8").digest("hex");
     const parsed2 = JSON.parse(receiptFile.bytes.toString("utf8"));
     if (!isRecord5(parsed2) || typeof parsed2["outputPath"] !== "string" || typeof parsed2["outputSha256"] !== "string" || !/^[0-9a-f]{64}$/u.test(parsed2["outputSha256"])) {
       throw new Error(
@@ -100871,7 +101053,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
       "Authenticated bridge archive generation"
     );
     await controlRoot.assertCurrent();
-    const archiveSha256 = createHash29("sha256").update(archive.bytes).digest("hex");
+    const archiveSha256 = createHash30("sha256").update(archive.bytes).digest("hex");
     const authentication = isRecord5(parsed2) && isRecord5(parsed2["authentication"]) ? parsed2["authentication"] : void 0;
     const endpoint2 = isRecord5(authentication) && isRecord5(authentication["publicEndpoint"]) ? authentication["publicEndpoint"] : void 0;
     const source4 = isRecord5(parsed2) && isRecord5(parsed2["source"]) ? parsed2["source"] : void 0;
@@ -101512,7 +101694,7 @@ function stringToBigInt(str) {
 function parse5(input, options) {
   return Parser.parse(input, options);
 }
-var astralIdentifierCodes, astralIdentifierStartCodes, nonASCIIidentifierChars, nonASCIIidentifierStartChars, reservedWords, ecma5AndLessKeywords, keywords$1, keywordRelationalOperator, nonASCIIidentifierStart, nonASCIIidentifier, TokenType, beforeExpr, startsExpr, keywords, types$1, lineBreak, lineBreakG, nonASCIIwhitespace, skipWhiteSpace, ref2, hasOwnProperty, toString, hasOwn, isArray, regexpCache, loneSurrogate, Position, SourceLocation, defaultOptions2, warnedAboutEcmaVersion, SCOPE_TOP, SCOPE_FUNCTION, SCOPE_ASYNC, SCOPE_GENERATOR, SCOPE_ARROW, SCOPE_SIMPLE_CATCH, SCOPE_SUPER, SCOPE_DIRECT_SUPER, SCOPE_CLASS_STATIC_BLOCK, SCOPE_CLASS_FIELD_INIT, SCOPE_SWITCH, SCOPE_VAR, BIND_NONE, BIND_VAR, BIND_LEXICAL, BIND_FUNCTION, BIND_SIMPLE_CATCH, BIND_OUTSIDE, Parser, prototypeAccessors, pp$9, literal5, DestructuringErrors, pp$8, loopLabel, switchLabel, empty$1, FUNC_STATEMENT, FUNC_HANGING_STATEMENT, FUNC_NULLABLE_ID, pp$7, TokContext, types, pp$6, pp$5, empty2, pp$4, pp$3, Scope, Node, pp$2, scriptValuesAddedInUnicode, ecma9BinaryProperties, ecma10BinaryProperties, ecma11BinaryProperties, ecma12BinaryProperties, ecma13BinaryProperties, ecma14BinaryProperties, unicodeBinaryProperties, ecma14BinaryPropertiesOfStrings, unicodeBinaryPropertiesOfStrings, unicodeGeneralCategoryValues, ecma9ScriptValues, ecma10ScriptValues, ecma11ScriptValues, ecma12ScriptValues, ecma13ScriptValues, ecma14ScriptValues, unicodeScriptValues, data, ecmaVersion, i, list, pp$1, BranchID, RegExpValidationState, CharSetNone, CharSetOk, CharSetString, Token, pp, INVALID_TEMPLATE_ESCAPE_ERROR, version2;
+var astralIdentifierCodes, astralIdentifierStartCodes, nonASCIIidentifierChars, nonASCIIidentifierStartChars, reservedWords, ecma5AndLessKeywords, keywords$1, keywordRelationalOperator, nonASCIIidentifierStart, nonASCIIidentifier, TokenType, beforeExpr, startsExpr, keywords, types$1, lineBreak, lineBreakG, nonASCIIwhitespace, skipWhiteSpace, ref2, hasOwnProperty, toString, hasOwn, isArray, regexpCache, loneSurrogate, Position, SourceLocation, defaultOptions2, warnedAboutEcmaVersion, SCOPE_TOP, SCOPE_FUNCTION, SCOPE_ASYNC, SCOPE_GENERATOR, SCOPE_ARROW, SCOPE_SIMPLE_CATCH, SCOPE_SUPER, SCOPE_DIRECT_SUPER, SCOPE_CLASS_STATIC_BLOCK, SCOPE_CLASS_FIELD_INIT, SCOPE_SWITCH, SCOPE_VAR, BIND_NONE, BIND_VAR, BIND_LEXICAL, BIND_FUNCTION, BIND_SIMPLE_CATCH, BIND_OUTSIDE, Parser, prototypeAccessors, pp$9, literal5, DestructuringErrors, pp$8, loopLabel, switchLabel, empty$1, FUNC_STATEMENT, FUNC_HANGING_STATEMENT, FUNC_NULLABLE_ID, pp$7, TokContext, types2, pp$6, pp$5, empty2, pp$4, pp$3, Scope, Node, pp$2, scriptValuesAddedInUnicode, ecma9BinaryProperties, ecma10BinaryProperties, ecma11BinaryProperties, ecma12BinaryProperties, ecma13BinaryProperties, ecma14BinaryProperties, unicodeBinaryProperties, ecma14BinaryPropertiesOfStrings, unicodeBinaryPropertiesOfStrings, unicodeGeneralCategoryValues, ecma9ScriptValues, ecma10ScriptValues, ecma11ScriptValues, ecma12ScriptValues, ecma13ScriptValues, ecma14ScriptValues, unicodeScriptValues, data, ecmaVersion, i, list, pp$1, BranchID, RegExpValidationState, CharSetNone, CharSetOk, CharSetString, Token, pp, INVALID_TEMPLATE_ESCAPE_ERROR, version2;
 var init_acorn = __esm({
   "node_modules/acorn/dist/acorn.mjs"() {
     astralIdentifierCodes = [509, 0, 227, 0, 150, 4, 294, 9, 1368, 2, 2, 1, 6, 3, 41, 2, 5, 0, 166, 1, 574, 3, 9, 9, 7, 9, 32, 4, 318, 1, 78, 5, 71, 10, 50, 3, 123, 2, 54, 14, 32, 10, 3, 1, 11, 3, 46, 10, 8, 0, 46, 9, 7, 2, 37, 13, 2, 9, 6, 1, 45, 0, 13, 2, 49, 13, 9, 3, 2, 11, 83, 11, 7, 0, 3, 0, 158, 11, 6, 9, 7, 3, 56, 1, 2, 6, 3, 1, 3, 2, 10, 0, 11, 1, 3, 6, 4, 4, 68, 8, 2, 0, 3, 0, 2, 3, 2, 4, 2, 0, 15, 1, 83, 17, 10, 9, 5, 0, 82, 19, 13, 9, 214, 6, 3, 8, 28, 1, 83, 16, 16, 9, 82, 12, 9, 9, 7, 19, 58, 14, 5, 9, 243, 14, 166, 9, 71, 5, 2, 1, 3, 3, 2, 0, 2, 1, 13, 9, 120, 6, 3, 6, 4, 0, 29, 9, 41, 6, 2, 3, 9, 0, 10, 10, 47, 15, 199, 7, 137, 9, 54, 7, 2, 7, 17, 9, 57, 21, 2, 13, 123, 5, 4, 0, 2, 1, 2, 6, 2, 0, 9, 9, 49, 4, 2, 1, 2, 4, 9, 9, 55, 9, 266, 3, 10, 1, 2, 0, 49, 6, 4, 4, 14, 10, 5350, 0, 7, 14, 11465, 27, 2343, 9, 87, 9, 39, 4, 60, 6, 26, 9, 535, 9, 470, 0, 2, 54, 8, 3, 82, 0, 12, 1, 19628, 1, 4178, 9, 519, 45, 3, 22, 543, 4, 4, 5, 9, 7, 3, 6, 31, 3, 149, 2, 1418, 49, 513, 54, 5, 49, 9, 0, 15, 0, 23, 4, 2, 14, 1361, 6, 2, 16, 3, 6, 2, 1, 2, 4, 101, 0, 161, 6, 10, 9, 357, 0, 62, 13, 499, 13, 245, 1, 2, 9, 233, 0, 3, 0, 8, 1, 6, 0, 475, 6, 110, 6, 6, 9, 4759, 9, 787719, 239];
@@ -103462,7 +103644,7 @@ var init_acorn = __esm({
       this.override = override;
       this.generator = !!generator;
     };
-    types = {
+    types2 = {
       b_stat: new TokContext("{", false),
       b_expr: new TokContext("{", true),
       b_tmpl: new TokContext("${", false),
@@ -103478,17 +103660,17 @@ var init_acorn = __esm({
     };
     pp$6 = Parser.prototype;
     pp$6.initialContext = function() {
-      return [types.b_stat];
+      return [types2.b_stat];
     };
     pp$6.curContext = function() {
       return this.context[this.context.length - 1];
     };
     pp$6.braceIsBlock = function(prevType) {
       var parent = this.curContext();
-      if (parent === types.f_expr || parent === types.f_stat) {
+      if (parent === types2.f_expr || parent === types2.f_stat) {
         return true;
       }
-      if (prevType === types$1.colon && (parent === types.b_stat || parent === types.b_expr)) {
+      if (prevType === types$1.colon && (parent === types2.b_stat || parent === types2.b_expr)) {
         return !parent.isExpr;
       }
       if (prevType === types$1._return || prevType === types$1.name && this.exprAllowed) {
@@ -103498,7 +103680,7 @@ var init_acorn = __esm({
         return true;
       }
       if (prevType === types$1.braceL) {
-        return parent === types.b_stat;
+        return parent === types2.b_stat;
       }
       if (prevType === types$1._var || prevType === types$1._const || prevType === types$1.name) {
         return false;
@@ -103535,31 +103717,31 @@ var init_acorn = __esm({
         return;
       }
       var out = this.context.pop();
-      if (out === types.b_stat && this.curContext().token === "function") {
+      if (out === types2.b_stat && this.curContext().token === "function") {
         out = this.context.pop();
       }
       this.exprAllowed = !out.isExpr;
     };
     types$1.braceL.updateContext = function(prevType) {
-      this.context.push(this.braceIsBlock(prevType) ? types.b_stat : types.b_expr);
+      this.context.push(this.braceIsBlock(prevType) ? types2.b_stat : types2.b_expr);
       this.exprAllowed = true;
     };
     types$1.dollarBraceL.updateContext = function() {
-      this.context.push(types.b_tmpl);
+      this.context.push(types2.b_tmpl);
       this.exprAllowed = true;
     };
     types$1.parenL.updateContext = function(prevType) {
       var statementParens = prevType === types$1._if || prevType === types$1._for || prevType === types$1._with || prevType === types$1._while;
-      this.context.push(statementParens ? types.p_stat : types.p_expr);
+      this.context.push(statementParens ? types2.p_stat : types2.p_expr);
       this.exprAllowed = true;
     };
     types$1.incDec.updateContext = function() {
     };
     types$1._function.updateContext = types$1._class.updateContext = function(prevType) {
-      if (prevType.beforeExpr && prevType !== types$1._else && !(prevType === types$1.semi && this.curContext() !== types.p_stat) && !(prevType === types$1._return && lineBreak.test(this.input.slice(this.lastTokEnd, this.start))) && !((prevType === types$1.colon || prevType === types$1.braceL) && this.curContext() === types.b_stat)) {
-        this.context.push(types.f_expr);
+      if (prevType.beforeExpr && prevType !== types$1._else && !(prevType === types$1.semi && this.curContext() !== types2.p_stat) && !(prevType === types$1._return && lineBreak.test(this.input.slice(this.lastTokEnd, this.start))) && !((prevType === types$1.colon || prevType === types$1.braceL) && this.curContext() === types2.b_stat)) {
+        this.context.push(types2.f_expr);
       } else {
-        this.context.push(types.f_stat);
+        this.context.push(types2.f_stat);
       }
       this.exprAllowed = false;
     };
@@ -103570,20 +103752,20 @@ var init_acorn = __esm({
       this.exprAllowed = true;
     };
     types$1.backQuote.updateContext = function() {
-      if (this.curContext() === types.q_tmpl) {
+      if (this.curContext() === types2.q_tmpl) {
         this.context.pop();
       } else {
-        this.context.push(types.q_tmpl);
+        this.context.push(types2.q_tmpl);
       }
       this.exprAllowed = false;
     };
     types$1.star.updateContext = function(prevType) {
       if (prevType === types$1._function) {
         var index = this.context.length - 1;
-        if (this.context[index] === types.f_expr) {
-          this.context[index] = types.f_expr_gen;
+        if (this.context[index] === types2.f_expr) {
+          this.context[index] = types2.f_expr_gen;
         } else {
-          this.context[index] = types.f_gen;
+          this.context[index] = types2.f_gen;
         }
       }
       this.exprAllowed = true;
@@ -103979,7 +104161,7 @@ var init_acorn = __esm({
           var startPos = this.start, startLoc = this.startLoc, containsEsc = this.containsEsc;
           var id9 = this.parseIdent(false);
           if (this.options.ecmaVersion >= 8 && !containsEsc && id9.name === "async" && !this.canInsertSemicolon() && this.eat(types$1._function)) {
-            this.overrideContext(types.f_expr);
+            this.overrideContext(types2.f_expr);
             return this.parseFunction(this.startNodeAt(startPos, startLoc), 0, false, true, forInit);
           }
           if (canBeArrow && !this.canInsertSemicolon()) {
@@ -104028,7 +104210,7 @@ var init_acorn = __esm({
           node.elements = this.parseExprList(types$1.bracketR, true, true, refDestructuringErrors);
           return this.finishNode(node, "ArrayExpression");
         case types$1.braceL:
-          this.overrideContext(types.b_expr);
+          this.overrideContext(types2.b_expr);
           return this.parseObj(false, refDestructuringErrors);
         case types$1._function:
           node = this.startNode();
@@ -106901,7 +107083,7 @@ var init_acorn = __esm({
       tokTypes: types$1,
       keywordTypes: keywords,
       TokContext,
-      tokContexts: types,
+      tokContexts: types2,
       isIdentifierChar,
       isIdentifierStart,
       Token,
@@ -106914,7 +107096,7 @@ var init_acorn = __esm({
 });
 
 // server/src/upstream-module-execution.ts
-import { createHash as createHash30 } from "node:crypto";
+import { createHash as createHash31 } from "node:crypto";
 import { constants as fsConstants8 } from "node:fs";
 import { lstat as lstat28, open as open25 } from "node:fs/promises";
 import { createRequire, isBuiltin, registerHooks } from "node:module";
@@ -107059,7 +107241,7 @@ async function readSealedFile(path5, seals, capturedSeals) {
     }
     const bytes2 = await handle.readFile();
     const after = await handle.stat();
-    const sha256 = createHash30("sha256").update(bytes2).digest("hex");
+    const sha256 = createHash31("sha256").update(bytes2).digest("hex");
     if (!sameSeal(after, seal) || seal.sha256 !== void 0 && sha256 !== seal.sha256) {
       throw new Error(`Reviewed upstream module changed during descriptor capture: ${path5}`);
     }
@@ -107174,7 +107356,7 @@ function executionSourceFor(cwd, path5, source4) {
   }
   return {
     bytes: bytes2,
-    executionSha256: createHash30("sha256").update(bytes2).digest("hex"),
+    executionSha256: createHash31("sha256").update(bytes2).digest("hex"),
     transform: transform2
   };
 }
@@ -107356,7 +107538,7 @@ function graphFingerprint(cwd, entrypointUrl, modules, resolutions) {
     moduleCount: moduleRows.length,
     edgeCount: edgeRows.length,
     totalBytes: moduleRows.reduce((total, module) => total + module.bytes, 0),
-    sha256: createHash30("sha256").update(JSON.stringify(projection7)).digest("hex")
+    sha256: createHash31("sha256").update(JSON.stringify(projection7)).digest("hex")
   };
 }
 async function captureUpstreamModuleGraph(cwd, entrypoint, pathSeals = []) {
@@ -107538,7 +107720,7 @@ var init_upstream_module_execution = __esm({
 });
 
 // server/src/upstream-trust.ts
-import { createHash as createHash31 } from "node:crypto";
+import { createHash as createHash32 } from "node:crypto";
 import { spawn as spawn6 } from "node:child_process";
 import { constants as fsConstants9 } from "node:fs";
 import {
@@ -107638,7 +107820,7 @@ async function hashOpenFile(path5, expected3) {
     if (!opened.isFile() || !sameIdentity4(expected3, opened)) {
       throw new Error(`Trusted upstream file changed before open: ${path5}`);
     }
-    const hash35 = createHash31("sha256");
+    const hash35 = createHash32("sha256");
     for await (const chunk of handle.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw new TypeError("Trusted upstream file yielded a non-buffer chunk.");
@@ -107745,7 +107927,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
     const pathOrder = left.path.localeCompare(right.path);
     return pathOrder === 0 ? left.kind.localeCompare(right.kind) : pathOrder;
   });
-  const closureHash = createHash31("sha256");
+  const closureHash = createHash32("sha256");
   for (const entry of sortedEntries) {
     closureHash.update(entry.kind);
     closureHash.update("\0");
@@ -107759,7 +107941,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
   const implementationFiles = sortedEntries.filter(
     (entry) => entry.kind === "file" && isWithin5(implementationRoot, join50(cwd, entry.path)) && /\.(c?m?js|json)$/iu.test(entry.path)
   );
-  const implementationHash = createHash31("sha256");
+  const implementationHash = createHash32("sha256");
   for (const entry of implementationFiles) {
     implementationHash.update(
       relative7(implementationRoot, join50(cwd, entry.path)).split(sep5).join("/")
@@ -107821,7 +108003,7 @@ async function sha256OpenHandle(handle, expected3, label) {
   if (!before.isFile() || !sameIdentity4(before, expected3)) {
     throw new Error(`${label} descriptor identity changed.`);
   }
-  const hash35 = createHash31("sha256");
+  const hash35 = createHash32("sha256");
   const buffer = Buffer.allocUnsafe(64 * 1024);
   let position = 0;
   while (position < before.size) {
@@ -108263,7 +108445,7 @@ async function assertPathSealsCurrent(seals, boundary = "before spawn") {
   }
 }
 function launcherFingerprintSha256(value) {
-  return createHash31("sha256").update(canonicalJson(value)).digest("hex");
+  return createHash32("sha256").update(canonicalJson(value)).digest("hex");
 }
 var LOCAL_INTEGRITY_STAGES, LocalIntegrityTimings, DEFAULT_SANDBOX_COMMAND, REVIEWED_SANDBOX_VERSION, REQUIRED_SANDBOX_OPTIONS, runtimeSha256Schema, runtimeDescriptorSanitizerSchema, runtimeLauncherFingerprintSchema;
 var init_upstream_trust = __esm({
@@ -108462,7 +108644,7 @@ var init_upstream_bootstrap = __esm({
 });
 
 // server/src/private-runtime-payload.ts
-import { createHash as createHash32, randomUUID as randomUUID9 } from "node:crypto";
+import { createHash as createHash33, randomUUID as randomUUID9 } from "node:crypto";
 import { constants as fsConstants10 } from "node:fs";
 import { open as open27, unlink as unlink4 } from "node:fs/promises";
 import process13 from "node:process";
@@ -108538,7 +108720,7 @@ async function stagePrivateRuntimePayload(source4, privateDirectory) {
       throw new Error("Private runtime payload changed before descriptor open.");
     }
     const captured = await readExact(readable, source4.length);
-    const sha256 = createHash32("sha256").update(captured).digest("hex");
+    const sha256 = createHash33("sha256").update(captured).digest("hex");
     if (!captured.equals(source4)) {
       throw new Error("Private runtime payload differs from its captured source bytes.");
     }
@@ -108556,7 +108738,7 @@ async function stagePrivateRuntimePayload(source4, privateDirectory) {
       const before = await readable.stat({ bigint: true });
       const current2 = await readExact(readable, source4.length);
       const after = await readable.stat({ bigint: true });
-      if (!sameStableFile2(unlinked, before) || !sameStableFile2(before, after) || before.nlink !== 0n || after.nlink !== 0n || before.ctimeNs !== unlinked.ctimeNs || after.ctimeNs !== before.ctimeNs || createHash32("sha256").update(current2).digest("hex") !== sha256) {
+      if (!sameStableFile2(unlinked, before) || !sameStableFile2(before, after) || before.nlink !== 0n || after.nlink !== 0n || before.ctimeNs !== unlinked.ctimeNs || after.ctimeNs !== before.ctimeNs || createHash33("sha256").update(current2).digest("hex") !== sha256) {
         throw new Error("Private runtime payload changed before sandbox spawn.");
       }
     };
@@ -109457,7 +109639,7 @@ var init_sandboxed_stdio_client_transport = __esm({
 });
 
 // server/src/supervisor-execution.ts
-import { createHash as createHash33 } from "node:crypto";
+import { createHash as createHash34 } from "node:crypto";
 import { constants as fsConstants12 } from "node:fs";
 import {
   lstat as lstat30,
@@ -109551,7 +109733,7 @@ async function captureReviewedSupervisor(sourcePath, expected3) {
   try {
     const captured = await readStableHandle(handle, "Upstream supervisor source");
     assertSameIdentity2(pathInfo, captured.info, "Upstream supervisor source");
-    const sha256 = createHash33("sha256").update(captured.bytes).digest("hex");
+    const sha256 = createHash34("sha256").update(captured.bytes).digest("hex");
     if (expected3.relativePath !== SUPERVISOR_BUNDLE_NAME || expected3.bytes !== captured.bytes.length || expected3.sha256 !== sha256) {
       throw new Error(
         "The upstream supervisor bytes do not match the reviewed facade bundle."
@@ -109728,7 +109910,7 @@ var init_upstream_seccomp = __esm({
 
 // server/src/upstream.ts
 import { AsyncLocalStorage } from "node:async_hooks";
-import { createHash as createHash34, randomBytes as randomBytes11 } from "node:crypto";
+import { createHash as createHash35, randomBytes as randomBytes11 } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { join as join52, resolve as resolve15 } from "node:path";
@@ -109742,7 +109924,7 @@ function startupFailureWithStderr(error51, diagnosticBytes, diagnosticSha256, st
   );
 }
 async function sha256File(path5) {
-  const hash35 = createHash34("sha256");
+  const hash35 = createHash35("sha256");
   const source4 = createReadStream(path5);
   for await (const chunk of source4) {
     if (typeof chunk !== "string" && !Buffer.isBuffer(chunk)) {
@@ -109761,7 +109943,7 @@ function requireVersionSegment(value, label) {
   return value;
 }
 function disconnectedLifecycleBoundarySha256(lifecycle) {
-  return createHash34("sha256").update(
+  return createHash35("sha256").update(
     JSON.stringify({
       gatewayInstanceId: lifecycle.gatewayInstanceId,
       publicEndpoint: lifecycle.publicEndpoint,
@@ -109862,7 +110044,7 @@ var init_upstream = __esm({
       connectPromise = null;
       tools = null;
       stderrBytes = 0;
-      stderrDigest = createHash34("sha256");
+      stderrDigest = createHash35("sha256");
       retainedProcessDiagnostics;
       startupLauncherAdmission = null;
       bridgeGateway = null;
@@ -109906,7 +110088,7 @@ var init_upstream = __esm({
       }
       async #connect() {
         this.stderrBytes = 0;
-        this.stderrDigest = createHash34("sha256");
+        this.stderrDigest = createHash35("sha256");
         const controlRoot = this.options.controlRoot;
         if (controlRoot === void 0) {
           throw new Error(
@@ -110134,7 +110316,7 @@ var init_upstream = __esm({
             transport2.startupDiagnostics()
           );
           this.stderrBytes = 0;
-          this.stderrDigest = createHash34("sha256");
+          this.stderrDigest = createHash35("sha256");
           const cleanupErrors = [];
           let clientClosed = true;
           let transportClosed = true;
@@ -110174,7 +110356,7 @@ var init_upstream = __esm({
           throw startupError;
         }
         this.stderrBytes = 0;
-        this.stderrDigest = createHash34("sha256");
+        this.stderrDigest = createHash35("sha256");
         this.startupLauncherAdmission = launcherAdmission;
         this.client = client;
         this.transport = transport2;
@@ -110486,7 +110668,7 @@ var init_upstream = __esm({
         }
         this.startupLauncherAdmission = null;
         this.stderrBytes = 0;
-        this.stderrDigest = createHash34("sha256");
+        this.stderrDigest = createHash35("sha256");
         if (failures.length > 0) {
           throw new AggregateError(
             failures,
@@ -111980,10 +112162,10 @@ var init_pcb_net_membership_read = __esm({
 function bounded(value) {
   return Number.isFinite(value) ? Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(value))) : 0;
 }
-var STAGES, PcbSelectedReadTimings;
+var STAGES2, PcbSelectedReadTimings;
 var init_pcb_selected_read_timings = __esm({
   "server/src/pcb-selected-read-timings.ts"() {
-    STAGES = ["quarantine", "context", "status", "source-read", "inventory-read", "selected-id-read", "inherited-capture", "inherited-reproof"];
+    STAGES2 = ["quarantine", "context", "status", "source-read", "inventory-read", "selected-id-read", "inherited-capture", "inherited-reproof"];
     PcbSelectedReadTimings = class {
       #clock;
       #stages = /* @__PURE__ */ new Map();
@@ -111999,7 +112181,7 @@ var init_pcb_selected_read_timings = __esm({
         }
       }
       async measure(stage, action) {
-        if (!STAGES.some((allowed) => allowed === stage)) {
+        if (!STAGES2.some((allowed) => allowed === stage)) {
           return action();
         }
         const start = this.#now();
@@ -112027,7 +112209,7 @@ var init_pcb_selected_read_timings = __esm({
           schema: "easyeda-pro-control.pcb-selected-read-timings.v1",
           scope: "coordinator-stages; constituent-read-and-capture-times-include-inner-guards",
           authority: "passive-diagnostics-not-native-observation-or-admission-proof",
-          stages: Object.freeze(STAGES.flatMap((stage) => {
+          stages: Object.freeze(STAGES2.flatMap((stage) => {
             const state2 = this.#stages.get(stage);
             return state2 === void 0 ? [] : [Object.freeze({ stage, ...state2 })];
           }))
@@ -112668,7 +112850,7 @@ var init_sdk_read_validation_history = __esm({
 });
 
 // server/src/public-sdk-catalog.ts
-import { createHash as createHash35 } from "node:crypto";
+import { createHash as createHash36 } from "node:crypto";
 function queryPublicSdkReads(input = {}) {
   const query = publicSdkCatalogQuerySchema.parse(input);
   const all = publicSdkReadDescriptors();
@@ -112683,7 +112865,7 @@ function queryPublicSdkReads(input = {}) {
       historicalValidation: getSdkReadValidationHistory(entry.path),
       ...query.includeSchemas ? {
         inputSchema,
-        inputSchemaSha256: createHash35("sha256").update(JSON.stringify(inputSchema)).digest("hex")
+        inputSchemaSha256: createHash36("sha256").update(JSON.stringify(inputSchema)).digest("hex")
       } : {}
     };
     if (Buffer.byteLength(JSON.stringify([...entries3, result]), "utf8") > MAX_ENTRIES_BYTES) {
@@ -112760,7 +112942,7 @@ function validatePublicSdkArguments(input) {
       executionAuthorized: false,
       nativePreflightPerformed: false,
       normalizedRequestBytes: bytes2,
-      normalizedRequestSha256: createHash35("sha256").update(encoded).digest("hex"),
+      normalizedRequestSha256: createHash36("sha256").update(encoded).digest("hex"),
       ...bytes2 <= MAX_ENTRIES_BYTES ? { normalizedRequest: result.data } : { normalizedRequestOmitted: true }
     };
   }
@@ -112807,7 +112989,7 @@ var init_public_sdk_catalog = __esm({
 });
 
 // server/src/operation-catalog.ts
-import { createHash as createHash36 } from "node:crypto";
+import { createHash as createHash37 } from "node:crypto";
 function collectOperations(parser) {
   if (parser instanceof external_exports.ZodUnion) {
     return parser.options.flatMap((option) => {
@@ -112906,7 +113088,7 @@ function queryOperationCatalog(input) {
       } : {},
       ...schema2 === void 0 ? {} : {
         inputSchema: schema2,
-        inputSchemaSha256: createHash36("sha256").update(JSON.stringify(schema2)).digest("hex")
+        inputSchemaSha256: createHash37("sha256").update(JSON.stringify(schema2)).digest("hex")
       }
     };
     if (Buffer.byteLength(JSON.stringify([...entries3, descriptor9]), "utf8") > MAX_CATALOG_BYTES) {
@@ -112947,7 +113129,7 @@ function validateCatalogOperation(input) {
       valid: true,
       ...normalizedOperationBytes <= MAX_CATALOG_BYTES ? { normalizedOperation: result.data } : {},
       normalizedOperationBytes,
-      normalizedOperationSha256: createHash36("sha256").update(serialized).digest("hex"),
+      normalizedOperationSha256: createHash37("sha256").update(serialized).digest("hex"),
       normalizedOperationOmitted: normalizedOperationBytes > MAX_CATALOG_BYTES,
       offline: true,
       executionAuthorized: false,
@@ -113140,9 +113322,10 @@ async function buildClosedSymbolExpectedFingerprint(engine2, upstream2) {
     installedBundles,
     toolCount: manifest.upstream.toolCatalog.count,
     toolCatalogSha256: manifest.upstream.toolCatalog.sha256,
+    // Upstream health reports process.version; the manifest stores its unprefixed semantic version.
     health: { payload: {
       version: pinned.healthVersion,
-      node_version: pinned.nodeVersion,
+      node_version: `v${pinned.nodeVersion}`,
       bridge_connected: true,
       easyeda_version: pinned.easyedaVersion,
       extension_version: pinned.extensionVersion,
@@ -113594,11 +113777,11 @@ async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
   const currentInputs = () => {
     requireValue6(canonicalJson(inputs2(rawRequest, ownerPlan)) === seal, "Operation claim inputs changed during publication.");
   };
-  const intentKey = sha256Json({ profile: PROFILE14, actionId: bound2.request.operation.id });
+  const intentKey = sha256Json({ profile: PROFILE15, actionId: bound2.request.operation.id });
   const parentPath = join53(controlDataDirectory(), "closed-symbol-operation-intents-v1"), reservationPath = join53(parentPath, intentKey);
   const closedPlanSha256 = sha256Json(bound2.plan), markerSha256 = sha256Json(bound2.plan.marker), requestSha256 = sha256Json(bound2.request);
   const body4 = {
-    profile: PROFILE14,
+    profile: PROFILE15,
     intentKey,
     createdAt: (/* @__PURE__ */ new Date()).toISOString(),
     request: bound2.request,
@@ -113628,7 +113811,7 @@ async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
     try {
       await slot.handle.sync();
       currentInputs();
-      artifact2 = await publishManagedAttachmentExclusive(join53(reservationPath, "intent.json"), "Closed-symbol operation intent", bytes2, PROFILE14);
+      artifact2 = await publishManagedAttachmentExclusive(join53(reservationPath, "intent.json"), "Closed-symbol operation intent", bytes2, PROFILE15);
       currentInputs();
       await readExactUtf8Artifact({ path: artifact2.path, bytes: artifact2.bytes, sha256: artifact2.sha256 });
       currentInputs();
@@ -113653,7 +113836,7 @@ async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
   finalReservation2(root, parent, retainedSlot, artifact2, bytes2);
   currentInputs();
   return Object.freeze({
-    profile: PROFILE14,
+    profile: PROFILE15,
     intentKey,
     reservationPath,
     artifact: Object.freeze({ path: artifact2.path, bytes: artifact2.bytes, sha256: artifact2.sha256 }),
@@ -113665,7 +113848,7 @@ async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
     completionProved: false
   });
 }
-var PROFILE14, FAMILY3;
+var PROFILE15, FAMILY3;
 var init_closed_symbol_operation_intent = __esm({
   "server/src/closed-symbol-operation-intent.ts"() {
     init_artifacts();
@@ -113673,7 +113856,7 @@ var init_closed_symbol_operation_intent = __esm({
     init_closed_symbol_native_profile();
     init_closed_symbol_validation_request();
     init_closed_symbol_operation_request();
-    PROFILE14 = "easyeda-pro-control.closed-symbol-operation-intent.v1";
+    PROFILE15 = "easyeda-pro-control.closed-symbol-operation-intent.v1";
     FAMILY3 = "easyeda-pro-control.project-symbol-closed-session.v1";
   }
 });
@@ -113999,7 +114182,7 @@ var init_closed_symbol_operation_entry = __esm({
 
 // server/src/index.ts
 var src_exports = {};
-import { createHash as createHash37 } from "node:crypto";
+import { createHash as createHash38 } from "node:crypto";
 import {
   basename as basename23,
   dirname as dirname22,
@@ -114103,8 +114286,11 @@ async function runClosedSymbolTool(input, mode) {
     if (mode === "ordinary") {
       try {
         assertClosedSymbolOperationValidated();
-      } catch {
-        return formatClosedSymbolOperationResult(closedSymbolOperationStopped({ phase: "validation", attemptReserved: false }));
+      } catch (error51) {
+        return formatClosedSymbolOperationResult(
+          closedSymbolOperationStopped({ phase: "validation", attemptReserved: false }),
+          closedSymbolFailureDiagnostic(error51, "validation")
+        );
       }
     }
     const requestText = canonicalJson(parsed2.request);
@@ -114229,7 +114415,8 @@ async function runClosedSymbolTool(input, mode) {
     }
     phase4 = "projection";
     reason = "result-refused";
-    return mode === "validation" ? formatClosedSymbolDisposableResult(result) : formatClosedSymbolOperationResult(result);
+    const diagnostic = closedSymbolEntryFailureDiagnostic(entry);
+    return mode === "validation" ? formatClosedSymbolDisposableResult(result, diagnostic) : formatClosedSymbolOperationResult(result, diagnostic);
   } catch (error51) {
     if (activeReservation === void 0) {
       if (!closedSymbolUnreservedFailure.observed) {
@@ -114244,7 +114431,7 @@ async function runClosedSymbolTool(input, mode) {
       return formatClosedSymbolOperationResult(closedSymbolOperationStopped({
         phase: phase4,
         attemptReserved: activeReservation !== void 0
-      }));
+      }), closedSymbolFailureDiagnostic(error51, phase4));
     }
     return closedSymbolDisposableIndexRefusal({
       phase: phase4,
@@ -114253,7 +114440,7 @@ async function runClosedSymbolTool(input, mode) {
       entryInvocationAttempted: activeReservation?.entryInvocationAttempted ?? false,
       entryReturnObserved: activeReservation?.entryReturnObserved ?? false,
       originalEntryResult: activeReservation?.originalReturn
-    });
+    }, closedSymbolFailureDiagnostic(error51, phase4));
   }
 }
 function runClosedSymbolDisposableTool(input) {
@@ -114965,6 +115152,7 @@ var init_src = __esm({
     init_tool_operation_envelope();
     init_windows_runtime();
     init_closed_symbol_operation_request();
+    init_closed_symbol_failure_diagnostic();
     init_closed_symbol_operation_tool();
     init_closed_symbol_disposable_tool();
     init_windows_native_ui();
@@ -116639,7 +116827,7 @@ var init_src = __esm({
           if (generated.byteLength !== publishedExport.bytes) {
             throw new Error("Export byte length changed after write.");
           }
-          if (publishedExport.sha256 !== createHash37("sha256").update(exportBytes).digest("hex")) {
+          if (publishedExport.sha256 !== createHash38("sha256").update(exportBytes).digest("hex")) {
             throw new Error("Export hash changed during managed publication.");
           }
           await engine.assertContext(input.expectedContext);
@@ -116847,7 +117035,7 @@ var init_src = __esm({
       "easyeda_control_recover_incomplete",
       {
         title: "Inspect incomplete journals or resolve a supported retained refusal",
-        description: "Without an operation ID, list unresolved managed journals. Resolution abandoned-before-navigation accepts only the exact closed-symbol validation marker-read transport refusal or successful six-event baseline startup stopped before navigation; it preserves the original journal, marker and permanent claim, performs no application call, and never authorizes replay. Baseline abandonment proves neither process closure nor source invariance. Other ID-based resolutions are the retained legacy component workflow, not typed design, library, check or runtime-open recovery; use the originating tool for those journals. Legacy orphan resolution requires a fresh human-supplied operation-bound runtimeRestartConfirmation after an authorized restart and reconnect. Never synthesize that attestation, choose Save after an unknown write, or discard or force-quit without applicable authority.",
+        description: "Without an operation ID, list unresolved managed journals. Resolution abandoned-before-navigation accepts only the exact closed-symbol validation sixteen-event marker-read transport refusal or successful fixed marker-read boundary, or successful six-event baseline startup stopped before navigation; it preserves the original journal, marker and permanent claim, performs no application call, and never authorizes replay. Baseline abandonment proves neither process closure nor source invariance. Other ID-based resolutions are the retained legacy component workflow, not typed design, library, check or runtime-open recovery; use the originating tool for those journals. Legacy orphan resolution requires a fresh human-supplied operation-bound runtimeRestartConfirmation after an authorized restart and reconnect. Never synthesize that attestation, choose Save after an unknown write, or discard or force-quit without applicable authority.",
         inputSchema: {
           operationId: operationIdSchema.optional(),
           resolution: external_exports.enum([

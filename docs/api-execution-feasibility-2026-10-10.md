@@ -29,9 +29,9 @@ These are remaining implementation or investigation tasks, not proof that the
 native API cannot perform them. This release does not complete every feasible
 SDK method.
 
-## Current restriction, October 13, installed 084617
+## Current restriction, October 13, installed 101000
 
-Installed `0.3.0+codex.20261013084617` and current source block all
+Installed `0.3.0+codex.20261013101000` and current source block all
 schematic-page, symbol and PCB design transactions, including previously
 narrow display and wire profiles.
 Eight symbol/page/container metadata operations are also blocked. Source review
@@ -44,13 +44,38 @@ the [074635 release report](api-coverage-074635-release-2026-10-13.md) records t
 retained document-ID and duplicate structure-row corrections. The
 [084617 release report](api-coverage-084617-release-2026-10-13.md) records fixed
 probe transport and exact pre-navigation abandonment; it enables no new writer.
+The [101000 release report](api-coverage-101000-release-2026-10-13.md) records
+the separate ordinary symbol-metadata entry, still disabled, and the corrected
+application-window selector. The actual official host PID4147270 now matches the
+complete installed101000 payload. C09 historical abandonment completed through
+its public recovery route with retained proof and original evidence preserved;
+it grants neither completion nor retry authority.
+
+The new disposable validation `easyeda-20261013t111537z-e7df16d2` stopped in
+the coordinator at sequence16 after a successful edit-marker read, without a
+navigation intent, symbol mutation or Save. The application was observed on
+Start Page and closed normally once; native discovery was then empty and the
+434,176-byte fixture stayed byte-identical. This is not lifecycle completion or
+recovery. The consumed attempt must not be repeated, and no writer is enabled.
 
 Internal completion code and the separate disposable-validation tool have not
-restored these editing routes. Each route still needs operation-owned integration
-and its own complete effect proof. The earlier feasibility analysis below
+restored these editing routes. The ordinary symbol-metadata entry now has
+operation-owned integration but still awaits successful disposable lifecycle
+validation. The other blocked routes need their own integration and complete
+effect proofs. The earlier feasibility analysis below
 explains the method-specific work; references to a display exception or admitted
 metadata writer describe its original implementation, not present execution
 support. Historical test results do not override the current execution guards.
+
+The user chose a [scoped release](scoped-release-2026-10-13.md) with the remaining
+implementations documented as backlog. Ship the corrected fingerprint and bounded
+diagnostics through existing CI, leaving ordinary execution disabled. A successful
+disposable lifecycle remains required before enabling that entry in a later update.
+Additional test matrices and fixture variants are deferred.
+The other seven metadata effects, type1/2/3 geometry lifecycles and
+remaining reader/export/library adapters are implementation or investigation
+backlog, not work that can be completed by deferring tests. Shipping a limited
+release does not establish that all feasible SDK methods are implemented.
 
 ## Earlier schematic-connectivity investigation
 

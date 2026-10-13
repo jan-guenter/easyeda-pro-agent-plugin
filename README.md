@@ -2,7 +2,7 @@
 
 `easyeda-pro-control` is a Codex skill and MCP facade for EasyEDA Pro inspection and typed API editing, with native controls for missing APIs and dialogs. It provides version-pinned readers, component and geometry transactions, operation-specific library/export workflows, SQLite checkpoints, hash-bound evidence and recovery journals.
 
-The current candidate limits `easyeda_control_design` execution to footprint
+The scoped release limits `easyeda_control_design` execution to footprint
 editors under their existing guards. Schematic-page, symbol and PCB transactions,
 plus eight library metadata writers, are blocked pending native structure-job
 completion and complete SQL-effect proof. Their schemas and pure effect
@@ -19,9 +19,9 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Installed version `0.3.0+codex.20261013101000` has 28 tools and seven skills.
-Its [release report](docs/api-coverage-101000-release-2026-10-13.md) records
-passing CI and exact installed-package verification. The new ordinary
+Release `0.3.0+codex.20261013113000` has 28 tools and seven skills.
+See the [scoped release report](docs/scoped-release-2026-10-13.md) for verification,
+publication, installation and the implementation backlog. The ordinary
 `easyeda_control_symbol_metadata` entry is implemented but refuses before runtime
 allocation until disposable full-lifecycle validation succeeds. It accepts one
 explicit name/description operation with a unique caller ID and exact closed
@@ -29,28 +29,20 @@ symbol/project identity. Its operation-intent reservation is separate from the
 validation-only permanent target claim. It does not enable the old library
 executor or other metadata/geometry writers.
 
-The
 `easyeda_control_validate_closed_symbol` is a one-attempt, approval-required
 disposable validation route, not a general editing endpoint. The compiled helper
 and v3 transport pass a standalone Windows smoke run, including process cleanup.
-The first public disposable run stopped before project navigation or editing:
-upstream rejected a marker read whose transport confirmation was missing. Source
-now corrects that flag and the two other affected fixed probes. Full connected
-completion remains unproved; the attempt is never retried.
-Ordinary editing gates remain. Installed084617 also adds evidence-preserving
-abandonment for this exact pre-navigation refusal; it does not authorize retry.
-That public recovery has completed on the restarted084617 host with original
-evidence preserved. The next native-created disposable case stopped after its
-startup marker. Native observation showed a tooltip and the application window,
-a pair that the old selector would reject. No project navigation or edit occurred;
-the closed fixture is unchanged. The installed correction keeps ordinary
-execution disabled pending successful
-lifecycle validation. See [C09](docs/api-connected-validation-ledger.md#2026-10-13-c09-closed-symbol-validation-stopped-after-startup-marker).
-See the [transport correction and remaining scope](docs/api-coverage-084617-release-2026-10-13.md).
-The installed101000 catalog retains074635's native16-hex document
-identity handling and exact duplicate structure-row verification. These changes
-do not enable the blocked writers. See the
-[preceding integration corrections](docs/api-coverage-074635-release-2026-10-13.md).
+The latest disposable run passed baseline closure and native reference checks,
+then stopped after a successful startup-marker read, before navigation or editing.
+Its closed fixture is unchanged. This release corrects the expected Node version
+format (`v24.18.0`, matching the upstream health response), adds bounded failure
+diagnostics and admits evidence-preserving abandonment of that exact pre-navigation
+boundary. It does not retry the operation or enable the writer. Earlier fixes
+cover native 16-hex document IDs, duplicate structure rows, transport confirmation
+and tooltip-aware application-window selection. The
+[connected ledger](docs/api-connected-validation-ledger.md) records the evidence
+and limitations of each case. Full closed-symbol lifecycle validation remains
+unfinished.
 Start a fresh Codex host after updating.
 `easyeda_control_api` exposes 93 reviewed
 namespaces / 749 declared signatures and 99 latest official namespaces / 806
@@ -66,11 +58,9 @@ The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)
 describes the earlier containment changes. The [preceding054207 candidate](docs/api-coverage-054207-release-2026-10-13.md)
 packages the native-helper and disposable-workflow implementation.
 The [completion report](docs/project-structure-save-completion-2026-10-12.md)
-tracks that work and its remaining tasks. The preceding source snapshot passed
-9,701 facade tests with one platform skip and 424 bridge tests. The v3 integration
-passes types, strict lint and its affected existing tests. Exact-payload CI passes
-9,713 facade tests with five skips and 424 bridge tests. Successful public
-disposable workflow validation remains pending.
+tracks native lifecycle work. Remaining adapters are an implementation backlog,
+not merely missing tests and not a claim that the native APIs are impossible.
+The scoped release does not complete every feasible SDK method.
 The030626 release introduced the Unicode evidence-reader
 fixes from024750 and blocks eight metadata-writing routes plus schematic-page,
 symbol and PCB design transactions whose delayed native structure-table effects

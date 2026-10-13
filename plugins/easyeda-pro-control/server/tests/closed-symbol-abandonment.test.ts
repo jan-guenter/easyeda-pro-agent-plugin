@@ -42,7 +42,7 @@ function phaseInput(journal: ClosedJournal): AppendInput {
     data: step.endsWith("-launch") && kind === "result" ? { launchReceipt, launchReceiptSha256: sha256Json(launchReceipt) } : { syntheticOnly: true } };
 }
 
-async function fixture(rawReturn: unknown = rejection, baseline = false): Promise<{ journal: ClosedJournal; source: string; claimPath: string }> {
+async function fixture(rawReturn: unknown = rejection, baseline = false, successfulRead = false): Promise<{ journal: ClosedJournal; source: string; claimPath: string }> {
   const directory = await mkdtemp(join(syntheticSqlRoot(), "abandonment-")), source = join(directory, "synthetic.eprj2");
   const database = new DatabaseSync(source);
   try { database.exec("CREATE TABLE t(value TEXT); INSERT INTO t(rowid,value) VALUES(55,'synthetic baseline')"); }
@@ -50,7 +50,9 @@ async function fixture(rawReturn: unknown = rejection, baseline = false): Promis
   await chmod(source, 0o600);
   const operationId = newOperationId(), project = "b".repeat(64), target = sha256Text(operationId).slice(0, 16);
   const metadata = { name: "Synthetic symbol", description: "No native CAD call" };
-  const startup = baseline ? startupFixture() : undefined;
+  let startup: ReturnType<typeof startupFixture> | undefined;
+  if (baseline) { startup = startupFixture(); }
+  else if (successfulRead) { startup = startupFixture("edit-marker-read"); }
   const plan: ClosedSymbolPlan = { profile: FAMILY, projectUuid: project, branchUuid: "d".repeat(32), ownerUuid: "e".repeat(32), targetUuid: target,
     activeUuid: "f".repeat(16), projectPath: source, operation: { id: VALIDATION_ACTION_ID, action: "library.symbol.modify", libraryUuid: project,
       target: { uuid: target }, patch: metadata }, marker: startup?.input.marker ?? { namespaceNonce: "1".repeat(64), keyNonce: "2".repeat(64), bodyNonce: "3".repeat(64) },
@@ -59,7 +61,7 @@ async function fixture(rawReturn: unknown = rejection, baseline = false): Promis
   const request = { action: "run-disposable-once", target: { projectPath: source, projectUuid: project, branchUuid: plan.branchUuid,
     ownerUuid: plan.ownerUuid, symbolUuid: target, companionPcbUuid: plan.activeUuid }, metadata, confirmDisposableMetadataEdit: true };
   const claim = await claimClosedSymbolValidationTarget(request, plan);
-  if (startup !== undefined) {
+  if (baseline && startup !== undefined) {
     while (journal.sequence < 4) { await appendClosedSymbolEvent(journal, phaseInput(journal)); }
     const startupRequest = { profile: "easyeda-pro-control.closed-symbol-startup-request.v1", input: startup.input,
       codeSha256: sha256Text(buildStartupProgram(startup.input)), directMainFrameOnly: true };
@@ -84,7 +86,9 @@ async function fixture(rawReturn: unknown = rejection, baseline = false): Promis
   const startupRequest = { profile: "easyeda-pro-control.closed-symbol-startup-request.v1", input,
     codeSha256: sha256Text(buildStartupProgram(input)), directMainFrameOnly: true };
   await appendClosedSymbolEvent(journal, { ...phaseInput(journal), requestSha256: sha256Json(startupRequest), data: startupRequest });
-  await appendClosedSymbolEvent(journal, { ...phaseInput(journal), requestSha256: sha256Json(startupRequest), data: { rawReturn } });
+  const returned: unknown = successfulRead && startup !== undefined
+    ? { structuredContent: { ok: true, result: await startup.run() }, content: [] } : rawReturn;
+  await appendClosedSymbolEvent(journal, { ...phaseInput(journal), requestSha256: sha256Json(startupRequest), data: { rawReturn: returned } });
   return { journal, source, claimPath: claim.artifact.path };
 }
 function retainedBytes(value: Awaited<ReturnType<typeof fixture>>): Promise<Buffer[]> {
@@ -116,6 +120,23 @@ void test("an ordinary handler failure cannot qualify as a pre-handler rejection
   await assert.rejects(abandonClosedSymbolBeforeNavigation(value.journal.operationId), /pre-handler rejection/u);
   assert.equal(await inspectClosedSymbolAbandonment(value.journal.operationId), undefined);
   assert.deepEqual(await retainedBytes(value), before);
+});
+
+void test("a successful fixed marker read permits only unchanged-source historical abandonment", async () => {
+  const value = await fixture(undefined, false, true);
+  const before = await retainedBytes(value);
+  const result = await abandonClosedSymbolBeforeNavigation(value.journal.operationId);
+  assert.equal(result.classification, "historical-abandonment-verified");
+  assert.equal(result.completionProved, false); assert.equal(result.replayAllowed, false);
+  assert.equal(result.authorityRestored, false); assert.equal(result.executionAuthorized, false);
+  assert.deepEqual(await retainedBytes(value), before);
+  assert.deepEqual(await inspectClosedSymbolAbandonment(value.journal.operationId), result);
+  const incomplete = await fixture({ structuredContent: { ok: true, result: { ok: true } }, content: [] });
+  await assert.rejects(abandonClosedSymbolBeforeNavigation(incomplete.journal.operationId));
+  assert.equal(await inspectClosedSymbolAbandonment(incomplete.journal.operationId), undefined);
+  const later = await fixture(undefined, false, true);
+  await writePhaseArtifact(later.journal.operationId, 17, "edit-open-intent", { syntheticUnacknowledgedIntent: true });
+  await assert.rejects(abandonClosedSymbolBeforeNavigation(later.journal.operationId), /Unreferenced next phase/u);
 });
 
 void test("unreferenced later navigation evidence prevents historical abandonment", async () => {

@@ -3,6 +3,8 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { sha256Text } from "./core.ts";
 import { boundedOwnData } from "./closed-symbol-disposable-tool.ts";
+import { closedSymbolFailureDiagnosticText } from "./closed-symbol-failure-diagnostic.ts";
+import type { ClosedSymbolFailureDiagnostic } from "./closed-symbol-failure-diagnostic.ts";
 import { exactData } from "./closed-symbol-validation-request.ts";
 import { parseClosedSymbolOperationRequest } from "./closed-symbol-operation-request.ts";
 import type { ClosedSymbolOperationRequest } from "./closed-symbol-operation-request.ts";
@@ -46,10 +48,11 @@ export function closedSymbolOperationStopped(input: Pick<z.infer<typeof stopped>
   return stopped.parse({ ...CLOSED_SYMBOL_OPERATION_COMMON, outcome: "stopped", actionId: null, operationId: null, intentArtifact: null,
     terminalArtifact: null, completionProved: false, nextSafeAction: "Inspect retained evidence. Do not repeat this request or any native phase.", ...input });
 }
-export function formatClosedSymbolOperationResult(input: unknown): CallToolResult {
+export function formatClosedSymbolOperationResult(input: unknown, diagnostic?: ClosedSymbolFailureDiagnostic): CallToolResult {
   const structuredContent = closedSymbolOperationOutputSchema.parse({ result: boundedOwnData(input) });
   const encoded = JSON.stringify(structuredContent), jsonBytes = Buffer.byteLength(encoded);
   if (jsonBytes > 16_384) { throw new Error("Closed-symbol operation result exceeds 16 KiB."); }
   const ok = structuredContent.result.outcome === "completed";
-  return { isError: !ok, structuredContent, content: [{ type: "text", text: JSON.stringify({ ok, structuredContent: true, jsonBytes, sha256: sha256Text(encoded) }) }] };
+  return { isError: !ok, structuredContent, content: [{ type: "text", text: JSON.stringify({ ok, structuredContent: true, jsonBytes, sha256: sha256Text(encoded) }) },
+    ...ok ? [] : closedSymbolFailureDiagnosticText(diagnostic)] };
 }

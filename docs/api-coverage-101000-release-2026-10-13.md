@@ -1,9 +1,10 @@
 # Ordinary symbol entry and tooltip-aware lifecycle selection
 
-Candidate `0.3.0+codex.20261013101000` adds the ordinary operation-owned symbol
+Installed `0.3.0+codex.20261013101000` adds the ordinary operation-owned symbol
 metadata entry and fixes the next integration failure found in disposable use.
 It does not yet enable that writer: successful full-lifecycle validation is
-still missing. The source catalog is28 tools and seven skills.
+still missing. The new disposable validation stopped before project navigation.
+The source catalog is28 tools and seven skills.
 
 ## Implementation
 
@@ -49,8 +50,24 @@ A separate six-event abandonment profile verifies the successful fixed startup
 result and exact original claim/phase artifacts. It cannot classify an active
 same-host invocation. It preserves the marker, claim and journal and makes no
 application call, replay grant, process-closure claim or source-invariance claim.
-The sixteen-event transport-refusal recovery is unchanged. The new profile has
-not yet been run against C09; it requires the updated official host.
+The sixteen-event transport-refusal recovery is unchanged. C09 abandonment has
+now completed through the public recovery route on the admitted101000 host,
+with its retained proof and original evidence preserved. This records historical
+abandonment, not successful validation or permission to retry the consumed target.
+
+A genuinely new native-created disposable project ran through the public
+validation route once, operation `easyeda-20261013t111537z-e7df16d2`.
+Its closed-file preflight matched the complete84-entry schema and decoded all
+12 documents from three linear history rows and four chunks, without snapshots.
+The ordinary resistor symbol and separate META-only PCB companion passed the
+existing read-only preparation checks. The public result stopped in the
+coordinator at sequence16 after a successful edit-marker read. No navigation
+intent, symbol mutation or Save was recorded. The application was observed on
+Start Page, then closed normally once without a Save/Discard choice; subsequent
+native discovery was empty. The434,176-byte fixture remained byte-identical at
+SHA256 `4ad992b9fd1448e07aa3395053397e970e3eb8007c4f35bb0d3be21ca5d0e0f7`.
+No full-lifecycle completion or recovery is claimed. Preserve the stopped
+operation and its consumed claim; do not repeat the request.
 
 ## Verification and delivery
 
@@ -95,8 +112,14 @@ admission. Inventory SHA256 is
 `7855650d3f07efa7b007d8354cf36b858b95415ade71871f603ad7c211049fc9`;
 installed proof SHA256 is
 `412a7b959098ccd0f6ee5d2d5af338135ac1823cc5f37a88d55a1febe17848bc`.
-The existing official host still loads084617; use a fresh host before C09 public
-abandonment or another disposable workflow. No C09 recovery has run.
+After the Codex restart, the actual official facade PID4147270 was admitted
+against the exact installed101000 payload. Its pinned Node executable, parent,
+cache working directory and lease ownership matched; the old PID4122421 was
+absent. The complete1,112-file package, source/bundle projections and modes
+matched the published tree and retained installed proof. This is process and
+filesystem admission, not memory attestation or a successful writer lifecycle.
+C09 public abandonment then completed; the new disposable validation above
+subsequently stopped before navigation.
 
 Final root-only documentation leaves the tested package tree unchanged and skips
 duplicate CI. That does not turn a skipped check into a passing check.
@@ -104,11 +127,20 @@ No new broad test matrix or private harness is added.
 
 ## Remaining scope
 
-Finish the one disposable closed-symbol lifecycle, then deliberately enable the
-ordinary entry with its exact validated limits. The other seven metadata effects
-and schematic-page/symbol/PCB geometry lifecycles still need their own native
-completion and complete SQL-effect models. General reader/export/library omissions
-remain itemized in [the feasibility inventory](api-execution-feasibility-2026-10-10.md).
+Diagnose the stopped sequence16 case and retain its evidence without replay.
+Successful disposable full-lifecycle validation is still required before
+deliberately enabling the ordinary entry with its exact limits and adding its separate
+execution route to the coverage inventory. The old library executor stays blocked.
+The other seven metadata effects and schematic-page/symbol/PCB geometry lifecycles
+still need their own native completion and complete SQL-effect models. General
+reader/export/library omissions remain itemized in
+[the feasibility inventory](api-execution-feasibility-2026-10-10.md).
 These are implementation limits, not merely deferred tests or claimed native
-impossibilities. PR9 remains draft; this incremental update does not complete the
-entire API-coverage request. Production designs remain untouched.
+impossibilities.
+
+Expanded test matrices and additional fixture variants can follow this delivery;
+they do not replace those missing adapters. Any enabled change still needs its
+focused regression checks and the existing release CI. Final delivery also needs
+PR9/main promotion and official marketplace installation of the frozen final
+payload. PR9 remains draft; this incremental update does not complete the entire
+API-coverage request. Production designs remain untouched.

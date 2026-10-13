@@ -8,6 +8,7 @@ import { OPERATION_SCHEMA, buildPlanHash, isRecord, newOperationId, sha256Json }
 import { createOperation, operationPath } from "../../src/artifacts.ts";
 import { readFile } from "node:fs/promises";
 import { retireSyntheticJournal } from "./synthetic-journal-retirement.ts";
+import { closedSymbolEntryFailureDiagnostic } from "../../src/closed-symbol-failure-diagnostic.ts";
 
 export function registerSuccess(kind: "locked" | "aged"): void {
   void test(`dormant handler ${kind} selects its terminal from the original full result`, async context => {
@@ -86,8 +87,12 @@ export function registerAfterClaimFailure(): void {
     const claim = await originalClaim(f.entry);
     assert.deepEqual(result.claimArtifact, claim.artifact); assert.ok(retained["coordinator"] instanceof ClosedSymbolCoordinator);
     assert.ok(retained["failure"] instanceof Error); assert.equal(retained["full"], undefined); assert.equal(retained["completion"], undefined);
+    const diagnostic = closedSymbolEntryFailureDiagnostic(f.entry);
+    assert.equal(diagnostic?.stage, "coordinator"); assert.equal(diagnostic.lastSuccessfulStage, "baseline-admission");
+    assert.equal(diagnostic.errorCode, "UNCLASSIFIED_FAILURE"); assert.match(diagnostic.messageSha256 ?? "", /^[a-f0-9]{64}$/u);
     assert.equal(f.events.filter(event => event === "normal-close").length, 0); assert.equal(f.state.writes, 0);
     const events = [...f.events]; await f.entry.run(f.request); assert.deepEqual(f.events, events);
     assert.equal(f.entry.retained()["claim"], retained["claim"]); assert.equal(f.entry.retained()["failure"], retained["failure"]);
+    assert.deepEqual(closedSymbolEntryFailureDiagnostic(f.entry), diagnostic);
   });
 }

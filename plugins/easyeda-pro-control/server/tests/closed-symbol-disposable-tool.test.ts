@@ -4,6 +4,7 @@ import { z } from "zod";
 import { closedSymbolDisposableIndexRefusal, closedSymbolDisposableInputSchema, closedSymbolDisposableOutputSchema,
   formatClosedSymbolDisposableResult, parseClosedSymbolDisposableInput } from "../src/closed-symbol-disposable-tool.ts";
 import { sha256Text } from "../src/core.ts";
+import { closedSymbolEntryFailureDiagnostic, closedSymbolFailureDiagnostic, closedSymbolFailureDiagnosticText } from "../src/closed-symbol-failure-diagnostic.ts";
 import { artifactData, completedData, requestData, stoppedData } from "./helpers/disposable-tool-data.ts";
 
 function check(input: unknown, ok: boolean): z.infer<typeof closedSymbolDisposableOutputSchema>["result"] {
@@ -16,6 +17,57 @@ function check(input: unknown, ok: boolean): z.infer<typeof closedSymbolDisposab
   assert.ok(Buffer.byteLength(JSON.stringify(parsed)) <= 16_384);
   return parsed.result;
 }
+
+void test("failure diagnostic keeps the result and digest exact and exposes only fixed fingerprint paths", () => {
+  let reads = 0;
+  const message = "Closed navigation runtime does not match the expected subset.";
+  const error = Object.assign(new Error(message), { mismatches: [
+    { pointer: "/health/payload/node_version", get actual(): never { reads += 1; throw new Error("private actual"); } },
+    { pointer: "/private-secret-sentinel", expected: "private-value" },
+  ] });
+  const diagnostic = closedSymbolFailureDiagnostic(error, "coordinator", "edit-marker-read");
+  assert.ok(diagnostic !== undefined);
+  assert.equal(diagnostic.errorCode, "RUNTIME_FINGERPRINT_MISMATCH");
+  assert.equal(diagnostic.messageSha256, sha256Text(message));
+  assert.deepEqual(diagnostic.mismatchPaths, ["/health/payload/node_version"]);
+  const original = formatClosedSymbolDisposableResult(stoppedData()), withDiagnostic = formatClosedSymbolDisposableResult(stoppedData(), diagnostic);
+  assert.deepEqual(withDiagnostic.structuredContent, original.structuredContent);
+  assert.deepEqual(withDiagnostic.content[0], original.content[0]);
+  const text = withDiagnostic.content[1]; assert.ok(text?.type === "text");
+  assert.deepEqual(JSON.parse(text.text), diagnostic); assert.ok(Buffer.byteLength(text.text) <= 2048);
+  assert.doesNotMatch(JSON.stringify(withDiagnostic), /private|expected subset/u); assert.equal(reads, 0);
+  assert.equal(formatClosedSymbolDisposableResult(completedData(), diagnostic).content.length, 1);
+  const refusal = closedSymbolDisposableIndexRefusal({ phase: "projection", reason: "result-refused", attemptReserved: true,
+    entryInvocationAttempted: true, entryReturnObserved: true, originalEntryResult: stoppedData() }, diagnostic);
+  assert.deepEqual(refusal.content[1], text); assert.equal(refusal.isError, true);
+});
+
+void test("failure diagnostics never read accessors, proxies, stack or cause and bound unknown messages", () => {
+  let reads = 0;
+  const unknown = new Error("private-message-sentinel");
+  Object.defineProperty(unknown, "stack", { get: (): never => { reads += 1; throw new Error("never read stack"); } });
+  Object.defineProperty(unknown, "cause", { get: (): never => { reads += 1; throw new Error("never read cause"); } });
+  const diagnostic = closedSymbolFailureDiagnostic(unknown, "coordinator", "private-stage");
+  assert.equal(diagnostic?.errorCode, "UNCLASSIFIED_FAILURE"); assert.equal(diagnostic.lastSuccessfulStage, null);
+  assert.equal(diagnostic.messageSha256, sha256Text("private-message-sentinel"));
+  assert.doesNotMatch(JSON.stringify(diagnostic), /private/u);
+  const accessor = new Error("replaced by accessor");
+  Object.defineProperty(accessor, "message", { get: (): never => { reads += 1; throw new Error("never read message"); } });
+  assert.equal(closedSymbolFailureDiagnostic(accessor, "request")?.messageSha256, null);
+  const oversized = new Error("x".repeat(8193));
+  assert.equal(closedSymbolFailureDiagnostic(oversized, "request")?.messageSha256, null);
+  assert.equal(closedSymbolFailureDiagnostic(new Error("\uD800"), "request")?.messageSha256, null);
+  const revoked = Proxy.revocable({}, {}); revoked.revoke();
+  assert.equal(closedSymbolFailureDiagnostic(revoked.proxy, "request")?.errorCode, "ERROR_MESSAGE_UNAVAILABLE");
+  assert.equal(closedSymbolEntryFailureDiagnostic(revoked.proxy), undefined);
+  assert.deepEqual(closedSymbolFailureDiagnosticText({ ...diagnostic, mismatchPaths: revoked.proxy }), []);
+  const error = Object.assign(new Error("Closed navigation runtime does not match the expected subset."), { mismatches: revoked.proxy });
+  assert.deepEqual(closedSymbolFailureDiagnostic(error, "coordinator")?.mismatchPaths, []);
+  const entry = { failure: unknown, phase: "coordinator", coordinator: { lastSuccessfulStage: "edit-marker-read" },
+    get retained(): never { reads += 1; throw new Error("never read retained"); } };
+  assert.equal(closedSymbolEntryFailureDiagnostic(entry)?.lastSuccessfulStage, "edit-marker-read");
+  assert.equal(entry.failure, unknown); assert.equal(reads, 0);
+});
 
 for (const projectLength of [32, 64]) {
   void test(`strict parser keeps the original request and freezes its separate ${String(projectLength)}-hex projection`, () => {

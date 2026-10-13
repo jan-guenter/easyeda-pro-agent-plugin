@@ -13,7 +13,59 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Current continuation: ordinary entry and pre-navigation window correction
+### Current delivery: scoped release approved
+
+The user explicitly chose: "Ship the scoped release; document the backlog."
+Finish protected publication and official Git-marketplace installation; do not
+continue broad API implementation or add more live fixtures in this delivery.
+Candidate `0.3.0+codex.20261013113000` keeps the ordinary symbol writer disabled.
+Its release report is `docs/scoped-release-2026-10-13.md`. Missing adapters remain
+implementation backlog, not merely missing tests or native impossibilities.
+
+The new B validation ran ONCE as `easyeda-20261013t111537z-e7df16d2` and stopped
+at sequence16 after a successful edit-marker read. Baseline close/copy and aged
+native reference qualification passed. No navigation intent, edit or Save followed.
+Native capture showed Start Page; normal application close ran once without a
+prompt choice, then discovery was empty. The disposable remains434176bytes,
+SHA4ad992b9fd1448e07aa3395053397e970e3eb8007c4f35bb0d3be21ca5d0e0f7.
+Original journal81a9dcd2, phase16139cff12, claim e7c9d34f are retained; no
+completion, original edit-Job termination or abandonment is claimed. Never replay.
+
+Independent maintained read-only checks pass startup parsing, checkpoint equality
+and navigation preparation. Fresh disconnected status exposes Node `v24.18.0`
+against expected `24.18.0`; upstream emits process.version while the semantic
+manifest intentionally strips the prefix. The new builder restores the wire
+prefix without relaxing comparison or changing external pins. This defect would
+reject admission; the swallowed original exception itself was not observed.
+Bounded public failure diagnostics are integrated. The sixteen-event
+abandonment route now separately accepts a complete successful fixed marker read,
+retaining all source/claim/phase and no-later-evidence requirements. Its eight
+focused tests pass; fingerprint43 and diagnostic/entry73 tests pass. Both types,
+full zero-warning lint, build, compatibility, coverage, package/repository/privacy
+and seven official skill validations pass. Dependency audits are clean. Source305
+projection809593eb/runtime3 projection5799fa8d; external pins unchanged. Existing
+full CI, protected publication and install remain pending. Actual4147270 remains
+on101000; updated public abandonment needs a fresh official host. No CAD call
+or Save is pending. Production and its record remain untouched.
+
+### Historical restart admission and fixture setup
+
+Restarted101000 is independently admitted at official facade4147270, parent
+Codex4145351. Its full1,112-file tree/modes and source/bundle projections match
+tested306871c5; prior4122421 is absent. C09 public baseline-abandonment completed
+once with original journal, phases, marker and claim unchanged. Sidecar78ec1b35,
+bodye9b23145 record historical abandonment only, without process/file invariance
+or completion/replay authority. Public incomplete listing then returned empty.
+A genuinely new native-created disposable fixture is saved and closed after
+one resistor placement and one File > Save. Its default companion PCB has not
+been manually opened; source admission permits META-only PCB membership, and
+the coordinator owns first opening with its live navigation-preference guard.
+Read-only fixture eligibility is being checked. No new public validation has
+been dispatched, and no native/CAD/Save call is pending. The facade's retained
+runtime remains not-launched. Computer Use failed before initialization on the
+workspace URI; maintained observed-unowned native controls handled setup.
+
+The following paragraph records the preceding release and setup history.
 
 The restarted official084617 host is admitted: its complete1,104-file installed
 tree and modes match tested payloadc2412d6. Public pre-navigation abandonment
@@ -3409,7 +3461,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Current Git-marketplace101000 is published and installed/enabled after exact-payload CI38382522749. All1,112files/21,663,074bytes/modes match306871c5, with offline proof412a7b95 and28tools/sevenskills. The installer cache-backup error is retained; independent cache/startup verification passed without manual cache changes or reinstall. Actual4122421 still loads084617, so fresh-host admission remains required. C08 public pre-navigation abandonment completed without replay. C09 stopped after its startup marker, before navigation; fixture unchanged and app closed. Its new six-event abandonment has not run. Ordinary writer source is integrated but disabled. Successful disposable lifecycle and the other native-effect implementations remain unfinished; all type1/2/3 design and eight metadata restrictions remain. Production and its record remain excluded.
+- The user approved a scoped release with remaining implementations recorded as backlog. Candidate113000 retains28 tools/seven skills and all current writer restrictions. Installed101000 is independently admitted on4147270; C09 historical abandonment completed. C10 stopped after successful edit-marker read, before navigation; the app is closed and fixture unchanged. Candidate113000 corrects the expected Node wire version, adds bounded failure diagnostics and qualifies successful-marker pre-navigation abandonment. No C10 recovery or full closed-symbol lifecycle succeeded. Publication/install evidence is tracked in docs/scoped-release-2026-10-13.md; production designs and their records remain excluded.
 - Historical Git-marketplace030626 was published and installed/enabled after exact-payload CI38202074298. All652files/17001549bytes/modes matched6535cfad, with offline prooffc6c5e6a. It introduced the blocks on all type1/2/3 design lifecycles and eight metadata actions, including affected retained recovery, before bridge connection. Fresh connected admission and native structure completion were not claimed. Historical013324 C06/C07 retain their scoped wire observations, not later-job exclusion. Both disposable fixtures remain closed; completed operations must never be replayed. Candidate024750 was not installed. Broader API work and PR9 remain unfinished.
 - Historical000206 installation record, superseded by the current entry: Git-marketplace `0.3.0+codex.20261012000206` is published and installed/enabled after exact-head CI38187143546. All633files/17006218bytes/modes match payloadac9f0a7, package subtree369d8572; offline proofc146a756 passes. Loaded facade2527645 remains independently admitted220050, not000206; use a fresh Codex host before connected work. The220050 font case and omitted-lock three-segment wire forward/reverse saved/reopened pair pass their scoped proofs. Both disposable fixtures are closed; final flat sourcec9e04b15/checkpoint621cb2f6/database471d6b9e/logicalea3da0fa are verified. Original source geometry is restored, not original SQLite history. Closed verifier11 and all-nine-root metadata41 pass. The earlier authorized UI action/private comparison9bf4428a established pcbCommandTab false to true in browser and one anonymous SQL residual without identifying the current user. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission. The installed historical-case index grants no live authority or current-generation validation.
 - Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct. Installed164600 passed scoped PCB Text readers/create/delete and empty free-SCH creation;204104 passed system-library UUID, schematic Text/Wire readers with both mixed caller orders, and independently visible pointer-only hover. Installed220050 adds configured-font R09 and sealed-wire C04/C05 exact-case evidence. Unsaved wire rollback, failure recovery, broader wire shapes, literal-false connected input and later generations remain separate. The connected ledger records scope, not whole SDK contracts. Never access production or its project record. The user's continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation, not relaxed technical safety checks or unrelated changes.
