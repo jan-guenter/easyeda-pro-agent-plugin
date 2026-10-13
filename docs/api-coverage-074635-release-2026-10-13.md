@@ -31,7 +31,14 @@ the native DLL are unchanged.
 Source projection: `6241777a0c68d86207613360700f49c42766090c7e7fbfd3ade169b6fb0e6757`.
 Bundle projection: `b0d5c05f09155d3453a3dc138b18d7b635e93279bdd055bf198291e5e1f4ee20`.
 
-GitHub CI, publication and official Git-marketplace installation are pending.
+Payload `48ae947847ee1acc73296857c141deb86ff3076a` is published in draft
+[PR9](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/9).
+First CI38365339756 passed the complete verify-build job, but nine historical
+program-hash tests inherited the new16-character fixture IDs. A test-only
+correction restores explicit32-character inputs for those historical cases;
+their golden hashes and production code remain unchanged. All16 existing cases
+and targeted strict lint pass. Corrected GitHub CI and official Git-marketplace
+installation are pending.
 The previously installed054207 host was independently admitted after restart.
 No public disposable callback, editor launch, Save or production-project access
 occurred during this correction.

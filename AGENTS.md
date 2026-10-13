@@ -24,7 +24,12 @@ assumptions. Nine source files and six existing test/fixture files changed;
 1,221 affected tests pass with no failures/skips. Final facade types, full strict
 lint, build, compatibility, package/repository/privacy, coverage and seven skill
 checks pass. Source6241777a/bundleb0d5c05f; external pins and native DLL unchanged.
-GitHub CI, publication and installation of074635 are pending.
+Payload48ae947 is published in PR9. First CI38365339756 passed verify-build but
+found nine legacy program-hash test failures: those cases inherited the new
+16-character fixture IDs. Their test-only correction supplies the original
+32-character inputs; golden hashes and production code remain unchanged.
+All16 existing cases and targeted strict lint pass. Corrected CI and official
+installation of074635 are pending.
 
 The public closed-symbol workflow and ordinary writer integration remain
 unfinished. Further test-matrix expansion is deferred. Finish this focused
