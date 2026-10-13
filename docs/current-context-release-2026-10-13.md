@@ -54,6 +54,17 @@ stdio checks. Independent review found no other stale option expectation.
 The79 focused witness/recorded-native/protocol cases pass after this correction;
 full types and strict lint remain clean. No runtime guard or test was removed.
 
+Second PR16 CI38462535822 passed build verification and six test shards. Two
+test-only failures remained: private race commands could be observed between
+file creation and the asynchronous write, and cold PowerShell startup exceeded
+the geometry test's10s deadline. Commands are now fully staged before atomic
+publication; strict child checks remain. A deliberate partial-file schedule
+reproduced the same hidden AssertionError shape, though the failed runner's
+original inner message was unavailable. The pure geometry test now allows45s
+for startup without changing production deadlines or result assertions. All
+five CI-like race cases and the geometry case pass locally. Runtime source and
+bundle projections are unchanged by these corrections.
+
 The preceding193500 release is already published and installed through
 [PR15](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/15),
 main90b96777e32c909ac46285f9ba43f8147f80f93d. Required PR CI38457338169 and

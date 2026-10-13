@@ -52,6 +52,15 @@ Initial PR16 CI38462036703 exposed the synthetic SQL-spawn helper's old exact
 options. It now requires fixed cwd/ too, retaining all executable/descriptor/
 argument/environment/stdio checks.79 focused cases, fulltypes and strictlint
 pass. Runtime source/bundle projections are unchanged by this test-only fix.
+Second PR16 CI38462535822 passed build verification and six shards, but caught
+a synthetic command-file publication race and a cold PowerShell startup timeout.
+The private fixture now stages complete command bytes before atomic rename;
+strict child checks are unchanged. A deliberately partial synthetic publication
+reproduced the hidden AssertionError shape before the correction. The geometry
+test alone now allows45s for process startup, preserving every result assertion
+and all production deadlines. Five CI-like race cases and the geometry case
+pass locally; the original CI error message was unavailable, so the reproduced
+race mechanism is not claimed as recovered evidence from that failed runner.
 The production project and its project record remain untouched.
 
 ### Historical candidate193500: ordinary launch and editor-shell observation
