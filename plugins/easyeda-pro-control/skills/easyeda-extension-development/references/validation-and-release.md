@@ -89,7 +89,7 @@ admits its reviewed API 0.3.50 closure without changing the older design tuple.
 The local environment/unit profile shares exact identity checks but fixes its
 own reviewed methods and effects, including a compiled-date local-cache write.
 New or unknown configured generations register only reference, discovery, status,
-calculation and local-system tools. Each execution requires its exact hashes and
+calculation, local-system and fixed extension-index tools. Each execution requires its exact hashes and
 authenticated session. Keep this registration boundary separate from runtime
 admission; adding a method to discovery must not expose unrelated old adapters.
 

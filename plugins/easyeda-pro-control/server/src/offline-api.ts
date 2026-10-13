@@ -5,6 +5,7 @@ import { publicSdkCatalogQuerySchema, publicSdkValidationQuerySchema, queryPubli
 import { operationCatalogQuerySchema, operationValidationRequestSchema, queryOperationCatalog, validateCatalogOperation } from "./operation-catalog.ts";
 import { querySdkMathCalculations, sdkMathCatalogQuerySchema, validateSdkMathArguments } from "./sdk-math.ts";
 import { querySdkSystemMethods, sdkSystemCatalogQuerySchema, validateSdkSystemArguments } from "./sdk-system.ts";
+import { queryStartupExtensions, startupExtensionsQuerySchema, validateStartupExtensionsArguments } from "./startup-extensions.ts";
 
 export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("sdk"), query: extensionApiCatalogInputSchema.optional() }).strict(),
@@ -15,13 +16,15 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("calculate-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("system"), query: sdkSystemCatalogQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("system-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("extensions"), query: startupExtensionsQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("extensions-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("operations"), query: operationCatalogQuerySchema }).strict(),
   z.object({ action: z.literal("validate"), query: operationValidationRequestSchema }).strict(),
 ]);
 
 export const offlineApiToolConfiguration = {
   title: "EasyEDA offline API reference and argument validation",
-  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation or local-system schemas; validate arguments including refinements. Entirely offline: no bridge calls, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
+  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system or extension-metadata schemas; validate arguments including refinements. Entirely offline: no bridge calls, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
   inputSchema: { request: apiRequestSchema },
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
 };
@@ -37,6 +40,8 @@ export function queryOfflineApi(request: z.infer<typeof apiRequestSchema>): { of
     case "calculate-validate": { result = validateSdkMathArguments(request.query.request); break; }
     case "system": { result = querySdkSystemMethods(request.query ?? {}); break; }
     case "system-validate": { result = validateSdkSystemArguments(request.query.request); break; }
+    case "extensions": { result = queryStartupExtensions(request.query ?? {}); break; }
+    case "extensions-validate": { result = validateStartupExtensionsArguments(request.query.request); break; }
     case "operations": { result = queryOperationCatalog(request.query); break; }
     case "validate": { result = validateCatalogOperation(request.query); break; }
     default: { throw new Error("Unknown offline API reference action."); }
