@@ -23,6 +23,7 @@ interface BundledFixture {
   readonly controlDirectory: string;
   readonly profilePath: string;
   readonly upstreamMarker: string;
+  readonly pcbBundle: string;
   readonly environment: Record<string, string>;
 }
 
@@ -68,7 +69,8 @@ async function fixture(context: TestContext): Promise<BundledFixture> {
   const upstreamMarker = join(root, "upstream-must-not-execute");
   await writeFile(join(upstreamRoot, "dist", "index.js"),
     `import { writeFileSync } from "node:fs"; writeFileSync(${JSON.stringify(upstreamMarker)}, "unexpected execution"); throw new Error("Synthetic upstream must never execute.");\n`);
-  for (const path of [join(assetsRoot, "pro-pcb", "3.2.fixture", "js", "pcb.js"),
+  const pcbBundle = join(assetsRoot, "pro-pcb", "3.2.fixture", "js", "pcb.js");
+  for (const path of [pcbBundle,
     ...["api.js", "api-types.js", "api-types.d.ts"].map((name) => join(assetsRoot, "pro-api", "0.2.fixture", name)),
   ]) { await writeFile(path, "synthetic installation metadata; never executed\n"); }
   const pinnedNode = await realpath(process.execPath);
@@ -81,7 +83,7 @@ async function fixture(context: TestContext): Promise<BundledFixture> {
   assert.deepEqual(await readdir(pluginRoot), ["server"]);
   const distEntries = await readdir(distRoot);
   assert.deepEqual(distEntries.toSorted(), ["server.mjs", "upstream-supervisor.mjs"]);
-  return { root, pluginRoot, bundle, bootstrapNode, pinnedNode, controlDirectory, profilePath, upstreamMarker,
+  return { root, pluginRoot, bundle, bootstrapNode, pinnedNode, controlDirectory, profilePath, upstreamMarker, pcbBundle,
     environment: { EASYEDA_MACHINE_PROFILE: profilePath, EASYEDA_CONTROL_DATA_DIR: controlDirectory, LANG: "C", LC_ALL: "C" } };
 }
 
@@ -119,6 +121,59 @@ async function assertNoLiveStartup(options: BundledFixture, pid: number): Promis
 }
 
 void describe("self-contained packaged machine startup", () => {
+  void test("missing pinned installation keeps only offline tools available until a new process starts", async (context) => {
+    const options = await fixture(context);
+    const pcbBytes = await readFile(options.pcbBundle);
+    await rm(options.pcbBundle);
+    const transport = new StdioClientTransport({ command: options.bootstrapNode,
+      args: [options.bundle, "--machine-launch"], cwd: options.root,
+      env: options.environment, stderr: "pipe" });
+    const client = new Client({ name: "offline-installation-startup-test", version: "1.0.0" }, { capabilities: {} });
+    context.after(async () => { await client.close(); });
+    await client.connect(transport, { timeout: 15_000, maxTotalTimeout: 15_000 });
+    const pid = transport.pid;
+    assert.ok(pid !== null);
+    assert.equal(await readlink(`/proc/${pid}/exe`), options.pinnedNode);
+    const expectedTools = ["easyeda_control_api", "easyeda_control_discover", "easyeda_control_status"];
+    const initialTools = await client.listTools();
+    assert.deepEqual(initialTools.tools.map((tool) => tool.name).toSorted(), expectedTools);
+    const initialStatus = await client.callTool({ name: "easyeda_control_status", arguments: {} });
+    assert.notEqual(initialStatus.isError, true, JSON.stringify(initialStatus.content));
+    const status = record(initialStatus.structuredContent);
+    assert.equal(status["mode"], "offline-only");
+    assert.equal(status["liveExecutionAvailable"], false);
+    assert.equal(status["restartRequired"], true);
+    assert.deepEqual(status["installation"], { ready: false, code: "machine-installation-pcb-bundle-unavailable" });
+    const sdk = await api(client, { action: "sdk", query: { reference: "reviewed-installed", namespace: "sys_WebSocket", limit: 1 } });
+    assert.equal(sdk["invocationEnabled"], false);
+    const validated = await api(client, { action: "validate", query: { family: "design",
+      operation: { id: "pose", action: "pcb.component.modify", target: { primitiveId: "part" }, patch: { x: 10 } } } });
+    assert.equal(validated["valid"], true);
+    assert.equal(validated["executionAuthorized"], false);
+    const discovery = await client.callTool({ name: "easyeda_control_discover", arguments: { query: "pcb", mode: "all" } });
+    assert.notEqual(discovery.isError, true);
+    const entries = record(discovery.structuredContent)["result"];
+    assert.ok(Array.isArray(entries) && entries.length > 0);
+    for (const entry of entries) {
+      assert.equal(record(entry)["facadeTool"], null);
+      assert.equal(record(entry)["availability"], "unavailable");
+    }
+    const live = await client.callTool({ name: "easyeda_control_discover", arguments: { source: "live" } });
+    assert.equal(live.isError, true);
+    const runtime = await client.callTool({ name: "easyeda_control_runtime", arguments: { request: { action: "launch-contained", confirmLaunch: true } } });
+    assert.equal(runtime.isError, true);
+    await assertNoLiveStartup(options, pid);
+    // Restoring a synthetic dependency cannot promote an already restricted process.
+    await writeFile(options.pcbBundle, pcbBytes);
+    const restoredTools = await client.listTools();
+    assert.deepEqual(restoredTools.tools.map((tool) => tool.name).toSorted(), expectedTools);
+    const restoredStatus = await client.callTool({ name: "easyeda_control_status", arguments: {} });
+    assert.deepEqual(restoredStatus.structuredContent, initialStatus.structuredContent);
+    await assertNoLiveStartup(options, pid);
+    await client.close();
+    assert.deepEqual(await readdir(options.controlDirectory), ["machine-profile.json"]);
+  });
+
   void test("replaces a different portable bootstrap executable and serves offline MCP queries without node_modules", async (context) => {
     const options = await fixture(context);
     const transport = new StdioClientTransport({ command: options.bootstrapNode,

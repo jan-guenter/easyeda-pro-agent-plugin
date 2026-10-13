@@ -14,7 +14,7 @@ async function registeredStatus(options: { connectDuringProbe?: boolean; disconn
   const wrapperStart = source.indexOf("function serializedStatusGuarded<Input>(");
   const wrapperEnd = source.indexOf("\nasync function callReadOnly(", wrapperStart);
   const registrationStart = source.indexOf('registerFacadeTool(\n  "easyeda_control_status",');
-  const registrationEnd = source.indexOf("\nconst apiRequestSchema", registrationStart);
+  const registrationEnd = source.indexOf("\nregisterFacadeTool(", registrationStart + 1);
   const failureStart = source.indexOf("function failure(error: unknown,");
   const failureEnd = source.indexOf("\nfunction serializedGuarded<Input>(", failureStart);
   assert.ok(wrapperStart !== -1 && wrapperEnd > wrapperStart && registrationStart !== -1 && registrationEnd > registrationStart);

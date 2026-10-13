@@ -10,7 +10,8 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { z } from "zod";
 
 import { assertSelfSoftCoreLimitZero } from "../server/src/soft-core-limit.ts";
-import { loadRuntimeMachineProfile, machineProfileLaunchConfiguration } from "../server/src/machine-profile.ts";
+import { loadMachineLaunchProfile, machineProfileLaunchConfiguration } from "../server/src/machine-profile.ts";
+import type { MachineProfile } from "../server/src/machine-profile.ts";
 
 export const MAXIMUM_REQUEST_BYTES = 65_536;
 const MAXIMUM_INLINE_BYTES = 1_048_576;
@@ -211,6 +212,13 @@ export function sessionTransportEnvironment(definitionEnvironment: Readonly<Reco
   return environment;
 }
 
+export function sessionMachineLaunchConfiguration(profilePath: string, profile: MachineProfile, pluginRoot: string): ReturnType<typeof machineProfileLaunchConfiguration> {
+  const definition = machineProfileLaunchConfiguration(profile, pluginRoot);
+  // The common launcher rechecks external readiness and chooses the restricted
+  // Offline entrypoint when needed. Never bypass it by entering index directly.
+  return { ...definition, args: [...definition.args, "--machine-launch"], env: { EASYEDA_MACHINE_PROFILE: profilePath } };
+}
+
 async function main(): Promise<void> {
   const option = process.argv[2];
   const suppliedRoot = process.argv[3];
@@ -230,8 +238,8 @@ async function main(): Promise<void> {
   const configurationPath = join(pluginRoot, ".mcp.json");
   const configurationText = await readFile(configurationPath, "utf8");
   parseSessionConfiguration(JSON.parse(configurationText));
-  const { profile } = await loadRuntimeMachineProfile();
-  const definition = machineProfileLaunchConfiguration(profile, pluginRoot);
+  const { profilePath, profile } = await loadMachineLaunchProfile();
+  const definition = sessionMachineLaunchConfiguration(profilePath, profile, pluginRoot);
   if (await realpath(definition.command) !== await realpath(process.execPath)) {
     throw new Error("unreviewed-node-command");
   }

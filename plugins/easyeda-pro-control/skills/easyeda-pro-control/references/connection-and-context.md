@@ -35,11 +35,20 @@ Distinguish these failure layers before changing anything:
 | Observation | What it proves | Next step |
 |---|---|---|
 | Tool is absent or host rejects dispatch as unavailable | No facade handler result | Check the plugin's enabled state. For authorized EasyEDA work, the checkout-only foreground MCP client below can use the same facade when no other owner is active. Never start a second owner or use a new data root to evade the lease. |
+| Status reports `mode:"offline-only"` and `installation.ready:false`; only three tools are listed | Trusted profile/Node admission passed, but a selected external installation check failed | Use its fixed `machine-installation-*` code and read-only installation inspection. API reference and local discovery remain usable. Live and recovery tools do not exist in this process. Review the changed installation before updating any pins, then restart the MCP session. |
 | Structured status error during upstream startup | Facade handler ran, but startup failed | Run `npm run doctor` offline from the trusted checkout. Use reported stage/exit details and failed checks; private stderr remains withheld. Do not infer the cause from its hash or length. |
 | Status succeeds but has no authenticated session | Upstream responded; extension connection is unproven | Verify the selected receipt/import and bridge connection. Do not call context or design readers yet. |
 | Authenticated session with `validation-required` tuple | Connection succeeded; compatibility remains unadmitted | Collect bounded status/context/public-read evidence for review. Exact/private calls remain blocked. |
 
 Local `easyeda_control_discover` is available independently of upstream startup. It defaults to `source: "local"`, `mode: "read"`, reports `catalogSource` and `schemasAvailable`, and identifies an admitted `facadeTool` or `availability: "unavailable"`. It never starts an upstream process in local mode. For current argument schemas, explicitly request `source: "live", includeSchemas: true` only after startup succeeds. During quarantine that request falls back to the marked local catalog. A catalog entry is not proof that its operation is allowed or that an extension is connected.
+
+In restricted offline-only mode, `source:"live"` is refused and every discovered
+execution route is unavailable. `easyeda_control_api` describes the bundled
+reference versions, not the installed application. Restoring external files
+does not promote this process to live mode. Do not substitute direct entrypoints,
+modify the cache or change profiles to bypass the restriction. An invalid private
+profile or unverified Node still prevents startup entirely; configuration reuse
+and the offline doctor remain strict.
 
 Passing the offline doctor does not prove startup under the model host's process environment and does not clear a failed live status. Older installed snapshots may report only the private stderr length/hash; do not invent missing stage or exit evidence.
 

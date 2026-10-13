@@ -19,7 +19,14 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Release `0.3.0+codex.20261013113000` has 28 tools and seven skills.
+Update `0.3.0+codex.20261013124500` retains 28 normal-mode tools and
+seven skills. When a trusted machine profile selects missing or invalid external
+installation files, startup instead exposes three offline-only tools: API
+reference, local discovery and bounded startup status. Live execution and
+recovery are unavailable in that process, even if the files are later repaired.
+See the [upgrade-resilient startup report](docs/offline-startup-release-2026-10-13.md).
+
+The preceding release `0.3.0+codex.20261013113000` has 28 tools and seven skills.
 See the [scoped release report](docs/scoped-release-2026-10-13.md) for verification,
 publication, installation and the implementation backlog. The ordinary
 `easyeda_control_symbol_metadata` entry is implemented but refuses before runtime
@@ -534,6 +541,18 @@ The supported editing/runtime profile is Linux x86_64 under WSL controlling the 
 The checked-in [`.mcp.json`](plugins/easyeda-pro-control/.mcp.json) runs `node server/dist/server.mjs --machine-launch` with an empty environment map. This bundled launcher needs no plugin `node_modules`; it loads the private machine profile, verifies its Node/install identities and starts the sole facade. `scripts/launch-machine.ts` remains a developer wrapper requiring the trusted checkout's pinned dependencies. Create a profile with `node scripts/configure-machine.ts --upstream-root /absolute/upstream --assets-root /mnt/drive/path/resources/app/assets` from that prepared checkout's plugin directory. Optional `--node`, `--control-dir`, `--pcb-version` and `--api-version` select explicit installation values. The default profile is `~/.easyeda-pro-control/machine-profile.json`; `EASYEDA_MACHINE_PROFILE` selects another existing private profile. Configuration finds paths and versions, not compatibility admission. A different tuple still needs deliberate review.
 
 The external upstream checkout must already contain its reviewed built `dist/index.js` and dependency tree. Configuration does not fetch, install or rebuild it. The same version label is insufficient: the runtime checks the pinned module graph and executable identities.
+
+Missing or invalid external installation files now select a restricted
+offline-only process. It retains the same sole-owner lease and exact Node/profile
+trust checks but never constructs an upstream client or native controller.
+`easyeda_control_status` reports a fixed `machine-installation-*` code without
+private paths or raw errors. Local API catalogs describe bundled references,
+not the currently installed application. An unsafe profile or unverified Node
+still prevents startup. Configuration reuse and the offline doctor remain strict.
+After repairing and reviewing the installation, restart the MCP session; do not
+change compatibility pins merely to suppress the failure. The currently observed
+EasyEDA update is [inventoried separately](docs/easyeda-3.2.206-upgrade-inventory-2026-10-13.md)
+and is not yet admitted.
 
 Reuse a profile with `node scripts/configure-machine.ts` or `node scripts/configure-machine.ts --profile /absolute/control/machine-profile.json`, without configuration overrides. Overrides against an existing profile are refused. For another supported installation, create a fresh explicit profile path inside its owner-only control directory. Do not overwrite an active profile or change directories to evade the sole-owner lease or quarantine.
 

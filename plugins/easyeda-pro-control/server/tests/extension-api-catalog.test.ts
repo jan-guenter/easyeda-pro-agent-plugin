@@ -58,6 +58,9 @@ void test("all mounted API namespaces and signatures are bounded and each page a
   for (const snapshot of extensionApiSnapshots) {
     assert.equal(snapshot.namespaces.length, snapshot.reference === "reviewed-installed" ? 93 : 99);
     assert.equal(snapshot.namespaces.reduce((sum, entry) => sum + entry.methods.length, 0), snapshot.reference === "reviewed-installed" ? 749 : 806);
+    const retainedSignatures = snapshot.namespaces.flatMap((entry) => entry.methods.map((method) => method.signature));
+    const roundTrip = inventoryApiDeclarations(`declare class SYS_Probe {\n${retainedSignatures.map((signature) => `    ${signature}`).join("\n")}\n}\ndeclare class EDA {\n    sys_Probe: SYS_Probe;\n}\n`);
+    assert.deepEqual(roundTrip.namespaces.flatMap((entry) => entry.methods.map((method) => method.signature)).toSorted(), retainedSignatures.toSorted());
     for (const namespace of snapshot.namespaces) {
       assert.ok(namespace.methods.length > 0);
       for (const method of namespace.methods) {
@@ -105,4 +108,40 @@ void test("declaration parser retains unions, multiline signatures and tags with
     source.replace("pcb_Pad: PCB_Pad | PCB_NewPad;", "readonly pcb_Pad: PCB_Pad;")]) {
     assert.throws(() => inventoryApiDeclarations(invalid));
   }
+});
+
+void test("declaration parser retains same-indent object fields and delimiter-bearing comments or strings", () => {
+  const method = [
+    "  public open(props?: { /** field ; ) } */",
+    "  title: string;",
+    String.raw`  callback?: (value: { kind: '};)'; escaped: '\'('; }) => Promise<void>;`,
+    "  /* A multiline comment with a fake method and terminator",
+    "  ignored(): void; } */",
+    '  mode?: "[;]"; commentStart?: "/**"; commentEnd?: "*/";',
+    "  }): Promise<{ ok: boolean; items: Array<[number, number]> }> ;",
+  ];
+  const source = `declare class SYS_Frame {\n${method.join("\n")}\n  /*\n  ignored(): void;\n  */\n  start(value: "/**"): void;\n  end(value: "*/"): void;\n}\ndeclare class EDA {\n  sys_Frame: SYS_Frame;\n}\n/*\ndeclare class SYS_Commented {\n}\ninterface ISYS_Commented {}\n*/\n`;
+  const inventory = inventoryApiDeclarations(source);
+  const methods = inventory.namespaces[0]?.methods;
+  assert.deepEqual(methods?.map((entry) => entry.name), ["end", "open", "start"]);
+  assert.equal(methods?.[1]?.signature, method.map((line) => line.trim().replace(/^public /u, "")).join(" "));
+  assert.equal(methods?.[1]?.sourceLine, 2);
+  assert.deepEqual(inventory.types, [{ name: "EDA", kind: "class", sourceLine: 15 }, { name: "SYS_Frame", kind: "class", sourceLine: 1 }]);
+});
+
+const singleMethodSource = (method: string): string => `declare class SYS_Frame {\n  ${method}\n}\ndeclare class EDA {\n  sys_Frame: SYS_Frame;\n}\n`;
+
+void test("declaration parser refuses incomplete, mismatched or unsupported method syntax instead of publishing prefixes", () => {
+  for (const method of [
+    "open(props: { title: string;",
+    "open(props: [string}): void;",
+    "open(value: 'unclosed): void;",
+    // oxlint-disable-next-line eslint/no-template-curly-in-string -- Literal unsupported TypeScript template syntax must reach the declaration parser unchanged.
+    "open(value: `prefix${string}`): void;",
+    "open(): void; hidden(): void;",
+    "open(props: { // unsupported line comment\n title: string; }): void;",
+    "open(props: { /* unfinished comment title: string; }): void;",
+    "/** same-line declaration is unsupported */ open(): void;",
+    `open(value: '${"x".repeat(32_768)}'): void;`,
+  ]) { assert.throws(() => inventoryApiDeclarations(singleMethodSource(method))); }
 });

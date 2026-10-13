@@ -9,6 +9,7 @@ import { configureMachine, parseMachineArguments } from "../../scripts/configure
 import { parseMachineLauncherArguments } from "../../scripts/launch-machine.ts";
 import {
   createMachineProfile,
+  loadMachineLaunchProfile,
   loadRuntimeMachineProfile,
   machineProfileEnvironment,
   machineProfileLaunchConfiguration,
@@ -54,6 +55,7 @@ void describe("installation-generated machine profiles", () => {
     const tokenPath = join(options.controlDirectory, "bridge-token");
     await writeFile(tokenPath, "fixture-key-not-a-real-credential", { mode: 0o600 });
     const loaded = await loadRuntimeMachineProfile({ profilePath });
+    assert.deepEqual(await loadMachineLaunchProfile({ profilePath }), { ...loaded, installation: { ready: true } });
     assert.deepEqual(loaded.profile, profile);
     assert.equal(loaded.environment["EASYEDA_BRIDGE_TOKEN_FILE"], tokenPath);
     assert.equal(Object.values(loaded.environment).includes("fixture-key-not-a-real-credential"), false);
@@ -67,6 +69,29 @@ void describe("installation-generated machine profiles", () => {
       args: [join(options.pluginRoot, "server", "dist", "server.mjs")],
       cwd: options.pluginRoot, env: machineProfileEnvironment(profile),
     });
+  });
+
+  void test("missing pinned bundles permit only offline launch while strict reuse still refuses", async (context) => {
+    const options = await fixture(context);
+    const profile = await createMachineProfile(options);
+    const profilePath = join(options.controlDirectory, "machine-profile.json");
+    await writeMachineProfile(profile, profilePath);
+    const pcbPath = join(options.assetsRoot, "pro-pcb", profile.easyeda.pcbBundleVersion, "js", "pcb.js");
+    await rename(pcbPath, `${pcbPath}.retained`);
+    const loaded = await loadMachineLaunchProfile({ profilePath });
+    assert.deepEqual(loaded.profile, profile);
+    assert.deepEqual(loaded.installation, { ready: false, code: "machine-installation-pcb-bundle-unavailable" });
+    await assert.rejects(readMachineProfile(profilePath), /machine-installation-pcb-bundle-unavailable/u);
+    await assert.rejects(loadRuntimeMachineProfile({ profilePath }), /machine-installation-pcb-bundle-unavailable/u);
+    await assert.rejects(configureMachine(["--profile", profilePath]), /machine-installation-pcb-bundle-unavailable/u);
+    // Invalid trust inputs are fatal even when external installation files are missing.
+    await chmod(profilePath, 0o644);
+    await assert.rejects(loadMachineLaunchProfile({ profilePath }), /machine-profile-file-not-private/u);
+    await chmod(profilePath, 0o600);
+    const mismatchPath = join(options.controlDirectory, "wrong-node.json");
+    await writeMachineProfile({ ...profile, runtime: { ...profile.runtime, nodeSha256: "0".repeat(64) } }, mismatchPath);
+    await assert.rejects(loadMachineLaunchProfile({ profilePath: mismatchPath }), /machine-node-hash-mismatch/u);
+    assert.deepEqual(JSON.parse(await readFile(profilePath, "utf8")), profile);
   });
 
   void test("rejects ambiguous bundles, escaped paths, changed Node identity and unsafe profile files", async (context) => {

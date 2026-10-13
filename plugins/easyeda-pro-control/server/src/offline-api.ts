@@ -1,0 +1,35 @@
+import { z } from "zod";
+import { extensionApiCatalogInputSchema, queryExtensionApiCatalog } from "./extension-api-catalog.ts";
+import { extensionApiCoverageInputSchema, queryExtensionApiCoverage } from "./extension-api-coverage.ts";
+import { publicSdkCatalogQuerySchema, publicSdkValidationQuerySchema, queryPublicSdkReads, validatePublicSdkArguments } from "./public-sdk-catalog.ts";
+import { operationCatalogQuerySchema, operationValidationRequestSchema, queryOperationCatalog, validateCatalogOperation } from "./operation-catalog.ts";
+
+export const apiRequestSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("sdk"), query: extensionApiCatalogInputSchema.optional() }).strict(),
+  z.object({ action: z.literal("coverage"), query: extensionApiCoverageInputSchema.optional() }).strict(),
+  z.object({ action: z.literal("sdk-reads"), query: publicSdkCatalogQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("sdk-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("operations"), query: operationCatalogQuerySchema }).strict(),
+  z.object({ action: z.literal("validate"), query: operationValidationRequestSchema }).strict(),
+]);
+
+export const offlineApiToolConfiguration = {
+  title: "EasyEDA offline API reference and argument validation",
+  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library or SDK-read schemas; validate arguments including refinements. Entirely offline: no bridge calls, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
+  inputSchema: { request: apiRequestSchema },
+  annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+};
+
+export function queryOfflineApi(request: z.infer<typeof apiRequestSchema>): { offline: true; result: unknown } {
+  let result: unknown;
+  switch (request.action) {
+    case "sdk": { result = queryExtensionApiCatalog(request.query ?? {}); break; }
+    case "coverage": { result = queryExtensionApiCoverage(request.query ?? {}); break; }
+    case "sdk-reads": { result = queryPublicSdkReads(request.query ?? {}); break; }
+    case "sdk-validate": { result = validatePublicSdkArguments(request.query); break; }
+    case "operations": { result = queryOperationCatalog(request.query); break; }
+    case "validate": { result = validateCatalogOperation(request.query); break; }
+    default: { throw new Error("Unknown offline API reference action."); }
+  }
+  return { offline: true, result };
+}
