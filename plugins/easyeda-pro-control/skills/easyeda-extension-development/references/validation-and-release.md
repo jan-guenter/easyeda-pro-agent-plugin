@@ -89,12 +89,15 @@ admits its reviewed API 0.3.50 closure without changing the older design tuple.
 The local environment/unit profile shares exact identity checks but fixes its
 own reviewed methods and effects, including a compiled-date local-cache write.
 New or unknown configured generations register reference, discovery, status,
-calculation, local-system, fixed extension-index/editor-shell observers and the
+calculation, local-system, fixed extension-index/editor-shell/identity-context observers and the
 separate ordinary launcher. Bridge execution requires exact hashes and an
 authenticated session. Launch instead requires exact installed/profile-specific
 code admission, explicit existing-profile effects and durable attempt tracking;
 it does not prove profile isolation or connection. Keep registration separate from runtime
 admission; adding a method to discovery must not expose unrelated old adapters.
+The identity-context observer is native UI metadata only. Its project/branch
+fields and canonical active-document subset do not admit legacy context readers,
+project-manager RPCs, file paths, navigation or transactions.
 
 When publishing, preserve the immutable private bridge identity/key epoch and
 reproduce all bundle/license inputs. A changed reviewed bridge source closure

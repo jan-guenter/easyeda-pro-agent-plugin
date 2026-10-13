@@ -13,7 +13,44 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Candidate193500: ordinary launch and editor-shell observation
+### Candidate201500: current-version identity context
+
+PR15 is delivered: main90b96777e32c909ac46285f9ba43f8147f80f93d,
+required PR CI38457338169 and postmerge main CI38459136285 passed all10jobs.
+Installed/enabled193500 independently matches1141files/22211214bytes/42dirs,
+exact modes and inventory0dbf6e0b058237ef32c43b7b0a6d988f87e61a33113f05472998c7bee8edbc95.
+Delivery receipts are on PR15; do not repeat installation of that generation.
+
+The next restart message did not replace the actual host: PID105403 still runs
+182500 under Codex103552, with a removed script path and deleted installer-backup
+working directory. The old six-tool catalog remains; no193500 facade was found.
+One status call refused C09 as abandonment-evidence-unavailable before a new
+EasyEDA action. Source review identifies inherited deleted cwd as a plausible
+Node eval-reader startup failure; actual child stderr was not captured. This
+does not prove corrupt historical evidence. No journal repair, live retry,
+competing owner, cache edit, process termination or C10 replay is permitted.
+A fresh chat/session must prove its actual loaded generation before live work.
+
+Candidate201500 adds a separate identity-only current-context observer and
+offline schemas. It shares the bounded shell registry proof and pinned runtime
+coordinator, preserves explicit missing project/branch states, and returns no
+titles, paths or design contents. It does not grant legacy context or navigation
+authority. See docs/current-context-research-2026-10-13.md and the release note.
+The SQL child now uses fixed cwd/ instead of inheriting a removable package cwd;
+its descriptor-bound inputs, result proof and runtime guards are unchanged.
+One isolated deleted-cwd regression failed on old source and passes with the fix.
+Focused adapter/runtime/registration/bundled-startup/SQL protocol and424 bridge tests pass;
+fulltypes and strict type-aware lint are clean. Build/compatibility,77 package
+checks,179 repository/privacy checks and seven custom/official skill validators
+pass;151 registry signatures/40 attestations verify, audit0 vulnerabilities.
+Source322 projection05df454a6f221d7154dd9933ad61c544e688c2e1839322c126b0d440823dc5a5;
+runtime3 projectionc7d00a16c5e896d545825c90cab99055a8901ce3fe1c045426b989e1a1d59b24.
+External runtime/bridge pins are unchanged. Independent source reviews accept
+the scoped implementation. Required CI/publication/install are pending at this
+source checkpoint; consult the release PR receipt before repeating delivery.
+The production project and its project record remain untouched.
+
+### Historical candidate193500: ordinary launch and editor-shell observation
 
 Previous182500 is published and installed through PR14/mainb0cd79a89d2f806d99539278e50ef3af8ed44c62.
 Required PR CI38446281459 and main CI38447849023 passed all10jobs;9777 facade

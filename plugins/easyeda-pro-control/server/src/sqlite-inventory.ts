@@ -85,8 +85,10 @@ function runReader(file: FileHandle, node: VerifiedMachineNode, input: SqlScanIn
   const { promise, resolve, reject } = Promise.withResolvers<Readonly<{ inventory: ExactSqlInventory; completion: ReaderCompletion }>>();
     // The executable and database are retained descriptors. Nothing is inherited
     // From execArgv or ambient NODE_OPTIONS; only this fixed source is evaluated.
+    // ESM eval needs a live cwd even with only absolute inputs and builtin imports.
+    // An official plugin upgrade can remove the facade's inherited package cwd.
     const child = spawn(node.descriptorPath, ["--max-old-space-size=192", "--input-type=module", "--eval", SQLITE_INVENTORY_PROGRAM], {
-      env: { NODE_NO_WARNINGS: "1" }, stdio: ["pipe", "pipe", "pipe", file.fd],
+      cwd: "/", env: { NODE_NO_WARNINGS: "1" }, stdio: ["pipe", "pipe", "pipe", file.fd],
     });
     let refusal: string | undefined;
     let size = 0;

@@ -113,7 +113,8 @@ import { readSdkSystem } from "./sdk-system-runtime.ts";
 import { startupExtensionsRequestSchema } from "./startup-extensions.ts";
 import { readStartupExtensions } from "./startup-extensions-runtime.ts";
 import { editorShellRequestSchema } from "./editor-shell.ts";
-import { readEditorShell } from "./editor-shell-runtime.ts";
+import { editorContextRequestSchema } from "./editor-context.ts";
+import { readEditorContext, readEditorShell } from "./editor-shell-runtime.ts";
 import { OrdinaryLaunchCoordinator, ordinaryLaunchRequestSchema } from "./ordinary-launch.ts";
 
 const facadeMode = configuredFacadeMode(process.env);
@@ -1838,6 +1839,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_extensions: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_launch: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_editor_shell: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_editor_context: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_runtime: z.object({ action: z.string().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1870,7 +1872,7 @@ const server = new McpServer(
     capabilities: { tools: {} },
     instructions:
       facadeMode === "calculation-only"
-        ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations, system/extension/editor-shell observations and a journaled ordinary application launcher. Launch uses the existing profile and does not prove isolation, bridge authentication or Start Page readiness. No project readers, generic native controls, navigation, design changes, Save or design recovery tools are available. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
+        ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations, system/extension/editor-shell and identity-only context observations, and a journaled ordinary application launcher. Launch uses the existing profile and does not prove isolation, bridge authentication or Start Page readiness. No project-content readers, generic native controls, navigation, design changes, Save or design recovery tools are available. Identity context grants no later execution authority. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
         : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal.",
   },
 );
@@ -1914,13 +1916,14 @@ registerFacadeTool(
       typedDesign: { enabled: facadeMode === "legacy-reviewed", tool: "easyeda_control_design", supervisorRequired: true, persistence: "native-source-plus-complete-project-record-delta", arbitraryCode: false },
       libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
       ...(facadeMode === "calculation-only" ? { availableTools: CALCULATION_ONLY_TOOLS,
-        capabilityScope: "Separately admitted calculations, system/extension/editor-shell observations and ordinary existing-profile launch. No project navigation, design changes or legacy-route admission; launch does not prove isolation." } : {}),
+        capabilityScope: "Separately admitted calculations, system/extension/editor-shell and identity-context observations, and ordinary existing-profile launch. No project-content access, navigation, design changes or legacy-route admission; launch does not prove isolation." } : {}),
     },
     upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
       ...await engine.status(), capabilities: { sdkCalculations: { tool: "easyeda_control_calculate", runtimeAdmissionRequired: true },
         sdkSystem: { tool: "easyeda_control_system", runtimeAdmissionRequired: true },
         startupExtensions: { tool: "easyeda_control_extensions", runtimeAdmissionRequired: true, launchQualification: false },
         editorShell: { tool: "easyeda_control_editor_shell", runtimeAdmissionRequired: true, readinessProof: false },
+        editorContext: { tool: "easyeda_control_editor_context", runtimeAdmissionRequired: true, identityOnly: true, cadAuthority: false },
         ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
         designAccess: { enabled: false }, navigation: { enabled: false } },
     },
@@ -2314,6 +2317,17 @@ registerFacadeTool(
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
   },
   serializedLiveGuarded(async (input) => ({ result: await readEditorShell(engine, input.request, input.expectedFingerprint) })),
+);
+
+registerFacadeTool(
+  "easyeda_control_editor_context",
+  {
+    title: "Observe EasyEDA active identity context",
+    description: "Observe the active tab/document identity subset and current project/branch identity fields on the separately pinned current UI/API. Requires an authenticated bridge and two owner-stable matching samples. No titles, paths, content, selection, project-manager RPC, navigation, settings or Save. Explicitly distinguishes no active document and unsupported tabs; absent project fields do not prove closure. This is a native identity observation, not public SDK parity, saved-state proof or authority for a later read/write. Inspect offline editor-context/editor-context-validate first.",
+    inputSchema: { request: z.unknown().pipe(editorContextRequestSchema), expectedFingerprint: privateFingerprintSchema },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+  },
+  serializedLiveGuarded(async (input) => ({ result: await readEditorContext(engine, input.request, input.expectedFingerprint) })),
 );
 
 registerFacadeTool(
