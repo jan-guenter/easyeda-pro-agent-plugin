@@ -510,6 +510,14 @@ void test("shortcut coverage keeps legacy and current-version routes distinct wi
   assert.match(JSON.stringify(result), /inputSchema/u);
 });
 
+void test("LCSC catalogue lookup retains the concrete local-library fallback omission", () => {
+  const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.lib_Device.getByLcscIds");
+  assert.ok(row); assert.equal(row.status, "omitted"); assert.equal(row.routes.length, 0);
+  assert.equal(row.omission?.code, "catalogue-fallback-library-effects");
+  assert.match(row.omission.reason, /Concurrent library refresh/u);
+  assert.match(row.omission.nextRequirement, /remote-only/u);
+});
+
 void test("omitted heterogeneous geometric getters retain proven projection defects", () => {
   const rows = new Map(inventoryExtensionApiCoverage().map((row) => [row.path, row]));
   for (const path of ["eda.pcb_Document.getPrimitiveAtPoint", "eda.pcb_Document.getPrimitivesInRegion"]) {

@@ -31,6 +31,9 @@ export const ordinaryLaunchRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("inspect"), operationId: operationIdSchema }).strict(),
   z.object({ action: z.literal("observe-application"), operationId: operationIdSchema }).strict(),
   z.object({ action: z.literal("observe-termination"), operationId: operationIdSchema }).strict(),
+  z.object({ action: z.literal("abandon-supervision"), operationId: operationIdSchema,
+    expectedLaunchedSha256: digestSchema, confirmAbandonSupervision: z.literal(true),
+    acceptUnobservedDescendants: z.literal(true) }).strict(),
 ]);
 export type OrdinaryLaunchRequest = z.infer<typeof ordinaryLaunchRequestSchema>;
 export function parseOrdinaryLaunchRequest(input: unknown): OrdinaryLaunchRequest { return ordinaryLaunchRequestSchema.parse(input); }
@@ -39,15 +42,16 @@ const limitations = [
   "Starts the existing EasyEDA profile with no project arguments, flags or caller-selected code. This is not an isolated or startup-qualified profile.",
   "Ordinary startup may read project-list metadata, write preferences/cache/logs, contact services and run or update enabled extensions. Extension actions and persisted startup configuration are not prevented or qualified.",
   "A retained process launch is not bridge authentication, a verified Start Page, design admission or proof that no project file was accessed. No navigation, Save or forced termination is dispatched by this tool.",
-  "One exclusive operation intent precedes dispatch. Unresolved attempts block further launches across restarts. Only a durable termination observation from the original retained Job permits another operation; lost ownership requires separate recovery, never PID-only adoption.",
+  "One exclusive operation intent precedes dispatch. Unresolved attempts block further launches across restarts. A retained-Job termination receipt or explicit supervision abandonment permits consideration of a new ordinary startup; neither reuses the old operation ID. No PID-only adoption is supported.",
   "Application observation starts only the pinned diagnostic helper and samples same-name process presence twice. Presence may refer to another installation; absence does not prove original root or Job termination. It leaves historical launch state unchanged and grants no adoption or relaunch authority.",
+  "Supervision abandonment requires a successful historical launch receipt, its exact digest, explicit acceptance of unobserved descendants, no current retained launch, and two absent same-name samples. It records relinquishment, not termination or saved-state proof. Original descendants or external work may remain. Only the ordinary-startup blocker changes; bridge/design quarantine and all design authority checks remain unchanged.",
 ] as const;
 const claims = { bridgeAuthentication: "not-observed", startPage: "not-observed", profileIsolated: false,
   startupQualified: false, projectArgumentsSupplied: false, designExecutionAuthorized: false } as const;
 
 export function queryOrdinaryLaunch(input: unknown = {}): Record<string, unknown> {
   const parsed = z.object({ includeSchemas: z.boolean().optional() }).strict().parse(input);
-  return { tool: "easyeda_control_launch", actions: ["launch", "inspect", "observe-application", "observe-termination"],
+  return { tool: "easyeda_control_launch", actions: ["launch", "inspect", "observe-application", "observe-termination", "abandon-supervision"],
     effect: "ordinary-existing-profile-application-startup", profile: ORDINARY_LAUNCH_PROFILE,
     limitations, ...(parsed.includeSchemas === true ? { requestSchema: z.toJSONSchema(ordinaryLaunchRequestSchema) } : {}) };
 }
@@ -86,16 +90,23 @@ const terminatedSchema = z.object({ schema: z.literal("easyeda-pro-control.ordin
   launchedSha256: digestSchema, jobId: tokenSchema, helperInstance: tokenSchema, terminated: z.literal(true) }).strict();
 const refusedSchema = z.object({ schema: z.literal("easyeda-pro-control.ordinary-not-dispatched.v1"), operationId: operationIdSchema,
   intentSha256: digestSchema, dispatchAttempted: z.literal(false) }).strict();
+const abandonedSchema = z.object({ schema: z.literal("easyeda-pro-control.ordinary-supervision-abandoned.v1"), operationId: operationIdSchema,
+  intentSha256: digestSchema, launchedSha256: digestSchema, profileSha256: digestSchema, facadeSha256: digestSchema,
+  createdAt: z.iso.datetime(), confirmAbandonSupervision: z.literal(true), acceptUnobservedDescendants: z.literal(true),
+  sameNameProcessPresent: z.literal(false), samples: z.literal(2), terminationProved: z.literal(false),
+  originalLaunchIdentityVerified: z.literal(false), retainedLaunchAuthority: z.literal(false), designExecutionAuthorized: z.literal(false) }).strict();
 type Intent = z.infer<typeof intentSchema>;
 type Launched = z.infer<typeof launchedSchema>;
 type Terminated = z.infer<typeof terminatedSchema>;
 type Refused = z.infer<typeof refusedSchema>;
+type Abandoned = z.infer<typeof abandonedSchema>;
 interface Operation {
   readonly operationId: string;
   readonly intent?: Intent;
   readonly launched?: Launched;
   readonly terminated?: Terminated;
   readonly refused?: Refused;
+  readonly abandoned?: Abandoned;
 }
 const JOURNAL_DIRECTORY = "ordinary-launch-v1";
 const MAX_OPERATIONS = 4096;
@@ -196,22 +207,28 @@ async function inventory(): Promise<Operation[]> {
       requireValue(entry.isDirectory() && operationIdSchema.safeParse(entry.name).success, "Ordinary launch inventory contains an unknown entry.");
       const slot = await root.openDirectory(join(parent.absolute, entry.name), false);
       try {
-        const records = await boundedEntries(slot, 4);
-        requireValue(records.every((record) => record.isFile() && ["intent.json", "launched.json", "terminated.json", "not-dispatched.json"].includes(record.name)), "Ordinary launch journal contains unknown records.");
+        const records = await boundedEntries(slot, 5);
+        requireValue(records.every((record) => record.isFile() && ["intent.json", "launched.json", "terminated.json", "not-dispatched.json", "abandonment.json"].includes(record.name)), "Ordinary launch journal contains unknown records.");
         const intentRaw = await readRecord(slot, "intent.json"), launchedRaw = await readRecord(slot, "launched.json"), terminatedRaw = await readRecord(slot, "terminated.json");
         const refusedRaw = await readRecord(slot, "not-dispatched.json");
+        const abandonedRaw = await readRecord(slot, "abandonment.json");
         const intent = intentRaw === null ? undefined : intentSchema.parse(intentRaw);
         const launched = launchedRaw === null ? undefined : launchedSchema.parse(launchedRaw);
         const terminated = terminatedRaw === null ? undefined : terminatedSchema.parse(terminatedRaw);
         const refused = refusedRaw === null ? undefined : refusedSchema.parse(refusedRaw);
+        const abandoned = abandonedRaw === null ? undefined : abandonedSchema.parse(abandonedRaw);
         requireValue(intent === undefined || intent.operationId === entry.name, "Ordinary launch intent ID differs.");
         requireValue(launched === undefined || intent !== undefined && launched.operationId === entry.name && launched.intentSha256 === sha256Json(intent), "Ordinary launch result is unbound.");
         requireValue(terminated === undefined || launched !== undefined && terminated.operationId === entry.name && terminated.launchedSha256 === sha256Json(launched) &&
           terminated.jobId === launched.launch.jobId && terminated.helperInstance === launched.launch.helperInstance, "Ordinary launch termination is unbound.");
         requireValue(refused === undefined || intent !== undefined && launched === undefined && terminated === undefined && refused.operationId === entry.name &&
           refused.intentSha256 === sha256Json(intent), "Ordinary launch nondispatch receipt is unbound.");
+        requireValue(abandoned === undefined || intent !== undefined && launched !== undefined && terminated === undefined && refused === undefined &&
+          abandoned.operationId === entry.name && abandoned.intentSha256 === sha256Json(intent) && abandoned.launchedSha256 === sha256Json(launched) &&
+          abandoned.profileSha256 === intent.profileSha256, "Ordinary launch abandonment receipt is unbound or contradicts termination.");
         operations.push({ operationId: entry.name, ...(intent === undefined ? {} : { intent }), ...(launched === undefined ? {} : { launched }),
-          ...(terminated === undefined ? {} : { terminated }), ...(refused === undefined ? {} : { refused }) });
+          ...(terminated === undefined ? {} : { terminated }), ...(refused === undefined ? {} : { refused }),
+          ...(abandoned === undefined ? {} : { abandoned }) });
       } finally { await slot.handle.close(); }
     }
     await root.assertCurrent();
@@ -232,12 +249,18 @@ function describe(operationId: string, operation?: Operation): Record<string, un
     if (operation.launched !== undefined) { state = "launched"; }
     if (operation.terminated !== undefined) { state = "terminated"; }
     if (operation.refused !== undefined) { state = "not-dispatched"; }
+    if (operation.abandoned !== undefined) { state = "supervision-abandoned"; }
   }
   return { operationId, state, attemptConsumed: operation !== undefined, ...claims, limitations,
-  ...(operation?.launched === undefined ? {} : { launch: operation.launched.launch }),
-  ...(operation?.terminated === undefined ? {} : { termination: operation.terminated }) };
+  ...(operation?.launched === undefined ? {} : { launch: operation.launched.launch, launchedSha256: sha256Json(operation.launched) }),
+  ...(operation?.terminated === undefined ? {} : { termination: operation.terminated }),
+  ...(operation?.abandoned === undefined ? {} : { abandonment: operation.abandoned, terminationProved: false,
+    originalLaunchIdentityVerified: false, retainedLaunchAuthority: false }) };
 }
-function complete(operation: Operation): boolean { return operation.terminated !== undefined || operation.refused !== undefined; }
+// Relinquishment permits a new ordinary startup, but never counts as termination.
+function allowsNextLaunch(operation: Operation): boolean {
+  return operation.terminated !== undefined || operation.refused !== undefined || operation.abandoned !== undefined;
+}
 
 export class OrdinaryLaunchCoordinator {
   private readonly options: OrdinaryLaunchOptions;
@@ -266,8 +289,9 @@ export class OrdinaryLaunchCoordinator {
       requireValue(!this.uncertain, "Ordinary launch ownership or publication is uncertain; do not retry.");
       if (request.action === "observe-application") { return await this.observeApplication(request.operationId, operation, operations); }
       if (request.action === "observe-termination") { return await this.observe(request.operationId, operation); }
+      if (request.action === "abandon-supervision") { return await this.abandon(request, operation, operations); }
       requireValue(operation === undefined && operations.length < MAX_OPERATIONS, "Ordinary launch operation ID is consumed or inventory full.");
-      requireValue(operations.every((candidate) => complete(candidate)), "An unresolved ordinary launch blocks another launch.");
+      requireValue(operations.every((candidate) => allowsNextLaunch(candidate)), "An unresolved ordinary launch blocks another launch.");
       const facadeSha256 = digestSchema.parse(await this.verify(this.options));
       await this.options.assertAllowed();
       this.runtime ??= this.options.allocateRuntime({ expectedExecutableSha256: ORDINARY_LAUNCH_PROFILE.installedFiles[0].sha256,
@@ -290,7 +314,8 @@ export class OrdinaryLaunchCoordinator {
       await this.options.assertAllowed();
       const current = await inventory();
       requireValue(current.length === operations.length + 1 && current.every((candidate) => candidate.operationId === request.operationId ?
-        canonicalJson(candidate.intent) === canonicalJson(intent) && candidate.launched === undefined && candidate.terminated === undefined && candidate.refused === undefined : complete(candidate)),
+        canonicalJson(candidate.intent) === canonicalJson(intent) && candidate.launched === undefined && candidate.terminated === undefined && candidate.refused === undefined &&
+          candidate.abandoned === undefined : allowsNextLaunch(candidate)),
       "Ordinary launch intent or inventory changed before dispatch.");
       requireValue(await this.verify(this.options) === facadeSha256, "Ordinary launch installation changed before dispatch.");
       await this.options.assertAllowed();
@@ -329,14 +354,14 @@ export class OrdinaryLaunchCoordinator {
     await this.options.assertAllowed();
     requireValue(canonicalJson(await inventory()) === canonicalJson(operations), "Ordinary application observation journal changed.");
     requireValue(this.runtime === runtime, "Ordinary application observation runtime changed.");
-    return { action: "observe-application", operationId, historical: describe(operationId, operation),
+    return { action: "observe-application", operationId, facadeSha256, historical: describe(operationId, operation),
       application: { sameNameProcessPresent: second.running, samples: 2, originalLaunchIdentityVerified: false,
         retainedLaunchAuthority: false, terminationProved: false, relaunchAuthorized: false }, ...claims, limitations };
   }
 
   private async observe(operationId: string, operation: Operation | undefined): Promise<Record<string, unknown>> {
     requireValue(operation !== undefined, "Ordinary launch operation was not found.");
-    if (complete(operation)) { return describe(operationId, operation); }
+    if (allowsNextLaunch(operation)) { return describe(operationId, operation); }
     const retained = this.retained;
     requireValue(this.runtime !== undefined && retained !== undefined && retained.operationId === operationId &&
       canonicalJson(operation.launched) === canonicalJson(retained.launched), "Ordinary launch has no retained owner for this exact operation.");
@@ -350,5 +375,29 @@ export class OrdinaryLaunchCoordinator {
     await publish(operationId, "terminated.json", terminated);
     this.uncertain = false;
     return describe(operationId, { ...operation, terminated });
+  }
+
+  private async abandon(request: Extract<OrdinaryLaunchRequest, { action: "abandon-supervision" }>, operation: Operation | undefined,
+    operations: Operation[]): Promise<Record<string, unknown>> {
+    requireValue(operation?.intent !== undefined && operation.launched !== undefined, "Supervision abandonment requires a successful historical launch receipt.");
+    requireValue(!allowsNextLaunch(operation), "Ordinary launch supervision is already resolved or abandoned.");
+    requireValue(this.retained === undefined, "Supervision abandonment cannot supersede a current retained owner; observe its termination instead.");
+    requireValue(request.expectedLaunchedSha256 === sha256Json(operation.launched), "Supervision abandonment launch digest differs.");
+    requireValue(operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE), "Supervision abandonment historical profile is not reviewed.");
+    // This is an explicit risk acknowledgement, not restoration of lost handles.
+    // The observer rechecks installation, admission and the entire inventory.
+    const observation = await this.observeApplication(request.operationId, operation, operations);
+    const application = z.looseObject({ sameNameProcessPresent: z.boolean() }).parse(observation["application"]);
+    requireValue(!application.sameNameProcessPresent, "Supervision abandonment requires absent same-name application samples.");
+    const abandoned: Abandoned = { schema: "easyeda-pro-control.ordinary-supervision-abandoned.v1", operationId: request.operationId,
+      intentSha256: sha256Json(operation.intent), launchedSha256: request.expectedLaunchedSha256,
+      profileSha256: operation.intent.profileSha256, facadeSha256: digestSchema.parse(observation["facadeSha256"]),
+      createdAt: new Date().toISOString(), confirmAbandonSupervision: true, acceptUnobservedDescendants: true,
+      sameNameProcessPresent: false, samples: 2, terminationProved: false, originalLaunchIdentityVerified: false,
+      retainedLaunchAuthority: false, designExecutionAuthorized: false };
+    this.uncertain = true;
+    await publish(request.operationId, "abandonment.json", abandoned);
+    this.uncertain = false;
+    return describe(request.operationId, { ...operation, abandoned });
   }
 }

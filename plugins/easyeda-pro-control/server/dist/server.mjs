@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "47a48f77532da653e3e32fcdae9870262bee7ce5e86c67d4843c99a92bc4a61d";
+const __easyedaBundlePairId = "f65aaa3bd2497147cf5548096d527d733d088858b3ac48959e477d8869a4f73e";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -48920,11 +48920,11 @@ function derivePcbSelectedObjects(source4, inventoryInput, selectedInput, reques
   }
   for (const definition of familyDefinitions.filter((candidate) => candidate.type === "Component" || candidate.type === "String")) {
     if (requestedTypes.has(definition.sourceType)) {
-      const complete2 = source4.objects.filter((row6) => row6.type === definition.sourceType);
-      for (const row6 of complete2) {
+      const complete = source4.objects.filter((row6) => row6.type === definition.sourceType);
+      for (const row6 of complete) {
         rootRecord(row6);
       }
-      sameSet2(inventory2.families[definition.family]?.primitiveIds ?? [], complete2.map((row6) => row6.id));
+      sameSet2(inventory2.families[definition.family]?.primitiveIds ?? [], complete.map((row6) => row6.id));
     }
   }
   const attributes2 = /* @__PURE__ */ new Map();
@@ -51555,6 +51555,7 @@ var init_extension_api_coverage = __esm({
       "sch_PrimitiveText.getAllPrimitiveId": "The installed wrapper publishes its callback without awaiting completion; an empty result can precede actual enumeration."
     };
     concreteOmissions = {
+      "lib_Device.getByLcscIds": omitted("catalogue-fallback-library-effects", "The reviewed current desktop API 0.3.50/UI 3.2.196/server searchByCodes path can fall through to a local device-update controller when networking is disabled. Concurrent library refresh can temporarily resolve the fixed system library to a physical database, reaching initialization/migration before lookup failure. A renderer mode/network check cannot atomically exclude that path; failed service responses can also become empty arrays.", "Implement a separately reviewed remote-only bounded catalogue route or an explicitly scoped library-effects contract. The current desktop findings do not validate the older declaration tuple or prove that a live mutation occurred.", ["docs/system-device-backend-effects-2026-10-14.md"]),
       "lib_Symbol.delete": omitted("symbol-delete-subscriber-and-structure-lifecycle", "The project-qualified symbol delData worker ACK covers local queue acceptance, not native subscriber completion. Deletion emits DOCHEAD/DELETE_DOC, starts preview and close-tab/cache work, and schedules a debounced project_structures update. The ordinary awaitUploadEnd barrier waits task1, not the future timer/task2 write. A closed META-only symbol still takes these paths.", "Implement a complete dependency/editor/cache baseline, exact tombstone/raw-history and peer proof, retained ACK plus request-bound subscriber completion, and exact project_structures ticket/tree persistence with no pending duplicate. Stable polling or a delay alone is not a drain. This is unfinished bounded adapter work, not permanent API infeasibility.", ["docs/symbol-delete-native-effects-2026-10-12.md", "assets/pro-mgr/3.2.148.154949d9/js/project-worker.js@sha256:2792c6c87e3c60e09c43f03494a9cbb24e4ebe9c385372bbaf877ed75083a949;utf16:1927903,2091543,2117630"]),
       "pcb_Document.setCanvasOrigin": omitted("canvas-origin-pending-geometry-queues", "The installed origin command uploads the complete 13-field CANVAS and flushes private pending BOARD, POURED and LAYER_FILL queues plus deferred teardrops. Blank current FileSource and complete stored history cannot exclude earlier unsaved geometry activity; no reviewed read-only empty-queue predicate is available.", "Implement an enforceable empty-queue or continuous no-physical-edit provenance check bound through dispatch, exact CANVAS projection/inverse and complete disposable persistence proof. This is unfinished adapter work, not inherent infeasibility; no executable route is admitted.", ["docs/api-remaining-method-effects-2026-10-11.md", "assets/pro-pcb/3.2.149.5378b690/js/pcb.js@sha256:65401cdc0a8f244db2ff2d8da88fd835b6e1fb3a3ecdbcfd975781502cb04b54;utf16:10215588,7837738,4425338,7848624,9013374"]),
       "pcb_Layer.selectLayer": omitted("layer-selection-collateral-state", "The installed native handler returns true even when the layer lookup is absent. Valid selection changes active/last-active IDs, visibility, colors, ordering and plane/UI state; the native ACTIVE_LAYER source model also observes the change. A true result or switching back to the prior ID does not prove the complete effect or restoration.", "Implement an exact existing-layer subset with bound context, complete before/after layer/view/source effects and an explicit inverse or no-inverse proof. This is feasible unfinished adapter work, not an inherently unavailable method.", ["docs/api-remaining-method-effects-2026-10-11.md", "assets/pro-pcb/3.2.149.5378b690/js/pcb.js@sha256:65401cdc0a8f244db2ff2d8da88fd835b6e1fb3a3ecdbcfd975781502cb04b54;utf16:10234952,7863491,7864588,4426612,10827552"]),
@@ -91382,7 +91383,7 @@ function queryOrdinaryLaunch(input = {}) {
   const parsed2 = external_exports.object({ includeSchemas: external_exports.boolean().optional() }).strict().parse(input);
   return {
     tool: "easyeda_control_launch",
-    actions: ["launch", "inspect", "observe-application", "observe-termination"],
+    actions: ["launch", "inspect", "observe-application", "observe-termination", "abandon-supervision"],
     effect: "ordinary-existing-profile-application-startup",
     profile: ORDINARY_LAUNCH_PROFILE,
     limitations: limitations5,
@@ -91513,24 +91514,28 @@ async function inventory() {
       requireValue14(entry.isDirectory() && operationIdSchema.safeParse(entry.name).success, "Ordinary launch inventory contains an unknown entry.");
       const slot = await root.openDirectory(join46(parent.absolute, entry.name), false);
       try {
-        const records2 = await boundedEntries(slot, 4);
-        requireValue14(records2.every((record7) => record7.isFile() && ["intent.json", "launched.json", "terminated.json", "not-dispatched.json"].includes(record7.name)), "Ordinary launch journal contains unknown records.");
+        const records2 = await boundedEntries(slot, 5);
+        requireValue14(records2.every((record7) => record7.isFile() && ["intent.json", "launched.json", "terminated.json", "not-dispatched.json", "abandonment.json"].includes(record7.name)), "Ordinary launch journal contains unknown records.");
         const intentRaw = await readRecord(slot, "intent.json"), launchedRaw = await readRecord(slot, "launched.json"), terminatedRaw = await readRecord(slot, "terminated.json");
         const refusedRaw = await readRecord(slot, "not-dispatched.json");
+        const abandonedRaw = await readRecord(slot, "abandonment.json");
         const intent = intentRaw === null ? void 0 : intentSchema2.parse(intentRaw);
         const launched = launchedRaw === null ? void 0 : launchedSchema.parse(launchedRaw);
         const terminated = terminatedRaw === null ? void 0 : terminatedSchema.parse(terminatedRaw);
         const refused = refusedRaw === null ? void 0 : refusedSchema.parse(refusedRaw);
+        const abandoned = abandonedRaw === null ? void 0 : abandonedSchema.parse(abandonedRaw);
         requireValue14(intent === void 0 || intent.operationId === entry.name, "Ordinary launch intent ID differs.");
         requireValue14(launched === void 0 || intent !== void 0 && launched.operationId === entry.name && launched.intentSha256 === sha256Json(intent), "Ordinary launch result is unbound.");
         requireValue14(terminated === void 0 || launched !== void 0 && terminated.operationId === entry.name && terminated.launchedSha256 === sha256Json(launched) && terminated.jobId === launched.launch.jobId && terminated.helperInstance === launched.launch.helperInstance, "Ordinary launch termination is unbound.");
         requireValue14(refused === void 0 || intent !== void 0 && launched === void 0 && terminated === void 0 && refused.operationId === entry.name && refused.intentSha256 === sha256Json(intent), "Ordinary launch nondispatch receipt is unbound.");
+        requireValue14(abandoned === void 0 || intent !== void 0 && launched !== void 0 && terminated === void 0 && refused === void 0 && abandoned.operationId === entry.name && abandoned.intentSha256 === sha256Json(intent) && abandoned.launchedSha256 === sha256Json(launched) && abandoned.profileSha256 === intent.profileSha256, "Ordinary launch abandonment receipt is unbound or contradicts termination.");
         operations.push({
           operationId: entry.name,
           ...intent === void 0 ? {} : { intent },
           ...launched === void 0 ? {} : { launched },
           ...terminated === void 0 ? {} : { terminated },
-          ...refused === void 0 ? {} : { refused }
+          ...refused === void 0 ? {} : { refused },
+          ...abandoned === void 0 ? {} : { abandoned }
         });
       } finally {
         await slot.handle.close();
@@ -91566,6 +91571,9 @@ function describe3(operationId2, operation) {
     if (operation.refused !== void 0) {
       state2 = "not-dispatched";
     }
+    if (operation.abandoned !== void 0) {
+      state2 = "supervision-abandoned";
+    }
   }
   return {
     operationId: operationId2,
@@ -91573,14 +91581,20 @@ function describe3(operationId2, operation) {
     attemptConsumed: operation !== void 0,
     ...claims,
     limitations: limitations5,
-    ...operation?.launched === void 0 ? {} : { launch: operation.launched.launch },
-    ...operation?.terminated === void 0 ? {} : { termination: operation.terminated }
+    ...operation?.launched === void 0 ? {} : { launch: operation.launched.launch, launchedSha256: sha256Json(operation.launched) },
+    ...operation?.terminated === void 0 ? {} : { termination: operation.terminated },
+    ...operation?.abandoned === void 0 ? {} : {
+      abandonment: operation.abandoned,
+      terminationProved: false,
+      originalLaunchIdentityVerified: false,
+      retainedLaunchAuthority: false
+    }
   };
 }
-function complete(operation) {
-  return operation.terminated !== void 0 || operation.refused !== void 0;
+function allowsNextLaunch(operation) {
+  return operation.terminated !== void 0 || operation.refused !== void 0 || operation.abandoned !== void 0;
 }
-var ORDINARY_LAUNCH_PROFILE, operationIdSchema, digestSchema, tokenSchema, ordinaryLaunchRequestSchema, limitations5, claims, launchSchema, intentSchema2, launchedSchema, terminatedSchema, refusedSchema, JOURNAL_DIRECTORY, MAX_OPERATIONS, MAX_RECORD_BYTES, OrdinaryLaunchCoordinator;
+var ORDINARY_LAUNCH_PROFILE, operationIdSchema, digestSchema, tokenSchema, ordinaryLaunchRequestSchema, limitations5, claims, launchSchema, intentSchema2, launchedSchema, terminatedSchema, refusedSchema, abandonedSchema, JOURNAL_DIRECTORY, MAX_OPERATIONS, MAX_RECORD_BYTES, OrdinaryLaunchCoordinator;
 var init_ordinary_launch = __esm({
   "server/src/ordinary-launch.ts"() {
     init_zod();
@@ -91605,14 +91619,22 @@ var init_ordinary_launch = __esm({
       external_exports.object({ action: external_exports.literal("launch"), operationId: operationIdSchema, confirmLaunch: external_exports.literal(true), acceptExistingProfileEffects: external_exports.literal(true) }).strict(),
       external_exports.object({ action: external_exports.literal("inspect"), operationId: operationIdSchema }).strict(),
       external_exports.object({ action: external_exports.literal("observe-application"), operationId: operationIdSchema }).strict(),
-      external_exports.object({ action: external_exports.literal("observe-termination"), operationId: operationIdSchema }).strict()
+      external_exports.object({ action: external_exports.literal("observe-termination"), operationId: operationIdSchema }).strict(),
+      external_exports.object({
+        action: external_exports.literal("abandon-supervision"),
+        operationId: operationIdSchema,
+        expectedLaunchedSha256: digestSchema,
+        confirmAbandonSupervision: external_exports.literal(true),
+        acceptUnobservedDescendants: external_exports.literal(true)
+      }).strict()
     ]);
     limitations5 = [
       "Starts the existing EasyEDA profile with no project arguments, flags or caller-selected code. This is not an isolated or startup-qualified profile.",
       "Ordinary startup may read project-list metadata, write preferences/cache/logs, contact services and run or update enabled extensions. Extension actions and persisted startup configuration are not prevented or qualified.",
       "A retained process launch is not bridge authentication, a verified Start Page, design admission or proof that no project file was accessed. No navigation, Save or forced termination is dispatched by this tool.",
-      "One exclusive operation intent precedes dispatch. Unresolved attempts block further launches across restarts. Only a durable termination observation from the original retained Job permits another operation; lost ownership requires separate recovery, never PID-only adoption.",
-      "Application observation starts only the pinned diagnostic helper and samples same-name process presence twice. Presence may refer to another installation; absence does not prove original root or Job termination. It leaves historical launch state unchanged and grants no adoption or relaunch authority."
+      "One exclusive operation intent precedes dispatch. Unresolved attempts block further launches across restarts. A retained-Job termination receipt or explicit supervision abandonment permits consideration of a new ordinary startup; neither reuses the old operation ID. No PID-only adoption is supported.",
+      "Application observation starts only the pinned diagnostic helper and samples same-name process presence twice. Presence may refer to another installation; absence does not prove original root or Job termination. It leaves historical launch state unchanged and grants no adoption or relaunch authority.",
+      "Supervision abandonment requires a successful historical launch receipt, its exact digest, explicit acceptance of unobserved descendants, no current retained launch, and two absent same-name samples. It records relinquishment, not termination or saved-state proof. Original descendants or external work may remain. Only the ordinary-startup blocker changes; bridge/design quarantine and all design authority checks remain unchanged."
     ];
     claims = {
       bridgeAuthentication: "not-observed",
@@ -91654,6 +91676,23 @@ var init_ordinary_launch = __esm({
       intentSha256: digestSchema,
       dispatchAttempted: external_exports.literal(false)
     }).strict();
+    abandonedSchema = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.ordinary-supervision-abandoned.v1"),
+      operationId: operationIdSchema,
+      intentSha256: digestSchema,
+      launchedSha256: digestSchema,
+      profileSha256: digestSchema,
+      facadeSha256: digestSchema,
+      createdAt: external_exports.iso.datetime(),
+      confirmAbandonSupervision: external_exports.literal(true),
+      acceptUnobservedDescendants: external_exports.literal(true),
+      sameNameProcessPresent: external_exports.literal(false),
+      samples: external_exports.literal(2),
+      terminationProved: external_exports.literal(false),
+      originalLaunchIdentityVerified: external_exports.literal(false),
+      retainedLaunchAuthority: external_exports.literal(false),
+      designExecutionAuthorized: external_exports.literal(false)
+    }).strict();
     JOURNAL_DIRECTORY = "ordinary-launch-v1";
     MAX_OPERATIONS = 4096;
     MAX_RECORD_BYTES = 8192;
@@ -91688,8 +91727,11 @@ var init_ordinary_launch = __esm({
           if (request2.action === "observe-termination") {
             return await this.observe(request2.operationId, operation);
           }
+          if (request2.action === "abandon-supervision") {
+            return await this.abandon(request2, operation, operations);
+          }
           requireValue14(operation === void 0 && operations.length < MAX_OPERATIONS, "Ordinary launch operation ID is consumed or inventory full.");
-          requireValue14(operations.every((candidate) => complete(candidate)), "An unresolved ordinary launch blocks another launch.");
+          requireValue14(operations.every((candidate) => allowsNextLaunch(candidate)), "An unresolved ordinary launch blocks another launch.");
           const facadeSha256 = digestSchema.parse(await this.verify(this.options));
           await this.options.assertAllowed();
           this.runtime ??= this.options.allocateRuntime({
@@ -91722,7 +91764,7 @@ var init_ordinary_launch = __esm({
           await this.options.assertAllowed();
           const current2 = await inventory();
           requireValue14(
-            current2.length === operations.length + 1 && current2.every((candidate) => candidate.operationId === request2.operationId ? canonicalJson(candidate.intent) === canonicalJson(intent) && candidate.launched === void 0 && candidate.terminated === void 0 && candidate.refused === void 0 : complete(candidate)),
+            current2.length === operations.length + 1 && current2.every((candidate) => candidate.operationId === request2.operationId ? canonicalJson(candidate.intent) === canonicalJson(intent) && candidate.launched === void 0 && candidate.terminated === void 0 && candidate.refused === void 0 && candidate.abandoned === void 0 : allowsNextLaunch(candidate)),
             "Ordinary launch intent or inventory changed before dispatch."
           );
           requireValue14(await this.verify(this.options) === facadeSha256, "Ordinary launch installation changed before dispatch.");
@@ -91773,6 +91815,7 @@ var init_ordinary_launch = __esm({
         return {
           action: "observe-application",
           operationId: operationId2,
+          facadeSha256,
           historical: describe3(operationId2, operation),
           application: {
             sameNameProcessPresent: second.running,
@@ -91788,7 +91831,7 @@ var init_ordinary_launch = __esm({
       }
       async observe(operationId2, operation) {
         requireValue14(operation !== void 0, "Ordinary launch operation was not found.");
-        if (complete(operation)) {
+        if (allowsNextLaunch(operation)) {
           return describe3(operationId2, operation);
         }
         const retained = this.retained;
@@ -91810,6 +91853,37 @@ var init_ordinary_launch = __esm({
         await publish(operationId2, "terminated.json", terminated);
         this.uncertain = false;
         return describe3(operationId2, { ...operation, terminated });
+      }
+      async abandon(request2, operation, operations) {
+        requireValue14(operation?.intent !== void 0 && operation.launched !== void 0, "Supervision abandonment requires a successful historical launch receipt.");
+        requireValue14(!allowsNextLaunch(operation), "Ordinary launch supervision is already resolved or abandoned.");
+        requireValue14(this.retained === void 0, "Supervision abandonment cannot supersede a current retained owner; observe its termination instead.");
+        requireValue14(request2.expectedLaunchedSha256 === sha256Json(operation.launched), "Supervision abandonment launch digest differs.");
+        requireValue14(operation.intent.profileSha256 === sha256Json(ORDINARY_LAUNCH_PROFILE), "Supervision abandonment historical profile is not reviewed.");
+        const observation2 = await this.observeApplication(request2.operationId, operation, operations);
+        const application2 = external_exports.looseObject({ sameNameProcessPresent: external_exports.boolean() }).parse(observation2["application"]);
+        requireValue14(!application2.sameNameProcessPresent, "Supervision abandonment requires absent same-name application samples.");
+        const abandoned = {
+          schema: "easyeda-pro-control.ordinary-supervision-abandoned.v1",
+          operationId: request2.operationId,
+          intentSha256: sha256Json(operation.intent),
+          launchedSha256: request2.expectedLaunchedSha256,
+          profileSha256: operation.intent.profileSha256,
+          facadeSha256: digestSchema.parse(observation2["facadeSha256"]),
+          createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+          confirmAbandonSupervision: true,
+          acceptUnobservedDescendants: true,
+          sameNameProcessPresent: false,
+          samples: 2,
+          terminationProved: false,
+          originalLaunchIdentityVerified: false,
+          retainedLaunchAuthority: false,
+          designExecutionAuthorized: false
+        };
+        this.uncertain = true;
+        await publish(request2.operationId, "abandonment.json", abandoned);
+        this.uncertain = false;
+        return describe3(request2.operationId, { ...operation, abandoned });
       }
     };
   }
@@ -97826,7 +97900,7 @@ function auditPcbRoutes(source4, inventory2, input) {
     const paths = rows2.map((entry) => entry?.path);
     const lengths = paths.map((path5) => path5?.shortestKnownPlanarLengthMil);
     const findings = [];
-    const complete2 = members.length >= 2 && paths.every((path5) => path5?.completeSimplePath === true && path5.viaIds.length === 0);
+    const complete = members.length >= 2 && paths.every((path5) => path5?.completeSimplePath === true && path5.viaIds.length === 0);
     const measured = lengths.every((length) => typeof length === "number");
     const skew = measured && lengths.length >= 2 ? Math.max(...lengths) - Math.min(...lengths) : null;
     const limit = typeof maximum === "number" && Number.isFinite(maximum) && maximum >= 0 ? maximum : null;
@@ -97840,14 +97914,14 @@ function auditPcbRoutes(source4, inventory2, input) {
         findings.push(note("pair-endpoint-owner-mismatch", [], "The two pair members do not terminate on the same pair of component owners."));
       }
     }
-    if (!complete2) {
+    if (!complete) {
       findings.push(note("planar-comparison-incomplete", [], "Comparison requires one complete simple path per member. Via barrel lengths, branches and other copper need separate proof."));
     }
     if (limit === null) {
       findings.push(note("native-length-limit-unresolved", [], "The corresponding native skew/tolerance profile is missing or unsupported."));
     }
     let status2 = "indeterminate";
-    if (complete2 && skew !== null && limit !== null && sameEndpointComponentOwners !== false) {
+    if (complete && skew !== null && limit !== null && sameEndpointComponentOwners !== false) {
       status2 = skew <= limit ? "within-planar-limit" : "outside-planar-limit";
     }
     return { name: groupName, nets: members, planarSkewMil: skew, maximumSkewMil: limit, ruleId: selectedRule?.id ?? null, status: status2, sameEndpointComponentOwners, findings };
@@ -118935,7 +119009,7 @@ var init_src = __esm({
       "easyeda_control_launch",
       {
         title: "Launch or observe the reviewed EasyEDA application",
-        description: "Launch the exact reviewed EasyEDA executable with no arguments in its existing profile. Requires explicit launch/profile-effect confirmations and a unique operation ID. Ordinary startup can load extensions/project lists, use the network and write preferences/cache; it is not an isolated or project-free session. Journals before dispatch, retains Windows root/Job handles, and never retries an uncertain attempt. Inspect history, observe original retained termination, or use observe-application with an existing operation ID for two same-name process-presence samples. Presence observation starts only the pinned diagnostic helper; it does not bind the original root/Job, alter history or authorize relaunch. Lost handles leave unresolved attempts blocked across restart. No close, kill, design open, Save or discard. Use offline launch/launch-validate first. Successful launch is not bridge authentication or Start Page observation.",
+        description: "Launch the exact reviewed EasyEDA executable with no arguments in its existing profile. Requires explicit launch/profile-effect confirmations and a unique operation ID. Ordinary startup can load extensions/project lists, use the network and write preferences/cache; it is not an isolated or project-free session. Journals before dispatch, retains Windows root/Job handles, and never retries an uncertain attempt. Inspect history, observe original retained termination, or use observe-application with an existing operation ID for two same-name process-presence samples. Presence alone grants no relaunch authority. After losing supervision of a successful historical launch, abandon-supervision requires its inspected launchedSha256, explicit confirmations and two absent samples. It appends relinquishment without claiming termination; unobserved descendants may remain. Only the ordinary-startup blocker changes, never bridge quarantine or design authority. No close, kill, design open, Save or discard. Use offline launch/launch-validate first. Successful launch is not bridge authentication or Start Page observation.",
         inputSchema: { request: external_exports.unknown().pipe(ordinaryLaunchRequestSchema) },
         annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false }
       },

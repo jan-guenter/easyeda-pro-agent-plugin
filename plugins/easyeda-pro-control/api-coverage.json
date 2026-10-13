@@ -18,9 +18,10 @@
       "partially-blocked": 2
     },
     "omissions": {
-      "account-or-library-scope-needed": 40,
+      "account-or-library-scope-needed": 39,
       "callback-or-registration-lifecycle": 27,
       "canvas-origin-pending-geometry-queues": 1,
+      "catalogue-fallback-library-effects": 1,
       "cross-tab-netlist-export-scope": 1,
       "extension-or-global-settings-state": 15,
       "external-commercial-action": 6,
@@ -4997,10 +4998,12 @@
       "status": "omitted",
       "routes": [],
       "omission": {
-        "code": "account-or-library-scope-needed",
-        "reason": "lib_Device.getByLcscIds reaches account, workspace, folder, project or shared-library metadata outside the active disposable document.",
-        "nextRequirement": "Define explicit owner, collection/search bounds and privacy rules; mutations also need cloud/shared-asset authority and a durable independent verifier. Read-only catalog discovery is still feasible without granting writes.",
-        "evidence": []
+        "code": "catalogue-fallback-library-effects",
+        "reason": "The reviewed current desktop API 0.3.50/UI 3.2.196/server searchByCodes path can fall through to a local device-update controller when networking is disabled. Concurrent library refresh can temporarily resolve the fixed system library to a physical database, reaching initialization/migration before lookup failure. A renderer mode/network check cannot atomically exclude that path; failed service responses can also become empty arrays.",
+        "nextRequirement": "Implement a separately reviewed remote-only bounded catalogue route or an explicitly scoped library-effects contract. The current desktop findings do not validate the older declaration tuple or prove that a live mutation occurred.",
+        "evidence": [
+          "docs/system-device-backend-effects-2026-10-14.md"
+        ]
       },
       "completeDeclaredContractSupported": false,
       "currentGenerationLiveValidation": "not-recorded",

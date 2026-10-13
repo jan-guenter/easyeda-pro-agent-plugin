@@ -177,6 +177,8 @@ void describe("self-contained packaged machine startup", () => {
       ["editor-context-validate", { action: "observe-editor-context" }],
       ["launch-validate", { action: "launch", operationId: "offline-launch-fixture", confirmLaunch: true, acceptExistingProfileEffects: true }],
       ["launch-validate", { action: "observe-application", operationId: "offline-launch-fixture" }],
+      ["launch-validate", { action: "abandon-supervision", operationId: "offline-launch-fixture", expectedLaunchedSha256: "a".repeat(64),
+        confirmAbandonSupervision: true, acceptUnobservedDescendants: true }],
     ] as const) {
       const validation = await api(client, { action, query: { request } });
       assert.equal(validation["valid"], true); assert.equal(validation["executionAuthorized"], false);
