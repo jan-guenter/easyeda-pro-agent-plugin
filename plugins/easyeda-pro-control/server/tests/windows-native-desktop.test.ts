@@ -18,10 +18,10 @@ async function powershellPath(): Promise<string | undefined> {
   return undefined;
 }
 
-async function run(powershell: string, program: string): Promise<unknown> {
+async function run(powershell: string, program: string, timeout = 15_000): Promise<unknown> {
   const pending = execute(powershell, ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand",
     Buffer.from(`$ErrorActionPreference='Stop';$ProgressPreference='SilentlyContinue';\n${program}\nexit 0;`, "utf16le").toString("base64")],
-  { timeout: 15_000, maxBuffer: 32_768 });
+  { timeout, maxBuffer: 32_768 });
   pending.child.stdin?.end();
   const { stdout, stderr } = await pending;
   assert.equal(stderr, "");
@@ -70,6 +70,8 @@ public static long Foreground;public static bool FailForeground;public static ui
 public static IntPtr GetForegroundWindow(){if(FailForeground)throw new Exception("private detail");return new IntPtr(Foreground);}
 public static uint GetWindowThreadProcessId(IntPtr handle,out uint owner){owner=Owner;return 11;}}
 `;
+  // Allow process startup and C# compilation in this synthetic CI test. This is
+  // Not the production invocation deadline or the real Windows probe's bound.
   const actual = await run(powershell, `${compile(controller + doubled)}
 ${projection}
 $request=@{rootPid=17};function Owned-Window([IntPtr]$handle){return $handle.ToInt64() -eq 18};
@@ -81,7 +83,7 @@ $cases+=@{mode=$mode;probe=$probe;target=$target;input=$input;session=$session;c
 [EasyedaDesktopDiagnostic]::Mode=0;$states=@();foreach($fg in 0,18,19){[EasyedaUiController]::Foreground=$fg;$states+=Get-DesktopStatus 7 ([IntPtr]18)};
 [EasyedaUiController]::FailForeground=$true;$failed=Get-DesktopStatus -1 ([IntPtr]::Zero);
 [EasyedaUiController]::Owner=99;$foreign=[EasyedaDesktopDiagnostic]::TargetDesktopInput([IntPtr]18,17);
-@{cases=$cases;states=$states;failed=$failed;foreignTarget=$foreign;freed=[EasyedaDesktopDiagnostic]::Freed}|ConvertTo-Json -Depth 8 -Compress;`);
+@{cases=$cases;states=$states;failed=$failed;foreignTarget=$foreign;freed=[EasyedaDesktopDiagnostic]::Freed}|ConvertTo-Json -Depth 8 -Compress;`, 45_000);
   assert.ok(actual !== null && typeof actual === "object");
   const expectedCases = Array.from({ length: 12 }, (_, mode) => {
     let input = mode === 1 ? "no" : "yes";

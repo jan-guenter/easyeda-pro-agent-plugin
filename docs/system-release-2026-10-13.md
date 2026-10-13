@@ -66,6 +66,15 @@ runtime3 projection is
 `8b202a1c840d1067cc5eaa37cd82c5d1c7827f270455684ac9962f3f6f08386f`.
 All external compatibility-manifest fields compare equal to the preceding main.
 
+Initial PR13 CI38434735082 passed build and9,766 facade cases but failed two
+tests (five platform skips). A remaining catalog expectation needed29→30. An
+unchanged managed PowerShell/C# double exceeded its15s process deadline with
+no output; the same test passed PR12 in9.59s. The synthetic invocation now has
+45s for startup/compilation, without attributing the timeout to a proven stage.
+Its assertions and output bound are unchanged; the real Windows probe retains
+15s and production helper10s. All five affected local cases pass. No retries,
+skips or production changes were added. Preserve the original failed CI run.
+
 Official installation uses the existing Git marketplace and supported CLI,
 following [OpenAI's packaging documentation](https://developers.openai.com/plugins/build/plugins).
 The loaded161000 owner is not terminated, replaced or patched. A new installed

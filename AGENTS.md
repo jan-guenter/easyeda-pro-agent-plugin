@@ -46,6 +46,13 @@ Source315 projection673f00939cfb9adb8f011065209f4b9885afba588e52dd9057ba636ecd98
 runtime3 projection8b202a1c840d1067cc5eaa37cd82c5d1c7827f270455684ac9962f3f6f08386f.
 All external compatibilitymanifest fields remain equal to prior main.
 
+Initial PR13 CI38434735082 failed two test-only checks: one remaining legacy
+catalog assertion expected29 instead of30; the unchanged managed PowerShell
+double reached its15s process deadline with no output. Corrected count and
+synthetic-only45s allowance pass the original five affected local cases.
+Real Windows probe15s, production helper10s, assertions and output bounds stay
+unchanged; no retry/skip added. Retain the failed run; final CI belongs in PR13.
+
 PR12 required CI passed, but post-merge mainCI38431407972 found a randomized
 negative-test no-op in closed-sql-bindings. The fixture now guarantees a different
 ID; original29cases pass, production guard unchanged. Retain that failed run.
