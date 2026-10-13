@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { sha256Json } from "../src/core.ts";
 import type { ExecutionAuthorityCaptureInput, ExecutionAuthorityEvidence, ExecutionAuthorityTerminationInput } from "../src/engine.ts";
-import { createWindowsAuthoritySupervisor } from "../src/windows-authority.ts";
+import { createWindowsAuthoritySupervisor, startWindowsAuthoritySupervisor } from "../src/windows-authority.ts";
 import type { WindowsAuthorityPolicy, WindowsAuthoritySupervisor } from "../src/windows-authority.ts";
 
 const JOB = "a".repeat(32);
@@ -25,16 +27,19 @@ const INPUT: ExecutionAuthorityCaptureInput = {
 
 function fixture(policy = POLICY): {
   readonly requests: Record<string, unknown>[];
-  readonly behavior: { capture?: Record<string, unknown>; termination?: Record<string, unknown>; release?: Record<string, unknown>; error?: Error };
+  readonly behavior: { capture?: Record<string, unknown>; termination?: Record<string, unknown>; observation?: Record<string, unknown>; release?: Record<string, unknown>; error?: Error };
   readonly supervisor: WindowsAuthoritySupervisor;
 } {
   const requests: Record<string, unknown>[] = [];
-  const behavior: { capture?: Record<string, unknown>; termination?: Record<string, unknown>; release?: Record<string, unknown>; error?: Error } = {};
+  const behavior: { capture?: Record<string, unknown>; termination?: Record<string, unknown>; observation?: Record<string, unknown>; release?: Record<string, unknown>; error?: Error } = {};
   const supervisor = createWindowsAuthoritySupervisor({
     request(request) {
       requests.push(request);
       if (behavior.error !== undefined) {return Promise.reject(behavior.error);}
       if (request["action"] === "launch") {return Promise.resolve({ jobId: JOB, helperInstance: HELPER, root: ROOT });}
+      if (request["action"] === "observe-launch-termination") {return Promise.resolve({
+        jobId: JOB, helperInstance: HELPER, terminated: false, ...behavior.observation,
+      });}
       if (request["action"] === "begin-probe") {return Promise.resolve({
         schema: "easyeda-pro-control.windows-process-probe.v1", bindingSha256: INPUT.bindingSha256,
         port: 51_234, nonce: "9".repeat(64),
@@ -219,4 +224,92 @@ void test("fresh recovery nonce attempts retain exact original authority without
   const proof = await supervisor.proveTerminated({ ...termination(evidence), challengeAttempt: 2 });
   assert.equal(proof.ok, true);
   await assert.rejects(supervisor.proveTerminated({ ...termination(evidence), challengeAttempt: 0 }), /retained operation/u);
+});
+
+void test("launch termination observation binds retained root and Job without capture, close or replay", async () => {
+  const { supervisor, behavior, requests } = fixture();
+  const launch = await supervisor.launch({ confirmLaunch: true });
+  const observe = supervisor.observeLaunchTermination;
+  assert.ok(observe);
+  assert.deepEqual(await observe(launch), { jobId: JOB, helperInstance: HELPER, terminated: false });
+  behavior.observation = { terminated: true };
+  assert.deepEqual(await observe(launch), { jobId: JOB, helperInstance: HELPER, terminated: true });
+  assert.deepEqual(requests.slice(1), [0, 1].map(() => ({
+    action: "observe-launch-termination", jobId: JOB, helperInstance: HELPER,
+    rootPid: ROOT.pid, rootStartIdentity: ROOT.startIdentity,
+  })));
+});
+
+void test("launch termination observation rejects mismatched owners and malformed replies without losing ownership", async () => {
+  const { supervisor, behavior, requests } = fixture();
+  const observe = supervisor.observeLaunchTermination;
+  assert.ok(observe);
+  const unissued = { jobId: JOB, helperInstance: HELPER, root: ROOT };
+  await assert.rejects(observe(unissued), /original supervised generation/u);
+  assert.equal(requests.length, 0);
+  const launch = await supervisor.launch({ confirmLaunch: true });
+  await assert.rejects(observe({ ...launch, root: { ...ROOT, pid: 999 } }), /original supervised generation/u);
+  assert.equal(requests.length, 1);
+  for (const observation of [{ helperInstance: "f".repeat(32) }, { terminated: "true" }, { unexpected: true }]) {
+    behavior.observation = observation;
+    await assert.rejects(observe(launch), /malformed or belongs to another owner/u);
+  }
+  behavior.observation = { terminated: true };
+  const accepted = await observe(launch);
+  assert.equal(accepted.terminated, true);
+  assert.equal(requests.length, 5);
+});
+
+void test("launch termination observation rejects ownership loss across an await", async () => {
+  const { supervisor, requests } = fixture();
+  const launch = await supervisor.launch({ confirmLaunch: true });
+  const observe = supervisor.observeLaunchTermination;
+  assert.ok(observe);
+  const pending = observe(launch);
+  await supervisor.release();
+  await assert.rejects(pending, /released/u);
+  assert.equal(requests.length, 1);
+});
+
+void test("existing-app preflight needs no launch, accepts only Boolean output, and cannot acquire launch authority", async () => {
+  const requests: Record<string, unknown>[] = [];
+  let response: unknown = { running: true };
+  const supervisor = createWindowsAuthoritySupervisor({
+    request(input) { requests.push(input); return Promise.resolve(response); },
+    release: () => Promise.resolve(),
+  }, POLICY);
+  const observe = supervisor.observeExistingApplication;
+  assert.ok(observe);
+  assert.deepEqual(await observe(), { running: true });
+  response = { running: false };
+  assert.deepEqual(await observe(), { running: false });
+  response = { running: "false" };
+  await assert.rejects(observe(), /malformed/u);
+  assert.deepEqual(requests, [0, 1, 2].map(() => ({ action: "observe-existing-application", executable: POLICY.expectedExecutable })));
+  await assert.rejects(supervisor.capture(INPUT), /explicitly supervised/u);
+  await supervisor.release();
+  await assert.rejects(observe(), /released/u);
+  assert.equal(requests.length, 3);
+});
+
+void test("capability helper pin refuses mismatched repository bytes before spawning any Windows helper", async () => {
+  const helperPath = fileURLToPath(new URL("../../scripts/windows-authority.ps1", import.meta.url));
+  await assert.rejects(startWindowsAuthoritySupervisor({
+    ...POLICY, helperPath,
+    helperWindowsPath: "C:\\Synthetic\\windows-authority.ps1", powershellExecutable: "/nonexistent/powershell.exe",
+    expectedHelperSha256: "0".repeat(64),
+  }), /differs from the reviewed capability pin/u);
+});
+
+void test("fixed launch-time process refusal is conservative, after hashing and before Job creation", async () => {
+  const source = await readFile(new URL("../../scripts/windows-authority.ps1", import.meta.url), "utf8");
+  const start = source.indexOf("  if ($request.action -eq 'launch') {");
+  const end = source.indexOf("  if ($request.action -eq 'observe-launch-termination') {", start);
+  assert.ok(start > 0 && end > start);
+  const launch = source.slice(start, end);
+  const guard = launch.indexOf("authority-unsupervised-instance-present");
+  assert.ok(guard > launch.indexOf("authority-executable-hash-mismatch") && guard < launch.indexOf("$job=New-Object"));
+  assert.ok(launch.includes("GetProcessesByName('easyeda-pro')") && launch.includes("if (-not $process.HasExited) {throw 'authority-unsupervised-instance-present'}"));
+  assert.ok(launch.includes("finally {foreach ($process in $existing) {$process.Dispose()}}"));
+  assert.doesNotMatch(launch, /MainModule/u);
 });

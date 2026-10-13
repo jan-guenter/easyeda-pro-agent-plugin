@@ -16,9 +16,9 @@ PCB/footprint navigation also needs passive preference-side-effect admission.
 See [native navigation limits](native-ui.md#navigation-preference-side-effects);
 project-file invariance does not cover global preferences or backup pruning.
 
-The source inventory classifies 774 method paths as 193 public subsets, 30
-native equivalents, no lifecycle-only, 82 implemented-but-blocked and 469
-omitted. It maps 274 runtime-guarded available routes, 94 blocked routes and
+The source inventory classifies 774 method paths as 211 public subsets, 30
+native equivalents, no lifecycle-only, 82 implemented-but-blocked and 451
+omitted. It maps 308 runtime-guarded available routes, 94 blocked routes and
 two partially blocked routes. The fixed SDK-read catalog has 182 entries,
 including 21 native equivalents. These counts describe implementations, not
 whole-method live validation or admission of the installed host.
@@ -40,6 +40,8 @@ below describe retained source contracts, not execution support for types1/2/3.
 | Capability | Controlled path | Current boundary |
 |---|---|---|
 | Offline SDK and exact operation reference | api sdk/operations/validate | 749 reviewed / 806 latest official declaration signatures; exact strict design/library schemas and offline custom-refinement validation; no SDK invocation or runtime admission |
+| Ordinary current-version startup | launch | Fixed no-argument executable with exact installed code/helper pins, explicit existing-profile effects and durable attempt tracking. Retained root/Job termination can permit a later launch; unresolved lost handles block. No isolation, bridge, Start Page, navigation or CAD claim |
+| Current editor-shell observation | editor_shell | Bounded container/tab counts and registered Start Page flags on separately pinned API/UI; two stable samples, no titles/paths/document IDs. No visibility, restored-state completion, project closure or navigation authority |
 | Connection and active context | status, context | Authenticated responsive session, exact project path/UUID and document/type/tab |
 | Existing project/document open | runtime open-existing | Saved PCB or schematic page; exact registry/checkpoint membership, exclusive-tab guard and complete unchanged SQLite proof. Imported SYMBOL/FOOTPRINT header provenance is retained and compared; installed083400 passed a disposable12document open. Later generations require separate admission. No creation, save, discard or replacement |
 | Exact schematic components | exact_read | Stable double samples with fixed public projections; schematic-topology disabled pending a verified non-mutating replacement |

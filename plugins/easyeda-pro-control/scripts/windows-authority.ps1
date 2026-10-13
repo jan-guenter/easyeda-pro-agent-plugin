@@ -215,6 +215,7 @@ $captures = @{}
 $usedCaptureBindings = @{}
 $probes = @{}
 $currentJob = $null
+$currentLaunch = $null
 $helperInstance = [Guid]::NewGuid().ToString('N')
 # BEGIN PRIVATE CLOCK ACTIONS
 # Private fixed wrappers. Legacy Handle-Request and Finish-Probe stay unchanged.
@@ -377,6 +378,19 @@ function Handle-Request($request) {
     Dispose-Probe $binding
     return @{closed=$true;bindingSha256=$binding}
   }
+  if ($request.action -eq 'observe-existing-application') {
+    $executable=Require-Text $request.executable '^[A-Za-z]:\\[^\x00-\x1f"\r\n]+\.exe$'
+    $item=Get-Item -LiteralPath $executable -Force
+    if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or $item.FullName -cne $executable -or $item.Name -ine 'easyeda-pro.exe') {throw 'authority-invalid-executable'}
+    # This is only a preflight observation. Any live same-name app conservatively
+    # prevents startup, without inspecting its module, project or profile.
+    $existing=@([Diagnostics.Process]::GetProcessesByName('easyeda-pro'))
+    try {
+      $running=$false
+      foreach ($process in $existing) {if (-not $process.HasExited) {$running=$true}}
+      return @{running=$running}
+    } finally {foreach ($process in $existing) {$process.Dispose()}}
+  }
   if ($request.action -eq 'launch') {
     if ($request.confirmLaunch -ne $true) {throw 'authority-launch-not-authorized'}
     if ($null -ne $script:currentJob -and @($script:currentJob.Pids()).Count -ne 0) {throw 'authority-prior-job-not-empty'}
@@ -384,9 +398,6 @@ function Handle-Request($request) {
     $expectedHash=Require-Text $request.executableSha256 '^[a-f0-9]{64}$'
     $item=Get-Item -LiteralPath $executable -Force
     if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or $item.FullName -cne $executable -or $item.Name -ine 'easyeda-pro.exe') {throw 'authority-invalid-executable'}
-    foreach ($existing in [Diagnostics.Process]::GetProcessesByName('easyeda-pro')) {
-      try { if ($existing.MainModule.FileName -ieq $executable) {throw 'authority-unsupervised-instance-present'} } finally {$existing.Dispose()}
-    }
     # Deny replacement during creation. The executable remains pinned by the
     # reviewed runtime fingerprint after launch as well.
     $file=[IO.File]::Open($executable,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
@@ -394,13 +405,37 @@ function Handle-Request($request) {
       $sha=[Security.Cryptography.SHA256]::Create()
       try {$actual=([BitConverter]::ToString($sha.ComputeHash($file))).Replace('-','').ToLowerInvariant()} finally {$sha.Dispose()}
       if ($actual -cne $expectedHash) {throw 'authority-executable-hash-mismatch'}
+      # Repeat the conservative same-name check after hashing, immediately before
+      # creation. Another installation also blocks; no module inspection needed.
+      $existing=@([Diagnostics.Process]::GetProcessesByName('easyeda-pro'))
+      try {
+        foreach ($process in $existing) {if (-not $process.HasExited) {throw 'authority-unsupervised-instance-present'}}
+      } finally {foreach ($process in $existing) {$process.Dispose()}}
       $job=New-Object EasyedaAuthorityJob
       $script:jobs[$job.Id]=$job
       $script:currentJob=$job
       $job.Launch($executable)
       $record=Process-Record $job.Root 'easyeda-main' $job
-      return @{jobId=$job.Id;root=$record;helperInstance=$script:helperInstance}
+      $script:currentLaunch=@{jobId=$job.Id;root=$record;helperInstance=$script:helperInstance}
+      return $script:currentLaunch
     } finally {$file.Dispose()}
+  }
+  if ($request.action -eq 'observe-launch-termination') {
+    $job=$script:currentJob
+    $launch=$script:currentLaunch
+    if ($null -eq $job -or $null -eq $launch -or $null -eq $job.Root -or
+        $request.jobId -cne $job.Id -or $request.jobId -cne $launch.jobId -or
+        $request.helperInstance -cne $script:helperInstance -or
+        (Require-Pid $request.rootPid) -ne $launch.root.pid -or
+        $request.rootStartIdentity -cne $launch.root.startIdentity) {throw 'authority-launch-not-owned'}
+    # Read the original retained handles, not a later PID lookup. Neither a
+    # surviving root nor an empty Job alone establishes termination. A false
+    # result changes no ownership and dispatches no close or termination.
+    $firstRootExited=$job.Root.HasExited
+    $firstJobEmpty=@($job.Pids()).Count -eq 0
+    $secondRootExited=$job.Root.HasExited
+    $secondJobEmpty=@($job.Pids()).Count -eq 0
+    return @{jobId=$job.Id;helperInstance=$script:helperInstance;terminated=($firstRootExited -and $firstJobEmpty -and $secondRootExited -and $secondJobEmpty)}
   }
   if ($request.action -eq 'capture') {
     $binding=Require-Text $request.bindingSha256 '^[a-f0-9]{64}$'

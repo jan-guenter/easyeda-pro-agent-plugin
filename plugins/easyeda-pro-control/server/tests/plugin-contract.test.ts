@@ -22,9 +22,9 @@ void test("portable MCP launch requires the exact bundled launcher tuple without
   }
 });
 
-void test("all 31 facade tools include scoped utilities, extension metadata, disposable validation, blocked metadata and legacy refusals", () => {
-  assert.equal(FACADE_TOOL_NAMES.length, 31);
-  assert.equal(new Set(FACADE_TOOL_NAMES).size, 31);
+void test("all 33 facade tools include ordinary launch, editor observation, scoped utilities and legacy refusals", () => {
+  assert.equal(FACADE_TOOL_NAMES.length, 33);
+  assert.equal(new Set(FACADE_TOOL_NAMES).size, 33);
   for (const name of ["easyeda_control_api", "easyeda_control_sdk_read", "easyeda_control_design", "easyeda_control_library", "easyeda_control_runtime", "easyeda_control_native_ui",
     "easyeda_control_execute", "easyeda_control_apply", "easyeda_control_check", "easyeda_control_validate_closed_symbol", "easyeda_control_symbol_metadata", "easyeda_control_system", "easyeda_control_extensions"]) {
     assert.ok(FACADE_TOOL_NAMES.some((entry) => entry === name));

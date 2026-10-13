@@ -122,7 +122,7 @@ void test("native ownership program rejects wrong messages and cleanup failures 
   }
 });
 
-void test("runtime starts no helper until explicit launch and forwards normal close/release only to its generation", async () => {
+void test("runtime does not start helpers implicitly and binds normal close/release to its generation", async () => {
   const { upstream } = upstreamFixture();
   const calls: string[] = [];
   const launch: WindowsAuthorityLaunch = { jobId: "d".repeat(32), helperInstance: "e".repeat(32), root: { pid: 100, role: "easyeda-main", startIdentity: `win32:13333333333333333:job:${"d".repeat(32)}` } };
@@ -160,6 +160,22 @@ void test("runtime starts no helper until explicit launch and forwards normal cl
   assert.equal(runtime.status().state, "released");
   await assert.rejects(runtime.launch(), /current state/u);
   assert.deepEqual(calls, ["hash", "helper", "launch", "normal-close", "release"]);
+});
+
+void test("capability-pinned launch refuses executable substitution before starting its helper", async () => {
+  const { upstream } = upstreamFixture();
+  const options = { upstream, pluginRoot: "/opt/control", assetsRoot: "/mnt/d/Apps/EasyEDA/resources/app/assets",
+    wslDistribution: "ReviewDistro", reviewedExecutionScopeSha256: "f".repeat(64), expectedExecutableSha256: "1".repeat(64) };
+  let helperStarted = false;
+  const runtime = new WindowsControlRuntime(options, {
+    hashExecutable: (): Promise<string> => Promise.resolve("2".repeat(64)),
+    startSupervisor(): never { helperStarted = true; throw new Error("Helper must not start."); },
+  });
+  await assert.rejects(runtime.launch(), /differs from the reviewed launch profile/u);
+  assert.equal(helperStarted, false);
+  assert.equal(runtime.status().state, "launch-unknown");
+  await assert.rejects(runtime.launch(), /current state/u);
+  assert.throws(() => new WindowsControlRuntime({ ...options, expectedExecutableSha256: "invalid" }), /executable identity/u);
 });
 
 void test("native probe timeout is bounded and closes only its unique probe socket", async () => {

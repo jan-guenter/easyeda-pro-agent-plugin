@@ -112,6 +112,9 @@ import { sdkSystemRequestSchema } from "./sdk-system.ts";
 import { readSdkSystem } from "./sdk-system-runtime.ts";
 import { startupExtensionsRequestSchema } from "./startup-extensions.ts";
 import { readStartupExtensions } from "./startup-extensions-runtime.ts";
+import { editorShellRequestSchema } from "./editor-shell.ts";
+import { readEditorShell } from "./editor-shell-runtime.ts";
+import { OrdinaryLaunchCoordinator, ordinaryLaunchRequestSchema } from "./ordinary-launch.ts";
 
 const facadeMode = configuredFacadeMode(process.env);
 
@@ -145,6 +148,8 @@ const upstream = new UpstreamEasyedaClient({
   onChildStarted: (pid): Promise<void> => facadeLease.bindChild(pid),
 });
 let windowsRuntime: WindowsControlRuntime | undefined;
+let ordinaryLaunchCoordinator: OrdinaryLaunchCoordinator | undefined;
+let ordinaryLaunchRuntime: WindowsControlRuntime | undefined;
 let scheduledShutdown: Promise<void> | undefined;
 function ownedWindowsRuntime(): WindowsControlRuntime {
   if (windowsRuntime === undefined) { throw new Error("Use easyeda_control_runtime launch-contained before guarded design editing."); }
@@ -232,6 +237,7 @@ function disposableConstructedMethods(runtime: WindowsControlRuntime, nativeUi: 
 }
 function assertOrdinaryRuntimeAllocationAllowed(): void {
   if (closedSymbolIndexReservation !== undefined) { throw new Error("The Windows runtime is reserved by a consumed closed-symbol attempt."); }
+  if (ordinaryLaunchRuntime !== undefined) { throw new Error("The Windows runtime is reserved by the ordinary launch coordinator."); }
 }
 
 /** No outer gate/authenticated scope. The exact retained entry owns its one gate admission. */
@@ -1830,6 +1836,8 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_calculate: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_system: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_extensions: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_launch: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_editor_shell: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_runtime: z.object({ action: z.string().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1862,7 +1870,7 @@ const server = new McpServer(
     capabilities: { tools: {} },
     instructions:
       facadeMode === "calculation-only"
-        ? "Local-utility compatibility mode. Only status, local reference/discovery, separately version-pinned SDK calculations, bounded system observations and a fixed extension-index observer are registered. No project readers, native controls, navigation, design changes, Save or recovery tools are available. Utility admission does not admit legacy methods or qualify application startup. Use offline API schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
+        ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations, system/extension/editor-shell observations and a journaled ordinary application launcher. Launch uses the existing profile and does not prove isolation, bridge authentication or Start Page readiness. No project readers, generic native controls, navigation, design changes, Save or design recovery tools are available. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
         : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal.",
   },
 );
@@ -1906,12 +1914,14 @@ registerFacadeTool(
       typedDesign: { enabled: facadeMode === "legacy-reviewed", tool: "easyeda_control_design", supervisorRequired: true, persistence: "native-source-plus-complete-project-record-delta", arbitraryCode: false },
       libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
       ...(facadeMode === "calculation-only" ? { availableTools: CALCULATION_ONLY_TOOLS,
-        capabilityScope: "Sixteen SDK calculation and eighteen local system-method subsets, plus projected user-extension metadata; separate runtime admission, no project access, startup authorization or legacy-route admission." } : {}),
+        capabilityScope: "Separately admitted calculations, system/extension/editor-shell observations and ordinary existing-profile launch. No project navigation, design changes or legacy-route admission; launch does not prove isolation." } : {}),
     },
     upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
       ...await engine.status(), capabilities: { sdkCalculations: { tool: "easyeda_control_calculate", runtimeAdmissionRequired: true },
         sdkSystem: { tool: "easyeda_control_system", runtimeAdmissionRequired: true },
         startupExtensions: { tool: "easyeda_control_extensions", runtimeAdmissionRequired: true, launchQualification: false },
+        editorShell: { tool: "easyeda_control_editor_shell", runtimeAdmissionRequired: true, readinessProof: false },
+        ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
         designAccess: { enabled: false }, navigation: { enabled: false } },
     },
     bridgeConnection: upstream.bridgeConnectionDiagnostics(),
@@ -2257,6 +2267,53 @@ registerFacadeTool(
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   serializedLiveGuarded(async (input) => ({ result: await readSdkSystem(engine, input.request, input.expectedFingerprint) })),
+);
+
+registerFacadeTool(
+  "easyeda_control_launch",
+  {
+    title: "Launch the reviewed EasyEDA application",
+    description: "Launch the exact reviewed EasyEDA executable with no arguments in its existing profile. Requires explicit launch/profile-effect confirmations and a unique operation ID. Ordinary startup can load extensions/project lists, use the network and write preferences/cache; it is not an isolated or project-free session. Journals before dispatch, retains Windows root/Job handles, and never retries an uncertain attempt. Inspect retained state or observe termination without closing, killing, opening a design, saving or discarding. Lost handles leave unresolved attempts blocked across restart. Use offline launch/launch-validate first. Successful launch is not bridge authentication or Start Page observation.",
+    inputSchema: { request: z.unknown().pipe(ordinaryLaunchRequestSchema) },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  },
+  serializedGuarded(async ({ request }) => {
+    if (ordinaryLaunchCoordinator === undefined) {
+      const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"];
+      if (assetsRoot === undefined) { throw new Error("Configure the installed EasyEDA assets before ordinary launch."); }
+      const pluginRoot = resolve(import.meta.dirname, "../..");
+      ordinaryLaunchCoordinator = new OrdinaryLaunchCoordinator({
+        assetsRoot, pluginRoot,
+        assertAllowed: async (): Promise<void> => {
+          if (closedSymbolIndexReservation !== undefined || scheduledShutdown !== undefined ||
+              windowsRuntime !== ordinaryLaunchRuntime || process.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+            throw new Error("Ordinary launch runtime allocation is unavailable or changed.");
+          }
+          await engine.assertBridgeDispatchAllowed();
+        },
+        allocateRuntime: (identity): WindowsControlRuntime => {
+          assertOrdinaryRuntimeAllocationAllowed();
+          if (windowsRuntime !== undefined || scheduledShutdown !== undefined) { throw new Error("A Windows runtime is already allocated."); }
+          const runtime = new WindowsControlRuntime({ upstream, pluginRoot, assetsRoot, ...identity });
+          ordinaryLaunchRuntime = runtime;
+          windowsRuntime = runtime;
+          return runtime;
+        },
+      });
+    }
+    return { result: await ordinaryLaunchCoordinator.run(request) };
+  }),
+);
+
+registerFacadeTool(
+  "easyeda_control_editor_shell",
+  {
+    title: "Observe EasyEDA editor tab counts",
+    description: "Observe bounded container/tab counts and registered Start Page flags on the separately pinned current UI/API. Requires authenticated bridge and two owner-stable matching samples. Returns no project names, paths, document IDs or raw tab payloads. Does not prove visible windows, completed restoration, project closure, safe startup or permission to navigate. No launch, selection, open, close, settings or Save action. Inspect offline editor-shell/editor-shell-validate first.",
+    inputSchema: { request: z.unknown().pipe(editorShellRequestSchema), expectedFingerprint: privateFingerprintSchema },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+  },
+  serializedLiveGuarded(async (input) => ({ result: await readEditorShell(engine, input.request, input.expectedFingerprint) })),
 );
 
 registerFacadeTool(

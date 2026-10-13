@@ -19,7 +19,15 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261013182500` adds `easyeda_control_extensions`, a fixed
+Update `0.3.0+codex.20261013193500` adds `easyeda_control_launch` for journaled, fixed no-argument
+startup in the existing EasyEDA profile, plus `easyeda_control_editor_shell` for
+bounded tab counts and registered Start Page flags. Startup can run extensions,
+load project lists and change cache/preferences; it is not profile isolation.
+Launch, bridge authentication and editor observations are reported separately.
+An uncertain launch is never automatically repeated. See the
+[ordinary startup release](docs/ordinary-startup-release-2026-10-13.md).
+
+Previous update `0.3.0+codex.20261013182500` added `easyeda_control_extensions`, a fixed
 read-only observation of selected metadata in the initialized extension index.
 It excludes code, user configuration and account identifiers. The index can lag
 an account switch and omits builtin/loaded activation state, so it cannot qualify
@@ -34,12 +42,14 @@ remain under `easyeda_control_calculate`. Installed161000 passed one triangle
 area and one nested-square subtraction with a complete hole; these cases do not
 validate all methods or this newer source generation.
 
-The older reviewed tuple exposes 31 tools. A configured newer or unknown tuple
-exposes six: API reference, local discovery, status, calculations, local
-system methods and the fixed extension-index observer. The internal mode name remains `calculation-only`. Execution
-separately requires the exact reviewed EasyEDA 3.2.206 / API 0.3.50 hashes and an
-authenticated session. No project reader, launcher, navigation or writer is
-enabled on the new version. Seven skills remain included. See the
+The older reviewed tuple exposes 33 tools. A configured newer or unknown tuple
+exposes eight: API reference, local discovery, status, calculations, local
+system methods, extension-index/editor-shell observers and ordinary launch.
+The internal mode name remains `calculation-only`. Bridge execution separately
+requires exact reviewed EasyEDA 3.2.206 / API 0.3.50 hashes and authentication;
+launch instead verifies its installed executable/app/helper identities.
+No project reader, navigation or design writer is enabled on the new version.
+Seven skills remain included. See the
 [system-method release](docs/system-release-2026-10-13.md) for limits and backlog.
 
 When a trusted machine profile selects missing or invalid external
