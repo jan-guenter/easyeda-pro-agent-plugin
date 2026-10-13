@@ -25,6 +25,7 @@ import type {
   WindowsAuthorityLaunch,
   WindowsAuthorityStartOptions,
   WindowsAuthoritySupervisor,
+  WindowsLaunchTerminationObservation,
   WindowsProcessProbe,
 } from "./windows-authority.ts";
 
@@ -37,6 +38,9 @@ export interface WindowsControlRuntimeOptions {
   readonly pluginRoot: string;
   readonly assetsRoot: string;
   readonly reviewedExecutionScopeSha256: string;
+  /** Capability-specific executable admission; never supplied by a tool caller. */
+  readonly expectedExecutableSha256?: string;
+  readonly expectedHelperSha256?: string;
   readonly wslDistribution?: string;
   readonly powershellExecutable?: string;
 }
@@ -226,6 +230,12 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
 
   public constructor(options: WindowsControlRuntimeOptions, dependencies: WindowsRuntimeDependencies = {}) {
     if (!HASH.test(options.reviewedExecutionScopeSha256)) { throw new Error("Reviewed Windows execution scope identity is missing."); }
+    if (options.expectedExecutableSha256 !== undefined && !HASH.test(options.expectedExecutableSha256)) {
+      throw new Error("Reviewed Windows executable identity is invalid.");
+    }
+    if (options.expectedHelperSha256 !== undefined && !HASH.test(options.expectedHelperSha256)) {
+      throw new Error("Reviewed Windows helper identity is invalid.");
+    }
     this.options = options;
     this.dependencies = dependencies;
     this.paths = deriveWindowsRuntimePaths(options);
@@ -236,26 +246,59 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
     if (this.state === "released" || this.state === "launching" || this.state === "launch-unknown") { throw new Error("Windows runtime cannot start another application from its current state."); }
     this.state = "launching";
     try {
-      if (this.supervisor === undefined) {
-        const hashExecutable = this.dependencies.hashExecutable ?? hashInstalledExecutable;
-        const executableSha256 = await hashExecutable(this.paths.executablePath, this.paths.assetsRoot);
-        if (!HASH.test(executableSha256)) { throw new Error("Installed EasyEDA executable identity is invalid."); }
-        this.executableSha256 = executableSha256;
-        const start = this.dependencies.startSupervisor ?? startWindowsAuthoritySupervisor;
-        this.supervisor = await start({
-          powershellExecutable: this.paths.powershellExecutable, helperPath: this.paths.helperPath, helperWindowsPath: this.paths.helperWindowsPath,
-          expectedExecutable: this.paths.executableWindowsPath, expectedExecutableSha256: executableSha256,
-          reviewedExecutionScopeSha256: this.options.reviewedExecutionScopeSha256,
-          performAuthenticatedProcessProbe: (session, probe) => performWindowsAuthenticatedProcessProbe(this.options.upstream, session, probe),
-        });
-      }
-      const launch = await this.supervisor.launch({ confirmLaunch: true });
+      const supervisor = await this.ensureSupervisor();
+      const launch = await supervisor.launch({ confirmLaunch: true });
       this.currentLaunch = structuredClone(launch);
       this.state = "owned";
       const returned = structuredClone(launch);
-      this.clockLaunches.set(returned, { original: launch, snapshot: canonicalJson(returned), supervisor: this.supervisor });
+      this.clockLaunches.set(returned, { original: launch, snapshot: canonicalJson(returned), supervisor });
       return returned;
     } catch (error) { this.state = "launch-unknown"; throw error; }
+  }
+
+  private async ensureSupervisor(): Promise<WindowsAuthoritySupervisor> {
+    if (this.supervisor !== undefined) { return this.supervisor; }
+    const expectedState = this.state;
+    const hashExecutable = this.dependencies.hashExecutable ?? hashInstalledExecutable;
+    const executableSha256 = await hashExecutable(this.paths.executablePath, this.paths.assetsRoot);
+    if (!HASH.test(executableSha256)) { throw new Error("Installed EasyEDA executable identity is invalid."); }
+    if (this.options.expectedExecutableSha256 !== undefined && executableSha256 !== this.options.expectedExecutableSha256) {
+      throw new Error("Installed EasyEDA executable differs from the reviewed launch profile.");
+    }
+    this.executableSha256 = executableSha256;
+    if (this.state !== expectedState) { throw new Error("Windows runtime changed before helper startup."); }
+    const start = this.dependencies.startSupervisor ?? startWindowsAuthoritySupervisor;
+    this.supervisor = await start({
+      powershellExecutable: this.paths.powershellExecutable, helperPath: this.paths.helperPath, helperWindowsPath: this.paths.helperWindowsPath,
+      expectedExecutable: this.paths.executableWindowsPath, expectedExecutableSha256: executableSha256,
+      ...(this.options.expectedHelperSha256 === undefined ? {} : { expectedHelperSha256: this.options.expectedHelperSha256 }),
+      reviewedExecutionScopeSha256: this.options.reviewedExecutionScopeSha256,
+      performAuthenticatedProcessProbe: (session, probe) => performWindowsAuthenticatedProcessProbe(this.options.upstream, session, probe),
+    });
+    if (this.state !== expectedState) {
+      const acquired = this.supervisor;
+      this.supervisor = undefined;
+      await acquired.release();
+      throw new Error("Windows runtime changed during helper startup.");
+    }
+    return this.supervisor;
+  }
+
+  /** Starts only the proof helper, not EasyEDA. Existing instances are observed
+   * without adoption, close, bridge calls or a consumed application attempt.
+   */
+  public async observeExistingApplication(): Promise<{ readonly running: boolean }> {
+    if (this.state !== "not-launched" && this.state !== "owned") {
+      throw new Error("Windows runtime cannot observe an existing application from its current state.");
+    }
+    const previousState = this.state;
+    const supervisor = await this.ensureSupervisor();
+    if (supervisor.observeExistingApplication === undefined) { throw new Error("Existing application observation is unavailable."); }
+    const observation = await supervisor.observeExistingApplication();
+    if (this.supervisor !== supervisor || this.state !== previousState || typeof observation.running !== "boolean") {
+      throw new Error("Windows runtime changed during existing application observation.");
+    }
+    return observation;
   }
 
   /** Exact original runtime return only. This reads a clock fact, never launches. */
@@ -341,6 +384,24 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
     const supervisor = this.requireSupervisor();
     if (this.currentLaunch === null) { throw new Error("Windows application launch identity is missing."); }
     await supervisor.requestNormalClose({ confirmNormalClose: true, windowHandle, launch: structuredClone(this.currentLaunch) });
+  }
+
+  /** Read only: a true result requires this helper's original root and Job to
+   * have exited. It never requests closure or reacquires lost process handles.
+   */
+  public async observeLaunchTermination(): Promise<WindowsLaunchTerminationObservation> {
+    const supervisor = this.requireSupervisor();
+    const launch = structuredClone(this.currentLaunch);
+    if (launch === null || supervisor.observeLaunchTermination === undefined) {
+      throw new Error("Retained launch termination observation is unavailable.");
+    }
+    const observation = await supervisor.observeLaunchTermination(launch);
+    if (this.requireSupervisor() !== supervisor || canonicalJson(this.currentLaunch) !== canonicalJson(launch) ||
+        observation.jobId !== launch.jobId || observation.helperInstance !== launch.helperInstance ||
+        typeof observation.terminated !== "boolean") {
+      throw new Error("Retained launch identity changed during termination observation.");
+    }
+    return observation;
   }
 
   public async release(): Promise<void> {

@@ -47,7 +47,7 @@ interface QualifiedClockSource {
 const qualifiedClockSources = new WeakMap<WindowsAuthorityTransport, QualifiedClockSource>();
 const originalClocks = new WeakMap<object, IssuedWindowsClockObservation>();
 const issuedClocks = new WeakMap<object, { readonly observation: IssuedWindowsClockObservation; readonly verify: () => Promise<void> }>();
-const REVIEWED_CLOCK_HELPER_SHA256 = "5a5095d463afcf8f595c3085ec7d5f377baa2e545b623bca81205137c602e608";
+const REVIEWED_CLOCK_HELPER_SHA256 = "6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca";
 function freezeClockData<T>(value: T): T {
   if (value !== null && typeof value === "object") {
     for (const child of Object.values(value)) { freezeClockData(child); }
@@ -124,6 +124,13 @@ export interface WindowsAuthorityLaunch {
   readonly jobId: string;
   readonly helperInstance: string;
   readonly root: ExecutionAuthorityProcessIdentity;
+}
+
+/** Original retained launch liveness only, not closed-design or persistence proof. */
+export interface WindowsLaunchTerminationObservation {
+  readonly jobId: string;
+  readonly helperInstance: string;
+  readonly terminated: boolean;
 }
 
 
@@ -252,6 +259,10 @@ export interface WindowsAuthoritySupervisor extends RuntimeExecutionAuthorityVal
   readonly releaseCapture: (evidence: ExecutionAuthorityEvidence) => Promise<void>;
   /** Explicit lifecycle action. Refuses an existing unsupervised instance. */
   readonly launch: (confirmation: { readonly confirmLaunch: true }) => Promise<WindowsAuthorityLaunch>;
+  /** Ordinary startup preflight only; any running same-name app refuses launch. */
+  readonly observeExistingApplication?: () => Promise<{ readonly running: boolean }>;
+  /** Reads the original root handle and Job twice; never closes or rebinds a process. */
+  readonly observeLaunchTermination?: (launch: WindowsAuthorityLaunch) => Promise<WindowsLaunchTerminationObservation>;
   /** Dispatches WM_CLOSE only. A prompt or surviving process is not resolved. */
   readonly requestNormalClose: (input: {
     readonly confirmNormalClose: true;
@@ -267,6 +278,8 @@ export interface WindowsAuthorityStartOptions extends Omit<WindowsAuthorityPolic
   readonly helperPath: string;
   /** Explicit Windows/UNC spelling of that same reviewed helper. */
   readonly helperWindowsPath: string;
+  /** Internal capability pin checked again immediately before helper startup. */
+  readonly expectedHelperSha256?: string;
 }
 
 interface CaptureReceipt {
@@ -912,6 +925,57 @@ export function createWindowsAuthoritySupervisor(
         launchSha256: sha256Json(launch) });
       return launch;
     },
+    async observeExistingApplication() {
+      const epoch = lifecycleEpoch;
+      function current(): void {
+        requireOwned();
+        if (lifecycleEpoch !== epoch || policy.revalidateClosedSessionHelper !== reviewedHelperCheck ||
+            transport.assertClosedSessionAvailable !== retainedTransportCheck) {
+          throw new Error("Existing application observation lost its original supervisor ownership.");
+        }
+        retainedTransportCheck?.();
+      }
+      current();
+      await reviewedHelperCheck?.();
+      current();
+      const response = record(await transport.request({ action: "observe-existing-application", executable }));
+      current();
+      await reviewedHelperCheck?.();
+      current();
+      if (Object.keys(response).length !== 1 || typeof response["running"] !== "boolean") {
+        throw new Error("Existing application observation is malformed.");
+      }
+      return { running: response["running"] };
+    },
+    async observeLaunchTermination(launch) {
+      const epoch = lifecycleEpoch, launchText = canonicalJson(launch);
+      function current(): void {
+        requireOwned();
+        if (currentLaunch === undefined || canonicalJson(currentLaunch) !== launchText ||
+            canonicalJson(launch) !== launchText || lifecycleEpoch !== epoch ||
+            policy.revalidateClosedSessionHelper !== reviewedHelperCheck ||
+            transport.assertClosedSessionAvailable !== retainedTransportCheck) {
+          throw new Error("Launch termination observation requires the unchanged original supervised generation.");
+        }
+        retainedTransportCheck?.();
+      }
+      current();
+      await reviewedHelperCheck?.();
+      current();
+      const response = record(await transport.request({
+        action: "observe-launch-termination", jobId: launch.jobId, helperInstance: launch.helperInstance,
+        rootPid: launch.root.pid, rootStartIdentity: launch.root.startIdentity,
+      }));
+      current();
+      await reviewedHelperCheck?.();
+      current();
+      if (Object.keys(response).toSorted().join(",") !== "helperInstance,jobId,terminated" ||
+          response["jobId"] !== launch.jobId || response["helperInstance"] !== launch.helperInstance ||
+          typeof response["terminated"] !== "boolean") {
+        throw new Error("Retained launch termination observation is malformed or belongs to another owner.");
+      }
+      return { jobId: launch.jobId, helperInstance: launch.helperInstance, terminated: response["terminated"] };
+    },
     async requestNormalClose(input) {
       requireOwned();
       if (!input.confirmNormalClose || currentLaunch === undefined ||
@@ -948,6 +1012,9 @@ export async function startWindowsAuthoritySupervisor(options: WindowsAuthorityS
   }
   const helperSha256 = createHash("sha256").update(await readFile(options.helperPath)).digest("hex");
   windowsPath(options.helperWindowsPath, /^(?:[A-Za-z]:\\|\\\\)[^"\r\n]+\.ps1$/u);
+  if (options.expectedHelperSha256 !== undefined && hash(options.expectedHelperSha256) !== helperSha256) {
+    throw new Error("Windows authority helper differs from the reviewed capability pin.");
+  }
   const child = spawn(options.powershellExecutable, [
     "-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", options.helperWindowsPath,
   ], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });

@@ -13,7 +13,61 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Candidate182500: extension-index observer and startup investigation
+### Candidate193500: ordinary launch and editor-shell observation
+
+Previous182500 is published and installed through PR14/mainb0cd79a89d2f806d99539278e50ef3af8ed44c62.
+Required PR CI38446281459 and main CI38447849023 passed all10jobs;9777 facade
+passes/five platform skips/424 bridge passes. Exact installed1134files,
+22054477bytes/modes and inventory097b34eee0eefab4e378ce2ed720cacb0499dfe13906247f2f708af89b21445c
+were verified. Do not repeat delivery. Fresh facade105403 loads182500/runtime
+7839d149 with no implementation drift. Offline extensions lookup/validation
+passed. Status and one follow-up at122s both observed no bridge upgrades;
+digests0a000592a01b09ff47923d81a28a4c1780715855c22860dfc6bbca45f8183536
+andcc1b9dfbc1083bd2345965bac6d4b07d6c55f493e8949f40ce8110059254391d.
+No connected utility execution occurred. Computer Use again failed before any
+Windows action because its adapter rejected the WSL working-directory URI.
+App state remains unknown; no alternative UI automation or repeated polling.
+
+Startup scope correction: a closed-profile extension/code inventory and builtin
+activation proof are prerequisites for isolated or fully qualified startup,
+not for ordinary existing-profile startup already authorized by the user.
+The new separate launcher explicitly discloses profile/cache/network/extension
+effects. It makes no project-free or production-file-access exclusion claim.
+Do not expose legacy runtime routes or weaken their design/navigation guards.
+
+Candidate193500 implements easyeda_control_launch with exact installed binary,
+app/package/editor selector and helper pins, fixed no-argument startup, a
+read-only existing-process preflight and durable per-operation intent/results.
+Retained original root/Job observations permit later launch after termination;
+lost handles and ambiguous dispatch remain blocked across restart. The ordinary
+launch journal is separate from consumed C10 and does not authorize recovery.
+The helper's new fixed process/termination observers do not close, kill, adopt
+or publish a clock/persistence proof. Current helper SHA6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca,
+29979bytes; historical recorded-native helper pins are unchanged.
+
+easyeda_control_editor_shell adds bounded current UI/API tab/container counts
+and registered Start Page flags, with two owner-stable samples and no private
+tab payload. It does not prove visibility, completed restoration, project
+closure, safe navigation or CAD/persistence state. Offline schemas/validation
+cover both tools. Eight restricted tools/33legacy/seven skills; public SDK
+inventory unchanged774/211public/30native/82blocked/451omitted,308guardedroutes/
+94blocked/twopartial. See docs/ordinary-startup-release-2026-10-13.md and its
+research links for implementation, remaining limits and delivery evidence.
+
+Local148focused/integration and424bridge tests pass; fulltypes/strict type-aware
+lint are clean. All179repository/privacy and77package checks and seven custom/officialskillvalidators
+pass;151registry signatures/40attestations verify and auditfound0vulnerabilities.
+Source320 projection9e71a630c6241d33527a91322305769ef38fdc894aa3cfd5ddd733e77348550b;
+runtime3 projection002d61cc1362c5dafc60cac6db0327109b86902eaefb089156a89df3fd78c715.
+Independent reviews accept the scoped reader, helper, coordinator and integration.
+External compatibilitymanifest fields remain unchanged.
+RequiredCI/publication/install are pending at this source snapshot. Consult
+the release PR receipt before repeating completed delivery. The loaded182500
+host remains intact. New installed methods need a fresh host; no competing
+facade, cache patch, bridge rebuild/import, project access, CAD/Save/settings,
+C10 replay or production-record edit occurred.
+
+### Historical candidate182500: extension-index observer and startup investigation
 
 Previous170000 is published and installed through PR13/main411f7c583b9c7ef402fe964768acafb9f0c902f2.
 Required PR CI38436512407 and main CI38438396435 passed all10jobs;9768 facade

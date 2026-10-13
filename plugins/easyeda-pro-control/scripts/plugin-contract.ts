@@ -6,6 +6,8 @@ export const FACADE_TOOL_NAMES = [
   "easyeda_control_calculate",
   "easyeda_control_system",
   "easyeda_control_extensions",
+  "easyeda_control_launch",
+  "easyeda_control_editor_shell",
   "easyeda_control_status", "easyeda_control_discover", "easyeda_control_context",
   "easyeda_control_design", "easyeda_control_library", "easyeda_control_runtime", "easyeda_control_native_ui", "easyeda_control_check",
   "easyeda_control_validate_closed_symbol",

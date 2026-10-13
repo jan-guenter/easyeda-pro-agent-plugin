@@ -10,7 +10,7 @@ import { assertIssuedWindowsClockObservation, createWindowsAuthoritySupervisor, 
 import type { WindowsAuthorityTransport } from "../src/windows-authority.ts";
 import { clockEngineFixture, clockTrackedJournal } from "./helpers/windows-clock-engine-fixture.ts";
 
-const HELPER_SHA256 = "5a5095d463afcf8f595c3085ec7d5f377baa2e545b623bca81205137c602e608";
+const HELPER_SHA256 = "6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca";
 function terminationBody(source: string): string {
   const start = source.indexOf("  async function proveTerminated(");
   const end = source.indexOf("  /** Revalidation is intentionally separate", start);

@@ -7,6 +7,7 @@ export type FacadeMode = "legacy-reviewed" | "calculation-only";
 export const CALCULATION_ONLY_TOOLS = Object.freeze([
   "easyeda_control_api", "easyeda_control_discover", "easyeda_control_status", "easyeda_control_calculate",
   "easyeda_control_system", "easyeda_control_extensions",
+  "easyeda_control_launch", "easyeda_control_editor_shell",
 ]);
 
 export function configuredFacadeMode(environment: Readonly<Record<string, string | undefined>>): FacadeMode {

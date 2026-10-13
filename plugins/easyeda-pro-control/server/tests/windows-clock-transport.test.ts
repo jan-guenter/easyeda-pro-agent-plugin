@@ -105,6 +105,33 @@ void test("wrong capture binding refuses before adding an observation", async ()
   await assert.rejects(wrapper.transport.request({ action: "capture", bindingSha256: "1".repeat(64) }), /CLOCK_RECEIPT_REFUSED/u);
   assert.deepEqual(wrapper.observations(), []);
 });
+void test("maintained supervisor passes ordinary preflight and termination through clocked transport without clock attachments", async () => {
+  const f = fixture(), wrapper = createClockedTransport(f.transport, SOURCE);
+  const supervisor = createWindowsAuthoritySupervisor(wrapper.transport, {
+    helperSha256: SOURCE.helperSourceSha256, expectedExecutable: "C:\\Synthetic\\easyeda-pro.exe",
+    expectedExecutableSha256: "d".repeat(64), reviewedExecutionScopeSha256: SOURCE.executionScopeSha256,
+  });
+  const launchResponse = f.response;
+  const preflight = supervisor.observeExistingApplication;
+  assert.ok(preflight);
+  f.response = { running: false };
+  assert.deepEqual(await preflight(), { running: false });
+  assert.deepEqual(f.records[0], { action: "observe-existing-application", executable: "C:\\Synthetic\\easyeda-pro.exe" });
+  assert.deepEqual(wrapper.observations(), []);
+  f.response = launchResponse;
+  const launch = await supervisor.launch({ confirmLaunch: true });
+  const observe = supervisor.observeLaunchTermination;
+  assert.ok(observe);
+  f.response = { jobId: JOB, helperInstance: HELPER, terminated: true };
+  assert.deepEqual(await observe(launch), f.response);
+  assert.deepEqual(f.records.map((request) => request["action"]), ["observe-existing-application", "clocked-launch", "observe-launch-termination"]);
+  assert.deepEqual(f.records[2], {
+    action: "observe-launch-termination", jobId: JOB, helperInstance: HELPER,
+    rootPid: ROOT.pid, rootStartIdentity: ROOT.startIdentity,
+  });
+  assert.deepEqual(wrapper.observations().map((observation) => observation.phase), ["launch"]);
+  assert.equal(wrapper.originalAttachment(f.response), undefined);
+});
 for (const extra of [{ schema: "other" }, { unexpected: true }]) {
   void test(`malformed clock envelope refuses ${Object.keys(extra).join(",")}`, async () => {
     const f = fixture(); Object.assign(f.response, extra); const wrapper = createClockedTransport(f.transport, SOURCE);
