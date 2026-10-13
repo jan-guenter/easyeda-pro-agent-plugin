@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "5a12ad8c06da5191500c24438fea753fec05eb51d19345170f692caafc23a556";
+const __easyedaBundlePairId = "e14b320266b93b69183d63604b345ce5f1a37c80c254fd748149954854cc5127";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -68639,7 +68639,7 @@ var init_windows_authority = __esm({
     qualifiedClockSources = /* @__PURE__ */ new WeakMap();
     originalClocks = /* @__PURE__ */ new WeakMap();
     issuedClocks = /* @__PURE__ */ new WeakMap();
-    REVIEWED_CLOCK_HELPER_SHA256 = "6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca";
+    REVIEWED_CLOCK_HELPER_SHA256 = "811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65";
     CLOSED_SESSION_PROOF_BRAND = /* @__PURE__ */ Symbol("closed-session-termination-proof");
     terminationObservationOwners = /* @__PURE__ */ new WeakMap();
     closedProofOwners = /* @__PURE__ */ new WeakMap();
@@ -68934,7 +68934,7 @@ var init_closed_symbol_recorded_native = __esm({
     init_closed_symbol_native_profile();
     init_windows_clock_transport();
     HELPER = "5a5095d463afcf8f595c3085ec7d5f377baa2e545b623bca81205137c602e608";
-    CURRENT_HELPER = "6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca";
+    CURRENT_HELPER = "811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65";
     HASH8 = /^[a-f0-9]{64}$/u;
     ID = /^[a-f0-9]{32}$/u;
     TOKEN = /^[A-Za-z0-9_-]{43}$/u;
@@ -91151,7 +91151,7 @@ var init_ordinary_launch = __esm({
         { relativePath: "../editor.ini", bytes: 8031, sha256: "cb18dd85262f44dedd65487deed4e1b1fac68eb90ad6a99ca86ba163efe655b6" }
       ],
       // Updated together with the reviewed helper's fixed launch observer.
-      helper: { relativePath: "scripts/windows-authority.ps1", sha256: "6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca" }
+      helper: { relativePath: "scripts/windows-authority.ps1", sha256: "811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65" }
     };
     operationIdSchema = external_exports.string().min(1).max(80).regex(/^[a-z0-9][a-z0-9_-]*$/u);
     digestSchema = external_exports.string().regex(/^[a-f0-9]{64}$/u);
@@ -115427,8 +115427,10 @@ async function verifyUiImplementation2(assetsRoot) {
   const path5 = join55(assetsRoot, uiImplementation2.relativePath);
   const before = await lstat33(path5, { bigint: true });
   needUi2(before.isFile() && !before.isSymbolicLink() && before.size > 0n && before.size <= 128n * 1024n * 1024n && await realpath21(path5) === path5);
-  const file3 = await open32(path5, constants20.O_RDONLY | constants20.O_NOFOLLOW);
+  const file3 = await open32(path5, constants20.O_RDONLY | constants20.O_NOFOLLOW | constants20.O_NONBLOCK);
   try {
+    const opened = await file3.stat({ bigint: true });
+    needUi2(opened.isFile() && before.dev === opened.dev && before.ino === opened.ino && before.size === opened.size && before.mtimeNs === opened.mtimeNs && before.ctimeNs === opened.ctimeNs);
     const hash35 = createHash40("sha256");
     let consumed = 0n;
     for await (const chunk of file3.createReadStream({ autoClose: false })) {

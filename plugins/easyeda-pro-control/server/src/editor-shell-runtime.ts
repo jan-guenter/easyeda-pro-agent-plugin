@@ -27,9 +27,12 @@ async function verifyUiImplementation(assetsRoot: string): Promise<void> {
   const path = join(assetsRoot, uiImplementation.relativePath);
   const before = await lstat(path, { bigint: true });
   needUi(before.isFile() && !before.isSymbolicLink() && before.size > 0n && before.size <= 128n * 1024n * 1024n && await realpath(path) === path);
-  // oxlint-disable-next-line eslint/no-bitwise -- Refuse a substituted installed UI bundle symlink.
-  const file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+  // oxlint-disable-next-line eslint/no-bitwise -- Refuse symlinks and avoid blocking if a FIFO replaces the inspected UI bundle.
+  const file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   try {
+    const opened = await file.stat({ bigint: true });
+    needUi(opened.isFile() && before.dev === opened.dev && before.ino === opened.ino && before.size === opened.size &&
+      before.mtimeNs === opened.mtimeNs && before.ctimeNs === opened.ctimeNs);
     const hash = createHash("sha256");
     let consumed = 0n;
     for await (const chunk of file.createReadStream({ autoClose: false })) {

@@ -23,7 +23,7 @@ function fingerprint(): Bag {
       publicApi: { ...m.installedBundles.publicApi, implementationPath: '/synthetic/api.js', adapterPath: '/synthetic/adapter.js', declarationsPath: '/synthetic/api.d.ts' } } };
 }
 const helper = '5a5095d463afcf8f595c3085ec7d5f377baa2e545b623bca81205137c602e608';
-const currentHelper = '6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca';
+const currentHelper = '811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65';
 function sample(time: number): ReturnType<typeof validateClockSample> { return { schema: 'easyeda-pro-control.windows-clock-sample.v1', utcBeforeTicks: String(621_355_968_000_000_000n + BigInt(time) * 10_000n),
   utcAfterTicks: String(621_355_968_000_000_000n + BigInt(time + 1) * 10_000n), qpcBefore: String(time), qpcAfter: String(time + 1), qpcFrequency: '1000',
   highResolution: true, localOffsetMinutes: 120, zoneRulesSha256: 'a'.repeat(64) }; }

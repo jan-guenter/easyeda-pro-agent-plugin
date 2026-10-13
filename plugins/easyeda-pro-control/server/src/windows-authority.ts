@@ -47,7 +47,7 @@ interface QualifiedClockSource {
 const qualifiedClockSources = new WeakMap<WindowsAuthorityTransport, QualifiedClockSource>();
 const originalClocks = new WeakMap<object, IssuedWindowsClockObservation>();
 const issuedClocks = new WeakMap<object, { readonly observation: IssuedWindowsClockObservation; readonly verify: () => Promise<void> }>();
-const REVIEWED_CLOCK_HELPER_SHA256 = "6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca";
+const REVIEWED_CLOCK_HELPER_SHA256 = "811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65";
 function freezeClockData<T>(value: T): T {
   if (value !== null && typeof value === "object") {
     for (const child of Object.values(value)) { freezeClockData(child); }

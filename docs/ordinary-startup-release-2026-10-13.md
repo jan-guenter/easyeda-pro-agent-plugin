@@ -66,8 +66,11 @@ produced correctly pinned receipts that the old-only reader rejected. The fix
 explicitly recognizes both reviewed helper generations, retains the old pin and
 fixtures, derives each policy from its original helper, and rejects mixed helper
 generations. This remains data-only decoding and cannot restore authority. The
-helper comparison proved all legacy code unchanged except retaining the same
-launch result. The new branches are fixed read-only observers.
+helper comparison proved clock, capture and retained termination code unchanged.
+Launch retains the same returned record and now conservatively rejects any live
+same-name process after hashing, immediately before Job creation. An external
+process can still race the final check; this is not an operating-system-wide
+singleton lock. The new branches are fixed read-only observers.
 
 The same CI run exceeded a15-second timeout in a managed-double PowerShell hover
 test, with no output or assertion failure. That synthetic-only allowance is now
@@ -76,10 +79,18 @@ All196 focused regression cases pass, including actual-producer replay and both
 hover leaves. Final types, strict zero-warning lint and rebuilt compatibility
 projections pass. Historical fixtures remain unchanged.
 
+PR review also found that a substituted FIFO could block the editor-shell bundle
+open. The reader now opens nonblocking and verifies the descriptor is the original
+regular file before streaming. Both review findings have focused regressions.
+The final helper compiles on Windows without launching EasyEDA; this is build
+validation, not live startup evidence.
+Final verification passed222 helper/data-reader cases and four editor-shell
+runtime cases, full types, strict zero-warning lint and rebuilt compatibility.
+
 Source320 projection is
-`c67de23779b8e137fbc778d5418580dd8c3e1085bd15ee484b676b6abc13241d`;
+`9a384207f7e66401416d5bf2c70203889ec16d249b0c3efcf56102e2f5dff11f`;
 runtime3 projection is
-`d62f7f13b13b665a6d7fe36ee96d54117559a18c53b0124cd666111f183bc4fd`.
+`b34d6e1228e7404d0c71951ee002e7a8a577a784362c01e352b2c3a8b8114498`.
 Only facade projections and review timestamp changed in the compatibility
 manifest. External runtime/bridge pins remain unchanged. The native helper's
 deliberate new source pin is recorded separately in its launch/clock profiles.
@@ -96,7 +107,11 @@ the existing host to expose new methods.
 2. Supported ordinary-launch reconciliation after lost helper ownership. Current
    root/Job termination proof cannot be reconstructed across facade restart.
 3. Current-version project/context readers and navigation with their actual
-   preference and backup effects reviewed.
+   preference and backup effects reviewed. Start with an identity-only active
+   document/project/branch observer, preserving no-active-document semantics and
+   returning no design content. The old context getters already exist but are
+   version-blocked; restoring their whole legacy runtime is not required for this
+   smaller adapter.
 4. Native structure-job completion and full SQL-effect proof before restoring
    blocked schematic/symbol/PCB lifecycles and eight metadata writers.
 5. Remaining SDK families and broader geometric domains where feasible.

@@ -8,10 +8,11 @@ type Bag = Readonly<Record<string, unknown>>;
 type JournalBinding = Pick<ClosedJournal, 'operationId' | 'plan'>;
 type CapturePhase = 'closed-baseline' | 'closed-edit' | 'closed-verification';
 const HELPER = '5a5095d463afcf8f595c3085ec7d5f377baa2e545b623bca81205137c602e608';
-// The ordinary-launch revision adds fixed observers and retains the launch record.
+// The ordinary-launch revision adds fixed observers, retains the launch record
+// And conservatively rejects any live same-name process before creation.
 // Clock/capture/policy/termination production is unchanged. Both reviewed
 // Generations decode as data only, never as restored execution authority.
-const CURRENT_HELPER = '6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca';
+const CURRENT_HELPER = '811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65';
 function knownHelper(value: unknown): boolean { return value === HELPER || value === CURRENT_HELPER; }
 const HASH = /^[a-f0-9]{64}$/u, ID = /^[a-f0-9]{32}$/u, TOKEN = /^[A-Za-z0-9_-]{43}$/u;
 const EPOCH = 621_355_968_000_000_000n;

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -298,4 +299,17 @@ void test("capability helper pin refuses mismatched repository bytes before spaw
     helperWindowsPath: "C:\\Synthetic\\windows-authority.ps1", powershellExecutable: "/nonexistent/powershell.exe",
     expectedHelperSha256: "0".repeat(64),
   }), /differs from the reviewed capability pin/u);
+});
+
+void test("fixed launch-time process refusal is conservative, after hashing and before Job creation", async () => {
+  const source = await readFile(new URL("../../scripts/windows-authority.ps1", import.meta.url), "utf8");
+  const start = source.indexOf("  if ($request.action -eq 'launch') {");
+  const end = source.indexOf("  if ($request.action -eq 'observe-launch-termination') {", start);
+  assert.ok(start > 0 && end > start);
+  const launch = source.slice(start, end);
+  const guard = launch.indexOf("authority-unsupervised-instance-present");
+  assert.ok(guard > launch.indexOf("authority-executable-hash-mismatch") && guard < launch.indexOf("$job=New-Object"));
+  assert.ok(launch.includes("GetProcessesByName('easyeda-pro')") && launch.includes("if (-not $process.HasExited) {throw 'authority-unsupervised-instance-present'}"));
+  assert.ok(launch.includes("finally {foreach ($process in $existing) {$process.Dispose()}}"));
+  assert.doesNotMatch(launch, /MainModule/u);
 });

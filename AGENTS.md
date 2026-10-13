@@ -42,11 +42,11 @@ Retained original root/Job observations permit later launch after termination;
 lost handles and ambiguous dispatch remain blocked across restart. The ordinary
 launch journal is separate from consumed C10 and does not authorize recovery.
 The helper's new fixed process/termination observers do not close, kill, adopt
-or publish a clock/persistence proof. Current helper SHA6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca,
-29979bytes. The data-only recorded-native reader preserves the historical5a5095d4
-pin and explicitly recognizes6997c1ae, deriving the policy from the selected
+or publish a clock/persistence proof. Current helper SHA811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65,
+30184bytes. The data-only recorded-native reader preserves the historical5a5095d4
+pin and explicitly recognizes811d22ec, deriving the policy from the selected
 helper and rejecting mixed-generation capture receipts. Live qualification
-admits only6997c1ae; historical decoding never restores execution authority.
+admits only811d22ec; historical decoding never restores execution authority.
 
 easyeda_control_editor_shell adds bounded current UI/API tab/container counts
 and registered Start Page flags, with two owner-stable samples and no private
@@ -60,8 +60,8 @@ research links for implementation, remaining limits and delivery evidence.
 Local148focused/integration and424bridge tests pass; fulltypes/strict type-aware
 lint are clean. All179repository/privacy and77package checks and seven custom/officialskillvalidators
 pass;151registry signatures/40attestations verify and auditfound0vulnerabilities.
-Source320 projectionc67de23779b8e137fbc778d5418580dd8c3e1085bd15ee484b676b6abc13241d;
-runtime3 projectiond62f7f13b13b665a6d7fe36ee96d54117559a18c53b0124cd666111f183bc4fd.
+Source320 projection9a384207f7e66401416d5bf2c70203889ec16d249b0c3efcf56102e2f5dff11f;
+runtime3 projectionb34d6e1228e7404d0c71951ee002e7a8a577a784362c01e352b2c3a8b8114498.
 Independent reviews accept the scoped reader, helper, coordinator and integration.
 External compatibilitymanifest fields remain unchanged.
 Initial PR15 CI38455030813 passed the build but exposed the old-only historical
@@ -72,6 +72,14 @@ allowance is now45s, with all assertions and live UI deadlines unchanged.
 The196 focused regression cases pass, including actual-producer replay and both
 hover leaves. Finaltypes/zero-warninglint/build/compatibility pass. No historical
 fixture was rewritten and no existing check was skipped.
+PR review also tightened dispatch-time same-name process refusal after executable
+hashing and made the editor-shell bundle open nonblocking with a regular-file
+descriptor check before reading. The final helper compiles on Windows; this is
+not live launch evidence. Current-version identity-only editor context is the
+next useful reader slice after the installed startup check, not whole-profile
+admission or permission to access a production project.
+Final222 helper/data-reader and four editor-shell runtime cases pass. Fulltypes,
+zero-warninglint and rebuilt compatibility checks pass after both review fixes.
 RequiredCI/publication/install are pending at this source snapshot. Consult
 the release PR receipt before repeating completed delivery. The loaded182500
 host remains intact. New installed methods need a fresh host; no competing

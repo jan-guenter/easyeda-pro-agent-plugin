@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
+import fileSystem, { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
@@ -124,4 +125,33 @@ void test("editor shell changed UI/runtime and invalid results refuse after the 
   const invalid = await runtime({ reply: encoded({ ...payload, startupQualified: true }) });
   await assert.rejects(readEditorShell(invalid.engine, request, invalid.expected));
   for (const fixture of [changed, drifted, invalid]) { assert.equal(fixture.calls.filter((call) => call === "easyeda_execute").length, 1); }
+});
+
+void test("editor shell rejects a FIFO substituted after lstat before reading or dispatching", async (context) => {
+  const fixture = await runtime();
+  const ui = join(fixture.expected.installedBundles.assetsRoot, EDITOR_SHELL_RUNTIME_PROFILE.uiImplementation.relativePath);
+  const originalOpen = fileSystem.open;
+  let closed = 0, opened = 0, statted = 0, streamed = 0;
+  context.mock.method(fileSystem, "open", async (...args: Parameters<typeof originalOpen>): ReturnType<typeof originalOpen> => {
+    if (args[0] !== ui) { return originalOpen(...args); }
+    assert.equal(typeof args[1], "number");
+    // oxlint-disable-next-line eslint/no-bitwise -- Verify that a real substituted FIFO could not block the descriptor open.
+    assert.equal(Number(args[1]) & constants.O_NONBLOCK, constants.O_NONBLOCK);
+    const handle = await originalOpen(...args); opened += 1;
+    const originalClose = handle.close.bind(handle), originalStat = handle.stat.bind(handle);
+    context.mock.method(handle, "stat", async () => {
+      statted += 1;
+      // Model a FIFO descriptor acquired after the successful regular-file lstat.
+      const result = Object.assign(await originalStat({ bigint: true }), { mode: BigInt(constants.S_IFIFO) });
+      assert.equal(result.isFIFO(), true); return result;
+    });
+    context.mock.method(handle, "createReadStream", (): never => { streamed += 1; throw new Error("Unexpected stream read."); });
+    context.mock.method(handle, "close", async (): Promise<void> => { closed += 1; await originalClose(); });
+    return handle;
+  });
+  syncBuiltinESMExports();
+  context.after(() => { context.mock.restoreAll(); syncBuiltinESMExports(); });
+  await assert.rejects(readEditorShell(fixture.engine, request, fixture.expected), /UI implementation differs/u);
+  assert.deepEqual({ opened, statted, streamed, closed }, { opened: 1, statted: 1, streamed: 0, closed: 1 });
+  assert.deepEqual(fixture.calls, ["guard", "status"]);
 });

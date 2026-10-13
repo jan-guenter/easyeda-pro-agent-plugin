@@ -398,9 +398,6 @@ function Handle-Request($request) {
     $expectedHash=Require-Text $request.executableSha256 '^[a-f0-9]{64}$'
     $item=Get-Item -LiteralPath $executable -Force
     if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or $item.FullName -cne $executable -or $item.Name -ine 'easyeda-pro.exe') {throw 'authority-invalid-executable'}
-    foreach ($existing in [Diagnostics.Process]::GetProcessesByName('easyeda-pro')) {
-      try { if ($existing.MainModule.FileName -ieq $executable) {throw 'authority-unsupervised-instance-present'} } finally {$existing.Dispose()}
-    }
     # Deny replacement during creation. The executable remains pinned by the
     # reviewed runtime fingerprint after launch as well.
     $file=[IO.File]::Open($executable,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read)
@@ -408,6 +405,12 @@ function Handle-Request($request) {
       $sha=[Security.Cryptography.SHA256]::Create()
       try {$actual=([BitConverter]::ToString($sha.ComputeHash($file))).Replace('-','').ToLowerInvariant()} finally {$sha.Dispose()}
       if ($actual -cne $expectedHash) {throw 'authority-executable-hash-mismatch'}
+      # Repeat the conservative same-name check after hashing, immediately before
+      # creation. Another installation also blocks; no module inspection needed.
+      $existing=@([Diagnostics.Process]::GetProcessesByName('easyeda-pro'))
+      try {
+        foreach ($process in $existing) {if (-not $process.HasExited) {throw 'authority-unsupervised-instance-present'}}
+      } finally {foreach ($process in $existing) {$process.Dispose()}}
       $job=New-Object EasyedaAuthorityJob
       $script:jobs[$job.Id]=$job
       $script:currentJob=$job

@@ -20,7 +20,7 @@ export const ORDINARY_LAUNCH_PROFILE = {
     { relativePath: "../editor.ini", bytes: 8031, sha256: "cb18dd85262f44dedd65487deed4e1b1fac68eb90ad6a99ca86ba163efe655b6" },
   ],
   // Updated together with the reviewed helper's fixed launch observer.
-  helper: { relativePath: "scripts/windows-authority.ps1", sha256: "6997c1ae903b00d474abf47e65ba0ea5aacb9682f9e8482693fba81db52b71ca" },
+  helper: { relativePath: "scripts/windows-authority.ps1", sha256: "811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65" },
 } as const;
 
 const operationIdSchema = z.string().min(1).max(80).regex(/^[a-z0-9][a-z0-9_-]*$/u);
