@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "386aba6dcaa97b87e7287b19799937db3760b4c36e28f046ab99523318fb7d3c";
+const __easyedaBundlePairId = "d0decba56f6decda4ec36a26118db50b54b1ad42f8054ebc1e45c7359792f23e";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -90139,7 +90139,7 @@ function offlineGuard(handler) {
     try {
       return offlineResult(await handler(input));
     } catch {
-      const details = { ok: false, error: { code: "offline-query-failed", dispatched: false } };
+      const details = { offline: true, ok: false, error: { code: "offline-query-failed", dispatched: false } };
       return { isError: true, content: [{ type: "text", text: JSON.stringify(details) }], structuredContent: details };
     }
   };

@@ -101,12 +101,6 @@ export function inventoryApiDeclarations(source: string): Pick<ApiDeclarationSna
       // oxlint-disable-next-line eslint/no-continue -- A signature continuation is never parsed as an independent declaration.
       continue;
     }
-    const typeMatch = /^\s*(?:declare )?(class|interface|enum|type) ([A-Za-z_]\w*)\b/u.exec(line);
-    if (typeMatch?.[1] !== undefined && typeMatch[2] !== undefined && /^(?:(?:I|E|T)?(?:DMT|LIB|PCB|PNL|SCH|SYS)_|EDA$)/u.test(typeMatch[2])) {
-      const kind = typeMatch[1];
-      if (kind !== "class" && kind !== "interface" && kind !== "enum" && kind !== "type") { throw new Error("Unsupported declaration kind."); }
-      types.push({ name: typeMatch[2], kind, sourceLine: index + 1 });
-    }
     if (!inComment && line.trimStart().startsWith("/*")) { inComment = true; tags = []; }
     if (inComment) {
       for (const match of line.matchAll(/@(public|beta|alpha|internal|deprecated|since)\b([^@]*?)(?:\*\/|$)/gu)) {
@@ -119,6 +113,12 @@ export function inventoryApiDeclarations(source: string): Pick<ApiDeclarationSna
       }
       // oxlint-disable-next-line eslint/no-continue -- Documentation is deliberately excluded from declaration syntax parsing.
       continue;
+    }
+    const typeMatch = /^\s*(?:declare )?(class|interface|enum|type) ([A-Za-z_]\w*)\b/u.exec(line);
+    if (typeMatch?.[1] !== undefined && typeMatch[2] !== undefined && /^(?:(?:I|E|T)?(?:DMT|LIB|PCB|PNL|SCH|SYS)_|EDA$)/u.test(typeMatch[2])) {
+      const kind = typeMatch[1];
+      if (kind !== "class" && kind !== "interface" && kind !== "enum" && kind !== "type") { throw new Error("Unsupported declaration kind."); }
+      types.push({ name: typeMatch[2], kind, sourceLine: index + 1 });
     }
     const classMatch = /^(\s*)(?:declare )?class ([A-Za-z_]\w*)(?:\s[^{}]*)?\s*\{\s*$/u.exec(line);
     if (classMatch?.[2] !== undefined) {

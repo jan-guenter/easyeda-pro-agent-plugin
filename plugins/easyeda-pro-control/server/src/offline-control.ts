@@ -30,7 +30,7 @@ function offlineGuard<Input>(handler: (input: Input) => Record<string, unknown> 
   return async (input): Promise<CallToolResult> => {
     try { return offlineResult(await handler(input)); }
     catch {
-      const details = { ok: false, error: { code: "offline-query-failed", dispatched: false } };
+      const details = { offline: true, ok: false, error: { code: "offline-query-failed", dispatched: false } };
       return { isError: true, content: [{ type: "text", text: JSON.stringify(details) }], structuredContent: details };
     }
   };

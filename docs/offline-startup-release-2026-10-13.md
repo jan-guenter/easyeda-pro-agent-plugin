@@ -48,14 +48,22 @@ object schema fixed it; the same case then passed. Normal startup still exposes
 28 tools. These are isolated package tests, not connected EasyEDA validation.
 
 Source projection:307 files,
-`d341d2864b7ffb3f955a86c2807e75916ab3b674d3a641fd40842d35600bae45`.
+`0a961dcef646435dc1a17cd9c35bece71ecc9bd0831759493a3b1d0561b073c3`.
 Runtime projection:three files,
-`682a26284c78f6508469a6d94ea301b10151b9d426c0f96973d3b742f179488b`.
+`df661a1ba879b5611874bbdc2127a20757d248ee57f37c6cd9f00d5e4122f287`.
 External runtime, native helper and bridge pins are unchanged.
 
 A second build reproduces both committed JavaScript bundles byte-for-byte.
 Dependency audit reports zero vulnerabilities, 151 verified registry signatures
 and 40 verified attestations.
+
+PR review also found that type detection preceded block-comment filtering.
+The corrected ordering is covered by the existing positive parser case; the
+installed 321-type inventory is unchanged. Guarded failures now explicitly
+carry `offline:true`. Initial full CI found four existing status tests whose
+source-extraction delimiter named the API schema moved to the shared module.
+Their delimiter now ends at the next tool registration; the same status
+behavior and safety assertions remain in place.
 
 This is the pre-delivery snapshot. The
 [PR10 delivery receipt](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/10)

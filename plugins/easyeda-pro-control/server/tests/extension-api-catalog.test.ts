@@ -120,12 +120,13 @@ void test("declaration parser retains same-indent object fields and delimiter-be
     '  mode?: "[;]"; commentStart?: "/**"; commentEnd?: "*/";',
     "  }): Promise<{ ok: boolean; items: Array<[number, number]> }> ;",
   ];
-  const source = `declare class SYS_Frame {\n${method.join("\n")}\n  /*\n  ignored(): void;\n  */\n  start(value: "/**"): void;\n  end(value: "*/"): void;\n}\ndeclare class EDA {\n  sys_Frame: SYS_Frame;\n}\n`;
+  const source = `declare class SYS_Frame {\n${method.join("\n")}\n  /*\n  ignored(): void;\n  */\n  start(value: "/**"): void;\n  end(value: "*/"): void;\n}\ndeclare class EDA {\n  sys_Frame: SYS_Frame;\n}\n/*\ndeclare class SYS_Commented {\n}\ninterface ISYS_Commented {}\n*/\n`;
   const inventory = inventoryApiDeclarations(source);
   const methods = inventory.namespaces[0]?.methods;
   assert.deepEqual(methods?.map((entry) => entry.name), ["end", "open", "start"]);
   assert.equal(methods?.[1]?.signature, method.map((line) => line.trim().replace(/^public /u, "")).join(" "));
   assert.equal(methods?.[1]?.sourceLine, 2);
+  assert.deepEqual(inventory.types, [{ name: "EDA", kind: "class", sourceLine: 15 }, { name: "SYS_Frame", kind: "class", sourceLine: 1 }]);
 });
 
 const singleMethodSource = (method: string): string => `declare class SYS_Frame {\n  ${method}\n}\ndeclare class EDA {\n  sys_Frame: SYS_Frame;\n}\n`;
