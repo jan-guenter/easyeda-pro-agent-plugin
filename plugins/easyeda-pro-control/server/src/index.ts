@@ -110,6 +110,8 @@ import { sdkMathRequestSchema } from "./sdk-math.ts";
 import { calculateSdkMath } from "./sdk-math-runtime.ts";
 import { sdkSystemRequestSchema } from "./sdk-system.ts";
 import { readSdkSystem } from "./sdk-system-runtime.ts";
+import { startupExtensionsRequestSchema } from "./startup-extensions.ts";
+import { readStartupExtensions } from "./startup-extensions-runtime.ts";
 
 const facadeMode = configuredFacadeMode(process.env);
 
@@ -1827,6 +1829,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_sdk_read: evidenceSuccessOutputSchema,
   easyeda_control_calculate: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_system: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_extensions: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_runtime: z.object({ action: z.string().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1859,7 +1862,7 @@ const server = new McpServer(
     capabilities: { tools: {} },
     instructions:
       facadeMode === "calculation-only"
-        ? "Local-utility compatibility mode. Only status, local reference/discovery, separately version-pinned SDK calculations and bounded system observations are registered. No project readers, native controls, navigation, design changes, Save or recovery tools are available. Utility admission does not admit legacy methods. Use offline API schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
+        ? "Local-utility compatibility mode. Only status, local reference/discovery, separately version-pinned SDK calculations, bounded system observations and a fixed extension-index observer are registered. No project readers, native controls, navigation, design changes, Save or recovery tools are available. Utility admission does not admit legacy methods or qualify application startup. Use offline API schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
         : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal.",
   },
 );
@@ -1903,11 +1906,12 @@ registerFacadeTool(
       typedDesign: { enabled: facadeMode === "legacy-reviewed", tool: "easyeda_control_design", supervisorRequired: true, persistence: "native-source-plus-complete-project-record-delta", arbitraryCode: false },
       libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
       ...(facadeMode === "calculation-only" ? { availableTools: CALCULATION_ONLY_TOOLS,
-        capabilityScope: "Sixteen SDK calculation and eighteen local system-method subsets; separate runtime admission, no project access or legacy-route admission." } : {}),
+        capabilityScope: "Sixteen SDK calculation and eighteen local system-method subsets, plus projected user-extension metadata; separate runtime admission, no project access, startup authorization or legacy-route admission." } : {}),
     },
     upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
       ...await engine.status(), capabilities: { sdkCalculations: { tool: "easyeda_control_calculate", runtimeAdmissionRequired: true },
         sdkSystem: { tool: "easyeda_control_system", runtimeAdmissionRequired: true },
+        startupExtensions: { tool: "easyeda_control_extensions", runtimeAdmissionRequired: true, launchQualification: false },
         designAccess: { enabled: false }, navigation: { enabled: false } },
     },
     bridgeConnection: upstream.bridgeConnectionDiagnostics(),
@@ -2253,6 +2257,17 @@ registerFacadeTool(
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   serializedLiveGuarded(async (input) => ({ result: await readSdkSystem(engine, input.request, input.expectedFingerprint) })),
+);
+
+registerFacadeTool(
+  "easyeda_control_extensions",
+  {
+    title: "Inspect EasyEDA startup extension metadata",
+    description: "Observe a bounded projection of the initialized user-extension database index on separately reviewed EasyEDA 3.2.206/API 0.3.50/UI 3.2.196. Two matching observations retain frame, UI actor and RPC ownership, but do not bind the database to the current account. Requires the authenticated bridge in the index; excludes builtin extensions, loaded or queued activation state, file contents, config values and account identifiers. No enable, update, import, launch, project, navigation or Save action. This is not a complete startup baseline or launch authorization. Inspect offline API extensions and extensions-validate first. No caller-selected RPC or code; connected validation is not implied.",
+    inputSchema: { request: z.unknown().pipe(startupExtensionsRequestSchema), expectedFingerprint: privateFingerprintSchema },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  serializedLiveGuarded(async (input) => ({ result: await readStartupExtensions(engine, input.request, input.expectedFingerprint) })),
 );
 
 registerFacadeTool(

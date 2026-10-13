@@ -19,7 +19,14 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261013170000` adds `easyeda_control_system` with six
+Update `0.3.0+codex.20261013182500` adds `easyeda_control_extensions`, a fixed
+read-only observation of selected metadata in the initialized extension index.
+It excludes code, user configuration and account identifiers. The index can lag
+an account switch and omits builtin/loaded activation state, so it cannot qualify
+automatic startup. See the [extension-index release](docs/extension-index-release-2026-10-13.md)
+and [startup research](docs/bootstrap-implementation-research-2026-10-13.md).
+
+The previous `0.3.0+codex.20261013170000` added `easyeda_control_system` with six
 mil/mm/inch conversions and twelve environment methods, including the two
 version comparators. Strict arguments, signed-zero transport and fixed scalar
 projections preserve the reviewed SDK semantics. The sixteen geometry methods
@@ -27,9 +34,9 @@ remain under `easyeda_control_calculate`. Installed161000 passed one triangle
 area and one nested-square subtraction with a complete hole; these cases do not
 validate all methods or this newer source generation.
 
-The older reviewed tuple exposes 30 tools. A configured newer or unknown tuple
-exposes five: API reference, local discovery, status, calculations and local
-system methods. The internal mode name remains `calculation-only`. Execution
+The older reviewed tuple exposes 31 tools. A configured newer or unknown tuple
+exposes six: API reference, local discovery, status, calculations, local
+system methods and the fixed extension-index observer. The internal mode name remains `calculation-only`. Execution
 separately requires the exact reviewed EasyEDA 3.2.206 / API 0.3.50 hashes and an
 authenticated session. No project reader, launcher, navigation or writer is
 enabled on the new version. Seven skills remain included. See the

@@ -133,7 +133,7 @@ void describe("self-contained packaged machine startup", () => {
     const pid = transport.pid; assert.ok(pid !== null);
     const listed = await client.listTools();
     assert.deepEqual(listed.tools.map((tool) => tool.name).toSorted(), [
-      "easyeda_control_api", "easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_status", "easyeda_control_system",
+      "easyeda_control_api", "easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_extensions", "easyeda_control_status", "easyeda_control_system",
     ]);
     const catalog = await api(client, { action: "calculations", query: { includeSchemas: true } });
     assert.equal(catalog["total"], 16); assert.equal(catalog["invocationEnabledByDiscovery"], false);
@@ -154,6 +154,14 @@ void describe("self-contained packaged machine startup", () => {
       method: "eda.sys_Unit.inchToMm", arguments: { inch: 1, numberOfDecimals: 3 },
     } } });
     assert.equal(unit["valid"], true); assert.equal(unit["executionAuthorized"], false);
+    const extensions = await api(client, { action: "extensions", query: { includeSchemas: true } });
+    assert.equal(extensions["total"], 1); assert.equal(extensions["invocationEnabledByDiscovery"], false);
+    const indexRequest = await api(client, { action: "extensions-validate", query: { request: { action: "list-startup-index" } } });
+    assert.equal(indexRequest["valid"], true); assert.equal(indexRequest["executionAuthorized"], false);
+    const invalidIndex = await client.callTool({ name: "easyeda_control_extensions", arguments: {
+      request: { action: "list-startup-index", topic: "caller-selected" }, expectedFingerprint: {},
+    } });
+    assert.equal(invalidIndex.isError, true);
     const discovery = await client.callTool({ name: "easyeda_control_discover", arguments: { query: "pcb", mode: "all" } });
     assert.notEqual(discovery.isError, true);
     const entries = record(discovery.structuredContent)["value"];
@@ -245,7 +253,7 @@ void describe("self-contained packaged machine startup", () => {
         [options.pinnedNode, options.bundle]);
       assert.equal(await readlink(`/proc/${pid}/cwd`), options.pluginRoot);
       const tools = await client.listTools();
-      assert.equal(tools.tools.length, 30);
+      assert.equal(tools.tools.length, 31);
       assert.equal(new Set(tools.tools.map((tool) => tool.name)).size, tools.tools.length);
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_api"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_sdk_read"));

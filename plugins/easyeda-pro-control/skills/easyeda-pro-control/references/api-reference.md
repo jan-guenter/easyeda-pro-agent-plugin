@@ -168,6 +168,38 @@ document, project, selection, private account, file, network, navigation or Save
 is accessed. `getFrontendDataUnit` is excluded because it dispatches to UI state.
 New system methods are source-tested, not connected-validated.
 
+## Initialized extension-index observation
+
+Query `extensions` with `includeSchemas:true`, then validate the sole request
+with `extensions-validate`:
+
+```json
+{"action":"list-startup-index"}
+```
+
+Pass this request and the fresh authenticated `expectedFingerprint` to
+`easyeda_control_extensions`. It uses one fixed internal read-only RPC on the
+reviewed API 0.3.50 and independently hashed UI 3.2.196. Two matching samples
+retain the top frame, UI actor objects and RPC receiver. The response projects
+UUID, name, version, raw entry string, optional activation events and the actual
+enable/update/sync booleans. It preserves order and literal false values.
+No file content, user configuration, credentials or account IDs are returned.
+
+This observes an already initialized database, not a complete startup baseline.
+The API switches its database asynchronously after UI account changes, so
+`databaseActorBound:false` and `startupQualified:false` are mandatory. Builtin
+extensions, loaded code and queued activation are outside this result. Enabled
+entries can run without startup activation flags. Never use this observation
+to authorize launch, enablement, import or updates.
+
+Bounds are 128 entries and 65536 UTF-8 bytes; malformed, empty, changed or
+oversized results refuse. The authenticated bridge UUID must be present. The
+vendor cursor enumerates the full index internally before projection, and the
+10-second observer deadline does not cancel that work. Vendor RPC errors may
+produce local diagnostics; outward failures are redacted. A timeout authorizes
+neither retry nor startup. This internal diagnostic does not increase the public
+SDK method coverage count. Connected validation is not yet recorded.
+
 ## Fixed SDK reads and calculations on the older tuple
 
 ```json

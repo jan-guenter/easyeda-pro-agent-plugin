@@ -49,6 +49,7 @@ const OUTPUT_SCHEMA_ANCHORS = {
   easyeda_control_sdk_read: ["summary", "evidence"],
   easyeda_control_calculate: ["result"],
   easyeda_control_system: ["result"],
+  easyeda_control_extensions: ["result"],
   easyeda_control_design: ["operationId", "state", "nextSafeAction"],
   easyeda_control_library: ["capabilities", "operationId", "state"],
   easyeda_control_runtime: ["action", "result"],

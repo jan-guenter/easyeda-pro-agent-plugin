@@ -13,7 +13,54 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Candidate170000: system methods and restarted161000 math proof
+### Candidate182500: extension-index observer and startup investigation
+
+Previous170000 is published and installed through PR13/main411f7c583b9c7ef402fe964768acafb9f0c902f2.
+Required PR CI38436512407 and main CI38438396435 passed all10jobs;9768 facade
+passes/five platform skips/424 bridge passes. Independent restart verification
+matches1130files/21991609bytes/modes, inventory4000ecd15cb99757a39470308e375184d5d8d1b746d980f8e23ad68dee8e52ae.
+Do not repeat delivery. Actual fresh facade89224 loads170000/runtime8b202a1c,
+old68498 absent, no implementation drift. Status is disconnected/zero observed
+upgrades; digestdc5b555eb3a5139b9d4220502705c032f95c2e7b5a22bf00e8f09f06086738a5.
+Offline system lookup/validation passed; no system execution occurred.
+
+User expects agent-operated startup, not repeated requests to launch EasyEDA.
+Computer Use initialization failed before Windows inspection because it rejected
+the WSL sandboxCwd as a local file URI. No app action ran; app state is unknown.
+Do not infer a locked/absent app or substitute direct UI automation. Continue
+source work without polling the unchanged disconnected bridge.
+
+Candidate182500 adds fixed easyeda_control_extensions/list-startup-index and
+offline extensions/extensions-validate. This observes the initialized index,
+not a current-account or complete startup baseline. It separately pins API/UI,
+retains frame/UI actor/RPC owners, requires two matching bounded projections
+and keeps databaseActorBound/startupQualified false. No account IDs, user config,
+code content or credentials are returned. Vendor cursor traversal is not capped
+by output bounds; observer timeout does not cancel it. Vendor errors may log.
+Six restricted tools/31 legacy tools/seven skills. Public SDK inventory remains
+774/211public/30native/82blocked/451omitted; routes308guarded/94blocked/2partial.
+
+Automatic launch remains unimplemented pending closed-profile/index/code
+binding, dynamic builtin-manifest source and startup-policy proof. The apparent
+private/list path is BroadcastChannel RPC, not HTTP. Existing legacy launch must
+not be exposed wholesale. See docs/bootstrap-implementation-research-2026-10-13.md
+and docs/extension-index-release-2026-10-13.md for exact scope and backlog.
+
+Independent source review accepts the observer/runtime and integration. Five
+focused adapter and four coordinator cases pass; fulltypes/strict type-aware
+lint are clean. Build and compatibility checks pass. Source317 projection
+d8b75795c9dd681d45ad64f1275e8ea012e62f4cc67f615ac1d49dbda967b112;
+runtime3 projection7839d1492ca34257d7323b6272431b3bb2e32d832ad8aec1d85609edec0d9487.
+Local53 focused/integration cases and424 bridge cases pass,179 repository/privacy
+and77 package checks pass, seven custom/official skill validators pass. All151
+registry signatures/40attestations verify; audit found0vulnerabilities. Independent
+review confirms every external manifest pin unchanged. CI/delivery evidence is
+pending; consult the release PR receipt
+before repeating publication/install. No connected observer validation claimed.
+No project, settings, Save, bridge import, C10 replay/recovery or production
+record access occurred. Loaded170000 remains intact until a fresh host.
+
+### Historical candidate170000: system methods and restarted161000 math proof
 
 User startup instruction: the agent should start EasyEDA itself in future.
 Restore a supported current-version launcher as the next compatibility priority;
