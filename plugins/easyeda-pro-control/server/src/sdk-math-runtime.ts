@@ -1,18 +1,14 @@
 import {
-  assertExpectedFingerprint,
   assertSubset,
   assertUpstreamReplySettled,
   canonicalJson,
   extractToolPayload,
-  loadReviewedCompatibilityManifest,
-  reviewedCompatibilityManifestFingerprint,
   sha256Json,
 } from "./core.ts";
-import type { EasyedaControlEngine, UpstreamClient } from "./engine.ts";
 import { decodeExactReadEnvelope } from "./exact-readers.ts";
+import { SDK_LOCAL_RUNTIME_PROFILE, validateSdkLocalRuntimeFingerprint } from "./sdk-local-runtime.ts";
+import type { SdkLocalEngine } from "./sdk-local-runtime.ts";
 import {
-  SDK_MATH_API_SHA256,
-  SDK_MATH_API_VERSION,
   SDK_MATH_MAX_BYTES,
   buildSdkMathProgram,
   parseSdkMathRequest,
@@ -24,77 +20,18 @@ import {
  * admitted. The legacy private manifest and every native profile stay intact.
  */
 export const SDK_MATH_RUNTIME_PROFILE = {
+  ...SDK_LOCAL_RUNTIME_PROFILE,
   schema: "easyeda-pro-control.sdk-math-runtime.v1",
-  // The authenticated handshake forwards getEditorCurrentVersion(), which
-  // Reports editorMainVersion, not the suffixed installed package version.
-  editorReportedVersion: "3.2.206",
-  installedBundles: {
-    pcbEditor: {
-      version: "3.2.193.682ed44e",
-      implementationSha256: "217199c8532c48aa50ed5fc254ddf2e6d09c886984c9498b5eea4d1cf0b7ef33",
-    },
-    publicApi: {
-      version: SDK_MATH_API_VERSION,
-      implementationSha256: SDK_MATH_API_SHA256,
-      adapterSha256: "5570385041b304d6b2fc8ce59de7e0030f2732913cf6d43861fe985e0c079f3a",
-      declarationsSha256: "d5fe990034c55001302ea6c3f704c2d4b88cdf23253cc5293b3bad62a32b9def",
-    },
-  },
 } as const;
 
-export type SdkMathEngine = Pick<EasyedaControlEngine, "assertBridgeDispatchAllowed"> & {
-  readonly status: () => Promise<{ stableFingerprint: Record<string, unknown> }>;
-  readonly upstream: Pick<UpstreamClient, "callTool">;
-};
+export type SdkMathEngine = SdkLocalEngine;
 
 /** Keep all common manifest trust fields. Only the explicitly named math tuple
  * replaces the legacy app/bundle fields in this separate scope; never feed a
  * normalized or forged fingerprint into validatePrivateFingerprint.
  */
 export function validateSdkMathFingerprint(fingerprint: unknown): true {
-  assertExpectedFingerprint(fingerprint);
-  const manifestBefore = reviewedCompatibilityManifestFingerprint();
-  const manifest = loadReviewedCompatibilityManifest();
-  assertSubset(reviewedCompatibilityManifestFingerprint(), manifestBefore, "SDK math manifest stability");
-  assertSubset(fingerprint.reviewedCompatibilityManifest, manifestBefore, "SDK math manifest identity");
-  const implementation = fingerprint.facadeImplementation;
-  const actual = {
-    facadeImplementation: {
-      version: implementation.version,
-      operationSchema: implementation.operationSchema,
-      sha256: implementation.sha256,
-      fileCount: implementation.files.length,
-      files: implementation.files.map((file) => ({ relativePath: file.relativePath, bytes: file.bytes, sha256: file.sha256 }))
-        .toSorted((left, right) => left.relativePath.localeCompare(right.relativePath)),
-    },
-    upstream: {
-      serverVersion: fingerprint.upstreamServer.version,
-      launcher: fingerprint.upstreamLauncher,
-      toolCatalog: { count: fingerprint.toolCount, sha256: fingerprint.toolCatalogSha256 },
-    },
-    connectedRuntime: {
-      healthVersion: fingerprint.health.payload.version,
-      nodeVersion: fingerprint.health.payload.node_version.replace(/^v/u, ""),
-      easyedaVersion: fingerprint.health.payload.easyeda_version,
-      extensionVersion: fingerprint.health.payload.extension_version,
-      bridgeVersion: fingerprint.bridge.payload.bridge_version,
-      bridgeEasyedaVersion: fingerprint.bridge.payload.easyeda_version ?? null,
-      methodRegistryHash: fingerprint.bridge.payload.diagnostics.method_registry_hash,
-      dispatcher: {
-        source: fingerprint.bridgeDispatcher.payload.source,
-        buildId: fingerprint.bridgeDispatcher.payload.dispatcher_build_id,
-        total: fingerprint.bridgeDispatcher.payload.total,
-      },
-    },
-    installedBundles: fingerprint.installedBundles,
-  };
-  assertSubset(actual, {
-    facadeImplementation: manifest.facadeImplementation[implementation.mode],
-    upstream: manifest.upstream,
-    connectedRuntime: { ...manifest.connectedRuntime, easyedaVersion: SDK_MATH_RUNTIME_PROFILE.editorReportedVersion },
-    installedBundles: SDK_MATH_RUNTIME_PROFILE.installedBundles,
-  }, "SDK math reviewed runtime scope");
-  return true;
+  return validateSdkLocalRuntimeFingerprint(fingerprint);
 }
 
 /** The registered caller supplies the existing serialized authenticated bridge

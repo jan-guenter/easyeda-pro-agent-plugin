@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "af99be2cf06f3456f050b5fcdac4054e207ab417254e4f0d13a752411dc9a354";
+const __easyedaBundlePairId = "9909f7117df1d45292dc6289ac5e55b23cfd4e43118555fcf3c88509d3fd2297";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -1203,10 +1203,10 @@ var init_regexes = __esm({
     duration = /^P(?:(\d+W)|(?!.*W)(?=\d|T\d)(\d+Y)?(\d+M)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+([.,]\d+)?S)?)?)$/;
     extendedDuration = /^[-+]?P(?!$)(?:(?:[-+]?\d+Y)|(?:[-+]?\d+[.,]\d+Y$))?(?:(?:[-+]?\d+M)|(?:[-+]?\d+[.,]\d+M$))?(?:(?:[-+]?\d+W)|(?:[-+]?\d+[.,]\d+W$))?(?:(?:[-+]?\d+D)|(?:[-+]?\d+[.,]\d+D$))?(?:T(?=[\d+-])(?:(?:[-+]?\d+H)|(?:[-+]?\d+[.,]\d+H$))?(?:(?:[-+]?\d+M)|(?:[-+]?\d+[.,]\d+M$))?(?:[-+]?\d+(?:[.,]\d+)?S)?)??$/;
     guid = /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/;
-    uuid = (version3) => {
-      if (!version3)
+    uuid = (version4) => {
+      if (!version4)
         return /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/;
-      return new RegExp(`^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-${version3}[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$`);
+      return new RegExp(`^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-${version4}[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$`);
     };
     uuid4 = /* @__PURE__ */ uuid(4);
     uuid6 = /* @__PURE__ */ uuid(6);
@@ -14756,10 +14756,10 @@ function fromJSONSchema(schema2, params) {
   } catch {
     throw new Error("fromJSONSchema input is not valid JSON (possibly cyclic); use $defs/$ref for recursive schemas");
   }
-  const version3 = detectVersion(normalized2, params?.defaultTarget);
+  const version4 = detectVersion(normalized2, params?.defaultTarget);
   const defs = normalized2.$defs || normalized2.definitions || {};
   const ctx = {
-    version: version3,
+    version: version4,
     defs,
     refs: /* @__PURE__ */ new Map(),
     processing: /* @__PURE__ */ new Set(),
@@ -16393,11 +16393,11 @@ function datetimeRegex(args) {
   regex = `${regex}(${opts.join("|")})`;
   return new RegExp(`^${regex}$`);
 }
-function isValidIP(ip, version3) {
-  if ((version3 === "v4" || !version3) && ipv4Regex.test(ip)) {
+function isValidIP(ip, version4) {
+  if ((version4 === "v4" || !version4) && ipv4Regex.test(ip)) {
     return true;
   }
-  if ((version3 === "v6" || !version3) && ipv6Regex.test(ip)) {
+  if ((version4 === "v6" || !version4) && ipv6Regex.test(ip)) {
     return true;
   }
   return false;
@@ -16424,11 +16424,11 @@ function isValidJWT2(jwt2, alg) {
     return false;
   }
 }
-function isValidCidr(ip, version3) {
-  if ((version3 === "v4" || !version3) && ipv4CidrRegex.test(ip)) {
+function isValidCidr(ip, version4) {
+  if ((version4 === "v4" || !version4) && ipv4CidrRegex.test(ip)) {
     return true;
   }
-  if ((version3 === "v6" || !version3) && ipv6CidrRegex.test(ip)) {
+  if ((version4 === "v6" || !version4) && ipv6CidrRegex.test(ip)) {
     return true;
   }
   return false;
@@ -23069,7 +23069,7 @@ var init_zodToJsonSchema = __esm({
     init_any();
     zodToJsonSchema = (schema2, options) => {
       const refs = getRefs(options);
-      let definitions3 = typeof options === "object" && options.definitions ? Object.entries(options.definitions).reduce((acc, [name7, schema3]) => ({
+      let definitions4 = typeof options === "object" && options.definitions ? Object.entries(options.definitions).reduce((acc, [name7, schema3]) => ({
         ...acc,
         [name7]: parseDef(schema3._def, {
           ...refs,
@@ -23086,11 +23086,11 @@ var init_zodToJsonSchema = __esm({
         main.title = title7;
       }
       if (refs.flags.hasReferencedOpenAiAnyType) {
-        if (!definitions3) {
-          definitions3 = {};
+        if (!definitions4) {
+          definitions4 = {};
         }
-        if (!definitions3[refs.openAiAnyTypeName]) {
-          definitions3[refs.openAiAnyTypeName] = {
+        if (!definitions4[refs.openAiAnyTypeName]) {
+          definitions4[refs.openAiAnyTypeName] = {
             // Skipping "object" as no properties can be defined and additionalProperties must be "false"
             type: ["string", "number", "integer", "boolean", "array", "null"],
             items: {
@@ -23103,9 +23103,9 @@ var init_zodToJsonSchema = __esm({
           };
         }
       }
-      const combined = name6 === void 0 ? definitions3 ? {
+      const combined = name6 === void 0 ? definitions4 ? {
         ...main,
-        [refs.definitionPath]: definitions3
+        [refs.definitionPath]: definitions4
       } : main : {
         $ref: [
           ...refs.$refStrategy === "relative" ? [] : refs.basePath,
@@ -23113,7 +23113,7 @@ var init_zodToJsonSchema = __esm({
           name6
         ].join("/"),
         [refs.definitionPath]: {
-          ...definitions3,
+          ...definitions4,
           [name6]: main
         }
       };
@@ -28740,8 +28740,8 @@ var require_core = __commonJS({
         }
       }
       // add "vocabulary" - a collection of keywords
-      addVocabulary(definitions3) {
-        for (const def of definitions3)
+      addVocabulary(definitions4) {
+        for (const def of definitions4)
           this.addKeyword(def);
         return this;
       }
@@ -51015,6 +51015,196 @@ var init_sdk_math = __esm({
   }
 });
 
+// server/src/sdk-system.ts
+function unitDefinition(input, output) {
+  return {
+    parameters: [input, "numberOfDecimals"],
+    result: "number",
+    effect: "supplied-value-calculation",
+    units: { input, output },
+    limitation: "Finite input magnitude <=1e9; integer decimal precision 0-12, default 4. Uses SDK rounding, including its positive 1e-10 intermediate adjustment, not exact decimal arithmetic. Negative zero is preserved by the negativeZero flag. No canvas-origin or frontend-unit conversion."
+  };
+}
+function parseSdkSystemRequest(input) {
+  return sdkSystemRequestSchema.parse(input);
+}
+function sdkSystemDescriptors() {
+  return sdkSystemRequestSchema.options.map((schema2) => {
+    const method4 = schema2.shape.method.value;
+    const definition = definitions3[method4];
+    return {
+      path: method4,
+      method: method4,
+      inputSchema: external_exports.toJSONSchema(schema2),
+      parameters: [...definition.parameters],
+      resultKind: definition.result,
+      effect: definition.effect,
+      ...definition.units === void 0 ? {} : { units: { ...definition.units } },
+      limitations: [...commonLimitations2, definition.limitation],
+      invocationEnabledByDiscovery: false,
+      provenance: { version: SDK_SYSTEM_API_VERSION, apiSha256: SDK_SYSTEM_API_SHA256, implementationKind: "public-method-bounded-subset", liveValidation: "not-recorded" }
+    };
+  });
+}
+function querySdkSystemMethods(input = {}) {
+  const query = sdkSystemCatalogQuerySchema.parse(input);
+  const entries3 = sdkSystemDescriptors().filter((entry) => query.method === void 0 || entry.method === query.method).map(({ inputSchema, ...entry }) => query.includeSchemas ? Object.assign(entry, { inputSchema }) : entry);
+  return { offline: true, invocationEnabledByDiscovery: false, total: entries3.length, entries: entries3 };
+}
+function validateSdkSystemArguments(input) {
+  const result = sdkSystemRequestSchema.safeParse(input);
+  if (result.success) {
+    return { valid: true, request: result.data, executionAuthorized: false };
+  }
+  return { valid: false, executionAuthorized: false, issues: result.error.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String), message: issue2.message.slice(0, 512) })) };
+}
+function buildSdkSystemProgram(input) {
+  const request2 = parseSdkSystemRequest(input);
+  const definition = definitions3[request2.method];
+  const namespace = request2.method.startsWith("eda.sys_Unit.") ? "sys_Unit" : "sys_Environment";
+  const method4 = request2.method.slice(`eda.${namespace}.`.length);
+  const argumentProperties = Object.entries(request2.arguments).map(([key, value]) => `${JSON.stringify(key)}:${Object.is(value, -0) ? "-0" : JSON.stringify(value)}`).join(",");
+  const argumentsCode = definition.parameters.map((parameter) => `args.${parameter}`).join(",");
+  return `try {
+const fail=()=>{throw new Error('SDK_SYSTEM_INVALID_RESULT');};
+const args=Object.freeze({${argumentProperties}});
+const owner=eda.${namespace},method=owner?.${method4};if(!owner||typeof method!=='function')fail();
+const kind=${JSON.stringify(definition.result)};
+const project=value=>{
+ if(kind==='number'){if(typeof value!=='number'||!Number.isFinite(value)||Math.abs(value)>1e12)fail();return value;}
+ if(kind==='boolean'){if(typeof value!=='boolean')fail();return value;}
+ if(typeof value!=='string'||value.length<1||value.length>128||!/^[\\u0020-\\u007E]+$/.test(value))fail();return value;
+};
+const read=()=>{if(eda.${namespace}!==owner||owner.${method4}!==method)fail();const value=project(method.call(owner,${argumentsCode}));if(eda.${namespace}!==owner||owner.${method4}!==method)fail();return value;};
+const first=read(),second=read();if(!Object.is(first,second))fail();
+const json=JSON.stringify({ok:true,kind:'sdk-system',method:${JSON.stringify(request2.method)},value:first,...(kind==='number'?{negativeZero:Object.is(first,-0)}:{})});
+const utf8Bytes=new TextEncoder().encode(json).byteLength;
+const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
+if(utf8Bytes>${SDK_SYSTEM_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${SDK_SYSTEM_MAX_BYTES})fail();
+return envelope;
+}catch{throw new Error('SDK_SYSTEM_READ_FAILED');}`;
+}
+function validateSdkSystemResult(input, raw) {
+  const request2 = parseSdkSystemRequest(input);
+  const payload = payloadSchema4.parse(raw);
+  const definition = definitions3[request2.method];
+  if (payload.method !== request2.method) {
+    throw new Error("SDK system result belongs to a different method.");
+  }
+  let value;
+  if (definition.result === "number") {
+    value = external_exports.number().min(-1e12).max(1e12).parse(payload.value);
+    if (payload.negativeZero === void 0 || payload.negativeZero && value !== 0 || Object.is(value, -0)) {
+      throw new Error("SDK system numeric result has an invalid signed-zero encoding.");
+    }
+  } else {
+    if (Object.hasOwn(payload, "negativeZero")) {
+      throw new Error("SDK system metadata cannot carry a numeric signed-zero flag.");
+    }
+    value = definition.result === "boolean" ? external_exports.boolean().parse(payload.value) : metadataText.parse(payload.value);
+  }
+  return {
+    ...payload,
+    value,
+    effect: definition.effect,
+    ...definition.units === void 0 ? {} : { units: { ...definition.units }, numberOfDecimals: "numberOfDecimals" in request2.arguments ? request2.arguments.numberOfDecimals ?? 4 : 4 },
+    authority: "bounded-system-metadata-or-unit-calculation-only;not-project-state-or-runtime-admission",
+    apiVersion: SDK_SYSTEM_API_VERSION,
+    apiSha256: SDK_SYSTEM_API_SHA256,
+    limitations: [...commonLimitations2, definition.limitation]
+  };
+}
+var SDK_SYSTEM_API_VERSION, SDK_SYSTEM_API_SHA256, SDK_SYSTEM_MAX_BYTES, inputNumber, precision, emptyArguments3, version2, comparisonArguments, editorVersionArguments, sdkSystemRequestSchema, environmentBoolean, definitions3, commonLimitations2, sdkSystemCatalogQuerySchema, payloadSchema4, metadataText;
+var init_sdk_system = __esm({
+  "server/src/sdk-system.ts"() {
+    init_zod();
+    init_exact_readers();
+    SDK_SYSTEM_API_VERSION = "0.3.50.ab46409c";
+    SDK_SYSTEM_API_SHA256 = "021d155baafbcdc7b558da12f0834a8ee473aa37e276c6ea679936f952080c76";
+    SDK_SYSTEM_MAX_BYTES = 8192;
+    inputNumber = external_exports.number().min(-1e9).max(1e9);
+    precision = external_exports.number().int().min(0).max(12).optional();
+    emptyArguments3 = external_exports.object({}).strict();
+    version2 = external_exports.string().max(20).regex(/^(?:0|[1-9][0-9]{0,5})\.(?:0|[1-9][0-9]{0,5})\.(?:0|[1-9][0-9]{0,5})$/u);
+    comparisonArguments = external_exports.object({ version: version2 }).strict();
+    editorVersionArguments = external_exports.object({ onlySemantic: external_exports.boolean().optional() }).strict();
+    sdkSystemRequestSchema = external_exports.discriminatedUnion("method", [
+      external_exports.object({ method: external_exports.literal("eda.sys_Unit.milToMm"), arguments: external_exports.object({ mil: inputNumber, numberOfDecimals: precision }).strict() }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Unit.milToInch"), arguments: external_exports.object({ mil: inputNumber, numberOfDecimals: precision }).strict() }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Unit.mmToMil"), arguments: external_exports.object({ mm: inputNumber, numberOfDecimals: precision }).strict() }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Unit.mmToInch"), arguments: external_exports.object({ mm: inputNumber, numberOfDecimals: precision }).strict() }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Unit.inchToMil"), arguments: external_exports.object({ inch: inputNumber, numberOfDecimals: precision }).strict() }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Unit.inchToMm"), arguments: external_exports.object({ inch: inputNumber, numberOfDecimals: precision }).strict() }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Environment.isClient"), arguments: emptyArguments3 }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Environment.isWeb"), arguments: emptyArguments3 }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Environment.isEasyEDAProEdition"), arguments: emptyArguments3 }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Environment.isJLCEDAProEdition"), arguments: emptyArguments3 }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Environment.isProPrivateEdition"), arguments: emptyArguments3 }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Environment.isOnlineMode"), arguments: emptyArguments3 }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Environment.isHalfOfflineMode"), arguments: emptyArguments3 }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Environment.isOfflineMode"), arguments: emptyArguments3 }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Environment.getEditorCurrentVersion"), arguments: editorVersionArguments }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Environment.getEditorCompliedDate"), arguments: emptyArguments3 }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Environment.isEditorCurrentVersionGreaterThanOrEqual"), arguments: comparisonArguments }).strict(),
+      external_exports.object({ method: external_exports.literal("eda.sys_Environment.isEditorCurrentVersionLessThanOrEqual"), arguments: comparisonArguments }).strict()
+    ]);
+    environmentBoolean = {
+      parameters: [],
+      result: "boolean",
+      effect: "environment-metadata-read",
+      limitation: "Reads the API's captured application mode/edition flag. This is not a network-connectivity probe or current project state."
+    };
+    definitions3 = {
+      "eda.sys_Unit.milToMm": unitDefinition("mil", "mm"),
+      "eda.sys_Unit.milToInch": unitDefinition("mil", "inch"),
+      "eda.sys_Unit.mmToMil": unitDefinition("mm", "mil"),
+      "eda.sys_Unit.mmToInch": unitDefinition("mm", "inch"),
+      "eda.sys_Unit.inchToMil": unitDefinition("inch", "mil"),
+      "eda.sys_Unit.inchToMm": unitDefinition("inch", "mm"),
+      "eda.sys_Environment.isClient": environmentBoolean,
+      "eda.sys_Environment.isWeb": environmentBoolean,
+      "eda.sys_Environment.isEasyEDAProEdition": environmentBoolean,
+      "eda.sys_Environment.isJLCEDAProEdition": environmentBoolean,
+      "eda.sys_Environment.isProPrivateEdition": environmentBoolean,
+      "eda.sys_Environment.isOnlineMode": environmentBoolean,
+      "eda.sys_Environment.isHalfOfflineMode": environmentBoolean,
+      "eda.sys_Environment.isOfflineMode": environmentBoolean,
+      "eda.sys_Environment.getEditorCurrentVersion": {
+        parameters: ["onlySemantic"],
+        result: "string",
+        effect: "environment-metadata-read",
+        limitation: "Reads editorMainVersion metadata, not the installed package's suffixed version. onlySemantic optionally limits it to three components and pads a two-component value. It does not admit a runtime or update compatibility pins."
+      },
+      "eda.sys_Environment.getEditorCompliedDate": {
+        parameters: [],
+        result: "string",
+        effect: "environment-metadata-local-cache",
+        limitation: "Reads editorMainDate metadata and may initialize T.editorCompliedDate in the API's local runtime cache. This is not a strictly pure function; it does not change a shared preference or persist data. The bounded returned date text is not parsed or relabeled as a timezone."
+      },
+      "eda.sys_Environment.isEditorCurrentVersionGreaterThanOrEqual": {
+        parameters: ["version"],
+        result: "boolean",
+        effect: "environment-metadata-read",
+        limitation: "Compares SUPPLIED version >= CURRENT editor semantic version, despite the method's ambiguous English name. Canonical major.minor.patch only, each component 0-999999; no dev, leading zeros, prerelease, build suffix, partial version or implicit coercion. Bundled semver can emit console diagnostics if its initialization enabled semver NODE_DEBUG."
+      },
+      "eda.sys_Environment.isEditorCurrentVersionLessThanOrEqual": {
+        parameters: ["version"],
+        result: "boolean",
+        effect: "environment-metadata-read",
+        limitation: "Compares SUPPLIED version <= CURRENT editor semantic version, despite the method's ambiguous English name. Canonical major.minor.patch only, each component 0-999999; no dev, leading zeros, prerelease, build suffix, partial version or implicit coercion. Bundled semver can emit console diagnostics if its initialization enabled semver NODE_DEBUG."
+      }
+    };
+    commonLimitations2 = [
+      "Separately hash-admitted API 0.3.50 implementation. Discovery, source implementation and offline tests do not establish current connected validation.",
+      "Fixed synchronous public methods only, two exact scalar samples on the same owner/method. No project, document, selection, account, file, network, navigation, shared-settings change or Save access.",
+      "Responses are bounded to 8192 UTF-8 bytes; metadata strings to 128 printable ASCII characters. Malformed, asynchronous, unstable or oversized results refuse without truncation or automatic retry."
+    ];
+    sdkSystemCatalogQuerySchema = external_exports.object({ method: external_exports.enum(sdkSystemRequestSchema.options.map((schema2) => schema2.shape.method.value)).optional(), includeSchemas: external_exports.boolean().default(false) }).strict();
+    payloadSchema4 = external_exports.object({ ok: external_exports.literal(true), kind: external_exports.literal("sdk-system"), method: external_exports.string(), value: external_exports.unknown(), negativeZero: external_exports.boolean().optional() }).strict();
+    metadataText = external_exports.string().min(1).max(128).regex(/^[\u0020-\u007E]+$/u);
+  }
+});
+
 // server/src/extension-api-coverage.ts
 function omitted(code, reason, nextRequirement, evidence = []) {
   return { code, reason, nextRequirement, evidence };
@@ -51133,11 +51323,25 @@ function inventoryExtensionApiCoverage() {
       selector: descriptor9.path,
       implementation: "public-method",
       scope: `Separately reviewed EasyEDA 3.2.206/API 0.3.50 calculation-only runtime, not legacy-tuple admission. ${descriptor9.limitations.join(" ")}`,
-      source: ["sdk-math.ts", "sdk-math-clipping.ts", "sdk-math-runtime.ts", "facade-mode.ts"],
+      source: ["sdk-math.ts", "sdk-math-clipping.ts", "sdk-math-runtime.ts", "sdk-local-runtime.ts", "facade-mode.ts"],
       tests: ["sdk-math.test.ts", "sdk-math-clipping.test.ts", "sdk-math-runtime.test.ts", "facade-mode.test.ts"],
       validation: "offline-regression;current-live-unclaimed",
       executionState: "available-with-runtime-guards",
       inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "calculations", query: { method: descriptor9.path, includeSchemas: true } } } }
+    }]);
+  }
+  for (const descriptor9 of sdkSystemDescriptors()) {
+    const existing = routes.get(descriptor9.path) ?? [];
+    routes.set(descriptor9.path, [...existing, {
+      tool: "easyeda_control_system",
+      selector: descriptor9.path,
+      implementation: "public-method",
+      scope: `Separately reviewed EasyEDA 3.2.206/API 0.3.50 local-system subset; no project context or legacy-tuple admission. ${descriptor9.limitations.join(" ")}`,
+      source: ["sdk-system.ts", "sdk-system-runtime.ts", "sdk-local-runtime.ts", "facade-mode.ts"],
+      tests: ["sdk-system.test.ts", "sdk-system-runtime.test.ts", "facade-mode.test.ts"],
+      validation: "offline-regression;current-live-unclaimed",
+      executionState: "available-with-runtime-guards",
+      inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "system", query: { method: descriptor9.path, includeSchemas: true } } } }
     }]);
   }
   for (const descriptor9 of publicSdkReadDescriptors()) {
@@ -51273,6 +51477,7 @@ var init_extension_api_coverage = __esm({
     init_design_execution_lifecycle();
     init_public_sdk_read();
     init_sdk_math();
+    init_sdk_system();
     statusSchema = external_exports.enum(["implemented-public-subset", "implemented-native-equivalent", "internal-lifecycle-only", "implemented-but-blocked", "omitted"]);
     extensionApiCoverageInputSchema = external_exports.object({
       reference: external_exports.enum(["all", "reviewed-installed", "official-latest"]).default("all"),
@@ -70746,14 +70951,14 @@ function nativeUser(header, edit) {
 function line5(type2, ticket2, id9, raw, firstTicket) {
   return `${JSON.stringify({ type: type2, ticket: ticket2, id: id9, ...firstTicket === void 0 ? {} : { firstTicket } })}||${raw}`;
 }
-function head(target5, client, value, ticket2, version3) {
+function head(target5, client, value, ticket2, version4) {
   return `${JSON.stringify({ type: "DOCHEAD", ticket: ticket2 })}||${JSON.stringify({
     docType: "SYMBOL",
     client,
     uuid: target5,
     updateTime: value.updateTime,
     version: value.version,
-    ...version3 === null ? {} : { editVersion: version3 },
+    ...version4 === null ? {} : { editVersion: version4 },
     user: value.user
   })}`;
 }
@@ -70762,13 +70967,13 @@ function applyHeader(current2, edit, ticketValue, selected2) {
   const hasTime = Boolean(current2["updateTime"]);
   const updateTime = number16(hasTime ? current2["updateTime"] : edit["updateTime"]);
   need14(updateTime > 0, "clock-dependent missing/zero final header is not admitted");
-  const version3 = text18(current2["version"]);
+  const version4 = text18(current2["version"]);
   const editVersion = current2["editVersion"];
   need14(editVersion === void 0 || typeof editVersion === "string" && editVersion.length > 0 && editVersion.length <= 128, "stored editor version refused");
   const ticket2 = number16(ticketValue);
   return selected2 === void 0 || selected2.updateTime < updateTime ? {
     updateTime,
-    version: version3,
+    version: version4,
     ticket: selected2 === void 0 ? ticket2 : Math.max(selected2.ticket, ticket2),
     user: nativeUser(current2, edit),
     ...editVersion === void 0 ? {} : { editVersion }
@@ -90351,6 +90556,14 @@ function queryOfflineApi(request2) {
       result = validateSdkMathArguments(request2.query.request);
       break;
     }
+    case "system": {
+      result = querySdkSystemMethods(request2.query ?? {});
+      break;
+    }
+    case "system-validate": {
+      result = validateSdkSystemArguments(request2.query.request);
+      break;
+    }
     case "operations": {
       result = queryOperationCatalog(request2.query);
       break;
@@ -90374,6 +90587,7 @@ var init_offline_api = __esm({
     init_public_sdk_catalog();
     init_operation_catalog();
     init_sdk_math();
+    init_sdk_system();
     apiRequestSchema = external_exports.discriminatedUnion("action", [
       external_exports.object({ action: external_exports.literal("sdk"), query: extensionApiCatalogInputSchema.optional() }).strict(),
       external_exports.object({ action: external_exports.literal("coverage"), query: extensionApiCoverageInputSchema.optional() }).strict(),
@@ -90381,12 +90595,14 @@ var init_offline_api = __esm({
       external_exports.object({ action: external_exports.literal("sdk-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("calculations"), query: sdkMathCatalogQuerySchema.optional() }).strict(),
       external_exports.object({ action: external_exports.literal("calculate-validate"), query: publicSdkValidationQuerySchema }).strict(),
+      external_exports.object({ action: external_exports.literal("system"), query: sdkSystemCatalogQuerySchema.optional() }).strict(),
+      external_exports.object({ action: external_exports.literal("system-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("operations"), query: operationCatalogQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("validate"), query: operationValidationRequestSchema }).strict()
     ]);
     offlineApiToolConfiguration = {
       title: "EasyEDA offline API reference and argument validation",
-      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read or calculation schemas; validate arguments including refinements. Entirely offline: no bridge calls, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
+      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation or local-system schemas; validate arguments including refinements. Entirely offline: no bridge calls, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
       inputSchema: { request: apiRequestSchema },
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
     };
@@ -102166,7 +102382,7 @@ var require_websocket_server = __commonJS({
         socket.on("error", socketOnError);
         const key = req.headers["sec-websocket-key"];
         const upgrade = req.headers.upgrade;
-        const version3 = +req.headers["sec-websocket-version"];
+        const version4 = +req.headers["sec-websocket-version"];
         if (req.method !== "GET") {
           const message = "Invalid HTTP method";
           abortHandshakeOrEmitwsClientError(this, req, socket, 405, message);
@@ -102182,7 +102398,7 @@ var require_websocket_server = __commonJS({
           abortHandshakeOrEmitwsClientError(this, req, socket, 400, message);
           return;
         }
-        if (version3 !== 13 && version3 !== 8) {
+        if (version4 !== 13 && version4 !== 8) {
           const message = "Missing or invalid Sec-WebSocket-Version header";
           abortHandshakeOrEmitwsClientError(this, req, socket, 400, message, {
             "Sec-WebSocket-Version": "13, 8"
@@ -102226,7 +102442,7 @@ var require_websocket_server = __commonJS({
         }
         if (this.options.verifyClient) {
           const info = {
-            origin: req.headers[`${version3 === 8 ? "sec-websocket-origin" : "origin"}`],
+            origin: req.headers[`${version4 === 8 ? "sec-websocket-origin" : "origin"}`],
             secure: !!(req.socket.authorized || req.socket.encrypted),
             req
           };
@@ -104390,7 +104606,7 @@ function stringToBigInt(str) {
 function parse5(input, options) {
   return Parser.parse(input, options);
 }
-var astralIdentifierCodes, astralIdentifierStartCodes, nonASCIIidentifierChars, nonASCIIidentifierStartChars, reservedWords, ecma5AndLessKeywords, keywords$1, keywordRelationalOperator, nonASCIIidentifierStart, nonASCIIidentifier, TokenType, beforeExpr, startsExpr, keywords, types$1, lineBreak, lineBreakG, nonASCIIwhitespace, skipWhiteSpace, ref2, hasOwnProperty, toString, hasOwn, isArray, regexpCache, loneSurrogate, Position, SourceLocation, defaultOptions2, warnedAboutEcmaVersion, SCOPE_TOP, SCOPE_FUNCTION, SCOPE_ASYNC, SCOPE_GENERATOR, SCOPE_ARROW, SCOPE_SIMPLE_CATCH, SCOPE_SUPER, SCOPE_DIRECT_SUPER, SCOPE_CLASS_STATIC_BLOCK, SCOPE_CLASS_FIELD_INIT, SCOPE_SWITCH, SCOPE_VAR, BIND_NONE, BIND_VAR, BIND_LEXICAL, BIND_FUNCTION, BIND_SIMPLE_CATCH, BIND_OUTSIDE, Parser, prototypeAccessors, pp$9, literal5, DestructuringErrors, pp$8, loopLabel, switchLabel, empty$1, FUNC_STATEMENT, FUNC_HANGING_STATEMENT, FUNC_NULLABLE_ID, pp$7, TokContext, types2, pp$6, pp$5, empty2, pp$4, pp$3, Scope, Node, pp$2, scriptValuesAddedInUnicode, ecma9BinaryProperties, ecma10BinaryProperties, ecma11BinaryProperties, ecma12BinaryProperties, ecma13BinaryProperties, ecma14BinaryProperties, unicodeBinaryProperties, ecma14BinaryPropertiesOfStrings, unicodeBinaryPropertiesOfStrings, unicodeGeneralCategoryValues, ecma9ScriptValues, ecma10ScriptValues, ecma11ScriptValues, ecma12ScriptValues, ecma13ScriptValues, ecma14ScriptValues, unicodeScriptValues, data, ecmaVersion, i, list, pp$1, BranchID, RegExpValidationState, CharSetNone, CharSetOk, CharSetString, Token, pp, INVALID_TEMPLATE_ESCAPE_ERROR, version2;
+var astralIdentifierCodes, astralIdentifierStartCodes, nonASCIIidentifierChars, nonASCIIidentifierStartChars, reservedWords, ecma5AndLessKeywords, keywords$1, keywordRelationalOperator, nonASCIIidentifierStart, nonASCIIidentifier, TokenType, beforeExpr, startsExpr, keywords, types$1, lineBreak, lineBreakG, nonASCIIwhitespace, skipWhiteSpace, ref2, hasOwnProperty, toString, hasOwn, isArray, regexpCache, loneSurrogate, Position, SourceLocation, defaultOptions2, warnedAboutEcmaVersion, SCOPE_TOP, SCOPE_FUNCTION, SCOPE_ASYNC, SCOPE_GENERATOR, SCOPE_ARROW, SCOPE_SIMPLE_CATCH, SCOPE_SUPER, SCOPE_DIRECT_SUPER, SCOPE_CLASS_STATIC_BLOCK, SCOPE_CLASS_FIELD_INIT, SCOPE_SWITCH, SCOPE_VAR, BIND_NONE, BIND_VAR, BIND_LEXICAL, BIND_FUNCTION, BIND_SIMPLE_CATCH, BIND_OUTSIDE, Parser, prototypeAccessors, pp$9, literal5, DestructuringErrors, pp$8, loopLabel, switchLabel, empty$1, FUNC_STATEMENT, FUNC_HANGING_STATEMENT, FUNC_NULLABLE_ID, pp$7, TokContext, types2, pp$6, pp$5, empty2, pp$4, pp$3, Scope, Node, pp$2, scriptValuesAddedInUnicode, ecma9BinaryProperties, ecma10BinaryProperties, ecma11BinaryProperties, ecma12BinaryProperties, ecma13BinaryProperties, ecma14BinaryProperties, unicodeBinaryProperties, ecma14BinaryPropertiesOfStrings, unicodeBinaryPropertiesOfStrings, unicodeGeneralCategoryValues, ecma9ScriptValues, ecma10ScriptValues, ecma11ScriptValues, ecma12ScriptValues, ecma13ScriptValues, ecma14ScriptValues, unicodeScriptValues, data, ecmaVersion, i, list, pp$1, BranchID, RegExpValidationState, CharSetNone, CharSetOk, CharSetString, Token, pp, INVALID_TEMPLATE_ESCAPE_ERROR, version3;
 var init_acorn = __esm({
   "node_modules/acorn/dist/acorn.mjs"() {
     astralIdentifierCodes = [509, 0, 227, 0, 150, 4, 294, 9, 1368, 2, 2, 1, 6, 3, 41, 2, 5, 0, 166, 1, 574, 3, 9, 9, 7, 9, 32, 4, 318, 1, 78, 5, 71, 10, 50, 3, 123, 2, 54, 14, 32, 10, 3, 1, 11, 3, 46, 10, 8, 0, 46, 9, 7, 2, 37, 13, 2, 9, 6, 1, 45, 0, 13, 2, 49, 13, 9, 3, 2, 11, 83, 11, 7, 0, 3, 0, 158, 11, 6, 9, 7, 3, 56, 1, 2, 6, 3, 1, 3, 2, 10, 0, 11, 1, 3, 6, 4, 4, 68, 8, 2, 0, 3, 0, 2, 3, 2, 4, 2, 0, 15, 1, 83, 17, 10, 9, 5, 0, 82, 19, 13, 9, 214, 6, 3, 8, 28, 1, 83, 16, 16, 9, 82, 12, 9, 9, 7, 19, 58, 14, 5, 9, 243, 14, 166, 9, 71, 5, 2, 1, 3, 3, 2, 0, 2, 1, 13, 9, 120, 6, 3, 6, 4, 0, 29, 9, 41, 6, 2, 3, 9, 0, 10, 10, 47, 15, 199, 7, 137, 9, 54, 7, 2, 7, 17, 9, 57, 21, 2, 13, 123, 5, 4, 0, 2, 1, 2, 6, 2, 0, 9, 9, 49, 4, 2, 1, 2, 4, 9, 9, 55, 9, 266, 3, 10, 1, 2, 0, 49, 6, 4, 4, 14, 10, 5350, 0, 7, 14, 11465, 27, 2343, 9, 87, 9, 39, 4, 60, 6, 26, 9, 535, 9, 470, 0, 2, 54, 8, 3, 82, 0, 12, 1, 19628, 1, 4178, 9, 519, 45, 3, 22, 543, 4, 4, 5, 9, 7, 3, 6, 31, 3, 149, 2, 1418, 49, 513, 54, 5, 49, 9, 0, 15, 0, 23, 4, 2, 14, 1361, 6, 2, 16, 3, 6, 2, 1, 2, 4, 101, 0, 161, 6, 10, 9, 357, 0, 62, 13, 499, 13, 245, 1, 2, 9, 233, 0, 3, 0, 8, 1, 6, 0, 475, 6, 110, 6, 6, 9, 4759, 9, 787719, 239];
@@ -109766,10 +109982,10 @@ var init_acorn = __esm({
       }
       return this.finishToken(type2, word);
     };
-    version2 = "8.17.0";
+    version3 = "8.17.0";
     Parser.acorn = {
       Parser,
-      version: version2,
+      version: version3,
       defaultOptions: defaultOptions2,
       Position,
       SourceLocation,
@@ -110828,8 +111044,8 @@ async function runSandboxProbe(executable, argument) {
   return { stderr: stderrResult.value, stdout: stdoutResult.value };
 }
 async function assertReviewedSandboxRuntime(executable, expectedVersion) {
-  const version3 = await runSandboxProbe(executable, "--version");
-  if (version3.stderr.length > 0 || version3.stdout !== `bubblewrap ${expectedVersion}
+  const version4 = await runSandboxProbe(executable, "--version");
+  if (version4.stderr.length > 0 || version4.stdout !== `bubblewrap ${expectedVersion}
 `) {
     throw new Error("Reviewed bubblewrap reported an unexpected exact version.");
   }
@@ -113459,7 +113675,7 @@ function ownedContext3(context3) {
   return document3;
 }
 function checkedPayload2(input, kind) {
-  const payload = payloadSchema4.parse(input), { read_consistency: consistency, ...sample } = payload;
+  const payload = payloadSchema5.parse(input), { read_consistency: consistency, ...sample } = payload;
   if (payload.kind !== kind || sha256Json(sample) !== consistency.snapshotSha256) {
     throw new Error("PCB net membership exact observation commitment is invalid.");
   }
@@ -113581,7 +113797,7 @@ async function readPcbNetMembership(engine2, requestInput2, expectedContext, exp
   }
   return result;
 }
-var hash32, consistencySchema4, payloadSchema4;
+var hash32, consistencySchema4, payloadSchema5;
 var init_pcb_net_membership_read = __esm({
   "server/src/pcb-net-membership-read.ts"() {
     init_zod();
@@ -113596,7 +113812,7 @@ var init_pcb_net_membership_read = __esm({
       snapshotSha256: hash32,
       contextBinding: external_exports.object({ level: external_exports.literal("active-context-stability-required"), preAndPostChecked: external_exports.literal(true), switchAwayAndBackDetectable: external_exports.literal(false) }).strict()
     }).strict();
-    payloadSchema4 = external_exports.object({ ok: external_exports.literal(true), kind: external_exports.enum(["pcb-source", "pcb-inventory"]), documentType: external_exports.literal(3), read_consistency: consistencySchema4 }).loose();
+    payloadSchema5 = external_exports.object({ ok: external_exports.literal(true), kind: external_exports.enum(["pcb-source", "pcb-inventory"]), documentType: external_exports.literal(3), read_consistency: consistencySchema4 }).loose();
   }
 });
 
@@ -114011,18 +114227,19 @@ var init_facade_mode = __esm({
       "easyeda_control_api",
       "easyeda_control_discover",
       "easyeda_control_status",
-      "easyeda_control_calculate"
+      "easyeda_control_calculate",
+      "easyeda_control_system"
     ]);
   }
 });
 
-// server/src/sdk-math-runtime.ts
-function validateSdkMathFingerprint(fingerprint) {
+// server/src/sdk-local-runtime.ts
+function validateSdkLocalRuntimeFingerprint(fingerprint) {
   assertExpectedFingerprint(fingerprint);
   const manifestBefore = reviewedCompatibilityManifestFingerprint();
   const manifest = loadReviewedCompatibilityManifest();
-  assertSubset(reviewedCompatibilityManifestFingerprint(), manifestBefore, "SDK math manifest stability");
-  assertSubset(fingerprint.reviewedCompatibilityManifest, manifestBefore, "SDK math manifest identity");
+  assertSubset(reviewedCompatibilityManifestFingerprint(), manifestBefore, "SDK local manifest stability");
+  assertSubset(fingerprint.reviewedCompatibilityManifest, manifestBefore, "SDK local manifest identity");
   const implementation = fingerprint.facadeImplementation;
   const actual = {
     facadeImplementation: {
@@ -114056,10 +114273,39 @@ function validateSdkMathFingerprint(fingerprint) {
   assertSubset(actual, {
     facadeImplementation: manifest.facadeImplementation[implementation.mode],
     upstream: manifest.upstream,
-    connectedRuntime: { ...manifest.connectedRuntime, easyedaVersion: SDK_MATH_RUNTIME_PROFILE.editorReportedVersion },
-    installedBundles: SDK_MATH_RUNTIME_PROFILE.installedBundles
-  }, "SDK math reviewed runtime scope");
+    connectedRuntime: { ...manifest.connectedRuntime, easyedaVersion: SDK_LOCAL_RUNTIME_PROFILE.editorReportedVersion },
+    installedBundles: SDK_LOCAL_RUNTIME_PROFILE.installedBundles
+  }, "SDK local reviewed runtime scope");
   return true;
+}
+var SDK_LOCAL_RUNTIME_PROFILE;
+var init_sdk_local_runtime = __esm({
+  "server/src/sdk-local-runtime.ts"() {
+    init_core3();
+    SDK_LOCAL_RUNTIME_PROFILE = {
+      schema: "easyeda-pro-control.sdk-local-runtime.v1",
+      // The authenticated handshake forwards getEditorCurrentVersion(), which
+      // Reports editorMainVersion, not the suffixed installed package version.
+      editorReportedVersion: "3.2.206",
+      installedBundles: {
+        pcbEditor: {
+          version: "3.2.193.682ed44e",
+          implementationSha256: "217199c8532c48aa50ed5fc254ddf2e6d09c886984c9498b5eea4d1cf0b7ef33"
+        },
+        publicApi: {
+          version: "0.3.50.ab46409c",
+          implementationSha256: "021d155baafbcdc7b558da12f0834a8ee473aa37e276c6ea679936f952080c76",
+          adapterSha256: "5570385041b304d6b2fc8ce59de7e0030f2732913cf6d43861fe985e0c079f3a",
+          declarationsSha256: "d5fe990034c55001302ea6c3f704c2d4b88cdf23253cc5293b3bad62a32b9def"
+        }
+      }
+    };
+  }
+});
+
+// server/src/sdk-math-runtime.ts
+function validateSdkMathFingerprint(fingerprint) {
+  return validateSdkLocalRuntimeFingerprint(fingerprint);
 }
 async function calculateSdkMath(engine2, requestInput2, expectedFingerprint) {
   const request2 = parseSdkMathRequest(requestInput2);
@@ -114106,24 +114352,66 @@ var init_sdk_math_runtime = __esm({
   "server/src/sdk-math-runtime.ts"() {
     init_core3();
     init_exact_readers();
+    init_sdk_local_runtime();
     init_sdk_math();
     SDK_MATH_RUNTIME_PROFILE = {
-      schema: "easyeda-pro-control.sdk-math-runtime.v1",
-      // The authenticated handshake forwards getEditorCurrentVersion(), which
-      // Reports editorMainVersion, not the suffixed installed package version.
-      editorReportedVersion: "3.2.206",
-      installedBundles: {
-        pcbEditor: {
-          version: "3.2.193.682ed44e",
-          implementationSha256: "217199c8532c48aa50ed5fc254ddf2e6d09c886984c9498b5eea4d1cf0b7ef33"
-        },
-        publicApi: {
-          version: SDK_MATH_API_VERSION,
-          implementationSha256: SDK_MATH_API_SHA256,
-          adapterSha256: "5570385041b304d6b2fc8ce59de7e0030f2732913cf6d43861fe985e0c079f3a",
-          declarationsSha256: "d5fe990034c55001302ea6c3f704c2d4b88cdf23253cc5293b3bad62a32b9def"
-        }
-      }
+      ...SDK_LOCAL_RUNTIME_PROFILE,
+      schema: "easyeda-pro-control.sdk-math-runtime.v1"
+    };
+  }
+});
+
+// server/src/sdk-system-runtime.ts
+async function readSdkSystem(engine2, requestInput2, expectedFingerprint) {
+  const request2 = parseSdkSystemRequest(requestInput2);
+  const expected3 = structuredClone(expectedFingerprint);
+  validateSdkLocalRuntimeFingerprint(expected3);
+  await engine2.assertBridgeDispatchAllowed();
+  const initialStatus = await engine2.status();
+  const initial = structuredClone(initialStatus.stableFingerprint);
+  validateSdkLocalRuntimeFingerprint(initial);
+  assertSubset(initial, expected3, "SDK system expected runtime");
+  await engine2.assertBridgeDispatchAllowed();
+  const raw = await engine2.upstream.callTool("easyeda_execute", {
+    code: buildSdkSystemProgram(request2),
+    timeoutMs: 6e4,
+    confirmWrite: true
+  }, 7e4);
+  assertUpstreamReplySettled(raw);
+  const envelope2 = extractToolPayload(raw);
+  if (Buffer.byteLength(JSON.stringify(envelope2), "utf8") > SDK_SYSTEM_MAX_BYTES) {
+    throw new Error("SDK system reply exceeds its byte bound.");
+  }
+  const result = validateSdkSystemResult(request2, decodeExactReadEnvelope(envelope2));
+  await engine2.assertBridgeDispatchAllowed();
+  const finalStatus = await engine2.status();
+  const finalFingerprint = finalStatus.stableFingerprint;
+  validateSdkLocalRuntimeFingerprint(finalFingerprint);
+  if (canonicalJson(finalFingerprint) !== canonicalJson(initial)) {
+    throw new Error("SDK system runtime changed around the local operation.");
+  }
+  const response3 = { ...result, runtimeAdmission: {
+    profile: SDK_SYSTEM_RUNTIME_PROFILE.schema,
+    fingerprintSha256: sha256Json(initial),
+    beforeAndAfterChecked: true,
+    scope: "fixed-local-sdk-system",
+    liveValidation: "not-recorded"
+  } };
+  if (Buffer.byteLength(JSON.stringify(response3), "utf8") > SDK_SYSTEM_MAX_BYTES) {
+    throw new Error("SDK system result exceeds its byte bound.");
+  }
+  return response3;
+}
+var SDK_SYSTEM_RUNTIME_PROFILE;
+var init_sdk_system_runtime = __esm({
+  "server/src/sdk-system-runtime.ts"() {
+    init_core3();
+    init_exact_readers();
+    init_sdk_local_runtime();
+    init_sdk_system();
+    SDK_SYSTEM_RUNTIME_PROFILE = {
+      ...SDK_LOCAL_RUNTIME_PROFILE,
+      schema: "easyeda-pro-control.sdk-system-runtime.v1"
     };
   }
 });
@@ -116134,6 +116422,8 @@ var init_src = __esm({
     init_facade_mode();
     init_sdk_math();
     init_sdk_math_runtime();
+    init_sdk_system();
+    init_sdk_system_runtime();
     facadeMode = configuredFacadeMode(process18.env);
     MAX_INLINE_RESULT_BYTES = 256 * 1024;
     MAX_CAPTURE_PNG_BYTES = 16 * 1024 * 1024;
@@ -116572,6 +116862,7 @@ var init_src = __esm({
       easyeda_control_api: external_exports.object({ offline: external_exports.boolean().optional(), result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_sdk_read: evidenceSuccessOutputSchema,
       easyeda_control_calculate: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
+      easyeda_control_system: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_check: external_exports.object({ result: routeAuditResultSchema.optional(), operationId: external_exports.string().optional(), state: external_exports.string().optional(), report: external_exports.unknown().optional(), proof: external_exports.unknown().optional(), reportArtifact: external_exports.unknown().optional(), nextSafeAction: external_exports.string().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_native_ui: external_exports.object({ schema: external_exports.string().optional(), action: external_exports.string().optional(), result: external_exports.unknown().optional(), observations: external_exports.array(external_exports.unknown()).optional(), authority: external_exports.string().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_runtime: external_exports.object({ action: external_exports.string().optional(), result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
@@ -116601,7 +116892,7 @@ var init_src = __esm({
       { name: "easyeda-pro-control", version: CONTROL_VERSION },
       {
         capabilities: { tools: {} },
-        instructions: facadeMode === "calculation-only" ? "Calculation-only compatibility mode. Only status, local reference/discovery and separately version-pinned SDK calculations are registered. No project readers, native controls, navigation, design changes, Save or recovery tools are available. Calculation admission does not admit any other method. Use offline API calculation schemas and validation first. The mode stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
+        instructions: facadeMode === "calculation-only" ? "Local-utility compatibility mode. Only status, local reference/discovery, separately version-pinned SDK calculations and bounded system observations are registered. No project readers, native controls, navigation, design changes, Save or recovery tools are available. Utility admission does not admit legacy methods. Use offline API schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
       }
     );
     registerFacadeTool(
@@ -116626,13 +116917,14 @@ var init_src = __esm({
           libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
           ...facadeMode === "calculation-only" ? {
             availableTools: CALCULATION_ONLY_TOOLS,
-            capabilityScope: "Sixteen separately reviewed SDK calculation subsets only; no project access or legacy-route admission."
+            capabilityScope: "Sixteen SDK calculation and eighteen local system-method subsets; separate runtime admission, no project access or legacy-route admission."
           } : {}
         },
         upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
           ...await engine.status(),
           capabilities: {
             sdkCalculations: { tool: "easyeda_control_calculate", runtimeAdmissionRequired: true },
+            sdkSystem: { tool: "easyeda_control_system", runtimeAdmissionRequired: true },
             designAccess: { enabled: false },
             navigation: { enabled: false }
           }
@@ -116641,7 +116933,7 @@ var init_src = __esm({
         upstreamProcess: upstream.processDiagnostics(),
         incompleteOperations: admission.incompleteOperations,
         incompleteOperationsObservedAt: admission.observedAt,
-        safetyModel: facadeMode === "legacy-reviewed" ? "plan-apply-verify-save-reopen-checkpoint" : "fixed-calculations-with-separate-runtime-admission"
+        safetyModel: facadeMode === "legacy-reviewed" ? "plan-apply-verify-save-reopen-checkpoint" : "fixed-local-utilities-with-separate-runtime-admission"
       }))
     );
     registerFacadeTool(
@@ -116669,7 +116961,7 @@ var init_src = __esm({
       },
       guarded(async (input) => {
         if (facadeMode === "calculation-only" && input.source === "live") {
-          throw new Error("Live upstream discovery is unavailable in calculation-only mode; use the local API calculation catalog.");
+          throw new Error("Live upstream discovery is unavailable in local-utility mode; use the offline API catalogs.");
         }
         const entries3 = await discoverReviewedOrLiveTools(
           () => engine.assertBridgeDispatchAllowed(),
@@ -117060,6 +117352,16 @@ var init_src = __esm({
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
       serializedLiveGuarded(async (input) => ({ result: await calculateSdkMath(engine, input.request, input.expectedFingerprint) }))
+    );
+    registerFacadeTool(
+      "easyeda_control_system",
+      {
+        title: "Read local EasyEDA environment or convert units",
+        description: "Run one of eighteen fixed sys_Environment/sys_Unit subsets on separately reviewed EasyEDA 3.2.206/API 0.3.50. Uses the actual authenticated status fingerprint, without active project/context, navigation, Save, network or files. Units accept bounded scalars and precision; environment values describe API initialization metadata, not live account permissions. The compiled-date getter may populate an extension-local cache. Version comparators compare the supplied version against the current version. Inspect offline API system and system-validate first. No arbitrary method, code, callback or legacy-route admission; no connected validation is implied.",
+        inputSchema: { request: external_exports.unknown().pipe(sdkSystemRequestSchema), expectedFingerprint: privateFingerprintSchema },
+        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+      },
+      serializedLiveGuarded(async (input) => ({ result: await readSdkSystem(engine, input.request, input.expectedFingerprint) }))
     );
     registerFacadeTool(
       "easyeda_control_sdk_read",

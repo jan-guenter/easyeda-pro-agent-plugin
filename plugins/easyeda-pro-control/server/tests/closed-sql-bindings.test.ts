@@ -45,7 +45,11 @@ const changes: Readonly<Record<string, (value: Input) => void>> = {
   "wrong phase": (value) => { Reflect.set(value, "phase", "edit-copy"); },
   "unknown phase": (value) => { Reflect.set(value, "phase", "missing"); },
   "wrong project path": (value) => { Reflect.set(value.journal.plan, "projectPath", `${value.journal.plan.projectPath}.peer`); },
-  "wrong operation directory": (value) => { value.journal.operationId = value.journal.operationId.replace(/.$/u, "0"); },
+  "wrong operation directory": (value) => {
+    const originalId = value.journal.operationId;
+    value.journal.operationId = originalId.replace(/.$/u, originalId.endsWith("0") ? "1" : "0");
+    assert.notEqual(value.journal.operationId, originalId);
+  },
   "missing result": (value) => { Reflect.set(value, "events", value.events.filter((item) => item.kind !== "result" || item.step !== "baseline-copy")); },
   "missing intent": (value) => { Reflect.set(value, "events", value.events.filter((item) => item.kind !== "intent" || item.step !== "baseline-copy")); },
   "wrong generation ordinal": (value) => { record(event(value, "result")["generation"])["ordinal"] = 1; },

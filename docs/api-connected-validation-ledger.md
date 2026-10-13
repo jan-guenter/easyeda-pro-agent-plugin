@@ -1001,3 +1001,45 @@ The next candidate corrects this package-version/editor-reported-version
 confusion without changing bundle hashes or old design pins. The installed
 owner is not patched and the known refusal is not retried. No project/context
 reader, navigation, Save, settings change or C10 recovery was invoked.
+
+## 2026-10-13: M02/M03, supplied-coordinate math on installed161000
+
+Restarted161000 loaded from merged main `2b280b0bc177a44a03a63be749a78d9921eade17`,
+package tree `480709208526d69a9d1c05e692875e6f25881128`. Independent verification
+matched all 1,125 installed files, 21,895,703 bytes and file modes. Inventory
+SHA-256 is `1ef1e96c8601e5085ad3ac45fc4bf4b0acb46ea9f3bc071b5f20e6f83c556415`.
+Actual facade68498 reports runtime projection
+`3654c59582f1653094773e316f4268558a850786c84aa223810f2471f1745641`; prior51072
+is absent. Source projection is
+`54a886272cff526166f57b5d824198710313705336a42a3db33ca90502b2fe32`.
+
+The first status had no bridge. After the user started EasyEDA, authenticated
+status reported editor3.2.206, API0.3.50, dispatcher ded07x99dcxb504 from
+loader_status, one established session and no upstream drift. The status
+structured-content transcript commitment is
+`08a0f11ebc4a2773329b2ef3d7cd1ec9bfc6e84e16c898a28fb2f91108f988d9`, 23,854 bytes.
+Both calls below used that actual fingerprint, queried their exact offline
+schemas and passed exact argument validation before dispatch.
+
+- M02: `calculateArea` of (0,0),(10,0),(0,10) returned exactly50. Result transcript
+  commitment `8f1089ce6f512fe0144c8ae1ff8f0b9a1b5b19fc9c8b92f8dd0c7a2bba765816`,
+  1,444 bytes.
+- M03: `subtract` of inner square (2,2),(6,2),(6,6),(2,6) from outer square
+  (0,0),(8,0),(8,8),(0,8) returned one complete group. Its outer and sole hole
+  each repeat their first point as closure, preserving all five points in that
+  order. Result transcript commitment
+  `75da8af5788574c71169529762376399a43080248f60d21b4a61dea2f732a24c`, 2,182 bytes.
+
+Each public call performed one fixed SDK execution containing two synchronous
+samples and passed complete before/after runtime checks. Returned fingerprint
+commitment is `0b52775dc3b92efdeeaa4827423acf51cd7fb36d401b36ed0347710326bc5d20`.
+These are transcript commitments, not managed design artifacts or saved-state
+proofs. The two cases establish only these supplied inputs on installed161000.
+No other method, crossing geometry, boundary behavior, editor, persistence or
+later generation is validated. No project/context read, navigation, Save,
+shared-setting change, bridge import or C10 recovery occurred.
+
+The user asks the agent to handle EasyEDA startup itself in future sessions.
+Restore a supported new-version launcher as the next compatibility priority;
+do not make repeated manual startup the normal workflow or expose old editing
+routes merely to obtain a launch tool.

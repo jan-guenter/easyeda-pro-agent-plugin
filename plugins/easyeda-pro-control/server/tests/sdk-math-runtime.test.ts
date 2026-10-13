@@ -105,7 +105,7 @@ void test("invalid requests, unadmitted expected/observed runtime and quarantine
 
 void test("post-calculation API drift refuses the otherwise valid result without replay", async () => {
   const fixture = runtime({ finalDrift: true });
-  await assert.rejects(calculateSdkMath(fixture.engine, request, fingerprint()), /SDK math reviewed runtime scope/u);
+  await assert.rejects(calculateSdkMath(fixture.engine, request, fingerprint()), /SDK local reviewed runtime scope/u);
   assert.equal(fixture.calls.filter((name) => name === "easyeda_execute").length, 1);
 });
 

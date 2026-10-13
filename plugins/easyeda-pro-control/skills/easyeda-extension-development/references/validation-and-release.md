@@ -86,8 +86,10 @@ fallback. Never update a checksum solely because an admission check refused it.
 
 Compatibility can be capability-specific. The supplied-coordinate math profile
 admits its reviewed API 0.3.50 closure without changing the older design tuple.
-New or unknown configured generations register only reference, discovery, status
-and calculation tools. Each calculation still requires its exact hashes and
+The local environment/unit profile shares exact identity checks but fixes its
+own reviewed methods and effects, including a compiled-date local-cache write.
+New or unknown configured generations register only reference, discovery, status,
+calculation and local-system tools. Each execution requires its exact hashes and
 authenticated session. Keep this registration boundary separate from runtime
 admission; adding a method to discovery must not expose unrelated old adapters.
 

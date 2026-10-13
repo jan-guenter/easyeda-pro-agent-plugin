@@ -19,18 +19,21 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261013161000` provides bounded subsets of all sixteen
-`sys_Math` methods through `easyeda_control_calculate`. The five clipping methods
-accept small orthogonal integer polygons and preserve holes and disconnected
-output regions. The runtime profile now distinguishes the observed editor
-version from the installer version. Calculations use supplied coordinates, not CAD
-objects. The older reviewed tuple exposes 29 tools; a configured newer or unknown
-tuple exposes only API reference, local discovery, status and calculations.
-Calculation execution separately requires the exact reviewed EasyEDA 3.2.206 /
-API 0.3.50 hashes and an authenticated session. This does not enable design
-readers, navigation or writers on the new version. Seven skills remain included.
-See the [clipping release](docs/clipping-release-2026-10-13.md)
-for bounds, verification and remaining work.
+Update `0.3.0+codex.20261013170000` adds `easyeda_control_system` with six
+mil/mm/inch conversions and twelve environment methods, including the two
+version comparators. Strict arguments, signed-zero transport and fixed scalar
+projections preserve the reviewed SDK semantics. The sixteen geometry methods
+remain under `easyeda_control_calculate`. Installed161000 passed one triangle
+area and one nested-square subtraction with a complete hole; these cases do not
+validate all methods or this newer source generation.
+
+The older reviewed tuple exposes 30 tools. A configured newer or unknown tuple
+exposes five: API reference, local discovery, status, calculations and local
+system methods. The internal mode name remains `calculation-only`. Execution
+separately requires the exact reviewed EasyEDA 3.2.206 / API 0.3.50 hashes and an
+authenticated session. No project reader, launcher, navigation or writer is
+enabled on the new version. Seven skills remain included. See the
+[system-method release](docs/system-release-2026-10-13.md) for limits and backlog.
 
 When a trusted machine profile selects missing or invalid external
 installation files, startup instead exposes three offline-only tools: API
@@ -68,9 +71,9 @@ namespaces / 749 declared signatures and 99 latest official namespaces / 806
 signatures. Its `coverage` action inventories all 774 distinct mounted method
 paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
-Current source classifications are 209 public subsets, 30 native equivalents,
-no lifecycle-only methods, 82 implemented-but-blocked methods and 453
-omissions. Their execution routes comprise 290 available with runtime guards,
+Current source classifications are 211 public subsets, 30 native equivalents,
+no lifecycle-only methods, 82 implemented-but-blocked methods and 451
+omissions. Their execution routes comprise 308 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)
