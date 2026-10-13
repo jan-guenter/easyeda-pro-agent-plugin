@@ -50,6 +50,15 @@ function add(namespace: string, methods: readonly string[], tool: string, select
     ...(inputDiscovery === undefined ? {} : { inputDiscovery }) } });
 }
 
+groups.push({ namespace: "sys_ShortcutKey", methods: ["getShortcutKeys"], route: {
+  tool: "easyeda_control_shortcuts", selector: "eda.sys_ShortcutKey.getShortcutKeys", implementation: "public-method",
+  scope: "Separately pinned current API 0.3.50/UI 3.2.196 public shortcut-registry read, without design context or legacy-route admission. Optional includeSystem defaults false. Two owner-stable bounded copies preserve raw key strings, order, duplicates and empty tokens. Shortcut scope enums are not document types. No key execution, registration, navigation, settings or Save; the separate menu registry is excluded and vendor enumeration is not cancelled by the observer deadline.",
+  source: ["shortcut-keys.ts", "shortcut-keys-runtime.ts", "current-ui-implementation.ts", "sdk-local-runtime.ts", "facade-mode.ts"],
+  tests: ["shortcut-keys.test.ts", "shortcut-keys-runtime.test.ts", "facade-mode.test.ts"],
+  validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "shortcuts", query: { includeSchemas: true } } } },
+} });
+
 add("sys_FileManager", ["getDocumentSource"], "easyeda_control_exact_read", "*-source", "public-method",
   "Complete active schematic, symbol, PCB or footprint source, bounded and normalized only for volatile DOCHEAD export fields.", ["exact-readers.ts"], ["exact-readers.test.ts"]);
 add("dmt_EditorControl", ["getCurrentRenderedAreaImage"], "easyeda_control_capture", "easyeda_canvas_capture", "public-method",

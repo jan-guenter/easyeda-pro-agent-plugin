@@ -18,10 +18,12 @@ project-file invariance does not cover global preferences or backup pruning.
 
 The source inventory classifies 774 method paths as 211 public subsets, 30
 native equivalents, no lifecycle-only, 82 implemented-but-blocked and 451
-omitted. It maps 308 runtime-guarded available routes, 94 blocked routes and
+omitted. It maps 309 runtime-guarded available routes, 94 blocked routes and
 two partially blocked routes. The fixed SDK-read catalog has 182 entries,
 including 21 native equivalents. These counts describe implementations, not
 whole-method live validation or admission of the installed host.
+The legacy-compatible catalog has 35 tools; the restricted current-version
+catalog has ten, with separate exact admission for each live capability.
 
 Eight symbol/page/container metadata-writing routes are also blocked pending
 operation-owned structure-job completion and exact SQL-effect proof. Historical
@@ -43,6 +45,7 @@ below describe retained source contracts, not execution support for types1/2/3.
 | Ordinary current-version startup | launch | Fixed no-argument executable with exact installed code/helper pins, explicit existing-profile effects and durable attempt tracking. Retained root/Job termination can permit a later launch; unresolved lost handles block. No isolation, bridge, Start Page, navigation or CAD claim |
 | Current editor-shell observation | editor_shell | Bounded container/tab counts and registered Start Page flags on separately pinned API/UI; two stable samples, no titles/paths/document IDs. No visibility, restored-state completion, project closure or navigation authority |
 | Current identity-only context | editor_context | Bounded active ordinary document and UI project/branch identity metadata; explicit no-document/unsupported states, no titles/paths/content. No manager/database ownership, persistence or later-operation authority; not legacy context admission |
+| Current configured shortcuts | shortcuts; api shortcuts/shortcuts-validate | Fixed public getShortcutKeys query; optional includeSystem defaults false. Preserves raw key strings and shortcut-specific scope enums under complete bounded double samples and API/UI pins. No keypress, registration, focus/executability or complete inventory claim; source-tested, connected validation pending |
 | Connection and active context | status, context | Authenticated responsive session, exact project path/UUID and document/type/tab |
 | Existing project/document open | runtime open-existing | Saved PCB or schematic page; exact registry/checkpoint membership, exclusive-tab guard and complete unchanged SQLite proof. Imported SYMBOL/FOOTPRINT header provenance is retained and compared; installed083400 passed a disposable12document open. Later generations require separate admission. No creation, save, discard or replacement |
 | Exact schematic components | exact_read | Stable double samples with fixed public projections; schematic-topology disabled pending a verified non-mutating replacement |
@@ -115,6 +118,18 @@ below describe retained source contracts, not execution support for types1/2/3.
 | Raw JavaScript, automatic database restore, fabrication submission | unsupported | No unrestricted-code switch or implicit purchasing/manufacturing authority |
 
 ## Reported live coverage
+
+Installed `0.3.0+codex.20261013201500` completed ordinary existing-profile launch,
+then separately authenticated and observed the registered Start Page. The
+identity reader returned Start Page, undefined project and empty branch fields
+under the same before/after fingerprint. No project was deliberately opened.
+The shell response is bound to
+`c00242a36d07dd88424fbf51f2dcda85e94ffbede029d15a2c81bc4c48aab44e`
+and context response to
+`bad904f7c3700c48674c1ac6f8b8356ce939171e6bbfe5507b7cc54e022b69dd`.
+These observations prove neither visibility/focus nor restoration completion,
+project closure or persistence. They do not validate the new shortcut reader,
+the shared UI-verifier refactor or other context states.
 
 Installed220050 passed one configured-font-title observation in an ordinary
 schematic and a named three-segment wire's forward/reverse Save/reopen pair.

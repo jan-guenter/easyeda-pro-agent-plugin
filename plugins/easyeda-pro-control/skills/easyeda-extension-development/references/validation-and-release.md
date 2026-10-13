@@ -89,7 +89,7 @@ admits its reviewed API 0.3.50 closure without changing the older design tuple.
 The local environment/unit profile shares exact identity checks but fixes its
 own reviewed methods and effects, including a compiled-date local-cache write.
 New or unknown configured generations register reference, discovery, status,
-calculation, local-system, fixed extension-index/editor-shell/identity-context observers and the
+calculation, local-system, shortcut/extension-index/editor-shell/identity-context observers and the
 separate ordinary launcher. Bridge execution requires exact hashes and an
 authenticated session. Launch instead requires exact installed/profile-specific
 code admission, explicit existing-profile effects and durable attempt tracking;
@@ -98,6 +98,17 @@ admission; adding a method to discovery must not expose unrelated old adapters.
 The identity-context observer is native UI metadata only. Its project/branch
 fields and canonical active-document subset do not admit legacy context readers,
 project-manager RPCs, file paths, navigation or transactions.
+
+The current shortcut reader calls only `sys_ShortcutKey.getShortcutKeys`.
+Its optional `includeSystem` defaults false; preserve the actual raw keys,
+including mixed-case system names and empty tokens that differ from the
+declaration union. Shortcut scopes are not document-type enums. Bound and copy
+both complete samples, retain public/RPC/locale owners, and pin the delegated
+UI implementation as well as the API. Output bounds do not bound or cancel
+the vendor's preceding enumeration. Registration, callbacks and keyboard input
+remain outside that reader. Prior201500 launch/authentication and Start Page
+shell/context observations do not validate this new route or the shared
+UI-verifier refactor.
 
 When publishing, preserve the immutable private bridge identity/key epoch and
 reproduce all bundle/license inputs. A changed reviewed bridge source closure

@@ -9,6 +9,7 @@ export const CALCULATION_ONLY_TOOLS = Object.freeze([
   "easyeda_control_system", "easyeda_control_extensions",
   "easyeda_control_launch", "easyeda_control_editor_shell",
   "easyeda_control_editor_context",
+  "easyeda_control_shortcuts",
 ]);
 
 export function configuredFacadeMode(environment: Readonly<Record<string, string | undefined>>): FacadeMode {

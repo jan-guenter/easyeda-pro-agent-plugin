@@ -9,6 +9,7 @@ import { queryStartupExtensions, startupExtensionsQuerySchema, validateStartupEx
 import { editorShellQuerySchema, queryEditorShell, validateEditorShellArguments } from "./editor-shell.ts";
 import { editorContextQuerySchema, queryEditorContext, validateEditorContextArguments } from "./editor-context.ts";
 // oxlint-disable-next-line import/max-dependencies -- This fixed offline router imports each capability's own validator; an intermediary would only hide those dependencies.
+import { queryShortcutKeys, shortcutKeysQuerySchema, validateShortcutKeysArguments } from "./shortcut-keys.ts";
 import { queryOrdinaryLaunch, validateOrdinaryLaunchArguments } from "./ordinary-launch.ts";
 
 const ordinaryLaunchQuerySchema = z.object({ includeSchemas: z.boolean().default(false) }).strict();
@@ -28,6 +29,8 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("editor-shell-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("editor-context"), query: editorContextQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("editor-context-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("shortcuts"), query: shortcutKeysQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("shortcuts-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("launch"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("launch-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("operations"), query: operationCatalogQuerySchema }).strict(),
@@ -36,7 +39,7 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
 
 export const offlineApiToolConfiguration = {
   title: "EasyEDA offline API reference and argument validation",
-  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context or ordinary-launch schemas; validate arguments including refinements. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
+  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key or ordinary-launch schemas; validate arguments including refinements. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
   inputSchema: { request: apiRequestSchema },
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
 };
@@ -58,6 +61,8 @@ export function queryOfflineApi(request: z.infer<typeof apiRequestSchema>): { of
     case "editor-shell-validate": { result = validateEditorShellArguments(request.query.request); break; }
     case "editor-context": { result = queryEditorContext(request.query ?? {}); break; }
     case "editor-context-validate": { result = validateEditorContextArguments(request.query.request); break; }
+    case "shortcuts": { result = queryShortcutKeys(request.query ?? {}); break; }
+    case "shortcuts-validate": { result = validateShortcutKeysArguments(request.query.request); break; }
     case "launch": { result = queryOrdinaryLaunch(request.query ?? {}); break; }
     case "launch-validate": { result = validateOrdinaryLaunchArguments(request.query.request); break; }
     case "operations": { result = queryOperationCatalog(request.query); break; }
