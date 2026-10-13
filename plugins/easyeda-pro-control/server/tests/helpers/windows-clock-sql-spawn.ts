@@ -22,7 +22,7 @@ export function syntheticSqlSpawn(executable: unknown, args: unknown, options: u
   if (nodeAlias) {
     assert.equal(process.version, "v24.18.0"); assert.equal(realpathSync(executable), realpathSync(process.execPath));
     const fixedArgs = ["--max-old-space-size=192", "--input-type=module", "--eval", SQLITE_INVENTORY_PROGRAM];
-    const fixed: SpawnOptions = { env: { NODE_NO_WARNINGS: "1" }, stdio: ["pipe", "pipe", "pipe", descriptor] };
+    const fixed: SpawnOptions = { cwd: "/", env: { NODE_NO_WARNINGS: "1" }, stdio: ["pipe", "pipe", "pipe", descriptor] };
     assert.deepEqual(args, fixedArgs); assert.deepEqual(options, fixed);
     return originalSpawn(executable, fixedArgs, fixed);
   }

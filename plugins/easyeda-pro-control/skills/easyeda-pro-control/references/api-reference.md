@@ -67,16 +67,18 @@ It never opens pages, compiles a netlist or saves. The result explicitly reports
 `transactionTopology:false` and does not claim connected validation. Use its
 specific refusal to identify unsupported input; do not substitute cached nets.
 
-## Ordinary startup and editor-shell schemas
+## Ordinary startup and editor-observation schemas
 
 Ordinary startup and editor-shell observation also have offline schemas. Query
-`launch` or `editor-shell` with `query:{"includeSchemas":true}`, then use
-`launch-validate` or `editor-shell-validate` with `query:{"request":...}`.
+`launch`, `editor-shell` or `editor-context` with `query:{"includeSchemas":true}`, then use
+the corresponding `launch-validate`, `editor-shell-validate` or
+`editor-context-validate` with `query:{"request":...}`.
 Validation does not launch or authorize anything. The launcher accepts only
 fixed launch/inspect/observe-termination requests. The observer accepts only
-`{"action":"observe-editor-shell"}`. Their lifecycle and interpretation limits
+`{"action":"observe-editor-shell"}` or, for identity metadata,
+`{"action":"observe-editor-context"}`. Their lifecycle and interpretation limits
 are in [connection and context](connection-and-context.md#ordinary-application-startup-on-the-current-tuple).
-Neither is a newly covered public SDK method, so the distinct-method inventory
+These are not newly covered public SDK methods, so the distinct-method inventory
 above does not increase.
 
 ## Supplied-coordinate calculations on the new tuple

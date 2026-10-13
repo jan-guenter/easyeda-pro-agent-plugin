@@ -13,7 +13,7 @@ void test("only the exact legacy configuration retains legacy tool registration"
 });
 
 void test("calculation-only registration has no design, navigation, raw or recovery route", () => {
-  assert.equal(CALCULATION_ONLY_TOOLS.length, 8);
+  assert.equal(CALCULATION_ONLY_TOOLS.length, 9);
   for (const name of CALCULATION_ONLY_TOOLS) { assert.equal(facadeToolRegistered("calculation-only", name), true); }
   for (const name of ["easyeda_control_design", "easyeda_control_sdk_read", "easyeda_control_read",
     "easyeda_control_read_batch", "easyeda_control_context", "easyeda_control_native_ui", "easyeda_control_runtime",

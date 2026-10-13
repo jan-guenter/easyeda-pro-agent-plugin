@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import childProcess from "node:child_process";
 import type { ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
-import { copyFile, mkdtemp, open, readFile } from "node:fs/promises";
+import { copyFile, mkdtemp, open, readFile, rmdir } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { DatabaseSync } from "node:sqlite";
 import { describe, test } from "node:test";
@@ -112,6 +112,24 @@ void describe("isolated SQLite reader transport admission", { concurrency: false
       assert.equal(readerCompletion(result).exitCode, 0);
       assert.equal(readerCompletion(result).exitSignal, null);
     });
+  });
+
+  void test("reader survives a removed package working directory without changing its parent cwd", async () => {
+    const input = await fixture();
+    const originalDirectory = process.cwd();
+    const removedDirectory = await mkdtemp(`${input.directory}/retired-package-`);
+    try {
+      process.chdir(removedDirectory);
+      // Remove only this empty synthetic directory, never a package or control root.
+      await rmdir(removedDirectory);
+      assert.throws(() => process.cwd(), { code: "ENOENT" });
+      const result = await readExactSqlInventory(input);
+      assert.equal(result.checkpointSha256, input.expectedSha256);
+      assert.equal(readerCompletion(result).observedChildClose, true);
+      assert.equal(readerCompletion(result).exitCode, 0);
+      assert.equal(readerCompletion(result).exitSignal, null);
+      assert.throws(() => process.cwd(), { code: "ENOENT" });
+    } finally { process.chdir(originalDirectory); }
   });
 
   void test("child refuses substituted inherited database fd even for identical source bytes", async (context) => {

@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { constants } from "node:fs";
-import fileSystem, { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import fileSystem, { constants, mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
 import { loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint } from "../src/core.ts";
 import type { ExpectedFingerprint } from "../src/core.ts";
-import { EDITOR_SHELL_RUNTIME_PROFILE, readEditorShell } from "../src/editor-shell-runtime.ts";
+import { buildEditorContextProgram } from "../src/editor-context.ts";
+import { EDITOR_CONTEXT_RUNTIME_PROFILE, EDITOR_SHELL_RUNTIME_PROFILE, readEditorContext, readEditorShell } from "../src/editor-shell-runtime.ts";
 import type { EditorShellEngine } from "../src/editor-shell-runtime.ts";
 import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
 
@@ -65,7 +65,7 @@ function mockSyntheticUiDigest(context: TestContext, calls: string[]): void {
   context.after(() => { context.mock.restoreAll(); syncBuiltinESMExports(); });
 }
 
-async function runtime(options: { reply?: unknown; changeUi?: boolean; finalDrift?: boolean; quarantine?: boolean } = {}): Promise<{
+async function runtime(options: { reply?: unknown; changeUi?: boolean; finalDrift?: boolean; quarantine?: boolean; expectedCode?: string } = {}): Promise<{
   engine: EditorShellEngine; calls: string[]; expected: ExpectedFingerprint;
 }> {
   const isolatedRoot = process.env["EASYEDA_CONTROL_DATA_DIR"];
@@ -89,6 +89,7 @@ async function runtime(options: { reply?: unknown; changeUi?: boolean; finalDrif
       calls.push(name); assert.equal(name, "easyeda_execute"); assert.ok(args);
       assert.equal(args["confirmWrite"], true); assert.equal(args["timeoutMs"], 60_000); assert.equal(timeoutMs, 70_000);
       assert.equal(typeof args["code"], "string");
+      if (options.expectedCode !== undefined) { assert.equal(args["code"], options.expectedCode); }
       if (options.changeUi === true) { await writeFile(ui, "changed synthetic UI"); }
       return options.reply ?? encoded(payload);
     } },
@@ -101,6 +102,26 @@ void test("editor shell runtime pins UI around one guarded observation without s
   assert.deepEqual(fixture.calls, ["guard", "status", "ui-hash", "guard", "easyeda_execute", "ui-hash", "guard", "status"]);
   assert.equal(result["startPageActive"], true);
   const admission = result["runtimeAdmission"]; assert.ok(admission !== null && typeof admission === "object");
+  for (const field of ["startupQualified", "cadAuthority", "persistenceVerified"]) { assert.equal(Reflect.get(admission, field), false); }
+  assert.equal(JSON.stringify(result).includes(fixture.expected.installedBundles.assetsRoot), false);
+});
+
+void test("editor context uses its fixed program and result profile through the shared pinned coordinator", async (context) => {
+  const contextRequest = { action: "observe-editor-context" };
+  const contextPayload = { ok: true, kind: "editor-context-observation", action: contextRequest.action,
+    active: { state: "start-page" }, project: { state: "undefined" }, branch: { state: "empty" },
+    visibilityVerified: false, inputFocusVerified: false, restorationCompletionVerified: false,
+    projectClosureVerified: false, startupQualified: false, cadAuthority: false, persistenceVerified: false };
+  const fixture = await runtime({ reply: encoded(contextPayload), expectedCode: buildEditorContextProgram(contextRequest) });
+  mockSyntheticUiDigest(context, fixture.calls);
+  await assert.rejects(readEditorContext(fixture.engine, request, fixture.expected)); assert.deepEqual(fixture.calls, []);
+  const result = await readEditorContext(fixture.engine, contextRequest, fixture.expected);
+  assert.deepEqual(fixture.calls, ["guard", "status", "ui-hash", "guard", "easyeda_execute", "ui-hash", "guard", "status"]);
+  assert.deepEqual(result["active"], contextPayload.active); assert.deepEqual(result["project"], contextPayload.project);
+  const admission = result["runtimeAdmission"]; assert.ok(admission !== null && typeof admission === "object");
+  assert.equal(Reflect.get(admission, "profile"), EDITOR_CONTEXT_RUNTIME_PROFILE.schema);
+  assert.equal(Reflect.get(admission, "scope"), "registered-editor-context-only");
+  assert.deepEqual(Reflect.get(admission, "uiImplementation"), EDITOR_SHELL_RUNTIME_PROFILE.uiImplementation);
   for (const field of ["startupQualified", "cadAuthority", "persistenceVerified"]) { assert.equal(Reflect.get(admission, field), false); }
   assert.equal(JSON.stringify(result).includes(fixture.expected.installedBundles.assetsRoot), false);
 });

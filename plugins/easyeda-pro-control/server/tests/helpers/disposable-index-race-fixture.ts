@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import childProcess from "node:child_process";
 import type { ChildProcess, SpawnOptions } from "node:child_process";
-import { lstat, mkdtemp, readFile, readdir, readlink, writeFile } from "node:fs/promises";
+import { lstat, mkdtemp, readFile, readdir, readlink, rename, writeFile } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { basename, join, resolve } from "node:path";
 import type { TestContext } from "node:test";
@@ -81,7 +81,8 @@ export function ordinaryRefused(response: Response): void {
   const first: unknown = response.content[0]; assert.ok(isRecord(first) && typeof first["text"] === "string");
   const data: unknown = JSON.parse(first["text"]); assert.ok(isRecord(data));
   assert.equal(data["ok"], false); const error = data["error"]; assert.ok(isRecord(error));
-  assert.equal(error["name"], "Error"); assert.equal(error["message"], reservedMessage);
+  const diagnostic = typeof error["message"] === "string" ? error["message"].slice(0, 2048) : "Missing synthetic error message.";
+  assert.equal(error["name"], "Error", diagnostic); assert.equal(error["message"], reservedMessage);
 }
 export function shutdownOutcome(outcome: SettledCall, kind: "ordinary" | "validation"): void {
   if (outcome.ok) { if (kind === "ordinary") { ordinaryRefused(outcome.value); } else { setupRefused(outcome.value); } return; }
@@ -142,9 +143,17 @@ export async function raceFixture(context: TestContext, scenario: Scenario): Pro
       }
     }
   }
+  async function publishCommand(name: "release.json" | "change-assets.json", text: string): Promise<void> {
+    const destination = join(reports, name), staged = join(reports, `${name}.pending`);
+    await assert.rejects(lstat(destination), { code: "ENOENT" });
+    // This fixture alone publishes these private paths. Expose only complete
+    // Bytes: the child intentionally refuses an empty or partial command file.
+    await writeFile(staged, text, { flag: "wx", mode: 0o600 });
+    await rename(staged, destination);
+  }
   async function release(): Promise<void> {
     if (released) { return; }
-    await writeFile(join(reports, "release.json"), '{"release":true}', { flag: "wx", mode: 0o600 }); released = true;
+    await publishCommand("release.json", '{"release":true}'); released = true;
   }
   async function journalUnchanged(): Promise<void> {
     const originalReady = readiness.original;
@@ -224,7 +233,7 @@ export async function raceFixture(context: TestContext, scenario: Scenario): Pro
   }
   async function changeConfiguration(): Promise<void> {
     assert.equal(scenario, "configuration");
-    await writeFile(join(reports, "change-assets.json"), '{"changeAssets":true}', { flag: "wx", mode: 0o600 });
+    await publishCommand("change-assets.json", '{"changeAssets":true}');
     assert.deepEqual(await readReport("configuration-changed.json"), { changed: true, changes: 1 });
   }
   async function shutdown(): Promise<void> {

@@ -58,6 +58,27 @@ document IDs. Query `editor-shell` and validate with `editor-shell-validate`.
 Its two matching samples are not proof of window visibility, completed tab
 restoration, project closure, startup isolation or navigation admission.
 
+Use `easyeda_control_editor_context` for identity metadata on the same reviewed
+UI/API. Query `editor-context`, validate with `editor-context-validate`, then
+pass `{"action":"observe-editor-context"}` and the actual authenticated
+fingerprint. It reports no active tab, Start Page, placeholder, an admitted
+ordinary schematic/PCB document, or an explicit unsupported tab. It never
+returns an unsupported tab's raw ID, which can contain a private library path.
+Project and branch fields preserve absent, undefined and admitted empty-sentinel
+states rather than silently converting them to null. These are UI fields, not
+manager/database ownership or closure proof. No title/path fields, design content
+or selection are requested or returned; unsupported raw tab IDs stay private.
+Never turn this observation into legacy `expectedContext`
+or permission for a subsequent operation.
+
+After updating the marketplace, verify the actual tool catalog and loaded
+facade generation. Reopening the desktop app or seeing new skills is not by
+itself evidence that an existing chat's MCP process changed. If it still runs
+the old cache path, stop live calls and use a fresh chat/session. Do not repair
+the cache by hand or terminate the owner. A removed old cache can also leave
+the old process with a deleted working directory; a resulting historical-reader
+failure is not proof that the retained journal was corrupted.
+
 The portable `.mcp.json` invokes `node server/dist/server.mjs --machine-launch`, not hard-coded workstation paths. The bundled launcher requires no plugin `node_modules`; `scripts/launch-machine.ts` remains a checkout-only developer wrapper. From a trusted checkout prepared with the pinned toolchain and `npm ci`, configure the owner-only profile with `node scripts/configure-machine.ts --upstream-root /absolute/upstream --assets-root /mnt/drive/path/resources/app/assets`; optional explicit Node/control-directory/editor-version flags and WSL/Windows prerequisites are documented in the root README. The upstream checkout must already contain the reviewed built `dist/index.js` and dependency tree; configuration does not fetch or build it. The default profile is `~/.easyeda-pro-control/machine-profile.json`; `EASYEDA_MACHINE_PROFILE` selects another private profile. Configuration validates locations and versions but does not alter compatibility admission.
 
 Reuse a profile with `node scripts/configure-machine.ts` or `node scripts/configure-machine.ts --profile /absolute/control/machine-profile.json`, without overrides. Overrides against an existing profile are refused. A fresh explicit profile belongs inside its owner-only control directory; never switch directories to evade the lease or quarantine.
@@ -76,7 +97,7 @@ Distinguish these failure layers before changing anything:
 |---|---|---|
 | Tool is absent or host rejects dispatch as unavailable | No facade handler result | Check the plugin's enabled state. For authorized EasyEDA work, the checkout-only foreground MCP client below can use the same facade when no other owner is active. Never start a second owner or use a new data root to evade the lease. |
 | Status reports `mode:"offline-only"` and `installation.ready:false`; only three tools are listed | Trusted profile/Node admission passed, but a selected external installation check failed | Use its fixed `machine-installation-*` code and read-only installation inspection. API reference and local discovery remain usable. Live and recovery tools do not exist in this process. Review the changed installation before updating any pins, then restart the MCP session. |
-| Status reports `facade.mode:"calculation-only"`; eight tools are listed | Configured bundle selectors are not the older reviewed design tuple | API reference, local discovery, status, calculations, system/extension/editor-shell observations and ordinary launch are registered. The internal mode name is retained. Each capability has separate exact admission. No project reader, navigation, generic native UI, design writer or design recovery tool is available. |
+| Status reports `facade.mode:"calculation-only"`; nine tools are listed | Configured bundle selectors are not the older reviewed design tuple | API reference, local discovery, status, calculations, system/extension/editor-shell/identity-context observations and ordinary launch are registered. The internal mode name is retained. Each capability has separate exact admission. No project-content reader, navigation, generic native UI, design writer or design recovery tool is available. |
 | Structured status error during upstream startup | Facade handler ran, but startup failed | Run `npm run doctor` offline from the trusted checkout. Use reported stage/exit details and failed checks; private stderr remains withheld. Do not infer the cause from its hash or length. |
 | Status succeeds but has no authenticated session | Upstream responded; extension connection is unproven | Verify the selected receipt/import and bridge connection. Do not call context or design readers yet. |
 | Authenticated session with `validation-required` tuple | Connection succeeded; compatibility remains unadmitted | Collect bounded status/context/public-read evidence for review. Exact/private calls remain blocked. |

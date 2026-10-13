@@ -38,7 +38,9 @@ $cases=@(
   @{bounds=(Get-FiniteWindowBounds @(-32000,-32000,314,50))},
   @{bounds=(Get-FiniteWindowBounds @(0,0,200))}
 );ConvertTo-Json -InputObject $cases -Depth 4 -Compress;`;
-  const { stdout, stderr } = await execute(powershell, ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(program, "utf16le").toString("base64")], { timeout: 10_000, maxBuffer: 16_384 });
+  // Allow cold PowerShell startup on shared CI runners. This pure-function test
+  // Does not change the production native controller's operation deadlines.
+  const { stdout, stderr } = await execute(powershell, ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", Buffer.from(program, "utf16le").toString("base64")], { timeout: 45_000, maxBuffer: 16_384 });
   assert.equal(stderr, "");
   const actual: unknown = JSON.parse(stdout.trim());
   assert.deepEqual(actual, [{ bounds: [10, 20, 800, 600] }, { bounds: null }, { bounds: null }, { bounds: null }, { bounds: [-32_000, -32_000, 314, 50] }, { bounds: null }]);
