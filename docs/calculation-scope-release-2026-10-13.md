@@ -32,7 +32,7 @@ the separately reviewed connection/calculation closure and migration.
 Focused adapter and runtime tests use synthetic SDKs and fingerprints. The
 packaged-startup check proves the four-tool registration, offline discovery,
 argument refusal and absence of upstream startup. It does not connect to EasyEDA.
-Local verification passes 235 focused cases and all 424 bridge tests, full
+Local verification passes 230 focused tests and all 424 bridge tests, full
 facade/bridge types and strict zero-warning lint, package/repository/privacy
 checks, all seven skill validators and dependency audits. Source projection311
 is `a230862cb3e50933b95ec8813c3db51659b73047fb65895bc1f0b1ac1740b1aa`;
@@ -40,8 +40,9 @@ runtime projection3 is
 `fe016e31deb774dde190cd6598b5c2e9aecf207543b9bd59c4f35989b07d3ffa`.
 Old external manifest pins are unchanged. Reproducible build and existing
 GitHub CI remain release gates. Final CI counts, commit, protected merge and official
-Git-marketplace installation results will be recorded in this release's PR
-delivery receipt before handoff.
+Git-marketplace installation results will be recorded in the
+[PR11 delivery receipt](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/11)
+before handoff.
 
 No CAD/UI/Save, project access, shared-preference edit, bridge import or journal
 recovery is part of this release. No connected calculation has been validated.

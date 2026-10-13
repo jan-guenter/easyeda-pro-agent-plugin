@@ -31,7 +31,10 @@ the PCB/API selectors in the same control root after exact installed hash checks
 Do not hand-edit the profile or start another facade to bypass the offline owner.
 
 Release progress and final delivery receipt are tracked by
-`docs/calculation-scope-release-2026-10-13.md`. Source tests and packaged offline
+`docs/calculation-scope-release-2026-10-13.md` and
+[PR11](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/11).
+Local checks pass230 focused tests and424 bridge tests; the earlier235 count
+included five suite containers. Source tests and packaged offline
 checks do not establish connected math execution. At this pre-delivery snapshot,
 no profile migration, CAD/UI/Save call, journal recovery, bridge import or live
 calculation occurred. Production designs and their records remain untouched.
