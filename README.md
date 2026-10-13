@@ -25,7 +25,7 @@ disposable validation route, not a general editing endpoint. The compiled helper
 and v3 transport pass a standalone Windows smoke run, including process cleanup.
 The complete public disposable workflow still needs connected validation.
 Ordinary editing gates remain.
-The catalog has27 tools. Candidate074635 fixes native16-hex document identity
+The installed074635 catalog has27 tools. This release fixes native16-hex document identity
 handling throughout the closed-symbol workflow and exact duplicate structure-row
 verification. It does not enable the blocked writers. See the
 [focused release and remaining tasks](docs/api-coverage-074635-release-2026-10-13.md).
@@ -41,7 +41,7 @@ omissions. Their execution routes comprise 274 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)
-describes the earlier containment changes. The [installed054207 candidate](docs/api-coverage-054207-release-2026-10-13.md)
+describes the earlier containment changes. The [preceding054207 candidate](docs/api-coverage-054207-release-2026-10-13.md)
 packages the native-helper and disposable-workflow implementation.
 The [completion report](docs/project-structure-save-completion-2026-10-12.md)
 tracks that work and its remaining tasks. The preceding source snapshot passed

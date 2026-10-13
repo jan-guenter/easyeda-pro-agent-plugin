@@ -28,8 +28,19 @@ Payload48ae947 is published in PR9. First CI38365339756 passed verify-build but
 found nine legacy program-hash test failures: those cases inherited the new
 16-character fixture IDs. Their test-only correction supplies the original
 32-character inputs; golden hashes and production code remain unchanged.
-All16 existing cases and targeted strict lint pass. Corrected CI and official
-installation of074635 are pending.
+All16 existing cases and targeted strict lint pass. Corrected payload940c32082ead2753ac5bb90bf2cd4097df37b7e8
+passed CI38366377819:9,713 facade passes/five skips/zero failures and424 bridge
+passes. All10 jobs are green, including build/reproducibility/lint/audits.
+Official Git-marketplace074635 is installed and enabled. The first installer
+success was followed by an absent cache; supported reinstall resolved it, with
+no established cause or manual cache edits. All1,102files/21,488,412bytes/modes
+match payload tree97dc810eece6fbe0da7a7a3e3c228315b8e979af. Installed offline
+startup confirms27tools/sevenskills, original child closure and no observed
+upstream/socket; zero tool/live calls. Inventory0b572d4a79f245b55ab44d73961e78aef5863878f8495dc606375f13aeb6dbed,
+proofb20f65fc7fc52fa2416ce8a5bc4deadb48108dbeb89a79032565f8998244a289.
+The loaded host remains054207: use a fresh chat/host before the public callback.
+Final root-documentation recording does not change the CI-tested plugin tree;
+its commit skips a duplicate CI run. PR9 remains draft, not merged/main-ready.
 
 The public closed-symbol workflow and ordinary writer integration remain
 unfinished. Further test-matrix expansion is deferred. Finish this focused
@@ -39,7 +50,7 @@ engineering record remain out of scope.
 
 ### Previous release: 054207
 
-The installed and enabled release is `0.3.0+codex.20261013054207`, from the Git
+The previous installed release was `0.3.0+codex.20261013054207`, from the Git
 marketplace feature branch at payload2e2440f1fab83d825dd7c9616f880eb820d14f28.
 All type1/2/3 design lifecycles and the eight affected
 metadata writers remain blocked pending native completion proof.
@@ -3299,7 +3310,7 @@ specific dated case needed for the current change or retained-journal review.
 - Reusability requires maintained packaged adapters, configuration/bootstrap for supported installations, capability discovery with truthful tested/unsupported distinctions, and no dependency on temporary scripts or this workstation's hard-coded paths. Keep authentication, scoped writes, checkpoints and failure handling; implement and validate missing writers rather than merely removing their refusal checks. The existing single-component state machine is one implementation, not the requested product boundary.
 - The repository is a Codex marketplace named `easyeda-pro-agent`.
 - The shipped plugin is `plugins/easyeda-pro-control`.
-- Current Git-marketplace054207 is published and installed/enabled after exact-payload CI38354770224. All1102files/21484081bytes/modes match2e2440f1, with offline proof6b38ac15 and27tools/sevenskills. The complete native helper passes its standalone synthetic Windows run; the public disposable workflow remains unvalidated. All type1/2/3 design and eight metadata restrictions remain. Use a fresh host before the new callback. No CAD/Save is pending; production and its record remain excluded.
+- Current Git-marketplace074635 is published and installed/enabled after exact-payload CI38366377819. All1102files/21488412bytes/modes match940c3208, with offline proofb20f65fc and27tools/sevenskills. Native document IDs and eligible duplicate structure-row handling are corrected. The public disposable workflow remains unvalidated; all type1/2/3 design and eight metadata restrictions remain. The loaded host is054207, so use a fresh host before the callback. No CAD/Save is pending; production and its record remain excluded.
 - Historical Git-marketplace030626 was published and installed/enabled after exact-payload CI38202074298. All652files/17001549bytes/modes matched6535cfad, with offline prooffc6c5e6a. It introduced the blocks on all type1/2/3 design lifecycles and eight metadata actions, including affected retained recovery, before bridge connection. Fresh connected admission and native structure completion were not claimed. Historical013324 C06/C07 retain their scoped wire observations, not later-job exclusion. Both disposable fixtures remain closed; completed operations must never be replayed. Candidate024750 was not installed. Broader API work and PR9 remain unfinished.
 - Historical000206 installation record, superseded by the current entry: Git-marketplace `0.3.0+codex.20261012000206` is published and installed/enabled after exact-head CI38187143546. All633files/17006218bytes/modes match payloadac9f0a7, package subtree369d8572; offline proofc146a756 passes. Loaded facade2527645 remains independently admitted220050, not000206; use a fresh Codex host before connected work. The220050 font case and omitted-lock three-segment wire forward/reverse saved/reopened pair pass their scoped proofs. Both disposable fixtures are closed; final flat sourcec9e04b15/checkpoint621cb2f6/database471d6b9e/logicalea3da0fa are verified. Original source geometry is restored, not original SQLite history. Closed verifier11 and all-nine-root metadata41 pass. The earlier authorized UI action/private comparison9bf4428a established pcbCommandTab false to true in browser and one anonymous SQL residual without identifying the current user. Never replay navigation, Run Command, seed Saves or completed transactions. Runtime preference/context guards remain active; point-in-time equality is not continuing navigation admission. The installed historical-case index grants no live authority or current-generation validation.
 - Original creation journalc92a61b7 is terminal after150000 retained-Save recovery; never replay its edit or Save. Storednull/exportblack remain distinct. Installed164600 passed scoped PCB Text readers/create/delete and empty free-SCH creation;204104 passed system-library UUID, schematic Text/Wire readers with both mixed caller orders, and independently visible pointer-only hover. Installed220050 adds configured-font R09 and sealed-wire C04/C05 exact-case evidence. Unsaved wire rollback, failure recovery, broader wire shapes, literal-false connected input and later generations remain separate. The connected ledger records scope, not whole SDK contracts. Never access production or its project record. The user's continuation authorizes task-scoped shared-settings changes, necessary private preservation and disposable validation, not relaxed technical safety checks or unrelated changes.

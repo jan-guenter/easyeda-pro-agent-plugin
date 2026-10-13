@@ -1,6 +1,6 @@
 # Closed-symbol integration corrections
 
-Candidate `0.3.0+codex.20261013074635` fixes two mismatches found by inspecting
+Installed `0.3.0+codex.20261013074635` fixes two mismatches found by inspecting
 the existing disposable fixture before invoking the public workflow. No CAD
 operation was needed to identify them.
 
@@ -37,8 +37,32 @@ First CI38365339756 passed the complete verify-build job, but nine historical
 program-hash tests inherited the new16-character fixture IDs. A test-only
 correction restores explicit32-character inputs for those historical cases;
 their golden hashes and production code remain unchanged. All16 existing cases
-and targeted strict lint pass. Corrected GitHub CI and official Git-marketplace
-installation are pending.
+and targeted strict lint pass. Corrected payload
+`940c32082ead2753ac5bb90bf2cd4097df37b7e8` passed
+[CI38366377819](https://github.com/jan-guenter/easyeda-pro-agent-plugin/actions/runs/38366377819):
+all10 jobs green, 9,713 facade tests passed/five skipped/zero failed, and424
+bridge tests passed. Build, strict lint, dependency audits, packaging and
+reproducibility checks pass.
+
+The official CLI installed and enabled074635 from the configured Git marketplace
+`https://github.com/jan-guenter/easyeda-pro-agent-plugin.git`, on the feature ref.
+The first installer reported success but left no cache at verification; a
+supported reinstall resolved it. Its cause is not established. No manual cache
+edits or host termination occurred.
+
+All1,102 packaged files, 21,488,412 bytes and committed modes match the tested
+payload tree `97dc810eece6fbe0da7a7a3e3c228315b8e979af`, before and after the
+offline probe. Configured startup exposes27 tools and seven skills; its original
+child closed, with no observed upstream child or non-stdio socket. No tool or
+live call was made. Inventory SHA256:
+`0b572d4a79f245b55ab44d73961e78aef5863878f8495dc606375f13aeb6dbed`.
+Installation proof SHA256:
+`b20f65fc7fc52fa2416ce8a5bc4deadb48108dbeb89a79032565f8998244a289`.
+
+The final documentation-only commit leaves that plugin tree unchanged and skips
+a duplicate CI run. This is not a claim that skipped checks passed or that PR9
+is ready to merge. A fresh host is required before live use; the existing host
+still loads054207.
 The previously installed054207 host was independently admitted after restart.
 No public disposable callback, editor launch, Save or production-project access
 occurred during this correction.
