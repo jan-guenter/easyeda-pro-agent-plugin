@@ -523,6 +523,20 @@ void test("current PCB geometry adds narrow native routes without replacing lega
   const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
     tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
   for (const family of ["Line", "Arc", "Via", "Component", "Pad"]) {
+    const getMethod = `eda.pcb_Primitive${family}.get`;
+    const getRow = inventoryExtensionApiCoverage().find((entry) => entry.path === getMethod); assert.ok(getRow);
+    assert.equal(getRow.status, "implemented-public-subset"); assert.equal(getRow.completeDeclaredContractSupported, false);
+    assert.equal(getRow.routes.some((route) => route.tool === "easyeda_control_sdk_read"), true);
+    const getRoute = getRow.routes.find((route) => route.tool === "easyeda_control_pcb_geometry"); assert.ok(getRoute);
+    assert.equal(getRoute.implementation, "native-task-equivalent"); assert.equal(getRoute.validation, "offline-regression;current-live-unclaimed");
+    assert.match(getRoute.scope, /distinct bounded primitiveIds/u);
+    const getDiscovery = getRoute.inputDiscovery?.arguments["request"]; assert.ok(isRecord(getDiscovery));
+    const getCatalog = queryOfflineApi(apiRequestSchema.parse(getDiscovery)).result; assert.ok(isRecord(getCatalog));
+    assert.equal(getCatalog["total"], 1); assert.equal(getCatalog["invocationEnabledByDiscovery"], false);
+    const getValid = queryOfflineApi(apiRequestSchema.parse({ action: "pcb-geometry-validate", query: {
+      request: { method: getMethod, arguments: { primitiveIds: ["second", "first"] }, target },
+    } })).result;
+    assert.ok(isRecord(getValid)); assert.equal(getValid["valid"], true); assert.equal(getValid["executionAuthorized"], false);
     const method = `eda.pcb_Primitive${family}.getAll`;
     const row = inventoryExtensionApiCoverage().find((entry) => entry.path === method); assert.ok(row);
     assert.equal(row.status, "implemented-public-subset"); assert.equal(row.completeDeclaredContractSupported, false);

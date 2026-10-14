@@ -1043,3 +1043,44 @@ The user asks the agent to handle EasyEDA startup itself in future sessions.
 Restore a supported new-version launcher as the next compatibility priority;
 do not make repeated manual startup the normal workflow or expose old editing
 routes merely to obtain a launch tool.
+
+## P01: current disposable opening and Component/Pad reads, 2026-10-14
+
+Installed `0.3.0+codex.20261014180500`, source340 `769107bb`, runtime3
+`f41fcf9e`, passed one ordinary launch and authenticated opening of the selected
+disposable PCB. Project and document dispatch were each consumed once; exact
+native target identity passed and the opening is terminal completed, without
+orphan risk or hard stop. Journal commitment `099e6fa7`; terminal artifact
+`4933cddb`. This is navigation evidence, not full initialization or persistence.
+
+The current API/UI/PCB tuple was0.3.50.ab46409c/3.2.196.26ed3d6c/
+3.2.193.682ed44e, dispatcher ded07x99dcxb504. All four calls used the same
+authenticated fingerprint commitment
+`cbff6a2ab94321b8a52129da391ff3c1d8ff38ac6e7e69b6cfadb33ed3e21684`,
+an explicit disposable project/branch/document/tab, two matching native
+samples and before/after runtime checks.
+
+| Method | Rows | Observation SHA-256 |
+| --- | ---: | --- |
+| Component.getAllPrimitiveId | 2 | `88e1b68446a6c334820a673003bad51224ab6986bc0c90b449eeac2a0c26d2d1` |
+| Component.getAll | 2 | `a6572523139eac132c465ffb6574dd9710c850219b154f206f3a231909a7c502` |
+| Pad.getAllPrimitiveId | 4 | `28a87df66f996e65176454414d5863a6ba5e3c67bda0bec786e8c0f345faa8ac` |
+| Pad.getAll | 4 | `201af77fda83a41c9021ac0ac50e171da71509e695d6820c9d1d4415dae6de4a` |
+
+Ordered identities match the geometry rows within each family. Component
+placement and Pad numbers, raw net text, placement, metallization and pad type
+are observations only. No parent mapping is inferred from ID prefixes. The
+transcript file commitments are `27330ead`/`d87a3923`/`bcf671da`/`b99345bd`;
+private paths, project identities and design payloads are not published.
+
+The user closed EasyEDA normally without a prompt. Supported retained-owner
+observation proved the original root and Job terminated; receipt commitment
+`f0ac7c02e7777de085b25b52d745c4d37c6a2bfc6ed68f7e498c537bef247abb`.
+No explicit Save, design edit, discard or forced close was requested. Opening
+permits ordinary application effects; unchanged storage is not claimed.
+Production designs and their records were not accessed.
+
+This case does not validate complete source, saved membership, ownership,
+connectivity, writers, selected-ID reads, other families or later generations.
+The inventory's generation-neutral live-unclaimed labels remain conservative;
+this version-specific ledger is the connected evidence, not global authority.

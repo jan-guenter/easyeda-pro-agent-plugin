@@ -11,8 +11,8 @@ const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), docume
   tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
 const methods = ["eda.pcb_PrimitiveLine.getAll", "eda.pcb_PrimitiveArc.getAll", "eda.pcb_PrimitiveVia.getAll",
   "eda.pcb_PrimitiveComponent.getAll", "eda.pcb_PrimitivePad.getAll"] as const;
-function inputFor(method: typeof methods[number] = methods[0]): CurrentPcbGeometryRequest {
-  return parseCurrentPcbGeometryRequest({ method, arguments: {}, target });
+function inputFor(method: CurrentPcbGeometryRequest["method"] = methods[0], primitiveIds?: string[]): CurrentPcbGeometryRequest {
+  return parseCurrentPcbGeometryRequest({ method, arguments: primitiveIds === undefined ? {} : { primitiveIds }, target });
 }
 const track = { globalIndex: "line-b", net: "MixedCase", locked: false, layerId: 1,
   startX: 1.1234567, startY: -2, endX: 3, endY: 4, width: 10 };
@@ -113,7 +113,7 @@ void test("current geometry schemas limit input and retain empty collection and 
     { ...input, method: "eda.pcb_PrimitiveLine.get" }, { ...input, target: { ...target, tabId: "wrong" } }]) {
     assert.throws(() => buildCurrentPcbGeometryProgram(invalid)); assert.equal(validateCurrentPcbGeometryArguments(invalid)["valid"], false);
   }
-  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 5);
+  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 10);
   assert.match(JSON.stringify(queryCurrentPcbGeometry({ method: methods[0], includeSchemas: true })), /inputSchema/u);
   for (const method of methods) {
     const request = inputFor(method);
@@ -131,6 +131,65 @@ void test("current geometry schemas limit input and retain empty collection and 
   assert.ok(arcRaw !== null && typeof arcRaw === "object" && "rows" in arcRaw && Array.isArray(arcRaw.rows));
   const arcRow: unknown = arcRaw.rows[0]; assert.ok(arcRow !== null && typeof arcRow === "object");
   assert.throws(() => validateCurrentPcbGeometryResult(arcInput, { ...arcRaw, rows: [{ ...arcRow, interactiveMode: 3 }] }));
+});
+
+void test("current geometry explicit IDs return exact caller order with distinct observed and returned counts", async () => {
+  const cases = [["eda.pcb_PrimitiveLine.get", ["line-a", "line-b"]], ["eda.pcb_PrimitiveArc.get", ["arc-a"]],
+    ["eda.pcb_PrimitiveVia.get", ["via-a"]], ["eda.pcb_PrimitiveComponent.get", ["component-a", "component-b"]],
+    ["eda.pcb_PrimitivePad.get", ["pad-a", "pad-b"]]] as const;
+  for (const [method, primitiveIds] of cases) {
+    const input = inputFor(method, [...primitiveIds]);
+    const fixture = environment({ input });
+    const raw: unknown = decodeExactReadEnvelope(await fixture.run());
+    const result = validateCurrentPcbGeometryResult(input, raw);
+    const value = result["value"]; assert.ok(Array.isArray(value));
+    assert.deepEqual(value.map((row: Record<string, unknown>) => row["primitiveId"]), primitiveIds);
+    assert.equal(result["returnedRowCount"], primitiveIds.length); assert.equal(result["observedRowCount"], primitiveIds.length);
+    assert.equal(fixture.evaluateChild("calls"), 6); assert.equal(fixture.evaluateChild("dataReads"), 2);
+    assert.match(JSON.stringify(queryCurrentPcbGeometry({ method })), /"parameters":\["primitiveIds"\]/u);
+    if (method === "eda.pcb_PrimitiveLine.get") {
+      assert.throws(() => validateCurrentPcbGeometryResult(inputFor(method, ["line-b", "line-a"]), raw));
+      assert.ok(raw !== null && typeof raw === "object");
+      assert.throws(() => validateCurrentPcbGeometryResult(input, { ...raw, observedRowCount: 1 }));
+    }
+  }
+  const input = inputFor("eda.pcb_PrimitiveLine.get", ["line-a"]);
+  const raw: unknown = decodeExactReadEnvelope(await environment({ input }).run());
+  const result = validateCurrentPcbGeometryResult(input, raw);
+  assert.equal(result["returnedRowCount"], 1); assert.equal(result["observedRowCount"], 2);
+  assert.ok(raw !== null && typeof raw === "object" && "rows" in raw && Array.isArray(raw.rows));
+  const row: unknown = raw.rows[0]; assert.ok(row !== null && typeof row === "object");
+  for (const invalid of [{ ...raw, observedRowCount: 0 }, { ...raw, observedRowCount: 257 }, { ...raw, observedRowCount: 1.5 },
+    { ...raw, observedRowCount: undefined }, { ...raw, rows: [] }, { ...raw, rows: [{ ...row, primitiveId: "line-b" }] },
+    { ...raw, rows: [row, row] }, { ...raw, returnedRowCount: 1 }]) {
+    assert.throws(() => validateCurrentPcbGeometryResult(input, invalid));
+  }
+  assert.throws(() => validateCurrentPcbGeometryResult(inputFor("eda.pcb_PrimitiveLine.get", ["line-a", "line-b"]), raw));
+});
+
+void test("current geometry explicit IDs refuse malformed requests, missing IDs and unselected-family defects", async () => {
+  const input = inputFor("eda.pcb_PrimitiveLine.get", ["line-a"]);
+  for (const primitiveIds of ["line-a", [], ["line-a", "line-a"], [""], ["x".repeat(257)],
+    Array.from({ length: 257 }, (_, index) => String(index)), [1], [null]]) {
+    const invalid = { ...input, arguments: { primitiveIds } };
+    assert.throws(() => buildCurrentPcbGeometryProgram(invalid));
+    assert.equal(validateCurrentPcbGeometryArguments(invalid)["valid"], false);
+  }
+  for (const invalid of [{ ...input, arguments: { primitiveIds: ["line-a"], layer: 1 } },
+    { ...input, method: "eda.pcb_PrimitiveLine.getAll" }]) {
+    assert.throws(() => buildCurrentPcbGeometryProgram(invalid));
+  }
+  const missing = environment({ input: inputFor("eda.pcb_PrimitiveLine.get", ["line-a", "absent"]) });
+  await assert.rejects(missing.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  assert.equal(missing.evaluateChild("dataReads"), 2);
+  for (const options of [
+    { afterCall: "if(dataReads===2)rows.Line[0].startX++;" },
+    { beforeChild: "rows.Line[0].startX=NaN;" },
+    { beforeChild: "rows.Line=Array.from({length:257},(_,i)=>({...rows.Line[0],globalIndex:i===0?'line-a':String(i)}));" },
+    { beforeChild: "rows.Line=Array.from({length:256},(_,i)=>({...rows.Line[0],globalIndex:i===0?'line-a':String(i),net:'漢'.repeat(1024)}));" },
+  ]) {
+    await assert.rejects(environment({ input, ...options }).run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  }
 });
 
 void test("current geometry rejects malformed scalars, native accessors, duplicate identities and both bounds", async () => {

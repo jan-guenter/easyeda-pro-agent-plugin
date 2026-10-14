@@ -13,7 +13,7 @@
       "omitted": 451
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 325,
+      "available-with-runtime-guards": 330,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -15188,6 +15188,41 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb_geometry",
+          "selector": "eda.pcb_PrimitiveArc.get",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work. This get route accepts only 1..256 distinct bounded primitiveIds in an array, selects DTOs in caller order after complete-family checks and refuses any unavailable ID. It does not support scalar get or public missing-ID skipping. Returned and full-family observed row counts are distinct; all family bounds still apply before selection.",
+          "source": [
+            "current-pcb-geometry.ts",
+            "current-pcb-geometry-program.ts",
+            "current-pcb-geometry-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-geometry.test.ts",
+            "facade-mode.test.ts",
+            "current-pcb-geometry-registration.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-geometry",
+                "query": {
+                  "method": "eda.pcb_PrimitiveArc.get",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_PrimitiveArc.get",
           "implementation": "public-method",
@@ -15250,7 +15285,7 @@
           "tool": "easyeda_control_pcb_geometry",
           "selector": "eda.pcb_PrimitiveArc.getAll",
           "implementation": "native-task-equivalent",
-          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.",
+          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work. This getAll route accepts empty arguments only.",
           "source": [
             "current-pcb-geometry.ts",
             "current-pcb-geometry-program.ts",
@@ -15997,6 +16032,41 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb_geometry",
+          "selector": "eda.pcb_PrimitiveComponent.get",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work. This get route accepts only 1..256 distinct bounded primitiveIds in an array, selects DTOs in caller order after complete-family checks and refuses any unavailable ID. It does not support scalar get or public missing-ID skipping. Returned and full-family observed row counts are distinct; all family bounds still apply before selection.",
+          "source": [
+            "current-pcb-geometry.ts",
+            "current-pcb-geometry-program.ts",
+            "current-pcb-geometry-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-geometry.test.ts",
+            "facade-mode.test.ts",
+            "current-pcb-geometry-registration.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-geometry",
+                "query": {
+                  "method": "eda.pcb_PrimitiveComponent.get",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_PrimitiveComponent.get",
           "implementation": "public-method",
@@ -16059,7 +16129,7 @@
           "tool": "easyeda_control_pcb_geometry",
           "selector": "eda.pcb_PrimitiveComponent.getAll",
           "implementation": "native-task-equivalent",
-          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.",
+          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work. This getAll route accepts empty arguments only.",
           "source": [
             "current-pcb-geometry.ts",
             "current-pcb-geometry-program.ts",
@@ -17796,6 +17866,41 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb_geometry",
+          "selector": "eda.pcb_PrimitiveLine.get",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work. This get route accepts only 1..256 distinct bounded primitiveIds in an array, selects DTOs in caller order after complete-family checks and refuses any unavailable ID. It does not support scalar get or public missing-ID skipping. Returned and full-family observed row counts are distinct; all family bounds still apply before selection.",
+          "source": [
+            "current-pcb-geometry.ts",
+            "current-pcb-geometry-program.ts",
+            "current-pcb-geometry-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-geometry.test.ts",
+            "facade-mode.test.ts",
+            "current-pcb-geometry-registration.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-geometry",
+                "query": {
+                  "method": "eda.pcb_PrimitiveLine.get",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_PrimitiveLine.get",
           "implementation": "public-method",
@@ -17858,7 +17963,7 @@
           "tool": "easyeda_control_pcb_geometry",
           "selector": "eda.pcb_PrimitiveLine.getAll",
           "implementation": "native-task-equivalent",
-          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.",
+          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work. This getAll route accepts empty arguments only.",
           "source": [
             "current-pcb-geometry.ts",
             "current-pcb-geometry-program.ts",
@@ -18603,6 +18708,41 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb_geometry",
+          "selector": "eda.pcb_PrimitivePad.get",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work. This get route accepts only 1..256 distinct bounded primitiveIds in an array, selects DTOs in caller order after complete-family checks and refuses any unavailable ID. It does not support scalar get or public missing-ID skipping. Returned and full-family observed row counts are distinct; all family bounds still apply before selection.",
+          "source": [
+            "current-pcb-geometry.ts",
+            "current-pcb-geometry-program.ts",
+            "current-pcb-geometry-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-geometry.test.ts",
+            "facade-mode.test.ts",
+            "current-pcb-geometry-registration.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-geometry",
+                "query": {
+                  "method": "eda.pcb_PrimitivePad.get",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_PrimitivePad.get",
           "implementation": "public-method",
@@ -18665,7 +18805,7 @@
           "tool": "easyeda_control_pcb_geometry",
           "selector": "eda.pcb_PrimitivePad.getAll",
           "implementation": "native-task-equivalent",
-          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.",
+          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work. This getAll route accepts empty arguments only.",
           "source": [
             "current-pcb-geometry.ts",
             "current-pcb-geometry-program.ts",
@@ -21280,6 +21420,41 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb_geometry",
+          "selector": "eda.pcb_PrimitiveVia.get",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work. This get route accepts only 1..256 distinct bounded primitiveIds in an array, selects DTOs in caller order after complete-family checks and refuses any unavailable ID. It does not support scalar get or public missing-ID skipping. Returned and full-family observed row counts are distinct; all family bounds still apply before selection.",
+          "source": [
+            "current-pcb-geometry.ts",
+            "current-pcb-geometry-program.ts",
+            "current-pcb-geometry-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-geometry.test.ts",
+            "facade-mode.test.ts",
+            "current-pcb-geometry-registration.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-geometry",
+                "query": {
+                  "method": "eda.pcb_PrimitiveVia.get",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_PrimitiveVia.get",
           "implementation": "public-method",
@@ -21342,7 +21517,7 @@
           "tool": "easyeda_control_pcb_geometry",
           "selector": "eda.pcb_PrimitiveVia.getAll",
           "implementation": "native-task-equivalent",
-          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.",
+          "scope": "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work. This getAll route accepts empty arguments only.",
           "source": [
             "current-pcb-geometry.ts",
             "current-pcb-geometry-program.ts",

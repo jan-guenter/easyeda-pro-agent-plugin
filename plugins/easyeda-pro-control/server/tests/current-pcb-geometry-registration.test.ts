@@ -42,15 +42,20 @@ void test("PCB geometry registration preserves strict target requests and the se
     tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
   const request = { method: "eda.pcb_PrimitiveLine.getAll", arguments: {}, target };
   for (const invalid of [{ ...request, method: "eda.pcb_PrimitiveLine.create" }, { ...request, arguments: { layer: 1 } },
-    { ...request, target: { ...target, tabId: "wrong" } }, { ...request, code: "caller-code" }]) {
+    { ...request, target: { ...target, tabId: "wrong" } }, { ...request, code: "caller-code" },
+    { ...request, method: "eda.pcb_PrimitiveLine.get", arguments: { primitiveIds: "one" } },
+    { ...request, method: "eda.pcb_PrimitivePad.get", arguments: { primitiveIds: ["one", "one"] } }]) {
     assert.equal(requestSchema.safeParse(invalid).success, false);
   }
   assert.equal(calls.length, 0);
-  for (const family of ["Line", "Component", "Pad"]) {
-    const parsed: unknown = requestSchema.parse({ ...request, method: `eda.pcb_Primitive${family}.getAll` });
-    const result: unknown = await invoke({ request: parsed, expectedFingerprint });
-    assert.equal(calls.at(-1), parsed);
-    assert.ok(result !== null && typeof result === "object" && "result" in result); assert.equal(result.result, observed);
+  for (const family of ["Line", "Arc", "Via", "Component", "Pad"]) {
+    for (const method of ["getAll", "get"]) {
+      const parsed: unknown = requestSchema.parse({ ...request, method: `eda.pcb_Primitive${family}.${method}`,
+        arguments: method === "get" ? { primitiveIds: ["one"] } : {} });
+      const result: unknown = await invoke({ request: parsed, expectedFingerprint });
+      assert.equal(calls.at(-1), parsed);
+      assert.ok(result !== null && typeof result === "object" && "result" in result); assert.equal(result.result, observed);
+    }
   }
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 10);
 });

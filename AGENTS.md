@@ -13,7 +13,100 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Restarted163000, executor deadline mismatch corrected in source
+### Restarted180500 live checks passed; candidate190000 selected-ID reads
+
+Fresh facade651798/parent649930/start219809419 independently admitted180500:
+1177files/22869863bytes/42directories/seven skills, exact modes and inventory
+90b51a58, source340769107bb/runtime3f41fcf9e. Old583832 absent. Postmerge
+CI38614495662 completed all ten jobs,9881facade passes/five skips/zero failures
+and424bridge passes; same tested mainbb6dedff. No successful checks rerun.
+
+Ordinary-startup-180500-20261014 launched ONCE, root26264,
+Job59c50325f2bd41c489861ca66d5e815a/helper8c1a3093451746ef836b4dbfffd6bae9,
+launchedSha256b26ac84eee0381eae069c0eeb61c21aadcfe6933141c8951e69b0a983bf656bc.
+Status authenticated dispatcher ded07x99dcxb504; context observes StartPage,
+projectundefined/branchempty, no incomplete operation before opening. Transport
+captures are private in /root/.easyeda-pro-control/current-validation-180500-6Ob7hz
+(not facade-managed persistence receipts). Exact fixture source970d21b3 verified
+before launch. Original150000 terminal/termination records remain exact.
+
+New current-pcb-open-180500-20261014 COMPLETED cell16, both navigation stages
+consumed, activeTarget/nativeIdentityVerified true, orphan/hardStopfalse.
+Journal099e6fa7, seven retained artifacts, terminal4933cddb; transport04-open
+4b9d8aeb. Never replay opening or issue Save. This verifies the selected PCB
+native identity, not full restoration, persistence or writer support. No
+explicit Save/design edit. Four Component/Pad readers passed: two components,
+four pads, exact ordered ID/geometry agreement within each family, two samples
+each and exact before/after fingerprintcbff6a2a. Observation hashes88e1b684/
+a6572523/28a87df6/201af77f; private transports05..08 hash27330ead/d87a3923/
+bcf671da/b99345bd. No parent relation inferred from IDs or saved-state claim.
+User normal-closed without a prompt; supported observe-termination completed
+the original26264/Job with receiptf0ac7c02e7777de085b25b52d745c4d37c6a2bfc6ed68f7e498c537bef247abb.
+No pending opening/launch recovery. Never replay these completed operations.
+Computer Use failed before action on sandboxCwd infrastructure; no forced close
+or Save/Discard choice. Production and its record remain excluded.
+
+Candidate190000 adds array-only explicit-ID Line/Arc/Via/Component/Pad get
+equivalents using existing full-family geometry observations. Complete-family
+guards, bounds and matching samples precede caller-order selection; any absent
+ID refuses. Public scalar/missing-ID semantics and SDK-object parity remain
+omitted. Source research is docs/current-pcb-selected-read-research-2026-10-14.md.
+Independent review accepts the implementation and retained reader transcripts.
+Focused44tests/typecheck/zero-warning type-aware lint pass; reproducible build,
+compatibility and seven official skill validators pass. Source340f403f055,
+runtime386f89907. External pins, bridge and dependencies unchanged. Full local
+verification runs in /tmp/easyeda-190000-verify-jSXE2y.log; publication,
+installation and new-generation live admission remain pending.
+
+### Historical delivered180500, fresh-session disposable validation next
+
+PR26 merged through the normal protected route as main
+bb6dedff2057523a214770fed2b6da4e5797ba40. Fulltree1e311498 and packagee3b52578
+exactly match tested82f721f. Required CI38612590615 passed all ten jobs:
+9881facade passes/five skips/zero failures;424bridge passes. Full local required
+verification passed9882/four skips/zero failures and424bridge, with strict
+types/type-aware lint, signatures/audit, reproducible build, compatibility,
+package/repository/privacy and all seven skill validators clean. Local log
+/tmp/easyeda-180500-verify-06TM9i.log SHA2c1ed961f5fcf3f9bdcf97762afb28a0217eafacf1258bb137aa8f1a274ceb54.
+Automatic main CI38614495662 is still running at this delivery checkpoint;
+the exact tree already passed PR CI. Check its outcome next session, without
+rerunning successful checks merely because the host restarted. Final receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/26#issuecomment-6175353952.
+
+Official Git-marketplace upgrade under umask022 installed/enabled
+0.3.0+codex.20261014180500, errors[], snapshotHEADbb6dedf. Source remains
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git on main.
+Independent cache admission matches1177files/22869863bytes/42directories/
+seven skills, canonical Git modes, no extras or symlinks; inventory
+90b51a58c80348c5031b105f54408856f73f050e8f4dd6b33b195a0382ebaa00.
+Actual installed configured startup with synthetic profile passes ambient26.7
+to pinned24.18,15tools, identity7/geometry5 and all four Component/Pad offline
+requests valid with no execution authority. Seven process samples show no
+upstream child/nonstdio socket, stderr0. Proof1703bytes
+7095971b006865029677c0ae735fc40b4f060abfea08f2a5b9dd394acb7ca5c1 at
+/tmp/easyeda-installed-180500-KTleKO/proof.json; helperc97101c4 differs from the
+prior reviewed installation probe only in commit/version/scratch. No test
+matrix expansion or live execution was added for this delivery.
+
+Current facade583832/parent581947 still runs163000; never hotpatch or kill it.
+No EasyEDA launch/navigation occurred this turn. Original current-pcb-open-
+150000-20261014 remains terminal plan-invalidated30a49646; ordinary-startup-
+150000-20261014 remains terminated with receiptdaba9724. Both rehashed exact
+after installation; never replay/retire/abandon them again. User reports the
+old window remained on StartPage, consistent with the confirmed timeout defect
+but not proof of its historical raw reply or zero effects.
+
+Use a fresh Codex session, admit actual180500, then use the maintained ordinary
+launch to start EasyEDA ourselves and attempt ONE new disposable opening with
+a new operation identity. Do not ask the user to launch it routinely. Observe
+eligible non-orphan readiness without navigation replay; retain failures and
+use supported retirement if quarantined. Keep the selected validation fixture
+and exact-target reader scope. The timeout fix and pending PCB readers still
+need this live check; broader implementation backlog remains. No production
+design or its record was accessed. This local delivery checkpoint is for the
+next source commit; the published implementation and PR receipt are complete.
+
+### Historical restarted163000, executor deadline mismatch corrected in source
 
 Fresh facade583832/parent581947/start219626086 runs installed163000 on
 Node24.18.0; old500624 absent. Independent admission matches all1177files,

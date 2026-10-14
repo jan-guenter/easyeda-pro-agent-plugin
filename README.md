@@ -19,7 +19,16 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261014180500` corrects the disposable opener's
+Candidate `0.3.0+codex.20261014190000` adds explicit-ID reads for Line, Arc, Via,
+Component and Pad using the current geometry tool. Pass a distinct ID array;
+results preserve caller order and any unavailable ID refuses the request.
+Whole-family checks and bounds still apply. These are plain loaded-view DTOs,
+not complete SDK objects or editing support. Installed180500 independently
+passed disposable PCB opening and all four Component/Pad ID and geometry reads.
+The new explicit-ID routes still need their own installed live check. See
+[scope and backlog](docs/current-pcb-selected-read-release-2026-10-14.md).
+
+Previous update `0.3.0+codex.20261014180500` corrects the disposable opener's
 navigation timeout to fit the upstream executor's 60-second maximum. Native
 observation expires at 50 seconds and the outer host waits 70 seconds. Timeout
 still requires recovery; it is not cancellation or permission to replay.
@@ -59,7 +68,8 @@ project/document navigation once. Normal EasyEDA opening can migrate data,
 replay caches and automatically Save; this is not the legacy unchanged-storage
 workflow. Inspection and observation never repeat navigation. A retained-owner
 terminal retirement path handles interrupted calls without claiming a design
-outcome. Connected opening remains unvalidated. See the
+outcome. Installed180500 passed one scoped disposable opening; this is not
+full initialization or persistence proof. See the
 [opening guide](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-project-opening.md)
 and [release scope](docs/current-disposable-open-release-2026-10-14.md).
 

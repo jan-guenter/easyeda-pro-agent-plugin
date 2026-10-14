@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "9fefee34478cd027c26b073eddc08623012f93e77408db2fcab304323019b6be";
+const __easyedaBundlePairId = "9611c93faaff334f16e303962c32f07bce14a8437ab90a34a528b51ec89cd261";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -39484,18 +39484,20 @@ var init_extension_api_coverage_routes = __esm({
     }
     for (const family2 of ["Line", "Arc", "Via", "Component", "Pad"]) {
       const namespace = `pcb_Primitive${family2}`;
-      groups.push({ namespace, methods: ["getAll"], route: {
-        tool: "easyeda_control_pcb_geometry",
-        selector: `eda.${namespace}.getAll`,
-        implementation: "native-task-equivalent",
-        scope: "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.",
-        source: ["current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
-        tests: ["current-pcb-geometry.test.ts", "facade-mode.test.ts", "current-pcb-geometry-registration.test.ts"],
-        documentTypes: [3],
-        validation: "offline-regression;current-live-unclaimed",
-        executionState: "available-with-runtime-guards",
-        inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-geometry", query: { method: `eda.${namespace}.getAll`, includeSchemas: true } } } }
-      } });
+      for (const method4 of ["getAll", "get"]) {
+        groups.push({ namespace, methods: [method4], route: {
+          tool: "easyeda_control_pcb_geometry",
+          selector: `eda.${namespace}.${method4}`,
+          implementation: "native-task-equivalent",
+          scope: `Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.${method4 === "get" ? " This get route accepts only 1..256 distinct bounded primitiveIds in an array, selects DTOs in caller order after complete-family checks and refuses any unavailable ID. It does not support scalar get or public missing-ID skipping. Returned and full-family observed row counts are distinct; all family bounds still apply before selection." : " This getAll route accepts empty arguments only."}`,
+          source: ["current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+          tests: ["current-pcb-geometry.test.ts", "facade-mode.test.ts", "current-pcb-geometry-registration.test.ts"],
+          documentTypes: [3],
+          validation: "offline-regression;current-live-unclaimed",
+          executionState: "available-with-runtime-guards",
+          inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-geometry", query: { method: `eda.${namespace}.${method4}`, includeSchemas: true } } } }
+        } });
+      }
     }
     groups.push({ namespace: "pcb_Layer", methods: ["getAllLayers", "getTheNumberOfCopperLayers"], route: {
       tool: "easyeda_control_pcb_layers",
@@ -92748,19 +92750,24 @@ function parseCurrentPcbGeometryRequest(input) {
 }
 function currentPcbGeometryFamily(request2) {
   switch (request2.method) {
-    case "eda.pcb_PrimitiveLine.getAll": {
+    case "eda.pcb_PrimitiveLine.getAll":
+    case "eda.pcb_PrimitiveLine.get": {
       return "Line";
     }
-    case "eda.pcb_PrimitiveArc.getAll": {
+    case "eda.pcb_PrimitiveArc.getAll":
+    case "eda.pcb_PrimitiveArc.get": {
       return "Arc";
     }
-    case "eda.pcb_PrimitiveVia.getAll": {
+    case "eda.pcb_PrimitiveVia.getAll":
+    case "eda.pcb_PrimitiveVia.get": {
       return "Via";
     }
-    case "eda.pcb_PrimitiveComponent.getAll": {
+    case "eda.pcb_PrimitiveComponent.getAll":
+    case "eda.pcb_PrimitiveComponent.get": {
       return "Component";
     }
-    case "eda.pcb_PrimitivePad.getAll": {
+    case "eda.pcb_PrimitivePad.getAll":
+    case "eda.pcb_PrimitivePad.get": {
       return "Pad";
     }
     default: {
@@ -92775,7 +92782,7 @@ function queryCurrentPcbGeometry(input = {}) {
       path: method4,
       method: method4,
       effect: "current-pcb-loaded-view-geometry-read",
-      parameters: [],
+      parameters: method4.endsWith(".get") ? ["primitiveIds"] : [],
       invocationEnabledByDiscovery: false,
       limitations: [...limitations9],
       provenance: {
@@ -92819,10 +92826,18 @@ function validateCurrentPcbGeometryResult(input, raw) {
     seen.add(row6.primitiveId);
   }
   const { rows: rows2, ...metadata8 } = payload;
+  const counts2 = { observedRowCount: rows2.length };
+  if ("primitiveIds" in request2.arguments) {
+    if (!("observedRowCount" in payload) || payload.observedRowCount < rows2.length || canonicalJson(rows2.map((row6) => row6.primitiveId)) !== canonicalJson(request2.arguments.primitiveIds)) {
+      throw new Error("PCB geometry result differs from its complete requested identity sequence or observed count.");
+    }
+    counts2["observedRowCount"] = payload.observedRowCount;
+    counts2["returnedRowCount"] = rows2.length;
+  }
   return {
     ...metadata8,
     value: rows2,
-    observedRowCount: rows2.length,
+    ...counts2,
     units: { linear: "mil", arcAngle: "degrees", rotation: "degrees" },
     effect: "current-pcb-loaded-view-geometry-read",
     encoding: "native-getter-projection-without-public-wrapper-rounding",
@@ -92831,7 +92846,7 @@ function validateCurrentPcbGeometryResult(input, raw) {
     limitations: [...limitations9]
   };
 }
-var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, methods3, targetSchema6, numberSchema, layerSchema2, boundedText4, identity26, base3, track, lineSchema3, arcSchema, viaSchema, componentSchema2, padSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, currentPcbGeometryResultSchema, limitations9;
+var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, collectionMethods2, selectedMethods, methods3, targetSchema6, numberSchema, layerSchema2, boundedText4, idSchema2, identity26, base3, track, lineSchema3, arcSchema, viaSchema, componentSchema2, padSchema, requestedIdsSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, resultShape, currentPcbGeometryResultSchema, limitations9;
 var init_current_pcb_geometry = __esm({
   "server/src/current-pcb-geometry.ts"() {
     init_zod();
@@ -92842,18 +92857,27 @@ var init_current_pcb_geometry = __esm({
     CURRENT_PCB_GEOMETRY_MAX_BYTES = 384 * 1024;
     CURRENT_PCB_GEOMETRY_MAX_ROWS = 256;
     CURRENT_PCB_GEOMETRY_MAX_NUMBER = 1e12;
-    methods3 = [
+    collectionMethods2 = [
       "eda.pcb_PrimitiveLine.getAll",
       "eda.pcb_PrimitiveArc.getAll",
       "eda.pcb_PrimitiveVia.getAll",
       "eda.pcb_PrimitiveComponent.getAll",
       "eda.pcb_PrimitivePad.getAll"
     ];
+    selectedMethods = [
+      "eda.pcb_PrimitiveLine.get",
+      "eda.pcb_PrimitiveArc.get",
+      "eda.pcb_PrimitiveVia.get",
+      "eda.pcb_PrimitiveComponent.get",
+      "eda.pcb_PrimitivePad.get"
+    ];
+    methods3 = [...collectionMethods2, ...selectedMethods];
     targetSchema6 = currentPcbLayersRequestSchema.shape.target;
     numberSchema = external_exports.number().min(-CURRENT_PCB_GEOMETRY_MAX_NUMBER).max(CURRENT_PCB_GEOMETRY_MAX_NUMBER).refine((value) => !Object.is(value, -0), "Signed zero is not supported by this JSON observation.");
     layerSchema2 = numberSchema.refine((value) => Number.isInteger(value) && value >= 0 && value <= 65535, "Invalid native layer ID.");
     boundedText4 = external_exports.string().max(1024);
-    identity26 = { primitiveId: external_exports.string().min(1).max(256), primitiveLock: external_exports.boolean() };
+    idSchema2 = external_exports.string().min(1).max(256);
+    identity26 = { primitiveId: idSchema2, primitiveLock: external_exports.boolean() };
     base3 = { ...identity26, net: boundedText4.nullable() };
     track = {
       ...base3,
@@ -92905,12 +92929,15 @@ var init_current_pcb_geometry = __esm({
       metallization: external_exports.boolean(),
       padType: external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2)])
     }).strict();
-    currentPcbGeometryRequestSchema = external_exports.object({ method: external_exports.enum(methods3), arguments: external_exports.object({}).strict(), target: targetSchema6 }).strict();
+    requestedIdsSchema = external_exports.array(idSchema2).min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS).refine((ids2) => new Set(ids2).size === ids2.length, "Primitive IDs must be distinct.");
+    currentPcbGeometryRequestSchema = external_exports.discriminatedUnion("method", [
+      external_exports.object({ method: external_exports.enum(collectionMethods2), arguments: external_exports.object({}).strict(), target: targetSchema6 }).strict(),
+      external_exports.object({ method: external_exports.enum(selectedMethods), arguments: external_exports.object({ primitiveIds: requestedIdsSchema }).strict(), target: targetSchema6 }).strict()
+    ]);
     currentPcbGeometryQuerySchema = external_exports.object({ method: external_exports.enum(methods3).optional(), includeSchemas: external_exports.boolean().default(false) }).strict();
-    currentPcbGeometryResultSchema = external_exports.object({
+    resultShape = {
       ok: external_exports.literal(true),
       kind: external_exports.literal("current-pcb-geometry-observation"),
-      method: external_exports.enum(methods3),
       target: targetSchema6,
       rows: external_exports.array(external_exports.discriminatedUnion("primitiveType", [lineSchema3, arcSchema, viaSchema, componentSchema2, padSchema])).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
       samples: external_exports.literal(2),
@@ -92918,11 +92945,16 @@ var init_current_pcb_geometry = __esm({
       cadAuthority: external_exports.literal(false),
       persistenceVerified: external_exports.literal(false),
       sourceMembershipVerified: external_exports.literal(false)
-    }).strict();
+    };
+    currentPcbGeometryResultSchema = external_exports.discriminatedUnion("method", [
+      external_exports.object({ ...resultShape, method: external_exports.enum(collectionMethods2) }).strict(),
+      external_exports.object({ ...resultShape, method: external_exports.enum(selectedMethods), observedRowCount: external_exports.number().int().min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS) }).strict()
+    ]);
     limitations9 = [
       "Only the exact active ordinary project-owned type-3 PCB is admitted. The retained frame, local receiver and complete target are rechecked around awaits, with native tab/type identity bracketing each sample. This is not an atomic lock or proof against switching away and back between observations.",
       "This is an explicit native loaded-view geometry projection, not public class instances, complete native/source records, saved membership, ownership, connectivity, DRC or persistence proof. Loaded views may include inherited, generated and in-progress objects. Native display nets are copied without case conversion; empty string and null remain distinct, while undefined refuses.",
-      "Only unfiltered getAll with empty arguments is supported. Fixed native family handlers replace mutable public active-tab routing. All reported scalar fields and ordered rows must match across two complete samples; omitted native fields are not compared. No direct getByIds or SDK object constructor is invoked.",
+      "Unfiltered getAll accepts empty arguments. The narrower get equivalent accepts only 1 to 256 distinct primitiveIds in an array, returns DTOs in caller order and refuses the entire request if any ID is unavailable in the observed family. Scalar input and the public method's missing-ID skipping are not supported. This does not change editor selection or prove absence from saved source.",
+      "Fixed native getAll handlers replace mutable public active-tab routing for both methods. All projected scalar fields and ordered rows across the complete family must match twice before requested IDs are selected; omitted native fields are not compared. Full-family validation and bounds apply even to unrequested rows. No direct getByIds or SDK object constructor is invoked. For get, returnedRowCount counts selected DTOs and observedRowCount counts the complete observed family.",
       "Positions, widths, diameters and mask expansions are in mil; arcAngle and Component/Pad rotation are in degrees. The native callback's scaled results are not rounded using the public wrapper. Arc endpoints/angle and Pad placement can therefore retain precision that the public wrapper rounds; Via diameters are twice the native callback radii, without public one-decimal radius rounding. Layer IDs and arc/via/mask modes are native values, not validated design rules.",
       "Coordinates use the data origin, not the displayed canvas origin. Arc endpoints and angle are incomplete shape data: a full-circle case can project to zero angle. Native center/radius/sweep and partition are omitted, as are Via unused-layer and is-suture fields. Mask expansion values are loaded model observations, not proof of saved overrides or current rule resolution.",
       "Component observation contains only identity, lock and placement on layer 1 or 2; attributes, designator, library/device/footprint/3D enrichment and child associations are omitted. Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12; holes, shapes, masks, rules, thermal data and parent associations are omitted. Pad family membership does not distinguish free pads from component pads. Holeless native holeRotation may be NaN and is not part of this projection.",
@@ -118012,6 +118044,7 @@ var init_current_pcb_identities_runtime = __esm({
 function buildCurrentPcbGeometryProgram(input) {
   const request2 = parseCurrentPcbGeometryRequest(input);
   const family2 = currentPcbGeometryFamily(request2);
+  const primitiveIds2 = "primitiveIds" in request2.arguments ? request2.arguments.primitiveIds : null;
   const topics = {
     Line: "pcb/extensionAPI/track-getAll",
     Arc: "pcb/extensionAPI/arc-getAll",
@@ -118021,7 +118054,7 @@ function buildCurrentPcbGeometryProgram(input) {
   };
   return `let timer,clear;
 try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)},family=${JSON.stringify(family2)},topic=${JSON.stringify(topics[family2])};let expired=false;
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)},family=${JSON.stringify(family2)},topic=${JSON.stringify(topics[family2])},primitiveIds=${JSON.stringify(primitiveIds2)};let expired=false;
 const bad=()=>{throw new Error('CURRENT_PCB_GEOMETRY_READ_FAILED');};
 ${buildCurrentProjectUrlGuard()}
 const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
@@ -118105,9 +118138,12 @@ const read=async()=>{await identity();check();const raw=await call(topic,{});che
 const run=async()=>{
  const first=await read(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();
  const second=await read();if(JSON.stringify(second)!==firstJson)bad();check();
- const json=JSON.stringify({ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request2.method)},target,rows:first,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false});
- const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
- if(utf8Bytes>${CURRENT_PCB_GEOMETRY_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();return envelope;
+ const observation={ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request2.method)},target,rows:first,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ const encode=value=>{const json=JSON.stringify(value),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
+  if(utf8Bytes>${CURRENT_PCB_GEOMETRY_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();return envelope;};
+ const complete=encode(observation);if(primitiveIds===null)return complete;
+ const byId=new Map(first.map(row=>[row.primitiveId,row])),selected=primitiveIds.map(id=>{const row=byId.get(id);if(row===undefined)bad();return row;});
+ return encode({...observation,rows:selected,observedRowCount:first.length});
 };
 check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error('CURRENT_PCB_GEOMETRY_READ_FAILED'));},10000]);});
 return await Promise.race([run(),timeout]);
@@ -121318,8 +121354,8 @@ var init_src = __esm({
     registerFacadeTool(
       "easyeda_control_pcb_geometry",
       {
-        title: "Read loaded PCB line, arc and via geometry",
-        description: "Observe unfiltered Line/Arc/Via geometry or basic Component/Pad placement on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and requires two matching ordered bounded samples. Native equivalents of getAll, not public-wrapper dispatch or class instances. Values use mil/degrees without public-wrapper rounding; projections omit complete shapes, pad holes/rules, component libraries and parent-child mapping. Loaded-view geometry does not prove saved membership, ownership, connectivity or persistence; net labels and lock flags are observations, not electrical or editing authority. No filters, selection change, navigation, write or Save. Query offline pcb-geometry/pcb-geometry-validate first; no connected validation is implied.",
+        title: "Read loaded PCB geometry and placement",
+        description: "Observe Line/Arc/Via geometry or basic Component/Pad placement on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and requires two matching ordered bounded full-family samples. Native getAll equivalents accept empty arguments. Narrow get equivalents accept 1..256 distinct primitiveIds in an array, return DTOs in caller order, and refuse if any ID is unavailable; full-family bounds still apply before selection. No public-wrapper dispatch, scalar get or class instances. Values use mil/degrees without public-wrapper rounding; projections omit complete shapes, pad holes/rules, component libraries and parent-child mapping. Loaded-view geometry does not prove saved membership, ownership, connectivity or persistence; net labels and lock flags are observations, not electrical or editing authority. No optional public filters, selection change, navigation, write or Save. Query offline pcb-geometry/pcb-geometry-validate first; no connected validation is implied.",
         inputSchema: { request: external_exports.unknown().pipe(currentPcbGeometryRequestSchema), expectedFingerprint: privateFingerprintSchema },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
