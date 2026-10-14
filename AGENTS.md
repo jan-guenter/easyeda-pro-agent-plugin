@@ -58,6 +58,12 @@ The first bundled-startup check found one stale catalog list; its expectation no
 includes project_open, without changing runtime behavior. Existing external pins,
 helper and bridge are unchanged. Scope/backlog: docs/current-disposable-open-release-2026-10-14.md.
 
+PR21 initial CI38495709119 found one stale registration-test boundary: the
+launch-only source slice included the newly adjacent project opener. Its end
+delimiter now names project_open, preserving every launch assertion and leaving
+runtime source/bundles unchanged. Exact corrected-head CI is required before
+merge; the initial failed aggregate is not release acceptance.
+
 ### Historical restarted011500 and PCB inspection
 
 PR19 delivered011500 as main e94fe5a35ae15714eb679b816132f474e7e750c9,
