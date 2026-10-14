@@ -13,7 +13,87 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Restarted213000; metadata and normal close passed, pad details release in progress
+### Restarted003000; disposable child-pad check and Pad DTO enrichment underway
+
+Fresh facade806435/parent804435/start221573629 loads003000 on pinnedNode24.18.
+Independent read-only admission repeats all1177files/23018934bytes/42dirs/
+seven skills/inventoryc257ebe0/source34089557604/runtime3 5c2f1d98. Prior778304
+is absent. Completed opening849ba911/terminationd15d191a remain exact. Main
+CI38650657715 passed all ten jobs. Production designs and records stay excluded.
+
+Ordinary-startup-003000-20261015 completed once: root28456,
+Job737e8ae9ffb645829527f19f70ef9f3d/helperb9d8261edd044d94847af25a6133d759,
+launch digest2830efa849bb14c1e1466cdcdf8850fec38e98a7693ff94d52ab8ad649c84f52.
+Status14 authenticated with no incomplete operations. Context20 observed
+Start Page/no project. Disposable source970d21b3/598016bytes rehashed exact.
+Opening current-pcb-open-003000-20261015 dispatched ONCE in functions25 and is
+pending. Never replay launch/navigation. Private transport transcripts are in
+/tmp/easyeda-live-003000-3bemi7. No production design or record was accessed.
+
+Feature branch feature/pcb-pad-shape-rules-20261015 prepares020000 with default
+Pad copper parameters, mask mode/values and thermal configuration. Main and
+independent source review accept geometryd5818a2f/programaca421eb against
+pinned native code and research2edab26e. RECT ratio is percent, not radius;
+shape dimensions already have native0.1mil rounding. POLYGON returns an explicit
+not-projected marker; path contents, NGON and complete stacks remain outside
+the projection. Masks/thermal are loaded observations, not refreshed rules or
+fabrication validity. Existing child DTOs reuse these fields, with no new RPC.
+Catalog remains15tools/seven skills/11geometry methods/774SDK paths.
+
+28focused geometry/identity/registration and34coverage cases pass, plus strict
+types/full zero-warning type-aware lint, build/sanitizer, generated coverage,
+compatibility, package/repository/privacy and seven official skill validators.
+Initial helper field-name typo was corrected to defaultPadShapeAspect before
+passing runs. No guard or lint rule was relaxed. Final source340
+92946f2b38d87666fb031731efb8b900f60d2575ecc4543eb40eda8de3fb2aca/runtime3
+d7f99363d58ee66181f74c7841edcfd6b00d6e7da02a7dc1b5b686b77cf828a7;
+external pins unchanged. Publication/CI/install remain pending. New fields
+have source/offline evidence, not connected validation. Installed003000
+child-list/hole live check, normal-close and retained termination still pending.
+Backlog: docs/current-pad-parameters-release-2026-10-15.md.
+
+### Historical delivered003000; next work was bounded live admission and Pad DTO enrichment
+
+PR30 merged through the protected route as main
+23796d8ac477de9f2b819539ae62dfb0a1195033. Tested payload
+26cdb7835e5a2b8352eeadb9f4b5ec5fe95bc424 passed all ten required jobs in
+CI38649119786:9904facade passes/five skips/zero failures and424bridge passes.
+Fulltreebac320796c8db0349f22d7cbec6e9375926e47a4/package
+8caf825b1ef4cd1de576fc4d3fd678e1ebac3027 equal the tested payload exactly.
+Postmerge CI38650657715 is running on that same tree; check its outcome next
+session without rerunning successful checks solely for the restart.
+
+Official Git marketplace upgrade completed errors[], installed/enabled
+0.3.0+codex.20261015003000 from main. Actual configured offline startup passes
+ambientNode26.7 to pinned24.18,15tools, identity7/geometry11, new child-list and
+lifecycle argument schemas. Ten process samples show no upstream child/nonstdio
+socket, stderr0. Synthetic profile only; probe closed normally. Proof2103bytes
+SHA3c2bc2d5c6cd10b368e726a2c71720991d554237fea5e5ef18ba1bc966d7c21d is at
+/tmp/easyeda-installed-003000-clRBap/proof.json; reused probefa91602a.
+Independent post-probe admission confirms1177files/23018934bytes,42directories
+(all0755),seven skills,1176files100644/one100755; no extra entries/symlinks/
+hardlinks/mode mismatch. Git-tree-order inventorySHA
+c257ebe0b1ace90efd9ab84e389eae0c1594c875338de3378c6c3f8a1a5b51ae uses
+path NUL Gitmode NUL bytes NUL SHA256 LF. Source34089557604/runtime3 5c2f1d98/
+helperfa5cff83 remain exact. Marketplace marker and snapshot HEAD23796d8a match
+merged main and the tested trees. Public final delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/30#issuecomment-6180315977.
+
+Current host778304/parent776410 remains213000 on Node24.18. No owner termination
+or hotpatch. Use a fresh Codex session before live003000 calls. The213000
+metadata/opening/normal-close/retained-termination checks below are complete;
+never replay them. Production designs and records were not accessed.
+
+Next: admit fresh003000 and, if needed, combine one bounded child-list/Pad-hole
+observation on existing disposable objects with the maintained launch/open/
+normal-close lifecycle. Do not expand a test matrix or create fixture objects
+merely to cover round/slot cases. New003000 projections have source/CI/offline
+evidence, not connected validation. Then continue useful Pad DTO enrichment
+from the next-source advisory below. Broader remaining work is in
+docs/current-pcb-pad-details-release-2026-10-15.md. Preserve this local delivery
+checkpoint for the next source commit; no extra docs-only release is needed.
+
+### Historical restarted213000; metadata and normal close passed, pad details release prepared
 
 Fresh facade778304/parent776410/start221198580 loads213000 on Node24.18.
 Independent installed admission repeats exact1177files/22982782bytes/42dirs/
@@ -65,7 +145,22 @@ passes under Node24.18/core0, with authority/isolation assertions unchanged.
 Search found no other stale executable count. Initial CI38648316053 was
 canceled and is not release acceptance. Source/runtime pins remain exact;
 only the existing test and this checkpoint changed after the reviewed payload.
-Corrected-payload CI and installation remain pending.
+Corrected payload26cdb7835e5a2b8352eeadb9f4b5ec5fe95bc424 is pushed; required
+CI38649119786 is pending. Fulltreebac320796c8db0349f22d7cbec6e9375926e47a4/package
+8caf825b1ef4cd1de576fc4d3fd678e1ebac3027. PR finding4277028246 is fixed/replied/
+resolved. Installation-only probefa91602a is prepared but unexecuted at
+/tmp/easyeda-installed-003000-clRBap/probe.mjs. Installation remains pending.
+
+Next-source advisory (not implemented or main-source-reviewed): default copper
+shape can reuse the Pad DTO/child results without a new RPC. Agent source review
+points to pinned PCB zH10297659/callback10370738, qe5435419/radius6249808 and
+API1410928/getter1414366. ELLIPSE/OVAL dimensions are already rounded mil;
+RECT fourth value is corner ratio*100, not physical radius. Re-read those exact
+source spans before implementation. Complex polygons need bounded path handling,
+NGON sides remain unestablished and special stacks are not general layer ranges.
+Nested padRule may support a later loaded-rule observation, not explicit override
+or resolved-pour proof. No new tests, state access or implementation for this
+advisory. Prioritize scoped useful DTO additions over another test framework.
 
 ### Historical delivered213000; next work is metadata live admission and ownership backlog
 

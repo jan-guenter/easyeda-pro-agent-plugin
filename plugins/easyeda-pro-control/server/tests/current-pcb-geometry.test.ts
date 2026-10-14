@@ -24,8 +24,10 @@ const defaults = { Line: [track, { ...track, globalIndex: "line-a", net: null, l
     attrsMap: { Designator: "U1", Name: "={Manufacturer Part}", Manufacturer: "Example Devices", "Manufacturer Part": "ABC-1",
       Supplier: "Example Supplier", "Supplier Part": "S123" } },
     { globalIndex: "component-a", locked: true, layerId: 2, position: { x: -30, y: 40 }, rotation: 180, attrsMap: { Designator: "", Name: "" } }],
-  Pad: [{ globalIndex: "pad-b", locked: true, net: "MixedCase", layerId: 12, num: "A1", center: { x: 1.1234567, y: 2 }, rotation: 45.1234567, plated: true, padTypeAspect: 0, holeAspect: null },
-    { globalIndex: "pad-a", locked: false, net: null, layerId: 1, num: "", center: { x: -3, y: 4 }, rotation: -90, plated: false, padTypeAspect: 2, holeAspect: null }] };
+  Pad: [{ globalIndex: "pad-b", locked: true, net: "MixedCase", layerId: 12, num: "A1", center: { x: 1.1234567, y: 2 }, rotation: 45.1234567, plated: true, padTypeAspect: 0, holeAspect: null,
+    defaultPadShapeAspect: ["RECT", 60.1, 30.2, 25], expansionType: 1, topSolderExpansion: 4.1234567, bottomSolderExpansion: -2.5, pasteExpansion: 0, padRule: null },
+    { globalIndex: "pad-a", locked: false, net: null, layerId: 1, num: "", center: { x: -3, y: 4 }, rotation: -90, plated: false, padTypeAspect: 2, holeAspect: null,
+      defaultPadShapeAspect: ["OVAL", 30, 60], expansionType: 2, topSolderExpansion: 0, bottomSolderExpansion: 1.25, pasteExpansion: -0.75, padRule: { connectMode: 2 } }] };
 interface Options { before?: string; beforeChild?: string; afterCall?: string; input?: CurrentPcbGeometryRequest; fastDeadline?: boolean; }
 function environment(options: Options = {}): { run: () => Promise<unknown>; evaluateChild: (source: string) => unknown } {
   const input = options.input ?? inputFor();
@@ -96,9 +98,13 @@ void test("current geometry copies ordered cross-realm native fields without pub
       designator: "U1", name: "={Manufacturer Part}", manufacturer: "Example Devices", manufacturerPart: "ABC-1", supplier: "Example Supplier", supplierPart: "S123" },
     { primitiveId: "component-a", primitiveType: "Component", primitiveLock: true, layer: 2, x: -30, y: 40, rotation: 180, designator: "", name: "" }],
     [{ primitiveId: "pad-b", primitiveType: "Pad", primitiveLock: true, net: "MixedCase", layer: 12, padNumber: "A1",
-      x: 1.1234567, y: 2, rotation: 45.1234567, metallization: true, padType: 0, hole: null },
+      x: 1.1234567, y: 2, rotation: 45.1234567, metallization: true, padType: 0, hole: null,
+      defaultCopperShape: { shape: "RECT", width: 60.1, height: 30.2, cornerRatioPercent: 25 },
+      maskExpansion: { mode: 1, topSolder: 4.1234567, bottomSolder: -2.5, paste: 0 }, thermal: null },
     { primitiveId: "pad-a", primitiveType: "Pad", primitiveLock: false, net: null, layer: 1, padNumber: "",
-      x: -3, y: 4, rotation: -90, metallization: false, padType: 2, hole: null }],
+      x: -3, y: 4, rotation: -90, metallization: false, padType: 2, hole: null,
+      defaultCopperShape: { shape: "OVAL", width: 30, height: 60 },
+      maskExpansion: { mode: 2, topSolder: 0, bottomSolder: 1.25, paste: -0.75 }, thermal: { mode: 2 } }],
   ];
   for (const [index, method] of methods.entries()) {
     const input = inputFor(method);
@@ -218,10 +224,10 @@ void test("current geometry rejects malformed scalars, native accessors, duplica
   await assert.rejects(environment({ input: inputFor(methods[1]), beforeChild: "rows.Arc[0].arcType=3;" }).run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
 });
 
-void test("current Component and Pad projections refuse invalid required fields without inspecting omitted shape or library data", async () => {
+void test("current Component and Pad projections refuse invalid required fields without inspecting omitted stack or library data", async () => {
   for (const method of [methods[3], methods[4]]) {
     const input = inputFor(method);
-    const fixture = environment({ input, beforeChild: "for(const [row,key] of [[rows.Component[0],'net'],[rows.Component[0],'pads'],[rows.Component[0],'footprint'],[rows.Component[0].attrsMap,'Device'],[rows.Component[0].attrsMap,'Unselected'],[rows.Pad[0],'padRule'],[rows.Pad[0],'holeOffset']])Object.defineProperty(row,key,{get(){getterReads++;throw new Error('PRIVATE_OMITTED');}});" });
+    const fixture = environment({ input, beforeChild: "for(const [row,key] of [[rows.Component[0],'net'],[rows.Component[0],'pads'],[rows.Component[0],'footprint'],[rows.Component[0].attrsMap,'Device'],[rows.Component[0].attrsMap,'Unselected'],[rows.Pad[0],'specialPadShapeAspect'],[rows.Pad[0],'holeOffset']])Object.defineProperty(row,key,{get(){getterReads++;throw new Error('PRIVATE_OMITTED');}});" });
     const raw: unknown = decodeExactReadEnvelope(await fixture.run());
     validateCurrentPcbGeometryResult(input, raw);
     assert.equal(fixture.evaluateChild("getterReads"), 0);
@@ -367,17 +373,103 @@ void test("current Pad holes refuse malformed tuples and changing fields without
   }
 });
 
+void test("current Pad shape and mask parameters retain callback precision while thermal class fields convert once", async () => {
+  const input = inputFor(methods[4]);
+  const fixture = environment({ input, beforeChild: "rows.Pad[0].defaultPadShapeAspect=['ELLIPSE',0,-2.1234567];class Rule{constructor(){this.connectMode=0;this.lineClearance=0.125;this.lineWidth=-0.2;this.lineAngle=Math.PI/4;}toJSON(){getterReads++;throw new Error('PRIVATE_RULE_METHOD');}}rows.Pad[0].padRule=new Rule();rows.Pad[1].padRule={connectMode:1};rows.Pad.push({...rows.Pad[1],globalIndex:'pad-c',padRule:{connectMode:2}});for(const row of rows.Pad.slice(1))for(const key of ['lineClearance','lineWidth','lineAngle'])Object.defineProperty(row.padRule,key,{get(){getterReads++;throw new Error('PRIVATE_UNUSED_RULE');}});" });
+  const result = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await fixture.run())), value = result["value"];
+  assert.ok(Array.isArray(value));
+  assert.deepEqual(value.map((row: Record<string, unknown>) => row["thermal"]), [
+    { mode: 0, clearance: 1.25, spokeWidth: -2, angle: 45 }, { mode: 1 }, { mode: 2 },
+  ]);
+  assert.deepEqual(value.map((row: Record<string, unknown>) => row["defaultCopperShape"]), [
+    { shape: "ELLIPSE", width: 0, height: -2.1234567 }, { shape: "OVAL", width: 30, height: 60 }, { shape: "OVAL", width: 30, height: 60 },
+  ]);
+  assert.deepEqual(value.map((row: Record<string, unknown>) => row["maskExpansion"]), [
+    { mode: 1, topSolder: 4.1234567, bottomSolder: -2.5, paste: 0 },
+    { mode: 2, topSolder: 0, bottomSolder: 1.25, paste: -0.75 }, { mode: 2, topSolder: 0, bottomSolder: 1.25, paste: -0.75 },
+  ]);
+  assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("dataReads"), 2);
+});
+
+void test("current Pad polygon marker neither reads nor claims equality of omitted path contents", async () => {
+  const input = inputFor(methods[4]);
+  const fixture = environment({ input, beforeChild: "const path=[];Object.defineProperty(path,'0',{get(){getterReads++;throw new Error('PRIVATE_POLYGON');}});rows.Pad[0].defaultPadShapeAspect=['POLYGON',path];",
+    afterCall: "if(dataReads===2)rows.Pad[0].defaultPadShapeAspect[1]=['CIRCLE',1,2,3];" });
+  const result = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await fixture.run())), value = result["value"];
+  assert.ok(Array.isArray(value));
+  const first: unknown = value[0]; assert.ok(first !== null && typeof first === "object" && "defaultCopperShape" in first);
+  assert.deepEqual(first.defaultCopperShape, { shape: "POLYGON", details: "not-projected" });
+  assert.equal(fixture.evaluateChild("getterReads"), 0); assert.equal(fixture.evaluateChild("dataReads"), 2);
+});
+
+void test("current Pad enrichment rejects unavailable own data, malformed shapes and conversion overflow", async () => {
+  const input = inputFor("eda.pcb_PrimitivePad.get", ["pad-a"]);
+  const setup = "rows.Pad[0].padRule={connectMode:0,lineClearance:0.1,lineWidth:0.2,lineAngle:Math.PI/4};";
+  for (const mutation of ["delete rows.Pad[0].defaultPadShapeAspect;", "rows.Pad[0].defaultPadShapeAspect=['NGON',60,6];",
+    "rows.Pad[0].defaultPadShapeAspect=['OTHER',1,2];", "rows.Pad[0].defaultPadShapeAspect=['RECT',1,2];",
+    "rows.Pad[0].defaultPadShapeAspect=['OVAL',1,2,3];", "rows.Pad[0].defaultPadShapeAspect=['POLYGON',null];",
+    "rows.Pad[0].defaultPadShapeAspect=['POLYGON',[],1];", "delete rows.Pad[0].defaultPadShapeAspect[1];",
+    "rows.Pad[0].defaultPadShapeAspect.extra=1;", "rows.Pad[0].defaultPadShapeAspect[3]=-0;",
+    "rows.Pad[0].defaultPadShapeAspect[1]=Infinity;", "rows.Pad[0].defaultPadShapeAspect[2]=1e13;",
+    "Object.defineProperty(rows.Pad[0].defaultPadShapeAspect,'1',{get(){getterReads++;throw new Error('PRIVATE_SHAPE');}});",
+    "rows.Pad[0].expansionType=3;", "rows.Pad[0].topSolderExpansion=NaN;", "rows.Pad[0].bottomSolderExpansion='1';",
+    "rows.Pad[0].pasteExpansion=undefined;", "rows.Pad[0].pasteExpansion=-0;", "rows.Pad[0].pasteExpansion=1e13;",
+    "delete rows.Pad[0].expansionType;Object.prototype.expansionType=1;",
+    "Object.defineProperty(rows.Pad[0],'pasteExpansion',{get(){getterReads++;throw new Error('PRIVATE_MASK');}});",
+    "rows.Pad[0].padRule=undefined;", "rows.Pad[0].padRule=[];", "rows.Pad[0].padRule.connectMode=3;",
+    "rows.Pad[0].padRule=Object.create({connectMode:0,lineClearance:1,lineWidth:1,lineAngle:0});",
+    "rows.Pad[0].padRule.lineClearance=undefined;", "rows.Pad[0].padRule.lineWidth=2e11;",
+    "rows.Pad[0].padRule.lineAngle=2e10;", "rows.Pad[0].padRule.lineAngle=-0;",
+    "delete rows.Pad[0].padRule.lineClearance;Object.prototype.lineClearance=1;",
+    "Object.defineProperty(rows.Pad[0],'padRule',{get(){getterReads++;throw new Error('PRIVATE_RULE');}});",
+    "Object.defineProperty(rows.Pad[0].padRule,'lineWidth',{get(){getterReads++;throw new Error('PRIVATE_RULE');}});"]) {
+    const fixture = environment({ input, beforeChild: setup + mutation });
+    await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+    assert.equal(fixture.evaluateChild("getterReads"), 0);
+  }
+});
+
+void test("current Pad enrichment participates in complete sampling and strict host validation", async () => {
+  const input = inputFor("eda.pcb_PrimitivePad.get", ["pad-a"]);
+  const setup = "rows.Pad[0].padRule={connectMode:0,lineClearance:0.1,lineWidth:0.2,lineAngle:Math.PI/4};";
+  for (const mutation of ["rows.Pad[0].defaultPadShapeAspect[1]++;", "rows.Pad[0].defaultPadShapeAspect[3]++;",
+    "rows.Pad[0].expansionType=2;", "rows.Pad[0].topSolderExpansion++;", "rows.Pad[0].bottomSolderExpansion++;",
+    "rows.Pad[0].pasteExpansion++;", "rows.Pad[0].padRule.lineClearance++;", "rows.Pad[0].padRule.lineWidth++;",
+    "rows.Pad[0].padRule.lineAngle++;", "rows.Pad[0].padRule={connectMode:1};"]) {
+    await assert.rejects(environment({ input, beforeChild: setup, afterCall: `if(dataReads===2){${mutation}}` }).run(),
+      { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  }
+  const raw: unknown = decodeExactReadEnvelope(await environment({ input }).run());
+  assert.ok(raw !== null && typeof raw === "object" && "rows" in raw && Array.isArray(raw.rows));
+  const row: unknown = raw.rows[0]; assert.ok(row !== null && typeof row === "object");
+  for (const change of [{ defaultCopperShape: undefined }, { defaultCopperShape: { shape: "NGON", diameter: 60, sides: 6 } },
+    { defaultCopperShape: { shape: "RECT", width: 1, height: 2, cornerRadius: 3 } },
+    { defaultCopperShape: { shape: "POLYGON", details: "not-projected", path: [] } },
+    { maskExpansion: { mode: 3, topSolder: 1, bottomSolder: 2, paste: 3 } },
+    { maskExpansion: { mode: 1, topSolder: 1, bottomSolder: 2 } },
+    { thermal: { mode: 0, clearance: 1, spokeWidth: 1 } }, { thermal: { mode: 1, angle: 0 } }]) {
+    assert.throws(() => validateCurrentPcbGeometryResult(input, { ...raw, rows: [{ ...row, ...change }] }));
+  }
+});
+
 function componentPadsInput(primitiveId = "component-b"): CurrentPcbGeometryRequest {
   return parseCurrentPcbGeometryRequest({ method: "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId", arguments: { primitiveId }, target });
 }
 
 void test("current component child-pad association preserves full native IDs and child order using global Pad geometry", async () => {
   const input = componentPadsInput();
-  const fixture = environment({ input, beforeChild: "rows.Pad.push({...rows.Pad[0],globalIndex:'unrelated-pad'});for(const row of children)for(const key of ['center','rotation','holeAspect','holeOffset','holeRotation','parentId'])Object.defineProperty(row,key,{get(){getterReads++;throw new Error('PRIVATE_CHILD_GEOMETRY');}});" });
+  const fixture = environment({ input, beforeChild: "rows.Pad.push({...rows.Pad[0],globalIndex:'unrelated-pad'});for(const row of children)for(const key of ['center','rotation','holeAspect','holeOffset','holeRotation','defaultPadShapeAspect','expansionType','topSolderExpansion','bottomSolderExpansion','pasteExpansion','padRule','parentId'])Object.defineProperty(row,key,{get(){getterReads++;throw new Error('PRIVATE_CHILD_GEOMETRY');}});" });
   const result = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await fixture.run())), value = result["value"];
   assert.ok(Array.isArray(value));
   assert.deepEqual(value.map((row: Record<string, unknown>) => row["primitiveId"]), ["pad-a", "pad-b"]);
   assert.deepEqual(value.map((row: Record<string, unknown>) => row["x"]), [-3, 1.1234567]);
+  assert.deepEqual(value.map((row: Record<string, unknown>) => row["defaultCopperShape"]), [
+    { shape: "OVAL", width: 30, height: 60 }, { shape: "RECT", width: 60.1, height: 30.2, cornerRatioPercent: 25 },
+  ]);
+  assert.deepEqual(value.map((row: Record<string, unknown>) => row["maskExpansion"]), [
+    { mode: 2, topSolder: 0, bottomSolder: 1.25, paste: -0.75 }, { mode: 1, topSolder: 4.1234567, bottomSolder: -2.5, paste: 0 },
+  ]);
+  assert.deepEqual(value.map((row: Record<string, unknown>) => row["thermal"]), [{ mode: 2 }, null]);
   assert.equal(result["componentPrimitiveId"], "component-b"); assert.equal(result["observedComponentCount"], 2);
   assert.equal(result["observedPadCount"], 3); assert.equal(result["observedRowCount"], 3); assert.equal(result["returnedRowCount"], 2);
   assert.equal(result["relationshipEvidence"], "native-component-child-list-and-global-pad-membership");

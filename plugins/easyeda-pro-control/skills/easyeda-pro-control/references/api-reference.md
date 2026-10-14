@@ -272,7 +272,7 @@ resolved connectivity.
 | Arc | Line fields plus `arcAngle`, `interactiveMode` |
 | Via | `x`, `y`, `holeDiameter`, `diameter`, `viaType`, `designRuleBlindViaName`, `startLayer`, `endLayer`, `maskExpansionMode`, `topMaskExpansion`, `bottomMaskExpansion` |
 | Component | `layer` (1/2), `x`, `y`, `rotation`; optional raw `designator`, `name`, `manufacturer`, `manufacturerPart`, `supplier`, `supplierPart` |
-| Pad | `layer` (1/2/12), `padNumber`, `x`, `y`, `rotation`, `metallization`, `padType` (0/1/2), `hole` |
+| Pad | `layer` (1/2/12), `padNumber`, `x`, `y`, `rotation`, `metallization`, `padType` (0/1/2), `hole`, `defaultCopperShape`, `maskExpansion`, `thermal` |
 
 Lengths use mil from the data origin, which can differ from the displayed
 canvas origin. Arc angle and Component/Pad rotation use degrees. Arc modes
@@ -305,12 +305,43 @@ native slot-length value. Dimensions must be nonnegative, but zero is retained
 because the native callback can substitute zero for an unavailable dimension.
 This is not drill or fabrication validation. A null hole does not inspect unused
 rotation/offset fields, so native NaN for a holeless pad stays outside the DTO.
-Copper shapes, rules, mask expansions and reverse parent identity remain omitted.
+Default copper parameters, mask values and thermal configuration are described
+below; reverse parent identity remains unverified.
 A Pad row may be inherited; never infer that it is standalone or derive its
 parent from an ID prefix. Required missing fields refuse rather than receive SDK
 constructor defaults. Native Component serialization still reads existing
 footprint/device/font caches and child arrays before projection; ID-only reads
 do not avoid that work or fetch missing libraries.
+
+`defaultCopperShape` is one of:
+
+```ts
+{ shape: "ELLIPSE" | "OVAL", width, height }
+{ shape: "RECT", width, height, cornerRatioPercent }
+{ shape: "POLYGON", details: "not-projected" }
+```
+
+Width/height are already rounded to0.1mil by the native shape callback. The
+rectangle's fourth value is a percentage, not the corner radius named by the
+public docs. Do not infer a rendered outline: native ELLIPSE may use width
+alone. POLYGON deliberately omits its path; path contents are not compared.
+NGON and unknown representations refuse. Physical-layer pad stacks remain
+unimplemented; default shape is not proof that every layer uses that shape.
+
+`maskExpansion` contains `mode`, `topSolder`, `bottomSolder` and one shared
+`paste` value. Mode1 follows rules and mode2 is custom; values are observed mil,
+including negative and zero. Native null-to-zero coercion means zero does not
+prove an explicit override. No rule refresh is requested; these values do not
+prove fresh resolution, applicability to both faces or fabrication apertures.
+
+`thermal` is null, `{mode:1}` (direct), `{mode:2}` (nonconnected), or
+`{mode:0, clearance, spokeWidth, angle}` (thermal spokes). Clearance and width
+use mil; angle uses degrees. Null means no pad configuration in this projection,
+not no copper connection. Values may come from a footprint template and do not
+prove stored overrides or actual poured spokes. The adapter reads fixed own
+fields from the native thermal object, avoiding the public mapper's incorrect
+top-level reads and missing unit conversions. All three fields describe loaded
+parameters, not DRC or manufacturing validity.
 
 Two matching ordered projected samples retain the exact frame and receiver
 around each await. For `get`, the complete family is validated and compared
@@ -342,8 +373,8 @@ with the complete global Pad collection. Shared identity, number, raw net,
 layer, lock, metallization and pad-type values must agree. It repeats the
 compound observation and compares both complete samples before returning.
 
-The result contains Pad DTOs in native child order, including hole geometry
-from the global Pad callback. The component-specific callback uses different
+The result contains Pad DTOs in native child order, including hole geometry,
+default shape, mask and thermal fields from the global Pad callback. The component-specific callback uses different
 rounding and hole units, so its geometry is not copied. An existing component
 may return an empty child list; a missing component or child refuses. Unrelated
 pads stay outside the result but participate in full-family stability checks.
