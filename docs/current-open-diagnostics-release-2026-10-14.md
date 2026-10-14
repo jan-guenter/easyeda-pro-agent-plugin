@@ -53,6 +53,12 @@ review found no actionable regression. Full existing build, types, zero-warning
 type-aware lint, dependency/privacy checks, skill validation and GitHub CI remain
 release gates. Final counts are recorded in AGENTS.md and the PR receipt.
 
+The initial local full suite caught two stale exact source hashes in the
+existing disposable concurrency fixture, causing five failures before runtime
+initialization. Only those test pins were updated to the independently checked
+`core.ts` hash. All five focused cases then passed with their original race
+assertions intact. Exact corrected-head CI is required before delivery.
+
 Fresh installed133000 admission and offline geometry discovery/request validation
 passed before this source update. The earlier `current-pcb-open-054500-20261014`
 attempt is already terminally retired after original process/Job termination and

@@ -58,6 +58,16 @@ and sanitizer identity checks pass. Full existing verification and exact-head
 CI/publication/install are still in progress; final delivery evidence belongs
 to the originating PR receipt. No further live action follows the offline checks.
 
+PR24 initially tests09fe696. The local full run found five existing disposable
+race-fixture failures before runtime initialization: both test-only core.ts pins
+still named80876233 after the reviewed timeout-classifier import. Root and
+independent rehash agree onf536d9adae3fd0177718e9d6d1e10d68627ad8a9ee29266487d55305e05fb9fb.
+Only those two exact test pins changed; original-buffer, owner, gate and race
+assertions remain. Focused5/5 and strict lint pass. Runtime/source/compatibility
+fingerprints are unchanged. The failed aggregate is not acceptance; corrected-
+head CI and final delivery evidence are required on PR24:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/24.
+
 ### Historical restarted054500 and current PCB geometry
 
 PR22 delivered054500 as main08c48555b8e4434d9e49acfe5a8ce0d53bd3dcc7,
