@@ -13,7 +13,7 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Restarted213000; metadata check and pad details implementation in progress
+### Restarted213000; metadata and normal close passed, pad details release in progress
 
 Fresh facade778304/parent776410/start221198580 loads213000 on Node24.18.
 Independent installed admission repeats exact1177files/22982782bytes/42dirs/
@@ -27,7 +27,10 @@ launch digestc951729b8a6c23b144fa997668d2d914d932a718b370b7f025da687aaf4a96e2.
 Status17 authenticated ded07x99dcxb504, no incomplete operations. Context21
 observed Start Page/no project. Disposable opening current-pcb-open-213000-20261015
 completed in cell24, nohardStop/orphan, terminal4933cddb. Both navigation stages
-are consumed; never repeat them. Metadata getAll cell40 is running. Source
+are consumed; never repeat them. Metadata getAll cell40 completed: two matching
+samples, two components and all six raw metadata fields, including literal
+name formula. Observation5cfc9aee3afcc71a44ee63aba320f056c76a6b23bf57860f7d12a92f0b62b138.
+This validates the213000 getAll case only, not003000 holes/child lists. Source
 fixture970d21b3/598016bytes verified before opening. Private transport transcripts
 are in /tmp/easyeda-live-213000-01hdcG, not managed engineering receipts.
 
@@ -43,9 +46,26 @@ manifest wording checks required preserving typed API/connected-admission
 boundaries. Both corrected without weakening rules. Final source340
 89557604fe3f015abf64a2998b4758ed32dece7080eea9dd2d2536223ec33688/runtime3
 5c2f1d985e018b203263017151cf1313fcd50d9255dd6b703f3cd1054b2fba8c;
-external pins unchanged. Publication/installation and exact-payload CI pending.
-Loaded213000 remains unchanged. Close through the retained ordinary owner and
-separately prove termination before any successor installation.
+external pins unchanged. Payloadb265cee206671988a847e499d0098d8477602828 is
+published in PR30; required CI38648316053 is running. Fulltree
+ceb52f17291fb1156b96633c80ce79b5094352ff/packagecfefb90420e8d5b4f02697723afc81298b3ee8ba.
+Installation remains pending. Observe-window49 completed, exact retained
+HWND48562460. Normal-close54 dispatched ONCE and was acknowledged. Separate
+retained termination59 completed with state terminated and terminationProvedtrue.
+No prompt choice or forced exit. Never repeat launch/navigation/close. Raw
+close-intent9d9588bf, acknowledgment8ae93eaf and terminationd15d191a differ from
+internal canonical digests. Opening journal849ba911 is completed/non-orphan/
+nohardStop; independent retained metadata/opening/lifecycle crossbindings pass. Closed
+disposable file remains970d21b3/598016bytes, scoped byte equality only. No pending
+CAD/tool/recovery. Loaded213000 remains unchanged.
+
+PR review caught one stale bundled-startup catalog assertion (10 versus11).
+Corrected that existing assertion; its affected configured-generation test
+passes under Node24.18/core0, with authority/isolation assertions unchanged.
+Search found no other stale executable count. Initial CI38648316053 was
+canceled and is not release acceptance. Source/runtime pins remain exact;
+only the existing test and this checkpoint changed after the reviewed payload.
+Corrected-payload CI and installation remain pending.
 
 ### Historical delivered213000; next work is metadata live admission and ownership backlog
 
