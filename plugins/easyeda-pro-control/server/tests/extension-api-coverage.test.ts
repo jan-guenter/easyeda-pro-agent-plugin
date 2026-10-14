@@ -467,13 +467,19 @@ void test("PCB type lookup coverage exposes the native classification subset ins
   const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId"); assert.ok(row);
   assert.equal(row.status, "implemented-native-equivalent"); assert.equal(row.omission, null);
   assert.equal(row.completeDeclaredContractSupported, false); assert.equal(row.currentGenerationLiveValidation, "not-recorded");
-  assert.equal(row.runtimeAdmission, "not-granted-by-inventory"); assert.equal(row.routes.length, 1);
-  const route = row.routes[0]; assert.ok(route);
-  assert.equal(route.tool, "easyeda_control_sdk_read"); assert.equal(route.selector, row.path);
+  assert.equal(row.runtimeAdmission, "not-granted-by-inventory"); assert.equal(row.routes.length, 2);
+  const route = row.routes.find((entry) => entry.tool === "easyeda_control_sdk_read"); assert.ok(route);
+  assert.equal(route.selector, row.path);
   assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [3]);
   assert.deepEqual(route.source, ["pcb-primitive-type-read.ts"]); assert.deepEqual(route.tests, ["pcb-primitive-type-read.test.ts"]);
   assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
   assert.match(route.scope, /body is empty/u); assert.match(route.scope, /empty-net objects/u); assert.match(route.scope, /ambiguous membership refuse/u);
+  const current = row.routes.find((entry) => entry.tool === "easyeda_control_pcb_identities"); assert.ok(current);
+  assert.equal(current.selector, row.path); assert.equal(current.implementation, "native-task-equivalent");
+  assert.deepEqual(current.documentTypes, [3]); assert.equal(current.executionState, "available-with-runtime-guards");
+  assert.equal(current.validation, "offline-regression;current-live-unclaimed");
+  assert.match(current.scope, /positive unique membership/u); assert.match(current.scope, /loaded views/u);
+  assert.deepEqual(current.inputDiscovery?.arguments, { request: { action: "pcb-identities", query: { method: row.path, includeSchemas: true } } });
 });
 
 void test("existing capture workflows have truthful public-subset coverage without enabling standalone navigation", () => {

@@ -56,7 +56,11 @@ wrapper delegates unchanged qualification under the shared local serialized
 gate; no generic recovery, runtime allocation or guard relaxation. C10 original
 evidence is intact, and no actual abandonment has been published this turn.
 Five reader tests, seven context tests and12historical/helper/registration checks
-pass. Full release verification is running. Types/strict lint/build/inventory,
+pass. Full local facade run completed9861passes/four skips/one stale inventory
+test failure: type lookup now has two routes, not one. The corrected test retains
+the legacy assertions and checks the new current route separately; no runtime
+change. Focused recheck and exact-head CI are required before delivery.
+Types/strict lint/build/inventory,
 repository/privacy and all seven official skill validators pass. Clean npmci,
 dependency tree,151signatures/40attestations and zero vulnerabilities checked.
 Source335 fingerprint3b7e218abdcc3aae1812954bdeeac0cbcdfcfce55f1ffc7ec07f85db5501fb98;
