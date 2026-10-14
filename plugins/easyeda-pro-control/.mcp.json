@@ -19,6 +19,7 @@
         "easyeda_control_editor_context": { "approval_mode": "prompt" },
         "easyeda_control_shortcuts": { "approval_mode": "prompt" },
         "easyeda_control_pcb_layers": { "approval_mode": "prompt" },
+        "easyeda_control_project_open": { "approval_mode": "prompt" },
         "easyeda_control_status": { "approval_mode": "approve" },
         "easyeda_control_discover": { "approval_mode": "approve" },
         "easyeda_control_context": { "approval_mode": "approve" },

@@ -120,6 +120,8 @@ import { shortcutKeysRequestSchema } from "./shortcut-keys.ts";
 import { readShortcutKeys } from "./shortcut-keys-runtime.ts";
 import { currentPcbLayersRequestSchema } from "./current-pcb-layers.ts";
 import { readCurrentPcbLayers } from "./current-pcb-layers-runtime.ts";
+import { currentDisposableOpenRequestSchema } from "./current-disposable-open.ts";
+import { CurrentDisposableOpenCoordinator } from "./current-disposable-open-runtime.ts";
 
 const facadeMode = configuredFacadeMode(process.env);
 
@@ -155,6 +157,7 @@ const upstream = new UpstreamEasyedaClient({
 let windowsRuntime: WindowsControlRuntime | undefined;
 let ordinaryLaunchCoordinator: OrdinaryLaunchCoordinator | undefined;
 let ordinaryLaunchRuntime: WindowsControlRuntime | undefined;
+let currentDisposableOpenCoordinator: CurrentDisposableOpenCoordinator | undefined;
 let scheduledShutdown: Promise<void> | undefined;
 function ownedWindowsRuntime(): WindowsControlRuntime {
   if (windowsRuntime === undefined) { throw new Error("Use easyeda_control_runtime launch-contained before guarded design editing."); }
@@ -1846,6 +1849,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_editor_context: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_shortcuts: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_pcb_layers: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_project_open: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_runtime: z.object({ action: z.string().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1878,7 +1882,7 @@ const server = new McpServer(
     capabilities: { tools: {} },
     instructions:
       facadeMode === "calculation-only"
-        ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations, system/shortcut/extension/editor-shell and identity-only context observations, exact-target PCB layer metadata, and a journaled ordinary application launcher. Launch uses the existing profile and does not prove isolation, bridge authentication or Start Page readiness. PCB reads admit only layer-list/copper-count observations on one explicitly identified ordinary board, not generic design contents or physical stackup. No generic native controls, navigation, design changes, Save or design recovery tools are available. Identity context grants no later execution authority; shortcut metadata grants no keyboard authority. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
+        ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer metadata, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local disposable file and checkpoint-member PCB; it permits ordinary application migrations/cache replay/automatic Save effects, not design-writer authority. No generic native controls, navigation, design changes, explicit Save or design recovery tools are available. Launch does not prove isolation or readiness; metadata grants no later authority. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
         : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal.",
   },
 );
@@ -1922,7 +1926,7 @@ registerFacadeTool(
       typedDesign: { enabled: facadeMode === "legacy-reviewed", tool: "easyeda_control_design", supervisorRequired: true, persistence: "native-source-plus-complete-project-record-delta", arbitraryCode: false },
       libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
       ...(facadeMode === "calculation-only" ? { availableTools: CALCULATION_ONLY_TOOLS,
-        capabilityScope: "Separately admitted calculations, system/extension/editor-shell, identity-context, shortcut-key and exact-target PCB layer observations, and ordinary existing-profile launch. No generic design-content access, navigation, design changes or legacy-route admission; launch does not prove isolation." } : {}),
+        capabilityScope: "Separately admitted calculations and metadata observations, exact-target PCB layer observations, ordinary existing-profile launch and one-shot checkpointed disposable-project opening. No generic design-content access, design changes or legacy-route admission; ordinary opening may change storage and launch does not prove isolation." } : {}),
     },
     upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
       ...await engine.status(), capabilities: { sdkCalculations: { tool: "easyeda_control_calculate", runtimeAdmissionRequired: true },
@@ -1933,7 +1937,8 @@ registerFacadeTool(
         shortcutKeys: { tool: "easyeda_control_shortcuts", runtimeAdmissionRequired: true, keyboardExecution: false },
         pcbLayers: { tool: "easyeda_control_pcb_layers", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, designExecution: false },
         ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
-        designAccess: { enabled: false }, navigation: { enabled: false } },
+        designAccess: { enabled: false }, navigation: { enabled: true, tool: "easyeda_control_project_open",
+          scope: "registered-disposable-local-project-and-existing-pcb-only", retainedLaunchRequired: true, unchangedStorageGuaranteed: false } },
     },
     bridgeConnection: upstream.bridgeConnectionDiagnostics(),
     upstreamProcess: upstream.processDiagnostics(),
@@ -2314,6 +2319,32 @@ registerFacadeTool(
     }
     return { result: await ordinaryLaunchCoordinator.run(request) };
   }),
+);
+
+registerFacadeTool(
+  "easyeda_control_project_open",
+  {
+    title: "Open one registered disposable EasyEDA PCB",
+    description: "Open one explicitly selected, already registered local disposable project and checkpoint-member PCB on the separately pinned current runtime. Requires this facade's retained ordinary launch, an empty registered editor, raw Windows path/hash binding, original source digest and explicit acceptance of ordinary opening effects. EasyEDA may migrate data, replay caches, restore selected-project tabs and automatically Save. Journals each project/document call once; inspect is local and observe never retries navigation. An ambiguous call remains quarantined. retire-after-termination can invalidate only this coordinator's retained attempt after original root/Job termination and exact session closure, retaining unknown file effects; lost handles cannot be reconstructed. No explicit Save, close, discard, restore or CAD edit. Observed native identity is not persistence, rendering or full initialization. Use offline project-open/project-open-validate first.",
+    inputSchema: { request: z.unknown().pipe(currentDisposableOpenRequestSchema), expectedFingerprint: privateFingerprintSchema.optional() },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+  },
+  serializedGuarded(async ({ request, expectedFingerprint }) => {
+    if (currentDisposableOpenCoordinator === undefined) {
+      const assetsRoot = process.env["EASYEDA_ASSETS_ROOT"];
+      const assertOwner = (): void => {
+        if (closedSymbolIndexReservation !== undefined || scheduledShutdown !== undefined ||
+            ordinaryLaunchRuntime === undefined || windowsRuntime !== ordinaryLaunchRuntime ||
+            ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === undefined ||
+            process.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+          throw new Error("Disposable opening requires this facade's unchanged retained ordinary launch.");
+        }
+      };
+      currentDisposableOpenCoordinator = new CurrentDisposableOpenCoordinator({ engine, assertOwner,
+        runtime: (): WindowsControlRuntime => { assertOwner(); return ownedWindowsRuntime(); } });
+    }
+    return { result: await currentDisposableOpenCoordinator.run(request, expectedFingerprint) };
+  }, { allowDuringOrphanRisk: true }),
 );
 
 registerFacadeTool(

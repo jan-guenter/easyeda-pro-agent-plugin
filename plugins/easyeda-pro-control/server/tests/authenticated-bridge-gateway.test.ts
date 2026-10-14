@@ -1681,6 +1681,9 @@ void describe("upstream authenticated bridge dispatch scopes", () => {
       lifecycle.gatewayInstanceId,
       String(lifecycle.activeSession?.sessionId),
     );
+    assert.ok(lifecycle.activeSession !== null);
+    const prior = { ...lifecycle.activeSession, gatewayInstanceId: lifecycle.gatewayInstanceId };
+    assert.throws(() => gateway.assertClosedDispatchLeaseReleased(binding, prior), /released-lease proof/u);
     assert.deepEqual(
       gateway.abortDispatchLease(binding, "ambiguous-after-dispatch"),
       { released: false, retainedUntilSessionClose: true },
@@ -1691,6 +1694,10 @@ void describe("upstream authenticated bridge dispatch scopes", () => {
       assert.doesNotThrow(() => {
         gateway.assertDispatchLeaseForCall();
       });
+      const closure = gateway.assertClosedDispatchLeaseReleased(binding, prior);
+      assert.equal(closure.sessionId, binding.sessionId);
+      assert.throws(() => gateway.assertClosedDispatchLeaseReleased({ ...binding, bindingReceipt: Buffer.alloc(32, 12).toString("base64url") }, prior), /released-lease proof/u);
+      assert.throws(() => gateway.assertClosedDispatchLeaseReleased(binding, { ...prior, authenticationReceiptSha256: "0".repeat(64) }), /released-lease proof/u);
     } finally {
       authenticated.client.terminate();
       await gateway.close();

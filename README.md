@@ -19,7 +19,17 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261014020500` adds `easyeda_control_pcb_layers` for
+Update `0.3.0+codex.20261014033000` adds `easyeda_control_project_open` for one registered local
+disposable project and existing PCB. It preserves a checkpoint and journals
+project/document navigation once. Normal EasyEDA opening can migrate data,
+replay caches and automatically Save; this is not the legacy unchanged-storage
+workflow. Inspection and observation never repeat navigation. A retained-owner
+terminal retirement path handles interrupted calls without claiming a design
+outcome. Connected opening remains unvalidated. See the
+[opening guide](plugins/easyeda-pro-control/skills/easyeda-pro-control/references/current-project-opening.md)
+and [release scope](docs/current-disposable-open-release-2026-10-14.md).
+
+Previous update `0.3.0+codex.20261014020500` added `easyeda_control_pcb_layers` for
 current-version board layer metadata and copper-layer count. It reads an
 explicitly identified active PCB through a retained native receiver, with two
 matching samples and exact API/UI/PCB admission. This is a native equivalent,
@@ -79,15 +89,15 @@ remain under `easyeda_control_calculate`. Installed161000 passed one triangle
 area and one nested-square subtraction with a complete hole; these cases do not
 validate all methods or this newer source generation.
 
-The older reviewed tuple exposes 36 tools. A configured newer or unknown tuple
-exposes eleven: API reference, local discovery, status, calculations, local
+The older reviewed tuple exposes 37 tools. A configured newer or unknown tuple
+exposes twelve: API reference, local discovery, status, calculations, local
 system methods, extension-index/editor-shell/identity-context/shortcut observers,
-explicit-target PCB layer metadata and ordinary launch.
+explicit-target PCB layer metadata, ordinary launch and disposable project opening.
 The internal mode name remains `calculation-only`. Bridge execution separately
 requires exact reviewed EasyEDA 3.2.206 / API 0.3.50 hashes and authentication;
 launch instead verifies its installed executable/app/helper identities.
-Only the scoped layer-metadata reader accesses a board on the new version;
-generic project-content readers, navigation and design writers remain unavailable.
+The scoped layer reader and disposable opener can access a board on the new
+version. Generic project-content readers, navigation and design writers remain unavailable.
 Seven skills remain included. See the
 [system-method release](docs/system-release-2026-10-13.md) for limits and backlog.
 

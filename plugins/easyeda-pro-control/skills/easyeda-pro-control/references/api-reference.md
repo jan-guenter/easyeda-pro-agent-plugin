@@ -35,11 +35,17 @@ omission with the evidence and work required to support it. A native equivalent
 does not prove the public wrapper works. An internal Save call is not a new
 standalone Save capability. Follow the returned route and its exact scope.
 
-The current source inventory contains 774 distinct paths: 211 public subsets,
-30 native equivalents, no lifecycle-only methods, 82 implemented-but-blocked
-methods and 451 omissions. Its routes include 311 available with runtime guards,
+The current source inventory contains 774 distinct paths: 212 public subsets,
+29 native equivalents, no lifecycle-only methods, 82 implemented-but-blocked
+methods and 451 omissions. Its routes include 313 available with runtime guards,
 94 blocked and two partially blocked. These are implementation classifications,
 not connected validation counts; one method can have several routes.
+
+For current-version disposable project/PCB opening, query `project-open` with
+`includeSchemas:true` and validate with `project-open-validate`. Read
+[the opening guide](current-project-opening.md) before invoking the live tool.
+Its two public open methods accept ordinary writable application effects;
+they do not inherit the legacy lifecycle's unchanged-storage guarantee.
 
 An omission marked as needing a scoped adapter is remaining implementation work,
 not a claim that the method is impossible. Newer-only declarations require a

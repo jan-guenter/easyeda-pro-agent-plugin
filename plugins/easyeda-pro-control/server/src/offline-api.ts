@@ -12,6 +12,7 @@ import { editorContextQuerySchema, queryEditorContext, validateEditorContextArgu
 import { queryShortcutKeys, shortcutKeysQuerySchema, validateShortcutKeysArguments } from "./shortcut-keys.ts";
 import { queryOrdinaryLaunch, validateOrdinaryLaunchArguments } from "./ordinary-launch.ts";
 import { currentPcbLayersQuerySchema, queryCurrentPcbLayers, validateCurrentPcbLayersArguments } from "./current-pcb-layers.ts";
+import { currentDisposableOpenQuerySchema, queryCurrentDisposableOpen, validateCurrentDisposableOpenArguments } from "./current-disposable-open.ts";
 
 const ordinaryLaunchQuerySchema = z.object({ includeSchemas: z.boolean().default(false) }).strict();
 
@@ -34,6 +35,8 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("shortcuts-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("pcb-layers"), query: currentPcbLayersQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("pcb-layers-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("project-open"), query: currentDisposableOpenQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("project-open-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("launch"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("launch-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("operations"), query: operationCatalogQuerySchema }).strict(),
@@ -42,7 +45,7 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
 
 export const offlineApiToolConfiguration = {
   title: "EasyEDA offline API reference and argument validation",
-  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer or ordinary-launch schemas; validate arguments including refinements. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
+  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
   inputSchema: { request: apiRequestSchema },
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
 };
@@ -68,6 +71,8 @@ export function queryOfflineApi(request: z.infer<typeof apiRequestSchema>): { of
     case "shortcuts-validate": { result = validateShortcutKeysArguments(request.query.request); break; }
     case "pcb-layers": { result = queryCurrentPcbLayers(request.query ?? {}); break; }
     case "pcb-layers-validate": { result = validateCurrentPcbLayersArguments(request.query.request); break; }
+    case "project-open": { result = queryCurrentDisposableOpen(request.query ?? {}); break; }
+    case "project-open-validate": { result = validateCurrentDisposableOpenArguments(request.query.request); break; }
     case "launch": { result = queryOrdinaryLaunch(request.query ?? {}); break; }
     case "launch-validate": { result = validateOrdinaryLaunchArguments(request.query.request); break; }
     case "operations": { result = queryOperationCatalog(request.query); break; }

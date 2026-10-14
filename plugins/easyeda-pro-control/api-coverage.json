@@ -6,14 +6,14 @@
     "reviewedDistinctMethods": 697,
     "latestDistinctMethods": 773,
     "statuses": {
-      "implemented-public-subset": 211,
-      "implemented-native-equivalent": 30,
+      "implemented-public-subset": 212,
+      "implemented-native-equivalent": 29,
       "internal-lifecycle-only": 0,
       "implemented-but-blocked": 82,
       "omitted": 451
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 311,
+      "available-with-runtime-guards": 313,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -973,6 +973,39 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_project_open",
+          "selector": "open;registered-local-disposable-pcb",
+          "implementation": "public-method",
+          "scope": "Separately pinned current-version one-shot ordinary opening from an empty registered editor. Exact raw Windows registered-path hash, original source digest, managed checkpoint and undeleted default-branch PCB membership; same-facade retained ordinary launch required. Project/document calls have separate consumed intents and orphan tracking. Normal migrations, cached upload replay, selected-project tab restoration and automatic Save are accepted effects, not unchanged-storage or design-writer proof. Inspect/observe never repeat navigation. Retirement invalidates only the original retained attempt after root/Job termination and exact session closure; lost supervision cannot be adopted. Native identity observation does not establish full initialization, rendering or persistence. No explicit Save, close, discard, restore or CAD edit.",
+          "source": [
+            "current-disposable-open.ts",
+            "current-disposable-open-runtime.ts",
+            "current-disposable-open-checkpoint.ts",
+            "current-disposable-open-profile.ts"
+          ],
+          "tests": [
+            "current-disposable-open.test.ts",
+            "current-disposable-open-runtime.test.ts",
+            "current-disposable-open-checkpoint.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "project-open",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_library",
           "selector": "document.open",
@@ -2750,8 +2783,41 @@
         }
       ],
       "reviewedRuntimeDeclaration": true,
-      "status": "implemented-native-equivalent",
+      "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_project_open",
+          "selector": "open;registered-local-disposable-pcb",
+          "implementation": "public-method",
+          "scope": "Separately pinned current-version one-shot ordinary opening from an empty registered editor. Exact raw Windows registered-path hash, original source digest, managed checkpoint and undeleted default-branch PCB membership; same-facade retained ordinary launch required. Project/document calls have separate consumed intents and orphan tracking. Normal migrations, cached upload replay, selected-project tab restoration and automatic Save are accepted effects, not unchanged-storage or design-writer proof. Inspect/observe never repeat navigation. Retirement invalidates only the original retained attempt after root/Job termination and exact session closure; lost supervision cannot be adopted. Native identity observation does not establish full initialization, rendering or persistence. No explicit Save, close, discard, restore or CAD edit.",
+          "source": [
+            "current-disposable-open.ts",
+            "current-disposable-open-runtime.ts",
+            "current-disposable-open-checkpoint.ts",
+            "current-disposable-open-profile.ts"
+          ],
+          "tests": [
+            "current-disposable-open.test.ts",
+            "current-disposable-open-runtime.test.ts",
+            "current-disposable-open-checkpoint.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "project-open",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_runtime",
           "selector": "open-existing",
