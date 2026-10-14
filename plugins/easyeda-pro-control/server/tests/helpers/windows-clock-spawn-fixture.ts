@@ -13,7 +13,7 @@ import { syntheticSqlSpawn } from "./windows-clock-sql-spawn.ts";
 
 type Bag = Record<string, unknown>;
 const HELPER_SOURCE = new URL("../../../scripts/windows-authority.ps1", import.meta.url);
-export const HELPER_SHA256 = "811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65";
+export const HELPER_SHA256 = "fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161";
 const CLOCK_TICKS = 639_274_896_000_000_000n, HELPER = "b".repeat(32);
 type SyntheticChild = PassThrough & { stdin: PassThrough; stdout: PassThrough; stderr: PassThrough; exitCode: number | null; signalCode: null };
 function isBag(value: unknown): value is Bag { return value !== null && typeof value === "object" && !Array.isArray(value); }

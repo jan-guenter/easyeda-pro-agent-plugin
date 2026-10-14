@@ -27,11 +27,11 @@ const INPUT: ExecutionAuthorityCaptureInput = {
 
 function fixture(policy = POLICY): {
   readonly requests: Record<string, unknown>[];
-  readonly behavior: { capture?: Record<string, unknown>; termination?: Record<string, unknown>; observation?: Record<string, unknown>; release?: Record<string, unknown>; error?: Error };
+  readonly behavior: { capture?: Record<string, unknown>; termination?: Record<string, unknown>; observation?: Record<string, unknown>; window?: Record<string, unknown>; close?: Record<string, unknown>; release?: Record<string, unknown>; error?: Error };
   readonly supervisor: WindowsAuthoritySupervisor;
 } {
   const requests: Record<string, unknown>[] = [];
-  const behavior: { capture?: Record<string, unknown>; termination?: Record<string, unknown>; observation?: Record<string, unknown>; release?: Record<string, unknown>; error?: Error } = {};
+  const behavior: { capture?: Record<string, unknown>; termination?: Record<string, unknown>; observation?: Record<string, unknown>; window?: Record<string, unknown>; close?: Record<string, unknown>; release?: Record<string, unknown>; error?: Error } = {};
   const supervisor = createWindowsAuthoritySupervisor({
     request(request) {
       requests.push(request);
@@ -39,6 +39,9 @@ function fixture(policy = POLICY): {
       if (request["action"] === "launch") {return Promise.resolve({ jobId: JOB, helperInstance: HELPER, root: ROOT });}
       if (request["action"] === "observe-launch-termination") {return Promise.resolve({
         jobId: JOB, helperInstance: HELPER, terminated: false, ...behavior.observation,
+      });}
+      if (request["action"] === "observe-application-window") {return Promise.resolve({
+        jobId: JOB, helperInstance: HELPER, outcome: "available", hwnd: "12345", ...behavior.window,
       });}
       if (request["action"] === "begin-probe") {return Promise.resolve({
         schema: "easyeda-pro-control.windows-process-probe.v1", bindingSha256: INPUT.bindingSha256,
@@ -58,7 +61,7 @@ function fixture(policy = POLICY): {
       if (request["action"] === "release-capture") {return Promise.resolve({
         released: true, captureBindingSha256: INPUT.bindingSha256, helperInstance: HELPER, jobId: JOB, ...behavior.release,
       });}
-      return Promise.resolve({ closeDispatched: true, jobId: JOB, saveOrDiscardSelected: false });
+      return Promise.resolve({ closeDispatched: true, jobId: JOB, saveOrDiscardSelected: false, ...behavior.close });
     },
     release: () => Promise.resolve(),
   }, policy);
@@ -186,10 +189,77 @@ void test("normal close dispatch does not claim closure or select save/discard; 
   await supervisor.requestNormalClose({ confirmNormalClose: true, windowHandle: "12345", launch });
   assert.equal(requests[2]?.["action"], "normal-close");
   assert.equal(requests[2]?.["rootStartTicks"], "639247486000000000");
+  assert.equal(requests[2]?.["helperInstance"], HELPER);
+  assert.equal(requests[2]?.["rootPid"], ROOT.pid);
+  assert.equal(requests[2]?.["rootStartIdentity"], ROOT.startIdentity);
+  await assert.rejects(supervisor.requestNormalClose({ confirmNormalClose: true, windowHandle: "12345", launch }), /already has a normal-close attempt/u);
   await supervisor.release();
   await assert.rejects(supervisor.proveTerminated(termination(evidence)), /released/u);
   await assert.rejects(supervisor.launch({ confirmLaunch: true }), /released/u);
   assert.equal(requests.length, 3);
+});
+
+void test("generic close consumes concurrent and uncertain requests without a second dispatch", async () => {
+  for (const close of [{ closeDispatched: false }, { jobId: "f".repeat(32) }, { saveOrDiscardSelected: true }, { unexpected: true }]) {
+    const { supervisor, requests, behavior } = fixture();
+    const launch = await supervisor.launch({ confirmLaunch: true });
+    behavior.close = close;
+    const input = { confirmNormalClose: true as const, windowHandle: "12345", launch };
+    const first = supervisor.requestNormalClose(input), second = supervisor.requestNormalClose(input);
+    await assert.rejects(second, /already has a normal-close attempt/u);
+    await assert.rejects(first, /dispatch is unproven/u);
+    await assert.rejects(supervisor.requestNormalClose(input), /already has a normal-close attempt/u);
+    assert.equal(requests.filter((request) => request["action"] === "normal-close").length, 1);
+  }
+  const { supervisor, requests, behavior } = fixture();
+  const launch = await supervisor.launch({ confirmLaunch: true });
+  behavior.error = new Error("synthetic lost close acknowledgment");
+  const input = { confirmNormalClose: true as const, windowHandle: "12345", launch };
+  await assert.rejects(supervisor.requestNormalClose(input), /lost close acknowledgment/u);
+  await assert.rejects(supervisor.requestNormalClose(input), /already has a normal-close attempt/u);
+  assert.equal(requests.length, 2);
+});
+
+void test("generic close refuses changed input across source validation and keeps the attempt consumed", async () => {
+  let changed = false;
+  const { supervisor, requests } = fixture({ ...POLICY, revalidateClosedSessionHelper() {
+    changed = true;
+    return Promise.resolve();
+  } });
+  const launch = await supervisor.launch({ confirmLaunch: true });
+  const input = { confirmNormalClose: true as const, windowHandle: "12345", launch };
+  const pending = supervisor.requestNormalClose(input);
+  assert.equal(changed, true);
+  input.windowHandle = "54321";
+  await assert.rejects(pending, /unchanged exact supervised/u);
+  await assert.rejects(supervisor.requestNormalClose({ ...input, windowHandle: "12345" }), /already has a normal-close attempt/u);
+  assert.equal(requests.length, 1);
+});
+
+void test("application window observation binds original owner, reports all outcomes, and withholds desktop text", async () => {
+  const { supervisor, requests, behavior } = fixture();
+  const observe = supervisor.observeApplicationWindow;
+  assert.ok(observe);
+  const unissued = { jobId: JOB, helperInstance: HELPER, root: ROOT };
+  await assert.rejects(observe(unissued), /original supervised generation/u);
+  const launch = await supervisor.launch({ confirmLaunch: true });
+  await assert.rejects(observe({ ...launch, root: { ...ROOT, pid: 999 } }), /original supervised generation/u);
+  assert.equal(requests.length, 1);
+  for (const outcome of ["available", "unavailable", "ambiguous"]) {
+    const hwnd = outcome === "available" ? "12345" : null;
+    behavior.window = { outcome, hwnd };
+    assert.deepEqual(await observe(launch), { jobId: JOB, helperInstance: HELPER, outcome, hwnd });
+  }
+  for (const window of [{ helperInstance: "f".repeat(32) }, { jobId: "f".repeat(32) }, { title: "private" },
+    { outcome: "available", hwnd: null }, { outcome: "unavailable", hwnd: "12345" }, { hwnd: "0" }, { outcome: "unknown" }]) {
+    behavior.window = window;
+    await assert.rejects(observe(launch), /malformed or belongs to another owner/u);
+  }
+  assert.ok(requests.slice(1).every((request) => request["action"] === "observe-application-window" &&
+    request["rootPid"] === ROOT.pid && request["rootStartIdentity"] === ROOT.startIdentity && request["helperInstance"] === HELPER));
+  const pending = observe(launch);
+  await supervisor.release();
+  await assert.rejects(pending, /released/u);
 });
 
 void test("completed captures release handles once and neither old proof nor capture binding can be reopened", async () => {
@@ -312,4 +382,20 @@ void test("fixed launch-time process refusal is conservative, after hashing and 
   assert.ok(launch.includes("GetProcessesByName('easyeda-pro')") && launch.includes("if (-not $process.HasExited) {throw 'authority-unsupervised-instance-present'}"));
   assert.ok(launch.includes("finally {foreach ($process in $existing) {$process.Dispose()}}"));
   assert.doesNotMatch(launch, /MainModule/u);
+});
+
+void test("native close rechecks the bounded unique original-root application before fixed WM_CLOSE", async () => {
+  const source = await readFile(new URL("../../scripts/windows-authority.ps1", import.meta.url), "utf8");
+  const read = source.slice(source.indexOf("  string ReadApplicationTitle("), source.indexOf("  public void Dispose()"));
+  for (const guard of ["pid != Root.Id", "!IsWindowVisible(window)", "!IsWindowEnabled(window)", "IsIconic(window)",
+    "GetAncestor(window, 2) != window", "GetAncestor(window, 3) != window", "GetWindow(window, 4) != IntPtr.Zero",
+    "GetWindowLong(window, -20) & 0x80", '"Chrome_WidgetWin_1"', "width < 320", "height < 200", "width > 16384",
+    "height > 16384", "length > 1024", "++owned > 64", "candidates > 1", "ReadApplicationTitle(window) == title"]) {
+    assert.ok(read.includes(guard), guard);
+  }
+  const close = read.slice(read.indexOf("  public void NormalClose("));
+  assert.ok(close.indexOf("normalCloseAttempted = true") < close.indexOf("ObserveApplicationWindow(expectedStartTicks)"));
+  assert.ok(close.indexOf("ReadApplicationTitle(window) != title") < close.indexOf("PostMessage(window, 16, IntPtr.Zero, IntPtr.Zero)"));
+  assert.doesNotMatch(read, /MainWindowHandle|GetProcessById|GetForegroundWindow|SetForegroundWindow|SendKeys/u);
+  assert.match(source, /outcome=\$window\.outcome;hwnd=\$window\.hwnd/u);
 });

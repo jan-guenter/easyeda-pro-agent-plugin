@@ -65,6 +65,42 @@ All original-identity, retained-authority, termination and relaunch claims remai
 false. It writes no receipt and does not resolve the historical attempt. Absence
 alone is never permission to launch under a new ID.
 
+### Normal closure of a retained ordinary launch
+
+Use the same `easyeda_control_launch` owner while its original process and Job
+handles remain alive. Inspect the launch ID and retain `launchedSha256`, then
+validate and call:
+
+```json
+{"action":"observe-window","operationId":"<launch-id>","expectedLaunchedSha256":"<launchedSha256>"}
+```
+
+The observer returns only a unique qualifying application HWND or an explicit
+unavailable/ambiguous result. It does not expose titles or foreign-window data.
+With an available result and task authority for normal application closure,
+validate and call once:
+
+```json
+{"action":"normal-close","operationId":"<launch-id>","expectedLaunchedSha256":"<launchedSha256>","hwnd":"<observed-hwnd>","confirmNormalClose":true}
+```
+
+The coordinator reobserves the window and consumes a durable intent before the
+original helper posts fixed WM_CLOSE. The helper rechecks root/Job identity and
+the enabled, visible, ownerless, non-tool application window. No focus, pointer
+or keyboard input is needed. An unavailable or modal window is not permission
+to close a different window. Quarantine remains enforced.
+
+A close acknowledgment means only that Windows queued the request. EasyEDA
+may persist application data or show a prompt. Do not choose Save/Discard or
+infer unchanged design storage. After missing acknowledgment or uncertainty,
+inspect the same launch; never repeat close or create a replacement attempt.
+Use `observe-termination` to prove original root exit and an empty retained Job.
+If still running, observe or inspect any actual prompt without guessing a
+default response. Keep this facade alive until termination is recorded.
+Restarted facades cannot recover close authority from receipts or matching PIDs.
+
+### Lost supervision
+
 When ordinary startup/recovery is within the user's task, an acknowledged
 historical launch can use the separate `abandon-supervision` action. First inspect
 the original ID and retain its returned `launchedSha256`. Validate this exact

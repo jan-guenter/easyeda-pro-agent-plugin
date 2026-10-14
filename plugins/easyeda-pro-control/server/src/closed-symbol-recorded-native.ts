@@ -10,10 +10,13 @@ type CapturePhase = 'closed-baseline' | 'closed-edit' | 'closed-verification';
 const HELPER = '5a5095d463afcf8f595c3085ec7d5f377baa2e545b623bca81205137c602e608';
 // The ordinary-launch revision adds fixed observers, retains the launch record
 // And conservatively rejects any live same-name process before creation.
-// Clock/capture/policy/termination production is unchanged. Both reviewed
+// Clock/capture/policy/termination production is unchanged. These reviewed
 // Generations decode as data only, never as restored execution authority.
-const CURRENT_HELPER = '811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65';
-function knownHelper(value: unknown): boolean { return value === HELPER || value === CURRENT_HELPER; }
+const ORDINARY_LAUNCH_HELPER = '811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65';
+// The current revision adds private window observation and stronger one-shot
+// WM_CLOSE checks; the recorded clock/capture/termination producers are intact.
+const CURRENT_HELPER = 'fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161';
+function knownHelper(value: unknown): boolean { return value === HELPER || value === ORDINARY_LAUNCH_HELPER || value === CURRENT_HELPER; }
 const HASH = /^[a-f0-9]{64}$/u, ID = /^[a-f0-9]{32}$/u, TOKEN = /^[A-Za-z0-9_-]{43}$/u;
 const EPOCH = 621_355_968_000_000_000n;
 function need(value: boolean): asserts value { if (!value) { throw new Error('Recorded native capture refused.'); } }

@@ -17,6 +17,9 @@ function abandonRequest(operationId: string, expectedLaunchedSha256: string): Re
   return { action: "abandon-supervision", operationId, expectedLaunchedSha256,
     confirmAbandonSupervision: true, acceptUnobservedDescendants: true };
 }
+function closeRequest(operationId: string, expectedLaunchedSha256: string): Record<string, unknown> {
+  return { action: "normal-close", operationId, expectedLaunchedSha256, hwnd: "12345", confirmNormalClose: true };
+}
 async function state(coordinator: OrdinaryLaunchCoordinator, operationId: string): Promise<unknown> {
   const response = await coordinator.run({ action: "inspect", operationId });
   return response["state"];
@@ -31,7 +34,8 @@ function cleanup(context: TestContext, ...ids: string[]): void {
   context.after(async () => { for (const id of ids) { await rm(journal(id), { recursive: true, force: true }); } });
 }
 function fixture(operationId: string, behavior: { failure?: boolean; wrongTermination?: boolean; existing?: boolean;
-  presenceChanged?: boolean; onAllowed?: (presenceSamples: number) => Promise<void> } = {}): {
+  presenceChanged?: boolean; onAllowed?: (presenceSamples: number) => Promise<void>;
+  windowOutcome?: "available" | "unavailable" | "ambiguous"; wrongWindowOwner?: boolean; closeFailure?: boolean } = {}): {
   readonly options: OrdinaryLaunchOptions;
   readonly calls: string[];
   readonly coordinator: OrdinaryLaunchCoordinator;
@@ -69,6 +73,24 @@ function fixture(operationId: string, behavior: { failure?: boolean; wrongTermin
       return Promise.resolve({ jobId: behavior.wrongTermination === true ? "f".repeat(32) : launch.jobId,
         helperInstance: launch.helperInstance, terminated });
     },
+    observeApplicationWindow: () => {
+      calls.push("window");
+      const outcome = behavior.windowOutcome ?? "available";
+      return Promise.resolve({ jobId: behavior.wrongWindowOwner === true ? "f".repeat(32) : launch.jobId,
+        helperInstance: launch.helperInstance, outcome, hwnd: outcome === "available" ? "12345" : null });
+    },
+    normalClose: async (hwnd) => {
+      calls.push("close");
+      assert.equal(hwnd, "12345");
+      const intentText = await readFile(join(journal(operationId), "close-intent.json"), "utf8");
+      const intent: unknown = JSON.parse(intentText);
+      assert.ok(isRecord(intent));
+      assert.equal(intent["hwnd"], hwnd);
+      assert.equal(intent["jobId"], launch.jobId);
+      assert.equal(intent["helperInstance"], launch.helperInstance);
+      assert.equal(intent["confirmNormalClose"], true);
+      if (behavior.closeFailure === true) { throw new Error("synthetic missing close acknowledgment"); }
+    },
   };
   const options: OrdinaryLaunchOptions = {
     assetsRoot: "/opt/synthetic/assets", pluginRoot: "/opt/synthetic/plugin",
@@ -94,6 +116,14 @@ void test("ordinary launch discovery and validation disclose effects and reject 
   assert.equal(validateOrdinaryLaunchArguments(request(id))["valid"], true);
   assert.equal(validateOrdinaryLaunchArguments({ action: "observe-application", operationId: id })["valid"], true);
   assert.equal(validateOrdinaryLaunchArguments({ action: "observe-application", operationId: id, pid: 456 })["valid"], false);
+  const close = closeRequest(id, facadeSha256);
+  assert.equal(validateOrdinaryLaunchArguments(close)["valid"], true);
+  assert.equal(validateOrdinaryLaunchArguments({ ...close, confirmNormalClose: false })["valid"], false);
+  assert.equal(validateOrdinaryLaunchArguments({ ...close, hwnd: "0" })["valid"], false);
+  assert.equal(validateOrdinaryLaunchArguments({ ...close, hwnd: "01" })["valid"], false);
+  assert.equal(validateOrdinaryLaunchArguments({ ...close, pid: 456 })["valid"], false);
+  assert.equal(validateOrdinaryLaunchArguments({ action: "observe-window", operationId: id, expectedLaunchedSha256: facadeSha256 })["valid"], true);
+  assert.equal(validateOrdinaryLaunchArguments({ action: "observe-window", operationId: id })["valid"], false);
   const abandonment = abandonRequest(id, facadeSha256);
   assert.equal(validateOrdinaryLaunchArguments(abandonment)["valid"], true);
   assert.equal(validateOrdinaryLaunchArguments({ ...abandonment, confirmAbandonSupervision: false })["valid"], false);
@@ -107,7 +137,7 @@ void test("ordinary launch discovery and validation disclose effects and reject 
   const discovery = queryOrdinaryLaunch({ includeSchemas: true });
   assert.notEqual(discovery["requestSchema"], undefined);
   assert.match(JSON.stringify(discovery["limitations"]), /not an isolated/u);
-  assert.deepEqual(discovery["actions"], ["launch", "inspect", "observe-application", "observe-termination", "abandon-supervision"]);
+  assert.deepEqual(discovery["actions"], ["launch", "inspect", "observe-application", "observe-termination", "observe-window", "normal-close", "abandon-supervision"]);
 });
 
 void test("ordinary launch persists before dispatch, refuses restart replay, and permits a new operation after retained termination", async (context) => {
@@ -376,4 +406,157 @@ void test("supervision abandonment refuses a journal changed by the final admiss
   assert.equal(restarted.calls.includes("launch"), false);
   assert.equal(restarted.calls.includes("observe"), false);
   assert.deepEqual(await readdir(journal(id)), names);
+});
+
+void test("ordinary normal close reobserves the retained window, persists once and separates acknowledgment from termination", async (context) => {
+  const id = "ordinary-test-normal-close";
+  cleanup(context, id);
+  const current = fixture(id);
+  const launched = await current.coordinator.run(request(id));
+  const digest = launched["launchedSha256"];
+  assert.ok(typeof digest === "string");
+  const observed = await current.coordinator.run({ action: "observe-window", operationId: id, expectedLaunchedSha256: digest });
+  assert.deepEqual(observed["window"], { jobId: "1".padStart(32, "0"), helperInstance: "b".repeat(32), outcome: "available", hwnd: "12345" });
+  assert.equal(observed["closeAuthorized"], false);
+  const names = await readdir(journal(id));
+  assert.deepEqual(names.toSorted(), ["intent.json", "launched.json"]);
+  const result = await current.coordinator.run(closeRequest(id, digest));
+  assert.equal(result["state"], "launched");
+  assert.equal(result["terminationObserved"], false);
+  const close = result["normalClose"];
+  assert.ok(isRecord(close));
+  assert.equal(close["attemptConsumed"], true);
+  assert.equal(close["requestAcknowledged"], true);
+  assert.equal(close["terminationProved"], false);
+  assert.equal(current.calls.filter((call) => call === "window").length, 2);
+  assert.equal(current.calls.filter((call) => call === "close").length, 1);
+  await assert.rejects(current.coordinator.run(closeRequest(id, digest)), /consumed/u);
+  const pending = await current.coordinator.run({ action: "observe-termination", operationId: id });
+  assert.equal(pending["terminationObserved"], false);
+  current.markTerminated();
+  const terminated = await current.coordinator.run({ action: "observe-termination", operationId: id });
+  assert.equal(terminated["state"], "terminated");
+  assert.equal(current.calls.filter((call) => call === "close").length, 1);
+});
+
+void test("ordinary missing close acknowledgment consumes the attempt but preserves inspection and original exit observation", async (context) => {
+  const id = "ordinary-test-close-unknown";
+  cleanup(context, id);
+  const current = fixture(id, { closeFailure: true });
+  const launched = await current.coordinator.run(request(id));
+  const digest = launched["launchedSha256"];
+  assert.ok(typeof digest === "string");
+  await assert.rejects(current.coordinator.run(closeRequest(id, digest)), /missing close acknowledgment/u);
+  const inspected = await current.coordinator.run({ action: "inspect", operationId: id });
+  const close = inspected["normalClose"];
+  assert.ok(isRecord(close));
+  assert.equal(close["attemptConsumed"], true);
+  assert.equal(close["requestAcknowledged"], false);
+  const names = await readdir(journal(id));
+  assert.deepEqual(names.toSorted(), ["close-intent.json", "intent.json", "launched.json"]);
+  await assert.rejects(current.coordinator.run(closeRequest(id, digest)), /consumed/u);
+  const restarted = fixture(id);
+  await assert.rejects(restarted.coordinator.run(closeRequest(id, digest)), /consumed/u);
+  await assert.rejects(restarted.coordinator.run({ action: "observe-window", operationId: id, expectedLaunchedSha256: digest }), /retained owner/u);
+  assert.equal(restarted.calls.includes("allocate"), false);
+  assert.equal(restarted.calls.includes("close"), false);
+  const pending = await current.coordinator.run({ action: "observe-termination", operationId: id });
+  assert.equal(pending["terminationObserved"], false);
+  current.markTerminated();
+  assert.equal(await state(current.coordinator, id), "launched");
+  const terminated = await current.coordinator.run({ action: "observe-termination", operationId: id });
+  assert.equal(terminated["state"], "terminated");
+  assert.equal(current.calls.filter((call) => call === "close").length, 1);
+});
+
+void test("ordinary close refuses stale launch, nonunique windows and wrong retained owners without consuming an intent", async (context) => {
+  const id = "ordinary-test-close-window";
+  cleanup(context, id);
+  const behavior: { windowOutcome: "available" | "unavailable" | "ambiguous"; wrongWindowOwner: boolean } = {
+    windowOutcome: "unavailable", wrongWindowOwner: false,
+  };
+  const current = fixture(id, behavior);
+  const launched = await current.coordinator.run(request(id));
+  const digest = launched["launchedSha256"];
+  assert.ok(typeof digest === "string");
+  const wrongDigest = "f".repeat(64);
+  await assert.rejects(current.coordinator.run(closeRequest(id, wrongDigest)), /digest differs/u);
+  assert.equal(current.calls.includes("window"), false);
+  await assert.rejects(current.coordinator.run(closeRequest(id, digest)), /unique application window/u);
+  behavior.windowOutcome = "ambiguous";
+  await assert.rejects(current.coordinator.run(closeRequest(id, digest)), /unique application window/u);
+  behavior.windowOutcome = "available";
+  await assert.rejects(current.coordinator.run({ ...closeRequest(id, digest), hwnd: "12346" }), /unique application window/u);
+  behavior.wrongWindowOwner = true;
+  await assert.rejects(current.coordinator.run(closeRequest(id, digest)), /another launch/u);
+  assert.equal(current.calls.includes("close"), false);
+  const names = await readdir(journal(id));
+  assert.deepEqual(names.toSorted(), ["intent.json", "launched.json"]);
+  behavior.wrongWindowOwner = false;
+  await current.coordinator.run(closeRequest(id, digest));
+  assert.equal(current.calls.filter((call) => call === "close").length, 1);
+});
+
+void test("ordinary close retains quarantine and journal rechecks after durable intent without retry or read-only lockout", async (context) => {
+  const id = "ordinary-test-close-final-gate";
+  cleanup(context, id);
+  let armed = false, gatesAfterWindow = 0;
+  const current = fixture(id, { onAllowed: (): Promise<void> => {
+    if (armed && current.calls.includes("window")) { gatesAfterWindow += 1; }
+    return gatesAfterWindow === 2 ? Promise.reject(new Error("synthetic quarantine after close intent")) : Promise.resolve();
+  } });
+  const launched = await current.coordinator.run(request(id));
+  const digest = launched["launchedSha256"];
+  assert.ok(typeof digest === "string");
+  armed = true;
+  await assert.rejects(current.coordinator.run(closeRequest(id, digest)), /quarantine after close intent/u);
+  armed = false;
+  gatesAfterWindow = 0;
+  const inspected = await current.coordinator.run({ action: "inspect", operationId: id });
+  assert.ok(isRecord(inspected["normalClose"]));
+  assert.equal(inspected["normalClose"]["attemptConsumed"], true);
+  assert.equal(current.calls.includes("close"), false);
+  await assert.rejects(current.coordinator.run(closeRequest(id, digest)), /consumed/u);
+  const closeIntentPath = join(journal(id), "close-intent.json"), original = await readFile(closeIntentPath, "utf8");
+  const changed = original.replace('"hwnd":"12345"', '"hwnd":"12346"');
+  assert.notEqual(changed, original);
+  await writeFile(closeIntentPath, changed);
+  // Acknowledgments bind the complete intent, including its HWND, not just the Job.
+  const closeIntentSha256 = sha256Json(JSON.parse(original) as unknown);
+  await writeFile(join(journal(id), "close-acknowledged.json"), JSON.stringify({
+    schema: "easyeda-pro-control.ordinary-normal-close-acknowledged.v1", operationId: id,
+    closeIntentSha256, requestAcknowledged: true, terminationProved: false,
+  }), { mode: 0o600 });
+  await assert.rejects(current.coordinator.run({ action: "inspect", operationId: id }), /acknowledgment is unbound/u);
+  await writeFile(closeIntentPath, original);
+  current.markTerminated();
+  const terminated = await current.coordinator.run({ action: "observe-termination", operationId: id });
+  assert.equal(terminated["state"], "terminated");
+});
+
+void test("ordinary abandonment admits only the exact historical profile without granting retained close authority", async (context) => {
+  const id = "ordinary-test-abandon-old-profile";
+  cleanup(context, id);
+  await fixture(id).coordinator.run(request(id));
+  const intentPath = join(journal(id), "intent.json"), launchedPath = join(journal(id), "launched.json");
+  const originalIntent: unknown = JSON.parse(await readFile(intentPath, "utf8"));
+  const originalLaunched: unknown = JSON.parse(await readFile(launchedPath, "utf8"));
+  assert.ok(isRecord(originalIntent) && isRecord(originalLaunched));
+  const unknownIntent = { ...originalIntent, profileSha256: "f".repeat(64) };
+  const unknownLaunched = { ...originalLaunched, intentSha256: sha256Json(unknownIntent) };
+  await writeFile(intentPath, JSON.stringify(unknownIntent));
+  await writeFile(launchedPath, JSON.stringify(unknownLaunched));
+  const restarted = fixture(id);
+  const unknownDigest = sha256Json(unknownLaunched);
+  await assert.rejects(restarted.coordinator.run(abandonRequest(id, unknownDigest)), /historical profile is not reviewed/u);
+  const oldIntent = { ...originalIntent, profileSha256: "8c1552bec21a71fb3791e2e8422d2cef80394c3487f8ab1c75e7fc7eb20a9314" };
+  const oldLaunched = { ...originalLaunched, intentSha256: sha256Json(oldIntent) };
+  await writeFile(intentPath, JSON.stringify(oldIntent));
+  await writeFile(launchedPath, JSON.stringify(oldLaunched));
+  const oldDigest = sha256Json(oldLaunched);
+  await assert.rejects(restarted.coordinator.run(closeRequest(id, oldDigest)), /retained owner/u);
+  const abandoned = await restarted.coordinator.run(abandonRequest(id, oldDigest));
+  assert.equal(abandoned["state"], "supervision-abandoned");
+  assert.equal(abandoned["terminationProved"], false);
+  assert.equal(restarted.calls.includes("close"), false);
 });

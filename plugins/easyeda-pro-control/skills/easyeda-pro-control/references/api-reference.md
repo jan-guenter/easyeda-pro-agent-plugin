@@ -37,7 +37,7 @@ standalone Save capability. Follow the returned route and its exact scope.
 
 The current source inventory contains 774 distinct paths: 212 public subsets,
 29 native equivalents, no lifecycle-only methods, 82 implemented-but-blocked
-methods and 451 omissions. Its routes include 321 available with runtime guards,
+methods and 451 omissions. Its routes include 330 available with runtime guards,
 94 blocked and two partially blocked. These are implementation classifications,
 not connected validation counts; one method can have several routes.
 
@@ -80,7 +80,7 @@ Ordinary startup and editor-shell observation also have offline schemas. Query
 the corresponding `launch-validate`, `editor-shell-validate` or
 `editor-context-validate` with `query:{"request":...}`.
 Validation does not launch or authorize anything. The launcher accepts only
-fixed launch/inspect/observe-application/observe-termination/abandon-supervision requests. For
+fixed launch/inspect/observe-window/normal-close/observe-application/observe-termination/abandon-supervision requests. Window observation and normal closure require this facade's retained original launch and its inspected `expectedLaunchedSha256`. Closure additionally takes the observed `hwnd` and `confirmNormalClose:true`; it consumes one durable attempt and never selects a prompt response. See the connection reference for exit verification. For
 read-only presence after restart, validate
 `{"action":"observe-application","operationId":"<original-operation-id>"}`.
 It requires an existing journal and accepts no PID, executable or replacement
