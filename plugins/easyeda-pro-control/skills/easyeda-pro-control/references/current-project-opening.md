@@ -57,6 +57,16 @@ Project opening, document opening and observed native identity are separate
 facts. Public methods route through mutable global state, so before/after
 observations are not an atomic lock. Keep other app input quiescent.
 
+Ordinary opening changes the URL to `#id=<project>` and document focus can add
+`,tab=[*]<document>@<project>|...`. The opener requires an empty initial fragment
+for project dispatch, admits only the selected project's ordinary fragment at
+the public navigation return, then freezes the URL again. Listed tabs and any
+active marker must match its independently sampled registry. Unknown fragment
+keys, command/history modes and library/device syntax are refused. The current
+PCB layer, identity and geometry readers accept this target-bound grammar but
+keep their captured URL unchanged across all awaits. The URL never substitutes
+for their project, branch, frame or native identity checks.
+
 Each navigation stage is consumed before dispatch. `inspect` reads the journal
 without contacting EasyEDA. `observe` checks the existing target without
 opening it again. An absent frame or incomplete native identity is not permission
@@ -69,6 +79,20 @@ reader still performs its own admission. Opening does not grant general CAD
 execution authority.
 
 ## Interrupted calls
+
+Newer snapshots retain `failureDiagnostic` in the stopped operation and a
+managed `failure-diagnostic` artifact. It contains the operation `phase`, last
+`hostStage`, fixed `category`, and nullable `nativeStage`/`nativeCode`. Unknown
+exceptions remain `unknown`; raw messages, stacks and private values are not
+returned. `native-timeout` and `bridge-timeout` remain unsettled execution, not
+proof of cancellation. A stage identifies where observation stopped, not which
+file effects occurred or whether navigation succeeded. Inspect the original
+operation instead of repeating it to obtain a better error.
+
+When a new tracked phase is marked, its preceding phase's return timestamp is
+cleared. Older journals can retain that stale timestamp; interpret it with the
+recorded phase/marking time and artifacts, never as current-phase completion.
+Do not rewrite historical evidence or infer its missing cause from new codes.
 
 Never repeat an uncertain project or document stage, including under a new ID.
 Keep the same facade alive. If a tracked call remains orphaned, normal application

@@ -1,6 +1,7 @@
 import { CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_NUMBER, CURRENT_PCB_GEOMETRY_MAX_ROWS,
   currentPcbGeometryFamily, parseCurrentPcbGeometryRequest } from "./current-pcb-geometry.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
+import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
 
 /** Current API021d155b / UI3823ed6e / PCB217199c8 only. The three native
  * serializers are the same fixed ones used by current identity enumeration.
@@ -14,6 +15,7 @@ export function buildCurrentPcbGeometryProgram(input: unknown): string {
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)},family=${JSON.stringify(family)},topic=${JSON.stringify(topics[family])};let expired=false;
 const bad=()=>{throw new Error('CURRENT_PCB_GEOMETRY_READ_FAILED');};
+${buildCurrentProjectUrlGuard()}
 const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
 const absent=(owner,key)=>{const d=Object.getOwnPropertyDescriptor(owner,key);if(d&&(!Object.hasOwn(d,'value')||d.value!==undefined))bad();};
 const fn=(owner,key)=>{const value=own(owner,key);if(typeof value!=='function')bad();return value;};
@@ -37,7 +39,7 @@ if(typeof rpc!=='function')bad();
 const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
 const check=()=>{
  if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')bad();
- if(typeof href!=='string'||!/^https:\\/\\/client\\/editor\\?cll=(?:trace|debug|info|warn|error)#?$/.test(href))bad();
+ parseProjectUrl(href,target.projectUuid,target.tabId);
  if(own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
  if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(host,'currentProject')!==project||own(ui,'tabBar')!==tabs||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
  if(own(project,'projectId')!==target.projectUuid||own(project,'branchUuid')!==target.branchUuid||own(project,'isV2Format')!==false||own(host,'isHistoryMode')!==false)bad();

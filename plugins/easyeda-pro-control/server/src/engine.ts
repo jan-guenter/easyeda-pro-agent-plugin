@@ -2265,6 +2265,8 @@ export class EasyedaControlEngine {
       operation.orphanedCallPossible = true;
       operation.orphanedCallPhase = phase;
       operation.orphanedCallMarkedAt = now();
+      // A preceding phase's return does not settle this newly marked call.
+      delete operation.orphanedCallReturnedAt;
       operation.runtimeRestartChallengeAttempt = challengeAttempt;
       operation.runtimeRestartChallenge = [
         "EASYEDA_RESTARTED_AND_RECONNECTED",

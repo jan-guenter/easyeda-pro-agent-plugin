@@ -58,6 +58,19 @@ ${options.before ?? ""}`, context, { timeout: 1000 });
     evaluateChild: (source: string): unknown => runInContext(source, childContext, { timeout: 1000 }) as unknown };
 }
 
+void test("current identity reader admits the target project fragment and rejects foreign or changing URLs", async () => {
+  const before = "location.href+='id='+target.projectUuid+',tab=*'+target.tabId;document.URL=location.href;";
+  const valid = environment({ before });
+  validateCurrentPcbIdentitiesResult(request, decodeExactReadEnvelope(await valid.run()));
+  assert.equal(valid.evaluateChild("calls"), 6);
+  const foreign = environment({ before: "location.href+='id='+ 'f'.repeat(64);document.URL=location.href;" });
+  await assert.rejects(foreign.run(), { message: "CURRENT_PCB_IDENTITIES_READ_FAILED" });
+  assert.equal(foreign.evaluateChild("calls"), 0);
+  const changed = environment({ before, afterCall: "parent.location.href='https://client/editor?cll=warn#id='+parent.target.projectUuid;parent.document.URL=parent.location.href;" });
+  await assert.rejects(changed.run(), { message: "CURRENT_PCB_IDENTITIES_READ_FAILED" });
+  assert.equal(changed.evaluateChild("calls"), 1);
+});
+
 void test("current PCB identities retain cross-realm receiver, full ordered IDs and positive three-family type evidence", async () => {
   for (const [method, expected] of [[selectedMethod, defaults.selected], ["eda.pcb_PrimitiveLine.getAllPrimitiveId", ["line-b", "line-a"]],
     ["eda.pcb_PrimitiveArc.getAllPrimitiveId", ["arc-a"]], ["eda.pcb_PrimitiveVia.getAllPrimitiveId", ["via-a"]]] as const) {

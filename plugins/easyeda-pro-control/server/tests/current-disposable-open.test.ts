@@ -32,8 +32,8 @@ globalThis.registration={[target.projectUuid]:{path:target.rawWindowsPath,isCbb:
 class Registry{async rpcCall(topic,args,timeout){if(this!==gVars.messageBus||topic!=='/pro-mgr/api/client/getProjectPaths'||Object.keys(args).length||timeout!==0)throw new Error('PRIVATE_REGISTRY');registryCalls++;await Promise.resolve();${options.afterRegistry ?? ""}return {message:{success:true,result:registration},bridge:undefined,source:undefined};}}
 globalThis.gVars={currentProject:{projectId:undefined,branchUuid:''},isHistoryMode:false,messageBus:new Registry()};
 globalThis.UI={gVars,tabBar:Tabs};
-globalThis.openedProject=()=>{gVars.currentProject={projectId:target.projectUuid,branchUuid:target.branchUuid,isV2Format:false};};
-globalThis.openedDocument=()=>{globalThis.targetTab={tabId:targetTabId,data:{doctype:3,pid:target.projectUuid}};info.tabs=[start,targetTab];info.activeTabId=targetTabId;Tabs.currentTabId=targetTabId;
+globalThis.openedProject=()=>{gVars.currentProject={projectId:target.projectUuid,branchUuid:target.branchUuid,isV2Format:false};location.href=location.href.split('#')[0]+'#id='+target.projectUuid;document.URL=location.href;};
+globalThis.openedDocument=()=>{globalThis.targetTab={tabId:targetTabId,data:{doctype:3,pid:target.projectUuid}};info.tabs=[start,targetTab];info.activeTabId=targetTabId;Tabs.currentTabId=targetTabId;location.href=location.href.split('#')[0]+'#id='+target.projectUuid+',tab=*'+targetTabId;document.URL=location.href;
 globalThis.attributes={c_dbid:targetTabId,c_doctype:'3',src:'editor?entry=pcb','pcb-canvas':'true'};
 globalThis.frame={tagName:'IFRAME',id:'frame_'+targetTabId,ownerDocument:document,isConnected:true,contentWindow:child,classList:{contains(name){return name==='editframe';}},getAttribute(name){return attributes[name]??null;},hasAttribute(name){return Object.hasOwn(attributes,name);},parentElement:{getAttribute(name){return name==='uuid'?targetTabId:null;}}};
 frames=[frame];child.document={defaultView:child,nodeType:9};child.frameElement=frame;child.parent=globalThis;child.top=globalThis;};
@@ -61,6 +61,26 @@ void test("disposable opener uses separate one-shot public stages and exact nati
   assert.ok(!JSON.stringify(observed).includes(rawWindowsPath));
 });
 
+void test("ordinary URL transitions stay target-bound and are frozen outside navigation", async () => {
+  const preflight = environment({ before: "location.href+='#id='+target.projectUuid;document.URL=location.href;" });
+  await assert.rejects(preflight.run("open-project"), /CURRENT_DISPOSABLE_OPEN_FAILED:setup:(?:URL|GUARD)/u);
+  assert.equal(preflight.evaluate("projectCalls"), 0);
+  for (const change of ["location.href=location.href.replace('cll=warn','cll=info');",
+    "location.href+='&cmd=private';", "location.href=location.href.replace(target.projectUuid,'f'.repeat(64));"]) {
+    const fixture = environment({ projectBody: `openedProject();${change}document.URL=location.href;return true;` });
+    await assert.rejects(fixture.run("open-project"), /CURRENT_DISPOSABLE_OPEN_FAILED:project-acknowledgement:(?:URL|GUARD)/u);
+    assert.equal(fixture.evaluate("projectCalls"), 1); assert.equal(fixture.evaluate("documentCalls"), 0);
+  }
+  const missingTab = environment({ opened: true,
+    documentBody: "openedDocument();location.href+='|'+ 'f'.repeat(16)+'@'+target.projectUuid;document.URL=location.href;return targetTabId;" });
+  await assert.rejects(missingTab.run("open-document"), /CURRENT_DISPOSABLE_OPEN_FAILED:after-registration:URL/u);
+  assert.equal(missingTab.evaluate("documentCalls"), 1);
+  const drift = environment({ opened: true, document: true,
+    afterRegistry: "location.href=location.href.split(',tab=')[0];document.URL=location.href;" });
+  await assert.rejects(drift.run("observe"), /CURRENT_DISPOSABLE_OPEN_FAILED:before-registration:URL/u);
+  assert.equal(drift.evaluate("projectCalls"), 0); assert.equal(drift.evaluate("documentCalls"), 0);
+});
+
 void test("disposable opener distinguishes public acknowledgement from a missing native frame", async () => {
   const fixture = environment({ opened: true, documentBody: "openedDocument();frames=[];return targetTabId;" });
   const result = validateCurrentDisposableOpenResult(target, "open-document", decodeExactReadEnvelope(await fixture.run("open-document")));
@@ -77,33 +97,49 @@ void test("disposable preflight rejects hidden or mismatched project authority b
     String.raw`registration[target.projectUuid].path='C:\\Wrong\\Selected.eprj2';`, "registration[target.projectUuid].isCbb=true;",
     "Object.defineProperty(start.data,'pid',{get(){getterCalls++;return 'private';}});", "gVars.isHistoryMode=true;"]) {
     const fixture = environment({ before });
-    await assert.rejects(fixture.run("open-project"), { message: "CURRENT_DISPOSABLE_OPEN_FAILED" });
+    await assert.rejects(fixture.run("open-project"), /^Error: CURRENT_DISPOSABLE_OPEN_FAILED:before-registration:(?:GUARD|FIELD)$/u);
     assert.equal(fixture.evaluate("projectCalls"), 0); assert.equal(fixture.evaluate("documentCalls"), 0); assert.equal(fixture.evaluate("getterCalls"), 0);
   }
   const wrongBranch = environment({ opened: true, before: "gVars.currentProject.branchUuid='f'.repeat(32);" });
-  await assert.rejects(wrongBranch.run("open-document"), { message: "CURRENT_DISPOSABLE_OPEN_FAILED" }); assert.equal(wrongBranch.evaluate("documentCalls"), 0);
+  await assert.rejects(wrongBranch.run("open-document"), { message: "CURRENT_DISPOSABLE_OPEN_FAILED:before-registration:GUARD" }); assert.equal(wrongBranch.evaluate("documentCalls"), 0);
 });
 
 void test("disposable observer refuses registration, receiver and native identity drift without replay", async () => {
   const registry = environment({ afterRegistry: "gVars.currentProject={...gVars.currentProject};" });
-  await assert.rejects(registry.run("open-project"), { message: "CURRENT_DISPOSABLE_OPEN_FAILED" }); assert.equal(registry.evaluate("projectCalls"), 0);
-  for (const afterNative of ["parent.gVars.currentProject={...parent.gVars.currentProject};", "parent.attributes.c_dbid='other';",
-    "Bus.prototype.rpcCall=async()=>({message:{tabId:parent.targetTabId,docType:3}});", "parent.info.activeTabId='tab_page1';"] ) {
+  await assert.rejects(registry.run("open-project"), { message: "CURRENT_DISPOSABLE_OPEN_FAILED:before-registration:GUARD" }); assert.equal(registry.evaluate("projectCalls"), 0);
+  for (const [afterNative, code] of [["parent.gVars.currentProject={...parent.gVars.currentProject};", "OBJECT"],
+    ["parent.attributes.c_dbid='other';", "GUARD"],
+    ["Bus.prototype.rpcCall=async()=>({message:{tabId:parent.targetTabId,docType:3}});", "BINDING"],
+    ["parent.info.activeTabId='tab_page1';", "GUARD"]] as const) {
     const fixture = environment({ opened: true, document: true, afterNative });
-    await assert.rejects(fixture.run("observe"), { message: "CURRENT_DISPOSABLE_OPEN_FAILED" });
+    await assert.rejects(fixture.run("observe"), { message: `CURRENT_DISPOSABLE_OPEN_FAILED:native-observation:${code}` });
     assert.equal(fixture.evaluate("projectCalls"), 0); assert.equal(fixture.evaluate("documentCalls"), 0);
   }
 });
 
 void test("public-open deadline preserves unsettled marker and prevents later post-timeout dispatch", async () => {
   const fixture = environment({ fastDeadline: true, projectBody: "return await new Promise(resolve=>{globalThis.release=resolve;});" });
-  await assert.rejects(fixture.run("open-project"), { message: "NATIVE_LIFECYCLE_OPEN_TIMEOUT" });
+  await assert.rejects(fixture.run("open-project"), { message: "CURRENT_DISPOSABLE_OPEN_FAILED:open-project:TIMEOUT" });
   assert.equal(fixture.evaluate("projectCalls"), 1); assert.equal(fixture.evaluate("registryCalls"), 1);
   fixture.evaluate("release(true);"); await Promise.resolve(); await Promise.resolve();
   assert.equal(fixture.evaluate("registryCalls"), 1); assert.equal(fixture.evaluate("documentCalls"), 0);
   const registry = environment({ fastDeadline: true, afterRegistry: "return await new Promise(()=>{});" });
-  await assert.rejects(registry.run("preflight"), { message: "NATIVE_LIFECYCLE_OPEN_TIMEOUT" });
+  await assert.rejects(registry.run("preflight"), { message: "CURRENT_DISPOSABLE_OPEN_FAILED:before-registration:TIMEOUT" });
   assert.equal(registry.evaluate("projectCalls"), 0);
+});
+
+void test("native opener diagnostics discard private exceptions and never invoke their message getters", async () => {
+  for (const projectBody of ["throw new Error('PRIVATE_PATH_AND_DESIGN_CONTENT');",
+    "throw Object.defineProperty({},'message',{get(){getterCalls++;return 'PRIVATE_SECRET';}});",
+    "throw new Error('CURRENT_DISPOSABLE_OPEN_FAILED:open-project:ACK');"]) {
+    const fixture = environment({ projectBody });
+    await assert.rejects(fixture.run("open-project"), { message: "CURRENT_DISPOSABLE_OPEN_FAILED:open-project:EXCEPTION" });
+    assert.equal(fixture.evaluate("getterCalls"), 0);
+    assert.equal(fixture.evaluate("projectCalls"), 1); assert.equal(fixture.evaluate("documentCalls"), 0);
+  }
+  const acknowledgement = environment({ projectBody: "return 'PRIVATE_RESULT';" });
+  await assert.rejects(acknowledgement.run("open-project"), { message: "CURRENT_DISPOSABLE_OPEN_FAILED:project-acknowledgement:ACK" });
+  assert.equal(acknowledgement.evaluate("documentCalls"), 0);
 });
 
 void test("disposable schemas and result checks reject injected arguments and false authority", async () => {
