@@ -105,7 +105,7 @@ void test("wrong capture binding refuses before adding an observation", async ()
   await assert.rejects(wrapper.transport.request({ action: "capture", bindingSha256: "1".repeat(64) }), /CLOCK_RECEIPT_REFUSED/u);
   assert.deepEqual(wrapper.observations(), []);
 });
-void test("maintained supervisor passes ordinary preflight and termination through clocked transport without clock attachments", async () => {
+void test("maintained supervisor passes ordinary window observation and one-shot close through clocked transport without clock attachments", async () => {
   const f = fixture(), wrapper = createClockedTransport(f.transport, SOURCE);
   const supervisor = createWindowsAuthoritySupervisor(wrapper.transport, {
     helperSha256: SOURCE.helperSourceSha256, expectedExecutable: "C:\\Synthetic\\easyeda-pro.exe",
@@ -120,12 +120,31 @@ void test("maintained supervisor passes ordinary preflight and termination throu
   assert.deepEqual(wrapper.observations(), []);
   f.response = launchResponse;
   const launch = await supervisor.launch({ confirmLaunch: true });
+  const observeWindow = supervisor.observeApplicationWindow;
+  assert.ok(observeWindow);
+  f.response = { jobId: JOB, helperInstance: HELPER, outcome: "available", hwnd: "12345" };
+  assert.deepEqual(await observeWindow(launch), f.response);
+  assert.deepEqual(f.records[2], {
+    action: "observe-application-window", jobId: JOB, helperInstance: HELPER,
+    rootPid: ROOT.pid, rootStartIdentity: ROOT.startIdentity, rootStartTicks: "639247486999999999",
+  });
+  assert.equal(wrapper.originalAttachment(f.response), undefined);
+  f.response = { jobId: JOB, closeDispatched: true, saveOrDiscardSelected: false };
+  const closeInput = { confirmNormalClose: true as const, windowHandle: "12345", launch };
+  await supervisor.requestNormalClose(closeInput);
+  await assert.rejects(supervisor.requestNormalClose(closeInput), /already has a normal-close attempt/u);
+  assert.deepEqual(f.records[3], {
+    action: "normal-close", confirmNormalClose: true, jobId: JOB, helperInstance: HELPER,
+    rootPid: ROOT.pid, rootStartIdentity: ROOT.startIdentity, rootStartTicks: "639247486999999999", windowHandle: "12345",
+  });
+  assert.equal(wrapper.originalAttachment(f.response), undefined);
   const observe = supervisor.observeLaunchTermination;
   assert.ok(observe);
   f.response = { jobId: JOB, helperInstance: HELPER, terminated: true };
   assert.deepEqual(await observe(launch), f.response);
-  assert.deepEqual(f.records.map((request) => request["action"]), ["observe-existing-application", "clocked-launch", "observe-launch-termination"]);
-  assert.deepEqual(f.records[2], {
+  assert.deepEqual(f.records.map((request) => request["action"]), ["observe-existing-application", "clocked-launch",
+    "observe-application-window", "normal-close", "observe-launch-termination"]);
+  assert.deepEqual(f.records[4], {
     action: "observe-launch-termination", jobId: JOB, helperInstance: HELPER,
     rootPid: ROOT.pid, rootStartIdentity: ROOT.startIdentity,
   });

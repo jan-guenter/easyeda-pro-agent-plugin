@@ -159,7 +159,7 @@ const mapped: Readonly<Record<string, Readonly<{ action: string; phase: Phase }>
   "finish-probe": { action: "clocked-finish-probe", phase: "capture" },
   "prove-terminated": { action: "clocked-prove-terminated", phase: "termination" },
 };
-const passThrough = new Set(["begin-probe", "end-probe", "release-capture", "normal-close", "observe-launch-termination", "observe-existing-application"]);
+const passThrough = new Set(["begin-probe", "end-probe", "release-capture", "normal-close", "observe-launch-termination", "observe-existing-application", "observe-application-window"]);
 
 /** Feed this transport to the existing ownership validator, never directly to a caller.
  * Attachments are observations; only the existing retained validator can issue ownership.

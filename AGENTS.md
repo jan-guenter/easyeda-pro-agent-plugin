@@ -29,7 +29,12 @@ changes. Local76native/process,84clock/history/registration and22bundled-startup
 coordinator cases pass; strict types/full lint, build/compatibility, coverage,
 package/repository/privacy and seven official skill validators pass. Audit has
 zero vulnerabilities,151signatures/40attestations. Exact Windows helper compile
-passes without launching EasyEDA. Source340c7110f81/runtime38315f38a; helper
+passes without launching EasyEDA. PR28 review caught a missing clock-transport
+pass-through for the new window observer. Existing wrapped-supervisor regression
+failed before the one-action fix; all116affected tests, strict types and targeted
+zero-warning lint pass afterward. Main/independent review accept the correction.
+Initial CI38630099383 was canceled; it is not acceptance. Rebuilt final
+source34066633a7a/runtime3f1b6a1c0; helper
 fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161.
 Frozen-payload GitHub CI, publication and installation remain pending.
 EasyEDA stays closed this turn so the next installed session can combine the

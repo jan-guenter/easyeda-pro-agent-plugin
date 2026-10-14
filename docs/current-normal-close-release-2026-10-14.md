@@ -58,8 +58,16 @@ Dependency audit reports zero vulnerabilities,151verified registry signatures
 and40attestations. Windows compile-only accepts the exact helper without
 starting or closing EasyEDA.
 
-Source340: `c7110f818baf9e364ee4e24b719955d3886a4080e563d4f3453636ac7ec35f49`.
-Runtime3: `8315f38a395e5958893143df0e7853eeab9fcdfe8122871bc27c1d0e8ad8abb3`.
+PR review caught an integration omission in the clock-wrapped production path:
+its pass-through list rejected the new window observer before native dispatch.
+The corrected transport admits only that additional fixed action. The existing
+supervisor-through-wrapper regression failed before the correction, then all116
+affected tests passed. Strict types and targeted zero-warning type-aware lint
+also pass, with independent review accepting the correction. The initial CI
+run was canceled and is not release acceptance.
+
+Source340: `66633a7a5fa579eb14b3cba9b8a5ee6b013b4ec7d606ee46b10e54dff4329125`.
+Runtime3: `f1b6a1c0a48fe7fad3236bed86b9c2f0243d00e3e40d8885b26ce01641ed95cb`.
 Helper: `fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161`.
 The full existing suite and reproducibility checks run on the frozen payload
 in GitHub CI. Exact-head CI and installed verification remain pending at this
