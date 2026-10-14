@@ -10,11 +10,12 @@ import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
 export function buildCurrentPcbGeometryProgram(input: unknown): string {
   const request = parseCurrentPcbGeometryRequest(input);
   const family = currentPcbGeometryFamily(request);
+  const primitiveIds = "primitiveIds" in request.arguments ? request.arguments.primitiveIds : null;
   const topics = { Line: "pcb/extensionAPI/track-getAll", Arc: "pcb/extensionAPI/arc-getAll", Via: "pcb/extensionAPI/via-getAll",
     Component: "pcb/extensionAPI/component-getAll", Pad: "pcb/extensionAPI/pad-getAll" } as const;
   return `let timer,clear;
 try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)},family=${JSON.stringify(family)},topic=${JSON.stringify(topics[family])};let expired=false;
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)},family=${JSON.stringify(family)},topic=${JSON.stringify(topics[family])},primitiveIds=${JSON.stringify(primitiveIds)};let expired=false;
 const bad=()=>{throw new Error('CURRENT_PCB_GEOMETRY_READ_FAILED');};
 ${buildCurrentProjectUrlGuard()}
 const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
@@ -62,7 +63,8 @@ const integer=value=>{num(value);if(!Number.isInteger(value))bad();return value;
 const layer=value=>{integer(value);if(value<0||value>65535)bad();return value;};
 const bool=value=>{if(typeof value!=='boolean')bad();return value;};
 const text=(value,max,nullable=false)=>{if(value===null&&nullable)return value;if(typeof value!=='string'||value.length>max)bad();return value;};
-const point=value=>{if(!object(value))bad();const keys=Reflect.ownKeys(value);if(keys.length!==2||!keys.includes('x')||!keys.includes('y'))bad();return{x:num(own(value,'x')),y:num(own(value,'y'))};};
+// Native Point may retain an optional _hashed cache; project only own x/y data without reading that cache or its getter.
+const point=value=>{if(!object(value))bad();const keys=Reflect.ownKeys(value);if(!keys.includes('x')||!keys.includes('y')||keys.some(key=>key!=='x'&&key!=='y'&&key!=='_hashed'))bad();return{x:num(own(value,'x')),y:num(own(value,'y'))};};
 const copyRows=value=>{
  const p=Object.getPrototypeOf(value??{});if(!Array.isArray(value)||(p!==Array.prototype&&p!==childArrayPrototype))bad();
  const n=own(value,'length');if(!Number.isInteger(n)||n<0||n>${CURRENT_PCB_GEOMETRY_MAX_ROWS}||Reflect.ownKeys(value).length!==n+1)bad();
@@ -98,9 +100,12 @@ const read=async()=>{await identity();check();const raw=await call(topic,{});che
 const run=async()=>{
  const first=await read(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();
  const second=await read();if(JSON.stringify(second)!==firstJson)bad();check();
- const json=JSON.stringify({ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request.method)},target,rows:first,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false});
- const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
- if(utf8Bytes>${CURRENT_PCB_GEOMETRY_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();return envelope;
+ const observation={ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request.method)},target,rows:first,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ const encode=value=>{const json=JSON.stringify(value),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
+  if(utf8Bytes>${CURRENT_PCB_GEOMETRY_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();return envelope;};
+ const complete=encode(observation);if(primitiveIds===null)return complete;
+ const byId=new Map(first.map(row=>[row.primitiveId,row])),selected=primitiveIds.map(id=>{const row=byId.get(id);if(row===undefined)bad();return row;});
+ return encode({...observation,rows:selected,observedRowCount:first.length});
 };
 check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error('CURRENT_PCB_GEOMETRY_READ_FAILED'));},10000]);});
 return await Promise.race([run(),timeout]);

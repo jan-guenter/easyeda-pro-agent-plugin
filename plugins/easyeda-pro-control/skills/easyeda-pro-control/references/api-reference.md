@@ -239,7 +239,8 @@ Limits: 20,000 IDs per family, 256 selected IDs, 256 characters per ID and 39321
 combined evidence. No truncation or coercion. Native serializers allocate DTOs
 before projection; output bounds and deadlines do not cancel that work. Only
 IDs leave the adapter. No selection change, navigation, settings or Save is
-requested. Current connected validation remains pending.
+requested. Installed180500 passed one nonempty disposable Component/Pad ID
+case; other methods and generations need their own evidence.
 
 ## PCB geometry on the current tuple
 
@@ -251,8 +252,16 @@ as identity reads. The board must already be active; this tool never opens it.
 
 Methods are `eda.pcb_PrimitiveLine.getAll`, `eda.pcb_PrimitiveArc.getAll`,
 `eda.pcb_PrimitiveVia.getAll`, `eda.pcb_PrimitiveComponent.getAll` and
-`eda.pcb_PrimitivePad.getAll`, with empty `arguments` only. Results preserve
-native row order and contain plain data, not SDK objects or methods. Every row
+`eda.pcb_PrimitivePad.getAll`, with empty `arguments` only. Each family also
+supports a narrower `.get` equivalent with `arguments:{"primitiveIds":["id"]}`.
+Use 1 to 256 distinct nonempty IDs, each at most256characters. Scalar IDs,
+duplicates and empty arrays refuse. `get` returns rows in caller order and
+refuses the entire request if any ID is unavailable in the observed family;
+unlike the public API, it never silently skips unmatched IDs. That refusal
+does not establish absence from saved source. It does not change selection.
+
+`getAll` preserves native row order. Both return plain data, not SDK objects
+or methods. Every row
 has `primitiveId`, `primitiveType` and `primitiveLock`. All except Component
 also have `net`; null and empty net text remain distinct, and neither proves
 resolved connectivity.
@@ -286,7 +295,11 @@ footprint/device/font caches and child arrays before projection; ID-only reads
 do not avoid that work or fetch missing libraries.
 
 Two matching ordered projected samples retain the exact frame and receiver
-around each await. Omitted fields are not compared. Limits are256rows,
+around each await. For `get`, the complete family is validated and compared
+before selecting requested IDs; unrequested-row drift or an oversized family
+still refuses. `returnedRowCount` counts selected DTOs; `observedRowCount`
+counts the full family. Explicit IDs reduce returned data, not vendor work.
+Omitted fields are not compared. Limits are256rows,
 256characters per ID,1024per net/rule name, scalar magnitude1e12 and384KiB.
 Signed zero, non-finite values, duplicates, unknown enum values, missing fields
 and oversized data refuse without truncation. The bounds and deadline do not
@@ -294,10 +307,11 @@ cancel the native enumeration or serializer.
 
 Loaded views may omit saved records and include inherited or preview objects.
 These native equivalents establish neither saved membership, parent ownership,
-complete source, connectivity nor persistence. Filters, selected-ID geometry and
-other object families remain separate implementation work. No selection change,
-navigation, source export, settings change or Save is requested. Current
-connected geometry validation remains pending.
+complete source, connectivity nor persistence. Optional public filters, scalar
+`get` and other object families remain separate implementation work. No selection
+change, navigation, source export, settings change or Save is requested.
+Installed180500 passed nonempty Component/Pad `getAll` on one disposable PCB;
+the new explicit-ID routes and other generations have no connected claim yet.
 
 ## Local historical abandonment
 

@@ -7,14 +7,18 @@ import { SDK_LOCAL_RUNTIME_PROFILE } from "./sdk-local-runtime.ts";
 export const CURRENT_PCB_GEOMETRY_MAX_BYTES = 384 * 1024;
 export const CURRENT_PCB_GEOMETRY_MAX_ROWS = 256;
 export const CURRENT_PCB_GEOMETRY_MAX_NUMBER = 1e12;
-const methods = ["eda.pcb_PrimitiveLine.getAll", "eda.pcb_PrimitiveArc.getAll", "eda.pcb_PrimitiveVia.getAll",
+const collectionMethods = ["eda.pcb_PrimitiveLine.getAll", "eda.pcb_PrimitiveArc.getAll", "eda.pcb_PrimitiveVia.getAll",
   "eda.pcb_PrimitiveComponent.getAll", "eda.pcb_PrimitivePad.getAll"] as const;
+const selectedMethods = ["eda.pcb_PrimitiveLine.get", "eda.pcb_PrimitiveArc.get", "eda.pcb_PrimitiveVia.get",
+  "eda.pcb_PrimitiveComponent.get", "eda.pcb_PrimitivePad.get"] as const;
+const methods = [...collectionMethods, ...selectedMethods] as const;
 const targetSchema = currentPcbLayersRequestSchema.shape.target;
 const numberSchema = z.number().min(-CURRENT_PCB_GEOMETRY_MAX_NUMBER).max(CURRENT_PCB_GEOMETRY_MAX_NUMBER)
   .refine((value) => !Object.is(value, -0), "Signed zero is not supported by this JSON observation.");
 const layerSchema = numberSchema.refine((value) => Number.isInteger(value) && value >= 0 && value <= 65_535, "Invalid native layer ID.");
 const boundedText = z.string().max(1024);
-const identity = { primitiveId: z.string().min(1).max(256), primitiveLock: z.boolean() };
+const idSchema = z.string().min(1).max(256);
+const identity = { primitiveId: idSchema, primitiveLock: z.boolean() };
 const base = { ...identity, net: boundedText.nullable() };
 const track = { ...base, layer: layerSchema, startX: numberSchema, startY: numberSchema, endX: numberSchema,
   endY: numberSchema, lineWidth: numberSchema };
@@ -31,19 +35,28 @@ const componentSchema = z.object({ ...identity, primitiveType: z.literal("Compon
 const padSchema = z.object({ ...base, primitiveType: z.literal("Pad"), layer: z.union([z.literal(1), z.literal(2), z.literal(12)]),
   padNumber: boundedText, x: numberSchema, y: numberSchema, rotation: numberSchema, metallization: z.boolean(),
   padType: z.union([z.literal(0), z.literal(1), z.literal(2)]) }).strict();
-export const currentPcbGeometryRequestSchema = z.object({ method: z.enum(methods), arguments: z.object({}).strict(), target: targetSchema }).strict();
+const requestedIdsSchema = z.array(idSchema).min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS)
+  .refine((ids) => new Set(ids).size === ids.length, "Primitive IDs must be distinct.");
+export const currentPcbGeometryRequestSchema = z.discriminatedUnion("method", [
+  z.object({ method: z.enum(collectionMethods), arguments: z.object({}).strict(), target: targetSchema }).strict(),
+  z.object({ method: z.enum(selectedMethods), arguments: z.object({ primitiveIds: requestedIdsSchema }).strict(), target: targetSchema }).strict(),
+]);
 export type CurrentPcbGeometryRequest = z.infer<typeof currentPcbGeometryRequestSchema>;
 export const currentPcbGeometryQuerySchema = z.object({ method: z.enum(methods).optional(), includeSchemas: z.boolean().default(false) }).strict();
-export const currentPcbGeometryResultSchema = z.object({ ok: z.literal(true), kind: z.literal("current-pcb-geometry-observation"),
-  method: z.enum(methods), target: targetSchema,
+const resultShape = { ok: z.literal(true), kind: z.literal("current-pcb-geometry-observation"), target: targetSchema,
   rows: z.array(z.discriminatedUnion("primitiveType", [lineSchema, arcSchema, viaSchema, componentSchema, padSchema])).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
   samples: z.literal(2), implementationKind: z.literal("native-task-equivalent"), cadAuthority: z.literal(false),
-  persistenceVerified: z.literal(false), sourceMembershipVerified: z.literal(false) }).strict();
+  persistenceVerified: z.literal(false), sourceMembershipVerified: z.literal(false) };
+export const currentPcbGeometryResultSchema = z.discriminatedUnion("method", [
+  z.object({ ...resultShape, method: z.enum(collectionMethods) }).strict(),
+  z.object({ ...resultShape, method: z.enum(selectedMethods), observedRowCount: z.number().int().min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS) }).strict(),
+]);
 
 const limitations = [
   "Only the exact active ordinary project-owned type-3 PCB is admitted. The retained frame, local receiver and complete target are rechecked around awaits, with native tab/type identity bracketing each sample. This is not an atomic lock or proof against switching away and back between observations.",
   "This is an explicit native loaded-view geometry projection, not public class instances, complete native/source records, saved membership, ownership, connectivity, DRC or persistence proof. Loaded views may include inherited, generated and in-progress objects. Native display nets are copied without case conversion; empty string and null remain distinct, while undefined refuses.",
-  "Only unfiltered getAll with empty arguments is supported. Fixed native family handlers replace mutable public active-tab routing. All reported scalar fields and ordered rows must match across two complete samples; omitted native fields are not compared. No direct getByIds or SDK object constructor is invoked.",
+  "Unfiltered getAll accepts empty arguments. The narrower get equivalent accepts only 1 to 256 distinct primitiveIds in an array, returns DTOs in caller order and refuses the entire request if any ID is unavailable in the observed family. Scalar input and the public method's missing-ID skipping are not supported. This does not change editor selection or prove absence from saved source.",
+  "Fixed native getAll handlers replace mutable public active-tab routing for both methods. All projected scalar fields and ordered rows across the complete family must match twice before requested IDs are selected; omitted native fields are not compared. Full-family validation and bounds apply even to unrequested rows. No direct getByIds or SDK object constructor is invoked. For get, returnedRowCount counts selected DTOs and observedRowCount counts the complete observed family.",
   "Positions, widths, diameters and mask expansions are in mil; arcAngle and Component/Pad rotation are in degrees. The native callback's scaled results are not rounded using the public wrapper. Arc endpoints/angle and Pad placement can therefore retain precision that the public wrapper rounds; Via diameters are twice the native callback radii, without public one-decimal radius rounding. Layer IDs and arc/via/mask modes are native values, not validated design rules.",
   "Coordinates use the data origin, not the displayed canvas origin. Arc endpoints and angle are incomplete shape data: a full-circle case can project to zero angle. Native center/radius/sweep and partition are omitted, as are Via unused-layer and is-suture fields. Mask expansion values are loaded model observations, not proof of saved overrides or current rule resolution.",
   "Component observation contains only identity, lock and placement on layer 1 or 2; attributes, designator, library/device/footprint/3D enrichment and child associations are omitted. Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12; holes, shapes, masks, rules, thermal data and parent associations are omitted. Pad family membership does not distinguish free pads from component pads. Holeless native holeRotation may be NaN and is not part of this projection.",
@@ -54,18 +67,23 @@ const limitations = [
 export function parseCurrentPcbGeometryRequest(input: unknown): CurrentPcbGeometryRequest { return currentPcbGeometryRequestSchema.parse(input); }
 export function currentPcbGeometryFamily(request: CurrentPcbGeometryRequest): "Line" | "Arc" | "Via" | "Component" | "Pad" {
   switch (request.method) {
-    case "eda.pcb_PrimitiveLine.getAll": { return "Line"; }
-    case "eda.pcb_PrimitiveArc.getAll": { return "Arc"; }
-    case "eda.pcb_PrimitiveVia.getAll": { return "Via"; }
-    case "eda.pcb_PrimitiveComponent.getAll": { return "Component"; }
-    case "eda.pcb_PrimitivePad.getAll": { return "Pad"; }
+    case "eda.pcb_PrimitiveLine.getAll":
+    case "eda.pcb_PrimitiveLine.get": { return "Line"; }
+    case "eda.pcb_PrimitiveArc.getAll":
+    case "eda.pcb_PrimitiveArc.get": { return "Arc"; }
+    case "eda.pcb_PrimitiveVia.getAll":
+    case "eda.pcb_PrimitiveVia.get": { return "Via"; }
+    case "eda.pcb_PrimitiveComponent.getAll":
+    case "eda.pcb_PrimitiveComponent.get": { return "Component"; }
+    case "eda.pcb_PrimitivePad.getAll":
+    case "eda.pcb_PrimitivePad.get": { return "Pad"; }
     default: { throw new Error("Unsupported current PCB geometry method."); }
   }
 }
 export function queryCurrentPcbGeometry(input: unknown = {}): Record<string, unknown> {
   const query = currentPcbGeometryQuerySchema.parse(input);
   const entries = methods.filter((method) => query.method === undefined || query.method === method).map((method) => {
-    const entry: Record<string, unknown> = { path: method, method, effect: "current-pcb-loaded-view-geometry-read", parameters: [],
+    const entry: Record<string, unknown> = { path: method, method, effect: "current-pcb-loaded-view-geometry-read", parameters: method.endsWith(".get") ? ["primitiveIds"] : [],
       invocationEnabledByDiscovery: false, limitations: [...limitations], provenance: {
         apiVersion: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.version,
         apiSha256: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.implementationSha256,
@@ -94,7 +112,16 @@ export function validateCurrentPcbGeometryResult(input: unknown, raw: unknown): 
     seen.add(row.primitiveId);
   }
   const { rows, ...metadata } = payload;
-  return { ...metadata, value: rows, observedRowCount: rows.length, units: { linear: "mil", arcAngle: "degrees", rotation: "degrees" },
+  const counts: Record<string, number> = { observedRowCount: rows.length };
+  if ("primitiveIds" in request.arguments) {
+    if (!("observedRowCount" in payload) || payload.observedRowCount < rows.length ||
+      canonicalJson(rows.map((row) => row.primitiveId)) !== canonicalJson(request.arguments.primitiveIds)) {
+      throw new Error("PCB geometry result differs from its complete requested identity sequence or observed count.");
+    }
+    counts["observedRowCount"] = payload.observedRowCount;
+    counts["returnedRowCount"] = rows.length;
+  }
+  return { ...metadata, value: rows, ...counts, units: { linear: "mil", arcAngle: "degrees", rotation: "degrees" },
     effect: "current-pcb-loaded-view-geometry-read", encoding: "native-getter-projection-without-public-wrapper-rounding",
     authority: "explicit-target-loaded-view-geometry-only;not-design-or-persistence-authority", liveValidation: "not-recorded", limitations: [...limitations] };
 }
