@@ -12,6 +12,7 @@ export const FACADE_TOOL_NAMES = [
   "easyeda_control_shortcuts",
   "easyeda_control_pcb_layers",
   "easyeda_control_project_open",
+  "easyeda_control_pcb_identities", "easyeda_control_history",
   "easyeda_control_status", "easyeda_control_discover", "easyeda_control_context",
   "easyeda_control_design", "easyeda_control_library", "easyeda_control_runtime", "easyeda_control_native_ui", "easyeda_control_check",
   "easyeda_control_validate_closed_symbol",

@@ -122,6 +122,9 @@ import { currentPcbLayersRequestSchema } from "./current-pcb-layers.ts";
 import { readCurrentPcbLayers } from "./current-pcb-layers-runtime.ts";
 import { currentDisposableOpenRequestSchema } from "./current-disposable-open.ts";
 import { CurrentDisposableOpenCoordinator } from "./current-disposable-open-runtime.ts";
+import { currentPcbIdentitiesRequestSchema } from "./current-pcb-identities.ts";
+import { readCurrentPcbIdentities } from "./current-pcb-identities-runtime.ts";
+import { historicalAbandonmentRequestSchema, runHistoricalAbandonment } from "./historical-abandonment.ts";
 
 const facadeMode = configuredFacadeMode(process.env);
 
@@ -1850,6 +1853,8 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_shortcuts: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_pcb_layers: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_project_open: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_pcb_identities: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_history: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_runtime: z.object({ action: z.string().optional(), result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1882,7 +1887,7 @@ const server = new McpServer(
     capabilities: { tools: {} },
     instructions:
       facadeMode === "calculation-only"
-        ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer metadata, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local disposable file and checkpoint-member PCB; it permits ordinary application migrations/cache replay/automatic Save effects, not design-writer authority. No generic native controls, navigation, design changes, explicit Save or design recovery tools are available. Launch does not prove isolation or readiness; metadata grants no later authority. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
+        ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identities, local sixteen-event historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local disposable file and checkpoint-member PCB; it permits ordinary application migrations/cache replay/automatic Save effects, not design-writer authority. No generic native controls, navigation, design changes, explicit Save or design recovery tools are available. Launch does not prove isolation or readiness; metadata grants no later authority. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart."
         : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal.",
   },
 );
@@ -1926,7 +1931,7 @@ registerFacadeTool(
       typedDesign: { enabled: facadeMode === "legacy-reviewed", tool: "easyeda_control_design", supervisorRequired: true, persistence: "native-source-plus-complete-project-record-delta", arbitraryCode: false },
       libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
       ...(facadeMode === "calculation-only" ? { availableTools: CALCULATION_ONLY_TOOLS,
-        capabilityScope: "Separately admitted calculations and metadata observations, exact-target PCB layer observations, ordinary existing-profile launch and one-shot checkpointed disposable-project opening. No generic design-content access, design changes or legacy-route admission; ordinary opening may change storage and launch does not prove isolation." } : {}),
+        capabilityScope: "Separately admitted calculations and metadata observations, exact-target PCB layer/identity observations, local historical abandonment, ordinary existing-profile launch and one-shot checkpointed disposable-project opening. No generic design-content access, design changes or legacy-route admission; ordinary opening may change storage and launch does not prove isolation." } : {}),
     },
     upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
       ...await engine.status(), capabilities: { sdkCalculations: { tool: "easyeda_control_calculate", runtimeAdmissionRequired: true },
@@ -1936,6 +1941,8 @@ registerFacadeTool(
         editorContext: { tool: "easyeda_control_editor_context", runtimeAdmissionRequired: true, identityOnly: true, cadAuthority: false },
         shortcutKeys: { tool: "easyeda_control_shortcuts", runtimeAdmissionRequired: true, keyboardExecution: false },
         pcbLayers: { tool: "easyeda_control_pcb_layers", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, designExecution: false },
+        pcbIdentities: { tool: "easyeda_control_pcb_identities", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false },
+        historicalAbandonment: { tool: "easyeda_control_history", localOnly: true, scope: "sixteen-event-pre-navigation-validation-only", replayAuthority: false },
         ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
         designAccess: { enabled: false }, navigation: { enabled: true, tool: "easyeda_control_project_open",
           scope: "registered-disposable-local-project-and-existing-pcb-only", retainedLaunchRequired: true, unchangedStorageGuaranteed: false } },
@@ -2400,6 +2407,28 @@ registerFacadeTool(
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   serializedLiveGuarded(async (input) => ({ result: await readCurrentPcbLayers(engine, input.request, input.expectedFingerprint) })),
+);
+
+registerFacadeTool(
+  "easyeda_control_history",
+  {
+    title: "Qualify stopped pre-navigation validation history",
+    description: "Publish local historical abandonment for only the maintained sixteen-event closed-symbol validation marker-read boundary. Requires an exact operation ID and operationId:abandoned-before-navigation confirmation; retained journal, claim, baseline and unchanged disposable source are independently qualified. Writes only the exclusive historical sidecar, preserving original journal and permanent claim. No bridge, process, navigation, Save, discard, restart, completion or replay authority. Six-event baseline and later-phase/generic recovery are not exposed here. Existing valid sidecars are requalified, not republished. Query offline history/history-validate first.",
+    inputSchema: { request: z.unknown().pipe(historicalAbandonmentRequestSchema) },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  serializedGuarded(async ({ request }) => ({ result: await runHistoricalAbandonment(request) }), { allowDuringOrphanRisk: true }),
+);
+
+registerFacadeTool(
+  "easyeda_control_pcb_identities",
+  {
+    title: "Read selected and loaded PCB primitive identities",
+    description: "Observe selected IDs, unfiltered Line/Arc/Via IDs, or positively classify one ID within those three native view families on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and takes two matching ordered samples; missing, duplicate, ambiguous, malformed or oversized results refuse. Native equivalents, not public-wrapper dispatch. IDs describe loaded views or selection, not complete saved membership, ownership, geometry, connectivity or persistence. No filters, selection change, navigation, write or Save. Query offline pcb-identities/pcb-identities-validate first; no connected validation is implied.",
+    inputSchema: { request: z.unknown().pipe(currentPcbIdentitiesRequestSchema), expectedFingerprint: privateFingerprintSchema },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  serializedLiveGuarded(async (input) => ({ result: await readCurrentPcbIdentities(engine, input.request, input.expectedFingerprint) })),
 );
 
 registerFacadeTool(

@@ -6,7 +6,7 @@ const MAX_TREE_NODES = 255;
 const EDITOR_OBSERVATION_MAX_BYTES = 8192;
 
 const contextProjection = `
- const observedIdentity=(record,key,empty)=>{const descriptor=Object.getOwnPropertyDescriptor(record,key);if(!descriptor){if(key in record)bad();return {state:'absent'};}if(!Object.hasOwn(descriptor,'value'))bad();const value=descriptor.value;if(value===undefined)return {state:'undefined'};if(value===''&&empty)return {state:'empty'};if(typeof value!=='string'||!/^[a-f0-9]{32}$/.test(value))bad();return {state:'value',value};};
+ const observedIdentity=(record,key,empty)=>{const descriptor=Object.getOwnPropertyDescriptor(record,key);if(!descriptor){if(key in record)bad();return {state:'absent'};}if(!Object.hasOwn(descriptor,'value'))bad();const value=descriptor.value;if(value===undefined)return {state:'undefined'};if(value===''&&empty)return {state:'empty'};const format=key==='projectId'?/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/:/^[a-f0-9]{32}$/;if(typeof value!=='string'||!format.test(value))bad();return {state:'value',value};};
  const projectOwner=plain(own(host,'currentProject'));owners.push(projectOwner);
  const project=observedIdentity(projectOwner,'projectId',false),branch=observedIdentity(projectOwner,'branchUuid',true);
  if(branch.state==='value'&&project.state!=='value')bad();
@@ -16,9 +16,9 @@ const contextProjection = `
   if(!Number.isSafeInteger(documentType)||documentType<1||documentType>32)bad();contextIdentity.push(documentType);
   if(documentType!==1&&documentType!==3)activeContext={state:'unsupported',reason:'document-type'};
   else{
-   const match=/^([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{32})$/.exec(current);
+   const match=/^([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{32}|[a-f0-9]{64})$/.exec(current);
    if(!match)activeContext={state:'unsupported',reason:'tab-identity'};
-   else{const pid=own(data,'pid');if(typeof pid!=='string'||!/^[a-f0-9]{32}$/.test(pid)||pid!==match[2]||project.state!=='value'||project.value!==pid)bad();contextIdentity.push(pid);
+   else{const pid=own(data,'pid');if(typeof pid!=='string'||!/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/.test(pid)||pid!==match[2]||project.state!=='value'||project.value!==pid)bad();contextIdentity.push(pid);
     activeContext={state:'document',documentType,documentUuid:match[1],projectUuid:pid,tabId:match[1]+'@'+pid};
    }
   }

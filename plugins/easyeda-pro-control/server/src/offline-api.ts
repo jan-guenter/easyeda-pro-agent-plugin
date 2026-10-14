@@ -13,6 +13,8 @@ import { queryShortcutKeys, shortcutKeysQuerySchema, validateShortcutKeysArgumen
 import { queryOrdinaryLaunch, validateOrdinaryLaunchArguments } from "./ordinary-launch.ts";
 import { currentPcbLayersQuerySchema, queryCurrentPcbLayers, validateCurrentPcbLayersArguments } from "./current-pcb-layers.ts";
 import { currentDisposableOpenQuerySchema, queryCurrentDisposableOpen, validateCurrentDisposableOpenArguments } from "./current-disposable-open.ts";
+import { currentPcbIdentitiesQuerySchema, queryCurrentPcbIdentities, validateCurrentPcbIdentitiesArguments } from "./current-pcb-identities.ts";
+import { historicalAbandonmentRequestSchema } from "./historical-abandonment.ts";
 
 const ordinaryLaunchQuerySchema = z.object({ includeSchemas: z.boolean().default(false) }).strict();
 
@@ -37,6 +39,10 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("pcb-layers-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("project-open"), query: currentDisposableOpenQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("project-open-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("pcb-identities"), query: currentPcbIdentitiesQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("pcb-identities-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("history"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("history-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("launch"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("launch-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("operations"), query: operationCatalogQuerySchema }).strict(),
@@ -45,7 +51,7 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
 
 export const offlineApiToolConfiguration = {
   title: "EasyEDA offline API reference and argument validation",
-  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
+  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity, local historical-abandonment, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
   inputSchema: { request: apiRequestSchema },
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
 };
@@ -73,6 +79,25 @@ export function queryOfflineApi(request: z.infer<typeof apiRequestSchema>): { of
     case "pcb-layers-validate": { result = validateCurrentPcbLayersArguments(request.query.request); break; }
     case "project-open": { result = queryCurrentDisposableOpen(request.query ?? {}); break; }
     case "project-open-validate": { result = validateCurrentDisposableOpenArguments(request.query.request); break; }
+    case "pcb-identities": { result = queryCurrentPcbIdentities(request.query ?? {}); break; }
+    case "pcb-identities-validate": { result = validateCurrentPcbIdentitiesArguments(request.query.request); break; }
+    case "history": {
+      result = { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{
+        action: "abandon-before-navigation", tool: "easyeda_control_history", effect: "local-historical-sidecar-publication",
+        ...(request.query?.includeSchemas === true ? { inputSchema: z.toJSONSchema(historicalAbandonmentRequestSchema) } : {}),
+        limitations: ["Only the maintained sixteen-event validation marker-read boundary; no six-event baseline or later-phase recovery.",
+          "The exact confirmation is an argument-consistency check, not human attestation or restart authority.",
+          "Execution qualifies retained history and unchanged disposable source before exclusive sidecar publication; original journal and permanent claim remain unchanged.",
+          "Existing sidecars are requalified without republishing. No application call, completion, process closure, persistence, continuation or replay authority."],
+      }] }; break;
+    }
+    case "history-validate": {
+      const parsed = historicalAbandonmentRequestSchema.safeParse(request.query.request);
+      result = parsed.success ? { valid: true, request: parsed.data, executionAuthorized: false } : {
+        valid: false, executionAuthorized: false,
+        issues: parsed.error.issues.slice(0, 16).map((issue) => ({ path: issue.path.map(String), message: issue.message.slice(0, 512) })),
+      }; break;
+    }
     case "launch": { result = queryOrdinaryLaunch(request.query ?? {}); break; }
     case "launch-validate": { result = validateOrdinaryLaunchArguments(request.query.request); break; }
     case "operations": { result = queryOperationCatalog(request.query); break; }

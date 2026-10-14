@@ -18,12 +18,12 @@ project-file invariance does not cover global preferences or backup pruning.
 
 The source inventory classifies 774 method paths as 212 public subsets, 29
 native equivalents, no lifecycle-only, 82 implemented-but-blocked and 451
-omitted. It maps 313 runtime-guarded available routes, 94 blocked routes and
+omitted. It maps 318 runtime-guarded available routes, 94 blocked routes and
 two partially blocked routes. The fixed SDK-read catalog has 182 entries,
 including 21 native equivalents. These counts describe implementations, not
 whole-method live validation or admission of the installed host.
-The legacy-compatible catalog has 37 tools; the restricted current-version
-catalog has twelve, with separate exact admission for each live capability.
+The legacy-compatible catalog has 39 tools; the restricted current-version
+catalog has fourteen, with separate exact admission for each live capability.
 
 Eight symbol/page/container metadata-writing routes are also blocked pending
 operation-owned structure-job completion and exact SQL-effect proof. Historical
@@ -41,6 +41,8 @@ below describe retained source contracts, not execution support for types1/2/3.
 
 | Capability | Controlled path | Current boundary |
 |---|---|---|
+| Current PCB loaded-view identities | pcb_identities; api pcb-identities/pcb-identities-validate | Selected IDs or unfiltered Line/Arc/Via IDs; positive type lookup within those three families. Explicit target and captured native receiver, two matching ordered samples. No stored membership, ownership, geometry, connectivity or persistence claim; missing/ambiguous IDs refuse. Current connected validation pending |
+| Local historical abandonment | history; api history/history-validate | Exact sixteen-event closed-symbol validation marker-read boundary only. Requalifies retained history/claim/checkpoint and unchanged source before exclusive sidecar publication; preserves journal and permanent claim. No bridge, restart, process closure, completion or replay. Six-event baseline and generic recovery remain unavailable in restricted mode |
 | Offline SDK and exact operation reference | api sdk/operations/validate | 749 reviewed / 806 latest official declaration signatures; exact strict design/library schemas and offline custom-refinement validation; no SDK invocation or runtime admission |
 | Ordinary current-version startup | launch | Fixed no-argument executable with exact installed code/helper pins, explicit existing-profile effects and durable attempt tracking. Retained root/Job termination or separately acknowledged supervision abandonment can permit consideration of a new-ID launch. No isolation, bridge, Start Page, navigation or CAD claim |
 | Current disposable project/PCB opening | project_open; api project-open/project-open-validate | Already registered local disposable file, exact raw-path hash/original source digest, checkpoint-member default-branch PCB, initially empty editor and retained ordinary launch. Public project/document calls run once with orphan tracking. Normal opening may migrate data, replay caches and automatically Save. Inspection/observation never navigate. Terminal retirement requires original root/Job termination and exact session closure; no writer, persistence or full-initialization claim. Connected opening pending; read [the opening guide](current-project-opening.md) |

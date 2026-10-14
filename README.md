@@ -19,7 +19,15 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261014033000` adds `easyeda_control_project_open` for one registered local
+Update `0.3.0+codex.20261014054500` adds five current-version PCB identity
+readers: selected IDs, unfiltered Line/Arc/Via IDs, and positive type lookup
+within those three families. They describe stable loaded-view observations,
+not saved membership or geometry. Local-project context now accepts EasyEDA's
+64-hex path hashes. A local-only historical recovery tool exposes the existing
+sixteen-event pre-navigation abandonment verifier without enabling legacy
+recovery. See [release scope and remaining work](docs/current-pcb-readers-release-2026-10-14.md).
+
+Previous update `0.3.0+codex.20261014033000` added `easyeda_control_project_open` for one registered local
 disposable project and existing PCB. It preserves a checkpoint and journals
 project/document navigation once. Normal EasyEDA opening can migrate data,
 replay caches and automatically Save; this is not the legacy unchanged-storage
@@ -89,14 +97,15 @@ remain under `easyeda_control_calculate`. Installed161000 passed one triangle
 area and one nested-square subtraction with a complete hole; these cases do not
 validate all methods or this newer source generation.
 
-The older reviewed tuple exposes 37 tools. A configured newer or unknown tuple
-exposes twelve: API reference, local discovery, status, calculations, local
+The older reviewed tuple exposes 39 tools. A configured newer or unknown tuple
+exposes fourteen: API reference, local discovery, status, calculations, local
 system methods, extension-index/editor-shell/identity-context/shortcut observers,
-explicit-target PCB layer metadata, ordinary launch and disposable project opening.
+explicit-target PCB layer/identity observations, local historical abandonment,
+ordinary launch and disposable project opening.
 The internal mode name remains `calculation-only`. Bridge execution separately
 requires exact reviewed EasyEDA 3.2.206 / API 0.3.50 hashes and authentication;
 launch instead verifies its installed executable/app/helper identities.
-The scoped layer reader and disposable opener can access a board on the new
+The scoped layer/identity readers and disposable opener can access a board on the new
 version. Generic project-content readers, navigation and design writers remain unavailable.
 Seven skills remain included. See the
 [system-method release](docs/system-release-2026-10-13.md) for limits and backlog.

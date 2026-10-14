@@ -83,6 +83,18 @@ void test("editor context explicitly reports unsupported active kinds and path-b
   assert.equal(JSON.stringify([library, path]).includes("PRIVATE_"), false);
 });
 
+void test("editor context admits local path-hash projects without widening branch or document identities", async () => {
+  const documentUuid = "c".repeat(16), localProject = "a".repeat(64);
+  const setup = ordinary().replaceAll(projectUuid, localProject);
+  const result = await environment(setup).run();
+  assert.deepEqual(result["project"], { state: "value", value: localProject });
+  assert.deepEqual(result["active"], { state: "document", documentType: 3, documentUuid, projectUuid: localProject, tabId: `${documentUuid}@${localProject}` });
+  await assert.rejects(environment(`${setup}gVars.currentProject.branchUuid='${"b".repeat(64)}';`).run(), { message: "EDITOR_CONTEXT_READ_FAILED" });
+  await assert.rejects(environment(`${setup}target.data.pid='${"d".repeat(64)}';`).run(), { message: "EDITOR_CONTEXT_READ_FAILED" });
+  const unsupported = await environment(ordinary(3, "c".repeat(64))).run();
+  assert.deepEqual(unsupported["active"], { state: "unsupported", reason: "tab-identity" });
+});
+
 void test("editor context refuses partial, accessor-backed or inconsistent active identity with fixed errors", async () => {
   for (const setup of [
     "activate({tabId:'PRIVATE_UNINITIALIZED'});",

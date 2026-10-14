@@ -7,14 +7,15 @@ export const editorContextRequestSchema = z.object({ action: z.literal("observe-
 export type EditorContextRequest = z.infer<typeof editorContextRequestSchema>;
 export function parseEditorContextRequest(input: unknown): EditorContextRequest { return editorContextRequestSchema.parse(input); }
 
-const projectUuid = z.string().regex(/^[a-f0-9]{32}$/u);
+const projectUuid = z.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u);
+const branchUuid = z.string().regex(/^[a-f0-9]{32}$/u);
 const documentUuid = z.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
 const absentIdentity = z.object({ state: z.literal("absent") }).strict();
 const undefinedIdentity = z.object({ state: z.literal("undefined") }).strict();
 const valuedIdentity = z.object({ state: z.literal("value"), value: projectUuid }).strict();
 const projectIdentity = z.discriminatedUnion("state", [absentIdentity, undefinedIdentity, valuedIdentity]);
 const branchIdentity = z.discriminatedUnion("state", [absentIdentity, undefinedIdentity,
-  z.object({ state: z.literal("empty") }).strict(), valuedIdentity]);
+  z.object({ state: z.literal("empty") }).strict(), z.object({ state: z.literal("value"), value: branchUuid }).strict()]);
 const documentTypeSchema = z.union([z.literal(1), z.literal(3)]);
 const activeIdentity = z.discriminatedUnion("state", [
   z.object({ state: z.literal("none") }).strict(),
@@ -22,7 +23,7 @@ const activeIdentity = z.discriminatedUnion("state", [
   z.object({ state: z.literal("placeholder") }).strict(),
   z.object({ state: z.literal("unsupported"), reason: z.enum(["document-type", "tab-identity"]) }).strict(),
   z.object({ state: z.literal("document"), documentType: documentTypeSchema,
-    documentUuid, projectUuid, tabId: z.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})@[a-f0-9]{32}$/u) }).strict(),
+    documentUuid, projectUuid, tabId: z.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})@(?:[a-f0-9]{32}|[a-f0-9]{64})$/u) }).strict(),
 ]);
 
 /** UI identities only. Missing fields are not evidence of closed projects. */
@@ -38,7 +39,7 @@ export const editorContextResultSchema = z.object({
 
 const limitations = [
   "Registered UI metadata only, not actual input focus, visibility, native document readiness, project closure, completed restoration, CAD authority or persistence.",
-  "Ordinary schematic/PCB identities require type 1/3, a 16- or 32-lowercase-hex document UUID, a 32-lowercase-hex project UUID and exact documentUuid@projectUuid equality with tab pid and UI current project. Other active types or tab formats are reported unsupported without raw identity.",
+  "Ordinary schematic/PCB identities require type 1/3, a 16- or 32-lowercase-hex document UUID, a 32- or 64-lowercase-hex project UUID and exact documentUuid@projectUuid equality with tab pid and UI current project. Local project IDs may be 64-hex path hashes; branches remain 32-hex. Other active types or tab formats are reported unsupported without raw identity.",
   "Project and branch own-data fields preserve absent, undefined and value states; branch also preserves the native empty-string sentinel. Missing branch metadata does not mean no project. UI fields are not independent manager or database proof.",
   "Two matching bounded samples retain frame, UI, tab-manager methods, complete registry owners, active data and project-object identity. This is not an atomic guard for any later operation.",
   "No titles, paths, owners/account identifiers, document contents, settings, selection or nonactive payloads are returned. The fixed editor program makes no RPC, project-manager call, DOM query, navigation, Save, file or preference change.",

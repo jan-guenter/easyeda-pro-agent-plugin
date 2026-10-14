@@ -37,7 +37,7 @@ standalone Save capability. Follow the returned route and its exact scope.
 
 The current source inventory contains 774 distinct paths: 212 public subsets,
 29 native equivalents, no lifecycle-only methods, 82 implemented-but-blocked
-methods and 451 omissions. Its routes include 313 available with runtime guards,
+methods and 451 omissions. Its routes include 318 available with runtime guards,
 94 blocked and two partially blocked. These are implementation classifications,
 not connected validation counts; one method can have several routes.
 
@@ -208,6 +208,50 @@ admission and authentication match the separately reviewed new tuple. No active
 document, project, selection, private account, file, network, navigation or Save
 is accessed. `getFrontendDataUnit` is excluded because it dispatches to UI state.
 New system methods are source-tested, not connected-validated.
+
+## PCB identities on the current tuple
+
+Query `pcb-identities` with `includeSchemas:true`, validate with
+`pcb-identities-validate` and `query:{"request":...}`, then call
+`easyeda_control_pcb_identities` with that request and the authenticated
+`expectedFingerprint`. The exact `target` uses project32/64, branch32,
+document16/32 and `document@project` tab identity, as for layer reads below.
+The context observer accepts local 64-hex project IDs; branches stay32.
+
+Supported methods are `eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId`
+and `eda.pcb_PrimitiveLine.getAllPrimitiveId`, `eda.pcb_PrimitiveArc.getAllPrimitiveId`,
+`eda.pcb_PrimitiveVia.getAllPrimitiveId`, each with empty `arguments`.
+`eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId` takes `arguments:{"id":"..."}`
+and classifies only a positive unique membership in those three families.
+Missing IDs, other families and collisions refuse, never return invented
+`undefined`. No optional public filters are supported yet.
+
+These native equivalents retain the active ordinary PCB frame and receiver;
+two complete ordered ID samples and surrounding native identities must match.
+Selected IDs preserve the selection array. Family IDs enumerate loaded views,
+which may include inherited or in-progress objects and omit stored records
+without views. Neither means complete saved inventory, ownership, geometry,
+connectivity or persistence. Type results retain the three family observations
+in their commitment. No public type stub is executed.
+
+Limits: 20,000 IDs per family, 256 selected IDs, 256 characters per ID and 393216 UTF-8 bytes
+combined evidence. No truncation or coercion. Native serializers allocate DTOs
+before projection; output bounds and deadlines do not cancel that work. Only
+IDs leave the adapter. No selection change, navigation, settings or Save is
+requested. Current connected validation remains pending.
+
+## Local historical abandonment
+
+Query `history` with `includeSchemas:true`, then validate the request using
+`history-validate` before calling `easyeda_control_history`. The sole request
+is `action:"abandon-before-navigation"`, original `operationId` and
+`confirmation:"<operationId>:abandoned-before-navigation"`. This exact string
+checks argument consistency, not human restart attestation. The tool qualifies
+only the maintained sixteen-event validation marker-read boundary and publishes
+an exclusive historical sidecar. It has no bridge or runtime dependency and
+never rewrites the journal or permanent claim. Read [failure recovery](failure-recovery.md)
+for required retained evidence and the distinction from six-event baseline,
+later-phase, design or process recovery.
 
 ## PCB layer metadata on the current tuple
 

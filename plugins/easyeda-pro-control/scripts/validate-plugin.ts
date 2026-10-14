@@ -56,6 +56,8 @@ const OUTPUT_SCHEMA_ANCHORS = {
   easyeda_control_shortcuts: ["result"],
   easyeda_control_pcb_layers: ["result"],
   easyeda_control_project_open: ["result"],
+  easyeda_control_pcb_identities: ["result"],
+  easyeda_control_history: ["result"],
   easyeda_control_design: ["operationId", "state", "nextSafeAction"],
   easyeda_control_library: ["capabilities", "operationId", "state"],
   easyeda_control_runtime: ["action", "result"],
