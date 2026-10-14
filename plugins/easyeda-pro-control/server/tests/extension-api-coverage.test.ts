@@ -522,6 +522,18 @@ void test("current PCB layer coverage preserves the separate legacy route and di
 void test("current PCB geometry adds narrow native routes without replacing legacy inventory or granting authority", () => {
   const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
     tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
+  const childMethod = "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId";
+  const childRow = inventoryExtensionApiCoverage().find((entry) => entry.path === childMethod); assert.ok(childRow);
+  assert.equal(childRow.routes.some((route) => route.tool === "easyeda_control_sdk_read"), true);
+  const childRoute = childRow.routes.find((route) => route.tool === "easyeda_control_pcb_geometry"); assert.ok(childRoute);
+  assert.equal(childRoute.implementation, "native-task-equivalent"); assert.deepEqual(childRoute.documentTypes, [3]);
+  const childDiscovery = childRoute.inputDiscovery?.arguments["request"]; assert.ok(isRecord(childDiscovery));
+  const childCatalog = queryOfflineApi(apiRequestSchema.parse(childDiscovery)).result; assert.ok(isRecord(childCatalog));
+  assert.equal(childCatalog["total"], 1); assert.equal(childCatalog["invocationEnabledByDiscovery"], false);
+  const childValid = queryOfflineApi(apiRequestSchema.parse({ action: "pcb-geometry-validate", query: {
+    request: { method: childMethod, arguments: { primitiveId: "component-a" }, target },
+  } })).result;
+  assert.ok(isRecord(childValid)); assert.equal(childValid["valid"], true); assert.equal(childValid["executionAuthorized"], false);
   for (const family of ["Line", "Arc", "Via", "Component", "Pad"]) {
     const getMethod = `eda.pcb_Primitive${family}.get`;
     const getRow = inventoryExtensionApiCoverage().find((entry) => entry.path === getMethod); assert.ok(getRow);

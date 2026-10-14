@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "1025d6e744685d973fbf3731ff569ad08fa79cf15760715af7be43429d935a4c";
+const __easyedaBundlePairId = "386b227fc1dd9d2f631df0746e27f31dc08f1094c60c57fd79eedd31fb79051f";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -39489,7 +39489,7 @@ var init_extension_api_coverage_routes = __esm({
           tool: "easyeda_control_pcb_geometry",
           selector: `eda.${namespace}.${method4}`,
           implementation: "native-task-equivalent",
-          scope: `Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2 and six optional raw strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing or own-undefined values omit the field; empty strings and Name formulas remain exact. Selected null/non-string/inherited/accessor values refuse. Metadata is not verified part identity or schematic linkage. Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Other Component attributes, library/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.${method4 === "get" ? " This get route accepts only 1..256 distinct bounded primitiveIds in an array, selects DTOs in caller order after complete-family checks and refuses any unavailable ID. It does not support scalar get or public missing-ID skipping. Returned and full-family observed row counts are distinct; all family bounds still apply before selection." : " This getAll route accepts empty arguments only."}`,
+          scope: `Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state; fixed projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2 and six optional raw strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing or own-undefined values omit the field; empty strings and Name formulas remain exact. Selected null/non-string/inherited/accessor values refuse. Metadata is not verified part identity or schematic linkage. Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Pad hole is null or a strict ROUND/SLOT DTO with nonnegative mil dimensions, mil offsets and degree rotation relative to the pad. Holeless rows do not inspect unused native hole rotation/offsets; native zero dimensions are preserved without fabrication-validity claims. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Other Component attributes, library/child enrichment and Pad copper shapes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.${method4 === "get" ? " This get route accepts only 1..256 distinct bounded primitiveIds in an array, selects DTOs in caller order after complete-family checks and refuses any unavailable ID. It does not support scalar get or public missing-ID skipping. Returned and full-family observed row counts are distinct; all family bounds still apply before selection." : " This getAll route accepts empty arguments only."}`,
           source: ["current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
           tests: ["current-pcb-geometry.test.ts", "facade-mode.test.ts", "current-pcb-geometry-registration.test.ts"],
           documentTypes: [3],
@@ -39499,7 +39499,18 @@ var init_extension_api_coverage_routes = __esm({
         } });
       }
     }
-    groups.push({ namespace: "pcb_Layer", methods: ["getAllLayers", "getTheNumberOfCopperLayers"], route: {
+    groups.push({ namespace: "pcb_PrimitiveComponent", methods: ["getAllPinsByPrimitiveId"], route: {
+      tool: "easyeda_control_pcb_geometry",
+      selector: "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId",
+      implementation: "native-task-equivalent",
+      scope: "Current pinned ordinary PCB forward child membership. One bounded component primitiveId and exact project/branch/document/tab target. Two matching complete samples validate component IDs, global Pad DTOs and native component child IDs with shared-field correlation. Returns global Pad DTOs in native child order, with observed component/pad counts and explicit reciprocalParentVerified:false and symbolPinMappingVerified:false. Full IDs come from the native child callback; no ID-prefix reconstruction or caller-derived parent getter. Empty membership requires an observed component. Unrelated pads remain outside the result but still participate in complete-family stability and bounds. This is not public ComponentPad instances, reverse ownership, symbol-pin mapping, saved membership, connectivity or writer authority. No selection, navigation, design edit, library fetch or Save. Native enumeration/serialization precedes output limits and is not cancelled by the observer deadline.",
+      source: ["current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+      tests: ["current-pcb-geometry.test.ts", "current-pcb-geometry-registration.test.ts"],
+      documentTypes: [3],
+      validation: "offline-regression;current-live-unclaimed",
+      executionState: "available-with-runtime-guards",
+      inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-geometry", query: { method: "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId", includeSchemas: true } } } }
+    } }, { namespace: "pcb_Layer", methods: ["getAllLayers", "getTheNumberOfCopperLayers"], route: {
       tool: "easyeda_control_pcb_layers",
       selector: "explicit-current-pcb-layer-observation",
       implementation: "native-task-equivalent",
@@ -92969,7 +92980,8 @@ function currentPcbGeometryFamily(request2) {
       return "Component";
     }
     case "eda.pcb_PrimitivePad.getAll":
-    case "eda.pcb_PrimitivePad.get": {
+    case "eda.pcb_PrimitivePad.get":
+    case componentPadsMethod: {
       return "Pad";
     }
     default: {
@@ -92980,11 +92992,17 @@ function currentPcbGeometryFamily(request2) {
 function queryCurrentPcbGeometry(input = {}) {
   const query = currentPcbGeometryQuerySchema.parse(input);
   const entries3 = methods3.filter((method4) => query.method === void 0 || query.method === method4).map((method4) => {
+    let parameters = [];
+    if (method4 === componentPadsMethod) {
+      parameters = ["primitiveId"];
+    } else if (method4.endsWith(".get")) {
+      parameters = ["primitiveIds"];
+    }
     const entry = {
       path: method4,
       method: method4,
       effect: "current-pcb-loaded-view-geometry-read",
-      parameters: method4.endsWith(".get") ? ["primitiveIds"] : [],
+      parameters,
       invocationEnabledByDiscovery: false,
       limitations: [...limitations9],
       provenance: {
@@ -93036,6 +93054,13 @@ function validateCurrentPcbGeometryResult(input, raw) {
     counts2["observedRowCount"] = payload.observedRowCount;
     counts2["returnedRowCount"] = rows2.length;
   }
+  if ("primitiveId" in request2.arguments) {
+    if (!("componentPrimitiveId" in payload) || payload.componentPrimitiveId !== request2.arguments.primitiveId || payload.observedPadCount < rows2.length || seen.has(payload.componentPrimitiveId)) {
+      throw new Error("PCB component child-pad result differs from its requested component or complete observed family.");
+    }
+    counts2["observedRowCount"] = payload.observedPadCount;
+    counts2["returnedRowCount"] = rows2.length;
+  }
   return {
     ...metadata8,
     value: rows2,
@@ -93048,7 +93073,7 @@ function validateCurrentPcbGeometryResult(input, raw) {
     limitations: [...limitations9]
   };
 }
-var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, collectionMethods2, selectedMethods, methods3, targetSchema6, numberSchema, layerSchema2, boundedText4, idSchema2, identity26, base3, track, lineSchema3, arcSchema, viaSchema, componentSchema2, padSchema, requestedIdsSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, resultShape, currentPcbGeometryResultSchema, limitations9;
+var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, collectionMethods2, selectedMethods, componentPadsMethod, methods3, targetSchema6, numberSchema, layerSchema2, boundedText4, idSchema2, holeFields, holeSchema, identity26, base3, track, lineSchema3, arcSchema, viaSchema, componentSchema2, padSchema, requestedIdsSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, resultShape, currentPcbGeometryResultSchema, limitations9;
 var init_current_pcb_geometry = __esm({
   "server/src/current-pcb-geometry.ts"() {
     init_zod();
@@ -93073,12 +93098,23 @@ var init_current_pcb_geometry = __esm({
       "eda.pcb_PrimitiveComponent.get",
       "eda.pcb_PrimitivePad.get"
     ];
-    methods3 = [...collectionMethods2, ...selectedMethods];
+    componentPadsMethod = "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId";
+    methods3 = [...collectionMethods2, ...selectedMethods, componentPadsMethod];
     targetSchema6 = currentPcbLayersRequestSchema.shape.target;
     numberSchema = external_exports.number().min(-CURRENT_PCB_GEOMETRY_MAX_NUMBER).max(CURRENT_PCB_GEOMETRY_MAX_NUMBER).refine((value) => !Object.is(value, -0), "Signed zero is not supported by this JSON observation.");
     layerSchema2 = numberSchema.refine((value) => Number.isInteger(value) && value >= 0 && value <= 65535, "Invalid native layer ID.");
     boundedText4 = external_exports.string().max(1024);
     idSchema2 = external_exports.string().min(1).max(256);
+    holeFields = {
+      diameter: numberSchema.refine((value) => value >= 0, "Negative hole diameter."),
+      offsetX: numberSchema,
+      offsetY: numberSchema,
+      rotation: numberSchema
+    };
+    holeSchema = external_exports.discriminatedUnion("shape", [
+      external_exports.object({ ...holeFields, shape: external_exports.literal("ROUND") }).strict(),
+      external_exports.object({ ...holeFields, shape: external_exports.literal("SLOT"), length: numberSchema.refine((value) => value >= 0, "Negative slot length.") }).strict()
+    ]).nullable();
     identity26 = { primitiveId: idSchema2, primitiveLock: external_exports.boolean() };
     base3 = { ...identity26, net: boundedText4.nullable() };
     track = {
@@ -93135,12 +93171,14 @@ var init_current_pcb_geometry = __esm({
       y: numberSchema,
       rotation: numberSchema,
       metallization: external_exports.boolean(),
-      padType: external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2)])
+      padType: external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2)]),
+      hole: holeSchema
     }).strict();
     requestedIdsSchema = external_exports.array(idSchema2).min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS).refine((ids2) => new Set(ids2).size === ids2.length, "Primitive IDs must be distinct.");
     currentPcbGeometryRequestSchema = external_exports.discriminatedUnion("method", [
       external_exports.object({ method: external_exports.enum(collectionMethods2), arguments: external_exports.object({}).strict(), target: targetSchema6 }).strict(),
-      external_exports.object({ method: external_exports.enum(selectedMethods), arguments: external_exports.object({ primitiveIds: requestedIdsSchema }).strict(), target: targetSchema6 }).strict()
+      external_exports.object({ method: external_exports.enum(selectedMethods), arguments: external_exports.object({ primitiveIds: requestedIdsSchema }).strict(), target: targetSchema6 }).strict(),
+      external_exports.object({ method: external_exports.literal(componentPadsMethod), arguments: external_exports.object({ primitiveId: idSchema2 }).strict(), target: targetSchema6 }).strict()
     ]);
     currentPcbGeometryQuerySchema = external_exports.object({ method: external_exports.enum(methods3).optional(), includeSchemas: external_exports.boolean().default(false) }).strict();
     resultShape = {
@@ -93156,7 +93194,17 @@ var init_current_pcb_geometry = __esm({
     };
     currentPcbGeometryResultSchema = external_exports.discriminatedUnion("method", [
       external_exports.object({ ...resultShape, method: external_exports.enum(collectionMethods2) }).strict(),
-      external_exports.object({ ...resultShape, method: external_exports.enum(selectedMethods), observedRowCount: external_exports.number().int().min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS) }).strict()
+      external_exports.object({ ...resultShape, method: external_exports.enum(selectedMethods), observedRowCount: external_exports.number().int().min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS) }).strict(),
+      external_exports.object({
+        ...resultShape,
+        method: external_exports.literal(componentPadsMethod),
+        componentPrimitiveId: idSchema2,
+        observedComponentCount: external_exports.number().int().min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
+        observedPadCount: external_exports.number().int().min(0).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
+        relationshipEvidence: external_exports.literal("native-component-child-list-and-global-pad-membership"),
+        reciprocalParentVerified: external_exports.literal(false),
+        symbolPinMappingVerified: external_exports.literal(false)
+      }).strict()
     ]);
     limitations9 = [
       "Only the exact active ordinary project-owned type-3 PCB is admitted. The retained frame, local receiver and complete target are rechecked around awaits, with native tab/type identity bracketing each sample. This is not an atomic lock or proof against switching away and back between observations.",
@@ -93166,8 +93214,9 @@ var init_current_pcb_geometry = __esm({
       "Positions, widths, diameters and mask expansions are in mil; arcAngle and Component/Pad rotation are in degrees. The native callback's scaled results are not rounded using the public wrapper. Arc endpoints/angle and Pad placement can therefore retain precision that the public wrapper rounds; Via diameters are twice the native callback radii, without public one-decimal radius rounding. Layer IDs and arc/via/mask modes are native values, not validated design rules.",
       "Coordinates use the data origin, not the displayed canvas origin. Arc endpoints and angle are incomplete shape data: a full-circle case can project to zero angle. Native center/radius/sweep and partition are omitted, as are Via unused-layer and is-suture fields. Mask expansion values are loaded model observations, not proof of saved overrides or current rule resolution.",
       "Component observation contains identity, lock, placement on layer 1 or 2 and six optional raw attribute strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing and own-undefined attributes both omit the corresponding output field; empty strings are preserved. Null, non-string, inherited or accessor-valued selected attributes refuse. Name formulas are returned verbatim, not evaluated or claimed to match rendered text. Other attributes, library/device/footprint/3D enrichment and child associations are omitted. These strings do not prove part identity or ownership.",
-      "Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12; holes, shapes, masks, rules, thermal data and parent associations are omitted. Pad family membership does not distinguish free pads from component pads. Holeless native holeRotation may be NaN and is not part of this projection.",
-      "At most 256 rows, 256 characters per identity, 1024 characters per net/rule name/pad number or component metadata string, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
+      "Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12. Hole is null or a ROUND/SLOT projection: diameter, SLOT length and offsets in mil, with rotation in degrees relative to the pad. Native zero dimensions are retained observations, not manufacturing validity. A null hole omits all hole-specific scalars, including native holeRotation that may be NaN. Shapes, masks, rules, thermal data and independent parent associations are omitted. Pad family membership alone does not distinguish free pads from component pads.",
+      "getAllPinsByPrimitiveId accepts one exact component ID and returns its entire native child-pad sequence, correlated by full IDs and common scalar fields with the complete global Pad projection. Two complete ordered component-ID, Pad and child-list samples must match. Missing components, null child replies, duplicate IDs and missing or contradictory global Pad rows refuse; an empty child list is accepted only for an observed component. Geometry and holes come from global pad-getAll, not the differently scaled and rounded component callback. No ID-prefix reconstruction, reciprocal parent lookup, exclusivity across other component lists, saved ownership, symbol-pin mapping or connectivity proof is implied. The public ComponentPad parent getter merely returns the caller-supplied component ID and is not invoked.",
+      "At most 256 rows per observed family or child list, 256 characters per identity, 1024 characters per net/rule name/pad number or component metadata string, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. The byte ceiling also bounds the complete compound association sample before selection. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
       "No selection, layer change, navigation, Save, source export, design mutation or project/library service is requested. Local RPC bookkeeping, reviewed native identity initialization and possible empty pad-length singleton allocation remain incidental. Component enumeration reads existing footprint/device/font caches without fetching library data. Source review and offline tests are not current live validation."
     ];
   }
@@ -118291,6 +118340,7 @@ function buildCurrentPcbGeometryProgram(input) {
   const request2 = parseCurrentPcbGeometryRequest(input);
   const family2 = currentPcbGeometryFamily(request2);
   const primitiveIds2 = "primitiveIds" in request2.arguments ? request2.arguments.primitiveIds : null;
+  const componentPrimitiveId = "primitiveId" in request2.arguments ? request2.arguments.primitiveId : null;
   const topics = {
     Line: "pcb/extensionAPI/track-getAll",
     Arc: "pcb/extensionAPI/arc-getAll",
@@ -118300,7 +118350,7 @@ function buildCurrentPcbGeometryProgram(input) {
   };
   return `let timer,clear;
 try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)},family=${JSON.stringify(family2)},topic=${JSON.stringify(topics[family2])},primitiveIds=${JSON.stringify(primitiveIds2)};let expired=false;
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)},family=${JSON.stringify(family2)},topic=${JSON.stringify(topics[family2])},primitiveIds=${JSON.stringify(primitiveIds2)},componentPrimitiveId=${JSON.stringify(componentPrimitiveId)};let expired=false;
 const bad=()=>{throw new Error('CURRENT_PCB_GEOMETRY_READ_FAILED');};
 ${buildCurrentProjectUrlGuard()}
 const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
@@ -118360,9 +118410,22 @@ const componentMetadata=row=>{
 };
 // Native Point may retain an optional _hashed cache; project only own x/y data without reading that cache or its getter.
 const point=value=>{if(!object(value))bad();const keys=Reflect.ownKeys(value);if(!keys.includes('x')||!keys.includes('y')||keys.some(key=>key!=='x'&&key!=='y'&&key!=='_hashed'))bad();return{x:num(own(value,'x')),y:num(own(value,'y'))};};
-const copyRows=value=>{
+const arrayLength=value=>{
  const p=Object.getPrototypeOf(value??{});if(!Array.isArray(value)||(p!==Array.prototype&&p!==childArrayPrototype))bad();
  const n=own(value,'length');if(!Number.isInteger(n)||n<0||n>${CURRENT_PCB_GEOMETRY_MAX_ROWS}||Reflect.ownKeys(value).length!==n+1)bad();
+ return n;
+};
+// PCB217199c8@10370738: global pad-getAll already scales hole tuple/offsets to mil and rotation to degrees.
+// Null must branch first: legitimate holeless rows can contain NaN holeRotation. Zero dimensions are native observations, not DFM approval.
+const hole=row=>{
+ const tuple=own(row,'holeAspect');if(tuple===null)return null;
+ const n=arrayLength(tuple),shape=own(tuple,'0');if((shape==='ROUND'&&n!==2)||(shape==='SLOT'&&n!==3)||(shape!=='ROUND'&&shape!=='SLOT'))bad();
+ const diameter=num(own(tuple,'1'));if(diameter<0)bad();const offset=point(own(row,'holeOffset'));
+ const result={shape,diameter,offsetX:offset.x,offsetY:offset.y,rotation:num(own(row,'holeRotation'))};
+ if(shape==='SLOT'){const length=num(own(tuple,'2'));if(length<0)bad();result.length=length;}return result;
+};
+const copyRows=value=>{
+ const n=arrayLength(value);
  const rows=[],seen=new Set();
  for(let i=0;i<n;i++){
   const row=plain(own(value,String(i))),id=text(own(row,'globalIndex'),256);if(id.length===0||seen.has(id))bad();seen.add(id);
@@ -118376,7 +118439,7 @@ const copyRows=value=>{
    const center=point(own(row,'center')),padLayer=layer(own(row,'layerId')),padType=integer(own(row,'padTypeAspect'));
    if(![1,2,12].includes(padLayer)||![0,1,2].includes(padType))bad();
    rows.push({...base,layer:padLayer,padNumber:text(own(row,'num'),1024),x:center.x,y:center.y,rotation:num(own(row,'rotation')),
-    metallization:bool(own(row,'plated')),padType});
+    metallization:bool(own(row,'plated')),padType,hole:hole(row)});
   }else if(family==='Via'){
    const center=point(own(row,'center')),viaType=integer(own(row,'type'));if(![0,1,2].includes(viaType))bad();
    rows.push({...base,x:center.x,y:center.y,holeDiameter:num(num(own(row,'holeRadius'))*2),diameter:num(num(own(row,'radius'))*2),viaType,
@@ -118392,10 +118455,29 @@ const copyRows=value=>{
 const call=async(name,arg)=>{check();const reply=await apply(rpc,channel,[name,arg,0]);check();plain(reply);return own(reply,'message');};
 const identity=async()=>{const value=await call('getTabIdAndDocType',undefined);check();exact(value,['tabId','docType']);if(own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
 const read=async()=>{await identity();check();const raw=await call(topic,{});check();const rows=copyRows(raw);check();await identity();check();return rows;};
+// PCB217199c8@10336862 enumerates gr.getItem(id).getPads() with full IDs. API021d155b@1427274 supplies its own input as public parent ID.
+// Correlate observed child membership only; do not infer reverse parents, reconstructed IDs or symbol-pin mapping.
+const readComponentPads=async()=>{
+ await identity();check();const components=await call('pcb/extensionAPI/component-getAll',{}),componentIds=[],componentSet=new Set();
+ for(let i=0,n=arrayLength(components);i<n;i++){const id=text(own(plain(own(components,String(i))),'globalIndex'),256);if(id.length===0||componentSet.has(id))bad();componentIds.push(id);componentSet.add(id);}
+ if(!componentSet.has(componentPrimitiveId))bad();
+ const pads=copyRows(await call('pcb/extensionAPI/pad-getAll',{})),byId=new Map();
+ for(const pad of pads){if(componentSet.has(pad.primitiveId))bad();byId.set(pad.primitiveId,pad);}
+ const children=await call('pcb/extensionAPI/component-getAllPinsByPrimitiveId',componentPrimitiveId),childRows=[],seen=new Set(),selected=[];
+ for(let i=0,n=arrayLength(children);i<n;i++){
+  const row=plain(own(children,String(i))),id=text(own(row,'globalIndex'),256);if(id.length===0||seen.has(id))bad();seen.add(id);
+  const member={primitiveId:id,padNumber:text(own(row,'num'),1024),net:text(own(row,'net'),1024,true),layer:layer(own(row,'layerId')),
+   primitiveLock:bool(own(row,'locked')),metallization:bool(own(row,'plated')),padType:integer(own(row,'padTypeAspect'))};
+  const pad=byId.get(id);if(!pad||Object.keys(member).some(key=>member[key]!==pad[key]))bad();childRows.push(member);selected.push(pad);
+ }
+ await identity();check();return{componentIds,pads,childRows,selected};
+};
 const run=async()=>{
- const first=await read(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();
- const second=await read();if(JSON.stringify(second)!==firstJson)bad();check();
- const observation={ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request2.method)},target,rows:first,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ const reader=componentPrimitiveId===null?read:readComponentPads,first=await reader(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();
+ const second=await reader();if(JSON.stringify(second)!==firstJson)bad();check();
+ const observation={ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request2.method)},target,rows:componentPrimitiveId===null?first:first.selected,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ if(componentPrimitiveId!==null)Object.assign(observation,{componentPrimitiveId,observedComponentCount:first.componentIds.length,observedPadCount:first.pads.length,
+  relationshipEvidence:'native-component-child-list-and-global-pad-membership',reciprocalParentVerified:false,symbolPinMappingVerified:false});
  const encode=value=>{const json=JSON.stringify(value),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
   if(utf8Bytes>${CURRENT_PCB_GEOMETRY_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();return envelope;};
  const complete=encode(observation);if(primitiveIds===null)return complete;
@@ -121612,7 +121694,7 @@ var init_src = __esm({
       "easyeda_control_pcb_geometry",
       {
         title: "Read loaded PCB geometry and placement",
-        description: "Observe Line/Arc/Via geometry or basic Component/Pad placement on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and requires two matching ordered bounded full-family samples. Native getAll equivalents accept empty arguments. Narrow get equivalents accept 1..256 distinct primitiveIds in an array, return DTOs in caller order, and refuse if any ID is unavailable; full-family bounds still apply before selection. No public-wrapper dispatch, scalar get or class instances. Values use mil/degrees without public-wrapper rounding; projections omit complete shapes, pad holes/rules, component libraries and parent-child mapping. Loaded-view geometry does not prove saved membership, ownership, connectivity or persistence; net labels and lock flags are observations, not electrical or editing authority. No optional public filters, selection change, navigation, write or Save. Query offline pcb-geometry/pcb-geometry-validate first; no connected validation is implied.",
+        description: "Observe Line/Arc/Via geometry, Component metadata and Pad placement/hole geometry on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint, a retained native receiver and two matching bounded samples. getAll accepts empty arguments; get accepts 1..256 distinct primitiveIds and returns caller order after complete-family validation. getAllPinsByPrimitiveId accepts one component primitiveId and correlates its complete native child list with the global Pad family, returning Pad DTOs in child order. This proves observed forward membership only; reciprocal parent and symbol-pin mapping remain unverified. Pad hole is null, ROUND or SLOT with mil dimensions/offsets and degree rotation relative to the pad; native zero dimensions are observations, not fabrication approval. Projections omit full copper shapes, rules and component libraries. No SDK class instances, public-wrapper dispatch, optional filters, selection change, navigation, write or Save. Loaded-view data does not prove saved membership, connectivity or persistence. Query offline pcb-geometry/pcb-geometry-validate first; connected validation is generation-specific.",
         inputSchema: { request: external_exports.unknown().pipe(currentPcbGeometryRequestSchema), expectedFingerprint: privateFingerprintSchema },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },

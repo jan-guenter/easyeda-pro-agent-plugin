@@ -19,7 +19,14 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261014213000` adds six optional raw Component metadata
+Candidate `0.3.0+codex.20261015003000` adds nullable round/slot Pad hole geometry and a component's
+ordered child-pad list to the current PCB reader. The child list is correlated
+with the complete global Pad collection; results identify forward membership
+and explicitly leave reverse-parent and schematic pin mapping unverified.
+Hole dimensions/offsets use mil and rotation is relative to the pad in degrees.
+See [implementation scope and remaining work](docs/current-pcb-pad-details-release-2026-10-15.md).
+
+Published update `0.3.0+codex.20261014213000` adds six optional raw Component metadata
 fields to existing PCB `get`/`getAll` reads: designator, name, manufacturer,
 manufacturer part, supplier and supplier part. Empty strings and name formulas
 are preserved; unavailable values stay omitted. This is loaded-view metadata,
@@ -201,7 +208,7 @@ paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
 Current source classifications are 212 public subsets, 29 native equivalents,
 no lifecycle-only methods, 82 implemented-but-blocked methods and 451
-omissions. Their execution routes comprise 321 available with runtime guards,
+omissions. Their execution routes comprise 331 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)

@@ -44,7 +44,8 @@ void test("PCB geometry registration preserves strict target requests and the se
   for (const invalid of [{ ...request, method: "eda.pcb_PrimitiveLine.create" }, { ...request, arguments: { layer: 1 } },
     { ...request, target: { ...target, tabId: "wrong" } }, { ...request, code: "caller-code" },
     { ...request, method: "eda.pcb_PrimitiveLine.get", arguments: { primitiveIds: "one" } },
-    { ...request, method: "eda.pcb_PrimitivePad.get", arguments: { primitiveIds: ["one", "one"] } }]) {
+    { ...request, method: "eda.pcb_PrimitivePad.get", arguments: { primitiveIds: ["one", "one"] } },
+    { ...request, method: "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId", arguments: { primitiveId: ["one"] } }]) {
     assert.equal(requestSchema.safeParse(invalid).success, false);
   }
   assert.equal(calls.length, 0);
@@ -57,5 +58,11 @@ void test("PCB geometry registration preserves strict target requests and the se
       assert.ok(result !== null && typeof result === "object" && "result" in result); assert.equal(result.result, observed);
     }
   }
-  assert.equal(calls.length, 10);
+  const association: unknown = requestSchema.parse({ ...request, method: "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId",
+    arguments: { primitiveId: "one" } });
+  const associationResult: unknown = await invoke({ request: association, expectedFingerprint });
+  assert.equal(calls.at(-1), association);
+  assert.ok(associationResult !== null && typeof associationResult === "object" && "result" in associationResult);
+  assert.equal(associationResult.result, observed);
+  assert.equal(calls.length, 11);
 });
