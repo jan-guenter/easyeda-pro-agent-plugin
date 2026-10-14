@@ -37,7 +37,7 @@ standalone Save capability. Follow the returned route and its exact scope.
 
 The current source inventory contains 774 distinct paths: 211 public subsets,
 30 native equivalents, no lifecycle-only methods, 82 implemented-but-blocked
-methods and 451 omissions. Its routes include 309 available with runtime guards,
+methods and 451 omissions. Its routes include 311 available with runtime guards,
 94 blocked and two partially blocked. These are implementation classifications,
 not connected validation counts; one method can have several routes.
 
@@ -202,6 +202,40 @@ admission and authentication match the separately reviewed new tuple. No active
 document, project, selection, private account, file, network, navigation or Save
 is accessed. `getFrontendDataUnit` is excluded because it dispatches to UI state.
 New system methods are source-tested, not connected-validated.
+
+## PCB layer metadata on the current tuple
+
+Query `pcb-layers` with `includeSchemas:true`, then validate the inner request
+using `pcb-layers-validate` with `query:{"request":...}`. Pass that request and
+a fresh authenticated `expectedFingerprint` to `easyeda_control_pcb_layers`.
+The two methods are `eda.pcb_Layer.getAllLayers` and
+`eda.pcb_Layer.getTheNumberOfCopperLayers`, both with empty `arguments`.
+The required `target` contains `projectUuid`, `branchUuid`, `documentUuid` and
+`tabId`; the last must equal `documentUuid + "@" + projectUuid`.
+Project IDs admit 32/64 lowercase hex, branch 32, document 16/32. The current
+identity-only observer is not a source of CAD authority or a substitute for
+an explicit known target; local project IDs may use a 64-character path hash.
+
+This route requires an already active ordinary type-3 project PCB. It does not
+open or activate it. A retained native frame receiver supplies two complete
+matching layer samples, bracketed by native tab/type checks. The public wrapper
+instead selects an active frame after an asynchronous UI hop, so the result
+honestly reports `native-task-equivalent`, not public-method execution.
+
+Layer lists expose the public nine-field projection and exact two-decimal
+alpha conversion. Preserve raw color strings, including malformed native
+fractional-hex output. Copper count follows EasyEDA's enabled native SIGNAL or
+PLANE rows plus two; hidden configured inner copper counts, disabled inner
+copper does not. This is not physical-stackup or manufacturing verification.
+Limits are 512 unique layers, 1024 name characters, 128 type/color characters
+and 262144 UTF-8 bytes. Malformed, changed or oversized replies refuse whole.
+
+Exact current API/UI/PCB identities are checked separately from the old design
+profile. No selection, source serialization, navigation, settings or Save is
+requested. RPC bookkeeping and premature local environment defaults are
+possible incidental memory effects. The deadline does not cancel vendor
+enumeration. Matching observations are not an atomic lock or completed-load
+proof; current-generation connected validation remains pending.
 
 ## Configured shortcut listing on the current tuple
 

@@ -18,12 +18,12 @@ project-file invariance does not cover global preferences or backup pruning.
 
 The source inventory classifies 774 method paths as 211 public subsets, 30
 native equivalents, no lifecycle-only, 82 implemented-but-blocked and 451
-omitted. It maps 309 runtime-guarded available routes, 94 blocked routes and
+omitted. It maps 311 runtime-guarded available routes, 94 blocked routes and
 two partially blocked routes. The fixed SDK-read catalog has 182 entries,
 including 21 native equivalents. These counts describe implementations, not
 whole-method live validation or admission of the installed host.
-The legacy-compatible catalog has 35 tools; the restricted current-version
-catalog has ten, with separate exact admission for each live capability.
+The legacy-compatible catalog has 36 tools; the restricted current-version
+catalog has eleven, with separate exact admission for each live capability.
 
 Eight symbol/page/container metadata-writing routes are also blocked pending
 operation-owned structure-job completion and exact SQL-effect proof. Historical
@@ -47,6 +47,7 @@ below describe retained source contracts, not execution support for types1/2/3.
 | Explicit ordinary-supervision relinquishment | launch abandon-supervision | Successful historical launch and inspected digest, no current retained owner, explicit acceptance of unobserved descendants, two absent samples and unchanged admission/journal. Exclusive abandonment receipt preserves history and consumed ID. Not termination/design recovery; unknown dispatch remains blocked. Only a separately confirmed new ordinary startup can follow |
 | Current editor-shell observation | editor_shell | Bounded container/tab counts and registered Start Page flags on separately pinned API/UI; two stable samples, no titles/paths/document IDs. No visibility, restored-state completion, project closure or navigation authority |
 | Current identity-only context | editor_context | Bounded active ordinary document and UI project/branch identity metadata; explicit no-document/unsupported states, no titles/paths/content. No manager/database ownership, persistence or later-operation authority; not legacy context admission |
+| Current PCB layer metadata | pcb_layers; api pcb-layers/pcb-layers-validate | Explicit active ordinary PCB project/branch/document/tab, captured native receiver and two matching complete layer samples under current API/UI/PCB pins. Nine-field layer projection or enabled native SIGNAL/PLANE plus two; raw colors preserved. Native equivalent, not public-wrapper execution. No layer selection, navigation, Save, physical-stackup or ready-state proof; connected validation pending |
 | Current configured shortcuts | shortcuts; api shortcuts/shortcuts-validate | Fixed public getShortcutKeys query; optional includeSystem defaults false. Preserves raw key strings and shortcut-specific scope enums under complete bounded double samples and API/UI pins. No keypress, registration, focus/executability or complete inventory claim; source-tested, connected validation pending |
 | System-library LCSC lookup | Discovery only; omitted | Current desktop network-disabled fallback reaches the local device-update router. Concurrent library refresh can expose a physical system-library database to initialization/migration. Renderer checks cannot atomically rule out this path; a remote-only adapter or scoped library-effects contract is still required |
 | Connection and active context | status, context | Authenticated responsive session, exact project path/UUID and document/type/tab |

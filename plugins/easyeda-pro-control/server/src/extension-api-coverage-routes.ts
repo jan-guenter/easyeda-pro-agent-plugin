@@ -50,7 +50,14 @@ function add(namespace: string, methods: readonly string[], tool: string, select
     ...(inputDiscovery === undefined ? {} : { inputDiscovery }) } });
 }
 
-groups.push({ namespace: "sys_ShortcutKey", methods: ["getShortcutKeys"], route: {
+groups.push({ namespace: "pcb_Layer", methods: ["getAllLayers", "getTheNumberOfCopperLayers"], route: {
+  tool: "easyeda_control_pcb_layers", selector: "explicit-current-pcb-layer-observation", implementation: "native-task-equivalent",
+  scope: "Separately pinned current API 0.3.50/UI 3.2.196/PCB 3.2.193 layer metadata reader on an explicit project/branch/document/tab identity for an active ordinary type-3 PCB. Two complete matching samples use a captured native frame receiver with bracketing native identity checks. Ports the nine-field public projection or enabled native SIGNAL/PLANE count plus two; raw color strings remain unchanged. No public wrapper dispatch, legacy-route admission, source export, layer selection, navigation or Save. Not physical-stackup certification, an atomic lock or current connected validation. Vendor RPC bookkeeping and possible uninitialized environment defaults are incidental in-memory effects.",
+  source: ["current-pcb-layers.ts", "current-pcb-layers-runtime.ts", "current-ui-implementation.ts", "sdk-local-runtime.ts", "facade-mode.ts"],
+  tests: ["current-pcb-layers.test.ts", "current-pcb-layers-runtime.test.ts", "facade-mode.test.ts"],
+  documentTypes: [3], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-layers", query: { includeSchemas: true } } } },
+} }, { namespace: "sys_ShortcutKey", methods: ["getShortcutKeys"], route: {
   tool: "easyeda_control_shortcuts", selector: "eda.sys_ShortcutKey.getShortcutKeys", implementation: "public-method",
   scope: "Separately pinned current API 0.3.50/UI 3.2.196 public shortcut-registry read, without design context or legacy-route admission. Optional includeSystem defaults false. Two owner-stable bounded copies preserve raw key strings, order, duplicates and empty tokens. Shortcut scope enums are not document types. No key execution, registration, navigation, settings or Save; the separate menu registry is excluded and vendor enumeration is not cancelled by the observer deadline.",
   source: ["shortcut-keys.ts", "shortcut-keys-runtime.ts", "current-ui-implementation.ts", "sdk-local-runtime.ts", "facade-mode.ts"],

@@ -13,7 +13,67 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Restarted002000 and explicit supervision recovery
+### Restarted011500 and current PCB inspection
+
+PR19 delivered011500 as main e94fe5a35ae15714eb679b816132f474e7e750c9,
+full-tree9f300c2f248e5b3ccfa6c56cd0292ba4e3781fd2 identical to tested
+63983a81820347ff9e1b1103051b0657431fcd3e. RequiredCI38484269266 passed
+all10jobs:9827facade passes/five platform skips/424bridge passes. Official Git
+marketplace installed/enabled011500. Delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/19#issuecomment-6157518903.
+
+Fresh owner215979/parent214277 uses existing011500script/cwd and Node24.18.0;
+old196297 is absent. Independent admission verifies1149files/22353157bytes/
+42dirs/seven skills and exact modes, no extras/symlinks/mismatches. Inventory
+3549a5a4d9ad064b7da5d09b7cbda190b604b1420414ccf1c20da39d1115ec4e;
+source3258d8e12b2ebb4b2c1ae0b50155305fddefe51dcbb4e57eea998cc086e8e016365;
+runtime3b3dd534668b45d41e124f131ff7dcab52ff1922a66f6aab9ce3623601f8ede0e.
+
+Actual offline launch discovery and exact validation pass. Inspect of original
+ordinary-startup-20261013-201500 returned launchedSha256
+5ffc4554ab105cbad60fb6b3c652f157db7e87b4d53f0a6e6802acc3a0a59566.
+One abandon-supervision completed at2026-10-13T23:50:16.012Z, state
+supervision-abandoned/attemptConsumed true. Two same-name absence samples;
+termination/original identity/retained authority/design claims false. Original
+records and oldID are retained. Reply
+bc7adc64befabbb26b76c0db285a793d5adabb35d7f39e965fba3ef030bbc196.
+Do not repeat abandonment or replay the old launch.
+
+New ordinary-startup-20261014-015000 completed ONCE in functions cell20:
+root41192/Job347951bf0326443ba54403d93af5e38e, state launched/attemptConsumed true.
+Reply3d122c737cc93281df52d7f762c793056c6ffdd16ca4281a10de8b9ceef90866.
+Installed status authenticated the bridge with no implementation drift;
+replyc5ef3d07fbb8984d6d7e8a3a602861994a0e82363fdc9c6fb230d622366d4edd.
+Shell observation completed: one container/tab, Start Page present and active,
+zero other tabs; reply6d9bafcb5996c4e94b631d23ee9b5b8e27dca266c3538b5583e294980b9f363e.
+This is shell evidence, not visibility, closure or saved-state proof.
+Never launch again under a replacement ID.
+No project was deliberately
+opened, no Save or design action dispatched. Production and its record stay out
+of scope. Source work on feature/current-pcb-layer-observation adds separately
+admitted bound-frame layer-list/copper-count reads; no new reader is live yet.
+
+Candidate020500 is source-frozen. Independent source review accepts the separate
+current PCB reader and coordinator. Two explicit-target methods use a retained
+native receiver, twelve-field double samples and the exact nine-field projection
+or native copper-count expression; native-task-equivalent, no navigation/Save or
+physical-stack/readiness claim. Main read the installed handler, getter, mapper,
+count and lazy-identity closure. Research/release notes retain limits and next
+disposable-navigation work. Existing external pins, helper and bridge unchanged.
+
+Final local49focused/catalog/startup tests pass. Full types, zero-warning strict
+type-aware lint, build, compatibility and exhaustive inventory checks pass;
+77package/179repository checks and all seven custom/official skill checks pass.
+Dependency audit0vulnerabilities,151registry signatures/40attestations verified.
+Source3273805982754febd9aba6cefc8862bb099b8b3e335ecf86985f99f114eec04feab;
+runtime360662f5a9e1dca1699cd36670ff20f6f39401313d51deff77924ecc98b5ad44e.
+Counts774distinct/211public/30native/82blocked/451omitted and311guarded/
+94blocked/2partial;11restricted tools/36legacy/seven skills. Required CI,
+publication and official installation pending; use the PR delivery receipt
+before repeating delivery. Loaded215979 remains011500. New layer execution is
+not yet connected-validated. C10 data-only journal remains unreplayed.
+
+### Historical restarted002000 and explicit supervision recovery
 
 PR18 delivered002000 as main d165e4075975f4c484c3417244e8630c7af32a08,
 full-tree identical to tested77abfa5baec8bf1e98dee49d90df6ba813572a70.
