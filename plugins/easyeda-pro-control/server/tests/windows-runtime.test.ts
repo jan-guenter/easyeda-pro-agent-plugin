@@ -126,6 +126,7 @@ void test("runtime does not start helpers implicitly and binds normal close/rele
   const { upstream } = upstreamFixture();
   const calls: string[] = [];
   const launch: WindowsAuthorityLaunch = { jobId: "d".repeat(32), helperInstance: "e".repeat(32), root: { pid: 100, role: "easyeda-main", startIdentity: `win32:13333333333333333:job:${"d".repeat(32)}` } };
+  const windowObservation = { jobId: launch.jobId, helperInstance: launch.helperInstance, outcome: "available" as const, hwnd: "123" };
   let startOptions: WindowsAuthorityStartOptions | undefined;
   const supervisor: WindowsAuthoritySupervisor = {
     prepareClosedSessionClose(): never { throw new Error("synthetic-close-preparation"); },
@@ -134,6 +135,7 @@ void test("runtime does not start helpers implicitly and binds normal close/rele
     probeClosedSessionTermination(): never { throw new Error("synthetic-closed-probe"); },
     launch(confirmation) { assert.equal(confirmation.confirmLaunch, true); calls.push("launch"); return Promise.resolve(launch); },
     requestNormalClose(input) { assert.deepEqual(input.launch, launch); assert.equal(input.windowHandle, "123"); calls.push("normal-close"); return Promise.resolve(); },
+    observeApplicationWindow(input) { assert.deepEqual(input, launch); calls.push("observe-window"); return Promise.resolve(windowObservation); },
     release() { calls.push("release"); return Promise.resolve(); },
     capture(): never { throw new Error("synthetic-capture"); },
     proveTerminated(): never { throw new Error("synthetic-termination"); },
@@ -146,6 +148,7 @@ void test("runtime does not start helpers implicitly and binds normal close/rele
   assert.equal(runtime.status().state, "not-launched");
   assert.deepEqual(calls, []);
   await assert.rejects(runtime.normalClose("123"), /explicitly launched/u);
+  await assert.rejects(runtime.observeApplicationWindow(), /explicitly launched/u);
   await runtime.launch();
   assert.deepEqual(calls, ["hash", "helper", "launch"]);
   assert.equal(runtime.status().state, "owned");
@@ -154,12 +157,17 @@ void test("runtime does not start helpers implicitly and binds normal close/rele
     processes: [], processTreeSha256: sha256Json([]) }), /synthetic-capture-release/u);
   assert.equal(startOptions?.expectedExecutable, String.raw`D:\Apps\EasyEDA\easyeda-pro.exe`);
   assert.equal(startOptions?.expectedExecutableSha256, "1".repeat(64));
+  assert.deepEqual(await runtime.observeApplicationWindow(), windowObservation);
+  windowObservation.helperInstance = "9".repeat(32);
+  await assert.rejects(runtime.observeApplicationWindow(), /identity or window changed/u);
+  windowObservation.helperInstance = launch.helperInstance;
   await runtime.normalClose("123");
   assert.equal(runtime.status().state, "owned");
   await runtime.release();
   assert.equal(runtime.status().state, "released");
   await assert.rejects(runtime.launch(), /current state/u);
-  assert.deepEqual(calls, ["hash", "helper", "launch", "normal-close", "release"]);
+  await assert.rejects(runtime.observeApplicationWindow(), /explicitly launched/u);
+  assert.deepEqual(calls, ["hash", "helper", "launch", "observe-window", "observe-window", "normal-close", "release"]);
 });
 
 void test("capability-pinned launch refuses executable substitution before starting its helper", async () => {

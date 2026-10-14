@@ -11,7 +11,12 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+public sealed class EasyedaApplicationWindow {
+  public string outcome, hwnd;
+}
 public sealed class EasyedaAuthorityJob : IDisposable {
+  [StructLayout(LayoutKind.Sequential)] struct RECT { public int left, top, right, bottom; }
+  delegate bool WindowCallback(IntPtr window, IntPtr value);
   [StructLayout(LayoutKind.Sequential)] struct STARTUPINFO {
     public int cb; public IntPtr reserved, desktop, title;
     public int x, y, xSize, ySize, xCountChars, yCountChars, fillAttribute, flags;
@@ -37,8 +42,20 @@ public sealed class EasyedaAuthorityJob : IDisposable {
   [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern bool CreateProcess(string application, StringBuilder command, IntPtr processAttributes, IntPtr threadAttributes, bool inheritHandles, uint flags, IntPtr environment, string directory, ref STARTUPINFOEX startup, out PROCESS_INFORMATION info);
   [DllImport("kernel32.dll", SetLastError=true)] static extern bool CloseHandle(IntPtr handle);
   [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+  [DllImport("user32.dll", SetLastError=true)] static extern bool EnumWindows(WindowCallback callback, IntPtr value);
+  [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr window);
+  [DllImport("user32.dll")] static extern bool IsWindowEnabled(IntPtr window);
+  [DllImport("user32.dll")] static extern bool IsIconic(IntPtr window);
+  [DllImport("user32.dll")] static extern IntPtr GetAncestor(IntPtr window, uint flags);
+  [DllImport("user32.dll")] static extern IntPtr GetWindow(IntPtr window, uint command);
+  [DllImport("user32.dll", EntryPoint="GetWindowLongW")] static extern int GetWindowLong(IntPtr window, int index);
+  [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr window, out RECT rect);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetClassName(IntPtr window, StringBuilder text, int maximum);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetWindowTextLength(IntPtr window);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetWindowText(IntPtr window, StringBuilder text, int maximum);
   [DllImport("user32.dll", SetLastError=true)] static extern bool PostMessage(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
   IntPtr job;
+  bool normalCloseAttempted;
   public readonly string Id = Guid.NewGuid().ToString("N");
   public Process Root { get; private set; }
   public EasyedaAuthorityJob() {
@@ -105,12 +122,65 @@ public sealed class EasyedaAuthorityJob : IDisposable {
       Array.Sort(result); return result;
     } finally { Marshal.FreeHGlobal(data); }
   }
-  public void NormalClose(long hwnd, string expectedStartTicks) {
+  void AssertRoot(string expectedStartTicks) {
+    AssertLimits();
     if (Root == null || Root.HasExited || Root.StartTime.ToUniversalTime().Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture) != expectedStartTicks || !Contains(Root)) throw new InvalidOperationException("authority-root-generation-changed");
+  }
+  string ReadApplicationTitle(IntPtr window) {
     uint pid;
-    GetWindowThreadProcessId(new IntPtr(hwnd), out pid);
-    if (pid != Root.Id) throw new InvalidOperationException("authority-window-owner-mismatch");
-    if (!PostMessage(new IntPtr(hwnd), 16, IntPtr.Zero, IntPtr.Zero)) throw new Win32Exception(Marshal.GetLastWin32Error());
+    GetWindowThreadProcessId(window, out pid);
+    if (pid != Root.Id || !IsWindowVisible(window) || !IsWindowEnabled(window) || IsIconic(window) ||
+        GetAncestor(window, 2) != window || GetAncestor(window, 3) != window ||
+        GetWindow(window, 4) != IntPtr.Zero || (GetWindowLong(window, -20) & 0x80) != 0) return null;
+    StringBuilder className = new StringBuilder(256);
+    if (GetClassName(window, className, className.Capacity) != 18 || className.ToString() != "Chrome_WidgetWin_1") return null;
+    RECT rect;
+    if (!GetWindowRect(window, out rect)) return null;
+    long width = (long)rect.right - rect.left, height = (long)rect.bottom - rect.top;
+    if (width < 320 || height < 200 || width > 16384 || height > 16384) return null;
+    int length = GetWindowTextLength(window);
+    if (length < 1 || length > 1024) return null;
+    StringBuilder title = new StringBuilder(1025);
+    if (GetWindowText(window, title, title.Capacity) != length || title.Length != length || title.ToString().Trim().Length == 0) return null;
+    GetWindowThreadProcessId(window, out pid);
+    if (pid != Root.Id) return null;
+    return title.ToString();
+  }
+  public EasyedaApplicationWindow ObserveApplicationWindow(string expectedStartTicks) {
+    AssertRoot(expectedStartTicks);
+    int owned = 0, candidates = 0;
+    bool overflow = false;
+    IntPtr selected = IntPtr.Zero;
+    string selectedTitle = null;
+    // Only root-owned handles are inspected. Titles never cross this helper.
+    bool complete = EnumWindows((window, value) => {
+      uint pid;
+      GetWindowThreadProcessId(window, out pid);
+      if (pid != Root.Id) return true;
+      if (++owned > 64) { overflow = true; return false; }
+      string title = ReadApplicationTitle(window);
+      if (title != null && ReadApplicationTitle(window) == title) {
+        candidates++; selected = window; selectedTitle = title;
+      }
+      return true;
+    }, IntPtr.Zero);
+    AssertRoot(expectedStartTicks);
+    if (overflow) return new EasyedaApplicationWindow { outcome = "unavailable" };
+    if (!complete) throw new InvalidOperationException("authority-window-enumeration-failed");
+    if (candidates > 1) return new EasyedaApplicationWindow { outcome = "ambiguous" };
+    if (candidates != 1 || ReadApplicationTitle(selected) != selectedTitle) return new EasyedaApplicationWindow { outcome = "unavailable" };
+    return new EasyedaApplicationWindow { outcome = "available", hwnd = selected.ToInt64().ToString(System.Globalization.CultureInfo.InvariantCulture) };
+  }
+  public void NormalClose(long hwnd, string expectedStartTicks) {
+    if (normalCloseAttempted) throw new InvalidOperationException("authority-close-already-attempted");
+    normalCloseAttempted = true;
+    EasyedaApplicationWindow observed = ObserveApplicationWindow(expectedStartTicks);
+    if (observed.outcome != "available" || observed.hwnd != hwnd.ToString(System.Globalization.CultureInfo.InvariantCulture)) throw new InvalidOperationException("authority-close-window-not-unique-application");
+    IntPtr window = new IntPtr(hwnd);
+    string title = ReadApplicationTitle(window);
+    AssertRoot(expectedStartTicks);
+    if (title == null || ReadApplicationTitle(window) != title) throw new InvalidOperationException("authority-close-window-changed");
+    if (!PostMessage(window, 16, IntPtr.Zero, IntPtr.Zero)) throw new Win32Exception(Marshal.GetLastWin32Error());
   }
   public void Dispose() {
     // Closing our handle does NOT terminate or save the user's application.
@@ -490,12 +560,24 @@ function Handle-Request($request) {
     foreach ($handle in $capture.handles) {$handle.Dispose()}
     return @{released=$true;jobId=$capture.receipt.jobId;helperInstance=$script:helperInstance;captureBindingSha256=$binding}
   }
-  if ($request.action -eq 'normal-close') {
-    if ($request.confirmNormalClose -ne $true -or $null -eq $script:currentJob -or $script:currentJob.Id -cne $request.jobId) {throw 'authority-close-not-authorized'}
+  if ($request.action -eq 'observe-application-window' -or $request.action -eq 'normal-close') {
+    $job=$script:currentJob
+    $launch=$script:currentLaunch
+    if ($null -eq $job -or $null -eq $launch -or $null -eq $job.Root -or
+        $request.jobId -cne $job.Id -or $request.jobId -cne $launch.jobId -or
+        $request.helperInstance -cne $script:helperInstance -or
+        (Require-Pid $request.rootPid) -ne $launch.root.pid -or
+        $request.rootStartIdentity -cne $launch.root.startIdentity) {throw 'authority-launch-not-owned'}
     $ticks=Require-Text $request.rootStartTicks '^[0-9]{15,20}$'
+    if ("win32:$ticks`:job:$($job.Id)" -cne $launch.root.startIdentity) {throw 'authority-root-generation-changed'}
+    if ($request.action -eq 'observe-application-window') {
+      $window=$job.ObserveApplicationWindow($ticks)
+      return @{jobId=$job.Id;helperInstance=$script:helperInstance;outcome=$window.outcome;hwnd=$window.hwnd}
+    }
+    if ($request.confirmNormalClose -ne $true) {throw 'authority-close-not-authorized'}
     if ($null -eq $request.windowHandle -or $request.windowHandle -isnot [string] -or $request.windowHandle -cnotmatch '^[1-9][0-9]{0,18}$') {throw 'authority-invalid-window'}
-    $script:currentJob.NormalClose([long]$request.windowHandle,$ticks)
-    return @{closeDispatched=$true;jobId=$script:currentJob.Id;saveOrDiscardSelected=$false}
+    $job.NormalClose([long]$request.windowHandle,$ticks)
+    return @{closeDispatched=$true;jobId=$job.Id;saveOrDiscardSelected=$false}
   }
   throw 'authority-unknown-action'
 }

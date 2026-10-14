@@ -23,7 +23,8 @@ function fingerprint(): Bag {
       publicApi: { ...m.installedBundles.publicApi, implementationPath: '/synthetic/api.js', adapterPath: '/synthetic/adapter.js', declarationsPath: '/synthetic/api.d.ts' } } };
 }
 const helper = '5a5095d463afcf8f595c3085ec7d5f377baa2e545b623bca81205137c602e608';
-const currentHelper = '811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65';
+const ordinaryLaunchHelper = '811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65';
+const currentHelper = 'fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161';
 function sample(time: number): ReturnType<typeof validateClockSample> { return { schema: 'easyeda-pro-control.windows-clock-sample.v1', utcBeforeTicks: String(621_355_968_000_000_000n + BigInt(time) * 10_000n),
   utcAfterTicks: String(621_355_968_000_000_000n + BigInt(time + 1) * 10_000n), qpcBefore: String(time), qpcAfter: String(time + 1), qpcFrequency: '1000',
   highResolution: true, localOffsetMinutes: 120, zoneRulesSha256: 'a'.repeat(64) }; }
@@ -135,19 +136,23 @@ void test('helper literal and actual native runtime producer shape remain source
   assert.equal(createHash('sha256').update(helperBytes).digest('hex'), currentHelper);
   const decoder = await readFile(new URL('../src/closed-symbol-recorded-native.ts', import.meta.url), 'utf8');
   assert.ok(decoder.includes(`const HELPER = '${helper}';`) && decoder.includes(`const CURRENT_HELPER = '${currentHelper}';`));
+  assert.ok(decoder.includes(`const ORDINARY_LAUNCH_HELPER = '${ordinaryLaunchHelper}';`));
   const runtime = await readFile(new URL('../src/runtime-scripts.ts', import.meta.url), 'utf8');
   assert.ok(runtime.includes('ok: true,\n    kind: "runtime-identity",\n    generation,\n    timeOrigin,\n    processId:'));
 });
 void test('current reviewed helper remains data only and has its own bound policy', () => {
-  const current = fixture('closed-edit', 2, 101, currentHelper), historical = fixture();
-  const result = validateRecordedCaptureEvidence(current.input);
-  assert.equal(current.input.source.helperSourceSha256, currentHelper);
-  assert.notEqual(current.input.source.policySha256, historical.input.source.policySha256);
-  assert.equal(result.authorityRestored, false); assert.equal(result.executionAuthorized, false);
-  assert.ok(Object.isFrozen(result.capture));
+  const historical = fixture();
+  for (const selected of [ordinaryLaunchHelper, currentHelper]) {
+    const current = fixture('closed-edit', 2, 101, selected);
+    const result = validateRecordedCaptureEvidence(current.input);
+    assert.equal(current.input.source.helperSourceSha256, selected);
+    assert.notEqual(current.input.source.policySha256, historical.input.source.policySha256);
+    assert.equal(result.authorityRestored, false); assert.equal(result.executionAuthorized, false);
+    assert.ok(Object.isFrozen(result.capture));
+  }
 });
 void test('known helper generations cannot be mixed between launch, policy and capture', () => {
-  for (const selected of [helper, currentHelper]) {
+  for (const selected of [helper, ordinaryLaunchHelper, currentHelper]) {
     const f = fixture('closed-edit', 2, 101, selected), other = selected === helper ? currentHelper : helper;
     f.clock['helperSourceSha256'] = other;
     assert.throws(() => validateRecordedCaptureEvidence(f.input), /Recorded native capture refused/u);

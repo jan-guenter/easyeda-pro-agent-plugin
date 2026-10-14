@@ -19,7 +19,15 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261014190000` adds explicit-ID reads for Line, Arc, Via,
+Candidate `0.3.0+codex.20261014201000` adds retained-owner window observation and
+one-shot normal application closure to `easyeda_control_launch`. It uses the
+original Windows helper and process Job, without foreground input or Computer
+Use. It never selects Save/Discard, forces exit or repeats an uncertain close.
+The original launch must still be retained in this facade; quarantine remains
+enforced. A close acknowledgment is not termination or saved-state proof.
+See [scope and remaining checks](docs/current-normal-close-release-2026-10-14.md).
+
+Previous update `0.3.0+codex.20261014190000` adds explicit-ID reads for Line, Arc, Via,
 Component and Pad using the current geometry tool. Pass a distinct ID array;
 results preserve caller order and any unavailable ID refuses the request.
 Whole-family checks and bounds still apply. These are plain loaded-view DTOs,

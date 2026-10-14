@@ -38,6 +38,14 @@ void test("ordinary launcher registration keeps quarantine and exact shared runt
       assert.equal(name, "easyeda_control_launch");
       assert.equal(config.inputSchema.request.safeParse({ action: "launch", operationId: "fixture", confirmLaunch: true,
         acceptExistingProfileEffects: true, args: [] }).success, false);
+      const close = { action: "normal-close", operationId: "fixture", expectedLaunchedSha256: "c".repeat(64),
+        hwnd: "1234", confirmNormalClose: true };
+      assert.equal(config.inputSchema.request.safeParse(close).success, true);
+      assert.equal(config.inputSchema.request.safeParse({ ...close, confirmNormalClose: false }).success, false);
+      assert.equal(config.inputSchema.request.safeParse({ ...close, force: true }).success, false);
+      assert.equal(config.inputSchema.request.safeParse({ ...close, hwnd: "0" }).success, false);
+      assert.equal(config.inputSchema.request.safeParse({ action: "observe-window", operationId: "fixture",
+        expectedLaunchedSha256: close.expectedLaunchedSha256 }).success, true);
       invoke = handler;
     },
   });

@@ -1,6 +1,7 @@
 # Explicit-ID PCB read release
 
-Candidate: `0.3.0+codex.20261014190000`. Publication and installation pending.
+Released: `0.3.0+codex.20261014190000`. [PR27 delivery receipt](https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/27#issuecomment-6176487958)
+records the protected merge, passing CI and verified marketplace installation.
 
 ## Scope
 
@@ -72,7 +73,10 @@ Do not transfer180500 live evidence to190000 or to other method families.
 
 All44focused reader, registration and coverage tests pass. Independent review,
 strict types, zero-warning type-aware lint, reproducible build, compatibility
-and all seven official skill validators pass. Required aggregate checks,
-exact-head GitHub CI and installed inventory verification are pending; final
-delivery evidence belongs to this release's pull request. No new private harness
+and all seven official skill validators pass. Final immutable PR CI passed
+9,883 facade tests with five skips and zero failures, plus424bridge tests.
+Postmerge CI also passed. Installed inventory and configured offline startup
+were independently verified; the delivery receipt holds their exact hashes.
+The initial local aggregate was invalidated by a concurrent manifest rebuild
+and is not counted as acceptance. No new private harness
 or broad test matrix was introduced.

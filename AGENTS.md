@@ -13,7 +13,86 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Restarted180500 live checks passed; candidate190000 selected-ID reads
+### Restarted190000; retained-owner normal-close implementation
+
+Fresh facade732783/parent731011/start220366173 loads installed190000 on pinned
+Node24.18. Independent admission matches1177files/22898366bytes/42directories/
+seven skills, exact modes, source3402f953f02/runtime30879ff09 and mergedmain1289f743.
+Old651798 is absent. Postmerge CI38622523442 passed. Prior completed opening
+099e6fa7 and retained terminationf0ac7c02 remain exact; no pending CAD or recovery.
+
+Candidate201000 implements retained-owner window observation and one-shot normal
+application closure using the original helper/Job, with durable close intent and
+separate exit observation. Quarantine, no prompt selection and no forced exit
+remain. Independent review accepts the combined coordinator/native/pin/docs
+changes. Local76native/process,84clock/history/registration and22bundled-startup/
+coordinator cases pass; strict types/full lint, build/compatibility, coverage,
+package/repository/privacy and seven official skill validators pass. Audit has
+zero vulnerabilities,151signatures/40attestations. Exact Windows helper compile
+passes without launching EasyEDA. Source340c7110f81/runtime38315f38a; helper
+fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161.
+Frozen-payload GitHub CI, publication and installation remain pending.
+EasyEDA stays closed this turn so the next installed session can combine the
+new-reader check and normal-close validation without another manual-close request.
+No live launch, design access or completed-operation replay. Scope and remaining
+work: docs/current-normal-close-release-2026-10-14.md.
+
+### Historical delivered190000; fresh-host explicit-ID check and normal-close backlog next
+
+PR27 merged through the protected route as main
+1289f74344b3810d2fb984557b8fea2049567b26. Final payload37ea15bc782ef478350ca79b8864b9229c62350a
+passed all ten required jobs in CI38620207655:9883facade passes/five skips/zero
+failures;424bridge passes/28files. Main fulltree835d61b079ddb2d6465a33f82b73428af13110d5
+and packageb6f0888e4adb5d80160442773cbe238e0940dd11 exactly equal the tested
+payload. Postmerge CI38622523442 is running on that same tree; check its outcome
+without rerunning successful checks solely for a host restart.
+
+Final source3402f953f02bd61656ff2ecdb44f38480d3ef5e8a8b9d54413189392a1778f0d2ea;
+runtime30879ff09ede35f14c89ebedf2faf90d6533289b713314599c292f22346e697a6.
+Focused44tests passed before the Point correction; the ten affected reader/
+registration tests pass afterward, including two existing cache-shape cases
+that failed before the fix. Strict types/lint, build, compatibility, privacy/
+repository and all seven skill validators pass. Initial local aggregate
+/tmp/easyeda-190000-verify-jSXE2y.log ended with11failures after the manifest was
+rebuilt during its run (manifest drift and secondary isolation refusals), and
+is NOT acceptance. Retained logSHA4ace084e7503788d8b1f44b41269b445cff2485fc56dd344a6908a6b314f647f.
+The final immutable GitHub payload's complete suite is release acceptance.
+
+Official Git marketplace upgrade under umask022 completed errors[], snapshot
+HEAD1289f74, source https://github.com/jan-guenter/easyeda-pro-agent-plugin.git.
+Installed190000 offline configured startup passes ambientNode26.7 to pinned24.18,
+15tools, identity7/geometry10 and exact Component/Pad array-get validation with
+no execution authority. Seven process samples show no child/nonstdio socket;
+stderr0. Proof1703bytes SHA4287f2f06e068b5ee44f54fd0c4b322e06d1b68b08e4f26573d69a0b823dbf1d
+at /tmp/easyeda-installed-190000-q5q2m0/proof.json. Reused probe5f4aeee1 changes
+only release pins/scratch/count and two existing request shapes, not a new matrix.
+Independent installed admission passed after the probe: official list confirms
+installed/enabled190000; all1177files/22898366bytes/42directories/seven skills
+match both tested37ea15bc and merged1289f743. Git file modes exact, directories
+0755, no extras/symlinks/hardlinks. Inventory SHA
+600f697f85f5c3c44801006e8c62352f3de204d37b4e0c18ad3f13e6ffa3e4a6.
+Marketplace snapshot, full/package trees and recomputed source/runtime pins
+also match. No live calls or cache edits were used for this admission.
+Final public delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/27#issuecomment-6176487958.
+
+Current facade651798 remains180500; never hotpatch or terminate it. EasyEDA is
+normally closed. Original180500 opening remains completed099e6fa7 and launch
+terminationf0ac7c02; both rehashed unchanged after installation. No pending
+CAD/Save/navigation/recovery. New selected-ID routes need a fresh-host scoped
+disposable check;180500 connected evidence does not transfer to190000.
+
+Future-only local research docs/current-normal-close-research-2026-10-14.md
+is intentionally untracked/outside190000. It identifies a retained-root/Job
+normal-close adapter using the existing helper, with stronger window checks,
+durable one-shot intent and separate termination observation. SDK document
+close is discard-capable and is not the alternative. No close code or new
+test framework was added. Prefer implementing this next to reduce manual-close
+requests when Computer Use fails. Broader writer/data/export backlog remains
+in docs/current-pcb-selected-read-release-2026-10-14.md. Production and its
+record were not accessed. This delivery checkpoint is for the next source commit.
+
+### Historical restarted180500 live checks and candidate190000 preparation
 
 Fresh facade651798/parent649930/start219809419 independently admitted180500:
 1177files/22869863bytes/42directories/seven skills, exact modes and inventory

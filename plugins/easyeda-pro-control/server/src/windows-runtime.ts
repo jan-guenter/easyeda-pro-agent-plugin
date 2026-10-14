@@ -22,6 +22,7 @@ import type {
   ClosedSessionTerminationObservation,
   ClosedSessionTerminationProof,
   IssuedWindowsClockObservation,
+  WindowsApplicationWindowObservation,
   WindowsAuthorityLaunch,
   WindowsAuthorityStartOptions,
   WindowsAuthoritySupervisor,
@@ -382,8 +383,31 @@ export class WindowsControlRuntime implements RuntimeExecutionAuthorityValidator
 
   public async normalClose(windowHandle: string): Promise<void> {
     const supervisor = this.requireSupervisor();
-    if (this.currentLaunch === null) { throw new Error("Windows application launch identity is missing."); }
-    await supervisor.requestNormalClose({ confirmNormalClose: true, windowHandle, launch: structuredClone(this.currentLaunch) });
+    const launch = structuredClone(this.currentLaunch);
+    if (launch === null) { throw new Error("Windows application launch identity is missing."); }
+    await supervisor.requestNormalClose({ confirmNormalClose: true, windowHandle, launch });
+    if (this.requireSupervisor() !== supervisor || canonicalJson(this.currentLaunch) !== canonicalJson(launch)) {
+      throw new Error("Retained launch identity changed during normal close; do not repeat close.");
+    }
+  }
+
+  /** Read-only bounded window observation from the retained helper, without
+   * Computer Use, title disclosure, focus changes or launch adoption.
+   */
+  public async observeApplicationWindow(): Promise<WindowsApplicationWindowObservation> {
+    const launch = structuredClone(this.currentLaunch), supervisor = this.requireSupervisor();
+    if (launch === null || supervisor.observeApplicationWindow === undefined) {
+      throw new Error("Retained application window observation is unavailable.");
+    }
+    const observation = await supervisor.observeApplicationWindow(launch);
+    if (this.requireSupervisor() !== supervisor || canonicalJson(this.currentLaunch) !== canonicalJson(launch) ||
+        Object.keys(observation).toSorted().join(",") !== "helperInstance,hwnd,jobId,outcome" ||
+        observation.jobId !== launch.jobId || observation.helperInstance !== launch.helperInstance ||
+        (observation.outcome !== "available" && observation.outcome !== "unavailable" && observation.outcome !== "ambiguous") ||
+        (observation.outcome === "available" ? typeof observation.hwnd !== "string" || !/^[1-9]\d{0,18}$/u.test(observation.hwnd) : observation.hwnd !== null)) {
+      throw new Error("Retained launch identity or window changed during application window observation.");
+    }
+    return observation;
   }
 
   /** Read only: a true result requires this helper's original root and Job to

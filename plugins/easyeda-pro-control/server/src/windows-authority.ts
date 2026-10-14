@@ -47,7 +47,7 @@ interface QualifiedClockSource {
 const qualifiedClockSources = new WeakMap<WindowsAuthorityTransport, QualifiedClockSource>();
 const originalClocks = new WeakMap<object, IssuedWindowsClockObservation>();
 const issuedClocks = new WeakMap<object, { readonly observation: IssuedWindowsClockObservation; readonly verify: () => Promise<void> }>();
-const REVIEWED_CLOCK_HELPER_SHA256 = "811d22eca033a31b58a9963ee7d51d2a3ed8182a0d859e511a42cbae68786c65";
+const REVIEWED_CLOCK_HELPER_SHA256 = "fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161";
 function freezeClockData<T>(value: T): T {
   if (value !== null && typeof value === "object") {
     for (const child of Object.values(value)) { freezeClockData(child); }
@@ -133,6 +133,13 @@ export interface WindowsLaunchTerminationObservation {
   readonly terminated: boolean;
 }
 
+/** Bounded original-root application window only; no desktop text is returned. */
+export interface WindowsApplicationWindowObservation {
+  readonly jobId: string;
+  readonly helperInstance: string;
+  readonly outcome: "available" | "unavailable" | "ambiguous";
+  readonly hwnd: string | null;
+}
 
 /** Internal completion foundation, with no MCP route. A coordinator must durably publish the
  * returned intent before requesting close, then retain both receipts before
@@ -263,6 +270,8 @@ export interface WindowsAuthoritySupervisor extends RuntimeExecutionAuthorityVal
   readonly observeExistingApplication?: () => Promise<{ readonly running: boolean }>;
   /** Reads the original root handle and Job twice; never closes or rebinds a process. */
   readonly observeLaunchTermination?: (launch: WindowsAuthorityLaunch) => Promise<WindowsLaunchTerminationObservation>;
+  /** Read-only unique root-window observation by the original retained helper. */
+  readonly observeApplicationWindow?: (launch: WindowsAuthorityLaunch) => Promise<WindowsApplicationWindowObservation>;
   /** Dispatches WM_CLOSE only. A prompt or surviving process is not resolved. */
   readonly requestNormalClose: (input: {
     readonly confirmNormalClose: true;
@@ -700,6 +709,7 @@ export function createWindowsAuthoritySupervisor(
     closedBinding(bound);
     const response = record(await transport.request({
       action: "normal-close", confirmNormalClose: true, jobId: bound.launch.jobId,
+      helperInstance: bound.launch.helperInstance, rootPid: bound.launch.root.pid, rootStartIdentity: bound.launch.root.startIdentity,
       rootStartTicks: /^win32:(\d+):/u.exec(bound.launch.root.startIdentity)?.[1],
       windowHandle: slot.intent.windowHandle,
     }));
@@ -976,20 +986,70 @@ export function createWindowsAuthoritySupervisor(
       }
       return { jobId: launch.jobId, helperInstance: launch.helperInstance, terminated: response["terminated"] };
     },
-    async requestNormalClose(input) {
-      requireOwned();
-      if (!input.confirmNormalClose || currentLaunch === undefined ||
-          canonicalJson(input.launch) !== canonicalJson(currentLaunch)) {
-        throw new Error("Normal close requires the exact supervised application generation.");
+    async observeApplicationWindow(launch) {
+      const epoch = lifecycleEpoch, launchText = canonicalJson(launch);
+      function current(): void {
+        requireOwned();
+        if (currentLaunch === undefined || canonicalJson(currentLaunch) !== launchText ||
+            canonicalJson(launch) !== launchText || lifecycleEpoch !== epoch ||
+            policy.revalidateClosedSessionHelper !== reviewedHelperCheck ||
+            transport.assertClosedSessionAvailable !== retainedTransportCheck) {
+          throw new Error("Application window observation requires the unchanged original supervised generation.");
+        }
+        retainedTransportCheck?.();
       }
-      if (closedSessionSlots.has(currentLaunch.jobId)) { throw new Error("This Job has a reserved closed-session close; generic close cannot bypass it."); }
-      normalCloseJobs.add(currentLaunch.jobId);
-      const rootStartTicks = /^win32:(\d+):/u.exec(currentLaunch.root.startIdentity)?.[1];
+      current();
+      await reviewedHelperCheck?.();
+      current();
       const response = record(await transport.request({
-        action: "normal-close", confirmNormalClose: true, jobId: currentLaunch.jobId,
-        rootStartTicks, windowHandle: text(input.windowHandle, /^[1-9]\d{0,18}$/u),
+        action: "observe-application-window", jobId: launch.jobId, helperInstance: launch.helperInstance,
+        rootPid: launch.root.pid, rootStartIdentity: launch.root.startIdentity,
+        rootStartTicks: /^win32:(\d+):/u.exec(launch.root.startIdentity)?.[1],
       }));
-      if (response["closeDispatched"] !== true || response["jobId"] !== currentLaunch.jobId ||
+      current();
+      await reviewedHelperCheck?.();
+      current();
+      const hwnd = response["hwnd"], outcome = response["outcome"];
+      if (Object.keys(response).toSorted().join(",") !== "helperInstance,hwnd,jobId,outcome" ||
+          response["jobId"] !== launch.jobId || response["helperInstance"] !== launch.helperInstance ||
+          (outcome !== "available" && outcome !== "unavailable" && outcome !== "ambiguous") ||
+          (outcome === "available" ? typeof hwnd !== "string" || !/^[1-9]\d{0,18}$/u.test(hwnd) : hwnd !== null)) {
+        throw new Error("Application window observation is malformed or belongs to another owner.");
+      }
+      return { jobId: launch.jobId, helperInstance: launch.helperInstance, outcome, hwnd: outcome === "available" ? text(hwnd, /^[1-9]\d{0,18}$/u) : null };
+    },
+    async requestNormalClose(input) {
+      const epoch = lifecycleEpoch, launch = structuredClone(input.launch), launchText = canonicalJson(launch);
+      const windowHandle = text(input.windowHandle, /^[1-9]\d{0,18}$/u);
+      function current(): void {
+        requireOwned();
+        // oxlint-disable-next-line typescript/no-unnecessary-boolean-literal-compare -- Preserve exact runtime confirmation for untyped callers.
+        if (input.confirmNormalClose !== true || currentLaunch === undefined || canonicalJson(currentLaunch) !== launchText ||
+            canonicalJson(input.launch) !== launchText || input.windowHandle !== windowHandle || lifecycleEpoch !== epoch ||
+            policy.revalidateClosedSessionHelper !== reviewedHelperCheck || transport.assertClosedSessionAvailable !== retainedTransportCheck) {
+          throw new Error("Normal close requires the unchanged exact supervised application generation.");
+        }
+        retainedTransportCheck?.();
+      }
+      current();
+      if (closedSessionSlots.has(launch.jobId)) { throw new Error("This Job has a reserved closed-session close; generic close cannot bypass it."); }
+      if (normalCloseJobs.has(launch.jobId)) { throw new Error("This Job already has a normal-close attempt; do not repeat close."); }
+      // Consume before every await, including source revalidation. An uncertain
+      // Request, failed acknowledgment or changed owner never permits a retry.
+      normalCloseJobs.add(launch.jobId);
+      await reviewedHelperCheck?.();
+      current();
+      const rootStartTicks = /^win32:(\d+):/u.exec(launch.root.startIdentity)?.[1];
+      const response = record(await transport.request({
+        action: "normal-close", confirmNormalClose: true, jobId: launch.jobId,
+        helperInstance: launch.helperInstance, rootPid: launch.root.pid, rootStartIdentity: launch.root.startIdentity,
+        rootStartTicks, windowHandle,
+      }));
+      current();
+      await reviewedHelperCheck?.();
+      current();
+      if (Object.keys(response).toSorted().join(",") !== "closeDispatched,jobId,saveOrDiscardSelected" ||
+          response["closeDispatched"] !== true || response["jobId"] !== launch.jobId ||
           response["saveOrDiscardSelected"] !== false) {throw new Error("Normal close dispatch is unproven; do not retry blindly.");}
     },
     async release() {
