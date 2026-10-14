@@ -15,19 +15,26 @@ and unrelated library recovery retain their independent guards.
 
 ## Closed-symbol validation rejected before navigation
 
-For the exact closed-symbol validation failure at `edit-marker-read` with
-`ERR_CONFIRM_WRITE_REQUIRED`, use `easyeda_control_recover_incomplete` with the
-original `operationId`, `resolution:"abandoned-before-navigation"` and
-`confirmation:"<operationId>:abandoned-before-navigation"`. Do not supply restart,
-discard or repeat flags. This route checks the complete retained prefix, the
-fixed request's pre-handler rejection, absence of navigation/edit evidence and
-the unchanged complete saved database before publishing an abandonment record.
+For exactly sixteen closed-symbol validation events ending at `edit-marker-read`,
+the maintained verifier accepts either `ERR_CONFIRM_WRITE_REQUIRED` before the
+handler or a complete successful fixed marker read with no marker creation.
+On the current tuple use `easyeda_control_history`, with
+`request:{action:"abandon-before-navigation",operationId:"...",confirmation:"<operationId>:abandoned-before-navigation"}`.
+Query offline `history` and validate with `history-validate` first. The exact
+confirmation is not a human restart attestation. Supply no restart, discard,
+repeat or fingerprint fields. This local serialized route checks the complete
+retained prefix, fixed request/result, absence of later navigation/edit evidence,
+permanent claim and unchanged complete saved database before publishing an
+exclusive abandonment record.
 It makes no application call and leaves the original journal, startup marker and
 permanent target claim intact.
 
-A separate profile accepts exactly six successful baseline events ending in
-`baseline-marker-create`, with no later phase evidence. Use the same public
-resolution and original operation-bound confirmation. It validates the fixed
+A separate legacy-only profile accepts exactly six successful baseline events ending in
+`baseline-marker-create`, with no later phase evidence. It is not exposed by
+`history`: its retained-entry reservation requires the original legacy recovery
+route. On that tuple use `easyeda_control_recover_incomplete` with the original
+ID, `resolution:"abandoned-before-navigation"` and matching confirmation.
+That legacy route also retains the sixteen-event case. It validates the fixed
 startup program, complete original result, marker/claim binding and preserved
 artifacts. An optional retained window diagnostic is evidence only. The recovery
 callback shares the coordinator's gate and cannot abandon an active invocation;

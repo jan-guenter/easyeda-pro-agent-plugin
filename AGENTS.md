@@ -13,6 +13,70 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
+### Restarted033000 and disposable PCB admission
+
+PR21 delivered033000 as main6d3b1780cc793f63a715fa6d5d6ac8b8d52f0f6e,
+tree7b304691381f5728472e8de0a20becb8330f0bf8 identical to tested19a8a2d4.
+RequiredCI38496716937 and postmergeCI38497768879 passed all ten jobs:
+9851facade passes/five skips/424bridge passes. Official Git marketplace
+installed/enabled033000; delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/21#issuecomment-6159101076.
+Fresh owner267049/parent265213/start215112319 runs exact033000 and Node24.18.0;
+old238544 is absent. Independent admission verifies1161files/22613597bytes/
+42directories/seven skills and exact modes, with no extras or symlinks.
+Inventory0ec9ab585adf845169b8b0be4cd64a731ed1c46f26f07087de65b0554eb60eba.
+Receipt label correction: a63fae6e is reviewed-compatibility.json, not plugin.json;
+the actual plugin manifest SHA is6c15323ac7b69bcd39f9282f3e09b7fee0f25a7bbcf519ffb67307bd200389d2.
+
+Original ordinary-startup-20261014-030800 was inspected, observed absent twice,
+then abandoned ONCE at2026-10-14T05:29:37.547Z. This relinquishes supervision,
+not termination proof. Never repeat. New ordinary-startup-20261014-053200
+launched ONCE: root16788, Job3fc5c22d4c0344f9aa9dc3a2ae97fc85,
+helper6c1e62dfa3f94b4bb731570a6e42fb83, launchedSha256
+5a507294d4d13be790acf984ea12862cdc4eac2094be00eded93a57bee25b4bd.
+Actual status authenticates the current bridge with no implementation drift;
+reply647de01792823fea60ed44ca12e335235c92ce09ed07808cbee899a59c7ca833.
+Shell observation completed: one active Start Page, no other tabs; replycf15feb5.
+Opener current-pcb-open-033000-20261014 was submitted ONCE and refused at the
+shared incomplete-journal guard before checkpoint, journal or bridge/navigation
+dispatch. C10 easyeda-20261013t111537z-e7df16d2 remains closed-session-recording
+after its successful fixed marker read, with no later navigation or edit. Do not
+repeat opening until supported historical qualification is available. No Save
+or design action was dispatched; production and its record remain excluded.
+Source work is on feature/current-pcb-readers; the running installed owner is
+unchanged. Keep this facade alive through any uncertain navigation.
+
+Candidate054500 adds five current-version PCB loaded-view identity equivalents,
+the local-only16event historical-abandonment route and32/64project context IDs
+while retaining32branch and16/32document constraints. Main/independent source
+review accepts fixed callbacks, retained native receiver, ordered double samples
+and explicit loaded-view-only claims. A review-found2MiB/512KiB transport mismatch
+was corrected to393216bytes; no paging or saved-membership claim. The historical
+wrapper delegates unchanged qualification under the shared local serialized
+gate; no generic recovery, runtime allocation or guard relaxation. C10 original
+evidence is intact, and no actual abandonment has been published this turn.
+Five reader tests, seven context tests and12historical/helper/registration checks
+pass. Full local facade run completed9861passes/four skips/one stale inventory
+test failure: type lookup now has two routes, not one. The corrected test retains
+the legacy assertions and checks the new current route separately; no runtime
+change. Focused recheck and exact-head CI are required before delivery.
+Types/strict lint/build/inventory,
+repository/privacy and all seven official skill validators pass. Clean npmci,
+dependency tree,151signatures/40attestations and zero vulnerabilities checked.
+Source335 fingerprint3b7e218abdcc3aae1812954bdeeac0cbcdfcfce55f1ffc7ec07f85db5501fb98;
+runtime3 fingerprint1e1fca5731558d5da6bf63d499ab5c6085b9f6ef42c1cb6ca6ad4cd07071930b.
+External pins/companion/helper unchanged. Scope and concrete omissions are in
+docs/current-pcb-readers-release-2026-10-14.md. Publication/install still pending;
+loaded033000 is not candidate054500. A fresh host is required after installation.
+Corrected coverage suite passes33/33, bridge424/424, and packaged tool/skill
+validation passes. Final exact-head CI/publication/install evidence belongs to
+PR22 https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/22; its delivery
+receipt supersedes this pre-publication checkpoint. The earlier PR21 receipt's
+manifest-label correction is posted at issuecomment-6161866578. No further live
+action followed the pre-navigation refusal; fresh054500 should qualify C10 with
+history before considering a new disposable opening. Ordinary launch053200 is
+already consumed; retain its original supervision history, never replay it.
+
 ### Restarted020500 and disposable project opening
 
 Previous release020500 is delivered as main80a6af985d279ee2b6a44423a8df98e36738cb47

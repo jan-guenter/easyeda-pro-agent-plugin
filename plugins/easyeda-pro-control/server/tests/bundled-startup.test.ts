@@ -133,7 +133,7 @@ void describe("self-contained packaged machine startup", () => {
     const pid = transport.pid; assert.ok(pid !== null);
     const listed = await client.listTools();
     assert.deepEqual(listed.tools.map((tool) => tool.name).toSorted(), [
-      "easyeda_control_api", "easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_editor_context", "easyeda_control_editor_shell", "easyeda_control_extensions", "easyeda_control_launch", "easyeda_control_pcb_layers", "easyeda_control_project_open", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system",
+      "easyeda_control_api", "easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_editor_context", "easyeda_control_editor_shell", "easyeda_control_extensions", "easyeda_control_history", "easyeda_control_launch", "easyeda_control_pcb_identities", "easyeda_control_pcb_layers", "easyeda_control_project_open", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system",
     ]);
     const catalog = await api(client, { action: "calculations", query: { includeSchemas: true } });
     assert.equal(catalog["total"], 16); assert.equal(catalog["invocationEnabledByDiscovery"], false);
@@ -172,6 +172,21 @@ void describe("self-contained packaged machine startup", () => {
       },
     } } });
     assert.equal(layerRequest["valid"], true); assert.equal(layerRequest["executionAuthorized"], false);
+    const identities = await api(client, { action: "pcb-identities", query: { includeSchemas: true } });
+    assert.equal(identities["total"], 5); assert.equal(identities["invocationEnabledByDiscovery"], false);
+    const identityRequest = await api(client, { action: "pcb-identities-validate", query: { request: {
+      method: "eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId", arguments: {}, target: {
+        projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16), tabId: `${"c".repeat(16)}@${"a".repeat(64)}`,
+      },
+    } } });
+    assert.equal(identityRequest["valid"], true); assert.equal(identityRequest["executionAuthorized"], false);
+    const history = await api(client, { action: "history", query: { includeSchemas: true } });
+    assert.equal(history["total"], 1); assert.equal(history["invocationEnabledByDiscovery"], false);
+    const historyRequest = await api(client, { action: "history-validate", query: { request: {
+      action: "abandon-before-navigation", operationId: "easyeda-synthetic-historical-abandonment",
+      confirmation: "easyeda-synthetic-historical-abandonment:abandoned-before-navigation",
+    } } });
+    assert.equal(historyRequest["valid"], true); assert.equal(historyRequest["executionAuthorized"], false);
     const invalidShortcut = await client.callTool({ name: "easyeda_control_shortcuts", arguments: {
       request: { method: "eda.sys_ShortcutKey.getShortcutKeys", arguments: { includeSystem: false }, callback: "caller-code" }, expectedFingerprint: {},
     } });
@@ -290,7 +305,7 @@ void describe("self-contained packaged machine startup", () => {
         [options.pinnedNode, options.bundle]);
       assert.equal(await readlink(`/proc/${pid}/cwd`), options.pluginRoot);
       const tools = await client.listTools();
-      assert.equal(tools.tools.length, 37);
+      assert.equal(tools.tools.length, 39);
       assert.equal(new Set(tools.tools.map((tool) => tool.name)).size, tools.tools.length);
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_api"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_sdk_read"));

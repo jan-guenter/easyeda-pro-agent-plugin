@@ -61,6 +61,19 @@ function add(namespace: string, methods: readonly string[], tool: string, select
     ...(inputDiscovery === undefined ? {} : { inputDiscovery }) } });
 }
 
+for (const [namespace, method] of [["pcb_SelectControl", "getAllSelectedPrimitives_PrimitiveId"],
+  ["pcb_PrimitiveLine", "getAllPrimitiveId"], ["pcb_PrimitiveArc", "getAllPrimitiveId"],
+  ["pcb_PrimitiveVia", "getAllPrimitiveId"], ["pcb_Primitive", "getPrimitiveTypeByPrimitiveId"]] as const) {
+  groups.push({ namespace, methods: [method], route: {
+    tool: "easyeda_control_pcb_identities", selector: `eda.${namespace}.${method}`, implementation: "native-task-equivalent",
+    scope: "Separately pinned current API/UI/PCB native view identity subset. Explicit ordinary active PCB project/branch/document/tab, retained frame/receiver and two matching ordered ID observations. Selected IDs preserve observed selection; unfiltered Line/Arc/Via IDs enumerate loaded views. Type lookup admits only a positive unique membership in those three families; missing or ambiguous IDs refuse. No filters, complete stored inventory, root/inherited ownership, geometry, connectivity, public-wrapper dispatch, selection change, navigation or Save. Vendor enumeration and DTO allocation precede output bounds; limits do not cancel execution.",
+    source: ["current-pcb-identities.ts", "current-pcb-identities-program.ts", "current-pcb-identities-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+    tests: ["current-pcb-identities.test.ts", "facade-mode.test.ts"], documentTypes: [3],
+    validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-identities", query: { method: `eda.${namespace}.${method}`, includeSchemas: true } } } },
+  } });
+}
+
 groups.push({ namespace: "pcb_Layer", methods: ["getAllLayers", "getTheNumberOfCopperLayers"], route: {
   tool: "easyeda_control_pcb_layers", selector: "explicit-current-pcb-layer-observation", implementation: "native-task-equivalent",
   scope: "Separately pinned current API 0.3.50/UI 3.2.196/PCB 3.2.193 layer metadata reader on an explicit project/branch/document/tab identity for an active ordinary type-3 PCB. Two complete matching samples use a captured native frame receiver with bracketing native identity checks. Ports the nine-field public projection or enabled native SIGNAL/PLANE count plus two; raw color strings remain unchanged. No public wrapper dispatch, legacy-route admission, source export, layer selection, navigation or Save. Not physical-stackup certification, an atomic lock or current connected validation. Vendor RPC bookkeeping and possible uninitialized environment defaults are incidental in-memory effects.",

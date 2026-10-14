@@ -12,6 +12,11 @@ installation does not supply this implementation.
 
 ## Prepare and open
 
+Resolve any supported historical unfinished-record blocker before opening.
+The current `history` tool qualifies only the sixteen-event pre-navigation
+validation boundary; see [failure recovery](failure-recovery.md). Do not replay
+navigation or bypass the guard merely because an older record is data-only.
+
 Use the normal supported launcher in the same facade process. A manually
 started app, a historical launch receipt or an authenticated bridge alone is
 not retained process authority. The editor must initially have only its genuine

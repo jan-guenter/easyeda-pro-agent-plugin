@@ -13,7 +13,7 @@
       "omitted": 451
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 313,
+      "available-with-runtime-guards": 318,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -14948,6 +14948,40 @@
       "status": "implemented-native-equivalent",
       "routes": [
         {
+          "tool": "easyeda_control_pcb_identities",
+          "selector": "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB native view identity subset. Explicit ordinary active PCB project/branch/document/tab, retained frame/receiver and two matching ordered ID observations. Selected IDs preserve observed selection; unfiltered Line/Arc/Via IDs enumerate loaded views. Type lookup admits only a positive unique membership in those three families; missing or ambiguous IDs refuse. No filters, complete stored inventory, root/inherited ownership, geometry, connectivity, public-wrapper dispatch, selection change, navigation or Save. Vendor enumeration and DTO allocation precede output bounds; limits do not cancel execution.",
+          "source": [
+            "current-pcb-identities.ts",
+            "current-pcb-identities-program.ts",
+            "current-pcb-identities-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-identities.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-identities",
+                "query": {
+                  "method": "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId",
           "implementation": "native-task-equivalent",
@@ -15285,6 +15319,40 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb_identities",
+          "selector": "eda.pcb_PrimitiveArc.getAllPrimitiveId",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB native view identity subset. Explicit ordinary active PCB project/branch/document/tab, retained frame/receiver and two matching ordered ID observations. Selected IDs preserve observed selection; unfiltered Line/Arc/Via IDs enumerate loaded views. Type lookup admits only a positive unique membership in those three families; missing or ambiguous IDs refuse. No filters, complete stored inventory, root/inherited ownership, geometry, connectivity, public-wrapper dispatch, selection change, navigation or Save. Vendor enumeration and DTO allocation precede output bounds; limits do not cancel execution.",
+          "source": [
+            "current-pcb-identities.ts",
+            "current-pcb-identities-program.ts",
+            "current-pcb-identities-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-identities.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-identities",
+                "query": {
+                  "method": "eda.pcb_PrimitiveArc.getAllPrimitiveId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_exact_read",
           "selector": "pcb-inventory",
@@ -17755,6 +17823,40 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb_identities",
+          "selector": "eda.pcb_PrimitiveLine.getAllPrimitiveId",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB native view identity subset. Explicit ordinary active PCB project/branch/document/tab, retained frame/receiver and two matching ordered ID observations. Selected IDs preserve observed selection; unfiltered Line/Arc/Via IDs enumerate loaded views. Type lookup admits only a positive unique membership in those three families; missing or ambiguous IDs refuse. No filters, complete stored inventory, root/inherited ownership, geometry, connectivity, public-wrapper dispatch, selection change, navigation or Save. Vendor enumeration and DTO allocation precede output bounds; limits do not cancel execution.",
+          "source": [
+            "current-pcb-identities.ts",
+            "current-pcb-identities-program.ts",
+            "current-pcb-identities-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-identities.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-identities",
+                "query": {
+                  "method": "eda.pcb_PrimitiveLine.getAllPrimitiveId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_exact_read",
           "selector": "pcb-inventory",
@@ -21102,6 +21204,40 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb_identities",
+          "selector": "eda.pcb_PrimitiveVia.getAllPrimitiveId",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB native view identity subset. Explicit ordinary active PCB project/branch/document/tab, retained frame/receiver and two matching ordered ID observations. Selected IDs preserve observed selection; unfiltered Line/Arc/Via IDs enumerate loaded views. Type lookup admits only a positive unique membership in those three families; missing or ambiguous IDs refuse. No filters, complete stored inventory, root/inherited ownership, geometry, connectivity, public-wrapper dispatch, selection change, navigation or Save. Vendor enumeration and DTO allocation precede output bounds; limits do not cancel execution.",
+          "source": [
+            "current-pcb-identities.ts",
+            "current-pcb-identities-program.ts",
+            "current-pcb-identities-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-identities.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-identities",
+                "query": {
+                  "method": "eda.pcb_PrimitiveVia.getAllPrimitiveId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_exact_read",
           "selector": "pcb-inventory",
           "implementation": "public-method",
@@ -21617,6 +21753,40 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb_identities",
+          "selector": "eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API/UI/PCB native view identity subset. Explicit ordinary active PCB project/branch/document/tab, retained frame/receiver and two matching ordered ID observations. Selected IDs preserve observed selection; unfiltered Line/Arc/Via IDs enumerate loaded views. Type lookup admits only a positive unique membership in those three families; missing or ambiguous IDs refuse. No filters, complete stored inventory, root/inherited ownership, geometry, connectivity, public-wrapper dispatch, selection change, navigation or Save. Vendor enumeration and DTO allocation precede output bounds; limits do not cancel execution.",
+          "source": [
+            "current-pcb-identities.ts",
+            "current-pcb-identities-program.ts",
+            "current-pcb-identities-runtime.ts",
+            "current-pcb-layers.ts",
+            "sdk-local-runtime.ts"
+          ],
+          "tests": [
+            "current-pcb-identities.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-identities",
+                "query": {
+                  "method": "eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId",
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId",

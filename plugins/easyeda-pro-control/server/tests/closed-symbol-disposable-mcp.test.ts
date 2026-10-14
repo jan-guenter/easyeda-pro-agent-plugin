@@ -200,7 +200,7 @@ void test("actual SDK strict envelope does not consume the sole offline validati
   const catalog = f.catalogObservation();
   assert.ok(catalog.largestLineBytes > 65_536 && catalog.largestLineBytes <= 1_048_576);
   const entry = listed.tools.find(item => item.name === tool); assert.ok(entry !== undefined);
-  assert.equal(listed.tools.length, 37); assert.equal(entry.inputSchema["additionalProperties"], false);
+  assert.equal(listed.tools.length, 39); assert.equal(entry.inputSchema["additionalProperties"], false);
   assert.equal(entry.annotations?.readOnlyHint, false); assert.equal(entry.annotations?.destructiveHint, true);
   assert.equal(entry.annotations?.idempotentHint, false);
   assert.ok(entry.outputSchema !== undefined); assert.equal(entry.outputSchema.type, "object");
