@@ -146,9 +146,9 @@ namespaces / 749 declared signatures and 99 latest official namespaces / 806
 signatures. Its `coverage` action inventories all 774 distinct mounted method
 paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
-Current source classifications are 211 public subsets, 30 native equivalents,
+Current source classifications are 212 public subsets, 29 native equivalents,
 no lifecycle-only methods, 82 implemented-but-blocked methods and 451
-omissions. Their execution routes comprise 311 available with runtime guards,
+omissions. Their execution routes comprise 318 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)
