@@ -73,6 +73,12 @@ publication and official installation pending; use the PR delivery receipt
 before repeating delivery. Loaded215979 remains011500. New layer execution is
 not yet connected-validated. C10 data-only journal remains unreplayed.
 
+PR20 initial CI38487812622 caught two stale legacy-catalog count assertions
+(35 instead of36) in plugin-contract and closed-symbol-disposable-mcp tests.
+Build/bridge and six facade shards passed; no adapter test failed. Both existing
+assertions are corrected without runtime changes; exact updated-head CI remains
+required. Do not treat the failed initial aggregate as release acceptance.
+
 ### Historical restarted002000 and explicit supervision recovery
 
 PR18 delivered002000 as main d165e4075975f4c484c3417244e8630c7af32a08,
