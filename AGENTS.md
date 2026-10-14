@@ -68,6 +68,14 @@ runtime3 fingerprint1e1fca5731558d5da6bf63d499ab5c6085b9f6ef42c1cb6ca6ad4cd07071
 External pins/companion/helper unchanged. Scope and concrete omissions are in
 docs/current-pcb-readers-release-2026-10-14.md. Publication/install still pending;
 loaded033000 is not candidate054500. A fresh host is required after installation.
+Corrected coverage suite passes33/33, bridge424/424, and packaged tool/skill
+validation passes. Final exact-head CI/publication/install evidence belongs to
+PR22 https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/22; its delivery
+receipt supersedes this pre-publication checkpoint. The earlier PR21 receipt's
+manifest-label correction is posted at issuecomment-6161866578. No further live
+action followed the pre-navigation refusal; fresh054500 should qualify C10 with
+history before considering a new disposable opening. Ordinary launch053200 is
+already consumed; retain its original supervision history, never replay it.
 
 ### Restarted020500 and disposable project opening
 
