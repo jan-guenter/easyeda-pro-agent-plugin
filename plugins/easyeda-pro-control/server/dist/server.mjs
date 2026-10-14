@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "d267f2810f325314d30f0556850518e61c1da14a4a4671651a05e583f76b6561";
+const __easyedaBundlePairId = "078c0585a0536164a315137b3452052c75d4e6d81f02f8052245a1f08760cca9";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -13033,7 +13033,7 @@ __export(schemas_exports2, {
   xid: () => xid2,
   xor: () => xor
 });
-function _installLazyMethods(inst, group, methods3) {
+function _installLazyMethods(inst, group, methods4) {
   const proto = Object.getPrototypeOf(inst);
   let installed = _installedGroups.get(proto);
   if (!installed) {
@@ -13043,8 +13043,8 @@ function _installLazyMethods(inst, group, methods3) {
   if (installed.has(group))
     return;
   installed.add(group);
-  for (const key in methods3) {
-    const fn = methods3[key];
+  for (const key in methods4) {
+    const fn = methods4[key];
     Object.defineProperty(proto, key, {
       configurable: true,
       enumerable: false,
@@ -14544,27 +14544,27 @@ function convertBaseSchema(schema2, ctx) {
     }
     case "number":
     case "integer": {
-      let numberSchema = type2 === "integer" ? z.number().int() : z.number();
+      let numberSchema2 = type2 === "integer" ? z.number().int() : z.number();
       if (typeof schema2.minimum === "number") {
-        numberSchema = numberSchema.min(schema2.minimum);
+        numberSchema2 = numberSchema2.min(schema2.minimum);
       }
       if (typeof schema2.maximum === "number") {
-        numberSchema = numberSchema.max(schema2.maximum);
+        numberSchema2 = numberSchema2.max(schema2.maximum);
       }
       if (typeof schema2.exclusiveMinimum === "number") {
-        numberSchema = numberSchema.gt(schema2.exclusiveMinimum);
+        numberSchema2 = numberSchema2.gt(schema2.exclusiveMinimum);
       } else if (schema2.exclusiveMinimum === true && typeof schema2.minimum === "number") {
-        numberSchema = numberSchema.gt(schema2.minimum);
+        numberSchema2 = numberSchema2.gt(schema2.minimum);
       }
       if (typeof schema2.exclusiveMaximum === "number") {
-        numberSchema = numberSchema.lt(schema2.exclusiveMaximum);
+        numberSchema2 = numberSchema2.lt(schema2.exclusiveMaximum);
       } else if (schema2.exclusiveMaximum === true && typeof schema2.maximum === "number") {
-        numberSchema = numberSchema.lt(schema2.maximum);
+        numberSchema2 = numberSchema2.lt(schema2.maximum);
       }
       if (typeof schema2.multipleOf === "number") {
-        numberSchema = numberSchema.multipleOf(schema2.multipleOf);
+        numberSchema2 = numberSchema2.multipleOf(schema2.multipleOf);
       }
-      zodSchema = numberSchema;
+      zodSchema = numberSchema2;
       break;
     }
     case "boolean": {
@@ -19410,23 +19410,23 @@ var init_types = __esm({
         }
         if (effect.type === "transform") {
           if (ctx.common.async === false) {
-            const base3 = this._def.schema._parseSync({
+            const base4 = this._def.schema._parseSync({
               data: ctx.data,
               path: ctx.path,
               parent: ctx
             });
-            if (!isValid(base3))
+            if (!isValid(base4))
               return INVALID;
-            const result = effect.transform(base3.value, checkCtx);
+            const result = effect.transform(base4.value, checkCtx);
             if (result instanceof Promise) {
               throw new Error(`Asynchronous transform encountered during synchronous parse operation. Use .parseAsync instead.`);
             }
             return { status: status2.value, value: result };
           } else {
-            return this._def.schema._parseAsync({ data: ctx.data, path: ctx.path, parent: ctx }).then((base3) => {
-              if (!isValid(base3))
+            return this._def.schema._parseAsync({ data: ctx.data, path: ctx.path, parent: ctx }).then((base4) => {
+              if (!isValid(base4))
                 return INVALID;
-              return Promise.resolve(effect.transform(base3.value, checkCtx)).then((result) => ({
+              return Promise.resolve(effect.transform(base4.value, checkCtx)).then((result) => ({
                 status: status2.value,
                 value: result
               }));
@@ -22573,19 +22573,19 @@ function parseNullableDef(def, refs) {
     };
   }
   if (refs.target === "openApi3") {
-    const base4 = parseDef(def.innerType._def, {
+    const base5 = parseDef(def.innerType._def, {
       ...refs,
       currentPath: [...refs.currentPath]
     });
-    if (base4 && "$ref" in base4)
-      return { allOf: [base4], nullable: true };
-    return base4 && { ...base4, nullable: true };
+    if (base5 && "$ref" in base5)
+      return { allOf: [base5], nullable: true };
+    return base5 && { ...base5, nullable: true };
   }
-  const base3 = parseDef(def.innerType._def, {
+  const base4 = parseDef(def.innerType._def, {
     ...refs,
     currentPath: [...refs.currentPath, "anyOf", "0"]
   });
-  return base3 && { anyOf: [base3, { type: "null" }] };
+  return base4 && { anyOf: [base4, { type: "null" }] };
 }
 var init_nullable = __esm({
   "node_modules/zod-to-json-schema/dist/esm/parsers/nullable.js"() {
@@ -23228,8 +23228,8 @@ var init_zod_json_schema_compat = __esm({
 function isPlainObject2(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
-function mergeCapabilities(base3, additional) {
-  const result = { ...base3 };
+function mergeCapabilities(base4, additional) {
+  const result = { ...base4 };
   for (const key in additional) {
     const k = key;
     const addValue = additional[k];
@@ -28051,10 +28051,10 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved2, schemelessOptions);
     }
-    function resolveComponent(base3, relative9, options, skipNormalization) {
+    function resolveComponent(base4, relative9, options, skipNormalization) {
       const target5 = {};
       if (!skipNormalization) {
-        base3 = parse6(serialize(base3, options), options);
+        base4 = parse6(serialize(base4, options), options);
         relative9 = parse6(serialize(relative9, options), options);
       }
       options = options || {};
@@ -28074,32 +28074,32 @@ var require_fast_uri = __commonJS({
           target5.query = relative9.query;
         } else {
           if (!relative9.path) {
-            target5.path = base3.path;
+            target5.path = base4.path;
             if (relative9.query !== void 0) {
               target5.query = relative9.query;
             } else {
-              target5.query = base3.query;
+              target5.query = base4.query;
             }
           } else {
             if (relative9.path[0] === "/") {
               target5.path = removeDotSegments(relative9.path);
             } else {
-              if ((base3.userinfo !== void 0 || base3.host !== void 0 || base3.port !== void 0) && !base3.path) {
+              if ((base4.userinfo !== void 0 || base4.host !== void 0 || base4.port !== void 0) && !base4.path) {
                 target5.path = "/" + relative9.path;
-              } else if (!base3.path) {
+              } else if (!base4.path) {
                 target5.path = relative9.path;
               } else {
-                target5.path = base3.path.slice(0, base3.path.lastIndexOf("/") + 1) + relative9.path;
+                target5.path = base4.path.slice(0, base4.path.lastIndexOf("/") + 1) + relative9.path;
               }
               target5.path = removeDotSegments(target5.path);
             }
             target5.query = relative9.query;
           }
-          target5.userinfo = base3.userinfo;
-          target5.host = base3.host;
-          target5.port = base3.port;
+          target5.userinfo = base4.userinfo;
+          target5.host = base4.host;
+          target5.port = base4.port;
         }
-        target5.scheme = base3.scheme;
+        target5.scheme = base4.scheme;
       }
       target5.fragment = relative9.fragment;
       return target5;
@@ -39237,7 +39237,7 @@ var init_extension_api_catalog = __esm({
 });
 
 // server/src/extension-api-coverage-routes.ts
-function add(namespace, methods3, tool, selector4, implementation, scope5, source4, tests, admittedDocumentTypes) {
+function add(namespace, methods4, tool, selector4, implementation, scope5, source4, tests, admittedDocumentTypes) {
   let inputDiscovery;
   const action = selector4.split(";")[0] ?? "";
   const family2 = tool === "easyeda_control_library" ? "library" : "design";
@@ -39260,7 +39260,7 @@ function add(namespace, methods3, tool, selector4, implementation, scope5, sourc
     documentTypes = [1];
   }
   const blocked = schematicWrite || sharedLifecycle;
-  groups.push({ namespace, methods: methods3, route: {
+  groups.push({ namespace, methods: methods4, route: {
     tool,
     selector: selector4,
     implementation,
@@ -39323,6 +39323,21 @@ var init_extension_api_coverage_routes = __esm({
         validation: "offline-regression;current-live-unclaimed",
         executionState: "available-with-runtime-guards",
         inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-identities", query: { method: `eda.${namespace}.${method4}`, includeSchemas: true } } } }
+      } });
+    }
+    for (const family2 of ["Line", "Arc", "Via"]) {
+      const namespace = `pcb_Primitive${family2}`;
+      groups.push({ namespace, methods: ["getAll"], route: {
+        tool: "easyeda_control_pcb_geometry",
+        selector: `eda.${namespace}.getAll`,
+        implementation: "native-task-equivalent",
+        scope: "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, selection change, navigation, write or Save. Vendor enumeration and DTO allocation precede output bounds; limits do not cancel execution.",
+        source: ["current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+        tests: ["current-pcb-geometry.test.ts", "facade-mode.test.ts", "current-pcb-geometry-registration.test.ts"],
+        documentTypes: [3],
+        validation: "offline-regression;current-live-unclaimed",
+        executionState: "available-with-runtime-guards",
+        inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-geometry", query: { method: `eda.${namespace}.getAll`, includeSchemas: true } } } }
       } });
     }
     groups.push({ namespace: "pcb_Layer", methods: ["getAllLayers", "getTheNumberOfCopperLayers"], route: {
@@ -42044,9 +42059,9 @@ function validateExactReadPayload(payload, request2) {
         );
       }
     }
-    const limitations9 = payload.limitations;
+    const limitations10 = payload.limitations;
     if (request2.kind === "schematic-components") {
-      if (!isUnknownRecord(limitations9) || typeof limitations9.componentPinOtherProperty !== "string" || typeof limitations9.componentOtherPropertyFiltering !== "string" || typeof limitations9.cbbLibraryOwnership !== "string") {
+      if (!isUnknownRecord(limitations10) || typeof limitations10.componentPinOtherProperty !== "string" || typeof limitations10.componentOtherPropertyFiltering !== "string" || typeof limitations10.cbbLibraryOwnership !== "string") {
         throw new Error(
           "Exact schematic component reader omitted adapter limitations."
         );
@@ -42061,7 +42076,7 @@ function validateExactReadPayload(payload, request2) {
           }
         }
       }
-    } else if (!isUnknownRecord(limitations9) || typeof limitations9.componentPadWrapper !== "string") {
+    } else if (!isUnknownRecord(limitations10) || typeof limitations10.componentPadWrapper !== "string") {
       throw new Error(
         "Exact PCB component reader omitted its adapter limitation."
       );
@@ -42173,8 +42188,8 @@ function validateExactReadPayload(payload, request2) {
       );
     }
   } else if (request2.kind === "pcb-inventory") {
-    const limitations9 = payload.limitations;
-    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations9) || typeof limitations9["directPads"] !== "string" || typeof limitations9.componentPadCorrelation !== "string" || typeof limitations9["pouredCorrelation"] !== "string" || typeof limitations9.regionRuleTypes !== "string" || typeof limitations9.fillModes !== "string" || typeof limitations9.arcPrecision !== "string" || typeof limitations9.viaPrecision !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
+    const limitations10 = payload.limitations;
+    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations10) || typeof limitations10["directPads"] !== "string" || typeof limitations10.componentPadCorrelation !== "string" || typeof limitations10["pouredCorrelation"] !== "string" || typeof limitations10.regionRuleTypes !== "string" || typeof limitations10.fillModes !== "string" || typeof limitations10.arcPrecision !== "string" || typeof limitations10.viaPrecision !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
       throw new Error("Exact PCB inventory omitted primitive families.");
     }
     const families3 = payload.families;
@@ -44378,18 +44393,18 @@ function compileSchematicOperation(input) {
   if (family2 === "component") {
     collateral.push("target-owned-pins-and-attributes", "explicitly-planned-following-wire-geometry");
   }
-  const limitations9 = ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged"];
+  const limitations10 = ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged"];
   if (family2 === "wire") {
-    limitations9.push("public-wire-enumerators-hide-rpc-failure-use-document-source", "compiled-topology-proof-required");
+    limitations10.push("public-wire-enumerators-hide-rpc-failure-use-document-source", "compiled-topology-proof-required");
   }
   if (requiredPreservation !== null) {
-    limitations9.push("complete-source-property-merge-required-before-component-modify");
+    limitations10.push("complete-source-property-merge-required-before-component-modify");
   }
   if (operation.documentType === 2 && ["polygon", "rectangle"].includes(family2)) {
-    limitations9.push("known-symbol-editor-shape-manager-misrouting-needs-adapter-validation");
+    limitations10.push("known-symbol-editor-shape-manager-misrouting-needs-adapter-validation");
   }
   if (["port", "net-flag"].includes(family2)) {
-    limitations9.push("default-library-symbol-associations-must-be-captured-and-proven");
+    limitations10.push("default-library-symbol-associations-must-be-captured-and-proven");
   }
   let identity27 = "preserve";
   if (deleting) {
@@ -44398,7 +44413,7 @@ function compileSchematicOperation(input) {
   if (creating) {
     identity27 = "create";
   }
-  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method4, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field3, value]) => expected(family2, field3, value)), inverse, effect: { family: family2, target: target5, identity: identity27, fields: fields7, collateral }, requiredPreservation, limitations: limitations9 };
+  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method4, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field3, value]) => expected(family2, field3, value)), inverse, effect: { family: family2, target: target5, identity: identity27, fields: fields7, collateral }, requiredPreservation, limitations: limitations10 };
 }
 function referenceFamily(action) {
   const family2 = action.split(".")[1];
@@ -51354,12 +51369,12 @@ function designLifecycleRoute(route, namespace) {
   };
 }
 function inventoryExtensionApiCoverage() {
-  const methods3 = /* @__PURE__ */ new Map();
+  const methods4 = /* @__PURE__ */ new Map();
   for (const snapshot7 of extensionApiSnapshots) {
     for (const namespace of snapshot7.namespaces) {
       for (const method4 of namespace.methods) {
         const path5 = `eda.${namespace.name}.${method4.name}`;
-        const group = methods3.get(path5) ?? { namespace: namespace.name, method: method4.name, declarations: [], methods: [] };
+        const group = methods4.get(path5) ?? { namespace: namespace.name, method: method4.name, declarations: [], methods: [] };
         group.declarations.push({
           reference: snapshot7.reference,
           className: method4.className,
@@ -51368,7 +51383,7 @@ function inventoryExtensionApiCoverage() {
           documentationUrl: `https://prodocs.easyeda.com/en/api/reference/pro-api.${method4.className.toLowerCase()}.${method4.name.toLowerCase()}.html`
         });
         group.methods.push(method4);
-        methods3.set(path5, group);
+        methods4.set(path5, group);
       }
     }
   }
@@ -51416,11 +51431,11 @@ function inventoryExtensionApiCoverage() {
     }]);
   }
   for (const path5 of routes.keys()) {
-    if (!methods3.has(path5)) {
+    if (!methods4.has(path5)) {
       throw new Error(`Coverage route references undeclared method: ${path5}`);
     }
   }
-  return [...methods3].toSorted(([left], [right]) => left.localeCompare(right, "en")).map(([path5, group]) => {
+  return [...methods4].toSorted(([left], [right]) => left.localeCompare(right, "en")).map(([path5, group]) => {
     const reviewed = group.declarations.some((entry) => entry.reference === "reviewed-installed");
     const supported2 = [];
     for (const original2 of routes.get(path5) ?? []) {
@@ -52101,8 +52116,8 @@ function assertCopperClearProfile(operation, before, ids2 = {}) {
 function expectedCopperClearSource(operation, before, ids2 = {}) {
   const target5 = assertCopperClearProfile(operation, before, ids2);
   const objects = before.objects.filter((object4) => object4.id !== JSON.stringify(["POURED", target5.id]));
-  const base3 = { schema: before.schema, document: before.document, objects };
-  return { ...base3, sha256: sha256Json(base3) };
+  const base4 = { schema: before.schema, document: before.document, objects };
+  return { ...base4, sha256: sha256Json(base4) };
 }
 function expectedCopperRebuildSource(operation, before, ids2) {
   const target5 = assertCopperRebuildProfile(operation, before, ids2);
@@ -52147,8 +52162,8 @@ function expectedCopperRebuildSource(operation, before, ids2) {
     objects.push({ id: id9, type: "POURED", body: { ...existing?.body, pourFill: wanted } });
   }
   objects.sort((left, right) => left.id.localeCompare(right.id));
-  const base3 = { schema: before.schema, document: before.document, objects };
-  return { ...base3, sha256: sha256Json(base3) };
+  const base4 = { schema: before.schema, document: before.document, objects };
+  return { ...base4, sha256: sha256Json(base4) };
 }
 function copperBaselineGuard(before, target5) {
   const baseline2 = canonicalJson({ document: before.document, objects: before.objects });
@@ -52235,8 +52250,8 @@ function selector2(object4) {
 }
 function snapshot(before, objects) {
   objects.sort((left, right) => left.id.localeCompare(right.id));
-  const base3 = { schema: before.schema, document: before.document, objects };
-  return { ...base3, sha256: sha256Json(base3) };
+  const base4 = { schema: before.schema, document: before.document, objects };
+  return { ...base4, sha256: sha256Json(base4) };
 }
 function expectedBetweenRules(compiled2, before) {
   const argument = compiled2.call.args[0];
@@ -52398,8 +52413,8 @@ function layer2(value, before) {
   }
   return id9;
 }
-function thermalMode(value, track) {
-  const modes = track ? ["DIRECT", "NON_CONNECT"] : ["DIVERGENCE", "DIRECT", "NON_CONNECT"];
+function thermalMode(value, track2) {
+  const modes = track2 ? ["DIRECT", "NON_CONNECT"] : ["DIVERGENCE", "DIRECT", "NON_CONNECT"];
   const index = typeof value === "string" && /^[012]$/u.test(value) ? Number(value) : value;
   if (typeof index !== "number" || !Number.isInteger(index) || modes[index] === void 0) {
     throw new Error("Unknown native thermal mode.");
@@ -52568,8 +52583,8 @@ function expectedRuleConfiguration(compiled2, before) {
     }
   }
   const objects = [...records2.values()].toSorted((left, right) => left.id.localeCompare(right.id));
-  const base3 = { schema: before.schema, document: before.document, objects };
-  return { ...base3, sha256: sha256Json(base3) };
+  const base4 = { schema: before.schema, document: before.document, objects };
+  return { ...base4, sha256: sha256Json(base4) };
 }
 var FAMILIES, SCALARS;
 var init_design_rule_configuration = __esm({
@@ -52939,8 +52954,8 @@ function assertDesignSourceProfileSupported(operation, before, ids2 = {}) {
 }
 function sourceSnapshot(before, objects) {
   objects.sort((left, right) => left.id.localeCompare(right.id));
-  const base3 = { schema: before.schema, document: before.document, objects };
-  return { ...base3, sha256: sha256Json(base3) };
+  const base4 = { schema: before.schema, document: before.document, objects };
+  return { ...base4, sha256: sha256Json(base4) };
 }
 function nativeNetName(object4) {
   const key = JSON.parse(object4.id);
@@ -53340,8 +53355,8 @@ function buildExpectedDesignSource(operation, before, ids2 = {}) {
     }
   }
   objects.sort((left, right) => left.id.localeCompare(right.id));
-  const base3 = { schema: before.schema, document: before.document, objects };
-  return { ...base3, sha256: sha256Json(base3) };
+  const base4 = { schema: before.schema, document: before.document, objects };
+  return { ...base4, sha256: sha256Json(base4) };
 }
 function verifyDesignSourceEffect(compiled2, before, after, ids2 = {}) {
   if (compiled2.action === "pcb.pour.clear-derived") {
@@ -54391,8 +54406,8 @@ function expectedNativeStackIntermediate(before, expected3) {
       inactiveTransparency: object4.body["inactiveTransparency"]
     } };
   });
-  const base3 = { schema: before.schema, document: before.document, objects };
-  return { ...base3, sha256: sha256Json(base3) };
+  const base4 = { schema: before.schema, document: before.document, objects };
+  return { ...base4, sha256: sha256Json(base4) };
 }
 function buildNativeStackPersistenceCode(before, expected3) {
   const intermediate = expectedNativeStackIntermediate(before, expected3);
@@ -54610,8 +54625,8 @@ function expectedDesignStackSource(operation, before) {
   });
   objects.push(...desiredPhysical, ...newSubstrates);
   objects.sort((left, right) => left.id.localeCompare(right.id));
-  const base3 = { schema: before.schema, document: before.document, objects };
-  return { ...base3, sha256: sha256Json(base3) };
+  const base4 = { schema: before.schema, document: before.document, objects };
+  return { ...base4, sha256: sha256Json(base4) };
 }
 function verifyDesignStackSourceEffect(operation, before, after) {
   const expected3 = expectedDesignStackSource(operation, before);
@@ -55417,8 +55432,8 @@ function projectFootprintScope(source4, history, context3) {
   return footprintScopeSchema.parse({ libraryUuid: history.projectUuid, metadataOwnerUuid: history.projectOwnerUuid, footprintUuid: asset?.uuid, footprintName: metadata8.body["title"] });
 }
 function snapshot2(before, objects, document3 = before.document) {
-  const base3 = { schema: before.schema, document: document3, objects: objects.toSorted((left, right) => left.id.localeCompare(right.id)) };
-  return { ...base3, sha256: sha256Json(base3) };
+  const base4 = { schema: before.schema, document: document3, objects: objects.toSorted((left, right) => left.id.localeCompare(right.id)) };
+  return { ...base4, sha256: sha256Json(base4) };
 }
 function assertFootprintSource(before) {
   if (before.schema !== "easyeda-pro-control.document-source.v1" || before.document["docType"] !== "PCB" || before.document["editVersion"] !== "3.2.149.88089769" || typeof before.document["uuid"] !== "string" || !before.document["uuid"] || before.sha256 !== sha256Json({ schema: before.schema, document: before.document, objects: before.objects }) || new Set(before.objects.map((object4) => object4.id)).size !== before.objects.length) {
@@ -56820,8 +56835,8 @@ function patchFields(family2, properties, previous) {
   return result;
 }
 function snapshot3(before, objects) {
-  const base3 = { schema: before.schema, document: before.document, objects: objects.toSorted((a, b) => a.id.localeCompare(b.id)) };
-  return { ...base3, sha256: sha256Json(base3) };
+  const base4 = { schema: before.schema, document: before.document, objects: objects.toSorted((a, b) => a.id.localeCompare(b.id)) };
+  return { ...base4, sha256: sha256Json(base4) };
 }
 function pinAttribute(id9, key, value, body4, zIndex) {
   if (typeof value !== "string") {
@@ -67607,7 +67622,7 @@ function createClockedTransport(raw, source4) {
     bad();
   }
   const releaseMethod = raw.release, requestMethod = raw.request;
-  function methods3() {
+  function methods4() {
     const releaseNow = Object.getOwnPropertyDescriptor(raw, "release"), requestNow = Object.getOwnPropertyDescriptor(raw, "request");
     if (requestNow === void 0 || !Object.hasOwn(requestNow, "value") || requestNow.value !== requestMethod || releaseNow === void 0 || !Object.hasOwn(releaseNow, "value") || releaseNow.value !== releaseMethod) {
       bad();
@@ -67618,7 +67633,7 @@ function createClockedTransport(raw, source4) {
   let inFlight = false, released = false;
   const transport2 = {
     ...assertAvailable === void 0 ? {} : { assertClosedSessionAvailable() {
-      methods3();
+      methods4();
       const current2 = Object.getOwnPropertyDescriptor(raw, "assertClosedSessionAvailable");
       if (typeof assertAvailable !== "function" || current2 === void 0 || !Object.hasOwn(current2, "value") || current2.value !== assertAvailable) {
         bad();
@@ -67626,7 +67641,7 @@ function createClockedTransport(raw, source4) {
       Reflect.apply(assertAvailable, raw, []);
     } },
     async request(request2) {
-      methods3();
+      methods4();
       if (released || inFlight) {
         bad();
       }
@@ -67682,7 +67697,7 @@ function createClockedTransport(raw, source4) {
       }
     },
     async release() {
-      methods3();
+      methods4();
       released = true;
       await releaseMethod.call(raw);
     }
@@ -67691,7 +67706,7 @@ function createClockedTransport(raw, source4) {
     transport: transport2,
     observations: () => structuredClone(records2),
     originalAttachment(baseValue) {
-      methods3();
+      methods4();
       if (released) {
         bad();
       }
@@ -68726,8 +68741,8 @@ function compareClosedSymbolClockData(input) {
   const after = clock3(qualification["afterClock"]), before = clock3(qualification["beforeClock"]), exit = clock3(input.termination), launch = clock3(qualification["launchClock"]);
   const sources = [launch, before, after, exit];
   for (const [index, item2] of sources.entries()) {
-    const base4 = item2.attachment["base"];
-    need6(isRecord(base4) && base4["jobId"] === generation5.jobId && base4["helperInstance"] === generation5.helperInstance && item2.attachment["helperSourceSha256"] === before.attachment["helperSourceSha256"] && item2.attachment["executionScopeSha256"] === before.attachment["executionScopeSha256"] && item2.attachment["phase"] === ["launch", "capture", "capture", "termination"][index]);
+    const base5 = item2.attachment["base"];
+    need6(isRecord(base5) && base5["jobId"] === generation5.jobId && base5["helperInstance"] === generation5.helperInstance && item2.attachment["helperSourceSha256"] === before.attachment["helperSourceSha256"] && item2.attachment["executionScopeSha256"] === before.attachment["executionScopeSha256"] && item2.attachment["phase"] === ["launch", "capture", "capture", "termination"][index]);
     for (const sample of [item2.before, item2.after]) {
       need6(sample.localOffsetMinutes === witness.serverLocalOffsetMinutes && sample.zoneRulesSha256 === before.before.zoneRulesSha256 && sample.qpcFrequency === before.before.qpcFrequency);
       if (index > 0) {
@@ -68739,9 +68754,9 @@ function compareClosedSymbolClockData(input) {
       need6(BigInt(item2.before.utcBeforeTicks) >= BigInt(previous.after.utcAfterTicks) && BigInt(item2.before.qpcBefore) >= BigInt(previous.after.qpcAfter));
     }
   }
-  const base3 = exit.attachment["base"], owner = exit.attachment["ownerBinding"];
-  need6(isRecord(owner) && isRecord(base3) && proof["operationId"] === input.operationId && proof["phase"] === "closed-edit" && proof["challengeAttempt"] === 1 && proof["jobId"] === generation5.jobId && proof["helperInstance"] === generation5.helperInstance && proof["bridgeSessionSha256"] === generation5.sessionSha256 && proof["runtimeIdentitySha256"] === generation5.runtimeSha256 && proof["jobEmpty"] === true && proof["retainedProcessesExited"] === true && base3["jobEmpty"] === true && base3["retainedProcessesExited"] === true && owner["operationId"] === input.operationId && owner["phase"] === "closed-edit" && owner["challengeAttempt"] === 1 && owner["authoritySha256"] === proof["authoritySha256"] && owner["closeIntentSha256"] === proof["closeIntentSha256"] && owner["captureBindingSha256"] === base3["captureBindingSha256"] && base3["checkedAt"] === proof["closedAt"]);
-  const closedAt = base3["checkedAt"];
+  const base4 = exit.attachment["base"], owner = exit.attachment["ownerBinding"];
+  need6(isRecord(owner) && isRecord(base4) && proof["operationId"] === input.operationId && proof["phase"] === "closed-edit" && proof["challengeAttempt"] === 1 && proof["jobId"] === generation5.jobId && proof["helperInstance"] === generation5.helperInstance && proof["bridgeSessionSha256"] === generation5.sessionSha256 && proof["runtimeIdentitySha256"] === generation5.runtimeSha256 && proof["jobEmpty"] === true && proof["retainedProcessesExited"] === true && base4["jobEmpty"] === true && base4["retainedProcessesExited"] === true && owner["operationId"] === input.operationId && owner["phase"] === "closed-edit" && owner["challengeAttempt"] === 1 && owner["authoritySha256"] === proof["authoritySha256"] && owner["closeIntentSha256"] === proof["closeIntentSha256"] && owner["captureBindingSha256"] === base4["captureBindingSha256"] && base4["checkedAt"] === proof["closedAt"]);
+  const closedAt = base4["checkedAt"];
   need6(typeof closedAt === "string" && Number.isFinite(Date.parse(closedAt)) && Date.parse(closedAt) >= minimum && Date.parse(closedAt) <= maximum && Date.parse(closedAt) >= Number((BigInt(exit.before.utcBeforeTicks) - EPOCH_TICKS2) / 10000n) && Date.parse(closedAt) <= Number((BigInt(exit.after.utcAfterTicks) - EPOCH_TICKS2 + 9999n) / 10000n));
   return Object.freeze({
     profile: "private.closed-symbol-clock-completion-relation.v1",
@@ -68887,12 +68902,12 @@ function validateRecordedNativeSource(input) {
   need7(status2["state"] === "not-launched" && status2["launch"] === null && status2["executableSha256"] === null);
   const parsed2 = clock4(input.launchClock, "launch");
   const data2 = parsed2.attachment;
-  const base3 = exact6(data2["base"], ["jobId", "helperInstance", "root"]);
-  need7(base3["jobId"] === input.launchGeneration.jobId && base3["helperInstance"] === input.launchGeneration.helperInstance);
-  const root = processRow(base3["root"], input.launchGeneration);
+  const base4 = exact6(data2["base"], ["jobId", "helperInstance", "root"]);
+  need7(base4["jobId"] === input.launchGeneration.jobId && base4["helperInstance"] === input.launchGeneration.helperInstance);
+  const root = processRow(base4["root"], input.launchGeneration);
   same22(root, { pid: input.launchGeneration.rootPid, role: "easyeda-main", startIdentity: input.launchGeneration.rootStartIdentity });
   const owner = exact6(data2["ownerBinding"], ["executable", "executableSha256", "launchSha256"]);
-  need7(owner["launchSha256"] === sha256Json(base3));
+  need7(owner["launchSha256"] === sha256Json(base4));
   const scope5 = text15(data2["executionScopeSha256"], HASH8);
   need7(status2["reviewedExecutionScopeSha256"] === scope5);
   const executable = text15(owner["executable"], /^[A-Za-z]:\\[^"\r\n]+\.exe$/u), executableSha256 = text15(owner["executableSha256"], HASH8);
@@ -68961,10 +68976,10 @@ function validateRecordedCaptureEvidence(input) {
     parsed2 = clock4(input.clock, "capture");
     const data2 = parsed2.attachment;
     need7(data2["executionScopeSha256"] === source4.executionScopeSha256 && data2["helperSourceSha256"] === source4.helperSourceSha256);
-    const base3 = exact6(data2["base"], ["jobId", "helperInstance", "bindingSha256", "capturedAt", "processes", "runtimePid", "socketOwnerPid"]);
-    need7(base3["jobId"] === generation5.jobId && base3["helperInstance"] === generation5.helperInstance && base3["bindingSha256"] === a["bindingSha256"] && base3["capturedAt"] === capturedAt && base3["runtimePid"] === runtimePid);
-    same22(base3["processes"], rows2);
-    const socket = base3["socketOwnerPid"];
+    const base4 = exact6(data2["base"], ["jobId", "helperInstance", "bindingSha256", "capturedAt", "processes", "runtimePid", "socketOwnerPid"]);
+    need7(base4["jobId"] === generation5.jobId && base4["helperInstance"] === generation5.helperInstance && base4["bindingSha256"] === a["bindingSha256"] && base4["capturedAt"] === capturedAt && base4["runtimePid"] === runtimePid);
+    same22(base4["processes"], rows2);
+    const socket = base4["socketOwnerPid"];
     if (socket !== null) {
       number15(socket, 1, 2147483647);
       need7(rows2.some((row6) => row6["pid"] === socket));
@@ -69048,9 +69063,9 @@ function validateRecordedTerminationEvidence(input) {
   need8(clock7["status"] === "observed" && clock7["tzAbsentBefore"] === true && clock7["tzAbsentAfter"] === true);
   const after = validateClockSample(clock7["after"]), before = validateClockSample(clock7["before"]);
   need8(before.qpcFrequency === after.qpcFrequency && before.zoneRulesSha256 === after.zoneRulesSha256 && before.localOffsetMinutes === after.localOffsetMinutes && BigInt(after.qpcBefore) >= BigInt(before.qpcAfter) && BigInt(after.utcBeforeTicks) >= BigInt(before.utcAfterTicks));
-  const base3 = exact7(v["base"], ["jobId", "helperInstance", "captureBindingSha256", "jobEmpty", "retainedProcessesExited", "checkedAt"]);
-  need8(base3["jobId"] === generation5.jobId && base3["helperInstance"] === generation5.helperInstance && base3["captureBindingSha256"] === authority["bindingSha256"] && base3["jobEmpty"] === true && base3["retainedProcessesExited"] === true);
-  const closedTime = timestamp4(base3["checkedAt"]);
+  const base4 = exact7(v["base"], ["jobId", "helperInstance", "captureBindingSha256", "jobEmpty", "retainedProcessesExited", "checkedAt"]);
+  need8(base4["jobId"] === generation5.jobId && base4["helperInstance"] === generation5.helperInstance && base4["captureBindingSha256"] === authority["bindingSha256"] && base4["jobEmpty"] === true && base4["retainedProcessesExited"] === true);
+  const closedTime = timestamp4(base4["checkedAt"]);
   need8(closedTime >= timestamp4(authority["capturedAt"]) && closedTime >= Number((BigInt(before.utcBeforeTicks) - EPOCH2) / 10000n) && closedTime <= Number((BigInt(after.utcAfterTicks) - EPOCH2 + 9999n) / 10000n));
   const proof = exact7(input.closedProof, [
     "schema",
@@ -69091,7 +69106,7 @@ function validateRecordedTerminationEvidence(input) {
     runtimeIdentitySha256: generation5.runtimeSha256,
     helperInstance: generation5.helperInstance,
     jobId: generation5.jobId,
-    closedAt: base3["checkedAt"],
+    closedAt: base4["checkedAt"],
     jobEmpty: true,
     retainedProcessesExited: true,
     saveOrDiscardSelected: false,
@@ -70174,15 +70189,15 @@ function clock5(value, phase4, generation5) {
   hash18(v["baseSha256"]);
   hash18(v["helperSourceSha256"]);
   hash18(v["executionScopeSha256"]);
-  const base3 = exact9(v["base"], phase4 === "launch" ? ["jobId", "helperInstance", "root"] : ["jobId", "helperInstance", "bindingSha256", "capturedAt", "processes", "runtimePid", "socketOwnerPid"]);
-  need11(base3["jobId"] === generation5.jobId && base3["helperInstance"] === generation5.helperInstance);
+  const base4 = exact9(v["base"], phase4 === "launch" ? ["jobId", "helperInstance", "root"] : ["jobId", "helperInstance", "bindingSha256", "capturedAt", "processes", "runtimePid", "socketOwnerPid"]);
+  need11(base4["jobId"] === generation5.jobId && base4["helperInstance"] === generation5.helperInstance);
   const owner = exact9(v["ownerBinding"], phase4 === "launch" ? ["executable", "executableSha256", "launchSha256"] : ["operationId", "phase", "challengeAttempt", "bindingSha256", "bridgeSessionSha256", "runtimeIdentitySha256", "authoritySha256"]);
   const observed2 = exact9(v["clock"], ["status", "tzAbsentBefore", "tzAbsentAfter", "before", "after"]);
   need11(observed2["status"] === "observed" && observed2["tzAbsentBefore"] === true && observed2["tzAbsentAfter"] === true);
   const before = validateClockSample(observed2["before"]);
   const after = validateClockSample(observed2["after"]);
   need11(BigInt(after.utcBeforeTicks) >= BigInt(before.utcAfterTicks) && BigInt(after.qpcBefore) >= BigInt(before.qpcAfter));
-  return { data: v, base: base3, owner, before, after };
+  return { data: v, base: base4, owner, before, after };
 }
 function captureClock(value, retained, operationId3, generation5, attempt) {
   const authority = retained["executionAuthority"];
@@ -75827,7 +75842,7 @@ var init_closed_symbol_saved_read = __esm({
         const validatorMethods = [validator?.capture, validator?.releaseCapture, validator?.proveTerminated];
         const releaseCapture = this.engine.releaseClosedSessionAuthority;
         const methodIdentities = () => [this.engine.captureClosedSessionAuthority, this.engine.releaseClosedSessionAuthority, this.engine.clockObservationForClosedCapture, this.engine.dispatchWithOrphanTracking, this.engine.runtimeIdentity];
-        const methods3 = methodIdentities(), planText = canonicalJson({ operationId: operationId3, plan: journal.plan, closedPlanSha256: journal.closedPlanSha256, markerSha256: journal.markerSha256 });
+        const methods4 = methodIdentities(), planText = canonicalJson({ operationId: operationId3, plan: journal.plan, closedPlanSha256: journal.closedPlanSha256, markerSha256: journal.markerSha256 });
         let rawSeal, rawText;
         const originalReply = () => {
           need31(rawText !== void 0 && rawSeal !== void 0 && JSON.stringify(this.returns.get(operationId3)) === rawText && canonicalJson(this.returns.get(operationId3)) === rawSeal, "Saved read settled reply changed.");
@@ -75848,7 +75863,7 @@ var init_closed_symbol_saved_read = __esm({
             this.admission.originalCapture(operationId3, "verify-admission") === capture3 && this.relaunch.originalLaunch(operationId3, "verify-launch") === launch && canonicalJson(capture3) === captureText && canonicalJson(launch) === launchText && this.startup.originalReturn(operationId3, "verify-marker-read") === startupRaw && this.navigation.originalReturn(operationId3, "verify-open") === openRaw && canonicalJson(startupRaw) === startupText && canonicalJson(openRaw) === openText,
             "Saved read original lifecycle receipts changed."
           );
-          need31(this.engine.executionAuthorityValidator === validator && validatorMethods.every((method4) => typeof method4 === "function") && [validator?.capture, validator?.releaseCapture, validator?.proveTerminated].every((method4, index) => method4 === validatorMethods[index]) && methodIdentities().every((method4, index) => method4 === methods3[index]), "Saved read authority methods changed.");
+          need31(this.engine.executionAuthorityValidator === validator && validatorMethods.every((method4) => typeof method4 === "function") && [validator?.capture, validator?.releaseCapture, validator?.proveTerminated].every((method4, index) => method4 === validatorMethods[index]) && methodIdentities().every((method4, index) => method4 === methods4[index]), "Saved read authority methods changed.");
           need31(
             canonicalJson(this.runtime.status()) === statusText && this.engine.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && this.engine.upstream.bridgeSessionLifecycle === sessionReader && canonicalJson(scopeReader.call(this.engine.upstream) ?? null) === canonicalJson(binding2),
             "Saved read current runtime or scope changed."
@@ -77584,7 +77599,7 @@ async function reconstructRecordedSavedRead(input) {
   const capture3 = bag6(request2["clockCapture"]);
   const authority = bag6(capture3["executionAuthority"]);
   const clockData = bag6(clock7["clock"]);
-  const base3 = bag6(clock7["base"]);
+  const base4 = bag6(clock7["base"]);
   const owner = bag6(clock7["ownerBinding"]);
   validateRecordedCaptureEvidence({
     journal,
@@ -77597,11 +77612,11 @@ async function reconstructRecordedSavedRead(input) {
     clock: clock7
   });
   need34(
-    clock7["schema"] === "easyeda-pro-control.owned-clock-attachment.v1" && clock7["phase"] === "capture" && clock7["helperSourceSha256"] === input.nativeSource.helperSourceSha256 && clock7["executionScopeSha256"] === input.nativeSource.executionScopeSha256 && typeof clock7["baseSha256"] === "string" && /^[a-f0-9]{64}$/u.test(clock7["baseSha256"]) && clock7["producerBindingVerified"] === false && clock7["executionAuthorized"] === false && clockData["status"] === "observed" && clockData["tzAbsentBefore"] === true && clockData["tzAbsentAfter"] === true && base3["jobId"] === admitted.jobId && base3["helperInstance"] === admitted.helperInstance && base3["bindingSha256"] === authority["bindingSha256"] && capture3["operationId"] === journal.operationId && capture3["phase"] === "closed-verification" && capture3["challengeAttempt"] === 2 && sha256Json(capture3["bridgeSession"]) === admitted.sessionSha256 && sha256Json(capture3["runtimeIdentity"]) === admitted.runtimeSha256,
+    clock7["schema"] === "easyeda-pro-control.owned-clock-attachment.v1" && clock7["phase"] === "capture" && clock7["helperSourceSha256"] === input.nativeSource.helperSourceSha256 && clock7["executionScopeSha256"] === input.nativeSource.executionScopeSha256 && typeof clock7["baseSha256"] === "string" && /^[a-f0-9]{64}$/u.test(clock7["baseSha256"]) && clock7["producerBindingVerified"] === false && clock7["executionAuthorized"] === false && clockData["status"] === "observed" && clockData["tzAbsentBefore"] === true && clockData["tzAbsentAfter"] === true && base4["jobId"] === admitted.jobId && base4["helperInstance"] === admitted.helperInstance && base4["bindingSha256"] === authority["bindingSha256"] && capture3["operationId"] === journal.operationId && capture3["phase"] === "closed-verification" && capture3["challengeAttempt"] === 2 && sha256Json(capture3["bridgeSession"]) === admitted.sessionSha256 && sha256Json(capture3["runtimeIdentity"]) === admitted.runtimeSha256,
     "Terminal saved-read clock/capture binding differs."
   );
-  same26(base3["processes"], authority["processes"], "saved-read captured processes");
-  need34(base3["capturedAt"] === authority["capturedAt"], "Terminal saved-read capture time differs.");
+  same26(base4["processes"], authority["processes"], "saved-read captured processes");
+  need34(base4["capturedAt"] === authority["capturedAt"], "Terminal saved-read capture time differs.");
   const { authoritySha256, ...authorityBody } = authority;
   need34(
     authoritySha256 === sha256Json(authorityBody) && authority["processTreeSha256"] === sha256Json(authority["processes"]),
@@ -78426,9 +78441,9 @@ function validateRecordedBaselineTerminationEvidence(input) {
   need36(clock7["status"] === "observed" && clock7["tzAbsentBefore"] === true && clock7["tzAbsentAfter"] === true);
   const after = validateClockSample(clock7["after"]), before = validateClockSample(clock7["before"]);
   need36(before.qpcFrequency === after.qpcFrequency && before.zoneRulesSha256 === after.zoneRulesSha256 && before.localOffsetMinutes === after.localOffsetMinutes && BigInt(after.qpcBefore) >= BigInt(before.qpcAfter) && BigInt(after.utcBeforeTicks) >= BigInt(before.utcAfterTicks));
-  const base3 = exact13(v["base"], ["jobId", "helperInstance", "captureBindingSha256", "jobEmpty", "retainedProcessesExited", "checkedAt"]);
-  need36(base3["jobId"] === generation5.jobId && base3["helperInstance"] === generation5.helperInstance && base3["captureBindingSha256"] === authority["bindingSha256"] && base3["jobEmpty"] === true && base3["retainedProcessesExited"] === true);
-  const closedTime = timestamp6(base3["checkedAt"]);
+  const base4 = exact13(v["base"], ["jobId", "helperInstance", "captureBindingSha256", "jobEmpty", "retainedProcessesExited", "checkedAt"]);
+  need36(base4["jobId"] === generation5.jobId && base4["helperInstance"] === generation5.helperInstance && base4["captureBindingSha256"] === authority["bindingSha256"] && base4["jobEmpty"] === true && base4["retainedProcessesExited"] === true);
+  const closedTime = timestamp6(base4["checkedAt"]);
   need36(closedTime >= timestamp6(authority["capturedAt"]) && closedTime >= Number((BigInt(before.utcBeforeTicks) - EPOCH4) / 10000n) && closedTime <= Number((BigInt(after.utcAfterTicks) - EPOCH4 + 9999n) / 10000n));
   const proof = exact13(input.closedProof, [
     "schema",
@@ -78469,7 +78484,7 @@ function validateRecordedBaselineTerminationEvidence(input) {
     runtimeIdentitySha256: generation5.runtimeSha256,
     helperInstance: generation5.helperInstance,
     jobId: generation5.jobId,
-    closedAt: base3["checkedAt"],
+    closedAt: base4["checkedAt"],
     jobEmpty: true,
     retainedProcessesExited: true,
     saveOrDiscardSelected: false,
@@ -78924,15 +78939,15 @@ function clock6(value, phase4, generation5) {
   hash25(v["baseSha256"]);
   hash25(v["helperSourceSha256"]);
   hash25(v["executionScopeSha256"]);
-  const base3 = exact15(v["base"], phase4 === "launch" ? ["jobId", "helperInstance", "root"] : ["jobId", "helperInstance", "bindingSha256", "capturedAt", "processes", "runtimePid", "socketOwnerPid"]);
-  need40(base3["jobId"] === generation5.jobId && base3["helperInstance"] === generation5.helperInstance);
+  const base4 = exact15(v["base"], phase4 === "launch" ? ["jobId", "helperInstance", "root"] : ["jobId", "helperInstance", "bindingSha256", "capturedAt", "processes", "runtimePid", "socketOwnerPid"]);
+  need40(base4["jobId"] === generation5.jobId && base4["helperInstance"] === generation5.helperInstance);
   const owner = exact15(v["ownerBinding"], phase4 === "launch" ? ["executable", "executableSha256", "launchSha256"] : ["operationId", "phase", "challengeAttempt", "bindingSha256", "bridgeSessionSha256", "runtimeIdentitySha256", "authoritySha256"]);
   const observed2 = exact15(v["clock"], ["status", "tzAbsentBefore", "tzAbsentAfter", "before", "after"]);
   need40(observed2["status"] === "observed" && observed2["tzAbsentBefore"] === true && observed2["tzAbsentAfter"] === true);
   const before = validateClockSample(observed2["before"]);
   const after = validateClockSample(observed2["after"]);
   need40(BigInt(after.utcBeforeTicks) >= BigInt(before.utcAfterTicks) && BigInt(after.qpcBefore) >= BigInt(before.qpcAfter));
-  return { data: v, base: base3, owner, before, after };
+  return { data: v, base: base4, owner, before, after };
 }
 function captureClock2(value, retained, operationId3, generation5, attempt) {
   const authority = retained["executionAuthority"];
@@ -79876,30 +79891,30 @@ function project2(operation) {
   const family2 = isRecord(plan2) ? plan2["profile"] : void 0;
   const state2 = operation["state"];
   const summary7 = operationSummary2(asOperationJournal(operation));
-  const base3 = {
+  const base4 = {
     bridgeBlocking: state2 === "journal-unreadable" || operationHasOrphanedCallRisk(operation),
     unfinished: !isTerminalOperation(operation),
     summary: summary7
   };
   const reserved = family2 === FAMILY || typeof family2 === "string" && family2.startsWith("easyeda-pro-control.project-symbol-closed-session.") || typeof state2 === "string" && state2.startsWith("closed-session-") || Object.hasOwn(operation, "terminalArtifact") || Object.hasOwn(operation, "closedPlanSha256");
   if (!reserved) {
-    return { ...base3, classification: "legacy", terminal: null, incomplete: null };
+    return { ...base4, classification: "legacy", terminal: null, incomplete: null };
   }
   if (family2 === FAMILY && (state2 === "closed-session-recording" || state2 === "closed-session-evidence-recorded") && !Object.hasOwn(operation, "terminalArtifact")) {
     const operationId3 = operation["operationId"], storedJournalSha256 = operation["journalSha256"];
     const incomplete = typeof operationId3 === "string" && typeof storedJournalSha256 === "string" && HASH13.test(storedJournalSha256) ? { operationId: operationId3, storedJournalSha256, entireStoredJournalSha256: sha256Json(operation) } : null;
-    return { ...base3, classification: "incomplete", terminal: null, incomplete };
+    return { ...base4, classification: "incomplete", terminal: null, incomplete };
   }
   if (family2 !== FAMILY || state2 !== TERMINAL_STATE) {
-    return { ...base3, classification: "invalid", terminal: null, incomplete: null };
+    return { ...base4, classification: "invalid", terminal: null, incomplete: null };
   }
   try {
     const operationId3 = operation["operationId"], storedJournalSha256 = operation["journalSha256"];
     if (typeof operationId3 !== "string" || typeof storedJournalSha256 !== "string" || !HASH13.test(storedJournalSha256)) {
-      return { ...base3, classification: "invalid", terminal: null, incomplete: null };
+      return { ...base4, classification: "invalid", terminal: null, incomplete: null };
     }
     const terminalArtifact = parseClosedSymbolTerminalArtifact(operation["terminalArtifact"], operationId3);
-    return { ...base3, classification: "terminal", incomplete: null, terminal: {
+    return { ...base4, classification: "terminal", incomplete: null, terminal: {
       operationId: operationId3,
       state: state2,
       family: family2,
@@ -79908,7 +79923,7 @@ function project2(operation) {
       terminalArtifact
     } };
   } catch {
-    return { ...base3, classification: "invalid", terminal: null, incomplete: null };
+    return { ...base4, classification: "invalid", terminal: null, incomplete: null };
   }
 }
 function observation(candidate, qualification) {
@@ -82310,12 +82325,12 @@ function verifyStackPersistence(input, operation) {
       throw new Error("Retired substrate does not match the native physical-layer filter.");
     }
   }
-  const base3 = {
+  const base4 = {
     schema: input.expectedAfter.schema,
     document: input.expectedAfter.document,
     objects: [...input.expectedAfter.objects, ...retired].toSorted((left, right) => left.id.localeCompare(right.id))
   };
-  const projected4 = { ...base3, sha256: sha256Json(base3) };
+  const projected4 = { ...base4, sha256: sha256Json(base4) };
   const proof = verifyDesignPersistence({ ...input, expectedAfter: projected4 });
   return { ...proof, stackNativeStorage: {
     profile: "easyeda-pro-control.native-stack-storage.v1",
@@ -82774,8 +82789,8 @@ function exportOnlySelector(before, after, checkpoint) {
   return document3.records.every((record7) => record7.id !== SELECTOR);
 }
 function omit2(source4, ids2) {
-  const base3 = { schema: source4.schema, document: source4.document, objects: source4.objects.filter((record7) => !ids2.has(record7.id)) };
-  return { ...base3, sha256: sha256Json(base3) };
+  const base4 = { schema: source4.schema, document: source4.document, objects: source4.objects.filter((record7) => !ids2.has(record7.id)) };
+  return { ...base4, sha256: sha256Json(base4) };
 }
 function deriveFootprintBaselineTargets(before, after, checkpoint) {
   const targets = deriveDesignBaselineTargets(before, after);
@@ -92525,6 +92540,163 @@ var init_current_pcb_identities = __esm({
   }
 });
 
+// server/src/current-pcb-geometry.ts
+function parseCurrentPcbGeometryRequest(input) {
+  return currentPcbGeometryRequestSchema.parse(input);
+}
+function currentPcbGeometryFamily(request2) {
+  switch (request2.method) {
+    case "eda.pcb_PrimitiveLine.getAll": {
+      return "Line";
+    }
+    case "eda.pcb_PrimitiveArc.getAll": {
+      return "Arc";
+    }
+    case "eda.pcb_PrimitiveVia.getAll": {
+      return "Via";
+    }
+    default: {
+      throw new Error("Unsupported current PCB geometry method.");
+    }
+  }
+}
+function queryCurrentPcbGeometry(input = {}) {
+  const query = currentPcbGeometryQuerySchema.parse(input);
+  const entries3 = methods3.filter((method4) => query.method === void 0 || query.method === method4).map((method4) => {
+    const entry = {
+      path: method4,
+      method: method4,
+      effect: "current-pcb-loaded-view-geometry-read",
+      parameters: [],
+      invocationEnabledByDiscovery: false,
+      limitations: [...limitations9],
+      provenance: {
+        apiVersion: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.version,
+        apiSha256: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.implementationSha256,
+        uiVersion: CURRENT_UI_IMPLEMENTATION.version,
+        uiSha256: CURRENT_UI_IMPLEMENTATION.sha256,
+        implementationKind: "native-task-equivalent",
+        liveValidation: "not-recorded"
+      }
+    };
+    if (query.includeSchemas) {
+      entry["inputSchema"] = external_exports.toJSONSchema(currentPcbGeometryRequestSchema);
+    }
+    return entry;
+  });
+  return { offline: true, invocationEnabledByDiscovery: false, total: entries3.length, entries: entries3 };
+}
+function validateCurrentPcbGeometryArguments(input) {
+  const result = currentPcbGeometryRequestSchema.safeParse(input);
+  return result.success ? { valid: true, request: result.data, executionAuthorized: false } : {
+    valid: false,
+    executionAuthorized: false,
+    issues: result.error.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String), message: issue2.message.slice(0, 512) }))
+  };
+}
+function validateCurrentPcbGeometryResult(input, raw) {
+  const request2 = parseCurrentPcbGeometryRequest(input);
+  const payload = currentPcbGeometryResultSchema.parse(raw);
+  if (payload.method !== request2.method || canonicalJson(payload.target) !== canonicalJson(request2.target)) {
+    throw new Error("PCB geometry result differs from its exact target request.");
+  }
+  if (Buffer.byteLength(JSON.stringify(payload), "utf8") > CURRENT_PCB_GEOMETRY_MAX_BYTES) {
+    throw new Error("PCB geometry result exceeds its byte bound.");
+  }
+  const expectedFamily = currentPcbGeometryFamily(request2), seen = /* @__PURE__ */ new Set();
+  for (const row6 of payload.rows) {
+    if (row6.primitiveType !== expectedFamily || seen.has(row6.primitiveId)) {
+      throw new Error("PCB geometry result contains duplicate or unexpected family identities.");
+    }
+    seen.add(row6.primitiveId);
+  }
+  const { rows: rows2, ...metadata8 } = payload;
+  return {
+    ...metadata8,
+    value: rows2,
+    observedRowCount: rows2.length,
+    units: { linear: "mil", arcAngle: "degrees" },
+    effect: "current-pcb-loaded-view-geometry-read",
+    encoding: "native-getter-projection-without-public-wrapper-rounding",
+    authority: "explicit-target-loaded-view-geometry-only;not-design-or-persistence-authority",
+    liveValidation: "not-recorded",
+    limitations: [...limitations9]
+  };
+}
+var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, methods3, targetSchema6, numberSchema, layerSchema2, boundedText4, base3, track, lineSchema3, arcSchema, viaSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, currentPcbGeometryResultSchema, limitations9;
+var init_current_pcb_geometry = __esm({
+  "server/src/current-pcb-geometry.ts"() {
+    init_zod();
+    init_core3();
+    init_current_pcb_layers();
+    init_current_ui_implementation();
+    init_sdk_local_runtime();
+    CURRENT_PCB_GEOMETRY_MAX_BYTES = 384 * 1024;
+    CURRENT_PCB_GEOMETRY_MAX_ROWS = 256;
+    CURRENT_PCB_GEOMETRY_MAX_NUMBER = 1e12;
+    methods3 = ["eda.pcb_PrimitiveLine.getAll", "eda.pcb_PrimitiveArc.getAll", "eda.pcb_PrimitiveVia.getAll"];
+    targetSchema6 = currentPcbLayersRequestSchema.shape.target;
+    numberSchema = external_exports.number().min(-CURRENT_PCB_GEOMETRY_MAX_NUMBER).max(CURRENT_PCB_GEOMETRY_MAX_NUMBER).refine((value) => !Object.is(value, -0), "Signed zero is not supported by this JSON observation.");
+    layerSchema2 = numberSchema.refine((value) => Number.isInteger(value) && value >= 0 && value <= 65535, "Invalid native layer ID.");
+    boundedText4 = external_exports.string().max(1024);
+    base3 = { primitiveId: external_exports.string().min(1).max(256), net: boundedText4.nullable(), primitiveLock: external_exports.boolean() };
+    track = {
+      ...base3,
+      layer: layerSchema2,
+      startX: numberSchema,
+      startY: numberSchema,
+      endX: numberSchema,
+      endY: numberSchema,
+      lineWidth: numberSchema
+    };
+    lineSchema3 = external_exports.object({ ...track, primitiveType: external_exports.literal("Line") }).strict();
+    arcSchema = external_exports.object({
+      ...track,
+      primitiveType: external_exports.literal("Arc"),
+      arcAngle: numberSchema,
+      interactiveMode: external_exports.union([external_exports.literal(1), external_exports.literal(2)])
+    }).strict();
+    viaSchema = external_exports.object({
+      ...base3,
+      primitiveType: external_exports.literal("Via"),
+      x: numberSchema,
+      y: numberSchema,
+      holeDiameter: numberSchema,
+      diameter: numberSchema,
+      viaType: external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2)]),
+      designRuleBlindViaName: boundedText4.nullable(),
+      startLayer: layerSchema2,
+      endLayer: layerSchema2,
+      maskExpansionMode: numberSchema.refine(Number.isInteger, "Invalid native mask expansion mode."),
+      topMaskExpansion: numberSchema,
+      bottomMaskExpansion: numberSchema
+    }).strict();
+    currentPcbGeometryRequestSchema = external_exports.object({ method: external_exports.enum(methods3), arguments: external_exports.object({}).strict(), target: targetSchema6 }).strict();
+    currentPcbGeometryQuerySchema = external_exports.object({ method: external_exports.enum(methods3).optional(), includeSchemas: external_exports.boolean().default(false) }).strict();
+    currentPcbGeometryResultSchema = external_exports.object({
+      ok: external_exports.literal(true),
+      kind: external_exports.literal("current-pcb-geometry-observation"),
+      method: external_exports.enum(methods3),
+      target: targetSchema6,
+      rows: external_exports.array(external_exports.discriminatedUnion("primitiveType", [lineSchema3, arcSchema, viaSchema])).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
+      samples: external_exports.literal(2),
+      implementationKind: external_exports.literal("native-task-equivalent"),
+      cadAuthority: external_exports.literal(false),
+      persistenceVerified: external_exports.literal(false),
+      sourceMembershipVerified: external_exports.literal(false)
+    }).strict();
+    limitations9 = [
+      "Only the exact active ordinary project-owned type-3 PCB is admitted. The retained frame, local receiver and complete target are rechecked around awaits, with native tab/type identity bracketing each sample. This is not an atomic lock or proof against switching away and back between observations.",
+      "This is an explicit native loaded-view geometry projection, not public class instances, complete native/source records, saved membership, ownership, connectivity, DRC or persistence proof. Loaded views may include inherited, generated and in-progress objects. Native display nets are copied without case conversion; empty string and null remain distinct, while undefined refuses.",
+      "Only unfiltered getAll with empty arguments is supported. Fixed native family handlers replace mutable public active-tab routing. All reported scalar fields and ordered rows must match across two complete samples; omitted native fields are not compared. No direct getByIds or SDK object constructor is invoked.",
+      "Positions, widths, diameters and mask expansions are in mil; arcAngle is in degrees. The native callback's scaled results are not rounded using the public wrapper. Arc endpoints/angle can therefore retain precision that the public wrapper rounds; Via diameters are twice the native callback radii, without public one-decimal radius rounding. Layer IDs and arc/via/mask modes are native values, not validated design rules.",
+      "Coordinates use the data origin, not the displayed canvas origin. Arc endpoints and angle are incomplete shape data: a full-circle case can project to zero angle. Native center/radius/sweep and partition are omitted, as are Via unused-layer and is-suture fields. Mask expansion values are loaded model observations, not proof of saved overrides or current rule resolution.",
+      "At most 256 rows, 256 characters per identity, 1024 characters per net/rule name, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. Signed zero, non-finite values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
+      "No selection, layer change, navigation, Save, source export, design mutation or project/library service is requested. Local RPC bookkeeping and reviewed native identity initialization remain incidental. Source review and offline tests are not current live validation."
+    ];
+  }
+});
+
 // server/src/historical-abandonment.ts
 async function runHistoricalAbandonment(request2) {
   const parsed2 = historicalAbandonmentRequestSchema.parse(request2);
@@ -92639,6 +92811,14 @@ function queryOfflineApi(request2) {
       result = validateCurrentPcbIdentitiesArguments(request2.query.request);
       break;
     }
+    case "pcb-geometry": {
+      result = queryCurrentPcbGeometry(request2.query ?? {});
+      break;
+    }
+    case "pcb-geometry-validate": {
+      result = validateCurrentPcbGeometryArguments(request2.query.request);
+      break;
+    }
     case "history": {
       result = { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{
         action: "abandon-before-navigation",
@@ -92703,6 +92883,7 @@ var init_offline_api = __esm({
     init_current_pcb_layers();
     init_current_disposable_open();
     init_current_pcb_identities();
+    init_current_pcb_geometry();
     init_historical_abandonment();
     ordinaryLaunchQuerySchema = external_exports.object({ includeSchemas: external_exports.boolean().default(false) }).strict();
     apiRequestSchema = external_exports.discriminatedUnion("action", [
@@ -92728,6 +92909,8 @@ var init_offline_api = __esm({
       external_exports.object({ action: external_exports.literal("project-open-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("pcb-identities"), query: currentPcbIdentitiesQuerySchema.optional() }).strict(),
       external_exports.object({ action: external_exports.literal("pcb-identities-validate"), query: publicSdkValidationQuerySchema }).strict(),
+      external_exports.object({ action: external_exports.literal("pcb-geometry"), query: currentPcbGeometryQuerySchema.optional() }).strict(),
+      external_exports.object({ action: external_exports.literal("pcb-geometry-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("history"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
       external_exports.object({ action: external_exports.literal("history-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("launch"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
@@ -92737,7 +92920,7 @@ var init_offline_api = __esm({
     ]);
     offlineApiToolConfiguration = {
       title: "EasyEDA offline API reference and argument validation",
-      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity, local historical-abandonment, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
+      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, local historical-abandonment, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
       inputSchema: { request: apiRequestSchema },
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
     };
@@ -100364,7 +100547,7 @@ async function discardCloseConfirmation(input, controller, dependencies3 = {}) {
     throw transactionError(error51, { operationId: journal.operationId, state: String(journal["state"]), orphanedCallPossible: false, nextSafeAction: String(journal["nextSafeAction"]) });
   }
 }
-var hash31, targetSchema6, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
+var hash31, targetSchema7, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
 var init_native_close_recovery = __esm({
   "server/src/native-close-recovery.ts"() {
     init_zod();
@@ -100375,7 +100558,7 @@ var init_native_close_recovery = __esm({
     init_windows_native_ui();
     init_transaction_error();
     hash31 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
-    targetSchema6 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
+    targetSchema7 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
     buttonSchema = external_exports.object({ label: external_exports.literal("Leave this page"), x: external_exports.number().int().min(-32768).max(32767), y: external_exports.number().int().min(-32768).max(32767) }).strict();
     dialogSchema = external_exports.object({ title: external_exports.literal("Confirm Close"), onlyUnsavedTarget: external_exports.literal(true), targetName: external_exports.string().min(1).max(512), discardButton: buttonSchema }).strict();
     recoveryBaseSchema = external_exports.object({
@@ -100385,7 +100568,7 @@ var init_native_close_recovery = __esm({
       confirmUIWrite: external_exports.literal(true),
       discardOwnUnsavedChanges: external_exports.literal(true),
       acknowledgeDurableChanges: external_exports.boolean().optional(),
-      target: targetSchema6,
+      target: targetSchema7,
       capture: external_exports.object({ receiptPath: external_exports.string().min(1), receiptSha256: hash31, imageSha256: hash31 }).strict()
     }).strict();
     closeConfirmationRequestSchema = recoveryBaseSchema.extend({ action: external_exports.literal("discard-close-confirmation"), observedDialog: dialogSchema }).strict();
@@ -109170,15 +109353,15 @@ var init_acorn = __esm({
       }
       return result;
     };
-    pp$5.parseSubscripts = function(base3, startPos, startLoc, noCalls, forInit) {
-      var maybeAsyncArrow = this.options.ecmaVersion >= 8 && base3.type === "Identifier" && base3.name === "async" && this.lastTokEnd === base3.end && !this.canInsertSemicolon() && base3.end - base3.start === 5 && this.potentialArrowAt === base3.start;
+    pp$5.parseSubscripts = function(base4, startPos, startLoc, noCalls, forInit) {
+      var maybeAsyncArrow = this.options.ecmaVersion >= 8 && base4.type === "Identifier" && base4.name === "async" && this.lastTokEnd === base4.end && !this.canInsertSemicolon() && base4.end - base4.start === 5 && this.potentialArrowAt === base4.start;
       var optionalChained = false;
       while (true) {
-        var element = this.parseSubscript(base3, startPos, startLoc, noCalls, maybeAsyncArrow, optionalChained, forInit);
+        var element = this.parseSubscript(base4, startPos, startLoc, noCalls, maybeAsyncArrow, optionalChained, forInit);
         if (element.optional) {
           optionalChained = true;
         }
-        if (element === base3 || element.type === "ArrowFunctionExpression") {
+        if (element === base4 || element.type === "ArrowFunctionExpression") {
           if (optionalChained) {
             var chainNode = this.startNodeAt(startPos, startLoc);
             chainNode.expression = element;
@@ -109186,7 +109369,7 @@ var init_acorn = __esm({
           }
           return element;
         }
-        base3 = element;
+        base4 = element;
       }
     };
     pp$5.shouldParseAsyncArrow = function() {
@@ -109195,7 +109378,7 @@ var init_acorn = __esm({
     pp$5.parseSubscriptAsyncArrow = function(startPos, startLoc, exprList, forInit) {
       return this.parseArrowExpression(this.startNodeAt(startPos, startLoc), exprList, true, forInit);
     };
-    pp$5.parseSubscript = function(base3, startPos, startLoc, noCalls, maybeAsyncArrow, optionalChained, forInit) {
+    pp$5.parseSubscript = function(base4, startPos, startLoc, noCalls, maybeAsyncArrow, optionalChained, forInit) {
       var optionalSupported = this.options.ecmaVersion >= 11;
       var optional3 = optionalSupported && this.eat(types$1.questionDot);
       if (noCalls && optional3) {
@@ -109204,11 +109387,11 @@ var init_acorn = __esm({
       var computed = this.eat(types$1.bracketL);
       if (computed || optional3 && this.type !== types$1.parenL && this.type !== types$1.backQuote || this.eat(types$1.dot)) {
         var node = this.startNodeAt(startPos, startLoc);
-        node.object = base3;
+        node.object = base4;
         if (computed) {
           node.property = this.parseExpression();
           this.expect(types$1.bracketR);
-        } else if (this.type === types$1.privateId && base3.type !== "Super") {
+        } else if (this.type === types$1.privateId && base4.type !== "Super") {
           node.property = this.parsePrivateIdent();
         } else {
           node.property = this.parseIdent(this.options.allowReserved !== "never");
@@ -109217,7 +109400,7 @@ var init_acorn = __esm({
         if (optionalSupported) {
           node.optional = optional3;
         }
-        base3 = this.finishNode(node, "MemberExpression");
+        base4 = this.finishNode(node, "MemberExpression");
       } else if (!noCalls && this.eat(types$1.parenL)) {
         var refDestructuringErrors = new DestructuringErrors(), oldYieldPos = this.yieldPos, oldAwaitPos = this.awaitPos, oldAwaitIdentPos = this.awaitIdentPos;
         this.yieldPos = 0;
@@ -109240,22 +109423,22 @@ var init_acorn = __esm({
         this.awaitPos = oldAwaitPos || this.awaitPos;
         this.awaitIdentPos = oldAwaitIdentPos || this.awaitIdentPos;
         var node$1 = this.startNodeAt(startPos, startLoc);
-        node$1.callee = base3;
+        node$1.callee = base4;
         node$1.arguments = exprList;
         if (optionalSupported) {
           node$1.optional = optional3;
         }
-        base3 = this.finishNode(node$1, "CallExpression");
+        base4 = this.finishNode(node$1, "CallExpression");
       } else if (this.type === types$1.backQuote) {
         if (optional3 || optionalChained) {
           this.raise(this.start, "Optional chaining cannot appear in the tag of tagged template expressions");
         }
         var node$2 = this.startNodeAt(startPos, startLoc);
-        node$2.tag = base3;
+        node$2.tag = base4;
         node$2.quasi = this.parseTemplate({ isTagged: true });
-        base3 = this.finishNode(node$2, "TaggedTemplateExpression");
+        base4 = this.finishNode(node$2, "TaggedTemplateExpression");
       }
-      return base3;
+      return base4;
     };
     pp$5.parseExprAtom = function(refDestructuringErrors, forInit, forNew) {
       if (this.type === types$1.slash) {
@@ -110126,9 +110309,9 @@ var init_acorn = __esm({
       buildUnicodeData(ecmaVersion);
     }
     pp$1 = Parser.prototype;
-    BranchID = function BranchID2(parent, base3) {
+    BranchID = function BranchID2(parent, base4) {
       this.parent = parent;
-      this.base = base3 || this;
+      this.base = base4 || this;
     };
     BranchID.prototype.separatedFrom = function separatedFrom(alt) {
       for (var self = this; self; self = self.parent) {
@@ -116454,7 +116637,8 @@ var init_facade_mode = __esm({
       "easyeda_control_pcb_layers",
       "easyeda_control_project_open",
       "easyeda_control_pcb_identities",
-      "easyeda_control_history"
+      "easyeda_control_history",
+      "easyeda_control_pcb_geometry"
     ]);
   }
 });
@@ -117551,6 +117735,166 @@ var init_current_pcb_identities_runtime = __esm({
     CURRENT_PCB_IDENTITIES_RUNTIME_PROFILE = Object.freeze({
       ...SDK_LOCAL_RUNTIME_PROFILE,
       schema: "easyeda-pro-control.current-pcb-identities-runtime.v1",
+      uiImplementation: CURRENT_UI_IMPLEMENTATION
+    });
+  }
+});
+
+// server/src/current-pcb-geometry-program.ts
+function buildCurrentPcbGeometryProgram(input) {
+  const request2 = parseCurrentPcbGeometryRequest(input);
+  const family2 = currentPcbGeometryFamily(request2);
+  const topics = { Line: "pcb/extensionAPI/track-getAll", Arc: "pcb/extensionAPI/arc-getAll", Via: "pcb/extensionAPI/via-getAll" };
+  return `let timer,clear;
+try{
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)},family=${JSON.stringify(family2)},topic=${JSON.stringify(topics[family2])};let expired=false;
+const bad=()=>{throw new Error('CURRENT_PCB_GEOMETRY_READ_FAILED');};
+const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
+const absent=(owner,key)=>{const d=Object.getOwnPropertyDescriptor(owner,key);if(d&&(!Object.hasOwn(d,'value')||d.value!==undefined))bad();};
+const fn=(owner,key)=>{const value=own(owner,key);if(typeof value!=='function')bad();return value;};
+const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
+const topPlain=value=>{if(!object(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
+const location=root.location,href=location?.href,document=root.document,ui=own(root,'UI'),host=own(root,'gVars'),mode=own(root,'PRO_EDITOR_MODE');
+const project=topPlain(own(host,'currentProject')),tabs=own(ui,'tabBar'),edaOwner=eda;
+if(typeof tabs!=='function'||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
+const active=fn(tabs,'getActiveTab'),getTab=fn(tabs,'getTabById'),select=document?.querySelectorAll;
+if(typeof select!=='function')bad();
+const tab=topPlain(apply(getTab,tabs,[target.tabId])),data=topPlain(own(tab,'data'));
+const matches=apply(select,document,['[id="frame_'+target.tabId+'"]']);if(matches.length!==1)bad();
+const frame=matches[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
+const native=own(child,'MSG_BUS_PCB'),channel=own(native,'messageBus'),childObject=own(child,'Object'),childArray=own(child,'Array');
+const childObjectPrototype=own(childObject,'prototype'),childArrayPrototype=own(childArray,'prototype');
+const getAttribute=frame?.getAttribute,hasAttribute=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttribute=parent?.getAttribute;
+if(typeof getAttribute!=='function'||typeof hasAttribute!=='function'||typeof contains!=='function'||typeof parentAttribute!=='function')bad();
+const chain=[channel];let rpc,rpcOwner;
+for(let i=0;i<3;i++){const node=chain[i];if(!object(node))bad();const d=Object.getOwnPropertyDescriptor(node,'rpcCall');if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();rpc=d.value;rpcOwner=node;break;}chain.push(Object.getPrototypeOf(node));}
+if(typeof rpc!=='function')bad();
+const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
+const check=()=>{
+ if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')bad();
+ if(typeof href!=='string'||!/^https:\\/\\/client\\/editor\\?cll=(?:trace|debug|info|warn|error)#?$/.test(href))bad();
+ if(own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
+ if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(host,'currentProject')!==project||own(ui,'tabBar')!==tabs||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
+ if(own(project,'projectId')!==target.projectUuid||own(project,'branchUuid')!==target.branchUuid||own(project,'isV2Format')!==false||own(host,'isHistoryMode')!==false)bad();
+ if(fn(tabs,'getActiveTab')!==active||fn(tabs,'getTabById')!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,'data')!==data)bad();
+ if(own(tab,'tabId')!==target.tabId||own(data,'doctype')!==3||own(data,'pid')!==target.projectUuid)bad();absent(tab,'parentLibraryUuid');
+ if(document.querySelectorAll!==select)bad();const found=apply(select,document,['[id="frame_'+target.tabId+'"]']);if(found.length!==1||found[0]!==frame)bad();
+ if(frame.tagName!=='IFRAME'||frame.id!=='frame_'+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==getAttribute||frame.hasAttribute!==hasAttribute||parent.getAttribute!==parentAttribute||!apply(contains,classes,['editframe'])||apply(parentAttribute,parent,['uuid'])!==target.tabId)bad();
+ for(const [key,value] of [['c_dbid',target.tabId],['c_doctype','3'],['src','editor?entry=pcb'],['pcb-canvas','true']])if(apply(getAttribute,frame,[key])!==value)bad();
+ for(const key of ['blankIframe','fromFile','jsonCacheReady'])if(apply(hasAttribute,frame,[key]))bad();
+ if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||own(child,'MSG_BUS_PCB')!==native||own(native,'messageBus')!==channel)bad();
+ if(own(child,'Object')!==childObject||own(childObject,'prototype')!==childObjectPrototype||own(child,'Array')!==childArray||own(childArray,'prototype')!==childArrayPrototype)bad();
+ for(let i=0;i<chain.length;i++){const node=chain[i];if(i>0&&Object.getPrototypeOf(chain[i-1])!==node)bad();if(node===rpcOwner){if(own(node,'rpcCall')!==rpc)bad();}else if(Object.hasOwn(node,'rpcCall'))bad();}
+ if(own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear)bad();
+};
+const plain=value=>{if(!object(value))bad();const p=Object.getPrototypeOf(value);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return value;};
+const exact=(value,keys)=>{plain(value);const actual=Reflect.ownKeys(value);if(actual.length!==keys.length||!actual.every(key=>keys.includes(key)))bad();};
+const num=value=>{if(typeof value!=='number'||!Number.isFinite(value)||Object.is(value,-0)||Math.abs(value)>${CURRENT_PCB_GEOMETRY_MAX_NUMBER})bad();return value;};
+const integer=value=>{num(value);if(!Number.isInteger(value))bad();return value;};
+const layer=value=>{integer(value);if(value<0||value>65535)bad();return value;};
+const bool=value=>{if(typeof value!=='boolean')bad();return value;};
+const text=(value,max,nullable=false)=>{if(value===null&&nullable)return value;if(typeof value!=='string'||value.length>max)bad();return value;};
+const point=value=>{if(!object(value))bad();const keys=Reflect.ownKeys(value);if(keys.length!==2||!keys.includes('x')||!keys.includes('y'))bad();return{x:num(own(value,'x')),y:num(own(value,'y'))};};
+const copyRows=value=>{
+ const p=Object.getPrototypeOf(value??{});if(!Array.isArray(value)||(p!==Array.prototype&&p!==childArrayPrototype))bad();
+ const n=own(value,'length');if(!Number.isInteger(n)||n<0||n>${CURRENT_PCB_GEOMETRY_MAX_ROWS}||Reflect.ownKeys(value).length!==n+1)bad();
+ const rows=[],seen=new Set();
+ for(let i=0;i<n;i++){
+  const row=plain(own(value,String(i))),id=text(own(row,'globalIndex'),256);if(id.length===0||seen.has(id))bad();seen.add(id);
+  const base={primitiveId:id,primitiveType:family,net:text(own(row,'net'),1024,true),primitiveLock:bool(own(row,'locked'))};
+  if(family==='Via'){
+   const center=point(own(row,'center')),viaType=integer(own(row,'type'));if(![0,1,2].includes(viaType))bad();
+   rows.push({...base,x:center.x,y:center.y,holeDiameter:num(num(own(row,'holeRadius'))*2),diameter:num(num(own(row,'radius'))*2),viaType,
+    designRuleBlindViaName:text(own(row,'name'),1024,true),startLayer:layer(own(row,'startLayer')),endLayer:layer(own(row,'endLayer')),
+    maskExpansionMode:integer(own(row,'expansion')),topMaskExpansion:num(num(own(row,'topExpansion'))*10),bottomMaskExpansion:num(num(own(row,'bottomExpansion'))*10)});
+  }else{
+   const track={...base,layer:layer(own(row,'layerId')),startX:num(own(row,'startX')),startY:num(own(row,'startY')),endX:num(own(row,'endX')),endY:num(own(row,'endY')),lineWidth:num(own(row,'width'))};
+   if(family==='Arc'){const interactiveMode=integer(own(row,'arcType'));if(![1,2].includes(interactiveMode))bad();rows.push({...track,arcAngle:num(own(row,'arcAngle')),interactiveMode});}else rows.push(track);
+  }
+ }
+ return rows;
+};
+const call=async(name,arg)=>{check();const reply=await apply(rpc,channel,[name,arg,0]);check();plain(reply);return own(reply,'message');};
+const identity=async()=>{const value=await call('getTabIdAndDocType',undefined);check();exact(value,['tabId','docType']);if(own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
+const read=async()=>{await identity();check();const raw=await call(topic,{});check();const rows=copyRows(raw);check();await identity();check();return rows;};
+const run=async()=>{
+ const first=await read(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();
+ const second=await read();if(JSON.stringify(second)!==firstJson)bad();check();
+ const json=JSON.stringify({ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request2.method)},target,rows:first,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false});
+ const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
+ if(utf8Bytes>${CURRENT_PCB_GEOMETRY_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();return envelope;
+};
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error('CURRENT_PCB_GEOMETRY_READ_FAILED'));},10000]);});
+return await Promise.race([run(),timeout]);
+}catch{throw new Error('CURRENT_PCB_GEOMETRY_READ_FAILED');}
+finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error('CURRENT_PCB_GEOMETRY_READ_FAILED');}}}`;
+}
+var init_current_pcb_geometry_program = __esm({
+  "server/src/current-pcb-geometry-program.ts"() {
+    init_current_pcb_geometry();
+    init_exact_readers();
+  }
+});
+
+// server/src/current-pcb-geometry-runtime.ts
+async function readCurrentPcbGeometry(engine2, requestInput2, expectedFingerprint) {
+  const request2 = parseCurrentPcbGeometryRequest(requestInput2);
+  const expected3 = structuredClone(expectedFingerprint);
+  validateSdkLocalRuntimeFingerprint(expected3);
+  await engine2.assertBridgeDispatchAllowed();
+  const initialStatus = await engine2.status();
+  const initial = structuredClone(initialStatus.stableFingerprint);
+  validateSdkLocalRuntimeFingerprint(initial);
+  assertExpectedFingerprint(initial);
+  assertSubset(initial, expected3, "PCB geometry expected runtime");
+  await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
+  await engine2.assertBridgeDispatchAllowed();
+  const raw = await engine2.upstream.callTool("easyeda_execute", {
+    code: buildCurrentPcbGeometryProgram(request2),
+    timeoutMs: 6e4,
+    confirmWrite: true
+  }, 7e4);
+  assertUpstreamReplySettled(raw);
+  const envelope2 = extractToolPayload(raw);
+  if (Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_PCB_GEOMETRY_MAX_BYTES) {
+    throw new Error("PCB geometry reply exceeds its byte bound.");
+  }
+  const result = validateCurrentPcbGeometryResult(request2, decodeExactReadEnvelope(envelope2));
+  await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
+  await engine2.assertBridgeDispatchAllowed();
+  const finalStatus = await engine2.status();
+  const finalFingerprint = finalStatus.stableFingerprint;
+  validateSdkLocalRuntimeFingerprint(finalFingerprint);
+  if (canonicalJson(finalFingerprint) !== canonicalJson(initial)) {
+    throw new Error("PCB geometry runtime changed around the observation.");
+  }
+  const response3 = { ...result, observationSha256: sha256Json(result), runtimeAdmission: {
+    profile: CURRENT_PCB_GEOMETRY_RUNTIME_PROFILE.schema,
+    fingerprintSha256: sha256Json(initial),
+    uiImplementation: CURRENT_UI_IMPLEMENTATION,
+    beforeAndAfterChecked: true,
+    scope: "explicit-current-pcb-loaded-view-geometry-only",
+    designExecutionAuthorized: false,
+    persistenceVerified: false,
+    liveValidation: "not-recorded"
+  } };
+  if (Buffer.byteLength(JSON.stringify(response3), "utf8") > CURRENT_PCB_GEOMETRY_MAX_BYTES) {
+    throw new Error("PCB geometry result exceeds its byte bound.");
+  }
+  return response3;
+}
+var CURRENT_PCB_GEOMETRY_RUNTIME_PROFILE;
+var init_current_pcb_geometry_runtime = __esm({
+  "server/src/current-pcb-geometry-runtime.ts"() {
+    init_core3();
+    init_current_ui_implementation();
+    init_current_pcb_geometry();
+    init_current_pcb_geometry_program();
+    init_exact_readers();
+    init_sdk_local_runtime();
+    CURRENT_PCB_GEOMETRY_RUNTIME_PROFILE = Object.freeze({
+      ...SDK_LOCAL_RUNTIME_PROFILE,
+      schema: "easyeda-pro-control.current-pcb-geometry-runtime.v1",
       uiImplementation: CURRENT_UI_IMPLEMENTATION
     });
   }
@@ -118723,8 +119067,8 @@ async function runClosedSymbolTool(input, mode) {
       if (closedSymbolIndexReservation !== reservation || reservation.engine !== engine || reservation.upstream !== upstream || reservation.gate !== bridgeGate || disposableOwnData(engine, "upstream") !== upstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || reservation.facadePromise !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== reservation.executionAuthority || reservation.environment !== process18.env || process18.env["EASYEDA_ASSETS_ROOT"] !== reservation.assetsRoot || process18.env["WSL_DISTRO_NAME"] !== reservation.wslDistribution || controlDataDirectory() !== reservation.controlPath || retainedControlRoot2.path !== reservation.controlPath || resolve18(import.meta.dirname, "../..") !== reservation.pluginRoot || scheduledShutdown !== void 0 || canonicalJson((mode === "validation" ? parseClosedSymbolDisposableInput(input) : parseClosedSymbolOperationInput(input)).request) !== requestText) {
         throw new Error("Disposable index reservation, request, configuration or shutdown state changed.");
       }
-      const methods3 = disposableIndexMethods();
-      if (methods3.length !== reservation.methods.length || methods3.some((method4, index) => method4 !== reservation.methods[index]) || windowsRuntime !== reservation.runtime) {
+      const methods4 = disposableIndexMethods();
+      if (methods4.length !== reservation.methods.length || methods4.some((method4, index) => method4 !== reservation.methods[index]) || windowsRuntime !== reservation.runtime) {
         throw new Error("Disposable index runtime or method ownership changed.");
       }
       if (reservation.facade !== void 0 && disposableOwnData(reservation.facade, "sha256") !== reservation.facadeSha256) {
@@ -119581,6 +119925,8 @@ var init_src = __esm({
     init_current_disposable_open_runtime();
     init_current_pcb_identities();
     init_current_pcb_identities_runtime();
+    init_current_pcb_geometry();
+    init_current_pcb_geometry_runtime();
     init_historical_abandonment();
     facadeMode = configuredFacadeMode(process18.env);
     MAX_INLINE_RESULT_BYTES = 256 * 1024;
@@ -120029,6 +120375,7 @@ var init_src = __esm({
       easyeda_control_pcb_layers: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_project_open: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_pcb_identities: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
+      easyeda_control_pcb_geometry: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_history: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_check: external_exports.object({ result: routeAuditResultSchema.optional(), operationId: external_exports.string().optional(), state: external_exports.string().optional(), report: external_exports.unknown().optional(), proof: external_exports.unknown().optional(), reportArtifact: external_exports.unknown().optional(), nextSafeAction: external_exports.string().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_native_ui: external_exports.object({ schema: external_exports.string().optional(), action: external_exports.string().optional(), result: external_exports.unknown().optional(), observations: external_exports.array(external_exports.unknown()).optional(), authority: external_exports.string().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
@@ -120059,7 +120406,7 @@ var init_src = __esm({
       { name: "easyeda-pro-control", version: CONTROL_VERSION },
       {
         capabilities: { tools: {} },
-        instructions: facadeMode === "calculation-only" ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identities, local sixteen-event historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local disposable file and checkpoint-member PCB; it permits ordinary application migrations/cache replay/automatic Save effects, not design-writer authority. No generic native controls, navigation, design changes, explicit Save or design recovery tools are available. Launch does not prove isolation or readiness; metadata grants no later authority. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
+        instructions: facadeMode === "calculation-only" ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry reads, local sixteen-event historical abandonment, ordinary application launch and one-shot disposable-project opening. Opening requires a retained launcher, empty editor, registered local disposable file and checkpoint-member PCB; it permits ordinary application migrations/cache replay/automatic Save effects, not design-writer authority. No generic native controls, navigation, design changes, explicit Save or design recovery tools are available. Launch does not prove isolation or readiness; observations grant no later authority. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
       }
     );
     registerFacadeTool(
@@ -120084,7 +120431,7 @@ var init_src = __esm({
           libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
           ...facadeMode === "calculation-only" ? {
             availableTools: CALCULATION_ONLY_TOOLS,
-            capabilityScope: "Separately admitted calculations and metadata observations, exact-target PCB layer/identity observations, local historical abandonment, ordinary existing-profile launch and one-shot checkpointed disposable-project opening. No generic design-content access, design changes or legacy-route admission; ordinary opening may change storage and launch does not prove isolation."
+            capabilityScope: "Separately admitted calculations and metadata observations, exact-target PCB layer and loaded-view identity/geometry observations, local historical abandonment, ordinary existing-profile launch and one-shot checkpointed disposable-project opening. No generic design-content access, design changes or legacy-route admission; ordinary opening may change storage and launch does not prove isolation."
           } : {}
         },
         upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
@@ -120098,6 +120445,7 @@ var init_src = __esm({
             shortcutKeys: { tool: "easyeda_control_shortcuts", runtimeAdmissionRequired: true, keyboardExecution: false },
             pcbLayers: { tool: "easyeda_control_pcb_layers", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, designExecution: false },
             pcbIdentities: { tool: "easyeda_control_pcb_identities", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false },
+            pcbGeometry: { tool: "easyeda_control_pcb_geometry", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false, connectivityVerified: false },
             historicalAbandonment: { tool: "easyeda_control_history", localOnly: true, scope: "sixteen-event-pre-navigation-validation-only", replayAuthority: false },
             ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
             designAccess: { enabled: false },
@@ -120680,6 +121028,16 @@ var init_src = __esm({
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
       serializedLiveGuarded(async (input) => ({ result: await readCurrentPcbIdentities(engine, input.request, input.expectedFingerprint) }))
+    );
+    registerFacadeTool(
+      "easyeda_control_pcb_geometry",
+      {
+        title: "Read loaded PCB line, arc and via geometry",
+        description: "Observe unfiltered Line, Arc or Via geometry on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and requires two matching ordered bounded samples. Native equivalents of getAll, not public-wrapper dispatch or class instances. Values use mil/degrees without public-wrapper rounding; the projection is not complete shape reconstruction. Loaded-view geometry does not prove saved membership, root/inherited ownership, connectivity or persistence; net labels and lock flags are observations, not electrical or editing authority. No filters, selection change, navigation, write or Save. Query offline pcb-geometry/pcb-geometry-validate first; no connected validation is implied.",
+        inputSchema: { request: external_exports.unknown().pipe(currentPcbGeometryRequestSchema), expectedFingerprint: privateFingerprintSchema },
+        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+      },
+      serializedLiveGuarded(async (input) => ({ result: await readCurrentPcbGeometry(engine, input.request, input.expectedFingerprint) }))
     );
     registerFacadeTool(
       "easyeda_control_sdk_read",

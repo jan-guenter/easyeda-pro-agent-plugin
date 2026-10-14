@@ -74,6 +74,18 @@ for (const [namespace, method] of [["pcb_SelectControl", "getAllSelectedPrimitiv
   } });
 }
 
+for (const family of ["Line", "Arc", "Via"] as const) {
+  const namespace = `pcb_Primitive${family}`;
+  groups.push({ namespace, methods: ["getAll"], route: {
+    tool: "easyeda_control_pcb_geometry", selector: `eda.${namespace}.getAll`, implementation: "native-task-equivalent",
+    scope: "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, selection change, navigation, write or Save. Vendor enumeration and DTO allocation precede output bounds; limits do not cancel execution.",
+    source: ["current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+    tests: ["current-pcb-geometry.test.ts", "facade-mode.test.ts", "current-pcb-geometry-registration.test.ts"], documentTypes: [3],
+    validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-geometry", query: { method: `eda.${namespace}.getAll`, includeSchemas: true } } } },
+  } });
+}
+
 groups.push({ namespace: "pcb_Layer", methods: ["getAllLayers", "getTheNumberOfCopperLayers"], route: {
   tool: "easyeda_control_pcb_layers", selector: "explicit-current-pcb-layer-observation", implementation: "native-task-equivalent",
   scope: "Separately pinned current API 0.3.50/UI 3.2.196/PCB 3.2.193 layer metadata reader on an explicit project/branch/document/tab identity for an active ordinary type-3 PCB. Two complete matching samples use a captured native frame receiver with bracketing native identity checks. Ports the nine-field public projection or enabled native SIGNAL/PLANE count plus two; raw color strings remain unchanged. No public wrapper dispatch, legacy-route admission, source export, layer selection, navigation or Save. Not physical-stackup certification, an atomic lock or current connected validation. Vendor RPC bookkeeping and possible uninitialized environment defaults are incidental in-memory effects.",
