@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { z } from "zod";
 import { assertUpstreamReplySettled, canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts";
 import { buildCurrentDisposableOpenProgram, currentDisposableOpenTargetSchema } from "../src/current-disposable-open.ts";
 import type { CurrentDisposableOpenPhase, CurrentDisposableOpenRequest } from "../src/current-disposable-open.ts";
@@ -10,6 +11,10 @@ import type { AuthenticatedBridgeDispatchBinding, ExecutionAuthorityEvidence } f
 import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
 
 type Value = Record<string, unknown>;
+// Pinned upstream L0_diagnostics_api.js validates this before calling the bridge.
+// Keep its wire bound independent of the facade's selected deadlines.
+const executeInputSchema = z.object({ code: z.string().min(1), confirmWrite: z.literal(true),
+  timeoutMs: z.number().int().min(1000).max(60_000) }).strict();
 const HASH = "a".repeat(64), RAW_PATH = String.raw`C:\Fixtures\Disposable.eprj2`;
 const TARGET = { rawWindowsPath: RAW_PATH, projectUuid: sha256Text(RAW_PATH), documentUuid: "b".repeat(16), expectedSourceSha256: HASH };
 const SEALED = { ...TARGET, branchUuid: "c".repeat(32) };
@@ -125,7 +130,11 @@ function fixture(suffix: string): Fixture {
     dispatchWithOrphanTracking: async (journal, phase, name, args, timeoutMs, before, retain) => {
       assert.ok(phase === "preflight" || phase === "open-project" || phase === "open-document" || phase === "observe");
       assert.equal(name, "easyeda_execute"); assert.equal(args["code"], buildCurrentDisposableOpenProgram(SEALED, phase));
-      assert.equal(timeoutMs, phase === "open-project" || phase === "open-document" ? 130_000 : 30_000);
+      const wireInput = executeInputSchema.parse(args);
+      const navigation = phase === "open-project" || phase === "open-document";
+      assert.equal(wireInput.timeoutMs, navigation ? 60_000 : 20_000);
+      assert.equal(timeoutMs, wireInput.timeoutMs + 10_000);
+      assert.ok(wireInput.code.includes(`},${wireInput.timeoutMs - 10_000}]);`));
       assert.equal(journals.get(journal.operationId)?.["state"], `${phase}-dispatching`);
       assert.ok([...artifacts.keys()].some((path) => path.endsWith(`-${phase}-intent.json`)));
       Object.assign(journal, { orphanedCallPossible: true, orphanedCallPhase: phase, bridgeSessionBeforeOrphan: PRIOR,

@@ -19,7 +19,13 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261014163000` adds unfiltered Component/Pad IDs and
+Candidate `0.3.0+codex.20261014180500` corrects the disposable opener's
+navigation timeout to fit the upstream executor's 60-second maximum. Native
+observation expires at 50 seconds and the outer host waits 70 seconds. Timeout
+still requires recovery; it is not cancellation or permission to replay.
+See the [source investigation](docs/current-project-open-investigation-2026-10-14.md).
+
+Previous update `0.3.0+codex.20261014163000` adds unfiltered Component/Pad IDs and
 basic placement/state reads to the current PCB tools. Component libraries,
 child mappings and Pad shapes/holes/rules remain omitted with concrete reasons.
 These are bounded loaded-view projections, not complete public SDK objects or

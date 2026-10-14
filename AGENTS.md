@@ -13,7 +13,71 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Restarted150000, focused disposable opening
+### Restarted163000, executor deadline mismatch corrected in source
+
+Fresh facade583832/parent581947/start219626086 runs installed163000 on
+Node24.18.0; old500624 absent. Independent admission matches all1177files,
+22868734bytes/42directories/seven skills and exact canonical modes. Source340
+801f3e0e/runtime3fb068946 and prior terminal30a49646/terminateddaba9724 remain
+exact. The selected disposable file is still970d21b3/598016bytes in this closed
+observation, not general saved-state or no-background-effect proof. User reports
+the prior window remained on StartPage. No new application startup or navigation.
+
+Source confirms pinned upstream easyeda_execute accepts timeoutMs at most60000,
+but the current opener supplied120000 after its successful20000preflight.
+SDK1.29 input validation runs before the handler and returns non-JSON error text;
+the existing classifier labels that unclassified-upstream-failure. This is a
+confirmed source defect, not a recovered raw reply or retroactive no-effects
+claim. Candidate180500 uses shared60000navigation wire timeout,50000native
+observation and70000host wait. Preflight/observe20000/10000/30000 unchanged.
+One existing lifecycle fixture now enforces the upstream schema and timer
+ordering. It failed before the fix, then all17focused tests passed. Strict types
+and type-aware lint are clean after correcting one test-variable shadowing
+finding. Independent review accepted the narrow correction and unchanged guards.
+Build/sanitizer/SQL-reader/compatibility checks and all seven official skill
+validators pass. Frozen source340769107bb/runtime3f41fcf9e; external pins,
+sanitizer, bridge and dependencies unchanged. Full required release checks are
+running; CI, publication and installation remain pending.
+Loaded163000 is unchanged and must not attempt the known-invalid opening.
+Original150000 operations remain terminal and must never be replayed. Production
+and its record remain excluded. Research is in
+docs/current-project-open-investigation-2026-10-14.md.
+
+### Historical delivered163000, original launch and opening now terminal
+
+PR25 merged as main040f1eb88dc5069b23d11bedea7ea641e9ff4a98. Required
+CI38595491519 and postmerge38597830976 passed all ten jobs:9881facade passes,
+five skips, zero failures;424bridge passes. Fulltree5df99b10 and package
+facf8924 exactly match tested461a18f. Final delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/25#issuecomment-6174043832.
+Official Git marketplace https://github.com/jan-guenter/easyeda-pro-agent-plugin.git
+installed/enabled0.3.0+codex.20261014163000 under umask022, errors[]. Independent
+verification matches1177files/22868734bytes/42directories/seven skills, canonical
+Git modes, no extras or symlinks; inventorye873616078777d25fa7b9b874a26fe6677b3edf4154893a90074ef36640cce5b.
+Actual installed offline startup passes with synthetic profile, ambientNode26.7
+to pinned24.18,15tools, identity7/geometry5 and all four new exact requests valid
+without execution authority. Seven samples show no child/nonstdio socket or
+stderr. Proofa13f863914e0aeef0f30a9bfb1657b2e8ebe0af5dd096a62e73d7aa76daa756a
+is retained in /tmp/easyeda-installed-163000-SUynuJ/proof.json.
+
+After user normal closure, supported retirement of
+current-pcb-open-150000-20261014 completed ONCE:plan-invalidated, hardStop/orphan
+false. Retained original root35936/Job and exact authenticated session closure
+proved; proof3d791b7cad95eb4d4c55feb747483be5d3fe3a912913e53f3d1768dc6abd45c7,
+terminal journal30a4964681a60b162fda2eeceef262f32c06ae4e3c68221975eed14f58257a7f.
+Separate supported observe-termination completed ordinary-startup-150000-20261014
+as terminated; receiptdaba9724d073212b6222c3d2cac4abca386d16a1abd6b0594bd3be937673c859.
+Never repeat either operation. Unknown disposable file effects remain accepted,
+not verified persistence. No Save, navigation, restoration or design edit replay.
+This supersedes the pending-retirement/install instructions below. Old host500624
+still runs150000 and was not killed or patched. Use a fresh Codex session before
+live work; no new reader is live-validated. Leave EasyEDA closed until that
+session independently admits163000. Current opening diagnosis, disposable live
+reader checks and the documented implementation backlog remain. Production and
+its record stay excluded. This local delivery checkpoint is for the next source
+commit; the published implementation and final PR receipt are already complete.
+
+### Historical restarted150000, focused disposable opening
 
 PR24 delivered150000 as main0ef07908e1696d9def3361ae42a3618a3350e3c8;
 fulltree929f4e5bb2712e0c34d23959009c504bdfd6b0b6/package

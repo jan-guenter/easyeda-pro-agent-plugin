@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "./artifacts.ts";
 import { listQualifiedOperationStates } from "./closed-symbol-terminal-admission.ts";
 import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, extractToolPayload, isRecord, isTerminalOperation, sha256Json, sha256Text } from "./core.ts";
-import { CURRENT_DISPOSABLE_OPEN_MAX_BYTES, buildCurrentDisposableOpenProgram, currentDisposableOpenSealedTargetSchema,
+import { CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, buildCurrentDisposableOpenProgram, currentDisposableOpenSealedTargetSchema,
   parseCurrentDisposableOpenRequest, validateCurrentDisposableOpenResult } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenRequest, CurrentDisposableOpenSealedTarget, CurrentDisposableOpenTarget } from "./current-disposable-open.ts";
 import { currentOpenFailureDiagnosticSchema, describeCurrentOpenFailure } from "./current-disposable-open-diagnostics.ts";
@@ -204,7 +204,7 @@ export class CurrentDisposableOpenCoordinator {
       failureContext.hostStage = "write-intent";
       await this.record(journal, `${phase}-intent`, { phase, codeSha256: sha256Text(code), navigationIntent: navigate });
       let parsed: Value | undefined;
-      const toolTimeout = navigate ? 120_000 : 20_000;
+      const toolTimeout = navigate ? CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS : 20_000;
       failureContext.hostStage = "tracked-dispatch";
       await engine.dispatchWithOrphanTracking(journal, phase, "easyeda_execute", { code, timeoutMs: toolTimeout, confirmWrite: true }, toolTimeout + 10_000,
         async () => {

@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "a843383e930fcedb24ad035af42c5403fca8e3cd5d2c1b8705bb9fc6fdf2e47a";
+const __easyedaBundlePairId = "9fefee34478cd027c26b073eddc08623012f93e77408db2fcab304323019b6be";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -92488,7 +92488,7 @@ const run=async()=>{
  const json=JSON.stringify({ok:true,kind:'current-disposable-open',phase,projectUuid:target.projectUuid,documentUuid:target.documentUuid,projectPathMatched:true,branchUuid:final.branchUuid,projectPresent:final.projectPresent,documentPresent:final.documentPresent,activeTarget:final.activeTarget,nativeIdentityVerified:final.nativeIdentityVerified,dispatchAttempted,publicResult,restorationCompletionVerified:false,persistenceVerified:false,writerAuthority:false});
  const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};if(utf8Bytes>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES})bad('OUTPUT');return envelope;
 };
-check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;timedOut=true;timeoutStage=stage;reject(new Error('CURRENT_DISPOSABLE_OPEN_FAILED'));},${navigation ? 11e4 : 1e4}]);});return await Promise.race([run(),timeout]);
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;timedOut=true;timeoutStage=stage;reject(new Error('CURRENT_DISPOSABLE_OPEN_FAILED'));},${navigation ? CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS - 1e4 : 1e4}]);});return await Promise.race([run(),timeout]);
 }catch{failureMessage='CURRENT_DISPOSABLE_OPEN_FAILED:'+(timedOut?timeoutStage:stage)+':'+(timedOut?'TIMEOUT':failureCode);throw new Error(failureMessage);}
 finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(failureMessage??'CURRENT_DISPOSABLE_OPEN_FAILED:cleanup:EXCEPTION');}}}`;
 }
@@ -92516,7 +92516,7 @@ function validateCurrentDisposableOpenResult(targetInput3, phaseInput, raw) {
   }
   return result;
 }
-var CURRENT_DISPOSABLE_OPEN_MAX_BYTES, hex64, hex32, documentId, operationId, windowsPath2, targetFields, currentDisposableOpenTargetSchema, currentDisposableOpenSealedTargetSchema, currentDisposableOpenRequestSchema, currentDisposableOpenQuerySchema, phases, currentDisposableOpenResultSchema, limitations7;
+var CURRENT_DISPOSABLE_OPEN_MAX_BYTES, CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS, hex64, hex32, documentId, operationId, windowsPath2, targetFields, currentDisposableOpenTargetSchema, currentDisposableOpenSealedTargetSchema, currentDisposableOpenRequestSchema, currentDisposableOpenQuerySchema, phases, currentDisposableOpenResultSchema, limitations7;
 var init_current_disposable_open = __esm({
   "server/src/current-disposable-open.ts"() {
     init_zod();
@@ -92524,6 +92524,7 @@ var init_current_disposable_open = __esm({
     init_core3();
     init_exact_readers();
     CURRENT_DISPOSABLE_OPEN_MAX_BYTES = 16384;
+    CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS = 6e4;
     hex64 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
     hex32 = external_exports.string().regex(/^[a-f0-9]{32}$/u);
     documentId = external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
@@ -117625,7 +117626,7 @@ var init_current_disposable_open_runtime = __esm({
           failureContext.hostStage = "write-intent";
           await this.record(journal, `${phase4}-intent`, { phase: phase4, codeSha256: sha256Text(code), navigationIntent: navigate });
           let parsed2;
-          const toolTimeout = navigate ? 12e4 : 2e4;
+          const toolTimeout = navigate ? CURRENT_DISPOSABLE_OPEN_NAVIGATION_TIMEOUT_MS : 2e4;
           failureContext.hostStage = "tracked-dispatch";
           await engine2.dispatchWithOrphanTracking(
             journal,
