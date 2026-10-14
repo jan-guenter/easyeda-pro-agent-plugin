@@ -54,9 +54,16 @@ omitted. Source research is docs/current-pcb-selected-read-research-2026-10-14.m
 Independent review accepts the implementation and retained reader transcripts.
 Focused44tests/typecheck/zero-warning type-aware lint pass; reproducible build,
 compatibility and seven official skill validators pass. Source340f403f055,
-runtime386f89907. External pins, bridge and dependencies unchanged. Full local
-verification runs in /tmp/easyeda-190000-verify-jSXE2y.log; publication,
-installation and new-generation live admission remain pending.
+runtime386f89907 before the following Point correction. External pins, bridge
+and dependencies unchanged. Initial local verification log is
+/tmp/easyeda-190000-verify-jSXE2y.log; this pre-correction run is not final
+payload acceptance. PR27 initial payload2e25309 prompted one valid review
+correction: permit native Point's optional own _hashed cache without reading
+it, preserving own finite x/y and rejecting every other extra key. Two existing
+positive cases failed before the fix. This is a conservative shape restriction,
+not a demonstrated live failure; reviewed handlers allocate fresh Points.
+Final focused/build/CI, publication, installation and new-generation live
+admission remain pending. No new test matrix or current design action.
 
 ### Historical delivered180500, fresh-session disposable validation next
 

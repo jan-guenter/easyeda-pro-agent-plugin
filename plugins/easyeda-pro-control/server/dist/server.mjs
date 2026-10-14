@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "9611c93faaff334f16e303962c32f07bce14a8437ab90a34a528b51ec89cd261";
+const __easyedaBundlePairId = "3d8a6ab8c594fb1bfff870e39dd838e34ce52e8b9ff8867f394a25ee15e657b5";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -118102,7 +118102,8 @@ const integer=value=>{num(value);if(!Number.isInteger(value))bad();return value;
 const layer=value=>{integer(value);if(value<0||value>65535)bad();return value;};
 const bool=value=>{if(typeof value!=='boolean')bad();return value;};
 const text=(value,max,nullable=false)=>{if(value===null&&nullable)return value;if(typeof value!=='string'||value.length>max)bad();return value;};
-const point=value=>{if(!object(value))bad();const keys=Reflect.ownKeys(value);if(keys.length!==2||!keys.includes('x')||!keys.includes('y'))bad();return{x:num(own(value,'x')),y:num(own(value,'y'))};};
+// Native Point may retain an optional _hashed cache; project only own x/y data without reading that cache or its getter.
+const point=value=>{if(!object(value))bad();const keys=Reflect.ownKeys(value);if(!keys.includes('x')||!keys.includes('y')||keys.some(key=>key!=='x'&&key!=='y'&&key!=='_hashed'))bad();return{x:num(own(value,'x')),y:num(own(value,'y'))};};
 const copyRows=value=>{
  const p=Object.getPrototypeOf(value??{});if(!Array.isArray(value)||(p!==Array.prototype&&p!==childArrayPrototype))bad();
  const n=own(value,'length');if(!Number.isInteger(n)||n<0||n>${CURRENT_PCB_GEOMETRY_MAX_ROWS}||Reflect.ownKeys(value).length!==n+1)bad();

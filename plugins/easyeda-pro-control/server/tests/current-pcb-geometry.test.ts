@@ -97,7 +97,7 @@ void test("current geometry copies ordered cross-realm native fields without pub
   for (const [index, method] of methods.entries()) {
     const input = inputFor(method);
     const fixture = environment({ input,
-      beforeChild: "class Point {constructor(p){this.x=p.x;this.y=p.y;}get hashed(){getterReads++;throw new Error('PRIVATE_MUTATOR');}}rows.Via[0].center=new Point(rows.Via[0].center);rows.Component[0].position=new Point(rows.Component[0].position);rows.Pad[0].center=new Point(rows.Pad[0].center);rows.Pad[1].holeAspect=null;rows.Pad[1].holeRotation=NaN;for(const family of Object.values(rows))for(const row of family)Object.defineProperty(row,'unprojected',{get(){getterReads++;throw new Error('PRIVATE_EXTRA');}});" });
+      beforeChild: "class Point {constructor(p){this.x=p.x;this.y=p.y;this._hashed=123;}get hashed(){getterReads++;throw new Error('PRIVATE_MUTATOR');}}rows.Via[0].center=new Point(rows.Via[0].center);rows.Component[0].position=new Point(rows.Component[0].position);rows.Pad[0].center=new Point(rows.Pad[0].center);rows.Pad[1].holeAspect=null;rows.Pad[1].holeRotation=NaN;for(const family of Object.values(rows))for(const row of family)Object.defineProperty(row,'unprojected',{get(){getterReads++;throw new Error('PRIVATE_EXTRA');}});" });
     const result = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await fixture.run()));
     assert.deepEqual(result["value"], expected[index]); assert.equal(fixture.evaluateChild("getterReads"), 0);
     assert.equal(fixture.evaluateChild("calls"), 6); assert.equal(fixture.evaluateChild("dataReads"), 2);
@@ -139,7 +139,7 @@ void test("current geometry explicit IDs return exact caller order with distinct
     ["eda.pcb_PrimitivePad.get", ["pad-a", "pad-b"]]] as const;
   for (const [method, primitiveIds] of cases) {
     const input = inputFor(method, [...primitiveIds]);
-    const fixture = environment({ input });
+    const fixture = environment({ input, beforeChild: "rows.Via[0].center._hashed=7;rows.Component[0].position._hashed=8;rows.Pad[0].center._hashed=9;" });
     const raw: unknown = decodeExactReadEnvelope(await fixture.run());
     const result = validateCurrentPcbGeometryResult(input, raw);
     const value = result["value"]; assert.ok(Array.isArray(value));

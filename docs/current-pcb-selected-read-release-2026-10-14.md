@@ -16,8 +16,16 @@ The same retained receiver, exact target/runtime checks and full-family native
 selection, including unrequested rows. Existing row, field, byte and deadline
 bounds remain; a small requested subset cannot bypass them. `get` reports
 `returnedRowCount` separately from full-family `observedRowCount`. Existing
-`getAll` behavior is unchanged. No direct native `getByIds`, navigation,
+`getAll` arguments and response shape are unchanged. No direct native `getByIds`, navigation,
 selection change, Save or writer is added.
+
+PR review also identified a conservative Point-shape restriction: native
+Points may retain an own `_hashed` cache. The projector now tolerates that
+named optional field without reading it, while retaining own-data and finite
+checks for `x`/`y` and rejecting other extra keys. Both existing collection and
+explicit-ID tests failed with populated caches before the correction. This is
+not a claim that the live callbacks failed: the reviewed handlers currently
+allocate fresh Points without hashing them.
 
 [Primary-source research](current-pcb-selected-read-research-2026-10-14.md)
 documents why direct ID handlers are not reused: some have weaker family
