@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { assertUpstreamReplySettled, extractToolPayload, sha256Text } from "../src/core.ts";
-import { CURRENT_OPEN_NATIVE_CODES, CURRENT_OPEN_NATIVE_STAGES, currentOpenNativeFailureCategory, describeCurrentOpenFailure } from "../src/current-disposable-open-diagnostics.ts";
+import { CURRENT_OPEN_NATIVE_CODES, CURRENT_OPEN_NATIVE_STAGES, CURRENT_OPEN_UPSTREAM_CATEGORIES, currentOpenFailureDiagnosticSchema, currentOpenNativeFailureCategory, describeCurrentOpenFailure } from "../src/current-disposable-open-diagnostics.ts";
 import { buildCurrentDisposableOpenProgram } from "../src/current-disposable-open.ts";
 
 const CONTEXT = { phase: "open-project", hostStage: "tracked-dispatch" } as const;
@@ -31,10 +31,11 @@ void test("native opening stages and codes are fixed, complete and refuse privat
   assert.equal(getters, 0);
 });
 
-void test("bounded opener diagnostics survive actual nested/text upstream wrappers and preserve timeout quarantine", () => {
+void test("bounded opener diagnostics survive upstream error envelopes and preserve timeout quarantine", () => {
   for (const code of ["GUARD", "TIMEOUT"] as const) {
     const result = { ok: false, error: { code: "EASYEDA_API_ERROR", message: `CURRENT_DISPOSABLE_OPEN_FAILED:open-project:${code}`, private: "PRIVATE_PATH_AND_SOURCE" } };
-    for (const reply of [{ structuredContent: { result } }, { content: [{ type: "text", text: JSON.stringify({ result }) }] }]) {
+    // The pinned easyeda_execute handler returns the error message as a string.
+    for (const reply of [{ structuredContent: { ok: false, error: result.error.message } }, { structuredContent: { result } }, { content: [{ type: "text", text: JSON.stringify({ result }) }] }]) {
       let failure: unknown;
       try { assertUpstreamReplySettled(reply); extractToolPayload(reply); } catch (error) { failure = error; }
       assert.ok(failure instanceof Error);
@@ -43,10 +44,32 @@ void test("bounded opener diagnostics survive actual nested/text upstream wrappe
       const diagnostic = describeCurrentOpenFailure(failure, CONTEXT);
       assert.equal(diagnostic.category, code === "TIMEOUT" ? "native-timeout" : "native-guard");
       assert.equal(diagnostic.nativeStage, "open-project"); assert.equal(diagnostic.nativeCode, code);
+      assert.equal(Object.hasOwn(diagnostic, "upstreamCategory"), false);
       assert.equal(JSON.stringify(diagnostic).includes("PRIVATE"), false);
     }
   }
   const suffixed = { structuredContent: { ok: false, error: "CURRENT_DISPOSABLE_OPEN_FAILED:open-project:TIMEOUT:PRIVATE" } };
   assert.doesNotThrow(() => { assertUpstreamReplySettled(suffixed); });
   assert.throws(() => extractToolPayload(suffixed), /unclassified-upstream-failure/u);
+});
+
+void test("upstream subcategories are optional, fixed and exclude raw error text", () => {
+  const legacy = { schema: "easyeda-pro-control.current-open-failure.v1", ...CONTEXT,
+    category: "upstream-failure", nativeStage: null, nativeCode: null };
+  assert.deepEqual(currentOpenFailureDiagnosticSchema.parse(legacy), legacy);
+  for (const upstreamCategory of CURRENT_OPEN_UPSTREAM_CATEGORIES) {
+    for (const prefix of ["The upstream EasyEDA tool reported failure", "The upstream EasyEDA tool reported failure or unavailability"]) {
+      const message = `${prefix} [${upstreamCategory}].`;
+      assert.deepEqual(describeCurrentOpenFailure(new Error(message), CONTEXT), { ...legacy, upstreamCategory });
+      const suffixed = describeCurrentOpenFailure(new Error(`${message} PRIVATE_PATH_AND_SOURCE`), CONTEXT);
+      assert.equal(suffixed.category, "unknown");
+      assert.equal(Object.hasOwn(suffixed, "upstreamCategory"), false);
+      assert.equal(JSON.stringify(suffixed).includes("PRIVATE"), false);
+    }
+  }
+  assert.equal(currentOpenFailureDiagnosticSchema.safeParse({ ...legacy, upstreamCategory: "PRIVATE_PATH_AND_SOURCE" }).success, false);
+  const prefixed = { structuredContent: { ok: false, error: "Error: CURRENT_DISPOSABLE_OPEN_FAILED:open-project:GUARD" } };
+  let failure: unknown;
+  try { extractToolPayload(prefixed); } catch (error) { failure = error; }
+  assert.deepEqual(describeCurrentOpenFailure(failure, CONTEXT), { ...legacy, upstreamCategory: "unclassified-upstream-failure" });
 });

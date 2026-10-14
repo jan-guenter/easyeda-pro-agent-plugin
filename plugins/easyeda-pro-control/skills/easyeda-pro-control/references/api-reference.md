@@ -220,9 +220,10 @@ The context observer accepts local 64-hex project IDs; branches stay32.
 
 Supported methods are `eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId`
 and `eda.pcb_PrimitiveLine.getAllPrimitiveId`, `eda.pcb_PrimitiveArc.getAllPrimitiveId`,
-`eda.pcb_PrimitiveVia.getAllPrimitiveId`, each with empty `arguments`.
+`eda.pcb_PrimitiveVia.getAllPrimitiveId`, `eda.pcb_PrimitiveComponent.getAllPrimitiveId`
+and `eda.pcb_PrimitivePad.getAllPrimitiveId`, each with empty `arguments`.
 `eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId` takes `arguments:{"id":"..."}`
-and classifies only a positive unique membership in those three families.
+and classifies only a positive unique membership in Line, Arc or Via.
 Missing IDs, other families and collisions refuse, never return invented
 `undefined`. No optional public filters are supported yet.
 
@@ -248,26 +249,41 @@ request with `pcb-geometry-validate` and `query:{"request":...}`. Invoke
 `expectedFingerprint`. Use the same explicit project/branch/document/tab target
 as identity reads. The board must already be active; this tool never opens it.
 
-Methods are `eda.pcb_PrimitiveLine.getAll`, `eda.pcb_PrimitiveArc.getAll` and
-`eda.pcb_PrimitiveVia.getAll`, with empty `arguments` only. Results preserve
+Methods are `eda.pcb_PrimitiveLine.getAll`, `eda.pcb_PrimitiveArc.getAll`,
+`eda.pcb_PrimitiveVia.getAll`, `eda.pcb_PrimitiveComponent.getAll` and
+`eda.pcb_PrimitivePad.getAll`, with empty `arguments` only. Results preserve
 native row order and contain plain data, not SDK objects or methods. Every row
-has `primitiveId`, `primitiveType`, `net` and `primitiveLock`. Null and empty
-net text remain distinct; neither proves resolved connectivity.
+has `primitiveId`, `primitiveType` and `primitiveLock`. All except Component
+also have `net`; null and empty net text remain distinct, and neither proves
+resolved connectivity.
 
 | Family | Additional fields |
 |---|---|
 | Line | `layer`, `startX`, `startY`, `endX`, `endY`, `lineWidth` |
 | Arc | Line fields plus `arcAngle`, `interactiveMode` |
 | Via | `x`, `y`, `holeDiameter`, `diameter`, `viaType`, `designRuleBlindViaName`, `startLayer`, `endLayer`, `maskExpansionMode`, `topMaskExpansion`, `bottomMaskExpansion` |
+| Component | `layer` (1/2), `x`, `y`, `rotation` |
+| Pad | `layer` (1/2/12), `padNumber`, `x`, `y`, `rotation`, `metallization`, `padType` (0/1/2) |
 
 Lengths use mil from the data origin, which can differ from the displayed
-canvas origin. Arc angle uses degrees. Arc modes are native1/2, Via types0/1/2.
+canvas origin. Arc angle and Component/Pad rotation use degrees. Arc modes
+are native1/2, Via types0/1/2.
 The adapter preserves the native callback precision. It does not apply the
 public wrapper's Arc rounding or Via radius rounding before deriving diameter.
 Via mask fields are loaded model values, not proof of a stored custom override
 or fresh rule evaluation. Arc endpoints and angle omit center/radius/sweep;
 a full-circle case can project to zero `arcAngle`. Do not reconstruct a complete
 shape or derive an editing baseline from this projection.
+
+Component and Pad expose placement/state only. Component libraries, attributes,
+child IDs and pin mappings are omitted. Pad shapes, holes, rules, mask expansions
+and parent-component identity are omitted. A Pad row may be inherited; never
+infer that it is standalone or derive its parent from an ID prefix. The native
+holeless-Pad callback can contain NaN in discarded `holeRotation`; only promised
+fields are validated. Required missing fields refuse rather than receive SDK
+constructor defaults. Native Component serialization still reads existing
+footprint/device/font caches and child arrays before projection; ID-only reads
+do not avoid that work or fetch missing libraries.
 
 Two matching ordered projected samples retain the exact frame and receiver
 around each await. Omitted fields are not compared. Limits are256rows,

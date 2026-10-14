@@ -173,7 +173,7 @@ void describe("self-contained packaged machine startup", () => {
     } } });
     assert.equal(layerRequest["valid"], true); assert.equal(layerRequest["executionAuthorized"], false);
     const identities = await api(client, { action: "pcb-identities", query: { includeSchemas: true } });
-    assert.equal(identities["total"], 5); assert.equal(identities["invocationEnabledByDiscovery"], false);
+    assert.equal(identities["total"], 7); assert.equal(identities["invocationEnabledByDiscovery"], false);
     const identityRequest = await api(client, { action: "pcb-identities-validate", query: { request: {
       method: "eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId", arguments: {}, target: {
         projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16), tabId: `${"c".repeat(16)}@${"a".repeat(64)}`,
@@ -181,7 +181,7 @@ void describe("self-contained packaged machine startup", () => {
     } } });
     assert.equal(identityRequest["valid"], true); assert.equal(identityRequest["executionAuthorized"], false);
     const geometry = await api(client, { action: "pcb-geometry", query: { includeSchemas: true } });
-    assert.equal(geometry["total"], 3); assert.equal(geometry["invocationEnabledByDiscovery"], false);
+    assert.equal(geometry["total"], 5); assert.equal(geometry["invocationEnabledByDiscovery"], false);
     const geometryRequest = await api(client, { action: "pcb-geometry-validate", query: { request: {
       method: "eda.pcb_PrimitiveLine.getAll", arguments: {}, target: {
         projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16), tabId: `${"c".repeat(16)}@${"a".repeat(64)}`,

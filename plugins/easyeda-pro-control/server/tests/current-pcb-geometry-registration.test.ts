@@ -46,7 +46,11 @@ void test("PCB geometry registration preserves strict target requests and the se
     assert.equal(requestSchema.safeParse(invalid).success, false);
   }
   assert.equal(calls.length, 0);
-  const parsed = requestSchema.parse(request), result = await invoke({ request: parsed, expectedFingerprint });
-  assert.equal(calls.length, 1); assert.equal(calls[0], parsed);
-  assert.ok(result !== null && typeof result === "object" && "result" in result); assert.equal(result.result, observed);
+  for (const family of ["Line", "Component", "Pad"]) {
+    const parsed: unknown = requestSchema.parse({ ...request, method: `eda.pcb_Primitive${family}.getAll` });
+    const result: unknown = await invoke({ request: parsed, expectedFingerprint });
+    assert.equal(calls.at(-1), parsed);
+    assert.ok(result !== null && typeof result === "object" && "result" in result); assert.equal(result.result, observed);
+  }
+  assert.equal(calls.length, 3);
 });

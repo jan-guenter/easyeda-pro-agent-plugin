@@ -12,6 +12,9 @@ export const CURRENT_OPEN_HOST_STAGES = [
   "write-intent", "tracked-dispatch", "before-dispatch", "checkpoint-reproof", "decode-result", "validate-result",
   "retain-result", "settled-result", "post-admission", "project-acknowledgement", "write-completion",
 ] as const;
+export const CURRENT_OPEN_UPSTREAM_CATEGORIES = [
+  "native-api-error", "payload-too-large", "invalid-input", "unavailable", "unstable-read", "invalid-envelope", "unclassified-upstream-failure",
+] as const;
 export const currentOpenFailureDiagnosticSchema = z.object({
   schema: z.literal("easyeda-pro-control.current-open-failure.v1"),
   phase: z.enum(["preflight", "open-project", "open-document", "observe"]),
@@ -19,6 +22,7 @@ export const currentOpenFailureDiagnosticSchema = z.object({
   category: z.enum(["native-guard", "native-exception", "native-timeout", "bridge-timeout", "upstream-failure", "output-bound", "result-invalid", "project-acknowledgement", "unknown"]),
   nativeStage: z.enum(CURRENT_OPEN_NATIVE_STAGES).nullable(),
   nativeCode: z.enum(CURRENT_OPEN_NATIVE_CODES).nullable(),
+  upstreamCategory: z.enum(CURRENT_OPEN_UPSTREAM_CATEGORIES).optional(),
 }).strict();
 export type CurrentOpenFailureDiagnostic = z.infer<typeof currentOpenFailureDiagnosticSchema>;
 export type CurrentOpenFailureContext = Pick<CurrentOpenFailureDiagnostic, "phase" | "hostStage">;
@@ -70,9 +74,11 @@ const hostCategories = new Map<string, CurrentOpenFailureDiagnostic["category"]>
   ["Disposable opening result has an invalid public method acknowledgement.", "result-invalid"],
   ["Project opening did not acknowledge the exact target project.", "project-acknowledgement"],
 ]);
-for (const category of ["native-api-error", "payload-too-large", "invalid-input", "unavailable", "unstable-read", "invalid-envelope", "unclassified-upstream-failure"]) {
+const upstreamCategories = new Map<string, typeof CURRENT_OPEN_UPSTREAM_CATEGORIES[number]>();
+for (const category of CURRENT_OPEN_UPSTREAM_CATEGORIES) {
   for (const prefix of ["The upstream EasyEDA tool reported failure", "The upstream EasyEDA tool reported failure or unavailability"]) {
     hostCategories.set(`${prefix} [${category}].`, "upstream-failure");
+    upstreamCategories.set(`${prefix} [${category}].`, category);
   }
 }
 
@@ -80,6 +86,7 @@ export function describeCurrentOpenFailure(error: unknown, context: CurrentOpenF
   const message = ownMessage(error);
   const category = currentOpenNativeFailureCategory(message);
   const native = category === null ? wrappedCategories.get(message ?? "") : nativeCategories.get(category);
+  const upstreamCategory = upstreamCategories.get(message ?? "");
   let classification: CurrentOpenFailureDiagnostic["category"] = hostCategories.get(message ?? "") ?? "unknown";
   if (native !== undefined) {
     classification = "native-guard";
@@ -87,5 +94,6 @@ export function describeCurrentOpenFailure(error: unknown, context: CurrentOpenF
     else if (native.nativeCode === "EXCEPTION") { classification = "native-exception"; }
   }
   return currentOpenFailureDiagnosticSchema.parse({ schema: "easyeda-pro-control.current-open-failure.v1", ...context,
-    category: classification, nativeStage: native?.nativeStage ?? null, nativeCode: native?.nativeCode ?? null });
+    category: classification, nativeStage: native?.nativeStage ?? null, nativeCode: native?.nativeCode ?? null,
+    ...(upstreamCategory === undefined ? {} : { upstreamCategory }) });
 }

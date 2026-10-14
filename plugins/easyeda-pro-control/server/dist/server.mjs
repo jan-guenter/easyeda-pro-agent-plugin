@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "4a8805c96e33cfe12ba773aaf4c51ca93e889704999b14aa8733c778ea701d8c";
+const __easyedaBundlePairId = "a843383e930fcedb24ad035af42c5403fca8e3cd5d2c1b8705bb9fc6fdf2e47a";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -33275,6 +33275,7 @@ function describeCurrentOpenFailure(error51, context3) {
   const message = ownMessage(error51);
   const category = currentOpenNativeFailureCategory(message);
   const native = category === null ? wrappedCategories.get(message ?? "") : nativeCategories.get(category);
+  const upstreamCategory = upstreamCategories.get(message ?? "");
   let classification2 = hostCategories.get(message ?? "") ?? "unknown";
   if (native !== void 0) {
     classification2 = "native-guard";
@@ -33289,10 +33290,11 @@ function describeCurrentOpenFailure(error51, context3) {
     ...context3,
     category: classification2,
     nativeStage: native?.nativeStage ?? null,
-    nativeCode: native?.nativeCode ?? null
+    nativeCode: native?.nativeCode ?? null,
+    ...upstreamCategory === void 0 ? {} : { upstreamCategory }
   });
 }
-var CURRENT_OPEN_NATIVE_STAGES, CURRENT_OPEN_NATIVE_CODES, CURRENT_OPEN_HOST_STAGES, currentOpenFailureDiagnosticSchema, nativeMessages, nativeCategories, wrappedCategories, hostCategories;
+var CURRENT_OPEN_NATIVE_STAGES, CURRENT_OPEN_NATIVE_CODES, CURRENT_OPEN_HOST_STAGES, CURRENT_OPEN_UPSTREAM_CATEGORIES, currentOpenFailureDiagnosticSchema, nativeMessages, nativeCategories, wrappedCategories, hostCategories, upstreamCategories;
 var init_current_disposable_open_diagnostics = __esm({
   "server/src/current-disposable-open-diagnostics.ts"() {
     init_zod();
@@ -33342,13 +33344,23 @@ var init_current_disposable_open_diagnostics = __esm({
       "project-acknowledgement",
       "write-completion"
     ];
+    CURRENT_OPEN_UPSTREAM_CATEGORIES = [
+      "native-api-error",
+      "payload-too-large",
+      "invalid-input",
+      "unavailable",
+      "unstable-read",
+      "invalid-envelope",
+      "unclassified-upstream-failure"
+    ];
     currentOpenFailureDiagnosticSchema = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.current-open-failure.v1"),
       phase: external_exports.enum(["preflight", "open-project", "open-document", "observe"]),
       hostStage: external_exports.enum(CURRENT_OPEN_HOST_STAGES),
       category: external_exports.enum(["native-guard", "native-exception", "native-timeout", "bridge-timeout", "upstream-failure", "output-bound", "result-invalid", "project-acknowledgement", "unknown"]),
       nativeStage: external_exports.enum(CURRENT_OPEN_NATIVE_STAGES).nullable(),
-      nativeCode: external_exports.enum(CURRENT_OPEN_NATIVE_CODES).nullable()
+      nativeCode: external_exports.enum(CURRENT_OPEN_NATIVE_CODES).nullable(),
+      upstreamCategory: external_exports.enum(CURRENT_OPEN_UPSTREAM_CATEGORIES).optional()
     }).strict();
     nativeMessages = /* @__PURE__ */ new Map();
     nativeCategories = /* @__PURE__ */ new Map();
@@ -33376,9 +33388,11 @@ var init_current_disposable_open_diagnostics = __esm({
       ["Disposable opening result has an invalid public method acknowledgement.", "result-invalid"],
       ["Project opening did not acknowledge the exact target project.", "project-acknowledgement"]
     ]);
-    for (const category of ["native-api-error", "payload-too-large", "invalid-input", "unavailable", "unstable-read", "invalid-envelope", "unclassified-upstream-failure"]) {
+    upstreamCategories = /* @__PURE__ */ new Map();
+    for (const category of CURRENT_OPEN_UPSTREAM_CATEGORIES) {
       for (const prefix3 of ["The upstream EasyEDA tool reported failure", "The upstream EasyEDA tool reported failure or unavailability"]) {
         hostCategories.set(`${prefix3} [${category}].`, "upstream-failure");
+        upstreamCategories.set(`${prefix3} [${category}].`, category);
       }
     }
   }
@@ -38296,8 +38310,8 @@ function privateMode(mode) {
 function identityOf(information) {
   return { device: information.dev, inode: information.ino };
 }
-function sameIdentity2(information, identity27) {
-  return information.dev === identity27.device && information.ino === identity27.inode;
+function sameIdentity2(information, identity28) {
+  return information.dev === identity28.device && information.ino === identity28.inode;
 }
 function assertPrivateLeaseFile(information, label, expectedLinkCount = 1n) {
   if (information.isSymbolicLink() || !information.isFile() || information.nlink !== expectedLinkCount || privateMode(information.mode) !== 384 || information.size <= 0n || information.size > MAXIMUM_LEASE_RECORD_BYTES || typeof process6.getuid === "function" && information.uid !== BigInt(process6.getuid())) {
@@ -38395,16 +38409,16 @@ async function writeNewPrivateRecord(handle, path5, value, label) {
   ]);
   assertPrivateLeaseFile(opened, label);
   assertPrivateLeaseFile(currentPath, label);
-  const identity27 = identityOf(opened);
-  if (!sameIdentity2(currentPath, identity27)) {
+  const identity28 = identityOf(opened);
+  if (!sameIdentity2(currentPath, identity28)) {
     throw new Error(`${label} changed during exclusive publication.`);
   }
-  return identity27;
+  return identity28;
 }
-async function unlinkExpectedPrivateRecord(root, path5, identity27, label) {
+async function unlinkExpectedPrivateRecord(root, path5, identity28, label) {
   const pathInformation = await lstat4(path5, { bigint: true });
   assertPrivateLeaseFile(pathInformation, label);
-  if (!sameIdentity2(pathInformation, identity27)) {
+  if (!sameIdentity2(pathInformation, identity28)) {
     throw new Error(`${label} identity changed before cleanup.`);
   }
   const handle = await open4(
@@ -38419,13 +38433,13 @@ async function unlinkExpectedPrivateRecord(root, path5, identity27, label) {
     ]);
     assertPrivateLeaseFile(opened, label);
     assertPrivateLeaseFile(currentPath, label);
-    if (!sameIdentity2(opened, identity27) || !sameIdentity2(currentPath, identity27)) {
+    if (!sameIdentity2(opened, identity28) || !sameIdentity2(currentPath, identity28)) {
       throw new Error(`${label} identity changed before unlink.`);
     }
     await unlink2(path5);
     await syncControlRoot(root);
     const unlinked = await handle.stat({ bigint: true });
-    if (!sameIdentity2(unlinked, identity27) || unlinked.nlink !== 0n) {
+    if (!sameIdentity2(unlinked, identity28) || unlinked.nlink !== 0n) {
       throw new Error(`${label} did not become descriptor-only after unlink.`);
     }
   } catch (error51) {
@@ -38447,10 +38461,10 @@ async function unlinkExpectedPrivateRecord(root, path5, identity27, label) {
     throw operationFailure instanceof Error ? operationFailure : new Error(`${label} cleanup failed.`, { cause: operationFailure });
   }
 }
-function unlinkExpectedPrivateRecordSync(path5, identity27, label) {
+function unlinkExpectedPrivateRecordSync(path5, identity28, label) {
   const pathInformation = lstatSync(path5, { bigint: true });
   assertPrivateLeaseFile(pathInformation, label);
-  if (!sameIdentity2(pathInformation, identity27)) {
+  if (!sameIdentity2(pathInformation, identity28)) {
     throw new Error(`${label} identity changed before synchronous cleanup.`);
   }
   const descriptor9 = openSync(
@@ -38462,12 +38476,12 @@ function unlinkExpectedPrivateRecordSync(path5, identity27, label) {
     const currentPath = lstatSync(path5, { bigint: true });
     assertPrivateLeaseFile(opened, label);
     assertPrivateLeaseFile(currentPath, label);
-    if (!sameIdentity2(opened, identity27) || !sameIdentity2(currentPath, identity27)) {
+    if (!sameIdentity2(opened, identity28) || !sameIdentity2(currentPath, identity28)) {
       throw new Error(`${label} identity changed before synchronous unlink.`);
     }
     unlinkSync(path5);
     const unlinked = fstatSync(descriptor9, { bigint: true });
-    if (!sameIdentity2(unlinked, identity27) || unlinked.nlink !== 0n) {
+    if (!sameIdentity2(unlinked, identity28) || unlinked.nlink !== 0n) {
       throw new Error(
         `${label} did not become descriptor-only after synchronous unlink.`
       );
@@ -38614,7 +38628,7 @@ async function acquireCleanupLease(root, cleanupPath, staleToken) {
         fsConstants4.O_WRONLY | fsConstants4.O_CREAT | fsConstants4.O_EXCL | fsConstants4.O_NOFOLLOW,
         384
       );
-      const identity27 = await writeNewPrivateRecord(
+      const identity28 = await writeNewPrivateRecord(
         handle,
         cleanupPath,
         record7,
@@ -38623,7 +38637,7 @@ async function acquireCleanupLease(root, cleanupPath, staleToken) {
       await handle.close();
       handle = void 0;
       await syncControlRoot(root);
-      return { identity: identity27, record: record7 };
+      return { identity: identity28, record: record7 };
     } catch (error51) {
       await retryHandleCloseAfterFailure(
         handle,
@@ -39451,13 +39465,15 @@ var init_extension_api_coverage_routes = __esm({
       ["pcb_PrimitiveLine", "getAllPrimitiveId"],
       ["pcb_PrimitiveArc", "getAllPrimitiveId"],
       ["pcb_PrimitiveVia", "getAllPrimitiveId"],
+      ["pcb_PrimitiveComponent", "getAllPrimitiveId"],
+      ["pcb_PrimitivePad", "getAllPrimitiveId"],
       ["pcb_Primitive", "getPrimitiveTypeByPrimitiveId"]
     ]) {
       groups.push({ namespace, methods: [method4], route: {
         tool: "easyeda_control_pcb_identities",
         selector: `eda.${namespace}.${method4}`,
         implementation: "native-task-equivalent",
-        scope: "Separately pinned current API/UI/PCB native view identity subset. Explicit ordinary active PCB project/branch/document/tab, retained frame/receiver and two matching ordered ID observations. Selected IDs preserve observed selection; unfiltered Line/Arc/Via IDs enumerate loaded views. Type lookup admits only a positive unique membership in those three families; missing or ambiguous IDs refuse. No filters, complete stored inventory, root/inherited ownership, geometry, connectivity, public-wrapper dispatch, selection change, navigation or Save. Vendor enumeration and DTO allocation precede output bounds; limits do not cancel execution.",
+        scope: "Separately pinned current API/UI/PCB native view identity subset. Explicit ordinary active PCB project/branch/document/tab, retained frame/receiver and two matching ordered ID observations. Selected IDs preserve observed selection; unfiltered Line/Arc/Via/Component/Pad IDs enumerate loaded views. Type lookup admits only a positive unique membership in Line/Arc/Via, not Component/Pad; missing or ambiguous IDs refuse. No filters, complete stored inventory, root/inherited ownership, ComponentPad associations, geometry, connectivity, public-wrapper dispatch, selection change, navigation or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.",
         source: ["current-pcb-identities.ts", "current-pcb-identities-program.ts", "current-pcb-identities-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
         tests: ["current-pcb-identities.test.ts", "facade-mode.test.ts"],
         documentTypes: [3],
@@ -39466,13 +39482,13 @@ var init_extension_api_coverage_routes = __esm({
         inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-identities", query: { method: `eda.${namespace}.${method4}`, includeSchemas: true } } } }
       } });
     }
-    for (const family2 of ["Line", "Arc", "Via"]) {
+    for (const family2 of ["Line", "Arc", "Via", "Component", "Pad"]) {
       const namespace = `pcb_Primitive${family2}`;
       groups.push({ namespace, methods: ["getAll"], route: {
         tool: "easyeda_control_pcb_geometry",
         selector: `eda.${namespace}.getAll`,
         implementation: "native-task-equivalent",
-        scope: "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, selection change, navigation, write or Save. Vendor enumeration and DTO allocation precede output bounds; limits do not cancel execution.",
+        scope: "Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.",
         source: ["current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
         tests: ["current-pcb-geometry.test.ts", "facade-mode.test.ts", "current-pcb-geometry-registration.test.ts"],
         documentTypes: [3],
@@ -44547,14 +44563,14 @@ function compileSchematicOperation(input) {
   if (["port", "net-flag"].includes(family2)) {
     limitations10.push("default-library-symbol-associations-must-be-captured-and-proven");
   }
-  let identity27 = "preserve";
+  let identity28 = "preserve";
   if (deleting) {
-    identity27 = "delete";
+    identity28 = "delete";
   }
   if (creating) {
-    identity27 = "create";
+    identity28 = "create";
   }
-  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method4, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field3, value]) => expected(family2, field3, value)), inverse, effect: { family: family2, target: target5, identity: identity27, fields: fields7, collateral }, requiredPreservation, limitations: limitations10 };
+  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method4, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field3, value]) => expected(family2, field3, value)), inverse, effect: { family: family2, target: target5, identity: identity28, fields: fields7, collateral }, requiredPreservation, limitations: limitations10 };
 }
 function referenceFamily(action) {
   const family2 = action.split(".")[1];
@@ -57545,11 +57561,11 @@ function assertPcbTextSourceProfile(source4) {
       if (typeof parent !== "string" || !componentIds.has(parent) || typeof key !== "string" || !key || typeof row6.body["value"] !== "string" || typeof row6.body["keyVisible"] !== "boolean" || typeof row6.body["valueVisible"] !== "boolean") {
         throw new Error("Standalone PCB text requires explicit native component-attribute ownership; root or malformed ATTR is unsupported.");
       }
-      const identity27 = JSON.stringify([parent, key]);
-      if (attributes2.has(identity27)) {
+      const identity28 = JSON.stringify([parent, key]);
+      if (attributes2.has(identity28)) {
         throw new Error("Standalone PCB text refuses duplicate native component attributes.");
       }
-      attributes2.add(identity27);
+      attributes2.add(identity28);
     } else if (parent !== void 0 && parent !== "") {
       throw new Error("Standalone PCB text source has ambiguous native parent ownership.");
     }
@@ -57822,16 +57838,16 @@ function assertPcbTextCreateRetainedAuthority(input, createdId, prepared, acknow
   if (operation.action !== "pcb.text.create") {
     throw new Error("Retained PCB text creation authority requires its original create plan.");
   }
-  const identity27 = nativeId3.parse(createdId);
+  const identity28 = nativeId3.parse(createdId);
   external_exports.object({
     adapterProfile: external_exports.literal(PCB_TEXT_LIFECYCLE_PROFILE),
-    createdId: external_exports.literal(identity27),
+    createdId: external_exports.literal(identity28),
     createdIds: external_exports.null(),
     componentCreate: external_exports.null(),
     codeSha256: external_exports.string().regex(/^[a-f0-9]{64}$/u)
   }).strict().parse(prepared);
   if (acknowledgment !== void 0) {
-    assertPcbTextLifecycleAcknowledgment(operation, { createdId: identity27 }, acknowledgment);
+    assertPcbTextLifecycleAcknowledgment(operation, { createdId: identity28 }, acknowledgment);
   }
 }
 function compilePcbTextLifecycleOperation(input) {
@@ -62774,14 +62790,14 @@ function buildActorBoundEditorTargetAbsentExpression(input) {
   return compileEditorTargetAbsentExpression(input, true);
 }
 function compileEditorTargetAbsentExpression(input, actorBound) {
-  const identity27 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
+  const identity28 = external_exports.string().min(1).max(256).regex(/^[a-z0-9_-]+$/iu);
   const active2 = external_exports.object({
-    uuid: identity27,
+    uuid: identity28,
     documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]),
     // oxlint-disable-next-line eslint/no-control-regex -- Native tab identities must not contain control characters.
     tabId: external_exports.string().min(1).max(512).regex(/^[^\u0000-\u001F]+$/u)
   }).strict();
-  const scope5 = external_exports.object({ targetUuid: identity27, projectUuid: identity27, ownerUuid: identity27, active: active2 }).strict().parse(input);
+  const scope5 = external_exports.object({ targetUuid: identity28, projectUuid: identity28, ownerUuid: identity28, active: active2 }).strict().parse(input);
   if (scope5.active.uuid === scope5.targetUuid || scope5.active.tabId.split("@")[0] !== scope5.active.uuid) {
     throw new Error("Closed-target proof requires one exact different active tab.");
   }
@@ -70218,9 +70234,9 @@ async function row(tableValue, name6, value) {
     }
     const entry = tableValue.rows[index];
     need10(entry !== void 0);
-    const identity27 = cell(tableValue, entry, name6);
-    need10(identity27.kind === "text" && identity27.hex.length <= 128);
-    if (identity27.hex === expected3) {
+    const identity28 = cell(tableValue, entry, name6);
+    need10(identity28.kind === "text" && identity28.hex.length <= 128);
+    if (identity28.hex === expected3) {
       need10(result === void 0);
       result = entry;
     }
@@ -70312,13 +70328,13 @@ function capture(value, operationId3, generation5, attempt) {
   for (const process19 of processes2) {
     const p = exact9(process19, ["pid", "role", "startIdentity"]);
     const pid2 = p["pid"];
-    const identity27 = p["startIdentity"];
-    need11(typeof pid2 === "number" && Number.isSafeInteger(pid2) && pid2 > previous && pid2 <= 2147483647 && typeof identity27 === "string" && new RegExp(`^win32:\\d{15,20}:job:${generation5.jobId}$`, "u").test(identity27));
+    const identity28 = p["startIdentity"];
+    need11(typeof pid2 === "number" && Number.isSafeInteger(pid2) && pid2 > previous && pid2 <= 2147483647 && typeof identity28 === "string" && new RegExp(`^win32:\\d{15,20}:job:${generation5.jobId}$`, "u").test(identity28));
     previous = pid2;
     need11(["easyeda-main", "easyeda-descendant", "renderer", "native-socket-owner"].includes(String(p["role"])));
     if (p["role"] === "easyeda-main") {
       root += 1;
-      need11(pid2 === generation5.rootPid && identity27 === generation5.rootStartIdentity);
+      need11(pid2 === generation5.rootPid && identity28 === generation5.rootStartIdentity);
     }
   }
   need11(root === 1);
@@ -70352,8 +70368,8 @@ function captureClock(value, retained, operationId3, generation5, attempt) {
     runtimeIdentitySha256: generation5.runtimeSha256,
     authoritySha256: authority["authoritySha256"]
   }) && value.base["bindingSha256"] === authority["bindingSha256"] && value.base["capturedAt"] === authority["capturedAt"] && canonicalJson(value.base["processes"]) === canonicalJson(authority["processes"]));
-  const identity27 = retained["runtimeIdentity"];
-  need11(isRecord(identity27) && value.base["runtimePid"] === identity27["processId"]);
+  const identity28 = retained["runtimeIdentity"];
+  need11(isRecord(identity28) && value.base["runtimePid"] === identity28["processId"]);
   const rows2 = value.base["processes"];
   need11(Array.isArray(rows2));
   for (const key of ["runtimePid", "socketOwnerPid"]) {
@@ -73075,9 +73091,9 @@ async function row2(owner, column, value) {
     }
     const entry = owner.rows[index];
     need16(entry !== void 0, "Witness baseline row missing.");
-    const identity27 = cell2(owner, entry, column);
-    need16(identity27.kind === "text" && identity27.hex.length <= 128, "Witness baseline identity is not bounded SQL text.");
-    if (identity27.hex === expected3) {
+    const identity28 = cell2(owner, entry, column);
+    need16(identity28.kind === "text" && identity28.hex.length <= 128, "Witness baseline identity is not bounded SQL text.");
+    if (identity28.hex === expected3) {
       need16(selected2 === void 0, "Witness baseline row is not unique.");
       selected2 = entry;
     }
@@ -73160,9 +73176,9 @@ async function row3(owner, column, value) {
     }
     const entry = owner.rows[index];
     need17(entry !== void 0, "Witness baseline row missing.");
-    const identity27 = cell3(owner, entry, column);
-    need17(identity27.kind === "text" && identity27.hex.length <= 128, "Witness baseline identity is not bounded SQL text.");
-    if (identity27.hex === expected3) {
+    const identity28 = cell3(owner, entry, column);
+    need17(identity28.kind === "text" && identity28.hex.length <= 128, "Witness baseline identity is not bounded SQL text.");
+    if (identity28.hex === expected3) {
       need17(selected2 === void 0, "Witness baseline row is not unique.");
       selected2 = entry;
     }
@@ -73612,24 +73628,24 @@ async function source2(name6) {
 }
 async function compileMainReferenceV3Metadata(input) {
   const request2 = validateMainReferenceRequest(input);
-  const identity27 = MAIN_REFERENCE_HELPER_IDENTITY;
-  need19(identity27 !== null && identity27.profile === "private.main-reference-helper.v1" && Number.isSafeInteger(identity27.bytes) && identity27.bytes > 0 && identity27.bytes <= 262144);
-  hash20(identity27.sha256);
-  hash20(identity27.sourcesSha256);
-  const helperIdentity = Object.freeze({ ...identity27 });
+  const identity28 = MAIN_REFERENCE_HELPER_IDENTITY;
+  need19(identity28 !== null && identity28.profile === "private.main-reference-helper.v1" && Number.isSafeInteger(identity28.bytes) && identity28.bytes > 0 && identity28.bytes <= 262144);
+  hash20(identity28.sha256);
+  hash20(identity28.sourcesSha256);
+  const helperIdentity = Object.freeze({ ...identity28 });
   const main = buildMainReferenceProgram(request2), requestText = canonicalJson(request2);
   const mainSha256 = sha256Text(main), requestSha256 = sha256Text(requestText);
   const [template, decoder, helper] = await Promise.all([
     source2("owner-command-v3.ps1"),
     source2("stdin-decoder-v3.ps1"),
-    pinnedBytes(new URL("../bin/Easyeda.MainReference.dll", import.meta.url), identity27.sha256, 262144, identity27.bytes)
+    pinnedBytes(new URL("../bin/Easyeda.MainReference.dll", import.meta.url), identity28.sha256, 262144, identity28.bytes)
   ]);
   const replacements = Object.freeze({
     __NONCE__: request2.nonce,
     __REQUEST_HASH__: requestSha256,
     __MAIN_HASH__: mainSha256,
-    __HELPER_HASH__: identity27.sha256,
-    __HELPER_BYTES__: String(identity27.bytes),
+    __HELPER_HASH__: identity28.sha256,
+    __HELPER_BYTES__: String(identity28.bytes),
     __STDIN_DECODER__: decoder
   });
   let command = template;
@@ -73645,7 +73661,7 @@ async function compileMainReferenceV3Metadata(input) {
     requestBase64: Buffer.from(requestText).toString("base64")
   });
   need19(!/__[A-Z_]+__/u.test(command) && command.length > 0 && command.length <= 3e4 && stdin.length > 0 && stdin.length <= 524288 && Buffer.byteLength(stdin) === stdin.length && Buffer.byteLength(main) > 0 && Buffer.byteLength(main) <= 1e5 && Buffer.byteLength(requestText) > 0 && Buffer.byteLength(requestText) <= 8192);
-  const sourcePins = Object.freeze({ ...SCRIPT_PINS, "Easyeda.MainReference.dll": identity27.sha256, nativeSourcesSha256: identity27.sourcesSha256 });
+  const sourcePins = Object.freeze({ ...SCRIPT_PINS, "Easyeda.MainReference.dll": identity28.sha256, nativeSourcesSha256: identity28.sourcesSha256 });
   return Object.freeze({
     request: request2,
     command,
@@ -74967,9 +74983,9 @@ async function row4(owner, column, value) {
     }
     const entry = owner.rows[index];
     need26(entry !== void 0, "Automatic baseline row missing.");
-    const identity27 = cell4(owner, entry, column);
-    need26(identity27.kind === "text" && identity27.hex.length <= 128, "Automatic baseline identity is not bounded SQL text.");
-    if (identity27.hex === expected3) {
+    const identity28 = cell4(owner, entry, column);
+    need26(identity28.kind === "text" && identity28.hex.length <= 128, "Automatic baseline identity is not bounded SQL text.");
+    if (identity28.hex === expected3) {
       need26(selected2 === void 0, "Automatic baseline row is not unique.");
       selected2 = entry;
     }
@@ -78688,9 +78704,9 @@ async function row5(tableValue, name6, value) {
     }
     const entry = tableValue.rows[index];
     need37(entry !== void 0);
-    const identity27 = cell5(tableValue, entry, name6);
-    need37(identity27.kind === "text" && identity27.hex.length <= 128);
-    if (identity27.hex === expected3) {
+    const identity28 = cell5(tableValue, entry, name6);
+    need37(identity28.kind === "text" && identity28.hex.length <= 128);
+    if (identity28.hex === expected3) {
       need37(result === void 0);
       result = entry;
     }
@@ -79062,13 +79078,13 @@ function capture2(value, operationId3, generation5, attempt) {
   for (const process19 of processes2) {
     const p = exact15(process19, ["pid", "role", "startIdentity"]);
     const pid2 = p["pid"];
-    const identity27 = p["startIdentity"];
-    need40(typeof pid2 === "number" && Number.isSafeInteger(pid2) && pid2 > previous && pid2 <= 2147483647 && typeof identity27 === "string" && new RegExp(`^win32:\\d{15,20}:job:${generation5.jobId}$`, "u").test(identity27));
+    const identity28 = p["startIdentity"];
+    need40(typeof pid2 === "number" && Number.isSafeInteger(pid2) && pid2 > previous && pid2 <= 2147483647 && typeof identity28 === "string" && new RegExp(`^win32:\\d{15,20}:job:${generation5.jobId}$`, "u").test(identity28));
     previous = pid2;
     need40(["easyeda-main", "easyeda-descendant", "renderer", "native-socket-owner"].includes(String(p["role"])));
     if (p["role"] === "easyeda-main") {
       root += 1;
-      need40(pid2 === generation5.rootPid && identity27 === generation5.rootStartIdentity);
+      need40(pid2 === generation5.rootPid && identity28 === generation5.rootStartIdentity);
     }
   }
   need40(root === 1);
@@ -79102,8 +79118,8 @@ function captureClock2(value, retained, operationId3, generation5, attempt) {
     runtimeIdentitySha256: generation5.runtimeSha256,
     authoritySha256: authority["authoritySha256"]
   }) && value.base["bindingSha256"] === authority["bindingSha256"] && value.base["capturedAt"] === authority["capturedAt"] && canonicalJson(value.base["processes"]) === canonicalJson(authority["processes"]));
-  const identity27 = retained["runtimeIdentity"];
-  need40(isRecord(identity27) && value.base["runtimePid"] === identity27["processId"]);
+  const identity28 = retained["runtimeIdentity"];
+  need40(isRecord(identity28) && value.base["runtimePid"] === identity28["processId"]);
   const rows2 = value.base["processes"];
   need40(Array.isArray(rows2));
   for (const key of ["runtimePid", "socketOwnerPid"]) {
@@ -80283,8 +80299,8 @@ function prepareDeviceAssociation(input, history, modelInput) {
   const associations = [];
   const requestedModel = deviceRequestedModel(parsed2);
   const model = requestedModel === void 0 ? void 0 : validateDeviceModelMetadata(modelInput, requestedModel);
-  for (const [family2, identity27] of Object.entries(parsed2.patch.association ?? {})) {
-    if (family2 === "model3D" && identity27 === null) {
+  for (const [family2, identity28] of Object.entries(parsed2.patch.association ?? {})) {
+    if (family2 === "model3D" && identity28 === null) {
       attributes2["3D Model"] = "";
     } else if (family2 === "model3D" && model !== void 0) {
       attributes2["3D Model"] = `${model.uuid}|${model.libraryUuid}`;
@@ -80294,13 +80310,13 @@ function prepareDeviceAssociation(input, history, modelInput) {
         throw new Error("Unreviewed project association family.");
       }
       const key = family2 === "symbol" ? "Symbol" : "Footprint";
-      if (identity27 === null && family2 === "footprint") {
+      if (identity28 === null && family2 === "footprint") {
         attributes2[key] = "";
       } else {
-        if (!isRecord(identity27) || identity27.libraryUuid !== history.projectUuid || typeof identity27.uuid !== "string") {
+        if (!isRecord(identity28) || identity28.libraryUuid !== history.projectUuid || typeof identity28.uuid !== "string") {
           throw new Error("Association may not import or reference an off-project asset.");
         }
-        const target5 = history.documents.find((entry) => entry.uuid === identity27.uuid && entry.docType === (family2 === "symbol" ? "SYMBOL" : "FOOTPRINT") && !isNativeDocumentDeleted(entry));
+        const target5 = history.documents.find((entry) => entry.uuid === identity28.uuid && entry.docType === (family2 === "symbol" ? "SYMBOL" : "FOOTPRINT") && !isNativeDocumentDeleted(entry));
         const title7 = target5?.records.find((entry) => entry.id === "META" && entry.type === "META")?.body["title"];
         if (target5 === void 0 || typeof title7 !== "string" || title7.length === 0) {
           throw new Error("Association asset is absent from the complete checkpoint.");
@@ -84557,17 +84573,17 @@ var init_schematic_flat_read = __esm({
 });
 
 // server/src/flat-lifecycle-observation.ts
-function buildFlatLifecycleObservation(identity27, evidence) {
+function buildFlatLifecycleObservation(identity28, evidence) {
   const artifact2 = {
     schema: "easyeda-pro-control.flat-lifecycle-observation.v1",
-    phase: identity27.phase,
-    sourcePhase: identity27.sourcePhase,
-    operationId: identity27.operationId,
-    originalPlanHash: identity27.originalPlanHash,
-    flatBindingSha256: identity27.flatBindingSha256,
-    context: identity27.context,
-    sourceSha256: identity27.sourceSha256,
-    nativeSha256: identity27.nativeSha256,
+    phase: identity28.phase,
+    sourcePhase: identity28.sourcePhase,
+    operationId: identity28.operationId,
+    originalPlanHash: identity28.originalPlanHash,
+    flatBindingSha256: identity28.flatBindingSha256,
+    context: identity28.context,
+    sourceSha256: identity28.sourceSha256,
+    nativeSha256: identity28.nativeSha256,
     observerCheckpoint: evidence.checkpoint,
     projectBinding: evidence.projectBinding,
     ...evidence.libraryHeaderEvidence === void 0 ? {} : { libraryHeaderEvidence: evidence.libraryHeaderEvidence },
@@ -92571,6 +92587,12 @@ function currentPcbIdentityFamilies(request2) {
     case "eda.pcb_PrimitiveVia.getAllPrimitiveId": {
       return ["Via"];
     }
+    case "eda.pcb_PrimitiveComponent.getAllPrimitiveId": {
+      return ["Component"];
+    }
+    case "eda.pcb_PrimitivePad.getAllPrimitiveId": {
+      return ["Pad"];
+    }
     case CURRENT_PCB_IDENTITY_TYPE_METHOD: {
       return ["Line", "Arc", "Via"];
     }
@@ -92642,7 +92664,7 @@ function validateCurrentPcbIdentitiesResult(input, raw) {
   const extra = {};
   if (request2.method === CURRENT_PCB_IDENTITY_TYPE_METHOD) {
     const match = observations.find((entry) => entry.ids.includes(request2.arguments.id));
-    if (match === void 0 || match.family === "selected") {
+    if (match === void 0 || !["Line", "Arc", "Via"].includes(match.family)) {
       throw new Error("PCB identity is not in an observed supported family.");
     }
     value = match.family;
@@ -92682,12 +92704,14 @@ var init_current_pcb_identities = __esm({
       "eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId",
       "eda.pcb_PrimitiveLine.getAllPrimitiveId",
       "eda.pcb_PrimitiveArc.getAllPrimitiveId",
-      "eda.pcb_PrimitiveVia.getAllPrimitiveId"
+      "eda.pcb_PrimitiveVia.getAllPrimitiveId",
+      "eda.pcb_PrimitiveComponent.getAllPrimitiveId",
+      "eda.pcb_PrimitivePad.getAllPrimitiveId"
     ];
     methods2 = [...collectionMethods, CURRENT_PCB_IDENTITY_TYPE_METHOD];
     targetSchema5 = currentPcbLayersRequestSchema.shape.target;
     idSchema = external_exports.string().min(1).max(CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH);
-    families2 = ["selected", "Line", "Arc", "Via"];
+    families2 = ["selected", "Line", "Arc", "Via", "Component", "Pad"];
     currentPcbIdentitiesRequestSchema = external_exports.discriminatedUnion("method", [
       external_exports.object({ method: external_exports.enum(collectionMethods), arguments: external_exports.object({}).strict(), target: targetSchema5 }).strict(),
       external_exports.object({ method: external_exports.literal(CURRENT_PCB_IDENTITY_TYPE_METHOD), arguments: external_exports.object({ id: idSchema }).strict(), target: targetSchema5 }).strict()
@@ -92708,11 +92732,11 @@ var init_current_pcb_identities = __esm({
     }).strict();
     limitations8 = [
       "Exact active ordinary project-owned type-3 PCB only. The retained frame and local native receiver are rechecked around every await; native tab/type identity brackets each sample. This is not an atomic lock or proof against switching away and back between observations.",
-      "Selected IDs preserve the native selection array. Line, Arc and Via IDs preserve unfiltered native family enumeration order. These are loaded-view identities, which may include inherited, generated or in-progress objects; no root ownership, persisted membership, geometry, connectivity or saved-file claim is made.",
+      "Selected IDs preserve the native selection array. Line, Arc, Via, Component and Pad IDs preserve unfiltered native family enumeration order. These are loaded-view identities, which may include inherited, generated or in-progress objects; no root ownership, persisted membership, geometry, connectivity or saved-file claim is made. Pad IDs do not distinguish free pads from component pads or prove parent associations.",
       "Positive type lookup accepts one existing ID in exactly one of Line, Arc or Via. Missing IDs, other families, duplicate identities and cross-family collisions refuse; no undefined or absence claim is fabricated. The public type method is an empty body and is not invoked.",
       "Only empty collection arguments are supported. Fixed local native getter topics replace mutable public active-tab routing; these are native task equivalents, not complete public-method execution or return parity. Native family getters internally serialize view data, but only IDs leave this adapter.",
       "Two complete ordered ID samples must match. At most 20000 IDs per family, 256 selected IDs, 256 characters per ID and 393216 UTF-8 bytes total evidence. The byte bound can be reached before the count bound. Output bounds do not bound or cancel preceding vendor enumeration or serialization. Malformed, duplicate, incomplete and oversized results refuse without truncation.",
-      "No selection change, layer change, geometry edit, navigation, Save, source export, project service or persistence operation is requested. Local RPC bookkeeping and reviewed native identity initialization remain incidental. Source review and offline tests do not establish current live validation."
+      "No selection change, layer change, geometry edit, navigation, Save, source export, project service or persistence operation is requested. Local RPC bookkeeping, reviewed native identity initialization and possible empty pad-length singleton allocation remain incidental. Component enumeration reads existing footprint/device/font caches; it does not fetch or enrich library data. Source review and offline tests do not establish current live validation."
     ];
   }
 });
@@ -92731,6 +92755,12 @@ function currentPcbGeometryFamily(request2) {
     }
     case "eda.pcb_PrimitiveVia.getAll": {
       return "Via";
+    }
+    case "eda.pcb_PrimitiveComponent.getAll": {
+      return "Component";
+    }
+    case "eda.pcb_PrimitivePad.getAll": {
+      return "Pad";
     }
     default: {
       throw new Error("Unsupported current PCB geometry method.");
@@ -92792,7 +92822,7 @@ function validateCurrentPcbGeometryResult(input, raw) {
     ...metadata8,
     value: rows2,
     observedRowCount: rows2.length,
-    units: { linear: "mil", arcAngle: "degrees" },
+    units: { linear: "mil", arcAngle: "degrees", rotation: "degrees" },
     effect: "current-pcb-loaded-view-geometry-read",
     encoding: "native-getter-projection-without-public-wrapper-rounding",
     authority: "explicit-target-loaded-view-geometry-only;not-design-or-persistence-authority",
@@ -92800,7 +92830,7 @@ function validateCurrentPcbGeometryResult(input, raw) {
     limitations: [...limitations9]
   };
 }
-var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, methods3, targetSchema6, numberSchema, layerSchema2, boundedText4, base3, track, lineSchema3, arcSchema, viaSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, currentPcbGeometryResultSchema, limitations9;
+var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, methods3, targetSchema6, numberSchema, layerSchema2, boundedText4, identity26, base3, track, lineSchema3, arcSchema, viaSchema, componentSchema2, padSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, currentPcbGeometryResultSchema, limitations9;
 var init_current_pcb_geometry = __esm({
   "server/src/current-pcb-geometry.ts"() {
     init_zod();
@@ -92811,12 +92841,19 @@ var init_current_pcb_geometry = __esm({
     CURRENT_PCB_GEOMETRY_MAX_BYTES = 384 * 1024;
     CURRENT_PCB_GEOMETRY_MAX_ROWS = 256;
     CURRENT_PCB_GEOMETRY_MAX_NUMBER = 1e12;
-    methods3 = ["eda.pcb_PrimitiveLine.getAll", "eda.pcb_PrimitiveArc.getAll", "eda.pcb_PrimitiveVia.getAll"];
+    methods3 = [
+      "eda.pcb_PrimitiveLine.getAll",
+      "eda.pcb_PrimitiveArc.getAll",
+      "eda.pcb_PrimitiveVia.getAll",
+      "eda.pcb_PrimitiveComponent.getAll",
+      "eda.pcb_PrimitivePad.getAll"
+    ];
     targetSchema6 = currentPcbLayersRequestSchema.shape.target;
     numberSchema = external_exports.number().min(-CURRENT_PCB_GEOMETRY_MAX_NUMBER).max(CURRENT_PCB_GEOMETRY_MAX_NUMBER).refine((value) => !Object.is(value, -0), "Signed zero is not supported by this JSON observation.");
     layerSchema2 = numberSchema.refine((value) => Number.isInteger(value) && value >= 0 && value <= 65535, "Invalid native layer ID.");
     boundedText4 = external_exports.string().max(1024);
-    base3 = { primitiveId: external_exports.string().min(1).max(256), net: boundedText4.nullable(), primitiveLock: external_exports.boolean() };
+    identity26 = { primitiveId: external_exports.string().min(1).max(256), primitiveLock: external_exports.boolean() };
+    base3 = { ...identity26, net: boundedText4.nullable() };
     track = {
       ...base3,
       layer: layerSchema2,
@@ -92848,6 +92885,25 @@ var init_current_pcb_geometry = __esm({
       topMaskExpansion: numberSchema,
       bottomMaskExpansion: numberSchema
     }).strict();
+    componentSchema2 = external_exports.object({
+      ...identity26,
+      primitiveType: external_exports.literal("Component"),
+      layer: external_exports.union([external_exports.literal(1), external_exports.literal(2)]),
+      x: numberSchema,
+      y: numberSchema,
+      rotation: numberSchema
+    }).strict();
+    padSchema = external_exports.object({
+      ...base3,
+      primitiveType: external_exports.literal("Pad"),
+      layer: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(12)]),
+      padNumber: boundedText4,
+      x: numberSchema,
+      y: numberSchema,
+      rotation: numberSchema,
+      metallization: external_exports.boolean(),
+      padType: external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2)])
+    }).strict();
     currentPcbGeometryRequestSchema = external_exports.object({ method: external_exports.enum(methods3), arguments: external_exports.object({}).strict(), target: targetSchema6 }).strict();
     currentPcbGeometryQuerySchema = external_exports.object({ method: external_exports.enum(methods3).optional(), includeSchemas: external_exports.boolean().default(false) }).strict();
     currentPcbGeometryResultSchema = external_exports.object({
@@ -92855,7 +92911,7 @@ var init_current_pcb_geometry = __esm({
       kind: external_exports.literal("current-pcb-geometry-observation"),
       method: external_exports.enum(methods3),
       target: targetSchema6,
-      rows: external_exports.array(external_exports.discriminatedUnion("primitiveType", [lineSchema3, arcSchema, viaSchema])).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
+      rows: external_exports.array(external_exports.discriminatedUnion("primitiveType", [lineSchema3, arcSchema, viaSchema, componentSchema2, padSchema])).max(CURRENT_PCB_GEOMETRY_MAX_ROWS),
       samples: external_exports.literal(2),
       implementationKind: external_exports.literal("native-task-equivalent"),
       cadAuthority: external_exports.literal(false),
@@ -92866,10 +92922,11 @@ var init_current_pcb_geometry = __esm({
       "Only the exact active ordinary project-owned type-3 PCB is admitted. The retained frame, local receiver and complete target are rechecked around awaits, with native tab/type identity bracketing each sample. This is not an atomic lock or proof against switching away and back between observations.",
       "This is an explicit native loaded-view geometry projection, not public class instances, complete native/source records, saved membership, ownership, connectivity, DRC or persistence proof. Loaded views may include inherited, generated and in-progress objects. Native display nets are copied without case conversion; empty string and null remain distinct, while undefined refuses.",
       "Only unfiltered getAll with empty arguments is supported. Fixed native family handlers replace mutable public active-tab routing. All reported scalar fields and ordered rows must match across two complete samples; omitted native fields are not compared. No direct getByIds or SDK object constructor is invoked.",
-      "Positions, widths, diameters and mask expansions are in mil; arcAngle is in degrees. The native callback's scaled results are not rounded using the public wrapper. Arc endpoints/angle can therefore retain precision that the public wrapper rounds; Via diameters are twice the native callback radii, without public one-decimal radius rounding. Layer IDs and arc/via/mask modes are native values, not validated design rules.",
+      "Positions, widths, diameters and mask expansions are in mil; arcAngle and Component/Pad rotation are in degrees. The native callback's scaled results are not rounded using the public wrapper. Arc endpoints/angle and Pad placement can therefore retain precision that the public wrapper rounds; Via diameters are twice the native callback radii, without public one-decimal radius rounding. Layer IDs and arc/via/mask modes are native values, not validated design rules.",
       "Coordinates use the data origin, not the displayed canvas origin. Arc endpoints and angle are incomplete shape data: a full-circle case can project to zero angle. Native center/radius/sweep and partition are omitted, as are Via unused-layer and is-suture fields. Mask expansion values are loaded model observations, not proof of saved overrides or current rule resolution.",
-      "At most 256 rows, 256 characters per identity, 1024 characters per net/rule name, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. Signed zero, non-finite values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
-      "No selection, layer change, navigation, Save, source export, design mutation or project/library service is requested. Local RPC bookkeeping and reviewed native identity initialization remain incidental. Source review and offline tests are not current live validation."
+      "Component observation contains only identity, lock and placement on layer 1 or 2; attributes, designator, library/device/footprint/3D enrichment and child associations are omitted. Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12; holes, shapes, masks, rules, thermal data and parent associations are omitted. Pad family membership does not distinguish free pads from component pads. Holeless native holeRotation may be NaN and is not part of this projection.",
+      "At most 256 rows, 256 characters per identity, 1024 characters per net/rule name/pad number, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
+      "No selection, layer change, navigation, Save, source export, design mutation or project/library service is requested. Local RPC bookkeeping, reviewed native identity initialization and possible empty pad-length singleton allocation remain incidental. Component enumeration reads existing footprint/device/font caches without fetching library data. Source review and offline tests are not current live validation."
     ];
   }
 });
@@ -98531,7 +98588,7 @@ function bodyRecord(value) {
   }
   return value;
 }
-function identity26(object4, type2) {
+function identity27(object4, type2) {
   const value = JSON.parse(object4.id);
   if (!Array.isArray(value) || value[0] !== type2) {
     throw new Error("Native route source identity is malformed.");
@@ -98539,7 +98596,7 @@ function identity26(object4, type2) {
   return value;
 }
 function netName(object4) {
-  return external_exports.string().parse(identity26(object4, "NET")[1]);
+  return external_exports.string().parse(identity27(object4, "NET")[1]);
 }
 function note(code, objectIds, detail) {
   return { code, objectIds, detail };
@@ -98561,8 +98618,8 @@ function rule(source4, family2, reference2) {
   if (reference2 !== void 0 && reference2 !== null && typeof reference2 !== "string") {
     return null;
   }
-  const candidates = source4.objects.filter((entry) => entry.type === "RULE" && identity26(entry, "RULE")[1] === family2);
-  const selected2 = typeof reference2 === "string" && reference2 !== "default" && reference2 !== "" ? candidates.filter((entry) => identity26(entry, "RULE")[2] === reference2) : candidates.filter((entry) => entry.body["ruleState"] === "DEFAULT");
+  const candidates = source4.objects.filter((entry) => entry.type === "RULE" && identity27(entry, "RULE")[1] === family2);
+  const selected2 = typeof reference2 === "string" && reference2 !== "default" && reference2 !== "" ? candidates.filter((entry) => identity27(entry, "RULE")[2] === reference2) : candidates.filter((entry) => entry.body["ruleState"] === "DEFAULT");
   if (selected2.length !== 1 || selected2[0] === void 0) {
     return null;
   }
@@ -98593,7 +98650,7 @@ function checkedPads(source4, inventoryInput) {
   const expected3 = /* @__PURE__ */ new Map();
   for (const object4 of source4.objects) {
     if (object4.type === "PAD_NET") {
-      const id9 = identity26(object4, "PAD_NET");
+      const id9 = identity27(object4, "PAD_NET");
       if (id9.length !== 4 || !id9.slice(1).every((entry) => typeof entry === "string")) {
         throw new Error("Native PAD_NET identity is incomplete.");
       }
@@ -98946,7 +99003,7 @@ function auditPcbRoutes(source4, inventory2, input) {
         return false;
       }
       if (entry.type === "POURED") {
-        const parent = identity26(entry, "POURED")[1];
+        const parent = identity27(entry, "POURED")[1];
         return source4.objects.some((candidate) => candidate.type === "POUR" && candidate.id === parent && candidate.body["netName"] === net3);
       }
       return entry.body["netName"] === net3;
@@ -99038,7 +99095,7 @@ function auditPcbRoutes(source4, inventory2, input) {
     "The coordinator must bind source and inventory to the same stable project/document and runtime; callers cannot supply measurement geometry."
   ] });
 }
-var PCB_ROUTE_AUDIT_PROFILE, name5, coordinate6, names, pathRequest, widthContract, pcbRouteAuditRequestSchema, padSchema, padFamilySchema, padLinkSchema2, padCorrelationSchema2, padFamiliesSchema, padInventorySchema, findingSchema, widthResultSchema, pathResultSchema, graphNodeSchema, netResultSchema, comparisonSchema, pcbRouteAuditReportSchema, EPSILON_MIL;
+var PCB_ROUTE_AUDIT_PROFILE, name5, coordinate6, names, pathRequest, widthContract, pcbRouteAuditRequestSchema, padSchema2, padFamilySchema, padLinkSchema2, padCorrelationSchema2, padFamiliesSchema, padInventorySchema, findingSchema, widthResultSchema, pathResultSchema, graphNodeSchema, netResultSchema, comparisonSchema, pcbRouteAuditReportSchema, EPSILON_MIL;
 var init_pcb_route_audit = __esm({
   "server/src/pcb-route-audit.ts"() {
     init_zod();
@@ -99063,8 +99120,8 @@ var init_pcb_route_audit = __esm({
         context3.addIssue({ code: "custom", message: "Duplicate net/layer width contract." });
       }
     });
-    padSchema = external_exports.object({ primitiveId: name5, padNumber: external_exports.string(), net: external_exports.string().nullable(), layer: external_exports.number().int().positive(), x: coordinate6, y: coordinate6, metallization: external_exports.boolean(), parentComponentPrimitiveId: name5.optional(), source: external_exports.literal("pcb_PrimitivePad-direct-state") }).loose();
-    padFamilySchema = external_exports.object({ count: external_exports.number().int().nonnegative(), primitiveIds: external_exports.array(name5), byPrimitiveId: external_exports.record(name5, padSchema) }).loose();
+    padSchema2 = external_exports.object({ primitiveId: name5, padNumber: external_exports.string(), net: external_exports.string().nullable(), layer: external_exports.number().int().positive(), x: coordinate6, y: coordinate6, metallization: external_exports.boolean(), parentComponentPrimitiveId: name5.optional(), source: external_exports.literal("pcb_PrimitivePad-direct-state") }).loose();
+    padFamilySchema = external_exports.object({ count: external_exports.number().int().nonnegative(), primitiveIds: external_exports.array(name5), byPrimitiveId: external_exports.record(name5, padSchema2) }).loose();
     padLinkSchema2 = external_exports.object({ primitiveId: name5, parentComponentPrimitiveId: name5, padNumber: external_exports.string(), net: external_exports.string().nullable() }).loose();
     padCorrelationSchema2 = external_exports.object({ status: external_exports.literal("exact-subset"), primitiveIds: external_exports.array(name5), byPrimitiveId: external_exports.record(name5, padLinkSchema2) }).loose();
     padFamiliesSchema = external_exports.object({ pads: padFamilySchema }).loose();
@@ -117800,7 +117857,9 @@ function buildCurrentPcbIdentitiesProgram(input) {
     selected: "pcb/extensionAPI/selectcontrol-getAllSelectedPrimitiveIds",
     Line: "pcb/extensionAPI/track-getAll",
     Arc: "pcb/extensionAPI/arc-getAll",
-    Via: "pcb/extensionAPI/via-getAll"
+    Via: "pcb/extensionAPI/via-getAll",
+    Component: "pcb/extensionAPI/component-getAll",
+    Pad: "pcb/extensionAPI/pad-getAll"
   };
   const reads = currentPcbIdentityFamilies(request2).map((family2) => ({ family: family2, topic: nativeTopics[family2] }));
   return `let timer,clear;
@@ -117952,7 +118011,13 @@ var init_current_pcb_identities_runtime = __esm({
 function buildCurrentPcbGeometryProgram(input) {
   const request2 = parseCurrentPcbGeometryRequest(input);
   const family2 = currentPcbGeometryFamily(request2);
-  const topics = { Line: "pcb/extensionAPI/track-getAll", Arc: "pcb/extensionAPI/arc-getAll", Via: "pcb/extensionAPI/via-getAll" };
+  const topics = {
+    Line: "pcb/extensionAPI/track-getAll",
+    Arc: "pcb/extensionAPI/arc-getAll",
+    Via: "pcb/extensionAPI/via-getAll",
+    Component: "pcb/extensionAPI/component-getAll",
+    Pad: "pcb/extensionAPI/pad-getAll"
+  };
   return `let timer,clear;
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)},family=${JSON.stringify(family2)},topic=${JSON.stringify(topics[family2])};let expired=false;
@@ -118010,8 +118075,18 @@ const copyRows=value=>{
  const rows=[],seen=new Set();
  for(let i=0;i<n;i++){
   const row=plain(own(value,String(i))),id=text(own(row,'globalIndex'),256);if(id.length===0||seen.has(id))bad();seen.add(id);
-  const base={primitiveId:id,primitiveType:family,net:text(own(row,'net'),1024,true),primitiveLock:bool(own(row,'locked'))};
-  if(family==='Via'){
+  const identity={primitiveId:id,primitiveType:family,primitiveLock:bool(own(row,'locked'))};
+  if(family==='Component'){
+   const position=point(own(row,'position')),componentLayer=layer(own(row,'layerId'));if(![1,2].includes(componentLayer))bad();
+   rows.push({...identity,layer:componentLayer,x:position.x,y:position.y,rotation:num(own(row,'rotation'))});continue;
+  }
+  const base={...identity,net:text(own(row,'net'),1024,true)};
+  if(family==='Pad'){
+   const center=point(own(row,'center')),padLayer=layer(own(row,'layerId')),padType=integer(own(row,'padTypeAspect'));
+   if(![1,2,12].includes(padLayer)||![0,1,2].includes(padType))bad();
+   rows.push({...base,layer:padLayer,padNumber:text(own(row,'num'),1024),x:center.x,y:center.y,rotation:num(own(row,'rotation')),
+    metallization:bool(own(row,'plated')),padType});
+  }else if(family==='Via'){
    const center=point(own(row,'center')),viaType=integer(own(row,'type'));if(![0,1,2].includes(viaType))bad();
    rows.push({...base,x:center.x,y:center.y,holeDiameter:num(num(own(row,'holeRadius'))*2),diameter:num(num(own(row,'radius'))*2),viaType,
     designRuleBlindViaName:text(own(row,'name'),1024,true),startLayer:layer(own(row,'startLayer')),endLayer:layer(own(row,'endLayer')),
@@ -121126,12 +121201,12 @@ var init_src = __esm({
               }
               await engine.assertBridgeDispatchAllowed();
             },
-            allocateRuntime: (identity27) => {
+            allocateRuntime: (identity28) => {
               assertOrdinaryRuntimeAllocationAllowed();
               if (windowsRuntime !== void 0 || scheduledShutdown !== void 0) {
                 throw new Error("A Windows runtime is already allocated.");
               }
-              const runtime = new WindowsControlRuntime({ upstream, pluginRoot, assetsRoot, ...identity27 });
+              const runtime = new WindowsControlRuntime({ upstream, pluginRoot, assetsRoot, ...identity28 });
               ordinaryLaunchRuntime = runtime;
               windowsRuntime = runtime;
               return runtime;
@@ -121233,7 +121308,7 @@ var init_src = __esm({
       "easyeda_control_pcb_identities",
       {
         title: "Read selected and loaded PCB primitive identities",
-        description: "Observe selected IDs, unfiltered Line/Arc/Via IDs, or positively classify one ID within those three native view families on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and takes two matching ordered samples; missing, duplicate, ambiguous, malformed or oversized results refuse. Native equivalents, not public-wrapper dispatch. IDs describe loaded views or selection, not complete saved membership, ownership, geometry, connectivity or persistence. No filters, selection change, navigation, write or Save. Query offline pcb-identities/pcb-identities-validate first; no connected validation is implied.",
+        description: "Observe selected IDs, unfiltered Line/Arc/Via/Component/Pad IDs, or positively classify one ID within Line/Arc/Via only on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and takes two matching ordered samples; missing, duplicate, ambiguous, malformed or oversized results refuse. Native equivalents, not public-wrapper dispatch. IDs describe loaded views or selection, not complete saved membership, ownership, geometry, connectivity or persistence. No filters, selection change, navigation, write or Save. Query offline pcb-identities/pcb-identities-validate first; no connected validation is implied.",
         inputSchema: { request: external_exports.unknown().pipe(currentPcbIdentitiesRequestSchema), expectedFingerprint: privateFingerprintSchema },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
@@ -121243,7 +121318,7 @@ var init_src = __esm({
       "easyeda_control_pcb_geometry",
       {
         title: "Read loaded PCB line, arc and via geometry",
-        description: "Observe unfiltered Line, Arc or Via geometry on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and requires two matching ordered bounded samples. Native equivalents of getAll, not public-wrapper dispatch or class instances. Values use mil/degrees without public-wrapper rounding; the projection is not complete shape reconstruction. Loaded-view geometry does not prove saved membership, root/inherited ownership, connectivity or persistence; net labels and lock flags are observations, not electrical or editing authority. No filters, selection change, navigation, write or Save. Query offline pcb-geometry/pcb-geometry-validate first; no connected validation is implied.",
+        description: "Observe unfiltered Line/Arc/Via geometry or basic Component/Pad placement on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint. Retains the native frame/receiver and requires two matching ordered bounded samples. Native equivalents of getAll, not public-wrapper dispatch or class instances. Values use mil/degrees without public-wrapper rounding; projections omit complete shapes, pad holes/rules, component libraries and parent-child mapping. Loaded-view geometry does not prove saved membership, ownership, connectivity or persistence; net labels and lock flags are observations, not electrical or editing authority. No filters, selection change, navigation, write or Save. Query offline pcb-geometry/pcb-geometry-validate first; no connected validation is implied.",
         inputSchema: { request: external_exports.unknown().pipe(currentPcbGeometryRequestSchema), expectedFingerprint: privateFingerprintSchema },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
