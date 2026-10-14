@@ -13,7 +13,7 @@
       "omitted": 451
     },
     "executionRoutes": {
-      "available-with-runtime-guards": 309,
+      "available-with-runtime-guards": 311,
       "blocked": 94,
       "partially-blocked": 2
     },
@@ -10942,6 +10942,40 @@
       "status": "implemented-public-subset",
       "routes": [
         {
+          "tool": "easyeda_control_pcb_layers",
+          "selector": "explicit-current-pcb-layer-observation",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API 0.3.50/UI 3.2.196/PCB 3.2.193 layer metadata reader on an explicit project/branch/document/tab identity for an active ordinary type-3 PCB. Two complete matching samples use a captured native frame receiver with bracketing native identity checks. Ports the nine-field public projection or enabled native SIGNAL/PLANE count plus two; raw color strings remain unchanged. No public wrapper dispatch, legacy-route admission, source export, layer selection, navigation or Save. Not physical-stackup certification, an atomic lock or current connected validation. Vendor RPC bookkeeping and possible uninitialized environment defaults are incidental in-memory effects.",
+          "source": [
+            "current-pcb-layers.ts",
+            "current-pcb-layers-runtime.ts",
+            "current-ui-implementation.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "current-pcb-layers.test.ts",
+            "current-pcb-layers-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-layers",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
+        {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_Layer.getAllLayers",
           "implementation": "public-method",
@@ -11233,6 +11267,40 @@
       "reviewedRuntimeDeclaration": true,
       "status": "implemented-public-subset",
       "routes": [
+        {
+          "tool": "easyeda_control_pcb_layers",
+          "selector": "explicit-current-pcb-layer-observation",
+          "implementation": "native-task-equivalent",
+          "scope": "Separately pinned current API 0.3.50/UI 3.2.196/PCB 3.2.193 layer metadata reader on an explicit project/branch/document/tab identity for an active ordinary type-3 PCB. Two complete matching samples use a captured native frame receiver with bracketing native identity checks. Ports the nine-field public projection or enabled native SIGNAL/PLANE count plus two; raw color strings remain unchanged. No public wrapper dispatch, legacy-route admission, source export, layer selection, navigation or Save. Not physical-stackup certification, an atomic lock or current connected validation. Vendor RPC bookkeeping and possible uninitialized environment defaults are incidental in-memory effects.",
+          "source": [
+            "current-pcb-layers.ts",
+            "current-pcb-layers-runtime.ts",
+            "current-ui-implementation.ts",
+            "sdk-local-runtime.ts",
+            "facade-mode.ts"
+          ],
+          "tests": [
+            "current-pcb-layers.test.ts",
+            "current-pcb-layers-runtime.test.ts",
+            "facade-mode.test.ts"
+          ],
+          "documentTypes": [
+            3
+          ],
+          "validation": "offline-regression;current-live-unclaimed",
+          "executionState": "available-with-runtime-guards",
+          "inputDiscovery": {
+            "tool": "easyeda_control_api",
+            "arguments": {
+              "request": {
+                "action": "pcb-layers",
+                "query": {
+                  "includeSchemas": true
+                }
+              }
+            }
+          }
+        },
         {
           "tool": "easyeda_control_sdk_read",
           "selector": "eda.pcb_Layer.getTheNumberOfCopperLayers",

@@ -133,7 +133,7 @@ void describe("self-contained packaged machine startup", () => {
     const pid = transport.pid; assert.ok(pid !== null);
     const listed = await client.listTools();
     assert.deepEqual(listed.tools.map((tool) => tool.name).toSorted(), [
-      "easyeda_control_api", "easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_editor_context", "easyeda_control_editor_shell", "easyeda_control_extensions", "easyeda_control_launch", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system",
+      "easyeda_control_api", "easyeda_control_calculate", "easyeda_control_discover", "easyeda_control_editor_context", "easyeda_control_editor_shell", "easyeda_control_extensions", "easyeda_control_launch", "easyeda_control_pcb_layers", "easyeda_control_shortcuts", "easyeda_control_status", "easyeda_control_system",
     ]);
     const catalog = await api(client, { action: "calculations", query: { includeSchemas: true } });
     assert.equal(catalog["total"], 16); assert.equal(catalog["invocationEnabledByDiscovery"], false);
@@ -164,6 +164,14 @@ void describe("self-contained packaged machine startup", () => {
       method: "eda.sys_ShortcutKey.getShortcutKeys", arguments: { includeSystem: false },
     } } });
     assert.equal(shortcutRequest["valid"], true); assert.equal(shortcutRequest["executionAuthorized"], false);
+    const layers = await api(client, { action: "pcb-layers", query: { includeSchemas: true } });
+    assert.equal(layers["total"], 2); assert.equal(layers["invocationEnabledByDiscovery"], false);
+    const layerRequest = await api(client, { action: "pcb-layers-validate", query: { request: {
+      method: "eda.pcb_Layer.getAllLayers", arguments: {}, target: {
+        projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16), tabId: `${"c".repeat(16)}@${"a".repeat(64)}`,
+      },
+    } } });
+    assert.equal(layerRequest["valid"], true); assert.equal(layerRequest["executionAuthorized"], false);
     const invalidShortcut = await client.callTool({ name: "easyeda_control_shortcuts", arguments: {
       request: { method: "eda.sys_ShortcutKey.getShortcutKeys", arguments: { includeSystem: false }, callback: "caller-code" }, expectedFingerprint: {},
     } });
@@ -282,7 +290,7 @@ void describe("self-contained packaged machine startup", () => {
         [options.pinnedNode, options.bundle]);
       assert.equal(await readlink(`/proc/${pid}/cwd`), options.pluginRoot);
       const tools = await client.listTools();
-      assert.equal(tools.tools.length, 35);
+      assert.equal(tools.tools.length, 36);
       assert.equal(new Set(tools.tools.map((tool) => tool.name)).size, tools.tools.length);
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_api"));
       assert.ok(tools.tools.some((tool) => tool.name === "easyeda_control_sdk_read"));

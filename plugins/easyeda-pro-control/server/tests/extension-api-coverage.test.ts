@@ -497,6 +497,21 @@ void test("existing capture workflows have truthful public-subset coverage witho
   }
 });
 
+void test("current PCB layer coverage preserves the separate legacy route and discloses native execution", () => {
+  for (const method of ["getAllLayers", "getTheNumberOfCopperLayers"]) {
+    const row = inventoryExtensionApiCoverage().find((entry) => entry.path === `eda.pcb_Layer.${method}`);
+    assert.ok(row); assert.equal(row.status, "implemented-public-subset"); assert.equal(row.routes.length, 2);
+    assert.equal(row.routes.some((route) => route.tool === "easyeda_control_sdk_read"), true);
+    const route = row.routes.find((entry) => entry.tool === "easyeda_control_pcb_layers"); assert.ok(route);
+    assert.deepEqual(route.documentTypes, [3]); assert.equal(route.implementation, "native-task-equivalent");
+    assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+    const discovery = route.inputDiscovery?.arguments["request"]; assert.ok(isRecord(discovery));
+    const result = queryOfflineApi(apiRequestSchema.parse(discovery)).result; assert.ok(isRecord(result));
+    assert.equal(result["total"], 2); assert.equal(result["invocationEnabledByDiscovery"], false);
+    assert.match(JSON.stringify(result), /inputSchema/u);
+  }
+});
+
 void test("shortcut coverage keeps legacy and current-version routes distinct without design-context admission", () => {
   const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.sys_ShortcutKey.getShortcutKeys");
   assert.ok(row); assert.equal(row.status, "implemented-public-subset"); assert.equal(row.routes.length, 2);

@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "f65aaa3bd2497147cf5548096d527d733d088858b3ac48959e477d8869a4f73e";
+const __easyedaBundlePairId = "e78ed5d58e56771fcc4eb0dcca787479afcb22f5b88d6ccd3eb42214b9aa03ac";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -13033,7 +13033,7 @@ __export(schemas_exports2, {
   xid: () => xid2,
   xor: () => xor
 });
-function _installLazyMethods(inst, group, methods) {
+function _installLazyMethods(inst, group, methods2) {
   const proto = Object.getPrototypeOf(inst);
   let installed = _installedGroups.get(proto);
   if (!installed) {
@@ -13043,8 +13043,8 @@ function _installLazyMethods(inst, group, methods) {
   if (installed.has(group))
     return;
   installed.add(group);
-  for (const key in methods) {
-    const fn = methods[key];
+  for (const key in methods2) {
+    const fn = methods2[key];
     Object.defineProperty(proto, key, {
       configurable: true,
       enumerable: false,
@@ -39237,7 +39237,7 @@ var init_extension_api_catalog = __esm({
 });
 
 // server/src/extension-api-coverage-routes.ts
-function add(namespace, methods, tool, selector4, implementation, scope5, source4, tests, admittedDocumentTypes) {
+function add(namespace, methods2, tool, selector4, implementation, scope5, source4, tests, admittedDocumentTypes) {
   let inputDiscovery;
   const action = selector4.split(";")[0] ?? "";
   const family2 = tool === "easyeda_control_library" ? "library" : "design";
@@ -39260,7 +39260,7 @@ function add(namespace, methods, tool, selector4, implementation, scope5, source
     documentTypes = [1];
   }
   const blocked = schematicWrite || sharedLifecycle;
-  groups.push({ namespace, methods, route: {
+  groups.push({ namespace, methods: methods2, route: {
     tool,
     selector: selector4,
     implementation,
@@ -39291,7 +39291,18 @@ var init_extension_api_coverage_routes = __esm({
   "server/src/extension-api-coverage-routes.ts"() {
     groups = [];
     topologyBlock = "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.";
-    groups.push({ namespace: "sys_ShortcutKey", methods: ["getShortcutKeys"], route: {
+    groups.push({ namespace: "pcb_Layer", methods: ["getAllLayers", "getTheNumberOfCopperLayers"], route: {
+      tool: "easyeda_control_pcb_layers",
+      selector: "explicit-current-pcb-layer-observation",
+      implementation: "native-task-equivalent",
+      scope: "Separately pinned current API 0.3.50/UI 3.2.196/PCB 3.2.193 layer metadata reader on an explicit project/branch/document/tab identity for an active ordinary type-3 PCB. Two complete matching samples use a captured native frame receiver with bracketing native identity checks. Ports the nine-field public projection or enabled native SIGNAL/PLANE count plus two; raw color strings remain unchanged. No public wrapper dispatch, legacy-route admission, source export, layer selection, navigation or Save. Not physical-stackup certification, an atomic lock or current connected validation. Vendor RPC bookkeeping and possible uninitialized environment defaults are incidental in-memory effects.",
+      source: ["current-pcb-layers.ts", "current-pcb-layers-runtime.ts", "current-ui-implementation.ts", "sdk-local-runtime.ts", "facade-mode.ts"],
+      tests: ["current-pcb-layers.test.ts", "current-pcb-layers-runtime.test.ts", "facade-mode.test.ts"],
+      documentTypes: [3],
+      validation: "offline-regression;current-live-unclaimed",
+      executionState: "available-with-runtime-guards",
+      inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "pcb-layers", query: { includeSchemas: true } } } }
+    } }, { namespace: "sys_ShortcutKey", methods: ["getShortcutKeys"], route: {
       tool: "easyeda_control_shortcuts",
       selector: "eda.sys_ShortcutKey.getShortcutKeys",
       implementation: "public-method",
@@ -41999,9 +42010,9 @@ function validateExactReadPayload(payload, request2) {
         );
       }
     }
-    const limitations6 = payload.limitations;
+    const limitations7 = payload.limitations;
     if (request2.kind === "schematic-components") {
-      if (!isUnknownRecord(limitations6) || typeof limitations6.componentPinOtherProperty !== "string" || typeof limitations6.componentOtherPropertyFiltering !== "string" || typeof limitations6.cbbLibraryOwnership !== "string") {
+      if (!isUnknownRecord(limitations7) || typeof limitations7.componentPinOtherProperty !== "string" || typeof limitations7.componentOtherPropertyFiltering !== "string" || typeof limitations7.cbbLibraryOwnership !== "string") {
         throw new Error(
           "Exact schematic component reader omitted adapter limitations."
         );
@@ -42016,7 +42027,7 @@ function validateExactReadPayload(payload, request2) {
           }
         }
       }
-    } else if (!isUnknownRecord(limitations6) || typeof limitations6.componentPadWrapper !== "string") {
+    } else if (!isUnknownRecord(limitations7) || typeof limitations7.componentPadWrapper !== "string") {
       throw new Error(
         "Exact PCB component reader omitted its adapter limitation."
       );
@@ -42128,8 +42139,8 @@ function validateExactReadPayload(payload, request2) {
       );
     }
   } else if (request2.kind === "pcb-inventory") {
-    const limitations6 = payload.limitations;
-    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations6) || typeof limitations6["directPads"] !== "string" || typeof limitations6.componentPadCorrelation !== "string" || typeof limitations6["pouredCorrelation"] !== "string" || typeof limitations6.regionRuleTypes !== "string" || typeof limitations6.fillModes !== "string" || typeof limitations6.arcPrecision !== "string" || typeof limitations6.viaPrecision !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
+    const limitations7 = payload.limitations;
+    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations7) || typeof limitations7["directPads"] !== "string" || typeof limitations7.componentPadCorrelation !== "string" || typeof limitations7["pouredCorrelation"] !== "string" || typeof limitations7.regionRuleTypes !== "string" || typeof limitations7.fillModes !== "string" || typeof limitations7.arcPrecision !== "string" || typeof limitations7.viaPrecision !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
       throw new Error("Exact PCB inventory omitted primitive families.");
     }
     const families2 = payload.families;
@@ -44333,18 +44344,18 @@ function compileSchematicOperation(input) {
   if (family2 === "component") {
     collateral.push("target-owned-pins-and-attributes", "explicitly-planned-following-wire-geometry");
   }
-  const limitations6 = ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged"];
+  const limitations7 = ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged"];
   if (family2 === "wire") {
-    limitations6.push("public-wire-enumerators-hide-rpc-failure-use-document-source", "compiled-topology-proof-required");
+    limitations7.push("public-wire-enumerators-hide-rpc-failure-use-document-source", "compiled-topology-proof-required");
   }
   if (requiredPreservation !== null) {
-    limitations6.push("complete-source-property-merge-required-before-component-modify");
+    limitations7.push("complete-source-property-merge-required-before-component-modify");
   }
   if (operation.documentType === 2 && ["polygon", "rectangle"].includes(family2)) {
-    limitations6.push("known-symbol-editor-shape-manager-misrouting-needs-adapter-validation");
+    limitations7.push("known-symbol-editor-shape-manager-misrouting-needs-adapter-validation");
   }
   if (["port", "net-flag"].includes(family2)) {
-    limitations6.push("default-library-symbol-associations-must-be-captured-and-proven");
+    limitations7.push("default-library-symbol-associations-must-be-captured-and-proven");
   }
   let identity27 = "preserve";
   if (deleting) {
@@ -44353,7 +44364,7 @@ function compileSchematicOperation(input) {
   if (creating) {
     identity27 = "create";
   }
-  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method4, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field3, value]) => expected(family2, field3, value)), inverse, effect: { family: family2, target: target5, identity: identity27, fields: fields7, collateral }, requiredPreservation, limitations: limitations6 };
+  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method4, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field3, value]) => expected(family2, field3, value)), inverse, effect: { family: family2, target: target5, identity: identity27, fields: fields7, collateral }, requiredPreservation, limitations: limitations7 };
 }
 function referenceFamily(action) {
   const family2 = action.split(".")[1];
@@ -51309,12 +51320,12 @@ function designLifecycleRoute(route, namespace) {
   };
 }
 function inventoryExtensionApiCoverage() {
-  const methods = /* @__PURE__ */ new Map();
+  const methods2 = /* @__PURE__ */ new Map();
   for (const snapshot7 of extensionApiSnapshots) {
     for (const namespace of snapshot7.namespaces) {
       for (const method4 of namespace.methods) {
         const path5 = `eda.${namespace.name}.${method4.name}`;
-        const group = methods.get(path5) ?? { namespace: namespace.name, method: method4.name, declarations: [], methods: [] };
+        const group = methods2.get(path5) ?? { namespace: namespace.name, method: method4.name, declarations: [], methods: [] };
         group.declarations.push({
           reference: snapshot7.reference,
           className: method4.className,
@@ -51323,7 +51334,7 @@ function inventoryExtensionApiCoverage() {
           documentationUrl: `https://prodocs.easyeda.com/en/api/reference/pro-api.${method4.className.toLowerCase()}.${method4.name.toLowerCase()}.html`
         });
         group.methods.push(method4);
-        methods.set(path5, group);
+        methods2.set(path5, group);
       }
     }
   }
@@ -51371,11 +51382,11 @@ function inventoryExtensionApiCoverage() {
     }]);
   }
   for (const path5 of routes.keys()) {
-    if (!methods.has(path5)) {
+    if (!methods2.has(path5)) {
       throw new Error(`Coverage route references undeclared method: ${path5}`);
     }
   }
-  return [...methods].toSorted(([left], [right]) => left.localeCompare(right, "en")).map(([path5, group]) => {
+  return [...methods2].toSorted(([left], [right]) => left.localeCompare(right, "en")).map(([path5, group]) => {
     const reviewed = group.declarations.some((entry) => entry.reference === "reviewed-installed");
     const supported2 = [];
     for (const original2 of routes.get(path5) ?? []) {
@@ -56162,8 +56173,8 @@ function validateJson(value, maximumNodes = 5e5) {
       throw new Error("Persistence JSON exceeds its reviewed bounds.");
     }
     const entry = item2.value;
-    const scalar4 = entry === null || typeof entry === "string" || typeof entry === "boolean" || typeof entry === "number" && Number.isFinite(entry);
-    if (!scalar4) {
+    const scalar5 = entry === null || typeof entry === "string" || typeof entry === "boolean" || typeof entry === "number" && Number.isFinite(entry);
+    if (!scalar5) {
       if (typeof entry !== "object" || entry === null || !Array.isArray(entry) && Object.getPrototypeOf(entry) !== Object.prototype && Object.getPrototypeOf(entry) !== null || Object.getOwnPropertySymbols(entry).length > 0) {
         throw new Error("Persistence input is not exact JSON.");
       }
@@ -67562,7 +67573,7 @@ function createClockedTransport(raw, source4) {
     bad();
   }
   const releaseMethod = raw.release, requestMethod = raw.request;
-  function methods() {
+  function methods2() {
     const releaseNow = Object.getOwnPropertyDescriptor(raw, "release"), requestNow = Object.getOwnPropertyDescriptor(raw, "request");
     if (requestNow === void 0 || !Object.hasOwn(requestNow, "value") || requestNow.value !== requestMethod || releaseNow === void 0 || !Object.hasOwn(releaseNow, "value") || releaseNow.value !== releaseMethod) {
       bad();
@@ -67573,7 +67584,7 @@ function createClockedTransport(raw, source4) {
   let inFlight = false, released = false;
   const transport2 = {
     ...assertAvailable === void 0 ? {} : { assertClosedSessionAvailable() {
-      methods();
+      methods2();
       const current2 = Object.getOwnPropertyDescriptor(raw, "assertClosedSessionAvailable");
       if (typeof assertAvailable !== "function" || current2 === void 0 || !Object.hasOwn(current2, "value") || current2.value !== assertAvailable) {
         bad();
@@ -67581,7 +67592,7 @@ function createClockedTransport(raw, source4) {
       Reflect.apply(assertAvailable, raw, []);
     } },
     async request(request2) {
-      methods();
+      methods2();
       if (released || inFlight) {
         bad();
       }
@@ -67637,7 +67648,7 @@ function createClockedTransport(raw, source4) {
       }
     },
     async release() {
-      methods();
+      methods2();
       released = true;
       await releaseMethod.call(raw);
     }
@@ -67646,7 +67657,7 @@ function createClockedTransport(raw, source4) {
     transport: transport2,
     observations: () => structuredClone(records2),
     originalAttachment(baseValue) {
-      methods();
+      methods2();
       if (released) {
         bad();
       }
@@ -75782,7 +75793,7 @@ var init_closed_symbol_saved_read = __esm({
         const validatorMethods = [validator?.capture, validator?.releaseCapture, validator?.proveTerminated];
         const releaseCapture = this.engine.releaseClosedSessionAuthority;
         const methodIdentities = () => [this.engine.captureClosedSessionAuthority, this.engine.releaseClosedSessionAuthority, this.engine.clockObservationForClosedCapture, this.engine.dispatchWithOrphanTracking, this.engine.runtimeIdentity];
-        const methods = methodIdentities(), planText = canonicalJson({ operationId: operationId2, plan: journal.plan, closedPlanSha256: journal.closedPlanSha256, markerSha256: journal.markerSha256 });
+        const methods2 = methodIdentities(), planText = canonicalJson({ operationId: operationId2, plan: journal.plan, closedPlanSha256: journal.closedPlanSha256, markerSha256: journal.markerSha256 });
         let rawSeal, rawText;
         const originalReply = () => {
           need31(rawText !== void 0 && rawSeal !== void 0 && JSON.stringify(this.returns.get(operationId2)) === rawText && canonicalJson(this.returns.get(operationId2)) === rawSeal, "Saved read settled reply changed.");
@@ -75803,7 +75814,7 @@ var init_closed_symbol_saved_read = __esm({
             this.admission.originalCapture(operationId2, "verify-admission") === capture3 && this.relaunch.originalLaunch(operationId2, "verify-launch") === launch && canonicalJson(capture3) === captureText && canonicalJson(launch) === launchText && this.startup.originalReturn(operationId2, "verify-marker-read") === startupRaw && this.navigation.originalReturn(operationId2, "verify-open") === openRaw && canonicalJson(startupRaw) === startupText && canonicalJson(openRaw) === openText,
             "Saved read original lifecycle receipts changed."
           );
-          need31(this.engine.executionAuthorityValidator === validator && validatorMethods.every((method4) => typeof method4 === "function") && [validator?.capture, validator?.releaseCapture, validator?.proveTerminated].every((method4, index) => method4 === validatorMethods[index]) && methodIdentities().every((method4, index) => method4 === methods[index]), "Saved read authority methods changed.");
+          need31(this.engine.executionAuthorityValidator === validator && validatorMethods.every((method4) => typeof method4 === "function") && [validator?.capture, validator?.releaseCapture, validator?.proveTerminated].every((method4, index) => method4 === validatorMethods[index]) && methodIdentities().every((method4, index) => method4 === methods2[index]), "Saved read authority methods changed.");
           need31(
             canonicalJson(this.runtime.status()) === statusText && this.engine.upstream.currentAuthenticatedBridgeDispatchBinding === scopeReader && this.engine.upstream.bridgeSessionLifecycle === sessionReader && canonicalJson(scopeReader.call(this.engine.upstream) ?? null) === canonicalJson(binding2),
             "Saved read current runtime or scope changed."
@@ -91889,6 +91900,249 @@ var init_ordinary_launch = __esm({
   }
 });
 
+// server/src/current-pcb-layers.ts
+function parseCurrentPcbLayersRequest(input) {
+  return currentPcbLayersRequestSchema.parse(input);
+}
+function queryCurrentPcbLayers(input = {}) {
+  const query = currentPcbLayersQuerySchema.parse(input);
+  const selected2 = methods.filter((method4) => query.method === void 0 || method4 === query.method);
+  const entries3 = selected2.map((method4) => {
+    const entry = {
+      path: method4,
+      method: method4,
+      effect: "current-pcb-layer-metadata-read",
+      parameters: [],
+      invocationEnabledByDiscovery: false,
+      limitations: [...limitations6],
+      provenance: {
+        apiVersion: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.version,
+        apiSha256: SDK_LOCAL_RUNTIME_PROFILE.installedBundles.publicApi.implementationSha256,
+        uiVersion: CURRENT_UI_IMPLEMENTATION.version,
+        uiSha256: CURRENT_UI_IMPLEMENTATION.sha256,
+        implementationKind: "native-task-equivalent",
+        liveValidation: "not-recorded"
+      }
+    };
+    if (query.includeSchemas) {
+      entry["inputSchema"] = external_exports.toJSONSchema(currentPcbLayersRequestSchema);
+    }
+    return entry;
+  });
+  return { offline: true, invocationEnabledByDiscovery: false, total: selected2.length, entries: entries3 };
+}
+function validateCurrentPcbLayersArguments(input) {
+  const result = currentPcbLayersRequestSchema.safeParse(input);
+  return result.success ? { valid: true, request: result.data, executionAuthorized: false } : {
+    valid: false,
+    executionAuthorized: false,
+    issues: result.error.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String), message: issue2.message.slice(0, 512) }))
+  };
+}
+function layerType2(type2) {
+  switch (type2) {
+    case "TOP":
+    case "BOTTOM":
+    case "SIGNAL": {
+      return "SIGNAL";
+    }
+    case "PLANE": {
+      return "PLANE";
+    }
+    case "TOP_SILK":
+    case "BOT_SILK": {
+      return "SILKSCREEN";
+    }
+    case "TOP_SOLDER_MASK":
+    case "BOT_SOLDER_MASK": {
+      return "SOLDER_MASK";
+    }
+    case "TOP_PASTE_MASK":
+    case "BOT_PASTE_MASK": {
+      return "PASTE_MASK";
+    }
+    case "TOP_ASSEMBLY":
+    case "BOT_ASSEMBLY": {
+      return "ASSEMBLY";
+    }
+    case "CUSTOM": {
+      return "CUSTOM";
+    }
+    default: {
+      return "OTHER";
+    }
+  }
+}
+function transparency(alpha) {
+  const rounded = Math.round((1 - alpha) * 100 * 100) / 100;
+  return Number.parseFloat(rounded.toFixed(2));
+}
+function buildCurrentPcbLayersProgram(input) {
+  const request2 = parseCurrentPcbLayersRequest(input);
+  return `let timer,clear;
+try{
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)};let expired=false;
+const bad=()=>{throw new Error('CURRENT_PCB_LAYERS_READ_FAILED');};
+const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
+const absent=(owner,key)=>{const d=Object.getOwnPropertyDescriptor(owner,key);if(d&&(!Object.hasOwn(d,'value')||d.value!==undefined))bad();};
+const fn=(owner,key)=>{const value=own(owner,key);if(typeof value!=='function')bad();return value;};
+const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
+const topPlain=value=>{if(!object(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
+const location=root.location,href=location?.href,document=root.document,ui=own(root,'UI'),host=own(root,'gVars'),mode=own(root,'PRO_EDITOR_MODE');
+const project=topPlain(own(host,'currentProject')),tabs=own(ui,'tabBar'),edaOwner=eda;
+if(typeof tabs!=='function'||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
+const active=fn(tabs,'getActiveTab'),getTab=fn(tabs,'getTabById'),select=document?.querySelectorAll;
+if(typeof select!=='function')bad();
+const tab=topPlain(apply(getTab,tabs,[target.tabId])),data=topPlain(own(tab,'data'));
+const matches=apply(select,document,['[id="frame_'+target.tabId+'"]']);if(matches.length!==1)bad();
+const frame=matches[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
+const native=own(child,'MSG_BUS_PCB'),channel=own(native,'messageBus'),childObject=own(child,'Object'),childArray=own(child,'Array');
+const childObjectPrototype=own(childObject,'prototype'),childArrayPrototype=own(childArray,'prototype');
+const getAttribute=frame?.getAttribute,hasAttribute=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttribute=parent?.getAttribute;
+if(typeof getAttribute!=='function'||typeof hasAttribute!=='function'||typeof contains!=='function'||typeof parentAttribute!=='function')bad();
+const chain=[channel];let rpc,rpcOwner;
+for(let i=0;i<3;i++){const node=chain[i];if(!object(node))bad();const d=Object.getOwnPropertyDescriptor(node,'rpcCall');if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();rpc=d.value;rpcOwner=node;break;}chain.push(Object.getPrototypeOf(node));}
+if(typeof rpc!=='function')bad();
+const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
+const check=()=>{
+ if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')bad();
+ if(typeof href!=='string'||!/^https:\\/\\/client\\/editor\\?cll=(?:trace|debug|info|warn|error)#?$/.test(href))bad();
+ if(own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
+ if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(host,'currentProject')!==project||own(ui,'tabBar')!==tabs||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
+ if(own(project,'projectId')!==target.projectUuid||own(project,'branchUuid')!==target.branchUuid||own(project,'isV2Format')!==false||own(host,'isHistoryMode')!==false)bad();
+ if(fn(tabs,'getActiveTab')!==active||fn(tabs,'getTabById')!==getTab||apply(active,tabs,[])!==target.tabId||apply(getTab,tabs,[target.tabId])!==tab||own(tab,'data')!==data)bad();
+ if(own(tab,'tabId')!==target.tabId||own(data,'doctype')!==3||own(data,'pid')!==target.projectUuid)bad();absent(tab,'parentLibraryUuid');
+ if(document.querySelectorAll!==select)bad();const found=apply(select,document,['[id="frame_'+target.tabId+'"]']);if(found.length!==1||found[0]!==frame)bad();
+ if(frame.tagName!=='IFRAME'||frame.id!=='frame_'+target.tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==getAttribute||frame.hasAttribute!==hasAttribute||parent.getAttribute!==parentAttribute||!apply(contains,classes,['editframe'])||apply(parentAttribute,parent,['uuid'])!==target.tabId)bad();
+ for(const [key,value] of [['c_dbid',target.tabId],['c_doctype','3'],['src','editor?entry=pcb'],['pcb-canvas','true']])if(apply(getAttribute,frame,[key])!==value)bad();
+ for(const key of ['blankIframe','fromFile','jsonCacheReady'])if(apply(hasAttribute,frame,[key]))bad();
+ if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||own(child,'MSG_BUS_PCB')!==native||own(native,'messageBus')!==channel)bad();
+ if(own(child,'Object')!==childObject||own(childObject,'prototype')!==childObjectPrototype||own(child,'Array')!==childArray||own(childArray,'prototype')!==childArrayPrototype)bad();
+ for(let i=0;i<chain.length;i++){const node=chain[i];if(i>0&&Object.getPrototypeOf(chain[i-1])!==node)bad();if(node===rpcOwner){if(own(node,'rpcCall')!==rpc)bad();}else if(Object.hasOwn(node,'rpcCall'))bad();}
+ if(own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear)bad();
+};
+const plain=value=>{if(!object(value))bad();const p=Object.getPrototypeOf(value);if(p!==Object.prototype&&p!==childObjectPrototype)bad();return value;};
+const exact=(value,keys)=>{plain(value);const actual=Reflect.ownKeys(value);if(actual.length!==keys.length||!actual.every(key=>keys.includes(key)))bad();};
+const text=(value,max,empty=false)=>{if(typeof value!=='string'||value.length>max||(!empty&&value.length===0))bad();return value;};
+const num=(value,min=-Number.MAX_VALUE,max=Number.MAX_VALUE)=>{if(typeof value!=='number'||!Number.isFinite(value)||Object.is(value,-0)||value<min||value>max)bad();return value;};
+const bool=value=>{if(typeof value!=='boolean')bad();return value;};
+const projectRows=value=>{
+ const p=Object.getPrototypeOf(value??{});if(!Array.isArray(value)||(p!==Array.prototype&&p!==childArrayPrototype))bad();
+ const n=own(value,'length');if(!Number.isInteger(n)||n<1||n>${MAX_LAYERS}||Reflect.ownKeys(value).length!==n+1)bad();const rows=[],ids=new Set();
+ for(let i=0;i<n;i++){
+  const row=own(value,String(i));exact(row,['layerId','type','name','order','activeColor','activeColorAlpha','deactiveColor','deactiveColorAlpha','visible','locked','active','layerStatus']);
+  const id=num(own(row,'layerId'),1,65535),status=num(own(row,'layerStatus'),0,2);if(!Number.isInteger(id)||!Number.isInteger(status)||ids.has(id))bad();ids.add(id);
+  rows.push({layerId:id,type:text(own(row,'type'),128),name:text(own(row,'name'),1024,true),order:num(own(row,'order')),activeColor:text(own(row,'activeColor'),128),activeColorAlpha:num(own(row,'activeColorAlpha'),0,1),deactiveColor:text(own(row,'deactiveColor'),128),deactiveColorAlpha:num(own(row,'deactiveColorAlpha'),0,1),visible:bool(own(row,'visible')),locked:bool(own(row,'locked')),active:bool(own(row,'active')),layerStatus:status});
+ }
+ return rows;
+};
+const call=async topic=>{check();const reply=await apply(rpc,channel,[topic,undefined,0]);check();plain(reply);return own(reply,'message');};
+const identity=async()=>{const value=await call('getTabIdAndDocType');check();exact(value,['tabId','docType']);if(own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
+const read=async()=>{await identity();check();const raw=await call('pcb/extensionAPI/pcblayer-getAllLayers');check();const rows=projectRows(raw);check();await identity();check();return rows;};
+const run=async()=>{
+ const first=await read(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_LAYERS_MAX_BYTES})bad();
+ const second=await read();if(JSON.stringify(second)!==firstJson)bad();check();
+ const json=JSON.stringify({ok:true,kind:'current-pcb-layer-observation',method:${JSON.stringify(request2.method)},target,nativeLayers:first,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,physicalStackVerified:false});
+ const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
+ if(utf8Bytes>${CURRENT_PCB_LAYERS_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PCB_LAYERS_MAX_BYTES})bad();return envelope;
+};
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error('CURRENT_PCB_LAYERS_READ_FAILED'));},10000]);});
+return await Promise.race([run(),timeout]);
+}catch{throw new Error('CURRENT_PCB_LAYERS_READ_FAILED');}
+finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error('CURRENT_PCB_LAYERS_READ_FAILED');}}}`;
+}
+function validateCurrentPcbLayersResult(input, raw) {
+  const request2 = parseCurrentPcbLayersRequest(input);
+  const payload = currentPcbLayersResultSchema.parse(raw);
+  if (payload.method !== request2.method || canonicalJson(payload.target) !== canonicalJson(request2.target)) {
+    throw new Error("PCB layers result differs from its exact target request.");
+  }
+  if (Buffer.byteLength(JSON.stringify(payload), "utf8") > CURRENT_PCB_LAYERS_MAX_BYTES) {
+    throw new Error("PCB layers result exceeds its byte bound.");
+  }
+  const { nativeLayers, ...metadata8 } = payload;
+  if (new Set(nativeLayers.map((layer4) => layer4.layerId)).size !== nativeLayers.length) {
+    throw new Error("PCB layers contain duplicate identities.");
+  }
+  const value = request2.method === "eda.pcb_Layer.getTheNumberOfCopperLayers" ? nativeLayers.filter((layer4) => (layer4.type === "SIGNAL" || layer4.type === "PLANE") && layer4.layerStatus !== 0).length + 2 : nativeLayers.map((layer4) => ({
+    id: layer4.layerId,
+    name: layer4.name,
+    type: layerType2(layer4.type),
+    color: layer4.activeColor,
+    transparency: transparency(layer4.activeColorAlpha),
+    inactiveColor: layer4.deactiveColor,
+    inactiveTransparency: transparency(layer4.deactiveColorAlpha),
+    layerStatus: layer4.layerStatus,
+    locked: layer4.locked
+  }));
+  return {
+    ...metadata8,
+    value,
+    observedLayerCount: nativeLayers.length,
+    effect: "current-pcb-layer-metadata-read",
+    authority: "explicit-target-layer-observation-only;not-design-or-persistence-authority",
+    liveValidation: "not-recorded",
+    limitations: [...limitations6]
+  };
+}
+var CURRENT_PCB_LAYERS_MAX_BYTES, MAX_LAYERS, methods, targetSchema4, currentPcbLayersRequestSchema, currentPcbLayersQuerySchema, scalar4, layerStatus, layerSchema, currentPcbLayersResultSchema, limitations6;
+var init_current_pcb_layers = __esm({
+  "server/src/current-pcb-layers.ts"() {
+    init_zod();
+    init_core3();
+    init_current_ui_implementation();
+    init_exact_readers();
+    init_sdk_local_runtime();
+    CURRENT_PCB_LAYERS_MAX_BYTES = 262144;
+    MAX_LAYERS = 512;
+    methods = ["eda.pcb_Layer.getAllLayers", "eda.pcb_Layer.getTheNumberOfCopperLayers"];
+    targetSchema4 = external_exports.object({
+      projectUuid: external_exports.string().regex(/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u),
+      branchUuid: external_exports.string().regex(/^[a-f0-9]{32}$/u),
+      documentUuid: external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u),
+      tabId: external_exports.string().min(49).max(97)
+    }).strict().refine((value) => value.tabId === `${value.documentUuid}@${value.projectUuid}`, "Tab identity must equal document@project.");
+    currentPcbLayersRequestSchema = external_exports.object({ method: external_exports.enum(methods), arguments: external_exports.object({}).strict(), target: targetSchema4 }).strict();
+    currentPcbLayersQuerySchema = external_exports.object({ method: external_exports.enum(methods).optional(), includeSchemas: external_exports.boolean().default(false) }).strict();
+    scalar4 = external_exports.number().refine((value) => !Object.is(value, -0), "Signed zero is outside this bounded transport subset.");
+    layerStatus = scalar4.pipe(external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2)]));
+    layerSchema = external_exports.object({
+      layerId: external_exports.number().int().min(1).max(65535),
+      type: external_exports.string().min(1).max(128),
+      name: external_exports.string().max(1024),
+      order: scalar4,
+      activeColor: external_exports.string().min(1).max(128),
+      activeColorAlpha: scalar4.pipe(external_exports.number().min(0).max(1)),
+      deactiveColor: external_exports.string().min(1).max(128),
+      deactiveColorAlpha: scalar4.pipe(external_exports.number().min(0).max(1)),
+      visible: external_exports.boolean(),
+      locked: external_exports.boolean(),
+      active: external_exports.boolean(),
+      layerStatus
+    }).strict();
+    currentPcbLayersResultSchema = external_exports.object({
+      ok: external_exports.literal(true),
+      kind: external_exports.literal("current-pcb-layer-observation"),
+      method: external_exports.enum(methods),
+      target: targetSchema4,
+      nativeLayers: external_exports.array(layerSchema).min(1).max(MAX_LAYERS),
+      samples: external_exports.literal(2),
+      implementationKind: external_exports.literal("native-task-equivalent"),
+      cadAuthority: external_exports.literal(false),
+      persistenceVerified: external_exports.literal(false),
+      physicalStackVerified: external_exports.literal(false)
+    }).strict();
+    limitations6 = [
+      "Native task equivalents for ordinary active type-3 PCB frames only, with an explicit project/branch/document/tab target. No public SDK method is dispatched and no legacy context or design authority is admitted.",
+      "Two complete matching native layer samples retain the top/child documents, UI owners, exact frame and its local RPC receiver; native tab/type identity brackets each sample. These observations are not an atomic document lock or a proof against switching away and back between checks.",
+      "getAllLayers ports the installed API's nine-field projection and two-decimal alpha conversion. Colors remain raw strings, including malformed fractional hexadecimal output; no CSS validity or correction is implied.",
+      "The copper count follows the installed UI expression: enabled native SIGNAL or PLANE rows plus two. It does not count projected SIGNAL rows or prove a physical, manufacturable stackup.",
+      "At most 512 unique layers, 1024 name characters, 128 type/color characters and 262144 UTF-8 bytes. Non-finite numbers and signed zero refuse. Bounds apply after the vendor's internal enumeration, which is not cancelled by the 10-second deadline.",
+      "Only fixed local layer/identity RPCs are dispatched. RPC bookkeeping and a premature identity handler's local environment initialization are incidental; an uninitialized blank tab/type refuses. No layer change, selection, navigation, Save, source export, settings or persistence operation is requested. Source review and offline tests are not live validation."
+    ];
+  }
+});
+
 // server/src/offline-api.ts
 function queryOfflineApi(request2) {
   let result;
@@ -91957,6 +92211,14 @@ function queryOfflineApi(request2) {
       result = validateShortcutKeysArguments(request2.query.request);
       break;
     }
+    case "pcb-layers": {
+      result = queryCurrentPcbLayers(request2.query ?? {});
+      break;
+    }
+    case "pcb-layers-validate": {
+      result = validateCurrentPcbLayersArguments(request2.query.request);
+      break;
+    }
     case "launch": {
       result = queryOrdinaryLaunch(request2.query ?? {});
       break;
@@ -91994,6 +92256,7 @@ var init_offline_api = __esm({
     init_editor_context();
     init_shortcut_keys();
     init_ordinary_launch();
+    init_current_pcb_layers();
     ordinaryLaunchQuerySchema = external_exports.object({ includeSchemas: external_exports.boolean().default(false) }).strict();
     apiRequestSchema = external_exports.discriminatedUnion("action", [
       external_exports.object({ action: external_exports.literal("sdk"), query: extensionApiCatalogInputSchema.optional() }).strict(),
@@ -92012,6 +92275,8 @@ var init_offline_api = __esm({
       external_exports.object({ action: external_exports.literal("editor-context-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("shortcuts"), query: shortcutKeysQuerySchema.optional() }).strict(),
       external_exports.object({ action: external_exports.literal("shortcuts-validate"), query: publicSdkValidationQuerySchema }).strict(),
+      external_exports.object({ action: external_exports.literal("pcb-layers"), query: currentPcbLayersQuerySchema.optional() }).strict(),
+      external_exports.object({ action: external_exports.literal("pcb-layers-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("launch"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
       external_exports.object({ action: external_exports.literal("launch-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("operations"), query: operationCatalogQuerySchema }).strict(),
@@ -92019,7 +92284,7 @@ var init_offline_api = __esm({
     ]);
     offlineApiToolConfiguration = {
       title: "EasyEDA offline API reference and argument validation",
-      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key or ordinary-launch schemas; validate arguments including refinements. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
+      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer or ordinary-launch schemas; validate arguments including refinements. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
       inputSchema: { request: apiRequestSchema },
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
     };
@@ -99646,7 +99911,7 @@ async function discardCloseConfirmation(input, controller, dependencies3 = {}) {
     throw transactionError(error51, { operationId: journal.operationId, state: String(journal["state"]), orphanedCallPossible: false, nextSafeAction: String(journal["nextSafeAction"]) });
   }
 }
-var hash31, targetSchema4, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
+var hash31, targetSchema5, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
 var init_native_close_recovery = __esm({
   "server/src/native-close-recovery.ts"() {
     init_zod();
@@ -99657,7 +99922,7 @@ var init_native_close_recovery = __esm({
     init_windows_native_ui();
     init_transaction_error();
     hash31 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
-    targetSchema4 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
+    targetSchema5 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
     buttonSchema = external_exports.object({ label: external_exports.literal("Leave this page"), x: external_exports.number().int().min(-32768).max(32767), y: external_exports.number().int().min(-32768).max(32767) }).strict();
     dialogSchema = external_exports.object({ title: external_exports.literal("Confirm Close"), onlyUnsavedTarget: external_exports.literal(true), targetName: external_exports.string().min(1).max(512), discardButton: buttonSchema }).strict();
     recoveryBaseSchema = external_exports.object({
@@ -99667,7 +99932,7 @@ var init_native_close_recovery = __esm({
       confirmUIWrite: external_exports.literal(true),
       discardOwnUnsavedChanges: external_exports.literal(true),
       acknowledgeDurableChanges: external_exports.boolean().optional(),
-      target: targetSchema4,
+      target: targetSchema5,
       capture: external_exports.object({ receiptPath: external_exports.string().min(1), receiptSha256: hash31, imageSha256: hash31 }).strict()
     }).strict();
     closeConfirmationRequestSchema = recoveryBaseSchema.extend({ action: external_exports.literal("discard-close-confirmation"), observedDialog: dialogSchema }).strict();
@@ -115708,7 +115973,8 @@ var init_facade_mode = __esm({
       "easyeda_control_launch",
       "easyeda_control_editor_shell",
       "easyeda_control_editor_context",
-      "easyeda_control_shortcuts"
+      "easyeda_control_shortcuts",
+      "easyeda_control_pcb_layers"
     ]);
   }
 });
@@ -116032,6 +116298,69 @@ var init_shortcut_keys_runtime = __esm({
     SHORTCUT_KEYS_RUNTIME_PROFILE = Object.freeze({
       ...SDK_LOCAL_RUNTIME_PROFILE,
       schema: "easyeda-pro-control.shortcut-keys-runtime.v1",
+      uiImplementation: CURRENT_UI_IMPLEMENTATION
+    });
+  }
+});
+
+// server/src/current-pcb-layers-runtime.ts
+async function readCurrentPcbLayers(engine2, requestInput2, expectedFingerprint) {
+  const request2 = parseCurrentPcbLayersRequest(requestInput2);
+  const expected3 = structuredClone(expectedFingerprint);
+  validateSdkLocalRuntimeFingerprint(expected3);
+  await engine2.assertBridgeDispatchAllowed();
+  const initialStatus = await engine2.status();
+  const initial = structuredClone(initialStatus.stableFingerprint);
+  validateSdkLocalRuntimeFingerprint(initial);
+  assertExpectedFingerprint(initial);
+  assertSubset(initial, expected3, "PCB layers expected runtime");
+  await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
+  await engine2.assertBridgeDispatchAllowed();
+  const raw = await engine2.upstream.callTool("easyeda_execute", {
+    code: buildCurrentPcbLayersProgram(request2),
+    timeoutMs: 6e4,
+    confirmWrite: true
+  }, 7e4);
+  assertUpstreamReplySettled(raw);
+  const envelope2 = extractToolPayload(raw);
+  if (Buffer.byteLength(JSON.stringify(envelope2), "utf8") > CURRENT_PCB_LAYERS_MAX_BYTES) {
+    throw new Error("PCB layers reply exceeds its byte bound.");
+  }
+  const result = validateCurrentPcbLayersResult(request2, decodeExactReadEnvelope(envelope2));
+  await verifyCurrentUiImplementation(initial.installedBundles.assetsRoot);
+  await engine2.assertBridgeDispatchAllowed();
+  const finalStatus = await engine2.status();
+  const finalFingerprint = finalStatus.stableFingerprint;
+  validateSdkLocalRuntimeFingerprint(finalFingerprint);
+  if (canonicalJson(finalFingerprint) !== canonicalJson(initial)) {
+    throw new Error("PCB layers runtime changed around the observation.");
+  }
+  const response3 = { ...result, runtimeAdmission: {
+    profile: CURRENT_PCB_LAYERS_RUNTIME_PROFILE.schema,
+    fingerprintSha256: sha256Json(initial),
+    uiImplementation: CURRENT_UI_IMPLEMENTATION,
+    beforeAndAfterChecked: true,
+    scope: "explicit-current-pcb-layer-metadata-only",
+    designExecutionAuthorized: false,
+    persistenceVerified: false,
+    liveValidation: "not-recorded"
+  } };
+  if (Buffer.byteLength(JSON.stringify(response3), "utf8") > CURRENT_PCB_LAYERS_MAX_BYTES) {
+    throw new Error("PCB layers result exceeds its byte bound.");
+  }
+  return response3;
+}
+var CURRENT_PCB_LAYERS_RUNTIME_PROFILE;
+var init_current_pcb_layers_runtime = __esm({
+  "server/src/current-pcb-layers-runtime.ts"() {
+    init_core3();
+    init_current_ui_implementation();
+    init_current_pcb_layers();
+    init_exact_readers();
+    init_sdk_local_runtime();
+    CURRENT_PCB_LAYERS_RUNTIME_PROFILE = Object.freeze({
+      ...SDK_LOCAL_RUNTIME_PROFILE,
+      schema: "easyeda-pro-control.current-pcb-layers-runtime.v1",
       uiImplementation: CURRENT_UI_IMPLEMENTATION
     });
   }
@@ -117204,8 +117533,8 @@ async function runClosedSymbolTool(input, mode) {
       if (closedSymbolIndexReservation !== reservation || reservation.engine !== engine || reservation.upstream !== upstream || reservation.gate !== bridgeGate || disposableOwnData(engine, "upstream") !== upstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || reservation.facadePromise !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== reservation.executionAuthority || reservation.environment !== process18.env || process18.env["EASYEDA_ASSETS_ROOT"] !== reservation.assetsRoot || process18.env["WSL_DISTRO_NAME"] !== reservation.wslDistribution || controlDataDirectory() !== reservation.controlPath || retainedControlRoot2.path !== reservation.controlPath || resolve17(import.meta.dirname, "../..") !== reservation.pluginRoot || scheduledShutdown !== void 0 || canonicalJson((mode === "validation" ? parseClosedSymbolDisposableInput(input) : parseClosedSymbolOperationInput(input)).request) !== requestText) {
         throw new Error("Disposable index reservation, request, configuration or shutdown state changed.");
       }
-      const methods = disposableIndexMethods();
-      if (methods.length !== reservation.methods.length || methods.some((method4, index) => method4 !== reservation.methods[index]) || windowsRuntime !== reservation.runtime) {
+      const methods2 = disposableIndexMethods();
+      if (methods2.length !== reservation.methods.length || methods2.some((method4, index) => method4 !== reservation.methods[index]) || windowsRuntime !== reservation.runtime) {
         throw new Error("Disposable index runtime or method ownership changed.");
       }
       if (reservation.facade !== void 0 && disposableOwnData(reservation.facade, "sha256") !== reservation.facadeSha256) {
@@ -118056,6 +118385,8 @@ var init_src = __esm({
     init_ordinary_launch();
     init_shortcut_keys();
     init_shortcut_keys_runtime();
+    init_current_pcb_layers();
+    init_current_pcb_layers_runtime();
     facadeMode = configuredFacadeMode(process18.env);
     MAX_INLINE_RESULT_BYTES = 256 * 1024;
     MAX_CAPTURE_PNG_BYTES = 16 * 1024 * 1024;
@@ -118500,6 +118831,7 @@ var init_src = __esm({
       easyeda_control_editor_shell: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_editor_context: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_shortcuts: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
+      easyeda_control_pcb_layers: external_exports.object({ result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_check: external_exports.object({ result: routeAuditResultSchema.optional(), operationId: external_exports.string().optional(), state: external_exports.string().optional(), report: external_exports.unknown().optional(), proof: external_exports.unknown().optional(), reportArtifact: external_exports.unknown().optional(), nextSafeAction: external_exports.string().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_native_ui: external_exports.object({ schema: external_exports.string().optional(), action: external_exports.string().optional(), result: external_exports.unknown().optional(), observations: external_exports.array(external_exports.unknown()).optional(), authority: external_exports.string().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
       easyeda_control_runtime: external_exports.object({ action: external_exports.string().optional(), result: external_exports.unknown().optional(), ...optionalFailureOutputShape }).catchall(external_exports.unknown()),
@@ -118529,7 +118861,7 @@ var init_src = __esm({
       { name: "easyeda-pro-control", version: CONTROL_VERSION },
       {
         capabilities: { tools: {} },
-        instructions: facadeMode === "calculation-only" ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations, system/shortcut/extension/editor-shell and identity-only context observations, and a journaled ordinary application launcher. Launch uses the existing profile and does not prove isolation, bridge authentication or Start Page readiness. No project-content readers, generic native controls, navigation, design changes, Save or design recovery tools are available. Identity context grants no later execution authority; shortcut metadata grants no keyboard authority. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
+        instructions: facadeMode === "calculation-only" ? "Restricted compatibility mode. Tools include local reference/discovery, status, separately pinned calculations, system/shortcut/extension/editor-shell and identity-only context observations, exact-target PCB layer metadata, and a journaled ordinary application launcher. Launch uses the existing profile and does not prove isolation, bridge authentication or Start Page readiness. PCB reads admit only layer-list/copper-count observations on one explicitly identified ordinary board, not generic design contents or physical stackup. No generic native controls, navigation, design changes, Save or design recovery tools are available. Identity context grants no later execution authority; shortcut metadata grants no keyboard authority. Each capability needs its own admission; legacy methods remain unavailable. Use offline schemas and exact validation first. The internal calculation-only mode name is retained; registration stays fixed until restart." : "Use offline easyeda_control_api for documented SDK methods, exact typed operation schemas and argument validation. Declaration presence never authorizes execution. Before live work use status and exact context. Typed transactions require native record/connectivity checks and save/reopen complete-project persistence verification. Inspect library execution capabilities. Native controls handle missing APIs and dialogs; UI acknowledgment is not persistence proof. Raw execution and the old component writer remain refused. Never retry uncertain calls or Save attempts; inspect and reconcile the retained journal."
       }
     );
     registerFacadeTool(
@@ -118554,7 +118886,7 @@ var init_src = __esm({
           libraryExecution: { tool: "easyeda_control_library", capabilities: facadeMode === "legacy-reviewed" ? listLibraryExecutionCapabilities() : [] },
           ...facadeMode === "calculation-only" ? {
             availableTools: CALCULATION_ONLY_TOOLS,
-            capabilityScope: "Separately admitted calculations, system/extension/editor-shell, identity-context and shortcut-key observations, and ordinary existing-profile launch. No project-content access, navigation, design changes or legacy-route admission; launch does not prove isolation."
+            capabilityScope: "Separately admitted calculations, system/extension/editor-shell, identity-context, shortcut-key and exact-target PCB layer observations, and ordinary existing-profile launch. No generic design-content access, navigation, design changes or legacy-route admission; launch does not prove isolation."
           } : {}
         },
         upstream: facadeMode === "legacy-reviewed" ? await engine.status() : {
@@ -118566,6 +118898,7 @@ var init_src = __esm({
             editorShell: { tool: "easyeda_control_editor_shell", runtimeAdmissionRequired: true, readinessProof: false },
             editorContext: { tool: "easyeda_control_editor_context", runtimeAdmissionRequired: true, identityOnly: true, cadAuthority: false },
             shortcutKeys: { tool: "easyeda_control_shortcuts", runtimeAdmissionRequired: true, keyboardExecution: false },
+            pcbLayers: { tool: "easyeda_control_pcb_layers", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, designExecution: false },
             ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
             designAccess: { enabled: false },
             navigation: { enabled: false }
@@ -119083,6 +119416,16 @@ var init_src = __esm({
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },
       serializedLiveGuarded(async (input) => ({ result: await readShortcutKeys(engine, input.request, input.expectedFingerprint) }))
+    );
+    registerFacadeTool(
+      "easyeda_control_pcb_layers",
+      {
+        title: "Read layers on an explicitly identified PCB",
+        description: "Read a bounded layer list or copper-layer count on the separately reviewed current EasyEDA API/UI/PCB tuple. Requires the actual authenticated fingerprint and exact project/branch/document/tab target. Captures one ordinary active PCB frame and its native receiver, with two complete matching layer observations and target checks around awaits. These are native equivalents of getAllLayers/getTheNumberOfCopperLayers, not public-wrapper dispatch. Preserve raw color strings; copper count follows the vendor layer convention, not verified physical stackup. No footprint/panel/3D, generic project content, current-layer selection, navigation, settings, writes or Save. Query offline pcb-layers/pcb-layers-validate first. No connected validation, persistence or later editing authority is implied.",
+        inputSchema: { request: external_exports.unknown().pipe(currentPcbLayersRequestSchema), expectedFingerprint: privateFingerprintSchema },
+        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+      },
+      serializedLiveGuarded(async (input) => ({ result: await readCurrentPcbLayers(engine, input.request, input.expectedFingerprint) }))
     );
     registerFacadeTool(
       "easyeda_control_sdk_read",

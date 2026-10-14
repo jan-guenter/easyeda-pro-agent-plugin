@@ -19,7 +19,15 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261014011500` adds explicit `abandon-supervision` recovery
+Update `0.3.0+codex.20261014020500` adds `easyeda_control_pcb_layers` for
+current-version board layer metadata and copper-layer count. It reads an
+explicitly identified active PCB through a retained native receiver, with two
+matching samples and exact API/UI/PCB admission. This is a native equivalent,
+not execution of the public wrapper, full stackup validation or editing support.
+Offline `pcb-layers` and `pcb-layers-validate` expose the request contract.
+See the [layer-reader release](docs/current-pcb-layers-release-2026-10-14.md).
+
+Previous update `0.3.0+codex.20261014011500` added explicit `abandon-supervision` recovery
 for a successful ordinary launch whose original process handles were lost.
 It preserves history and requires the inspected launch digest, explicit risk
 acceptance and two absent process samples. It does not prove termination or
@@ -71,13 +79,15 @@ remain under `easyeda_control_calculate`. Installed161000 passed one triangle
 area and one nested-square subtraction with a complete hole; these cases do not
 validate all methods or this newer source generation.
 
-The older reviewed tuple exposes 35 tools. A configured newer or unknown tuple
-exposes ten: API reference, local discovery, status, calculations, local
-system methods, extension-index/editor-shell/identity-context/shortcut observers and ordinary launch.
+The older reviewed tuple exposes 36 tools. A configured newer or unknown tuple
+exposes eleven: API reference, local discovery, status, calculations, local
+system methods, extension-index/editor-shell/identity-context/shortcut observers,
+explicit-target PCB layer metadata and ordinary launch.
 The internal mode name remains `calculation-only`. Bridge execution separately
 requires exact reviewed EasyEDA 3.2.206 / API 0.3.50 hashes and authentication;
 launch instead verifies its installed executable/app/helper identities.
-No project-content reader, navigation or design writer is enabled on the new version.
+Only the scoped layer-metadata reader accesses a board on the new version;
+generic project-content readers, navigation and design writers remain unavailable.
 Seven skills remain included. See the
 [system-method release](docs/system-release-2026-10-13.md) for limits and backlog.
 
@@ -119,7 +129,7 @@ paths, linking each to a direct public call, narrower native task equivalent,
 internal lifecycle use, or a concrete omission reason and required work.
 Current source classifications are 211 public subsets, 30 native equivalents,
 no lifecycle-only methods, 82 implemented-but-blocked methods and 451
-omissions. Their execution routes comprise 309 available with runtime guards,
+omissions. Their execution routes comprise 311 available with runtime guards,
 94 blocked and two partially blocked. Method and route counts differ;
 neither is a live-validated-method count.
 The [030626 release record](docs/api-coverage-030626-release-2026-10-12.md)

@@ -53,6 +53,19 @@ changes before their first physical-layer mutation, not only inside a later
 source merge. Receiver binding is not an atomic source compare-and-swap;
 independent post-effect and durable proofs remain necessary.
 
+For read-only current PCB layers, the separately pinned `pcb_layers` route
+uses that native receiver pattern and declares `native-task-equivalent`.
+The public layer getter chooses its active frame after an asynchronous API/UI
+hop; binding `this` cannot fix its routing. Preserve native SIGNAL/PLANE types
+when deriving copper count, since the public mapper also maps TOP/BOTTOM to
+SIGNAL. Native color strings are not guaranteed valid CSS. Local project UUIDs
+may be 64-character path hashes; do not invent a 32-character-only contract.
+
+Current ordinary `openDocument` also performs partition cleanup/title updates
+and may invoke native Save. A new-version disposable opener must disclose
+those effects and retain one-shot navigation intent; it cannot inherit an
+older tuple's no-Save or unchanged-database promise from the method name.
+
 Large journal directories can defeat a cache that evicts the oldest entry for
 every new scan result. Test more entries than the cache cap. Preserve useful
 resident entries when declining a new admission, but still rehash current journal
