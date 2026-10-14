@@ -10,7 +10,7 @@ import { ordinaryLaunchRequestSchema } from "../src/ordinary-launch.ts";
 void test("ordinary launcher registration keeps quarantine and exact shared runtime allocation", async () => {
   const source = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
   const start = source.indexOf('registerFacadeTool(\n  "easyeda_control_launch",');
-  const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_editor_shell",', start);
+  const end = source.indexOf('registerFacadeTool(\n  "easyeda_control_project_open",', start);
   assert.ok(start > 0 && end > start);
   interface Options { assertAllowed: () => Promise<void>; allocateRuntime: (identity: object) => unknown }
   let options: Options | undefined;

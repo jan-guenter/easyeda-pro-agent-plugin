@@ -1,0 +1,179 @@
+import { z } from "zod";
+import { sha256Text } from "./core.ts";
+import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
+
+export const CURRENT_DISPOSABLE_OPEN_MAX_BYTES = 16_384;
+const hex64 = z.string().regex(/^[a-f0-9]{64}$/u);
+const hex32 = z.string().regex(/^[a-f0-9]{32}$/u);
+const documentId = z.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
+const operationId = z.string().min(8).max(96).regex(/^[a-z0-9][a-z0-9-]{7,95}$/u);
+// oxlint-disable-next-line no-control-regex -- Control characters must be rejected at the Windows path authority boundary.
+const windowsPath = z.string().min(12).max(4096).regex(/^[A-Za-z]:\\[^\u0000-\u001F\u007F<>:"|?*/]+\.eprj2$/u)
+  .refine((value) => value.slice(3).split("\\").every((part) => part.length > 0 && part.trim() === part
+    && part !== "." && part !== ".." && !/[. ]$/u.test(part) && !/~[0-9]/u.test(part)
+    && !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu.test(part)), "Use a canonical absolute Windows project path.");
+const targetFields = { rawWindowsPath: windowsPath, projectUuid: hex64, documentUuid: documentId, expectedSourceSha256: hex64 };
+export const currentDisposableOpenTargetSchema = z.object(targetFields).strict()
+  .refine((value) => sha256Text(value.rawWindowsPath) === value.projectUuid, "Project identity must hash the exact raw Windows path.");
+export type CurrentDisposableOpenTarget = z.infer<typeof currentDisposableOpenTargetSchema>;
+export const currentDisposableOpenSealedTargetSchema = z.object({ ...targetFields, branchUuid: hex32 }).strict()
+  .refine((value) => sha256Text(value.rawWindowsPath) === value.projectUuid, "Project identity must hash the exact raw Windows path.");
+export type CurrentDisposableOpenSealedTarget = z.infer<typeof currentDisposableOpenSealedTargetSchema>;
+export const currentDisposableOpenRequestSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("open"), operationId, ...targetFields, confirmDisposableProject: z.literal(true), acceptNormalOpenEffects: z.literal(true) }).strict(),
+  z.object({ action: z.literal("observe"), operationId }).strict(),
+  z.object({ action: z.literal("inspect"), operationId }).strict(),
+  z.object({ action: z.literal("retire-after-termination"), operationId, confirmRetire: z.literal(true), acceptUnknownFileEffects: z.literal(true) }).strict(),
+]).refine((value) => value.action !== "open" || sha256Text(value.rawWindowsPath) === value.projectUuid, "Project identity must hash the exact raw Windows path.");
+export type CurrentDisposableOpenRequest = z.infer<typeof currentDisposableOpenRequestSchema>;
+export function parseCurrentDisposableOpenRequest(input: unknown): CurrentDisposableOpenRequest { return currentDisposableOpenRequestSchema.parse(input); }
+export function parseCurrentDisposableOpenTarget(input: unknown): CurrentDisposableOpenTarget { return currentDisposableOpenTargetSchema.parse(input); }
+export const currentDisposableOpenQuerySchema = z.object({ includeSchemas: z.boolean().default(false) }).strict();
+
+const phases = ["preflight", "open-project", "open-document", "observe"] as const;
+export type CurrentDisposableOpenPhase = typeof phases[number];
+export const currentDisposableOpenResultSchema = z.object({
+  ok: z.literal(true), kind: z.literal("current-disposable-open"), phase: z.enum(phases),
+  projectUuid: hex64, documentUuid: documentId, projectPathMatched: z.literal(true), branchUuid: hex32.nullable(),
+  projectPresent: z.boolean(), documentPresent: z.boolean(), activeTarget: z.boolean(), nativeIdentityVerified: z.boolean(),
+  dispatchAttempted: z.boolean(), publicResult: z.union([z.boolean(), z.string().min(81).max(97), z.null()]),
+  restorationCompletionVerified: z.literal(false), persistenceVerified: z.literal(false), writerAuthority: z.literal(false),
+}).strict();
+export type CurrentDisposableOpenResult = z.infer<typeof currentDisposableOpenResultSchema>;
+
+const limitations = [
+  "One explicitly selected, already registered local disposable .eprj2 project and existing type-3 PCB only. The raw Windows registry path hashes to the project identity; the host separately binds the file checkpoint and PCB membership.",
+  "Ordinary opening can migrate the selected file, replay cached work, change project/shared metadata, restore selected-project tabs, start background work and automatically Save. The registry query also performs ordinary application bookkeeping. No unchanged-storage or zero-write claim is made.",
+  "The project and document public calls each require a durable one-shot dispatch reservation. Timeout, failure or lost response consumes that stage; observe never retries it. Retirement requires separately proved retained-owner termination and session closure, not process absence or PID adoption.",
+  "Complete bounded registry observations require an initially empty editor, then target-only project tabs and the sealed branch. Public methods route through global state: samples are not an atomic lock against an intervening switch away and back.",
+  "Final retained-frame/native identity is not rendering, restoration completion, persistence or writer authority. No explicit Save, close, discard, restoration, settings change or CAD edit is requested by this adapter.",
+  "At most 128 containers, 255 tree nodes, 256 tabs and 4096 registered project keys are admitted. The vendor enumerates its registry before these bounds and may log private errors; outward errors remain fixed. Source/offline tests are not live validation.",
+] as const;
+
+export function queryCurrentDisposableOpen(input: unknown = {}): Record<string, unknown> {
+  const query = currentDisposableOpenQuerySchema.parse(input);
+  return { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{
+    action: "open", effect: "ordinary-disposable-project-navigation", methods: ["eda.dmt_Project.openProject", "eda.dmt_EditorControl.openDocument"],
+    actions: ["open", "observe", "inspect", "retire-after-termination"], limitations: [...limitations],
+    ...(query.includeSchemas ? { inputSchema: z.toJSONSchema(currentDisposableOpenRequestSchema) } : {}),
+  }] };
+}
+
+export function validateCurrentDisposableOpenArguments(input: unknown): Record<string, unknown> {
+  const result = currentDisposableOpenRequestSchema.safeParse(input);
+  return result.success ? { valid: true, request: result.data, executionAuthorized: false } : {
+    valid: false, executionAuthorized: false,
+    issues: result.error.issues.slice(0, 16).map((issue) => ({ path: issue.path.map(String), message: issue.message.slice(0, 512) })),
+  };
+}
+
+/** Only maintained stages can select a program. No caller topic, selector,
+ * split-screen target, flags or source code crosses this boundary. The host
+ * must reserve each navigation stage durably before executing it.
+ */
+export function buildCurrentDisposableOpenProgram(targetInput: unknown, phaseInput: CurrentDisposableOpenPhase): string {
+  const target = currentDisposableOpenSealedTargetSchema.parse(targetInput);
+  const phase = z.enum(phases).parse(phaseInput);
+  const navigation = phase === "open-project" || phase === "open-document";
+  return `let timer,clear,timedOut=false;
+try{
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target)},phase=${JSON.stringify(phase)},tabId=target.documentUuid+'@'+target.projectUuid;let expired=false;
+const bad=()=>{throw new Error('CURRENT_DISPOSABLE_OPEN_FAILED');};
+const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
+const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
+const plain=value=>{if(!object(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
+const text=(value,max,empty=false)=>{if(typeof value!=='string'||value.length>max||(!empty&&value.length===0)||/[\u0000-\u001F\u007F]/.test(value))bad();return value;};
+const dense=(value,max)=>{if(!Array.isArray(value)||Object.getPrototypeOf(value)!==Array.prototype)bad();const n=own(value,'length');if(!Number.isInteger(n)||n<0||n>max||Reflect.ownKeys(value).length!==n+1)bad();for(let i=0;i<n;i++)own(value,String(i));return n;};
+const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad();chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();return {owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad();};
+const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad();if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad();}else if(Object.hasOwn(node,binding.key))bad();}};
+const location=root.location,href=location?.href,document=root.document,ui=own(root,'UI'),host=own(root,'gVars'),tabs=own(ui,'tabBar'),mode=own(root,'PRO_EDITOR_MODE'),edaOwner=eda;
+if(typeof tabs!=='function'||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
+const active=method(tabs,'getActiveTab'),container=method(tabs,'getContainerInfo'),getTab=method(tabs,'getTabById');
+const bus=own(host,'messageBus'),registryCall=method(bus,'rpcCall');
+const projectApi=own(edaOwner,'dmt_Project'),documentApi=own(edaOwner,'dmt_EditorControl'),openProject=method(projectApi,'openProject'),openDocument=method(documentApi,'openDocument');
+const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
+const check=()=>{
+ if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')bad();
+ if(typeof href!=='string'||!/^https:\\/\\/client\\/editor\\?cll=(?:trace|debug|info|warn|error)#?$/.test(href))bad();
+ if(own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
+ if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(ui,'tabBar')!==tabs||own(host,'messageBus')!==bus||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
+ if(own(edaOwner,'dmt_Project')!==projectApi||own(edaOwner,'dmt_EditorControl')!==documentApi||own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear)bad();
+ for(const binding of [active,container,getTab,registryCall,openProject,openDocument])methodCheck(binding);
+};
+const sample=()=>{
+ check();const owners=[],project=plain(own(host,'currentProject'));owners.push(project);const pid=own(project,'projectId',true),branch=own(project,'branchUuid',true);
+ const projectPresent=pid===target.projectUuid;if(pid!==undefined&&!projectPresent)bad();
+ if(projectPresent){if(branch!==target.branchUuid||own(project,'isV2Format')!==false)bad();}else if(branch!==undefined&&branch!=='')bad();
+ if(own(host,'isHistoryMode')!==false)bad();
+ const ids=own(tabs,'containerIds'),n=dense(ids,128);if(n===0)bad();owners.push(ids);const names=[],registry=new Set();
+ for(let i=0;i<n;i++){const id=text(own(ids,String(i)),256);if(registry.has(id))bad();registry.add(id);names.push(id);}
+ const tree=own(tabs,'containerTree'),pending=[{node:tree,depth:0}],seen=new Set(),treeIds=new Set(),leaves=new Set(),treeProjection=[];
+ if(own(tabs,'belongContainer')!=='editor-window-main'||own(tree,'id')!=='editor-window-main')bad();
+ while(pending.length){const item=pending.pop(),node=plain(item.node);if(item.depth>16||seen.has(node)||seen.size>=255)bad();seen.add(node);owners.push(node);const id=text(own(node,'id'),256),children=own(node,'children',true);if(treeIds.has(id))bad();treeIds.add(id);treeProjection.push([id,item.depth]);
+  if(children===undefined){if(!registry.has(id)||leaves.has(id))bad();leaves.add(id);}else{const count=dense(children,128);if(count===0||pending.length+seen.size+count>255)bad();owners.push(children);for(let i=count-1;i>=0;i--)pending.push({node:own(children,String(i)),depth:item.depth+1});}}
+ if(leaves.size!==registry.size)bad();const current=text(own(tabs,'currentTabId'),512,true);if(apply(active.fn,tabs,[])!==current)bad();
+ const allIds=new Set(),projection=[];let count=0,start=0,placeholder=0,currentCount=0,documentPresent=false,targetTab=null,targetData=null;
+ for(const id of names){const info=plain(apply(container.fn,tabs,[id]));check();owners.push(info);if(own(info,'id')!==id||own(info,'belong')!=='editor-window-main')bad();const list=own(info,'tabs'),length=dense(list,256);if(count+length>256)bad();count+=length;owners.push(list);const localActive=text(own(info,'activeTabId'),512,true),localIds=new Set(),rows=[];
+  for(let i=0;i<length;i++){const tab=plain(own(list,String(i))),id2=text(own(tab,'tabId'),512),data=plain(own(tab,'data'));owners.push(tab,data);if(allIds.has(id2))bad();allIds.add(id2);localIds.add(id2);const type=own(data,'doctype');
+   if(id2==='tab_page1'||id2==='0'){const isStart=id2==='tab_page1';if(type!==(isStart?-1:0)||own(tab,'isAbleDelete')!==false||own(tab,'group')!=='start_blank'||own(tab,'draggable')!==isStart)bad();const hidden=own(tab,'isDisplayNone');if(typeof hidden!=='boolean'||(!isStart&&hidden!==true))bad();const declared=own(tab,'documentType',true);if(declared!==undefined&&declared!==type)bad();for(const key of ['pid','owner'])if(own(data,key,true)!==undefined)bad();for(const key of ['parentProjectUuid','parentLibraryUuid'])if(own(tab,key,true)!==undefined)bad();if(isStart)start++;else placeholder++;
+   }else{if(!projectPresent||![1,3,26].includes(type)||own(data,'pid')!==target.projectUuid||own(tab,'parentLibraryUuid',true)!==undefined)bad();const parts=/^([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{64})$/.exec(id2);if(!parts||parts[2]!==target.projectUuid)bad();const parentProject=own(tab,'parentProjectUuid',true);if(parentProject!==undefined&&parentProject!==target.projectUuid)bad();if(id2===tabId){if(type!==3)bad();documentPresent=true;targetTab=tab;targetData=data;}}
+   if(id2===current){currentCount++;if(localActive!==current)bad();}rows.push([id2,type]);}
+  if(localActive!==''&&!localIds.has(localActive))bad();projection.push([id,localActive,rows]);}
+ if(start>1||placeholder>1||(current===''?currentCount!==0:currentCount!==1))bad();
+ if(!projectPresent&&(start!==1||current!=='tab_page1'||count!==start+placeholder))bad();
+ if(documentPresent&&apply(getTab.fn,tabs,[tabId])!==targetTab)bad();check();
+ return {owners,identity:JSON.stringify([names,treeProjection,projection,current,pid??null,branch??null]),projectPresent,branchUuid:projectPresent?branch:null,documentPresent,activeTarget:documentPresent&&current===tabId,targetTab,targetData};
+};
+const same=(a,b)=>{if(a.identity!==b.identity||a.owners.length!==b.owners.length||a.owners.some((owner,i)=>owner!==b.owners[i]))bad();};
+const registration=async()=>{const before=sample();const reply=await apply(registryCall.fn,bus,['/pro-mgr/api/client/getProjectPaths',{},0]);check();same(before,sample());plain(reply);const message=plain(own(reply,'message'));if(own(message,'success')!==true)bad();const result=plain(own(message,'result')),keys=Reflect.ownKeys(result);if(keys.length>4096||keys.some(key=>typeof key!=='string'||!/^[a-f0-9]{64}$/.test(key)))bad();const selected=plain(own(result,target.projectUuid));if(text(own(selected,'path'),4096)!==target.rawWindowsPath||own(selected,'isCbb')!==false)bad();return before;};
+const observe=async()=>{
+ const before=sample();if(!before.documentPresent){await Promise.resolve();check();same(before,sample());return {...before,nativeIdentityVerified:false};}
+ const select=document?.querySelectorAll;if(typeof select!=='function')bad();const matches=apply(select,document,['[id="frame_'+tabId+'"]']);if(matches.length>1)bad();if(matches.length===0){await Promise.resolve();same(before,sample());return {...before,nativeIdentityVerified:false};}
+ const frame=matches[0],child=frame?.contentWindow,childDocument=child?.document,parent=frame?.parentElement;
+ const getAttribute=frame?.getAttribute,hasAttribute=frame?.hasAttribute,classes=frame?.classList,contains=classes?.contains,parentAttribute=parent?.getAttribute;
+ if(typeof getAttribute!=='function'||typeof hasAttribute!=='function'||typeof contains!=='function'||typeof parentAttribute!=='function')bad();
+ const native=own(child,'MSG_BUS_PCB',true);if(native===undefined){await Promise.resolve();same(before,sample());return {...before,nativeIdentityVerified:false};}
+ const channel=own(native,'messageBus'),identityCall=method(channel,'rpcCall'),childObject=own(child,'Object'),childPrototype=own(childObject,'prototype');
+ const frameCheck=()=>{check();same(before,sample());methodCheck(identityCall);if(document.querySelectorAll!==select)bad();const found=apply(select,document,['[id="frame_'+tabId+'"]']);if(found.length!==1||found[0]!==frame)bad();
+  if(frame.tagName!=='IFRAME'||frame.id!=='frame_'+tabId||frame.ownerDocument!==document||frame.isConnected!==true||frame.parentElement!==parent||frame.classList!==classes||classes.contains!==contains||frame.getAttribute!==getAttribute||frame.hasAttribute!==hasAttribute||parent.getAttribute!==parentAttribute||!apply(contains,classes,['editframe'])||apply(parentAttribute,parent,['uuid'])!==tabId)bad();
+  for(const [key,value] of [['c_dbid',tabId],['c_doctype','3'],['src','editor?entry=pcb'],['pcb-canvas','true']])if(apply(getAttribute,frame,[key])!==value)bad();for(const key of ['blankIframe','fromFile','jsonCacheReady'])if(apply(hasAttribute,frame,[key]))bad();
+  if(frame.contentWindow!==child||child.document!==childDocument||childDocument?.defaultView!==child||childDocument?.nodeType!==9||child.frameElement!==frame||child.parent!==root||child.top!==root||own(child,'MSG_BUS_PCB')!==native||own(native,'messageBus')!==channel||own(child,'Object')!==childObject||own(childObject,'prototype')!==childPrototype)bad();};
+ const childPlain=value=>{if(!object(value))bad();const prototype=Object.getPrototypeOf(value);if(prototype!==Object.prototype&&prototype!==childPrototype)bad();return value;};
+ const read=async()=>{frameCheck();const reply=await apply(identityCall.fn,channel,['getTabIdAndDocType',undefined,0]);frameCheck();childPlain(reply);const value=childPlain(own(reply,'message')),keys=Reflect.ownKeys(value);if(keys.length!==2||!keys.includes('tabId')||!keys.includes('docType'))bad();const id=own(value,'tabId'),type=own(value,'docType');if(id===''&&type===0)return false;if(id!==tabId||type!==3)bad();return true;};
+ const first=await read();frameCheck();const second=await read();frameCheck();if(first!==second)bad();return {...before,nativeIdentityVerified:first};
+};
+const run=async()=>{
+ const initial=await registration();check();let publicResult=null,dispatchAttempted=false;
+ if(phase==='preflight'||phase==='open-project'){if(initial.projectPresent)bad();}else if(phase==='open-document'&&!initial.projectPresent)bad();
+ if(phase==='open-project'){same(initial,sample());check();dispatchAttempted=true;publicResult=await apply(openProject.fn,projectApi,[target.projectUuid]);check();if(typeof publicResult!=='boolean')bad();}
+ else if(phase==='open-document'){same(initial,sample());check();dispatchAttempted=true;publicResult=await apply(openDocument.fn,documentApi,[target.documentUuid]);check();if(publicResult===undefined)publicResult=null;else if(publicResult!==tabId)bad();}
+ const after=await registration();check();const final=await observe();check();same(after,final);if(phase==='preflight'&&final.projectPresent)bad();
+ const json=JSON.stringify({ok:true,kind:'current-disposable-open',phase,projectUuid:target.projectUuid,documentUuid:target.documentUuid,projectPathMatched:true,branchUuid:final.branchUuid,projectPresent:final.projectPresent,documentPresent:final.documentPresent,activeTarget:final.activeTarget,nativeIdentityVerified:final.nativeIdentityVerified,dispatchAttempted,publicResult,restorationCompletionVerified:false,persistenceVerified:false,writerAuthority:false});
+ const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};if(utf8Bytes>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES})bad();return envelope;
+};
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;timedOut=true;reject(new Error('CURRENT_DISPOSABLE_OPEN_FAILED'));},${navigation ? 110_000 : 10_000}]);});return await Promise.race([run(),timeout]);
+}catch{throw new Error(timedOut?'NATIVE_LIFECYCLE_OPEN_TIMEOUT':'CURRENT_DISPOSABLE_OPEN_FAILED');}
+finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(timedOut?'NATIVE_LIFECYCLE_OPEN_TIMEOUT':'CURRENT_DISPOSABLE_OPEN_FAILED');}}}`;
+}
+
+export function validateCurrentDisposableOpenResult(targetInput: unknown, phaseInput: CurrentDisposableOpenPhase, raw: unknown): CurrentDisposableOpenResult {
+  const target = currentDisposableOpenSealedTargetSchema.parse(targetInput);
+  const phase = z.enum(phases).parse(phaseInput);
+  const result = currentDisposableOpenResultSchema.parse(raw);
+  const expectedTab = `${target.documentUuid}@${target.projectUuid}`;
+  const navigation = phase === "open-project" || phase === "open-document";
+  if (result.phase !== phase || result.projectUuid !== target.projectUuid || result.documentUuid !== target.documentUuid
+    || result.dispatchAttempted !== navigation || result.branchUuid !== (result.projectPresent ? target.branchUuid : null)
+    || result.documentPresent && !result.projectPresent || result.activeTarget && !result.documentPresent
+    || result.nativeIdentityVerified && !result.documentPresent || phase === "preflight" && result.projectPresent) {
+    throw new Error("Disposable opening result contradicts its exact target and phase.");
+  }
+  let validAcknowledgement = result.publicResult === null;
+  if (phase === "open-project") { validAcknowledgement = typeof result.publicResult === "boolean"; }
+  if (phase === "open-document") { validAcknowledgement = result.publicResult === null || result.publicResult === expectedTab; }
+  if (!validAcknowledgement) {
+    throw new Error("Disposable opening result has an invalid public method acknowledgement.");
+  }
+  if (Buffer.byteLength(JSON.stringify(result), "utf8") > CURRENT_DISPOSABLE_OPEN_MAX_BYTES) { throw new Error("Disposable opening result exceeds its byte bound."); }
+  return result;
+}

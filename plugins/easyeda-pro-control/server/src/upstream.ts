@@ -18,6 +18,7 @@ import {
 } from "./authenticated-bridge-gateway.ts";
 import { loadAuthenticatedBridgeBuildIdentity } from "./authenticated-bridge-build-identity.ts";
 import type {
+  AuthenticatedBridgeSession,
   AuthenticatedBridgeSessionLifecycle,
   BridgeConnectionDiagnostics,
   BridgeDispatchAbortOutcome,
@@ -1014,6 +1015,14 @@ export class UpstreamEasyedaClient {
     sessionId: string,
   ): ClosedAuthenticatedBridgeSession | undefined {
     return this.bridgeGateway?.closedSession(sessionId);
+  }
+
+  public assertClosedAuthenticatedBridgeDispatchReleased(binding: BridgeDispatchLeaseBinding,
+    prior: AuthenticatedBridgeSession & { readonly gatewayInstanceId: string }): ClosedAuthenticatedBridgeSession {
+    if (this.authenticatedBridgeDispatchScope.getStore() !== undefined || this.bridgeGateway === null) {
+      throw new Error("Closed dispatch retirement requires the original idle gateway outside a bridge scope.");
+    }
+    return this.bridgeGateway.assertClosedDispatchLeaseReleased(binding, prior);
   }
 
   public beginAuthenticatedBridgeDispatch(

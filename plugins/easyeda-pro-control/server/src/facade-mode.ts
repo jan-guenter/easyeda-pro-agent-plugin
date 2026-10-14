@@ -11,6 +11,7 @@ export const CALCULATION_ONLY_TOOLS = Object.freeze([
   "easyeda_control_editor_context",
   "easyeda_control_shortcuts",
   "easyeda_control_pcb_layers",
+  "easyeda_control_project_open",
 ]);
 
 export function configuredFacadeMode(environment: Readonly<Record<string, string | undefined>>): FacadeMode {

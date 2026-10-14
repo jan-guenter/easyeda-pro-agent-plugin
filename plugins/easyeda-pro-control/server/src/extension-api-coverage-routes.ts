@@ -25,6 +25,17 @@ interface RouteGroup {
 const groups: RouteGroup[] = [];
 const topologyBlock = "Generic ordinary schematic type-1 execution requires readDesignTopology in design-execution.ts. The exact schematic-topology reader is currently refused before dispatch: the pinned compiled-netlist path can annotate DESIGNATOR/UNIQUEID and invoke global SaveAll. A reviewed pure complete topology reader and disposable proof are required for this generic route; existing action schemas and historical tests do not make it callable. Separately listed sealed flat-display and flat-wire-reroute routes do not activate this route or other schematic operations.";
 
+for (const [namespace, method] of [["dmt_Project", "openProject"], ["dmt_EditorControl", "openDocument"]] as const) {
+  groups.push({ namespace, methods: [method], route: {
+    tool: "easyeda_control_project_open", selector: "open;registered-local-disposable-pcb", implementation: "public-method",
+    scope: "Separately pinned current-version one-shot ordinary opening from an empty registered editor. Exact raw Windows registered-path hash, original source digest, managed checkpoint and undeleted default-branch PCB membership; same-facade retained ordinary launch required. Project/document calls have separate consumed intents and orphan tracking. Normal migrations, cached upload replay, selected-project tab restoration and automatic Save are accepted effects, not unchanged-storage or design-writer proof. Inspect/observe never repeat navigation. Retirement invalidates only the original retained attempt after root/Job termination and exact session closure; lost supervision cannot be adopted. Native identity observation does not establish full initialization, rendering or persistence. No explicit Save, close, discard, restore or CAD edit.",
+    source: ["current-disposable-open.ts", "current-disposable-open-runtime.ts", "current-disposable-open-checkpoint.ts", "current-disposable-open-profile.ts"],
+    tests: ["current-disposable-open.test.ts", "current-disposable-open-runtime.test.ts", "current-disposable-open-checkpoint.test.ts"],
+    documentTypes: [3], validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+    inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "project-open", query: { includeSchemas: true } } } },
+  } });
+}
+
 function add(namespace: string, methods: readonly string[], tool: string, selector: string,
   implementation: ApiCoverageRoute["implementation"], scope: string, source: readonly string[], tests: readonly string[], admittedDocumentTypes?: readonly number[]): void {
   let inputDiscovery: ApiCoverageRoute["inputDiscovery"];

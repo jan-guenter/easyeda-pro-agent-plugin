@@ -812,6 +812,28 @@ export class AuthenticatedBridgeGateway {
     return found === undefined ? undefined : { ...found };
   }
 
+  /** Read-only retirement prerequisite. A closed session normally releases an
+   * ambiguous lease automatically; this assertion never releases one itself.
+   * No replacement session or execution authority is created or inferred.
+   */
+  public assertClosedDispatchLeaseReleased(binding: BridgeDispatchLeaseBinding,
+    prior: AuthenticatedBridgeSession & { readonly gatewayInstanceId: string }): ClosedAuthenticatedBridgeSession {
+    const closed = this.closedSession(binding.sessionId);
+    const receipt = createHmac("sha256", this.#authenticationKey).update(dispatchLeaseTranscript(
+      binding.gatewayInstanceId, binding.leaseId, binding.sessionId, binding.sessionSequence, binding.begunAtEpochMs), "utf8").digest("base64url");
+    if (this.#dispatchLease !== null || this.#activeContext !== null || closed === undefined ||
+        binding.schema !== "easyeda-pro-control.bridge-dispatch-lease.v1" ||
+        !exactKeys(binding, ["begunAtEpochMs", "bindingReceipt", "gatewayInstanceId", "leaseId", "schema", "sessionId", "sessionSequence"]) ||
+        !macMatches(receipt, binding.bindingReceipt) || binding.gatewayInstanceId !== this.#gatewayInstanceId ||
+        prior.gatewayInstanceId !== this.#gatewayInstanceId || prior.sessionId !== binding.sessionId || prior.sequence !== binding.sessionSequence ||
+        prior.sessionId !== closed.sessionId || prior.sequence !== closed.sequence ||
+        prior.authenticationReceiptSha256 !== closed.authenticationReceiptSha256 || prior.authenticatedAtEpochMs !== closed.authenticatedAtEpochMs ||
+        binding.begunAtEpochMs < prior.authenticatedAtEpochMs || binding.begunAtEpochMs > closed.closedAtEpochMs) {
+      throw new Error("Closed dispatch retirement lacks exact session closure and released-lease proof.");
+    }
+    return closed;
+  }
+
   public beginDispatchLease(
     expectedGatewayInstanceId: string,
     expectedSessionId: string,

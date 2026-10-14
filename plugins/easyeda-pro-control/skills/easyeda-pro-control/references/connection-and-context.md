@@ -6,7 +6,16 @@ Project opening may restore PCB tabs, and public or native tab navigation may
 write global preferences and prune backups. A safe target type alone is not
 sufficient. Do not change settings or use a UI fallback to pass admission.
 
-## Open an existing saved project from Start Page
+## Current-version disposable opening
+
+On the separately reviewed 3.2.206 installation, use
+`easyeda_control_project_open` only for a selected registered disposable file
+and existing PCB. Read [current-project-opening.md](current-project-opening.md)
+for exact path/checkpoint binding, normal opening effects, one-shot navigation
+and terminal-only retirement. This route does not promise unchanged storage
+or admit the legacy workflow below.
+
+## Legacy existing-project open from Start Page
 
 After contained launch and authenticated status, `easyeda_control_runtime` accepts `request.action:"open-existing"` with `projectUuid`, `projectPath`, `documentUuid`, `documentType:1|3`, the current `expectedFingerprint`, and `confirmOpen:true`. The target must already exist in the saved `.eprj2` checkpoint and the native project-path registry. This path does not require a fabricated active-editor context.
 
@@ -154,7 +163,7 @@ Distinguish these failure layers before changing anything:
 |---|---|---|
 | Tool is absent or host rejects dispatch as unavailable | No facade handler result | Check the plugin's enabled state. For authorized EasyEDA work, the checkout-only foreground MCP client below can use the same facade when no other owner is active. Never start a second owner or use a new data root to evade the lease. |
 | Status reports `mode:"offline-only"` and `installation.ready:false`; only three tools are listed | Trusted profile/Node admission passed, but a selected external installation check failed | Use its fixed `machine-installation-*` code and read-only installation inspection. API reference and local discovery remain usable. Live and recovery tools do not exist in this process. Review the changed installation before updating any pins, then restart the MCP session. |
-| Status reports `facade.mode:"calculation-only"`; ten tools are listed | Configured bundle selectors are not the older reviewed design tuple | API reference, local discovery, status, calculations, system/shortcut/extension/editor-shell/identity-context observations and ordinary launch are registered. The internal mode name is retained. Each capability has separate exact admission. No project-content reader, navigation, generic native UI, design writer or design recovery tool is available. |
+| Status reports `facade.mode:"calculation-only"`; twelve tools are listed | Configured bundle selectors are not the older reviewed design tuple | API reference, local discovery, status, scoped utilities/metadata, exact PCB layer metadata, ordinary launch and disposable project opening are registered. Each has separate exact admission. Generic navigation, native UI, design writers and legacy recovery remain unavailable. |
 | Structured status error during upstream startup | Facade handler ran, but startup failed | Run `npm run doctor` offline from the trusted checkout. Use reported stage/exit details and failed checks; private stderr remains withheld. Do not infer the cause from its hash or length. |
 | Status succeeds but has no authenticated session | Upstream responded; extension connection is unproven | Verify the selected receipt/import and bridge connection. Do not call context or design readers yet. |
 | Authenticated session with `validation-required` tuple | Connection succeeded; compatibility remains unadmitted | Collect bounded status/context/public-read evidence for review. Exact/private calls remain blocked. |

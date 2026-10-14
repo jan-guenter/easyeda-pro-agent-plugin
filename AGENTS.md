@@ -13,7 +13,58 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Restarted011500 and current PCB inspection
+### Restarted020500 and disposable project opening
+
+Previous release020500 is delivered as main80a6af985d279ee2b6a44423a8df98e36738cb47
+through PR20. Required CI38489088396 and postmerge CI38490304934 passed all ten
+jobs. Delivery receipt: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/20#issuecomment-6158128765.
+Fresh facade238544 uses exact installed020500 on Node24.18.0. Independent
+admission verified1,153files/22,433,471bytes/42directories/seven skills and exact
+modes, zero mismatches. Old facade215979 is absent.
+
+Original ordinary-startup-20261014-015000 was inspected, then explicitly
+abandoned ONCE at2026-10-14T01:06:39.345Z after two absent process samples.
+This relinquished lost supervision, not termination proof. Never repeat it.
+New ordinary-startup-20261014-030800 launched ONCE: root22100,
+Jobfab4575c16a44d56b4942f9dd1cc3f50/helper68c7893f6b8f46a2a87dc81fd68614ad,
+launchedSha2566f300ee1a9d131cdc0f0db12ae470b058e87b8e22421d188968e905b0bb83890.
+Bridge authentication and current shell observation pass: one Start Page tab,
+zero other tabs. No project opening, Save or design action was dispatched.
+Production and its record remain excluded. C10 data-only history is unchanged.
+
+Candidate033000 adds a separately pinned ordinary disposable-project/PCB opener.
+Exact registered raw path/hash, original file digest, managed checkpoint/default
+branch membership and empty editor precede one-shot public project/document
+calls. Ordinary migrations, cache replay and automatic Save effects are accepted,
+not promised absent. Restored active target skips a redundant document-open.
+Inspection is local; observation never navigates. The new terminal-only retirement
+policy requires this same facade's retained original root/Job termination, exact
+closed authenticated session and released dispatch lease. It invalidates only
+this attempt, accepts unknown file effects and grants no continuation or writer
+authority. Existing design reconciliation and replacement-session requirements
+are unchanged. Lost handles cannot be reconstructed; keep the facade alive for
+an uncertain operation. Current opening is not yet live-validated.
+
+Source work is on feature/current-disposable-project-open. Release/build/CI and
+installation are in progress; the originating PR delivery receipt will supersede
+this pre-publication checkpoint. Do not replay the launch or prior CAD operations.
+Main and independent review accepted the fixed schema/program, checkpoint,
+coordinator and local terminal retirement. Focused/catalog/gateway verification
+passes85tests. Full types and strict type-aware lint have zero warnings; build,
+compatibility, inventory, plugin/repository/privacy and all seven skill validators
+pass. Source331 fingerprint2eb81d42fb9e68259723c962e9a8c8be339b37f5e453f5ee8d9e5fd7a4706ffa;
+runtime3 fingerprint34bef995e6d308e80a47eb7006796179c4b84f40439f82459ce3502849c2c54e.
+The first bundled-startup check found one stale catalog list; its expectation now
+includes project_open, without changing runtime behavior. Existing external pins,
+helper and bridge are unchanged. Scope/backlog: docs/current-disposable-open-release-2026-10-14.md.
+
+PR21 initial CI38495709119 found one stale registration-test boundary: the
+launch-only source slice included the newly adjacent project opener. Its end
+delimiter now names project_open, preserving every launch assertion and leaving
+runtime source/bundles unchanged. Exact corrected-head CI is required before
+merge; the initial failed aggregate is not release acceptance.
+
+### Historical restarted011500 and PCB inspection
 
 PR19 delivered011500 as main e94fe5a35ae15714eb679b816132f474e7e750c9,
 full-tree9f300c2f248e5b3ccfa6c56cd0292ba4e3781fd2 identical to tested

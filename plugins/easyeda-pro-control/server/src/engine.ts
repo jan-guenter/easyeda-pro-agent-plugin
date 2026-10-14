@@ -584,6 +584,14 @@ export interface UpstreamClient {
   installedEasyedaBundles?: () => Promise<InstalledEasyedaBundles>;
   bridgeSessionLifecycle?: () => unknown;
   closedAuthenticatedBridgeSession?: (sessionId: string) => unknown;
+  /** Read-only proof for an operation-specific no-replay retirement policy. */
+  assertClosedAuthenticatedBridgeDispatchReleased?: (
+    binding: AuthenticatedBridgeDispatchBinding,
+    prior: AuthenticatedBridgeSessionIdentity,
+  ) => unknown;
+  withAuthenticatedBridgeDispatchScope?: <Result>(
+    callback: (binding: AuthenticatedBridgeDispatchBinding) => PromiseLike<Result> | Result,
+  ) => Promise<Result>;
   beginAuthenticatedBridgeDispatch?: (
     expectedGatewayInstanceId: string,
     expectedSessionId: string,
