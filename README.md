@@ -19,7 +19,15 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261014133000` adds bounded native geometry reads for
+Update `0.3.0+codex.20261014150000` fixes the disposable opener and current PCB
+readers rejecting EasyEDA's ordinary project/tab URL fragments. The opener
+accepts only target-bound transitions at its owned navigation boundary; reads
+retain exact URL equality. Failed opening now retains bounded phase/stage
+diagnostics, and a new orphan-risk phase clears the preceding return timestamp.
+No navigation, retry or writer authority is added. See the
+[release scope](docs/current-open-diagnostics-release-2026-10-14.md).
+
+Previous update `0.3.0+codex.20261014133000` added bounded native geometry reads for
 Line, Arc and Via on the current EasyEDA version. These return loaded-view
 geometry, not public SDK objects, saved membership or connectivity proof.
 Empty arguments, an exact active PCB target and two matching observations are
@@ -214,7 +222,7 @@ complete native-source records for supported root objects. It refuses unsupporte
 or generated selections instead of returning a partial array; public primitive
 instances and persistence are not claimed. Two explicit-ID equivalents use the
 same source DTOs without reading or changing selection. Missing or unsupported
-IDs refuse the whole call. Installed150000 passed empty selection and one
+IDs refuse the whole call. Installed20261011150000 passed empty selection and one
 original standalone STRING. Installed164600 subsequently passed singular and
 one-element plural explicit-ID reads of one standalone STRING with no direct
 attributes, matching the complete baseline and independently verified receipts.
@@ -278,7 +286,7 @@ create and delete contracts, currently blocked. Installed131000 passed forward/r
 v1 creation exposed a cached null-to-black reload.
 New v2 creation fixes explicit black; creation-only retained-Save recovery proves
 the original storage and observed reload separately without another Save.
-Installed150000 completed that retained-Save recovery with full unchanged peer
+Installed20261011150000 completed that retained-Save recovery with full unchanged peer
 history and exact original storage/reload proof, without another Save or edit.
 Installed164600 then passed separate explicit-black v2 creation and deletion,
 each with exactly one acknowledged Save/close/reopen and complete 11-document
@@ -288,7 +296,7 @@ exact and the only addition was DOCHEAD/META, with no page, template, editor ope
 or Save. These are fixed disposable cases, not whole-method or later-generation
 admission. Exact generation bindings, argument domains and evidence commitments
 are in the append-only [connected validation ledger](docs/api-connected-validation-ledger.md).
-The earlier [candidate150000 report](docs/api-coverage-150000-release-2026-10-11.md)
+The earlier [candidate20261011150000 report](docs/api-coverage-150000-release-2026-10-11.md)
 retains its historical status. The
 [remaining-effects review](docs/api-remaining-method-effects-2026-10-11.md)
 records blockers for layer selection, page ordering, pad-pair groups and broader

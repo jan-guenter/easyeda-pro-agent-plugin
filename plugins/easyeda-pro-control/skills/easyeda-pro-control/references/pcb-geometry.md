@@ -74,7 +74,7 @@ one captured PCB frame across awaited reads. Its synthetic tests are not connect
 Save/reopen evidence. Installed131000 passed one forward modification and an
 explicit reverse modification with complete saved/reopened project proof.
 Its v1 creation retained one successful Save/close/reopen, then refused the new
-STRING's null-to-black export after reload. Installed150000 subsequently completed
+STRING's null-to-black export after reload. Installed20261011150000 subsequently completed
 that journal's narrow retained-Save recovery without repeating creation, Save or
 navigation. Stored null and exported black remain distinct. This recovery does
 not validate the v2 explicit-black writer or deletion.

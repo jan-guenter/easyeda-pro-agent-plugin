@@ -6,6 +6,8 @@ import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, extractTo
 import { CURRENT_DISPOSABLE_OPEN_MAX_BYTES, buildCurrentDisposableOpenProgram, currentDisposableOpenSealedTargetSchema,
   parseCurrentDisposableOpenRequest, validateCurrentDisposableOpenResult } from "./current-disposable-open.ts";
 import type { CurrentDisposableOpenRequest, CurrentDisposableOpenSealedTarget, CurrentDisposableOpenTarget } from "./current-disposable-open.ts";
+import { currentOpenFailureDiagnosticSchema, describeCurrentOpenFailure } from "./current-disposable-open-diagnostics.ts";
+import type { CurrentOpenFailureContext, CurrentOpenFailureDiagnostic } from "./current-disposable-open-diagnostics.ts";
 import { prepareCurrentDisposableOpenCheckpoint, verifyCurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import type { CurrentDisposableOpenCheckpoint } from "./current-disposable-open-checkpoint.ts";
 import { CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION, verifyCurrentDisposableOpenImplementation } from "./current-disposable-open-profile.ts";
@@ -40,6 +42,7 @@ interface OpenJournal extends TrackedDispatchOperationJournal {
   projectDispatchConsumed: boolean;
   documentDispatchConsumed: boolean;
   result?: Value;
+  failureDiagnostic?: CurrentOpenFailureDiagnostic;
 }
 interface Retained {
   readonly journal: OpenJournal;
@@ -79,7 +82,8 @@ function isOpenJournal(value: unknown): value is OpenJournal {
     Array.isArray(value["artifacts"]) && value["artifacts"].every((item: unknown) => isRecord(item) && typeof item["path"] === "string" &&
       typeof item["bytes"] === "number" && digest.safeParse(item["sha256"]).success) &&
     checkpoint["profile"] === "easyeda-pro-control.current-disposable-open-checkpoint.v1" && isRecord(checkpoint["checkpoint"]) &&
-    isRecord(checkpoint["targetEvidence"]) && launchSchema.safeParse(value["originalLaunch"]).success;
+    isRecord(checkpoint["targetEvidence"]) && launchSchema.safeParse(value["originalLaunch"]).success &&
+    (value["failureDiagnostic"] === undefined || currentOpenFailureDiagnosticSchema.safeParse(value["failureDiagnostic"]).success);
 }
 function observationOutcome(result: Value): string {
   if (result["phase"] === "open-document" && result["publicResult"] === null) { return "public-returned-not-opened"; }
@@ -90,6 +94,7 @@ function summary(journal: OpenJournal): Value {
   return { operationId: journal.operationId, state: journal.state, attemptConsumed: true, replayAllowed: false,
     projectDispatchConsumed: journal.projectDispatchConsumed, documentDispatchConsumed: journal.documentDispatchConsumed,
     orphanedCallPossible: journal.orphanedCallPossible, hardStop: journal.hardStop, result: journal.result ?? null,
+    failureDiagnostic: journal.failureDiagnostic ?? null,
     normalOpenEffectsMayHaveOccurred: journal.mutationMayHaveOccurred, explicitSaveDispatched: false,
     persistenceVerified: false, writerAuthority: false, nextSafeAction: journal.nextSafeAction,
     journalPath: journal.journalPath, artifacts: journal.artifacts };
@@ -168,16 +173,21 @@ export class CurrentDisposableOpenCoordinator {
     await this.services.verifyImplementation(actual["installedBundles"]["assetsRoot"]);
   }
 
-  private async dispatch(slot: Retained, phase: Phase): Promise<Value> {
+  private async dispatch(slot: Retained, phase: Phase, failureContext: CurrentOpenFailureContext): Promise<Value> {
     const { engine } = this.options, journal = slot.journal;
+    failureContext.phase = phase; failureContext.hostStage = "owner-check";
     this.current(slot);
+    failureContext.hostStage = "dispatch-guards";
     await engine.assertBridgeDispatchAllowed();
     await engine.assertRecoveryOperationIsolated(journal.operationId);
     const scope = engine.upstream.withAuthenticatedBridgeDispatchScope;
     requireValue(scope !== undefined, "Current disposable opening requires authenticated dispatch scopes.");
+    failureContext.hostStage = "scope";
     const result: unknown = await scope.call(engine.upstream, async () => {
+      failureContext.hostStage = "runtime-admission";
       this.current(slot); await this.admission(journal.plan.expectedFingerprint); this.current(slot);
       const navigate = phase === "open-project" || phase === "open-document";
+      failureContext.hostStage = "reserve-navigation";
       if (phase === "open-project") {
         requireValue(!journal.projectDispatchConsumed, "Project-open dispatch is already consumed.");
         journal.projectDispatchConsumed = true;
@@ -186,31 +196,47 @@ export class CurrentDisposableOpenCoordinator {
         requireValue(journal.projectDispatchConsumed && !journal.documentDispatchConsumed, "Document-open dispatch is unavailable or consumed.");
         journal.documentDispatchConsumed = true;
       }
+      failureContext.hostStage = "build-program";
       const code = buildCurrentDisposableOpenProgram(journal.plan.intent.target, phase);
       journal.state = `${phase}-dispatching`; journal.hardStop = true;
       journal.mutationMayHaveOccurred ||= navigate;
       journal.nextSafeAction = "Await this tracked phase; no project or document open may be replayed.";
+      failureContext.hostStage = "write-intent";
       await this.record(journal, `${phase}-intent`, { phase, codeSha256: sha256Text(code), navigationIntent: navigate });
       let parsed: Value | undefined;
       const toolTimeout = navigate ? 120_000 : 20_000;
+      failureContext.hostStage = "tracked-dispatch";
       await engine.dispatchWithOrphanTracking(journal, phase, "easyeda_execute", { code, timeoutMs: toolTimeout, confirmWrite: true }, toolTimeout + 10_000,
         async () => {
+          failureContext.hostStage = "before-dispatch";
           this.current(slot);
           await engine.assertRecoveryOperationIsolated(journal.operationId);
-          if (phase === "open-project") { await this.services.verifyCheckpoint(journal.checkpointProof, targetOnly(journal.plan.intent.request)); }
+          if (phase === "open-project") {
+            failureContext.hostStage = "checkpoint-reproof";
+            await this.services.verifyCheckpoint(journal.checkpointProof, targetOnly(journal.plan.intent.request));
+          }
           this.current(slot);
+          failureContext.hostStage = "tracked-dispatch";
         },
         async (raw) => {
+          failureContext.hostStage = "decode-result";
           const envelope = extractToolPayload(raw);
           requireValue(Buffer.byteLength(JSON.stringify(envelope), "utf8") <= CURRENT_DISPOSABLE_OPEN_MAX_BYTES, "Current disposable-open reply exceeds its bound.");
-          parsed = validateCurrentDisposableOpenResult(journal.plan.intent.target, phase, decodeExactReadEnvelope(envelope));
+          const decoded: unknown = decodeExactReadEnvelope(envelope);
+          failureContext.hostStage = "validate-result";
+          parsed = validateCurrentDisposableOpenResult(journal.plan.intent.target, phase, decoded);
+          failureContext.hostStage = "retain-result";
           await this.record(journal, `${phase}-return`, parsed);
+          failureContext.hostStage = "tracked-dispatch";
         });
+      failureContext.hostStage = "settled-result";
       this.current(slot);
       requireValue(parsed !== undefined, "Current disposable-open settled result was not retained.");
+      failureContext.hostStage = "post-admission";
       await this.admission(journal.plan.expectedFingerprint); this.current(slot);
       return parsed;
     });
+    failureContext.hostStage = "settled-result";
     requireValue(isRecord(result), "Current disposable-open dispatch returned no exact result.");
     return result;
   }
@@ -238,21 +264,24 @@ export class CurrentDisposableOpenCoordinator {
     const slot: Retained = { journal, runtime, launch, launchText: canonicalJson(launch), planText: canonicalJson(plan) };
     this.retained.set(request.operationId, slot); this.current(slot);
     await this.services.createOperation(journal);
+    const failureContext: CurrentOpenFailureContext = { phase: "preflight", hostStage: "owner-check" };
     try {
-      await this.dispatch(slot, "preflight");
-      const project = await this.dispatch(slot, "open-project");
+      await this.dispatch(slot, "preflight", failureContext);
+      const project = await this.dispatch(slot, "open-project", failureContext);
+      failureContext.hostStage = "project-acknowledgement";
       requireValue(project["publicResult"] === true && project["projectPresent"] === true, "Project opening did not acknowledge the exact target project.");
       // Project restoration may already have activated the selected PCB. A
       // Second ordinary open can Save again, so only observe that result.
-      const document = project["documentPresent"] === true && project["activeTarget"] === true ? project : await this.dispatch(slot, "open-document");
+      const document = project["documentPresent"] === true && project["activeTarget"] === true ? project : await this.dispatch(slot, "open-document", failureContext);
       journal.result = { ...document, outcome: observationOutcome(document) }; journal.state = "completed"; journal.hardStop = false;
       journal.nextSafeAction = "Navigation attempt completed. Inspect target identity/readiness separately; no Save, persistence or writer authority is inferred.";
+      failureContext.hostStage = "write-completion";
       await this.record(journal, "completed", { result: journal.result, replayAllowed: false, persistenceVerified: false, writerAuthority: false });
       return summary(journal);
-    } catch { return this.stop(journal); }
+    } catch (error) { return this.stop(journal, error, failureContext); }
   }
 
-  private async stop(journal: OpenJournal): Promise<Value> {
+  private async stop(journal: OpenJournal, error: unknown, context: CurrentOpenFailureContext): Promise<Value> {
     const beforeNavigation = !journal.projectDispatchConsumed && !journal.documentDispatchConsumed && !journal.orphanedCallPossible;
     journal.state = journal.orphanedCallPossible ? "current-open-outcome-unknown" : "current-open-stopped";
     journal.hardStop = !beforeNavigation;
@@ -264,7 +293,8 @@ export class CurrentDisposableOpenCoordinator {
       ? "Do not replay navigation. Keep this facade alive; close EasyEDA normally, then retire this exact attempt after original root/Job termination and bridge closure."
       : "Inspect or observe this consumed attempt without navigation. No successful opening or unchanged durable state is inferred.";
     if (beforeNavigation) { journal.nextSafeAction = "Attempt ended before navigation. Inspect its consumed history; never reuse this operation ID."; }
-    await this.services.updateOperation(journal);
+    journal.failureDiagnostic = describeCurrentOpenFailure(error, context);
+    await this.record(journal, "failure-diagnostic", journal.failureDiagnostic);
     return { ...summary(journal), failure: "CURRENT_DISPOSABLE_OPEN_STOPPED" };
   }
 
@@ -279,13 +309,15 @@ export class CurrentDisposableOpenCoordinator {
     requireValue(!loaded.orphanedCallPossible && loaded.state !== "plan-invalidated", "An uncertain or retired open cannot dispatch observations.");
     const slot = this.retainedJournal(loaded);
     const journal = slot.journal;
+    const failureContext: CurrentOpenFailureContext = { phase: "observe", hostStage: "owner-check" };
     try {
-      const observation = await this.dispatch(slot, "observe");
+      const observation = await this.dispatch(slot, "observe", failureContext);
       journal.result = { ...observation, outcome: observationOutcome(observation) }; journal.state = "completed"; journal.hardStop = false;
       journal.nextSafeAction = "Read-only target observation completed. Earlier navigation outcome is not reconstructed and navigation remains consumed.";
+      failureContext.hostStage = "write-completion";
       await this.record(journal, "observed", { observation, earlierNavigationOutcome: "not-inferred", replayAllowed: false });
       return summary(journal);
-    } catch { return this.stop(journal); }
+    } catch (error) { return this.stop(journal, error, failureContext); }
   }
 
   private async retire(loaded: OpenJournal): Promise<Value> {

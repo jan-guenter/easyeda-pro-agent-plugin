@@ -264,6 +264,25 @@ void describe("typed transaction retained-authority recovery", () => {
     assert.equal(journal.orphanedCallPossible, false);
   });
 
+  void it("a new tracked call removes the previous phase return timestamp before an uncertain dispatch", async (t) => {
+    const { engine, journal } = await fixture(t);
+    t.mock.method(engine.upstream, "callTool", () => Promise.resolve({ structuredContent: { ok: true } }));
+    await engine.dispatchWithOrphanTracking(journal, "preflight", "easyeda_execute", {}, 1000);
+    assert.equal(typeof journal.orphanedCallReturnedAt, "string");
+    t.mock.method(engine.upstream, "callTool", async () => {
+      const retained = await artifacts.loadOperation(journal.operationId);
+      assert.equal(retained["orphanedCallPossible"], true);
+      assert.equal(retained["orphanedCallPhase"], "open-project");
+      assert.equal(Object.hasOwn(retained, "orphanedCallReturnedAt"), false);
+      throw new Error("Synthetic uncertain second call");
+    });
+    await assert.rejects(engine.dispatchWithOrphanTracking(journal, "open-project", "easyeda_execute", {}, 1000), /uncertain second call/u);
+    const retained = await artifacts.loadOperation(journal.operationId);
+    assert.equal(retained["orphanedCallPossible"], true);
+    assert.equal(Object.hasOwn(retained, "orphanedCallReturnedAt"), false);
+    assert.equal(Object.hasOwn(journal, "orphanedCallReturnedAt"), false);
+  });
+
   void it("proven pre-dispatch failure clears and releases its new capture without invoking the design API", async (t) => {
     const { engine, journal, calls } = await fixture(t);
     journal.orphanedCallPossible = false;

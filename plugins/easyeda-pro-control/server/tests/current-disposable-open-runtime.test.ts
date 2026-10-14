@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts";
+import { assertUpstreamReplySettled, canonicalJson, isRecord, sha256Json, sha256Text } from "../src/core.ts";
 import { buildCurrentDisposableOpenProgram, currentDisposableOpenTargetSchema } from "../src/current-disposable-open.ts";
 import type { CurrentDisposableOpenPhase, CurrentDisposableOpenRequest } from "../src/current-disposable-open.ts";
 import type { CurrentDisposableOpenCheckpoint } from "../src/current-disposable-open-checkpoint.ts";
@@ -32,6 +32,8 @@ const CHECKPOINT: CurrentDisposableOpenCheckpoint = {
 const FINGERPRINT = { fixture: true, installedBundles: { assetsRoot: "/fixture/assets" } };
 interface FixtureState {
   uncertainPhase?: CurrentDisposableOpenPhase;
+  uncertainMessage?: string;
+  nativeFailure?: string;
   failImplementation: boolean;
   restored: boolean;
   nullDocument: boolean;
@@ -129,8 +131,12 @@ function fixture(suffix: string): Fixture {
       Object.assign(journal, { orphanedCallPossible: true, orphanedCallPhase: phase, bridgeSessionBeforeOrphan: PRIOR,
         bridgeDispatchBeforeOrphan: BINDING, executionAuthorityBeforeOrphan: AUTHORITY }); await save(journal);
       await before?.(); calls.push(`dispatch:${phase}`);
-      if (state.uncertainPhase === phase) { throw new Error("fixture execution unsettled"); }
-      const raw = reply(phase, state); await retain?.(raw); journal.orphanedCallPossible = false; await save(journal); return raw;
+      if (state.uncertainPhase === phase) { throw new Error(state.uncertainMessage ?? "fixture execution unsettled"); }
+      const raw = phase === "open-project" && state.nativeFailure !== undefined
+        ? { structuredContent: { ok: false, error: { code: "EASYEDA_API_ERROR", message: state.nativeFailure, private: "PRIVATE_PATH_AND_SOURCE" } } }
+        : reply(phase, state);
+      assertUpstreamReplySettled(raw);
+      await retain?.(raw); journal.orphanedCallPossible = false; await save(journal); return raw;
     },
   };
   const options: CurrentDisposableOpenOptions = { engine, runtime: () => runtime, assertOwner: () => { assert.equal(state.ownerLost, false, "fixture owner lost"); } };
@@ -219,4 +225,30 @@ void test("failed terminal retirement write preserves orphan quarantine and reta
   const inspected = await value.coordinator.run({ action: "inspect", operationId: value.input.operationId });
   assert.equal(inspected["orphanedCallPossible"], true);
   await assert.rejects(value.coordinator.run({ action: "observe", operationId: value.input.operationId }), /uncertain/u);
+});
+
+void test("stopped opener retains fixed diagnostics across inspect and retirement without raw native errors", async () => {
+  for (const code of ["GUARD", "TIMEOUT"] as const) {
+    const value = fixture(`diagnostic-${code.toLowerCase()}`);
+    value.state.nativeFailure = `CURRENT_DISPOSABLE_OPEN_FAILED:open-project:${code}`;
+    const stopped = await value.coordinator.run(value.input, FINGERPRINT);
+    const diagnostic = stopped["failureDiagnostic"];
+    assert.deepEqual(diagnostic, { schema: "easyeda-pro-control.current-open-failure.v1", phase: "open-project",
+      hostStage: code === "TIMEOUT" ? "tracked-dispatch" : "decode-result", category: code === "TIMEOUT" ? "native-timeout" : "native-guard",
+      nativeStage: "open-project", nativeCode: code });
+    assert.equal(stopped["orphanedCallPossible"], true); assert.equal(stopped["documentDispatchConsumed"], false);
+    assert.deepEqual(dispatches(value), ["dispatch:preflight", "dispatch:open-project"]);
+    assert.deepEqual([...value.artifacts.values()].filter((artifact) => artifact["schema"] === "easyeda-pro-control.current-open-failure.v1"), [diagnostic]);
+    const inspected = await value.coordinator.run({ action: "inspect", operationId: value.input.operationId });
+    assert.deepEqual(inspected["failureDiagnostic"], diagnostic);
+    assert.equal(JSON.stringify([...value.artifacts.values(), ...value.journals.values(), stopped]).includes("PRIVATE"), false);
+    value.state.terminated = true; value.state.closed = true;
+    const retired = await value.coordinator.run({ ...RETIRE, operationId: value.input.operationId });
+    assert.deepEqual(retired["failureDiagnostic"], diagnostic);
+  }
+  const unknown = fixture("diagnostic-unknown"); unknown.state.uncertainPhase = "open-project"; unknown.state.uncertainMessage = "PRIVATE_NATIVE_EXCEPTION";
+  const result = await unknown.coordinator.run(unknown.input, FINGERPRINT);
+  assert.deepEqual(result["failureDiagnostic"], { schema: "easyeda-pro-control.current-open-failure.v1", phase: "open-project",
+    hostStage: "tracked-dispatch", category: "unknown", nativeStage: null, nativeCode: null });
+  assert.equal(JSON.stringify([...unknown.artifacts.values(), ...unknown.journals.values(), result]).includes("PRIVATE"), false);
 });

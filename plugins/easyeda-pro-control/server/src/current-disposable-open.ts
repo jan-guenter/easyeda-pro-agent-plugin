@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
 import { sha256Text } from "./core.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
 
@@ -75,26 +76,29 @@ export function buildCurrentDisposableOpenProgram(targetInput: unknown, phaseInp
   const target = currentDisposableOpenSealedTargetSchema.parse(targetInput);
   const phase = z.enum(phases).parse(phaseInput);
   const navigation = phase === "open-project" || phase === "open-document";
-  return `let timer,clear,timedOut=false;
+  return `let timer,clear,timedOut=false,stage='setup',failureCode='EXCEPTION',timeoutStage='setup',failureMessage;
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target)},phase=${JSON.stringify(phase)},tabId=target.documentUuid+'@'+target.projectUuid;let expired=false;
-const bad=()=>{throw new Error('CURRENT_DISPOSABLE_OPEN_FAILED');};
-const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
+const bad=(code='GUARD')=>{failureCode=code;throw new Error('CURRENT_DISPOSABLE_OPEN_FAILED');};
+${buildCurrentProjectUrlGuard()}
+const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad('FIELD');const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad('FIELD');}if(!Object.hasOwn(d,'value'))bad('FIELD');return d.value;};
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
-const plain=value=>{if(!object(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
-const text=(value,max,empty=false)=>{if(typeof value!=='string'||value.length>max||(!empty&&value.length===0)||/[\u0000-\u001F\u007F]/.test(value))bad();return value;};
-const dense=(value,max)=>{if(!Array.isArray(value)||Object.getPrototypeOf(value)!==Array.prototype)bad();const n=own(value,'length');if(!Number.isInteger(n)||n<0||n>max||Reflect.ownKeys(value).length!==n+1)bad();for(let i=0;i<n;i++)own(value,String(i));return n;};
-const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad();chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();return {owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad();};
-const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad();if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad();}else if(Object.hasOwn(node,binding.key))bad();}};
+const plain=value=>{if(!object(value)||Object.getPrototypeOf(value)!==Object.prototype)bad('OBJECT');return value;};
+const text=(value,max,empty=false)=>{if(typeof value!=='string'||value.length>max||(!empty&&value.length===0)||/[\u0000-\u001F\u007F]/.test(value))bad('TEXT');return value;};
+const dense=(value,max)=>{if(!Array.isArray(value)||Object.getPrototypeOf(value)!==Array.prototype)bad('ARRAY');const n=own(value,'length');if(!Number.isInteger(n)||n<0||n>max||Reflect.ownKeys(value).length!==n+1)bad('ARRAY');for(let i=0;i<n;i++)own(value,String(i));return n;};
+const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad('METHOD');chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad('METHOD');return {owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad('METHOD');};
+const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad('BINDING');if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad('BINDING');}else if(Object.hasOwn(node,binding.key))bad('BINDING');}};
 const location=root.location,href=location?.href,document=root.document,ui=own(root,'UI'),host=own(root,'gVars'),tabs=own(ui,'tabBar'),mode=own(root,'PRO_EDITOR_MODE'),edaOwner=eda;
+const initialUrl=parseProjectUrl(href,target.projectUuid);let retainedHref=href;
+if((phase==='preflight'||phase==='open-project')&&!initialUrl.empty)bad('URL');
 if(typeof tabs!=='function'||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
 const active=method(tabs,'getActiveTab'),container=method(tabs,'getContainerInfo'),getTab=method(tabs,'getTabById');
 const bus=own(host,'messageBus'),registryCall=method(bus,'rpcCall');
 const projectApi=own(edaOwner,'dmt_Project'),documentApi=own(edaOwner,'dmt_EditorControl'),openProject=method(projectApi,'openProject'),openDocument=method(documentApi,'openDocument');
 const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
 const check=()=>{
- if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')bad();
- if(typeof href!=='string'||!/^https:\\/\\/client\\/editor\\?cll=(?:trace|debug|info|warn|error)#?$/.test(href))bad();
+ if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==retainedHref||location?.href!==retainedHref||location?.origin!=='https://client')bad('URL');
+ if(parseProjectUrl(retainedHref,target.projectUuid).base!==initialUrl.base)bad('URL');
  if(own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
  if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(ui,'tabBar')!==tabs||own(host,'messageBus')!==bus||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
  if(own(edaOwner,'dmt_Project')!==projectApi||own(edaOwner,'dmt_EditorControl')!==documentApi||own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear)bad();
@@ -122,6 +126,8 @@ const sample=()=>{
  if(start>1||placeholder>1||(current===''?currentCount!==0:currentCount!==1))bad();
  if(!projectPresent&&(start!==1||current!=='tab_page1'||count!==start+placeholder))bad();
  if(documentPresent&&apply(getTab.fn,tabs,[tabId])!==targetTab)bad();check();
+ const url=parseProjectUrl(retainedHref,target.projectUuid,current);
+ if(!url.empty&&!projectPresent||url.tabIds.some(id=>!allIds.has(id)))bad('URL');
  return {owners,identity:JSON.stringify([names,treeProjection,projection,current,pid??null,branch??null]),projectPresent,branchUuid:projectPresent?branch:null,documentPresent,activeTarget:documentPresent&&current===tabId,targetTab,targetData};
 };
 const same=(a,b)=>{if(a.identity!==b.identity||a.owners.length!==b.owners.length||a.owners.some((owner,i)=>owner!==b.owners[i]))bad();};
@@ -143,17 +149,20 @@ const observe=async()=>{
  const first=await read();frameCheck();const second=await read();frameCheck();if(first!==second)bad();return {...before,nativeIdentityVerified:first};
 };
 const run=async()=>{
- const initial=await registration();check();let publicResult=null,dispatchAttempted=false;
+ stage='before-registration';const initial=await registration();check();let publicResult=null,dispatchAttempted=false;
+ stage='pre-dispatch';
  if(phase==='preflight'||phase==='open-project'){if(initial.projectPresent)bad();}else if(phase==='open-document'&&!initial.projectPresent)bad();
- if(phase==='open-project'){same(initial,sample());check();dispatchAttempted=true;publicResult=await apply(openProject.fn,projectApi,[target.projectUuid]);check();if(typeof publicResult!=='boolean')bad();}
- else if(phase==='open-document'){same(initial,sample());check();dispatchAttempted=true;publicResult=await apply(openDocument.fn,documentApi,[target.documentUuid]);check();if(publicResult===undefined)publicResult=null;else if(publicResult!==tabId)bad();}
- const after=await registration();check();const final=await observe();check();same(after,final);if(phase==='preflight'&&final.projectPresent)bad();
+ // Only the owned public navigation may advance the retained URL. All subsequent observations freeze it again.
+ if(phase==='open-project'){same(initial,sample());check();dispatchAttempted=true;stage='open-project';publicResult=await apply(openProject.fn,projectApi,[target.projectUuid]);stage='project-acknowledgement';retainedHref=location?.href;check();if(typeof publicResult!=='boolean')bad('ACK');}
+ else if(phase==='open-document'){same(initial,sample());check();dispatchAttempted=true;stage='open-document';publicResult=await apply(openDocument.fn,documentApi,[target.documentUuid]);stage='document-acknowledgement';retainedHref=location?.href;check();if(publicResult===undefined)publicResult=null;else if(publicResult!==tabId)bad('ACK');}
+ stage='after-registration';const after=await registration();check();stage='native-observation';const final=await observe();check();same(after,final);if(phase==='preflight'&&final.projectPresent)bad();
+ stage='output';
  const json=JSON.stringify({ok:true,kind:'current-disposable-open',phase,projectUuid:target.projectUuid,documentUuid:target.documentUuid,projectPathMatched:true,branchUuid:final.branchUuid,projectPresent:final.projectPresent,documentPresent:final.documentPresent,activeTarget:final.activeTarget,nativeIdentityVerified:final.nativeIdentityVerified,dispatchAttempted,publicResult,restorationCompletionVerified:false,persistenceVerified:false,writerAuthority:false});
- const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};if(utf8Bytes>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES})bad();return envelope;
+ const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};if(utf8Bytes>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES})bad('OUTPUT');return envelope;
 };
-check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;timedOut=true;reject(new Error('CURRENT_DISPOSABLE_OPEN_FAILED'));},${navigation ? 110_000 : 10_000}]);});return await Promise.race([run(),timeout]);
-}catch{throw new Error(timedOut?'NATIVE_LIFECYCLE_OPEN_TIMEOUT':'CURRENT_DISPOSABLE_OPEN_FAILED');}
-finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(timedOut?'NATIVE_LIFECYCLE_OPEN_TIMEOUT':'CURRENT_DISPOSABLE_OPEN_FAILED');}}}`;
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;timedOut=true;timeoutStage=stage;reject(new Error('CURRENT_DISPOSABLE_OPEN_FAILED'));},${navigation ? 110_000 : 10_000}]);});return await Promise.race([run(),timeout]);
+}catch{failureMessage='CURRENT_DISPOSABLE_OPEN_FAILED:'+(timedOut?timeoutStage:stage)+':'+(timedOut?'TIMEOUT':failureCode);throw new Error(failureMessage);}
+finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(failureMessage??'CURRENT_DISPOSABLE_OPEN_FAILED:cleanup:EXCEPTION');}}}`;
 }
 
 export function validateCurrentDisposableOpenResult(targetInput: unknown, phaseInput: CurrentDisposableOpenPhase, raw: unknown): CurrentDisposableOpenResult {

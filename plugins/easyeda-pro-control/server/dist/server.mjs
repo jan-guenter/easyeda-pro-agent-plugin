@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "078c0585a0536164a315137b3452052c75d4e6d81f02f8052245a1f08760cca9";
+const __easyedaBundlePairId = "4a8805c96e33cfe12ba773aaf4c51ca93e889704999b14aa8733c778ea701d8c";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -33252,6 +33252,138 @@ await assertProject();}`;
   }
 });
 
+// server/src/current-disposable-open-diagnostics.ts
+function currentOpenNativeFailureCategory(message) {
+  return typeof message === "string" && message.length <= 256 ? nativeMessages.get(message) ?? null : null;
+}
+function isCurrentOpenNativeTimeoutCategory(category) {
+  return nativeCategories.get(category)?.nativeCode === "TIMEOUT";
+}
+function ownMessage(error51) {
+  try {
+    if (error51 === null || typeof error51 !== "object" && typeof error51 !== "function") {
+      return void 0;
+    }
+    const descriptor9 = Object.getOwnPropertyDescriptor(error51, "message");
+    const message = descriptor9 !== void 0 && Object.hasOwn(descriptor9, "value") ? descriptor9.value : void 0;
+    return typeof message === "string" && message.length <= 512 ? message : void 0;
+  } catch {
+    return void 0;
+  }
+}
+function describeCurrentOpenFailure(error51, context3) {
+  const message = ownMessage(error51);
+  const category = currentOpenNativeFailureCategory(message);
+  const native = category === null ? wrappedCategories.get(message ?? "") : nativeCategories.get(category);
+  let classification2 = hostCategories.get(message ?? "") ?? "unknown";
+  if (native !== void 0) {
+    classification2 = "native-guard";
+    if (native.nativeCode === "TIMEOUT") {
+      classification2 = "native-timeout";
+    } else if (native.nativeCode === "EXCEPTION") {
+      classification2 = "native-exception";
+    }
+  }
+  return currentOpenFailureDiagnosticSchema.parse({
+    schema: "easyeda-pro-control.current-open-failure.v1",
+    ...context3,
+    category: classification2,
+    nativeStage: native?.nativeStage ?? null,
+    nativeCode: native?.nativeCode ?? null
+  });
+}
+var CURRENT_OPEN_NATIVE_STAGES, CURRENT_OPEN_NATIVE_CODES, CURRENT_OPEN_HOST_STAGES, currentOpenFailureDiagnosticSchema, nativeMessages, nativeCategories, wrappedCategories, hostCategories;
+var init_current_disposable_open_diagnostics = __esm({
+  "server/src/current-disposable-open-diagnostics.ts"() {
+    init_zod();
+    CURRENT_OPEN_NATIVE_STAGES = [
+      "setup",
+      "before-registration",
+      "pre-dispatch",
+      "open-project",
+      "project-acknowledgement",
+      "open-document",
+      "document-acknowledgement",
+      "after-registration",
+      "native-observation",
+      "output",
+      "cleanup"
+    ];
+    CURRENT_OPEN_NATIVE_CODES = [
+      "GUARD",
+      "FIELD",
+      "OBJECT",
+      "TEXT",
+      "ARRAY",
+      "METHOD",
+      "BINDING",
+      "URL",
+      "ACK",
+      "OUTPUT",
+      "EXCEPTION",
+      "TIMEOUT"
+    ];
+    CURRENT_OPEN_HOST_STAGES = [
+      "owner-check",
+      "dispatch-guards",
+      "scope",
+      "runtime-admission",
+      "reserve-navigation",
+      "build-program",
+      "write-intent",
+      "tracked-dispatch",
+      "before-dispatch",
+      "checkpoint-reproof",
+      "decode-result",
+      "validate-result",
+      "retain-result",
+      "settled-result",
+      "post-admission",
+      "project-acknowledgement",
+      "write-completion"
+    ];
+    currentOpenFailureDiagnosticSchema = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.current-open-failure.v1"),
+      phase: external_exports.enum(["preflight", "open-project", "open-document", "observe"]),
+      hostStage: external_exports.enum(CURRENT_OPEN_HOST_STAGES),
+      category: external_exports.enum(["native-guard", "native-exception", "native-timeout", "bridge-timeout", "upstream-failure", "output-bound", "result-invalid", "project-acknowledgement", "unknown"]),
+      nativeStage: external_exports.enum(CURRENT_OPEN_NATIVE_STAGES).nullable(),
+      nativeCode: external_exports.enum(CURRENT_OPEN_NATIVE_CODES).nullable()
+    }).strict();
+    nativeMessages = /* @__PURE__ */ new Map();
+    nativeCategories = /* @__PURE__ */ new Map();
+    wrappedCategories = /* @__PURE__ */ new Map();
+    for (const stage of CURRENT_OPEN_NATIVE_STAGES) {
+      for (const code of CURRENT_OPEN_NATIVE_CODES) {
+        const category = `native-current-disposable-open:${stage}:${code}`;
+        const fields7 = { nativeStage: stage, nativeCode: code };
+        nativeMessages.set(`CURRENT_DISPOSABLE_OPEN_FAILED:${stage}:${code}`, category);
+        nativeCategories.set(category, fields7);
+        for (const prefix3 of ["The upstream EasyEDA tool reported failure", "The upstream EasyEDA tool reported failure or unavailability"]) {
+          wrappedCategories.set(`${prefix3} [${category}].`, fields7);
+        }
+        if (code === "TIMEOUT") {
+          wrappedCategories.set(`The native lifecycle deadline expired without proving execution ended [${category};execution-unsettled].`, fields7);
+        }
+      }
+    }
+    hostCategories = /* @__PURE__ */ new Map([
+      ["The upstream bridge timed out without proving native execution ended [bridge-timeout;execution-unsettled].", "bridge-timeout"],
+      ["The native lifecycle deadline expired without proving execution ended [native-lifecycle-timeout;execution-unsettled].", "native-timeout"],
+      ["Current disposable-open reply exceeds its bound.", "output-bound"],
+      ["Disposable opening result exceeds its byte bound.", "output-bound"],
+      ["Disposable opening result contradicts its exact target and phase.", "result-invalid"],
+      ["Disposable opening result has an invalid public method acknowledgement.", "result-invalid"],
+      ["Project opening did not acknowledge the exact target project.", "project-acknowledgement"]
+    ]);
+    for (const category of ["native-api-error", "payload-too-large", "invalid-input", "unavailable", "unstable-read", "invalid-envelope", "unclassified-upstream-failure"]) {
+      for (const prefix3 of ["The upstream EasyEDA tool reported failure", "The upstream EasyEDA tool reported failure or unavailability"]) {
+        hostCategories.set(`${prefix3} [${category}].`, "upstream-failure");
+      }
+    }
+  }
+});
+
 // server/src/library-runtime-guard.ts
 function libraryRuntimeFailureCategory(message) {
   if (typeof message !== "string" || message.length > 180) {
@@ -34551,6 +34683,10 @@ function nativeFailureCategory(message) {
   if (typeof message !== "string") {
     return null;
   }
+  const currentOpenCategory = currentOpenNativeFailureCategory(message);
+  if (currentOpenCategory !== null) {
+    return currentOpenCategory;
+  }
   const configuredFontCategory = message.length <= 288 ? configuredFontCategories.get(message) : void 0;
   if (configuredFontCategory !== void 0) {
     return configuredFontCategory;
@@ -34633,6 +34769,7 @@ var codes3, RECOVERY_NAVIGATION_FAILURE_STAGES, recoveryStages, tabCodes, padCod
 var init_native_diagnostics = __esm({
   "server/src/native-diagnostics.ts"() {
     init_device_runtime_guard();
+    init_current_disposable_open_diagnostics();
     init_library_runtime_guard();
     init_project_upload_barrier();
     init_metadata_native_diagnostics();
@@ -35191,6 +35328,9 @@ function assertUpstreamReplySettled(result) {
   }
   if (category === "native-lifecycle-timeout") {
     throw new Error("The native lifecycle deadline expired without proving execution ended [native-lifecycle-timeout;execution-unsettled].");
+  }
+  if (isCurrentOpenNativeTimeoutCategory(category)) {
+    throw new Error(`The native lifecycle deadline expired without proving execution ended [${category};execution-unsettled].`);
   }
   if (category === "native-lifecycle-unsettled") {
     throw new Error("Native document close was dispatched without proving teardown completed [native-lifecycle-unsettled;execution-unsettled].");
@@ -36125,6 +36265,7 @@ var init_core3 = __esm({
   "server/src/core.ts"() {
     init_reader_diagnostics();
     init_native_diagnostics();
+    init_current_disposable_open_diagnostics();
     init_descriptor_sanitizer_identity();
     init_soft_core_limit();
     init_descriptor_sanitizer_identity();
@@ -91950,6 +92091,31 @@ var init_ordinary_launch = __esm({
   }
 });
 
+// server/src/current-project-url.ts
+function buildCurrentProjectUrlGuard() {
+  return String.raw`const parseProjectUrl=(value,projectUuid,activeTabId)=>{
+ if(typeof value!=='string'||value.length>32768||typeof projectUuid!=='string')bad();
+ const projectMatch=/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/.exec(projectUuid);if(!projectMatch||projectMatch[0]!==projectUuid)bad();
+ const pieces=value.split('#');if(pieces.length>2)bad();const base=pieces[0];
+ const baseMatch=/^https:\/\/client\/editor\?cll=(?:trace|debug|info|warn|error)$/.exec(base);if(!baseMatch||baseMatch[0]!==base)bad();
+ const fragment=pieces.length===1?'':pieces[1];
+ if(fragment==='')return{base,empty:true,tabIds:[],activeTabId:null};
+ const prefix='id='+projectUuid;if(fragment===prefix)return{base,empty:false,tabIds:[],activeTabId:null};
+ if(!fragment.startsWith(prefix+',tab='))bad();const entries=fragment.slice(prefix.length+5).split('|');
+ if(entries.length<1||entries.length>256)bad();const tabIds=[],seen=new Set();let markedTabId=null;
+ for(const entry of entries){
+  const match=/^(\*?)([a-f0-9]{16}|[a-f0-9]{32})@([a-f0-9]{32}|[a-f0-9]{64})$/.exec(entry);
+  if(!match||match[0]!==entry||match[3]!==projectUuid)bad();const tabId=match[2]+'@'+match[3];if(seen.has(tabId))bad();seen.add(tabId);tabIds.push(tabId);
+  if(match[1]==='*'){if(markedTabId!==null||(activeTabId!==undefined&&activeTabId!==null&&activeTabId!==tabId))bad();markedTabId=tabId;}
+ }
+ return{base,empty:false,tabIds,activeTabId:markedTabId};
+};`;
+}
+var init_current_project_url = __esm({
+  "server/src/current-project-url.ts"() {
+  }
+});
+
 // server/src/current-pcb-layers.ts
 function parseCurrentPcbLayersRequest(input) {
   return currentPcbLayersRequestSchema.parse(input);
@@ -92033,6 +92199,7 @@ function buildCurrentPcbLayersProgram(input) {
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)};let expired=false;
 const bad=()=>{throw new Error('CURRENT_PCB_LAYERS_READ_FAILED');};
+${buildCurrentProjectUrlGuard()}
 const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
 const absent=(owner,key)=>{const d=Object.getOwnPropertyDescriptor(owner,key);if(d&&(!Object.hasOwn(d,'value')||d.value!==undefined))bad();};
 const fn=(owner,key)=>{const value=own(owner,key);if(typeof value!=='function')bad();return value;};
@@ -92056,7 +92223,7 @@ if(typeof rpc!=='function')bad();
 const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
 const check=()=>{
  if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')bad();
- if(typeof href!=='string'||!/^https:\\/\\/client\\/editor\\?cll=(?:trace|debug|info|warn|error)#?$/.test(href))bad();
+ parseProjectUrl(href,target.projectUuid,target.tabId);
  if(own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
  if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(host,'currentProject')!==project||own(ui,'tabBar')!==tabs||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
  if(own(project,'projectId')!==target.projectUuid||own(project,'branchUuid')!==target.branchUuid||own(project,'isV2Format')!==false||own(host,'isHistoryMode')!==false)bad();
@@ -92140,6 +92307,7 @@ var init_current_pcb_layers = __esm({
   "server/src/current-pcb-layers.ts"() {
     init_zod();
     init_core3();
+    init_current_project_url();
     init_current_ui_implementation();
     init_exact_readers();
     init_sdk_local_runtime();
@@ -92220,26 +92388,29 @@ function buildCurrentDisposableOpenProgram(targetInput3, phaseInput) {
   const target5 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
   const phase4 = external_exports.enum(phases).parse(phaseInput);
   const navigation = phase4 === "open-project" || phase4 === "open-document";
-  return `let timer,clear,timedOut=false;
+  return `let timer,clear,timedOut=false,stage='setup',failureCode='EXCEPTION',timeoutStage='setup',failureMessage;
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(target5)},phase=${JSON.stringify(phase4)},tabId=target.documentUuid+'@'+target.projectUuid;let expired=false;
-const bad=()=>{throw new Error('CURRENT_DISPOSABLE_OPEN_FAILED');};
-const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad();}if(!Object.hasOwn(d,'value'))bad();return d.value;};
+const bad=(code='GUARD')=>{failureCode=code;throw new Error('CURRENT_DISPOSABLE_OPEN_FAILED');};
+${buildCurrentProjectUrlGuard()}
+const own=(owner,key,optional=false)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad('FIELD');const d=Object.getOwnPropertyDescriptor(owner,key);if(!d){if(optional&&!(key in owner))return undefined;bad('FIELD');}if(!Object.hasOwn(d,'value'))bad('FIELD');return d.value;};
 const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
-const plain=value=>{if(!object(value)||Object.getPrototypeOf(value)!==Object.prototype)bad();return value;};
-const text=(value,max,empty=false)=>{if(typeof value!=='string'||value.length>max||(!empty&&value.length===0)||/[\0-\x7F]/.test(value))bad();return value;};
-const dense=(value,max)=>{if(!Array.isArray(value)||Object.getPrototypeOf(value)!==Array.prototype)bad();const n=own(value,'length');if(!Number.isInteger(n)||n<0||n>max||Reflect.ownKeys(value).length!==n+1)bad();for(let i=0;i<n;i++)own(value,String(i));return n;};
-const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad();chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad();return {owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad();};
-const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad();if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad();}else if(Object.hasOwn(node,binding.key))bad();}};
+const plain=value=>{if(!object(value)||Object.getPrototypeOf(value)!==Object.prototype)bad('OBJECT');return value;};
+const text=(value,max,empty=false)=>{if(typeof value!=='string'||value.length>max||(!empty&&value.length===0)||/[\0-\x7F]/.test(value))bad('TEXT');return value;};
+const dense=(value,max)=>{if(!Array.isArray(value)||Object.getPrototypeOf(value)!==Array.prototype)bad('ARRAY');const n=own(value,'length');if(!Number.isInteger(n)||n<0||n>max||Reflect.ownKeys(value).length!==n+1)bad('ARRAY');for(let i=0;i<n;i++)own(value,String(i));return n;};
+const method=(owner,key)=>{const chain=[];let node=owner;for(let i=0;i<4;i++){if(node===null||(typeof node!=='object'&&typeof node!=='function'))bad('METHOD');chain.push(node);const d=Object.getOwnPropertyDescriptor(node,key);if(d){if(!Object.hasOwn(d,'value')||typeof d.value!=='function')bad('METHOD');return {owner,key,chain,fn:d.value};}node=Object.getPrototypeOf(node);}bad('METHOD');};
+const methodCheck=binding=>{for(let i=0;i<binding.chain.length;i++){const node=binding.chain[i];if(i>0&&Object.getPrototypeOf(binding.chain[i-1])!==node)bad('BINDING');if(i===binding.chain.length-1){if(own(node,binding.key)!==binding.fn)bad('BINDING');}else if(Object.hasOwn(node,binding.key))bad('BINDING');}};
 const location=root.location,href=location?.href,document=root.document,ui=own(root,'UI'),host=own(root,'gVars'),tabs=own(ui,'tabBar'),mode=own(root,'PRO_EDITOR_MODE'),edaOwner=eda;
+const initialUrl=parseProjectUrl(href,target.projectUuid);let retainedHref=href;
+if((phase==='preflight'||phase==='open-project')&&!initialUrl.empty)bad('URL');
 if(typeof tabs!=='function'||Object.getPrototypeOf(tabs)!==Function.prototype)bad();
 const active=method(tabs,'getActiveTab'),container=method(tabs,'getContainerInfo'),getTab=method(tabs,'getTabById');
 const bus=own(host,'messageBus'),registryCall=method(bus,'rpcCall');
 const projectApi=own(edaOwner,'dmt_Project'),documentApi=own(edaOwner,'dmt_EditorControl'),openProject=method(projectApi,'openProject'),openDocument=method(documentApi,'openDocument');
 const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
 const check=()=>{
- if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')bad();
- if(typeof href!=='string'||!/^https:\\/\\/client\\/editor\\?cll=(?:trace|debug|info|warn|error)#?$/.test(href))bad();
+ if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==retainedHref||location?.href!==retainedHref||location?.origin!=='https://client')bad('URL');
+ if(parseProjectUrl(retainedHref,target.projectUuid).base!==initialUrl.base)bad('URL');
  if(own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
  if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(ui,'tabBar')!==tabs||own(host,'messageBus')!==bus||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
  if(own(edaOwner,'dmt_Project')!==projectApi||own(edaOwner,'dmt_EditorControl')!==documentApi||own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear)bad();
@@ -92267,6 +92438,8 @@ const sample=()=>{
  if(start>1||placeholder>1||(current===''?currentCount!==0:currentCount!==1))bad();
  if(!projectPresent&&(start!==1||current!=='tab_page1'||count!==start+placeholder))bad();
  if(documentPresent&&apply(getTab.fn,tabs,[tabId])!==targetTab)bad();check();
+ const url=parseProjectUrl(retainedHref,target.projectUuid,current);
+ if(!url.empty&&!projectPresent||url.tabIds.some(id=>!allIds.has(id)))bad('URL');
  return {owners,identity:JSON.stringify([names,treeProjection,projection,current,pid??null,branch??null]),projectPresent,branchUuid:projectPresent?branch:null,documentPresent,activeTarget:documentPresent&&current===tabId,targetTab,targetData};
 };
 const same=(a,b)=>{if(a.identity!==b.identity||a.owners.length!==b.owners.length||a.owners.some((owner,i)=>owner!==b.owners[i]))bad();};
@@ -92288,17 +92461,20 @@ const observe=async()=>{
  const first=await read();frameCheck();const second=await read();frameCheck();if(first!==second)bad();return {...before,nativeIdentityVerified:first};
 };
 const run=async()=>{
- const initial=await registration();check();let publicResult=null,dispatchAttempted=false;
+ stage='before-registration';const initial=await registration();check();let publicResult=null,dispatchAttempted=false;
+ stage='pre-dispatch';
  if(phase==='preflight'||phase==='open-project'){if(initial.projectPresent)bad();}else if(phase==='open-document'&&!initial.projectPresent)bad();
- if(phase==='open-project'){same(initial,sample());check();dispatchAttempted=true;publicResult=await apply(openProject.fn,projectApi,[target.projectUuid]);check();if(typeof publicResult!=='boolean')bad();}
- else if(phase==='open-document'){same(initial,sample());check();dispatchAttempted=true;publicResult=await apply(openDocument.fn,documentApi,[target.documentUuid]);check();if(publicResult===undefined)publicResult=null;else if(publicResult!==tabId)bad();}
- const after=await registration();check();const final=await observe();check();same(after,final);if(phase==='preflight'&&final.projectPresent)bad();
+ // Only the owned public navigation may advance the retained URL. All subsequent observations freeze it again.
+ if(phase==='open-project'){same(initial,sample());check();dispatchAttempted=true;stage='open-project';publicResult=await apply(openProject.fn,projectApi,[target.projectUuid]);stage='project-acknowledgement';retainedHref=location?.href;check();if(typeof publicResult!=='boolean')bad('ACK');}
+ else if(phase==='open-document'){same(initial,sample());check();dispatchAttempted=true;stage='open-document';publicResult=await apply(openDocument.fn,documentApi,[target.documentUuid]);stage='document-acknowledgement';retainedHref=location?.href;check();if(publicResult===undefined)publicResult=null;else if(publicResult!==tabId)bad('ACK');}
+ stage='after-registration';const after=await registration();check();stage='native-observation';const final=await observe();check();same(after,final);if(phase==='preflight'&&final.projectPresent)bad();
+ stage='output';
  const json=JSON.stringify({ok:true,kind:'current-disposable-open',phase,projectUuid:target.projectUuid,documentUuid:target.documentUuid,projectPathMatched:true,branchUuid:final.branchUuid,projectPresent:final.projectPresent,documentPresent:final.documentPresent,activeTarget:final.activeTarget,nativeIdentityVerified:final.nativeIdentityVerified,dispatchAttempted,publicResult,restorationCompletionVerified:false,persistenceVerified:false,writerAuthority:false});
- const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};if(utf8Bytes>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES})bad();return envelope;
+ const utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};if(utf8Bytes>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_DISPOSABLE_OPEN_MAX_BYTES})bad('OUTPUT');return envelope;
 };
-check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;timedOut=true;reject(new Error('CURRENT_DISPOSABLE_OPEN_FAILED'));},${navigation ? 11e4 : 1e4}]);});return await Promise.race([run(),timeout]);
-}catch{throw new Error(timedOut?'NATIVE_LIFECYCLE_OPEN_TIMEOUT':'CURRENT_DISPOSABLE_OPEN_FAILED');}
-finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(timedOut?'NATIVE_LIFECYCLE_OPEN_TIMEOUT':'CURRENT_DISPOSABLE_OPEN_FAILED');}}}`;
+check();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;timedOut=true;timeoutStage=stage;reject(new Error('CURRENT_DISPOSABLE_OPEN_FAILED'));},${navigation ? 11e4 : 1e4}]);});return await Promise.race([run(),timeout]);
+}catch{failureMessage='CURRENT_DISPOSABLE_OPEN_FAILED:'+(timedOut?timeoutStage:stage)+':'+(timedOut?'TIMEOUT':failureCode);throw new Error(failureMessage);}
+finally{if(timer!==undefined&&typeof clear==='function'){try{Reflect.apply(clear,globalThis,[timer]);}catch{throw new Error(failureMessage??'CURRENT_DISPOSABLE_OPEN_FAILED:cleanup:EXCEPTION');}}}`;
 }
 function validateCurrentDisposableOpenResult(targetInput3, phaseInput, raw) {
   const target5 = currentDisposableOpenSealedTargetSchema.parse(targetInput3);
@@ -92328,6 +92504,7 @@ var CURRENT_DISPOSABLE_OPEN_MAX_BYTES, hex64, hex32, documentId, operationId, wi
 var init_current_disposable_open = __esm({
   "server/src/current-disposable-open.ts"() {
     init_zod();
+    init_current_project_url();
     init_core3();
     init_exact_readers();
     CURRENT_DISPOSABLE_OPEN_MAX_BYTES = 16384;
@@ -94553,6 +94730,7 @@ var init_engine = __esm({
           operation.orphanedCallPossible = true;
           operation.orphanedCallPhase = phase4;
           operation.orphanedCallMarkedAt = now();
+          delete operation.orphanedCallReturnedAt;
           operation.runtimeRestartChallengeAttempt = challengeAttempt;
           operation.runtimeRestartChallenge = [
             "EASYEDA_RESTARTED_AND_RECONNECTED",
@@ -117216,7 +117394,7 @@ function isOpenJournal(value) {
     return false;
   }
   const checkpoint = value["checkpointProof"], plan2 = value["plan"];
-  return plan2["profile"] === PROFILE16 && isRecord(plan2["intent"]) && isRecord(plan2["expectedFingerprint"]) && typeof value["operationId"] === "string" && typeof value["journalPath"] === "string" && typeof value["planHash"] === "string" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["updatedAt"] === "string" && Number.isSafeInteger(value["sequence"]) && typeof value["projectDispatchConsumed"] === "boolean" && typeof value["documentDispatchConsumed"] === "boolean" && Array.isArray(value["artifacts"]) && value["artifacts"].every((item2) => isRecord(item2) && typeof item2["path"] === "string" && typeof item2["bytes"] === "number" && digest5.safeParse(item2["sha256"]).success) && checkpoint["profile"] === "easyeda-pro-control.current-disposable-open-checkpoint.v1" && isRecord(checkpoint["checkpoint"]) && isRecord(checkpoint["targetEvidence"]) && launchSchema2.safeParse(value["originalLaunch"]).success;
+  return plan2["profile"] === PROFILE16 && isRecord(plan2["intent"]) && isRecord(plan2["expectedFingerprint"]) && typeof value["operationId"] === "string" && typeof value["journalPath"] === "string" && typeof value["planHash"] === "string" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["updatedAt"] === "string" && Number.isSafeInteger(value["sequence"]) && typeof value["projectDispatchConsumed"] === "boolean" && typeof value["documentDispatchConsumed"] === "boolean" && Array.isArray(value["artifacts"]) && value["artifacts"].every((item2) => isRecord(item2) && typeof item2["path"] === "string" && typeof item2["bytes"] === "number" && digest5.safeParse(item2["sha256"]).success) && checkpoint["profile"] === "easyeda-pro-control.current-disposable-open-checkpoint.v1" && isRecord(checkpoint["checkpoint"]) && isRecord(checkpoint["targetEvidence"]) && launchSchema2.safeParse(value["originalLaunch"]).success && (value["failureDiagnostic"] === void 0 || currentOpenFailureDiagnosticSchema.safeParse(value["failureDiagnostic"]).success);
 }
 function observationOutcome(result) {
   if (result["phase"] === "open-document" && result["publicResult"] === null) {
@@ -117238,6 +117416,7 @@ function summary6(journal) {
     orphanedCallPossible: journal.orphanedCallPossible,
     hardStop: journal.hardStop,
     result: journal.result ?? null,
+    failureDiagnostic: journal.failureDiagnostic ?? null,
     normalOpenEffectsMayHaveOccurred: journal.mutationMayHaveOccurred,
     explicitSaveDispatched: false,
     persistenceVerified: false,
@@ -117255,6 +117434,7 @@ var init_current_disposable_open_runtime = __esm({
     init_closed_symbol_terminal_admission();
     init_core3();
     init_current_disposable_open();
+    init_current_disposable_open_diagnostics();
     init_current_disposable_open_checkpoint();
     init_current_disposable_open_profile();
     init_exact_readers();
@@ -117353,18 +117533,24 @@ var init_current_disposable_open_runtime = __esm({
         requireValue15(isRecord(actual["installedBundles"]) && typeof actual["installedBundles"]["assetsRoot"] === "string", "Current disposable-open installed assets are unavailable.");
         await this.services.verifyImplementation(actual["installedBundles"]["assetsRoot"]);
       }
-      async dispatch(slot, phase4) {
+      async dispatch(slot, phase4, failureContext) {
         const { engine: engine2 } = this.options, journal = slot.journal;
+        failureContext.phase = phase4;
+        failureContext.hostStage = "owner-check";
         this.current(slot);
+        failureContext.hostStage = "dispatch-guards";
         await engine2.assertBridgeDispatchAllowed();
         await engine2.assertRecoveryOperationIsolated(journal.operationId);
         const scope5 = engine2.upstream.withAuthenticatedBridgeDispatchScope;
         requireValue15(scope5 !== void 0, "Current disposable opening requires authenticated dispatch scopes.");
+        failureContext.hostStage = "scope";
         const result = await scope5.call(engine2.upstream, async () => {
+          failureContext.hostStage = "runtime-admission";
           this.current(slot);
           await this.admission(journal.plan.expectedFingerprint);
           this.current(slot);
           const navigate = phase4 === "open-project" || phase4 === "open-document";
+          failureContext.hostStage = "reserve-navigation";
           if (phase4 === "open-project") {
             requireValue15(!journal.projectDispatchConsumed, "Project-open dispatch is already consumed.");
             journal.projectDispatchConsumed = true;
@@ -117373,14 +117559,17 @@ var init_current_disposable_open_runtime = __esm({
             requireValue15(journal.projectDispatchConsumed && !journal.documentDispatchConsumed, "Document-open dispatch is unavailable or consumed.");
             journal.documentDispatchConsumed = true;
           }
+          failureContext.hostStage = "build-program";
           const code = buildCurrentDisposableOpenProgram(journal.plan.intent.target, phase4);
           journal.state = `${phase4}-dispatching`;
           journal.hardStop = true;
           journal.mutationMayHaveOccurred ||= navigate;
           journal.nextSafeAction = "Await this tracked phase; no project or document open may be replayed.";
+          failureContext.hostStage = "write-intent";
           await this.record(journal, `${phase4}-intent`, { phase: phase4, codeSha256: sha256Text(code), navigationIntent: navigate });
           let parsed2;
           const toolTimeout = navigate ? 12e4 : 2e4;
+          failureContext.hostStage = "tracked-dispatch";
           await engine2.dispatchWithOrphanTracking(
             journal,
             phase4,
@@ -117388,26 +117577,37 @@ var init_current_disposable_open_runtime = __esm({
             { code, timeoutMs: toolTimeout, confirmWrite: true },
             toolTimeout + 1e4,
             async () => {
+              failureContext.hostStage = "before-dispatch";
               this.current(slot);
               await engine2.assertRecoveryOperationIsolated(journal.operationId);
               if (phase4 === "open-project") {
+                failureContext.hostStage = "checkpoint-reproof";
                 await this.services.verifyCheckpoint(journal.checkpointProof, targetOnly(journal.plan.intent.request));
               }
               this.current(slot);
+              failureContext.hostStage = "tracked-dispatch";
             },
             async (raw) => {
+              failureContext.hostStage = "decode-result";
               const envelope2 = extractToolPayload(raw);
               requireValue15(Buffer.byteLength(JSON.stringify(envelope2), "utf8") <= CURRENT_DISPOSABLE_OPEN_MAX_BYTES, "Current disposable-open reply exceeds its bound.");
-              parsed2 = validateCurrentDisposableOpenResult(journal.plan.intent.target, phase4, decodeExactReadEnvelope(envelope2));
+              const decoded = decodeExactReadEnvelope(envelope2);
+              failureContext.hostStage = "validate-result";
+              parsed2 = validateCurrentDisposableOpenResult(journal.plan.intent.target, phase4, decoded);
+              failureContext.hostStage = "retain-result";
               await this.record(journal, `${phase4}-return`, parsed2);
+              failureContext.hostStage = "tracked-dispatch";
             }
           );
+          failureContext.hostStage = "settled-result";
           this.current(slot);
           requireValue15(parsed2 !== void 0, "Current disposable-open settled result was not retained.");
+          failureContext.hostStage = "post-admission";
           await this.admission(journal.plan.expectedFingerprint);
           this.current(slot);
           return parsed2;
         });
+        failureContext.hostStage = "settled-result";
         requireValue15(isRecord(result), "Current disposable-open dispatch returned no exact result.");
         return result;
       }
@@ -117458,22 +117658,25 @@ var init_current_disposable_open_runtime = __esm({
         this.retained.set(request2.operationId, slot);
         this.current(slot);
         await this.services.createOperation(journal);
+        const failureContext = { phase: "preflight", hostStage: "owner-check" };
         try {
-          await this.dispatch(slot, "preflight");
-          const project3 = await this.dispatch(slot, "open-project");
+          await this.dispatch(slot, "preflight", failureContext);
+          const project3 = await this.dispatch(slot, "open-project", failureContext);
+          failureContext.hostStage = "project-acknowledgement";
           requireValue15(project3["publicResult"] === true && project3["projectPresent"] === true, "Project opening did not acknowledge the exact target project.");
-          const document3 = project3["documentPresent"] === true && project3["activeTarget"] === true ? project3 : await this.dispatch(slot, "open-document");
+          const document3 = project3["documentPresent"] === true && project3["activeTarget"] === true ? project3 : await this.dispatch(slot, "open-document", failureContext);
           journal.result = { ...document3, outcome: observationOutcome(document3) };
           journal.state = "completed";
           journal.hardStop = false;
           journal.nextSafeAction = "Navigation attempt completed. Inspect target identity/readiness separately; no Save, persistence or writer authority is inferred.";
+          failureContext.hostStage = "write-completion";
           await this.record(journal, "completed", { result: journal.result, replayAllowed: false, persistenceVerified: false, writerAuthority: false });
           return summary6(journal);
-        } catch {
-          return this.stop(journal);
+        } catch (error51) {
+          return this.stop(journal, error51, failureContext);
         }
       }
-      async stop(journal) {
+      async stop(journal, error51, context3) {
         const beforeNavigation = !journal.projectDispatchConsumed && !journal.documentDispatchConsumed && !journal.orphanedCallPossible;
         journal.state = journal.orphanedCallPossible ? "current-open-outcome-unknown" : "current-open-stopped";
         journal.hardStop = !beforeNavigation;
@@ -117485,7 +117688,8 @@ var init_current_disposable_open_runtime = __esm({
         if (beforeNavigation) {
           journal.nextSafeAction = "Attempt ended before navigation. Inspect its consumed history; never reuse this operation ID.";
         }
-        await this.services.updateOperation(journal);
+        journal.failureDiagnostic = describeCurrentOpenFailure(error51, context3);
+        await this.record(journal, "failure-diagnostic", journal.failureDiagnostic);
         return { ...summary6(journal), failure: "CURRENT_DISPOSABLE_OPEN_STOPPED" };
       }
       retainedJournal(journal) {
@@ -117501,16 +117705,18 @@ var init_current_disposable_open_runtime = __esm({
         requireValue15(!loaded.orphanedCallPossible && loaded.state !== "plan-invalidated", "An uncertain or retired open cannot dispatch observations.");
         const slot = this.retainedJournal(loaded);
         const journal = slot.journal;
+        const failureContext = { phase: "observe", hostStage: "owner-check" };
         try {
-          const observation2 = await this.dispatch(slot, "observe");
+          const observation2 = await this.dispatch(slot, "observe", failureContext);
           journal.result = { ...observation2, outcome: observationOutcome(observation2) };
           journal.state = "completed";
           journal.hardStop = false;
           journal.nextSafeAction = "Read-only target observation completed. Earlier navigation outcome is not reconstructed and navigation remains consumed.";
+          failureContext.hostStage = "write-completion";
           await this.record(journal, "observed", { observation: observation2, earlierNavigationOutcome: "not-inferred", replayAllowed: false });
           return summary6(journal);
-        } catch {
-          return this.stop(journal);
+        } catch (error51) {
+          return this.stop(journal, error51, failureContext);
         }
       }
       async retire(loaded) {
@@ -117601,6 +117807,7 @@ function buildCurrentPcbIdentitiesProgram(input) {
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)},reads=${JSON.stringify(reads)};let expired=false;
 const bad=()=>{throw new Error('CURRENT_PCB_IDENTITIES_READ_FAILED');};
+${buildCurrentProjectUrlGuard()}
 const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
 const absent=(owner,key)=>{const d=Object.getOwnPropertyDescriptor(owner,key);if(d&&(!Object.hasOwn(d,'value')||d.value!==undefined))bad();};
 const fn=(owner,key)=>{const value=own(owner,key);if(typeof value!=='function')bad();return value;};
@@ -117624,7 +117831,7 @@ if(typeof rpc!=='function')bad();
 const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
 const check=()=>{
  if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')bad();
- if(typeof href!=='string'||!/^https:\\/\\/client\\/editor\\?cll=(?:trace|debug|info|warn|error)#?$/.test(href))bad();
+ parseProjectUrl(href,target.projectUuid,target.tabId);
  if(own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
  if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(host,'currentProject')!==project||own(ui,'tabBar')!==tabs||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
  if(own(project,'projectId')!==target.projectUuid||own(project,'branchUuid')!==target.branchUuid||own(project,'isV2Format')!==false||own(host,'isHistoryMode')!==false)bad();
@@ -117673,6 +117880,7 @@ var init_current_pcb_identities_program = __esm({
   "server/src/current-pcb-identities-program.ts"() {
     init_current_pcb_identities();
     init_exact_readers();
+    init_current_project_url();
   }
 });
 
@@ -117749,6 +117957,7 @@ function buildCurrentPcbGeometryProgram(input) {
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request2.target)},family=${JSON.stringify(family2)},topic=${JSON.stringify(topics[family2])};let expired=false;
 const bad=()=>{throw new Error('CURRENT_PCB_GEOMETRY_READ_FAILED');};
+${buildCurrentProjectUrlGuard()}
 const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
 const absent=(owner,key)=>{const d=Object.getOwnPropertyDescriptor(owner,key);if(d&&(!Object.hasOwn(d,'value')||d.value!==undefined))bad();};
 const fn=(owner,key)=>{const value=own(owner,key);if(typeof value!=='function')bad();return value;};
@@ -117772,7 +117981,7 @@ if(typeof rpc!=='function')bad();
 const set=own(root,'setTimeout');clear=own(root,'clearTimeout');if(typeof set!=='function'||typeof clear!=='function')bad();
 const check=()=>{
  if(expired||root.window!==root||root.top!==root||root.location!==location||root.document!==document||document?.defaultView!==root||document?.nodeType!==9||document?.URL!==href||location?.href!==href||location?.origin!=='https://client')bad();
- if(typeof href!=='string'||!/^https:\\/\\/client\\/editor\\?cll=(?:trace|debug|info|warn|error)#?$/.test(href))bad();
+ parseProjectUrl(href,target.projectUuid,target.tabId);
  if(own(root,'PRO_EDITOR_MODE')!==mode||(mode!=='CLIENT-HALF_OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'&&mode!=='CLIENT-OFFLINE-EASYEDA-PCB-SCH-PANEL-SIM'))bad();
  if(own(root,'UI')!==ui||own(root,'gVars')!==host||own(ui,'gVars')!==host||own(host,'currentProject')!==project||own(ui,'tabBar')!==tabs||eda!==edaOwner||own(edaOwner,'extensionUuid')!=='7e06d286b1ac846ef7eab9c7f2a9ee40')bad();
  if(own(project,'projectId')!==target.projectUuid||own(project,'branchUuid')!==target.branchUuid||own(project,'isV2Format')!==false||own(host,'isHistoryMode')!==false)bad();
@@ -117833,6 +118042,7 @@ var init_current_pcb_geometry_program = __esm({
   "server/src/current-pcb-geometry-program.ts"() {
     init_current_pcb_geometry();
     init_exact_readers();
+    init_current_project_url();
   }
 });
 

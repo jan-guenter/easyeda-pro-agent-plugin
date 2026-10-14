@@ -4,6 +4,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { exactReaderFailureCategory } from "./reader-diagnostics.ts";
 import { nativeFailureCategory } from "./native-diagnostics.ts";
+import { isCurrentOpenNativeTimeoutCategory } from "./current-disposable-open-diagnostics.ts";
 
 import {
   DESCRIPTOR_SANITIZER_FILE_NAME,
@@ -572,6 +573,9 @@ export function assertUpstreamReplySettled(result: unknown): void {
   }
   if (category === "native-lifecycle-timeout") {
     throw new Error("The native lifecycle deadline expired without proving execution ended [native-lifecycle-timeout;execution-unsettled].");
+  }
+  if (isCurrentOpenNativeTimeoutCategory(category)) {
+    throw new Error(`The native lifecycle deadline expired without proving execution ended [${category};execution-unsettled].`);
   }
   if (category === "native-lifecycle-unsettled") {
     throw new Error("Native document close was dispatched without proving teardown completed [native-lifecycle-unsettled;execution-unsettled].");

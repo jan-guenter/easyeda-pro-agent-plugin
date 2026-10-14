@@ -13,7 +13,62 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Restarted054500 and current PCB geometry
+### Restarted133000, opening diagnostics and ordinary URL handling
+
+PR23 delivered133000 as protected main50a952df28670885a0b554aa22076631b9483365.
+Tested and merged full tree5f2df2422c41618edf2799f5e9a4dcfcec096dbe match.
+Required CI38571189327 and postmerge CI38572980145 passed all ten jobs.
+Delivery receipt: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/23#issuecomment-6169672280.
+Fresh facade425339, parent423558, startTicks218500920 uses exact installed133000
+and Node24.18.0. Old351497 is absent. Independent admission verifies1,173files,
+22,798,702bytes,42directories,seven skills and exact modes, without extras or
+symlinks. Source338 fingerprint62588c03f06505e88a175b2ac1581658a6d685faebbae67f0b6a88a00550fc19;
+runtime3 fingerprint5f4c805c68ed6b805216413527b9d1f152b6b0564fa4794deca0f2bc8cb27c6f.
+
+The earlier instruction to keep351497 alive is superseded by completed retained-
+owner retirement of current-pcb-open-054500-20261014. Maintained load verifies
+the unchanged terminal journal6bc6799d5d4ae017b7045b6e549e1c94937cffedebb458f02ebf7eb9920c31f9
+and all four artifacts; retirement proofbbf0a916755c273de6d576f391abe95b8a4d7accec826822f0c840aed57160f5.
+It is plan-invalidated, orphan/hardStop false, with unknown accepted file effects.
+No replay, continuation, persistence or writer authority follows. Original
+ordinary-startup131200 remains consumed. Never repeat either original operation.
+
+Actual133000 offline geometry discovery and exact request validation pass;
+reply hashes02ca6d42 and222d2836. No app launch, bridge call, project opening,
+explicit Save or writer is requested in this continuation. Production and its
+record remain excluded. Candidate150000 fixes the confirmed ordinary project/tab
+URL mismatch in the opener and three PCB reader families, adds fixed bounded
+failure diagnostics, and clears a preceding return timestamp when marking a new
+orphan-risk phase. Existing authority, quarantine, no-repeat and retirement
+contracts remain. Source research does not identify the retired call's cause.
+The shell/context and other non-PCB URL policies remain separate backlog, not
+silently broadened here. Release scope and verification are recorded in
+docs/current-open-diagnostics-release-2026-10-14.md and the originating PR receipt.
+Loaded133000 is not candidate150000; no new connected execution is claimed.
+
+Candidate150000 main/independent source review passes. Focused diagnostic/opening/
+recovery tests57/57 and URL/PCB reader tests20/20 pass. Full types and strict
+type-aware lint pass with no warnings. Independent repository/privacy and all
+seven packaged/official skill validators pass. Source340 fingerprint
+2093bf4e701faba8f182fe9642a243d3897e9f84086b0dcd979f90f992715d36 and runtime3
+d21b500e0cbe2d6786661767fcf98b91a6b8e1bf2f1f6e3ae2603b1463d088f8 match the
+reviewed manifest. All external pins, dependencies, bridge and helper are
+unchanged. Clean npmci/tree,151signatures/40attestations, zero vulnerabilities
+and sanitizer identity checks pass. Full existing verification and exact-head
+CI/publication/install are still in progress; final delivery evidence belongs
+to the originating PR receipt. No further live action follows the offline checks.
+
+PR24 initially tests09fe696. The local full run found five existing disposable
+race-fixture failures before runtime initialization: both test-only core.ts pins
+still named80876233 after the reviewed timeout-classifier import. Root and
+independent rehash agree onf536d9adae3fd0177718e9d6d1e10d68627ad8a9ee29266487d55305e05fb9fb.
+Only those two exact test pins changed; original-buffer, owner, gate and race
+assertions remain. Focused5/5 and strict lint pass. Runtime/source/compatibility
+fingerprints are unchanged. The failed aggregate is not acceptance; corrected-
+head CI and final delivery evidence are required on PR24:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/24.
+
+### Historical restarted054500 and current PCB geometry
 
 PR22 delivered054500 as main08c48555b8e4434d9e49acfe5a8ce0d53bd3dcc7,
 fulltree9fed42921de7e360ce67c384982032b9d682d90d identical to testeda829ccc.

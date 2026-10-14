@@ -635,7 +635,7 @@ proof, but selected inherited Lines still refuse. Supply the complete observed
 PCB tab and owner context. Limits are 256 selected IDs, 20,000 source records
 and 2 MiB output; excess data refuses without truncation. This source-tested
 reader changes neither selection nor design. Stable observations are not an
-atomic snapshot, resolved connectivity or persistence proof. Installed150000
+atomic snapshot, resolved connectivity or persistence proof. Installed20261011150000
 passed empty selection and one original standalone STRING, with complete saved
 fixture invariance. Other families and the newer optimized reader remain untested
 live. Fixed stage timings are diagnostic only and excluded from semantic hashes;

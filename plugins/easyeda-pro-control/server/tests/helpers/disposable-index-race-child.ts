@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 const plugin = resolve(import.meta.dirname, "../../..");
 const sourcePath = join(plugin, "server/src/core.ts");
-const expectedSourceHash = "80876233ce661602df0155a545ba0d5f656611d02fb3aacb94eae00107ba156d";
+const expectedSourceHash = "f536d9adae3fd0177718e9d6d1e10d68627ad8a9ee29266487d55305e05fb9fb";
 const scenario = process.argv[2];
 assert.ok(["ordinary-first", "reservation-first", "concurrent", "configuration", "shutdown"].includes(scenario ?? ""));
 assert.equal(process.argv.length, 3); assert.equal(process.versions.node, "24.18.0");
