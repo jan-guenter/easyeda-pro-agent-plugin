@@ -63,6 +63,16 @@ const integer=value=>{num(value);if(!Number.isInteger(value))bad();return value;
 const layer=value=>{integer(value);if(value<0||value>65535)bad();return value;};
 const bool=value=>{if(typeof value!=='boolean')bad();return value;};
 const text=(value,max,nullable=false)=>{if(value===null&&nullable)return value;if(typeof value!=='string'||value.length>max)bad();return value;};
+// PCB217199c8@7397863 clones attrsMap including own undefined; API021d155b@1426362 passes these fields to optional string getters.
+// Omit unavailable values, never coerce them to empty strings. Name is raw: native formula evaluation is separate at PCB4325200.
+const componentMetadata=row=>{
+ const attrs=plain(own(row,'attrsMap')),result={};
+ for(const [key,field] of [['Designator','designator'],['Name','name'],['Manufacturer','manufacturer'],['Manufacturer Part','manufacturerPart'],['Supplier','supplier'],['Supplier Part','supplierPart']]){
+  const d=Object.getOwnPropertyDescriptor(attrs,key);if(!d){if(key in attrs)bad();continue;}
+  if(!Object.hasOwn(d,'value'))bad();if(d.value!==undefined)result[field]=text(d.value,1024);
+ }
+ return result;
+};
 // Native Point may retain an optional _hashed cache; project only own x/y data without reading that cache or its getter.
 const point=value=>{if(!object(value))bad();const keys=Reflect.ownKeys(value);if(!keys.includes('x')||!keys.includes('y')||keys.some(key=>key!=='x'&&key!=='y'&&key!=='_hashed'))bad();return{x:num(own(value,'x')),y:num(own(value,'y'))};};
 const copyRows=value=>{
@@ -74,7 +84,7 @@ const copyRows=value=>{
   const identity={primitiveId:id,primitiveType:family,primitiveLock:bool(own(row,'locked'))};
   if(family==='Component'){
    const position=point(own(row,'position')),componentLayer=layer(own(row,'layerId'));if(![1,2].includes(componentLayer))bad();
-   rows.push({...identity,layer:componentLayer,x:position.x,y:position.y,rotation:num(own(row,'rotation'))});continue;
+   rows.push({...identity,layer:componentLayer,x:position.x,y:position.y,rotation:num(own(row,'rotation')),...componentMetadata(row)});continue;
   }
   const base={...identity,net:text(own(row,'net'),1024,true)};
   if(family==='Pad'){

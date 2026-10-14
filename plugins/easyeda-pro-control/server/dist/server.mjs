@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "0600fd264e0eb8a84c2654d7fb6fca141c9c23a3b8d9f3796ce9d18763d7dcab";
+const __easyedaBundlePairId = "1025d6e744685d973fbf3731ff569ad08fa79cf15760715af7be43429d935a4c";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -39489,7 +39489,7 @@ var init_extension_api_coverage_routes = __esm({
           tool: "easyeda_control_pcb_geometry",
           selector: `eda.${namespace}.${method4}`,
           implementation: "native-task-equivalent",
-          scope: `Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state only; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2; Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Component library/attribute/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.${method4 === "get" ? " This get route accepts only 1..256 distinct bounded primitiveIds in an array, selects DTOs in caller order after complete-family checks and refuses any unavailable ID. It does not support scalar get or public missing-ID skipping. Returned and full-family observed row counts are distinct; all family bounds still apply before selection." : " This getAll route accepts empty arguments only."}`,
+          scope: `Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state; fixed scalar projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2 and six optional raw strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing or own-undefined values omit the field; empty strings and Name formulas remain exact. Selected null/non-string/inherited/accessor values refuse. Metadata is not verified part identity or schematic linkage. Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Other Component attributes, library/child enrichment and Pad shapes/holes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, ComponentPad associations, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.${method4 === "get" ? " This get route accepts only 1..256 distinct bounded primitiveIds in an array, selects DTOs in caller order after complete-family checks and refuses any unavailable ID. It does not support scalar get or public missing-ID skipping. Returned and full-family observed row counts are distinct; all family bounds still apply before selection." : " This getAll route accepts empty arguments only."}`,
           source: ["current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
           tests: ["current-pcb-geometry.test.ts", "facade-mode.test.ts", "current-pcb-geometry-registration.test.ts"],
           documentTypes: [3],
@@ -93118,7 +93118,13 @@ var init_current_pcb_geometry = __esm({
       layer: external_exports.union([external_exports.literal(1), external_exports.literal(2)]),
       x: numberSchema,
       y: numberSchema,
-      rotation: numberSchema
+      rotation: numberSchema,
+      designator: boundedText4.optional(),
+      name: boundedText4.optional(),
+      manufacturer: boundedText4.optional(),
+      manufacturerPart: boundedText4.optional(),
+      supplier: boundedText4.optional(),
+      supplierPart: boundedText4.optional()
     }).strict();
     padSchema = external_exports.object({
       ...base3,
@@ -93159,8 +93165,9 @@ var init_current_pcb_geometry = __esm({
       "Fixed native getAll handlers replace mutable public active-tab routing for both methods. All projected scalar fields and ordered rows across the complete family must match twice before requested IDs are selected; omitted native fields are not compared. Full-family validation and bounds apply even to unrequested rows. No direct getByIds or SDK object constructor is invoked. For get, returnedRowCount counts selected DTOs and observedRowCount counts the complete observed family.",
       "Positions, widths, diameters and mask expansions are in mil; arcAngle and Component/Pad rotation are in degrees. The native callback's scaled results are not rounded using the public wrapper. Arc endpoints/angle and Pad placement can therefore retain precision that the public wrapper rounds; Via diameters are twice the native callback radii, without public one-decimal radius rounding. Layer IDs and arc/via/mask modes are native values, not validated design rules.",
       "Coordinates use the data origin, not the displayed canvas origin. Arc endpoints and angle are incomplete shape data: a full-circle case can project to zero angle. Native center/radius/sweep and partition are omitted, as are Via unused-layer and is-suture fields. Mask expansion values are loaded model observations, not proof of saved overrides or current rule resolution.",
-      "Component observation contains only identity, lock and placement on layer 1 or 2; attributes, designator, library/device/footprint/3D enrichment and child associations are omitted. Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12; holes, shapes, masks, rules, thermal data and parent associations are omitted. Pad family membership does not distinguish free pads from component pads. Holeless native holeRotation may be NaN and is not part of this projection.",
-      "At most 256 rows, 256 characters per identity, 1024 characters per net/rule name/pad number, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
+      "Component observation contains identity, lock, placement on layer 1 or 2 and six optional raw attribute strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing and own-undefined attributes both omit the corresponding output field; empty strings are preserved. Null, non-string, inherited or accessor-valued selected attributes refuse. Name formulas are returned verbatim, not evaluated or claimed to match rendered text. Other attributes, library/device/footprint/3D enrichment and child associations are omitted. These strings do not prove part identity or ownership.",
+      "Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12; holes, shapes, masks, rules, thermal data and parent associations are omitted. Pad family membership does not distinguish free pads from component pads. Holeless native holeRotation may be NaN and is not part of this projection.",
+      "At most 256 rows, 256 characters per identity, 1024 characters per net/rule name/pad number or component metadata string, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
       "No selection, layer change, navigation, Save, source export, design mutation or project/library service is requested. Local RPC bookkeeping, reviewed native identity initialization and possible empty pad-length singleton allocation remain incidental. Component enumeration reads existing footprint/device/font caches without fetching library data. Source review and offline tests are not current live validation."
     ];
   }
@@ -112990,6 +112997,20 @@ function dependenciesFor(format, source4) {
     return modeOrder === 0 ? left.specifier.localeCompare(right.specifier) : modeOrder;
   });
 }
+function parseUpstreamModuleDependencies(format, executionBytes) {
+  const key = `${DEPENDENCY_PARSE_POLICY}\0${format}\0${createHash35("sha256").update(executionBytes).digest("hex")}`;
+  const cached2 = dependencyParseCache.get(key);
+  if (cached2 !== void 0) {
+    return cached2;
+  }
+  const dependencies3 = Object.freeze(dependenciesFor(format, executionBytes.toString("utf8")).map((dependency) => Object.freeze({ ...dependency })));
+  const bytes2 = Buffer.byteLength(key) + Buffer.byteLength(JSON.stringify(dependencies3));
+  if (dependencyParseCache.size < MAX_DEPENDENCY_CACHE_ENTRIES && dependencyParseCacheBytes + bytes2 <= MAX_DEPENDENCY_CACHE_BYTES) {
+    dependencyParseCache.set(key, dependencies3);
+    dependencyParseCacheBytes += bytes2;
+  }
+  return dependencies3;
+}
 function sameSeal(info, seal) {
   return info.isFile() && info.dev === seal.dev && info.ino === seal.ino && info.mode === seal.mode && info.size === seal.size && info.mtimeMs === seal.mtimeMs && info.ctimeMs === seal.ctimeMs;
 }
@@ -113265,9 +113286,9 @@ async function captureReachableModule(current2, state2) {
     transform: execution.transform,
     url: currentUrl
   });
-  const dependencies3 = dependenciesFor(
+  const dependencies3 = parseUpstreamModuleDependencies(
     current2.format,
-    execution.bytes.toString("utf8")
+    execution.bytes
   );
   for (const dependency of dependencies3) {
     const key = resolutionKey(currentUrl, dependency.specifier, dependency.mode);
@@ -113419,7 +113440,7 @@ function serializeCapturedUpstreamModuleGraph(graph) {
   }
   return bytes2;
 }
-var MODULE_GRAPH_SCHEMA, SUPPORTED_SOURCE_EXTENSIONS, PINO_WORKER_OPTION, PINO_WORKER_TRANSFORM, PINO_LOGGER_CONSTRUCTION, SERIALIZED_GRAPH_SCHEMA, MAXIMUM_SERIALIZED_GRAPH_BYTES, sha256Schema, moduleGraphFingerprintSchema, serializedModuleSchema, serializedResolutionSchema, serializedGraphSchema, EsmResolutionAuthority;
+var MODULE_GRAPH_SCHEMA, SUPPORTED_SOURCE_EXTENSIONS, PINO_WORKER_OPTION, PINO_WORKER_TRANSFORM, PINO_LOGGER_CONSTRUCTION, DEPENDENCY_PARSE_POLICY, MAX_DEPENDENCY_CACHE_ENTRIES, MAX_DEPENDENCY_CACHE_BYTES, dependencyParseCache, dependencyParseCacheBytes, SERIALIZED_GRAPH_SCHEMA, MAXIMUM_SERIALIZED_GRAPH_BYTES, sha256Schema, moduleGraphFingerprintSchema, serializedModuleSchema, serializedResolutionSchema, serializedGraphSchema, EsmResolutionAuthority;
 var init_upstream_module_execution = __esm({
   "server/src/upstream-module-execution.ts"() {
     init_acorn();
@@ -113432,6 +113453,11 @@ var init_upstream_module_execution = __esm({
 `;
     PINO_WORKER_TRANSFORM = "easyeda-pro-control.disable-pino-worker.v2";
     PINO_LOGGER_CONSTRUCTION = "pino(pinoOpts)";
+    DEPENDENCY_PARSE_POLICY = "acorn-static-dependencies.v1";
+    MAX_DEPENDENCY_CACHE_ENTRIES = 2048;
+    MAX_DEPENDENCY_CACHE_BYTES = 2 * 1024 * 1024;
+    dependencyParseCache = /* @__PURE__ */ new Map();
+    dependencyParseCacheBytes = 0;
     SERIALIZED_GRAPH_SCHEMA = "easyeda-pro-control.serialized-module-graph.v1";
     MAXIMUM_SERIALIZED_GRAPH_BYTES = 16 * 1024 * 1024;
     sha256Schema = external_exports.string().regex(/^[a-f0-9]{64}$/u);
@@ -118322,6 +118348,16 @@ const integer=value=>{num(value);if(!Number.isInteger(value))bad();return value;
 const layer=value=>{integer(value);if(value<0||value>65535)bad();return value;};
 const bool=value=>{if(typeof value!=='boolean')bad();return value;};
 const text=(value,max,nullable=false)=>{if(value===null&&nullable)return value;if(typeof value!=='string'||value.length>max)bad();return value;};
+// PCB217199c8@7397863 clones attrsMap including own undefined; API021d155b@1426362 passes these fields to optional string getters.
+// Omit unavailable values, never coerce them to empty strings. Name is raw: native formula evaluation is separate at PCB4325200.
+const componentMetadata=row=>{
+ const attrs=plain(own(row,'attrsMap')),result={};
+ for(const [key,field] of [['Designator','designator'],['Name','name'],['Manufacturer','manufacturer'],['Manufacturer Part','manufacturerPart'],['Supplier','supplier'],['Supplier Part','supplierPart']]){
+  const d=Object.getOwnPropertyDescriptor(attrs,key);if(!d){if(key in attrs)bad();continue;}
+  if(!Object.hasOwn(d,'value'))bad();if(d.value!==undefined)result[field]=text(d.value,1024);
+ }
+ return result;
+};
 // Native Point may retain an optional _hashed cache; project only own x/y data without reading that cache or its getter.
 const point=value=>{if(!object(value))bad();const keys=Reflect.ownKeys(value);if(!keys.includes('x')||!keys.includes('y')||keys.some(key=>key!=='x'&&key!=='y'&&key!=='_hashed'))bad();return{x:num(own(value,'x')),y:num(own(value,'y'))};};
 const copyRows=value=>{
@@ -118333,7 +118369,7 @@ const copyRows=value=>{
   const identity={primitiveId:id,primitiveType:family,primitiveLock:bool(own(row,'locked'))};
   if(family==='Component'){
    const position=point(own(row,'position')),componentLayer=layer(own(row,'layerId'));if(![1,2].includes(componentLayer))bad();
-   rows.push({...identity,layer:componentLayer,x:position.x,y:position.y,rotation:num(own(row,'rotation'))});continue;
+   rows.push({...identity,layer:componentLayer,x:position.x,y:position.y,rotation:num(own(row,'rotation')),...componentMetadata(row)});continue;
   }
   const base={...identity,net:text(own(row,'net'),1024,true)};
   if(family==='Pad'){
