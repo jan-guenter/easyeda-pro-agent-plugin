@@ -518,6 +518,29 @@ void test("current PCB layer coverage preserves the separate legacy route and di
   }
 });
 
+void test("current PCB geometry adds narrow native routes without replacing legacy inventory or granting authority", () => {
+  const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
+    tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
+  for (const family of ["Line", "Arc", "Via"]) {
+    const method = `eda.pcb_Primitive${family}.getAll`;
+    const row = inventoryExtensionApiCoverage().find((entry) => entry.path === method); assert.ok(row);
+    assert.equal(row.status, "implemented-public-subset"); assert.equal(row.completeDeclaredContractSupported, false);
+    assert.equal(row.currentGenerationLiveValidation, "not-recorded"); assert.equal(row.runtimeAdmission, "not-granted-by-inventory");
+    assert.equal(row.routes.some((route) => route.tool === "easyeda_control_exact_read"), true);
+    const route = row.routes.find((entry) => entry.tool === "easyeda_control_pcb_geometry"); assert.ok(route);
+    assert.equal(route.implementation, "native-task-equivalent"); assert.deepEqual(route.documentTypes, [3]);
+    assert.equal(route.executionState, "available-with-runtime-guards"); assert.equal(route.validation, "offline-regression;current-live-unclaimed");
+    assert.match(route.scope, /loaded-view geometry/u); assert.match(route.scope, /No filters/u);
+    const request = route.inputDiscovery?.arguments["request"]; assert.ok(isRecord(request));
+    const discovered = queryOfflineApi(apiRequestSchema.parse(request)).result; assert.ok(isRecord(discovered));
+    assert.equal(discovered["total"], 1); assert.equal(discovered["invocationEnabledByDiscovery"], false);
+    const valid = queryOfflineApi(apiRequestSchema.parse({ action: "pcb-geometry-validate", query: { request: { method, arguments: {}, target } } })).result;
+    assert.ok(isRecord(valid)); assert.equal(valid["valid"], true); assert.equal(valid["executionAuthorized"], false);
+    const invalid = queryOfflineApi(apiRequestSchema.parse({ action: "pcb-geometry-validate", query: { request: { method, arguments: { layer: 1 }, target } } })).result;
+    assert.ok(isRecord(invalid)); assert.equal(invalid["valid"], false); assert.equal(invalid["executionAuthorized"], false);
+  }
+});
+
 void test("shortcut coverage keeps legacy and current-version routes distinct without design-context admission", () => {
   const row = inventoryExtensionApiCoverage().find((entry) => entry.path === "eda.sys_ShortcutKey.getShortcutKeys");
   assert.ok(row); assert.equal(row.status, "implemented-public-subset"); assert.equal(row.routes.length, 2);

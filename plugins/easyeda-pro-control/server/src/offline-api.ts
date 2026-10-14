@@ -14,6 +14,7 @@ import { queryOrdinaryLaunch, validateOrdinaryLaunchArguments } from "./ordinary
 import { currentPcbLayersQuerySchema, queryCurrentPcbLayers, validateCurrentPcbLayersArguments } from "./current-pcb-layers.ts";
 import { currentDisposableOpenQuerySchema, queryCurrentDisposableOpen, validateCurrentDisposableOpenArguments } from "./current-disposable-open.ts";
 import { currentPcbIdentitiesQuerySchema, queryCurrentPcbIdentities, validateCurrentPcbIdentitiesArguments } from "./current-pcb-identities.ts";
+import { currentPcbGeometryQuerySchema, queryCurrentPcbGeometry, validateCurrentPcbGeometryArguments } from "./current-pcb-geometry.ts";
 import { historicalAbandonmentRequestSchema } from "./historical-abandonment.ts";
 
 const ordinaryLaunchQuerySchema = z.object({ includeSchemas: z.boolean().default(false) }).strict();
@@ -41,6 +42,8 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("project-open-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("pcb-identities"), query: currentPcbIdentitiesQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("pcb-identities-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("pcb-geometry"), query: currentPcbGeometryQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("pcb-geometry-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("history"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("history-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("launch"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
@@ -51,7 +54,7 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
 
 export const offlineApiToolConfiguration = {
   title: "EasyEDA offline API reference and argument validation",
-  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity, local historical-abandonment, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
+  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, local historical-abandonment, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
   inputSchema: { request: apiRequestSchema },
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
 };
@@ -81,6 +84,8 @@ export function queryOfflineApi(request: z.infer<typeof apiRequestSchema>): { of
     case "project-open-validate": { result = validateCurrentDisposableOpenArguments(request.query.request); break; }
     case "pcb-identities": { result = queryCurrentPcbIdentities(request.query ?? {}); break; }
     case "pcb-identities-validate": { result = validateCurrentPcbIdentitiesArguments(request.query.request); break; }
+    case "pcb-geometry": { result = queryCurrentPcbGeometry(request.query ?? {}); break; }
+    case "pcb-geometry-validate": { result = validateCurrentPcbGeometryArguments(request.query.request); break; }
     case "history": {
       result = { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{
         action: "abandon-before-navigation", tool: "easyeda_control_history", effect: "local-historical-sidecar-publication",

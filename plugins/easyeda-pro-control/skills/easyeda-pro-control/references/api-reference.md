@@ -37,7 +37,7 @@ standalone Save capability. Follow the returned route and its exact scope.
 
 The current source inventory contains 774 distinct paths: 212 public subsets,
 29 native equivalents, no lifecycle-only methods, 82 implemented-but-blocked
-methods and 451 omissions. Its routes include 318 available with runtime guards,
+methods and 451 omissions. Its routes include 321 available with runtime guards,
 94 blocked and two partially blocked. These are implementation classifications,
 not connected validation counts; one method can have several routes.
 
@@ -239,6 +239,49 @@ combined evidence. No truncation or coercion. Native serializers allocate DTOs
 before projection; output bounds and deadlines do not cancel that work. Only
 IDs leave the adapter. No selection change, navigation, settings or Save is
 requested. Current connected validation remains pending.
+
+## PCB geometry on the current tuple
+
+Query `pcb-geometry` with `includeSchemas:true`, then validate the assembled
+request with `pcb-geometry-validate` and `query:{"request":...}`. Invoke
+`easyeda_control_pcb_geometry` with the validated request and authenticated
+`expectedFingerprint`. Use the same explicit project/branch/document/tab target
+as identity reads. The board must already be active; this tool never opens it.
+
+Methods are `eda.pcb_PrimitiveLine.getAll`, `eda.pcb_PrimitiveArc.getAll` and
+`eda.pcb_PrimitiveVia.getAll`, with empty `arguments` only. Results preserve
+native row order and contain plain data, not SDK objects or methods. Every row
+has `primitiveId`, `primitiveType`, `net` and `primitiveLock`. Null and empty
+net text remain distinct; neither proves resolved connectivity.
+
+| Family | Additional fields |
+|---|---|
+| Line | `layer`, `startX`, `startY`, `endX`, `endY`, `lineWidth` |
+| Arc | Line fields plus `arcAngle`, `interactiveMode` |
+| Via | `x`, `y`, `holeDiameter`, `diameter`, `viaType`, `designRuleBlindViaName`, `startLayer`, `endLayer`, `maskExpansionMode`, `topMaskExpansion`, `bottomMaskExpansion` |
+
+Lengths use mil from the data origin, which can differ from the displayed
+canvas origin. Arc angle uses degrees. Arc modes are native1/2, Via types0/1/2.
+The adapter preserves the native callback precision. It does not apply the
+public wrapper's Arc rounding or Via radius rounding before deriving diameter.
+Via mask fields are loaded model values, not proof of a stored custom override
+or fresh rule evaluation. Arc endpoints and angle omit center/radius/sweep;
+a full-circle case can project to zero `arcAngle`. Do not reconstruct a complete
+shape or derive an editing baseline from this projection.
+
+Two matching ordered projected samples retain the exact frame and receiver
+around each await. Omitted fields are not compared. Limits are256rows,
+256characters per ID,1024per net/rule name, scalar magnitude1e12 and384KiB.
+Signed zero, non-finite values, duplicates, unknown enum values, missing fields
+and oversized data refuse without truncation. The bounds and deadline do not
+cancel the native enumeration or serializer.
+
+Loaded views may omit saved records and include inherited or preview objects.
+These native equivalents establish neither saved membership, parent ownership,
+complete source, connectivity nor persistence. Filters, selected-ID geometry and
+other object families remain separate implementation work. No selection change,
+navigation, source export, settings change or Save is requested. Current
+connected geometry validation remains pending.
 
 ## Local historical abandonment
 

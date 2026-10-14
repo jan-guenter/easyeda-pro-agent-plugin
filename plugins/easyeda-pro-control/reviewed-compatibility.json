@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "3b7e218abdcc3aae1812954bdeeac0cbcdfcfce55f1ffc7ec07f85db5501fb98",
-      "fileCount": 335,
+      "sha256": "62588c03f06505e88a175b2ac1581658a6d685faebbae67f0b6a88a00550fc19",
+      "fileCount": 338,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -457,6 +457,21 @@
           "sha256": "1d1948e57595fb4341357579197a426f974eca91a69e6b071704a7095741a8ba"
         },
         {
+          "relativePath": "current-pcb-geometry-program.ts",
+          "bytes": 10771,
+          "sha256": "1f586c4f9fb4fab2f96d045de3f511a4d630e8d771a32bb756ea2918612ab255"
+        },
+        {
+          "relativePath": "current-pcb-geometry-runtime.ts",
+          "bytes": 3346,
+          "sha256": "fb182ff388bb1b09e4e48ed7f2f894eac5d2eca3be3bee77f9864ae64c5f8dbd"
+        },
+        {
+          "relativePath": "current-pcb-geometry.ts",
+          "bytes": 8856,
+          "sha256": "109374d4aae41ea8d0730c55e700796caf8549e59e69d0c2fecb7038e94a43e1"
+        },
+        {
           "relativePath": "current-pcb-identities-program.ts",
           "bytes": 9551,
           "sha256": "20d614a047bcd5e8f913df7d689337df484d84a129ad88a382c33147b075f503"
@@ -718,8 +733,8 @@
         },
         {
           "relativePath": "extension-api-coverage-routes.ts",
-          "bytes": 46696,
-          "sha256": "d68f04a015b164831ecf078fc80321f685247de4b9c52501036490bd41916fb4"
+          "bytes": 48363,
+          "sha256": "08ccab91c42497d3d132c02f13b37e79a582bd905bc5d88da7e632de5a66b20f"
         },
         {
           "relativePath": "extension-api-coverage.ts",
@@ -733,8 +748,8 @@
         },
         {
           "relativePath": "facade-mode.ts",
-          "bytes": 1233,
-          "sha256": "cf1f6b117ebb58cb7f9706d3da73abe57f16d2559a78abb8a3048de1525ade9f"
+          "bytes": 1267,
+          "sha256": "718af59999c333b34c9964f8c5b86f86755cf4b4f163ea81c22ada686d429837"
         },
         {
           "relativePath": "flat-display-binding.ts",
@@ -843,8 +858,8 @@
         },
         {
           "relativePath": "index.ts",
-          "bytes": 161326,
-          "sha256": "c268c7acf7c05579f1f6443f108d42b4f4132071cd74ae627badf5b9ff08ef7a"
+          "bytes": 163168,
+          "sha256": "1b9ffb03f91615d66a2e1be06c7a14d972163aab745ee1cae10272b748a68af5"
         },
         {
           "relativePath": "lease.ts",
@@ -1013,8 +1028,8 @@
         },
         {
           "relativePath": "offline-api.ts",
-          "bytes": 10099,
-          "sha256": "0efb66fe9368844202188acc312a7f6f731c69ad1f78ad38f747ad44fc9f9a78"
+          "bytes": 10667,
+          "sha256": "58cfaa7e03b558be608aeb346455f0d8ad4aa96c85b08530c871d0d233fe98aa"
         },
         {
           "relativePath": "offline-control.ts",
@@ -1686,7 +1701,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "1e1fca5731558d5da6bf63d499ab5c6085b9f6ef42c1cb6ca6ad4cd07071930b",
+      "sha256": "5f4c805c68ed6b805216413527b9d1f152b6b0564fa4794deca0f2bc8cb27c6f",
       "fileCount": 3,
       "files": [
         {
@@ -1696,19 +1711,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 6480271,
-          "sha256": "de7953523010d6a13cd4ef88be9917b9e4eb7cf36dc473f3386d8382113ca018"
+          "bytes": 6507579,
+          "sha256": "5b710d78194585aa47dc393b83a46934023b30cdf62ca2a7f51a981037cf8f2e"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 786360,
-          "sha256": "c945359988d3a71cf352ba30ceab93d7888b0b192d6e898f46c4e86c3aa91864"
+          "sha256": "053bc78d358a3a99390b0c6a8b057c4241a9309883976b5589e22b026c5b680e"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-10-14T05:48:31.725Z",
+  "reviewedAt": "2026-10-14T13:16:01.112Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

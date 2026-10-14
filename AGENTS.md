@@ -13,6 +13,53 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
+### Restarted054500 and current PCB geometry
+
+PR22 delivered054500 as main08c48555b8e4434d9e49acfe5a8ce0d53bd3dcc7,
+fulltree9fed42921de7e360ce67c384982032b9d682d90d identical to testeda829ccc.
+RequiredCI38519720580 and postmergeCI38520846788 passed all ten jobs.
+Fresh owner351497/parent349684/start217868126 runs exact installed054500 on
+Node24.18.0; old267049 is absent. Independent admission verifies1168files,
+22714754bytes,42directories,seven skills and exact modes with no extras or
+symlinks. Source335 fingerprint3b7e218abdcc3aae1812954bdeeac0cbcdfcfce55f1ffc7ec07f85db5501fb98;
+runtime3 fingerprint1e1fca5731558d5da6bf63d499ab5c6085b9f6ef42c1cb6ca6ad4cd07071930b.
+
+Supported local history abandonment of C10
+easyeda-20261013t111537z-e7df16d2 completed ONCE. Resultd21cb14870128efcb32183728e05776f6e687041c494fbffa9c8cb76453ccc16;
+sidecar5620bytes SHAe8deda145a52c5edc0f22efa77cc25dcb18d8da0d4bff21f3c4c1bc0ea90e599,
+body076b8e26eb53376f111efe859564d67ddae7ae59c4ff7a641f6db020c5a74d92.
+Independent maintained inspection passes all16artifacts, retained baseline and
+permanent claim. Original journal81a9dcd2 remains intact. This removes only the
+historical blocker; completion, process closure, authority and replay remain
+false. Never rerun the closed-symbol validation or rewrite its records.
+
+Original ordinary-startup-20261014-053200 inspected, then observe-application
+returned two absent samples. Supported abandon-supervision completed ONCE at
+2026-10-14T13:09:18.125Z, replyb32fabbf, without termination/design authority.
+New ordinary-startup-20261014-131200 launched ONCE: root25804,
+Jobceef96a9b9a34c53a3bc581bd580e780/helperaa22b7fca3ea4fc8b1cf0ffee8788f8c,
+launchedSha03807467649e4e7bd3854652616447fdfea2418e34a5516c4d7bc9212d1830f0.
+Actual054500 authenticates the current tuple with no drift or incomplete journal,
+status7cc22f0392a3dc9b75e3e7b1e8bb90cb09e1f74a59b819a2595b6325e0cc621f.
+Shellad7696de proves one active StartPage and no other tabs. Targeted disposable
+file was970d21b3/598016bytes before opening. The sole
+current-pcb-open-054500-20261014 returned current-open-outcome-unknown,
+projectDispatchConsumedtrue/documentfalse/orphantrue/hardStoptrue. Resultf0c433b4;
+02preflight-return81626d82 passes,03openproject-intentc78039e6 retained without
+acknowledgment. Never replay the request or its launch; no explicit Save/edit.
+KEEP facade351497 alive for retained-owner retirement. Computer Use failed
+before app access: node_repl sandboxCwd is not a local file URI. No UI action
+was sent. User asked to close EasyEDA normally without Save/Discard and keep
+Codex running; retirement must prove original root/Job exit and session closure.
+Do not install a new cache or restart while this original recovery is pending.
+Production and its record remain excluded. Source branchfeature/current-pcb-geometry
+adds three bounded native Line/Arc/Via getAll equivalents, empty arguments only.
+Loaded054500 remains unchanged while source work proceeds. Main/independent
+review accepts units, native callbacks, receiver/target checks, projection limits
+and full-circle/Via mask caveats. Five geometry and40integration focusedtests
+pass; types and scoped zero-warning lint pass. Candidate133000 build/release
+validation underway; it is not installed or live-validated.
+
 ### Restarted033000 and disposable PCB admission
 
 PR21 delivered033000 as main6d3b1780cc793f63a715fa6d5d6ac8b8d52f0f6e,
