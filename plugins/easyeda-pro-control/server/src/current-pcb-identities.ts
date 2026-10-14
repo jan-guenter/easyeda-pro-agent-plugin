@@ -11,11 +11,12 @@ export const CURRENT_PCB_IDENTITIES_MAX_SELECTED_IDS = 256;
 export const CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH = 256;
 export const CURRENT_PCB_IDENTITY_TYPE_METHOD = "eda.pcb_Primitive.getPrimitiveTypeByPrimitiveId";
 const collectionMethods = ["eda.pcb_SelectControl.getAllSelectedPrimitives_PrimitiveId",
-  "eda.pcb_PrimitiveLine.getAllPrimitiveId", "eda.pcb_PrimitiveArc.getAllPrimitiveId", "eda.pcb_PrimitiveVia.getAllPrimitiveId"] as const;
+  "eda.pcb_PrimitiveLine.getAllPrimitiveId", "eda.pcb_PrimitiveArc.getAllPrimitiveId", "eda.pcb_PrimitiveVia.getAllPrimitiveId",
+  "eda.pcb_PrimitiveComponent.getAllPrimitiveId", "eda.pcb_PrimitivePad.getAllPrimitiveId"] as const;
 const methods = [...collectionMethods, CURRENT_PCB_IDENTITY_TYPE_METHOD] as const;
 const targetSchema = currentPcbLayersRequestSchema.shape.target;
 const idSchema = z.string().min(1).max(CURRENT_PCB_IDENTITIES_MAX_ID_LENGTH);
-const families = ["selected", "Line", "Arc", "Via"] as const;
+const families = ["selected", "Line", "Arc", "Via", "Component", "Pad"] as const;
 export type CurrentPcbIdentityFamily = typeof families[number];
 export const currentPcbIdentitiesRequestSchema = z.discriminatedUnion("method", [
   z.object({ method: z.enum(collectionMethods), arguments: z.object({}).strict(), target: targetSchema }).strict(),
@@ -32,11 +33,11 @@ export const currentPcbIdentitiesResultSchema = z.object({ ok: z.literal(true), 
 
 const limitations = [
   "Exact active ordinary project-owned type-3 PCB only. The retained frame and local native receiver are rechecked around every await; native tab/type identity brackets each sample. This is not an atomic lock or proof against switching away and back between observations.",
-  "Selected IDs preserve the native selection array. Line, Arc and Via IDs preserve unfiltered native family enumeration order. These are loaded-view identities, which may include inherited, generated or in-progress objects; no root ownership, persisted membership, geometry, connectivity or saved-file claim is made.",
+  "Selected IDs preserve the native selection array. Line, Arc, Via, Component and Pad IDs preserve unfiltered native family enumeration order. These are loaded-view identities, which may include inherited, generated or in-progress objects; no root ownership, persisted membership, geometry, connectivity or saved-file claim is made. Pad IDs do not distinguish free pads from component pads or prove parent associations.",
   "Positive type lookup accepts one existing ID in exactly one of Line, Arc or Via. Missing IDs, other families, duplicate identities and cross-family collisions refuse; no undefined or absence claim is fabricated. The public type method is an empty body and is not invoked.",
   "Only empty collection arguments are supported. Fixed local native getter topics replace mutable public active-tab routing; these are native task equivalents, not complete public-method execution or return parity. Native family getters internally serialize view data, but only IDs leave this adapter.",
   "Two complete ordered ID samples must match. At most 20000 IDs per family, 256 selected IDs, 256 characters per ID and 393216 UTF-8 bytes total evidence. The byte bound can be reached before the count bound. Output bounds do not bound or cancel preceding vendor enumeration or serialization. Malformed, duplicate, incomplete and oversized results refuse without truncation.",
-  "No selection change, layer change, geometry edit, navigation, Save, source export, project service or persistence operation is requested. Local RPC bookkeeping and reviewed native identity initialization remain incidental. Source review and offline tests do not establish current live validation.",
+  "No selection change, layer change, geometry edit, navigation, Save, source export, project service or persistence operation is requested. Local RPC bookkeeping, reviewed native identity initialization and possible empty pad-length singleton allocation remain incidental. Component enumeration reads existing footprint/device/font caches; it does not fetch or enrich library data. Source review and offline tests do not establish current live validation.",
 ] as const;
 
 export function currentPcbIdentityFamilies(request: CurrentPcbIdentitiesRequest): readonly CurrentPcbIdentityFamily[] {
@@ -45,6 +46,8 @@ export function currentPcbIdentityFamilies(request: CurrentPcbIdentitiesRequest)
     case "eda.pcb_PrimitiveLine.getAllPrimitiveId": { return ["Line"]; }
     case "eda.pcb_PrimitiveArc.getAllPrimitiveId": { return ["Arc"]; }
     case "eda.pcb_PrimitiveVia.getAllPrimitiveId": { return ["Via"]; }
+    case "eda.pcb_PrimitiveComponent.getAllPrimitiveId": { return ["Component"]; }
+    case "eda.pcb_PrimitivePad.getAllPrimitiveId": { return ["Pad"]; }
     case CURRENT_PCB_IDENTITY_TYPE_METHOD: { return ["Line", "Arc", "Via"]; }
     default: { throw new Error("Unsupported current PCB identity method."); }
   }
@@ -92,7 +95,7 @@ export function validateCurrentPcbIdentitiesResult(input: unknown, raw: unknown)
   const extra: Record<string, unknown> = {};
   if (request.method === CURRENT_PCB_IDENTITY_TYPE_METHOD) {
     const match = observations.find((entry) => entry.ids.includes(request.arguments.id));
-    if (match === undefined || match.family === "selected") { throw new Error("PCB identity is not in an observed supported family."); }
+    if (match === undefined || !["Line", "Arc", "Via"].includes(match.family)) { throw new Error("PCB identity is not in an observed supported family."); }
     value = match.family;
     extra["familyObservations"] = observations;
   } else {

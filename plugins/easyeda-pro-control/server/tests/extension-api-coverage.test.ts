@@ -479,6 +479,7 @@ void test("PCB type lookup coverage exposes the native classification subset ins
   assert.deepEqual(current.documentTypes, [3]); assert.equal(current.executionState, "available-with-runtime-guards");
   assert.equal(current.validation, "offline-regression;current-live-unclaimed");
   assert.match(current.scope, /positive unique membership/u); assert.match(current.scope, /loaded views/u);
+  assert.match(current.scope, /Type lookup admits only a positive unique membership in Line\/Arc\/Via, not Component\/Pad/u);
   assert.deepEqual(current.inputDiscovery?.arguments, { request: { action: "pcb-identities", query: { method: row.path, includeSchemas: true } } });
 });
 
@@ -521,7 +522,7 @@ void test("current PCB layer coverage preserves the separate legacy route and di
 void test("current PCB geometry adds narrow native routes without replacing legacy inventory or granting authority", () => {
   const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
     tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
-  for (const family of ["Line", "Arc", "Via"]) {
+  for (const family of ["Line", "Arc", "Via", "Component", "Pad"]) {
     const method = `eda.pcb_Primitive${family}.getAll`;
     const row = inventoryExtensionApiCoverage().find((entry) => entry.path === method); assert.ok(row);
     assert.equal(row.status, "implemented-public-subset"); assert.equal(row.completeDeclaredContractSupported, false);
@@ -538,6 +539,24 @@ void test("current PCB geometry adds narrow native routes without replacing lega
     assert.ok(isRecord(valid)); assert.equal(valid["valid"], true); assert.equal(valid["executionAuthorized"], false);
     const invalid = queryOfflineApi(apiRequestSchema.parse({ action: "pcb-geometry-validate", query: { request: { method, arguments: { layer: 1 }, target } } })).result;
     assert.ok(isRecord(invalid)); assert.equal(invalid["valid"], false); assert.equal(invalid["executionAuthorized"], false);
+    if (family === "Component" || family === "Pad") {
+      const idMethod = `eda.pcb_Primitive${family}.getAllPrimitiveId`;
+      const identityRow = inventoryExtensionApiCoverage().find((entry) => entry.path === idMethod); assert.ok(identityRow);
+      assert.equal(identityRow.status, "implemented-public-subset"); assert.equal(identityRow.completeDeclaredContractSupported, false);
+      assert.equal(identityRow.currentGenerationLiveValidation, "not-recorded");
+      assert.equal(identityRow.routes.some((entry) => entry.tool === "easyeda_control_exact_read"), true);
+      const identityRoute = identityRow.routes.find((entry) => entry.tool === "easyeda_control_pcb_identities"); assert.ok(identityRoute);
+      assert.equal(identityRoute.implementation, "native-task-equivalent"); assert.deepEqual(identityRoute.documentTypes, [3]);
+      assert.equal(identityRoute.executionState, "available-with-runtime-guards");
+      assert.equal(identityRoute.validation, "offline-regression;current-live-unclaimed");
+      const identityRequest = identityRoute.inputDiscovery?.arguments["request"]; assert.ok(isRecord(identityRequest));
+      const identityDiscovered = queryOfflineApi(apiRequestSchema.parse(identityRequest)).result; assert.ok(isRecord(identityDiscovered));
+      assert.equal(identityDiscovered["total"], 1); assert.equal(identityDiscovered["invocationEnabledByDiscovery"], false);
+      const identityValid = queryOfflineApi(apiRequestSchema.parse({ action: "pcb-identities-validate", query: {
+        request: { method: idMethod, arguments: {}, target },
+      } })).result;
+      assert.ok(isRecord(identityValid)); assert.equal(identityValid["valid"], true); assert.equal(identityValid["executionAuthorized"], false);
+    }
   }
 });
 

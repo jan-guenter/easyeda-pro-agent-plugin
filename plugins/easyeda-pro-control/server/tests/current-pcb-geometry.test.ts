@@ -9,7 +9,8 @@ import { decodeExactReadEnvelope } from "../src/exact-readers.ts";
 
 const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32), documentUuid: "c".repeat(16),
   tabId: `${"c".repeat(16)}@${"a".repeat(64)}` };
-const methods = ["eda.pcb_PrimitiveLine.getAll", "eda.pcb_PrimitiveArc.getAll", "eda.pcb_PrimitiveVia.getAll"] as const;
+const methods = ["eda.pcb_PrimitiveLine.getAll", "eda.pcb_PrimitiveArc.getAll", "eda.pcb_PrimitiveVia.getAll",
+  "eda.pcb_PrimitiveComponent.getAll", "eda.pcb_PrimitivePad.getAll"] as const;
 function inputFor(method: typeof methods[number] = methods[0]): CurrentPcbGeometryRequest {
   return parseCurrentPcbGeometryRequest({ method, arguments: {}, target });
 }
@@ -18,7 +19,11 @@ const track = { globalIndex: "line-b", net: "MixedCase", locked: false, layerId:
 const defaults = { Line: [track, { ...track, globalIndex: "line-a", net: null, locked: true }],
   Arc: [{ ...track, globalIndex: "arc-a", arcAngle: 45.1234567, arcType: 1 }],
   Via: [{ globalIndex: "via-a", net: "", locked: true, center: { x: 1.234567, y: -2 }, holeRadius: 5.123456,
-    radius: 10.123456, type: 0, name: null, startLayer: 1, endLayer: 2, expansion: 1, topExpansion: 0.15, bottomExpansion: -0.25 }] };
+    radius: 10.123456, type: 0, name: null, startLayer: 1, endLayer: 2, expansion: 1, topExpansion: 0.15, bottomExpansion: -0.25 }],
+  Component: [{ globalIndex: "component-b", locked: false, layerId: 1, position: { x: 10.1234567, y: -20 }, rotation: -45.1234567 },
+    { globalIndex: "component-a", locked: true, layerId: 2, position: { x: -30, y: 40 }, rotation: 180 }],
+  Pad: [{ globalIndex: "pad-b", locked: true, net: "MixedCase", layerId: 12, num: "A1", center: { x: 1.1234567, y: 2 }, rotation: 45.1234567, plated: true, padTypeAspect: 0 },
+    { globalIndex: "pad-a", locked: false, net: null, layerId: 1, num: "", center: { x: -3, y: 4 }, rotation: -90, plated: false, padTypeAspect: 2 }] };
 interface Options { before?: string; beforeChild?: string; afterCall?: string; input?: CurrentPcbGeometryRequest; fastDeadline?: boolean; }
 function environment(options: Options = {}): { run: () => Promise<unknown>; evaluateChild: (source: string) => unknown } {
   const input = options.input ?? inputFor();
@@ -26,13 +31,14 @@ function environment(options: Options = {}): { run: () => Promise<unknown>; eval
     assert.equal(timeout, 0);
     if (topic === "getTabIdAndDocType") { assert.equal(arg, undefined); }
     else {
-      assert.ok(topic === "pcb/extensionAPI/track-getAll" || topic === "pcb/extensionAPI/arc-getAll" || topic === "pcb/extensionAPI/via-getAll");
+      assert.ok(topic === "pcb/extensionAPI/track-getAll" || topic === "pcb/extensionAPI/arc-getAll" || topic === "pcb/extensionAPI/via-getAll" ||
+        topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll");
       assert.ok(arg !== null && typeof arg === "object"); assert.deepEqual(Object.keys(arg), []);
     }
   } });
   runInContext(`globalThis.rows=${JSON.stringify(defaults)};globalThis.calls=0;globalThis.dataReads=0;globalThis.getterReads=0;
 globalThis.identity={tabId:${JSON.stringify(input.target.tabId)},docType:3};
-globalThis.topics={'pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via'};
+globalThis.topics={'pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad'};
 class Bus {async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus)throw new Error('PRIVATE_RECEIVER');checkCall(topic,arg,timeout);calls++;await Promise.resolve();if(topic!=='getTabIdAndDocType')dataReads++;${options.afterCall ?? ""}return {message:topic==='getTabIdAndDocType'?identity:rows[topics[topic]],bridge:undefined,source:undefined};}}
 globalThis.MSG_BUS_PCB={messageBus:new Bus()};${options.beforeChild ?? ""}`, childContext, { timeout: 1000 });
   const child: unknown = runInContext("globalThis", childContext);
@@ -81,15 +87,21 @@ void test("current geometry copies ordered cross-realm native fields without pub
     [{ primitiveId: "via-a", primitiveType: "Via", net: "", primitiveLock: true, x: 1.234567, y: -2,
       holeDiameter: 10.246912, diameter: 20.246912, viaType: 0, designRuleBlindViaName: null,
       startLayer: 1, endLayer: 2, maskExpansionMode: 1, topMaskExpansion: 1.5, bottomMaskExpansion: -2.5 }],
+    [{ primitiveId: "component-b", primitiveType: "Component", primitiveLock: false, layer: 1, x: 10.1234567, y: -20, rotation: -45.1234567 },
+    { primitiveId: "component-a", primitiveType: "Component", primitiveLock: true, layer: 2, x: -30, y: 40, rotation: 180 }],
+    [{ primitiveId: "pad-b", primitiveType: "Pad", primitiveLock: true, net: "MixedCase", layer: 12, padNumber: "A1",
+      x: 1.1234567, y: 2, rotation: 45.1234567, metallization: true, padType: 0 },
+    { primitiveId: "pad-a", primitiveType: "Pad", primitiveLock: false, net: null, layer: 1, padNumber: "",
+      x: -3, y: 4, rotation: -90, metallization: false, padType: 2 }],
   ];
   for (const [index, method] of methods.entries()) {
     const input = inputFor(method);
     const fixture = environment({ input,
-      beforeChild: "class Point {constructor(p){this.x=p.x;this.y=p.y;}get hashed(){getterReads++;throw new Error('PRIVATE_MUTATOR');}}rows.Via[0].center=new Point(rows.Via[0].center);for(const family of Object.values(rows))for(const row of family)Object.defineProperty(row,'unprojected',{get(){getterReads++;throw new Error('PRIVATE_EXTRA');}});" });
+      beforeChild: "class Point {constructor(p){this.x=p.x;this.y=p.y;}get hashed(){getterReads++;throw new Error('PRIVATE_MUTATOR');}}rows.Via[0].center=new Point(rows.Via[0].center);rows.Component[0].position=new Point(rows.Component[0].position);rows.Pad[0].center=new Point(rows.Pad[0].center);rows.Pad[1].holeAspect=null;rows.Pad[1].holeRotation=NaN;for(const family of Object.values(rows))for(const row of family)Object.defineProperty(row,'unprojected',{get(){getterReads++;throw new Error('PRIVATE_EXTRA');}});" });
     const result = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await fixture.run()));
     assert.deepEqual(result["value"], expected[index]); assert.equal(fixture.evaluateChild("getterReads"), 0);
     assert.equal(fixture.evaluateChild("calls"), 6); assert.equal(fixture.evaluateChild("dataReads"), 2);
-    assert.deepEqual(result["units"], { linear: "mil", arcAngle: "degrees" });
+    assert.deepEqual(result["units"], { linear: "mil", arcAngle: "degrees", rotation: "degrees" });
     for (const field of ["cadAuthority", "persistenceVerified", "sourceMembershipVerified"]) { assert.equal(result[field], false); }
   }
 });
@@ -101,11 +113,11 @@ void test("current geometry schemas limit input and retain empty collection and 
     { ...input, method: "eda.pcb_PrimitiveLine.get" }, { ...input, target: { ...target, tabId: "wrong" } }]) {
     assert.throws(() => buildCurrentPcbGeometryProgram(invalid)); assert.equal(validateCurrentPcbGeometryArguments(invalid)["valid"], false);
   }
-  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 3);
+  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 5);
   assert.match(JSON.stringify(queryCurrentPcbGeometry({ method: methods[0], includeSchemas: true })), /inputSchema/u);
   for (const method of methods) {
     const request = inputFor(method);
-    const fixture = environment({ input: request, beforeChild: "rows={Line:[],Arc:[],Via:[]};" });
+    const fixture = environment({ input: request, beforeChild: "rows={Line:[],Arc:[],Via:[],Component:[],Pad:[]};" });
     const emptyResult = validateCurrentPcbGeometryResult(request, decodeExactReadEnvelope(await fixture.run()));
     assert.deepEqual(emptyResult["value"], []);
   }
@@ -139,6 +151,28 @@ void test("current geometry rejects malformed scalars, native accessors, duplica
     await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" }); assert.equal(fixture.evaluateChild("getterReads"), 0);
   }
   await assert.rejects(environment({ input: inputFor(methods[1]), beforeChild: "rows.Arc[0].arcType=3;" }).run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+});
+
+void test("current Component and Pad projections refuse invalid required fields without inspecting omitted shape or library data", async () => {
+  for (const method of [methods[3], methods[4]]) {
+    const input = inputFor(method);
+    const fixture = environment({ input, beforeChild: "for(const [row,key] of [[rows.Component[0],'attrsMap'],[rows.Component[0],'net'],[rows.Component[0],'pads'],[rows.Pad[0],'padRule'],[rows.Pad[0],'holeOffset']])Object.defineProperty(row,key,{get(){getterReads++;throw new Error('PRIVATE_OMITTED');}});" });
+    const raw: unknown = decodeExactReadEnvelope(await fixture.run());
+    validateCurrentPcbGeometryResult(input, raw);
+    assert.equal(fixture.evaluateChild("getterReads"), 0);
+    assert.ok(raw !== null && typeof raw === "object" && "rows" in raw && Array.isArray(raw.rows));
+    const row: unknown = raw.rows[0]; assert.ok(row !== null && typeof row === "object");
+    const invalid = method === methods[3] ? { ...row, layer: 12 } : { ...row, padType: 3 };
+    assert.throws(() => validateCurrentPcbGeometryResult(input, { ...raw, rows: [invalid] }));
+  }
+  for (const [method, beforeChild] of [[methods[3], "rows.Component[0].layerId=12;"], [methods[3], "rows.Component[0].position.x=NaN;"],
+    [methods[3], "delete rows.Component[0].rotation;"], [methods[4], "rows.Pad[0].layerId=3;"],
+    [methods[4], "rows.Pad[0].padTypeAspect=3;"], [methods[4], "rows.Pad[0].plated=1;"],
+    [methods[4], "rows.Pad[0].net=undefined;"], [methods[4], "rows.Pad[0].num=undefined;"]] as const) {
+    await assert.rejects(environment({ input: inputFor(method), beforeChild }).run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  }
+  await assert.rejects(environment({ input: inputFor(methods[4]), afterCall: "if(dataReads===2)rows.Pad[0].rotation++;" }).run(),
+    { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
 });
 
 void test("current geometry refuses stable-ID geometry drift, target drift and retained receiver changes", async () => {

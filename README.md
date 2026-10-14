@@ -19,7 +19,13 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Update `0.3.0+codex.20261014150000` fixes the disposable opener and current PCB
+Candidate `0.3.0+codex.20261014163000` adds unfiltered Component/Pad IDs and
+basic placement/state reads to the current PCB tools. Component libraries,
+child mappings and Pad shapes/holes/rules remain omitted with concrete reasons.
+These are bounded loaded-view projections, not complete public SDK objects or
+writer support. See [scope and backlog](docs/current-pcb-component-pad-release-2026-10-14.md).
+
+Previous update `0.3.0+codex.20261014150000` fixes the disposable opener and current PCB
 readers rejecting EasyEDA's ordinary project/tab URL fragments. The opener
 accepts only target-bound transitions at its owned navigation boundary; reads
 retain exact URL equality. Failed opening now retains bounded phase/stage

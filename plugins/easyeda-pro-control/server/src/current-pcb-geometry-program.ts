@@ -3,14 +3,15 @@ import { CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_NUMBER, CURREN
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
 import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
 
-/** Current API021d155b / UI3823ed6e / PCB217199c8 only. The three native
- * serializers are the same fixed ones used by current identity enumeration.
+/** Current API021d155b / UI3823ed6e / PCB217199c8 only. The native
+ * serializers are the same ones used by current identity enumeration.
  * Copy own scalar fields only; native Point prototypes also contain mutators.
  */
 export function buildCurrentPcbGeometryProgram(input: unknown): string {
   const request = parseCurrentPcbGeometryRequest(input);
   const family = currentPcbGeometryFamily(request);
-  const topics = { Line: "pcb/extensionAPI/track-getAll", Arc: "pcb/extensionAPI/arc-getAll", Via: "pcb/extensionAPI/via-getAll" } as const;
+  const topics = { Line: "pcb/extensionAPI/track-getAll", Arc: "pcb/extensionAPI/arc-getAll", Via: "pcb/extensionAPI/via-getAll",
+    Component: "pcb/extensionAPI/component-getAll", Pad: "pcb/extensionAPI/pad-getAll" } as const;
   return `let timer,clear;
 try{
 const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)},family=${JSON.stringify(family)},topic=${JSON.stringify(topics[family])};let expired=false;
@@ -68,8 +69,18 @@ const copyRows=value=>{
  const rows=[],seen=new Set();
  for(let i=0;i<n;i++){
   const row=plain(own(value,String(i))),id=text(own(row,'globalIndex'),256);if(id.length===0||seen.has(id))bad();seen.add(id);
-  const base={primitiveId:id,primitiveType:family,net:text(own(row,'net'),1024,true),primitiveLock:bool(own(row,'locked'))};
-  if(family==='Via'){
+  const identity={primitiveId:id,primitiveType:family,primitiveLock:bool(own(row,'locked'))};
+  if(family==='Component'){
+   const position=point(own(row,'position')),componentLayer=layer(own(row,'layerId'));if(![1,2].includes(componentLayer))bad();
+   rows.push({...identity,layer:componentLayer,x:position.x,y:position.y,rotation:num(own(row,'rotation'))});continue;
+  }
+  const base={...identity,net:text(own(row,'net'),1024,true)};
+  if(family==='Pad'){
+   const center=point(own(row,'center')),padLayer=layer(own(row,'layerId')),padType=integer(own(row,'padTypeAspect'));
+   if(![1,2,12].includes(padLayer)||![0,1,2].includes(padType))bad();
+   rows.push({...base,layer:padLayer,padNumber:text(own(row,'num'),1024),x:center.x,y:center.y,rotation:num(own(row,'rotation')),
+    metallization:bool(own(row,'plated')),padType});
+  }else if(family==='Via'){
    const center=point(own(row,'center')),viaType=integer(own(row,'type'));if(![0,1,2].includes(viaType))bad();
    rows.push({...base,x:center.x,y:center.y,holeDiameter:num(num(own(row,'holeRadius'))*2),diameter:num(num(own(row,'radius'))*2),viaType,
     designRuleBlindViaName:text(own(row,'name'),1024,true),startLayer:layer(own(row,'startLayer')),endLayer:layer(own(row,'endLayer')),

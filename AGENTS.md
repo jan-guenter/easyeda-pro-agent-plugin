@@ -13,7 +13,66 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Restarted133000, opening diagnostics and ordinary URL handling
+### Restarted150000, focused disposable opening
+
+PR24 delivered150000 as main0ef07908e1696d9def3361ae42a3618a3350e3c8;
+fulltree929f4e5bb2712e0c34d23959009c504bdfd6b0b6/package
+d05858fa737373abe0316f1b89616deddffaacf9 equal tested5950f98. Required
+CI38587520735 and postmerge38589588787 passed all ten jobs. Delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/24#issuecomment-6171982042.
+Fresh facade500624/parent498937/start218821578 runs exact installed150000 and
+Node24.18.0; old425339 absent. Independent admission verifies1177files,
+22840484bytes,42directories,seven skills and exact modes without extras/links.
+Source3402093bf4e701faba8f182fe9642a243d3897e9f84086b0dcd979f90f992715d36,
+runtime3d21b500e0cbe2d6786661767fcf98b91a6b8e1bf2f1f6e3ae2603b1463d088f8.
+
+Original ordinary-startup-20261014-131200 inspected, then supported
+abandon-supervision completed ONCE at2026-10-14T15:46:48.267Z after two absent
+samples. Resultf206cdee53b1bce2a035dca68b2e879c569b3d5584403226a8e4b58136c0e24b.
+This relinquishes supervision, not termination or design proof. Never repeat.
+Retired current-pcb-open-054500-20261014 journal remains exact6bc6799d; no replay.
+Selected disposable fixture remains970d21b3/598016bytes before new startup.
+New ordinary-startup-150000-20261014 launched ONCE, root35936,
+Job40215e14a93549249844b94556091af5/helper8e8353040c4a4ee89d0e0cf57dec68f6.
+Launch digest5aad406e3e48b33d0f1998924253b46b832a717d00f203d2d6950ff7ccd2f40f;
+reply8533b418f57f3807c57649dea118a798e393e77404516d3e33f06e2ec73b5ace.
+Authenticated status completed, replyb121005fc6372d3b972abf97302d42529a6935cb87160f8bb8fb01120c9070af;
+loaderded07x99dcxb504/67methods, no drift or incomplete operations. Shell
+observation09452a61 completed: one container/one active StartPage/no other tabs.
+New disposable opening current-pcb-open-150000-20261014 dispatched ONCE in
+cell23 against exact970d21b3 fixture and PCB463c2770e47a25bc. It stopped as
+current-open-outcome-unknown: project consumed/document not consumed,
+orphan/hardStop true. Reply295582223824721abb19d87d98b4f63c06b6a59fdb24f520768a018260b341b5.
+Diagnostic: open-project/decode-result/upstream-failure, nativeStage/code null.
+No explicit Save; unknown normal opening effects remain accepted. Never replay.
+Original facade500624 retains ownership. ComputerUse list_windows failed before
+execution with sandboxCwd not a local file URI; the private working path is omitted.
+User has been asked to close EasyEDA normally without Save/Discard and keep
+Codex running. Retire this exact attempt only after retained root/Job and
+session closure proof. No close or retirement has completed yet.
+Keep this facade alive through any later uncertain navigation. Production and
+its record remain excluded. Candidate163000 implements four bounded
+Component/Pad ID/basic-placement routes in the existing tools, with research
+and concrete omissions in docs/current-pcb-component-pad-research-2026-10-14.md
+and its release report. Existing positive type lookup remains Line/Arc/Via.
+There are325guarded routes (four added),94blocked and2partial;774distinct
+method statuses unchanged. Focused readers13/13 and coverage/registration35/35
+pass. Full types and zero-warning lint pass. Bridge424/424, dependency
+signatures151/attestations40/audit0, sanitizer, repository/privacy and seven
+packaged/official skill validators pass. Existing full verification, CI and
+publication remain pending; installation must wait for retained retirement.
+No new reader is live-validated. Old runtime150000 remains loaded unchanged.
+Candidate163000 main/independent source review accepts all four readers and
+optional fixed upstreamCategory diagnostics; old journals remain compatible.
+Source340801f3e0eddbfcb75640a76fc54849caffe9eff39637731ae7e297300fbf40d30,
+runtime3fb068946725e3bb32e9a8b88e1533d59e9efde261d52674ae4ae6c7f4aafb120;
+all external pins unchanged. Full existing local verification found stale
+bundled-startup catalog counts5/3, now corrected to7/5 only. Independent review
+confirms all no-upstream/socket/authority checks unchanged; focused startup1/1
+passes. Original full run continues with that failure retained, not acceptance;
+the exact corrected payload still requires complete GitHub CI before merge.
+
+### Historical restarted133000, opening diagnostics and ordinary URL handling
 
 PR23 delivered133000 as protected main50a952df28670885a0b554aa22076631b9483365.
 Tested and merged full tree5f2df2422c41618edf2799f5e9a4dcfcec096dbe match.

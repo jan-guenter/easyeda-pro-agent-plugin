@@ -84,7 +84,10 @@ Newer snapshots retain `failureDiagnostic` in the stopped operation and a
 managed `failure-diagnostic` artifact. It contains the operation `phase`, last
 `hostStage`, fixed `category`, and nullable `nativeStage`/`nativeCode`. Unknown
 exceptions remain `unknown`; raw messages, stacks and private values are not
-returned. `native-timeout` and `bridge-timeout` remain unsettled execution, not
+returned. When recognized, optional `upstreamCategory` retains one of the seven
+fixed host categories, such as `native-api-error` or `invalid-envelope`. Older
+journals can omit it; never infer a missing subtype from a later release.
+`native-timeout` and `bridge-timeout` remain unsettled execution, not
 proof of cancellation. A stage identifies where observation stopped, not which
 file effects occurred or whether navigation succeeded. Inspect the original
 operation instead of repeating it to obtain a better error.
