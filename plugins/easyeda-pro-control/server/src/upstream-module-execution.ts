@@ -95,6 +95,11 @@ const PINO_WORKER_OPTION = `        ...(config.NODE_ENV !== 'production'
 const PINO_WORKER_TRANSFORM =
   "easyeda-pro-control.disable-pino-worker.v2";
 const PINO_LOGGER_CONSTRUCTION = "pino(pinoOpts)";
+const DEPENDENCY_PARSE_POLICY = "acorn-static-dependencies.v1";
+const MAX_DEPENDENCY_CACHE_ENTRIES = 2048;
+const MAX_DEPENDENCY_CACHE_BYTES = 2 * 1024 * 1024;
+const dependencyParseCache = new Map<string, readonly ModuleDependency[]>();
+let dependencyParseCacheBytes = 0;
 const SERIALIZED_GRAPH_SCHEMA =
   "easyeda-pro-control.serialized-module-graph.v1";
 export const MAXIMUM_SERIALIZED_GRAPH_BYTES = 16 * 1024 * 1024;
@@ -260,6 +265,30 @@ function dependenciesFor(
       ? left.specifier.localeCompare(right.specifier)
       : modeOrder;
   });
+}
+
+/** Reuse only immutable syntax-derived specifiers, never filesystem resolution
+ * or admission. The key comes from the actual execution bytes, not a caller's
+ * claimed digest. Every graph capture still reads/hashes files and resolves all
+ * edges with its current package, path, ownership and seal checks.
+ */
+export function parseUpstreamModuleDependencies(
+  format: SupportedModuleFormat,
+  executionBytes: Buffer,
+): readonly ModuleDependency[] {
+  const key = `${DEPENDENCY_PARSE_POLICY}\0${format}\0${createHash("sha256").update(executionBytes).digest("hex")}`;
+  const cached = dependencyParseCache.get(key);
+  if (cached !== undefined) { return cached; }
+  // A thrown parse never inserts a result. Neither source nor AST is retained.
+  const dependencies = Object.freeze(dependenciesFor(format, executionBytes.toString("utf8"))
+    .map((dependency) => Object.freeze({ ...dependency })));
+  const bytes = Buffer.byteLength(key) + Buffer.byteLength(JSON.stringify(dependencies));
+  // Decline new entries when full rather than evict a hot graph during a scan.
+  if (dependencyParseCache.size < MAX_DEPENDENCY_CACHE_ENTRIES && dependencyParseCacheBytes + bytes <= MAX_DEPENDENCY_CACHE_BYTES) {
+    dependencyParseCache.set(key, dependencies);
+    dependencyParseCacheBytes += bytes;
+  }
+  return dependencies;
 }
 
 function sameSeal(info: Awaited<ReturnType<Awaited<ReturnType<typeof open>>["stat"]>>, seal: PathSeal): boolean {
@@ -716,9 +745,9 @@ async function captureReachableModule(
     transform: execution.transform,
     url: currentUrl,
   });
-  const dependencies = dependenciesFor(
+  const dependencies = parseUpstreamModuleDependencies(
     current.format,
-    execution.bytes.toString("utf8"),
+    execution.bytes,
   );
   for (const dependency of dependencies) {
     const key = resolutionKey(currentUrl, dependency.specifier, dependency.mode);

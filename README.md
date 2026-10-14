@@ -19,7 +19,16 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261014201000` adds retained-owner window observation and
+Candidate `0.3.0+codex.20261014213000` adds six optional raw Component metadata
+fields to existing PCB `get`/`getAll` reads: designator, name, manufacturer,
+manufacturer part, supplier and supplier part. Empty strings and name formulas
+are preserved; unavailable values stay omitted. This is loaded-view metadata,
+not verified part identity, BOM export, component-pad ownership or writer support.
+It also caches immutable dependency-parse results for unchanged upstream bytes;
+fresh file hashing and graph validation remain mandatory on every admission.
+See [scope and remaining work](docs/current-component-metadata-release-2026-10-14.md).
+
+Published update `0.3.0+codex.20261014201000` adds retained-owner window observation and
 one-shot normal application closure to `easyeda_control_launch`. It uses the
 original Windows helper and process Job, without foreground input or Computer
 Use. It never selects Save/Discard, forces exit or repeats an uncertain close.

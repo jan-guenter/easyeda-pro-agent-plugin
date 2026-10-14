@@ -13,7 +13,111 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Restarted190000; retained-owner normal-close implementation
+### Restarted201000; disposable live check in progress
+
+Fresh facade750542/parent748651/start220608550 loads installed201000 on pinned
+Node24.18. Read-only admission matches all1177files/22960951bytes/42directories/
+seven skills and inventoryc253e124, source34066633a7a/runtime3f1b6a1c0. Old732783
+is absent. Prior completed opening099e6fa7 and terminationf0ac7c02 remain exact.
+Postmerge CI38633211844 passed all ten jobs on the same tested tree.
+
+Ordinary-startup-201000-20261014 launched ONCE, retained root31928,
+Job430029c7304d4db8a11788107902748f/helper308a58a7589a490ebfecba3c380b3f2e,
+launchedSha25674ab313c5b404a81bf9b320341fd8e8711b59243a647b7a88f8b90d242c51649.
+Status13 authenticated dispatcher ded07x99dcxb504 on EasyEDA3.2.206 and the
+current pinned API/PCB/UI tuple; incompleteOperations is empty. Context18
+observed Start Page/no project. Disposable opening current-pcb-open-201000-20261014
+completed in functions cell19 with exact target native identity, nohardStop/
+orphan and terminal artifact4933cddbbe. Both navigation stages are consumed;
+never repeat them. Explicit Save was not dispatched; normal open effects are
+accepted, not unchanged-storage proof. Component identity39 returns two IDs;
+selected geometry46 returns both in reversed caller order, independently checked.
+Pad identity50 returned four IDs and selected geometry53 returned all four in
+reversed caller order, independently checked. Functions cell58 now owns the
+sequential layer-list/copper-count/Line/Arc/Via geometry reads; await it, do not
+duplicate those calls. No new fixture objects are being created.
+Private transport transcripts are under
+/tmp/easyeda-live-201000-mH5DJy; they are not managed engineering receipts.
+No close request has been issued. Keep this facade alive through normal close and retained
+termination observation; never repeat this launch. Production remains excluded.
+The normal sandbox runner fails before exec; approved escalated read-only shell
+calls work. NodeREPL reports an invalid sandboxCwd; no CAD fallback was attempted.
+
+Candidate213000 adds six optional raw Component metadata strings to existing
+get/getAll DTOs; missing/own-undefined omit, empty strings/formulas stay exact.
+Nineteen focused/adjacent tests, both strict types and targeted zero-warning lint
+pass. Main/independent source review accepted. Integrated full lint/types/build,
+coverage/compatibility/package/repository/privacy and seven official skill
+validators pass. Source34015fc994d/runtime37209e2a5 is an intermediate build:
+a parse-only upstream dependency cache now removes repeated Acorn work while
+preserving fresh hashing/resolution and all admission checks. Main/independent
+review accepts both additions. Twelve module-graph tests and final integrated
+types/fullzero-warninglint/build/coverage/compatibility checks pass. Final source340
+c0ecc836bb3e655a0eabd1f61c4bb0e7c111a30061970feeea78ab5d1ba20644 and runtime3
+f025ad0ec9a166466b8a2301ea6e9bd5fe6ad678b4ee9aa4552627dd35e461d6; external
+pins unchanged. Existing timings show graph1353ms versus closure10773ms, so
+no end-to-end speedup is claimed. Required exact-payload CI/publication/install
+are pending. Installed201000 remains immutable.
+Do not install before retained
+normal-close/termination validation completes. Scope/backlog is in
+docs/current-component-metadata-release-2026-10-14.md.
+
+### Delivered201000; disposable readers and normal-close validation next
+
+PR28 merged through the protected route as main
+1746af78a98a4ca33e7fb16af834580c8d930087. Corrected payload
+cceae08da815f389a59fa99133a92fa99dd66cb6 passed all ten required jobs in
+CI38631256843:9892facade passes/five skips/zero failures;424bridge passes across
+28files. Fulltreec1628aa8de4eb12ecb482e6d42dc51afb87bf6e6 and package
+d4c82c8999d636559c20d6daffb207b7a0f643f7 match the tested payload exactly.
+Postmerge CI38633211844 is running on the same tree; check its outcome next
+session without rerunning successful checks solely for a restart.
+
+PR review found a missing observe-application-window pass-through in the
+production clock wrapper. The extended existing composed regression failed
+before the one-action correction, then116affected tests passed; strict types,
+targeted zero-warning lint and independent review passed. Rebuilt startup/
+coordinator22cases and compatibility/package/repository checks passed afterward.
+Initial CI38630099383 was canceled and is not release acceptance. Final source340
+66633a7a5fa579eb14b3cba9b8a5ee6b013b4ec7d606ee46b10e54dff4329125;
+runtime3f1b6a1c0a48fe7fad3236bed86b9c2f0243d00e3e40d8885b26ce01641ed95cb.
+The helper remains fa5cff83eea61dea9a58dad282c76a2016bc7cbcb6f54dea1ef51375d9a91161.
+
+Official Git marketplace upgrade under umask022 completed errors[], with
+source https://github.com/jan-guenter/easyeda-pro-agent-plugin.git and snapshot
+HEAD1746af78. Independent post-probe admission confirms installed/enabled201000,
+1177files/22960951bytes/42directories/seven skills exactly matching tested and
+merged trees. Git modes exact, directories0755, no extras/symlinks/hardlinks.
+InventorySHA c253e12425f3e60ce2ba3eac64a2025fb7e183c3b2a2fe3d68bec134c6f781b4
+uses Git tree order: path NUL Gitmode NUL bytes NUL SHA256 LF.
+
+Actual installed configured offline startup passes ambientNode26.7 to pinned24.18,
+15tools, identity7/geometry10 and both new launch schemas without execution
+authority. Nine process samples show no child/nonstdio socket, stderr0.
+Proof1965bytes SHA b7ea18e7571aeb3cbc46b1194091e923a1bdbc49cef557294760f0fbc9866c54
+at /tmp/easyeda-installed-201000-xKlkb7/proof.json. Probea7afd2dd is the retained
+installation-only check with final commit pin, not a live test or new matrix.
+Public delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/28#issuecomment-6177915383.
+
+Current facade732783/parent731011/start220366173 remains190000 on Node24.18;
+official upgrade pruned its old cache directory, so its cwd reports deleted.
+Never hotpatch or kill that host; use a fresh Codex session before live201000
+calls. Prior completed opening099e6fa7 and terminationf0ac7c02 remain exact.
+No live launch, bridge execution, design/project-record access or completed
+operation replay occurred this turn. No pending CAD or recovery.
+
+Next: admit fresh201000, use the maintained ordinary launcher ourselves, then
+combine one scoped disposable explicit-ID/layer/Line/Arc/Via read check with
+observe-window, one-shot normal-close and separate retained-termination proof.
+This new close route is source-tested/Windows-compiled, NOT connected-validated.
+Do not respond to Save/Discard prompts, repeat uncertain close or bypass a
+quarantined opening. Lost-handle supervision and broader writer/library/3D/ECO/
+export work remain in the release reports and API inventory. Production and its
+record remain excluded. This local delivery checkpoint is for the next source
+commit; no extra documentation-only release cycle is needed.
+
+### Historical restarted190000; retained-owner normal-close implementation
 
 Fresh facade732783/parent731011/start220366173 loads installed190000 on pinned
 Node24.18. Independent admission matches1177files/22898366bytes/42directories/

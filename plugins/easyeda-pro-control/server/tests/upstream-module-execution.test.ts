@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 
 import {
   deserializeCapturedUpstreamModuleGraph,
   executeCapturedUpstreamModuleGraph,
+  parseUpstreamModuleDependencies,
   serializeCapturedUpstreamModuleGraph,
 } from "../src/upstream-module-execution.ts";
 import { captureLauncherFingerprint } from "../src/upstream-trust.ts";
@@ -101,6 +102,41 @@ async function replaceWithAttacker(path: string, source: string): Promise<void> 
 }
 
 void describe("captured upstream module execution", () => {
+  void test("reuses only immutable dependency syntax from exact execution bytes", () => {
+    const source = Buffer.from('import "./alpha.js"; require("./beta.cjs"); require.resolve("./asset.txt");');
+    const first = parseUpstreamModuleDependencies("module", source);
+    assert.strictEqual(parseUpstreamModuleDependencies("module", Buffer.from(source)), first);
+    assert.deepEqual(first, [{ loadsTarget: true, mode: "import", specifier: "./alpha.js" },
+      { loadsTarget: false, mode: "require", specifier: "./asset.txt" },
+      { loadsTarget: true, mode: "require", specifier: "./beta.cjs" }]);
+    assert.ok(Object.isFrozen(first));
+    for (const dependency of first) {
+      assert.ok(Object.isFrozen(dependency));
+      assert.equal(Reflect.set(dependency, "specifier", "./unreviewed.js"), false);
+    }
+    assert.equal(Reflect.set(first, "0", { loadsTarget: true, mode: "import", specifier: "./unreviewed.js" }), false);
+    assert.strictEqual(parseUpstreamModuleDependencies("module", source), first);
+    source.write('import "./bravo.js";');
+    const changed = parseUpstreamModuleDependencies("module", source);
+    assert.notStrictEqual(changed, first);
+    assert.equal(changed[0]?.specifier, "./bravo.js");
+    assert.equal(first[0]?.specifier, "./alpha.js");
+  });
+
+  void test("separates parse formats and never converts a failed parse to a cached result", () => {
+    const source = Buffer.from('import "./format.js";');
+    const module = parseUpstreamModuleDependencies("module", source);
+    assert.deepEqual(parseUpstreamModuleDependencies("json", source), []);
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      assert.throws(() => parseUpstreamModuleDependencies("commonjs", source), SyntaxError);
+      assert.strictEqual(parseUpstreamModuleDependencies("module", source), module);
+    }
+    const both = Buffer.from('require("./shared.cjs");');
+    const commonjs = parseUpstreamModuleDependencies("commonjs", both);
+    const esm = parseUpstreamModuleDependencies("module", both);
+    assert.deepEqual(commonjs, esm); assert.notStrictEqual(commonjs, esm);
+  });
+
   void test("captured logger sends warnings and errors to synchronous stderr without a worker", async () => {
     const root = await mkdtemp("/tmp/easyeda-logger-graph-test-");
     const implementation = join(root, "dist");
@@ -409,6 +445,34 @@ export function createLogger(config) {
     }
   });
 
+  void test("a warmed dependency parse still recaptures bytes, package format and file permissions", async () => {
+    const root = await mkdtemp("/tmp/easyeda-module-graph-warm-test-");
+    const implementation = join(root, "dist");
+    const entrypoint = join(implementation, "entry.mjs");
+    const dependency = join(implementation, "dependency.js"), packagePath = join(root, "package.json");
+    const packageText = JSON.stringify({ name: "warm-graph-fixture", type: "module" });
+    try {
+      await mkdir(implementation); await mkdir(join(root, "node_modules"));
+      await writeFile(packagePath, packageText);
+      await writeFile(join(root, "package-lock.json"), JSON.stringify({ name: "warm-graph-fixture", lockfileVersion: 3 }));
+      await writeFile(entrypoint, 'import "./dependency.js";');
+      await writeFile(dependency, "export const value = 1;");
+      const cold = await captureFixture(root, entrypoint), warm = await captureFixture(root, entrypoint);
+      assert.deepEqual(warm.fingerprint, cold.fingerprint);
+      await writeFile(dependency, "export const value = 2;");
+      const changed = await captureFixture(root, entrypoint);
+      assert.notEqual(changed.moduleGraph.fingerprint.sha256, cold.moduleGraph.fingerprint.sha256);
+      assert.notEqual(changed.fingerprint.executionClosure.sha256, cold.fingerprint.executionClosure.sha256);
+      await writeFile(packagePath, JSON.stringify({ name: "warm-graph-fixture", type: "commonjs" }));
+      await assert.rejects(captureFixture(root, entrypoint), /inconsistent format|sourceType/u);
+      await writeFile(packagePath, packageText);
+      await chmod(dependency, 0o666);
+      await assert.rejects(captureFixture(root, entrypoint), /group- or other-writable/u);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   void test("rejects noncanonical graph JSON, URL, NUL, and transform ambiguity", async () => {
     const root = await mkdtemp("/tmp/easyeda-module-graph-canonical-test-");
     const implementation = join(root, "dist");
@@ -554,5 +618,20 @@ export function createLogger(config) {
     } finally {
       await rm(root, { recursive: true, force: true });
     }
+  });
+
+  void test("dependency parse reuse bounds retained bytes and entries without evicting a hot result", () => {
+    const oversized = Buffer.from(`import "${"x".repeat(2 * 1024 * 1024)}";`);
+    const firstOversized = parseUpstreamModuleDependencies("module", oversized);
+    assert.notStrictEqual(parseUpstreamModuleDependencies("module", oversized), firstOversized);
+    assert.ok(Object.isFrozen(firstOversized));
+    const hotSource = Buffer.from('void "retained-hot-parse";');
+    const hot = parseUpstreamModuleDependencies("module", hotSource);
+    for (let index = 0; index < 2048; index += 1) {
+      parseUpstreamModuleDependencies("module", Buffer.from(`void "bounded-parse-${index}";`));
+    }
+    const declinedSource = Buffer.from('void "not-retained-after-full-cache";');
+    assert.notStrictEqual(parseUpstreamModuleDependencies("module", declinedSource), parseUpstreamModuleDependencies("module", declinedSource));
+    assert.strictEqual(parseUpstreamModuleDependencies("module", hotSource), hot);
   });
 });

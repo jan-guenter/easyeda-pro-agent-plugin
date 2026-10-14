@@ -271,7 +271,7 @@ resolved connectivity.
 | Line | `layer`, `startX`, `startY`, `endX`, `endY`, `lineWidth` |
 | Arc | Line fields plus `arcAngle`, `interactiveMode` |
 | Via | `x`, `y`, `holeDiameter`, `diameter`, `viaType`, `designRuleBlindViaName`, `startLayer`, `endLayer`, `maskExpansionMode`, `topMaskExpansion`, `bottomMaskExpansion` |
-| Component | `layer` (1/2), `x`, `y`, `rotation` |
+| Component | `layer` (1/2), `x`, `y`, `rotation`; optional raw `designator`, `name`, `manufacturer`, `manufacturerPart`, `supplier`, `supplierPart` |
 | Pad | `layer` (1/2/12), `padNumber`, `x`, `y`, `rotation`, `metallization`, `padType` (0/1/2) |
 
 Lengths use mil from the data origin, which can differ from the displayed
@@ -284,8 +284,13 @@ or fresh rule evaluation. Arc endpoints and angle omit center/radius/sweep;
 a full-circle case can project to zero `arcAngle`. Do not reconstruct a complete
 shape or derive an editing baseline from this projection.
 
-Component and Pad expose placement/state only. Component libraries, attributes,
-child IDs and pin mappings are omitted. Pad shapes, holes, rules, mask expansions
+Component adds six fixed strings from the native attribute map. Missing and
+own-undefined values omit the corresponding field; empty strings are preserved.
+Selected null, non-string, inherited or accessor-backed values refuse. `name`
+may be an unevaluated formula, not rendered text. These values are observations,
+not verified manufacturer part identity or schematic linkage. Other Component
+attributes, libraries, child IDs and pin mappings remain omitted.
+Pad shapes, holes, rules, mask expansions
 and parent-component identity are omitted. A Pad row may be inherited; never
 infer that it is standalone or derive its parent from an ID prefix. The native
 holeless-Pad callback can contain NaN in discarded `holeRotation`; only promised
@@ -300,7 +305,8 @@ before selecting requested IDs; unrequested-row drift or an oversized family
 still refuses. `returnedRowCount` counts selected DTOs; `observedRowCount`
 counts the full family. Explicit IDs reduce returned data, not vendor work.
 Omitted fields are not compared. Limits are256rows,
-256characters per ID,1024per net/rule name, scalar magnitude1e12 and384KiB.
+256characters per ID,1024per net/rule name/pad number or Component metadata
+string, scalar magnitude1e12 and384KiB.
 Signed zero, non-finite values, duplicates, unknown enum values, missing fields
 and oversized data refuse without truncation. The bounds and deadline do not
 cancel the native enumeration or serializer.
