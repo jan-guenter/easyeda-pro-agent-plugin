@@ -90,6 +90,29 @@ const hole=row=>{
  const result={shape,diameter,offsetX:offset.x,offsetY:offset.y,rotation:num(own(row,'holeRotation'))};
  if(shape==='SLOT'){const length=num(own(tuple,'2'));if(length<0)bad();result.length=length;}return result;
 };
+// PCB217199c8@10297659: native default-shape dimensions already use mil, rounded to 0.1 mil by qe.
+// RECT's fourth item is ratio*100, not the physical corner radius described by the public type.
+// A polygon marker deliberately omits its unreviewed path; neither its contents nor special layer stacks are sampled.
+const defaultCopperShape=row=>{
+ const tuple=own(row,'defaultPadShapeAspect'),n=arrayLength(tuple),shape=own(tuple,'0');
+ if(shape==='POLYGON'){if(n!==2||!Array.isArray(own(tuple,'1')))bad();return{shape,details:'not-projected'};}
+ if((shape==='RECT'&&n!==4)||((shape==='ELLIPSE'||shape==='OVAL')&&n!==3)||!['RECT','ELLIPSE','OVAL'].includes(shape))bad();
+ const result={shape,width:num(own(tuple,'1')),height:num(own(tuple,'2'))};
+ if(shape==='RECT')result.cornerRatioPercent=num(own(tuple,'3'));return result;
+};
+// PCB217199c8@10370738 scales the three existing mask values to mil; do not run mutating rule resolver w0.
+// One native paste field must not be represented as independently observed top/bottom paste values.
+const maskExpansion=row=>{
+ const mode=integer(own(row,'expansionType'));if(mode!==1&&mode!==2)bad();
+ return{mode,topSolder:num(own(row,'topSolderExpansion')),bottomSolder:num(own(row,'bottomSolderExpansion')),paste:num(own(row,'pasteExpansion'))};
+};
+// Native Hf (PCB217199c8@3427613) is a class instance: copy only own data, never methods or inherited getters.
+// Only mode 0 has dimensions. Native distances are internal units and angle is radians; export @4171525 confirms conversions.
+const thermal=row=>{
+ const rule=own(row,'padRule');if(rule===null)return null;if(!object(rule))bad();
+ const mode=integer(own(rule,'connectMode'));if(mode===1||mode===2)return{mode};if(mode!==0)bad();
+ return{mode,clearance:num(num(own(rule,'lineClearance'))*10),spokeWidth:num(num(own(rule,'lineWidth'))*10),angle:num(num(own(rule,'lineAngle'))/Math.PI*180)};
+};
 const copyRows=value=>{
  const n=arrayLength(value);
  const rows=[],seen=new Set();
@@ -105,7 +128,7 @@ const copyRows=value=>{
    const center=point(own(row,'center')),padLayer=layer(own(row,'layerId')),padType=integer(own(row,'padTypeAspect'));
    if(![1,2,12].includes(padLayer)||![0,1,2].includes(padType))bad();
    rows.push({...base,layer:padLayer,padNumber:text(own(row,'num'),1024),x:center.x,y:center.y,rotation:num(own(row,'rotation')),
-    metallization:bool(own(row,'plated')),padType,hole:hole(row)});
+    metallization:bool(own(row,'plated')),padType,hole:hole(row),defaultCopperShape:defaultCopperShape(row),maskExpansion:maskExpansion(row),thermal:thermal(row)});
   }else if(family==='Via'){
    const center=point(own(row,'center')),viaType=integer(own(row,'type'));if(![0,1,2].includes(viaType))bad();
    rows.push({...base,x:center.x,y:center.y,holeDiameter:num(num(own(row,'holeRadius'))*2),diameter:num(num(own(row,'radius'))*2),viaType,

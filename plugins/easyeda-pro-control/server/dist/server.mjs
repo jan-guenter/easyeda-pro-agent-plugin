@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "386b227fc1dd9d2f631df0746e27f31dc08f1094c60c57fd79eedd31fb79051f";
+const __easyedaBundlePairId = "c517ec6fe90c94d8460ac2a2abe0db1fa91203e70baaa02406d176bcbfd0752b";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -39489,7 +39489,7 @@ var init_extension_api_coverage_routes = __esm({
           tool: "easyeda_control_pcb_geometry",
           selector: `eda.${namespace}.${method4}`,
           implementation: "native-task-equivalent",
-          scope: `Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad placement/state; fixed projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2 and six optional raw strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing or own-undefined values omit the field; empty strings and Name formulas remain exact. Selected null/non-string/inherited/accessor values refuse. Metadata is not verified part identity or schematic linkage. Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Pad hole is null or a strict ROUND/SLOT DTO with nonnegative mil dimensions, mil offsets and degree rotation relative to the pad. Holeless rows do not inspect unused native hole rotation/offsets; native zero dimensions are preserved without fabrication-validity claims. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Other Component attributes, library/child enrichment and Pad copper shapes/rules are omitted. Net labels and lock flags remain observed fields, not connectivity, ownership or editing authority. No filters, complete saved membership, root/inherited ownership, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.${method4 === "get" ? " This get route accepts only 1..256 distinct bounded primitiveIds in an array, selects DTOs in caller order after complete-family checks and refuses any unavailable ID. It does not support scalar get or public missing-ID skipping. Returned and full-family observed row counts are distinct; all family bounds still apply before selection." : " This getAll route accepts empty arguments only."}`,
+          scope: `Separately pinned current API/UI/PCB loaded-view geometry subset. Explicit ordinary active PCB project/branch/document/tab, retained native frame/receiver and two matching ordered bounded observations. Unfiltered Line/Arc/Via geometry and narrow Component/Pad state; fixed projections in mil/degrees without public-wrapper rounding, not public class instances or public-wrapper dispatch. Component admits layers1/2 and six optional raw strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing or own-undefined values omit the field; empty strings and Name formulas remain exact. Selected null/non-string/inherited/accessor values refuse. Metadata is not verified part identity or schematic linkage. Pad admits layers1/2/12 and pad types0/1/2. Pad net spelling and empty-string versus null are preserved; pad number requires a bounded string. Pad hole is null or a strict ROUND/SLOT DTO with nonnegative mil dimensions, mil offsets and degree rotation relative to the pad. Holeless rows skip unused native hole scalars; native zero dimensions do not establish fabrication validity. Default copper ELLIPSE/OVAL/RECT parameters retain native0.1mil rounding and RECT corner ratio percent, not radius. POLYGON returns only a not-projected marker; its omitted path is not compared. NGON refuses and physical-layer stacks remain omitted. Mask mode1/2 and top/bottom solder plus one shared paste value are observed mil, not refreshed rules or explicit overrides. Nullable thermal mode0 includes mil clearance/spokeWidth and degree angle; modes1/2 omit unused dimensions. Null is not no connection; inherited values and actual pours remain unverified. Not complete shape reconstruction; Arc center/radius/sweep are omitted and full-circle angle can project to zero. Other Component attributes, library enrichment and reverse ownership are omitted. Net labels and lock flags are not connectivity or editing authority. No filters, complete saved membership, selection change, navigation, write or Save. Vendor enumeration and full DTO allocation precede output bounds; limits do not cancel execution or bound cache/child serialization work.${method4 === "get" ? " This get route accepts only 1..256 distinct bounded primitiveIds in an array, selects DTOs in caller order after complete-family checks and refuses any unavailable ID. It does not support scalar get or public missing-ID skipping. Returned and full-family observed row counts are distinct; all family bounds still apply before selection." : " This getAll route accepts empty arguments only."}`,
           source: ["current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
           tests: ["current-pcb-geometry.test.ts", "facade-mode.test.ts", "current-pcb-geometry-registration.test.ts"],
           documentTypes: [3],
@@ -93073,7 +93073,7 @@ function validateCurrentPcbGeometryResult(input, raw) {
     limitations: [...limitations9]
   };
 }
-var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, collectionMethods2, selectedMethods, componentPadsMethod, methods3, targetSchema6, numberSchema, layerSchema2, boundedText4, idSchema2, holeFields, holeSchema, identity26, base3, track, lineSchema3, arcSchema, viaSchema, componentSchema2, padSchema, requestedIdsSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, resultShape, currentPcbGeometryResultSchema, limitations9;
+var CURRENT_PCB_GEOMETRY_MAX_BYTES, CURRENT_PCB_GEOMETRY_MAX_ROWS, CURRENT_PCB_GEOMETRY_MAX_NUMBER, collectionMethods2, selectedMethods, componentPadsMethod, methods3, targetSchema6, numberSchema, layerSchema2, boundedText4, idSchema2, holeFields, holeSchema, defaultCopperShapeSchema, maskExpansionSchema, thermalSchema, identity26, base3, track, lineSchema3, arcSchema, viaSchema, componentSchema2, padSchema, requestedIdsSchema, currentPcbGeometryRequestSchema, currentPcbGeometryQuerySchema, resultShape, currentPcbGeometryResultSchema, limitations9;
 var init_current_pcb_geometry = __esm({
   "server/src/current-pcb-geometry.ts"() {
     init_zod();
@@ -93114,6 +93114,23 @@ var init_current_pcb_geometry = __esm({
     holeSchema = external_exports.discriminatedUnion("shape", [
       external_exports.object({ ...holeFields, shape: external_exports.literal("ROUND") }).strict(),
       external_exports.object({ ...holeFields, shape: external_exports.literal("SLOT"), length: numberSchema.refine((value) => value >= 0, "Negative slot length.") }).strict()
+    ]).nullable();
+    defaultCopperShapeSchema = external_exports.discriminatedUnion("shape", [
+      external_exports.object({ shape: external_exports.literal("ELLIPSE"), width: numberSchema, height: numberSchema }).strict(),
+      external_exports.object({ shape: external_exports.literal("OVAL"), width: numberSchema, height: numberSchema }).strict(),
+      external_exports.object({ shape: external_exports.literal("RECT"), width: numberSchema, height: numberSchema, cornerRatioPercent: numberSchema }).strict(),
+      external_exports.object({ shape: external_exports.literal("POLYGON"), details: external_exports.literal("not-projected") }).strict()
+    ]);
+    maskExpansionSchema = external_exports.object({
+      mode: external_exports.union([external_exports.literal(1), external_exports.literal(2)]),
+      topSolder: numberSchema,
+      bottomSolder: numberSchema,
+      paste: numberSchema
+    }).strict();
+    thermalSchema = external_exports.discriminatedUnion("mode", [
+      external_exports.object({ mode: external_exports.literal(0), clearance: numberSchema, spokeWidth: numberSchema, angle: numberSchema }).strict(),
+      external_exports.object({ mode: external_exports.literal(1) }).strict(),
+      external_exports.object({ mode: external_exports.literal(2) }).strict()
     ]).nullable();
     identity26 = { primitiveId: idSchema2, primitiveLock: external_exports.boolean() };
     base3 = { ...identity26, net: boundedText4.nullable() };
@@ -93172,7 +93189,10 @@ var init_current_pcb_geometry = __esm({
       rotation: numberSchema,
       metallization: external_exports.boolean(),
       padType: external_exports.union([external_exports.literal(0), external_exports.literal(1), external_exports.literal(2)]),
-      hole: holeSchema
+      hole: holeSchema,
+      defaultCopperShape: defaultCopperShapeSchema,
+      maskExpansion: maskExpansionSchema,
+      thermal: thermalSchema
     }).strict();
     requestedIdsSchema = external_exports.array(idSchema2).min(1).max(CURRENT_PCB_GEOMETRY_MAX_ROWS).refine((ids2) => new Set(ids2).size === ids2.length, "Primitive IDs must be distinct.");
     currentPcbGeometryRequestSchema = external_exports.discriminatedUnion("method", [
@@ -93214,8 +93234,10 @@ var init_current_pcb_geometry = __esm({
       "Positions, widths, diameters and mask expansions are in mil; arcAngle and Component/Pad rotation are in degrees. The native callback's scaled results are not rounded using the public wrapper. Arc endpoints/angle and Pad placement can therefore retain precision that the public wrapper rounds; Via diameters are twice the native callback radii, without public one-decimal radius rounding. Layer IDs and arc/via/mask modes are native values, not validated design rules.",
       "Coordinates use the data origin, not the displayed canvas origin. Arc endpoints and angle are incomplete shape data: a full-circle case can project to zero angle. Native center/radius/sweep and partition are omitted, as are Via unused-layer and is-suture fields. Mask expansion values are loaded model observations, not proof of saved overrides or current rule resolution.",
       "Component observation contains identity, lock, placement on layer 1 or 2 and six optional raw attribute strings: designator, name, manufacturer, manufacturerPart, supplier and supplierPart. Missing and own-undefined attributes both omit the corresponding output field; empty strings are preserved. Null, non-string, inherited or accessor-valued selected attributes refuse. Name formulas are returned verbatim, not evaluated or claimed to match rendered text. Other attributes, library/device/footprint/3D enrichment and child associations are omitted. These strings do not prove part identity or ownership.",
-      "Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12. Hole is null or a ROUND/SLOT projection: diameter, SLOT length and offsets in mil, with rotation in degrees relative to the pad. Native zero dimensions are retained observations, not manufacturing validity. A null hole omits all hole-specific scalars, including native holeRotation that may be NaN. Shapes, masks, rules, thermal data and independent parent associations are omitted. Pad family membership alone does not distinguish free pads from component pads.",
-      "getAllPinsByPrimitiveId accepts one exact component ID and returns its entire native child-pad sequence, correlated by full IDs and common scalar fields with the complete global Pad projection. Two complete ordered component-ID, Pad and child-list samples must match. Missing components, null child replies, duplicate IDs and missing or contradictory global Pad rows refuse; an empty child list is accepted only for an observed component. Geometry and holes come from global pad-getAll, not the differently scaled and rounded component callback. No ID-prefix reconstruction, reciprocal parent lookup, exclusivity across other component lists, saved ownership, symbol-pin mapping or connectivity proof is implied. The public ComponentPad parent getter merely returns the caller-supplied component ID and is not invoked.",
+      "Pad observation adds number, raw net, metallization and pad type 0/1/2 on layer 1/2/12. Hole is null or a ROUND/SLOT projection: diameter, SLOT length and offsets in mil, with rotation in degrees relative to the pad. Native zero dimensions are retained observations, not manufacturing validity. A null hole omits all hole-specific scalars, including native holeRotation that may be NaN. Pad family membership alone does not distinguish free pads from component pads.",
+      "defaultCopperShape preserves ELLIPSE/OVAL width/height or RECT width/height/cornerRatioPercent. Native shape dimensions are already rounded to 0.1 mil, and the rectangle fourth value is a percentage, not the radius named in public documentation. These parameters do not reconstruct the rendered outline; native ELLIPSE can use width alone. POLYGON returns only {shape:POLYGON,details:not-projected}: its path is neither returned nor compared. NGON and unknown representations refuse; special physical-layer stacks remain omitted.",
+      "Pad maskExpansion reports native mode 1 (follow rules) or 2 (custom), topSolder, bottomSolder and one shared paste value in mil. Negative/zero observations are preserved; native null-to-zero coercion means zero does not prove an explicit override. No rule refresh or face applicability is established. thermal is null, mode 1 (direct), mode 2 (nonconnected), or mode 0 with clearance/spokeWidth in mil and angle in degrees. Null means no pad configuration in this projection, not no connection. Thermal fields may be inherited from a footprint template; they do not prove stored overrides, current rule resolution, actual poured spokes or fabrication validity.",
+      "getAllPinsByPrimitiveId accepts one exact component ID and returns its entire native child-pad sequence, correlated by full IDs and common scalar fields with the complete global Pad projection. Two complete ordered component-ID, Pad and child-list samples must match. Missing components, null child replies, duplicate IDs and missing or contradictory global Pad rows refuse; an empty child list is accepted only for an observed component. Geometry, holes, default shape, masks and thermal configuration come from global pad-getAll, not the differently scaled and rounded component callback. No ID-prefix reconstruction, reciprocal parent lookup, exclusivity across other component lists, saved ownership, symbol-pin mapping or connectivity proof is implied. The public ComponentPad parent getter merely returns the caller-supplied component ID and is not invoked.",
       "At most 256 rows per observed family or child list, 256 characters per identity, 1024 characters per net/rule name/pad number or component metadata string, scalar magnitude 1e12 and 393216 UTF-8 bytes of evidence. The byte ceiling also bounds the complete compound association sample before selection. Signed zero, non-finite projected values, malformed, duplicate, incomplete and oversized results refuse without truncation or coercion. Vendor enumeration and serialization precede these bounds; the observer deadline does not cancel vendor work.",
       "No selection, layer change, navigation, Save, source export, design mutation or project/library service is requested. Local RPC bookkeeping, reviewed native identity initialization and possible empty pad-length singleton allocation remain incidental. Component enumeration reads existing footprint/device/font caches without fetching library data. Source review and offline tests are not current live validation."
     ];
@@ -118424,6 +118446,29 @@ const hole=row=>{
  const result={shape,diameter,offsetX:offset.x,offsetY:offset.y,rotation:num(own(row,'holeRotation'))};
  if(shape==='SLOT'){const length=num(own(tuple,'2'));if(length<0)bad();result.length=length;}return result;
 };
+// PCB217199c8@10297659: native default-shape dimensions already use mil, rounded to 0.1 mil by qe.
+// RECT's fourth item is ratio*100, not the physical corner radius described by the public type.
+// A polygon marker deliberately omits its unreviewed path; neither its contents nor special layer stacks are sampled.
+const defaultCopperShape=row=>{
+ const tuple=own(row,'defaultPadShapeAspect'),n=arrayLength(tuple),shape=own(tuple,'0');
+ if(shape==='POLYGON'){if(n!==2||!Array.isArray(own(tuple,'1')))bad();return{shape,details:'not-projected'};}
+ if((shape==='RECT'&&n!==4)||((shape==='ELLIPSE'||shape==='OVAL')&&n!==3)||!['RECT','ELLIPSE','OVAL'].includes(shape))bad();
+ const result={shape,width:num(own(tuple,'1')),height:num(own(tuple,'2'))};
+ if(shape==='RECT')result.cornerRatioPercent=num(own(tuple,'3'));return result;
+};
+// PCB217199c8@10370738 scales the three existing mask values to mil; do not run mutating rule resolver w0.
+// One native paste field must not be represented as independently observed top/bottom paste values.
+const maskExpansion=row=>{
+ const mode=integer(own(row,'expansionType'));if(mode!==1&&mode!==2)bad();
+ return{mode,topSolder:num(own(row,'topSolderExpansion')),bottomSolder:num(own(row,'bottomSolderExpansion')),paste:num(own(row,'pasteExpansion'))};
+};
+// Native Hf (PCB217199c8@3427613) is a class instance: copy only own data, never methods or inherited getters.
+// Only mode 0 has dimensions. Native distances are internal units and angle is radians; export @4171525 confirms conversions.
+const thermal=row=>{
+ const rule=own(row,'padRule');if(rule===null)return null;if(!object(rule))bad();
+ const mode=integer(own(rule,'connectMode'));if(mode===1||mode===2)return{mode};if(mode!==0)bad();
+ return{mode,clearance:num(num(own(rule,'lineClearance'))*10),spokeWidth:num(num(own(rule,'lineWidth'))*10),angle:num(num(own(rule,'lineAngle'))/Math.PI*180)};
+};
 const copyRows=value=>{
  const n=arrayLength(value);
  const rows=[],seen=new Set();
@@ -118439,7 +118484,7 @@ const copyRows=value=>{
    const center=point(own(row,'center')),padLayer=layer(own(row,'layerId')),padType=integer(own(row,'padTypeAspect'));
    if(![1,2,12].includes(padLayer)||![0,1,2].includes(padType))bad();
    rows.push({...base,layer:padLayer,padNumber:text(own(row,'num'),1024),x:center.x,y:center.y,rotation:num(own(row,'rotation')),
-    metallization:bool(own(row,'plated')),padType,hole:hole(row)});
+    metallization:bool(own(row,'plated')),padType,hole:hole(row),defaultCopperShape:defaultCopperShape(row),maskExpansion:maskExpansion(row),thermal:thermal(row)});
   }else if(family==='Via'){
    const center=point(own(row,'center')),viaType=integer(own(row,'type'));if(![0,1,2].includes(viaType))bad();
    rows.push({...base,x:center.x,y:center.y,holeDiameter:num(num(own(row,'holeRadius'))*2),diameter:num(num(own(row,'radius'))*2),viaType,
@@ -121694,7 +121739,7 @@ var init_src = __esm({
       "easyeda_control_pcb_geometry",
       {
         title: "Read loaded PCB geometry and placement",
-        description: "Observe Line/Arc/Via geometry, Component metadata and Pad placement/hole geometry on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint, a retained native receiver and two matching bounded samples. getAll accepts empty arguments; get accepts 1..256 distinct primitiveIds and returns caller order after complete-family validation. getAllPinsByPrimitiveId accepts one component primitiveId and correlates its complete native child list with the global Pad family, returning Pad DTOs in child order. This proves observed forward membership only; reciprocal parent and symbol-pin mapping remain unverified. Pad hole is null, ROUND or SLOT with mil dimensions/offsets and degree rotation relative to the pad; native zero dimensions are observations, not fabrication approval. Projections omit full copper shapes, rules and component libraries. No SDK class instances, public-wrapper dispatch, optional filters, selection change, navigation, write or Save. Loaded-view data does not prove saved membership, connectivity or persistence. Query offline pcb-geometry/pcb-geometry-validate first; connected validation is generation-specific.",
+        description: "Observe Line/Arc/Via geometry, Component metadata and Pad parameters on the separately pinned current API/UI/PCB runtime. Requires exact project/branch/document/tab target and authenticated fingerprint, a retained native receiver and two matching bounded samples. getAll accepts empty arguments; get accepts 1..256 distinct primitiveIds and returns caller order after complete-family validation. getAllPinsByPrimitiveId correlates one component's complete child list with global Pad DTOs in child order; reverse parent and symbol-pin mapping remain unverified. Pad includes null/ROUND/SLOT holes, default ELLIPSE/OVAL/RECT parameters, a POLYGON not-projected marker, mask mode/values and nullable thermal configuration. Lengths use mil, rotations/thermal angle degrees and rectangle corner ratio percent; default shape dimensions already have native 0.1mil rounding. Omitted polygon paths and physical stacks are not compared. Masks and thermal values are loaded observations, not fresh rule resolution, actual poured geometry or fabrication approval. No SDK instances, public-wrapper dispatch, optional filters, selection change, navigation, write or Save. Loaded-view data does not prove saved membership, connectivity or persistence. Query offline pcb-geometry/pcb-geometry-validate first; connected validation is generation-specific.",
         inputSchema: { request: external_exports.unknown().pipe(currentPcbGeometryRequestSchema), expectedFingerprint: privateFingerprintSchema },
         annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
       },

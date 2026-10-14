@@ -19,7 +19,15 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261015003000` adds nullable round/slot Pad hole geometry and a component's
+Candidate `0.3.0+codex.20261015020000` adds default Pad copper-shape parameters,
+mask expansion values and thermal configuration to the existing PCB reads and
+component child-pad results. Rectangle corners are reported as a ratio percent,
+not a radius. Polygon paths, full pad stacks and fresh rule resolution remain
+excluded. The existing skill reference documents these distinctions; the
+[release scope and backlog](docs/current-pad-parameters-release-2026-10-15.md)
+records what is implemented and what still needs live validation.
+
+Published update `0.3.0+codex.20261015003000` adds nullable round/slot Pad hole geometry and a component's
 ordered child-pad list to the current PCB reader. The child list is correlated
 with the complete global Pad collection; results identify forward membership
 and explicitly leave reverse-parent and schematic pin mapping unverified.
