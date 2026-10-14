@@ -24,24 +24,27 @@ const defaults = { Line: [track, { ...track, globalIndex: "line-a", net: null, l
     attrsMap: { Designator: "U1", Name: "={Manufacturer Part}", Manufacturer: "Example Devices", "Manufacturer Part": "ABC-1",
       Supplier: "Example Supplier", "Supplier Part": "S123" } },
     { globalIndex: "component-a", locked: true, layerId: 2, position: { x: -30, y: 40 }, rotation: 180, attrsMap: { Designator: "", Name: "" } }],
-  Pad: [{ globalIndex: "pad-b", locked: true, net: "MixedCase", layerId: 12, num: "A1", center: { x: 1.1234567, y: 2 }, rotation: 45.1234567, plated: true, padTypeAspect: 0 },
-    { globalIndex: "pad-a", locked: false, net: null, layerId: 1, num: "", center: { x: -3, y: 4 }, rotation: -90, plated: false, padTypeAspect: 2 }] };
+  Pad: [{ globalIndex: "pad-b", locked: true, net: "MixedCase", layerId: 12, num: "A1", center: { x: 1.1234567, y: 2 }, rotation: 45.1234567, plated: true, padTypeAspect: 0, holeAspect: null },
+    { globalIndex: "pad-a", locked: false, net: null, layerId: 1, num: "", center: { x: -3, y: 4 }, rotation: -90, plated: false, padTypeAspect: 2, holeAspect: null }] };
 interface Options { before?: string; beforeChild?: string; afterCall?: string; input?: CurrentPcbGeometryRequest; fastDeadline?: boolean; }
 function environment(options: Options = {}): { run: () => Promise<unknown>; evaluateChild: (source: string) => unknown } {
   const input = options.input ?? inputFor();
   const childContext = createContext({ checkCall: (topic: unknown, arg: unknown, timeout: unknown): void => {
     assert.equal(timeout, 0);
     if (topic === "getTabIdAndDocType") { assert.equal(arg, undefined); }
+    else if (topic === "pcb/extensionAPI/component-getAllPinsByPrimitiveId") {
+      assert.ok("primitiveId" in input.arguments); assert.equal(arg, input.arguments.primitiveId);
+    }
     else {
       assert.ok(topic === "pcb/extensionAPI/track-getAll" || topic === "pcb/extensionAPI/arc-getAll" || topic === "pcb/extensionAPI/via-getAll" ||
         topic === "pcb/extensionAPI/component-getAll" || topic === "pcb/extensionAPI/pad-getAll");
       assert.ok(arg !== null && typeof arg === "object"); assert.deepEqual(Object.keys(arg), []);
     }
   } });
-  runInContext(`globalThis.rows=${JSON.stringify(defaults)};globalThis.calls=0;globalThis.dataReads=0;globalThis.getterReads=0;
+  runInContext(`globalThis.rows=${JSON.stringify(defaults)};globalThis.children=[{...rows.Pad[1]},{...rows.Pad[0]}];globalThis.calls=0;globalThis.dataReads=0;globalThis.getterReads=0;
 globalThis.identity={tabId:${JSON.stringify(input.target.tabId)},docType:3};
 globalThis.topics={'pcb/extensionAPI/track-getAll':'Line','pcb/extensionAPI/arc-getAll':'Arc','pcb/extensionAPI/via-getAll':'Via','pcb/extensionAPI/component-getAll':'Component','pcb/extensionAPI/pad-getAll':'Pad'};
-class Bus {async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus)throw new Error('PRIVATE_RECEIVER');checkCall(topic,arg,timeout);calls++;await Promise.resolve();if(topic!=='getTabIdAndDocType')dataReads++;${options.afterCall ?? ""}return {message:topic==='getTabIdAndDocType'?identity:rows[topics[topic]],bridge:undefined,source:undefined};}}
+class Bus {async rpcCall(topic,arg,timeout){if(this!==MSG_BUS_PCB.messageBus)throw new Error('PRIVATE_RECEIVER');checkCall(topic,arg,timeout);calls++;await Promise.resolve();if(topic!=='getTabIdAndDocType')dataReads++;${options.afterCall ?? ""}return {message:topic==='getTabIdAndDocType'?identity:topic==='pcb/extensionAPI/component-getAllPinsByPrimitiveId'?children:rows[topics[topic]],bridge:undefined,source:undefined};}}
 globalThis.MSG_BUS_PCB={messageBus:new Bus()};${options.beforeChild ?? ""}`, childContext, { timeout: 1000 });
   const child: unknown = runInContext("globalThis", childContext);
   const context = createContext({ child, TextEncoder, setTimeout: options.fastDeadline === true
@@ -93,9 +96,9 @@ void test("current geometry copies ordered cross-realm native fields without pub
       designator: "U1", name: "={Manufacturer Part}", manufacturer: "Example Devices", manufacturerPart: "ABC-1", supplier: "Example Supplier", supplierPart: "S123" },
     { primitiveId: "component-a", primitiveType: "Component", primitiveLock: true, layer: 2, x: -30, y: 40, rotation: 180, designator: "", name: "" }],
     [{ primitiveId: "pad-b", primitiveType: "Pad", primitiveLock: true, net: "MixedCase", layer: 12, padNumber: "A1",
-      x: 1.1234567, y: 2, rotation: 45.1234567, metallization: true, padType: 0 },
+      x: 1.1234567, y: 2, rotation: 45.1234567, metallization: true, padType: 0, hole: null },
     { primitiveId: "pad-a", primitiveType: "Pad", primitiveLock: false, net: null, layer: 1, padNumber: "",
-      x: -3, y: 4, rotation: -90, metallization: false, padType: 2 }],
+      x: -3, y: 4, rotation: -90, metallization: false, padType: 2, hole: null }],
   ];
   for (const [index, method] of methods.entries()) {
     const input = inputFor(method);
@@ -116,7 +119,7 @@ void test("current geometry schemas limit input and retain empty collection and 
     { ...input, method: "eda.pcb_PrimitiveLine.get" }, { ...input, target: { ...target, tabId: "wrong" } }]) {
     assert.throws(() => buildCurrentPcbGeometryProgram(invalid)); assert.equal(validateCurrentPcbGeometryArguments(invalid)["valid"], false);
   }
-  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 10);
+  assert.equal(queryCurrentPcbGeometry({ includeSchemas: true })["total"], 11);
   assert.match(JSON.stringify(queryCurrentPcbGeometry({ method: methods[0], includeSchemas: true })), /inputSchema/u);
   for (const method of methods) {
     const request = inputFor(method);
@@ -312,6 +315,125 @@ void test("current Component metadata participates in whole-family sampling and 
     }
   }
   assert.throws(() => validateCurrentPcbGeometryResult(input, { ...raw, rows: [{ ...row, libraryUuid: "unproven" }] }));
+});
+
+void test("current Pad holes preserve null and exact mil dimensions with pad-relative rotation", async () => {
+  const input = inputFor(methods[4]);
+  const fixture = environment({ input, beforeChild: "rows.Pad[0].holeAspect=['ROUND',12.1234567];rows.Pad[0].holeOffset={x:-1.234567,y:2};rows.Pad[0].holeRotation=-30;rows.Pad[1].holeAspect=['SLOT',0,20.1234567];rows.Pad[1].holeOffset={x:0,y:0};rows.Pad[1].holeRotation=90;" });
+  const raw: unknown = decodeExactReadEnvelope(await fixture.run());
+  const result = validateCurrentPcbGeometryResult(input, raw), value = result["value"];
+  assert.ok(Array.isArray(value));
+  assert.deepEqual(value.map((row: Record<string, unknown>) => row["hole"]), [
+    { shape: "ROUND", diameter: 12.1234567, offsetX: -1.234567, offsetY: 2, rotation: -30 },
+    { shape: "SLOT", diameter: 0, length: 20.1234567, offsetX: 0, offsetY: 0, rotation: 90 },
+  ]);
+  const absent = environment({ input, beforeChild: "for(const row of rows.Pad){row.holeRotation=NaN;Object.defineProperty(row,'holeOffset',{get(){getterReads++;throw new Error('PRIVATE_HOLELESS');}});}" });
+  const absentResult = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await absent.run()));
+  assert.equal(absent.evaluateChild("getterReads"), 0);
+  const absentRows = absentResult["value"]; assert.ok(Array.isArray(absentRows));
+  for (const valueRow of absentRows) {
+    const row: unknown = valueRow; assert.ok(row !== null && typeof row === "object" && "hole" in row);
+    assert.equal(row.hole, null);
+  }
+  assert.ok(raw !== null && typeof raw === "object" && "rows" in raw && Array.isArray(raw.rows));
+  const row: unknown = raw.rows[0]; assert.ok(row !== null && typeof row === "object");
+  for (const hole of [undefined, {}, { shape: "ROUND", diameter: -1, offsetX: 0, offsetY: 0, rotation: 0 },
+    { shape: "ROUND", diameter: 1, length: 2, offsetX: 0, offsetY: 0, rotation: 0 },
+    { shape: "SLOT", diameter: 1, offsetX: 0, offsetY: 0, rotation: 0 }]) {
+    assert.throws(() => validateCurrentPcbGeometryResult(input, { ...raw, rows: [{ ...row, hole }] }));
+  }
+});
+
+void test("current Pad holes refuse malformed tuples and changing fields without invoking accessors", async () => {
+  const input = inputFor(methods[4]);
+  const setup = "rows.Pad[0].holeAspect=['SLOT',12,20];rows.Pad[0].holeOffset={x:1,y:2};rows.Pad[0].holeRotation=45;";
+  for (const mutation of ["delete rows.Pad[0].holeAspect;", "rows.Pad[0].holeAspect=undefined;", "rows.Pad[0].holeAspect={};",
+    "rows.Pad[0].holeAspect=['ROUND',12,20];", "rows.Pad[0].holeAspect=['SLOT',12];", "rows.Pad[0].holeAspect=['OVAL',12];",
+    "rows.Pad[0].holeAspect[1]=-1;", "rows.Pad[0].holeAspect[2]=-1;", "rows.Pad[0].holeAspect[1]=-0;",
+    "rows.Pad[0].holeAspect[1]=NaN;", "rows.Pad[0].holeAspect[1]='12';", "rows.Pad[0].holeAspect[2]=1e13;",
+    "delete rows.Pad[0].holeAspect[1];", "rows.Pad[0].holeAspect.extra=1;", "rows.Pad[0].holeAspect[Symbol('extra')]=1;",
+    "rows.Pad[0].holeRotation=NaN;", "rows.Pad[0].holeOffset.x=Infinity;", "rows.Pad[0].holeOffset=Object.create({x:1,y:2});",
+    "Object.defineProperty(rows.Pad[0].holeAspect,'1',{get(){getterReads++;throw new Error('PRIVATE_HOLE');}});",
+    "Object.defineProperty(rows.Pad[0],'holeAspect',{get(){getterReads++;throw new Error('PRIVATE_HOLE');}});",
+    "Object.defineProperty(rows.Pad[0].holeOffset,'x',{get(){getterReads++;throw new Error('PRIVATE_HOLE');}});"]) {
+    const fixture = environment({ input, beforeChild: setup + mutation });
+    await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+    assert.equal(fixture.evaluateChild("getterReads"), 0);
+  }
+  for (const mutation of ["rows.Pad[0].holeAspect[1]++;", "rows.Pad[0].holeAspect[2]++;", "rows.Pad[0].holeRotation++;",
+    "rows.Pad[0].holeOffset.x++;", "rows.Pad[0].holeOffset.y++;", "rows.Pad[0].holeAspect=null;"]) {
+    await assert.rejects(environment({ input, beforeChild: setup, afterCall: `if(dataReads===2){${mutation}}` }).run(),
+      { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  }
+});
+
+function componentPadsInput(primitiveId = "component-b"): CurrentPcbGeometryRequest {
+  return parseCurrentPcbGeometryRequest({ method: "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId", arguments: { primitiveId }, target });
+}
+
+void test("current component child-pad association preserves full native IDs and child order using global Pad geometry", async () => {
+  const input = componentPadsInput();
+  const fixture = environment({ input, beforeChild: "rows.Pad.push({...rows.Pad[0],globalIndex:'unrelated-pad'});for(const row of children)for(const key of ['center','rotation','holeAspect','holeOffset','holeRotation','parentId'])Object.defineProperty(row,key,{get(){getterReads++;throw new Error('PRIVATE_CHILD_GEOMETRY');}});" });
+  const result = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await fixture.run())), value = result["value"];
+  assert.ok(Array.isArray(value));
+  assert.deepEqual(value.map((row: Record<string, unknown>) => row["primitiveId"]), ["pad-a", "pad-b"]);
+  assert.deepEqual(value.map((row: Record<string, unknown>) => row["x"]), [-3, 1.1234567]);
+  assert.equal(result["componentPrimitiveId"], "component-b"); assert.equal(result["observedComponentCount"], 2);
+  assert.equal(result["observedPadCount"], 3); assert.equal(result["observedRowCount"], 3); assert.equal(result["returnedRowCount"], 2);
+  assert.equal(result["relationshipEvidence"], "native-component-child-list-and-global-pad-membership");
+  assert.equal(result["reciprocalParentVerified"], false); assert.equal(result["symbolPinMappingVerified"], false);
+  assert.equal(fixture.evaluateChild("calls"), 10); assert.equal(fixture.evaluateChild("dataReads"), 6); assert.equal(fixture.evaluateChild("getterReads"), 0);
+  assert.match(JSON.stringify(queryCurrentPcbGeometry({ method: input.method })), /"parameters":\["primitiveId"\]/u);
+  const empty = environment({ input, beforeChild: "children=[];" });
+  const emptyResult = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await empty.run()));
+  assert.deepEqual(emptyResult["value"], []); assert.equal(emptyResult["observedPadCount"], 2);
+  const noPads = environment({ input, beforeChild: "children=[];rows.Pad=[];" });
+  const noPadsResult = validateCurrentPcbGeometryResult(input, decodeExactReadEnvelope(await noPads.run()));
+  assert.deepEqual(noPadsResult["value"], []); assert.equal(noPadsResult["observedPadCount"], 0);
+});
+
+void test("current component child-pad association refuses missing, colliding, malformed or contradictory membership", async () => {
+  const input = componentPadsInput();
+  for (const argumentsValue of [{}, { primitiveId: "" }, { primitiveId: [] }, { primitiveId: "x".repeat(257) },
+    { primitiveId: "component-b", primitiveIds: ["pad-a"] }, { primitiveId: "component-b", topic: "private" }]) {
+    assert.throws(() => buildCurrentPcbGeometryProgram({ ...input, arguments: argumentsValue }));
+  }
+  const missing = environment({ input: componentPadsInput("missing") });
+  await assert.rejects(missing.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  assert.equal(missing.evaluateChild("dataReads"), 1);
+  for (const beforeChild of ["children=null;", "children=undefined;", "children.push(children[0]);", "delete children[0];",
+    "children[0].globalIndex='component-b';", "children[0].globalIndex='missing';", "children[0].globalIndex='';",
+    "children[0].num='contradiction';", "children[0].net='contradiction';", "children[0].layerId=12;",
+    "children[0].locked=true;", "children[0].plated=true;", "children[0].padTypeAspect=0;",
+    "rows.Component.push(rows.Component[0]);", "rows.Component[1].globalIndex=rows.Pad[0].globalIndex;",
+    "rows.Pad.push(rows.Pad[0]);", "rows.Pad[0].num=undefined;", "children[0].net=undefined;",
+    "rows.Component=[];", "rows.Component=Array.from({length:257},(_,i)=>({globalIndex:i===0?'component-b':String(i)}));",
+    "children=Array.from({length:257},(_,i)=>({...children[0],globalIndex:String(i)}));",
+    "Object.defineProperty(children[0],'globalIndex',{get(){getterReads++;throw new Error('PRIVATE_CHILD');}});",
+    "Object.defineProperty(rows.Component[0],'globalIndex',{get(){getterReads++;throw new Error('PRIVATE_COMPONENT');}});"]) {
+    const fixture = environment({ input, beforeChild });
+    await assert.rejects(fixture.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+    assert.equal(fixture.evaluateChild("getterReads"), 0);
+  }
+});
+
+void test("current component child-pad association seals complete compound samples and host metadata", async () => {
+  const input = componentPadsInput();
+  for (const afterCall of ["if(dataReads===4)rows.Component.reverse();", "if(dataReads===4)rows.Component[1].globalIndex='other';",
+    "if(dataReads===5)rows.Pad.reverse();", "if(dataReads===5)rows.Pad[0].center.x++;", "if(dataReads===6)children.reverse();",
+    "if(dataReads===6)children.pop();", "if(dataReads===3)parent.activeTab='other';",
+    "if(dataReads===2)Bus.prototype.rpcCall=async()=>({message:[]});"]) {
+    await assert.rejects(environment({ input, afterCall }).run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  }
+  const oversized = environment({ input, beforeChild: "rows.Pad=Array.from({length:256},(_,i)=>({...rows.Pad[0],globalIndex:String(i),num:'漢'.repeat(1024)}));children=[];" });
+  await assert.rejects(oversized.run(), { message: "CURRENT_PCB_GEOMETRY_READ_FAILED" });
+  const raw: unknown = decodeExactReadEnvelope(await environment({ input }).run());
+  assert.ok(raw !== null && typeof raw === "object" && "rows" in raw && Array.isArray(raw.rows));
+  for (const invalid of [{ ...raw, componentPrimitiveId: "other" }, { ...raw, observedPadCount: 1 },
+    { ...raw, observedComponentCount: 0 }, { ...raw, observedComponentCount: 257 }, { ...raw, reciprocalParentVerified: true },
+    { ...raw, symbolPinMappingVerified: true }, { ...raw, rows: [raw.rows[0], raw.rows[0]] }]) {
+    assert.throws(() => validateCurrentPcbGeometryResult(input, invalid));
+  }
 });
 
 void test("current geometry refuses stable-ID geometry drift, target drift and retained receiver changes", async () => {

@@ -2,7 +2,7 @@
 
 This file is the durable engineering record and common ground for every human or agent working in this repository. Keep it current whenever a requirement, assumption, interface, compatibility tuple, safety boundary, or test result changes. Do not silently turn an open question into a requirement.
 
-Last updated: 2026-10-14 (Europe/Berlin)
+Last updated: 2026-10-15 (Europe/Berlin)
 
 ## Current checkpoint
 
@@ -13,7 +13,111 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Restarted201000; disposable live check in progress
+### Restarted213000; metadata and normal close passed, pad details release in progress
+
+Fresh facade778304/parent776410/start221198580 loads213000 on Node24.18.
+Independent installed admission repeats exact1177files/22982782bytes/42dirs/
+seven skills/inventoryb6b03e70/source340c0ecc836/runtime3f025ad0e. Old750542
+is absent. Prior opening75c11213/terminationfc233f80 remain exact. Postmerge
+CI38639298338 passed all ten jobs. Production designs and records stay excluded.
+
+Ordinary-startup-213000-20261015 launched ONCE in cell13, root6508,
+Job89033508fc834d7f9bfeac6236f87abd/helper053796b065d6476eaba3f674962c042d,
+launch digestc951729b8a6c23b144fa997668d2d914d932a718b370b7f025da687aaf4a96e2.
+Status17 authenticated ded07x99dcxb504, no incomplete operations. Context21
+observed Start Page/no project. Disposable opening current-pcb-open-213000-20261015
+completed in cell24, nohardStop/orphan, terminal4933cddb. Both navigation stages
+are consumed; never repeat them. Metadata getAll cell40 completed: two matching
+samples, two components and all six raw metadata fields, including literal
+name formula. Observation5cfc9aee3afcc71a44ee63aba320f056c76a6b23bf57860f7d12a92f0b62b138.
+This validates the213000 getAll case only, not003000 holes/child lists. Source
+fixture970d21b3/598016bytes verified before opening. Private transport transcripts
+are in /tmp/easyeda-live-213000-01hdcG, not managed engineering receipts.
+
+Feature branch feature/pcb-pad-details-20261015 adds nullable Pad hole geometry
+and getAllPinsByPrimitiveId forward child-list/global-Pad correlation. Native
+public parent getter is caller-derived; reciprocalParentVerified and
+symbolPinMappingVerified stay false. Candidate003000 has24focused and34coverage
+tests passing. Main/independent source review accepts; strict types/full lint,
+build/compatibility/package/repository/privacy/seven official skill validators
+pass. Initial coverage check found the expected stale generated inventory;
+regeneration and34cases pass. Lint required merging consecutive push calls;
+manifest wording checks required preserving typed API/connected-admission
+boundaries. Both corrected without weakening rules. Final source340
+89557604fe3f015abf64a2998b4758ed32dece7080eea9dd2d2536223ec33688/runtime3
+5c2f1d985e018b203263017151cf1313fcd50d9255dd6b703f3cd1054b2fba8c;
+external pins unchanged. Payloadb265cee206671988a847e499d0098d8477602828 is
+published in PR30; required CI38648316053 is running. Fulltree
+ceb52f17291fb1156b96633c80ce79b5094352ff/packagecfefb90420e8d5b4f02697723afc81298b3ee8ba.
+Installation remains pending. Observe-window49 completed, exact retained
+HWND48562460. Normal-close54 dispatched ONCE and was acknowledged. Separate
+retained termination59 completed with state terminated and terminationProvedtrue.
+No prompt choice or forced exit. Never repeat launch/navigation/close. Raw
+close-intent9d9588bf, acknowledgment8ae93eaf and terminationd15d191a differ from
+internal canonical digests. Opening journal849ba911 is completed/non-orphan/
+nohardStop; independent retained metadata/opening/lifecycle crossbindings pass. Closed
+disposable file remains970d21b3/598016bytes, scoped byte equality only. No pending
+CAD/tool/recovery. Loaded213000 remains unchanged.
+
+PR review caught one stale bundled-startup catalog assertion (10 versus11).
+Corrected that existing assertion; its affected configured-generation test
+passes under Node24.18/core0, with authority/isolation assertions unchanged.
+Search found no other stale executable count. Initial CI38648316053 was
+canceled and is not release acceptance. Source/runtime pins remain exact;
+only the existing test and this checkpoint changed after the reviewed payload.
+Corrected-payload CI and installation remain pending.
+
+### Historical delivered213000; next work is metadata live admission and ownership backlog
+
+PR29 merged through the protected route as main
+1be7cfc13dca23f5b8443933fa73fb207c4a7d1e. Tested payload
+80c6c911df6de6b4e9d95c2f1518d076cbf56f26 passed all ten required jobs in
+CI38637816276:9899facade passes/five skips/zero failures and424bridge passes.
+Fulltree8c782f95d568e7b2a75f3f6223337bf757fa1022/package
+6cfa6ba60276c09a562ce1d6cd7cf3cf3c02c011 equal the tested payload exactly.
+Postmerge CI38639298338 is running on that same tree; check its outcome next
+session without rerunning successful checks solely for the restart.
+
+Official Git marketplace upgrade completed errors[], installed/enabled
+0.3.0+codex.20261014213000 from main. Marker and marketplace snapshot HEAD
+equal1be7cfc13. Independent post-probe admission confirms1177files/22982782bytes,
+42directories(all0755), seven skills,1176files100644/one100755, no extra entries/
+symlinks/hardlinks/mode mismatch. InventorySHA
+b6b03e70757bd09dd32ed6670e99b1244d796cdb70a8cad5973631386f276ed3
+uses Git tree order: path NUL Gitmode NUL bytes NUL SHA256 LF. Final source340
+c0ecc836bb3e655a0eabd1f61c4bb0e7c111a30061970feeea78ab5d1ba20644 and runtime3
+f025ad0ec9a166466b8a2301ea6e9bd5fe6ad678b4ee9aa4552627dd35e461d6 match.
+External pins/helper are unchanged. Actual installed configured offline startup
+passes ambientNode26.7 to pinned24.18,15tools, identity7/geometry10 and lifecycle
+schemas. Nine process samples show no upstream child/nonstdio socket, stderr0.
+Synthetic profile only; probe closed normally. Proof1965bytes SHA
+cdfc1478f01537eda61ad9600dfc8f4ad390f1116db3113886d7a483434c751d is at
+/tmp/easyeda-installed-213000-4ykAmH/proof.json; reused probe7ee30e08.
+Public final delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/29#issuecomment-6178830672.
+
+Current host750542/parent748651/start220608550 remains201000 on Node24.18.
+Official upgrade emptied its old cache directory; do not claim current old-cache
+source admission, hotpatch or kill the host. Use a fresh Codex session before
+live213000 calls. Completed201000 opening75c11213 and retained termination
+fc233f80 remain exact after installation. Independent review accepted all16
+transport commitments, opening artifacts, reader target/order/sample evidence,
+single-close acknowledgment and separate retained-Job termination. Raw file
+hashes and internal canonical digests remain distinct. No pending CAD/recovery.
+Production designs and records were not accessed.
+
+Next: admit fresh213000, then combine one bounded nonempty metadata observation
+with the maintained disposable launch/open/normal-close lifecycle if needed.
+Do not replay completed operations or expand a test matrix. The six new metadata
+fields are source/CI-tested, not connected-validated. Continue reciprocal
+Component/Pad ownership and pin-mapping implementation from reviewed source;
+metadata does not prove ownership. Richer pad/component/library/3D contracts,
+current writer completion/SQL-effect proof, lost-handle supervision and broader
+ECO/export work remain in docs/current-component-metadata-release-2026-10-14.md.
+Preserve this local delivery checkpoint for the next source commit; no extra
+documentation-only release cycle is needed.
+
+### Historical restarted201000; disposable readers and normal close completed
 
 Fresh facade750542/parent748651/start220608550 loads installed201000 on pinned
 Node24.18. Read-only admission matches all1177files/22960951bytes/42directories/
@@ -33,13 +137,21 @@ never repeat them. Explicit Save was not dispatched; normal open effects are
 accepted, not unchanged-storage proof. Component identity39 returns two IDs;
 selected geometry46 returns both in reversed caller order, independently checked.
 Pad identity50 returned four IDs and selected geometry53 returned all four in
-reversed caller order, independently checked. Functions cell58 now owns the
-sequential layer-list/copper-count/Line/Arc/Via geometry reads; await it, do not
-duplicate those calls. No new fixture objects are being created.
+reversed caller order, independently checked. Cell58 completed layer262/count4,
+Line1/Arc0/Via1 geometry. No new fixture objects were created. Arc evidence is
+empty-case only. Window76 observed unique retained HWND58068678. Normal-close
+was submitted ONCE in cell78 and acknowledged. Cell82 separately proved
+retained termination; state terminated/normalClose.terminationProved true.
+No prompt choice, forced exit or manual close was used. Never repeat any
+completed launch/navigation/close. Raw file hashes: close-intent073d5f8b,
+acknowledgment218bafaa, terminationfc233f80; the tool's306b256b close-intent
+reference is an internal canonical digest, not the raw file hash.
 Private transport transcripts are under
 /tmp/easyeda-live-201000-mH5DJy; they are not managed engineering receipts.
-No close request has been issued. Keep this facade alive through normal close and retained
-termination observation; never repeat this launch. Production remains excluded.
+Opening journal rawSHA75c11213 is completed/non-orphan/nohardStop. Closed
+disposable file remains970d21b3903e727cc3fb97b843c43e188f38254d85f361e5439fc1a5d382f199,
+598016bytes; this is scoped byte equality, not broader persistence/rollback proof.
+No pending CAD/tool/recovery. Production remains excluded.
 The normal sandbox runner fails before exec; approved escalated read-only shell
 calls work. NodeREPL reports an invalid sandboxCwd; no CAD fallback was attempted.
 
@@ -57,12 +169,19 @@ c0ecc836bb3e655a0eabd1f61c4bb0e7c111a30061970feeea78ab5d1ba20644 and runtime3
 f025ad0ec9a166466b8a2301ea6e9bd5fe6ad678b4ee9aa4552627dd35e461d6; external
 pins unchanged. Existing timings show graph1353ms versus closure10773ms, so
 no end-to-end speedup is claimed. Required exact-payload CI/publication/install
-are pending. Installed201000 remains immutable.
-Do not install before retained
-normal-close/termination validation completes. Scope/backlog is in
+subsequently completed as recorded above, after retained normal-close/termination
+validation. No hotpatch of the loaded201000 host occurred. Scope/backlog is in
 docs/current-component-metadata-release-2026-10-14.md.
 
-### Delivered201000; disposable readers and normal-close validation next
+Final payload80c6c911df6de6b4e9d95c2f1518d076cbf56f26 was published in PR29;
+required CI38637816276 subsequently passed all ten jobs.
+Fulltree8c782f95d568e7b2a75f3f6223337bf757fa1022/package6cfa6ba60276c09a562ce1d6cd7cf3cf3c02c011.
+Independent final source/bundle/external-pin verification passed. Reused offline
+installation-only probe7ee30e08 under /tmp/easyeda-installed-213000-4ykAmH
+subsequently passed. Local handoff edits after this payload are for the next source commit;
+preserve them across protected merge, without an extra docs-only release cycle.
+
+### Historical delivered201000; disposable readers and normal-close validation next
 
 PR28 merged through the protected route as main
 1746af78a98a4ca33e7fb16af834580c8d930087. Corrected payload

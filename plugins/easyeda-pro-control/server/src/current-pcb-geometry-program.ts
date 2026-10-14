@@ -11,11 +11,12 @@ export function buildCurrentPcbGeometryProgram(input: unknown): string {
   const request = parseCurrentPcbGeometryRequest(input);
   const family = currentPcbGeometryFamily(request);
   const primitiveIds = "primitiveIds" in request.arguments ? request.arguments.primitiveIds : null;
+  const componentPrimitiveId = "primitiveId" in request.arguments ? request.arguments.primitiveId : null;
   const topics = { Line: "pcb/extensionAPI/track-getAll", Arc: "pcb/extensionAPI/arc-getAll", Via: "pcb/extensionAPI/via-getAll",
     Component: "pcb/extensionAPI/component-getAll", Pad: "pcb/extensionAPI/pad-getAll" } as const;
   return `let timer,clear;
 try{
-const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)},family=${JSON.stringify(family)},topic=${JSON.stringify(topics[family])},primitiveIds=${JSON.stringify(primitiveIds)};let expired=false;
+const root=globalThis,apply=Reflect.apply,target=${JSON.stringify(request.target)},family=${JSON.stringify(family)},topic=${JSON.stringify(topics[family])},primitiveIds=${JSON.stringify(primitiveIds)},componentPrimitiveId=${JSON.stringify(componentPrimitiveId)};let expired=false;
 const bad=()=>{throw new Error('CURRENT_PCB_GEOMETRY_READ_FAILED');};
 ${buildCurrentProjectUrlGuard()}
 const own=(owner,key)=>{if(owner===null||(typeof owner!=='object'&&typeof owner!=='function'))bad();const d=Object.getOwnPropertyDescriptor(owner,key);if(!d||!Object.hasOwn(d,'value'))bad();return d.value;};
@@ -75,9 +76,22 @@ const componentMetadata=row=>{
 };
 // Native Point may retain an optional _hashed cache; project only own x/y data without reading that cache or its getter.
 const point=value=>{if(!object(value))bad();const keys=Reflect.ownKeys(value);if(!keys.includes('x')||!keys.includes('y')||keys.some(key=>key!=='x'&&key!=='y'&&key!=='_hashed'))bad();return{x:num(own(value,'x')),y:num(own(value,'y'))};};
-const copyRows=value=>{
+const arrayLength=value=>{
  const p=Object.getPrototypeOf(value??{});if(!Array.isArray(value)||(p!==Array.prototype&&p!==childArrayPrototype))bad();
  const n=own(value,'length');if(!Number.isInteger(n)||n<0||n>${CURRENT_PCB_GEOMETRY_MAX_ROWS}||Reflect.ownKeys(value).length!==n+1)bad();
+ return n;
+};
+// PCB217199c8@10370738: global pad-getAll already scales hole tuple/offsets to mil and rotation to degrees.
+// Null must branch first: legitimate holeless rows can contain NaN holeRotation. Zero dimensions are native observations, not DFM approval.
+const hole=row=>{
+ const tuple=own(row,'holeAspect');if(tuple===null)return null;
+ const n=arrayLength(tuple),shape=own(tuple,'0');if((shape==='ROUND'&&n!==2)||(shape==='SLOT'&&n!==3)||(shape!=='ROUND'&&shape!=='SLOT'))bad();
+ const diameter=num(own(tuple,'1'));if(diameter<0)bad();const offset=point(own(row,'holeOffset'));
+ const result={shape,diameter,offsetX:offset.x,offsetY:offset.y,rotation:num(own(row,'holeRotation'))};
+ if(shape==='SLOT'){const length=num(own(tuple,'2'));if(length<0)bad();result.length=length;}return result;
+};
+const copyRows=value=>{
+ const n=arrayLength(value);
  const rows=[],seen=new Set();
  for(let i=0;i<n;i++){
   const row=plain(own(value,String(i))),id=text(own(row,'globalIndex'),256);if(id.length===0||seen.has(id))bad();seen.add(id);
@@ -91,7 +105,7 @@ const copyRows=value=>{
    const center=point(own(row,'center')),padLayer=layer(own(row,'layerId')),padType=integer(own(row,'padTypeAspect'));
    if(![1,2,12].includes(padLayer)||![0,1,2].includes(padType))bad();
    rows.push({...base,layer:padLayer,padNumber:text(own(row,'num'),1024),x:center.x,y:center.y,rotation:num(own(row,'rotation')),
-    metallization:bool(own(row,'plated')),padType});
+    metallization:bool(own(row,'plated')),padType,hole:hole(row)});
   }else if(family==='Via'){
    const center=point(own(row,'center')),viaType=integer(own(row,'type'));if(![0,1,2].includes(viaType))bad();
    rows.push({...base,x:center.x,y:center.y,holeDiameter:num(num(own(row,'holeRadius'))*2),diameter:num(num(own(row,'radius'))*2),viaType,
@@ -107,10 +121,29 @@ const copyRows=value=>{
 const call=async(name,arg)=>{check();const reply=await apply(rpc,channel,[name,arg,0]);check();plain(reply);return own(reply,'message');};
 const identity=async()=>{const value=await call('getTabIdAndDocType',undefined);check();exact(value,['tabId','docType']);if(own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
 const read=async()=>{await identity();check();const raw=await call(topic,{});check();const rows=copyRows(raw);check();await identity();check();return rows;};
+// PCB217199c8@10336862 enumerates gr.getItem(id).getPads() with full IDs. API021d155b@1427274 supplies its own input as public parent ID.
+// Correlate observed child membership only; do not infer reverse parents, reconstructed IDs or symbol-pin mapping.
+const readComponentPads=async()=>{
+ await identity();check();const components=await call('pcb/extensionAPI/component-getAll',{}),componentIds=[],componentSet=new Set();
+ for(let i=0,n=arrayLength(components);i<n;i++){const id=text(own(plain(own(components,String(i))),'globalIndex'),256);if(id.length===0||componentSet.has(id))bad();componentIds.push(id);componentSet.add(id);}
+ if(!componentSet.has(componentPrimitiveId))bad();
+ const pads=copyRows(await call('pcb/extensionAPI/pad-getAll',{})),byId=new Map();
+ for(const pad of pads){if(componentSet.has(pad.primitiveId))bad();byId.set(pad.primitiveId,pad);}
+ const children=await call('pcb/extensionAPI/component-getAllPinsByPrimitiveId',componentPrimitiveId),childRows=[],seen=new Set(),selected=[];
+ for(let i=0,n=arrayLength(children);i<n;i++){
+  const row=plain(own(children,String(i))),id=text(own(row,'globalIndex'),256);if(id.length===0||seen.has(id))bad();seen.add(id);
+  const member={primitiveId:id,padNumber:text(own(row,'num'),1024),net:text(own(row,'net'),1024,true),layer:layer(own(row,'layerId')),
+   primitiveLock:bool(own(row,'locked')),metallization:bool(own(row,'plated')),padType:integer(own(row,'padTypeAspect'))};
+  const pad=byId.get(id);if(!pad||Object.keys(member).some(key=>member[key]!==pad[key]))bad();childRows.push(member);selected.push(pad);
+ }
+ await identity();check();return{componentIds,pads,childRows,selected};
+};
 const run=async()=>{
- const first=await read(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();
- const second=await read();if(JSON.stringify(second)!==firstJson)bad();check();
- const observation={ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request.method)},target,rows:first,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ const reader=componentPrimitiveId===null?read:readComponentPads,first=await reader(),firstJson=JSON.stringify(first);if(new TextEncoder().encode(firstJson).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();
+ const second=await reader();if(JSON.stringify(second)!==firstJson)bad();check();
+ const observation={ok:true,kind:'current-pcb-geometry-observation',method:${JSON.stringify(request.method)},target,rows:componentPrimitiveId===null?first:first.selected,samples:2,implementationKind:'native-task-equivalent',cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ if(componentPrimitiveId!==null)Object.assign(observation,{componentPrimitiveId,observedComponentCount:first.componentIds.length,observedPadCount:first.pads.length,
+  relationshipEvidence:'native-component-child-list-and-global-pad-membership',reciprocalParentVerified:false,symbolPinMappingVerified:false});
  const encode=value=>{const json=JSON.stringify(value),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
   if(utf8Bytes>${CURRENT_PCB_GEOMETRY_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_PCB_GEOMETRY_MAX_BYTES})bad();return envelope;};
  const complete=encode(observation);if(primitiveIds===null)return complete;

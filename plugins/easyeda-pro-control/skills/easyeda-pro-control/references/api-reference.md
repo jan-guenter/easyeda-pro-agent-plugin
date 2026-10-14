@@ -37,7 +37,7 @@ standalone Save capability. Follow the returned route and its exact scope.
 
 The current source inventory contains 774 distinct paths: 212 public subsets,
 29 native equivalents, no lifecycle-only methods, 82 implemented-but-blocked
-methods and 451 omissions. Its routes include 330 available with runtime guards,
+methods and 451 omissions. Its routes include 331 available with runtime guards,
 94 blocked and two partially blocked. These are implementation classifications,
 not connected validation counts; one method can have several routes.
 
@@ -272,7 +272,7 @@ resolved connectivity.
 | Arc | Line fields plus `arcAngle`, `interactiveMode` |
 | Via | `x`, `y`, `holeDiameter`, `diameter`, `viaType`, `designRuleBlindViaName`, `startLayer`, `endLayer`, `maskExpansionMode`, `topMaskExpansion`, `bottomMaskExpansion` |
 | Component | `layer` (1/2), `x`, `y`, `rotation`; optional raw `designator`, `name`, `manufacturer`, `manufacturerPart`, `supplier`, `supplierPart` |
-| Pad | `layer` (1/2/12), `padNumber`, `x`, `y`, `rotation`, `metallization`, `padType` (0/1/2) |
+| Pad | `layer` (1/2/12), `padNumber`, `x`, `y`, `rotation`, `metallization`, `padType` (0/1/2), `hole` |
 
 Lengths use mil from the data origin, which can differ from the displayed
 canvas origin. Arc angle and Component/Pad rotation use degrees. Arc modes
@@ -289,12 +289,25 @@ own-undefined values omit the corresponding field; empty strings are preserved.
 Selected null, non-string, inherited or accessor-backed values refuse. `name`
 may be an unevaluated formula, not rendered text. These values are observations,
 not verified manufacturer part identity or schematic linkage. Other Component
-attributes, libraries, child IDs and pin mappings remain omitted.
-Pad shapes, holes, rules, mask expansions
-and parent-component identity are omitted. A Pad row may be inherited; never
-infer that it is standalone or derive its parent from an ID prefix. The native
-holeless-Pad callback can contain NaN in discarded `holeRotation`; only promised
-fields are validated. Required missing fields refuse rather than receive SDK
+attributes and library enrichment remain omitted. For observed child membership,
+use the separate component method below.
+
+Pad `hole` is null or one of these strict objects:
+
+```ts
+{ shape: "ROUND", diameter, offsetX, offsetY, rotation }
+{ shape: "SLOT", diameter, length, offsetX, offsetY, rotation }
+```
+
+Dimensions and offsets use mil. Hole rotation uses degrees relative to the pad;
+it is separate from the pad's board rotation. The `length` field preserves the
+native slot-length value. Dimensions must be nonnegative, but zero is retained
+because the native callback can substitute zero for an unavailable dimension.
+This is not drill or fabrication validation. A null hole does not inspect unused
+rotation/offset fields, so native NaN for a holeless pad stays outside the DTO.
+Copper shapes, rules, mask expansions and reverse parent identity remain omitted.
+A Pad row may be inherited; never infer that it is standalone or derive its
+parent from an ID prefix. Required missing fields refuse rather than receive SDK
 constructor defaults. Native Component serialization still reads existing
 footprint/device/font caches and child arrays before projection; ID-only reads
 do not avoid that work or fetch missing libraries.
@@ -318,6 +331,31 @@ complete source, connectivity nor persistence. Optional public filters, scalar
 change, navigation, source export, settings change or Save is requested.
 Installed180500 passed nonempty Component/Pad `getAll` on one disposable PCB;
 the new explicit-ID routes and other generations have no connected claim yet.
+
+### Component child-pad membership
+
+The same tool accepts `eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId` with
+`arguments:{"primitiveId":"<component-id>"}` and the exact PCB target.
+It requires the component in the complete native Component ID collection,
+reads its complete native child-pad list, and correlates every full child ID
+with the complete global Pad collection. Shared identity, number, raw net,
+layer, lock, metallization and pad-type values must agree. It repeats the
+compound observation and compares both complete samples before returning.
+
+The result contains Pad DTOs in native child order, including hole geometry
+from the global Pad callback. The component-specific callback uses different
+rounding and hole units, so its geometry is not copied. An existing component
+may return an empty child list; a missing component or child refuses. Unrelated
+pads stay outside the result but participate in full-family stability checks.
+
+`componentPrimitiveId` identifies the requested component. Counts are
+`observedComponentCount`, `observedPadCount` and `returnedRowCount`.
+`relationshipEvidence` is `native-component-child-list-and-global-pad-membership`.
+`reciprocalParentVerified` and `symbolPinMappingVerified` remain false. The
+public parent getter stores the caller-supplied component ID, so it cannot
+independently corroborate the reverse relationship. Pad numbers may repeat;
+they are not symbol-pin identities. These are plain Pad DTOs, not SDK
+ComponentPad instances or a verified electrical mapping.
 
 ## Local historical abandonment
 
