@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "5acd87d9836459e364545084e8b711413ce2cf71b262f8656c9f472cef8da774";
+const __easyedaBundlePairId = "bd277030b7150068a4a2724e39c89f8165ae992655006987ff6e5f5bddfcfc38";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -119133,7 +119133,21 @@ function need45(condition, message) {
   }
 }
 function relaunchMethods(engine2, runtime) {
-  return [runtime.launch, runtime.status, runtime.clockObservationForLaunch, runtime.releaseCapture, engine2.releaseClosedSessionAuthority];
+  return [
+    runtime.launch,
+    runtime.status,
+    runtime.clockObservationForLaunch,
+    runtime.releaseCapture,
+    engine2.releaseClosedSessionAuthority,
+    runtime.capture,
+    runtime.proveTerminated,
+    engine2.captureClosedSessionAuthority,
+    engine2.clockObservationForClosedCapture,
+    engine2.runtimeIdentity,
+    engine2.assertBridgeDispatchAllowed,
+    engine2.assertRecoveryOperationIsolated,
+    engine2.upstream.withAuthenticatedBridgeDispatchScope
+  ];
 }
 function summary6(slot) {
   return {
@@ -119149,6 +119163,11 @@ function summary6(slot) {
     releaseAttempted: slot.releaseAttempted,
     captureReleased: slot.captureReleased,
     nativeLaunchClockStatus: slot.launchClock?.clock.status ?? "not-observed",
+    admissionAttempted: slot.admissionAttempted,
+    admissionCaptureRetained: slot.admissionCapture !== void 0,
+    admissionProved: slot.admissionProved,
+    nativeAdmissionClockStatus: slot.admissionClock?.clock.status ?? "not-observed",
+    startupQualified: false,
     beforeWriteBaselineVerified: false,
     openingEffectsVerified: false,
     backendActorVerified: false,
@@ -119162,7 +119181,7 @@ function summary6(slot) {
     nextSafeAction: slot.journal.nextSafeAction
   };
 }
-var PROFILE16, currentSymbolBaselineRequestSchema, CurrentSymbolBaselineCoordinator;
+var PROFILE16, activeSessionSchema, currentSymbolBaselineRequestSchema, CurrentSymbolBaselineCoordinator;
 var init_current_symbol_baseline_runtime = __esm({
   "server/src/current-symbol-baseline-runtime.ts"() {
     init_zod();
@@ -119173,6 +119192,12 @@ var init_current_symbol_baseline_runtime = __esm({
     init_current_symbol_metadata_preparation();
     init_windows_authority();
     PROFILE16 = "easyeda-pro-control.current-symbol-closed-baseline.v1";
+    activeSessionSchema = external_exports.object({
+      sessionId: external_exports.string().regex(/^[A-Za-z0-9_-]{43}$/u),
+      sequence: external_exports.number().int().positive(),
+      authenticationReceiptSha256: external_exports.string().regex(/^[a-f0-9]{64}$/u),
+      authenticatedAtEpochMs: external_exports.number().int().positive()
+    }).strict();
     currentSymbolBaselineRequestSchema = external_exports.object({
       operationId: external_exports.string().regex(/^[A-Za-z0-9._:-]{1,160}$/u),
       preparation: currentSymbolMetadataPreparationRequestSchema.omit({ observationProjection: true }),
@@ -119222,7 +119247,8 @@ var init_current_symbol_baseline_runtime = __esm({
         slot.journal.hardStop = true;
         slot.journal.relaunchAttempted = slot.relaunchAttempted;
         slot.journal.releaseAttempted = slot.releaseAttempted;
-        slot.journal.nextSafeAction = "Inspect this consumed attempt. Do not repeat close, copy, launch, release, Save or navigation; retain the original facade and process handles.";
+        slot.journal.admissionAttempted = slot.admissionAttempted;
+        slot.journal.nextSafeAction = "Inspect this consumed attempt. Do not repeat close, copy, launch, release, admission, Save or navigation; retain the original facade and process handles.";
         if (slot.created) {
           const persisted = await loadOperation(slot.owner.operationId);
           if (canonicalJson(persisted) !== slot.journalText) {
@@ -119236,7 +119262,9 @@ var init_current_symbol_baseline_runtime = __esm({
             relaunchAttempted: slot.relaunchAttempted,
             launchAcknowledged: slot.launch !== void 0,
             releaseAttempted: slot.releaseAttempted,
-            captureReleased: slot.captureReleased
+            captureReleased: slot.captureReleased,
+            admissionAttempted: slot.admissionAttempted,
+            admissionCaptureRetained: slot.admissionCapture !== void 0
           });
         }
       }
@@ -119282,6 +119310,7 @@ var init_current_symbol_baseline_runtime = __esm({
           copyAttempted: false,
           relaunchAttempted: false,
           releaseAttempted: false,
+          admissionAttempted: false,
           createdAt: (/* @__PURE__ */ new Date()).toISOString(),
           updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
           nextSafeAction: "Retain one closed-session capture in the original authenticated scope before normal close."
@@ -119298,6 +119327,8 @@ var init_current_symbol_baseline_runtime = __esm({
           relaunchAttempted: false,
           releaseAttempted: false,
           captureReleased: false,
+          admissionAttempted: false,
+          admissionProved: false,
           evidence: /* @__PURE__ */ new Map()
         };
         this.slots.set(owner.operationId, slot);
@@ -119477,7 +119508,7 @@ var init_current_symbol_baseline_runtime = __esm({
       }
       /** Owned subsequent launch only. Consumes the attempt before any await and
        * keeps actual return objects even when publication or handle release fails.
-       * There is deliberately no authenticated admission, project-open or writer.
+       * The later admission is separate; this dispatch opens no project or writer.
        */
       async relaunch(operationId3) {
         const slot = this.slots.get(operationId3);
@@ -119501,14 +119532,16 @@ var init_current_symbol_baseline_runtime = __esm({
           );
           const methods4 = relaunchMethods(this.engine, this.runtime);
           const captureText = canonicalJson(capture3), priorLaunch = canonicalJson(source4.launchProjection);
+          const sourceText = canonicalJson({ target: source4.target, expectedFingerprint: source4.expectedFingerprint, preNavigationCheckpoint: source4.preNavigationCheckpoint });
           const endpoint2 = lifecycleReader.call(upstream2), priorSession = source4.bridgeSession;
           const priorSessionText = canonicalJson(priorSession);
           need45(isRecord(endpoint2), "Current symbol relaunch lifecycle is unavailable.");
           const endpointText = canonicalJson(endpoint2["publicEndpoint"]);
           let replacementSessionText;
-          const infrastructure = (launched2) => {
+          const infrastructure = (launched2, scopeText) => {
+            const scope5 = scopeReader.call(upstream2);
             need45(
-              this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && upstream2.bridgeSessionLifecycle === lifecycleReader && relaunchMethods(this.engine, this.runtime).every((method5, index) => method5 === methods4[index]) && scopeReader.call(upstream2) === void 0 && canonicalJson(slot.owner) === slot.ownerText && canonicalJson(capture3) === captureText && canonicalJson(source4.launchProjection) === priorLaunch && canonicalJson(priorSession) === priorSessionText,
+              this.engine.upstream === upstream2 && this.engine.executionAuthorityValidator === validator && upstream2.currentAuthenticatedBridgeDispatchBinding === scopeReader && upstream2.bridgeSessionLifecycle === lifecycleReader && relaunchMethods(this.engine, this.runtime).every((method5, index) => method5 === methods4[index]) && (scopeText === void 0 ? scope5 === void 0 : scope5 !== void 0 && canonicalJson(scope5) === scopeText) && this.slots.get(operationId3) === slot && canonicalJson(slot.owner) === slot.ownerText && canonicalJson(capture3) === captureText && canonicalJson(source4.launchProjection) === priorLaunch && canonicalJson(priorSession) === priorSessionText && canonicalJson({ target: source4.target, expectedFingerprint: source4.expectedFingerprint, preNavigationCheckpoint: source4.preNavigationCheckpoint }) === sourceText,
               "Current symbol relaunch infrastructure, capture or ended scope changed."
             );
             assertOriginalCurrentSymbolBaselineCopy(copy, this.engine);
@@ -119564,14 +119597,15 @@ var init_current_symbol_baseline_runtime = __esm({
           const launch = await this.runtime.launch();
           slot.launch = launch;
           const launchText = canonicalJson(launch);
-          const launched = () => {
-            infrastructure(true);
+          const launched = (scopeText) => {
+            infrastructure(true, scopeText);
             const status2 = this.runtime.status();
             need45(
               status2.state === "owned" && canonicalJson(status2.launch) === launchText && canonicalJson(launch) === launchText && launch.helperInstance === source4.launchProjection.helperInstance && launch.jobId !== source4.launchProjection.jobId && launch.root.startIdentity !== source4.launchProjection.root.startIdentity,
               "Current symbol relaunch original result or new generation changed."
             );
           };
+          slot.currentLaunch = launched;
           const journalCurrent = async () => {
             launched();
             const journal = await loadOperation(operationId3);
@@ -119622,6 +119656,153 @@ var init_current_symbol_baseline_runtime = __esm({
           return summary6(slot);
         } catch (error51) {
           return await _CurrentSymbolBaselineCoordinator.fail(slot, "relaunch-or-release", error51);
+        } finally {
+          this.busy = false;
+        }
+      }
+      /** One new-session capture on the retained relaunched Job. A disconnected
+       * observation is repeatable; once a session is selected, every failure consumes
+       * admission. Scope settlement is part of success, not merely the callback.
+       */
+      async admit(operationId3) {
+        const slot = this.slots.get(operationId3);
+        need45(
+          !this.busy && slot !== void 0 && slot.journal.state === "relaunched" && slot.captureReleased && slot.launch !== void 0 && slot.launchClock !== void 0 && slot.currentLaunch !== void 0 && !slot.admissionAttempted,
+          "Current symbol admission needs its original retained relaunch and unused attempt."
+        );
+        this.busy = true;
+        const { launch, launchClock, currentLaunch } = slot;
+        try {
+          currentLaunch();
+          const upstream2 = this.engine.upstream;
+          const reader = upstream2.bridgeSessionLifecycle, scope5 = upstream2.withAuthenticatedBridgeDispatchScope;
+          need45(typeof scope5 === "function" && typeof reader === "function", "Current symbol admission lacks its original scope or lifecycle reader.");
+          const lifecycle = reader.call(upstream2);
+          need45(isRecord(lifecycle), "Current symbol admission lifecycle is unavailable.");
+          const unchanged2 = async (scopeText) => {
+            currentLaunch(scopeText);
+            const persisted = await loadOperation(operationId3);
+            currentLaunch(scopeText);
+            need45(
+              canonicalJson(persisted) === slot.journalText && canonicalJson(slot.journal) === slot.journalText,
+              "Current symbol admission journal changed."
+            );
+          };
+          if (lifecycle["activeSession"] === null) {
+            await unchanged2();
+            return { ...summary6(slot), authentication: "pending", nextSafeAction: "Wait for this owned launch's authenticated bridge. Do not relaunch." };
+          }
+          slot.admissionAttempted = true;
+          const session = { ...activeSessionSchema.parse(lifecycle["activeSession"]), gatewayInstanceId: lifecycle["gatewayInstanceId"] };
+          const sessionText = canonicalJson(session);
+          let captureText, retainedCapture;
+          const sessionCurrent = (scopeText) => {
+            currentLaunch(scopeText);
+            need45(
+              slot.admissionCapture === retainedCapture && (retainedCapture === void 0 || canonicalJson(retainedCapture) === captureText),
+              "Current symbol admission original capture changed."
+            );
+            const now2 = reader.call(upstream2);
+            need45(
+              isRecord(now2) && isRecord(now2["activeSession"]) && canonicalJson({ ...now2["activeSession"], gatewayInstanceId: now2["gatewayInstanceId"] }) === sessionText,
+              "Current symbol admission selected session changed."
+            );
+          };
+          const current2 = async (scopeText) => {
+            sessionCurrent(scopeText);
+            await unchanged2(scopeText);
+            sessionCurrent(scopeText);
+          };
+          await current2();
+          need45(await assertIssuedWindowsClockObservation(launchClock) === launchClock, "Current symbol admission launch clock changed.");
+          await current2();
+          await this.engine.assertBridgeDispatchAllowed();
+          await current2();
+          await this.engine.assertRecoveryOperationIsolated(operationId3);
+          await current2();
+          slot.journal.admissionAttempted = true;
+          slot.journal.state = "admission-dispatching";
+          slot.journal.nextSafeAction = "Retain one capture from the new authenticated session; no project open, Save or writer is authorized.";
+          await _CurrentSymbolBaselineCoordinator.record(slot, "admission-intent", { launch, launchClock, session, capturePhase: "closed-edit", challengeAttempt: 1 });
+          await current2();
+          let completed3 = false;
+          await scope5.call(upstream2, async (binding2) => {
+            const scopeText = canonicalJson(binding2);
+            sessionCurrent(scopeText);
+            need45(
+              binding2.gatewayInstanceId === session.gatewayInstanceId && binding2.sessionId === session.sessionId && binding2.sessionSequence === session.sequence,
+              "Current symbol admission scope differs from its selected session."
+            );
+            await current2(scopeText);
+            await _CurrentSymbolBaselineCoordinator.record(slot, "admission-capture-intent", { bridgeDispatch: binding2 });
+            await current2(scopeText);
+            const capture3 = await this.engine.captureClosedSessionAuthority(operationId3, "closed-edit", 1);
+            slot.admissionCapture = capture3;
+            retainedCapture = capture3;
+            captureText = canonicalJson(capture3);
+            const captured = () => {
+              sessionCurrent(scopeText);
+              need45(canonicalJson(capture3) === captureText, "Current symbol admission original capture changed.");
+            };
+            captured();
+            await current2(scopeText);
+            captured();
+            need45(capture3.operationId === operationId3 && capture3.phase === "closed-edit" && capture3.challengeAttempt === 1 && canonicalJson(capture3.bridgeSession) === sessionText, "Current symbol admission capture identity differs.");
+            const roots = capture3.executionAuthority.processes.filter((process20) => process20.role === "easyeda-main");
+            need45(
+              roots.length === 1 && canonicalJson(roots[0]) === canonicalJson(launch.root) && capture3.executionAuthority.processes.every((process20) => process20.startIdentity.endsWith(`:job:${launch.jobId}`)),
+              "Current symbol admission capture differs from its relaunched root or Job."
+            );
+            const identity28 = await this.engine.runtimeIdentity(binding2);
+            captured();
+            await current2(scopeText);
+            captured();
+            need45(canonicalJson(identity28) === canonicalJson(capture3.runtimeIdentity), "Current symbol admission native runtime changed.");
+            slot.admissionClock = await this.engine.clockObservationForClosedCapture(capture3);
+            captured();
+            await current2(scopeText);
+            captured();
+            need45(await assertIssuedWindowsClockObservation(slot.admissionClock) === slot.admissionClock, "Current symbol admission capture clock changed.");
+            captured();
+            await current2(scopeText);
+            captured();
+            await _CurrentSymbolBaselineCoordinator.record(slot, "admission-capture-result", {
+              capture: capture3,
+              captureClock: slot.admissionClock,
+              admissionProved: false,
+              startupQualified: false,
+              executionAuthorized: false
+            });
+            captured();
+            await current2(scopeText);
+            captured();
+            completed3 = true;
+          });
+          await current2();
+          need45(completed3 && slot.admissionCapture !== void 0 && slot.admissionClock !== void 0, "Current symbol admission callback did not complete.");
+          const finalClock = await this.engine.clockObservationForClosedCapture(slot.admissionCapture);
+          await current2();
+          need45(
+            finalClock === slot.admissionClock && await assertIssuedWindowsClockObservation(finalClock) === finalClock,
+            "Current symbol admission settled capture clock changed."
+          );
+          await current2();
+          slot.journal.state = "admitted";
+          slot.journal.nextSafeAction = "New session admitted only. Qualify inactive caches, project-only startup effects and backend actor/clock before opening or writing.";
+          await _CurrentSymbolBaselineCoordinator.record(slot, "admission-result", {
+            admissionProved: true,
+            startupQualified: false,
+            openingEffectsVerified: false,
+            beforeWriteBaselineVerified: false,
+            executionAuthorized: false
+          });
+          await current2();
+          need45(await assertIssuedWindowsClockObservation(finalClock) === finalClock, "Current symbol admission final capture clock changed.");
+          await current2();
+          slot.admissionProved = true;
+          return summary6(slot);
+        } catch (error51) {
+          return await _CurrentSymbolBaselineCoordinator.fail(slot, "new-session-admission", error51);
         } finally {
           this.busy = false;
         }
@@ -119931,6 +120112,17 @@ var init_current_disposable_open_runtime = __esm({
         this.busy = true;
         try {
           return await stage.relaunch(operationId3);
+        } finally {
+          this.busy = false;
+        }
+      }
+      /** Internal new-session admission; never an ordinary opener or writer route. */
+      async admitSymbolBaseline(operationId3) {
+        const stage = this.baselines.get(operationId3);
+        requireValue15(!this.busy && stage !== void 0, "Current symbol baseline original coordinator is unavailable or busy.");
+        this.busy = true;
+        try {
+          return await stage.admit(operationId3);
         } finally {
           this.busy = false;
         }

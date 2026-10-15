@@ -236,9 +236,11 @@ also retains only a launch projection; later writer work must retain the genuine
 runtime launch object for launch-bound clock evidence.
 
 Backend actor/clock evidence and actual APP timezone/history-age qualification
-remain necessary before dispatch. Writer and inverse integration, capture-release
-and relaunch sequencing, and recovery from stopped or lost-owner baseline stages
-remain unfinished. Release or relaunch invalidates current copy authority;
+remain necessary before dispatch. Subsequent internal work adds one-shot owned
+relaunch, old-capture release and new-session admission; see the
+[reopening checkpoint](current-reopen-effects-research-2026-10-15.md#implementation-checkpoint).
+Writer and inverse integration and recovery from stopped or lost-owner baseline
+stages remain unfinished. Release or relaunch invalidates current copy authority;
 neither action may happen before the closed evidence has been captured and
 published. A later disposable forward/inverse case must prove owned close,
 process/Job termination, whole-file SQL effects and fresh-generation readback.

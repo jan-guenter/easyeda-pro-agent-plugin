@@ -6,6 +6,44 @@ Last updated: 2026-10-15 (Europe/Berlin)
 
 ## Current checkpoint
 
+### In development: new-session admission and current cache observer
+
+Draft PR36 now has an internal admitSymbolBaseline continuation on the retained
+relaunched Job. A disconnected observation writes nothing and does not repeat
+launch. Selecting a new authenticated session consumes admission once. The
+coordinator owns its exact scope, retains the actual closed-edit capture and
+native clock, checks root/Job/runtime identity, and requires scope settlement
+before reporting admission. Session/capture/method drift and conflicting journal
+history refuse without replay or automatic capture release. The retained new
+generation closure never calls the invalidated old owner or closure proof.
+Admission is historical session/process evidence, not startup or writer authority.
+
+A separate current-upload-queue-read program and current-start-page guard are
+implemented. Three hasProject absence observations bracket two fixed native
+CacheStorage.match calls. They retain the current empty Start Page and restore
+state, browser owners and method receivers. No cache enumeration, body read,
+network request, deletion, navigation or retry is added. Cache absence is
+sequential and point-in-time, not atomic or continuing. Timeout stops later
+calls but does not cancel an in-flight native read. The program has no executor
+or public route yet. Keep the legacy cache reader unchanged.
+
+Independent reviews accept both changes within these limits. Local verification
+passes50 focused tests with no failures/skips, full types, whole-tree strict
+type-aware lint with zero warnings, build/sanitizer, compatibility, package/
+privacy/repository,774-method coverage and all seven official skill validators.
+Dependency checks verify151 signatures/40 attestations and0 vulnerabilities.
+Frozen facade projections are source354 SHA6e5cd3e7 and runtime3 SHA664f842a;
+only facade projections and review timestamp changed, not external pins.
+Full final-payload CI and publication evidence are recorded after the push.
+
+Next: integrate the cache observer with the retained admission and source-pinned
+executor; qualify project-only startup effects and backend actor/clock; integrate
+writer/inverse; run one complete disposable lifecycle. Then review publication
+and installation. No source guard, native semantics or writer restriction was
+relaxed. No live EasyEDA call, launch, design access, Save, restore or install
+occurred. Installed140000 is unchanged; production designs and their records
+remain excluded. Do not merge this draft or claim complete API execution support.
+
 ### In development: retained current symbol relaunch
 
 Continuation remains on feature/current-symbol-runtime-witness in draft PR36.
@@ -44,10 +82,54 @@ types and whole-tree zero-warning type-aware lint pass. Build/sanitizer,
 compatibility, package/privacy/repository, 774-method coverage and all seven
 official skill checks pass. Rebuilt source352 SHA99bae0e3/runtime3 SHA3ebba5ec
 change only facade projections; external pins stay unchanged. Independent
-runtime review accepts the transition; final payload CI remains pending.
+runtime and copy review accept the transition. Payload
+254ec11268c8e6903bdbb1241d658f8f5b5e9370 is pushed to draft PR36. Required
+CI38806146630 passed all ten jobs: 9991 facade passes, five skips, zero
+failures; 424 bridge passes. Windows38806146682 passed at the same exact head.
+Postcommit build reproduces both bundles exactly. Full tree
+b945e04129ab48dedeb3c2f484821a2cdfb88532 and package subtree
+afac5418db5e6818e09a93fe53a258e419b7b904 identify this checkpoint.
+Receipt: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6202366378.
+This post-payload continuation record should accompany the next source change,
+not trigger another full CI run by itself. Keep the PR draft/unmerged.
 No live EasyEDA call, app launch, design access, Save, restoration or installation occurred.
 Installed140000 is unchanged; no restart is required for this source work.
 Production designs and their records remain excluded.
+
+Additional bounded source research while CI runs: project-only opening still
+reaches linked schematic documents. SCH-main
+assets/pro-sch/3.2.192.b79ad524/js/sch-main.js is 6289422 bytes,
+SHAd9d6a955bf40d57daf9f27f31e0fff3191715ff50582418ad0922beb71b424bd.
+Its -prjInit handler6171718 awaits wb5471485, On5770161/Kxe5472590 and
+Xl5769763/getOrInitDoc5758065/createDocManagerWithRealTimeSync5759240 for
+each linked schematic sheet. Base m1.init4462789 awaits consistencyImpl.init,
+whose callback awaits ja._init5372957; net-name correction4197241 runs before
+the observed uploadImpl.watch registration. This establishes reachability,
+not persistence of that correction. A no-linked-schematic-sheets fixture can
+exclude this startup path without suppressing native behavior. No complete
+startup completion observer was found; do not claim the earlier project-only
+premises alone establish silence. This new source has not been runtime-admitted.
+
+WORKER offline Fe1654701 excludes applySnap2024962 writes during syncCloud
+2031829; structure2104057 refuses while isSyncing. Updater methods1947714/
+1949977/1952403/1954592/1957278/1959479/1962140 compare versions and publish
+memory/cache notifications; downstream handlers still matter. UI JP10169300
+starts empty, with only explicit import-to-existing add sites10179733/10180316;
+a fresh owned root with no import excludes it. Second ON_OPENED16737080 path
+U9o15979220/LJ9757098/wPt12747205 updates renderer fields/title/warnings;
+S3t8483039 returns for offline client. These are narrowed dependencies, not a
+full no-write certificate. Preserve these findings for the next implementation;
+no further source or live action was added after the tested payload.
+
+Backend actor remains separate: APP52f51ce4 protocol.handle registrations
+2629794/2629823 route host client at2630239 through the same APP router,
+not the Linux MCP backend listener. Router rC2573797 retains the license
+result, but eC2574653 queries the system user per request. UI actor equality
+and native process/socket ownership do not identify that request user. Do not
+treat /api/user as passive: the middleware/route can create user/preferences
+state. Retain current SQL document/backend clock separation and the exact
+61000ms earliest-bound rule for a guaranteed aged unlocked head; no old
+source/journal witness can simply be repinned into current authority.
 
 ### In development: owned current symbol closed baseline
 

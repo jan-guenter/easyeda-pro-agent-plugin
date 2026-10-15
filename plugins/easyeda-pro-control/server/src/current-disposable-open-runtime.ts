@@ -312,6 +312,15 @@ export class CurrentDisposableOpenCoordinator {
     finally { this.busy = false; }
   }
 
+  /** Internal new-session admission; never an ordinary opener or writer route. */
+  public async admitSymbolBaseline(operationId: string): Promise<Value> {
+    const stage = this.baselines.get(operationId);
+    requireValue(!this.busy && stage !== undefined, "Current symbol baseline original coordinator is unavailable or busy.");
+    this.busy = true;
+    try { return await stage.admit(operationId); }
+    finally { this.busy = false; }
+  }
+
   private static assertNotTransferred(runtime: Retained["runtime"]): void {
     requireValue(!baselineRuntimeReservations.has(runtime), "Current disposable opening was transferred to a one-shot baseline owner.");
   }

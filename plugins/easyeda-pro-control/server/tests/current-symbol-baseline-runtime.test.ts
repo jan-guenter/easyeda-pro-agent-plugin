@@ -34,29 +34,39 @@ async function fixture(context: TestContext): Promise<{
   coordinator: CurrentSymbolBaselineCoordinator; restart: () => CurrentSymbolBaselineCoordinator;
   owner: CurrentSymbolBaselineOwner; native: Awaited<ReturnType<typeof qualifiedNativeFixture>>;
   runtime: WindowsControlRuntime;
+  engine: EasyedaControlEngine;
   state: { scope: boolean; activeSession: boolean; sessionSequence: number; ownerLost: boolean; copyFailure: boolean; copies: number; events: string[];
     copied: unknown; proof: unknown;
     afterCompleted: (() => Promise<void>) | undefined; afterLoad: (() => Promise<void>) | undefined; afterStopped: (() => Promise<void>) | undefined;
-    afterClockAssert: (() => Promise<void>) | undefined };
+    afterClockAssert: (() => Promise<void>) | undefined; beforeScope: (() => void) | undefined; afterScope: (() => Promise<void>) | undefined };
   calls: (action: string) => number;
 }> {
   const native = await qualifiedNativeFixture(context), operationId = newOperationId();
   const state = { scope: true, activeSession: true, sessionSequence: 1, ownerLost: false, copyFailure: false, copies: 0, events: [] as string[],
     copied: undefined as unknown, proof: undefined as unknown,
     afterCompleted: undefined as (() => Promise<void>) | undefined, afterLoad: undefined as (() => Promise<void>) | undefined,
-    afterStopped: undefined as (() => Promise<void>) | undefined, afterClockAssert: undefined as (() => Promise<void>) | undefined };
+    afterStopped: undefined as (() => Promise<void>) | undefined, afterClockAssert: undefined as (() => Promise<void>) | undefined,
+    beforeScope: undefined as (() => void) | undefined, afterScope: undefined as (() => Promise<void>) | undefined };
   const session = { gatewayInstanceId: "g".repeat(43), sessionId: "s".repeat(43), sequence: 1,
     authenticationReceiptSha256: "2".repeat(64), authenticatedAtEpochMs: 1000 };
   const binding: AuthenticatedBridgeDispatchBinding = { schema: "easyeda-pro-control.bridge-dispatch-lease.v1", gatewayInstanceId: session.gatewayInstanceId,
     sessionId: session.sessionId, sessionSequence: 1, begunAtEpochMs: 1001, leaseId: "l".repeat(43), bindingReceipt: "b".repeat(43) };
-  const upstream: Upstream & Pick<EasyedaControlEngine["upstream"], "findTool"> = {
+  const upstream: Upstream & Pick<EasyedaControlEngine["upstream"], "findTool" | "withAuthenticatedBridgeDispatchScope"> = {
     findTool: () => Promise.resolve({ name: "easyeda_execute" }),
     callTool: (name) => {
       assert.equal(name, "easyeda_execute"); assert.equal(state.scope, true); state.events.push("runtime-identity");
       return Promise.resolve({ content: [{ type: "text", text: JSON.stringify({ kind: "runtime-identity",
         generation: "synthetic-current-symbol-runtime-0001", timeOrigin: 1000, processId: 101 }) }] });
     },
-    currentAuthenticatedBridgeDispatchBinding: () => state.scope ? binding : undefined,
+    withAuthenticatedBridgeDispatchScope: async <Result>(run: (value: AuthenticatedBridgeDispatchBinding) => PromiseLike<Result> | Result): Promise<Result> => {
+      assert.equal(state.scope, false); state.beforeScope?.(); state.scope = true;
+      let result: Result;
+      try { result = await run({ ...binding, sessionId: state.sessionSequence === 1 ? session.sessionId : "n".repeat(43), sessionSequence: state.sessionSequence }); }
+      finally { state.scope = false; }
+      await state.afterScope?.(); return result;
+    },
+    currentAuthenticatedBridgeDispatchBinding: () => state.scope ? { ...binding,
+      sessionId: state.sessionSequence === 1 ? session.sessionId : "n".repeat(43), sessionSequence: state.sessionSequence } : undefined,
     bridgeSessionLifecycle: () => ({ schema: "easyeda-pro-control.authenticated-bridge-lifecycle.v1", gatewayInstanceId: session.gatewayInstanceId,
       activeSession: state.activeSession ? { sessionId: state.sessionSequence === 1 ? session.sessionId : "n".repeat(43), sequence: state.sessionSequence,
         authenticationReceiptSha256: session.authenticationReceiptSha256, authenticatedAtEpochMs: session.authenticatedAtEpochMs } : null,
@@ -150,7 +160,7 @@ async function fixture(context: TestContext): Promise<{
     catch (error) { if (isRecord(error) && error["code"] === "ENOENT") { return; } throw error; }
     await retireSyntheticJournal(operationId);
   });
-  return { coordinator: restart(), restart, owner, native, runtime, state,
+  return { coordinator: restart(), restart, owner, native, runtime, engine, state,
     calls: (action): number => native.requests.filter((request) => request["action"] === action).length };
 }
 
@@ -350,4 +360,91 @@ void test("current baseline refuses relaunch while the prior authenticated sessi
   await assert.rejects(f.coordinator.relaunch(f.owner.operationId));
   await assert.rejects(f.coordinator.relaunch(f.owner.operationId));
   assert.equal(f.calls("clocked-launch"), 1); assert.equal(f.calls("release-capture"), 0);
+});
+
+void test("current admission waits without repeating launch, then binds one new session to its original Job", async (context) => {
+  const f = await completedBaseline(context); await f.coordinator.relaunch(f.owner.operationId);
+  const before = await readFile(operationPath(f.owner.operationId)), captures = f.calls("clocked-capture");
+  for (let count = 0; count < 2; count += 1) {
+    const waiting = await f.coordinator.admit(f.owner.operationId);
+    assert.equal(waiting["authentication"], "pending"); assert.equal(waiting["admissionAttempted"], false);
+  }
+  assert.deepEqual(await readFile(operationPath(f.owner.operationId)), before);
+  f.state.activeSession = true; f.state.sessionSequence = 2;
+  const admitted = await f.coordinator.admit(f.owner.operationId);
+  assert.equal(admitted["state"], "admitted"); assert.equal(admitted["admissionProved"], true);
+  assert.equal(admitted["admissionCaptureRetained"], true); assert.equal(admitted["nativeAdmissionClockStatus"], "observed");
+  for (const key of ["startupQualified", "beforeWriteBaselineVerified", "openingEffectsVerified", "backendActorVerified", "backendClockVerified", "writerReady", "executionAuthorized", "explicitSaveDispatched", "replayAllowed"]) {
+    assert.equal(admitted[key], false);
+  }
+  assert.equal(f.state.scope, false); assert.equal(f.calls("clocked-capture"), captures + 1);
+  assert.equal(f.calls("clocked-launch"), 2); assert.equal(f.calls("release-capture"), 1);
+  const journal = await loadOperation(f.owner.operationId);
+  assert.equal(journal["hardStop"], true); assert.equal(journal["admissionAttempted"], true);
+  assert.ok(f.state.events.indexOf("journal:admission-dispatching") < f.state.events.lastIndexOf("native:clocked-capture"));
+  await assert.rejects(f.coordinator.admit(f.owner.operationId), /original retained relaunch/u);
+  await assert.rejects(f.restart().admit(f.owner.operationId), /original retained relaunch/u);
+  assert.equal(f.calls("clocked-capture"), captures + 1);
+});
+
+void test("current admission consumes session drift before capture and lease-settlement failure after capture", async (context) => {
+  for (const phase of ["scope-acquisition", "scope-settlement"]) {
+    await context.test(phase, async (childContext) => {
+      const f = await completedBaseline(childContext); await f.coordinator.relaunch(f.owner.operationId);
+      f.state.activeSession = true; f.state.sessionSequence = 2;
+      const captures = f.calls("clocked-capture");
+      if (phase === "scope-acquisition") { f.state.beforeScope = (): void => { f.state.sessionSequence = 3; }; }
+      else { f.state.afterScope = (): Promise<void> => Promise.reject(new Error("synthetic lease settlement failed")); }
+      await assert.rejects(f.coordinator.admit(f.owner.operationId), /(?:replacement session changed|lease settlement failed)/u);
+      const stopped = await f.coordinator.inspect(f.owner.operationId);
+      assert.equal(stopped["state"], "stopped"); assert.equal(stopped["admissionAttempted"], true); assert.equal(stopped["admissionProved"], false);
+      assert.equal(stopped["admissionCaptureRetained"], phase === "scope-settlement");
+      await assert.rejects(f.coordinator.admit(f.owner.operationId));
+      assert.equal(f.calls("clocked-capture"), captures + (phase === "scope-settlement" ? 1 : 0));
+      assert.equal(f.calls("clocked-launch"), 2); assert.equal(f.calls("release-capture"), 1);
+    });
+  }
+});
+
+void test("current admission preserves a foreign journal change at scope settlement and retains its original capture", async (context) => {
+  const f = await completedBaseline(context); await f.coordinator.relaunch(f.owner.operationId);
+  f.state.activeSession = true; f.state.sessionSequence = 2;
+  let external: Buffer | undefined;
+  f.state.afterScope = async (): Promise<void> => {
+    const journal = await loadOperation(f.owner.operationId); journal["nextSafeAction"] = "Synthetic competing admission history; preserve it.";
+    await updateOperation(journal); external = await readFile(operationPath(f.owner.operationId));
+  };
+  await assert.rejects(f.coordinator.admit(f.owner.operationId), /journal changed/u);
+  assert.ok(external !== undefined); assert.deepEqual(await readFile(operationPath(f.owner.operationId)), external);
+  const inspected = await f.coordinator.inspect(f.owner.operationId);
+  assert.equal(inspected["admissionCaptureRetained"], true); assert.equal(inspected["admissionProved"], false);
+  await assert.rejects(f.coordinator.admit(f.owner.operationId));
+  assert.deepEqual(await readFile(operationPath(f.owner.operationId)), external); assert.equal(f.calls("release-capture"), 1);
+});
+
+void test("current admission rejects capture mutation after scope settlement and keeps unavailable clocks honest", async (context) => {
+  for (const mutate of [false, true]) {
+    await context.test(mutate ? "capture mutation" : "unavailable clock", async (childContext) => {
+      const f = await completedBaseline(childContext);
+      if (mutate) {
+        const capture = f.engine.captureClosedSessionAuthority.bind(f.engine);
+        childContext.mock.method(f.engine, "captureClosedSessionAuthority", async (...args: Parameters<typeof capture>): ReturnType<typeof capture> => {
+          const original = await capture(...args);
+          f.state.afterScope = (): Promise<void> => { original.runtimeIdentity.processId = 999; return Promise.resolve(); };
+          return original;
+        });
+      } else { f.native.behavior.clockMode = "unavailable"; }
+      await f.coordinator.relaunch(f.owner.operationId); f.state.activeSession = true; f.state.sessionSequence = 2;
+      if (mutate) {
+        await assert.rejects(f.coordinator.admit(f.owner.operationId), /original capture changed/u);
+        const stopped = await f.coordinator.inspect(f.owner.operationId);
+        assert.equal(stopped["admissionCaptureRetained"], true); assert.equal(stopped["admissionProved"], false);
+      } else {
+        const admitted = await f.coordinator.admit(f.owner.operationId);
+        assert.equal(admitted["admissionProved"], true); assert.equal(admitted["nativeAdmissionClockStatus"], "unavailable");
+        assert.equal(admitted["backendClockVerified"], false); assert.equal(admitted["writerReady"], false);
+      }
+      assert.equal(f.calls("release-capture"), 1); assert.equal(f.calls("clocked-launch"), 2);
+    });
+  }
 });

@@ -10,8 +10,10 @@ can reject unexpected effects; it cannot prevent their interleaving with the
 proposed symbol write or establish that the earlier snapshot preceded only
 that write.
 
-The smallest next implementation is retained release/relaunch plus a
-current-only, inactive-target upload-cache observation before opening. For
+Retained release/relaunch and new-session admission are now implemented
+internally. A separate current-only inactive-target upload-cache program is
+implemented and tested offline; wiring it into the retained pre-opening
+coordinator is still pending. For
 the eventual symbol metadata writer, prefer a separate **project-only opening
 profile** over the current companion-PCB profile. The manager's metadata
 getters need no editor. Native project opening can nevertheless restore
@@ -26,6 +28,35 @@ inert text and plugin source. Only `easyeda.assetsRoot` was selected from the
 machine profile. No design, user/license database, account record, live
 project, setting or EasyEDA process was accessed. This subtask changes only
 this note; the parent records implementation and automated checks separately.
+
+## Implementation checkpoint
+
+The baseline coordinator now admits one strictly newer authenticated session
+on its original relaunched Job. It retains the engine-issued `closed-edit`
+capture and its native clock before further checks, correlates the exact
+root/Job and runtime identity, and requires successful lease settlement before
+reporting admission. A disconnected observation does not consume admission or
+repeat launch. Once a session is selected, failure consumes the attempt;
+captures and conflicting journal history are preserved. The new process never
+uses the invalidated old owner or termination proof. This is session/process
+admission, not an ongoing liveness guarantee or a startup-completion barrier.
+
+The fixed cache program uses the current Start Page/URL/container profile and
+retains an empty restore-tab Set, null URL command, browser owners and native
+method receivers. Exactly three target-absence RPCs bracket the two named
+`CacheStorage.match` calls. It never opens/enumerates/deletes a cache, reads a
+response body, opens a project, or retries. Its deadline stops continuation
+after a late result; it does not claim cancellation. The strict output says
+only `point-in-time-inactive-target`, with all startup, persistence and writer
+authority flags false. These sequential samples do not establish atomic or
+continuing cache emptiness. The legacy program is unchanged.
+
+These are internal source changes, not connected validation or an installed
+release. The cache program still needs an owned, source-pinned executor and
+pre-opening continuity checks. Project-only opening, startup-producer
+qualification, backend actor/clock, writer/inverse integration and a complete
+disposable lifecycle remain pending. Future consumers must revalidate original
+captures and clocks; neither journal JSON nor `admissionProved` grants authority.
 
 ## Source identities
 
