@@ -12,6 +12,13 @@ When reading native library document history, fold records by their ordering fie
 
 Query `easyeda_control_library` with `{request:{action:"capabilities"}}`. A catalog descriptor is not execution support. Metadata reads, DEVICE writes, geometry edits and exports have separate proof paths.
 
+On the current restricted tuple, use `easyeda_control_project_symbol` for one
+project-local symbol's metadata while an ordinary PCB is active. Read
+[its exact contract](api-reference.md#current-project-local-symbol-metadata)
+first. It observes registry absence and loaded metadata only. It does not prove
+hidden-editor absence, saved source or readiness to rename, and it never enables
+the blocked writer below.
+
 ## Structure-write completion restriction
 
 The separate `easyeda_control_symbol_metadata` source entry implements one

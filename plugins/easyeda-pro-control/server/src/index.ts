@@ -126,6 +126,8 @@ import { currentPcbIdentitiesRequestSchema } from "./current-pcb-identities.ts";
 import { readCurrentPcbIdentities } from "./current-pcb-identities-runtime.ts";
 import { currentPcbGeometryRequestSchema } from "./current-pcb-geometry.ts";
 import { readCurrentPcbGeometry } from "./current-pcb-geometry-runtime.ts";
+import { currentSymbolMetadataRequestSchema } from "./current-symbol-metadata.ts";
+import { readCurrentSymbolMetadata } from "./current-symbol-metadata-runtime.ts";
 import { historicalAbandonmentRequestSchema, runHistoricalAbandonment } from "./historical-abandonment.ts";
 
 const facadeMode = configuredFacadeMode(process.env);
@@ -1857,6 +1859,7 @@ const toolOutputSchemas: Readonly<Record<string, z.ZodType>> = {
   easyeda_control_project_open: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_pcb_identities: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_pcb_geometry: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
+  easyeda_control_project_symbol: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_history: z.object({ result: z.unknown().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_check: z.object({ result: routeAuditResultSchema.optional(), operationId: z.string().optional(), state: z.string().optional(), report: z.unknown().optional(), proof: z.unknown().optional(), reportArtifact: z.unknown().optional(), nextSafeAction: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
   easyeda_control_native_ui: z.object({ schema: z.string().optional(), action: z.string().optional(), result: z.unknown().optional(), observations: z.array(z.unknown()).optional(), authority: z.string().optional(), ...optionalFailureOutputShape }).catchall(z.unknown()),
@@ -1946,6 +1949,7 @@ registerFacadeTool(
         pcbLayers: { tool: "easyeda_control_pcb_layers", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, designExecution: false },
         pcbIdentities: { tool: "easyeda_control_pcb_identities", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false },
         pcbGeometry: { tool: "easyeda_control_pcb_geometry", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false, connectivityVerified: false },
+        projectSymbol: { tool: "easyeda_control_project_symbol", runtimeAdmissionRequired: true, explicitTargetRequired: true, nativeEquivalent: true, savedMembershipVerified: false, cadAuthority: false },
         historicalAbandonment: { tool: "easyeda_control_history", localOnly: true, scope: "sixteen-event-pre-navigation-validation-only", replayAuthority: false },
         ordinaryLaunch: { tool: "easyeda_control_launch", installedIdentityAdmissionRequired: true, profileIsolation: false },
         designAccess: { enabled: false }, navigation: { enabled: true, tool: "easyeda_control_project_open",
@@ -2433,6 +2437,17 @@ registerFacadeTool(
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   serializedLiveGuarded(async (input) => ({ result: await readCurrentPcbIdentities(engine, input.request, input.expectedFingerprint) })),
+);
+
+registerFacadeTool(
+  "easyeda_control_project_symbol",
+  {
+    title: "Read project-local symbol metadata",
+    description: "Read one exact project-local symbol's metadata on the separately pinned current API/UI/project-worker runtime. Requires an explicit active PCB project/branch/document/tab target and authenticated fingerprint. Two matching bounded observations retain the outer RPC receiver and verify the symbol remains absent from the tab registry. The module-private worker is not independently leased; hidden editors, saved records, complete source and connectivity remain unverified. Native task equivalent of the project-local lib_Symbol.get subset, with no cloud-library lookup, geometry load, navigation, write or Save. Query offline project-symbol/project-symbol-validate first; current writer execution remains blocked.",
+    inputSchema: { request: z.unknown().pipe(currentSymbolMetadataRequestSchema), expectedFingerprint: privateFingerprintSchema },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  serializedLiveGuarded(async (input) => ({ result: await readCurrentSymbolMetadata(engine, input.request, input.expectedFingerprint) })),
 );
 
 registerFacadeTool(

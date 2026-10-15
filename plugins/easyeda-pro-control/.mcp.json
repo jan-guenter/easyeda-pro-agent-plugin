@@ -22,6 +22,7 @@
         "easyeda_control_project_open": { "approval_mode": "prompt" },
         "easyeda_control_pcb_identities": { "approval_mode": "prompt" },
         "easyeda_control_pcb_geometry": { "approval_mode": "prompt" },
+        "easyeda_control_project_symbol": { "approval_mode": "prompt" },
         "easyeda_control_history": { "approval_mode": "prompt" },
         "easyeda_control_status": { "approval_mode": "approve" },
         "easyeda_control_discover": { "approval_mode": "approve" },

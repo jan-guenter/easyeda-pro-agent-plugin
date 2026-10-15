@@ -89,7 +89,14 @@ for (const family of ["Line", "Arc", "Via", "Component", "Pad"] as const) {
   }
 }
 
-groups.push({ namespace: "pcb_PrimitiveComponent", methods: ["getAllPinsByPrimitiveId"], route: {
+groups.push({ namespace: "lib_Symbol", methods: ["get"], route: {
+  tool: "easyeda_control_project_symbol", selector: "eda.lib_Symbol.get", implementation: "native-task-equivalent",
+  scope: "Separately pinned current project-local symbol metadata subset. One exact symbolUuid and explicit active ordinary PCB project/branch/document/tab target. Two matching bounded metadata observations correlate the loaded project owner and require the symbol to remain absent from the complete registered editor tree. Hidden or unregistered editors are not independently excluded. Raw tagsJson is retained without normalization. Retained manager/RPC references do not directly lease the module-private worker; workerIdentityVerified remains false. Not a cloud-library lookup, complete library inventory, symbol geometry, lossless stored META or persistence proof, and not authority to rename or edit. No geometry load, navigation, write or Save; legacy library writers and their existing restrictions are unchanged.",
+  source: ["current-symbol-metadata.ts", "current-symbol-metadata-program.ts", "current-symbol-metadata-runtime.ts", "current-disposable-open-profile.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],
+  tests: ["current-symbol-metadata.test.ts", "facade-mode.test.ts"], documentTypes: [3],
+  validation: "offline-regression;current-live-unclaimed", executionState: "available-with-runtime-guards",
+  inputDiscovery: { tool: "easyeda_control_api", arguments: { request: { action: "project-symbol", query: { method: "eda.lib_Symbol.get", includeSchemas: true } } } },
+} }, { namespace: "pcb_PrimitiveComponent", methods: ["getAllPinsByPrimitiveId"], route: {
   tool: "easyeda_control_pcb_geometry", selector: "eda.pcb_PrimitiveComponent.getAllPinsByPrimitiveId", implementation: "native-task-equivalent",
   scope: "Current pinned ordinary PCB forward child membership. One bounded component primitiveId and exact project/branch/document/tab target. Two matching complete samples validate component IDs, global Pad DTOs and native component child IDs with shared-field correlation. Returns global Pad DTOs in native child order, with observed component/pad counts and explicit reciprocalParentVerified:false and symbolPinMappingVerified:false. Full IDs come from the native child callback; no ID-prefix reconstruction or caller-derived parent getter. Empty membership requires an observed component. Unrelated pads remain outside the result but still participate in complete-family stability and bounds. This is not public ComponentPad instances, reverse ownership, symbol-pin mapping, saved membership, connectivity or writer authority. No selection, navigation, design edit, library fetch or Save. Native enumeration/serialization precedes output limits and is not cancelled by the observer deadline.",
   source: ["current-pcb-geometry.ts", "current-pcb-geometry-program.ts", "current-pcb-geometry-runtime.ts", "current-pcb-layers.ts", "sdk-local-runtime.ts"],

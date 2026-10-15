@@ -19,7 +19,14 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261015020000` adds default Pad copper-shape parameters,
+Candidate `0.3.0+codex.20261015040000` adds `easyeda_control_project_symbol`
+for metadata of one exact project-local symbol absent from the tab registry while a PCB
+is active. It avoids the public getter's cloud-library fallback and geometry
+loading. This provides a reusable read needed by the current-version rename
+workflow; it does not enable that writer. See the
+[implementation scope and backlog](docs/current-symbol-metadata-release-2026-10-15.md).
+
+Published update `0.3.0+codex.20261015020000` adds default Pad copper-shape parameters,
 mask expansion values and thermal configuration to the existing PCB reads and
 component child-pad results. Rectangle corners are reported as a ratio percent,
 not a radius. Polygon paths, full pad stacks and fresh rule resolution remain
@@ -165,10 +172,10 @@ remain under `easyeda_control_calculate`. Installed161000 passed one triangle
 area and one nested-square subtraction with a complete hole; these cases do not
 validate all methods or this newer source generation.
 
-The older reviewed tuple exposes 40 tools. A configured newer or unknown tuple
-exposes fifteen: API reference, local discovery, status, calculations, local
+The older reviewed tuple exposes 41 tools. A configured newer or unknown tuple
+exposes sixteen: API reference, local discovery, status, calculations, local
 system methods, extension-index/editor-shell/identity-context/shortcut observers,
-explicit-target PCB layer/identity/geometry observations, local historical abandonment,
+explicit-target PCB layer/identity/geometry and project-symbol metadata observations, local historical abandonment,
 ordinary launch and disposable project opening.
 The internal mode name remains `calculation-only`. Bridge execution separately
 requires exact reviewed EasyEDA 3.2.206 / API 0.3.50 hashes and authentication;

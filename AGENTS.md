@@ -6,6 +6,63 @@ Last updated: 2026-10-15 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Current symbol metadata implementation; interrupted020000 launch
+
+Fresh020000 facade828513/parent826773/start221761542 passed independent installed
+admission:1177files/23043590bytes/42dirs/seven skills, inventory2e74e324,
+source34092946f2b/runtime3d7f99363/helperfa5cff83 exact. MainCI38656269263 passed
+all ten jobs on merged5b06ff38. Previous806435 was absent.
+
+Ordinary startup ordinary-startup-020000-20261015 was dispatched ONCE, but its
+reply was lost across a host transition. Do not repeat launch under any ID.
+Original828513 is now absent; current facade1306/parent419/start6189 loads020000.
+Independent bounded inspection found only intent.json312bytes, rawSHA
+0a55eac0f0e8ea1241b143f1d0907d6c06692e339506d06b30c94da3aea11524.
+Maintained inspect returned launch-unknown/attemptConsumedtrue. No successful
+launch receipt or original retained authority exists in this owner. No project
+opening, Pad read, Save or close was dispatched. No source-file invariance or
+application-termination claim. Ordinary supervision abandonment requires a
+successful receipt and cannot resolve this intent-only case. Live checks pause;
+source implementation continues without journal edits or a competing owner.
+
+Branch feature/current-symbol-metadata-20261015 adds a current project-local
+symbol metadata reader as a reusable dependency of the rename workflow. Native
+writer migration remains necessary: old navigation/worker/URL/actor guards are
+incompatible, and current Save still schedules delayed structure writes. Do not
+enable the legacy writer by changing flags or pins. Production and its records
+remain excluded. Candidate040000 has ten focused reader/runtime/registration
+tests passing, strict types and zero-warning type-aware lint, dependency audits,
+build, generated coverage and compatibility checks. Independent source review
+accepts the bounded metadata-only implementation and unchanged external pins.
+The full local run failed: host library-loading/Windows-interop errors occurred,
+and the new tool lacked its required output-schema registration. The latter was
+a real integration defect, also caught by PR32 CI38666798620. That run was
+canceled and is not release acceptance. The missing standard result/failure
+schema is now registered, with the corresponding restricted-status capability.
+Existing bundled startup, writer-gate, catalog and reader tests pass after the
+fix, as do types, zero-warning lint, build, compatibility, package/repository
+checks and seven official skill validators. The isolated aux-bytes case also
+passes unchanged. Bridge424 passes. No full-local-suite success is claimed;
+the corrected payload still requires full GitHub CI. No connected validation,
+merge or installation is claimed yet.
+
+PR review also found one stale legacy-catalog assertion in the existing
+closed-symbol disposable MCP test:40 instead of41 tools. Corrected that count
+only; its actual SDK strict-envelope test passes and targeted lint is clean.
+All envelope/isolation assertions are unchanged. A search found no remaining
+executable old tool counts. Corrected source/runtime projections below are
+unchanged by this test-only fix; CI38667156029 is superseded, not acceptance.
+
+Frozen source343 aggregate
+2fc93d4187c044ce123ae8c570a38d8354b8c9afb7e2672cedd5c9d99f53c214;
+runtime3 aggregate
+ccbcc79cc197a7c7a8d8be9a4bace080f9280f3619c64fdf6b931498cb72cea7.
+Catalog16 restricted/41 legacy tools, seven skills,774 SDK methods and332
+runtime-guarded routes. Route counts include legacy profiles, not current
+callability. The existing control skill documents invocation and observation
+limits. Current release scope/backlog:
+docs/current-symbol-metadata-release-2026-10-15.md.
+
 User priority update, 2026-10-13: finish the main implementation, publication and
 installation. Do not expand private test harnesses or adversarial test matrices
 at the expense of integration. Defer additional coverage; retain build, types,
@@ -13,7 +70,7 @@ zero-warning lint, existing release/CI checks and focused disposable end-to-end
 verification before enabling affected editing routes. Production remains out
 of scope. Existing completed operations must not be replayed.
 
-### Restarted003000; disposable child-pad check and Pad DTO enrichment underway
+### Delivered020000; new Pad fields installed, fresh-host live check remains
 
 Fresh facade806435/parent804435/start221573629 loads003000 on pinnedNode24.18.
 Independent read-only admission repeats all1177files/23018934bytes/42dirs/
@@ -26,8 +83,19 @@ Job737e8ae9ffb645829527f19f70ef9f3d/helperb9d8261edd044d94847af25a6133d759,
 launch digest2830efa849bb14c1e1466cdcdf8850fec38e98a7693ff94d52ab8ad649c84f52.
 Status14 authenticated with no incomplete operations. Context20 observed
 Start Page/no project. Disposable source970d21b3/598016bytes rehashed exact.
-Opening current-pcb-open-003000-20261015 dispatched ONCE in functions25 and is
-pending. Never replay launch/navigation. Private transport transcripts are in
+Opening current-pcb-open-003000-20261015 completed once in functions25,
+nohardStop/orphan; target-native identity observed, terminal4933cddb. Child-pad
+geometry read38 completed: two matching samples,2components/4globalPads,
+2returned childPads withnullholes, exact observed forward membership and no
+reverse-parent/pin-map claim. Observation8aa312b8231f4ac011de60265afbd6d2ea6c0d173b7ab7806352fb7044a9a7fd.
+This validates the003000 child-list/holeless case, not round/slot geometry or
+the new020000 fields. Observe-window41 completed HWND84215296; normal-close43
+was acknowledged. Separate retained termination45 completed with state
+terminated/terminationProvedtrue, without prompt choice or forced exit.
+Independent opening/child evidence crossbindings pass: completed
+journal9bd1c25a/16997bytes, child rawtranscriptc5361fac/8654bytes, retained
+source34089557604/runtime3 5c2f1d98 exact. Never replay launch/navigation/close. Private
+transport transcripts are in
 /tmp/easyeda-live-003000-3bemi7. No production design or record was accessed.
 
 Feature branch feature/pcb-pad-shape-rules-20261015 prepares020000 with default
@@ -47,10 +115,46 @@ Initial helper field-name typo was corrected to defaultPadShapeAspect before
 passing runs. No guard or lint rule was relaxed. Final source340
 92946f2b38d87666fb031731efb8b900f60d2575ecc4543eb40eda8de3fb2aca/runtime3
 d7f99363d58ee66181f74c7841edcfd6b00d6e7da02a7dc1b5b686b77cf828a7;
-external pins unchanged. Publication/CI/install remain pending. New fields
-have source/offline evidence, not connected validation. Installed003000
-child-list/hole live check, normal-close and retained termination still pending.
+external pins unchanged. Payload2b5cd01279c4bc33b4f3d124c2478c506837ee22 is
+published in PR31; CI38654929415 passed all ten jobs:9908facade passes/five
+skips/zero failures and424bridge passes. Copilot review38654940211 has zero
+findings. Merged main5b06ff38a4b8010021120ba248a43554c11531f6 has identical fulltree
+e2c3666300876c127003359ea8b8d35b5afff5da/package
+9e5d5695f5791b0084f6f7889f926ecb165c49cd. Official Git marketplace upgrade
+completed errors[], with umask022. Installed020000 synthetic configured startup
+passes ambientNode26.7 to pinned24.18,15tools, identity7/geometry11 and all
+existing argument queries. Ten process samples show no upstream child/nonstdio
+socket, stderr0; probe closed normally, no live profile or CAD access. Proof is
+at /tmp/easyeda-installed-020000-qpqDpa/proof.json,2103bytes SHA
+7b0e2843eb0f07da90ff8e363106b9b3b7016397911c5c568f4f7643320ad230.
+Probe29a22fd4 reuses the prior
+installed probe with only version/scratch/explicit commit changes. Independent
+admission confirms exact1177files/23043590bytes/42dirs0755/seven skills,
+1176files100644/one100755 and no extras/symlinks/hardlinks/mode mismatch.
+Git-tree-order inventorySHA2e74e324a47665894baf1b91b07f45ccf4a80517a9f15e43e0bb2a2c261c1657
+uses path NUL Gitmode NUL bytes NUL SHA256 LF. Source34092946f2b/runtime3
+d7f99363/helperfa5cff83 match. Official enabled020000, marketplace Git URL/main
+marker and snapshot HEAD5b06ff38 match merged/tested trees.
+Independent post-probe inventory/proof confirmation also passes; no discrepancy.
+Final public delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/31#issuecomment-6181041135.
+MainCI38656269263 is running on the identical
+tested tree; no manual rerun. Loaded806435 remains003000; no owner termination
+or cache hotpatch. Use a fresh Codex chat for live020000 calls.
+New fields have source/offline evidence, not connected validation. Installed
+003000 child-list/holeless live check, normal-close and retained termination
+are complete. Independent final crosscheck accepts raw close-intent9d6ed3af,
+ack4c2b0dfb and termination00b3929fe087a4d77b5126bfdaabd6a36180c11c5a3ffd84233bc5a6059df050,
+all original launch bindings. Closed disposable remains970d21b3/598016bytes;
+scoped byte equality only. No pending CAD/tool/recovery or further live call.
 Backlog: docs/current-pad-parameters-release-2026-10-15.md.
+
+Next: admit fresh020000 without rerunning successful checks solely for restart,
+then one bounded existing-disposable Pad/child read can validate the newly
+projected fields through maintained ordinary launch/open/normal-close/termination.
+Do not create fixture objects or expand a test matrix merely for more cases.
+Continue the concrete implementation backlog after that scoped check. Preserve
+this local delivery checkpoint for the next source commit; no docs-only release.
 
 ### Historical delivered003000; next work was bounded live admission and Pad DTO enrichment
 
