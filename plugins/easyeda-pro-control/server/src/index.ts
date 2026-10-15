@@ -89,7 +89,7 @@ import { discoverReviewedOrLiveTools } from "./reviewed-upstream-tools.ts";
 import { buildDsnExportCode, wrapWithContextGuard } from "./runtime-scripts.ts";
 import { UpstreamEasyedaClient, UpstreamStartupError } from "./upstream.ts";
 import { createSerializedShutdown } from "./shutdown.ts";
-import { offlineApiToolConfiguration, queryOfflineApi } from "./offline-api.ts";
+import { offlineApiToolConfiguration, runOfflineApi } from "./offline-api.ts";
 import { publicSdkReadImplementationKind, publicSdkReadRequestSchema } from "./public-sdk-read.ts";
 import { isSchematicNativeIdMethod } from "./schematic-native-ids.ts";
 import { SCHEMATIC_COMPONENT_PROPERTY_METHOD } from "./schematic-component-properties.ts";
@@ -1966,7 +1966,7 @@ registerFacadeTool(
 registerFacadeTool(
   "easyeda_control_api",
   offlineApiToolConfiguration,
-  guarded(({ request }) => Promise.resolve(queryOfflineApi(request))),
+  guarded(({ request }) => runOfflineApi(request)),
 );
 
 registerFacadeTool(

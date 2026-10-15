@@ -10,7 +10,7 @@ const require = function __easyedaGuardedRequire(specifier) { if (typeof specifi
 	const __easyedaPublicationLockPath = __easyedaJoin(__easyedaPublicationDirectory, ".bundle-publication.lock");
 const __easyedaAssertNoPublication = () => { try { __easyedaLstatSync(__easyedaPublicationLockPath); throw new Error("The facade bundle is undergoing a fail-closed publication transaction."); } catch (__easyedaPublicationError) { if (!__easyedaPublicationError || typeof __easyedaPublicationError !== "object" || !("code" in __easyedaPublicationError) || __easyedaPublicationError.code !== "ENOENT") throw __easyedaPublicationError; } };
 __easyedaAssertNoPublication();
-const __easyedaBundlePairId = "aa3254b359f2523d648e26f81255d820ce1d69abbca70f705ce2f309a0d469de";
+const __easyedaBundlePairId = "cf1ad97e1e2445fdabdb1455566644d7e91ed5583908d0db0a935a655a063594";
 if (__easyedaBasename(import.meta.filename) === "server.mjs") {
   const __easyedaPeerPath = __easyedaJoin(import.meta.dirname, "upstream-supervisor.mjs");
   const __easyedaPeerPathBefore = __easyedaLstatSync(__easyedaPeerPath, { bigint: true });
@@ -23772,7 +23772,7 @@ var init_protocol = __esm({
               return;
             }
             const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-            await new Promise((resolve19) => setTimeout(resolve19, pollInterval));
+            await new Promise((resolve20) => setTimeout(resolve20, pollInterval));
             options?.signal?.throwIfAborted();
           }
         } catch (error51) {
@@ -23789,7 +23789,7 @@ var init_protocol = __esm({
        */
       request(request2, resultSchema3, options) {
         const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-        return new Promise((resolve19, reject) => {
+        return new Promise((resolve20, reject) => {
           const earlyReject = (error51) => {
             reject(error51);
           };
@@ -23867,7 +23867,7 @@ var init_protocol = __esm({
               if (!parseResult.success) {
                 reject(parseResult.error);
               } else {
-                resolve19(parseResult.data);
+                resolve20(parseResult.data);
               }
             } catch (error51) {
               reject(error51);
@@ -24129,12 +24129,12 @@ var init_protocol = __esm({
           }
         } catch {
         }
-        return new Promise((resolve19, reject) => {
+        return new Promise((resolve20, reject) => {
           if (signal.aborted) {
             reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
             return;
           }
-          const timeoutId = setTimeout(resolve19, interval);
+          const timeoutId = setTimeout(resolve20, interval);
           signal.addEventListener("abort", () => {
             clearTimeout(timeoutId);
             reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -24587,11 +24587,11 @@ var require_codegen = __commonJS({
         const rhs = this.rhs === void 0 ? "" : ` = ${this.rhs}`;
         return `${varKind} ${this.name}${rhs};` + _n;
       }
-      optimizeNames(names2, constants23) {
+      optimizeNames(names2, constants24) {
         if (!names2[this.name.str])
           return;
         if (this.rhs)
-          this.rhs = optimizeExpr(this.rhs, names2, constants23);
+          this.rhs = optimizeExpr(this.rhs, names2, constants24);
         return this;
       }
       get names() {
@@ -24608,10 +24608,10 @@ var require_codegen = __commonJS({
       render({ _n }) {
         return `${this.lhs} = ${this.rhs};` + _n;
       }
-      optimizeNames(names2, constants23) {
+      optimizeNames(names2, constants24) {
         if (this.lhs instanceof code_1.Name && !names2[this.lhs.str] && !this.sideEffects)
           return;
-        this.rhs = optimizeExpr(this.rhs, names2, constants23);
+        this.rhs = optimizeExpr(this.rhs, names2, constants24);
         return this;
       }
       get names() {
@@ -24672,8 +24672,8 @@ var require_codegen = __commonJS({
       optimizeNodes() {
         return `${this.code}` ? this : void 0;
       }
-      optimizeNames(names2, constants23) {
-        this.code = optimizeExpr(this.code, names2, constants23);
+      optimizeNames(names2, constants24) {
+        this.code = optimizeExpr(this.code, names2, constants24);
         return this;
       }
       get names() {
@@ -24702,12 +24702,12 @@ var require_codegen = __commonJS({
         }
         return nodes.length > 0 ? this : void 0;
       }
-      optimizeNames(names2, constants23) {
+      optimizeNames(names2, constants24) {
         const { nodes } = this;
         let i2 = nodes.length;
         while (i2--) {
           const n = nodes[i2];
-          if (n.optimizeNames(names2, constants23))
+          if (n.optimizeNames(names2, constants24))
             continue;
           subtractNames(names2, n.names);
           nodes.splice(i2, 1);
@@ -24760,12 +24760,12 @@ var require_codegen = __commonJS({
           return void 0;
         return this;
       }
-      optimizeNames(names2, constants23) {
+      optimizeNames(names2, constants24) {
         var _a3;
-        this.else = (_a3 = this.else) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names2, constants23);
-        if (!(super.optimizeNames(names2, constants23) || this.else))
+        this.else = (_a3 = this.else) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names2, constants24);
+        if (!(super.optimizeNames(names2, constants24) || this.else))
           return;
-        this.condition = optimizeExpr(this.condition, names2, constants23);
+        this.condition = optimizeExpr(this.condition, names2, constants24);
         return this;
       }
       get names() {
@@ -24788,10 +24788,10 @@ var require_codegen = __commonJS({
       render(opts) {
         return `for(${this.iteration})` + super.render(opts);
       }
-      optimizeNames(names2, constants23) {
-        if (!super.optimizeNames(names2, constants23))
+      optimizeNames(names2, constants24) {
+        if (!super.optimizeNames(names2, constants24))
           return;
-        this.iteration = optimizeExpr(this.iteration, names2, constants23);
+        this.iteration = optimizeExpr(this.iteration, names2, constants24);
         return this;
       }
       get names() {
@@ -24827,10 +24827,10 @@ var require_codegen = __commonJS({
       render(opts) {
         return `for(${this.varKind} ${this.name} ${this.loop} ${this.iterable})` + super.render(opts);
       }
-      optimizeNames(names2, constants23) {
-        if (!super.optimizeNames(names2, constants23))
+      optimizeNames(names2, constants24) {
+        if (!super.optimizeNames(names2, constants24))
           return;
-        this.iterable = optimizeExpr(this.iterable, names2, constants23);
+        this.iterable = optimizeExpr(this.iterable, names2, constants24);
         return this;
       }
       get names() {
@@ -24872,11 +24872,11 @@ var require_codegen = __commonJS({
         (_b = this.finally) === null || _b === void 0 ? void 0 : _b.optimizeNodes();
         return this;
       }
-      optimizeNames(names2, constants23) {
+      optimizeNames(names2, constants24) {
         var _a3, _b;
-        super.optimizeNames(names2, constants23);
-        (_a3 = this.catch) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names2, constants23);
-        (_b = this.finally) === null || _b === void 0 ? void 0 : _b.optimizeNames(names2, constants23);
+        super.optimizeNames(names2, constants24);
+        (_a3 = this.catch) === null || _a3 === void 0 ? void 0 : _a3.optimizeNames(names2, constants24);
+        (_b = this.finally) === null || _b === void 0 ? void 0 : _b.optimizeNames(names2, constants24);
         return this;
       }
       get names() {
@@ -25177,7 +25177,7 @@ var require_codegen = __commonJS({
     function addExprNames(names2, from) {
       return from instanceof code_1._CodeOrName ? addNames(names2, from.names) : names2;
     }
-    function optimizeExpr(expr, names2, constants23) {
+    function optimizeExpr(expr, names2, constants24) {
       if (expr instanceof code_1.Name)
         return replaceName(expr);
       if (!canOptimize(expr))
@@ -25192,14 +25192,14 @@ var require_codegen = __commonJS({
         return items;
       }, []));
       function replaceName(n) {
-        const c = constants23[n.str];
+        const c = constants24[n.str];
         if (c === void 0 || names2[n.str] !== 1)
           return n;
         delete names2[n.str];
         return c;
       }
       function canOptimize(e) {
-        return e instanceof code_1._Code && e._items.some((c) => c instanceof code_1.Name && names2[c.str] === 1 && constants23[c.str] !== void 0);
+        return e instanceof code_1._Code && e._items.some((c) => c instanceof code_1.Name && names2[c.str] === 1 && constants24[c.str] !== void 0);
       }
     }
     function subtractNames(names2, from) {
@@ -27161,7 +27161,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref3];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve19.call(this, root, ref3);
+      let _sch = resolve20.call(this, root, ref3);
       if (_sch === void 0) {
         const schema2 = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref3];
         const { schemaId } = this.opts;
@@ -27188,7 +27188,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve19(root, ref3) {
+    function resolve20(root, ref3) {
       let sch;
       while (typeof (sch = this.refs[ref3]) == "string")
         ref3 = sch;
@@ -28018,7 +28018,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve19(baseURI, relativeURI, options) {
+    function resolve20(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const {
         parsed: baseParsed,
@@ -28051,49 +28051,49 @@ var require_fast_uri = __commonJS({
       schemelessOptions.skipEscape = true;
       return serialize(resolved2, schemelessOptions);
     }
-    function resolveComponent(base4, relative9, options, skipNormalization) {
+    function resolveComponent(base4, relative10, options, skipNormalization) {
       const target5 = {};
       if (!skipNormalization) {
         base4 = parse6(serialize(base4, options), options);
-        relative9 = parse6(serialize(relative9, options), options);
+        relative10 = parse6(serialize(relative10, options), options);
       }
       options = options || {};
-      if (!options.tolerant && relative9.scheme) {
-        target5.scheme = relative9.scheme;
-        target5.userinfo = relative9.userinfo;
-        target5.host = relative9.host;
-        target5.port = relative9.port;
-        target5.path = removeDotSegments(relative9.path || "");
-        target5.query = relative9.query;
+      if (!options.tolerant && relative10.scheme) {
+        target5.scheme = relative10.scheme;
+        target5.userinfo = relative10.userinfo;
+        target5.host = relative10.host;
+        target5.port = relative10.port;
+        target5.path = removeDotSegments(relative10.path || "");
+        target5.query = relative10.query;
       } else {
-        if (relative9.userinfo !== void 0 || relative9.host !== void 0 || relative9.port !== void 0) {
-          target5.userinfo = relative9.userinfo;
-          target5.host = relative9.host;
-          target5.port = relative9.port;
-          target5.path = removeDotSegments(relative9.path || "");
-          target5.query = relative9.query;
+        if (relative10.userinfo !== void 0 || relative10.host !== void 0 || relative10.port !== void 0) {
+          target5.userinfo = relative10.userinfo;
+          target5.host = relative10.host;
+          target5.port = relative10.port;
+          target5.path = removeDotSegments(relative10.path || "");
+          target5.query = relative10.query;
         } else {
-          if (!relative9.path) {
+          if (!relative10.path) {
             target5.path = base4.path;
-            if (relative9.query !== void 0) {
-              target5.query = relative9.query;
+            if (relative10.query !== void 0) {
+              target5.query = relative10.query;
             } else {
               target5.query = base4.query;
             }
           } else {
-            if (relative9.path[0] === "/") {
-              target5.path = removeDotSegments(relative9.path);
+            if (relative10.path[0] === "/") {
+              target5.path = removeDotSegments(relative10.path);
             } else {
               if ((base4.userinfo !== void 0 || base4.host !== void 0 || base4.port !== void 0) && !base4.path) {
-                target5.path = "/" + relative9.path;
+                target5.path = "/" + relative10.path;
               } else if (!base4.path) {
-                target5.path = relative9.path;
+                target5.path = relative10.path;
               } else {
-                target5.path = base4.path.slice(0, base4.path.lastIndexOf("/") + 1) + relative9.path;
+                target5.path = base4.path.slice(0, base4.path.lastIndexOf("/") + 1) + relative10.path;
               }
               target5.path = removeDotSegments(target5.path);
             }
-            target5.query = relative9.query;
+            target5.query = relative10.query;
           }
           target5.userinfo = base4.userinfo;
           target5.host = base4.host;
@@ -28101,7 +28101,7 @@ var require_fast_uri = __commonJS({
         }
         target5.scheme = base4.scheme;
       }
-      target5.fragment = relative9.fragment;
+      target5.fragment = relative10.fragment;
       return target5;
     }
     function equal6(uriA, uriB, options) {
@@ -28387,7 +28387,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve19,
+      resolve: resolve20,
       resolveComponent,
       equal: equal6,
       serialize,
@@ -32537,7 +32537,7 @@ var init_mcp = __esm({
         let task = createTaskResult.task;
         const pollInterval = task.pollInterval ?? 5e3;
         while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-          await new Promise((resolve19) => setTimeout(resolve19, pollInterval));
+          await new Promise((resolve20) => setTimeout(resolve20, pollInterval));
           const updatedTask = await extra.taskStore.getTask(taskId);
           if (!updatedTask) {
             throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -33146,12 +33146,12 @@ var init_stdio2 = __esm({
         this.onclose?.();
       }
       send(message) {
-        return new Promise((resolve19) => {
+        return new Promise((resolve20) => {
           const json3 = serializeMessage(message);
           if (this._stdout.write(json3)) {
-            resolve19();
+            resolve20();
           } else {
-            this._stdout.once("drain", resolve19);
+            this._stdout.once("drain", resolve20);
           }
         });
       }
@@ -41421,7 +41421,7 @@ async function readNativeHistoryCheckpoint(input) {
     fail2();
   }
   await absentSidecars(checkpointPath);
-  const file3 = await open5(checkpointPath, constants.O_RDONLY | constants.O_NOFOLLOW);
+  const file3 = await open5(checkpointPath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   let database;
   try {
     stage = "checkpoint-file";
@@ -42240,9 +42240,9 @@ function validateExactReadPayload(payload, request2) {
         );
       }
     }
-    const limitations11 = payload.limitations;
+    const limitations12 = payload.limitations;
     if (request2.kind === "schematic-components") {
-      if (!isUnknownRecord(limitations11) || typeof limitations11.componentPinOtherProperty !== "string" || typeof limitations11.componentOtherPropertyFiltering !== "string" || typeof limitations11.cbbLibraryOwnership !== "string") {
+      if (!isUnknownRecord(limitations12) || typeof limitations12.componentPinOtherProperty !== "string" || typeof limitations12.componentOtherPropertyFiltering !== "string" || typeof limitations12.cbbLibraryOwnership !== "string") {
         throw new Error(
           "Exact schematic component reader omitted adapter limitations."
         );
@@ -42257,7 +42257,7 @@ function validateExactReadPayload(payload, request2) {
           }
         }
       }
-    } else if (!isUnknownRecord(limitations11) || typeof limitations11.componentPadWrapper !== "string") {
+    } else if (!isUnknownRecord(limitations12) || typeof limitations12.componentPadWrapper !== "string") {
       throw new Error(
         "Exact PCB component reader omitted its adapter limitation."
       );
@@ -42369,8 +42369,8 @@ function validateExactReadPayload(payload, request2) {
       );
     }
   } else if (request2.kind === "pcb-inventory") {
-    const limitations11 = payload.limitations;
-    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations11) || typeof limitations11["directPads"] !== "string" || typeof limitations11.componentPadCorrelation !== "string" || typeof limitations11["pouredCorrelation"] !== "string" || typeof limitations11.regionRuleTypes !== "string" || typeof limitations11.fillModes !== "string" || typeof limitations11.arcPrecision !== "string" || typeof limitations11.viaPrecision !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
+    const limitations12 = payload.limitations;
+    if (!payload.families || typeof payload.families !== "object" || Array.isArray(payload.families) || payload.units?.coordinatesAndLengths !== "mil" || payload.units?.angles !== "degree" || !isUnknownRecord(limitations12) || typeof limitations12["directPads"] !== "string" || typeof limitations12.componentPadCorrelation !== "string" || typeof limitations12["pouredCorrelation"] !== "string" || typeof limitations12.regionRuleTypes !== "string" || typeof limitations12.fillModes !== "string" || typeof limitations12.arcPrecision !== "string" || typeof limitations12.viaPrecision !== "string" || payload.componentPadCorrelation?.status !== "exact-subset" || !Array.isArray(payload.componentPadCorrelation?.primitiveIds) || !payload.componentPadCorrelation?.byPrimitiveId || typeof payload.componentPadCorrelation.byPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byPrimitiveId) || !payload.componentPadCorrelation?.byComponentPrimitiveId || typeof payload.componentPadCorrelation.byComponentPrimitiveId !== "object" || Array.isArray(payload.componentPadCorrelation.byComponentPrimitiveId) || payload.pouredCorrelation?.status !== "derived-subset" || !Array.isArray(payload.pouredCorrelation?.pourPrimitiveIds) || !payload.pouredCorrelation?.byPourPrimitiveId || typeof payload.pouredCorrelation.byPourPrimitiveId !== "object" || Array.isArray(payload.pouredCorrelation.byPourPrimitiveId)) {
       throw new Error("Exact PCB inventory omitted primitive families.");
     }
     const families3 = payload.families;
@@ -44574,18 +44574,18 @@ function compileSchematicOperation(input) {
   if (family2 === "component") {
     collateral.push("target-owned-pins-and-attributes", "explicitly-planned-following-wire-geometry");
   }
-  const limitations11 = ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged"];
+  const limitations12 = ["compiler-only-until-connected-mutation-admission", "all-unlisted-document-state-must-remain-unchanged"];
   if (family2 === "wire") {
-    limitations11.push("public-wire-enumerators-hide-rpc-failure-use-document-source", "compiled-topology-proof-required");
+    limitations12.push("public-wire-enumerators-hide-rpc-failure-use-document-source", "compiled-topology-proof-required");
   }
   if (requiredPreservation !== null) {
-    limitations11.push("complete-source-property-merge-required-before-component-modify");
+    limitations12.push("complete-source-property-merge-required-before-component-modify");
   }
   if (operation.documentType === 2 && ["polygon", "rectangle"].includes(family2)) {
-    limitations11.push("known-symbol-editor-shape-manager-misrouting-needs-adapter-validation");
+    limitations12.push("known-symbol-editor-shape-manager-misrouting-needs-adapter-validation");
   }
   if (["port", "net-flag"].includes(family2)) {
-    limitations11.push("default-library-symbol-associations-must-be-captured-and-proven");
+    limitations12.push("default-library-symbol-associations-must-be-captured-and-proven");
   }
   let identity28 = "preserve";
   if (deleting) {
@@ -44594,7 +44594,7 @@ function compileSchematicOperation(input) {
   if (creating) {
     identity28 = "create";
   }
-  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method5, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field3, value]) => expected(family2, field3, value)), inverse, effect: { family: family2, target: target5, identity: identity28, fields: fields7, collateral }, requiredPreservation, limitations: limitations11 };
+  return { profile: SCHEMATIC_OPERATION_PROFILE, operation: structuredClone(operation), id: operation.id, action: operation.action, documentType: operation.documentType, call: { api: definition.api, method: method5, args }, resultKind, beforeReads, afterReads, expectedFields: Object.entries(values2).map(([field3, value]) => expected(family2, field3, value)), inverse, effect: { family: family2, target: target5, identity: identity28, fields: fields7, collateral }, requiredPreservation, limitations: limitations12 };
 }
 function referenceFamily(action) {
   const family2 = action.split(".")[1];
@@ -64035,7 +64035,7 @@ function runReader(file3, node, input, scanDeadlineMs) {
   const started = performance2.now();
   const request2 = JSON.stringify(input);
   requireValue3(Buffer.byteLength(request2) <= 8192, "Reader input exceeded its bound.");
-  const { promise: promise2, resolve: resolve19, reject } = Promise.withResolvers();
+  const { promise: promise2, resolve: resolve20, reject } = Promise.withResolvers();
   const child = spawn(node.descriptorPath, ["--max-old-space-size=192", "--input-type=module", "--eval", SQLITE_INVENTORY_PROGRAM], {
     cwd: "/",
     env: { NODE_NO_WARNINGS: "1" },
@@ -64124,7 +64124,7 @@ function runReader(file3, node, input, scanDeadlineMs) {
       return;
     }
     try {
-      resolve19({ inventory: parseCompletedOutput(output, input.expectedSha256), completion });
+      resolve20({ inventory: parseCompletedOutput(output, input.expectedSha256), completion });
     } catch {
       reject(new SqlReaderFailureError("Reader completion protocol refused.", completion));
     }
@@ -64639,7 +64639,7 @@ async function trustedSqliteBinary() {
 }
 async function runSqliteDump(handle, options = {}) {
   const command = await trustedSqliteBinary();
-  return new Promise((resolve19, reject) => {
+  return new Promise((resolve20, reject) => {
     const checkedMaxBuffer = positiveInteger(
       options.maxBuffer ?? process.env["EASYEDA_CHECKPOINT_STDOUT_MAX_BYTES"],
       256 * 1024 * 1024
@@ -64736,7 +64736,7 @@ async function runSqliteDump(handle, options = {}) {
       }
       if (code === 0) {
         finish(() => {
-          resolve19(Buffer.concat(stdout));
+          resolve20(Buffer.concat(stdout));
         });
       } else {
         fail11(
@@ -70399,8 +70399,8 @@ function capture(value, operationId3, generation5, attempt) {
   const processes2 = a["processes"];
   need11(Array.isArray(processes2) && processes2.length > 0 && processes2.length <= 512);
   let previous = 0, root = 0;
-  for (const process19 of processes2) {
-    const p = exact9(process19, ["pid", "role", "startIdentity"]);
+  for (const process20 of processes2) {
+    const p = exact9(process20, ["pid", "role", "startIdentity"]);
     const pid2 = p["pid"];
     const identity28 = p["startIdentity"];
     need11(typeof pid2 === "number" && Number.isSafeInteger(pid2) && pid2 > previous && pid2 <= 2147483647 && typeof identity28 === "string" && new RegExp(`^win32:\\d{15,20}:job:${generation5.jobId}$`, "u").test(identity28));
@@ -79149,8 +79149,8 @@ function capture2(value, operationId3, generation5, attempt) {
   const processes2 = a["processes"];
   need40(Array.isArray(processes2) && processes2.length > 0 && processes2.length <= 512);
   let previous = 0, root = 0;
-  for (const process19 of processes2) {
-    const p = exact15(process19, ["pid", "role", "startIdentity"]);
+  for (const process20 of processes2) {
+    const p = exact15(process20, ["pid", "role", "startIdentity"]);
     const pid2 = p["pid"];
     const identity28 = p["startIdentity"];
     need40(typeof pid2 === "number" && Number.isSafeInteger(pid2) && pid2 > previous && pid2 <= 2147483647 && typeof identity28 === "string" && new RegExp(`^win32:\\d{15,20}:job:${generation5.jobId}$`, "u").test(identity28));
@@ -83461,8 +83461,8 @@ function verifyWireRetainedSaveAuthority(journal, afterPhase, acknowledgment) {
   if (!isRecord(acknowledgment) || acknowledgment["ok"] !== true || acknowledgment["saved"] !== true || acknowledgment["closed"] !== true || acknowledgment["reopened"] !== true || !isRecord(acknowledgment["document"]) || acknowledgment["document"]["uuid"] !== expected3.document["uuid"] || acknowledgment["document"]["documentType"] !== 1 || acknowledgment["document"]["tabId"] !== journal.context.document.tabId || expected3.document["uuid"] !== (journal.context.document.uuid ?? journal.context.document.documentUuid)) {
     throw new Error("Retained wire Save/reopen acknowledgment is missing or does not match the target; do not repeat Save.");
   }
-  const barrier = acknowledgment["projectUploadBarrier"], close = acknowledgment["closeProof"], guard = acknowledgment["exactSaveGuard"], open34 = acknowledgment["openProof"];
-  if (!isRecord(guard) || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || !same34(guard["labels"], ["schematic-source"]) || !same34(guard["snapshotSha256"], [consistency["snapshotSha256"]]) || !isRecord(close) || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || !isRecord(open34) || open34["profile"] !== "easyeda-pro-control.native-document-open.v1" || open34["tabId"] !== journal.context.document.tabId || open34["newFrameReady"] !== true || open34["exactContext"] !== true || open34["readinessSamples"] !== 2 || typeof open34["activated"] !== "boolean" || !isRecord(barrier) || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== projectUuid4 || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
+  const barrier = acknowledgment["projectUploadBarrier"], close = acknowledgment["closeProof"], guard = acknowledgment["exactSaveGuard"], open35 = acknowledgment["openProof"];
+  if (!isRecord(guard) || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || !same34(guard["labels"], ["schematic-source"]) || !same34(guard["snapshotSha256"], [consistency["snapshotSha256"]]) || !isRecord(close) || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || !isRecord(open35) || open35["profile"] !== "easyeda-pro-control.native-document-open.v1" || open35["tabId"] !== journal.context.document.tabId || open35["newFrameReady"] !== true || open35["exactContext"] !== true || open35["readinessSamples"] !== 2 || typeof open35["activated"] !== "boolean" || !isRecord(barrier) || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== projectUuid4 || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
     throw new Error("Retained wire Save lacks its exact guard, terminal close, ready reopen or upload barrier.");
   }
 }
@@ -83524,7 +83524,7 @@ function buildSchematicLayoutPageLoadCode(value, pageUuid) {
   if (scope5.projectPath !== normalizeEasyedaProjectPath(scope5.projectPath) || scope5.activeTabId !== `${scope5.activePageUuid}@${scope5.projectUuid}` || new Set(scope5.pageUuids).size !== scope5.pageUuids.length || !scope5.pageUuids.includes(scope5.activePageUuid) || !scope5.pageUuids.includes(pageUuid)) {
     throw new Error("Schematic page loading target is outside the declared checkpoint scope.");
   }
-  const open34 = buildNativeDocumentOpenFunction({ projectUuid: scope5.projectUuid, documentUuid: pageUuid, documentType: 1 });
+  const open35 = buildNativeDocumentOpenFunction({ projectUuid: scope5.projectUuid, documentUuid: pageUuid, documentType: 1 });
   return `return await (async()=>{
 ${DEVICE_NATIVE_HOST_GUARD}
 const scope=${JSON.stringify(scope5)},pageUuid=${JSON.stringify(pageUuid)},targetTab=pageUuid+'@'+scope.projectUuid;
@@ -83556,7 +83556,7 @@ const activeMatches=async(id)=>{
 await owners();if(!await activeMatches(scope.activePageUuid))fail();
 if(pageUuid!==scope.activePageUuid){
  const present=(await bus.rpcCall('isOpenTab',[targetTab]))?.message;
- if(present===false){if(manager.get(pageUuid)!==undefined&&manager.get(pageUuid)!==null)fail();await (${open34})(targetTab);}
+ if(present===false){if(manager.get(pageUuid)!==undefined&&manager.get(pageUuid)!==null)fail();await (${open35})(targetTab);}
  else if(present!==true||!await frameReady(pageUuid))fail();
 }
 let deadline,pollTimer,rejectDeadline;
@@ -85346,8 +85346,8 @@ function verifyLayoutRetainedSaveAuthority(journal, afterPhase, acknowledgment) 
   if (!isRecord(acknowledgment) || acknowledgment["ok"] !== true || acknowledgment["saved"] !== true || acknowledgment["closed"] !== true || acknowledgment["reopened"] !== true || !isRecord(acknowledgment["document"]) || acknowledgment["document"]["uuid"] !== expected3.document["uuid"] || acknowledgment["document"]["documentType"] !== 1 || acknowledgment["document"]["tabId"] !== journal.context.document.tabId || expected3.document["uuid"] !== (journal.context.document.uuid ?? journal.context.document.documentUuid)) {
     throw new Error("Retained layout Save/reopen receipt does not match the exact current target.");
   }
-  const barrier = acknowledgment["projectUploadBarrier"], close = acknowledgment["closeProof"], guard = acknowledgment["exactSaveGuard"], open34 = acknowledgment["openProof"];
-  if (!isRecord(guard) || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || canonicalJson(guard["labels"]) !== canonicalJson(["schematic-source"]) || canonicalJson(guard["snapshotSha256"]) !== canonicalJson([consistency["snapshotSha256"]]) || !isRecord(close) || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || !isRecord(open34) || open34["profile"] !== "easyeda-pro-control.native-document-open.v1" || open34["tabId"] !== journal.context.document.tabId || open34["newFrameReady"] !== true || open34["exactContext"] !== true || open34["readinessSamples"] !== 2 || typeof open34["activated"] !== "boolean" || !isRecord(barrier) || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== projectUuid4 || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
+  const barrier = acknowledgment["projectUploadBarrier"], close = acknowledgment["closeProof"], guard = acknowledgment["exactSaveGuard"], open35 = acknowledgment["openProof"];
+  if (!isRecord(guard) || guard["passes"] !== 2 || guard["saveInvokedInSameExecution"] !== true || guard["publicCompareAndSwapAvailable"] !== false || canonicalJson(guard["labels"]) !== canonicalJson(["schematic-source"]) || canonicalJson(guard["snapshotSha256"]) !== canonicalJson([consistency["snapshotSha256"]]) || !isRecord(close) || close["profile"] !== "easyeda-pro-control.native-document-close.v1" || close["closeCalls"] !== 1 || close["terminalNotification"] !== true || close["oldFrameRemoved"] !== true || close["oldTabRemoved"] !== true || close["saved"] !== false || !isRecord(open35) || open35["profile"] !== "easyeda-pro-control.native-document-open.v1" || open35["tabId"] !== journal.context.document.tabId || open35["newFrameReady"] !== true || open35["exactContext"] !== true || open35["readinessSamples"] !== 2 || typeof open35["activated"] !== "boolean" || !isRecord(barrier) || barrier["profile"] !== "easyeda-pro-control.project-upload-barrier.v1" || barrier["projectUuid"] !== projectUuid4 || barrier["scheduledWritesSettled"] !== true || barrier["savedEditorChanges"] !== false) {
     throw new Error("Retained layout Save lacks its exact guard, terminal close, ready reopen or upload barrier.");
   }
 }
@@ -92192,15 +92192,15 @@ async function observeOrdinaryLaunchRecovery(options) {
   }
   return { ...observation2, helperSha256: ORDINARY_LAUNCH_RECOVERY_HELPER.sha256 };
 }
-var ORDINARY_LAUNCH_RECOVERY_HELPER, nativeObservationSchema, ordinaryLaunchRecoveryObservationSchema, OrdinaryLaunchRecoveryError;
+var ORDINARY_LAUNCH_RECOVERY_HELPER, nativeObservationSchema, ordinaryLaunchRecoveryObservationSchema, recordedOrdinaryLaunchRecoveryObservationSchema, OrdinaryLaunchRecoveryError;
 var init_ordinary_launch_recovery = __esm({
   "server/src/ordinary-launch-recovery.ts"() {
     init_zod();
     init_windows_runtime();
     ORDINARY_LAUNCH_RECOVERY_HELPER = Object.freeze({
       relativePath: "scripts/ordinary-launch-recovery.ps1",
-      bytes: 2279,
-      sha256: "d68a8029d12d4bcbff1432e21c917ac4dd11c390dc95effea138522b3080298c"
+      bytes: 2320,
+      sha256: "8ffb025cdd20c1851c37d57a20816240928c7e6425b44528a623c8b8f72a37aa"
     });
     nativeObservationSchema = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.ordinary-launch-recovery-observation.v1"),
@@ -92210,6 +92210,12 @@ var init_ordinary_launch_recovery = __esm({
     }).strict();
     ordinaryLaunchRecoveryObservationSchema = nativeObservationSchema.extend({
       helperSha256: external_exports.literal(ORDINARY_LAUNCH_RECOVERY_HELPER.sha256)
+    }).strict();
+    recordedOrdinaryLaunchRecoveryObservationSchema = nativeObservationSchema.extend({
+      helperSha256: external_exports.enum([
+        ORDINARY_LAUNCH_RECOVERY_HELPER.sha256,
+        "d68a8029d12d4bcbff1432e21c917ac4dd11c390dc95effea138522b3080298c"
+      ])
     }).strict();
     OrdinaryLaunchRecoveryError = class extends Error {
       category;
@@ -92622,7 +92628,7 @@ var init_ordinary_launch = __esm({
       createdAt: external_exports.iso.datetime(),
       confirmAbandonUnknownLaunch: external_exports.literal(true),
       acceptUnobservedDescendants: external_exports.literal(true),
-      observation: ordinaryLaunchRecoveryObservationSchema,
+      observation: recordedOrdinaryLaunchRecoveryObservationSchema,
       pendingHelperLaunchExcluded: external_exports.literal(true),
       launchOutcome: external_exports.literal("unknown"),
       terminationProved: external_exports.literal(false),
@@ -94112,6 +94118,246 @@ var init_current_symbol_metadata = __esm({
   }
 });
 
+// server/src/current-symbol-metadata-preparation.ts
+import { createHash as createHash33 } from "node:crypto";
+import { constants as constants21 } from "node:fs";
+import { lstat as lstat29, open as open26 } from "node:fs/promises";
+import { basename as basename20, dirname as dirname17, isAbsolute as isAbsolute21, join as join48, relative as relative5, resolve as resolve13, sep as sep3 } from "node:path";
+import process9 from "node:process";
+function queryCurrentSymbolMetadataPreparation(input = {}) {
+  const query = external_exports.object({ includeSchemas: external_exports.boolean().default(false) }).strict().parse(input);
+  return {
+    offline: true,
+    executionAuthorized: false,
+    writerReady: false,
+    inverseReady: false,
+    schema: "easyeda-pro-control.current-symbol-metadata-preparation.v1",
+    limitations: [...limitations11],
+    provenance: {
+      workerSha256: "b849bd124dc3e31d7c491381fba301ed0c759ffc3c513519b464c66977951928",
+      serializer: "DOCHEAD xt at 241441; SYMBOL metaData at 661091; updateString at 1937501",
+      liveValidation: "not-recorded"
+    },
+    ...query.includeSchemas ? {
+      inputSchema: external_exports.toJSONSchema(currentSymbolMetadataPreparationRequestSchema),
+      resultSchema: external_exports.toJSONSchema(currentSymbolMetadataPreparationResultSchema)
+    } : {}
+  };
+}
+function validateCurrentSymbolMetadataPreparationArguments(input) {
+  const parsed2 = currentSymbolMetadataPreparationRequestSchema.safeParse(input);
+  return parsed2.success ? { valid: true, request: parsed2.data, executionAuthorized: false, writerReady: false } : {
+    valid: false,
+    executionAuthorized: false,
+    writerReady: false,
+    issues: parsed2.error.issues.slice(0, 16).map((issue2) => ({ path: issue2.path.map(String), message: issue2.message.slice(0, 512) }))
+  };
+}
+function requireCheckpoint(condition) {
+  if (!condition) {
+    throw new Error("Current symbol metadata checkpoint identity, scope or stability is not proven.");
+  }
+}
+function sameFile5(before, after) {
+  return after.isFile() && !after.isSymbolicLink() && before.dev === after.dev && before.ino === after.ino && before.uid === after.uid && before.mode === after.mode && before.nlink === after.nlink && before.size === after.size && before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs;
+}
+async function verifyBytes(file3, descriptor9) {
+  const hash35 = createHash33("sha256");
+  let bytes2 = 0;
+  for await (const chunk of file3.createReadStream({ autoClose: false, start: 0 })) {
+    requireCheckpoint(Buffer.isBuffer(chunk));
+    bytes2 += chunk.length;
+    requireCheckpoint(bytes2 <= descriptor9.bytes);
+    hash35.update(chunk);
+  }
+  requireCheckpoint(bytes2 === descriptor9.bytes && hash35.digest("hex") === descriptor9.sha256);
+}
+async function requireNoSidecars(path5) {
+  for (const suffix of ["-wal", "-shm", "-journal"]) {
+    let missing = false;
+    try {
+      await lstat29(`${path5}${suffix}`);
+    } catch (error51) {
+      requireCheckpoint(isRecord(error51) && error51["code"] === "ENOENT");
+      missing = true;
+    }
+    requireCheckpoint(missing);
+  }
+}
+async function prepareCurrentSymbolMetadata(input) {
+  const request2 = currentSymbolMetadataPreparationRequestSchema.parse(input);
+  const checkpointRoot = join48(controlDataDirectory(), "checkpoints");
+  const child = relative5(checkpointRoot, request2.checkpoint.path);
+  requireCheckpoint(child.length > 0 && child !== ".." && !child.startsWith(`..${sep3}`) && !isAbsolute21(child));
+  const root = await controlRootCapability(false);
+  const directory = await root.openDirectory(dirname17(request2.checkpoint.path), false);
+  try {
+    const boundPath = `/proc/self/fd/${String(directory.handle.fd)}/${basename20(request2.checkpoint.path)}`;
+    const named = await lstat29(boundPath, { bigint: true });
+    requireCheckpoint(named.isFile() && !named.isSymbolicLink() && named.nlink === 1n && named.mode % 64n === 0n && named.size === BigInt(request2.checkpoint.bytes) && (typeof process9.getuid !== "function" || named.uid === BigInt(process9.getuid())));
+    const file3 = await open26(boundPath, constants21.O_RDONLY | constants21.O_NOFOLLOW | constants21.O_NONBLOCK);
+    try {
+      const before = await file3.stat({ bigint: true });
+      requireCheckpoint(sameFile5(named, before));
+      const history = await readNativeHistoryCheckpoint({
+        checkpointPath: boundPath,
+        expectedSha256: request2.checkpoint.sha256,
+        projectUuid: request2.target.projectUuid
+      });
+      requireCheckpoint(history.projectUuid === request2.target.projectUuid && history.branchUuid === request2.target.branchUuid && history.projectOwnerUuid === request2.target.ownerUuid);
+      const plan2 = prepareProjectSymbolMetadata({
+        id: "offline-current-symbol-metadata",
+        action: "library.symbol.modify",
+        libraryUuid: request2.target.projectUuid,
+        target: { uuid: request2.target.symbolUuid },
+        patch: request2.patch
+      }, history);
+      const target5 = history.documents.find((document3) => document3.uuid === request2.target.symbolUuid);
+      requireCheckpoint(target5 !== void 0);
+      const observation2 = request2.observationProjection;
+      if (observation2 !== void 0) {
+        const value = observation2.value;
+        requireCheckpoint(observation2.target.projectUuid === request2.target.projectUuid && observation2.target.branchUuid === request2.target.branchUuid && observation2.target.documentUuid !== request2.target.symbolUuid && value.projectUuid === request2.target.projectUuid && value.uuid === request2.target.symbolUuid && value.ownerUuid === request2.target.ownerUuid && value.name === plan2.beforeTitle && value.description === plan2.beforeDescription && value.source === plan2.beforeSource && canonicalJson(JSON.parse(value.tagsJson)) === canonicalJson(plan2.beforeTags));
+      }
+      const beforeMetadata = { name: plan2.beforeTitle, description: plan2.beforeDescription, tags: plan2.beforeTags, source: plan2.beforeSource };
+      const prepared = {
+        schema: "easyeda-pro-control.current-symbol-metadata-preparation.v1",
+        offline: true,
+        checkpoint: request2.checkpoint,
+        target: request2.target,
+        patch: request2.patch,
+        history: {
+          profile: history.profile,
+          headHistoryUuid: history.headHistoryUuid,
+          historyRows: history.historyRowCount,
+          chunks: history.chunkCount,
+          plaintextBytes: history.plaintextBytes,
+          documents: history.documents.length,
+          selectedBranchRecordsSha256: plan2.beforeProjectSha256,
+          targetHeaderSha256: sha256Json(target5.metadata),
+          targetHeaderEditVersion: plan2.headerEditVersion
+        },
+        metadata: { before: beforeMetadata, after: { ...beforeMetadata, name: plan2.desiredTitle, description: plan2.desiredDescription }, peerNames: plan2.peerTitles },
+        correlation: {
+          observationProjectionSha256: observation2 === void 0 ? null : sha256Json(observation2),
+          metadataMatches: observation2 !== void 0,
+          freshnessVerified: false,
+          ticketCompared: false,
+          versionCompared: false
+        },
+        liveSourceRead: false,
+        cadAuthority: false,
+        writerReady: false,
+        inverseReady: false,
+        executionAuthorized: false,
+        persistenceVerified: false,
+        sqlInventoryVerified: false
+      };
+      const result = currentSymbolMetadataPreparationResultSchema.parse({ ...prepared, preparationSha256: sha256Json(prepared) });
+      if (Buffer.byteLength(JSON.stringify({ offline: true, result }), "utf8") > 512 * 1024) {
+        throw new Error("Current symbol metadata preparation exceeds the 512 KiB offline response limit.");
+      }
+      await verifyBytes(file3, request2.checkpoint);
+      requireCheckpoint(sameFile5(before, await file3.stat({ bigint: true })) && sameFile5(before, await lstat29(boundPath, { bigint: true })));
+      const currentDirectory = await root.openDirectory(directory.absolute, false);
+      try {
+        requireCheckpoint(currentDirectory.info.dev === directory.info.dev && currentDirectory.info.ino === directory.info.ino);
+      } finally {
+        await currentDirectory.handle.close();
+      }
+      await requireNoSidecars(boundPath);
+      await root.assertCurrent();
+      return result;
+    } finally {
+      await file3.close();
+    }
+  } finally {
+    await directory.handle.close();
+  }
+}
+var hashSchema4, idSchema3, symbolIdSchema, maximumCheckpointBytes, checkpointSchema5, targetSchema8, patchSchema2, currentSymbolMetadataPreparationRequestSchema, metadataSchema, peerNamesSchema, currentSymbolMetadataPreparationResultSchema, limitations11;
+var init_current_symbol_metadata_preparation = __esm({
+  "server/src/current-symbol-metadata-preparation.ts"() {
+    init_zod();
+    init_artifacts();
+    init_core3();
+    init_current_symbol_metadata();
+    init_native_history();
+    init_project_symbol_metadata();
+    hashSchema4 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
+    idSchema3 = external_exports.string().regex(/^[a-f0-9]{32}$/u);
+    symbolIdSchema = external_exports.string().regex(/^(?:[a-f0-9]{16}|[a-f0-9]{32})$/u);
+    maximumCheckpointBytes = 256 * 1024 * 1024;
+    checkpointSchema5 = external_exports.object({
+      path: external_exports.string().min(1).max(4096).refine((path5) => isAbsolute21(path5) && resolve13(path5) === path5 && path5.endsWith(".eprj2"), "Checkpoint must be a canonical absolute .eprj2 path."),
+      bytes: external_exports.number().int().positive().max(maximumCheckpointBytes),
+      sha256: hashSchema4
+    }).strict();
+    targetSchema8 = external_exports.object({ projectUuid: hashSchema4, branchUuid: idSchema3, ownerUuid: idSchema3, symbolUuid: symbolIdSchema }).strict();
+    patchSchema2 = external_exports.object({
+      name: external_exports.string().min(1).max(512).refine((name6) => name6.trim().length > 0, "Name must not be blank.").optional(),
+      description: external_exports.string().max(65536).optional()
+    }).strict().refine(
+      (patch2) => patch2.name !== void 0 || patch2.description !== void 0,
+      "A name or non-null description patch is required."
+    );
+    currentSymbolMetadataPreparationRequestSchema = external_exports.object({
+      checkpoint: checkpointSchema5,
+      target: targetSchema8,
+      patch: patchSchema2,
+      observationProjection: currentSymbolMetadataResultSchema.optional()
+    }).strict();
+    metadataSchema = external_exports.object({
+      name: external_exports.string().min(1).max(512),
+      description: external_exports.string().max(65536),
+      tags: external_exports.array(external_exports.string().max(512)).max(256),
+      source: external_exports.string().max(4096)
+    }).strict();
+    peerNamesSchema = external_exports.array(external_exports.string().min(1).max(512)).max(4096);
+    currentSymbolMetadataPreparationResultSchema = external_exports.object({
+      schema: external_exports.literal("easyeda-pro-control.current-symbol-metadata-preparation.v1"),
+      offline: external_exports.literal(true),
+      checkpoint: checkpointSchema5,
+      target: targetSchema8,
+      patch: patchSchema2,
+      history: external_exports.object({
+        profile: external_exports.literal("easyeda.native-history.linear-gcm-gzip.v1"),
+        headHistoryUuid: idSchema3,
+        historyRows: external_exports.number().int().positive().max(4096),
+        chunks: external_exports.number().int().positive(),
+        plaintextBytes: external_exports.number().int().nonnegative(),
+        documents: external_exports.number().int().positive(),
+        selectedBranchRecordsSha256: hashSchema4,
+        targetHeaderSha256: hashSchema4,
+        targetHeaderEditVersion: external_exports.string().min(1).max(128).nullable()
+      }).strict(),
+      metadata: external_exports.object({ before: metadataSchema, after: metadataSchema, peerNames: peerNamesSchema }).strict(),
+      correlation: external_exports.object({
+        observationProjectionSha256: hashSchema4.nullable(),
+        metadataMatches: external_exports.boolean(),
+        freshnessVerified: external_exports.literal(false),
+        ticketCompared: external_exports.literal(false),
+        versionCompared: external_exports.literal(false)
+      }).strict(),
+      liveSourceRead: external_exports.literal(false),
+      cadAuthority: external_exports.literal(false),
+      writerReady: external_exports.literal(false),
+      inverseReady: external_exports.literal(false),
+      executionAuthorized: external_exports.literal(false),
+      persistenceVerified: external_exports.literal(false),
+      sqlInventoryVerified: external_exports.literal(false),
+      preparationSha256: hashSchema4
+    }).strict();
+    limitations11 = [
+      "Reads an existing owner-owned, owner-only, single-link .eprj2 checkpoint below the managed control-root checkpoints directory. Missing paths stay missing. No original design, receipt, journal, application or network access is performed.",
+      "Decodes the complete selected linked-history branch, verifies exact project/branch/owner and an undeleted ordinary SYMBOL with strict DOCHEAD and five-field META, and checks all active peer symbol names. Unsupported history, metadata, links, sidecars, identity changes or bytes refuse.",
+      "The result prepares only name and non-null description; exact tags/source and complete selected-branch record hash are retained. It is not complete SQL inventory, all-branch comparison, a lock, writer-ready plan, inverse-ready plan, persistence proof or execution authority.",
+      "Optional observationProjection is the exact core currentSymbolMetadataResultSchema projection, not the decorated tool envelope. Explicitly select ok/kind/method/target/value/samples/implementationKind/targetClosedInRegistry/hiddenEditorsVerified/workerIdentityVerified/cadAuthority/persistenceVerified/sourceMembershipVerified from the observer result. Supplied values establish no provenance or freshness. Ticket and version are not compared; source/version getter fallback semantics are not treated as lossless storage evidence.",
+      "The complete {offline:true,result} JSON response must fit 512 KiB of UTF-8. Oversized metadata/peer-name results refuse without truncation or artifact publication."
+    ];
+  }
+});
+
 // server/src/historical-abandonment.ts
 async function runHistoricalAbandonment(request2) {
   const parsed2 = historicalAbandonmentRequestSchema.parse(request2);
@@ -94135,6 +94381,12 @@ var init_historical_abandonment = __esm({
 });
 
 // server/src/offline-api.ts
+async function runOfflineApi(request2) {
+  if (request2.action === "project-symbol-prepare") {
+    return { offline: true, result: await prepareCurrentSymbolMetadata(request2.query.request) };
+  }
+  return queryOfflineApi(request2);
+}
 function queryOfflineApi(request2) {
   let result;
   switch (request2.action) {
@@ -94242,6 +94494,17 @@ function queryOfflineApi(request2) {
       result = validateCurrentSymbolMetadataArguments(request2.query.request);
       break;
     }
+    case "project-symbol-preparation": {
+      result = queryCurrentSymbolMetadataPreparation(request2.query ?? {});
+      break;
+    }
+    case "project-symbol-prepare-validate": {
+      result = validateCurrentSymbolMetadataPreparationArguments(request2.query.request);
+      break;
+    }
+    case "project-symbol-prepare": {
+      throw new Error("Checkpoint preparation requires the asynchronous offline API handler.");
+    }
     case "history": {
       result = { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{
         action: "abandon-before-navigation",
@@ -94308,6 +94571,7 @@ var init_offline_api = __esm({
     init_current_pcb_identities();
     init_current_pcb_geometry();
     init_current_symbol_metadata();
+    init_current_symbol_metadata_preparation();
     init_historical_abandonment();
     ordinaryLaunchQuerySchema = external_exports.object({ includeSchemas: external_exports.boolean().default(false) }).strict();
     apiRequestSchema = external_exports.discriminatedUnion("action", [
@@ -94337,6 +94601,9 @@ var init_offline_api = __esm({
       external_exports.object({ action: external_exports.literal("pcb-geometry-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol"), query: currentSymbolMetadataQuerySchema.optional() }).strict(),
       external_exports.object({ action: external_exports.literal("project-symbol-validate"), query: publicSdkValidationQuerySchema }).strict(),
+      external_exports.object({ action: external_exports.literal("project-symbol-preparation"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
+      external_exports.object({ action: external_exports.literal("project-symbol-prepare-validate"), query: publicSdkValidationQuerySchema }).strict(),
+      external_exports.object({ action: external_exports.literal("project-symbol-prepare"), query: external_exports.object({ request: currentSymbolMetadataPreparationRequestSchema }).strict() }).strict(),
       external_exports.object({ action: external_exports.literal("history"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
       external_exports.object({ action: external_exports.literal("history-validate"), query: publicSdkValidationQuerySchema }).strict(),
       external_exports.object({ action: external_exports.literal("launch"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
@@ -94346,7 +94613,7 @@ var init_offline_api = __esm({
     ]);
     offlineApiToolConfiguration = {
       title: "EasyEDA offline API reference and argument validation",
-      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, local historical-abandonment, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
+      description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, local historical-abandonment, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Prepare a symbol name/description change from an existing hash-bound managed checkpoint with project-symbol-prepare. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Checkpoint preparation does not prove current state or enable editing. Declaration and adapter presence do not imply live validation.",
       inputSchema: { request: apiRequestSchema },
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true }
     };
@@ -94676,7 +94943,7 @@ var offline_control_exports = {};
 __export(offline_control_exports, {
   startOfflineControlServer: () => startOfflineControlServer
 });
-import process9 from "node:process";
+import process10 from "node:process";
 function offlineResult(value) {
   const encoded = JSON.stringify(value);
   if (Buffer.byteLength(encoded) > 512 * 1024) {
@@ -94709,13 +94976,13 @@ async function startOfflineControlServer(code) {
   await assertSelfSoftCoreLimitZero();
   const server2 = new McpServer({ name: "easyeda-pro-control", version: CONTROL_VERSION }, {
     capabilities: { tools: {} },
-    instructions: "Offline-only mode: the configured external installation is unavailable. Only bundled API reference, argument validation, local catalog discovery and bounded startup diagnostics are available. No live execution or recovery tools exist in this process. Repair and review the installation, then restart the MCP session. Offline mode never promotes itself to live mode."
+    instructions: "Offline-only mode: the configured external installation is unavailable. Bundled API reference, argument validation, existing managed-checkpoint symbol preparation, local catalog discovery and bounded startup diagnostics are available. No live execution or recovery tools exist in this process. Repair and review the installation, then restart the MCP session. Offline mode never promotes itself to live mode."
   });
   const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
   server2.registerTool(
     "easyeda_control_api",
     { ...offlineApiToolConfiguration, outputSchema },
-    offlineGuard(({ request: request2 }) => queryOfflineApi(request2))
+    offlineGuard(({ request: request2 }) => runOfflineApi(request2))
   );
   server2.registerTool("easyeda_control_status", {
     title: "Report offline-only EasyEDA startup status",
@@ -94730,7 +94997,7 @@ async function startOfflineControlServer(code) {
     installation: { ready: false, code },
     restartRequired: true,
     availableTools: ["easyeda_control_api", "easyeda_control_discover", "easyeda_control_status"],
-    capabilityScope: "Bundled reference only; no claim about the current EasyEDA installation."
+    capabilityScope: "Bundled reference and existing managed-checkpoint preparation only; no claim about the current EasyEDA installation."
   })));
   server2.registerTool("easyeda_control_discover", {
     title: "Discover the local EasyEDA reference catalog",
@@ -94764,23 +95031,23 @@ async function startOfflineControlServer(code) {
     try {
       await close();
     } catch {
-      process9.stderr.write("EasyEDA offline control shutdown was incomplete.\n");
+      process10.stderr.write("EasyEDA offline control shutdown was incomplete.\n");
       exitCode = 1;
     }
-    process9.exit(exitCode);
+    process10.exit(exitCode);
   };
   const scheduleShutdown2 = () => {
     void closeAndExit();
   };
-  process9.once("SIGINT", scheduleShutdown2);
-  process9.once("SIGTERM", scheduleShutdown2);
-  process9.stdin.once("end", scheduleShutdown2);
+  process10.once("SIGINT", scheduleShutdown2);
+  process10.once("SIGTERM", scheduleShutdown2);
+  process10.stdin.once("end", scheduleShutdown2);
   try {
     await server2.connect(new StdioServerTransport());
   } catch (error51) {
-    process9.removeListener("SIGINT", scheduleShutdown2);
-    process9.removeListener("SIGTERM", scheduleShutdown2);
-    process9.stdin.removeListener("end", scheduleShutdown2);
+    process10.removeListener("SIGINT", scheduleShutdown2);
+    process10.removeListener("SIGTERM", scheduleShutdown2);
+    process10.stdin.removeListener("end", scheduleShutdown2);
     await close();
     throw error51;
   }
@@ -94818,15 +95085,15 @@ var init_legacy_recovery_family = __esm({
 
 // server/src/engine.ts
 import { randomUUID as randomUUID6 } from "node:crypto";
-import { dirname as dirname17, isAbsolute as isAbsolute21, join as join48 } from "node:path";
+import { dirname as dirname18, isAbsolute as isAbsolute22, join as join49 } from "node:path";
 async function checkpointAccessPolicy(source4) {
   const expectedSource = normalizeEasyedaProjectPath(source4);
   return {
     expectedSource,
     controlRoot: await controlRootCapability(),
     artifactRoots: [
-      join48(dirname17(expectedSource), "backups"),
-      join48(controlDataDirectory(), "checkpoints")
+      join49(dirname18(expectedSource), "backups"),
+      join49(controlDataDirectory(), "checkpoints")
     ]
   };
 }
@@ -95006,7 +95273,7 @@ function executionAuthorityPayload(value, expectedBindingSha256) {
       startIdentity: candidate["startIdentity"]
     };
   });
-  if (new Set(processes2.map((process19) => process19.pid)).size !== processes2.length) {
+  if (new Set(processes2.map((process20) => process20.pid)).size !== processes2.length) {
     throw new Error(
       "The execution-authority process tree contains duplicate process IDs."
     );
@@ -95627,7 +95894,7 @@ function ensurePlanShape(value) {
       "Plan requires source, outputDir, and label for durable checkpoints."
     );
   }
-  if (!isAbsolute21(plan2.checkpoint.source) || !isAbsolute21(plan2.checkpoint.outputDir)) {
+  if (!isAbsolute22(plan2.checkpoint.source) || !isAbsolute22(plan2.checkpoint.outputDir)) {
     throw new Error("Checkpoint source and outputDir must be absolute paths.");
   }
   const checkpointSource = normalizeEasyedaProjectPath(plan2.checkpoint.source);
@@ -95745,8 +96012,8 @@ var init_engine = __esm({
       async enqueue(task) {
         const previous = this.tail;
         let release;
-        this.tail = new Promise((resolve19) => {
-          release = resolve19;
+        this.tail = new Promise((resolve20) => {
+          release = resolve20;
         });
         await previous;
         try {
@@ -98944,7 +99211,7 @@ var init_design_execute = __esm({
 });
 
 // server/src/check-execution.ts
-import { join as join49 } from "node:path";
+import { join as join50 } from "node:path";
 function binding(context3) {
   return nativeRuleCheckBindingSchema.parse({
     projectUuid: context3.project.uuid ?? context3.project.projectUuid,
@@ -99015,9 +99282,9 @@ function summary4(journal) {
   };
 }
 function isJournal(value) {
-  return isRecord(value) && isRecord(value["plan"]) && value["plan"]["profile"] === PROFILE12 && isRecord(value["plan"]["check"]) && isRecord(value["plan"]["expectedContext"]) && isRecord(value["plan"]["expectedFingerprint"]) && typeof value["plan"]["maxInlineItems"] === "number" && typeof value["operationId"] === "string" && typeof value["planHash"] === "string" && typeof value["journalPath"] === "string" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["updatedAt"] === "string" && typeof value["sequence"] === "number" && typeof value["calculationDispatched"] === "boolean" && isRecord(value["context"]) && checkpointSchema5.safeParse(value["preCheckpoint"]).success && Array.isArray(value["artifacts"]);
+  return isRecord(value) && isRecord(value["plan"]) && value["plan"]["profile"] === PROFILE12 && isRecord(value["plan"]["check"]) && isRecord(value["plan"]["expectedContext"]) && isRecord(value["plan"]["expectedFingerprint"]) && typeof value["plan"]["maxInlineItems"] === "number" && typeof value["operationId"] === "string" && typeof value["planHash"] === "string" && typeof value["journalPath"] === "string" && typeof value["state"] === "string" && typeof value["mutationState"] === "string" && typeof value["saved"] === "boolean" && typeof value["reopened"] === "boolean" && typeof value["orphanedCallPossible"] === "boolean" && typeof value["hardStop"] === "boolean" && typeof value["mutationMayHaveOccurred"] === "boolean" && typeof value["nextSafeAction"] === "string" && typeof value["updatedAt"] === "string" && typeof value["sequence"] === "number" && typeof value["calculationDispatched"] === "boolean" && isRecord(value["context"]) && checkpointSchema6.safeParse(value["preCheckpoint"]).success && Array.isArray(value["artifacts"]);
 }
-var PROFILE12, hash28, checkpointSchema5, verificationSchema, dependencies, RuleCheckExecutor;
+var PROFILE12, hash28, checkpointSchema6, verificationSchema, dependencies, RuleCheckExecutor;
 var init_check_execution = __esm({
   "server/src/check-execution.ts"() {
     init_zod();
@@ -99033,7 +99300,7 @@ var init_check_execution = __esm({
     init_transaction_error();
     PROFILE12 = "easyeda-pro-control.rule-check-transaction.v1";
     hash28 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
-    checkpointSchema5 = external_exports.object({
+    checkpointSchema6 = external_exports.object({
       schema: external_exports.literal("easyeda-pro-control.checkpoint.v2"),
       source: external_exports.string().min(1),
       checkpoint: external_exports.string().min(1),
@@ -99142,8 +99409,8 @@ var init_check_execution = __esm({
         await this.runtime(plan2, plan2.expectedContext);
         const expectedContext = structuredClone(plan2.expectedContext);
         const context3 = structuredClone(await this.engine.assertContext(expectedContext));
-        const checkpointDirectory = join49(controlDataDirectory(), "checkpoints");
-        const checkpoint = checkpointSchema5.parse(await this.engine.checkpoint({ source: context3.project.path, outputDir: checkpointDirectory, label: "rule-check-before" }));
+        const checkpointDirectory = join50(controlDataDirectory(), "checkpoints");
+        const checkpoint = checkpointSchema6.parse(await this.engine.checkpoint({ source: context3.project.path, outputDir: checkpointDirectory, label: "rule-check-before" }));
         const operationId3 = newOperationId();
         const journal = {
           schema: OPERATION_SCHEMA,
@@ -99187,7 +99454,7 @@ var init_check_execution = __esm({
             throw new Error("Native check changed its full live calculation scope.");
           }
           const database = await this.unchanged(journal);
-          const final = checkpointSchema5.parse(await this.engine.checkpoint({ source: context3.project.path, outputDir: checkpointDirectory, label: "rule-check-after" }));
+          const final = checkpointSchema6.parse(await this.engine.checkpoint({ source: context3.project.path, outputDir: checkpointDirectory, label: "rule-check-after" }));
           if (final.source !== checkpoint.source || final.checkpointDumpSha256 !== checkpoint.checkpointDumpSha256) {
             throw new Error("Native check changed the complete saved SQLite project.");
           }
@@ -99311,7 +99578,7 @@ var init_check_execution = __esm({
 });
 
 // server/src/project-open-execution.ts
-import { join as join50 } from "node:path";
+import { join as join51 } from "node:path";
 function failureCategory(error51) {
   try {
     if (typeof error51 !== "object" || error51 === null) {
@@ -99324,7 +99591,7 @@ function failureCategory(error51) {
   }
 }
 async function checkpointPolicy(source4) {
-  return { expectedSource: source4, artifactRoots: [join50(controlDataDirectory(), "checkpoints")], controlRoot: await controlRootCapability() };
+  return { expectedSource: source4, artifactRoots: [join51(controlDataDirectory(), "checkpoints")], controlRoot: await controlRootCapability() };
 }
 function targetContext(target5) {
   return { project: { uuid: target5.projectUuid, path: target5.projectPath }, document: { uuid: target5.documentUuid, documentType: target5.documentType } };
@@ -99506,7 +99773,7 @@ var init_project_open_execution = __esm({
           { checkpointSha256: journal.preCheckpoint.checkpointSha256, projectUuid: journal.plan.target.projectUuid }
         );
         const checkpoint = await this.services.createCheckpoint(
-          { source: journal.plan.target.projectPath, outputDir: join50(controlDataDirectory(), "checkpoints"), label: "project-open-after" },
+          { source: journal.plan.target.projectPath, outputDir: join51(controlDataDirectory(), "checkpoints"), label: "project-open-after" },
           await this.services.checkpointPolicy(journal.plan.target.projectPath)
         );
         const after = await this.readHistory(checkpoint, journal.plan.target);
@@ -99594,7 +99861,7 @@ var init_project_open_execution = __esm({
           throw new Error("Resolve the incomplete transaction before opening another target.");
         }
         await this.runtime(input.expectedFingerprint);
-        const checkpoint = await this.services.createCheckpoint({ source: target5.projectPath, outputDir: join50(controlDataDirectory(), "checkpoints"), label: "project-open-before" }, await this.services.checkpointPolicy(target5.projectPath));
+        const checkpoint = await this.services.createCheckpoint({ source: target5.projectPath, outputDir: join51(controlDataDirectory(), "checkpoints"), label: "project-open-before" }, await this.services.checkpointPolicy(target5.projectPath));
         const before = await this.readHistory(checkpoint, target5);
         const libraryHeaderEvidence = await nativeLibraryHeaderEvidence(before, { checkpointSha256: checkpoint.checkpointSha256, projectUuid: target5.projectUuid });
         const context3 = targetContext(target5);
@@ -100626,7 +100893,7 @@ var init_closed_symbol_operation_request = __esm({
 });
 
 // server/src/closed-symbol-failure-diagnostic.ts
-import { createHash as createHash33 } from "node:crypto";
+import { createHash as createHash34 } from "node:crypto";
 import { types } from "node:util";
 function own(value, key) {
   if (value === null || typeof value !== "object" || types.isProxy(value)) {
@@ -100662,7 +100929,7 @@ function closedSymbolFailureDiagnostic(error51, stage, lastSuccessfulStage) {
     stage,
     lastSuccessfulStage: typeof lastSuccessfulStage === "string" && SUCCESSFUL.has(lastSuccessfulStage) ? lastSuccessfulStage : null,
     errorCode: errorCode6,
-    messageSha256: message === void 0 ? null : createHash33("sha256").update(message).digest("hex"),
+    messageSha256: message === void 0 ? null : createHash34("sha256").update(message).digest("hex"),
     mismatchPaths: Object.freeze(errorCode6 === "RUNTIME_FINGERPRINT_MISMATCH" ? selectedPaths(error51) : [])
   });
 }
@@ -101139,15 +101406,15 @@ var init_closed_symbol_operation_tool = __esm({
 
 // server/src/windows-native-ui.ts
 import { spawn as spawn6 } from "node:child_process";
-import { createHash as createHash34, randomUUID as randomUUID7 } from "node:crypto";
-import { constants as constants21 } from "node:fs";
-import { lstat as lstat29, open as open26, readFile as readFile5, realpath as realpath20 } from "node:fs/promises";
+import { createHash as createHash35, randomUUID as randomUUID7 } from "node:crypto";
+import { constants as constants22 } from "node:fs";
+import { lstat as lstat30, open as open27, readFile as readFile5, realpath as realpath20 } from "node:fs/promises";
 import path3 from "node:path";
 function nativeUiFailure(code, dispatched) {
   return Object.assign(new Error(code), { name: "NativeUiFailureError", dispatched });
 }
 async function verifyHelper2(helperPath) {
-  const before = await lstat29(helperPath);
+  const before = await lstat30(helperPath);
   if (!before.isFile() || before.isSymbolicLink() || before.nlink !== 1 || before.size === 0 || before.size > 128 * 1024 || await realpath20(helperPath) !== helperPath) {
     throw new Error("Native UI helper is not the canonical bounded packaged file.");
   }
@@ -101156,20 +101423,20 @@ async function hashExecutable(executablePath) {
   if (await realpath20(executablePath) !== executablePath) {
     throw nativeUiFailure("native-ui-installed-path-not-canonical", false);
   }
-  const file3 = await open26(executablePath, constants21.O_RDONLY | constants21.O_NOFOLLOW);
+  const file3 = await open27(executablePath, constants22.O_RDONLY | constants22.O_NOFOLLOW);
   try {
     const before = await file3.stat();
     if (!before.isFile() || before.nlink !== 1 || before.size === 0 || before.size > 1073741824) {
       throw nativeUiFailure("native-ui-installed-executable-invalid", false);
     }
-    const hash35 = createHash34("sha256");
+    const hash35 = createHash35("sha256");
     for await (const chunk of file3.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw nativeUiFailure("native-ui-installed-read-invalid", false);
       }
       hash35.update(chunk);
     }
-    for (const after of [await file3.stat(), await lstat29(executablePath)]) {
+    for (const after of [await file3.stat(), await lstat30(executablePath)]) {
       if (!after.isFile() || after.nlink !== 1 || after.dev !== before.dev || after.ino !== before.ino || after.size !== before.size || after.ctimeMs !== before.ctimeMs || after.mtimeMs !== before.mtimeMs) {
         throw nativeUiFailure("native-ui-installed-executable-changed", false);
       }
@@ -101180,7 +101447,7 @@ async function hashExecutable(executablePath) {
   }
 }
 function invokeNativeUiHelper(input) {
-  return new Promise((resolve19, reject) => {
+  return new Promise((resolve20, reject) => {
     const child = spawn6(input.powershellExecutable, ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", input.helperWindowsPath], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
     const chunks = [];
     let size2 = 0;
@@ -101221,7 +101488,7 @@ function invokeNativeUiHelper(input) {
       }
       try {
         const decoded = JSON.parse(Buffer.concat(chunks).toString("utf8").trim());
-        resolve19(decoded);
+        resolve20(decoded);
       } catch {
         reject(nativeUiFailure("native-ui-response-invalid", mutating));
       }
@@ -101336,7 +101603,7 @@ var init_windows_native_ui = __esm({
         const legacyHelperPath = path3.join(this.options.pluginRoot, "scripts/native-ui.ps1");
         await (this.dependencies.verifyHelper ?? verifyHelper2)(helperPath);
         await (this.dependencies.verifyHelper ?? verifyHelper2)(legacyHelperPath);
-        const legacySha256 = createHash34("sha256").update(await readFile5(legacyHelperPath)).digest("hex");
+        const legacySha256 = createHash35("sha256").update(await readFile5(legacyHelperPath)).digest("hex");
         const executableSha256 = runtime.state === "owned" ? runtime.executableSha256 : await (this.dependencies.hashExecutable ?? hashExecutable)(paths.executablePath);
         if (executableSha256 === null || !/^[a-f0-9]{64}$/u.test(executableSha256)) {
           throw nativeUiFailure("native-ui-installed-executable-invalid", false);
@@ -101605,7 +101872,7 @@ async function discardCloseConfirmation(input, controller, dependencies3 = {}) {
     throw transactionError(error51, { operationId: journal.operationId, state: String(journal["state"]), orphanedCallPossible: false, nextSafeAction: String(journal["nextSafeAction"]) });
   }
 }
-var hash31, targetSchema8, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
+var hash31, targetSchema9, buttonSchema, dialogSchema, recoveryBaseSchema, closeConfirmationRequestSchema, warningButtonSchema, warningDialogSchema, saveWarningRequestSchema, nativeCloseRecoveryRequestSchema;
 var init_native_close_recovery = __esm({
   "server/src/native-close-recovery.ts"() {
     init_zod();
@@ -101616,7 +101883,7 @@ var init_native_close_recovery = __esm({
     init_windows_native_ui();
     init_transaction_error();
     hash31 = external_exports.string().regex(/^[a-f0-9]{64}$/u);
-    targetSchema8 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
+    targetSchema9 = external_exports.object({ projectUuid: external_exports.string().min(1).max(256), documentUuid: external_exports.string().min(1).max(256), documentType: external_exports.union([external_exports.literal(1), external_exports.literal(2), external_exports.literal(3), external_exports.literal(4)]) }).strict();
     buttonSchema = external_exports.object({ label: external_exports.literal("Leave this page"), x: external_exports.number().int().min(-32768).max(32767), y: external_exports.number().int().min(-32768).max(32767) }).strict();
     dialogSchema = external_exports.object({ title: external_exports.literal("Confirm Close"), onlyUnsavedTarget: external_exports.literal(true), targetName: external_exports.string().min(1).max(512), discardButton: buttonSchema }).strict();
     recoveryBaseSchema = external_exports.object({
@@ -101626,7 +101893,7 @@ var init_native_close_recovery = __esm({
       confirmUIWrite: external_exports.literal(true),
       discardOwnUnsavedChanges: external_exports.literal(true),
       acknowledgeDurableChanges: external_exports.boolean().optional(),
-      target: targetSchema8,
+      target: targetSchema9,
       capture: external_exports.object({ receiptPath: external_exports.string().min(1), receiptSha256: hash31, imageSha256: hash31 }).strict()
     }).strict();
     closeConfirmationRequestSchema = recoveryBaseSchema.extend({ action: external_exports.literal("discard-close-confirmation"), observedDialog: dialogSchema }).strict();
@@ -104578,7 +104845,7 @@ var require_websocket = __commonJS({
     var http = __require("http");
     var net3 = __require("net");
     var tls = __require("tls");
-    var { randomBytes: randomBytes14, createHash: createHash43 } = __require("crypto");
+    var { randomBytes: randomBytes14, createHash: createHash44 } = __require("crypto");
     var { Duplex, Readable: Readable2 } = __require("stream");
     var { URL: URL2 } = __require("url");
     var PerMessageDeflate2 = require_permessage_deflate();
@@ -105246,7 +105513,7 @@ var require_websocket = __commonJS({
           abortHandshake(websocket, socket, "Invalid Upgrade header");
           return;
         }
-        const digest6 = createHash43("sha1").update(key + GUID).digest("base64");
+        const digest6 = createHash44("sha1").update(key + GUID).digest("base64");
         if (res.headers["sec-websocket-accept"] !== digest6) {
           abortHandshake(websocket, socket, "Invalid Sec-WebSocket-Accept header");
           return;
@@ -105527,7 +105794,7 @@ var require_stream = __commonJS({
       };
       duplex._final = function(callback) {
         if (ws.readyState === ws.CONNECTING) {
-          ws.once("open", function open34() {
+          ws.once("open", function open35() {
             duplex._final(callback);
           });
           return;
@@ -105548,7 +105815,7 @@ var require_stream = __commonJS({
       };
       duplex._write = function(chunk, encoding, callback) {
         if (ws.readyState === ws.CONNECTING) {
-          ws.once("open", function open34() {
+          ws.once("open", function open35() {
             duplex._write(chunk, encoding, callback);
           });
           return;
@@ -105615,7 +105882,7 @@ var require_websocket_server = __commonJS({
     var EventEmitter = __require("events");
     var http = __require("http");
     var { Duplex } = __require("stream");
-    var { createHash: createHash43 } = __require("crypto");
+    var { createHash: createHash44 } = __require("crypto");
     var extension3 = require_extension();
     var PerMessageDeflate2 = require_permessage_deflate();
     var subprotocol2 = require_subprotocol();
@@ -105922,7 +106189,7 @@ var require_websocket_server = __commonJS({
           );
         }
         if (this._state > RUNNING) return abortHandshake(socket, 503);
-        const digest6 = createHash43("sha1").update(key + GUID).digest("base64");
+        const digest6 = createHash44("sha1").update(key + GUID).digest("base64");
         const headers = [
           "HTTP/1.1 101 Switching Protocols",
           "Upgrade: websocket",
@@ -106027,7 +106294,7 @@ var init_wrapper = __esm({
 
 // server/src/backend-listener-authority.ts
 import { readFile as readFile6, readdir as readdir4, readlink, stat as statPath } from "node:fs/promises";
-import process10 from "node:process";
+import process11 from "node:process";
 function processStartTime(stat2) {
   const closingParenthesis = stat2.lastIndexOf(")");
   if (closingParenthesis < 1) {
@@ -106044,18 +106311,18 @@ async function readProcessStartTime(pid2) {
   return processStartTime(await readFile6(`/proc/${pid2}/stat`, "utf8"));
 }
 function assertLinuxProcessOwnership(status2) {
-  if (typeof process10.getuid !== "function") {
+  if (typeof process11.getuid !== "function") {
     throw new TypeError(
       "Backend socket ownership requires a numeric local user ID."
     );
   }
   const match = /^Uid:\s+(\d+)\s+/mu.exec(status2);
-  if (match?.[1] === void 0 || Number(match[1]) !== process10.getuid()) {
+  if (match?.[1] === void 0 || Number(match[1]) !== process11.getuid()) {
     throw new Error("The supervised backend process is not owned by this user.");
   }
 }
 async function captureBackendProcessAuthority(pid2) {
-  if (process10.platform !== "linux") {
+  if (process11.platform !== "linux") {
     throw new Error(
       "Authenticated backend socket ownership is currently supported only on Linux."
     );
@@ -106293,7 +106560,7 @@ var init_backend_listener_authority = __esm({
 
 // server/src/authenticated-bridge-gateway.ts
 import {
-  createHash as createHash35,
+  createHash as createHash36,
   createHmac,
   randomBytes as randomBytes10,
   timingSafeEqual
@@ -106463,26 +106730,26 @@ function closeWebSocket(socket, code, reason) {
   }
 }
 function waitForNetServerListening(server2) {
-  return new Promise((resolve19, reject) => {
+  return new Promise((resolve20, reject) => {
     const onError = (error51) => {
       reject(error51);
     };
     const onListening = () => {
       server2.off("error", onError);
-      resolve19();
+      resolve20();
     };
     server2.once("listening", onListening);
     server2.once("error", onError);
   });
 }
 function waitForWebSocketServerListening(server2) {
-  return new Promise((resolve19, reject) => {
+  return new Promise((resolve20, reject) => {
     const onError = (error51) => {
       reject(error51);
     };
     const onListening = () => {
       server2.off("error", onError);
-      resolve19();
+      resolve20();
     };
     server2.once("listening", onListening);
     server2.once("error", onError);
@@ -106492,7 +106759,7 @@ function errorCode3(value) {
   return value !== null && typeof value === "object" && "code" in value && typeof value.code === "string" ? value.code : void 0;
 }
 function closeWebSocketServer(server2) {
-  return new Promise((resolve19, reject) => {
+  return new Promise((resolve20, reject) => {
     const timeout = setTimeout(() => {
       for (const socket of server2.clients) {
         socket.terminate();
@@ -106504,7 +106771,7 @@ function closeWebSocketServer(server2) {
       server2.close((error51) => {
         clearTimeout(timeout);
         if (error51 === void 0 || errorCode3(error51) === "ERR_SERVER_NOT_RUNNING") {
-          resolve19();
+          resolve20();
         } else {
           reject(error51);
         }
@@ -106537,9 +106804,9 @@ async function allocatePrivateLoopbackPort(excludedPublicPort = 49621) {
         return address.port;
       }
     } finally {
-      await new Promise((resolve19) => {
+      await new Promise((resolve20) => {
         reservation.close(() => {
-          resolve19();
+          resolve20();
         });
       });
     }
@@ -106640,7 +106907,7 @@ var init_authenticated_bridge_gateway = __esm({
         if (!/^i[A-Za-z0-9_-]{43}$/u.test(options.expectedAuthenticatedIndexBuildId)) {
           throw new Error("The expected authenticated bridge build ID is invalid.");
         }
-        if (!/^[0-9a-f]{64}$/u.test(options.expectedAuthenticationKeySha256) || createHash35("sha256").update(options.authenticationKey, "utf8").digest("hex") !== options.expectedAuthenticationKeySha256) {
+        if (!/^[0-9a-f]{64}$/u.test(options.expectedAuthenticationKeySha256) || createHash36("sha256").update(options.authenticationKey, "utf8").digest("hex") !== options.expectedAuthenticationKeySha256) {
           throw new Error(
             "The expected authenticated bridge credential epoch does not match the configured key."
           );
@@ -107068,7 +107335,7 @@ var init_authenticated_bridge_gateway = __esm({
         );
         context3.session = {
           authenticatedAtEpochMs: this.#now(),
-          authenticationReceiptSha256: createHash35("sha256").update(serverReceipt, "utf8").digest("hex"),
+          authenticationReceiptSha256: createHash36("sha256").update(serverReceipt, "utf8").digest("hex"),
           sequence: this.#sessionSequence,
           sessionId
         };
@@ -107317,11 +107584,11 @@ var init_authenticated_bridge_gateway = __esm({
 });
 
 // server/src/authenticated-bridge-build-identity.ts
-import { createHash as createHash36 } from "node:crypto";
+import { createHash as createHash37 } from "node:crypto";
 import { constants as fsConstants6 } from "node:fs";
-import { lstat as lstat30, open as open27 } from "node:fs/promises";
-import { basename as basename20, dirname as dirname18, join as join51 } from "node:path";
-import process11 from "node:process";
+import { lstat as lstat31, open as open28 } from "node:fs/promises";
+import { basename as basename21, dirname as dirname19, join as join52 } from "node:path";
+import process12 from "node:process";
 function isRecord5(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -107329,23 +107596,23 @@ function sameIdentity3(left, right) {
   return left.dev === right.dev && left.ino === right.ino;
 }
 function assertPrivateOwnedFile(stat2, label) {
-  if (!stat2.isFile() || stat2.nlink !== 1 || stat2.mode % 512 !== 384 || typeof process11.getuid === "function" && stat2.uid !== process11.getuid()) {
+  if (!stat2.isFile() || stat2.nlink !== 1 || stat2.mode % 512 !== 384 || typeof process12.getuid === "function" && stat2.uid !== process12.getuid()) {
     throw new Error(`${label} must be an owner-owned mode-0600 single-link file.`);
   }
 }
 function assertPrivateOwnedDirectory(stat2, label) {
-  if (!stat2.isDirectory() || stat2.mode % 512 !== 448 || typeof process11.getuid === "function" && stat2.uid !== process11.getuid()) {
+  if (!stat2.isDirectory() || stat2.mode % 512 !== 448 || typeof process12.getuid === "function" && stat2.uid !== process12.getuid()) {
     throw new Error(`${label} must be an owner-owned mode-0700 directory.`);
   }
 }
 async function readStablePrivateChildFile(parent, name6, maximumBytes, label) {
   const descriptorPath = `/proc/self/fd/${parent.handle.fd}/${name6}`;
-  const before = await lstat30(descriptorPath);
+  const before = await lstat31(descriptorPath);
   if (before.isSymbolicLink() || before.size > maximumBytes) {
     throw new Error(`${label} is not a bounded regular file.`);
   }
   assertPrivateOwnedFile(before, label);
-  const handle = await open27(
+  const handle = await open28(
     descriptorPath,
     fsConstants6.O_RDONLY | fsConstants6.O_NOFOLLOW
   );
@@ -107360,13 +107627,13 @@ async function readStablePrivateChildFile(parent, name6, maximumBytes, label) {
     if (!sameIdentity3(opened, after) || after.size !== opened.size || after.mtimeMs !== opened.mtimeMs || after.ctimeMs !== opened.ctimeMs) {
       throw new Error(`${label} changed while it was read.`);
     }
-    return { bytes: bytes2, path: join51(parent.path, name6), stat: after };
+    return { bytes: bytes2, path: join52(parent.path, name6), stat: after };
   } finally {
     await handle.close();
   }
 }
 async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRoot) {
-  const configuredControlRoot = process11.env["EASYEDA_CONTROL_DATA_DIR"];
+  const configuredControlRoot = process12.env["EASYEDA_CONTROL_DATA_DIR"];
   if (configuredControlRoot !== controlRoot.path) {
     throw new Error(
       "EASYEDA_CONTROL_DATA_DIR must match the retained control-root capability before bridge admission."
@@ -107376,7 +107643,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
   let build;
   try {
     const opened = await controlRoot.openDirectory(
-      join51(controlRoot.path, AUTHENTICATED_BRIDGE_BUILD_DIRECTORY),
+      join52(controlRoot.path, AUTHENTICATED_BRIDGE_BUILD_DIRECTORY),
       false
     );
     build = {
@@ -107394,7 +107661,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
       MAXIMUM_RECEIPT_BYTES,
       "Authenticated bridge build receipt"
     );
-    const authenticationKeySha256 = createHash36("sha256").update(authenticationKey, "utf8").digest("hex");
+    const authenticationKeySha256 = createHash37("sha256").update(authenticationKey, "utf8").digest("hex");
     const parsed2 = JSON.parse(receiptFile.bytes.toString("utf8"));
     if (!isRecord5(parsed2) || typeof parsed2["outputPath"] !== "string" || typeof parsed2["outputSha256"] !== "string" || !/^[0-9a-f]{64}$/u.test(parsed2["outputSha256"])) {
       throw new Error(
@@ -107405,7 +107672,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
       /\.eext$/u,
       `.${parsed2["outputSha256"]}.eext`
     );
-    if (dirname18(parsed2["outputPath"]) !== build.path || basename20(parsed2["outputPath"]) !== expectedGenerationName) {
+    if (dirname19(parsed2["outputPath"]) !== build.path || basename21(parsed2["outputPath"]) !== expectedGenerationName) {
       throw new Error(
         "The authenticated bridge commit receipt points outside its exact immutable generation namespace."
       );
@@ -107417,7 +107684,7 @@ async function loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRo
       "Authenticated bridge archive generation"
     );
     await controlRoot.assertCurrent();
-    const archiveSha256 = createHash36("sha256").update(archive.bytes).digest("hex");
+    const archiveSha256 = createHash37("sha256").update(archive.bytes).digest("hex");
     const authentication = isRecord5(parsed2) && isRecord5(parsed2["authentication"]) ? parsed2["authentication"] : void 0;
     const endpoint2 = isRecord5(authentication) && isRecord5(authentication["publicEndpoint"]) ? authentication["publicEndpoint"] : void 0;
     const source4 = isRecord5(parsed2) && isRecord5(parsed2["source"]) ? parsed2["source"] : void 0;
@@ -107459,25 +107726,25 @@ var init_authenticated_bridge_build_identity = __esm({
 
 // server/src/upstream-environment.ts
 import { constants as fsConstants7 } from "node:fs";
-import { lstat as lstat31, open as open28 } from "node:fs/promises";
+import { lstat as lstat32, open as open29 } from "node:fs/promises";
 import {
-  basename as basename21,
-  dirname as dirname19,
-  isAbsolute as isAbsolute22,
-  join as join52,
-  relative as relative5,
-  resolve as resolve13,
-  sep as sep3
+  basename as basename22,
+  dirname as dirname20,
+  isAbsolute as isAbsolute23,
+  join as join53,
+  relative as relative6,
+  resolve as resolve14,
+  sep as sep4
 } from "node:path";
-import process12 from "node:process";
+import process13 from "node:process";
 function configuredControlRootDirectory() {
-  return resolve13(
-    process12.env["EASYEDA_CONTROL_DATA_DIR"] ?? join52(process12.env["HOME"] ?? "/tmp", ".easyeda-pro-control")
+  return resolve14(
+    process13.env["EASYEDA_CONTROL_DATA_DIR"] ?? join53(process13.env["HOME"] ?? "/tmp", ".easyeda-pro-control")
   );
 }
 function isWithin3(root, candidate) {
-  const relativePath = relative5(root, candidate);
-  return relativePath.length === 0 || relativePath !== ".." && !relativePath.startsWith(`..${sep3}`) && !isAbsolute22(relativePath);
+  const relativePath = relative6(root, candidate);
+  return relativePath.length === 0 || relativePath !== ".." && !relativePath.startsWith(`..${sep4}`) && !isAbsolute23(relativePath);
 }
 async function bindPrivateUpstreamDataDirectory(controlRoot, dataDirectory, capability) {
   if (capability.path !== controlRoot) {
@@ -107485,8 +107752,8 @@ async function bindPrivateUpstreamDataDirectory(controlRoot, dataDirectory, capa
       "The retained control-root capability does not match EASYEDA_CONTROL_DATA_DIR."
     );
   }
-  const relation = relative5(controlRoot, dataDirectory);
-  if (relation.length === 0 || relation === ".." || relation.startsWith(`..${sep3}`) || isAbsolute22(relation) || relation.includes(sep3)) {
+  const relation = relative6(controlRoot, dataDirectory);
+  if (relation.length === 0 || relation === ".." || relation.startsWith(`..${sep4}`) || isAbsolute23(relation) || relation.includes(sep4)) {
     throw new Error(
       "EASYEDA_UPSTREAM_DATA_DIR must be a dedicated child of EASYEDA_CONTROL_DATA_DIR."
     );
@@ -107495,7 +107762,7 @@ async function bindPrivateUpstreamDataDirectory(controlRoot, dataDirectory, capa
   const directory = await capability.openDirectory(dataDirectory);
   try {
     const information = await directory.handle.stat({ bigint: true });
-    if (!information.isDirectory() || Number(information.mode % 512n) !== 448 || typeof process12.getuid === "function" && information.uid !== BigInt(process12.getuid())) {
+    if (!information.isDirectory() || Number(information.mode % 512n) !== 448 || typeof process13.getuid === "function" && information.uid !== BigInt(process13.getuid())) {
       throw new Error(
         "EASYEDA_UPSTREAM_DATA_DIR must be an owner-owned mode-0700 directory."
       );
@@ -107509,28 +107776,28 @@ async function bindPrivateUpstreamDataDirectory(controlRoot, dataDirectory, capa
   }
 }
 function assertPrivateFileMode(mode) {
-  if (process12.platform !== "win32" && (mode & 63) !== 0) {
+  if (process13.platform !== "win32" && (mode & 63) !== 0) {
     throw new Error(
       "EASYEDA_BRIDGE_TOKEN_FILE must not grant group or other permissions."
     );
   }
 }
 async function readBoundBridgeTokenFile(configuredPath, capability) {
-  if (!isAbsolute22(configuredPath)) {
+  if (!isAbsolute23(configuredPath)) {
     throw new Error("EASYEDA_BRIDGE_TOKEN_FILE must be absolute.");
   }
-  const path5 = resolve13(configuredPath);
+  const path5 = resolve14(configuredPath);
   if (!isWithin3(capability.path, path5) || path5 === capability.path) {
     throw new Error(
       "EASYEDA_BRIDGE_TOKEN_FILE must stay inside EASYEDA_CONTROL_DATA_DIR."
     );
   }
   await capability.assertCurrent();
-  const directory = await capability.openDirectory(dirname19(path5), false);
-  const descriptorPath = `/proc/self/fd/${directory.handle.fd}/${basename21(path5)}`;
+  const directory = await capability.openDirectory(dirname20(path5), false);
+  const descriptorPath = `/proc/self/fd/${directory.handle.fd}/${basename22(path5)}`;
   try {
-    const pathInfo = await lstat31(descriptorPath);
-    const handle = await open28(
+    const pathInfo = await lstat32(descriptorPath);
+    const handle = await open29(
       descriptorPath,
       fsConstants7.O_RDONLY | fsConstants7.O_NOFOLLOW
     );
@@ -107547,9 +107814,9 @@ async function readBoundBridgeTokenFile(configuredPath, capability) {
             "EASYEDA_BRIDGE_TOKEN_FILE parent changed while being read."
           );
         }
-        const currentPath = `/proc/self/fd/${currentDirectory.handle.fd}/${basename21(path5)}`;
-        const currentInfo = await lstat31(currentPath);
-        if (currentInfo.isSymbolicLink() || !currentInfo.isFile() || currentInfo.dev !== openedInfo.dev || currentInfo.ino !== openedInfo.ino || currentInfo.nlink !== 1 || currentInfo.size !== openedInfo.size || currentInfo.mtimeMs !== openedInfo.mtimeMs || currentInfo.ctimeMs !== openedInfo.ctimeMs || typeof process12.getuid === "function" && currentInfo.uid !== process12.getuid()) {
+        const currentPath = `/proc/self/fd/${currentDirectory.handle.fd}/${basename22(path5)}`;
+        const currentInfo = await lstat32(currentPath);
+        if (currentInfo.isSymbolicLink() || !currentInfo.isFile() || currentInfo.dev !== openedInfo.dev || currentInfo.ino !== openedInfo.ino || currentInfo.nlink !== 1 || currentInfo.size !== openedInfo.size || currentInfo.mtimeMs !== openedInfo.mtimeMs || currentInfo.ctimeMs !== openedInfo.ctimeMs || typeof process13.getuid === "function" && currentInfo.uid !== process13.getuid()) {
           throw new Error("EASYEDA_BRIDGE_TOKEN_FILE changed while being read.");
         }
         assertPrivateFileMode(currentInfo.mode);
@@ -107571,7 +107838,7 @@ async function readBridgeTokenFileHandle(handle, pathInfo) {
       "EASYEDA_BRIDGE_TOKEN_FILE must be a single-link regular non-symlink file."
     );
   }
-  if (typeof process12.getuid === "function" && pathInfo.uid !== process12.getuid()) {
+  if (typeof process13.getuid === "function" && pathInfo.uid !== process13.getuid()) {
     throw new Error("EASYEDA_BRIDGE_TOKEN_FILE must be owned by this user.");
   }
   assertPrivateFileMode(pathInfo.mode);
@@ -107595,7 +107862,7 @@ async function readBridgeTokenFileHandle(handle, pathInfo) {
   return token;
 }
 function configuredBridgeAuthenticationKey(capability) {
-  const configuredPath = process12.env["EASYEDA_BRIDGE_TOKEN_FILE"];
+  const configuredPath = process13.env["EASYEDA_BRIDGE_TOKEN_FILE"];
   if (configuredPath === void 0 || configuredPath.length === 0) {
     throw new Error(
       "EASYEDA_BRIDGE_TOKEN_FILE is required; unauthenticated bridge startup is prohibited."
@@ -107606,10 +107873,10 @@ function configuredBridgeAuthenticationKey(capability) {
   );
 }
 async function prepareBoundUpstreamEnvironment(command, privateBridge, controlRootCapability2) {
-  if (!isAbsolute22(command)) {
+  if (!isAbsolute23(command)) {
     throw new Error("The reviewed upstream command must be absolute.");
   }
-  if (process12.env["EASYEDA_BRIDGE_TOKEN_FILE"] === void 0 || process12.env["EASYEDA_BRIDGE_TOKEN_FILE"]?.length === 0) {
+  if (process13.env["EASYEDA_BRIDGE_TOKEN_FILE"] === void 0 || process13.env["EASYEDA_BRIDGE_TOKEN_FILE"]?.length === 0) {
     throw new Error(
       "EASYEDA_BRIDGE_TOKEN_FILE is required; unauthenticated bridge startup is prohibited."
     );
@@ -107623,8 +107890,8 @@ async function prepareBoundUpstreamEnvironment(command, privateBridge, controlRo
     throw new Error("The private authenticated bridge backend is invalid.");
   }
   const controlRoot = configuredControlRootDirectory();
-  const dataDirectory = resolve13(
-    process12.env["EASYEDA_UPSTREAM_DATA_DIR"] ?? join52(controlRoot, "upstream")
+  const dataDirectory = resolve14(
+    process13.env["EASYEDA_UPSTREAM_DATA_DIR"] ?? join53(controlRoot, "upstream")
   );
   if (!isWithin3(controlRoot, dataDirectory)) {
     throw new Error(
@@ -107642,10 +107909,10 @@ async function prepareBoundUpstreamEnvironment(command, privateBridge, controlRo
     AI_PROVIDER: "none",
     BRIDGE_HOST: privateBridge.host,
     BRIDGE_HOT_SWAP_ENABLED: "false",
-    BRIDGE_MAX_PAYLOAD_SIZE: process12.env["EASYEDA_BRIDGE_MAX_PAYLOAD_SIZE"] ?? "10485760",
+    BRIDGE_MAX_PAYLOAD_SIZE: process13.env["EASYEDA_BRIDGE_MAX_PAYLOAD_SIZE"] ?? "10485760",
     BRIDGE_PORT: String(privateBridge.port),
     BRIDGE_PORT_SCAN: String(privateBridge.port),
-    BRIDGE_RAW_EXEC_ENABLED: process12.env["EASYEDA_RAW_EXEC_ENABLED"] ?? "true",
+    BRIDGE_RAW_EXEC_ENABLED: process13.env["EASYEDA_RAW_EXEC_ENABLED"] ?? "true",
     BRIDGE_TOKEN: privateBridge.sessionToken,
     DATA_DIR: UPSTREAM_SANDBOX_DATA_DIRECTORY,
     DIGIKEY_ENABLED: "false",
@@ -107659,10 +107926,10 @@ async function prepareBoundUpstreamEnvironment(command, privateBridge, controlRo
     KEYLESS_SOURCING_ENABLED: "false",
     LANG: "C.UTF-8",
     LC_ALL: "C.UTF-8",
-    LOG_LEVEL: process12.env["EASYEDA_UPSTREAM_LOG_LEVEL"] ?? "warn",
+    LOG_LEVEL: process13.env["EASYEDA_UPSTREAM_LOG_LEVEL"] ?? "warn",
     LOGNAME: "easyeda-pro-control",
     MCP_BRIDGE_BACKEND: "local_bridge",
-    MCP_RAW_EXEC_EXPERIMENTAL: process12.env["EASYEDA_RAW_EXEC_EXPERIMENTAL"] ?? "true",
+    MCP_RAW_EXEC_EXPERIMENTAL: process13.env["EASYEDA_RAW_EXEC_EXPERIMENTAL"] ?? "true",
     MOUSER_ENABLED: "false",
     // The pinned upstream deliberately disables its raw-exec tool in production.
     // The private stdio child exposes it only to facade-generated authenticated calls.
@@ -107673,7 +107940,7 @@ async function prepareBoundUpstreamEnvironment(command, privateBridge, controlRo
     PATH: "/runtime",
     SHELL: "",
     TERM: "dumb",
-    TOOL_PROFILE: process12.env["EASYEDA_TOOL_PROFILE"] ?? "dev",
+    TOOL_PROFILE: process13.env["EASYEDA_TOOL_PROFILE"] ?? "dev",
     TRANSPORT: "stdio",
     TZ: "UTC",
     USER: "easyeda-pro-control"
@@ -107681,7 +107948,7 @@ async function prepareBoundUpstreamEnvironment(command, privateBridge, controlRo
   const assertCurrent = async () => {
     await controlRootCapability2.assertCurrent();
     const retained = await boundDataDirectory.handle.stat({ bigint: true });
-    if (retained.dev !== boundDataDirectory.info.dev || retained.ino !== boundDataDirectory.info.ino || !retained.isDirectory() || Number(retained.mode % 512n) !== 448 || typeof process12.getuid === "function" && retained.uid !== BigInt(process12.getuid())) {
+    if (retained.dev !== boundDataDirectory.info.dev || retained.ino !== boundDataDirectory.info.ino || !retained.isDirectory() || Number(retained.mode % 512n) !== 448 || typeof process13.getuid === "function" && retained.uid !== BigInt(process13.getuid())) {
       throw new Error(
         "The retained upstream data-directory capability changed before spawn."
       );
@@ -113460,11 +113727,11 @@ var init_acorn = __esm({
 });
 
 // server/src/upstream-module-execution.ts
-import { createHash as createHash37 } from "node:crypto";
+import { createHash as createHash38 } from "node:crypto";
 import { constants as fsConstants8 } from "node:fs";
-import { lstat as lstat32, open as open29 } from "node:fs/promises";
+import { lstat as lstat33, open as open30 } from "node:fs/promises";
 import { createRequire, isBuiltin, registerHooks } from "node:module";
-import { dirname as dirname20, extname, isAbsolute as isAbsolute23, relative as relative6, resolve as resolve14, sep as sep4 } from "node:path";
+import { dirname as dirname21, extname, isAbsolute as isAbsolute24, relative as relative7, resolve as resolve15, sep as sep5 } from "node:path";
 import { fileURLToPath as fileURLToPath2, pathToFileURL } from "node:url";
 function isRecord6(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -113561,7 +113828,7 @@ function dependenciesFor(format, source4) {
   });
 }
 function parseUpstreamModuleDependencies(format, executionBytes) {
-  const key = `${DEPENDENCY_PARSE_POLICY}\0${format}\0${createHash37("sha256").update(executionBytes).digest("hex")}`;
+  const key = `${DEPENDENCY_PARSE_POLICY}\0${format}\0${createHash38("sha256").update(executionBytes).digest("hex")}`;
   const cached2 = dependencyParseCache.get(key);
   if (cached2 !== void 0) {
     return cached2;
@@ -113594,7 +113861,7 @@ function assertTrustedModulePath(path5, info) {
 async function readSealedFile(path5, seals, capturedSeals) {
   let seal = seals.get(path5);
   if (seal === void 0) {
-    const info = await lstat32(path5);
+    const info = await lstat33(path5);
     assertTrustedModulePath(path5, info);
     seal = {
       ctimeMs: info.ctimeMs,
@@ -113611,7 +113878,7 @@ async function readSealedFile(path5, seals, capturedSeals) {
   if (seal.kind !== "file") {
     throw new Error(`Resolved upstream module is not a sealed file: ${path5}`);
   }
-  const handle = await open29(path5, fsConstants8.O_RDONLY + fsConstants8.O_NOFOLLOW);
+  const handle = await open30(path5, fsConstants8.O_RDONLY + fsConstants8.O_NOFOLLOW);
   try {
     const opened = await handle.stat();
     if (!sameSeal(opened, seal)) {
@@ -113619,7 +113886,7 @@ async function readSealedFile(path5, seals, capturedSeals) {
     }
     const bytes2 = await handle.readFile();
     const after = await handle.stat();
-    const sha256 = createHash37("sha256").update(bytes2).digest("hex");
+    const sha256 = createHash38("sha256").update(bytes2).digest("hex");
     if (!sameSeal(after, seal) || seal.sha256 !== void 0 && sha256 !== seal.sha256) {
       throw new Error(`Reviewed upstream module changed during descriptor capture: ${path5}`);
     }
@@ -113644,8 +113911,8 @@ async function readSealedFileIfPresent(path5, seals, capturedSeals) {
   }
 }
 function isWithin4(root, candidate) {
-  const child = relative6(root, candidate);
-  return child.length === 0 || child !== ".." && !child.startsWith(`..${sep4}`) && !isAbsolute23(child);
+  const child = relative7(root, candidate);
+  return child.length === 0 || child !== ".." && !child.startsWith(`..${sep5}`) && !isAbsolute24(child);
 }
 function normalizedBuiltin(specifier) {
   if (!isBuiltin(specifier)) {
@@ -113683,9 +113950,9 @@ async function packageTypeFor(path5, cwd, seals, capturedSeals, cache) {
   if (extension3 !== ".js") {
     throw new Error(`Unsupported executable upstream module extension: ${path5}`);
   }
-  let directory = dirname20(path5);
+  let directory = dirname21(path5);
   while (isWithin4(cwd, directory)) {
-    const packagePath = resolve14(directory, "package.json");
+    const packagePath = resolve15(directory, "package.json");
     const captured = await readSealedFileIfPresent(
       packagePath,
       seals,
@@ -113700,7 +113967,7 @@ async function packageTypeFor(path5, cwd, seals, capturedSeals, cache) {
     if (directory === cwd) {
       break;
     }
-    directory = dirname20(directory);
+    directory = dirname21(directory);
   }
   cache.set(path5, "commonjs");
   return "commonjs";
@@ -113709,7 +113976,7 @@ function resolutionKey(parentUrl, specifier, mode) {
   return `${mode}\0${parentUrl}\0${specifier}`;
 }
 function executionSourceFor(cwd, path5, source4) {
-  const relativePath = relative6(cwd, path5).split(sep4).join("/");
+  const relativePath = relative7(cwd, path5).split(sep5).join("/");
   let bytes2 = source4;
   let transform2 = "none";
   if (relativePath === "dist/utils/logger.js") {
@@ -113734,7 +114001,7 @@ function executionSourceFor(cwd, path5, source4) {
   }
   return {
     bytes: bytes2,
-    executionSha256: createHash37("sha256").update(bytes2).digest("hex"),
+    executionSha256: createHash38("sha256").update(bytes2).digest("hex"),
     transform: transform2
   };
 }
@@ -113783,7 +114050,7 @@ async function resolveRequiredDependency(dependency, parentUrl, state2) {
   if (builtin !== void 0) {
     return { format: "builtin", url: builtin };
   }
-  const resolvedPath = resolve14(resolved2);
+  const resolvedPath = resolve15(resolved2);
   if (!dependency.loadsTarget) {
     return {
       format: null,
@@ -113879,7 +114146,7 @@ function relativeGraphPath(cwd, url2) {
   if (!isWithin4(cwd, path5)) {
     throw new Error(`Resolved upstream graph path escapes its cwd: ${path5}`);
   }
-  return relative6(cwd, path5).split(sep4).join("/");
+  return relative7(cwd, path5).split(sep5).join("/");
 }
 function graphFingerprint(cwd, entrypointUrl, modules, resolutions) {
   const moduleRows = [...modules.values()].map((module) => ({
@@ -113916,7 +114183,7 @@ function graphFingerprint(cwd, entrypointUrl, modules, resolutions) {
     moduleCount: moduleRows.length,
     edgeCount: edgeRows.length,
     totalBytes: moduleRows.reduce((total, module) => total + module.bytes, 0),
-    sha256: createHash37("sha256").update(JSON.stringify(projection7)).digest("hex")
+    sha256: createHash38("sha256").update(JSON.stringify(projection7)).digest("hex")
   };
 }
 async function captureUpstreamModuleGraph(cwd, entrypoint, pathSeals = []) {
@@ -113925,7 +114192,7 @@ async function captureUpstreamModuleGraph(cwd, entrypoint, pathSeals = []) {
   );
   const packageTypeCache = /* @__PURE__ */ new Map();
   const capturedSeals = /* @__PURE__ */ new Map();
-  const entrypointPath = resolve14(entrypoint);
+  const entrypointPath = resolve15(entrypoint);
   const entrypointFormat = await packageTypeFor(
     entrypointPath,
     cwd,
@@ -114103,18 +114370,18 @@ var init_upstream_module_execution = __esm({
 });
 
 // server/src/upstream-trust.ts
-import { createHash as createHash38 } from "node:crypto";
+import { createHash as createHash39 } from "node:crypto";
 import { spawn as spawn7 } from "node:child_process";
 import { constants as fsConstants9 } from "node:fs";
 import {
-  lstat as lstat33,
-  open as open30,
+  lstat as lstat34,
+  open as open31,
   readdir as readdir5,
   readlink as readlink2,
   realpath as realpath21
 } from "node:fs/promises";
-import { dirname as dirname21, isAbsolute as isAbsolute24, join as join53, relative as relative7, resolve as resolve15, sep as sep5 } from "node:path";
-import process13 from "node:process";
+import { dirname as dirname22, isAbsolute as isAbsolute25, join as join54, relative as relative8, resolve as resolve16, sep as sep6 } from "node:path";
+import process14 from "node:process";
 function boundedTimingInteger(value) {
   return Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(value)));
 }
@@ -114131,14 +114398,14 @@ function isStringArray3(value) {
   return Array.isArray(value) && value.every((item2) => typeof item2 === "string");
 }
 function configuredUpstreamArgs() {
-  const raw = process13.env["EASYEDA_UPSTREAM_ARGS_JSON"];
+  const raw = process14.env["EASYEDA_UPSTREAM_ARGS_JSON"];
   if (raw === void 0 || raw.length === 0) {
     throw new Error(
       "EASYEDA_UPSTREAM_ARGS_JSON must configure exactly one absolute Node entrypoint."
     );
   }
   const parsed2 = JSON.parse(raw);
-  if (!isStringArray3(parsed2) || parsed2.length !== 1 || parsed2[0] === void 0 || !isAbsolute24(parsed2[0])) {
+  if (!isStringArray3(parsed2) || parsed2.length !== 1 || parsed2[0] === void 0 || !isAbsolute25(parsed2[0])) {
     throw new Error(
       "EASYEDA_UPSTREAM_ARGS_JSON must contain exactly one absolute Node entrypoint and no runtime flags."
     );
@@ -114146,25 +114413,25 @@ function configuredUpstreamArgs() {
   return parsed2;
 }
 function configuredUpstreamCommand() {
-  const command = process13.env["EASYEDA_UPSTREAM_COMMAND"];
-  if (command === void 0 || command.length === 0 || !isAbsolute24(command)) {
+  const command = process14.env["EASYEDA_UPSTREAM_COMMAND"];
+  if (command === void 0 || command.length === 0 || !isAbsolute25(command)) {
     throw new Error("EASYEDA_UPSTREAM_COMMAND must be an absolute path.");
   }
-  return resolve15(command);
+  return resolve16(command);
 }
 function configuredUpstreamCwd() {
-  const cwd = process13.env["EASYEDA_UPSTREAM_CWD"];
-  if (cwd === void 0 || cwd.length === 0 || !isAbsolute24(cwd)) {
+  const cwd = process14.env["EASYEDA_UPSTREAM_CWD"];
+  if (cwd === void 0 || cwd.length === 0 || !isAbsolute25(cwd)) {
     throw new Error("EASYEDA_UPSTREAM_CWD must be an absolute path.");
   }
-  return resolve15(cwd);
+  return resolve16(cwd);
 }
 function isWithin5(root, candidate) {
-  const relativePath = relative7(root, candidate);
-  return relativePath.length === 0 || relativePath !== ".." && !relativePath.startsWith(`..${sep5}`) && !isAbsolute24(relativePath);
+  const relativePath = relative8(root, candidate);
+  return relativePath.length === 0 || relativePath !== ".." && !relativePath.startsWith(`..${sep6}`) && !isAbsolute25(relativePath);
 }
 function assertTrustedOwnership(path5, info, allowRootOwner = false) {
-  if (typeof process13.getuid === "function" && info.uid !== process13.getuid() && !(allowRootOwner && info.uid === 0)) {
+  if (typeof process14.getuid === "function" && info.uid !== process14.getuid() && !(allowRootOwner && info.uid === 0)) {
     throw new Error(`Trusted upstream path is owned by another user: ${path5}`);
   }
   if (!info.isSymbolicLink() && (info.mode & 18) !== 0) {
@@ -114198,12 +114465,12 @@ function sameIdentity4(left, right) {
 async function hashOpenFile(path5, expected3) {
   let handle;
   try {
-    handle = await open30(path5, fsConstants9.O_RDONLY | fsConstants9.O_NOFOLLOW);
+    handle = await open31(path5, fsConstants9.O_RDONLY | fsConstants9.O_NOFOLLOW);
     const opened = await handle.stat();
     if (!opened.isFile() || !sameIdentity4(expected3, opened)) {
       throw new Error(`Trusted upstream file changed before open: ${path5}`);
     }
-    const hash35 = createHash38("sha256");
+    const hash35 = createHash39("sha256");
     for await (const chunk of handle.createReadStream({ autoClose: false })) {
       if (!Buffer.isBuffer(chunk)) {
         throw new TypeError("Trusted upstream file yielded a non-buffer chunk.");
@@ -114227,9 +114494,9 @@ async function detectDependencyLock(cwd) {
     ["yarn", "yarn.lock"]
   ];
   for (const [type2, name6] of candidates) {
-    const path5 = join53(cwd, name6);
+    const path5 = join54(cwd, name6);
     try {
-      const info = await lstat33(path5);
+      const info = await lstat34(path5);
       if (info.isFile() && !info.isSymbolicLink()) {
         return [type2, path5];
       }
@@ -114242,21 +114509,21 @@ async function detectDependencyLock(cwd) {
   throw new Error("The upstream dependency lockfile is unavailable.");
 }
 async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPath) {
-  const dependencyRoot = join53(cwd, "node_modules");
-  const packagePath = join53(cwd, "package.json");
-  const roots = [implementationRoot, dependencyRoot, packagePath, dependencyLockPath].map((path5) => resolve15(path5)).toSorted();
+  const dependencyRoot = join54(cwd, "node_modules");
+  const packagePath = join54(cwd, "package.json");
+  const roots = [implementationRoot, dependencyRoot, packagePath, dependencyLockPath].map((path5) => resolve16(path5)).toSorted();
   const entries3 = [];
   const seals = [];
   const visitedDirectories = /* @__PURE__ */ new Set();
   const visitedFiles = /* @__PURE__ */ new Set();
   const visit = async (path5) => {
-    const absolute = resolve15(path5);
+    const absolute = resolve16(path5);
     if (!isWithin5(cwd, absolute)) {
       throw new Error(`Upstream execution closure escapes its cwd: ${absolute}`);
     }
-    const info = await lstat33(absolute);
+    const info = await lstat34(absolute);
     assertTrustedOwnership(absolute, info);
-    const relativePath = relative7(cwd, absolute).split(sep5).join("/");
+    const relativePath = relative8(cwd, absolute).split(sep6).join("/");
     if (info.isSymbolicLink()) {
       const target5 = await readlink2(absolute);
       seals.push(sealFor(absolute, info, "symlink", target5));
@@ -114280,7 +114547,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
       entries3.push({ path: relativePath, kind: "directory", bytes: 0 });
       const children2 = await readdir5(absolute);
       for (const child of children2.toSorted()) {
-        await visit(join53(absolute, child));
+        await visit(join54(absolute, child));
       }
       return;
     }
@@ -114310,7 +114577,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
     const pathOrder = left.path.localeCompare(right.path);
     return pathOrder === 0 ? left.kind.localeCompare(right.kind) : pathOrder;
   });
-  const closureHash = createHash38("sha256");
+  const closureHash = createHash39("sha256");
   for (const entry of sortedEntries) {
     closureHash.update(entry.kind);
     closureHash.update("\0");
@@ -114322,12 +114589,12 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
     closureHash.update("\n");
   }
   const implementationFiles = sortedEntries.filter(
-    (entry) => entry.kind === "file" && isWithin5(implementationRoot, join53(cwd, entry.path)) && /\.(c?m?js|json)$/iu.test(entry.path)
+    (entry) => entry.kind === "file" && isWithin5(implementationRoot, join54(cwd, entry.path)) && /\.(c?m?js|json)$/iu.test(entry.path)
   );
-  const implementationHash = createHash38("sha256");
+  const implementationHash = createHash39("sha256");
   for (const entry of implementationFiles) {
     implementationHash.update(
-      relative7(implementationRoot, join53(cwd, entry.path)).split(sep5).join("/")
+      relative8(implementationRoot, join54(cwd, entry.path)).split(sep6).join("/")
     );
     implementationHash.update("\0");
     implementationHash.update(entry.sha256 ?? "");
@@ -114335,7 +114602,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
   }
   const entryHashes = new Map(
     sortedEntries.flatMap(
-      (entry) => entry.kind === "file" && entry.sha256 !== void 0 ? [[resolve15(cwd, entry.path), entry.sha256]] : []
+      (entry) => entry.kind === "file" && entry.sha256 !== void 0 ? [[resolve16(cwd, entry.path), entry.sha256]] : []
     )
   );
   return {
@@ -114363,7 +114630,7 @@ async function captureExecutionClosure(cwd, implementationRoot, dependencyLockPa
   };
 }
 async function captureTrustedFile(path5, allowRootOwner = false) {
-  const info = await lstat33(path5);
+  const info = await lstat34(path5);
   if (info.isSymbolicLink() || !info.isFile()) {
     throw new Error(`Trusted launcher path must be a regular file: ${path5}`);
   }
@@ -114375,18 +114642,18 @@ async function captureTrustedFile(path5, allowRootOwner = false) {
   };
 }
 function configuredSandboxCommand() {
-  const command = process13.env["EASYEDA_BWRAP_COMMAND"] ?? DEFAULT_SANDBOX_COMMAND;
-  if (!isAbsolute24(command)) {
+  const command = process14.env["EASYEDA_BWRAP_COMMAND"] ?? DEFAULT_SANDBOX_COMMAND;
+  if (!isAbsolute25(command)) {
     throw new Error("EASYEDA_BWRAP_COMMAND must be an absolute path.");
   }
-  return resolve15(command);
+  return resolve16(command);
 }
 async function sha256OpenHandle(handle, expected3, label) {
   const before = await handle.stat();
   if (!before.isFile() || !sameIdentity4(before, expected3)) {
     throw new Error(`${label} descriptor identity changed.`);
   }
-  const hash35 = createHash38("sha256");
+  const hash35 = createHash39("sha256");
   const buffer = Buffer.allocUnsafe(64 * 1024);
   let position = 0;
   while (position < before.size) {
@@ -114409,8 +114676,8 @@ async function sha256OpenHandle(handle, expected3, label) {
   return hash35.digest("hex");
 }
 async function openReviewedExecutable(path5, expectedSha256, label, allowRootOwner, expectedMode) {
-  const absolute = resolve15(path5);
-  const pathInfo = await lstat33(absolute);
+  const absolute = resolve16(path5);
+  const pathInfo = await lstat34(absolute);
   if (pathInfo.isSymbolicLink() || !pathInfo.isFile()) {
     throw new Error(`${label} must be a regular non-symlink file.`);
   }
@@ -114420,7 +114687,7 @@ async function openReviewedExecutable(path5, expectedSha256, label, allowRootOwn
     );
   }
   assertTrustedOwnership(absolute, pathInfo, allowRootOwner);
-  const handle = await open30(
+  const handle = await open31(
     absolute,
     fsConstants9.O_RDONLY | fsConstants9.O_NOFOLLOW
   );
@@ -114430,7 +114697,7 @@ async function openReviewedExecutable(path5, expectedSha256, label, allowRootOwn
       if (disposed) {
         throw new Error(`${label} descriptor is closed.`);
       }
-      const currentPath = await lstat33(absolute);
+      const currentPath = await lstat34(absolute);
       if (!sameIdentity4(pathInfo, currentPath) || await sha256OpenHandle(handle, pathInfo, label) !== expectedSha256) {
         throw new Error(`${label} changed after review.`);
       }
@@ -114446,7 +114713,7 @@ async function openReviewedExecutable(path5, expectedSha256, label, allowRootOwn
       assertCurrent,
       descriptor: handle.fd,
       dispose,
-      executionPath: `/proc/${process13.pid}/fd/${handle.fd}`,
+      executionPath: `/proc/${process14.pid}/fd/${handle.fd}`,
       handle
     };
   } catch (error51) {
@@ -114557,7 +114824,7 @@ function openReviewedNodeExecutable(command, expectedSha256) {
   );
 }
 function descriptorSanitizerPath() {
-  return resolve15(
+  return resolve16(
     import.meta.dirname,
     "..",
     "bin",
@@ -114575,17 +114842,17 @@ function openReviewedDescriptorSanitizerExecutable() {
 }
 async function captureLauncherFingerprintAt(commandPath, args, cwd, timings) {
   const commandRealPath = await realpath21(commandPath);
-  const currentNodeRealPath = await realpath21(process13.execPath);
+  const currentNodeRealPath = await realpath21(process14.execPath);
   if (commandRealPath !== currentNodeRealPath) {
     throw new Error(
       "The reviewed upstream command must be the same Node executable running the facade."
     );
   }
-  const entrypointPath = resolve15(args[0] ?? "");
+  const entrypointPath = resolve16(args[0] ?? "");
   if (await realpath21(cwd) !== cwd) {
     throw new Error("EASYEDA_UPSTREAM_CWD must not traverse a symbolic link.");
   }
-  const cwdInfo = await lstat33(cwd);
+  const cwdInfo = await lstat34(cwd);
   if (!cwdInfo.isDirectory() || cwdInfo.isSymbolicLink()) {
     throw new Error("EASYEDA_UPSTREAM_CWD must be a real directory.");
   }
@@ -114597,7 +114864,7 @@ async function captureLauncherFingerprintAt(commandPath, args, cwd, timings) {
     throw new Error("The upstream entrypoint must not traverse a symbolic link.");
   }
   const [dependencyType, dependencyLockPath] = await detectDependencyLock(cwd);
-  const implementationRoot = dirname21(entrypointPath);
+  const implementationRoot = dirname22(entrypointPath);
   const closure = await timings.measure("execution-closure", () => captureExecutionClosure(
     cwd,
     implementationRoot,
@@ -114695,9 +114962,9 @@ function captureLauncherFingerprint(timings = new LocalIntegrityTimings()) {
   );
 }
 async function captureLauncherAdmissionAt(expected3, command, cwd, entrypoint) {
-  const normalizedCommand = resolve15(command);
-  const normalizedCwd = resolve15(cwd);
-  const normalizedEntrypoint = resolve15(entrypoint);
+  const normalizedCommand = resolve16(command);
+  const normalizedCwd = resolve16(cwd);
+  const normalizedEntrypoint = resolve16(entrypoint);
   if (normalizedCommand !== expected3.command || normalizedCwd !== expected3.cwd || normalizedEntrypoint !== expected3.entrypoint || expected3.args.length !== 1 || expected3.args[0] !== normalizedEntrypoint) {
     throw new Error(
       "Configured upstream command, cwd, or entrypoint differs from the reviewed launcher."
@@ -114708,7 +114975,7 @@ async function captureLauncherAdmissionAt(expected3, command, cwd, entrypoint) {
       "The configured sandbox-launcher identity differs from review."
     );
   }
-  if (await realpath21(normalizedCommand) !== await realpath21(process13.execPath)) {
+  if (await realpath21(normalizedCommand) !== await realpath21(process14.execPath)) {
     throw new Error(
       "The reviewed upstream command must be the Node executable running the facade."
     );
@@ -114716,7 +114983,7 @@ async function captureLauncherAdmissionAt(expected3, command, cwd, entrypoint) {
   if (await realpath21(normalizedCwd) !== normalizedCwd) {
     throw new Error("The reviewed upstream cwd must not traverse a symbolic link.");
   }
-  const cwdInfo = await lstat33(normalizedCwd);
+  const cwdInfo = await lstat34(normalizedCwd);
   if (!cwdInfo.isDirectory() || cwdInfo.isSymbolicLink()) {
     throw new Error("The reviewed upstream cwd must be a real directory.");
   }
@@ -114804,7 +115071,7 @@ async function assertPathSealsCurrent(seals, boundary = "before spawn") {
   for (let offset2 = 0; offset2 < seals.length; offset2 += batchSize) {
     await Promise.all(
       seals.slice(offset2, offset2 + batchSize).map(async (seal) => {
-        const current2 = await lstat33(seal.path);
+        const current2 = await lstat34(seal.path);
         let currentKind = "unsupported";
         if (current2.isSymbolicLink()) {
           currentKind = "symlink";
@@ -114828,7 +115095,7 @@ async function assertPathSealsCurrent(seals, boundary = "before spawn") {
   }
 }
 function launcherFingerprintSha256(value) {
-  return createHash38("sha256").update(canonicalJson(value)).digest("hex");
+  return createHash39("sha256").update(canonicalJson(value)).digest("hex");
 }
 var LOCAL_INTEGRITY_STAGES, LocalIntegrityTimings, DEFAULT_SANDBOX_COMMAND, REVIEWED_SANDBOX_VERSION, REQUIRED_SANDBOX_OPTIONS, runtimeSha256Schema, runtimeDescriptorSanitizerSchema, runtimeLauncherFingerprintSchema;
 var init_upstream_trust = __esm({
@@ -115027,10 +115294,10 @@ var init_upstream_bootstrap = __esm({
 });
 
 // server/src/private-runtime-payload.ts
-import { createHash as createHash39, randomUUID as randomUUID9 } from "node:crypto";
+import { createHash as createHash40, randomUUID as randomUUID9 } from "node:crypto";
 import { constants as fsConstants10 } from "node:fs";
-import { open as open31, unlink as unlink4 } from "node:fs/promises";
-import process14 from "node:process";
+import { open as open32, unlink as unlink4 } from "node:fs/promises";
+import process15 from "node:process";
 function permissionMode2(mode) {
   return Number(mode % 512n);
 }
@@ -115070,21 +115337,21 @@ async function writeExact(handle, bytes2) {
   }
 }
 async function stagePrivateRuntimePayload(source4, privateDirectory) {
-  if (process14.platform !== "linux") {
+  if (process15.platform !== "linux") {
     throw new Error("Private runtime payload staging requires Linux descriptors.");
   }
   if (source4.length === 0 || source4.length > 16 * 1024 * 1024) {
     throw new Error("Private runtime payload has an unsupported byte length.");
   }
   const directoryInformation = await privateDirectory.stat({ bigint: true });
-  if (!directoryInformation.isDirectory() || permissionMode2(directoryInformation.mode) !== 448 || typeof process14.getuid === "function" && directoryInformation.uid !== BigInt(process14.getuid())) {
+  if (!directoryInformation.isDirectory() || permissionMode2(directoryInformation.mode) !== 448 || typeof process15.getuid === "function" && directoryInformation.uid !== BigInt(process15.getuid())) {
     throw new Error("Runtime payload directory must be owner-owned mode 0700.");
   }
   const path5 = `/proc/self/fd/${privateDirectory.fd}/.${randomUUID9()}.graph`;
   let writable;
   let readable;
   try {
-    writable = await open31(
+    writable = await open32(
       path5,
       fsConstants10.O_CREAT | fsConstants10.O_EXCL | fsConstants10.O_RDWR | fsConstants10.O_NOFOLLOW,
       384
@@ -115093,7 +115360,7 @@ async function stagePrivateRuntimePayload(source4, privateDirectory) {
     await writable.sync();
     await writable.chmod(256);
     const written = await writable.stat({ bigint: true });
-    if (!written.isFile() || written.size !== BigInt(source4.length) || written.nlink !== 1n || permissionMode2(written.mode) !== 256 || typeof process14.getuid === "function" && written.uid !== BigInt(process14.getuid())) {
+    if (!written.isFile() || written.size !== BigInt(source4.length) || written.nlink !== 1n || permissionMode2(written.mode) !== 256 || typeof process15.getuid === "function" && written.uid !== BigInt(process15.getuid())) {
       throw new Error("Private runtime payload publication is not owner-only.");
     }
     readable = writable;
@@ -115103,7 +115370,7 @@ async function stagePrivateRuntimePayload(source4, privateDirectory) {
       throw new Error("Private runtime payload changed before descriptor open.");
     }
     const captured = await readExact(readable, source4.length);
-    const sha256 = createHash39("sha256").update(captured).digest("hex");
+    const sha256 = createHash40("sha256").update(captured).digest("hex");
     if (!captured.equals(source4)) {
       throw new Error("Private runtime payload differs from its captured source bytes.");
     }
@@ -115121,7 +115388,7 @@ async function stagePrivateRuntimePayload(source4, privateDirectory) {
       const before = await readable.stat({ bigint: true });
       const current2 = await readExact(readable, source4.length);
       const after = await readable.stat({ bigint: true });
-      if (!sameStableFile2(unlinked, before) || !sameStableFile2(before, after) || before.nlink !== 0n || after.nlink !== 0n || before.ctimeNs !== unlinked.ctimeNs || after.ctimeNs !== before.ctimeNs || createHash39("sha256").update(current2).digest("hex") !== sha256) {
+      if (!sameStableFile2(unlinked, before) || !sameStableFile2(before, after) || before.nlink !== 0n || after.nlink !== 0n || before.ctimeNs !== unlinked.ctimeNs || after.ctimeNs !== before.ctimeNs || createHash40("sha256").update(current2).digest("hex") !== sha256) {
         throw new Error("Private runtime payload changed before sandbox spawn.");
       }
     };
@@ -115178,7 +115445,7 @@ var init_private_runtime_payload = __esm({
 import { spawn as spawn8 } from "node:child_process";
 import { constants as fsConstants11 } from "node:fs";
 import { once } from "node:events";
-import { open as open32, readFile as readFile7 } from "node:fs/promises";
+import { open as open33, readFile as readFile7 } from "node:fs/promises";
 import { PassThrough, Readable, Writable } from "node:stream";
 import { setTimeout as wait2 } from "node:timers/promises";
 function protocolError(code, message) {
@@ -115457,7 +115724,7 @@ async function waitForSandboxNodeIdentity(authority, nodeHandle, expectedCommand
       if (currentAuthority.startTimeTicks !== authority.startTimeTicks) {
         throw new Error("Sandbox child PID changed before Node admission.");
       }
-      executable = await open32(`/proc/${authority.pid}/exe`, fsConstants11.O_RDONLY);
+      executable = await open33(`/proc/${authority.pid}/exe`, fsConstants11.O_RDONLY);
       if (childHasClosed) {
         await closedBeforeIdentity;
       }
@@ -116022,18 +116289,18 @@ var init_sandboxed_stdio_client_transport = __esm({
 });
 
 // server/src/supervisor-execution.ts
-import { createHash as createHash40 } from "node:crypto";
+import { createHash as createHash41 } from "node:crypto";
 import { constants as fsConstants12 } from "node:fs";
 import {
-  lstat as lstat34,
-  open as open33,
+  lstat as lstat35,
+  open as open34,
   realpath as realpath22
 } from "node:fs/promises";
-import { basename as basename22, join as join54, resolve as resolve16 } from "node:path";
-import process15 from "node:process";
+import { basename as basename23, join as join55, resolve as resolve17 } from "node:path";
+import process16 from "node:process";
 function bundledSupervisorPath() {
-  const bundleDirectory = basename22(import.meta.filename) === "server.mjs" ? import.meta.dirname : resolve16(import.meta.dirname, "..", "dist");
-  return join54(bundleDirectory, SUPERVISOR_BUNDLE_NAME);
+  const bundleDirectory = basename23(import.meta.filename) === "server.mjs" ? import.meta.dirname : resolve17(import.meta.dirname, "..", "dist");
+  return join55(bundleDirectory, SUPERVISOR_BUNDLE_NAME);
 }
 function reviewedSupervisorFingerprint() {
   const expected3 = loadReviewedCompatibilityManifest().facadeImplementation.bundle.files.find(
@@ -116089,19 +116356,19 @@ async function readStableHandle(handle, label) {
   return { bytes: bytes2, info: after };
 }
 async function captureReviewedSupervisor(sourcePath, expected3) {
-  const absolute = resolve16(sourcePath);
+  const absolute = resolve17(sourcePath);
   if (await realpath22(absolute) !== absolute) {
     throw new Error(
       "The upstream supervisor source must not traverse symbolic links."
     );
   }
-  const pathInfo = await lstat34(absolute, { bigint: true });
+  const pathInfo = await lstat35(absolute, { bigint: true });
   if (pathInfo.isSymbolicLink() || !pathInfo.isFile()) {
     throw new Error(
       "The upstream supervisor source must be a regular non-symlink file."
     );
   }
-  if (typeof process15.getuid === "function" && pathInfo.uid !== BigInt(process15.getuid())) {
+  if (typeof process16.getuid === "function" && pathInfo.uid !== BigInt(process16.getuid())) {
     throw new Error("The upstream supervisor source is not owned by this user.");
   }
   if (isGroupOrOtherWritable(pathInfo.mode)) {
@@ -116109,14 +116376,14 @@ async function captureReviewedSupervisor(sourcePath, expected3) {
       "The upstream supervisor source must not be group- or other-writable."
     );
   }
-  const handle = await open33(
+  const handle = await open34(
     absolute,
     fsConstants12.O_RDONLY + fsConstants12.O_NOFOLLOW
   );
   try {
     const captured = await readStableHandle(handle, "Upstream supervisor source");
     assertSameIdentity2(pathInfo, captured.info, "Upstream supervisor source");
-    const sha256 = createHash40("sha256").update(captured.bytes).digest("hex");
+    const sha256 = createHash41("sha256").update(captured.bytes).digest("hex");
     if (expected3.relativePath !== SUPERVISOR_BUNDLE_NAME || expected3.bytes !== captured.bytes.length || expected3.sha256 !== sha256) {
       throw new Error(
         "The upstream supervisor bytes do not match the reviewed facade bundle."
@@ -116128,7 +116395,7 @@ async function captureReviewedSupervisor(sourcePath, expected3) {
   }
 }
 async function stageReviewedSupervisorExecution(privateDirectory, options = {}) {
-  if (process15.platform !== "linux") {
+  if (process16.platform !== "linux") {
     throw new Error(
       "Descriptor-bound upstream supervisor staging requires Linux /proc file descriptors."
     );
@@ -116153,7 +116420,7 @@ async function stageReviewedSupervisorExecution(privateDirectory, options = {}) 
       bytes: payload.bytes,
       descriptor: payload.descriptor,
       dispose: payload.dispose,
-      path: `/proc/${process15.pid}/fd/${payload.descriptor}`,
+      path: `/proc/${process16.pid}/fd/${payload.descriptor}`,
       sha256: expected3.sha256
     };
   } catch (error51) {
@@ -116182,7 +116449,7 @@ var init_supervisor_execution = __esm({
 
 // server/src/upstream-seccomp.ts
 import { endianness } from "node:os";
-import process16 from "node:process";
+import process17 from "node:process";
 function encodeInstruction(output, index, instruction) {
   const offset2 = index * 8;
   output.writeUInt16LE(instruction.code, offset2);
@@ -116191,7 +116458,7 @@ function encodeInstruction(output, index, instruction) {
   output.writeUInt32LE(instruction.value, offset2 + 4);
 }
 function createReviewedUpstreamSeccompProgram() {
-  if (process16.platform !== "linux" || process16.arch !== "x64" || endianness() !== "LE") {
+  if (process17.platform !== "linux" || process17.arch !== "x64" || endianness() !== "LE") {
     throw new Error(
       "The reviewed upstream seccomp program requires little-endian Linux x86_64."
     );
@@ -116293,11 +116560,11 @@ var init_upstream_seccomp = __esm({
 
 // server/src/upstream.ts
 import { AsyncLocalStorage } from "node:async_hooks";
-import { createHash as createHash41, randomBytes as randomBytes11 } from "node:crypto";
+import { createHash as createHash42, randomBytes as randomBytes11 } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
-import { join as join55, resolve as resolve17 } from "node:path";
-import process17 from "node:process";
+import { join as join56, resolve as resolve18 } from "node:path";
+import process18 from "node:process";
 function startupFailureWithStderr(error51, diagnosticBytes, diagnosticSha256, startupDiagnostics) {
   return diagnosticBytes === 0 && startupDiagnostics === void 0 ? error51 : new UpstreamStartupError(
     error51,
@@ -116307,7 +116574,7 @@ function startupFailureWithStderr(error51, diagnosticBytes, diagnosticSha256, st
   );
 }
 async function sha256File(path5) {
-  const hash35 = createHash41("sha256");
+  const hash35 = createHash42("sha256");
   const source4 = createReadStream(path5);
   for await (const chunk of source4) {
     if (typeof chunk !== "string" && !Buffer.isBuffer(chunk)) {
@@ -116326,7 +116593,7 @@ function requireVersionSegment(value, label) {
   return value;
 }
 function disconnectedLifecycleBoundarySha256(lifecycle) {
-  return createHash41("sha256").update(
+  return createHash42("sha256").update(
     JSON.stringify({
       gatewayInstanceId: lifecycle.gatewayInstanceId,
       publicEndpoint: lifecycle.publicEndpoint,
@@ -116352,12 +116619,12 @@ async function prepareAuthenticatedBridgeGateway(testingPublicPort, controlRoot)
     controlRoot
   );
   const authenticatedBuildIdentity = await loadAuthenticatedBridgeBuildIdentity(authenticationKey, controlRoot);
-  const publicHost = process17.env["EASYEDA_BRIDGE_HOST"] ?? "127.0.0.1";
+  const publicHost = process18.env["EASYEDA_BRIDGE_HOST"] ?? "127.0.0.1";
   if (publicHost !== "127.0.0.1") {
     throw new Error("The authenticated EasyEDA bridge must bind IPv4 loopback.");
   }
   const configuredPublicPort = Number(
-    process17.env["EASYEDA_BRIDGE_PORT"] ?? "49621"
+    process18.env["EASYEDA_BRIDGE_PORT"] ?? "49621"
   );
   const publicPort = testingPublicPort ?? configuredPublicPort;
   if (!Number.isSafeInteger(publicPort) || publicPort < 0 || publicPort > 65535 || testingPublicPort === void 0 && publicPort !== 49621) {
@@ -116365,12 +116632,12 @@ async function prepareAuthenticatedBridgeGateway(testingPublicPort, controlRoot)
       "The production authenticated bridge endpoint is exactly 127.0.0.1:49621."
     );
   }
-  const configuredScan = process17.env["EASYEDA_BRIDGE_PORT_SCAN"] ?? "49621";
+  const configuredScan = process18.env["EASYEDA_BRIDGE_PORT_SCAN"] ?? "49621";
   if (testingPublicPort === void 0 && configuredScan !== "49621") {
     throw new Error("Authenticated bridge adjacent-port scanning is prohibited.");
   }
   const maximumPayloadBytes = Number(
-    process17.env["EASYEDA_BRIDGE_MAX_PAYLOAD_SIZE"] ?? "10485760"
+    process18.env["EASYEDA_BRIDGE_MAX_PAYLOAD_SIZE"] ?? "10485760"
   );
   const backendPort = await allocatePrivateLoopbackPort(publicPort);
   const backendSessionToken = randomBytes11(48).toString("base64url");
@@ -116427,7 +116694,7 @@ var init_upstream = __esm({
       connectPromise = null;
       tools = null;
       stderrBytes = 0;
-      stderrDigest = createHash41("sha256");
+      stderrDigest = createHash42("sha256");
       retainedProcessDiagnostics;
       startupLauncherAdmission = null;
       bridgeGateway = null;
@@ -116471,7 +116738,7 @@ var init_upstream = __esm({
       }
       async #connect() {
         this.stderrBytes = 0;
-        this.stderrDigest = createHash41("sha256");
+        this.stderrDigest = createHash42("sha256");
         const controlRoot = this.options.controlRoot;
         if (controlRoot === void 0) {
           throw new Error(
@@ -116699,7 +116966,7 @@ var init_upstream = __esm({
             transport2.startupDiagnostics()
           );
           this.stderrBytes = 0;
-          this.stderrDigest = createHash41("sha256");
+          this.stderrDigest = createHash42("sha256");
           const cleanupErrors = [];
           let clientClosed = true;
           let transportClosed = true;
@@ -116739,7 +117006,7 @@ var init_upstream = __esm({
           throw startupError;
         }
         this.stderrBytes = 0;
-        this.stderrDigest = createHash41("sha256");
+        this.stderrDigest = createHash42("sha256");
         this.startupLauncherAdmission = launcherAdmission;
         this.client = client;
         this.transport = transport2;
@@ -116935,27 +117202,27 @@ var init_upstream = __esm({
         };
       }
       async installedEasyedaBundles() {
-        const assetsRoot = resolve17(
-          process17.env["EASYEDA_ASSETS_ROOT"] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets"
+        const assetsRoot = resolve18(
+          process18.env["EASYEDA_ASSETS_ROOT"] ?? "/mnt/c/Program Files/easyeda-pro/resources/app/assets"
         );
         const pcbVersion = requireVersionSegment(
-          process17.env["EASYEDA_PCB_BUNDLE_VERSION"],
+          process18.env["EASYEDA_PCB_BUNDLE_VERSION"],
           "EASYEDA_PCB_BUNDLE_VERSION"
         );
         const apiVersion = requireVersionSegment(
-          process17.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"],
+          process18.env["EASYEDA_PUBLIC_API_BUNDLE_VERSION"],
           "EASYEDA_PUBLIC_API_BUNDLE_VERSION"
         );
-        const pcbImplementation = join55(
+        const pcbImplementation = join56(
           assetsRoot,
           "pro-pcb",
           pcbVersion,
           "js",
           "pcb.js"
         );
-        const apiImplementation = join55(assetsRoot, "pro-api", apiVersion, "api.js");
-        const apiAdapter = join55(assetsRoot, "pro-api", apiVersion, "api-types.js");
-        const apiDeclarations = join55(
+        const apiImplementation = join56(assetsRoot, "pro-api", apiVersion, "api.js");
+        const apiAdapter = join56(assetsRoot, "pro-api", apiVersion, "api-types.js");
+        const apiDeclarations = join56(
           assetsRoot,
           "pro-api",
           apiVersion,
@@ -117051,7 +117318,7 @@ var init_upstream = __esm({
         }
         this.startupLauncherAdmission = null;
         this.stderrBytes = 0;
-        this.stderrDigest = createHash41("sha256");
+        this.stderrDigest = createHash42("sha256");
         if (failures.length > 0) {
           throw new AggregateError(
             failures,
@@ -118109,7 +118376,7 @@ var init_current_pcb_layers_runtime = __esm({
 });
 
 // server/src/current-disposable-open-checkpoint.ts
-import { join as join56 } from "node:path";
+import { join as join57 } from "node:path";
 function normalizedSource(target5) {
   const raw = target5.rawWindowsPath, separator = raw[2];
   if (!/^[a-z]:[\\/]/iu.test(raw) || separator !== "\\" && separator !== "/" || raw.includes(separator === "\\" ? "/" : "\\") || target5.projectUuid !== sha256Text(raw)) {
@@ -118125,7 +118392,7 @@ async function accessPolicy(source4) {
   return {
     expectedSource: source4,
     controlRoot: await controlRootCapability(),
-    artifactRoots: [join56(controlDataDirectory(), "checkpoints")],
+    artifactRoots: [join57(controlDataDirectory(), "checkpoints")],
     maximumSourceBytes: MAX_SOURCE_BYTES
   };
 }
@@ -118175,7 +118442,7 @@ async function prepareCurrentDisposableOpenCheckpoint(input) {
   const inputText = canonicalJson(input), source4 = normalizedSource(target5);
   const checkpoint = await createCheckpoint({
     source: source4,
-    outputDir: join56(controlDataDirectory(), "checkpoints"),
+    outputDir: join57(controlDataDirectory(), "checkpoints"),
     label: "current-disposable-open"
   }, await accessPolicy(source4));
   assertSourceBinding(checkpoint, target5, source4);
@@ -118568,7 +118835,7 @@ var init_current_disposable_open_runtime = __esm({
         this.current(slot);
         const authority = journal.executionAuthorityBeforeOrphan, binding2 = journal.bridgeDispatchBeforeOrphan, prior = journal.bridgeSessionBeforeOrphan;
         requireValue15(
-          prior !== void 0 && binding2 !== void 0 && authority !== void 0 && authority.processes.some((process19) => process19.pid === slot.launch.root.pid && process19.startIdentity === slot.launch.root.startIdentity && process19.role === "easyeda-main") && authority.processes.every((process19) => process19.startIdentity.endsWith(`:job:${slot.launch.jobId}`)),
+          prior !== void 0 && binding2 !== void 0 && authority !== void 0 && authority.processes.some((process20) => process20.pid === slot.launch.root.pid && process20.startIdentity === slot.launch.root.startIdentity && process20.role === "easyeda-main") && authority.processes.every((process20) => process20.startIdentity.endsWith(`:job:${slot.launch.jobId}`)),
           "Retirement lacks the operation's original retained launch/capture binding."
         );
         const observeClosure = engine2.upstream.assertClosedAuthenticatedBridgeDispatchReleased;
@@ -119705,9 +119972,9 @@ var init_closed_symbol_disposable_entry = __esm({
 });
 
 // server/src/closed-symbol-operation-intent.ts
-import { closeSync as closeSync3, constants as constants22, fstatSync as fstatSync3, lstatSync as lstatSync3, openSync as openSync3, readSync as readSync2 } from "node:fs";
+import { closeSync as closeSync3, constants as constants23, fstatSync as fstatSync3, lstatSync as lstatSync3, openSync as openSync3, readSync as readSync2 } from "node:fs";
 import { mkdir as mkdir5 } from "node:fs/promises";
-import { join as join57 } from "node:path";
+import { join as join58 } from "node:path";
 function inputs2(rawRequest, rawPlan) {
   const request2 = parseClosedSymbolOperationRequest(rawRequest);
   const source4 = exactData(rawPlan, ["profile", "projectUuid", "branchUuid", "ownerUuid", "targetUuid", "activeUuid", "projectPath", "operation", "marker", "nativePinsSha256", "facadeSha256", "expectedFingerprintSha256"]);
@@ -119742,7 +120009,7 @@ function inputs2(rawRequest, rawPlan) {
   requireValue6(operation["id"] === request2.operation.id && operation["action"] === "library.symbol.modify" && operation["libraryUuid"] === request2.target.projectUuid && target5["uuid"] === request2.target.symbolUuid && patch2["name"] === request2.operation.patch.name && patch2["description"] === request2.operation.patch.description, "Ordinary operation does not match its request.");
   return Object.freeze({ request: request2, plan: plan2 });
 }
-function sameFile5(left, right) {
+function sameFile6(left, right) {
   return ["dev", "ino", "mode", "uid", "gid", "nlink", "size", "mtimeNs", "ctimeNs"].every((key) => left[key] === right[key]);
 }
 function finalDirectory2(path5, device, inode, uid) {
@@ -119763,7 +120030,7 @@ function finalReservation2(root, parent, slot, artifact2, expected3) {
   lineage();
   const named = lstatSync3(boundPath, { bigint: true });
   requireValue6(named.isFile() && named.dev.toString() === artifact2.identity.device && named.ino.toString() === artifact2.identity.inode, "Operation claim named identity changed.");
-  const descriptor9 = openSync3(boundPath, constants22.O_RDONLY | constants22.O_NOFOLLOW | constants22.O_NONBLOCK);
+  const descriptor9 = openSync3(boundPath, constants23.O_RDONLY | constants23.O_NOFOLLOW | constants23.O_NONBLOCK);
   let before;
   try {
     before = fstatSync3(descriptor9, { bigint: true });
@@ -119777,12 +120044,12 @@ function finalReservation2(root, parent, slot, artifact2, expected3) {
       }
       offset2 += count2;
     }
-    requireValue6(offset2 === expected3.length && bytes2.subarray(0, offset2).equals(expected3) && sameFile5(before, fstatSync3(descriptor9, { bigint: true })), "Operation claim bytes changed after publication cleanup.");
+    requireValue6(offset2 === expected3.length && bytes2.subarray(0, offset2).equals(expected3) && sameFile6(before, fstatSync3(descriptor9, { bigint: true })), "Operation claim bytes changed after publication cleanup.");
   } finally {
     closeSync3(descriptor9);
   }
   lineage();
-  requireValue6(sameFile5(before, lstatSync3(boundPath, { bigint: true })), "Operation claim pathname changed after final read.");
+  requireValue6(sameFile6(before, lstatSync3(boundPath, { bigint: true })), "Operation claim pathname changed after final read.");
 }
 async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
   requireValue6(typeof process.getuid === "function", "Operation claim requires Linux UID support.");
@@ -119791,7 +120058,7 @@ async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
     requireValue6(canonicalJson(inputs2(rawRequest, ownerPlan)) === seal, "Operation claim inputs changed during publication.");
   };
   const intentKey = sha256Json({ profile: PROFILE17, actionId: bound2.request.operation.id });
-  const parentPath = join57(controlDataDirectory(), "closed-symbol-operation-intents-v1"), reservationPath = join57(parentPath, intentKey);
+  const parentPath = join58(controlDataDirectory(), "closed-symbol-operation-intents-v1"), reservationPath = join58(parentPath, intentKey);
   const closedPlanSha256 = sha256Json(bound2.plan), markerSha256 = sha256Json(bound2.plan.marker), requestSha256 = sha256Json(bound2.request);
   const body4 = {
     profile: PROFILE17,
@@ -119816,7 +120083,7 @@ async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
   let artifact2, retainedSlot;
   try {
     currentInputs();
-    await mkdir5(join57(`/proc/self/fd/${parent.handle.fd}`, intentKey), { mode: 448 });
+    await mkdir5(join58(`/proc/self/fd/${parent.handle.fd}`, intentKey), { mode: 448 });
     await parent.handle.sync();
     currentInputs();
     const slot = await root.openDirectory(reservationPath, false);
@@ -119824,7 +120091,7 @@ async function claimClosedSymbolOperationIntent(rawRequest, ownerPlan) {
     try {
       await slot.handle.sync();
       currentInputs();
-      artifact2 = await publishManagedAttachmentExclusive(join57(reservationPath, "intent.json"), "Closed-symbol operation intent", bytes2, PROFILE17);
+      artifact2 = await publishManagedAttachmentExclusive(join58(reservationPath, "intent.json"), "Closed-symbol operation intent", bytes2, PROFILE17);
       currentInputs();
       await readExactUtf8Artifact({ path: artifact2.path, bytes: artifact2.bytes, sha256: artifact2.sha256 });
       currentInputs();
@@ -120195,16 +120462,16 @@ var init_closed_symbol_operation_entry = __esm({
 
 // server/src/index.ts
 var src_exports = {};
-import { createHash as createHash42 } from "node:crypto";
+import { createHash as createHash43 } from "node:crypto";
 import {
-  basename as basename23,
-  dirname as dirname22,
-  isAbsolute as isAbsolute25,
-  relative as relative8,
-  resolve as resolve18,
-  sep as sep6
+  basename as basename24,
+  dirname as dirname23,
+  isAbsolute as isAbsolute26,
+  relative as relative9,
+  resolve as resolve19,
+  sep as sep7
 } from "node:path";
-import process18 from "node:process";
+import process19 from "node:process";
 import { inflateSync } from "node:zlib";
 function ownedWindowsRuntime() {
   if (windowsRuntime === void 0) {
@@ -120327,7 +120594,7 @@ async function runClosedSymbolTool(input, mode) {
     if (executionAuthority === null || typeof executionAuthority !== "object") {
       throw new Error("Disposable index engine authority owner differs.");
     }
-    const environment = process18.env;
+    const environment = process19.env;
     const reservation = {
       engine,
       upstream,
@@ -120338,7 +120605,7 @@ async function runClosedSymbolTool(input, mode) {
       assetsRoot: environment["EASYEDA_ASSETS_ROOT"],
       wslDistribution: environment["WSL_DISTRO_NAME"],
       controlPath: retainedControlRoot2.path,
-      pluginRoot: resolve18(import.meta.dirname, "../.."),
+      pluginRoot: resolve19(import.meta.dirname, "../.."),
       requestText,
       methods: disposableIndexMethods(),
       runtime: void 0,
@@ -120357,7 +120624,7 @@ async function runClosedSymbolTool(input, mode) {
     closedSymbolIndexReservation = reservation;
     activeReservation = reservation;
     const current2 = () => {
-      if (closedSymbolIndexReservation !== reservation || reservation.engine !== engine || reservation.upstream !== upstream || reservation.gate !== bridgeGate || disposableOwnData(engine, "upstream") !== upstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || reservation.facadePromise !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== reservation.executionAuthority || reservation.environment !== process18.env || process18.env["EASYEDA_ASSETS_ROOT"] !== reservation.assetsRoot || process18.env["WSL_DISTRO_NAME"] !== reservation.wslDistribution || controlDataDirectory() !== reservation.controlPath || retainedControlRoot2.path !== reservation.controlPath || resolve18(import.meta.dirname, "../..") !== reservation.pluginRoot || scheduledShutdown !== void 0 || canonicalJson((mode === "validation" ? parseClosedSymbolDisposableInput(input) : parseClosedSymbolOperationInput(input)).request) !== requestText) {
+      if (closedSymbolIndexReservation !== reservation || reservation.engine !== engine || reservation.upstream !== upstream || reservation.gate !== bridgeGate || disposableOwnData(engine, "upstream") !== upstream || disposableOwnData(engine, "controlFingerprintPromise") !== facadePromise || reservation.facadePromise !== facadePromise || disposableOwnData(engine, "executionAuthorityValidator") !== reservation.executionAuthority || reservation.environment !== process19.env || process19.env["EASYEDA_ASSETS_ROOT"] !== reservation.assetsRoot || process19.env["WSL_DISTRO_NAME"] !== reservation.wslDistribution || controlDataDirectory() !== reservation.controlPath || retainedControlRoot2.path !== reservation.controlPath || resolve19(import.meta.dirname, "../..") !== reservation.pluginRoot || scheduledShutdown !== void 0 || canonicalJson((mode === "validation" ? parseClosedSymbolDisposableInput(input) : parseClosedSymbolOperationInput(input)).request) !== requestText) {
         throw new Error("Disposable index reservation, request, configuration or shutdown state changed.");
       }
       const methods4 = disposableIndexMethods();
@@ -121223,7 +121490,7 @@ var init_src = __esm({
     init_current_symbol_metadata();
     init_current_symbol_metadata_runtime();
     init_historical_abandonment();
-    facadeMode = configuredFacadeMode(process18.env);
+    facadeMode = configuredFacadeMode(process19.env);
     MAX_INLINE_RESULT_BYTES = 256 * 1024;
     MAX_CAPTURE_PNG_BYTES = 16 * 1024 * 1024;
     MAX_CAPTURE_BASE64_CHARACTERS = Math.ceil(MAX_CAPTURE_PNG_BYTES / 3) * 4;
@@ -121765,7 +122032,7 @@ var init_src = __esm({
     registerFacadeTool(
       "easyeda_control_api",
       offlineApiToolConfiguration,
-      guarded(({ request: request2 }) => Promise.resolve(queryOfflineApi(request2)))
+      guarded(({ request: request2 }) => runOfflineApi(request2))
     );
     registerFacadeTool(
       "easyeda_control_discover",
@@ -121842,13 +122109,13 @@ var init_src = __esm({
         annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false }
       },
       serializedGuarded(({ request: request2 }) => {
-        const assetsRoot = process18.env["EASYEDA_ASSETS_ROOT"];
+        const assetsRoot = process19.env["EASYEDA_ASSETS_ROOT"];
         if (assetsRoot === void 0) {
           throw new Error("Configure the machine's installed EasyEDA assets first.");
         }
         const controller = new WindowsNativeUiController({
           runtime: { status: () => windowsRuntime?.status() ?? { state: "not-launched", launch: null, executableSha256: null, reviewedExecutionScopeSha256: "" } },
-          pluginRoot: resolve18(import.meta.dirname, "../.."),
+          pluginRoot: resolve19(import.meta.dirname, "../.."),
           assetsRoot
         });
         if (request2.action === "discard-close-confirmation" || request2.action === "discard-save-warning") {
@@ -121887,7 +122154,7 @@ var init_src = __esm({
         }
         if (request2.action === "launch-contained") {
           assertOrdinaryRuntimeAllocationAllowed();
-          const assetsRoot = process18.env["EASYEDA_ASSETS_ROOT"];
+          const assetsRoot = process19.env["EASYEDA_ASSETS_ROOT"];
           if (assetsRoot === void 0) {
             throw new Error("Configure the machine's installed EasyEDA assets first.");
           }
@@ -121895,7 +122162,7 @@ var init_src = __esm({
           assertOrdinaryRuntimeAllocationAllowed();
           windowsRuntime ??= new WindowsControlRuntime({
             upstream,
-            pluginRoot: resolve18(import.meta.dirname, "../.."),
+            pluginRoot: resolve19(import.meta.dirname, "../.."),
             assetsRoot,
             reviewedExecutionScopeSha256: implementation.sha256
           });
@@ -122199,16 +122466,16 @@ var init_src = __esm({
       },
       serializedGuarded(async ({ request: request2 }) => {
         if (ordinaryLaunchCoordinator === void 0) {
-          const assetsRoot = process18.env["EASYEDA_ASSETS_ROOT"];
+          const assetsRoot = process19.env["EASYEDA_ASSETS_ROOT"];
           if (assetsRoot === void 0) {
             throw new Error("Configure the installed EasyEDA assets before ordinary launch.");
           }
-          const pluginRoot = resolve18(import.meta.dirname, "../..");
+          const pluginRoot = resolve19(import.meta.dirname, "../..");
           ordinaryLaunchCoordinator = new OrdinaryLaunchCoordinator({
             assetsRoot,
             pluginRoot,
             assertAllowed: async () => {
-              if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || windowsRuntime !== ordinaryLaunchRuntime || process18.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+              if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || windowsRuntime !== ordinaryLaunchRuntime || process19.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
                 throw new Error("Ordinary launch runtime allocation is unavailable or changed.");
               }
               await engine.assertBridgeDispatchAllowed();
@@ -122238,9 +122505,9 @@ var init_src = __esm({
       },
       serializedGuarded(async ({ request: request2, expectedFingerprint }) => {
         if (currentDisposableOpenCoordinator === void 0) {
-          const assetsRoot = process18.env["EASYEDA_ASSETS_ROOT"];
+          const assetsRoot = process19.env["EASYEDA_ASSETS_ROOT"];
           const assertOwner = () => {
-            if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || ordinaryLaunchRuntime === void 0 || windowsRuntime !== ordinaryLaunchRuntime || ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === void 0 || process18.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
+            if (closedSymbolIndexReservation !== void 0 || scheduledShutdown !== void 0 || ordinaryLaunchRuntime === void 0 || windowsRuntime !== ordinaryLaunchRuntime || ordinaryLaunchRuntime.status().state !== "owned" || assetsRoot === void 0 || process19.env["EASYEDA_ASSETS_ROOT"] !== assetsRoot) {
               throw new Error("Disposable opening requires this facade's unchanged retained ordinary launch.");
             }
           };
@@ -122938,7 +123205,7 @@ var init_src = __esm({
         const reservation = await reserveEvidencePaths(input.evidence);
         let dispatched = false;
         let publishedExport;
-        const requestedPath = resolve18(exportRequest.arguments.filePath);
+        const requestedPath = resolve19(exportRequest.arguments.filePath);
         const request2 = {
           upstreamTool: exportRequest.upstreamTool,
           arguments: exportRequest.arguments,
@@ -122968,21 +123235,21 @@ var init_src = __esm({
               "Export arguments.projectId must equal the proven project UUID."
             );
           }
-          if (!isAbsolute25(exportRequest.arguments.filePath)) {
+          if (!isAbsolute26(exportRequest.arguments.filePath)) {
             throw new Error(
               "Every export requires an explicit absolute arguments.filePath."
             );
           }
-          const exportRoot = resolve18(
+          const exportRoot = resolve19(
             controlDataDirectory(),
             "upstream",
             "artifacts",
             "facade-exports"
           );
           await ensureManagedDirectory(exportRoot);
-          const exportDirectory = dirname22(requestedPath);
-          const exportRelation = relative8(exportRoot, requestedPath);
-          if (dirname22(exportDirectory) !== exportRoot || !/^export-[a-z0-9-]{8,80}$/iu.test(basename23(exportDirectory)) || exportRelation === ".." || exportRelation.startsWith(`..${sep6}`) || isAbsolute25(exportRelation)) {
+          const exportDirectory = dirname23(requestedPath);
+          const exportRelation = relative9(exportRoot, requestedPath);
+          if (dirname23(exportDirectory) !== exportRoot || !/^export-[a-z0-9-]{8,80}$/iu.test(basename24(exportDirectory)) || exportRelation === ".." || exportRelation.startsWith(`..${sep7}`) || isAbsolute26(exportRelation)) {
             throw new Error(
               `Export filePath must use a dedicated ${exportRoot}/export-<unique>/ directory.`
             );
@@ -122998,7 +123265,7 @@ var init_src = __esm({
           const startedAtMs = Date.now();
           dispatched = true;
           const source4 = buildDsnExportCode(
-            basename23(requestedPath),
+            basename24(requestedPath),
             input.expectedContext
           );
           const guardedSource = wrapWithContextGuard(source4, input.expectedContext);
@@ -123050,7 +123317,7 @@ var init_src = __esm({
           if (generated.byteLength !== publishedExport.bytes) {
             throw new Error("Export byte length changed after write.");
           }
-          if (publishedExport.sha256 !== createHash42("sha256").update(exportBytes).digest("hex")) {
+          if (publishedExport.sha256 !== createHash43("sha256").update(exportBytes).digest("hex")) {
             throw new Error("Export hash changed during managed publication.");
           }
           await engine.assertContext(input.expectedContext);
@@ -123087,7 +123354,7 @@ var init_src = __esm({
           if (dispatched) {
             const failureMetadata = {
               effect: "artifact-write",
-              exportDirectory: dirname22(requestedPath)
+              exportDirectory: dirname23(requestedPath)
             };
             const failureAttachments = [];
             if (publishedExport === void 0) {
@@ -123393,19 +123660,19 @@ var init_src = __esm({
     shutdownAndExit = async () => {
       try {
         await shutdown();
-        process18.exit(0);
+        process19.exit(0);
       } catch {
-        process18.stderr.write("EasyEDA control shutdown was incomplete.\n");
-        process18.exit(1);
+        process19.stderr.write("EasyEDA control shutdown was incomplete.\n");
+        process19.exit(1);
       }
     };
     scheduleShutdown = () => {
       scheduledShutdown ??= shutdownAndExit();
       void scheduledShutdown;
     };
-    process18.once("SIGINT", scheduleShutdown);
-    process18.once("SIGTERM", scheduleShutdown);
-    process18.stdin.once("end", scheduleShutdown);
+    process19.once("SIGINT", scheduleShutdown);
+    process19.once("SIGTERM", scheduleShutdown);
+    process19.stdin.once("end", scheduleShutdown);
     await server.connect(transport);
   }
 });

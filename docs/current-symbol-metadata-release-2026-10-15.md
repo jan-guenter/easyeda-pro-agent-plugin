@@ -1,5 +1,8 @@
 # Current project-symbol metadata
 
+This records the040000 release. For subsequent checkpoint preparation and the
+current backlog, see [the090000 update](current-symbol-preparation-release-2026-10-15.md).
+
 Candidate `0.3.0+codex.20261015040000` targets the existing separately reviewed
 EasyEDA 3.2.206.715d940d, API 0.3.50, UI 3.2.196 and project-manager 3.2.184 code.
 External pins are unchanged. The new read reuses the current opener's exact

@@ -16,6 +16,8 @@ import { currentDisposableOpenQuerySchema, queryCurrentDisposableOpen, validateC
 import { currentPcbIdentitiesQuerySchema, queryCurrentPcbIdentities, validateCurrentPcbIdentitiesArguments } from "./current-pcb-identities.ts";
 import { currentPcbGeometryQuerySchema, queryCurrentPcbGeometry, validateCurrentPcbGeometryArguments } from "./current-pcb-geometry.ts";
 import { currentSymbolMetadataQuerySchema, queryCurrentSymbolMetadata, validateCurrentSymbolMetadataArguments } from "./current-symbol-metadata.ts";
+import { currentSymbolMetadataPreparationRequestSchema, prepareCurrentSymbolMetadata, queryCurrentSymbolMetadataPreparation,
+  validateCurrentSymbolMetadataPreparationArguments } from "./current-symbol-metadata-preparation.ts";
 import { historicalAbandonmentRequestSchema } from "./historical-abandonment.ts";
 
 const ordinaryLaunchQuerySchema = z.object({ includeSchemas: z.boolean().default(false) }).strict();
@@ -47,6 +49,9 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("pcb-geometry-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("project-symbol"), query: currentSymbolMetadataQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("project-symbol-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("project-symbol-preparation"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
+  z.object({ action: z.literal("project-symbol-prepare-validate"), query: publicSdkValidationQuerySchema }).strict(),
+  z.object({ action: z.literal("project-symbol-prepare"), query: z.object({ request: currentSymbolMetadataPreparationRequestSchema }).strict() }).strict(),
   z.object({ action: z.literal("history"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
   z.object({ action: z.literal("history-validate"), query: publicSdkValidationQuerySchema }).strict(),
   z.object({ action: z.literal("launch"), query: ordinaryLaunchQuerySchema.optional() }).strict(),
@@ -57,12 +62,22 @@ export const apiRequestSchema = z.discriminatedUnion("action", [
 
 export const offlineApiToolConfiguration = {
   title: "EasyEDA offline API reference and argument validation",
-  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, local historical-abandonment, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Declaration and adapter presence do not imply live validation.",
+  description: "Query hash-pinned SDK declarations and exhaustive per-method execution coverage with concrete omission reasons. Retrieve exact typed design/library, SDK-read, calculation, local-system, extension-metadata, editor-shell, identity-context, shortcut-key, current-PCB-layer/identity/geometry, local historical-abandonment, disposable-project-open or ordinary-launch schemas; validate arguments including refinements. Prepare a symbol name/description change from an existing hash-bound managed checkpoint with project-symbol-prepare. Entirely offline: no bridge calls, application launch, design changes, journal writes or execution authority. Checkpoint preparation does not prove current state or enable editing. Declaration and adapter presence do not imply live validation.",
   inputSchema: { request: apiRequestSchema },
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
 };
 
-export function queryOfflineApi(request: z.infer<typeof apiRequestSchema>): { offline: true; result: unknown } {
+type ApiRequest = z.infer<typeof apiRequestSchema>;
+
+/** Local checkpoint reads share the offline tool, never the bridge or live admission gate. */
+export async function runOfflineApi(request: ApiRequest): Promise<{ offline: true; result: unknown }> {
+  if (request.action === "project-symbol-prepare") {
+    return { offline: true, result: await prepareCurrentSymbolMetadata(request.query.request) };
+  }
+  return queryOfflineApi(request);
+}
+
+export function queryOfflineApi(request: ApiRequest): { offline: true; result: unknown } {
   let result: unknown;
   switch (request.action) {
     case "sdk": { result = queryExtensionApiCatalog(request.query ?? {}); break; }
@@ -91,6 +106,9 @@ export function queryOfflineApi(request: z.infer<typeof apiRequestSchema>): { of
     case "pcb-geometry-validate": { result = validateCurrentPcbGeometryArguments(request.query.request); break; }
     case "project-symbol": { result = queryCurrentSymbolMetadata(request.query ?? {}); break; }
     case "project-symbol-validate": { result = validateCurrentSymbolMetadataArguments(request.query.request); break; }
+    case "project-symbol-preparation": { result = queryCurrentSymbolMetadataPreparation(request.query ?? {}); break; }
+    case "project-symbol-prepare-validate": { result = validateCurrentSymbolMetadataPreparationArguments(request.query.request); break; }
+    case "project-symbol-prepare": { throw new Error("Checkpoint preparation requires the asynchronous offline API handler."); }
     case "history": {
       result = { offline: true, invocationEnabledByDiscovery: false, total: 1, entries: [{
         action: "abandon-before-navigation", tool: "easyeda_control_history", effect: "local-historical-sidecar-publication",

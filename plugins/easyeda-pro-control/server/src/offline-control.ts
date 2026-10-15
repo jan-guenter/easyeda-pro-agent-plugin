@@ -8,7 +8,7 @@ import { controlDataDirectory, controlRootCapability, ensureManagedDirectory } f
 import { CONTROL_VERSION, assertSelfSoftCoreLimitZero, sha256Text } from "./core.ts";
 import { acquireFacadeLease } from "./lease.ts";
 import type { MachineInstallationFailureCode } from "./machine-profile.ts";
-import { offlineApiToolConfiguration, queryOfflineApi } from "./offline-api.ts";
+import { offlineApiToolConfiguration, runOfflineApi } from "./offline-api.ts";
 import { discoverReviewedOrLiveTools } from "./reviewed-upstream-tools.ts";
 import { shutdownBeforeLeaseRelease } from "./shutdown.ts";
 
@@ -45,11 +45,11 @@ export async function startOfflineControlServer(code: MachineInstallationFailure
   await assertSelfSoftCoreLimitZero();
   const server = new McpServer({ name: "easyeda-pro-control", version: CONTROL_VERSION }, {
     capabilities: { tools: {} },
-    instructions: "Offline-only mode: the configured external installation is unavailable. Only bundled API reference, argument validation, local catalog discovery and bounded startup diagnostics are available. No live execution or recovery tools exist in this process. Repair and review the installation, then restart the MCP session. Offline mode never promotes itself to live mode.",
+    instructions: "Offline-only mode: the configured external installation is unavailable. Bundled API reference, argument validation, existing managed-checkpoint symbol preparation, local catalog discovery and bounded startup diagnostics are available. No live execution or recovery tools exist in this process. Repair and review the installation, then restart the MCP session. Offline mode never promotes itself to live mode.",
   });
   const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
   server.registerTool("easyeda_control_api", { ...offlineApiToolConfiguration, outputSchema },
-    offlineGuard(({ request }) => queryOfflineApi(request)));
+    offlineGuard(({ request }) => runOfflineApi(request)));
   server.registerTool("easyeda_control_status", {
     title: "Report offline-only EasyEDA startup status",
     description: "Return the bounded installation failure code. Does not inspect designs, start an upstream process, access credentials, or connect to EasyEDA. Repair and review the external installation, then restart this session to reassess availability.",
@@ -57,7 +57,7 @@ export async function startOfflineControlServer(code: MachineInstallationFailure
   }, offlineGuard(() => ({ offline: true, mode: "offline-only", liveExecutionAvailable: false,
     installation: { ready: false, code }, restartRequired: true,
     availableTools: ["easyeda_control_api", "easyeda_control_discover", "easyeda_control_status"],
-    capabilityScope: "Bundled reference only; no claim about the current EasyEDA installation." })));
+    capabilityScope: "Bundled reference and existing managed-checkpoint preparation only; no claim about the current EasyEDA installation." })));
   server.registerTool("easyeda_control_discover", {
     title: "Discover the local EasyEDA reference catalog",
     description: "Search the bundled upstream reference. Every execution route is unavailable in this offline-only process. Live discovery is refused; catalog presence does not admit a method on the installed EasyEDA version.",

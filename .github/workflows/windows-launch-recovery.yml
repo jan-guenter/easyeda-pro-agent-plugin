@@ -31,25 +31,61 @@ jobs:
           $executable = Join-Path $PSHOME 'powershell.exe'
           $script = Join-Path $env:GITHUB_WORKSPACE 'plugins\easyeda-pro-control\scripts\ordinary-launch-recovery.ps1'
           $bytes = [IO.File]::ReadAllBytes($script)
-          if ($bytes.Length -ne 2279) { throw 'Recovery helper byte count differs from the reviewed pin.' }
+          if ($bytes.Length -ne 2320) { throw 'Recovery helper byte count differs from the reviewed pin.' }
           $sha256 = [Security.Cryptography.SHA256]::Create()
           try { $digest = ([BitConverter]::ToString($sha256.ComputeHash($bytes))).Replace('-', '').ToLowerInvariant() }
           finally { $sha256.Dispose() }
-          if ($digest -cne 'd68a8029d12d4bcbff1432e21c917ac4dd11c390dc95effea138522b3080298c') {
+          if ($digest -cne '8ffb025cdd20c1851c37d57a20816240928c7e6425b44528a623c8b8f72a37aa') {
             throw 'Recovery helper bytes differ from the reviewed pin.'
           }
           $decoder = [Text.UTF8Encoding]::new($false, $true)
           $source = $decoder.GetString($bytes)
           $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($source))
-          # The waiting parent guarantees a second powershell process. The
-          # child executes the verified bytes, not a later path reopen.
-          $output = @(& "$executable" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand "$encoded")
-          $childExitCode = $LASTEXITCODE
+          # Use raw redirected pipes: PowerShell's native-command invocation
+          # can deserialize CLIXML progress instead of exposing stderr bytes.
+          # The waiting parent guarantees a second powershell process, and
+          # the child executes the verified bytes, not a later path reopen.
+          $child = [Diagnostics.Process]::new()
+          $child.StartInfo.FileName = $executable
+          $child.StartInfo.Arguments = '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand ' + $encoded
+          $child.StartInfo.UseShellExecute = $false
+          $child.StartInfo.CreateNoWindow = $true
+          $child.StartInfo.RedirectStandardOutput = $true
+          $child.StartInfo.RedirectStandardError = $true
+          $stdoutBuffer = [IO.MemoryStream]::new()
+          $stderrBuffer = [IO.MemoryStream]::new()
+          $deadline = [Diagnostics.Stopwatch]::StartNew()
+          try {
+            if (-not $child.Start()) { throw 'Recovery helper did not start.' }
+            # Drain both pipes concurrently before waiting for exit.
+            $stdoutTask = $child.StandardOutput.BaseStream.CopyToAsync($stdoutBuffer)
+            $stderrTask = $child.StandardError.BaseStream.CopyToAsync($stderrBuffer)
+            $remaining = 10000 - [int]$deadline.ElapsedMilliseconds
+            if ($remaining -le 0 -or -not $child.WaitForExit($remaining)) {
+              throw 'Recovery helper exceeded its observation deadline.'
+            }
+            $remaining = 10000 - [int]$deadline.ElapsedMilliseconds
+            if ($remaining -le 0 -or -not [Threading.Tasks.Task]::WaitAll(
+                [Threading.Tasks.Task[]]@($stdoutTask, $stderrTask), $remaining)) {
+              throw 'Recovery helper output exceeded its observation deadline.'
+            }
+            $childExitCode = $child.ExitCode
+            $stdoutBytes = $stdoutBuffer.ToArray()
+            $stderrByteCount = $stderrBuffer.Length
+          } finally {
+            $deadline.Stop()
+            # Dispose closes local handles; it does not terminate the child.
+            $child.Dispose()
+            $stdoutBuffer.Dispose()
+            $stderrBuffer.Dispose()
+          }
+          if ($stderrByteCount -ne 0) { throw 'Recovery helper emitted unexpected stderr.' }
           if ($childExitCode -ne 0) { throw "Recovery helper exited with code $childExitCode." }
-          if ($output.Count -ne 1 -or $output[0] -isnot [string]) {
+          $stdout = $decoder.GetString($stdoutBytes)
+          if ($stdoutBytes.Length -gt 4096 -or $stdout -cnotmatch '\A[^\r\n]+\r?\n\z') {
             throw 'Recovery helper did not emit exactly one JSON line.'
           }
-          $result = ConvertFrom-Json -InputObject $output[0]
+          $result = ConvertFrom-Json -InputObject $stdout
           $keys = @($result.PSObject.Properties.Name | Sort-Object)
           if (($keys -join ',') -cne 'otherPowerShellPresent,sameNameProcessPresent,samples,schema' -or
               $result.schema -cne 'easyeda-pro-control.ordinary-launch-recovery-observation.v1' -or
@@ -61,5 +97,5 @@ jobs:
           }
           if (-not $result.otherPowerShellPresent) { throw 'The helper missed its waiting PowerShell parent.' }
           if ($result.sameNameProcessPresent) { throw 'Unexpected EasyEDA process on the fresh hosted runner.' }
-          Write-Output 'Windows PowerShell 5.1 recovery helper observed its parent and no EasyEDA process.'
+          Write-Output 'Windows PowerShell 5.1 recovery helper emitted no stderr, observed its parent and no EasyEDA process.'
           exit 0

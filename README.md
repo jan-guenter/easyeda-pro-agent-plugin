@@ -19,7 +19,14 @@ readiness observation and a durable no-repeat Save guard. Failed navigation is
 observed and reconciled, not blindly replayed. A failed Save cannot become
 repeatable through reconciliation or runtime rebinding.
 
-Candidate `0.3.0+codex.20261015060000` adds recovery for a reviewed intent-only
+Candidate `0.3.0+codex.20261015090000` integrates checkpoint-bound symbol
+name/description preparation into the existing offline API. It checks complete
+selected-branch history and peer names without opening the original design or
+enabling a writer. It also fixes PowerShell first-use progress breaking startup
+recovery and checks raw stderr in Windows CI. See the
+[scope, usage and remaining work](docs/current-symbol-preparation-release-2026-10-15.md).
+
+Published update `0.3.0+codex.20261015060000` adds recovery for a reviewed intent-only
 ordinary startup after its facade restarts. A separate read-only Windows helper
 excludes a delayed old-helper launch before recording explicit abandonment.
 It preserves the original intent and does not claim termination or authorize
@@ -193,7 +200,7 @@ Seven skills remain included. See the
 
 When a trusted machine profile selects missing or invalid external
 installation files, startup instead exposes three offline-only tools: API
-reference, local discovery and bounded startup status. Live execution and
+reference with existing managed-checkpoint preparation, local discovery and bounded startup status. Live execution and
 recovery are unavailable in that process, even if the files are later repaired.
 See the [upgrade-resilient startup report](docs/offline-startup-release-2026-10-13.md).
 

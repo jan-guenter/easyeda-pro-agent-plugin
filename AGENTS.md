@@ -6,6 +6,131 @@ Last updated: 2026-10-15 (Europe/Berlin)
 
 ## Current checkpoint
 
+### Candidate090000: symbol checkpoint preparation integrated; startup recovery transport fixed
+
+PR34 initial payload7fe72359 passed all ten CI38709292917 jobs:9944facade
+passes/five skips/zero failures and424bridge passes. Windows38709292945 passed.
+Automated review found a real missed registration in offline-control.ts: the
+offline-only fallback advertised preparation but still called queryOfflineApi.
+It now uses runOfflineApi, and both real entrypoint registration slices are
+tested; all seven focused preparation/routing checks, strict types and targeted
+zero-warning lint pass. All five existing bundled startup tests pass, including
+missing-installation fallback; repository179 checks pass after rebuild.
+Corrected source345 SHAddda3b74/runtime3 SHA925427cb replace the initial values
+below. Initial CI is not final-payload acceptance. Final CI and official delivery
+remain pending. No further live call.
+
+Fresh060000 owner165394/parent163591/startTicks2803482 independently matches
+the installed1186files and344source/3runtime projections below. Previous1306 is
+absent. Prior mainCI38673729256 completed all ten jobs successfully. No status,
+runtime allocation, EasyEDA launch, project open, edit, Save or close this turn.
+Production designs and their records remain excluded.
+
+Maintained inspect returned launch-unknown/attemptConsumedtrue for
+ordinary-startup-020000-20261015. Canonical intentSHA
+8bec5da34b13748c4d27e6490ff20aaaf78d39a98044656974268e3f48bbd7d3 differs from raw
+fileSHA0a55eac0. One maintained abandon-unknown-launch call refused on stderr.
+Original directory still contains only unchanged intent.json312bytes; no
+abandonment sidecar exists. Never replay startup under any ID or edit history.
+
+Private read-only transport diagnostic reproduced exit0 plus392bytes CLIXML
+first-use module progress on stderr. Source helper now suppresses progress only;
+stderr/exit/schema checks stay strict. Helper2320/SHA8ffb025c replaces2279/d68a8029
+for new observations; completed old-hash receipts remain readable only. One
+source-adapter diagnostic passed WSL transport with otherPowerShellPresenttrue,
+sameNameProcessPresentfalse. It is diagnostic only, not recovery/termination or
+launch authority. Do not kill unrelated PowerShell processes. Windows CI now
+checks raw concurrent redirected pipes under one ten-second deadline, no Kill.
+The loaded060000 owner remains untouched; fresh installation/chat is required
+before using new live code.
+
+Current symbol metadata preparation is now integrated into the asynchronous
+offline API via project-symbol-preparation/project-symbol-prepare-validate/
+project-symbol-prepare. Existing managed owner-only single-link checkpoints,
+exact bytes/hash and project/branch/owner/symbol identity bind the complete
+selected linked history. Reused pure metadata checks preserve tags/source and
+validate peer names. Explicit reader-core projection correlation is advisory;
+ticket/version/freshness are unproved. Wrapped output is512KiB maximum.
+WriterReady/inverseReady/execution/persistence/SQL authority remain false.
+No checkpoint/artifact/journal creation, original-design access or live owner is added.
+The shared history decoder now uses nonblocking open before its regular-file
+check, preventing a substituted FIFO from stalling a read.
+
+Final combined focused run passes103tests/zero failures, including size-bound,
+actual API success, historical-receipt and FIFO regressions. Strict types,
+whole-tree zero-warning lint, coverage, build and seven official skill checks
+pass. Clean dependency install/tree,151 registry signatures/40 attestations and
+zero vulnerabilities pass. Initial repository validation caught a missing
+required Safety-gated description phrase; restored. Final repository179/package77
+checks and all seven packaged skill checks pass; Windows workflow actionlint
+and diff whitespace checks pass. Main and independent source review accept the
+offline preparation and recovery-transport scope; connected validation remains separate.
+Initial source345 SHAb0b5a026/runtime3 SHA5a48cb82; external pins unchanged. Full existing
+GitHub CI, publication and installation remain pending; no full-local-suite
+success or live writer validation is claimed. Scope and implementation backlog:
+docs/current-symbol-preparation-release-2026-10-15.md. Prior local delivery
+checkpoint below is preserved in this source change.
+
+### Delivered060000: interrupted-startup recovery implemented, live recovery pending
+
+PR33 merged through the protected route as main
+93eb7b33b2f06a9a8108ee5c258bbc8ad9c8e6da. Final payload
+93c29101709b9f41301e26100661d0b389d78213 passed all ten jobs in CI38672625517:
+9936 facade passes/five skips/zero failures and424 bridge passes. Types,
+zero-warning lint, dependency/privacy checks and builds passed. Separate
+Windows PowerShell5.1 encoded-helper smoke38672625575 passed. The review's
+parent-directory substitution finding is fixed and resolved. Full tree
+ed3d9b2ed47ae3486904680ea9abea6bde8b60d1 and package subtree
+1618010c10d7403ee18b942fd4f9fea3fa9753ee equal the tested payload exactly.
+The postcommit bundle rebuild was reproducible. External compatibility pins
+and writer restrictions are unchanged.
+
+Official Git marketplace upgrade completed errors[] under umask022. Installed
+and enabled0.3.0+codex.20261015060000 comes from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain. Independent
+pre/post-probe verification matches1186files/23186128bytes,42directories including
+root/all0755,seven skills,1185files100644/one100755. No extras, symlinks,
+hardlinks or mode mismatch. Git-tree-order inventorySHA
+2099e9a3107e1574bc2e8b34d22488bafaac68fdecf50d1d03069d1d2593ac74 uses path NUL
+Gitmode NUL bytes NUL SHA256 LF. Source3441944371e/runtime30a80e364 and both
+native helpers fa5cff83/d68a8029 match. Marketplace marker and snapshot HEAD
+equal merged main.
+
+Installed configured offline startup passes ambientNode26.11.1 to pinned24.18,
+16tools, project-symbol discovery/valid arguments and11geometry methods. The
+new abandon-unknown-launch action is discoverable and validates exact arguments
+without execution authority. Ten samples show no upstream child/nonstdio
+socket, stderr0; normal client close completed. Synthetic profile only, no
+live control/CAD access. Proof is /tmp/easyeda-installed-060000-qVIsdO/proof.json,
+1730bytes SHA3e16b39ae5f5ad9cdff6e3aec9fe24d73aa1b7ab26ea559874c989a61cd8f1fc.
+Independent bounded proof review passes; probe149444 exited. The installed
+inventory and marketplace marker remained exact afterward.
+
+Delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/33#issuecomment-6183390328.
+Postmerge Windows CI38673729290 and all ten jobs in main CI38673729256 passed
+on the identical tested tree. Do not rerun successful checks. This local
+delivery checkpoint is preserved in the next source commit.
+
+The historical ordinary-startup-020000-20261015 intent remains unresolved.
+No launch, recovery, navigation, Save or close was attempted in this release.
+Never replay that attempt under any ID or edit its journal. Three earlier
+read-only native adapter probes refused; the corrected encoded invocation is
+Windows-CI validated, not locally WSL-validated. After a fresh Codex chat loads
+060000, independently admit its actual owner, then use maintained inspect and
+the connection reference's intent-only recovery before allocating a diagnostic
+runtime. No old-owner termination, cache hotpatch or competing live client.
+Production designs and their records were not accessed.
+
+Next useful writer work is complete checkpoint-bound current-symbol metadata
+preparation and integration, not another standalone preview. Reuse the complete
+selected-branch checkpoint decoder and pure preparation checks, with managed
+descriptor-bound artifacts and exact identity/hash limits. The metadata reader
+alone cannot supply current actor/worker/hidden-editor evidence. Current owned
+lifecycle, post-opening baseline, SQL/upload-cache proof and one disposable
+rename/inverse/reopen validation remain required. The broader API backlog is
+in docs/current-symbol-metadata-release-2026-10-15.md. No writer was enabled.
+
 ### Candidate 060000: intent-only ordinary startup recovery
 
 PR33 review found a real helper-path TOCTOU after initial CI38671526233 passed.
