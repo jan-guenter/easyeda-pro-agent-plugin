@@ -2,9 +2,53 @@
 
 This file is the durable engineering record and common ground for every human or agent working in this repository. Keep it current whenever a requirement, assumption, interface, compatibility tuple, safety boundary, or test result changes. Do not silently turn an open question into a requirement.
 
-Last updated: 2026-10-15 (Europe/Berlin)
+Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
+
+### In development: owned current cache observation
+
+The retained baseline now has an internal observeSymbolBaselineCaches
+continuation. It consumes one attempt, derives the fixed project/branch and
+fingerprint from the retained source, and revalidates the original admitted
+capture/clock and session around awaits. Current UI/APP/MGR/WORKER pins and
+runtime identity are checked before and after the observation. The coordinator
+owns a fresh authenticated scope and the real engine's tracked dispatch. The
+16KiB exact envelope is decoded inside reply retention before quarantine clears;
+an inner deadline or failed reply stays blocked, without retry or navigation.
+Actual returns reaching the retention hook remain in memory before validation.
+Generic transport timeouts may throw before that hook; no return is fabricated.
+
+The new local transition checker accepts only the engine's exact sealed mark
+and clear field changes, binding scope/session/runtime/root/Job and the genuine
+tracked clock lookup. An optional engine cleanup veto runs on successful returns,
+pre-dispatch refusal and failed post-mark identity reproof. This fixes review
+findings where a detected
+foreign journal could otherwise be overwritten by automatic cleanup. The veto
+cannot bypass quarantine or authorize dispatch. Observed conflicts are retained;
+managed journal writes are not compare-and-swap and do not protect against an
+external writer racing inside replacement. No stronger locking claim is made.
+
+Cache success requires lease settlement and final original-owner/source/runtime
+checks. It records sequential, point-in-time absence only. Startup, persistence,
+opening effects, backend actor/clock, before-write baseline and writer authority
+remain unproved. No public schema or MCP route is added; legacy readers and
+external implementation pins stay unchanged.
+
+The 101 focused tests pass with no failures or skips, including retained-baseline,
+cache wrapper/transition, opener delegation and shared recovery tests. Full types
+and whole-tree strict type-aware lint pass with zero warnings. Build/sanitizer,
+compatibility, package/privacy/repository, 774-method coverage and all seven
+official skill validators pass. Dependency audit verifies 151 signatures and 40
+attestations with 0 vulnerabilities. Independent reviews accept the final source
+within the documented limits. Frozen projections: source 355 SHA31020556,
+runtime 3 SHA19279146; only facade projections/review timestamp changed, not
+external pins. Final publication/CI checks are pending. Keep draft PR36 unmerged
+and installed140000 unchanged. Next: pre-opening continuity and
+project-only startup qualification, backend actor/clock, writer/inverse, and one
+complete disposable lifecycle before release/install. No live EasyEDA call,
+launch, design access, Save, restore or installation occurred in this slice.
+Production designs and their records remain outside scope.
 
 ### In development: new-session admission and current cache observer
 
@@ -34,7 +78,16 @@ privacy/repository,774-method coverage and all seven official skill validators.
 Dependency checks verify151 signatures/40 attestations and0 vulnerabilities.
 Frozen facade projections are source354 SHA6e5cd3e7 and runtime3 SHA664f842a;
 only facade projections and review timestamp changed, not external pins.
-Full final-payload CI and publication evidence are recorded after the push.
+Payload a5e1a37c375319fab1ab3ec7bcd44ff7569c14fa is pushed to draft PR36.
+Postcommit build reproduces both bundles exactly. Full tree
+6c78b294d33b10dce9cbf1857848ed96d801bfc0, package subtree
+0f07894847139f919607986297653b31351c8c90. Windows38810639954 passed;
+main CI38810639931 passed all ten jobs at that exact head:10005 facade
+passes/five skips/zero failures and424 bridge passes across28 files.
+Publication/local-check receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6202730678.
+This post-payload record should accompany the next source change, not cause a
+second full CI run by itself.
 
 Next: integrate the cache observer with the retained admission and source-pinned
 executor; qualify project-only startup effects and backend actor/clock; integrate
@@ -43,6 +96,21 @@ and installation. No source guard, native semantics or writer restriction was
 relaxed. No live EasyEDA call, launch, design access, Save, restore or install
 occurred. Installed140000 is unchanged; production designs and their records
 remain excluded. Do not merge this draft or claim complete API execution support.
+
+Next-slice source review: retain the original source reference already sealed by
+relaunch's sourceText, and retain the successful admission's sessionCurrent
+closure with its actual capture/clock. Do not reconstruct either from journals.
+A cache-only executor can use verifyCurrentDisposableOpenImplementation, without
+the separate WS clock pin. Keep expectedFingerprint/target derived from that
+retained source. Revalidate originals around internal awaits, not only around
+the complete collector. A new one-shot method needs a fixed bounded envelope
+wrapper inside its own scope and tracked dispatch. Retain the actual return,
+then decode/validate inside retainSettledResult before quarantine clearing.
+CURRENT_UPLOAD_QUEUE_READ_REFUSED:TIMEOUT is not a generic settled-timeout
+category; accepting it as an ordinary return could clear uncertain work.
+dispatchWithOrphanTracking legitimately changes journal fields during mark/
+clear, so recognize only those maintained transitions, not arbitrary loaded
+history. No such executor or recovery path is implemented by this checkpoint.
 
 ### In development: retained current symbol relaunch
 

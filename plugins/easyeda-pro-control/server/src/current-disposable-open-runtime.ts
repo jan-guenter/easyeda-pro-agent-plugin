@@ -321,6 +321,15 @@ export class CurrentDisposableOpenCoordinator {
     finally { this.busy = false; }
   }
 
+  /** Internal cache-only continuation; public requests cannot supply code or targets. */
+  public async observeSymbolBaselineCaches(operationId: string): Promise<Value> {
+    const stage = this.baselines.get(operationId);
+    requireValue(!this.busy && stage !== undefined, "Current symbol baseline original coordinator is unavailable or busy.");
+    this.busy = true;
+    try { return await stage.observeCaches(operationId); }
+    finally { this.busy = false; }
+  }
+
   private static assertNotTransferred(runtime: Retained["runtime"]): void {
     requireValue(!baselineRuntimeReservations.has(runtime), "Current disposable opening was transferred to a one-shot baseline owner.");
   }

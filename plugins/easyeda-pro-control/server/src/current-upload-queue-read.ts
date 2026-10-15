@@ -1,7 +1,10 @@
+import { assertUpstreamReplySettled, extractToolPayload } from "./core.ts";
 import { buildCurrentStartPageGuard } from "./current-start-page.ts";
+import { EXACT_READ_ENVELOPE_SCHEMA, decodeExactReadEnvelope } from "./exact-readers.ts";
 
 export const CURRENT_UPLOAD_QUEUE_PROFILE = "easyeda-pro-control.current-inactive-upload-queues.v1";
 export const CURRENT_UPLOAD_QUEUE_TIMEOUT_MS = 10_000;
+export const CURRENT_UPLOAD_QUEUE_MAX_BYTES = 16_384;
 export interface CurrentUploadQueueScope { readonly projectUuid: string; readonly branchUuid: string }
 
 function fields(input: unknown, names: readonly string[]): Record<string, unknown> {
@@ -69,6 +72,26 @@ try{
 }catch{throw new Error('CURRENT_UPLOAD_QUEUE_READ_REFUSED:'+stage);}
 finally{if(timer!==undefined){try{apply(clear,root,[timer]);}catch{throw new Error('CURRENT_UPLOAD_QUEUE_READ_REFUSED:CLEANUP');}}}
 })()`;
+}
+
+/** Fixed executor body. Rejection, including the inner deadline, stays rejected. */
+export function buildCurrentUploadQueueReadProgram(input: unknown): string {
+  return `const observation=await ${buildCurrentUploadQueueReadExpression(input)};
+const json=JSON.stringify(observation),utf8Bytes=new TextEncoder().encode(json).byteLength;
+const envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};
+if(utf8Bytes>${CURRENT_UPLOAD_QUEUE_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_UPLOAD_QUEUE_MAX_BYTES})throw new Error('CURRENT_UPLOAD_QUEUE_ENVELOPE');
+return envelope;`;
+}
+
+/** Bounded data decoding only; neither the reply nor its envelope grants authority. */
+export function decodeCurrentUploadQueueReadReply(raw: unknown, expected: unknown): Readonly<Record<string, unknown>> {
+  assertUpstreamReplySettled(raw);
+  const envelope = fields(extractToolPayload(raw), ["schema", "utf8Bytes", "json"]);
+  if (envelope["schema"] !== EXACT_READ_ENVELOPE_SCHEMA || typeof envelope["json"] !== "string" ||
+    envelope["json"].length === 0 || envelope["json"].length > CURRENT_UPLOAD_QUEUE_MAX_BYTES ||
+    !Number.isSafeInteger(envelope["utf8Bytes"]) || Buffer.byteLength(envelope["json"], "utf8") > CURRENT_UPLOAD_QUEUE_MAX_BYTES ||
+    Buffer.byteLength(JSON.stringify(envelope), "utf8") > CURRENT_UPLOAD_QUEUE_MAX_BYTES) { throw new Error("CURRENT_UPLOAD_QUEUE_ENVELOPE"); }
+  return validateCurrentUploadQueueReadResult(decodeExactReadEnvelope(envelope), expected);
 }
 
 /** Strict data parser only. Matching JSON cannot issue runtime authority. */

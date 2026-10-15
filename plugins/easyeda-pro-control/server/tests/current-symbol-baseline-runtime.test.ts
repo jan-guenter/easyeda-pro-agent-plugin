@@ -8,10 +8,13 @@ import type { TestContext } from "node:test";
 import vm from "node:vm";
 import { z } from "zod";
 import { createOperation, loadOperation, operationPath, updateOperation, writePhaseArtifact } from "../src/artifacts.ts";
-import { OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, newOperationId, sha256Json } from "../src/core.ts";
+import { OPERATION_SCHEMA, assertSubset, buildPlanHash, canonicalJson, isRecord, newOperationId, sha256Json } from "../src/core.ts";
 import type { CurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
 import type { CurrentSymbolBaselineCoordinator } from "../src/current-symbol-baseline-runtime.ts";
 import { currentSymbolMetadataPreparationRequestSchema } from "../src/current-symbol-metadata-preparation.ts";
+import { assertCurrentSymbolCacheClear, assertCurrentSymbolCacheMark } from "../src/current-symbol-cache-journal.ts";
+import { CURRENT_UPLOAD_QUEUE_PROFILE, CURRENT_UPLOAD_QUEUE_TIMEOUT_MS, buildCurrentUploadQueueReadProgram, decodeCurrentUploadQueueReadReply } from "../src/current-upload-queue-read.ts";
+import { encodeExactReadEnvelope } from "../src/exact-readers.ts";
 import { EasyedaControlEngine } from "../src/engine.ts";
 import type { AuthenticatedBridgeDispatchBinding } from "../src/engine.ts";
 import { assertClosedSessionCopyAuthority, assertCurrentClosedSessionCopyAuthority, assertCurrentClosedSessionTerminationObservation, assertIssuedWindowsClockObservation, windowsClockObservationForResult } from "../src/windows-authority.ts";
@@ -23,10 +26,12 @@ import { retireSyntheticJournal } from "./helpers/synthetic-journal-retirement.t
 
 const HASH = "a".repeat(64);
 const SQL_RUNTIME = { nodeExecutable: "/synthetic/no-sql-child", nodeVersion: "24.18.0" as const, nodeSha256: HASH };
+const FINGERPRINT = { synthetic: true, installedBundles: { assetsRoot: "/synthetic/current-cache-assets" } };
+const CACHE_TARGET = { projectUuid: "b".repeat(64), branchUuid: "d".repeat(32) };
 type Upstream = WindowsControlRuntimeOptions["upstream"];
 
-/** Only the opener's private owner lookup and final copy sink are substituted
- * in this VM. The unchanged coordinator, managed storage, engine capture,
+/** Private owner/copy and installed-source qualification are synthetic seams.
+ * The unchanged coordinator, managed storage, engine capture/tracked dispatch,
  * runtime normal-close and termination issuers execute their actual code.
  * Synthetic native child frames do not launch Windows or establish CAD proof.
  */
@@ -36,14 +41,16 @@ async function fixture(context: TestContext): Promise<{
   runtime: WindowsControlRuntime;
   engine: EasyedaControlEngine;
   state: { scope: boolean; activeSession: boolean; sessionSequence: number; ownerLost: boolean; copyFailure: boolean; copies: number; events: string[];
-    copied: unknown; proof: unknown;
+    copied: unknown; proof: unknown; cacheReads: number; cacheTimeout: boolean; statusDrift: boolean;
+    afterCache: (() => Promise<void>) | undefined;
     afterCompleted: (() => Promise<void>) | undefined; afterLoad: (() => Promise<void>) | undefined; afterStopped: (() => Promise<void>) | undefined;
     afterClockAssert: (() => Promise<void>) | undefined; beforeScope: (() => void) | undefined; afterScope: (() => Promise<void>) | undefined };
   calls: (action: string) => number;
 }> {
   const native = await qualifiedNativeFixture(context), operationId = newOperationId();
   const state = { scope: true, activeSession: true, sessionSequence: 1, ownerLost: false, copyFailure: false, copies: 0, events: [] as string[],
-    copied: undefined as unknown, proof: undefined as unknown,
+    copied: undefined as unknown, proof: undefined as unknown, cacheReads: 0, cacheTimeout: false, statusDrift: false,
+    afterCache: undefined as (() => Promise<void>) | undefined,
     afterCompleted: undefined as (() => Promise<void>) | undefined, afterLoad: undefined as (() => Promise<void>) | undefined,
     afterStopped: undefined as (() => Promise<void>) | undefined, afterClockAssert: undefined as (() => Promise<void>) | undefined,
     beforeScope: undefined as (() => void) | undefined, afterScope: undefined as (() => Promise<void>) | undefined };
@@ -53,10 +60,25 @@ async function fixture(context: TestContext): Promise<{
     sessionId: session.sessionId, sessionSequence: 1, begunAtEpochMs: 1001, leaseId: "l".repeat(43), bindingReceipt: "b".repeat(43) };
   const upstream: Upstream & Pick<EasyedaControlEngine["upstream"], "findTool" | "withAuthenticatedBridgeDispatchScope"> = {
     findTool: () => Promise.resolve({ name: "easyeda_execute" }),
-    callTool: (name) => {
-      assert.equal(name, "easyeda_execute"); assert.equal(state.scope, true); state.events.push("runtime-identity");
-      return Promise.resolve({ content: [{ type: "text", text: JSON.stringify({ kind: "runtime-identity",
-        generation: "synthetic-current-symbol-runtime-0001", timeOrigin: 1000, processId: 101 }) }] });
+    callTool: async (name, args, timeout, dispatch) => {
+      assert.equal(name, "easyeda_execute"); assert.equal(state.scope, true);
+      assert.ok(args !== undefined);
+      if (args["code"] === buildCurrentUploadQueueReadProgram(CACHE_TARGET)) {
+        state.cacheReads += 1; state.events.push("cache-read");
+        assert.equal(args["timeoutMs"], CURRENT_UPLOAD_QUEUE_TIMEOUT_MS + 5000);
+        assert.equal(timeout, CURRENT_UPLOAD_QUEUE_TIMEOUT_MS + 15_000); assert.equal(args["confirmWrite"], true);
+        assert.equal(dispatch?.sessionSequence, 2);
+        const journal = await loadOperation(operationId);
+        assert.equal(journal["orphanedCallPossible"], true); assert.equal(journal["cacheAttempted"], true);
+        await state.afterCache?.();
+        if (state.cacheTimeout) { return { content: [], structuredContent: { ok: false, error: { message: "CURRENT_UPLOAD_QUEUE_READ_REFUSED:TIMEOUT" } } }; }
+        return { content: [], structuredContent: { ok: true, result: encodeExactReadEnvelope({ profile: CURRENT_UPLOAD_QUEUE_PROFILE,
+          ...CACHE_TARGET, origin: "https://client", projectV6UploadAbsent: true, localProjectV1UploadAbsent: true,
+          scope: "point-in-time-inactive-target", startupQualified: false, persistenceVerified: false, writerAuthority: false, executionAuthorized: false }) } };
+      }
+      state.events.push("runtime-identity");
+      return { content: [{ type: "text", text: JSON.stringify({ kind: "runtime-identity",
+        generation: "synthetic-current-symbol-runtime-0001", timeOrigin: 1000, processId: 101 }) }] };
     },
     withAuthenticatedBridgeDispatchScope: async <Result>(run: (value: AuthenticatedBridgeDispatchBinding) => PromiseLike<Result> | Result): Promise<Result> => {
       assert.equal(state.scope, false); state.beforeScope?.(); state.scope = true;
@@ -95,10 +117,11 @@ async function fixture(context: TestContext): Promise<{
   };
   const engine = new EasyedaControlEngine(upstream, { executionAuthorityValidator: runtime });
   await engine.controlFingerprintPromise;
+  context.mock.method(engine, "status", () => Promise.resolve({ stableFingerprint: { ...structuredClone(FINGERPRINT), ...(state.statusDrift ? { drifted: true } : {}) } }));
   const ownerData = { profile: "synthetic.current-symbol-baseline-owner", operationId, openingOperationId: "synthetic-original-opening" };
   const original = { source: { engine, runtime, launchProjection: launch, bridgeSession: session,
     target: { rawWindowsPath: "C:\\Fixtures\\Disposable.eprj2", projectUuid: "b".repeat(64), documentUuid: "c".repeat(16), branchUuid: "d".repeat(32), expectedSourceSha256: HASH },
-    expectedFingerprint: { synthetic: true } }, preparation: { preparationSha256: HASH } };
+    expectedFingerprint: structuredClone(FINGERPRINT) }, preparation: { preparationSha256: HASH } };
   const ownerText = canonicalJson(ownerData);
   const checkOwner = (owner: unknown, receivedEngine: unknown): typeof original => {
     assert.equal(receivedEngine, engine); assert.equal(owner, ownerData, "synthetic owner must be original");
@@ -109,6 +132,23 @@ async function fixture(context: TestContext): Promise<{
     .replaceAll(/^import[\s\S]*?;\n/gmu, "").replaceAll(/\bexport (?=(?:async )?(?:class|function|const))/gu, "");
   const scope = vm.createContext({ z, Buffer, Object, Date, Reflect, structuredClone,
     OPERATION_SCHEMA, buildPlanHash, canonicalJson, isRecord, sha256Json, currentSymbolMetadataPreparationRequestSchema,
+    assertSubset, CURRENT_UPLOAD_QUEUE_TIMEOUT_MS,
+    // Only cross-realm JSON arguments are normalized at these VM boundaries;
+    // Actual engine journals, original captures and native issuers stay unchanged.
+    assertCurrentSymbolCacheMark: (...args: Parameters<typeof assertCurrentSymbolCacheMark>): void => {
+      assertCurrentSymbolCacheMark(structuredClone(args[0]), structuredClone(args[1]), args[2]);
+    },
+    assertCurrentSymbolCacheClear: (...args: Parameters<typeof assertCurrentSymbolCacheClear>): void => {
+      assertCurrentSymbolCacheClear(structuredClone(args[0]), structuredClone(args[1]), args[2]);
+    },
+    buildCurrentUploadQueueReadProgram: (target: unknown): string => buildCurrentUploadQueueReadProgram(structuredClone(target)),
+    decodeCurrentUploadQueueReadReply: (raw: unknown, target: unknown): ReturnType<typeof decodeCurrentUploadQueueReadReply> =>
+      decodeCurrentUploadQueueReadReply(raw, structuredClone(target)),
+    assertExpectedFingerprint: (value: unknown): void => { assert.ok(isRecord(value)); assert.equal(value["synthetic"], true); },
+    validateSdkLocalRuntimeFingerprint: (value: unknown): void => { assertSubset(value, FINGERPRINT, "Synthetic current cache runtime"); },
+    verifyCurrentDisposableOpenImplementation: (root: unknown): Promise<void> => {
+      assert.equal(root, FINGERPRINT.installedBundles.assetsRoot); state.events.push("source-pin"); return Promise.resolve();
+    },
     createOperation, operationPath, writePhaseArtifact,
     loadOperation: async (id: string): ReturnType<typeof loadOperation> => {
       const loaded = await loadOperation(id); await state.afterLoad?.(); return loaded;
@@ -447,4 +487,87 @@ void test("current admission rejects capture mutation after scope settlement and
       assert.equal(f.calls("release-capture"), 1); assert.equal(f.calls("clocked-launch"), 2);
     });
   }
+});
+
+async function admittedBaseline(context: TestContext): ReturnType<typeof fixture> {
+  const f = await completedBaseline(context); await f.coordinator.relaunch(f.owner.operationId);
+  f.state.activeSession = true; f.state.sessionSequence = 2; await f.coordinator.admit(f.owner.operationId); return f;
+}
+
+void test("current cache continuation owns one tracked read and settles without admitting startup or writing", async (context) => {
+  const f = await admittedBaseline(context);
+  const captures = f.calls("clocked-capture");
+  const result = await f.coordinator.observeCaches(f.owner.operationId);
+  assert.equal(result["state"], "caches-observed"); assert.equal(result["cacheAttempted"], true);
+  assert.equal(result["cacheReplyRetained"], true); assert.equal(result["cachesObserved"], true);
+  assert.equal(result["nativeCacheClockStatus"], "observed"); assert.equal(f.state.cacheReads, 1);
+  assert.equal(f.calls("clocked-capture"), captures + 1); assert.equal(f.calls("release-capture"), 2);
+  for (const key of ["startupQualified", "beforeWriteBaselineVerified", "openingEffectsVerified", "backendActorVerified", "backendClockVerified", "writerReady", "executionAuthorized", "explicitSaveDispatched", "replayAllowed"]) {
+    assert.equal(result[key], false);
+  }
+  const journal = await loadOperation(f.owner.operationId);
+  assert.equal(journal["orphanedCallPossible"], false); assert.equal(journal["hardStop"], true);
+  assert.equal(journal["cacheAttempted"], true); assert.equal(f.state.scope, false);
+  assert.ok(f.state.events.indexOf("source-pin") < f.state.events.indexOf("cache-read"));
+  assert.ok(f.state.events.lastIndexOf("source-pin") > f.state.events.indexOf("cache-read"));
+  await assert.rejects(f.coordinator.observeCaches(f.owner.operationId), /original admitted session/u);
+  await assert.rejects(f.restart().observeCaches(f.owner.operationId), /original admitted session/u);
+  assert.equal(f.state.cacheReads, 1); assert.equal(f.calls("clocked-launch"), 2);
+});
+
+void test("current cache timeout retains its actual reply and quarantine without replay or cleanup", async (context) => {
+  const f = await admittedBaseline(context); f.state.cacheTimeout = true;
+  await assert.rejects(f.coordinator.observeCaches(f.owner.operationId), /upstream EasyEDA tool reported failure/u);
+  const journal = await loadOperation(f.owner.operationId), result = await f.coordinator.inspect(f.owner.operationId);
+  assert.equal(result["state"], "stopped"); assert.equal(result["cacheReplyRetained"], true); assert.equal(result["cachesObserved"], false);
+  assert.equal(journal["orphanedCallPossible"], true); assert.equal(f.calls("release-capture"), 1);
+  await assert.rejects(f.engine.assertBridgeDispatchAllowed());
+  await assert.rejects(f.coordinator.observeCaches(f.owner.operationId)); assert.equal(f.state.cacheReads, 1);
+});
+
+void test("current cache success waits for scope settlement and the final pinned runtime", async (context) => {
+  for (const phase of ["scope-settlement", "runtime-drift"]) {
+    await context.test(phase, async (childContext) => {
+      const f = await admittedBaseline(childContext);
+      if (phase === "scope-settlement") { f.state.afterScope = (): Promise<void> => Promise.reject(new Error("synthetic cache scope failed")); }
+      else { f.state.afterCache = (): Promise<void> => { f.state.statusDrift = true; return Promise.resolve(); }; }
+      await assert.rejects(f.coordinator.observeCaches(f.owner.operationId), /(?:cache scope failed|runtime changed around observation)/u);
+      const result = await f.coordinator.inspect(f.owner.operationId);
+      assert.equal(result["cacheReplyRetained"], true); assert.equal(result["cachesObserved"], false); assert.equal(result["state"], "stopped");
+      await assert.rejects(f.coordinator.observeCaches(f.owner.operationId)); assert.equal(f.state.cacheReads, 1);
+    });
+  }
+});
+
+void test("current cache continuation preserves conflicting history observed after the actual reply", async (context) => {
+  const f = await admittedBaseline(context); let external: Buffer | undefined;
+  f.state.afterCache = async (): Promise<void> => {
+    const journal = await loadOperation(f.owner.operationId); journal["nextSafeAction"] = "Synthetic cache conflict; preserve this history.";
+    await updateOperation(journal); external = await readFile(operationPath(f.owner.operationId));
+  };
+  await assert.rejects(f.coordinator.observeCaches(f.owner.operationId), /journal changed/u);
+  assert.ok(external !== undefined); assert.deepEqual(await readFile(operationPath(f.owner.operationId)), external);
+  const result = await f.coordinator.inspect(f.owner.operationId);
+  assert.equal(result["cacheReplyRetained"], true); assert.equal(result["cachesObserved"], false);
+  const journal = await loadOperation(f.owner.operationId); assert.equal(journal["orphanedCallPossible"], true);
+  assert.equal(f.calls("release-capture"), 1); await assert.rejects(f.coordinator.observeCaches(f.owner.operationId));
+  assert.deepEqual(await readFile(operationPath(f.owner.operationId)), external);
+});
+
+void test("current cache pre-dispatch conflict vetoes cleanup before any cache read", async (context) => {
+  const f = await admittedBaseline(context); let external: Buffer | undefined;
+  f.state.afterLoad = async (): Promise<void> => {
+    const journal = await loadOperation(f.owner.operationId);
+    if (external === undefined && journal["orphanedCallPossible"] === true) {
+      journal["nextSafeAction"] = "Synthetic pre-dispatch cache conflict; preserve this history.";
+      await updateOperation(journal); external = await readFile(operationPath(f.owner.operationId));
+    }
+  };
+  await assert.rejects(f.coordinator.observeCaches(f.owner.operationId));
+  assert.ok(external !== undefined); assert.deepEqual(await readFile(operationPath(f.owner.operationId)), external);
+  const result = await f.coordinator.inspect(f.owner.operationId);
+  assert.equal(result["cacheReplyRetained"], false); assert.equal(result["cachesObserved"], false);
+  assert.equal(f.state.cacheReads, 0); assert.equal(f.calls("release-capture"), 1);
+  await assert.rejects(f.coordinator.observeCaches(f.owner.operationId));
+  assert.deepEqual(await readFile(operationPath(f.owner.operationId)), external);
 });

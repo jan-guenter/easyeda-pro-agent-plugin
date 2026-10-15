@@ -237,7 +237,8 @@ runtime launch object for launch-bound clock evidence.
 
 Backend actor/clock evidence and actual APP timezone/history-age qualification
 remain necessary before dispatch. Subsequent internal work adds one-shot owned
-relaunch, old-capture release and new-session admission; see the
+relaunch, old-capture release, new-session admission and one tracked inactive-cache
+observation; see the
 [reopening checkpoint](current-reopen-effects-research-2026-10-15.md#implementation-checkpoint).
 Writer and inverse integration and recovery from stopped or lost-owner baseline
 stages remain unfinished. Release or relaunch invalidates current copy authority;

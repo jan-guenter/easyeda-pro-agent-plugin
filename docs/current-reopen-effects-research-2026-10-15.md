@@ -11,9 +11,8 @@ proposed symbol write or establish that the earlier snapshot preceded only
 that write.
 
 Retained release/relaunch and new-session admission are now implemented
-internally. A separate current-only inactive-target upload-cache program is
-implemented and tested offline; wiring it into the retained pre-opening
-coordinator is still pending. For
+internally. The current-only inactive-target upload-cache program now has a
+one-shot executor on that retained session, tested offline. For
 the eventual symbol metadata writer, prefer a separate **project-only opening
 profile** over the current companion-PCB profile. The manager's metadata
 getters need no editor. Native project opening can nevertheless restore
@@ -51,9 +50,27 @@ only `point-in-time-inactive-target`, with all startup, persistence and writer
 authority flags false. These sequential samples do not establish atomic or
 continuing cache emptiness. The legacy program is unchanged.
 
+The coordinator's internal `observeSymbolBaselineCaches` continuation derives
+the target and fingerprint from the original retained source. It revalidates
+the admitted capture/clock and current session, checks the current installed
+UI/APP/MGR/WORKER implementations and runtime, owns a fresh dispatch lease, and
+journals a single fixed read through the engine's tracked dispatcher. A bounded
+exact envelope is decoded inside reply retention, before quarantine clearing.
+An inner timeout or failed reply therefore cannot become a successful clear.
+An actual reply reaching retention stays in memory even if later checks fail;
+generic transport timeouts can throw before that callback is reached.
+
+Only the executor's exact mark/clear journal transitions are accepted. A new
+optional cleanup veto prevents clearing over conflicting history observed in
+pre-dispatch or return checks, including failed identity reproof inside marking.
+This is not compare-and-swap: managed journal
+replacement cannot prevent an external write racing inside the replacement
+itself, and unkeyed seals do not authenticate directory writers. Successful
+observation also requires lease settlement and final source/runtime checks.
+It creates no public route, opening permission, retry or cache-clear operation.
+
 These are internal source changes, not connected validation or an installed
-release. The cache program still needs an owned, source-pinned executor and
-pre-opening continuity checks. Project-only opening, startup-producer
+release. Pre-opening continuity checks, project-only opening, startup-producer
 qualification, backend actor/clock, writer/inverse integration and a complete
 disposable lifecycle remain pending. Future consumers must revalidate original
 captures and clocks; neither journal JSON nor `admissionProved` grants authority.

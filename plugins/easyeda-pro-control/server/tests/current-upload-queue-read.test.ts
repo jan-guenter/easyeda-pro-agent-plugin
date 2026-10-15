@@ -1,15 +1,19 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createContext, runInContext } from "node:vm";
-import { CURRENT_UPLOAD_QUEUE_PROFILE, buildCurrentUploadQueueReadExpression, validateCurrentUploadQueueReadResult } from "../src/current-upload-queue-read.ts";
+import { CURRENT_UPLOAD_QUEUE_MAX_BYTES, CURRENT_UPLOAD_QUEUE_PROFILE, buildCurrentUploadQueueReadExpression, buildCurrentUploadQueueReadProgram,
+  decodeCurrentUploadQueueReadReply, validateCurrentUploadQueueReadResult } from "../src/current-upload-queue-read.ts";
+import { EXACT_READ_ENVELOPE_SCHEMA, encodeExactReadEnvelope } from "../src/exact-readers.ts";
 
 const target = { projectUuid: "a".repeat(64), branchUuid: "b".repeat(32) };
+function upstreamReply(value: unknown): unknown { return { content: [], structuredContent: { ok: true, result: value } }; }
 interface Options { readonly before?: string; readonly afterNative?: string; readonly pendingAt?: number; readonly presentAt?: number }
 function environment(options: Options = {}): {
-  run: () => Promise<unknown>; evaluate: (source: string) => unknown; expire: () => void; clears: () => number;
+  run: () => Promise<unknown>; runProgram: () => Promise<unknown>; evaluate: (source: string) => unknown; expire: () => void; clears: () => number;
 } {
   let clears = 0, timeout: (() => void) | undefined;
   const context = createContext({
+    TextEncoder,
     setTimeout(callback: () => void, delay: number): number { assert.equal(delay, 10_000); timeout = callback; return 7; },
     clearTimeout(timer: unknown): void { assert.equal(timer, 7); clears += 1; },
   });
@@ -34,6 +38,7 @@ globalThis.gVars={currentProject:{projectId:undefined,branchUuid:''},isHistoryMo
 globalThis.UI={gVars,tabBar:Tabs};${options.before ?? ""}`, context, { timeout: 1000 });
   return {
     run: (): Promise<unknown> => Promise.resolve(runInContext(buildCurrentUploadQueueReadExpression(target), context, { timeout: 1000 }) as unknown),
+    runProgram: (): Promise<unknown> => Promise.resolve(runInContext(`(async()=>{${buildCurrentUploadQueueReadProgram(target)}})()`, context, { timeout: 1000 }) as unknown),
     evaluate: (source): unknown => runInContext(source, context, { timeout: 1000 }) as unknown,
     expire(): void { assert.ok(timeout !== undefined); timeout(); }, clears: (): number => clears,
   };
@@ -107,4 +112,42 @@ void test("current cache schemas reject injected selectors, getters and unsuppor
   }
   assert.throws(() => validateCurrentUploadQueueReadResult({ ...result, branchUuid: "c".repeat(32) }, target), { message: "CURRENT_UPLOAD_QUEUE_RESULT" });
   assert.throws(() => validateCurrentUploadQueueReadResult({ ...result, complete: true }, target), { message: "CURRENT_UPLOAD_QUEUE_INPUT" });
+});
+
+void test("current cache executable returns a bounded exact envelope without converting native failures or deadlines", async () => {
+  const fixture = environment();
+  const envelope = structuredClone(await fixture.runProgram());
+  assert.ok(envelope !== null && typeof envelope === "object" && "json" in envelope && "utf8Bytes" in envelope);
+  assert.equal(typeof envelope.json, "string");
+  assert.equal(envelope.utf8Bytes, Buffer.byteLength(String(envelope.json), "utf8"));
+  assert.ok(Buffer.byteLength(JSON.stringify(envelope), "utf8") <= CURRENT_UPLOAD_QUEUE_MAX_BYTES);
+  const result = decodeCurrentUploadQueueReadReply(upstreamReply(envelope), target);
+  assert.equal(result["profile"], CURRENT_UPLOAD_QUEUE_PROFILE); assert.equal(result["executionAuthorized"], false);
+  assert.equal(Object.isFrozen(result), true); assert.equal(fixture.evaluate("calls.length"), 5);
+  await assert.rejects(environment({ presentAt: 2 }).runProgram(), { message: "CURRENT_UPLOAD_QUEUE_READ_REFUSED:PROJECT_CACHE" });
+  const pending = environment({ pendingAt: 2 }), running = pending.runProgram();
+  for (let i = 0; i < 12; i += 1) { await Promise.resolve(); }
+  assert.equal(pending.evaluate("calls.length"), 2); pending.expire();
+  await assert.rejects(running, { message: "CURRENT_UPLOAD_QUEUE_READ_REFUSED:TIMEOUT" });
+  pending.evaluate("release();");
+  for (let i = 0; i < 12; i += 1) { await Promise.resolve(); }
+  assert.equal(pending.evaluate("calls.length"), 2); assert.equal(pending.clears(), 1);
+});
+
+void test("current cache reply decoder rejects failure, timeout, malformed and oversized transport without granting authority", async () => {
+  const payload = validateCurrentUploadQueueReadResult(structuredClone(await environment().run()), target), valid = encodeExactReadEnvelope(payload);
+  for (const failure of [{ isError: true, content: [], structuredContent: { ok: false, error: "native failure" } },
+    { content: [], structuredContent: { ok: true, result: { ok: false, error: "CURRENT_UPLOAD_QUEUE_READ_REFUSED:TIMEOUT" } } },
+    { content: [], structuredContent: { ok: false, error: "Request timed out" } }]) {
+    assert.throws(() => decodeCurrentUploadQueueReadReply(failure, target));
+  }
+  const oversized = `"${"é".repeat(CURRENT_UPLOAD_QUEUE_MAX_BYTES / 2)}"`;
+  for (const invalid of [{ ...valid, schema: "wrong" }, { ...valid, utf8Bytes: valid.utf8Bytes + 1 },
+    { schema: EXACT_READ_ENVELOPE_SCHEMA, utf8Bytes: 1, json: "{" },
+    { schema: EXACT_READ_ENVELOPE_SCHEMA, utf8Bytes: Buffer.byteLength(oversized, "utf8"), json: oversized },
+    { ...valid, extra: true }, encodeExactReadEnvelope({ ok: false, error: "CURRENT_UPLOAD_QUEUE_READ_REFUSED:TIMEOUT" }),
+    encodeExactReadEnvelope({ ...payload, writerAuthority: true })]) {
+    assert.throws(() => decodeCurrentUploadQueueReadReply(upstreamReply(invalid), target));
+  }
+  assert.throws(() => decodeCurrentUploadQueueReadReply(upstreamReply(valid), { ...target, branchUuid: "c".repeat(32) }));
 });
