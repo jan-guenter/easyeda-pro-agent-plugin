@@ -558,8 +558,8 @@ export async function readNativeHistoryCheckpoint(input: {
   const projectUuid = text(requestedProjectUuid, 64);
   if (!/^(?:[a-f0-9]{32}|[a-f0-9]{64})$/u.test(projectUuid)) {fail();}
   await absentSidecars(checkpointPath);
-  // oxlint-disable-next-line eslint/no-bitwise -- POSIX open flags prevent following a substituted symbolic link.
-  const file = await open(checkpointPath, constants.O_RDONLY | constants.O_NOFOLLOW);
+  // oxlint-disable-next-line eslint/no-bitwise -- Refuse substituted links and open FIFOs without blocking before the regular-file check.
+  const file = await open(checkpointPath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   let database: DatabaseSync | undefined;
   try {
     stage = "checkpoint-file";

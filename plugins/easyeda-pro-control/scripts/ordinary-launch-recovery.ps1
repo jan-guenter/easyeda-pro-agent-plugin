@@ -1,6 +1,7 @@
 # Read-only ordinary-launch recovery observation. No input, application launch,
 # process termination, command-line enumeration, project access or Save action.
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
 Set-StrictMode -Version Latest
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $schema = 'easyeda-pro-control.ordinary-launch-recovery-observation.v1'

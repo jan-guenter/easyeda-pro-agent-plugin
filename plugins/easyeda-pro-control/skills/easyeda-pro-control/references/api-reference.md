@@ -80,7 +80,7 @@ Ordinary startup and editor-shell observation also have offline schemas. Query
 the corresponding `launch-validate`, `editor-shell-validate` or
 `editor-context-validate` with `query:{"request":...}`.
 Validation does not launch or authorize anything. The launcher accepts only
-fixed launch/inspect/observe-window/normal-close/observe-application/observe-termination/abandon-supervision requests. Window observation and normal closure require this facade's retained original launch and its inspected `expectedLaunchedSha256`. Closure additionally takes the observed `hwnd` and `confirmNormalClose:true`; it consumes one durable attempt and never selects a prompt response. See the connection reference for exit verification. For
+fixed launch/inspect/observe-window/normal-close/observe-application/observe-termination/abandon-supervision/abandon-unknown-launch requests. Window observation and normal closure require this facade's retained original launch and its inspected `expectedLaunchedSha256`. Closure additionally takes the observed `hwnd` and `confirmNormalClose:true`; it consumes one durable attempt and never selects a prompt response. See the connection reference for exit verification. For
 read-only presence after restart, validate
 `{"action":"observe-application","operationId":"<original-operation-id>"}`.
 It requires an existing journal and accepts no PID, executable or replacement
@@ -89,6 +89,11 @@ additionally requires the inspected `expectedLaunchedSha256`,
 `confirmAbandonSupervision:true` and `acceptUnobservedDescendants:true`.
 It appends a separate relinquishment receipt; it never proves original process
 termination or grants design authority. Read the connection workflow before use.
+For a reviewed intent-only launch, `abandon-unknown-launch` instead takes the
+inspected `expectedIntentSha256`, `confirmAbandonUnknownLaunch:true` and
+`acceptUnobservedDescendants:true`. It must run before this coordinator allocates
+a runtime. Other PowerShell or EasyEDA processes block it; do not terminate
+unrelated processes to pass the check. Neither abandonment action reuses the old ID.
 The editor observer accepts only
 `{"action":"observe-editor-shell"}` or, for identity metadata,
 `{"action":"observe-editor-context"}`. Their lifecycle and interpretation limits
@@ -416,6 +421,53 @@ atomic lock on the module-private project worker, complete source, hidden-editor
 absence, saved membership or persistence proof. No writer may accept this result
 as its complete before-state. The ordinary symbol rename still needs its own
 current-version lifecycle and complete closed-file proof.
+
+### Checkpoint-bound symbol preparation
+
+The offline API also prepares a name and/or non-null description change from an
+existing managed checkpoint. It does not call EasyEDA or the metadata reader.
+Discover the exact schemas first:
+
+```json
+{"request":{"action":"project-symbol-preparation","query":{"includeSchemas":true}}}
+```
+
+Use `project-symbol-prepare-validate` with `query:{"request":...}` for argument
+validation only, then `project-symbol-prepare` with the same query to read the
+checkpoint. The inner request has:
+
+- `checkpoint:{path,bytes,sha256}`: an existing canonical absolute `.eprj2` path
+  beneath this profile's managed `checkpoints` directory, with exact size and
+  SHA-256. Limit 256 MiB; file must be owner-owned, owner-only and single-link.
+- `target:{projectUuid,branchUuid,ownerUuid,symbolUuid}`: exact identities;
+  project ID is 64 hex, branch/owner 32 hex, symbol 16 or 32 hex.
+- `patch:{name?,description?}`: at least one field. Name must be nonblank and
+  at most 512 characters; description at most 65536. Null, classification,
+  caller code and other fields refuse.
+
+The reader verifies the complete selected linked-history branch, its identity,
+an undeleted ordinary SYMBOL with supported DOCHEAD/META, and all active peer
+symbol names. It returns before/after metadata, unchanged tags/template source,
+peer names, selected-history counts and complete selected-branch record hash.
+The original file descriptor, named file, parent directory, hash and sidecar
+absence are checked. It creates no checkpoint, artifact or journal and accepts
+no arbitrary original-project path. The wrapped result must fit 512 KiB;
+excess data refuses without truncation or an artifact fallback.
+
+Optional `observationProjection` correlates metadata from the current symbol
+reader, not its decorated tool envelope. Explicitly select these core fields:
+`ok`, `kind`, `method`, `target`, `value`, `samples`, `implementationKind`,
+`targetClosedInRegistry`, `hiddenEditorsVerified`, `workerIdentityVerified`,
+`cadAuthority`, `persistenceVerified`, `sourceMembershipVerified`. Discovery
+returns the exact strict schema. Supplied values establish no provenance or
+freshness. The correlation compares identities, name, description, tags and
+template source; it does not compare ticket or version.
+
+`preparationSha256` binds the returned preparation, not the live application.
+`writerReady`, `inverseReady`, `executionAuthorized`, `cadAuthority`,
+`persistenceVerified` and `sqlInventoryVerified` stay false. This is selected-
+branch storage preparation, not all-branch/SQL proof, hidden-editor absence,
+current actor/worker identity or permission to execute the legacy writer.
 
 ## Local historical abandonment
 

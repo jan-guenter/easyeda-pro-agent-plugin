@@ -10,8 +10,8 @@ import { deriveWindowsRuntimePaths } from "./windows-runtime.ts";
 
 /** Independent read-only helper; changing it does not admit a native writer. */
 export const ORDINARY_LAUNCH_RECOVERY_HELPER = Object.freeze({
-  relativePath: "scripts/ordinary-launch-recovery.ps1", bytes: 2279,
-  sha256: "d68a8029d12d4bcbff1432e21c917ac4dd11c390dc95effea138522b3080298c",
+  relativePath: "scripts/ordinary-launch-recovery.ps1", bytes: 2320,
+  sha256: "8ffb025cdd20c1851c37d57a20816240928c7e6425b44528a623c8b8f72a37aa",
 });
 const nativeObservationSchema = z.object({
   schema: z.literal("easyeda-pro-control.ordinary-launch-recovery-observation.v1"),
@@ -19,6 +19,11 @@ const nativeObservationSchema = z.object({
 }).strict();
 export const ordinaryLaunchRecoveryObservationSchema = nativeObservationSchema.extend({
   helperSha256: z.literal(ORDINARY_LAUNCH_RECOVERY_HELPER.sha256),
+}).strict();
+/** Read completed 060000 receipts without admitting that helper to new execution. */
+export const recordedOrdinaryLaunchRecoveryObservationSchema = nativeObservationSchema.extend({
+  helperSha256: z.enum([ORDINARY_LAUNCH_RECOVERY_HELPER.sha256,
+    "d68a8029d12d4bcbff1432e21c917ac4dd11c390dc95effea138522b3080298c"]),
 }).strict();
 
 type RecoveryFailureCategory = "pre-helper-source" | "spawn" | "timeout" | "stderr" | "output-schema" |

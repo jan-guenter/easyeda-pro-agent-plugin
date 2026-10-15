@@ -7,7 +7,7 @@ import { isRecord, sha256Json } from "../src/core.ts";
 import { ORDINARY_LAUNCH_PROFILE, OrdinaryLaunchCoordinator, parseOrdinaryLaunchRequest, queryOrdinaryLaunch,
   validateOrdinaryLaunchArguments, verifyOrdinaryLaunchInstallation } from "../src/ordinary-launch.ts";
 import type { OrdinaryLaunchOptions, OrdinaryLaunchRuntime } from "../src/ordinary-launch.ts";
-import { ORDINARY_LAUNCH_RECOVERY_HELPER } from "../src/ordinary-launch-recovery.ts";
+import { ORDINARY_LAUNCH_RECOVERY_HELPER, ordinaryLaunchRecoveryObservationSchema } from "../src/ordinary-launch-recovery.ts";
 import type { observeOrdinaryLaunchRecovery } from "../src/ordinary-launch-recovery.ts";
 import type { WindowsAuthorityLaunch } from "../src/windows-authority.ts";
 
@@ -251,6 +251,40 @@ void test("unknown launch recovery excludes a delayed helper without rewriting i
   await assert.rejects(later.coordinator.run(request(id)), /consumed/u);
   const nextLaunch = await later.coordinator.run(request(next));
   assert.equal(nextLaunch["state"], "launched");
+});
+
+void test("completed unknown recovery retains its historical helper pin without admitting new observations", async (context) => {
+  const id = "ordinary-test-unknown-old-helper";
+  cleanup(context, id);
+  await assert.rejects(fixture(id, { failure: true }).coordinator.run(request(id)), /synthetic lost/u);
+  const intentPath = join(journal(id), "intent.json");
+  const intentBefore = await readFile(intentPath);
+  const restarted = fixture(id);
+  const inspection = await restarted.coordinator.run({ action: "inspect", operationId: id });
+  const digest = inspection["intentSha256"];
+  assert.ok(typeof digest === "string");
+  await restarted.coordinator.run(unknownRequest(id, digest));
+  const receiptPath = join(journal(id), "unknown-abandonment.json");
+  const receipt: unknown = JSON.parse(await readFile(receiptPath, "utf8"));
+  assert.ok(isRecord(receipt));
+  const observation = receipt["observation"];
+  assert.ok(isRecord(observation));
+  // Only this isolated synthetic receipt represents a completed 060000 recovery.
+  const historical = { ...receipt, observation: { ...observation,
+    helperSha256: "d68a8029d12d4bcbff1432e21c917ac4dd11c390dc95effea138522b3080298c" } };
+  assert.equal(ordinaryLaunchRecoveryObservationSchema.safeParse(historical.observation).success, false);
+  const recordedBytes = `${JSON.stringify(historical)}\n`;
+  await writeFile(receiptPath, recordedBytes);
+  const later = fixture(id);
+  const result = await later.coordinator.run({ action: "inspect", operationId: id });
+  assert.equal(result["state"], "unknown-launch-abandoned");
+  assert.equal(result["attemptConsumed"], true);
+  assert.equal(result["terminationProved"], false);
+  assert.equal(result["designExecutionAuthorized"], false);
+  assert.deepEqual(result["unknownLaunchAbandonment"], historical);
+  assert.deepEqual(later.calls, []);
+  assert.deepEqual(await readFile(intentPath), intentBefore);
+  assert.equal(await readFile(receiptPath, "utf8"), recordedBytes);
 });
 
 void test("unknown recovery blocks delayed helpers, live applications, digest drift and allocated runtimes", async (context) => {

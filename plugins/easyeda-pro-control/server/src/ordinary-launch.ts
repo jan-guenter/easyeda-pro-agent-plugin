@@ -8,7 +8,7 @@ import { controlDataDirectory, controlRootCapability, publishManagedAttachmentEx
 import type { ControlRootDirectory } from "./control-root.ts";
 import { assertSubset, canonicalJson, controlImplementationFingerprint, loadReviewedCompatibilityManifest, reviewedCompatibilityManifestFingerprint, sha256Json } from "./core.ts";
 import type { WindowsAuthorityLaunch } from "./windows-authority.ts";
-import { observeOrdinaryLaunchRecovery, ordinaryLaunchRecoveryObservationSchema } from "./ordinary-launch-recovery.ts";
+import { observeOrdinaryLaunchRecovery, ordinaryLaunchRecoveryObservationSchema, recordedOrdinaryLaunchRecoveryObservationSchema } from "./ordinary-launch-recovery.ts";
 
 /** Ordinary startup of the existing profile, not project-free or isolated startup. */
 export const ORDINARY_LAUNCH_PROFILE = {
@@ -117,7 +117,7 @@ const abandonedSchema = z.object({ schema: z.literal("easyeda-pro-control.ordina
 const unknownAbandonedSchema = z.object({ schema: z.literal("easyeda-pro-control.ordinary-unknown-launch-abandoned.v1"), operationId: operationIdSchema,
   intentSha256: digestSchema, profileSha256: digestSchema, facadeSha256: digestSchema, createdAt: z.iso.datetime(),
   confirmAbandonUnknownLaunch: z.literal(true), acceptUnobservedDescendants: z.literal(true),
-  observation: ordinaryLaunchRecoveryObservationSchema,
+  observation: recordedOrdinaryLaunchRecoveryObservationSchema,
   pendingHelperLaunchExcluded: z.literal(true), launchOutcome: z.literal("unknown"), terminationProved: z.literal(false),
   originalLaunchIdentityVerified: z.literal(false), retainedLaunchAuthority: z.literal(false), designExecutionAuthorized: z.literal(false),
 }).strict().refine((value) => !value.observation.otherPowerShellPresent && !value.observation.sameNameProcessPresent,

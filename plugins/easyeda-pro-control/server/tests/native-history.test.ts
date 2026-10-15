@@ -1,11 +1,16 @@
+/* oxlint-disable import/max-dependencies -- The checkpoint reopen regression needs real FIFO creation and builtin open interception alongside the existing encrypted SQLite fixture. */
 import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
 import { createCipheriv, createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
+import fsPromises, { mkdtemp, readFile, rename, rm, symlink, writeFile } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
 import type { TestContext } from "node:test";
+import { promisify } from "node:util";
 import { gzipSync } from "node:zlib";
 import {
   decodeNativeHistoryChunk,
@@ -21,6 +26,8 @@ const SECOND_HISTORY = "44".repeat(16);
 // Synthetic fixture key, never a runtime credential.
 const KEY = "55".repeat(16);
 const DOCUMENT = "66".repeat(16);
+// oxlint-disable-next-line typescript/strict-void-return -- Promisify retains execFile callback completion, not its immediate ChildProcess return.
+const execFileAsync = promisify(execFile);
 
 function encrypt(content: string | Buffer, historyUuid = HISTORY): string {
   const cipher = createCipheriv("aes-128-gcm", Buffer.from(KEY, "hex"), Buffer.from(historyUuid, "hex"));
@@ -339,4 +346,30 @@ void test("rejects symlinks and checkpoint sidecars", async (t) => {
   await assert.rejects(readNativeHistoryCheckpoint({ ...input, checkpointPath: symbolicPath }));
   await writeFile(`${input.checkpointPath}-wal`, "fixture-sidecar");
   await assert.rejects(readNativeHistoryCheckpoint(input));
+});
+
+void test("rejects a real FIFO substituted at checkpoint reopen without waiting for a writer", async (t) => {
+  const input = await fixture(t), originalOpen = fsPromises.open;
+  let closed = 0, opened = 0, streamed = 0;
+  t.mock.method(fsPromises, "open", async (...args: Parameters<typeof originalOpen>): ReturnType<typeof originalOpen> => {
+    if (args[0] !== input.checkpointPath) { return originalOpen(...args); }
+    // Fail safely before installing the FIFO if the production nonblocking flag regresses.
+    // oxlint-disable-next-line eslint/no-bitwise -- Assert the actual kernel open flags before exercising a real FIFO.
+    assert.ok(typeof args[1] === "number" && (args[1] & constants.O_NONBLOCK) !== 0);
+    await rename(input.checkpointPath, `${input.checkpointPath}.regular`);
+    await execFileAsync("/usr/bin/mkfifo", ["-m", "600", input.checkpointPath], { env: {}, timeout: 1000 });
+    const handle = await originalOpen(...args);
+    opened += 1;
+    const openedStat = await handle.stat();
+    assert.equal(openedStat.isFIFO(), true);
+    const originalClose = handle.close.bind(handle);
+    t.mock.method(handle, "createReadStream", (): never => { streamed += 1; throw new Error("Unexpected FIFO read."); });
+    t.mock.method(handle, "close", async (): Promise<void> => { closed += 1; await originalClose(); });
+    return handle;
+  });
+  syncBuiltinESMExports();
+  t.after(() => { t.mock.restoreAll(); syncBuiltinESMExports(); });
+  await assert.rejects(readNativeHistoryCheckpoint(input), { name: "NativeHistoryError",
+    message: "Unsupported, malformed, unstable or unauthenticated native history (record-invalid)." });
+  assert.deepEqual({ opened, streamed, closed }, { opened: 1, streamed: 0, closed: 1 });
 });
