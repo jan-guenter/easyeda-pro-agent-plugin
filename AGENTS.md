@@ -52,6 +52,12 @@ assertion in the existing startup test: retained process identity, EROFS and
 unchanged graph/source pass without relaxing Node permissions. Final types,
 whole-tree zero-warning lint and actionlint pass. Exact-payload CI and publication
 remain pending.
+PR35 initial payload6f9c60fc/CI38729420762 exposed one test portability error:
+the nonroot runner rejects a write-open on the mode0444 synthetic graph with
+EACCES before EROFS. The corrected assertion first requires exactly one kernel
+mountinfo row for that graph, ro present/rw absent, then accepts only EACCES or
+EROFS. It keeps process identity and byte equality checks; no runtime permission
+or guard changes. Focused corrected test passes. Final-payload CI is still needed.
 Production designs/records remain excluded. Broader backlog and release scope:
 docs/current-symbol-owned-preparation-release-2026-10-15.md.
 

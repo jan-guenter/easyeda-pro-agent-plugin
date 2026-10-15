@@ -757,9 +757,24 @@ void describe(
         assert.deepEqual(await captureBackendProcessAuthority(sandboxAuthority.pid), sandboxAuthority);
         const mountedGraph = `/proc/${String(sandboxAuthority.pid)}/root/runtime/graph.json`;
         const graphBefore = await readFile(mountedGraph), sourceBefore = await readFile(entrypoint);
+        const mountInfo = await readFile(`/proc/${String(sandboxAuthority.pid)}/mountinfo`, "utf8");
+        assert.ok(Buffer.byteLength(mountInfo, "utf8") <= 65_536);
+        const mountRows = mountInfo.trimEnd().split("\n");
+        assert.ok(mountRows.length <= 128);
+        const graphMounts = mountRows.map((row) => row.split(" "))
+          .filter((fields) => fields[4] === "/runtime/graph.json");
+        assert.equal(graphMounts.length, 1);
+        const mountOptions = graphMounts[0]?.[5]?.split(",");
+        assert.ok(mountOptions !== undefined);
+        assert.ok(mountOptions.includes("ro"));
+        assert.equal(mountOptions.includes("rw"), false);
         // Use the retained synthetic child's mount from its parent so Node's
         // Separate filesystem permission layer cannot mask a writable mount.
-        await assert.rejects(writeFile(mountedGraph, "synthetic mount-write probe", { flag: "r+" }), { code: "EROFS" });
+        // File permissions may reject first on nonroot runners; prove the
+        // Kernel mount is read-only before attempting this nontruncating write.
+        await assert.rejects(writeFile(mountedGraph, "synthetic mount-write probe", { flag: "r+" }), {
+          code: /^(?:EROFS|EACCES)$/u,
+        });
         assert.deepEqual(await readFile(mountedGraph), graphBefore);
         assert.deepEqual(await readFile(entrypoint), sourceBefore);
         assert.deepEqual(await captureBackendProcessAuthority(sandboxAuthority.pid), sandboxAuthority);

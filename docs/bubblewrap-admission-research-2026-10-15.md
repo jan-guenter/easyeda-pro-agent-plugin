@@ -242,9 +242,13 @@ Bubblewrap monitor. No live EasyEDA bridge was connected for these tests.
 
 The actual startup test additionally passed a direct read-only mount check.
 Its parent retains and verifies the exact synthetic child's process identity,
-then attempts a nontruncating write-open only on that child's mounted runtime
-graph through its proc root. The kernel returns EROFS. Mounted graph and host
-fixture source bytes remain unchanged. This avoids Node's separate filesystem
-permission layer masking a writable mount. Exact-payload GitHub results remain
+then requires exactly one kernel mountinfo row for the runtime graph with ro
+present and rw absent. Only then does it attempt a nontruncating write-open on
+that graph through the child's proc root. The local kernel returns EROFS; the
+first GitHub run returned EACCES because the nonroot runner hits the graph's
+mode0444 first. The corrected assertion accepts only those two denial codes
+after proving the read-only mount flag. Mounted graph and host fixture source
+bytes remain unchanged. Neither Node permissions nor file-mode denial alone
+can satisfy the mount proof. Exact-payload GitHub results remain
 separate and belong in the release record. This
 qualification does not admit any EasyEDA writer or change its lifecycle gates.

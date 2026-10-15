@@ -84,8 +84,12 @@ and all unrelated external pins. The updated CI recipe targets the immutable
 0.13.1 revision and keeps kernel compatibility fallbacks. It does not use the
 new fail-open option. The reviewed signed 0.13.1 executable passes 47 focused
 upstream, sanitizer and lifetime tests. The existing startup test now also proves
-that a nontruncating write-open on the synthetic child's mounted graph returns
-EROFS, with retained process identity and graph/source bytes unchanged. The
+the synthetic child's exact kernel mount is read-only before attempting a
+nontruncating write-open. That attempt must fail with EROFS or EACCES, with
+retained process identity and graph/source bytes unchanged. The initial GitHub
+run exposed EACCES preceding EROFS on a nonroot runner because the graph file
+also denies writes by mode; accepting that denial alone would not prove a
+read-only mount, so the corrected check requires the kernel flag too. The
 changed GitHub build remains pending at this checkpoint. No
 EasyEDA connection or production project is needed for those checks. Sandbox
 qualification does not admit the EasyEDA runtime or enable design writes.
