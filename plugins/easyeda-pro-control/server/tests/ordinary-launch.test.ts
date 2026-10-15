@@ -295,10 +295,22 @@ void test("unknown recovery blocks delayed helpers, live applications, digest dr
   const digest = inspection["intentSha256"];
   assert.ok(typeof digest === "string");
   const input = unknownRequest(id, digest);
-  for (const behavior of [{ otherPowerShell: true }, { recoveryApplication: true }]) {
+  const intentBefore = await readFile(join(journal(id), "intent.json"));
+  const presenceCases = [
+    { behavior: { otherPowerShell: true }, message: "Unknown-launch abandonment refused: another PowerShell process was observed." },
+    { behavior: { recoveryApplication: true }, message: "Unknown-launch abandonment refused: a same-name EasyEDA application was observed." },
+    { behavior: { otherPowerShell: true, recoveryApplication: true },
+      message: "Unknown-launch abandonment refused: another PowerShell process and a same-name EasyEDA application were observed." },
+  ];
+  for (const { behavior, message } of presenceCases) {
     const current = fixture(id, behavior);
-    await assert.rejects(current.coordinator.run(input), /absent other PowerShell/u);
+    await assert.rejects(current.coordinator.run(input), { message });
+    assert.equal(current.calls.filter((call) => call === "recovery").length, 1);
+    assert.equal(current.calls.includes("allocate"), false);
     assert.equal(current.calls.includes("launch"), false);
+    const intentAfter = await readFile(join(journal(id), "intent.json"));
+    assert.deepEqual(intentAfter, intentBefore);
+    assert.deepEqual(await readdir(journal(id)), ["intent.json"]);
   }
   const stale = fixture(id);
   const wrongDigest = "f".repeat(64);

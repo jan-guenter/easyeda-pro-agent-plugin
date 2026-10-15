@@ -321,7 +321,7 @@ export function bubblewrapArguments(
     });
   return [
     "--unshare-all",
-    // Bubblewrap 0.11.2 requires the explicit option before --disable-userns,
+    // Bubblewrap requires the explicit option before --disable-userns,
     // Explicit user-namespace selection is required despite --unshare-all.
     "--unshare-user",
     "--unshare-pid",

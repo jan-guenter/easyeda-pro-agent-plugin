@@ -591,8 +591,14 @@ export class OrdinaryLaunchCoordinator {
     // PowerShell absence precedes EasyEDA sampling to exclude its delayed launch.
     // A timed-out facade may have left that helper hashing the executable.
     const observation = ordinaryLaunchRecoveryObservationSchema.parse(await this.observeRecovery(this.options));
+    let presenceRefusal = "Unknown-launch abandonment refused: a same-name EasyEDA application was observed.";
+    if (observation.otherPowerShellPresent) {
+      presenceRefusal = observation.sameNameProcessPresent ?
+        "Unknown-launch abandonment refused: another PowerShell process and a same-name EasyEDA application were observed." :
+        "Unknown-launch abandonment refused: another PowerShell process was observed.";
+    }
     requireValue(!observation.otherPowerShellPresent && !observation.sameNameProcessPresent,
-      "Unknown-launch abandonment requires absent other PowerShell and same-name application samples.");
+      presenceRefusal);
     await this.options.assertAllowed();
     requireValue(await this.verify(this.options) === facadeSha256, "Unknown-launch recovery installation changed.");
     await this.options.assertAllowed();

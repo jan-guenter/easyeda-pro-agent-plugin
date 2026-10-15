@@ -41,10 +41,13 @@ import {
 } from "../src/upstream-environment.ts";
 import {
   assertPathSealsCurrent,
+  captureLauncherAdmission,
   captureLauncherFingerprint,
   parseRuntimeLauncherFingerprint,
 } from "../src/upstream-trust.ts";
 import { UpstreamEasyedaClient } from "../src/upstream.ts";
+import { captureBackendProcessAuthority } from "../src/backend-listener-authority.ts";
+import type { BackendProcessAuthority } from "../src/backend-listener-authority.ts";
 // oxlint-enable import/max-dependencies
 
 interface SavedEnvironmentValue {
@@ -653,6 +656,26 @@ void describe(
       }
     });
 
+    void test("launcher admission reports fixed drift labels without private paths", async () => {
+      const { fingerprint } = await captureLauncherFingerprint();
+      const wrong = "0".repeat(64);
+      const cases = [
+        { label: "Node executable", change: (value: typeof fingerprint): void => { value.commandSha256 = wrong; } },
+        { label: "entrypoint", change: (value: typeof fingerprint): void => { value.entrypointSha256 = wrong; } },
+        { label: "dependency lock", change: (value: typeof fingerprint): void => { value.dependencyLock.sha256 = wrong; } },
+        { label: "sandbox executable", change: (value: typeof fingerprint): void => { value.sandbox.commandSha256 = wrong; } },
+        { label: "entrypoint, sandbox executable", change: (value: typeof fingerprint): void => {
+          value.entrypointSha256 = wrong; value.sandbox.commandSha256 = wrong;
+        } },
+      ];
+      for (const { label, change } of cases) {
+        const changed = structuredClone(fingerprint); change(changed);
+        await assert.rejects(captureLauncherAdmission(changed), {
+          message: `Runtime launcher integrity differs from review: ${label}.`,
+        });
+      }
+    });
+
     void test("accepts only the exact descriptor sanitizer runtime identity", async () => {
       const capture = await captureLauncherFingerprint();
       const fingerprint = capture.fingerprint;
@@ -685,10 +708,14 @@ void describe(
     void test("keeps the startup fingerprint and reports later on-disk drift", async () => {
       const trustedLauncher = await new UpstreamEasyedaClient().launcherFingerprint();
       const controlRoot = await openConfiguredControlRootCapability();
+      let sandboxAuthority: BackendProcessAuthority | undefined;
       const upstream = new UpstreamEasyedaClient({
         bridgePublicPortForTesting: 0,
         controlRoot,
         trustedLauncher,
+        onChildStarted: (pid, authority): Promise<void> => {
+          assert.equal(pid, authority.pid); sandboxAuthority = authority; return Promise.resolve();
+        },
       });
       let extension: WebSocketClient | undefined;
       try {
@@ -725,6 +752,32 @@ void describe(
           tcpWrongPort: true,
         });
         assert.deepEqual(environment["unexpectedInheritedDescriptors"], []);
+
+        assert.ok(sandboxAuthority !== undefined);
+        assert.deepEqual(await captureBackendProcessAuthority(sandboxAuthority.pid), sandboxAuthority);
+        const mountedGraph = `/proc/${String(sandboxAuthority.pid)}/root/runtime/graph.json`;
+        const graphBefore = await readFile(mountedGraph), sourceBefore = await readFile(entrypoint);
+        const mountInfo = await readFile(`/proc/${String(sandboxAuthority.pid)}/mountinfo`, "utf8");
+        assert.ok(Buffer.byteLength(mountInfo, "utf8") <= 65_536);
+        const mountRows = mountInfo.trimEnd().split("\n");
+        assert.ok(mountRows.length <= 128);
+        const graphMounts = mountRows.map((row) => row.split(" "))
+          .filter((fields) => fields[4] === "/runtime/graph.json");
+        assert.equal(graphMounts.length, 1);
+        const mountOptions = graphMounts[0]?.[5]?.split(",");
+        assert.ok(mountOptions !== undefined);
+        assert.ok(mountOptions.includes("ro"));
+        assert.equal(mountOptions.includes("rw"), false);
+        // Use the retained synthetic child's mount from its parent so Node's
+        // Separate filesystem permission layer cannot mask a writable mount.
+        // File permissions may reject first on nonroot runners; prove the
+        // Kernel mount is read-only before attempting this nontruncating write.
+        await assert.rejects(writeFile(mountedGraph, "synthetic mount-write probe", { flag: "r+" }), {
+          code: /^(?:EROFS|EACCES)$/u,
+        });
+        assert.deepEqual(await readFile(mountedGraph), graphBefore);
+        assert.deepEqual(await readFile(entrypoint), sourceBefore);
+        assert.deepEqual(await captureBackendProcessAuthority(sandboxAuthority.pid), sandboxAuthority);
 
         const lifecycle = upstream.bridgeSessionLifecycle();
         assert.ok(lifecycle);

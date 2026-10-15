@@ -669,9 +669,9 @@ check(
   thirdPartyNoticeSource.includes("adds 5 files, modifies\n57 files, and removes 5 files") &&
     thirdPartyNoticeSource.includes("copyright 2026 oaslananka") &&
     thirdPartyNoticeSource.includes("copyright 2026 Jan Günter") &&
-    thirdPartyNoticeSource.includes("LGPL-2.0-or-later") &&
+    thirdPartyNoticeSource.includes("LGPL-2.1-or-later") &&
     thirdPartyNoticeSource.includes(
-      "1b80120ef26a28e065e67f89bfef873f13bdd317",
+      "362936aea0d5c6e70f7af75d2d44b5a914cb4ba2",
     ) &&
     thirdPartyNoticeSource.includes(
       "neither bundled in\nthe plugin archive nor uploaded",
@@ -992,14 +992,16 @@ check(
 );
 check(
   "ci-reviewed-bubblewrap",
-  ciSource.includes("1b80120ef26a28e065e67f89bfef873f13bdd317") &&
+  ciSource.includes("362936aea0d5c6e70f7af75d2d44b5a914cb4ba2") &&
     ciSource.includes("https://github.com/containers/bubblewrap.git") &&
-    ciSource.includes("-Dsupport_setuid=false") &&
+    ciSource.includes("-Dassume_kernel= \\") &&
+    ciSource.includes("-Dselinux=disabled") &&
+    !ciSource.includes("-Dsupport_setuid=") &&
     ciSource.includes('meson compile -C "${bwrap_source}/_build"') &&
     ciSource.includes("sudo install -o root -g root -m 0755") &&
     ciSource.includes("libcap2-bin") &&
     ciSource.includes("test ! -L /usr/sbin/bwrap") &&
-    ciSource.includes('test "$(/usr/sbin/bwrap --version)" = "bubblewrap 0.11.2"') &&
+    ciSource.includes('test "$(/usr/sbin/bwrap --version)" = "bubblewrap 0.13.1"') &&
     ciSource.includes('test -z "$(getcap -n /usr/sbin/bwrap)"') &&
     ciSource.includes(
       "--bind-fd --ro-bind-data --ro-bind-fd --json-status-fd --block-fd --disable-userns",
