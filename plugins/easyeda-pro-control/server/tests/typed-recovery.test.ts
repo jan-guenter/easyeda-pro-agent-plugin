@@ -298,6 +298,37 @@ void describe("typed transaction retained-authority recovery", () => {
     assert.deepEqual(calls, ["capture", "abort-dispatch", "release-capture-after-durable-clear"]);
   });
 
+  void it("a failed post-mark identity probe honors the cleanup veto before touching foreign history or retained authority", async (t) => {
+    const { engine, journal, calls } = await fixture(t);
+    journal.orphanedCallPossible = false; await artifacts.updateOperation(journal);
+    const primary = new Error("Synthetic second identity failure"), veto = new Error("Synthetic early clear refuses foreign history");
+    let callbacks = 0, clearChecks = 0, foreign = "", marked = "", probes = 0;
+    t.mock.method(engine, "runtimeIdentity", async () => {
+      probes += 1;
+      if (probes === 1) { return NEXT_RUNTIME; }
+      marked = await fileSystem.readFile(artifacts.operationPath(journal.operationId), "utf8");
+      const changed = await artifacts.loadOperation(journal.operationId);
+      assert.equal(changed["orphanedCallPossible"], true);
+      changed["nextSafeAction"] = "Preserve this synthetic post-mark conflict.";
+      await artifacts.updateOperation(changed);
+      foreign = await fileSystem.readFile(artifacts.operationPath(journal.operationId), "utf8");
+      throw primary;
+    });
+    await assert.rejects(engine.dispatchWithOrphanTracking(journal, "execute", "easyeda_execute", {}, 1000,
+      () => { callbacks += 1; return Promise.resolve(); }, undefined, async () => {
+        clearChecks += 1;
+        if (await fileSystem.readFile(artifacts.operationPath(journal.operationId), "utf8") !== marked) { throw veto; }
+      }), (error: unknown): boolean => {
+      assert.ok(error instanceof AggregateError); assert.deepEqual(error.errors, [primary, veto]); assert.equal(error.cause, veto); return true;
+    });
+    assert.equal(probes, 2); assert.equal(callbacks, 0); assert.equal(clearChecks, 1); assert.notEqual(foreign, marked);
+    assert.equal(await fileSystem.readFile(artifacts.operationPath(journal.operationId), "utf8"), foreign);
+    const stored = await artifacts.loadOperation(journal.operationId);
+    assert.equal(stored["orphanedCallPossible"], true); assert.equal(journal.orphanedCallPossible, true);
+    assert.deepEqual(calls, ["capture"]);
+    await assert.rejects(engine.assertBridgeDispatchAllowed());
+  });
+
   void it("a durable pre-dispatch callback runs after authority reproof and before the native call", async (t) => {
     const { engine, journal, calls } = await fixture(t);
     journal.orphanedCallPossible = false; await artifacts.updateOperation(journal);
@@ -324,6 +355,49 @@ void describe("typed transaction retained-authority recovery", () => {
     assert.equal(calls.at(-1), "release-capture-after-durable-clear");
     const retained = await artifacts.loadOperation(journal.operationId);
     assert.equal(retained["orphanedCallPossible"], false);
+  });
+
+  void it("a pre-dispatch clear veto preserves conflicting history, quarantine, capture and both failures", async (t) => {
+    const { engine, journal, calls } = await fixture(t);
+    journal.orphanedCallPossible = false; await artifacts.updateOperation(journal);
+    const primary = new Error("Synthetic pre-dispatch refusal"), veto = new Error("Synthetic conflicting journal refuses clear");
+    let clearChecks = 0, foreign = "", marked = "";
+    await assert.rejects(engine.dispatchWithOrphanTracking(journal, "execute", "easyeda_execute", {}, 1000, async () => {
+      marked = await fileSystem.readFile(artifacts.operationPath(journal.operationId), "utf8");
+      const changed = await artifacts.loadOperation(journal.operationId);
+      changed["nextSafeAction"] = "Preserve this synthetic external history.";
+      await artifacts.updateOperation(changed);
+      foreign = await fileSystem.readFile(artifacts.operationPath(journal.operationId), "utf8");
+      throw primary;
+    }, undefined, async () => {
+      clearChecks += 1;
+      if (await fileSystem.readFile(artifacts.operationPath(journal.operationId), "utf8") !== marked) { throw veto; }
+    }), (error: unknown): boolean => {
+      assert.ok(error instanceof AggregateError); assert.deepEqual(error.errors, [primary, veto]); assert.equal(error.cause, veto); return true;
+    });
+    assert.equal(clearChecks, 1); assert.notEqual(foreign, marked);
+    assert.equal(await fileSystem.readFile(artifacts.operationPath(journal.operationId), "utf8"), foreign);
+    const stored = await artifacts.loadOperation(journal.operationId);
+    assert.equal(journal.orphanedCallPossible, true); assert.equal(stored["orphanedCallPossible"], true);
+    assert.equal(calls.includes("unexpected-upstream-call"), false); assert.equal(calls.includes("end-dispatch"), false);
+    assert.equal(calls.includes("release-capture-after-durable-clear"), false); assert.equal(calls.filter((call) => call === "capture").length, 1);
+    await assert.rejects(engine.assertBridgeDispatchAllowed());
+  });
+
+  void it("a settled-result clear veto retains the actual reply and quarantine without repeating the native call", async (t) => {
+    const { engine, journal, calls } = await fixture(t);
+    journal.orphanedCallPossible = false; await artifacts.updateOperation(journal);
+    const result = { structuredContent: { ok: true, result: "synthetic settled data" } }, veto = new Error("Synthetic settled clear refused");
+    let clearChecks = 0, retained: unknown;
+    t.mock.method(engine.upstream, "callTool", () => { calls.push("native-call"); return Promise.resolve(result); });
+    await assert.rejects(engine.dispatchWithOrphanTracking(journal, "execute", "easyeda_execute", {}, 1000, undefined,
+      (raw) => { retained = raw; return Promise.resolve(); },
+      () => { clearChecks += 1; return Promise.reject(veto); }), (error: unknown): boolean => error === veto);
+    assert.equal(retained, result); assert.equal(clearChecks, 1); assert.equal(calls.filter((call) => call === "native-call").length, 1);
+    const stored = await artifacts.loadOperation(journal.operationId);
+    assert.equal(journal.orphanedCallPossible, true); assert.equal(stored["orphanedCallPossible"], true);
+    assert.equal(calls.includes("end-dispatch"), false); assert.equal(calls.includes("release-capture-after-durable-clear"), false);
+    await assert.rejects(engine.assertBridgeDispatchAllowed());
   });
 
   void it("settled-result retention is awaited exactly once before lease clear and capture release", async (t) => {
@@ -490,14 +564,17 @@ void describe("typed transaction retained-authority recovery", () => {
   void it("callback failure with an unsuccessful durable clear retains the disk quarantine and never dispatches", async (t) => {
     const { engine, journal, calls } = await fixture(t);
     journal.orphanedCallPossible = false; await artifacts.updateOperation(journal);
+    const clearError = new Error("Synthetic durable clear failed"), primary = new Error("Synthetic intent publication failed");
     t.mock.method(engine, "clearOrphanedCallRisk", () => {
       // Mirror a transient journal-write failure after only the in-memory
       // Marker changed. The persisted retained authority must not be lost.
       journal.orphanedCallPossible = false;
-      return Promise.reject(new Error("Synthetic durable clear failed"));
+      return Promise.reject(clearError);
     });
     await assert.rejects(engine.dispatchWithOrphanTracking(journal, "save-reopen", "easyeda_execute", {}, 70_000,
-      () => Promise.reject(new Error("Synthetic intent publication failed"))), /durable clear failed/u);
+      () => Promise.reject(primary)), (error: unknown): boolean => {
+      assert.ok(error instanceof AggregateError); assert.deepEqual(error.errors, [primary, clearError]); assert.equal(error.cause, clearError); return true;
+    });
     const retained = await artifacts.loadOperation(journal.operationId);
     assert.equal(retained["orphanedCallPossible"], true);
     assert.equal(calls.includes("unexpected-upstream-call"), false);

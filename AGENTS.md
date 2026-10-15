@@ -2,9 +2,533 @@
 
 This file is the durable engineering record and common ground for every human or agent working in this repository. Keep it current whenever a requirement, assumption, interface, compatibility tuple, safety boundary, or test result changes. Do not silently turn an open question into a requirement.
 
-Last updated: 2026-10-15 (Europe/Berlin)
+Last updated: 2026-10-16 (Europe/Berlin)
 
 ## Current checkpoint
+
+### In development: usable disposable baseline validation
+
+The current turn continues until completion or the necessary fresh-session
+boundary for an installed plugin update, per the user's latest instruction.
+This payload exposes the retained baseline through strict baseline-* actions on
+the existing project-open tool, without enabling any writer. It adds one
+project-only opening with the original closed baseline, fresh raw-source hash,
+registration and cache observations, a retained startup-prefix event listener,
+and separate new-generation normal-close/termination finish actions. Public
+continuations cannot supply targets, code, runtime overrides or fingerprints.
+Historical inspection does not adopt owners. The new raw reader never attaches
+SQLite to the original source after relaunch. Its hash/sidecar observations are
+point-in-time, not atomic continuity.
+
+The project-only implementation additionally pins the reviewed SCH initializer.
+Its Start/hidden-blank transition opens no document. loadProjectCompleted has
+no producer identity and is not full startup completion. Startup, before-write,
+opening-effect, backend actor/clock and writer flags remain false. Unknown
+database versions now report unsupported-database-version, not an inferred
+migration. The control skill documents this exact workflow and its stop states.
+
+Independent source reviews accept the compiler, raw-source reader and terminal
+lifecycle. Local checks pass74 focused tests, zero failures/skips, clean npm ci,
+full facade/bridge types and whole-tree strict type-aware lint with zero warnings.
+Build/sanitizer, compatibility, repository/privacy, package,774-method coverage,
+actionlint and all seven official skill checks pass. Audit verifies151 signatures,
+40 attestations and zero vulnerabilities. Final operator review corrected stale
+nextSafeAction text to name the guarded project-only and finish continuations;
+both affected existing tests pass again with explicit instruction assertions.
+Source359 SHA7ebe0085/runtime3 SHA8b7cd10d are frozen; external compatibility pins
+are unchanged. These are
+offline synthetic checks, not live qualification. Full exact-payload CI,
+postcommit reproducibility, publication and installation are pending; do not
+reuse the prior payload's CI. Installed140000 remains unchanged for now.
+
+Offline doctor reports the known legacy installed-bundle mismatch and restricted
+16-tool catalog instead of the full41-tool catalog. Those two checks are not
+passes; separately pinned current capabilities and the isolated installed probe
+must be evaluated independently. No compatibility restriction was relaxed.
+
+This is a scoped validation release so the actual workflow can be exercised
+through a fresh installed facade. The older keep-draft-until-writer text below
+describes the previous slice, not a claim that this payload finishes editing.
+After installation stop for a fresh Codex session. Remaining work is installed
+disposable lifecycle qualification, producer-specific reopening/actor/clock
+proof, fixed writer/inverse integration and saved forward/inverse validation.
+No live EasyEDA call, app launch, design access, Save or restoration has occurred
+in this turn. Production designs and their records remain untouched.
+
+Scope: docs/current-project-only-lifecycle-release-2026-10-16.md.
+
+### In development: historical startup premises
+
+The closed-copy stage now retains a startupPremises report inside its original
+issued baseline, copy-result artifact and internal summary. A new SQL selector
+uses the original completed raw-copy inventory and the actual separately hashed
+checkpoint history. It checks exact schema, sole project/default branch/owner,
+complete linear native history selection and numbered chunk membership. It
+selects db_versions['sqlite'], never PRAGMA schema_version. Exact unsupported
+schema produces a fixed blocker; inconsistent supported-schema evidence fails
+capture. The report does not carry independent authority or authenticate a
+caller-supplied history object. Future consumers must retain the original copy.
+
+The historical subset requires terminal migration version25.10.31.1, a
+nondeleted PCB META count witness and no active SCH_PAGE documents. Missing META
+does not prove an empty native project. The source review corrected an earlier
+assumption: local APP project detail omits editorVersion and exam_info, and the
+truthy editorVersion-only update returns without project mutation. No persisted
+project version or exam flag is invented. Renderer exam state, pre-opening
+continuity, startup/opening effects and execution remain unproved/false. SCH
+initialization and version.txt were researched but are not new execution pins.
+
+Local verification passes60 focused tests, zero failures/skips, full types and
+whole-tree strict type-aware lint with zero warnings. Build/sanitizer,
+compatibility, package/privacy/repository,774-method coverage and all seven
+official skill validators pass. Audit verifies151 signatures/40 attestations
+and0 vulnerabilities. Independent review accepts the scoped implementation.
+Frozen projections: source357 SHA185b8bcc, runtime3 SHA7cd7e82a; only facade
+projections/review timestamp changed. Payload
+1ab7d3fdb48cfe8fb6656dc321cdd1eecc692a17 is pushed to draft PR36.
+Postcommit rebuild reproduces both bundles exactly. Full tree
+671a386efbfd35070ce9ec8374fee703fa162f04, package subtree
+1fcb6f491b3e4076ea3acba3d8f9f42599904d4a. Windows38818614236 passed;
+main CI38818614218 passed all ten jobs at this exact head:10030 facade passes,
+five skips and zero failures;424 bridge passes across28 files.
+Publication/local-check receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6203757053.
+Final same-head CI receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6203952087.
+This post-payload record accompanies the next source change; do not create a
+record-only commit that repeats the full CI run.
+
+Next: carry the retained historical subset and inactive-cache observation into
+one project-only opening with fresh owner/source continuity, qualify remaining
+startup producers and renderer exam state, then backend actor/clock,
+writer/inverse, stopped/lost-owner recovery and one complete disposable
+lifecycle before release/install. Keep draft PR36 unmerged and installed
+0.3.0+codex.20261015140000 unchanged. No live EasyEDA call, launch, design access,
+Save, restoration or installation occurred. Production designs and their records
+remain untouched. Research details: docs/current-startup-premises-research-2026-10-16.md.
+
+Next-slice read-only plan: use a separate project-only compiler/decoder and one
+private baseline continuation; do not call the reserved ordinary opener, which
+can open a PCB. Bind fresh source continuity to copy.checkpoint/sourceSha256,
+not the older initial-opening target hash or invalidated old termination proof.
+Carry exact session/capture/clock and journal ownership. Fresh registry/path and
+inactive-cache samples belong inside the new single navigation attempt, followed
+by the final synchronous guard and one openProject call. cachesObserved alone
+cannot bridge that gap. Allow the native Start/blank-tab transition, not editor
+tabs: UI16424893 createBlankTab creates hidden tab0 and can activate it. Do not
+reuse the pre-open Start Page guard unchanged after project/URL transition.
+Resolve exam-path reachability before adding a cache probe. UI glt is called at
+15246044/15251262 and generic xr tab creation15256604; getExamProjectStatus also
+has menu/permission/close callsites15102848/15130853/15859927/15955114/16424816/
+16686367. No-PCB alone is not a complete exclusion. ON_OPENED16667083 restores
+tabs asynchronously; second subscriber16737077 populates detail cache. These
+offsets are inert-source planning only, not a new executor, pin or live result.
+Before exposing the report, rename its private database-migration-required code
+to unsupported-database-version: any nonterminal literal blocks this profile,
+but an unknown literal need not actually select a native migration script.
+
+### In development: owned current cache observation
+
+The retained baseline now has an internal observeSymbolBaselineCaches
+continuation. It consumes one attempt, derives the fixed project/branch and
+fingerprint from the retained source, and revalidates the original admitted
+capture/clock and session around awaits. Current UI/APP/MGR/WORKER pins and
+runtime identity are checked before and after the observation. The coordinator
+owns a fresh authenticated scope and the real engine's tracked dispatch. The
+16KiB exact envelope is decoded inside reply retention before quarantine clears;
+an inner deadline or failed reply stays blocked, without retry or navigation.
+Actual returns reaching the retention hook remain in memory before validation.
+Generic transport timeouts may throw before that hook; no return is fabricated.
+
+The new local transition checker accepts only the engine's exact sealed mark
+and clear field changes, binding scope/session/runtime/root/Job and the genuine
+tracked clock lookup. An optional engine cleanup veto runs on successful returns,
+pre-dispatch refusal and failed post-mark identity reproof. This fixes review
+findings where a detected
+foreign journal could otherwise be overwritten by automatic cleanup. The veto
+cannot bypass quarantine or authorize dispatch. Observed conflicts are retained;
+managed journal writes are not compare-and-swap and do not protect against an
+external writer racing inside replacement. No stronger locking claim is made.
+
+Cache success requires lease settlement and final original-owner/source/runtime
+checks. It records sequential, point-in-time absence only. Startup, persistence,
+opening effects, backend actor/clock, before-write baseline and writer authority
+remain unproved. No public schema or MCP route is added; legacy readers and
+external implementation pins stay unchanged.
+
+The 101 focused tests pass with no failures or skips, including retained-baseline,
+cache wrapper/transition, opener delegation and shared recovery tests. Full types
+and whole-tree strict type-aware lint pass with zero warnings. Build/sanitizer,
+compatibility, package/privacy/repository, 774-method coverage and all seven
+official skill validators pass. Dependency audit verifies 151 signatures and 40
+attestations with 0 vulnerabilities. Independent reviews accept the final source
+within the documented limits. Frozen projections: source 355 SHA31020556,
+runtime 3 SHA19279146; only facade projections/review timestamp changed, not
+external pins. Payload e6cddf9b9f057db6e829925130b8d5c082e5a6f7 is pushed
+to draft PR36. Postcommit builds reproduce both bundles exactly. Full tree
+d5b0372bd719d25c86dbe6f9dd875af0880a7937, package subtree
+6e00894f93eb1649aa3d869aab34bf19c9f64369. Windows38814626990 passed;
+main CI38814626893 passed all ten jobs at this exact head: 10021 facade passes,
+five skips and zero failures; 424 bridge passes across 28 files. Publication/local-check receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6203243573.
+This post-payload record should accompany the next source change, not cause a
+second full CI run by itself. Keep draft PR36 unmerged and installed140000
+unchanged. Next: pre-opening continuity and
+project-only startup qualification, backend actor/clock, writer/inverse, and one
+complete disposable lifecycle, including stopped/lost-owner recovery, before
+release/install. No live EasyEDA call,
+launch, design access, Save, restore or installation occurred in this slice.
+Production designs and their records remain outside scope.
+
+Next-slice source review: a current-only historical-premises selector can reuse
+the original closed-copy issuer, completed full SQL inventory and hash-bound
+native-history reader. The existing copy stage materializes selected history but
+retains only counts/hashes and target evidence, not all document types/settings.
+Do not treat its document count as the native startup count, SYMBOL editVersion
+as project editorVersion, or SQLite schema_version as the app migration version.
+Source-backed mappings for project editorVersion, UI editorMainVersion,
+migration-version key and isExamProject are still needed. A conservative profile
+with no active SCH_PAGE documents is a candidate for excluding linked-sheet
+startup, not yet an implemented acceptance predicate. After relaunch use the
+retained session/capture/clock; never call the old-owner/termination-dependent
+copy revalidation. Historical premises and cache absence still do not prove
+pre-opening continuity or startup completion. No code or live work was added
+by this final read-only planning review.
+
+### In development: new-session admission and current cache observer
+
+Draft PR36 now has an internal admitSymbolBaseline continuation on the retained
+relaunched Job. A disconnected observation writes nothing and does not repeat
+launch. Selecting a new authenticated session consumes admission once. The
+coordinator owns its exact scope, retains the actual closed-edit capture and
+native clock, checks root/Job/runtime identity, and requires scope settlement
+before reporting admission. Session/capture/method drift and conflicting journal
+history refuse without replay or automatic capture release. The retained new
+generation closure never calls the invalidated old owner or closure proof.
+Admission is historical session/process evidence, not startup or writer authority.
+
+A separate current-upload-queue-read program and current-start-page guard are
+implemented. Three hasProject absence observations bracket two fixed native
+CacheStorage.match calls. They retain the current empty Start Page and restore
+state, browser owners and method receivers. No cache enumeration, body read,
+network request, deletion, navigation or retry is added. Cache absence is
+sequential and point-in-time, not atomic or continuing. Timeout stops later
+calls but does not cancel an in-flight native read. The program has no executor
+or public route yet. Keep the legacy cache reader unchanged.
+
+Independent reviews accept both changes within these limits. Local verification
+passes50 focused tests with no failures/skips, full types, whole-tree strict
+type-aware lint with zero warnings, build/sanitizer, compatibility, package/
+privacy/repository,774-method coverage and all seven official skill validators.
+Dependency checks verify151 signatures/40 attestations and0 vulnerabilities.
+Frozen facade projections are source354 SHA6e5cd3e7 and runtime3 SHA664f842a;
+only facade projections and review timestamp changed, not external pins.
+Payload a5e1a37c375319fab1ab3ec7bcd44ff7569c14fa is pushed to draft PR36.
+Postcommit build reproduces both bundles exactly. Full tree
+6c78b294d33b10dce9cbf1857848ed96d801bfc0, package subtree
+0f07894847139f919607986297653b31351c8c90. Windows38810639954 passed;
+main CI38810639931 passed all ten jobs at that exact head:10005 facade
+passes/five skips/zero failures and424 bridge passes across28 files.
+Publication/local-check receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6202730678.
+This post-payload record should accompany the next source change, not cause a
+second full CI run by itself.
+
+Next: integrate the cache observer with the retained admission and source-pinned
+executor; qualify project-only startup effects and backend actor/clock; integrate
+writer/inverse; run one complete disposable lifecycle. Then review publication
+and installation. No source guard, native semantics or writer restriction was
+relaxed. No live EasyEDA call, launch, design access, Save, restore or install
+occurred. Installed140000 is unchanged; production designs and their records
+remain excluded. Do not merge this draft or claim complete API execution support.
+
+Next-slice source review: retain the original source reference already sealed by
+relaunch's sourceText, and retain the successful admission's sessionCurrent
+closure with its actual capture/clock. Do not reconstruct either from journals.
+A cache-only executor can use verifyCurrentDisposableOpenImplementation, without
+the separate WS clock pin. Keep expectedFingerprint/target derived from that
+retained source. Revalidate originals around internal awaits, not only around
+the complete collector. A new one-shot method needs a fixed bounded envelope
+wrapper inside its own scope and tracked dispatch. Retain the actual return,
+then decode/validate inside retainSettledResult before quarantine clearing.
+CURRENT_UPLOAD_QUEUE_READ_REFUSED:TIMEOUT is not a generic settled-timeout
+category; accepting it as an ordinary return could clear uncertain work.
+dispatchWithOrphanTracking legitimately changes journal fields during mark/
+clear, so recognize only those maintained transitions, not arbitrary loaded
+history. No such executor or recovery path is implemented by this checkpoint.
+
+### In development: retained current symbol relaunch
+
+Continuation remains on feature/current-symbol-runtime-witness in draft PR36.
+The original completed baseline now has an internal one-shot relaunch path.
+It requires the original disconnected gateway session, ended dispatch scope,
+unchanged checkpoint receipt/source lineage and genuine termination authority.
+The intent is journaled before launch. The actual new launch return and its
+issued native clock are retained; no old owner or closure proof is checked
+after launch invalidates that generation. The old capture is released once
+through its original engine, after a separate durable intent. The runtime and
+new Job remain owned; runtime.release is never called. Unavailable native clock
+data is reported, not fabricated or retried. Launch/release ambiguity and
+publication drift consume the attempt while preserving acquired evidence and
+foreign journal history. Final clock validation is followed by a journal check.
+
+The opening transfer now reserves the runtime for its entire lifetime, not
+only the old Job. A new Job or null launch cannot reopen ordinary navigation
+or allow a sibling coordinator to take over. No public schema or MCP route
+has been added. Authenticated new-session admission, opening-effect proof,
+backend actor/clock, writer/inverse and a disposable complete lifecycle remain
+unfinished. This internal checkpoint is not an installed release.
+
+Source research in docs/current-reopen-effects-research-2026-10-15.md identifies
+cache replay, asynchronous project startup and detached PCB Save paths. The
+next opening profile should be project-only for metadata, with both target
+upload caches absent before opening and independently established no-restore,
+current-version/nonempty-project premises. It must still qualify relevant
+startup producers; a resolved open promise or repeated stable snapshots do not
+do that. Backend request-user identity remains distinct from observed UI actors.
+No native semantics or persistence guards were weakened.
+
+The 36 focused tests pass with no failures or skips. They exercise real managed
+journals, engine/native proof issuers, checkpoint/copy readers and SQL with
+synthetic native frames/private owner seams, not a connected editor. Full
+types and whole-tree zero-warning type-aware lint pass. Build/sanitizer,
+compatibility, package/privacy/repository, 774-method coverage and all seven
+official skill checks pass. Rebuilt source352 SHA99bae0e3/runtime3 SHA3ebba5ec
+change only facade projections; external pins stay unchanged. Independent
+runtime and copy review accept the transition. Payload
+254ec11268c8e6903bdbb1241d658f8f5b5e9370 is pushed to draft PR36. Required
+CI38806146630 passed all ten jobs: 9991 facade passes, five skips, zero
+failures; 424 bridge passes. Windows38806146682 passed at the same exact head.
+Postcommit build reproduces both bundles exactly. Full tree
+b945e04129ab48dedeb3c2f484821a2cdfb88532 and package subtree
+afac5418db5e6818e09a93fe53a258e419b7b904 identify this checkpoint.
+Receipt: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6202366378.
+This post-payload continuation record should accompany the next source change,
+not trigger another full CI run by itself. Keep the PR draft/unmerged.
+No live EasyEDA call, app launch, design access, Save, restoration or installation occurred.
+Installed140000 is unchanged; no restart is required for this source work.
+Production designs and their records remain excluded.
+
+Additional bounded source research while CI runs: project-only opening still
+reaches linked schematic documents. SCH-main
+assets/pro-sch/3.2.192.b79ad524/js/sch-main.js is 6289422 bytes,
+SHAd9d6a955bf40d57daf9f27f31e0fff3191715ff50582418ad0922beb71b424bd.
+Its -prjInit handler6171718 awaits wb5471485, On5770161/Kxe5472590 and
+Xl5769763/getOrInitDoc5758065/createDocManagerWithRealTimeSync5759240 for
+each linked schematic sheet. Base m1.init4462789 awaits consistencyImpl.init,
+whose callback awaits ja._init5372957; net-name correction4197241 runs before
+the observed uploadImpl.watch registration. This establishes reachability,
+not persistence of that correction. A no-linked-schematic-sheets fixture can
+exclude this startup path without suppressing native behavior. No complete
+startup completion observer was found; do not claim the earlier project-only
+premises alone establish silence. This new source has not been runtime-admitted.
+
+WORKER offline Fe1654701 excludes applySnap2024962 writes during syncCloud
+2031829; structure2104057 refuses while isSyncing. Updater methods1947714/
+1949977/1952403/1954592/1957278/1959479/1962140 compare versions and publish
+memory/cache notifications; downstream handlers still matter. UI JP10169300
+starts empty, with only explicit import-to-existing add sites10179733/10180316;
+a fresh owned root with no import excludes it. Second ON_OPENED16737080 path
+U9o15979220/LJ9757098/wPt12747205 updates renderer fields/title/warnings;
+S3t8483039 returns for offline client. These are narrowed dependencies, not a
+full no-write certificate. Preserve these findings for the next implementation;
+no further source or live action was added after the tested payload.
+
+Backend actor remains separate: APP52f51ce4 protocol.handle registrations
+2629794/2629823 route host client at2630239 through the same APP router,
+not the Linux MCP backend listener. Router rC2573797 retains the license
+result, but eC2574653 queries the system user per request. UI actor equality
+and native process/socket ownership do not identify that request user. Do not
+treat /api/user as passive: the middleware/route can create user/preferences
+state. Retain current SQL document/backend clock separation and the exact
+61000ms earliest-bound rule for a guaranteed aged unlocked head; no old
+source/journal witness can simply be repinned into current authority.
+
+### In development: owned current symbol closed baseline
+
+Continuation remains on feature/current-symbol-runtime-witness in draft PR36.
+The current opener now reserves a baseline operation and its retained Job once,
+collects a fresh owned metadata preparation, and transfers that original
+generation to a separate private owner. The old active-generation validator is
+not relaxed. Re-preparation and non-inspect opening actions on the reserved Job
+refuse, including from another coordinator sharing the same runtime. A reused
+baseline ID cannot replace a retained coordinator. Already-issued sibling
+generations and ordinary continuations also recheck that reservation after
+awaits; only the baseline's private generation can use its reserved Job.
+
+The internal baseline coordinator captures process authority inside the original
+authenticated scope, retains the actual capture before further checks, ends the
+scope, observes the owned window and records one normal-close intent before
+dispatch. It retains the close acknowledgment before checking or publishing it.
+Only a genuinely issued pending termination observation permits another probe;
+normal close and copy cannot repeat. Conflicting journal changes refuse without
+overwriting the changed history. Capture root/Job and original launch projection
+are independently correlated. Pending observations and completed-copy authority
+are rechecked after publication awaits. A stopped-record failure retains both
+the primary failure and the recording error.
+
+The separate copy stage uses the genuine original owner and termination proof.
+It creates a new checkpoint at the post-opening closed hash, retains a raw byte
+copy, reads the complete SQL inventory, and prepares metadata from the new
+checkpoint against the fresh closed-target observation. It verifies the exact
+project/branch/owner, undeleted active PCB, target symbol, checkpoint/copy file
+lineage and receipt, including the original source device/inode/birth time.
+All acquired evidence is retained before follow-up checks.
+The VACUUM checkpoint is not substituted for the raw full-SQL baseline.
+
+This is internal source implementation only. No MCP writer route or new public
+schema is enabled. Opening effects, before-write baseline, backend actor/clock,
+writer/inverse and complete disposable lifecycle remain unqualified. Captures
+remain retained; no automatic release, relaunch, Save/Discard selection or
+recovery from lost handles is added. Independent review accepts the final
+ownership and concurrency boundaries. The final focused runs passed28 tests
+with no failures or skips. They use real managed journals, process-proof issuers,
+checkpoint/copy/SQL readers and metadata decoding with synthetic native frames
+and private owner seams, not a connected editor. Full typecheck, whole-tree
+zero-warning type-aware lint, sanitizer/build, package/privacy/repository,
+774-method coverage and all seven official skill checks pass. Rebuilt source352
+SHAe1656bc3 and runtime3 SHA6a5c61f6 match their facade projections; external pins
+are unchanged. Exact payload7a90164c4eecc26234938c2170dd4f46b050af15 is pushed
+to draft PR36. Required CI38799413869 passed all ten jobs:9979 facade passes,
+five skips, zero failures, and424 bridge passes. Windows38799413640 also passed.
+Postcommit build reproduces both bundles exactly. Tested full tree
+b0785d474ca79e4fa7a49206c16cd32b6b863921 and package subtree
+f89b64d374413ce59de44a8f1011de34f8dd08d3 identify this checkpoint.
+Receipt: https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6201445983.
+Keep the PR draft/unmerged until writer integration is complete or the user
+selects a smaller release boundary. This final local continuation record is the
+only post-payload change; preserve it in the next source commit instead of
+starting another CI run for documentation alone. Next implementation is
+subsequent-opening effects and backend actor/clock qualification, then the
+writer/inverse and retained release/relaunch/recovery lifecycle described in the
+research note. Do not repeat historical application operations.
+
+No live EasyEDA call, app launch, design access, Save or restoration occurred in
+this continuation. Installed140000 is unchanged and no restart is required.
+Production designs and their records remain excluded.
+
+### In development: current symbol runtime witness and SQL effect profile
+
+Work continues on `feature/current-symbol-runtime-witness`. The restart was
+independently admitted read-only: actual facade236685/parent234854/startTicks6421209
+uses pinned Node24.18.0 and installed140000; former190428 is absent. All1193
+installed files/23310801bytes and42directory modes still match merged072f078f,
+inventory6aef523c. MainCI38732514902 finished successfully with all ten jobs.
+This is process-path/package evidence, not an authenticated connection or memory
+attestation. Do not repeat the completed startup/recovery histories below.
+
+The internal current closed-target collector now takes four matching, exact
+project-qualified client/maxTicket pairs around its two metadata samples.
+Client16 follows the native eight-byte hexadecimal allocator. It also retains
+the two current UI actor objects, editorVersion3.2.206, notify-bus namespace,
+receiver/method chain and Date.now identity. Four bare-scalar notify-clock reads
+are individually bounded by renderer times. Context, DOM and all these owners
+are rechecked across awaits. Actor/clock results remain observations; backend
+actor, backend clock and clock-producer ownership are explicitly unverified.
+The current WS7a372d72 pin is verified before/after this internal collector only.
+Public metadata/discovery contracts and the original opener pins are unchanged.
+
+A separate original-object current SQL plan/verifier models the exact current
+DOCHEAD editVersion3.2.206 transition, including older/absent baseline versions.
+Document time has its own bounds; APP history selection/EDIT_HEAD, SQLite UTC
+defaults and project-local timestamps use explicit backend bounds. No union of
+those clocks, caller-derived provenance, relaxed raw records, partial SQL
+comparison or legacy plan crossover is accepted. All execution/lifecycle flags
+remain false. The old SQL APIs retain their profile and behavior.
+
+Verification passed122 collector/owned-preparation and current/
+legacy/generated-field SQL tests, zero failures or skips. Full typecheck,
+whole-tree zero-warning type-aware lint, sanitizer/build, source/bundle parity,
+package/privacy/repository checks,774-method coverage and all seven official
+skill validators pass. Final independent review found a current-only regex
+coercion path; explicit string guards now reject numeric identities. All six
+current SQL tests, types and targeted zero-warning lint passed again after
+that fix; legacy entry semantics are unchanged. Rebuilt source350 SHA0bea26c3
+and runtime3 SHA9ebda1c6; compatibility
+changes only the facade projections/review time, not external pins. New WS
+admission is a separately reviewed internal capability pin in source. Exact
+payload623fdb26bba82af25ec5c8a813c031a2bdc61007 is pushed in draft PR36:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36.
+Postcommit build reproduces both committed bundles exactly. Required
+CI38789639253 passed all ten jobs:9962 facade passes/five skips/zero failures
+and424 bridge passes.
+Windows38789638943 passed at that exact payload. The tested Git tree is
+69b0917454408171d3fabfda1117778bafbac760 and package subtree is
+00f24e78e7d2b7960441acfba64e75ffe34087e6. Keep this development PR unmerged
+until the remaining writer integration is complete or the user selects a
+smaller release boundary. This local continuation record is the only
+post-payload edit; preserve it in the next source change rather than triggering
+another CI run for a documentation-only checkpoint.
+Verification receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/36#issuecomment-6200144534.
+The research and next-stage contract are in
+docs/current-symbol-writer-witness-research-2026-10-15.md. Next: transfer the
+original opening generation into a one-shot retained closure owner, capture a
+post-opening raw-copy/full-SQL baseline, qualify subsequent opening effects and
+backend actor/clock, then integrate modifier/inverse and one disposable complete
+lifecycle. A closed baseline followed by another ordinary open is not yet a
+verified before-write baseline. Do not simply repeat open/close cycles.
+
+No live EasyEDA call, app launch, design read/edit, Save or restoration occurred
+in this continuation. Production designs and their records remain excluded.
+This source checkpoint is not an installed release; installed140000 and its
+host remain untouched. No restart is required for unfinished source work.
+
+### Delivered140000: retained-owner preparation and sandbox upgrade
+
+PR35 merged through the protected route as main
+072f078f900556893007f9d50cd16a79995ad721. Final payload
+7a81f0551041a6cf5783ba32c703729fabfef5f6 passed all ten required CI38730923426
+jobs:9952 facade passes/five skips/zero failures and424 bridge passes.
+Windows38730923665 passed. The initial root/nonroot errno test mismatch is
+fixed by requiring the exact kernel graph mount ro/no-rw before accepting
+EROFS or EACCES. Runtime permissions and guards were not changed. Full tree
+80e34bad9eb768997837d73e16b442bd4d4e8044 and package subtree
+6b8441dd3f67292a0852cb0dd9dfbd8b8efd8469 equal the tested payload exactly.
+Postcommit build is reproducible. Types, whole-tree zero-warning lint,
+dependencies/signatures/attestations, privacy/package/repository, actionlint
+and seven official skill checks pass. Source349011e5ac0/runtime3a5ad85a3.
+
+Official named Git-marketplace upgrade under022 completed errors[]. Installed
+and enabled0.3.0+codex.20261015140000 comes from
+https://github.com/jan-guenter/easyeda-pro-agent-plugin.git, refmain. Independent
+pre/post-probe verification matches1193files/23310801bytes/42directories all0755,
+1192files0644/one0755, seven skills; zero extras/symlinks/hardlinks. Git-tree-order
+inventorySHA6aef523cab2218359dfffd42bb3adac54ba96ba255ea34549e3afe37fa99145a
+uses path NUL Gitmode NUL bytes NUL SHA256 LF. Manifestd236635e and helper
+2320/8ffb025c match. Marketplace marker and snapshotHEAD equal mergedmain.
+
+Actual installed configured startup passes ambientNode26.11.1 to pinned24.18.
+Synthetic-only offline probe passed16normal and3fallback tool catalogs,
+discovery/validation and identical two-document checkpoint preparation. Writer,
+execution and persistence authority stay false. Twenty samples show no upstream
+child/nonstdio socket, stderr0, normal client closes. Independent observation
+confirms probePIDs216937/216962 exited and synthetic lease absent. Proof
+/tmp/easyeda-installed-140000-4tpcFp/proof.json3338bytes SHA
+c77f816304c3692f717288084745b381fe791dcf241bde2b1e79ce6e6ef0113b;
+reviewed script4ef77572. This is offline installed proof, not live collector or
+writer validation. No manual cache/config edits or loaded-owner termination.
+
+Original020000 startup is terminal unknown-abandoned after the user closed an
+idle PowerShell. New090000 startup completed normal close and retained root/Job
+termination before installation. Preserve both histories; never replay launch,
+abandonment or close. No project was deliberately opened, no design action,
+explicit Save or restoration ran; ordinary profile effects are not design-file
+invariance proof. Production designs and their records remain excluded.
+
+Actual host190428 still loaded090000. The release skill requires a fresh Codex
+chat before live140000 calls; independently admit that actual owner first.
+No outstanding startup-recovery prerequisite remains. Next source work is the
+current actor/worker/client/clock witness, operation-owned post-opening baseline
+and complete SQL comparison, then fixed writer/inverse and one disposable owned
+close/reopen proof. Internal preparation does not enable a public writer. Full
+backlog: docs/current-symbol-owned-preparation-release-2026-10-15.md.
+
+Postmerge Windows38732514897 passed. MainCI38732514902 is still running on the
+identical tested tree; do not rerun successful checks. Preserve this local
+delivery checkpoint in the next source change; no docs-only release is needed.
+Delivery receipt:
+https://github.com/jan-guenter/easyeda-pro-agent-plugin/pull/35#issuecomment-6191784633.
 
 ### Candidate140000: owned preparation; startup recovered; sandbox upgrade
 

@@ -2,6 +2,7 @@ import { CURRENT_SYMBOL_METADATA_MAX_BYTES, parseCurrentSymbolMetadataRequest } 
 import { buildCurrentProjectUrlGuard } from "./current-project-url.ts";
 import { EXACT_READ_ENVELOPE_SCHEMA } from "./exact-readers.ts";
 import { CURRENT_SYMBOL_CLOSED_TARGET_DOM } from "./current-symbol-closed-target-dom.ts";
+import { CURRENT_SYMBOL_RUNTIME_OBSERVATION_SOURCE } from "./current-symbol-runtime-observation.ts";
 
 /** Fixed project-qualified loaded metadata reads. MGR 005584e0 routes
  * symbol.getData without its optional canvas flag; WORKER b849bd12 reads its
@@ -56,6 +57,7 @@ const check=()=>{
  if(own(root,'setTimeout')!==set||own(root,'clearTimeout')!==clear)bad();
 };
 ${closedTarget ? CURRENT_SYMBOL_CLOSED_TARGET_DOM : ""}
+${closedTarget ? CURRENT_SYMBOL_RUNTIME_OBSERVATION_SOURCE : ""}
 // Enumerate the complete current tab registry, not the public split-tree mapper.
 // Absence here deliberately makes no assertion about hidden/export editors.
 const registry=()=>{
@@ -75,23 +77,31 @@ const registry=()=>{
   if(localActive!==''&&!localIds.has(localActive))bad();projection.push([id,localActive,rows]);}
  if(start>1||placeholder>1||currentCount!==1)bad();const url=parseProjectUrl(href,target.projectUuid,target.tabId);if(url.tabIds.some(id=>!allIds.has(id)))bad();check();return{owners,seal:JSON.stringify([names,treeProjection,projection])};
 };
-const initial=registry();const same=()=>{const now=registry();if(now.seal!==initial.seal||now.owners.length!==initial.owners.length||now.owners.some((owner,i)=>owner!==initial.owners[i]))bad();${closedTarget ? "closedTargetDom();" : ""}};
+const initial=registry();const same=()=>{const now=registry();if(now.seal!==initial.seal||now.owners.length!==initial.owners.length||now.owners.some((owner,i)=>owner!==initial.owners[i]))bad();${closedTarget ? "closedTargetDom();checkRuntimeObservation();" : ""}};
 const childPlain=value=>{if(!object(value))bad();const p=Object.getPrototypeOf(value);if(p!==Object.prototype&&p!==childPrototype)bad();return value;};
 const identity=async()=>{same();const reply=await apply(identityCall.fn,channel,['getTabIdAndDocType',undefined,0]);same();const value=childPlain(own(childPlain(reply),'message')),keys=Reflect.ownKeys(value);if(keys.length!==2||!keys.includes('tabId')||!keys.includes('docType')||own(value,'tabId')!==target.tabId||own(value,'docType')!==3)bad();};
 const call=async(topic,args)=>{same();const reply=await apply(rpc.fn,bus,[topic,args,0]);same();return plain(own(plain(reply),'message'));};
+${closedTarget ? `// These fixed scalar getters do not retain the worker object or grant worker identity.
+let retainedClientTicket;
+const clientTicketSample=async()=>{
+ const scalar=async topic=>{same();const reply=await apply(rpc.fn,bus,[topic,[target.projectUuid],0]);same();return own(plain(reply),'message');};
+ const client=await scalar('/PrjDB/project/getClient');same();if(typeof client!=='string'||!/^[a-f0-9]{16}$/.test(client))bad();
+ const maxTicket=await scalar('/PrjDB/project/getMaxTicket');same();if(typeof maxTicket!=='number'||!Number.isSafeInteger(maxTicket)||maxTicket<0||Object.is(maxTicket,-0))bad();
+ const observed={client,maxTicket};if(retainedClientTicket&&(retainedClientTicket.client!==client||retainedClientTicket.maxTicket!==maxTicket))bad();retainedClientTicket=observed;
+};` : ""}
 const projectMetadata=async()=>{const value=await call('/PrjDB/project/getData',[target.projectUuid]);if(own(value,'uuid')!==target.projectUuid||own(value,'currentBranch')!==target.branchUuid||own(value,'isV2Format')!==false)bad();const ownerUuid=own(plain(own(value,'owner')),'uuid');if(typeof ownerUuid!=='string'||!/^[a-f0-9]{32}$/.test(ownerUuid))bad();return ownerUuid;};
 const sample=async()=>{
- await identity();same();const ownerUuid=await projectMetadata();same();
+ await identity();same();${closedTarget ? "await sampleRuntimeClock();await clientTicketSample();same();" : ""}const ownerUuid=await projectMetadata();same();
  // No third argument: the manager's optional canvas flag remains undefined.
  const value=await call('/PrjDB/symbol/getData',[symbolUuid,target.projectUuid]);same();
  if(own(value,'uuid')!==symbolUuid||own(value,'project_uuid')!==target.projectUuid||own(value,'path')!==target.projectUuid||own(value,'docType')!==2||own(plain(own(value,'owner')),'uuid')!==ownerUuid)bad();
  const ticket=own(value,'ticket');if(typeof ticket!=='number'||!Number.isSafeInteger(ticket)||ticket<0||Object.is(ticket,-0))bad();
  const tagsJson=text(own(value,'custom_tags'),131072,true),tags=JSON.parse(tagsJson);for(let i=0,n=dense(tags,256);i<n;i++)text(own(tags,String(i)),512,true);
  const result={uuid:symbolUuid,projectUuid:target.projectUuid,ownerUuid,name:text(own(value,'display_title'),512,true),description:text(own(value,'description'),65536,true),tagsJson,source:text(own(value,'source'),4096,true),version:text(own(value,'version'),128,true),ticket};
- if(await projectMetadata()!==ownerUuid)bad();same();await identity();same();return result;
+ if(await projectMetadata()!==ownerUuid)bad();same();await identity();same();${closedTarget ? "await clientTicketSample();await sampleRuntimeClock();same();if(ticket>retainedClientTicket.maxTicket)bad();" : ""}return result;
 };
 const run=async()=>{const first=await sample(),seal=JSON.stringify(first);if(new TextEncoder().encode(seal).byteLength>${CURRENT_SYMBOL_METADATA_MAX_BYTES})bad();const second=await sample();same();if(JSON.stringify(second)!==seal)bad();
- const result={ok:true,kind:${JSON.stringify(closedTarget ? "current-closed-symbol-metadata-witness" : "current-symbol-metadata-observation")},method:${JSON.stringify(request.method)},target,value:first,samples:2,implementationKind:'native-task-equivalent',targetClosedInRegistry:true,hiddenEditorsVerified:${String(closedTarget)},workerIdentityVerified:false,cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
+ const result={ok:true,kind:${JSON.stringify(closedTarget ? "current-closed-symbol-metadata-witness" : "current-symbol-metadata-observation")},method:${JSON.stringify(request.method)},target,value:first,samples:2,${closedTarget ? "clientTicketObservation:{...retainedClientTicket,samples:4},runtimeObservation:runtimeObservation()," : ""}implementationKind:'native-task-equivalent',targetClosedInRegistry:true,hiddenEditorsVerified:${String(closedTarget)},workerIdentityVerified:false,cadAuthority:false,persistenceVerified:false,sourceMembershipVerified:false};
  const json=JSON.stringify(result),utf8Bytes=new TextEncoder().encode(json).byteLength,envelope={schema:${JSON.stringify(EXACT_READ_ENVELOPE_SCHEMA)},utf8Bytes,json};if(utf8Bytes>${CURRENT_SYMBOL_METADATA_MAX_BYTES}||new TextEncoder().encode(JSON.stringify(envelope)).byteLength>${CURRENT_SYMBOL_METADATA_MAX_BYTES})bad();return envelope;};
 same();const timeout=new Promise((resolve,reject)=>{timer=apply(set,root,[()=>{expired=true;reject(new Error('CURRENT_SYMBOL_METADATA_READ_FAILED'));},10000]);});return await Promise.race([run(),timeout]);
 }catch{throw new Error('CURRENT_SYMBOL_METADATA_READ_FAILED');}

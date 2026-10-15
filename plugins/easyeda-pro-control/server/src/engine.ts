@@ -2197,6 +2197,7 @@ export class EasyedaControlEngine {
   public async markOrphanedCallRisk(
     operation: TrackedDispatchOperationJournal,
     phase: string,
+    beforeClear?: () => Promise<void>,
   ): Promise<OperationBridgeDispatch> {
     const validator = this.executionAuthorityValidator;
     if (validator === undefined) {
@@ -2291,6 +2292,14 @@ export class EasyedaControlEngine {
       }
       return { binding: bridgeDispatch, ownedByAuthenticatedScope };
     } catch (error) {
+      if ((journaled || capturedAuthority !== undefined) && beforeClear !== undefined) {
+        // The post-mark identity probe can fail before beforeDispatch runs.
+        // Preserve the owner's retained history before changing any cleanup state.
+        try { await beforeClear(); }
+        catch (clearError) {
+          throw new AggregateError([error, clearError], "Pre-dispatch authority capture failed and its quarantine cleanup was refused.", { cause: clearError });
+        }
+      }
       if (!ownedByAuthenticatedScope) {
         try {
           abortDispatch?.call(
@@ -2366,15 +2375,23 @@ export class EasyedaControlEngine {
     timeoutMs: number,
     beforeDispatch?: () => Promise<void>,
     retainSettledResult?: (result: unknown) => Promise<void>,
+    beforeClear?: () => Promise<void>,
   ): Promise<unknown> {
-    const dispatch = await this.markOrphanedCallRisk(operation, phase);
+    const dispatch = await this.markOrphanedCallRisk(operation, phase, beforeClear);
     if (beforeDispatch !== undefined) {
       try { await beforeDispatch(); }
       catch (error) {
         // Final authority reproof succeeded, but callTool has not started.
         // Release its unused capture only after a durable clear. If that clear
         // Fails, the retained journal quarantine must stay intact.
-        await this.clearOrphanedCallRisk(operation, phase, dispatch);
+        try {
+          // An operation owner may veto cleanup when its retained journal or
+          // Scope changed. This never substitutes for the maintained clear.
+          if (beforeClear !== undefined) { await beforeClear(); }
+          await this.clearOrphanedCallRisk(operation, phase, dispatch);
+        } catch (clearError) {
+          throw new AggregateError([error, clearError], "The pre-dispatch callback failed and its quarantine could not be cleared safely.", { cause: clearError });
+        }
         throw error;
       }
     }
@@ -2390,6 +2407,7 @@ export class EasyedaControlEngine {
       // Fallible lease/journal/capture cleanup can discard a settled reply.
       // Failed retention must leave quarantine and its capture in place.
       if (retainSettledResult !== undefined) { await retainSettledResult(result); }
+      if (beforeClear !== undefined) { await beforeClear(); }
       await this.clearOrphanedCallRisk(operation, phase, dispatch);
       return result;
     } catch (error) {

@@ -3,8 +3,8 @@
     "source-tree": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "011e5ac074d7199842dd3d15d5540d8a647602aaf4fafd78ebef313c6b150edb",
-      "fileCount": 349,
+      "sha256": "7ebe00855daaac36cd58912c6ed76271d41da713080bf4806d1a4095d7b71b56",
+      "fileCount": 359,
       "files": [
         {
           "relativePath": "aged-symbol-witness.ts",
@@ -448,18 +448,18 @@
         },
         {
           "relativePath": "current-disposable-open-profile.ts",
-          "bytes": 3107,
-          "sha256": "0015cce970aa08e9a7066bc47a3749a50e6d448d43c80648b7da6f7028bf9540"
+          "bytes": 4708,
+          "sha256": "f59aa116ce9d76acfa72cb404eb4e20459ba4a85b20dc5062f0d46a343398b7a"
         },
         {
           "relativePath": "current-disposable-open-runtime.ts",
-          "bytes": 34798,
-          "sha256": "27488d2cc6627cf813e31239fffdbdde078b02005bf6006334e6ba154cf65083"
+          "bytes": 50789,
+          "sha256": "1a317f704e8fbc00204675ef534d1a1a1869a6885bbebc872d07c58099977e91"
         },
         {
           "relativePath": "current-disposable-open.ts",
-          "bytes": 24114,
-          "sha256": "5d1246f4f3a131548000437c7f86f222536d616356ee3b38ff0ce41482bf06fd"
+          "bytes": 27063,
+          "sha256": "6090c1445132735a20af0562619cfd71b8c61a0ffb28ee83407c3a3578139f74"
         },
         {
           "relativePath": "current-pcb-geometry-program.ts",
@@ -502,9 +502,44 @@
           "sha256": "7d9ab9f9d8b107fa9275494ff2e32df75f25873fb9721ef29a6b62abf583bc1e"
         },
         {
+          "relativePath": "current-project-only-open.ts",
+          "bytes": 17730,
+          "sha256": "4e768b199d98ca5f5329b3f7ee1de133a9582cc1adf8a80f8e65701c83750584"
+        },
+        {
           "relativePath": "current-project-url.ts",
           "bytes": 1707,
           "sha256": "11da217d261c93cf084a4eb092d8078129a92aadfff9ff170538871996288609"
+        },
+        {
+          "relativePath": "current-start-page.ts",
+          "bytes": 6461,
+          "sha256": "873414917abb1cf9514937df2a4e3f38896b6ebe3f8e25784dfccfa1abf61d42"
+        },
+        {
+          "relativePath": "current-startup-premises.ts",
+          "bytes": 5094,
+          "sha256": "802b963d6cb29ab1f3efea73aae150f62b98ccf0364d86e84c87ff03e70a46fd"
+        },
+        {
+          "relativePath": "current-startup-sql.ts",
+          "bytes": 9940,
+          "sha256": "42e17c33738b94e395c310a9c4ca8107c76691e414f333002bbed7927daad85a"
+        },
+        {
+          "relativePath": "current-symbol-baseline-copy.ts",
+          "bytes": 19779,
+          "sha256": "a70cdec93df66df0c0e1d77cd5d9c04ba5a09d77924d52e817f83725dad881f9"
+        },
+        {
+          "relativePath": "current-symbol-baseline-runtime.ts",
+          "bytes": 72783,
+          "sha256": "3c21e31191834ac3b000253c9a52a6513d4b38c676bddb3fca93a724d53a2d2b"
+        },
+        {
+          "relativePath": "current-symbol-cache-journal.ts",
+          "bytes": 10503,
+          "sha256": "e1ab57e6d3cf8a90a8a2d8fb802cd28020f76f1fc478bb1a6872da0aa90db787"
         },
         {
           "relativePath": "current-symbol-closed-target-dom.ts",
@@ -513,13 +548,13 @@
         },
         {
           "relativePath": "current-symbol-closed-target-runtime.ts",
-          "bytes": 3265,
-          "sha256": "c4b60acd35b20d84fd6f16c72fa08e3cec6ba70809cf1f318b690aab13b0ff54"
+          "bytes": 3262,
+          "sha256": "4356d778dcf5b2bcba46157ccd5190e3c0a3b3e7b2f0eb6df357d70f5cc828f2"
         },
         {
           "relativePath": "current-symbol-closed-target.ts",
-          "bytes": 1860,
-          "sha256": "2d79b1f73736ba3a097a34086976e1bbf112f5d6b744bb266320154fe4e49788"
+          "bytes": 2850,
+          "sha256": "9959ac88809126cd069c17bd6463f80d625baad71892f381d9b34faae1caacc5"
         },
         {
           "relativePath": "current-symbol-metadata-preparation.ts",
@@ -528,8 +563,8 @@
         },
         {
           "relativePath": "current-symbol-metadata-program.ts",
-          "bytes": 14468,
-          "sha256": "c48176d5fb5cdb481017df5c08618e84fbc04a89cc71a1bd2137c040cff7b982"
+          "bytes": 15816,
+          "sha256": "9d4678d7f794c4e1f3bd9ddc9a62f8f336aa967cc255b11e8ae096bc494bf6ef"
         },
         {
           "relativePath": "current-symbol-metadata-runtime.ts",
@@ -547,9 +582,24 @@
           "sha256": "26b37834ff787e2e3d0851f442b49678c5c4ed47b0bccb671796c64ccb23492e"
         },
         {
+          "relativePath": "current-symbol-preopen-source.ts",
+          "bytes": 9909,
+          "sha256": "1fb55b3cb66ec1337283f011d2266f7a6e611f350c21f7210c2f71ff81e0e6ac"
+        },
+        {
+          "relativePath": "current-symbol-runtime-observation.ts",
+          "bytes": 4053,
+          "sha256": "28e741b37d6f3938c7c4b3efceb0128aeaa5a6ae70a091cd7b563e251fca7a27"
+        },
+        {
           "relativePath": "current-ui-implementation.ts",
           "bytes": 2622,
           "sha256": "89a1bf23116e51a65ae16751aa587d23fd739c80fdf13124e878a79a167427cc"
+        },
+        {
+          "relativePath": "current-upload-queue-read.ts",
+          "bytes": 8688,
+          "sha256": "1b323f9d5f882ca69b8af3ce7f7ce346b45099cafc9d4fec9f4a633225165c7d"
         },
         {
           "relativePath": "descriptor-sanitizer-identity.ts",
@@ -763,8 +813,8 @@
         },
         {
           "relativePath": "engine.ts",
-          "bytes": 207300,
-          "sha256": "700e441a13716fec8b5f5139ed876432a30d9df24ea2c9d01894d4d87e4e9f8b"
+          "bytes": 208390,
+          "sha256": "bced4de4bbfd67e6dba742d05d0e5a9f743d5d266dfefd5f2f1464ef3c624b5b"
         },
         {
           "relativePath": "exact-readers.ts",
@@ -908,8 +958,8 @@
         },
         {
           "relativePath": "index.ts",
-          "bytes": 166103,
-          "sha256": "be4b0d28bf640d61f27c1cda91b4f9fc7d358f547b779b5d8f99fc7e4b77345a"
+          "bytes": 166256,
+          "sha256": "70ea48fd7eca91343dc8ab43a25d986be39f7db9f1cca19795665aed9806fd10"
         },
         {
           "relativePath": "lease.ts",
@@ -1653,8 +1703,8 @@
         },
         {
           "relativePath": "symbol-sql-comparator.ts",
-          "bytes": 28818,
-          "sha256": "32b2adf0b63faceaced403b76869825eb06d0189fa1def902897e2ad3464c8cb"
+          "bytes": 33939,
+          "sha256": "9f1901a9813a669e7ae7edc17bfaf0dd7e65b19722ed1d332c4fd7d4d7a5f33d"
         },
         {
           "relativePath": "symbol-startup-actor.ts",
@@ -1756,7 +1806,7 @@
     "bundle": {
       "version": "0.3.0",
       "operationSchema": "easyeda-pro-control.operation.v2",
-      "sha256": "a5ad85a313ab7e41b61e60eabefbf3d8e1083f9b71b8088ca2789b82f2ab18f9",
+      "sha256": "8b7cd10d329081ce3162098402181aacad068d969cf47d638361b42a1d806f66",
       "fileCount": 3,
       "files": [
         {
@@ -1766,19 +1816,19 @@
         },
         {
           "relativePath": "server.mjs",
-          "bytes": 6637444,
-          "sha256": "b4dccae32dc1bf6774c933e88bc0554fd4c5a1fdaa06d0f5219de2bcf13d64da"
+          "bytes": 6815889,
+          "sha256": "77ea9d7636bb84f806856f28ad3a6b21ad3bfed6f49c6a384ecfbdc2a9553cdd"
         },
         {
           "relativePath": "upstream-supervisor.mjs",
           "bytes": 786410,
-          "sha256": "7b6bdcfa9af6f41ee3307ad0309f1d2b4b3dfb37361669283e41cb774fbc8db8"
+          "sha256": "e8cf9f0a5e06d1afb369f437408669befcd395701cacbfbd34fbceab5c0911e0"
         }
       ]
     }
   },
   "schema": "easyeda-pro-control.reviewed-compatibility.v1",
-  "reviewedAt": "2026-10-15T11:40:09.205Z",
+  "reviewedAt": "2026-10-15T23:30:12.185Z",
   "upstream": {
     "serverVersion": "1.0.0-rc.1",
     "launcher": {

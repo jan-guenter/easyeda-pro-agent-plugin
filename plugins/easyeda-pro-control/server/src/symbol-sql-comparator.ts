@@ -35,6 +35,32 @@ export interface SymbolNewHeadSqlPlan {
   readonly executionAuthorized: false;
   readonly headEligibility: "locked" | "aged-unlocked";
 }
+/** Supplied comparison bounds, not an issued actor or clock provenance proof.
+ * APP/SQLite times never inherit or union the separate document-clock bounds.
+ */
+export interface CurrentSymbolSqlWitness {
+  readonly projectUuid: string;
+  readonly branchUuid: string;
+  readonly backendActorUuid: string;
+  readonly client: string;
+  readonly preDispatchMaxTicket: number;
+  readonly documentClockMinMs: number;
+  readonly documentClockMaxMs: number;
+  readonly backendClockMinMs: number;
+  readonly backendClockMaxMs: number;
+  readonly backendLocalOffsetMinutes: number;
+  readonly agedHead?: SymbolSqlWitness["agedHead"];
+}
+export interface CurrentSymbolNewHeadSqlPlan {
+  readonly profile: "easyeda-pro-control.current-symbol-new-head-sql-plan.v1";
+  readonly beforeSqlSha256: string;
+  readonly targetUuid: string;
+  readonly expectedTicket: number;
+  readonly expectedDocumentEditVersion: "3.2.206";
+  readonly headEligibility: "locked" | "aged-unlocked";
+  readonly producerBindingVerified: false;
+  readonly executionAuthorized: false;
+}
 interface Prepared {
   readonly before: Inventory;
   readonly witness: SymbolSqlWitness;
@@ -50,6 +76,7 @@ interface Prepared {
   readonly projectRow: SqlRow;
   readonly structureRows: readonly SqlRow[];
   readonly sequenceRow: SqlRow;
+  readonly headEligibility: "locked" | "aged-unlocked";
 }
 export interface DecodedSymbolSqlRawHistory {
   readonly history: NativeHistorySnapshot; readonly maximumTicket: number;
@@ -58,6 +85,7 @@ export interface DecodedSymbolSqlRawHistory {
     ordinal: number; ciphertextBase64Sha256: string; plaintextSha256: string; plaintextBytes: number }>[];
 }
 const plans = new WeakMap<object, Prepared>();
+const currentPlans = new WeakMap<object, Readonly<{ prepared: Prepared; documentClockMinMs: number; documentClockMaxMs: number }>>();
 function need(condition: boolean, message: string): asserts condition { if (!condition) { throw new Error(message); } }
 /** Read only the metadata plan retained by this original SQL preparation.
  * No decoding, caller-supplied metadata or restored authority is admitted.
@@ -195,6 +223,37 @@ export async function decodeRawHistoryForOriginalSymbolSqlPlan(input: unknown, a
   return decoded;
 }
 export async function prepareSymbolNewHeadSqlPlan(input: Readonly<{ before: Inventory; operation: unknown; witness: SymbolSqlWitness }>): Promise<SymbolNewHeadSqlPlan> {
+  const prepared = await prepareSymbolSqlState(input);
+  const plan: SymbolNewHeadSqlPlan = Object.freeze({ profile: "easyeda-pro-control.symbol-new-head-sql-plan.v1", beforeSqlSha256: prepared.before.logicalSha256,
+    targetUuid: prepared.symbol.targetUuid, expectedTicket: prepared.witness.preDispatchMaxTicket + 1, executionAuthorized: false, headEligibility: prepared.headEligibility });
+  plans.set(plan, prepared);
+  return plan;
+}
+/** Current 3.2.206 pure effect profile. Original inventory/plan identity is
+ * retained; no native dispatch, producer provenance or lifecycle is established.
+ */
+export async function prepareCurrentSymbolNewHeadSqlPlan(input: Readonly<{ before: Inventory; operation: unknown; witness: CurrentSymbolSqlWitness }>): Promise<CurrentSymbolNewHeadSqlPlan> {
+  const current = structuredClone(input.witness);
+  need(typeof current.projectUuid === "string" && typeof current.branchUuid === "string" && typeof current.backendActorUuid === "string" &&
+    typeof current.client === "string", "Current native identity witness refused.");
+  for (const [minimum, maximum] of [[current.documentClockMinMs, current.documentClockMaxMs], [current.backendClockMinMs, current.backendClockMaxMs]]) {
+    need(typeof minimum === "number" && typeof maximum === "number" && Number.isSafeInteger(minimum) && Number.isSafeInteger(maximum) &&
+      !Object.is(minimum, -0) && !Object.is(maximum, -0) && minimum >= 0 && maximum >= minimum && maximum - minimum <= 60_000,
+    "Current native clock bounds refused.");
+  }
+  need(!Object.is(current.preDispatchMaxTicket, -0), "Current native ticket witness refused.");
+  const witness: SymbolSqlWitness = { projectUuid: current.projectUuid, branchUuid: current.branchUuid, actorUuid: current.backendActorUuid,
+    client: current.client, preDispatchMaxTicket: current.preDispatchMaxTicket, serverClockMinMs: current.backendClockMinMs,
+    serverClockMaxMs: current.backendClockMaxMs, serverLocalOffsetMinutes: current.backendLocalOffsetMinutes,
+    ...(current.agedHead === undefined ? {} : { agedHead: current.agedHead }) };
+  const prepared = await prepareSymbolSqlState({ before: input.before, operation: input.operation, witness });
+  const plan: CurrentSymbolNewHeadSqlPlan = Object.freeze({ profile: "easyeda-pro-control.current-symbol-new-head-sql-plan.v1",
+    beforeSqlSha256: prepared.before.logicalSha256, targetUuid: prepared.symbol.targetUuid, expectedTicket: witness.preDispatchMaxTicket + 1,
+    expectedDocumentEditVersion: "3.2.206", headEligibility: prepared.headEligibility, producerBindingVerified: false, executionAuthorized: false });
+  currentPlans.set(plan, { prepared, documentClockMinMs: current.documentClockMinMs, documentClockMaxMs: current.documentClockMaxMs });
+  return plan;
+}
+async function prepareSymbolSqlState(input: Readonly<{ before: Inventory; operation: unknown; witness: SymbolSqlWitness }>): Promise<Prepared> {
   const before = input.before; const witness = structuredClone(input.witness); const operation = structuredClone(input.operation);
   need(PROJECT_UUID.test(witness.projectUuid) && UUID.test(witness.branchUuid) && UUID.test(witness.actorUuid) && /^[a-f0-9]{16}$/u.test(witness.client), "Native identity witness refused.");
   need(Number.isSafeInteger(witness.preDispatchMaxTicket) && witness.preDispatchMaxTicket >= 0 && witness.preDispatchMaxTicket < Number.MAX_SAFE_INTEGER,
@@ -261,17 +320,14 @@ export async function prepareSymbolNewHeadSqlPlan(input: Readonly<{ before: Inve
   need(actor.length <= 1, "Actor is ambiguous.");
   const username = actor[0] ? text(field(users, actor[0], "username")) : "";
   const nickname = actor[0] ? text(field(users, actor[0], "nickname")) : "";
-  const plan: SymbolNewHeadSqlPlan = Object.freeze({ profile: "easyeda-pro-control.symbol-new-head-sql-plan.v1", beforeSqlSha256: before.logicalSha256,
-    targetUuid: symbol.targetUuid, expectedTicket: witness.preDispatchMaxTicket + 1, executionAuthorized: false, headEligibility: locked === 1n ? "locked" : "aged-unlocked" });
-  plans.set(plan, { before, witness, symbol, historyTable, historyData, oldHead, nextHistoryId: nextRowid(historyTable), nextChunkId: sequenceId + 1n,
-    username, nickname, branchRow, projectRow, structureRows, sequenceRow });
-  return plan;
+  return { before, witness, symbol, historyTable, historyData, oldHead, nextHistoryId: nextRowid(historyTable), nextChunkId: sequenceId + 1n,
+    username, nickname, branchRow, projectRow, structureRows, sequenceRow, headEligibility: locked === 1n ? "locked" : "aged-unlocked" };
 }
 function newRow(owner: SqlTable, expectedId: bigint): SqlRow {
   const rows = owner.rows.filter((row) => integer(field(owner, row, "id")) === expectedId);
   need(rows.length === 1 && rows[0] !== undefined, "Expected exact newly allocated row is missing."); return rows[0];
 }
-function generatedMs(value: unknown, witness: SymbolSqlWitness): number {
+function generatedMs(value: unknown, witness: Pick<SymbolSqlWitness, "serverClockMinMs" | "serverClockMaxMs">): number {
   need(typeof value === "number" && Number.isSafeInteger(value) && value >= witness.serverClockMinMs && value <= witness.serverClockMaxMs,
     "Generated native timestamp is outside its independent clock witness."); return value;
 }
@@ -324,6 +380,18 @@ async function exactRows(expected: readonly SqlRow[], observed: readonly SqlRow[
 }
 export async function verifySymbolNewHeadSqlEffect(plan: SymbolNewHeadSqlPlan, after: Inventory): Promise<Readonly<Record<string, unknown>>> {
   const prepared = plans.get(plan); need(prepared !== undefined, "SQL comparison requires its original prepared plan.");
+  const proof = await verifySymbolSqlEffect(plan, after, prepared, { resultProfile: "easyeda-pro-control.symbol-new-head-full-sql-effect.v1",
+    documentClock: prepared.witness, documentEditVersion: prepared.symbol.headerEditVersion });
+  return proof;
+}
+export async function verifyCurrentSymbolNewHeadSqlEffect(plan: CurrentSymbolNewHeadSqlPlan, after: Inventory): Promise<Readonly<Record<string, unknown>>> {
+  const current = currentPlans.get(plan); need(current !== undefined, "Current SQL comparison requires its original prepared plan.");
+  const proof = await verifySymbolSqlEffect(plan, after, current.prepared, { resultProfile: "easyeda-pro-control.current-symbol-new-head-full-sql-effect.v1",
+    documentClock: { serverClockMinMs: current.documentClockMinMs, serverClockMaxMs: current.documentClockMaxMs }, documentEditVersion: "3.2.206" });
+  return proof;
+}
+async function verifySymbolSqlEffect(plan: Pick<SymbolNewHeadSqlPlan, "expectedTicket" | "headEligibility">, after: Inventory, prepared: Prepared,
+  profile: Readonly<{ resultProfile: string; documentClock: Pick<SymbolSqlWitness, "serverClockMinMs" | "serverClockMaxMs">; documentEditVersion: string | null }>): Promise<Readonly<Record<string, unknown>>> {
   const { before, witness, symbol, historyTable, historyData } = prepared;
   supported(after, witness.branchUuid);
   need(canonicalJson(before.properties) === canonicalJson(after.properties), "Persisted SQL properties changed.");
@@ -336,9 +404,9 @@ export async function verifySymbolNewHeadSqlEffect(plan: SymbolNewHeadSqlPlan, a
   const encoded = text(field(afterData, chunk, "dataStr"));
   const plaintext = await decodeNativeHistoryChunk({ historyUuid: headUuid, keyHex: key, dataBase64: encoded });
   const editTime = generatedMs(bodyAt(plaintext, 0)["updateTime"], witness);
-  const documentTime = generatedMs(bodyAt(plaintext, 1)["updateTime"], witness);
+  const documentTime = generatedMs(bodyAt(plaintext, 1)["updateTime"], profile.documentClock);
   const header = { docType: "SYMBOL", client: witness.client, uuid: symbol.targetUuid, updateTime: documentTime, version: String(documentTime),
-    ...(symbol.headerEditVersion === null ? {} : { editVersion: symbol.headerEditVersion }) };
+    ...(profile.documentEditVersion === null ? {} : { editVersion: profile.documentEditVersion }) };
   const metadata = { title: symbol.desiredTitle, description: symbol.desiredDescription, tags: symbol.beforeTags, docType: 2, source: symbol.beforeSource };
   const expectedPlaintext = `${JSON.stringify({ type: "EDIT_HEAD" })}||${JSON.stringify({ uuid: witness.actorUuid, username: prepared.username, nickname: prepared.nickname, updateTime: editTime })}|\n` +
     `${JSON.stringify({ type: "DOCHEAD", ticket: plan.expectedTicket })}||${JSON.stringify(header)}|\n` +
@@ -368,7 +436,7 @@ export async function verifySymbolNewHeadSqlEffect(plan: SymbolNewHeadSqlPlan, a
     await exactRows(expected.get(prior.name) ?? prior.rows, observed.rows, prior.name);
     await yieldProofEventLoop();
   }
-  return Object.freeze({ profile: "easyeda-pro-control.symbol-new-head-full-sql-effect.v1", exactLogicalSqlEffect: true, headEligibility: plan.headEligibility,
+  return Object.freeze({ profile: profile.resultProfile, exactLogicalSqlEffect: true, headEligibility: plan.headEligibility,
     beforeSqlSha256: before.logicalSha256, afterSqlSha256: after.logicalSha256, expectedPlaintextSha256: sha256Json(expectedPlaintext),
     newHistoryUuid: headUuid, newHistoryId: prepared.nextHistoryId.toString(), newChunkId: prepared.nextChunkId.toString(),
     generatedCiphertextSha256: sha256Json(encoded), expectedTicket: plan.expectedTicket, executionAuthorized: false,

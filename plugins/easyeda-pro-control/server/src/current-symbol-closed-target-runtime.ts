@@ -1,5 +1,5 @@
 import { assertExpectedFingerprint, assertSubset, assertUpstreamReplySettled, canonicalJson, extractToolPayload, sha256Json } from "./core.ts";
-import { verifyCurrentDisposableOpenImplementation } from "./current-disposable-open-profile.ts";
+import { verifyCurrentSymbolWitnessImplementation } from "./current-disposable-open-profile.ts";
 import { validateCurrentClosedSymbolMetadataResult } from "./current-symbol-closed-target.ts";
 import type { CurrentClosedSymbolMetadataResult } from "./current-symbol-closed-target.ts";
 import { CURRENT_SYMBOL_METADATA_MAX_BYTES, parseCurrentSymbolMetadataRequest } from "./current-symbol-metadata.ts";
@@ -28,7 +28,7 @@ export async function readCurrentClosedSymbolMetadata(engine: SdkLocalEngine, re
   const initial = structuredClone(initialStatus.stableFingerprint);
   validateSdkLocalRuntimeFingerprint(initial); assertExpectedFingerprint(initial);
   assertSubset(initial, expected, "Current closed-symbol witness runtime");
-  await verifyCurrentDisposableOpenImplementation(initial.installedBundles.assetsRoot);
+  await verifyCurrentSymbolWitnessImplementation(initial.installedBundles.assetsRoot);
   await engine.assertBridgeDispatchAllowed();
   const raw = await engine.upstream.callTool("easyeda_execute", {
     code: buildCurrentClosedSymbolMetadataProgram(request), timeoutMs: 60_000, confirmWrite: true,
@@ -39,7 +39,7 @@ export async function readCurrentClosedSymbolMetadata(engine: SdkLocalEngine, re
     throw new Error("Current closed-symbol witness reply exceeds its byte bound.");
   }
   const observation = validateCurrentClosedSymbolMetadataResult(request, decodeExactReadEnvelope(envelope));
-  await verifyCurrentDisposableOpenImplementation(initial.installedBundles.assetsRoot);
+  await verifyCurrentSymbolWitnessImplementation(initial.installedBundles.assetsRoot);
   await engine.assertBridgeDispatchAllowed();
   const finalStatus = await engine.status();
   const final = finalStatus.stableFingerprint;

@@ -19,6 +19,27 @@ export const CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION = Object.freeze({
   ],
 });
 
+/** The internal writer witness additionally observes the notify-bus clock.
+ * This fixed source qualification does not prove a retained WS responder.
+ */
+export const CURRENT_SYMBOL_CLOCK_IMPLEMENTATION = Object.freeze({
+  relativePath: "pro-mgr/3.2.184.355087e9/js/ws-service.js", bytes: 855_142,
+  sha256: "7a372d7271225999c3d16bcef1cd91c0fa2d3a1a402ebcf9761442ecf3187453",
+});
+
+/** The project-only profile relies on the no-active-sheet startup exclusion.
+ * Pin the implementation that owns that initialization, not just its caller.
+ */
+export const CURRENT_PROJECT_ONLY_SCH_IMPLEMENTATION = Object.freeze({
+  relativePath: "pro-sch/3.2.192.b79ad524/js/sch-main.js", bytes: 6_289_422,
+  sha256: "d9d6a955bf40d57daf9f27f31e0fff3191715ff50582418ad0922beb71b424bd",
+});
+
+export async function verifyCurrentProjectOnlyOpenImplementation(assetsRoot: string): Promise<void> {
+  await verifyCurrentDisposableOpenImplementation(assetsRoot);
+  await verifyFiles(assetsRoot, [CURRENT_PROJECT_ONLY_SCH_IMPLEMENTATION]);
+}
+
 function requirePinned(condition: boolean): asserts condition {
   if (!condition) { throw new Error("Current disposable-open implementation differs from its reviewed profile."); }
 }
@@ -27,7 +48,19 @@ function requirePinned(condition: boolean): asserts condition {
 export async function verifyCurrentDisposableOpenImplementation(assetsRoot: string): Promise<void> {
   requirePinned(isAbsolute(assetsRoot) && await realpath(assetsRoot) === assetsRoot);
   await verifyCurrentUiImplementation(assetsRoot);
-  for (const pin of CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION.files) {
+  await verifyFiles(assetsRoot, CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION.files);
+}
+
+/** No caller-selected paths, hashes or profile overrides. Public metadata and
+ * ordinary opening retain their existing pins and do not gain this RPC.
+ */
+export async function verifyCurrentSymbolWitnessImplementation(assetsRoot: string): Promise<void> {
+  await verifyCurrentDisposableOpenImplementation(assetsRoot);
+  await verifyFiles(assetsRoot, [CURRENT_SYMBOL_CLOCK_IMPLEMENTATION]);
+}
+
+async function verifyFiles(assetsRoot: string, pins: readonly Readonly<{ relativePath: string; bytes: number; sha256: string }>[]): Promise<void> {
+  for (const pin of pins) {
     const path = resolve(assetsRoot, pin.relativePath);
     requirePinned(await realpath(path) === path);
     // oxlint-disable-next-line no-bitwise -- Do not follow a replaced symlink or block on a substituted FIFO.

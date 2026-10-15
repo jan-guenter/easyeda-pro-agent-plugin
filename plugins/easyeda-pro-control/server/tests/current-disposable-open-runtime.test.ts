@@ -17,8 +17,10 @@ import type { CurrentDisposableOpenPhase, CurrentDisposableOpenRequest } from ".
 import type { CurrentDisposableOpenCheckpoint } from "../src/current-disposable-open-checkpoint.ts";
 import { currentOpenFailureDiagnosticSchema, describeCurrentOpenFailure } from "../src/current-disposable-open-diagnostics.ts";
 import { CURRENT_DISPOSABLE_OPEN_IMPLEMENTATION } from "../src/current-disposable-open-profile.ts";
-import { CurrentDisposableOpenCoordinator } from "../src/current-disposable-open-runtime.ts";
-import type { CurrentDisposableOpenDependencies, CurrentDisposableOpenOptions, revalidateCurrentDisposableOpenGeneration } from "../src/current-disposable-open-runtime.ts";
+import { CurrentDisposableOpenCoordinator, assertCurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
+import type { CurrentDisposableOpenDependencies, CurrentDisposableOpenOptions, CurrentSymbolBaselineOwner,
+  revalidateCurrentDisposableOpenGeneration, revalidateCurrentSymbolBaselineOwner } from "../src/current-disposable-open-runtime.ts";
+import { currentSymbolBaselineRequestSchema } from "../src/current-symbol-baseline-runtime.ts";
 import { currentClosedSymbolMetadataProjection, validateCurrentClosedSymbolMetadataResult } from "../src/current-symbol-closed-target.ts";
 import type { readCurrentClosedSymbolMetadata } from "../src/current-symbol-closed-target-runtime.ts";
 import { currentSymbolMetadataPreparationRequestSchema, prepareCurrentSymbolMetadata } from "../src/current-symbol-metadata-preparation.ts";
@@ -284,10 +286,12 @@ void test("stopped opener retains fixed diagnostics across inspect and retiremen
  * these VM originals are deliberately rejected by the actual module issuer.
  * The checkpoint decoder/preparer below is the real maintained implementation.
  */
-async function sourcePreparation(services: CurrentDisposableOpenDependencies, read: typeof readCurrentClosedSymbolMetadata): Promise<{
+async function sourcePreparation(services: CurrentDisposableOpenDependencies, read: typeof readCurrentClosedSymbolMetadata, baselineClass?: unknown): Promise<{
   Coordinator: typeof CurrentDisposableOpenCoordinator;
   original: typeof assertOriginalCurrentOwnedSymbolPreparation;
   revalidate: typeof revalidateCurrentDisposableOpenGeneration;
+  baselineOwner: typeof assertCurrentSymbolBaselineOwner;
+  revalidateBaselineOwner: typeof revalidateCurrentSymbolBaselineOwner;
 }> {
   const source = await Promise.all(["current-disposable-open-runtime", "current-symbol-owned-preparation"].map(async (name) =>
     stripTypeScriptTypes(await readFile(new URL(`../src/${name}.ts`, import.meta.url), "utf8"))
@@ -298,6 +302,7 @@ async function sourcePreparation(services: CurrentDisposableOpenDependencies, re
     currentDisposableOpenSealedTargetSchema, parseCurrentDisposableOpenRequest, buildCurrentDisposableOpenProgram, validateCurrentDisposableOpenResult,
     currentOpenFailureDiagnosticSchema, describeCurrentOpenFailure, decodeExactReadEnvelope,
     currentSymbolMetadataPreparationRequestSchema, prepareCurrentSymbolMetadata, currentClosedSymbolMetadataProjection, readCurrentClosedSymbolMetadata: read,
+    CurrentSymbolBaselineCoordinator: baselineClass, currentSymbolBaselineRequestSchema,
     EasyedaControlEngine: Object, WindowsControlRuntime: Object,
     createOperation: services.createOperation, loadOperation: services.loadOperation, updateOperation: services.updateOperation,
     operationPath: (id: string): string => `/fixture/${id}.json`, writePhaseArtifact: services.writePhaseArtifact,
@@ -305,11 +310,13 @@ async function sourcePreparation(services: CurrentDisposableOpenDependencies, re
     verifyCurrentDisposableOpenCheckpoint: services.verifyCheckpoint, verifyCurrentDisposableOpenImplementation: services.verifyImplementation,
     validateSdkLocalRuntimeFingerprint: services.validateFingerprint,
   });
-  const loaded: unknown = vm.runInContext(`${source.join("\n")}\n({ Coordinator: CurrentDisposableOpenCoordinator, original: assertOriginalCurrentOwnedSymbolPreparation, revalidate: revalidateCurrentDisposableOpenGeneration });`, scope);
-  assert.ok(isRecord(loaded) && typeof loaded["Coordinator"] === "function" && typeof loaded["original"] === "function" && typeof loaded["revalidate"] === "function");
+  const loaded: unknown = vm.runInContext(`${source.join("\n")}\n({ Coordinator: CurrentDisposableOpenCoordinator, original: assertOriginalCurrentOwnedSymbolPreparation, revalidate: revalidateCurrentDisposableOpenGeneration, baselineOwner: assertCurrentSymbolBaselineOwner, revalidateBaselineOwner: revalidateCurrentSymbolBaselineOwner });`, scope);
+  assert.ok(isRecord(loaded) && typeof loaded["Coordinator"] === "function" && typeof loaded["original"] === "function" && typeof loaded["revalidate"] === "function" &&
+    typeof loaded["baselineOwner"] === "function" && typeof loaded["revalidateBaselineOwner"] === "function");
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- These two checked exports were evaluated directly from the maintained source in this private VM, not supplied by a tool caller.
   return loaded as { Coordinator: typeof CurrentDisposableOpenCoordinator; original: typeof assertOriginalCurrentOwnedSymbolPreparation;
-    revalidate: typeof revalidateCurrentDisposableOpenGeneration };
+    revalidate: typeof revalidateCurrentDisposableOpenGeneration; baselineOwner: typeof assertCurrentSymbolBaselineOwner;
+    revalidateBaselineOwner: typeof revalidateCurrentSymbolBaselineOwner };
 }
 
 function historyRecord(type: string, body: unknown, id?: string): string {
@@ -355,6 +362,11 @@ void test("owned symbol preparation uses the real checkpoint preparer and invali
     const observation = validateCurrentClosedSymbolMetadataResult(request, { ok: true, kind: "current-closed-symbol-metadata-witness", method: "eda.lib_Symbol.get",
       target, value: { uuid: "a".repeat(16), projectUuid: TARGET.projectUuid, ownerUuid: "2".repeat(32), name: "Original", description: "Original description",
         tagsJson: "[]", source: "template", version: "1", ticket: 1 }, samples: 2, implementationKind: "native-task-equivalent",
+      clientTicketObservation: { client: "f".repeat(16), maxTicket: 1, samples: 4 },
+      runtimeObservation: { editorVersion: "3.2.206", actor: { uuid: "1".repeat(32), username: "fixture-user", nickname: "Fixture" },
+        clockSamples: Array.from({ length: 4 }, (_, index) => ({ rendererBeforeMs: 1000 + index * 3,
+          serverTimeMs: 1001 + index * 3, rendererAfterMs: 1002 + index * 3 })),
+        backendActorVerified: false, backendClockVerified: false, clockProducerOwnershipVerified: false },
       targetClosedInRegistry: true, hiddenEditorsVerified: true, workerIdentityVerified: false, cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false });
     readControl.duringRead?.();
     return Promise.resolve({ observation, observationSha256: sha256Json(observation), runtimeFingerprintSha256: sha256Json(FINGERPRINT),
@@ -407,4 +419,160 @@ void test("owned symbol preparation uses the real checkpoint preparer and invali
   await assert.rejects(coordinator.prepareSymbolMetadata(isolated.input.operationId, input), /original authenticated session changed/u);
   sessionChanged = false;
   assert.deepEqual(dispatches(isolated), [...beforeDispatches, "dispatch:observe"]);
+});
+
+void test("owned baseline transfer reserves the runtime across Jobs and stops in-flight ordinary continuations", async (t) => {
+  const input = await preparationCheckpoint(t), isolated = fixture("baseline-transfer");
+  const followups: string[] = [];
+  let active = false, admitted = 0, cacheReads = 0, constructed = 0, observed = 0, relaunched = 0, sessionClosed = false;
+  let retainedOwner: CurrentSymbolBaselineOwner | undefined;
+  let currentLaunch = structuredClone(LAUNCH);
+  const runtime = isolated.options.runtime(), transition = Promise.withResolvers<Value>();
+  const originalStatus = runtime.status.bind(runtime);
+  runtime.status = (): ReturnType<typeof originalStatus> => ({ ...originalStatus(), launch: structuredClone(currentLaunch) });
+  const baselineId = "current-symbol-baseline-transfer", sqlRuntime = { nodeExecutable: "/synthetic/not-invoked", nodeVersion: "24.18.0" as const, nodeSha256: HASH };
+  class SyntheticBaseline {
+    private readonly ordinal: number;
+    public constructor(engine: unknown, retainedRuntime: unknown, sql: unknown) {
+      assert.equal(engine, isolated.options.engine); assert.equal(retainedRuntime, isolated.options.runtime()); assert.deepEqual(sql, sqlRuntime);
+      constructed += 1; this.ordinal = constructed;
+    }
+    public capture(owner: CurrentSymbolBaselineOwner): Promise<void> {
+      assert.equal(this.ordinal, 1); assert.equal(active, true); assert.equal(retainedOwner, undefined); retainedOwner = owner; return Promise.resolve();
+    }
+    public close(owner: CurrentSymbolBaselineOwner): Promise<Value> {
+      assert.equal(active, false); assert.equal(owner, retainedOwner); sessionClosed = true;
+      return Promise.resolve({ state: "awaiting-termination", stageOrdinal: this.ordinal });
+    }
+    public observe(operationId: string): Promise<Value> {
+      assert.equal(operationId, baselineId); observed += 1; return Promise.resolve({ state: "awaiting-termination", stageOrdinal: this.ordinal });
+    }
+    public relaunch(operationId: string): Promise<Value> {
+      assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); assert.equal(relaunched, 0); relaunched += 1;
+      const jobId = "9".repeat(32);
+      currentLaunch = { ...LAUNCH, jobId, root: { ...LAUNCH.root, pid: 4321, startIdentity: `win32:134000000000000001:job:${jobId}` } };
+      return transition.promise;
+    }
+    public admit(operationId: string): Promise<Value> {
+      assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); admitted += 1;
+      return Promise.resolve({ state: "admitted", stageOrdinal: this.ordinal });
+    }
+    public observeCaches(operationId: string): Promise<Value> {
+      assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); cacheReads += 1;
+      return Promise.resolve({ state: "caches-observed", stageOrdinal: this.ordinal });
+    }
+    public openProject(operationId: string): Promise<Value> {
+      assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); followups.push("open-project");
+      return Promise.resolve({ state: "project-only-opened", stageOrdinal: this.ordinal, writerAuthority: false });
+    }
+    public finishNormalClose(operationId: string): Promise<Value> {
+      assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); followups.push("finish-close");
+      return Promise.resolve({ state: "awaiting-finish-termination", stageOrdinal: this.ordinal });
+    }
+    public observeFinish(operationId: string): Promise<Value> {
+      assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); followups.push("observe-finish");
+      return Promise.resolve({ state: "retired", stageOrdinal: this.ordinal, executionAuthorized: false });
+    }
+    public inspect(operationId: string): Promise<Value> {
+      assert.equal(this.ordinal, 1); assert.equal(operationId, baselineId); followups.push("inspect");
+      return Promise.resolve({ state: "retired", stageOrdinal: this.ordinal, executionAuthorized: false });
+    }
+    public stopAfterScopeFailure(): Promise<void> { return Promise.reject(new Error(`Unexpected synthetic scope failure in stage ${String(this.ordinal)}`)); }
+  }
+  const loaded = await sourcePreparation(isolated.services, (engine, request, fingerprint): ReturnType<typeof readCurrentClosedSymbolMetadata> => {
+    assert.equal(engine, isolated.options.engine); assert.deepEqual(fingerprint, FINGERPRINT);
+    const target = { projectUuid: TARGET.projectUuid, branchUuid: SEALED.branchUuid, documentUuid: TARGET.documentUuid,
+      tabId: `${TARGET.documentUuid}@${TARGET.projectUuid}` };
+    const observation = validateCurrentClosedSymbolMetadataResult(request, { ok: true, kind: "current-closed-symbol-metadata-witness", method: "eda.lib_Symbol.get",
+      target, value: { uuid: "a".repeat(16), projectUuid: TARGET.projectUuid, ownerUuid: "2".repeat(32), name: "Original", description: "Original description",
+        tagsJson: "[]", source: "template", version: "1", ticket: 1 }, samples: 2, implementationKind: "native-task-equivalent",
+      clientTicketObservation: { client: "f".repeat(16), maxTicket: 1, samples: 4 },
+      runtimeObservation: { editorVersion: "3.2.206", actor: { uuid: "1".repeat(32), username: "fixture-user", nickname: "Fixture" },
+        clockSamples: Array.from({ length: 4 }, (_, index) => ({ rendererBeforeMs: 1000 + index * 3,
+          serverTimeMs: 1001 + index * 3, rendererAfterMs: 1002 + index * 3 })),
+        backendActorVerified: false, backendClockVerified: false, clockProducerOwnershipVerified: false },
+      targetClosedInRegistry: true, hiddenEditorsVerified: true, workerIdentityVerified: false, cadAuthority: false, persistenceVerified: false, sourceMembershipVerified: false });
+    return Promise.resolve({ observation, observationSha256: sha256Json(observation), runtimeFingerprintSha256: sha256Json(FINGERPRINT),
+      sourceImplementationVerified: true, executionAuthorized: false });
+  }, SyntheticBaseline);
+  const upstream = isolated.options.engine.upstream;
+  upstream.withAuthenticatedBridgeDispatchScope = async <Result>(run: (binding: AuthenticatedBridgeDispatchBinding) => PromiseLike<Result> | Result): Promise<Result> => {
+    assert.equal(active, false); active = true; try { return await run(BINDING); } finally { active = false; }
+  };
+  upstream.currentAuthenticatedBridgeDispatchBinding = (): AuthenticatedBridgeDispatchBinding | undefined => active ? BINDING : undefined;
+  upstream.bridgeSessionLifecycle = (): unknown => ({ schema: "easyeda-pro-control.authenticated-bridge-lifecycle.v1", gatewayInstanceId: PRIOR.gatewayInstanceId,
+    activeSession: sessionClosed ? null : { sessionId: PRIOR.sessionId, sequence: PRIOR.sequence,
+      authenticatedAtEpochMs: PRIOR.authenticatedAtEpochMs, authenticationReceiptSha256: PRIOR.authenticationReceiptSha256 } });
+  const coordinator = new loaded.Coordinator(isolated.options);
+  await coordinator.run(isolated.input, FINGERPRINT);
+  const preparingSibling = new loaded.Coordinator(isolated.options), siblingInput = { ...isolated.input, operationId: "current-open-preparing-sibling" };
+  await preparingSibling.run(siblingInput, FINGERPRINT);
+  const siblingPreparation = await preparingSibling.prepareSymbolMetadata(siblingInput.operationId, input);
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Only the private source-evaluation scope regards this fixture engine as its synthetic engine class.
+  const engine = isolated.options.engine as EasyedaControlEngine;
+  const siblingOriginal = loaded.original(siblingPreparation, engine);
+  const observingInput = { ...isolated.input, operationId: "current-open-observing-sibling" }, observingSibling = new loaded.Coordinator(isolated.options);
+  await observingSibling.run(observingInput, FINGERPRINT);
+  const beforeReservation = dispatches(isolated);
+  const request = { operationId: baselineId, preparation: input, confirmNormalClose: true };
+  // Both sibling actions begin before the baseline reserves the shared Job.
+  // Their next awaited-boundary checks must stop before another CAD dispatch.
+  const revalidation = loaded.revalidate(siblingOriginal.generation, engine);
+  const queuedObservation = observingSibling.run({ action: "observe", operationId: observingInput.operationId });
+  const baseline = coordinator.beginSymbolBaseline(isolated.input.operationId, request, sqlRuntime);
+  const [closed] = await Promise.all([baseline, assert.rejects(revalidation, /transferred/u), assert.rejects(queuedObservation, /transferred/u)]);
+  assert.deepEqual(dispatches(isolated), beforeReservation);
+  assert.equal(closed["state"], "awaiting-termination"); assert.equal(constructed, 1); assert.equal(sessionClosed, true); assert.ok(retainedOwner !== undefined);
+  const original = loaded.baselineOwner(retainedOwner, engine);
+  assert.equal(original.source.runtime, isolated.options.runtime()); assert.equal(original.preparation.checkpointPreparation.metadata.after.name, "Changed");
+  assert.equal(await loaded.revalidateBaselineOwner(retainedOwner, engine), original);
+  assert.throws(() => loaded.baselineOwner(structuredClone(retainedOwner), engine), /not issued/u);
+  assert.throws(() => assertCurrentSymbolBaselineOwner(retainedOwner, engine), /not issued/u);
+  await assert.rejects(coordinator.prepareSymbolMetadata(isolated.input.operationId, input), /transferred/u);
+  await assert.rejects(coordinator.run({ action: "observe", operationId: isolated.input.operationId }), /transferred/u);
+  const inspected = await coordinator.run({ action: "inspect", operationId: isolated.input.operationId }); assert.equal(inspected["state"], "completed");
+  assert.equal(loaded.baselineOwner(retainedOwner, engine), original);
+  await assert.rejects(coordinator.beginSymbolBaseline(isolated.input.operationId, request, sqlRuntime), /distinct unused/u);
+  await assert.rejects(coordinator.beginSymbolBaseline(isolated.input.operationId, { ...request, operationId: "another-baseline" }, sqlRuntime), /transferred/u);
+  const sibling = new loaded.Coordinator(isolated.options);
+  await assert.rejects(sibling.run({ ...isolated.input, operationId: "another-opening" }, FINGERPRINT), /transferred/u);
+  const observation = await coordinator.run({ action: "baseline-observe-termination", operationId: baselineId });
+  assert.equal(observation["stageOrdinal"], 1); assert.equal(constructed, 1); assert.equal(observed, 1);
+  const beforeRelaunch = dispatches(isolated), relaunch = coordinator.run({ action: "baseline-relaunch", operationId: baselineId, acceptNormalOpenEffects: true });
+  assert.equal(runtime.status().launch?.jobId, "9".repeat(32)); assert.equal(relaunched, 1);
+  await assert.rejects(coordinator.observeSymbolBaseline(baselineId), /busy/u);
+  await assert.rejects(coordinator.relaunchSymbolBaseline(baselineId), /busy/u);
+  await assert.rejects(coordinator.admitSymbolBaseline(baselineId), /busy/u);
+  await assert.rejects(coordinator.observeSymbolBaselineCaches(baselineId), /busy/u);
+  await assert.rejects(coordinator.run({ action: "baseline-open-project", operationId: baselineId, acceptNormalOpenEffects: true }), /in progress/u);
+  await assert.rejects(sibling.run({ ...isolated.input, operationId: "after-relaunch-opening" }, FINGERPRINT), /transferred/u);
+  await assert.rejects(preparingSibling.beginSymbolBaseline(siblingInput.operationId, { ...request, operationId: "after-relaunch-sibling-baseline" }, sqlRuntime), /transferred/u);
+  transition.resolve({ state: "relaunched", stageOrdinal: 1 });
+  const relaunchedResult = await relaunch;
+  assert.equal(relaunchedResult["stageOrdinal"], 1);
+  assert.equal(constructed, 1); assert.deepEqual(dispatches(isolated), beforeRelaunch);
+  await assert.rejects(coordinator.relaunchSymbolBaseline("unknown-baseline"), /unavailable/u);
+  const admission = await coordinator.run({ action: "baseline-admit", operationId: baselineId });
+  assert.equal(admission["stageOrdinal"], 1); assert.equal(admitted, 1);
+  await assert.rejects(coordinator.admitSymbolBaseline("unknown-baseline"), /unavailable/u);
+  const caches = await coordinator.run({ action: "baseline-observe-caches", operationId: baselineId });
+  assert.equal(caches["stageOrdinal"], 1); assert.equal(cacheReads, 1);
+  await assert.rejects(coordinator.observeSymbolBaselineCaches("unknown-baseline"), /unavailable/u);
+  await assert.rejects(coordinator.run({ action: "baseline-open-project", operationId: baselineId, acceptNormalOpenEffects: true }, FINGERPRINT), /cannot replace/u);
+  const opened = await coordinator.run({ action: "baseline-open-project", operationId: baselineId, acceptNormalOpenEffects: true });
+  assert.equal(opened["stageOrdinal"], 1); assert.equal(opened["writerAuthority"], false);
+  const finished = await coordinator.run({ action: "baseline-finish-close", operationId: baselineId, confirmNormalClose: true, acceptUnknownFileEffects: true });
+  assert.equal(finished["stageOrdinal"], 1);
+  const terminal = await coordinator.run({ action: "baseline-observe-finish", operationId: baselineId });
+  assert.equal(terminal["stageOrdinal"], 1); assert.equal(terminal["executionAuthorized"], false);
+  isolated.state.quarantine = true;
+  const baselineInspection = await coordinator.run({ action: "baseline-inspect", operationId: baselineId });
+  assert.equal(baselineInspection["stageOrdinal"], 1); assert.equal(baselineInspection["executionAuthorized"], false);
+  isolated.state.quarantine = false;
+  assert.deepEqual(followups, ["open-project", "finish-close", "observe-finish", "inspect"]);
+  assert.equal(constructed, 1); assert.deepEqual(dispatches(isolated), beforeRelaunch);
+  // Neither a completed transition nor a later null launch returns this runtime
+  // To ordinary ownership. The reservation lasts for the runtime's lifetime.
+  runtime.status = (): ReturnType<typeof originalStatus> => ({ ...originalStatus(), launch: null });
+  await assert.rejects(sibling.run({ ...isolated.input, operationId: "null-launch-opening" }, FINGERPRINT), /transferred/u);
 });
